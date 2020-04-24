@@ -106,7 +106,9 @@ define(['require',
                 var that = this;
                 require(["views/audit/AdminAuditTableLayoutView"], function(AdminAuditTableLayoutView) {
                     var view = new AdminAuditTableLayoutView({
-                        searchTableFilters: that.searchTableFilters
+                        searchTableFilters: that.searchTableFilters,
+                        entityDefCollection: that.entityDefCollection,
+                        enumDefCollection: that.enumDefCollection
                     });
                     that.RAdminTableLayoutView.show(view);
                 });

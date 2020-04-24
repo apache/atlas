@@ -292,7 +292,7 @@ define(['require',
                         data: this.json,
                         success: function(model, response) {
                             Utils.notifySuccess({
-                                content: "One or more Business Metadada attribute" + Messages.getAbbreviationMsg(false, 'editSuccessMessage')
+                                content: "One or more Business Metadada attribute" + Messages.getAbbreviationMsg(true, 'editSuccessMessage')
                             });
                             if (model.businessMetadataDefs && model.businessMetadataDefs.length) {
                                 that.selectedBusinessMetadata.set(model.businessMetadataDefs[0]);

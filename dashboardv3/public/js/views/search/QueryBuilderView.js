@@ -65,6 +65,9 @@ define(['require',
                 }
                 if (type === "string") {
                     obj.operators = ['=', '!=', 'contains', 'begins_with', 'ends_with'];
+                    if (this.adminAttrFilters) {
+                        obj.operators = obj.operators.concat(['like', 'in']);
+                    }
                 }
                 if (type === "date") {
                     obj.operators = ['>', '<'];
@@ -279,12 +282,13 @@ define(['require',
                     _.extend(obj, this.getOperator(obj.type));
                     return obj;
                 }
+
                 if (this.isPrimitive(obj.type)) {
                     if (obj.type === "boolean") {
                         obj['input'] = 'select';
                         obj['values'] = ['true', 'false'];
                     }
-                    _.extend(obj, this.getOperator(obj.type));
+                    _.extend(obj, this.getOperator(obj.type, false));
                     if (_.has(Enums.regex.RANGE_CHECK, obj.type)) {
                         obj.validation = {
                             min: Enums.regex.RANGE_CHECK[obj.type].min,
@@ -318,7 +322,19 @@ define(['require',
                     placeHolder = '--Select Attribute--';
                 var rules_widgets = null;
                 if (this.adminAttrFilters) {
-                    filters = this.adminAttrFilters;
+                    var entityDef = this.entityDefCollection.fullCollection.find({ name: "__AtlasAuditEntry" }),
+                        auditEntryAttributeDefs = null;
+                    if (entityDef) {
+                        auditEntryAttributeDefs = $.extend(true, {}, entityDef.get("attributeDefs")) || null;
+                    }
+                    if (auditEntryAttributeDefs) {
+                        _.each(auditEntryAttributeDefs, function(attributes) {
+                            var returnObj = that.getObjDef(attributes, rules_widgets);
+                            if (returnObj) {
+                                filters.push(returnObj);
+                            }
+                        });
+                    }
                     rules_widgets = CommonViewFunction.attributeFilter.extractUrl({ "value": this.searchTableFilters ? this.searchTableFilters["adminAttrFilters"] : null, "formatDate": true });;
                 } else {
                     if (this.value) {
@@ -427,6 +443,8 @@ define(['require',
                             { type: '>=', nb_inputs: 1, multiple: false, apply_to: ['number', 'string', 'boolean'] },
                             { type: '<=', nb_inputs: 1, multiple: false, apply_to: ['number', 'string', 'boolean'] },
                             { type: 'contains', nb_inputs: 1, multiple: false, apply_to: ['string'] },
+                            { type: 'like', nb_inputs: 1, multiple: false, apply_to: ['string'] },
+                            { type: 'in', nb_inputs: 1, multiple: false, apply_to: ['string'] },
                             { type: 'begins_with', nb_inputs: 1, multiple: false, apply_to: ['string'] },
                             { type: 'ends_with', nb_inputs: 1, multiple: false, apply_to: ['string'] },
                             { type: 'is_null', nb_inputs: false, multiple: false, apply_to: ['number', 'string', 'boolean', 'enum'] },

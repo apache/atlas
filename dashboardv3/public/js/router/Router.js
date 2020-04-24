@@ -36,9 +36,6 @@ define([
             "!/search/searchResult": function() {
                 this.renderDefaultSearchLayoutView({ fromSearchResultView: true });
             },
-            "!/search/customFilter": function() {
-                this.renderDefaultSearchLayoutView({ fromCustomFilterView: true });
-            },
             // Tag
             "!/tag": "renderTagLayoutView",
             "!/tag/tagAttribute/(*name)": "renderTagLayoutView",

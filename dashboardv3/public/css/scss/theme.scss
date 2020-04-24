@@ -38,27 +38,6 @@ body {
         padding-top: 15px !important;
         padding-bottom: 10px !important;
     }
-
-    // &:after {
-    //     content: "beta";
-    //     position: fixed;
-    //     width: 80px;
-    //     height: 25px;
-    //     background: #509ce7;
-    //     top: 5px;
-    //     left: -23px;
-    //     text-align: center;
-    //     font-size: 13px;
-    //     font-family: sans-serif;
-    //     text-transform: uppercase;
-    //     font-weight: bold;
-    //     color: #fff;
-    //     line-height: 27px;
-    //     -ms-transform: rotate(-45deg);
-    //     -webkit-transform: rotate(-40deg);
-    //     transform: rotate(-45deg);
-    //     z-index: 9;
-    // }
 }
 
 .back-button {
@@ -66,8 +45,8 @@ body {
     float: left;
     position: absolute;
     left: 4px;
-    top: 32px;
-    font-size: 47px;
+    top: 9px;
+    font-size: 38px;
     color: #bfbfbf;
     cursor: pointer;
 
@@ -244,27 +223,6 @@ header.atlas-header {
     }
 }
 
-// .sidebar-fixed-filter {
-//     position: fixed;
-//     overflow: scroll;
-//     padding: 15px 15px 15px 5px;
-//     width: auto;
-//     left: 16px;
-//     width: 340px;
-//     top: 91px;
-//     bottom: 0;
-//     border-right: 1px solid #eeeaea;
-
-//     .add-seperator {
-//         border-bottom: 1px solid #eeeaea;
-//     }
-// }
-
-.sidebar-fixed-left-container {
-    width: calc(100% - 350px);
-    margin-left: 350px;
-}
-
 .main-search {
     .form-control {
         border: none;
@@ -301,8 +259,7 @@ header.atlas-header {
 }
 
 .page-title {
-    //background-color: $color_white_lilac_approx;
-    padding: 15px 15px 0px 15px;
+    padding: 0px 15px 0px 15px;
 
     .title {
         padding-top: 0;
@@ -469,12 +426,9 @@ hr[size="10"] {
     }
 }
 
-@media (min-width: 768px) {
-    .col-sm-custom {
-        //width: 92%;
-        margin: 25px 25px 0px;
-        position: relative;
-    }
+.col-sm-custom {
+    margin: 15px 25px 0px;
+    position: relative;
 }
 
 .no-padding {
