@@ -247,13 +247,7 @@
 
 .tab-content>.tab-pane.active {
     overflow-x: hidden;
-}
-
-.admin-details {
-    .tab-pane.active {
-        min-height: 400px;
-    }
-
+    overflow: initial;
 }
 
 .advancedInfo {

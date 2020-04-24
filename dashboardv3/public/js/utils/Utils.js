@@ -407,12 +407,6 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
                 matchString: "administrator"
             });
         },
-        isCustomFilterTab: function(url) {
-            return this.checkTabUrl({
-                url: url,
-                matchString: "search/customFilter"
-            });
-        },
         isGlossaryTab: function(url) {
             return this.checkTabUrl({
                 url: url,
@@ -423,12 +417,6 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
             return this.checkTabUrl({
                 url: url,
                 matchString: "detailPage"
-            });
-        },
-        isPurgePage: function(url) {
-            return this.checkTabUrl({
-                url: url,
-                matchString: "purge"
             });
         },
         getLastValue: function() {
@@ -932,7 +920,6 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
         } else {
             tableEl.addClass('hide-empty-value');
         }
-
     }
     $.fn.showButtonLoader = function() {
         $(this).attr("disabled", "true").addClass('button-loader');

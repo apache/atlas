@@ -72,53 +72,7 @@
 </head>
 
 <body>
-    <!--     <div id="wrapper">
-        <div id="sidebar-wrapper" class="sidebar-wrapper">
-            <div id="sideNav-wrapper"></div>
-        </div>
-        <div id="page-content-wrapper" class="page-content-wrapper">
-            <header id="new-header" class="clearfix"></header>
-            <div id="new-page-wrapper">
-                <div>
-                    <div class="initialLoading"></div>
-                </div>
-            </div>
-        </div>
-    </div> -->
-    <!--  <div id="wrapper">
-        <div id="sidebar-wrapper" class="sidebar-wrapper">
-            <div id="sideNav-wrapper"></div>
-        </div>
-        <div id="page-content-wrapper" class="page-content-wrapper">
-           
-            <div id="new-page-wrapper">
-                <div>
-                    <div class="initialLoading"></div>
-                </div>
-            </div>
-        </div>
-    </div> -->
-    <!--  <div class="container-fluid gray-bg">
-       <div class="col-sm-12">
-            <div id="new-page-wrapper">
-                <div>
-                    <div class="initialLoading"></div>
-                </div>
-            </div>
-            <div class="fix-filter">
-                    <div class="sideBar">
-                        <div class="header">
-                            <span>Filter</span>
-                        </div>
-                        <div class="body">
-                            <div id="sideNav-wrapper"></div>
-                        </div>
-                    </div>
-                </div>
-        </div>
-    </div>
- -->
-    <div class="">
+    <div>
         <div id="header" class="clearfix"></div>
         <div class="container-fluid view-container">
             <div id="sidebar-wrapper" class="col-sm-3 no-padding"></div>

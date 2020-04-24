@@ -74,7 +74,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'searchTableFilters'));
+                _.extend(this, _.pick(options, 'searchTableFilters', 'entityDefCollection', 'enumDefCollection'));
                 this.entityCollection = new VEntityList();
                 this.limit = 25;
                 this.entityCollection.url = UrlLinks.adminApiUrl();
@@ -106,49 +106,6 @@ define(['require',
                     paginatorOpts: {}
                 };
                 this.isFilters = null;
-                this.adminAttrFilters = [{
-                    "id": "startTime",
-                    "label": "startTime (date)",
-                    "operators": [
-                        "=",
-                        "!=",
-                        ">",
-                        "<",
-                        ">=",
-                        "<="
-                    ],
-                    "plugin": "daterangepicker",
-                    "plugin_config": {
-                        "locale": {
-                            "format": "MM/DD/YYYY h:mm A"
-                        },
-                        "showDropdowns": true,
-                        "singleDatePicker": true,
-                        "timePicker": true
-                    },
-                    "type": "date"
-                }, {
-                    "id": "endTime",
-                    "label": "endTime (date)",
-                    "operators": [
-                        "=",
-                        "!=",
-                        ">",
-                        "<",
-                        ">=",
-                        "<="
-                    ],
-                    "plugin": "daterangepicker",
-                    "plugin_config": {
-                        "locale": {
-                            "format": "MM/DD/YYYY h:mm A"
-                        },
-                        "showDropdowns": true,
-                        "singleDatePicker": true,
-                        "timePicker": true
-                    },
-                    "type": "date"
-                }]
             },
             onRender: function() {
                 var str = '<option>All</option><option>Purged</option>';
@@ -167,28 +124,30 @@ define(['require',
                 that.$('.fa-angle-right').toggleClass('fa-angle-down');
                 that.$('.attribute-filter-container, .attr-filter-overlay').toggleClass('hide');
             },
-            getAttributes: function() {
-                var adminAttributes = [{
-                    "attributeName": "userName",
-                    "operator": "like",
-                    "attributeValue": "admin"
-                }];
-                if (this.onlyPurged === true) {
-                    adminAttributes.push({
-                        "attributeName": "operation",
-                        "operator": "like",
-                        "attributeValue": "PURGE"
-                    })
-                }
-                if (this.isFilters) {
-                    _.each(this.isFilters, function(adminFilter) {
+            getAttributes: function(options) {
+                var adminAttributes = [];
+                if (options.isFilter) {
+                    _.each(options.isFilter, function(adminFilter) {
                         adminAttributes.push({
                             "attributeName": adminFilter.id,
                             "operator": adminFilter.operator,
-                            "attributeValue": Date.parse(adminFilter.value).toString(),
+                            "attributeValue": (adminFilter.type == "date" && options.isDateParsed) ? Date.parse(adminFilter.value).toString() : adminFilter.value
                         })
                     })
                     this.isFilters = null;
+                } else {
+                    adminAttributes = [{
+                        "attributeName": "userName",
+                        "operator": "=",
+                        "attributeValue": "admin"
+                    }];
+                    if (this.onlyPurged === true) {
+                        adminAttributes.push({
+                            "attributeName": "operation",
+                            "operator": "=",
+                            "attributeValue": "PURGE"
+                        })
+                    }
                 }
                 return adminAttributes;
             },
@@ -196,7 +155,7 @@ define(['require',
                 var that = this;
                 this.ui.adminRegion.show();
                 require(['views/search/QueryBuilderView'], function(QueryBuilderView) {
-                    that.RQueryBuilderAdmin.show(new QueryBuilderView({ adminAttrFilters: that.adminAttrFilters, searchTableFilters: that.searchTableFilters }));
+                    that.RQueryBuilderAdmin.show(new QueryBuilderView({ adminAttrFilters: true, searchTableFilters: that.searchTableFilters, entityDefCollection: that.entityDefCollection, enumDefCollection: that.enumDefCollection }));
                 });
             },
             okAttrFilterButton: function(options) {
@@ -207,7 +166,6 @@ define(['require',
                     var queryBuilder = queryBuilderRef.queryBuilder("getRules");
                     if (queryBuilder) {
                         that.isFilters = queryBuilder.rules;
-                        that.searchTableFilters["adminAttrFilters"] = CommonViewFunction.attributeFilter.generateUrl({ value: queryBuilder, formatedDateToLong: true });
                     } else {
                         isFilterValidate = false
                     }
@@ -219,10 +177,20 @@ define(['require',
             },
             getAdminCollection: function() {
                 var that = this,
+                    options = {
+                        isDateParsed: true,
+                        isFilter: this.isFilters
+                    },
                     adminParam = {
                         condition: "AND",
-                        criterion: that.getAttributes()
+                        criterion: that.getAttributes(options)
                     };
+                options.isDateParsed = false;
+                var auditQueryParam = {
+                    condition: "AND",
+                    criterion: that.getAttributes(options)
+                };
+                that.searchTableFilters["adminAttrFilters"] = CommonViewFunction.attributeFilter.generateUrl({ value: auditQueryParam, formatedDateToLong: true });
                 this.$('.fontLoader').show();
                 this.$('.tableOverlay').show();
                 $.extend(that.entityCollection.queryParams, { limit: this.limit, offset: 0, auditFilters: adminParam });
@@ -266,7 +234,7 @@ define(['require',
                         expand: function(el, model) {
                             var adminValues = '<div class="col-sm-6">',
                                 newColumn = '';
-                            el.attr('colspan', '6');
+                            el.attr('colspan', '7');
                             if (model.attributes.params) {
                                 var guids = model.attributes.result.replace('[', '').replace(']', '').split(',');
                                 _.each(guids, function(adminGuid, index) {
@@ -297,6 +265,11 @@ define(['require',
                     },
                     clientId: {
                         label: "Client ID",
+                        cell: "String",
+                        editable: false
+                    },
+                    resultCount: {
+                        label: "Result Count",
                         cell: "String",
                         editable: false
                     },
