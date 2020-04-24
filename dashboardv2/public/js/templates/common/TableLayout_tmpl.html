@@ -22,11 +22,7 @@
             {{/unless}}
         </div>
     </div>
-    {{#if includePagination}}
-    <div class="clearfix banded">
-        <div data-id="r_footerRecords" class="margin-top-10"></div>
-    </div>
-    {{/if}} {{#if includeAtlasPagination}}
+    {{#if includeAtlasPagination}}
     <div class="row form-group pagination-box filter-box">
         <div class="col-sm-4">
             <span class="labelShowRecord pull-left" data-id="pageRecordText"> </span>
@@ -43,7 +39,10 @@
     </div>
     {{#if includePagination}}
     <div class="row clearfix banded pagination-box">
-        <div class="col-sm-offset-4 col-sm-8">
+        <div class="col-sm-4">
+            <div data-id="r_footerRecords" class="margin-top-10"></div>
+        </div>
+        <div class="col-sm-8">
             <div class="inline-content-fr">
                 <div data-id="r_pagination" data-id="paginationDiv" class="inline"></div>
                 {{#if includeGotoPage}}

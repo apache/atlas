@@ -147,7 +147,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'value', 'guid', 'initialView', 'isTypeTagNotExists', 'classificationDefCollection', 'entityDefCollection', 'typeHeaders', 'searchVent', 'enumDefCollection', 'tagCollection', 'searchTableColumns', 'isTableDropDisable', 'fromView', 'glossaryCollection', 'termName'));
+                _.extend(this, _.pick(options, 'value', 'guid', 'initialView', 'isTypeTagNotExists', 'classificationDefCollection', 'entityDefCollection', 'typeHeaders', 'searchVent', 'enumDefCollection', 'tagCollection', 'searchTableColumns', 'isTableDropDisable', 'fromView', 'glossaryCollection', 'termName', 'businessMetadataDefCollection'));
                 this.entityModel = new VEntity();
                 this.searchCollection = new VSearchList();
                 this.limit = 25;
@@ -543,7 +543,6 @@ define(['require',
                         Globals.searchApiCallRef = this.searchCollection.fetch(apiObj);
                     }
                 }
-
             },
             tableRender: function(options) {
                 var that = this,
@@ -644,7 +643,6 @@ define(['require',
                 if (this.value && this.value.searchType === "basic" && this.searchTableColumns && (this.searchTableColumns[this.value.type] !== undefined)) {
                     columnToShow = this.searchTableColumns[this.value.type] == null ? [] : this.searchTableColumns[this.value.type];
                 }
-
                 col['Check'] = {
                     name: "selected",
                     label: "Select",
@@ -729,8 +727,6 @@ define(['require',
                         }
                     })
                 };
-
-
                 if (this.value && this.value.profileDBView) {
                     col['createTime'] = {
                         label: "Date Created",
@@ -749,7 +745,6 @@ define(['require',
                     }
                 }
                 if (this.value && !this.value.profileDBView) {
-
                     col['description'] = {
                         label: "Description",
                         cell: "String",
@@ -791,7 +786,23 @@ define(['require',
 
                     if (this.value && this.value.searchType === "basic") {
                         var def = this.entityDefCollection.fullCollection.find({ name: this.value.type }),
-                            systemAttr = [];
+                            systemAttr = [],
+                            businessMetadataAttr = [],
+                            businessAttributes = {};
+                        if (this.value.type == "_ALL_ENTITY_TYPES") {
+                            this.businessMetadataDefCollection.each(function(model) {
+                                var sortedAttributes = model.get('attributeDefs') || null,
+                                    name = model.get('name');
+                                if (sortedAttributes) {
+                                    sortedAttributes = _.sortBy(sortedAttributes, function(obj) {
+                                        return obj.name;
+                                    });
+                                    businessAttributes[name] = $.extend(true, {}, sortedAttributes);
+                                }
+                            })
+                        } else {
+                            businessAttributes = def ? ($.extend(true, {}, def.get('businessAttributeDefs')) || null) : null;
+                        }
                         if (def || Globals[this.value.type] || (
                                 this.value.tag ?
                                 Globals[this.value.tag] ?
@@ -806,6 +817,17 @@ define(['require',
                                 systemAttr = (Globals[this.value.tag] || Globals[Enums.addOnClassification[0]]).attributeDefs;
                             }
                             attrObj = attrObj.concat(systemAttr);
+                            if (businessAttributes) {
+                                _.each(businessAttributes, function(businessMetadata, businessMetadataName) {
+                                    _.each(businessMetadata, function(attr, index) {
+                                        var attribute = attr;
+                                        attribute.isBusinessAttributes = true;
+                                        attribute.name = businessMetadataName + '.' + attribute.name;
+                                        businessMetadataAttr.push(attribute);
+                                    })
+                                })
+                            }
+                            attrObj = attrObj.concat(businessMetadataAttr);
                             _.each(attrObj, function(obj, key) {
                                 var key = obj.name,
                                     isRenderable = _.contains(columnToShow, key),
@@ -820,7 +842,7 @@ define(['require',
                                     return;
                                 }
                                 col[obj.name] = {
-                                    label: Enums.systemAttributes[obj.name] ? Enums.systemAttributes[obj.name] : _.escape(obj.name).capitalize(),
+                                    label: Enums.systemAttributes[obj.name] ? Enums.systemAttributes[obj.name] : (_.escape(obj.isBusinessAttributes ? obj.name : obj.name.capitalize())),
                                     cell: "Html",
                                     headerCell: Backgrid.HeaderHTMLDecodeCell,
                                     editable: false,
@@ -828,6 +850,7 @@ define(['require',
                                     orderable: true,
                                     sortable: isSortable,
                                     renderable: isRenderable,
+                                    headerClassName: obj.isBusinessAttributes ? "no-capitalize" : "",
                                     formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                                         fromRaw: function(rawValue, model) {
                                             var modelObj = model.toJSON();

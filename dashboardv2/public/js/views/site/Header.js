@@ -35,27 +35,13 @@ define(['require',
             globalSearch: "[data-id='globalSearch']",
             clearGlobalSearch: "[data-id='clearGlobalSearch']",
             signOut: "[data-id='signOut']",
+            administrator: "[data-id='administrator']",
             uiSwitch: "[data-id='uiSwitch']"
         },
         events: function() {
             var events = {};
             events['click ' + this.ui.backButton] = function() {
-                var queryParams = Utils.getUrlState.getQueryParams(),
-                    urlPath = "searchUrl";
-                if (queryParams && queryParams.from) {
-                    if (queryParams.from == "classification") {
-                        urlPath = "tagUrl";
-                    } else if (queryParams.from == "glossary") {
-                        urlPath = "glossaryUrl";
-                    }
-                }
-                Utils.setUrl({
-                    url: Globals.saveApplicationState.tabState[urlPath],
-                    mergeBrowserUrl: false,
-                    trigger: true,
-                    updateTabState: true
-                });
-
+                Utils.backButtonClick();
             };
             events['click ' + this.ui.clearGlobalSearch] = function() {
                 this.ui.globalSearch.val("");
@@ -82,6 +68,14 @@ define(['require',
                 }
                 window.location.href = path;
             };
+            events['click ' + this.ui.administrator] = function() {
+                Utils.setUrl({
+                    url: "#!/administrator",
+                    mergeBrowserUrl: false,
+                    trigger: true,
+                    updateTabState: true
+                });
+            };
 
             return events;
         },
@@ -90,7 +84,7 @@ define(['require',
         },
         setSearchBoxWidth: function(options) {
             var atlasHeaderWidth = this.$el.find(".atlas-header").width(),
-                minusWidth = Utils.getUrlState.isDetailPage() ? 413 : 263;
+                minusWidth = (Utils.getUrlState.isDetailPage() || Utils.getUrlState.isBSDetail()) ? 413 : 263;
             if (options && options.updateWidth) {
                 atlasHeaderWidth = options.updateWidth(atlasHeaderWidth);
             }

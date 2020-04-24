@@ -89,6 +89,12 @@ define(['require',
             case '>=':
                 return (v1 >= v2) ? options.fn(this) : options.inverse(this);
                 break;
+            case 'isEmpty':
+                return (_.isEmpty(v1)) ? options.fn(this) : options.inverse(this);
+                break;
+            case 'has':
+                return (_.has(v1, v2)) ? options.fn(this) : options.inverse(this);
+                break;
             default:
                 return options.inverse(this);
                 break;

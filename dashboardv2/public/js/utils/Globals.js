@@ -28,7 +28,8 @@ define(["require"], function(require) {
             stateChanged: false,
             tagUrl: "#!/tag",
             searchUrl: "#!/search",
-            glossaryUrl: "#!/glossary"
+            glossaryUrl: "#!/glossary",
+            administratorUrl: "#!/administrator"
         },
         detailPageState: {}
     };

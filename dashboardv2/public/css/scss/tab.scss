@@ -68,7 +68,7 @@ ul.tabs li.tab {
     overflow: hidden;
 
     &.active {
-        padding: 25px;
+        padding: 15px 20px;
         opacity: 1;
         height: auto;
         overflow: auto;
@@ -136,10 +136,6 @@ ul.tabs li.tab {
     }
 }
 
-.tab-pane {
-    padding: 25px;
-}
-
 .atlast-tabbable {
     margin: 25px 0;
 
@@ -185,6 +181,7 @@ ul.tabs li.tab {
             &.active {
                 >a {
                     color: $color_jungle_green_approx;
+                    // background: $color_white_lilac_approx;
                 }
             }
 

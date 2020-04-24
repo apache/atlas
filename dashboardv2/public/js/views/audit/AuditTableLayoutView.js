@@ -179,6 +179,32 @@ define(['require',
             getAuditTableColumns: function() {
                 var that = this;
                 return this.entityCollection.constructor.getTableCols({
+
+                    tool: {
+                        label: "",
+                        cell: "html",
+                        editable: false,
+                        sortable: false,
+                        fixWidth: "20",
+                        cell: Backgrid.ExpandableCell,
+                        accordion: false,
+                        expand: function(el, model) {
+                            el.attr('colspan', '4');
+                            require([
+                                'views/audit/CreateAuditTableLayoutView',
+                            ], function(CreateAuditTableLayoutView) {
+
+                                that.action = model.get('action');
+                                // $(el.target).attr('disabled', true);
+                                var eventModel = that.entityCollection.fullCollection.findWhere({ 'eventKey': model.get('eventKey') }).toJSON(),
+                                    collectionModel = new that.entityCollection.model(eventModel),
+                                    view = new CreateAuditTableLayoutView({ guid: that.guid, entityModel: collectionModel, action: that.action, entity: that.entity, entityName: that.entityName, attributeDefs: that.attributeDefs });
+                                view.render();
+                                $(el).append($('<div>').html(view.$el));
+                            });
+
+                        }
+                    },
                     user: {
                         label: "Users",
                         cell: "html",
@@ -207,19 +233,7 @@ define(['require',
                                 }
                             }
                         })
-                    },
-                    tool: {
-                        label: "Tools",
-                        cell: "html",
-                        editable: false,
-                        sortable: false,
-                        formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
-                            fromRaw: function(rawValue, model) {
-                                return '<div class="btn btn-action btn-sm" data-id="auditCreate" data-action="' + Enums.auditAction[model.get('action')] + '" data-modalId="' + model.get('eventKey') + '">Detail</div>';
-                            }
-                        })
-                    },
-
+                    }
                 }, this.entityCollection);
 
             },
