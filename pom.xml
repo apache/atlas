@@ -896,6 +896,11 @@
             <name>Typesafe Repository</name>
             <url>https://repo.typesafe.com/typesafe/releases/</url>
         </repository>
+        <repository>
+            <id>maven-restlet</id>
+            <name>Public online Restlet repository</name>
+            <url>https://maven.restlet.talend.com/</url>
+        </repository>
     </repositories>
 
     <dependencyManagement>
