@@ -97,7 +97,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'associatedTerms', 'guid', 'value', 'glossaryCollection', 'glossary', 'isAssignTermView', 'isAssignCategoryView', 'isAssignEntityView', 'isAssignAttributeRelationView'));
+                _.extend(this, _.pick(options, 'associatedTerms', 'guid', 'value', 'glossaryCollection', 'glossary', 'isAssignTermView', 'isAssignCategoryView', 'isAssignEntityView', 'isAssignAttributeRelationView', 'importVent'));
                 this.viewType = "term";
                 this.isAssignView = this.isAssignTermView || this.isAssignCategoryView || this.isAssignEntityView || this.isAssignAttributeRelationView;
                 this.bindEvents();
@@ -142,6 +142,9 @@ define(['require',
                         that[$(this).find('a').data('fn')](e)
                     });
                 }
+                this.importVent.on("Import:Glossary:Update", function(options) {
+                    that.getGlossary();
+                });
             },
             onRender: function() {
                 this.changeLoaderState(true);
@@ -772,12 +775,13 @@ define(['require',
             onClickImportGlossary: function() {
                 var that = this;
                 require([
-                    'views/glossary/ImportGlossaryLayoutView'
-                ], function(ImportGlossaryLayoutView) {
-                    var view = new ImportGlossaryLayoutView({
+                    'views/import/ImportLayoutView'
+                ], function(ImportLayoutView) {
+                    var view = new ImportLayoutView({
                         callback: function() {
                             that.getGlossary();
-                        }
+                        },
+                        isGlossary: true
                     });
                 });
             }

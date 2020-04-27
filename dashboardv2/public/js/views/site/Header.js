@@ -29,6 +29,12 @@ define(['require',
     var Header = Marionette.LayoutView.extend({
         template: tmpl,
         regions: {},
+        templateHelpers: function() {
+            return {
+                glossaryImportTempUrl: UrlLinks.glossaryImportTempUrl(),
+                businessMetadataImportTempUrl: UrlLinks.businessMetadataImportTempUrl()
+            };
+        },
         ui: {
             backButton: "[data-id='backButton']",
             menuHamburger: "[data-id='menuHamburger']",
@@ -36,7 +42,9 @@ define(['require',
             clearGlobalSearch: "[data-id='clearGlobalSearch']",
             signOut: "[data-id='signOut']",
             administrator: "[data-id='administrator']",
-            uiSwitch: "[data-id='uiSwitch']"
+            uiSwitch: "[data-id='uiSwitch']",
+            glossaryImport: "[data-id='glossaryImport']",
+            businessMetadataImport: "[data-id='businessMetadataImport']"
         },
         events: function() {
             var events = {};
@@ -76,15 +84,22 @@ define(['require',
                     updateTabState: true
                 });
             };
+            events['click ' + this.ui.glossaryImport] = function() {
+                this.onClickImport(true);
+            };
+            events['click ' + this.ui.businessMetadataImport] = function() {
+                this.onClickImport()
+            };
 
             return events;
         },
         initialize: function(options) {
             this.bindEvent();
+            this.options = options;
         },
         setSearchBoxWidth: function(options) {
             var atlasHeaderWidth = this.$el.find(".atlas-header").width(),
-                minusWidth = (Utils.getUrlState.isDetailPage() || Utils.getUrlState.isBSDetail()) ? 413 : 263;
+                minusWidth = (Utils.getUrlState.isDetailPage() || Utils.getUrlState.isBSDetail()) ? 360 : 210;
             if (options && options.updateWidth) {
                 atlasHeaderWidth = options.updateWidth(atlasHeaderWidth);
             }
@@ -276,6 +291,23 @@ define(['require',
                     }
                 }
             };
+        },
+        onClickImport: function(isGlossary) {
+            var that = this;
+            require([
+                'views/import/ImportLayoutView'
+            ], function(ImportLayoutView) {
+                var view = new ImportLayoutView({
+                    callback: function() {
+                        if (isGlossary) {
+                            that.options.importVent.trigger("Import:Glossary:Update");
+                        } else {
+                            that.options.importVent.trigger("Import:BM:Update");
+                        }
+                    },
+                    isGlossary: isGlossary
+                });
+            });
         }
     });
     return Header;
