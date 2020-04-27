@@ -101,18 +101,19 @@ define([
                         this.removeAllFiles();
                         this.addFile(file);
                     },
-                    success: function(file, response) {
-                        if (response.successImportInfoList.length && response.failedImportInfoList.length === 0) {
+                    success: function(file, response, responseObj) {
+                        var success = true;
+                        if (response.failedImportInfoList && response.failedImportInfoList.length) {
+                            success = false;
+                            Utils.defaultErrorHandler(null, file.xhr, { defaultErrorMessage: response.failedImportInfoList[0].remarks });
+                        }
+                        if (success) {
                             that.modal.trigger("cancel");
                             Utils.notifySuccess({
                                 content: "File: " + file.name + " imported successfully"
                             });
-                        } else if (response.failedImportInfoList.length) {
-                            Utils.notifyError({
-                                content: response.failedImportInfoList[0].remarks
-                            });
                         }
-                        if (that.callback) {
+                        if (that.callback && ((response.successImportInfoList && response.successImportInfoList.length > 0) || success)) {
                             that.callback();
                         }
                     },

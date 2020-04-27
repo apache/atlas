@@ -55,6 +55,7 @@ define([
             this.bindCommonEvents();
             this.listenTo(this, 'route', this.postRouteExecute, this);
             this.searchVent = new Backbone.Wreqr.EventAggregator();
+            this.importVent = new Backbone.Wreqr.EventAggregator();
             this.glossaryCollection = new VGlossaryList([], {
                 comparator: function(item) {
                     return item.get("name");
@@ -130,14 +131,15 @@ define([
             // console.log("Post-Route Change Operations can be performed here !!");
             // console.log("Route changed: ", name);
         },
-        getHeaderOptions: function(Header) {
+        getHeaderOptions: function(Header, options) {
+            var that = this;
             return {
                 view: App.rNHeader,
                 manualRender: function() {
                     this.view.currentView.manualRender();
                 },
                 render: function() {
-                    return new Header();
+                    return new Header(_.extend({ importVent: that.importVent }, that.preFetchedCollectionLists, that.sharedObj, options));
                 }
             }
         },
@@ -238,22 +240,18 @@ define([
                 ], function(Header, GlossaryDetailLayoutView, SideNavLayoutView) {
                     var paramObj = Utils.getUrlState.getQueryParams();
                     that.renderViewIfNotExists(that.getHeaderOptions(Header));
+                    var options = _.extend({}, that.preFetchedCollectionLists, that.sharedObj, { 'guid': id, 'value': paramObj, importVent: that.importVent })
                     that.renderViewIfNotExists({
                         view: App.rSideNav,
                         manualRender: function() {
-                            this.view.currentView.RGlossaryLayoutView.currentView.manualRender(_.extend({}, { 'guid': id, 'value': paramObj }));
+                            this.view.currentView.RGlossaryLayoutView.currentView.manualRender(options);
                             this.view.currentView.selectTab();
                         },
                         render: function() {
-                            return new SideNavLayoutView(
-                                _.extend({}, that.preFetchedCollectionLists, that.sharedObj, { 'guid': id, 'value': paramObj })
-                            )
+                            return new SideNavLayoutView(options)
                         }
                     });
-                    App.rNContent.show(new GlossaryDetailLayoutView(_.extend({
-                        'guid': id,
-                        'value': paramObj
-                    }, that.preFetchedCollectionLists, that.sharedObj)));
+                    App.rNContent.show(new GlossaryDetailLayoutView(options));
                 });
             }
         },
@@ -273,13 +271,14 @@ define([
                         if (Utils.getUrlState.isTagTab()) {
                             this.view.currentView.RTagLayoutView.currentView.manualRender();
                         } else if (Utils.getUrlState.isGlossaryTab()) {
-                            this.view.currentView.RGlossaryLayoutView.currentView.manualRender(_.extend({ "isTrigger": true }, { "value": paramObj }));
+                            this.view.currentView.RGlossaryLayoutView.currentView.manualRender(_.extend({ "isTrigger": true, "value": paramObj }));
                         }
                     },
                     render: function() {
                         return new SideNavLayoutView(
                             _.extend({
-                                'searchVent': that.searchVent
+                                'searchVent': that.searchVent,
+                                'importVent': that.importVent
                             }, that.preFetchedCollectionLists, that.sharedObj)
                         )
                     }
@@ -296,6 +295,8 @@ define([
                 } else {
                     if (App.rNContent.currentView) {
                         App.rNContent.currentView.destroy();
+                    } else {
+                        App.rNContent.$el.empty();
                     }
                 }
             });

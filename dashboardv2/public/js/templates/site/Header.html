@@ -37,12 +37,36 @@
                 <table class="header-menu">
                     <tr>
                         <td><a class="show-stat" href="javascript:void(0);" title="Statistics"><i class="fa fa-bar-chart"></i></a></td>
-                        <td><a target="_blank" href="http://atlas.apache.org/"><i class="fa  fa-question-circle"></i></a></td>
                         <td>
                             <a href="javascript:void(0);" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" class="user-dropdown"><i class="fa fa-user user-circle "></i><span class="userName"></span></a>
                             <ul class="dropdown-menu pull-right multi-level">
                                 <li><a href="javascript:void(0)" data-id='administrator'>Administration</a></li>
-                                <li class="aboutAtlas"><a href="javascript:void(0)">About</a></li>
+                                <li class="dropdown-submenu">
+                                    <a tabindex="-1" href="javascript:void(0)">Bulk Import</span></a>
+                                    <ul class="dropdown-menu multi-level">
+                                        <li class="dropdown-submenu">
+                                            <a tabindex="-1" href="javascript:void(0)">Business Metadata</span></a>
+                                            <ul class="dropdown-menu">
+                                                <li><a href="{{businessMetadataImportTempUrl}}">Download Import template</a></li>
+                                                <li data-id='businessMetadataImport'><a href="javascript:void(0)">Import Business Metadata</a></li>
+                                            </ul>
+                                        </li>
+                                        <li class="dropdown-submenu">
+                                            <a tabindex="-1" href="javascript:void(0)">Glossary</span></a>
+                                            <ul class="dropdown-menu">
+                                                <li><a href="{{glossaryImportTempUrl}}">Download Import template</a></li>
+                                                <li data-id='glossaryImport'><a href="javascript:void(0)">Import Glossary</a></li>
+                                            </ul>
+                                        </li>
+                                    </ul>
+                                </li>
+                                <li class="dropdown-submenu">
+                                    <a tabindex="-1" href="javascript:void(0)">Help</span></a>
+                                    <ul class="dropdown-menu">
+                                        <li><a target="_blank" href="http://atlas.apache.org/">Documentation</a></li>
+                                        <li class="aboutAtlas"><a href="javascript:void(0)">About</a></li>
+                                    </ul>
+                                </li>
                                 <li role="separator" class="divider"></li>
                                 <li><a data-id="uiSwitch" href="javascript:void(0)">Switch to New</a></li>
                                 <li>

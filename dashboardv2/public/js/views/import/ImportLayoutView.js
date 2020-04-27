@@ -19,25 +19,19 @@
 define([
     "require",
     "backbone",
-    "hbs!tmpl/glossary/ImportGlossaryLayoutView_tmpl",
+    "hbs!tmpl/import/ImportLayoutView_tmpl",
     "modules/Modal",
     'utils/CommonViewFunction',
     "utils/Utils",
     "utils/UrlLinks",
     "dropzone"
-], function(require, Backbone, ImportGlossaryLayoutViewTmpl, Modal, CommonViewFunction, Utils, UrlLinks, dropzone) {
-    var ImportGlossaryLayoutView = Backbone.Marionette.LayoutView.extend(
-        /** @lends ImportGlossaryLayoutView */
+], function(require, Backbone, ImportLayoutViewTmpl, Modal, CommonViewFunction, Utils, UrlLinks, dropzone) {
+    var ImportLayoutView = Backbone.Marionette.LayoutView.extend(
+        /** @lends ImportLayoutView */
         {
-            _viewName: "ImportGlossaryLayoutView",
+            _viewName: "ImportLayoutView",
 
-            template: ImportGlossaryLayoutViewTmpl,
-
-            templateHelpers: function() {
-                return {
-                    importUrl: UrlLinks.glossaryImportUrl()
-                };
-            },
+            template: ImportLayoutViewTmpl,
 
             /** Layout sub regions */
             regions: {},
@@ -50,14 +44,14 @@ define([
                 return events;
             },
             /**
-             * intialize a new ImportGlossaryLayoutView Layout
+             * intialize a new ImportLayoutView Layout
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, "callback"));
+                _.extend(this, _.pick(options, "callback", "isGlossary"));
                 var that = this;
                 this.modal = new Modal({
-                    title: "Import Glossary",
+                    title: this.isGlossary ? "Import Glossary" : "Import Business Metadata",
                     content: this,
                     cancelText: "Cancel",
                     okText: "upload",
@@ -88,7 +82,7 @@ define([
                 var headers = {};
                 headers[CommonViewFunction.restCsrfCustomHeader] = '""';
                 this.$("#importGlossary").dropzone({
-                    url: UrlLinks.glossaryImportUrl(),
+                    url: that.isGlossary ? UrlLinks.glossaryImportUrl() : UrlLinks.businessMetadataImportUrl(),
                     clickable: true,
                     acceptedFiles: ".csv,.xls,.xlsx",
                     autoProcessQueue: false,
@@ -107,12 +101,21 @@ define([
                         this.removeAllFiles();
                         this.addFile(file);
                     },
-                    success: function(file, response) {
-                        that.modal.trigger("cancel");
-                        Utils.notifySuccess({
-                            content: "File: " + file.name + " added successfully"
-                        });
-                        that.callback();
+                    success: function(file, response, responseObj) {
+                        var success = true;
+                        if (response.failedImportInfoList && response.failedImportInfoList.length) {
+                            success = false;
+                            Utils.defaultErrorHandler(null, file.xhr, { defaultErrorMessage: response.failedImportInfoList[0].remarks });
+                        }
+                        if (success) {
+                            that.modal.trigger("cancel");
+                            Utils.notifySuccess({
+                                content: "File: " + file.name + " imported successfully"
+                            });
+                        }
+                        if (that.callback && ((response.successImportInfoList && response.successImportInfoList.length > 0) || success)) {
+                            that.callback();
+                        }
                     },
                     error: function(file, response, responseObj) {
                         Utils.defaultErrorHandler(null, responseObj, { defaultErrorMessage: (response.errorMessage) || response });
@@ -124,5 +127,5 @@ define([
             }
         }
     );
-    return ImportGlossaryLayoutView;
+    return ImportLayoutView;
 });
