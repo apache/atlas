@@ -195,7 +195,7 @@
       "serviceType": "aws",
       "typeVersion": "1.0",
       "attributeDefs": [
-       {
+        {
           "name":        "accountId",
           "typeName":    "string",
           "cardinality": "SINGLE",
@@ -204,7 +204,7 @@
           "isUnique":    false,
           "searchWeight" : 5
         },
-		{
+        {
           "name":        "creationTime",
           "typeName":    "date",
           "cardinality": "SINGLE",
