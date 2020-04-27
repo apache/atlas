@@ -251,6 +251,15 @@
           "isIndexable": false,
           "isOptional":  true,
           "isUnique":    false
+        },
+        {
+          "name":        "accountId",
+          "typeName":    "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional":  true,
+          "isUnique":    false,
+          "searchWeight" : 10
         }
       ]
     }
