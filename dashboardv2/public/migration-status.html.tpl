@@ -45,12 +45,8 @@
 </head>
 
 <body>
-    <div class="container-fluid">
-        <div class="col-sm-12">
-            <div class="page-wrapper">
-                <div class="initialLoading"></div>
-            </div>
-        </div>
+    <div class="page-wrapper">
+        <div class="initialLoading"></div>
     </div>
     <!-- build:js scripts/main.js -->
     <script data-main="js/migration.js?bust=<%- bust %>" src="js/libs/requirejs/require.js?bust=<%- bust %>"></script>

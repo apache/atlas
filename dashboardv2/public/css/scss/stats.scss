@@ -61,6 +61,7 @@
     .panel {
         &.panel-default {
             padding: 5px;
+            margin: 5px;
         }
 
         .panel-body {
@@ -80,6 +81,12 @@
 
     .table {
         &.stat-table {
+            width: 100%;
+
+            td {
+                display: table-cell;
+            }
+
             &.notification-table {
                 &.table-striped>tbody>tr:nth-of-type(odd) {
                     background-color: $color_white_lilac_approx;
@@ -113,17 +120,54 @@
     }
 }
 
-.refresh-container {
-    background: white;
+.statistics-header {
+    height: 50px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     position: fixed;
-    z-index: 9999;
-    right: 23px;
-    top: 7px;
-    border-radius: 23px;
+    z-index: 999;
+    top: 0px;
+    padding: 0px 15px;
+    background: #fff;
+    border-bottom: 1px #e8e9ee solid;
+    box-shadow: 0 2px 6px 0 rgba(0, 0, 0, .05);
 
-    .btn {
-        margin: 0px;
+    &>div {
+        margin: 0px 5px;
+    }
+
+    pre {
+        width: 100%;
+        padding: 5px 10px;
+        margin: 0px 10px;
+        color: $gray;
+
+        .color {
+            color: $color_jungle_green_approx;
+            font-weight: bold;
+        }
+    }
+
+    .progress {
+        width: 100%;
+        margin-top: 7px;
+        margin-bottom: 0px;
+
+        .progress-bar-success {
+            background-color: $color_jungle_green_approx;
+        }
+    }
+
+    .refresh-container {
+        background: white;
         border-radius: 23px;
-        padding: 10px 10px;
+
+        .btn {
+            margin: 0px;
+            border-radius: 23px;
+            padding: 10px 10px;
+        }
     }
 }

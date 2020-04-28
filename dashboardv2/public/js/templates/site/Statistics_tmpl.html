@@ -14,8 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
 -->
-<div class="refresh-container statisticsRefresh hide" data-id="statisticsRefresh">
-    <button type="button" class="btn fa fa-refresh pull-right btn-sm btn-action" title="Refresh Data"></button>
+<div class="statistics-header col-md-12 hide">
+    <div class="progress hide">
+        <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuemin="0" aria-valuemax="100" data-id="migrationProgressBar">
+            <span data-id="migrationProgressBarValue"></span>
+        </div>
+    </div>
+    <pre class="successStatus hide">Migration is <span class="color">successful</span>. To exit form migration mode, please remove <span class="color">atlas.migration.data.filename</span> property and restart Atlas.</pre>
+    <div class="refresh-container statisticsRefresh" data-id="statisticsRefresh">
+        <button type="button" class="btn fa fa-refresh pull-right btn-sm btn-action" title="Refresh Data"></button>
+    </div>
 </div>
 <div class="panel-group server-stats-container statsContainer hide col-md-12" id="accordion">
     <div class="panel panel-default custom-panel expand_collapse_panel-icon" data-id="entity">
