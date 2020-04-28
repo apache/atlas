@@ -1,4 +1,4 @@
-/*
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,17 +16,17 @@
  * limitations under the License.
  */
 
-@import "__mixin.scss";
-@import "__variable.scss";
-@import "common.scss";
-@import "table.scss";
-@import "form.scss";
-@import "panel.scss";
-@import "loader.scss";
-@import "theme.scss";
-@import "stats.scss";
-@import "override.scss";
+define(['require'], function(require) {
+    'use strict';
 
-.initialLoading {
-    left: 0px !important;
-}
+    var Enums = {};
+
+    Enums.migrationStatus = {
+        STARTED: "STARTED",
+        IN_PROGRESS: "IN_PROGRESS",
+        FAIL: "FAIL",
+        DONE: "DONE"
+    }
+
+    return Enums;
+});

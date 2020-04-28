@@ -28,10 +28,11 @@ define(['require',
     'collection/VTagList',
     'utils/CommonViewFunction',
     'utils/Enums',
+    'utils/MigrationEnums',
     'moment',
     'utils/Utils',
     'moment-timezone'
-], function(require, Backbone, StatTmpl, StatsNotiTable, TopicOffsetTable, EntityTable, Modal, VCommon, UrlLinks, VTagList, CommonViewFunction, Enums, moment, Utils) {
+], function(require, Backbone, StatTmpl, StatsNotiTable, TopicOffsetTable, EntityTable, Modal, VCommon, UrlLinks, VTagList, CommonViewFunction, Enums, MigrationEnums, moment, Utils) {
     'use strict';
 
     var StatisticsView = Backbone.Marionette.LayoutView.extend(
@@ -57,15 +58,17 @@ define(['require',
                 memoryCard: "[data-id='memory-card']",
                 memoryPoolUsage: "[data-id='memory-pool-usage-card']",
                 statisticsRefresh: "[data-id='statisticsRefresh']",
-                notificationDetails: "[data-id='notificationDetails']"
+                notificationDetails: "[data-id='notificationDetails']",
+                migrationProgressBar: "[data-id='migrationProgressBar']",
+                migrationProgressBarValue: "[data-id='migrationProgressBarValue']"
             },
             /** ui events hash */
             events: function() {
                 var events = {};
                 events["click " + this.ui.statisticsRefresh] = function(e) {
-                    this.$('.statsContainer,.statsNotificationContainer,.statisticsRefresh').addClass('hide');
-                    this.$('.statsLoader,.statsNotificationLoader').addClass('show');
+                    this.showLoader();
                     this.fetchMetricData();
+                    this.fetchStatusData();
                 };
                 return events;
             },
@@ -77,7 +80,11 @@ define(['require',
                 _.extend(this, options);
                 var that = this;
                 this.DATA_MAX_LENGTH = 25;
-                if (this.isMigrationView !== true) {
+                this.loaderCount = 0;
+                if (this.isMigrationView) {
+                    this.migrationImportStatus = new VTagList();
+                    this.migrationImportStatus.url = UrlLinks.migrationStatusApiUrl();
+                } else {
                     var modal = new Modal({
                         title: 'Statistics',
                         content: this,
@@ -110,8 +117,54 @@ define(['require',
                     })
                 }
             },
+            fetchStatusData: function() {
+                var that = this;
+                ++this.loaderCount;
+                that.migrationImportStatus.fetch({
+                    success: function(data) {
+                        var data = _.first(data.toJSON()),
+                            migrationStatus = data.MigrationStatus || null,
+                            operationStatus = migrationStatus.operationStatus,
+                            showProgress = true,
+                            totalProgress = 0,
+                            progressMessage = "";
+                        if (migrationStatus) {
+                            if (MigrationEnums.migrationStatus[operationStatus] === "DONE") {
+                                showProgress = false;
+                            } else if (MigrationEnums.migrationStatus[operationStatus] === "IN_PROGRESS" || MigrationEnums.migrationStatus[operationStatus] === "STARTED") {
+                                var currentIndex = migrationStatus.currentIndex || 0,
+                                    totalCount = migrationStatus.totalCount || 0;
+                                totalProgress = Math.ceil((migrationStatus.currentIndex / migrationStatus.totalCount) * 100)
+                                progressMessage = totalProgress + "%";
+                                that.ui.migrationProgressBar.removeClass("progress-bar-danger");
+                                that.ui.migrationProgressBar.addClass("progress-bar-success");
+                            } else if (MigrationEnums.migrationStatus[operationStatus] === "FAIL") {
+                                totalProgress = "100";
+                                progressMessage = "Failed";
+                                that.ui.migrationProgressBar.addClass("progress-bar-danger");
+                                that.ui.migrationProgressBar.removeClass("progress-bar-success");
+                            }
+                            if (showProgress) {
+                                that.$el.find(".statistics-header>.progress").removeClass("hide");
+                                that.$el.find(".statistics-header>.successStatus").addClass("hide");
+                                that.ui.migrationProgressBar.css({ width: totalProgress + '%' });
+                                that.ui.migrationProgressBarValue.text(progressMessage);
+                            } else {
+                                that.$el.find(".statistics-header>.progress").addClass("hide");
+                                that.$el.find(".statistics-header>.successStatus").removeClass("hide");
+                            }
+                        }
+
+                    },
+                    complete: function() {
+                        --that.loaderCount;
+                        that.hideLoader();
+                    }
+                });
+            },
             fetchMetricData: function(options) {
                 var that = this;
+                ++this.loaderCount;
                 this.metricCollection.fetch({
                     success: function(data) {
                         var data = _.first(data.toJSON());
@@ -119,11 +172,6 @@ define(['require',
                         that.renderEntities({ data: data });
                         that.renderSystemDeatils({ data: data });
                         that.renderClassifications({ data: data });
-                        that.$('.statsContainer,.statsNotificationContainer').removeClass('hide');
-                        if (that.isMigrationView) {
-                            that.$('.statisticsRefresh').removeClass('hide');
-                        }
-                        that.$('.statsLoader,.statsNotificationLoader').removeClass('show');
                         if (options && options.update) {
                             if (that.modal) {
                                 that.modal.$el.find('.header-button .fa-refresh').prop('disabled', false).removeClass('fa-spin');
@@ -132,11 +180,37 @@ define(['require',
                                 content: "Metric data is refreshed"
                             })
                         }
+                    },
+                    complete: function() {
+                        --that.loaderCount;
+                        that.hideLoader()
                     }
                 });
             },
+            hideLoader: function() {
+                if (this.loaderCount === 0) {
+                    var className = ".statsContainer";
+                    if (this.isMigrationView) {
+                        className += ",.statistics-header";
+                    }
+                    this.$(className).removeClass('hide');
+                    this.$('.statsLoader').removeClass('show');
+                }
+            },
+            showLoader: function() {
+                var className = ".statsContainer";
+                if (this.isMigrationView) {
+                    className += ",.statistics-header";
+                }
+                this.$(className).addClass('hide');
+                this.$('.statsLoader').addClass('show');
+            },
             onRender: function() {
                 this.bindEvents();
+                if (this.isMigrationView) {
+                    this.showLoader();
+                    this.fetchStatusData();
+                }
                 this.fetchMetricData();
             },
             closePanel: function(options) {

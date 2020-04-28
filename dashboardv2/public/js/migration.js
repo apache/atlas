@@ -77,9 +77,6 @@ require.config({
         'pnotify': {
             'exports': ['pnotify']
         },
-        'jstree': {
-            'deps': ['jquery']
-        },
         'd3': {
             'exports': ['d3']
         }
@@ -106,7 +103,6 @@ require.config({
         'moment': 'libs/moment/js/moment.min',
         'moment-timezone': 'libs/moment-timezone/moment-timezone-with-data.min',
         'jquery-ui': 'external_lib/jquery-ui/jquery-ui.min',
-        'jstree': 'libs/jstree/jstree.min',
         'd3': 'libs/d3/d3.min'
     },
 
