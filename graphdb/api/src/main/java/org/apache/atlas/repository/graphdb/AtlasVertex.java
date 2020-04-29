@@ -45,6 +45,16 @@ public interface AtlasVertex<V, E> extends AtlasElement {
      */
     Iterable<AtlasEdge<V, E>> getEdges(AtlasEdgeDirection direction, String[] edgeLabels);
 
+    long getEdgesCount(AtlasEdgeDirection direction, String edgeLabel);
+
+    /**
+     * Does vertex have edges specified by the direction and label
+     * @param dir
+     * @param edgeLabel
+     * @return
+     */
+    boolean hasEdges(AtlasEdgeDirection dir, String edgeLabel);
+
     /**
      * Gets the edges associated with this vertex going the
      * specified direction.

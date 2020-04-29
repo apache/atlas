@@ -18,6 +18,7 @@
 package org.apache.atlas.repository.graphdb.janus;
 
 import com.google.common.base.Function;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.atlas.ApplicationProperties;
@@ -25,7 +26,19 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.groovy.GroovyExpression;
-import org.apache.atlas.repository.graphdb.*;
+import org.apache.atlas.repository.graphdb.AtlasEdge;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.AtlasGraphIndexClient;
+import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
+import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
+import org.apache.atlas.repository.graphdb.AtlasGraphTraversal;
+import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
+import org.apache.atlas.repository.graphdb.AtlasIndexQueryParameter;
+import org.apache.atlas.repository.graphdb.AtlasPropertyKey;
+import org.apache.atlas.repository.graphdb.AtlasSchemaViolationException;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.graphdb.GraphIndexQueryParameters;
+import org.apache.atlas.repository.graphdb.GremlinVersion;
 import org.apache.atlas.repository.graphdb.janus.query.AtlasJanusGraphQuery;
 import org.apache.atlas.repository.graphdb.utils.IteratorToIterableAdapter;
 import org.apache.atlas.type.AtlasType;
@@ -62,9 +75,12 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptException;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static org.apache.atlas.repository.Constants.INDEX_SEARCH_VERTEX_PREFIX_DEFAULT;
 import static org.apache.atlas.repository.Constants.INDEX_SEARCH_VERTEX_PREFIX_PROPERTY;
@@ -403,7 +419,11 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
     }
 
     public Iterable<AtlasVertex<AtlasJanusVertex, AtlasJanusEdge>> wrapVertices(Iterable<? extends Vertex> it) {
-        return StreamSupport.stream(it.spliterator(), false).map(input -> GraphDbObjectFactory.createVertex(AtlasJanusGraph.this, input)).collect(Collectors.toList());
+
+        return Iterables.transform(it,
+                (Function<Vertex, AtlasVertex<AtlasJanusVertex, AtlasJanusEdge>>) input ->
+                    GraphDbObjectFactory.createVertex(AtlasJanusGraph.this, input));
+
     }
 
     public Iterable<AtlasEdge<AtlasJanusVertex, AtlasJanusEdge>> wrapEdges(Iterator<? extends Edge> it) {
@@ -413,7 +433,11 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
     }
 
     public Iterable<AtlasEdge<AtlasJanusVertex, AtlasJanusEdge>> wrapEdges(Iterable<? extends Edge> it) {
-        return StreamSupport.stream(it.spliterator(), false).map(input -> GraphDbObjectFactory.createEdge(AtlasJanusGraph.this, input)).collect(Collectors.toList());
+
+        return Iterables.transform(it,
+                (Function<Edge, AtlasEdge<AtlasJanusVertex, AtlasJanusEdge>>) input ->
+                        GraphDbObjectFactory.createEdge(AtlasJanusGraph.this, input));
+
     }
 
     public void addMultiProperties(Set<String> names) {

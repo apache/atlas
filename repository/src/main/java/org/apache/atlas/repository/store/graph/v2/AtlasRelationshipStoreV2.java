@@ -19,6 +19,7 @@
 package org.apache.atlas.repository.store.graph.v2;
 
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasPrivilege;
@@ -49,6 +50,7 @@ import org.apache.atlas.type.AtlasRelationshipType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
@@ -67,24 +69,25 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 
+import static org.apache.atlas.AtlasConfiguration.NOTIFICATION_RELATIONSHIPS_ENABLED;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
-import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.*;
+import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.BOTH;
+import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.NONE;
+import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.ONE_TO_TWO;
+import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.TWO_TO_ONE;
 import static org.apache.atlas.repository.Constants.ENTITY_TYPE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.HOME_ID_KEY;
 import static org.apache.atlas.repository.Constants.PROVENANCE_TYPE_KEY;
 import static org.apache.atlas.repository.Constants.RELATIONSHIPTYPE_TAG_PROPAGATION_KEY;
 import static org.apache.atlas.repository.Constants.RELATIONSHIP_GUID_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.VERSION_PROPERTY_KEY;
-import static org.apache.atlas.AtlasConfiguration.NOTIFICATION_RELATIONSHIPS_ENABLED;
-
-
 import static org.apache.atlas.repository.graph.GraphHelper.getBlockedClassificationIds;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEntityGuid;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationName;
 import static org.apache.atlas.repository.graph.GraphHelper.getPropagatableClassifications;
-import static org.apache.atlas.repository.graph.GraphHelper.getIncomingEdgesByLabel;
 import static org.apache.atlas.repository.graph.GraphHelper.getPropagateTags;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getState;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getTypeName;
@@ -776,23 +779,39 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
     }
 
     public AtlasEdge getRelationshipEdge(AtlasVertex fromVertex, AtlasVertex toVertex, String relationshipLabel) {
-        AtlasEdge           ret           = null;
-        Iterator<AtlasEdge> edgesIterator = getIncomingEdgesByLabel(toVertex, relationshipLabel);
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("getRelationshipEdge");
 
+        AtlasEdge ret = null;
+
+        if (toVertex.hasEdges(AtlasEdgeDirection.IN, relationshipLabel) && fromVertex.hasEdges(AtlasEdgeDirection.OUT, relationshipLabel)) {
+            long fromVertexOutgoingEdgeCount = graphHelper.getOutGoingEdgesCountByLabel(fromVertex, relationshipLabel);
+            long toVertexIncomingEdgeCount = graphHelper.getInComingEdgesCountByLabel(toVertex, relationshipLabel);
+            if (toVertexIncomingEdgeCount < fromVertexOutgoingEdgeCount) {
+                Iterator<AtlasEdge> edgesIteratorIn = graphHelper.getIncomingEdgesByLabel(toVertex, relationshipLabel);
+                ret = getActiveEdgeFromList(edgesIteratorIn, fromVertex.getId(), e -> e.getOutVertex().getId());
+            } else {
+                Iterator<AtlasEdge> edgesIteratorOut = graphHelper.getOutGoingEdgesByLabel(fromVertex, relationshipLabel);
+                ret = getActiveEdgeFromList(edgesIteratorOut, toVertex.getId(), e -> e.getInVertex().getId());
+            }
+        }
+
+        RequestContext.get().endMetricRecord(metric);
+        return ret;
+    }
+
+    private AtlasEdge getActiveEdgeFromList(Iterator<AtlasEdge> edgesIterator, Object vertexIdToCompare, Function<AtlasEdge, Object> edgeIdFn) {
         while (edgesIterator != null && edgesIterator.hasNext()) {
             AtlasEdge edge = edgesIterator.next();
-
             if (edge != null) {
                 Status status = graphHelper.getStatus(edge);
 
-                if ((status == null || status == ACTIVE) && edge.getOutVertex().getId().equals(fromVertex.getId())) {
-                    ret = edge;
-                    break;
+                if ((status == null || status == ACTIVE) && edgeIdFn.apply(edge).equals(vertexIdToCompare)) {
+                    return edge;
                 }
             }
         }
 
-        return ret;
+        return null;
     }
 
     private Long getRelationshipVersion(AtlasRelationship relationship) {
