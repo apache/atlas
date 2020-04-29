@@ -20,12 +20,14 @@ package org.apache.atlas.repository.graphdb.janus;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.stream.StreamSupport;
 
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasSchemaViolationException;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.AtlasVertexQuery;
+import org.apache.atlas.repository.graphdb.utils.IteratorToIterableAdapter;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -76,6 +78,21 @@ public class AtlasJanusVertex extends AtlasJanusElement<Vertex> implements Atlas
         Iterator<Edge> edges     = getWrappedElement().edges(direction, edgeLabels);
 
         return graph.wrapEdges(edges);
+    }
+
+    @Override
+    public long getEdgesCount(AtlasEdgeDirection dir, String edgeLabel) {
+        Direction      direction = AtlasJanusObjectFactory.createDirection(dir);
+        Iterator<Edge> it     = getWrappedElement().edges(direction, edgeLabel);
+        IteratorToIterableAdapter<Edge> iterable = new IteratorToIterableAdapter<>(it);
+        return StreamSupport.stream(iterable.spliterator(), true).count();
+    }
+
+    @Override
+    public boolean hasEdges(AtlasEdgeDirection dir, String edgeLabel) {
+        Direction      direction = AtlasJanusObjectFactory.createDirection(dir);
+        Iterator<Edge> edges     = getWrappedElement().edges(direction, edgeLabel);
+        return edges.hasNext();
     }
 
     private JanusGraphVertex getAsJanusVertex() {

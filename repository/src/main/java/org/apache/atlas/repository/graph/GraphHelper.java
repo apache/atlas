@@ -35,7 +35,6 @@ import org.apache.atlas.repository.graphdb.AtlasVertexQuery;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasMapType;
-import org.apache.atlas.util.AtlasGremlinQueryProvider;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.v1.model.instance.Id;
 import org.apache.atlas.v1.model.instance.Referenceable;
@@ -72,7 +71,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.UUID;
 
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
@@ -269,6 +267,21 @@ public final class GraphHelper {
         return ret;
     }
 
+    public static long getAdjacentEdgesCountByLabel(AtlasVertex instanceVertex, AtlasEdgeDirection direction, final String edgeLabel) {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("getAdjacentEdgesCountByLabel");
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Finding edges for {} with label {}", string(instanceVertex), edgeLabel);
+        }
+
+        long ret = 0;
+        if(instanceVertex != null && edgeLabel != null) {
+            ret = instanceVertex.getEdgesCount(direction, edgeLabel);
+        }
+
+        RequestContext.get().endMetricRecord(metric);
+        return ret;
+    }
+
     public static boolean isPropagationEnabled(AtlasVertex classificationVertex) {
         boolean ret = false;
 
@@ -435,6 +448,14 @@ public final class GraphHelper {
 
     public static Iterator<AtlasEdge> getOutGoingEdgesByLabel(AtlasVertex instanceVertex, String edgeLabel) {
         return getAdjacentEdgesByLabel(instanceVertex, AtlasEdgeDirection.OUT, edgeLabel);
+    }
+
+    public static long getOutGoingEdgesCountByLabel(AtlasVertex instanceVertex, String edgeLabel) {
+        return getAdjacentEdgesCountByLabel(instanceVertex, AtlasEdgeDirection.OUT, edgeLabel);
+    }
+
+    public static long getInComingEdgesCountByLabel(AtlasVertex instanceVertex, String edgeLabel) {
+        return getAdjacentEdgesCountByLabel(instanceVertex, AtlasEdgeDirection.IN, edgeLabel);
     }
 
     public AtlasEdge getEdgeForLabel(AtlasVertex vertex, String edgeLabel, AtlasRelationshipEdgeDirection edgeDirection) {
