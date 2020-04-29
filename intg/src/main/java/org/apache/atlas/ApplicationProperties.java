@@ -65,6 +65,7 @@ public final class ApplicationProperties extends PropertiesConfiguration {
     public static final boolean DEFAULT_SOLR_WAIT_SEARCHER      = true;
     public static final boolean DEFAULT_INDEX_MAP_NAME          = false;
     public static final AtlasRunMode DEFAULT_ATLAS_RUN_MODE     = AtlasRunMode.PROD;
+    public static final String INDEX_SEARCH_MAX_RESULT_SET_SIZE = "atlas.graph.index.search.max-result-set-size";
 
     public static final SimpleEntry<String, String> DB_CACHE_CONF               = new SimpleEntry<>("atlas.graph.cache.db-cache", "true");
     public static final SimpleEntry<String, String> DB_CACHE_CLEAN_WAIT_CONF    = new SimpleEntry<>("atlas.graph.cache.db-cache-clean-wait", "20");
@@ -353,6 +354,14 @@ public final class ApplicationProperties extends PropertiesConfiguration {
                 LOG.info("Setting index.search.map-name property '" + DEFAULT_INDEX_MAP_NAME + "'");
             }
         }
+
+        // setting value for 'atlas.graph.index.search.max-result-set-size' (default = 2147483647)
+        int indexMaxResultSetSize = getInt(INDEX_SEARCH_MAX_RESULT_SET_SIZE, Integer.MAX_VALUE);
+
+        clearPropertyDirect(INDEX_SEARCH_MAX_RESULT_SET_SIZE);
+        addPropertyDirect(INDEX_SEARCH_MAX_RESULT_SET_SIZE, indexMaxResultSetSize);
+
+        LOG.info("Setting " + INDEX_SEARCH_MAX_RESULT_SET_SIZE + " = " + indexMaxResultSetSize);
 
         setDbCacheConfDefaults();
     }
