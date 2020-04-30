@@ -299,10 +299,12 @@ define(['require',
             ], function(ImportLayoutView) {
                 var view = new ImportLayoutView({
                     callback: function() {
-                        if (isGlossary) {
-                            that.options.importVent.trigger("Import:Glossary:Update");
-                        } else {
-                            that.options.importVent.trigger("Import:BM:Update");
+                        if (that.options.importVent) {
+                            if (isGlossary) {
+                                that.options.importVent.trigger("Import:Glossary:Update");
+                            } else {
+                                that.options.importVent.trigger("Import:BM:Update");
+                            }
                         }
                     },
                     isGlossary: isGlossary

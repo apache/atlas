@@ -142,26 +142,6 @@
     opacity: 0.2;
 }
 
-.business-metadata-details {
-    .backgrid {
-        td.expandable-content {
-            max-width: none;
-            background: #f8f8f8;
-
-            div {
-
-                table {
-                    width: 100%;
-                }
-            }
-        }
-
-        tbody>tr:last-child>td {
-            border-bottom: none;
-        }
-    }
-}
-
 .business-metadata-attr-page {
     .modal-footer {
         text-align: center;
