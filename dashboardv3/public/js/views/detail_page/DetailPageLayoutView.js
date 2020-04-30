@@ -486,9 +486,11 @@ define(['require',
             onClickAddTermBtn: function(e) {
                 var that = this,
                     entityGuid = that.id,
-                    associatedTerms = this.collection.first().get('entity').relationshipAttributes.meanings;
-
-
+                    entityObj = this.collection.first().get('entity'),
+                    associatedTerms = [];
+                if (entityObj && entityObj.relationshipAttributes && entityObj.relationshipAttributes.meanings) {
+                    associatedTerms = entityObj.relationshipAttributes.meanings;
+                }
                 require(['views/glossary/AssignTermLayoutView'], function(AssignTermLayoutView) {
                     var view = new AssignTermLayoutView({
                         guid: that.id,

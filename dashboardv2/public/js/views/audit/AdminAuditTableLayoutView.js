@@ -77,30 +77,28 @@ define(['require',
                 _.extend(this, _.pick(options, 'searchTableFilters', 'entityDefCollection', 'enumDefCollection'));
                 this.entityCollection = new VEntityList();
                 this.limit = 25;
+                this.offset = 0;
                 this.entityCollection.url = UrlLinks.adminApiUrl();
                 this.entityCollection.modelAttrName = "events";
                 this.commonTableOptions = {
                     collection: this.entityCollection,
-                    includeFilter: false,
-                    includePagination: true,
-                    includeFooterRecords: true,
-                    includePageSize: true,
-                    includeAtlasTableSorting: true,
-                    includeTableLoader: true,
+                    includePagination: false,
+                    includeAtlasPagination: true,
+                    includeFooterRecords: false,
                     includeColumnManager: false,
-                    gridOpts: {
-                        className: "table table-hover backgrid table-quickMenu",
-                        emptyText: 'No records found!'
+                    includeOrderAbleColumns: false,
+                    includeSizeAbleColumns: false,
+                    includeTableLoader: true,
+                    includeAtlasPageSize: true,
+                    includeAtlasTableSorting: true,
+                    atlasPaginationOpts: {
+                        limit: this.limit,
+                        offset: this.offset,
+                        fetchCollection: this.getAdminCollection.bind(this),
                     },
-                    columnOpts: {
-                        opts: {
-                            initialColumnsVisible: null,
-                            saveState: false
-                        },
-                        visibilityControlOpts: {
-                            buttonTemplate: _.template("<button class='btn btn-action btn-sm pull-right'>Columns&nbsp<i class='fa fa-caret-down'></i></button>")
-                        },
-                        el: this.ui.colManager
+                    gridOpts: {
+                        emptyText: 'No Record found!',
+                        className: 'table table-hover backgrid table-quickMenu colSort'
                     },
                     filterOpts: {},
                     paginatorOpts: {}
@@ -116,6 +114,7 @@ define(['require',
                 this.entityCollection.comparator = function(model) {
                     return -model.get('timestamp');
                 }
+                this.renderTableLayoutView();
             },
             bindEvents: function() {},
             closeAttributeModel: function() {
@@ -172,10 +171,11 @@ define(['require',
                 }
                 if (isFilterValidate) {
                     that.closeAttributeModel();
+                    that.defaultPagination();
                     that.getAdminCollection();
                 }
             },
-            getAdminCollection: function() {
+            getAdminCollection: function(option) {
                 var that = this,
                     options = {
                         isDateParsed: true,
@@ -193,13 +193,12 @@ define(['require',
                 that.searchTableFilters["adminAttrFilters"] = CommonViewFunction.attributeFilter.generateUrl({ value: auditQueryParam, formatedDateToLong: true });
                 this.$('.fontLoader').show();
                 this.$('.tableOverlay').show();
-                $.extend(that.entityCollection.queryParams, { limit: this.limit, offset: 0, auditFilters: adminParam });
+                $.extend(that.entityCollection.queryParams, { auditFilters: adminParam });
                 var apiObj = {
                     sort: false,
                     data: that.entityCollection.queryParams,
                     success: function(dataOrCollection, response) {
-                        that.entityCollection.fullCollection.reset(dataOrCollection);
-                        that.renderTableLayoutView();
+                        that.entityCollection.fullCollection.reset(dataOrCollection, option);
                         that.$('.fontLoader').hide();
                         that.$('.tableOverlay').hide();
                         that.$('.auditTable').show();
@@ -296,15 +295,20 @@ define(['require',
                 }, this.entityCollection);
 
             },
+            defaultPagination: function() {
+                $.extend(this.entityCollection.queryParams, { limit: this.limit, offset: this.offset });
+                this.renderTableLayoutView();
+            },
             onClickAdminType: function(e, value) {
                 this.onlyPurged = e.currentTarget.value === "Purged";
+                this.defaultPagination();
                 this.getAdminCollection();
             },
             onClickAdminEntity: function(e) {
                 var that = this;
                 require([
-                    'modules/Modal', 'views/audit/AuditTableLayoutView', 'views/audit/CreateAuditTableLayoutView',
-                ], function(Modal, AuditTableLayoutView, CreateAuditTableLayoutView) {
+                    'modules/Modal', 'views/audit/AuditTableLayoutView'
+                ], function(Modal, AuditTableLayoutView) {
                     var obj = {
                             guid: $(e.target).text(),
                         },

@@ -142,9 +142,11 @@ define(['require',
                         that[$(this).find('a').data('fn')](e)
                     });
                 }
-                this.importVent.on("Import:Glossary:Update", function(options) {
-                    that.getGlossary();
-                });
+                if (this.importVent) {
+                    this.importVent.on("Import:Glossary:Update", function(options) {
+                        that.getGlossary();
+                    });
+                }
             },
             onRender: function() {
                 this.changeLoaderState(true);

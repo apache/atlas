@@ -59,7 +59,6 @@ define(['require',
             /** ui events hash */
             events: function() {
                 var events = {};
-                events["click " + this.ui.auditCreate] = "onClickAuditCreate";
                 return events;
             },
             /**

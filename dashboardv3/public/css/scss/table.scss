@@ -213,6 +213,29 @@ tr.empty {
             text-align: center;
         }
     }
+
+    .expandable {
+        .expandable-content {
+            max-width: none;
+            background: #f8f8f8;
+
+            div {
+
+                table {
+                    width: 100%;
+
+                    td {
+
+                        display: table-cell;
+                    }
+
+                    tr:last-child>td {
+                        border-bottom: none;
+                    }
+                }
+            }
+        }
+    }
 }
 
 td {
@@ -255,8 +278,8 @@ td {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-}
 
-.auditStatusContainer>div {
-    flex-grow: 1;
+    &>div {
+        flex-grow: 1;
+    }
 }

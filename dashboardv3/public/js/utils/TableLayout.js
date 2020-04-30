@@ -267,7 +267,7 @@ define(['require',
                         this.renderFooterRecords(this.collection.state);
                     }
                     if (this.includeAtlasPagination) {
-                        this.renderAtlasPagination(collection, options);
+                        this.renderAtlasPagination(options);
                     }
                 }, this);
 

@@ -83,18 +83,20 @@ define(['require',
                             that.fetchMetricData({ update: true });
                         }
                     }]
-                }).open();
-
+                });
                 modal.on('closeModal', function() {
                     modal.trigger('cancel');
                 });
                 this.modal = modal;
+                modal.open();
             },
             bindEvents: function() {
                 var that = this;
-                this.$el.on('click', '.linkClicked', function() {
-                    that.modal.close();
-                })
+                if (this.modal) {
+                    this.$el.on('click', '.linkClicked', function() {
+                        that.modal.close();
+                    })
+                }
             },
             fetchMetricData: function(options) {
                 var that = this;

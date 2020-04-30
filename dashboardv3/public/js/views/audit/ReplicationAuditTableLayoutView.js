@@ -41,13 +41,10 @@ define(['require',
             },
 
             /** ui selector cache */
-            ui: {
-                auditDetail: "[data-action='audit_detail']",
-            },
+            ui: {},
             /** ui events hash */
             events: function() {
                 var events = {}
-                events["click " + this.ui.auditDetail] = "onClickAuditDetails";
                 return events;
             },
             /**
@@ -70,6 +67,8 @@ define(['require',
                     includeOrderAbleColumns: false,
                     includeSizeAbleColumns: false,
                     includeTableLoader: true,
+                    includeAtlasPageSize: true,
+                    includeAtlasTableSorting: true,
                     atlasPaginationOpts: {
                         limit: this.limit,
                         offset: this.offset,
@@ -123,7 +122,21 @@ define(['require',
             getColumn: function(argument) {
                 var that = this,
                     col = {};
-
+                col['tools'] = {
+                    label: "",
+                    cell: "html",
+                    editable: false,
+                    sortable: false,
+                    fixWidth: "20",
+                    cell: Backgrid.ExpandableCell,
+                    accordion: false,
+                    expand: function(el, model) {
+                        el.attr('colspan', '6');
+                        var result = JSON.parse(model.get("resultSummary")),
+                            view = "<table class='table table-bordered table-striped'>" + CommonViewFunction.propertyTable({ scope: that, valueObject: result, attributeDefs: that.attributeDefs }) + "</table>";
+                        $(el).append($('<div>').html(view));
+                    }
+                };
                 col['operation'] = {
                     label: "Operation",
                     cell: "string",
@@ -175,46 +188,8 @@ define(['require',
                         }
                     })
                 };
-                col['tools'] = {
-                    label: "Tools",
-                    cell: "html",
-                    editable: false,
-                    sortable: false,
-                    formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
-                        fromRaw: function(rawValue, model) {
-                            return '<div class="btn btn-action btn-sm" data-action="audit_detail" data-guid="' + model.get('guid') + '">Detail</div>';
-                        }
-                    })
-                };
                 return this.searchCollection.constructor.getTableCols(col, this.searchCollection);
-            },
-            onClickAuditDetails: function(e) {
-                var that = this;
-                require([
-                    'modules/Modal',
-                    'views/audit/CreateAuditTableLayoutView',
-                ], function(Modal, CreateAuditTableLayoutView) {
-                    $(e.target).attr('disabled', true);
-                    var guid = $(e.target).data("guid"),
-                        model = that.searchCollection.fullCollection.findWhere({ 'guid': guid }),
-                        result = JSON.parse(model.get("resultSummary")),
-                        view = "<table class='table table-bordered table-striped'>" + CommonViewFunction.propertyTable({ scope: that, valueObject: result, attributeDefs: that.attributeDefs }) + "</table>";
-                    var modal = new Modal({
-                        title: model.get("operation") + " Details",
-                        content: view,
-                        contentHtml: true,
-                        okCloses: true,
-                        showFooter: true,
-                    });
-                    modal.open();
-                    modal.on('closeModal', function() {
-                        modal.trigger('cancel');
-                    });
-                    modal.on('hidden.bs.modal', function() {
-                        that.$('.btn-action[data-action="audit_detail"]').attr('disabled', false);
-                    });
-                });
-            },
+            }
         });
     return ReplicationAuditTableLayoutView;
 });
