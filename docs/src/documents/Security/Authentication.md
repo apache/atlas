@@ -116,7 +116,7 @@ atlas.authentication.method.ldap.ad.default.role=ROLE_USER`}
 
 <SyntaxHighlighter wrapLines={true} language="shell" style={theme.dark}>
 {`atlas.authentication.method.ldap.url=ldap://<Ldap server ip>:389
-atlas.authentication.method.ldap.userDNpattern=uid={0],ou=users,dc=example,dc=com
+atlas.authentication.method.ldap.userDNpattern=uid={0},ou=users,dc=example,dc=com
 atlas.authentication.method.ldap.groupSearchBase=dc=example,dc=com
 atlas.authentication.method.ldap.groupSearchFilter=(member=cn={0},ou=users,dc=example,dc=com
 atlas.authentication.method.ldap.groupRoleAttribute=cn
