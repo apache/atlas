@@ -23,7 +23,11 @@ import org.apache.atlas.pc.WorkItemManager;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.IndexException;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer.UniqueKind;
-import org.apache.atlas.repository.graphdb.*;
+import org.apache.atlas.repository.graphdb.AtlasCardinality;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
+import org.apache.atlas.repository.graphdb.AtlasSchemaViolationException;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.type.AtlasEntityType;
@@ -159,10 +163,37 @@ public class UniqueAttributePatch extends AtlasPatchHandler {
         protected void processItem(Long vertexId, AtlasVertex vertex, String typeName, AtlasEntityType entityType) {
             LOG.debug("processItem(typeName={}, vertexId={})", typeName, vertexId);
 
+            processIndexStringAttribute(vertexId, vertex, typeName, entityType);
+            processUniqueAttribute(vertexId, vertex, typeName, entityType);
+
+            LOG.debug("processItem(typeName={}, vertexId={}): Done!", typeName, vertexId);
+        }
+
+        private void processIndexStringAttribute(Long vertexId, AtlasVertex vertex, String typeName, AtlasEntityType entityType) {
+            for (AtlasAttribute attribute : entityType.getAllAttributes().values()) {
+                if (attribute.getAttributeDef().getIndexType() != null &&
+                        attribute.getAttributeDef().getIndexType() == AtlasAttributeDef.IndexType.STRING) {
+
+                    String vertexPropertyName = attribute.getVertexPropertyName();
+                    if (vertex.getProperty(vertexPropertyName, String.class) != null) {
+                        continue;
+                    }
+
+                    Object attrVal = AtlasGraphUtilsV2.getEncodedProperty(vertex, attribute.getQualifiedName(), String.class);
+                    if (attrVal != null) {
+                        AtlasGraphUtilsV2.setEncodedProperty(vertex, vertexPropertyName, attrVal);
+                    }
+                }
+            }
+
+            LOG.debug("processIndexStringAttribute(typeName={}, vertexId={}): Done!", typeName, vertexId);
+        }
+
+        private void processUniqueAttribute(Long vertexId, AtlasVertex vertex, String typeName, AtlasEntityType entityType) {
             for (AtlasAttribute attribute : entityType.getUniqAttributes().values()) {
-                String                       uniquePropertyKey = attribute.getVertexUniquePropertyName();
-                Collection<? extends String> propertyKeys      = vertex.getPropertyKeys();
-                Object                       uniqAttrValue     = null;
+                String uniquePropertyKey = attribute.getVertexUniquePropertyName();
+                Collection<? extends String> propertyKeys = vertex.getPropertyKeys();
+                Object uniqAttrValue = null;
 
                 if (propertyKeys == null || !propertyKeys.contains(uniquePropertyKey)) {
                     try {
@@ -171,14 +202,14 @@ public class UniqueAttributePatch extends AtlasPatchHandler {
                         uniqAttrValue = EntityGraphRetriever.mapVertexToPrimitive(vertex, propertyKey, attribute.getAttributeDef());
 
                         AtlasGraphUtilsV2.setEncodedProperty(vertex, uniquePropertyKey, uniqAttrValue);
-                    } catch(AtlasSchemaViolationException ex) {
+                    } catch (AtlasSchemaViolationException ex) {
                         LOG.error("Duplicates detected: {}:{}:{}", typeName, uniqAttrValue, getIdFromVertex(vertex));
                         vertex.removeProperty(uniquePropertyKey);
                     }
                 }
             }
 
-            LOG.debug("processItem(typeName={}, vertexId={}): Done!", typeName, vertexId);
+            LOG.debug("processUniqueAttribute(typeName={}, vertexId={}): Done!", typeName, vertexId);
         }
     }
 }
