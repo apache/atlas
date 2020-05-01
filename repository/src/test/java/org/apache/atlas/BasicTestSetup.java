@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.query;
+package org.apache.atlas;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.atlas.AtlasClient;
@@ -32,6 +32,8 @@ import org.apache.atlas.type.AtlasTypeRegistry;
 
 import javax.inject.Inject;
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -179,6 +181,7 @@ public abstract class BasicTestSetup {
         AtlasEntity salesFactDaily =
                 table("sales_fact_daily_mv", "sales fact daily materialized view", reportingDB, sd, "Joe BI", "Managed",
                       salesFactColumns, "Metric");
+        salesFactDaily.setAttribute("createTime", Date.from(LocalDate.of(2016, 8, 19).atStartOfDay(ZoneId.systemDefault()).toInstant()));
         entities.add(salesFactDaily);
 
         sd = storageDescriptor("hdfs://host:8000/apps/warehouse/sales", "TextInputFormat", "TextOutputFormat", true, ImmutableList.of(column("time_id", "int", "time id")));

@@ -25,7 +25,7 @@ import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
-import org.apache.atlas.type.AtlasStructType;
+import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.util.SearchPredicateUtil;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.collections.CollectionUtils;
@@ -42,6 +42,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.StreamSupport;
 
 import static org.apache.atlas.SortOrder.ASCENDING;
 import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_CLASSIFICATION_TYPES;
@@ -197,13 +198,15 @@ public class EntitySearchProcessor extends SearchProcessor {
                     graphQueryPredicate = activePredicate;
                 }
             }
-
             if (sortBy != null && !sortBy.isEmpty()) {
-                AtlasGraphQuery.SortOrder qrySortOrder = sortOrder == SortOrder.ASCENDING ? ASC : DESC;
-                graphQuery.orderBy(sortBy, qrySortOrder);
+                AtlasAttribute sortByAttribute = context.getEntityType().getAttribute(sortBy);
+
+                if (sortByAttribute != null) {
+                    AtlasGraphQuery.SortOrder qrySortOrder = sortOrder == SortOrder.ASCENDING ? ASC : DESC;
+
+                    graphQuery.orderBy(sortByAttribute.getVertexPropertyName(), qrySortOrder);
+                }
             }
-
-
         } else {
             graphQuery = null;
             graphQueryPredicate = null;
@@ -263,7 +266,7 @@ public class EntitySearchProcessor extends SearchProcessor {
             String sortBy = context.getSearchParameters().getSortBy();
 
             final AtlasEntityType entityType = context.getEntityType();
-            AtlasStructType.AtlasAttribute sortByAttribute = entityType.getAttribute(sortBy);
+            AtlasAttribute sortByAttribute = entityType.getAttribute(sortBy);
             if (sortByAttribute == null) {
                 sortBy = null;
             } else {
@@ -360,6 +363,12 @@ public class EntitySearchProcessor extends SearchProcessor {
 
     @Override
     public long getResultCount() {
-        return (indexQuery != null) ? indexQuery.vertexTotals() : -1;
+        if (indexQuery != null) {
+            return indexQuery.vertexTotals();
+        } else if (graphQuery != null) {
+            return StreamSupport.stream(graphQuery.vertexIds().spliterator(), false).count();
+        } else {
+            return -1L;
+        }
     }
 }
