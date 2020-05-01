@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.query;
 
+import org.apache.atlas.BasicTestSetup;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
