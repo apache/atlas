@@ -473,7 +473,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                                     var classificationDef = classificationDefCollection.fullCollection.findWhere({ 'name': value[skey].classification }),
                                         attributeDefs = [];
                                     if (classificationDef) {
-                                        Utils.getNestedSuperTypeObj({
+                                        attributeDefs = Utils.getNestedSuperTypeObj({
                                             collection: classificationDefCollection,
                                             attrMerge: true,
                                             data: classificationDef.toJSON()
@@ -489,7 +489,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                                     var entityDef = entityDefCollection.fullCollection.findWhere({ 'name': value[skey].typeName }),
                                         attributeDefs = [];
                                     if (entityDef) {
-                                        Utils.getNestedSuperTypeObj({
+                                        attributeDefs = Utils.getNestedSuperTypeObj({
                                             collection: entityDefCollection,
                                             attrMerge: true,
                                             data: entityDef.toJSON()
@@ -985,44 +985,44 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
         return list.join(',');
     }
     CommonViewFunction.fetchRootEntityAttributes = function(options) {
-            $.ajax({
-                url: options.url,
-                methods: 'GET',
-                dataType: 'json',
-                delay: 250,
-                cache: true,
-                success: function(response) {
-                    if (response) {
-                        var entity = Object.assign(response, { name: options.entity });
-                        Globals[options.entity] = entity;
-                    }
-                },
-                complete: function(response) {
-                    if (options.callback) {
-                        options.callback(response);
-                    }
+        $.ajax({
+            url: options.url,
+            methods: 'GET',
+            dataType: 'json',
+            cache: true,
+            success: function(response) {
+                if (response) {
+                    _.each(options.entity, function(rootEntity) {
+                        Globals[rootEntity] = $.extend(true, {}, response, { name: rootEntity, guid: rootEntity });
+                    });
                 }
-            });
-        },
-        CommonViewFunction.fetchRootClassificationAttributes = function(options) {
-            $.ajax({
-                url: options.url,
-                methods: 'GET',
-                dataType: 'json',
-                delay: 250,
-                cache: true,
-                success: function(response) {
-                    if (response) {
-                        var classification = Object.assign(response, { name: options.classification });
-                        Globals[options.classification] = classification;
-                    }
-                },
-                complete: function(response) {
-                    if (options.callback) {
-                        options.callback(response);
-                    }
+            },
+            complete: function(response) {
+                if (options.callback) {
+                    options.callback(response);
                 }
-            });
-        }
+            }
+        });
+    }
+    CommonViewFunction.fetchRootClassificationAttributes = function(options) {
+        $.ajax({
+            url: options.url,
+            methods: 'GET',
+            dataType: 'json',
+            cache: true,
+            success: function(response) {
+                if (response) {
+                    _.each(options.classification, function(rootClassification) {
+                        Globals[rootClassification] = $.extend(true, {}, response, { name: rootClassification, guid: rootClassification });
+                    });
+                }
+            },
+            complete: function(response) {
+                if (options.callback) {
+                    options.callback(response);
+                }
+            }
+        });
+    }
     return CommonViewFunction;
 });

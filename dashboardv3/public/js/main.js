@@ -360,15 +360,13 @@ require(['App',
         }
     });
 
-    Enums.addOnEntities.forEach(function(addOnEntity) {
-        CommonViewFunction.fetchRootEntityAttributes({
-            url: UrlLinks.rootEntityDefUrl(addOnEntity),
-            entity: addOnEntity,
-            callback: function() {
-                --that.asyncFetchCounter;
-                startApp();
-            }
-        });
+    CommonViewFunction.fetchRootEntityAttributes({
+        url: UrlLinks.rootEntityDefUrl(Enums.addOnEntities[0]),
+        entity: Enums.addOnEntities,
+        callback: function() {
+            --that.asyncFetchCounter;
+            startApp();
+        }
     });
 
     CommonViewFunction.fetchRootClassificationAttributes({
