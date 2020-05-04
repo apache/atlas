@@ -111,6 +111,16 @@ public interface AtlasElement {
     void removeProperty(String propertyName);
 
     /**
+     * Removes a property with given property value from the vertex.
+     */
+    void removePropertyValue(String propertyName, Object propertyValue);
+
+    /**
+     * Removes a property with given property value from the vertex.
+     */
+    void removeAllPropertyValue(String propertyName, Object propertyValue);
+
+    /**
      * Sets a single-valued property to the given value.  For
      * properties defined as multiplicty many in the graph schema, the value is added instead
      * (following set semantics)
