@@ -73,8 +73,10 @@ public class ZipFileMigrationImporter implements Runnable {
             dataMigrationStatusService.setStatus("DONE");
         } catch (IOException e) {
             LOG.error("Migration Import: IO Error!", e);
+            dataMigrationStatusService.setStatus("FAIL");
         } catch (AtlasBaseException e) {
             LOG.error("Migration Import: Error!", e);
+            dataMigrationStatusService.setStatus("FAIL");
         }
     }
 

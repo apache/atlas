@@ -68,6 +68,5 @@ public class DataMigrationStatusServiceTest {
 
         dataMigrationStatusService.delete();
         assertNull(dataMigrationStatusService.getStatus());
-        assertNull(dataMigrationStatusService.getByName(ret.getName()));
     }
 }
