@@ -990,42 +990,39 @@ public abstract class DeleteHandlerV1 {
         }
         entityVertex.addListProperty(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, classificationName);
 
-        String propClsNames = entityVertex.getProperty(PROPAGATED_CLASSIFICATION_NAMES_KEY, String.class);
-
-        propClsNames = StringUtils.isEmpty(propClsNames) ? CLASSIFICATION_NAME_DELIMITER + classificationName
-                                                         : (propClsNames + classificationName);
-
-        propClsNames = propClsNames + CLASSIFICATION_NAME_DELIMITER;
-        entityVertex.setProperty(PROPAGATED_CLASSIFICATION_NAMES_KEY, propClsNames);
+        entityVertex.setProperty(PROPAGATED_CLASSIFICATION_NAMES_KEY, getDelimitedPropagatedClassificationNames(entityVertex, classificationName));
     }
 
-    private void removeFromPropagatedClassificationNames(AtlasVertex entityVertex, String classificationName) {
+    public void removeFromPropagatedClassificationNames(AtlasVertex entityVertex, String classificationName) {
         if (entityVertex != null && StringUtils.isNotEmpty(classificationName)) {
-            List<String> propagatedTraitNames = getTraitNames(entityVertex, true);
-
-            propagatedTraitNames.remove(classificationName);
-
-            setPropagatedClassificationNames(entityVertex, propagatedTraitNames);
-        }
-    }
-
-    private void setPropagatedClassificationNames(AtlasVertex entityVertex, List<String> classificationNames) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Adding property {} = \"{}\" to vertex {}", PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, classificationNames, string(entityVertex));
-        }
-
-        entityVertex.removeProperty(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY);
-        entityVertex.removeProperty(PROPAGATED_CLASSIFICATION_NAMES_KEY);
-
-        if (CollectionUtils.isNotEmpty(classificationNames)) {
-            for (String classificationName : classificationNames) {
-                entityVertex.addListProperty(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, classificationName);
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Removing from property: {} value: {} in vertex: {}", PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, classificationName, string(entityVertex));
             }
 
-            String propClsName = CLASSIFICATION_NAME_DELIMITER + StringUtils.join(classificationNames, CLASSIFICATION_NAME_DELIMITER) + CLASSIFICATION_NAME_DELIMITER;
+            entityVertex.removePropertyValue(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, classificationName);
 
-            entityVertex.setProperty(PROPAGATED_CLASSIFICATION_NAMES_KEY, propClsName);
+            List<String> propagatedTraitNames = getPropagatedTraitNames(entityVertex);
+
+            if (CollectionUtils.isNotEmpty(propagatedTraitNames)) {
+                propagatedTraitNames.remove(classificationName);
+
+                String propClsName = CLASSIFICATION_NAME_DELIMITER + StringUtils.join(propagatedTraitNames, CLASSIFICATION_NAME_DELIMITER) + CLASSIFICATION_NAME_DELIMITER;
+
+                entityVertex.setProperty(PROPAGATED_CLASSIFICATION_NAMES_KEY, propClsName);
+            }
         }
+    }
+
+    private String getDelimitedPropagatedClassificationNames(AtlasVertex entityVertex, String classificationName) {
+        String ret = entityVertex.getProperty(PROPAGATED_CLASSIFICATION_NAMES_KEY, String.class);
+
+        if (StringUtils.isEmpty(ret)) {
+            ret = CLASSIFICATION_NAME_DELIMITER + classificationName + CLASSIFICATION_NAME_DELIMITER;
+        } else {
+            ret = ret + classificationName + CLASSIFICATION_NAME_DELIMITER;
+        }
+
+        return ret;
     }
 
     /**
