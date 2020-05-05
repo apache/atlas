@@ -739,19 +739,21 @@ public final class GraphHelper {
 
     public static List<AtlasVertex> getPropagationEnabledClassificationVertices(AtlasVertex entityVertex) {
         List<AtlasVertex> ret   = new ArrayList<>();
-        Iterable          edges = entityVertex.query().direction(AtlasEdgeDirection.OUT).label(CLASSIFICATION_LABEL).edges();
+        if (entityVertex.hasEdges(AtlasEdgeDirection.OUT, CLASSIFICATION_LABEL)) {
+            Iterable edges = entityVertex.query().direction(AtlasEdgeDirection.OUT).label(CLASSIFICATION_LABEL).edges();
 
-        if (edges != null) {
-            Iterator<AtlasEdge> iterator = edges.iterator();
+            if (edges != null) {
+                Iterator<AtlasEdge> iterator = edges.iterator();
 
-            while (iterator.hasNext()) {
-                AtlasEdge edge = iterator.next();
+                while (iterator.hasNext()) {
+                    AtlasEdge edge = iterator.next();
 
-                if (edge != null) {
-                    AtlasVertex classificationVertex = edge.getInVertex();
+                    if (edge != null) {
+                        AtlasVertex classificationVertex = edge.getInVertex();
 
-                    if (isPropagationEnabled(classificationVertex)) {
-                        ret.add(classificationVertex);
+                        if (isPropagationEnabled(classificationVertex)) {
+                            ret.add(classificationVertex);
+                        }
                     }
                 }
             }

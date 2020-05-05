@@ -48,10 +48,19 @@ public interface AtlasGraph<V, E> {
     AtlasEdge<V, E> addEdge(AtlasVertex<V, E> outVertex, AtlasVertex<V, E> inVertex, String label);
 
     /**
-     * Adds a vertex to the graph.
-     *
+     * Fetch edges between two vertices using relationshipLabel
+     * @param fromVertex
+     * @param toVertex
+     * @param relationshipLabel
      * @return
      */
+    AtlasEdge<V, E> getEdgeBetweenVertices(AtlasVertex fromVertex, AtlasVertex toVertex, String relationshipLabel);
+
+        /**
+         * Adds a vertex to the graph.
+         *
+         * @return
+         */
     AtlasVertex<V, E> addVertex();
 
     /**
