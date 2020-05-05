@@ -784,34 +784,11 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         AtlasEdge ret = null;
 
         if (toVertex.hasEdges(AtlasEdgeDirection.IN, relationshipLabel) && fromVertex.hasEdges(AtlasEdgeDirection.OUT, relationshipLabel)) {
-            long fromVertexOutgoingEdgeCount = graphHelper.getOutGoingEdgesCountByLabel(fromVertex, relationshipLabel);
-            long toVertexIncomingEdgeCount = graphHelper.getInComingEdgesCountByLabel(toVertex, relationshipLabel);
-            if (toVertexIncomingEdgeCount < fromVertexOutgoingEdgeCount) {
-                Iterator<AtlasEdge> edgesIteratorIn = graphHelper.getIncomingEdgesByLabel(toVertex, relationshipLabel);
-                ret = getActiveEdgeFromList(edgesIteratorIn, fromVertex.getId(), e -> e.getOutVertex().getId());
-            } else {
-                Iterator<AtlasEdge> edgesIteratorOut = graphHelper.getOutGoingEdgesByLabel(fromVertex, relationshipLabel);
-                ret = getActiveEdgeFromList(edgesIteratorOut, toVertex.getId(), e -> e.getInVertex().getId());
-            }
+            ret = graph.getEdgeBetweenVertices(fromVertex, toVertex, relationshipLabel);
         }
 
         RequestContext.get().endMetricRecord(metric);
         return ret;
-    }
-
-    private AtlasEdge getActiveEdgeFromList(Iterator<AtlasEdge> edgesIterator, Object vertexIdToCompare, Function<AtlasEdge, Object> edgeIdFn) {
-        while (edgesIterator != null && edgesIterator.hasNext()) {
-            AtlasEdge edge = edgesIterator.next();
-            if (edge != null) {
-                Status status = graphHelper.getStatus(edge);
-
-                if ((status == null || status == ACTIVE) && edgeIdFn.apply(edge).equals(vertexIdToCompare)) {
-                    return edge;
-                }
-            }
-        }
-
-        return null;
     }
 
     private Long getRelationshipVersion(AtlasRelationship relationship) {

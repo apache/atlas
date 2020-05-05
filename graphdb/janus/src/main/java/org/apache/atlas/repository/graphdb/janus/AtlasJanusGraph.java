@@ -172,6 +172,17 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
     }
 
     @Override
+    public AtlasEdge getEdgeBetweenVertices(AtlasVertex fromVertex, AtlasVertex toVertex, String edgeLabel) {
+        GraphTraversal gt = V(fromVertex.getId()).outE(edgeLabel).where(__.otherV().hasId(toVertex.getId()));
+        Object o = gt.hasNext() ? gt.next() : null;
+        if (o == null) {
+            return null;
+        }
+
+        return GraphDbObjectFactory.createEdge(this, (Edge) o);
+    }
+
+    @Override
     public AtlasEdge<AtlasJanusVertex, AtlasJanusEdge> getEdge(String edgeId) {
         Iterator<Edge> it = getGraph().edges(edgeId);
         Edge           e  = getSingleElement(it, edgeId);
