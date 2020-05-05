@@ -355,8 +355,8 @@ public final class ApplicationProperties extends PropertiesConfiguration {
             }
         }
 
-        // setting value for 'atlas.graph.index.search.max-result-set-size' (default = 2147483647)
-        int indexMaxResultSetSize = getInt(INDEX_SEARCH_MAX_RESULT_SET_SIZE, Integer.MAX_VALUE);
+        // setting value for 'atlas.graph.index.search.max-result-set-size' (default = 500000)
+        int indexMaxResultSetSize = getInt(INDEX_SEARCH_MAX_RESULT_SET_SIZE, 500000);
 
         clearPropertyDirect(INDEX_SEARCH_MAX_RESULT_SET_SIZE);
         addPropertyDirect(INDEX_SEARCH_MAX_RESULT_SET_SIZE, indexMaxResultSetSize);
