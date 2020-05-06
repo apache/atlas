@@ -20,6 +20,7 @@ package org.apache.atlas.query;
 
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection;
 
 public interface Lookup {
     AtlasType getType(String typeName) throws AtlasBaseException;
@@ -29,6 +30,8 @@ public interface Lookup {
     boolean isPrimitive(GremlinQueryComposer.Context context, String attributeName);
 
     String getRelationshipEdgeLabel(GremlinQueryComposer.Context context, String attributeName);
+
+    AtlasRelationshipEdgeDirection getRelationshipEdgeDirection(GremlinQueryComposer.Context context, String attributeName);
 
     boolean hasAttribute(GremlinQueryComposer.Context context, String typeName);
 

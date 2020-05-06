@@ -26,6 +26,7 @@ import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.query.antlr4.AtlasDSLParser;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType;
+import org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.lang.StringUtils;
@@ -38,7 +39,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
-
+import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
 public class GremlinQueryComposerTest {
     @Test
     public void classification() {
@@ -479,6 +480,11 @@ public class GremlinQueryComposerTest {
                 return "__Table.db";
             else
                 return "__DB.Table";
+        }
+
+        @Override
+        public AtlasRelationshipEdgeDirection getRelationshipEdgeDirection(GremlinQueryComposer.Context context, String attributeName) {
+            return OUT;
         }
 
         @Override
