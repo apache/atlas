@@ -22,6 +22,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.type.*;
+import org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.*;
@@ -119,6 +120,21 @@ class RegistryBasedLookup implements Lookup {
         AtlasStructType.AtlasAttribute attr = getAttribute(et, attributeName);
 
         return (attr != null) ? attr.getRelationshipEdgeLabel() : "";
+    }
+
+    @Override
+    public AtlasRelationshipEdgeDirection getRelationshipEdgeDirection(GremlinQueryComposer.Context context, String attributeName) {
+        AtlasEntityType entityType  = context.getActiveEntityType();
+        AtlasStructType.AtlasAttribute attribute = null;
+        AtlasRelationshipEdgeDirection ret = null;
+
+        if (entityType != null) {
+            attribute = entityType.getRelationshipAttribute(attributeName, null);
+            if (attribute != null) {
+                ret = attribute.getRelationshipEdgeDirection();
+            }
+        }
+        return ret;
     }
 
     @Override

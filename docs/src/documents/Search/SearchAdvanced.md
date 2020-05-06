@@ -98,6 +98,18 @@ Example: To retrieve _DB_ whose name starts with _R_ followed by has any 3 chara
 {`DB where name like "R???rt?*"`}
 </SyntaxHighlighter>
 
+Example: To find all the columns in a Table.
+
+<SyntaxHighlighter wrapLines={true} language="html" style={theme.dark}>
+{`Column where table.name="sales_fact"`}
+</SyntaxHighlighter>
+
+Example: To find all the Tables for a column.
+
+<SyntaxHighlighter wrapLines={true} language="html" style={theme.dark}>
+{`Table where columns.name="sales"`}
+</SyntaxHighlighter>
+
 
 ### Using Date Literals
 Dates used in literals need to be specified using the ISO 8601 format.
