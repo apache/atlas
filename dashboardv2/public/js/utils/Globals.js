@@ -37,6 +37,7 @@ define(["require"], function(require) {
         status: false,
         response: {}
     };
+    Globals.serviceTypeMap = {};
     Globals.entityImgPath = "/img/entity-icon/";
     Globals.DEFAULT_UI = "v2";
     return Globals;

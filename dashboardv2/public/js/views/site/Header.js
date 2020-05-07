@@ -133,12 +133,14 @@ define(['require',
             var that = this,
                 request = options.request,
                 response = options.response,
+                inputEl = options.inputEl,
                 term = request.term,
                 data = {},
                 sendResponse = function() {
                     var query = data.query,
                         suggestions = data.suggestions;
                     if (query !== undefined && suggestions !== undefined) {
+                        inputEl.siblings('span.fa-refresh').removeClass("fa-refresh fa-spin-custom").addClass("fa-search");
                         response(data);
                     }
                 };
@@ -195,12 +197,6 @@ define(['require',
                 search: function() {
                     $(this).siblings('span.fa-search').removeClass("fa-search").addClass("fa-refresh fa-spin-custom");
                 },
-                focus: function(event, ui) {
-                    return false;
-                },
-                open: function() {
-                    $(this).siblings('span.fa-refresh').removeClass("fa-refresh fa-spin-custom").addClass("fa-search");
-                },
                 select: function(event, ui) {
                     var item = ui && ui.item;
                     event.preventDefault();
@@ -223,7 +219,8 @@ define(['require',
                 source: function(request, response) {
                     that.fetchSearchData({
                         request: request,
-                        response: response
+                        response: response,
+                        inputEl: this.element
                     });
                 }
             }).focus(function() {
@@ -242,7 +239,6 @@ define(['require',
                     }
                 }
             }).atlasAutoComplete("instance")._renderItem = function(ul, searchItem) {
-
                 if (searchItem) {
                     var data = searchItem.data,
                         searchTerm = this.term,
@@ -268,6 +264,17 @@ define(['require',
                                     item.itemText = Utils.getName(item) + " (" + item.typeName + ")";
                                     var options = {},
                                         table = '';
+                                    if (item.serviceType === undefined) {
+                                        if (Globals.serviceTypeMap[item.typeName] === undefined && that.entityDefCollection) {
+                                            var defObj = that.entityDefCollection.fullCollection.find({ name: item.typeName });
+                                            if (defObj) {
+                                                Globals.serviceTypeMap[item.typeName] = defObj.get("serviceType");
+                                            }
+                                        }
+                                    } else if (Globals.serviceTypeMap[item.typeName] === undefined) {
+                                        Globals.serviceTypeMap[item.typeName] = item.serviceType;
+                                    }
+                                    item.serviceType = Globals.serviceTypeMap[item.typeName];
                                     options.entityData = item;
                                     var imgEl = $('<img src="' + Utils.getEntityIconPath(options) + '">').on("error", function(error, s) {
                                         this.src = Utils.getEntityIconPath(_.extend(options, { errorUrl: this.src }));
