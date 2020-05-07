@@ -680,6 +680,17 @@ define(['require',
                             var obj = model.toJSON(),
                                 nameHtml = "",
                                 name = Utils.getName(obj);
+                            if (obj.attributes.serviceType === undefined) {
+                                if (Globals.serviceTypeMap[obj.typeName] === undefined && that.entityDefCollection) {
+                                    var defObj = that.entityDefCollection.fullCollection.find({ name: obj.typeName });
+                                    if (defObj) {
+                                        Globals.serviceTypeMap[obj.typeName] = defObj.get('serviceType');
+                                    }
+                                }
+                            } else if (Globals.serviceTypeMap[obj.typeName] === undefined) {
+                                Globals.serviceTypeMap[obj.typeName] = obj.attributes.serviceType;
+                            }
+                            obj.serviceType = Globals.serviceTypeMap[obj.typeName];
                             if (obj.guid) {
                                 if (obj.guid == "-1") {
                                     nameHtml = '<span title="' + name + '">' + name + '</span>';

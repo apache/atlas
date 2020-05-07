@@ -189,7 +189,14 @@ define(['require',
                                     titleName += '<button title="Deleted" class="btn btn-action btn-md deleteBtn"><i class="fa fa-trash"></i> Deleted</button>';
                                 }
                                 this.ui.title.html(titleName);
-                                var entityData = _.extend({ "serviceType": this.activeEntityDef && this.activeEntityDef.get('serviceType'), "isProcess": isProcess }, collectionJSON);
+                                if (collectionJSON.attributes.serviceType === undefined) {
+                                    if (Globals.serviceTypeMap[collectionJSON.typeName] === undefined && this.activeEntityDef) {
+                                        Globals.serviceTypeMap[collectionJSON.typeName] = this.activeEntityDef.get('serviceType');
+                                    }
+                                } else if (Globals.serviceTypeMap[collectionJSON.typeName] === undefined) {
+                                    Globals.serviceTypeMap[collectionJSON.typeName] = collectionJSON.attributes.serviceType;
+                                }
+                                var entityData = _.extend({ "serviceType": Globals.serviceTypeMap[collectionJSON.typeName], "isProcess": isProcess }, collectionJSON);
                                 if (this.readOnly) {
                                     this.ui.entityIcon.addClass('disabled');
                                 } else {
