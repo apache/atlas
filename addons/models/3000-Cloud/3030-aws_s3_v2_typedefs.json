@@ -259,7 +259,7 @@
           "isIndexable": true,
           "isOptional":  true,
           "isUnique":    false,
-          "searchWeight" : 5
+          "searchWeight" : 10
         }
       ]
     }
