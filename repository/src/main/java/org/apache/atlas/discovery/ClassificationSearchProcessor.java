@@ -21,12 +21,7 @@ import org.apache.atlas.SortOrder;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria;
 import org.apache.atlas.repository.Constants;
-import org.apache.atlas.repository.graphdb.AtlasEdge;
-import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
-import org.apache.atlas.repository.graphdb.AtlasGraph;
-import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
-import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
-import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.graphdb.*;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.util.AtlasGremlinQueryProvider;
@@ -43,10 +38,6 @@ import org.slf4j.LoggerFactory;
 import javax.script.ScriptEngine;
 import javax.script.ScriptException;
 import java.util.*;
-
-import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_CLASSIFIED;
-import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_NOT_CLASSIFIED;
-import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_WILDCARD_CLASSIFICATION;
 
 /**
  * This class is needed when this is a registered classification type or wildcard search,
@@ -292,6 +283,8 @@ public class ClassificationSearchProcessor extends SearchProcessor {
                         Iterator<AtlasIndexQuery.Result> queryResult = classificationIndexQuery.vertices(qryOffset, limit);
 
                         getVerticesFromIndexQueryResult(queryResult, classificationVertices);
+
+                        isLastResultPage = classificationVertices.size() < limit;
 
                         // Do in-memory filtering before the graph query
                         CollectionUtils.filter(classificationVertices, inMemoryPredicate);
