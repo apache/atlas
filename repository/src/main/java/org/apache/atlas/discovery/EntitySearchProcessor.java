@@ -287,14 +287,7 @@ public class EntitySearchProcessor extends SearchProcessor {
                 final boolean isLastResultPage;
 
                 if (indexQuery != null) {
-                    Iterator<AtlasIndexQuery.Result> idxQueryResult;
-
-                    if (StringUtils.isEmpty(sortBy)) {
-                        idxQueryResult = indexQuery.vertices(qryOffset, limit);
-                    } else {
-                        Order qrySortOrder = sortOrder == SortOrder.ASCENDING ? Order.asc : Order.desc;
-                        idxQueryResult = indexQuery.vertices(qryOffset, limit, sortBy, qrySortOrder);
-                    }
+                    Iterator<AtlasIndexQuery.Result> idxQueryResult = executeIndexQuery(context, indexQuery, qryOffset, limit);
 
                     getVerticesFromIndexQueryResult(idxQueryResult, entityVertices);
 

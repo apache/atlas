@@ -19,6 +19,7 @@ package org.apache.atlas.discovery;
 
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.SortOrder;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria;
@@ -39,6 +40,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.Predicate;
 import org.apache.commons.collections.PredicateUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,6 +49,7 @@ import java.math.BigInteger;
 import java.util.*;
 import java.util.regex.Pattern;
 
+import static org.apache.atlas.SortOrder.ASCENDING;
 import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_CLASSIFICATION_TYPES;
 import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_CLASSIFIED;
 import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_NOT_CLASSIFIED;
@@ -986,4 +989,29 @@ public abstract class SearchProcessor {
         return defaultValue;
     }
 
+    private static String getSortByAttribute(SearchContext context) {
+        final AtlasEntityType entityType = context.getEntityType();
+        String sortBy = context.getSearchParameters().getSortBy();
+        AtlasStructType.AtlasAttribute sortByAttribute = entityType != null ? entityType.getAttribute(sortBy) : null;
+        if (sortByAttribute != null) {
+            return sortByAttribute.getVertexPropertyName();
+        }
+        return null;
+    }
+
+    private static Order getSortOrderAttribute(SearchContext context) {
+        SortOrder sortOrder = context.getSearchParameters().getSortOrder();
+        if (sortOrder == null) sortOrder = ASCENDING;
+
+        return sortOrder == SortOrder.ASCENDING ? Order.asc : Order.desc;
+    }
+
+    protected static Iterator<AtlasIndexQuery.Result> executeIndexQuery(SearchContext context, AtlasIndexQuery indexQuery, int qryOffset, int limit) {
+        String sortBy = getSortByAttribute(context);
+        if (sortBy != null && !sortBy.isEmpty()) {
+            Order sortOrder = getSortOrderAttribute(context);
+            return indexQuery.vertices(qryOffset, limit, sortBy, sortOrder);
+        }
+        return indexQuery.vertices(qryOffset, limit);
+    }
 }

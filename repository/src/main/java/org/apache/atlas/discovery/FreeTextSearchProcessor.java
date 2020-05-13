@@ -113,7 +113,7 @@ public class FreeTextSearchProcessor extends SearchProcessor {
                         break;
                     }
 
-                    Iterator<AtlasIndexQuery.Result> idxQueryResult = indexQuery.vertices(qryOffset, limit);
+                    Iterator<AtlasIndexQuery.Result> idxQueryResult = executeIndexQuery(context, indexQuery, qryOffset, limit);
 
                     final boolean isLastResultPage;
                     int resultCount = 0;
