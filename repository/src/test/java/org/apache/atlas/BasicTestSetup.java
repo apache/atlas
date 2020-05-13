@@ -18,8 +18,6 @@
 package org.apache.atlas;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.atlas.AtlasClient;
-import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -58,6 +56,7 @@ public abstract class BasicTestSetup {
     public static final String ETL_CLASSIFICATION          = "ETL";
     public static final String JDBC_CLASSIFICATION         = "JdbcAccess";
     public static final String LOGDATA_CLASSIFICATION      = "Log Data";
+    public static final String DIMENSIONAL_CLASSIFICATION  = "Dimensional";
 
     @Inject
     protected AtlasTypeRegistry typeRegistry;
@@ -143,11 +142,11 @@ public abstract class BasicTestSetup {
         List<AtlasEntity> salesFactColumns = ImmutableList
                 .of(column("time_id", "int", "time id"),
                         column("product_id", "int", "product id"),
-                        column("customer_id", "int", "customer id", "PII"),
-                        column("sales", "double", "product id", "Metric"));
+                        column("customer_id", "int", "customer id", PII_CLASSIFICATION),
+                        column("sales", "double", "product id", METRIC_CLASSIFICATION));
         entities.addAll(salesFactColumns);
 
-        AtlasEntity salesFact = table("sales_fact", "sales fact table", salesDB, sd, "Joe", "Managed", salesFactColumns, "Fact");
+        AtlasEntity salesFact = table("sales_fact", "sales fact table", salesDB, sd, "Joe", "Managed", salesFactColumns, FACT_CLASSIFICATION);
         salesFact.setAttribute("createTime", new Date(2018, 01, 01));
         entities.add(salesFact);
 
@@ -155,7 +154,7 @@ public abstract class BasicTestSetup {
                     .of(column("time_id", "int", "time id"),
                         column("app_id", "int", "app id"),
                         column("machine_id", "int", "machine id"),
-                        column("log", "string", "log data", "Log Data"));
+                        column("log", "string", "log data", LOGDATA_CLASSIFICATION));
         entities.addAll(logFactColumns);
 
         List<AtlasEntity> timeDimColumns = ImmutableList
@@ -168,7 +167,7 @@ public abstract class BasicTestSetup {
         entities.add(sd);
 
         AtlasEntity timeDim = table("time_dim", "time dimension table", salesDB, sd, "John Doe", "External", timeDimColumns,
-                                    "Dimension");
+                                    DIMENSION_CLASSIFICATION);
         entities.add(timeDim);
 
         AtlasEntity reportingDB =
@@ -180,32 +179,32 @@ public abstract class BasicTestSetup {
 
         AtlasEntity salesFactDaily =
                 table("sales_fact_daily_mv", "sales fact daily materialized view", reportingDB, sd, "Joe BI", "Managed",
-                      salesFactColumns, "Metric");
+                      salesFactColumns, METRIC_CLASSIFICATION);
         salesFactDaily.setAttribute("createTime", Date.from(LocalDate.of(2016, 8, 19).atStartOfDay(ZoneId.systemDefault()).toInstant()));
         entities.add(salesFactDaily);
 
         sd = storageDescriptor("hdfs://host:8000/apps/warehouse/sales", "TextInputFormat", "TextOutputFormat", true, ImmutableList.of(column("time_id", "int", "time id")));
         entities.add(sd);
 
-        AtlasEntity circularLineageTable1 = table("table1", "", reportingDB, sd, "Vimal", "Managed", salesFactColumns, "Metric");
+        AtlasEntity circularLineageTable1 = table("table1", "", reportingDB, sd, "Vimal", "Managed", salesFactColumns, METRIC_CLASSIFICATION);
         entities.add(circularLineageTable1);
 
         sd = storageDescriptor("hdfs://host:8000/apps/warehouse/sales", "TextInputFormat", "TextOutputFormat", true, ImmutableList.of(column("time_id", "int", "time id")));
         entities.add(sd);
 
-        AtlasEntity circularLineageTable2 = table("table2", "", reportingDB, sd, "Vimal 2", "Managed", salesFactColumns, "Metric");
+        AtlasEntity circularLineageTable2 = table("table2", "", reportingDB, sd, "Vimal 2", "Managed", salesFactColumns, METRIC_CLASSIFICATION);
         entities.add(circularLineageTable2);
 
         AtlasEntity circularLineage1Process = loadProcess("circularLineage1", "hive query for daily summary", "John ETL", ImmutableList.of(circularLineageTable1),
-                                         ImmutableList.of(circularLineageTable2), "create table as select ", "plan", "id", "graph", "ETL");
+                                         ImmutableList.of(circularLineageTable2), "create table as select ", "plan", "id", "graph", ETL_CLASSIFICATION);
         entities.add(circularLineage1Process);
 
         AtlasEntity circularLineage2Process = loadProcess("circularLineage2", "hive query for daily summary", "John ETL", ImmutableList.of(circularLineageTable2),
-                                         ImmutableList.of(circularLineageTable1), "create table as select ", "plan", "id", "graph", "ETL");
+                                         ImmutableList.of(circularLineageTable1), "create table as select ", "plan", "id", "graph", ETL_CLASSIFICATION);
         entities.add(circularLineage2Process);
 
         AtlasEntity loadSalesDaily = loadProcess("loadSalesDaily", "hive query for daily summary", "John ETL", ImmutableList.of(salesFact, timeDim),
-                                         ImmutableList.of(salesFactDaily), "create table as select ", "plan", "id", "graph", "ETL");
+                                         ImmutableList.of(salesFactDaily), "create table as select ", "plan", "id", "graph", ETL_CLASSIFICATION);
         entities.add(loadSalesDaily);
 
         AtlasEntity logDB = database("Logging", "logging database", "Tim ETL", "hdfs://host:8000/apps/warehouse/logging");
@@ -216,7 +215,7 @@ public abstract class BasicTestSetup {
 
         AtlasEntity loggingFactDaily =
                 table("log_fact_daily_mv", "log fact daily materialized view", logDB, sd, "Tim ETL", "Managed",
-                      logFactColumns, "Log Data");
+                      logFactColumns, LOGDATA_CLASSIFICATION);
         entities.add(loggingFactDaily);
 
         List<AtlasEntity> productDimColumns = ImmutableList
@@ -230,27 +229,27 @@ public abstract class BasicTestSetup {
 
         AtlasEntity productDim =
                 table("product_dim", "product dimension table", salesDB, sd, "John Doe 2", "Managed", productDimColumns,
-                      "Dimension");
+                      DIMENSION_CLASSIFICATION);
         entities.add(productDim);
 
-        AtlasEntity productDimView = view("product_dim_view", reportingDB, ImmutableList.of(productDim), "Dimension", "JdbcAccess");
+        AtlasEntity productDimView = view("product_dim_view", reportingDB, ImmutableList.of(productDim), DIMENSION_CLASSIFICATION, JDBC_CLASSIFICATION);
         entities.add(productDimView);
 
         List<AtlasEntity> customerDimColumns = ImmutableList.of(
-                column("customer_id", "int", "customer id", "PII"),
-                column("name", "string", "customer name", "PII"),
-                column("address", "string", "customer address", "PII"));
+                column("customer_id", "int", "customer id", PII_CLASSIFICATION),
+                column("name", "string", "customer name", PII_CLASSIFICATION),
+                column("address", "string", "customer address", PII_CLASSIFICATION));
         entities.addAll(customerDimColumns);
 
         sd = storageDescriptor("hdfs://host:8000/apps/warehouse/sales", "TextInputFormat", "TextOutputFormat", true, ImmutableList.of(column("time_id", "int", "time id")));
         entities.add(sd);
 
         AtlasEntity customerDim =
-                table("customer_dim", "customer dimension table", salesDB, sd, "fetl", "External", customerDimColumns,
-                      "Dimension");
+                    table("customer_dim", "customer dimension table", salesDB, sd, "fetl", "External", customerDimColumns,
+                      DIMENSION_CLASSIFICATION);
         entities.add(customerDim);
 
-        AtlasEntity customerDimView = view("customer_dim_view", reportingDB, ImmutableList.of(customerDim), "Dimension", "JdbcAccess");
+        AtlasEntity customerDimView = view("customer_dim_view", reportingDB, ImmutableList.of(customerDim), DIMENSION_CLASSIFICATION, JDBC_CLASSIFICATION);
         entities.add(customerDimView);
 
         sd = storageDescriptor("hdfs://host:8000/apps/warehouse/sales", "TextInputFormat", "TextOutputFormat", true, ImmutableList.of(column("time_id", "int", "time id")));
@@ -258,11 +257,11 @@ public abstract class BasicTestSetup {
 
         AtlasEntity salesFactMonthly =
                 table("sales_fact_monthly_mv", "sales fact monthly materialized view", reportingDB, sd, "Jane BI",
-                      "Managed", salesFactColumns, "Metric");
+                      "Managed", salesFactColumns, METRIC_CLASSIFICATION);
         entities.add(salesFactMonthly);
 
         AtlasEntity loadSalesMonthly = loadProcess("loadSalesMonthly", "hive query for monthly summary", "John ETL", ImmutableList.of(salesFactDaily),
-                                         ImmutableList.of(salesFactMonthly), "create table as select ", "plan", "id", "graph", "ETL");
+                                         ImmutableList.of(salesFactMonthly), "create table as select ", "plan", "id", "graph", ETL_CLASSIFICATION);
         entities.add(loadSalesMonthly);
 
         sd = storageDescriptor("hdfs://host:8000/apps/warehouse/sales", "TextInputFormat", "TextOutputFormat", true, ImmutableList.of(column("time_id", "int", "time id")));
@@ -270,11 +269,11 @@ public abstract class BasicTestSetup {
 
         AtlasEntity loggingFactMonthly =
                 table("logging_fact_monthly_mv", "logging fact monthly materialized view", logDB, sd, "Tim ETL 2",
-                      "Managed", logFactColumns, "Log Data");
+                      "Managed", logFactColumns, LOGDATA_CLASSIFICATION);
         entities.add(loggingFactMonthly);
 
         AtlasEntity loadLogsMonthly = loadProcess("loadLogsMonthly", "hive query for monthly summary", "Tim ETL", ImmutableList.of(loggingFactDaily),
-                                         ImmutableList.of(loggingFactMonthly), "create table as select ", "plan", "id", "graph", "ETL");
+                                         ImmutableList.of(loggingFactMonthly), "create table as select ", "plan", "id", "graph", ETL_CLASSIFICATION);
         entities.add(loadLogsMonthly);
 
         AtlasEntity datasetSubType = datasetSubType("dataSetSubTypeInst1", "testOwner");
@@ -290,7 +289,9 @@ public abstract class BasicTestSetup {
                 new AtlasClassificationDef(METRIC_CLASSIFICATION, "Metric Classification", "1.0"),
                 new AtlasClassificationDef(ETL_CLASSIFICATION, "ETL Classification", "1.0"),
                 new AtlasClassificationDef(JDBC_CLASSIFICATION, "JdbcAccess Classification", "1.0"),
-                new AtlasClassificationDef(LOGDATA_CLASSIFICATION, "LogData Classification", "1.0"));
+                new AtlasClassificationDef(LOGDATA_CLASSIFICATION, "LogData Classification", "1.0"),
+                new AtlasClassificationDef(DIMENSIONAL_CLASSIFICATION,"Dimensional Classification", "1.0" ,
+                        Arrays.asList(new AtlasStructDef.AtlasAttributeDef("attr1","string"))));
 
         AtlasTypesDef tds = new AtlasTypesDef(Collections.<AtlasEnumDef>emptyList(),
                 Collections.<AtlasStructDef>emptyList(),
