@@ -497,7 +497,7 @@ public abstract class BaseHiveEvent {
 
             StorageDescriptor sd = table.getSd();
 
-            AtlasRelatedObjectId tableRelatedObject =     new AtlasRelatedObjectId(tableId, RELATIONSHIP_HIVE_TABLE_STORAGE_DESC);
+            AtlasRelatedObjectId tableRelatedObject = new AtlasRelatedObjectId(tableId, RELATIONSHIP_HIVE_TABLE_STORAGE_DESC);
 
             ret.setRelationshipAttribute(ATTRIBUTE_TABLE, tableRelatedObject);
             ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, sdQualifiedName);
@@ -729,7 +729,7 @@ public abstract class BaseHiveEvent {
         } else if (StringUtils.equals(objId.getTypeName(), HIVE_TYPE_TABLE)) {
             hiveDDL = new AtlasEntity(HIVE_TABLE_DDL);
             objIdRelatedObject.setRelationshipType(RELATIONSHIP_HIVE_TABLE_DDL_QUERIES);
-            hiveDDL.setRelationshipAttribute( ATTRIBUTE_TABLE, objIdRelatedObject);
+            hiveDDL.setRelationshipAttribute(ATTRIBUTE_TABLE, objIdRelatedObject);
         }
 
         if (hiveDDL != null) {

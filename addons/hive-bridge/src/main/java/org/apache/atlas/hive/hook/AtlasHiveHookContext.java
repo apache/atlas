@@ -215,11 +215,11 @@ public class AtlasHiveHookContext {
     }
 
     public boolean isKnownDatabase(String dbQualifiedName) {
-        return knownObjects != null && dbQualifiedName != null ? knownObjects.isKnownDatabase(dbQualifiedName) : false;
+        return (knownObjects != null && dbQualifiedName != null) && knownObjects.isKnownDatabase(dbQualifiedName);
     }
 
     public boolean isKnownTable(String tblQualifiedName) {
-        return knownObjects != null && tblQualifiedName != null ? knownObjects.isKnownTable(tblQualifiedName) : false;
+        return (knownObjects != null && tblQualifiedName != null) && knownObjects.isKnownTable(tblQualifiedName);
     }
 
     public void addToKnownEntities(Collection<AtlasEntity> entities) {
