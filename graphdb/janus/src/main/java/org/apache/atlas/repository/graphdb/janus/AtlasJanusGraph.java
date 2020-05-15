@@ -26,6 +26,7 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.groovy.GroovyExpression;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphIndexClient;
@@ -85,6 +86,7 @@ import java.util.Set;
 import static org.apache.atlas.repository.Constants.INDEX_SEARCH_VERTEX_PREFIX_DEFAULT;
 import static org.apache.atlas.repository.Constants.INDEX_SEARCH_VERTEX_PREFIX_PROPERTY;
 import static org.apache.atlas.repository.graphdb.janus.AtlasJanusGraphDatabase.getGraphInstance;
+import static org.apache.atlas.type.Constants.STATE_PROPERTY_KEY;
 
 /**
  * Janus implementation of AtlasGraph.
@@ -174,12 +176,11 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
     @Override
     public AtlasEdge getEdgeBetweenVertices(AtlasVertex fromVertex, AtlasVertex toVertex, String edgeLabel) {
         GraphTraversal gt = V(fromVertex.getId()).outE(edgeLabel).where(__.otherV().hasId(toVertex.getId()));
-        Object o = gt.hasNext() ? gt.next() : null;
-        if (o == null) {
-            return null;
-        }
 
-        return GraphDbObjectFactory.createEdge(this, (Edge) o);
+        Edge gremlinEdge = getFirstActiveEdge(gt);
+        return (gremlinEdge != null)
+                ? GraphDbObjectFactory.createEdge(this, gremlinEdge)
+                : null;
     }
 
     @Override
@@ -567,9 +568,22 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
 
 
     private final class ConvertGremlinValueFunction implements Function<Object, Object> {
+
         @Override
         public Object apply(Object input) {
             return convertGremlinValue(input);
         }
+    }
+    private Edge getFirstActiveEdge(GraphTraversal gt) {
+        while (gt.hasNext()) {
+            Edge gremlinEdge = (Edge) gt.next();
+            if (gremlinEdge != null && gremlinEdge.property(STATE_PROPERTY_KEY).isPresent() &&
+                    gremlinEdge.property(STATE_PROPERTY_KEY).value().equals(AtlasEntity.Status.ACTIVE.toString())
+            ) {
+                return gremlinEdge;
+            }
+        }
+
+        return null;
     }
 }
