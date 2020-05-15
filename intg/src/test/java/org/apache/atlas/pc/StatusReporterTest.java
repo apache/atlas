@@ -82,6 +82,9 @@ public class StatusReporterTest {
         extractResults(wi, statusReporter);
         assertEquals(statusReporter.ack().intValue(), (maxItems - 1));
         wi.shutdown();
+
+        assertEquals(statusReporter.getProducedCount(), 0);
+        assertEquals(statusReporter.getProcessedCount(), 0);
     }
 
     private void extractResults(WorkItemManager<Integer, WorkItemConsumer> wi, StatusReporter<Integer, Integer> statusReporter) {
