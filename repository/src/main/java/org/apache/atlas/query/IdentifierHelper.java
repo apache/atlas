@@ -159,7 +159,8 @@ public class IdentifierHelper {
                     updateSubTypes(lookup, context);
                 }
             } catch (NullPointerException ex) {
-                context.getErrorList().add("NullPointerException");
+                String exception = (StringUtils.isNotEmpty(ex.getMessage()) ? ex.getMessage() : "Exception");
+                context.getErrorList().add(exception);
             }
         }
 
