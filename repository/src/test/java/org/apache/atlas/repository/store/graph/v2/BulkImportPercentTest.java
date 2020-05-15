@@ -39,7 +39,7 @@ public class BulkImportPercentTest {
     private List<Integer> percentHolder;
     private Logger log;
 
-    public void setupPercentHolder(int max) {
+    public void setupPercentHolder(long max) {
         percentHolder = new ArrayList<>();
     }
 
@@ -127,6 +127,15 @@ public class BulkImportPercentTest {
     }
 
     @Test
+    public void percentTest_Equal100M() throws Exception {
+        long streamSize = 100000000;
+        double[] expected = fillPercentHolderWith100();
+
+        runWithSize(streamSize);
+        assertEqualsForPercentHolder(expected);
+    }
+
+    @Test
     public void percentTest_Equal4323() throws Exception {
         int streamSize = 4323;
 
@@ -153,7 +162,7 @@ public class BulkImportPercentTest {
         assertTrue((f - MAX_PERCENT_FLOAT) <= 0.0001);
     }
 
-    private void runWithSize(int streamSize) throws Exception {
+    private void runWithSize(long streamSize) throws Exception {
         float currentPercent = 0;
         setupPercentHolder(streamSize);
         for (int currentIndex = 0; currentIndex < streamSize; currentIndex++) {
@@ -161,7 +170,7 @@ public class BulkImportPercentTest {
         }
     }
 
-    private float invokeBulkImportProgress(int currentIndex, int streamSize, float currentPercent) throws Exception {
+    private float invokeBulkImportProgress(int currentIndex, long streamSize, float currentPercent) throws Exception {
         return BulkImporterImpl.updateImportProgress(log, currentIndex, streamSize, currentPercent, "additional info");
     }
 

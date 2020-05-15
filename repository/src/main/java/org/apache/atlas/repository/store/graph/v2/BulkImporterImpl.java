@@ -89,11 +89,11 @@ public class BulkImporterImpl implements BulkImporter {
     }
 
     @VisibleForTesting
-    public static float updateImportProgress(Logger log, int currentIndex, int streamSize, float currentPercent, String additionalInfo) {
+    public static float updateImportProgress(Logger log, long currentIndex, long streamSize, float currentPercent, String additionalInfo) {
         final double tolerance   = 0.000001;
         final int    MAX_PERCENT = 100;
 
-        int     maxSize        = (currentIndex <= streamSize) ? streamSize : currentIndex;
+        long     maxSize        = (currentIndex <= streamSize) ? streamSize : currentIndex;
         if (maxSize <= 0) {
             return currentPercent;
         }
