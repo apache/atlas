@@ -98,7 +98,7 @@ public class StatusReporter<T, U> {
     private U acknowledged(Map.Entry<T, U> lookFor) {
         U ack = lookFor.getValue();
         producedItems.remove(lookFor.getKey());
-        processedSet.remove(lookFor);
+        processedSet.remove(lookFor.getKey());
         return ack;
     }
 
@@ -106,5 +106,13 @@ public class StatusReporter<T, U> {
         boolean b = (this.timeoutDuration > -1) && (this.lastAck != 0) && ((now - this.lastAck) >= timeoutDuration);
         lastAck = System.currentTimeMillis();
         return b;
+    }
+
+    public int getProducedCount() {
+        return this.producedItems.size();
+    }
+
+    public int getProcessedCount() {
+        return this.processedSet.size();
     }
 }
