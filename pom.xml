@@ -176,14 +176,14 @@
         <developer>
             <id>chyzer</id>
             <name>Chris Hyzer</name>
-            <email>chyzer@aetna.com</email>
+            <email>tjbchris@apache.org</email>
             <timezone>America/New_York</timezone>
             <roles>
                 <role>committer</role>
                 <role>PMC</role>
             </roles>
-            <organization>Aetna Inc.</organization>
-            <!--<organizationUrl>https://www.aetna.com</organizationUrl>-->
+            <organization>Travelers Inc.</organization>
+            <!--<organizationUrl>http://www.travelers.com</organizationUrl>-->
         </developer>
         <developer>
             <id>dmarkwat</id>
@@ -269,14 +269,14 @@
         <developer>
             <id>gsenia</id>
             <name>Greg Senia</name>
-            <email>gsenia@aetna.com</email>
+            <email>gsenia@apache.org</email>
             <timezone>America/New_York</timezone>
             <roles>
                 <role>committer</role>
                 <role>PMC</role>
             </roles>
-            <organization>Aetna Inc.</organization>
-            <!--<organizationUrl>https://www.aetna.com</organizationUrl>-->
+            <organization>New York Life Insurance</organization>
+            <!--<organizationUrl>http://www.newyorklife.com</organizationUrl>-->
         </developer>
         <developer>
             <id>rhbutani</id>
