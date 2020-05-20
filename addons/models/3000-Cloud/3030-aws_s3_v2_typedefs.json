@@ -282,7 +282,7 @@
         "isContainer":        false,
         "cardinality":        "SINGLE"
       },
-      "propagateTags": "ONE_TO_TWO"
+      "propagateTags": "NONE"
     }
   ]
 }

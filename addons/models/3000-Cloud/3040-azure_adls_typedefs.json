@@ -411,7 +411,7 @@
         "isContainer":        false,
         "cardinality":        "SINGLE"
       },
-      "propagateTags": "ONE_TO_TWO"
+      "propagateTags": "NONE"
     },
     {
       "name":                 "adls_gen2_parent_children",
@@ -430,7 +430,7 @@
         "isContainer":        false,
         "cardinality":        "SINGLE"
       },
-      "propagateTags": "ONE_TO_TWO"
+      "propagateTags": "NONE"
     }
   ]
 }
