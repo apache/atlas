@@ -19,6 +19,7 @@ package org.apache.atlas;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
@@ -448,4 +449,27 @@ public abstract class BasicTestSetup {
 
         return datasetSubType;
     }
+
+    public void createDummyEntity(String name, String type, String... traitNames) throws AtlasBaseException {
+        AtlasEntity entity = new AtlasEntity(type);
+        entity.setAttribute("name", name);
+        entity.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, name);
+        entity.setClassifications(Stream.of(traitNames).map(AtlasClassification::new).collect(Collectors.toList()));
+        entityStore.createOrUpdate(new AtlasEntityStream(new AtlasEntity.AtlasEntitiesWithExtInfo(entity)), false);
+    }
+
+    public SearchParameters.FilterCriteria getSingleFilterCondition(String attName, SearchParameters.Operator op, String attrValue) {
+        SearchParameters.FilterCriteria filterCriteria = new SearchParameters.FilterCriteria();
+        filterCriteria.setCondition(SearchParameters.FilterCriteria.Condition.AND);
+        List<SearchParameters.FilterCriteria> criteria = new ArrayList<>();
+        SearchParameters.FilterCriteria f1 = new SearchParameters.FilterCriteria();
+        f1.setAttributeName(attName);
+        f1.setOperator(op);
+        String time = String.valueOf(System.currentTimeMillis());
+        f1.setAttributeValue(attrValue);
+        criteria.add(f1);
+        filterCriteria.setCriterion(criteria);
+        return filterCriteria;
+    }
+
 }
