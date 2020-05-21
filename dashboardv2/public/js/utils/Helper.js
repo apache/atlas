@@ -26,6 +26,20 @@ define(['require',
         numberFormatWithComa: function(number) {
             return d3.format(',')(number);
         },
+        numberFormatWithBytes: function(number) {
+            if (number > -1) {
+                if (number === 0) {
+                    return "0 Bytes";
+                }
+                var i = number == 0 ? 0 : Math.floor(Math.log(number) / Math.log(1024));
+                if (i > 8) {
+                    return _.numberFormatWithComa(number);
+                }
+                return Number((number / Math.pow(1024, i)).toFixed(2)) + " " + ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"][i];
+            } else {
+                return number;
+            }
+        },
         isEmptyArray: function(val) {
             if (val && _.isArray(val)) {
                 return _.isEmpty(val);

@@ -477,7 +477,8 @@ define(['require',
                     var memoryTable = CommonViewFunction.propertyTable({
                         scope: this,
                         formatStringVal: true,
-                        valueObject: systemMemoryData
+                        valueObject: systemMemoryData,
+                        numberFormat: _.numberFormatWithBytes
                     });
                     that.ui.memoryCard.html(
                         memoryTable);
