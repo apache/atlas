@@ -338,10 +338,16 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
                 filterPopupStatus();
 
                 function searchAttribute() {
-                    if (queryBuilderRef.data("queryBuilder")) {
-                        var rule = queryBuilderRef.queryBuilder("getRules");
+                    var queryBuilderObj = queryBuilderRef.data("queryBuilder");
+                    if (queryBuilderObj) {
+                        var ruleWithInvalid = queryBuilderObj.getRules({ allow_invalid: true }),
+                            rule = queryBuilderObj.getRules();
+                        rule ? that.updateFilterOptions(rule, filtertype, isTag) : isFilterValidate = false;
+                        if (ruleWithInvalid && ruleWithInvalid.rules.length === 1 && ruleWithInvalid.rules[0].id === null) {
+                            isFilterValidate = true;
+                            queryBuilderObj.clearErrors();
+                        }
                     }
-                    rule ? that.updateFilterOptions(rule, filtertype, isTag) : isFilterValidate = false;
                 }
 
                 function filterPopupStatus() {
