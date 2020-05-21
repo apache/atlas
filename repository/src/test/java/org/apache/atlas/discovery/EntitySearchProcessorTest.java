@@ -23,6 +23,7 @@ import org.apache.atlas.SortOrder;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.SearchParameters;
+import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
@@ -32,6 +33,7 @@ import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import javax.inject.Inject;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -56,6 +58,8 @@ public class EntitySearchProcessorTest extends BasicTestSetup {
         setupTestData();
     }
 
+    @Inject
+    public GraphBackedSearchIndexer indexer;
 
     @Test
     public void searchTablesByClassification() throws AtlasBaseException {
@@ -126,4 +130,71 @@ public class EntitySearchProcessorTest extends BasicTestSetup {
         new EntitySearchProcessor(context);
     }
 
+    @Test
+    public void searchWithNEQ_stringAttr() throws AtlasBaseException {
+        String expectedEntityName = "hive_Table_Null_tableType";
+        createDummyEntity(expectedEntityName,HIVE_TABLE_TYPE);
+        SearchParameters params = new SearchParameters();
+        params.setTypeName(HIVE_TABLE_TYPE);
+        SearchParameters.FilterCriteria filterCriteria = getSingleFilterCondition("tableType", SearchParameters.Operator.NEQ, "Managed");
+        params.setEntityFilters(filterCriteria);
+        params.setLimit(20);
+
+        SearchContext context = new SearchContext(params, typeRegistry, graph, indexer.getVertexIndexKeys());
+        EntitySearchProcessor processor = new EntitySearchProcessor(context);
+        List<AtlasVertex> vertices = processor.execute();
+
+        assertEquals(vertices.size(), 3);
+
+        List<String> nameList = new ArrayList<>();
+        for (AtlasVertex vertex : vertices) {
+            nameList.add((String) entityRetriever.toAtlasEntityHeader(vertex, Collections.singleton("name")).getAttribute("name"));
+        }
+
+        assertTrue(nameList.contains(expectedEntityName));
+    }
+
+    @Test(dependsOnMethods = "searchWithNEQ_stringAttr")
+    public void searchWithNEQ_pipeSeperatedAttr() throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+        params.setTypeName(HIVE_TABLE_TYPE);
+        SearchParameters.FilterCriteria filterCriteria = getSingleFilterCondition("__classificationNames", SearchParameters.Operator.NEQ, METRIC_CLASSIFICATION);
+        params.setEntityFilters(filterCriteria);
+        params.setLimit(20);
+
+        SearchContext context = new SearchContext(params, typeRegistry, graph, indexer.getVertexIndexKeys());
+        EntitySearchProcessor processor = new EntitySearchProcessor(context);
+        List<AtlasVertex> vertices = processor.execute();
+
+        assertEquals(vertices.size(), 7);
+
+        List<String> nameList = new ArrayList<>();
+        for (AtlasVertex vertex : vertices) {
+            nameList.add((String) entityRetriever.toAtlasEntityHeader(vertex, Collections.singleton("name")).getAttribute("name"));
+        }
+
+        assertTrue(nameList.contains("hive_Table_Null_tableType"));
+    }
+
+    @Test(dependsOnMethods = "searchWithNEQ_stringAttr")
+    public void searchWithNEQ_doubleAttr() throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+        params.setTypeName(HIVE_TABLE_TYPE);
+        SearchParameters.FilterCriteria filterCriteria = getSingleFilterCondition("retention", SearchParameters.Operator.NEQ, "5");
+        params.setEntityFilters(filterCriteria);
+        params.setLimit(20);
+
+        SearchContext context = new SearchContext(params, typeRegistry, graph, indexer.getVertexIndexKeys());
+        EntitySearchProcessor processor = new EntitySearchProcessor(context);
+        List<AtlasVertex> vertices = processor.execute();
+
+        assertEquals(vertices.size(), 1);
+
+        List<String> nameList = new ArrayList<>();
+        for (AtlasVertex vertex : vertices) {
+            nameList.add((String) entityRetriever.toAtlasEntityHeader(vertex, Collections.singleton("name")).getAttribute("name"));
+        }
+
+        assertTrue(nameList.contains("hive_Table_Null_tableType"));
+    }
 }

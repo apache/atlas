@@ -225,17 +225,5 @@ public class BasicSearchClassificationTest extends BasicTestSetup {
         List<AtlasEntityHeader> entityHeaders = discoveryService.searchWithParameters(params).getEntities();
         return entityHeaders.size();
     }
-    private FilterCriteria getSingleFilterCondition(String attName, Operator op, String attrValue) {
-        FilterCriteria filterCriteria = new FilterCriteria();
-        filterCriteria.setCondition(FilterCriteria.Condition.AND);
-        List<FilterCriteria> criteria = new ArrayList<>();
-        FilterCriteria f1 = new FilterCriteria();
-        f1.setAttributeName(attName);
-        f1.setOperator(op);
-        String time = String.valueOf(System.currentTimeMillis());
-        f1.setAttributeValue(attrValue);
-        criteria.add(f1);
-        filterCriteria.setCriterion(criteria);
-        return filterCriteria;
-    }
+
 }
