@@ -240,10 +240,12 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
     }
     Utils.defaultErrorHandler = function(model, error, options) {
         var skipDefaultError = null,
-            defaultErrorMessage = null;
+            defaultErrorMessage = null,
+            isHtml = null;
         if (options) {
             skipDefaultError = options.skipDefaultError;
             defaultErrorMessage = options.defaultErrorMessage;
+            isHtml = options.isHtml;
         }
         var redirectToLoginPage = function() {
             Utils.localStorage.setValue("last_ui_load", "v2");
@@ -266,13 +268,13 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
                     });
                 }
             } else if (skipDefaultError !== true) {
-                Utils.serverErrorHandler(error, defaultErrorMessage);
+                Utils.serverErrorHandler(error, defaultErrorMessage, isHtml);
             }
         } else if (skipDefaultError !== true) {
             Utils.serverErrorHandler(error, defaultErrorMessage);
         }
     };
-    Utils.serverErrorHandler = function(response, defaultErrorMessage) {
+    Utils.serverErrorHandler = function(response, defaultErrorMessage, isHtml) {
         var responseJSON = response ? response.responseJSON : response,
             message = defaultErrorMessage ? defaultErrorMessage : Messages.defaultErrorMessage
         if (response && responseJSON) {
@@ -281,6 +283,7 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
         var existingError = $(".ui-pnotify-container.alert-danger .ui-pnotify-text").text();
         if (existingError !== message) {
             Utils.notifyError({
+                html:isHtml,
                 content: message
             });
         }

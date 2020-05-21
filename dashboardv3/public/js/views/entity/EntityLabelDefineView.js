@@ -44,13 +44,15 @@ define(['require',
         ui: {
             addLabelOptions: "[data-id='addLabelOptions']",
             addLabels: "[data-id='addLabels']",
-            saveLabels: "[data-id='saveLabels']"
+            saveLabels: "[data-id='saveLabels']",
+            cancel: "[data-id='cancel']"
         },
         events: function() {
             var events = {};
             events["change " + this.ui.addLabelOptions] = 'onChangeLabelChange';
             events["click " + this.ui.addLabels] = 'handleBtnClick';
             events["click " + this.ui.saveLabels] = 'saveUserDefinedLabels';
+            events["click " + this.ui.cancel] = 'onCancelClick';
             return events;
         },
         initialize: function(options) {
@@ -138,6 +140,12 @@ define(['require',
             } else {
                 this.saveLabels = false;
             }
+            this.render();
+        },
+        onCancelClick: function() {
+            this.labels = this.entityModel.get("labels") || [];
+            this.swapItem = false;
+            this.saveLabels = false;
             this.render();
         },
         saveUserDefinedLabels: function() {

@@ -29,7 +29,8 @@ define(['require',
 
         templateHelpers: function() {
             return {
-                items: this.items
+                items: this.items,
+                allValueRemovedUpdate: this.allValueRemovedUpdate
             };
         },
 
@@ -62,11 +63,13 @@ define(['require',
             if (options.items.length === 0) {
                 this.items = [{ key: "", value: "" }];
             } else {
-                this.items = options.items;
+                this.items = $.extend(true, [], options.items);
             }
+            this.updateParentButtonState = options.updateButtonState;
         },
         onRender: function() {},
         onAddItemClick: function(e) {
+            this.allValueRemovedUpdate = false;
             var el = e.currentTarget;
             this.items.splice(parseInt(el.dataset.index) + 1, 0, { key: "", value: "" });
             this.render();
@@ -74,7 +77,16 @@ define(['require',
         onDeleteItemClick: function(e) {
             var el = e.currentTarget;
             this.items.splice(el.dataset.index, 1);
-            this.render();
+            this.allValueRemovedUpdate = false;
+            if (this.items.length === 0) {
+                var updated = this.updateParentButtonState();
+                if (updated === false) {
+                    this.allValueRemovedUpdate = true;
+                    this.render();
+                }
+            } else {
+                this.render();
+            }
         },
         onItemKeyChange: function(e) {
             var el = e.currentTarget;
