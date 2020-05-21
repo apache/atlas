@@ -201,6 +201,9 @@ define([
             if (options) {
                 _.extend(this.options, options);
                 this.showHideGlobalFilter();
+                if(!this.options.value){
+                    this.ui.searchNode.val('').trigger('keyup');
+                }
                 if (this.RBusinessMetadataTreeRender.currentView) {
                     this.RBusinessMetadataTreeRender.currentView.manualRender(this.options);
                 }
