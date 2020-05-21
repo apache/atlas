@@ -62,6 +62,20 @@ body {
     }
 }
 
+.modal-header {
+    .back-button {
+        margin-left: 10px;
+        top: 9px;
+        font-size: 38px;
+    }
+
+    .modal-name {
+        font-size: 22px;
+        margin-top: 5px;
+        margin-left: 20px;
+    }
+}
+
 
 .atlas-page-header {
     height: 70px;
@@ -829,4 +843,9 @@ td.searchTableName:hover {
     .modal-body {
         background: $color_white_lilac_approx;
     }
+}
+
+.help-btn {
+    cursor: pointer;
+    font-size: 20px;
 }

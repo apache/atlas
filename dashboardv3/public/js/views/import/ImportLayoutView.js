@@ -37,7 +37,11 @@ define([
             regions: {},
 
             /** ui selector cache */
-            ui: {},
+            ui: {
+                errorContainer: "[data-id='errorContainer']",
+                importGlossary: "[data-id='importGlossary']",
+                errorDetails: "[data-id='errorDetails']"
+            },
             /** ui events hash */
             events: function() {
                 var events = {};
@@ -66,8 +70,15 @@ define([
                 this.modal.on("closeModal", function() {
                     that.modal.trigger("cancel");
                 });
+                this.bindEvents();
             },
-            bindEvents: function() {},
+            bindEvents: function() {
+                var that = this;
+                $('body').on('click', '.importBackBtn', function() {
+                    var modalTitle = that.isGlossary ? "Import Glossary" : "Import Business Metadata";
+                    that.toggleErrorAndDropZoneView({ title: modalTitle, isErrorView: false });
+                });
+            },
             onRender: function() {
                 var that = this;
                 this.dropzone = null;
@@ -81,7 +92,7 @@ define([
                 }
                 var headers = {};
                 headers[CommonViewFunction.restCsrfCustomHeader] = '""';
-                this.$("#importGlossary").dropzone({
+                this.ui.importGlossary.dropzone({
                     url: that.isGlossary ? UrlLinks.glossaryImportUrl() : UrlLinks.businessMetadataImportUrl(),
                     clickable: true,
                     acceptedFiles: ".csv,.xls,.xlsx",
@@ -104,8 +115,19 @@ define([
                     success: function(file, response, responseObj) {
                         var success = true;
                         if (response.failedImportInfoList && response.failedImportInfoList.length) {
+                            var errorStr = '',
+                                notificationMsg = '';
                             success = false;
+                            that.ui.errorDetails.empty();
                             Utils.defaultErrorHandler(null, file.xhr, { defaultErrorMessage: response.failedImportInfoList[0].remarks });
+                            if (response.failedImportInfoList.length > 1) {
+                                var modalTitle = '<div class="back-button importBackBtn" title="Back to import file"><i class="fa fa-angle-left "></i> </div> <div class="modal-name">Error Details</div>';
+                                _.each(response.failedImportInfoList, function(err_obj) {
+                                    errorStr += '<li>' + err_obj.remarks + '</li>';
+                                });
+                                that.ui.errorDetails.append(errorStr);
+                                that.toggleErrorAndDropZoneView({ title: modalTitle, isErrorView: true });
+                            }
                         }
                         if (success) {
                             that.modal.trigger("cancel");
@@ -124,6 +146,22 @@ define([
                     dictDefaultMessage: "Drop files here or click to upload.",
                     headers: headers
                 });
+            },
+            toggleErrorAndDropZoneView: function(options) {
+                var that = this;
+                if (options) {
+                    that.modal.$el.find('.modal-title').html(options.title);
+                    if (options.isErrorView) {
+                        that.ui.importGlossary.addClass("hide");
+                        that.ui.errorContainer.removeClass("hide");
+                        that.modal.$el.find("button.ok").addClass('hide');
+                    } else {
+                        that.ui.importGlossary.removeClass("hide");
+                        that.ui.errorContainer.addClass("hide");
+                        that.modal.$el.find("button.ok").removeClass('hide');
+                        that.ui.errorDetails.empty();
+                    }
+                }
             }
         }
     );
