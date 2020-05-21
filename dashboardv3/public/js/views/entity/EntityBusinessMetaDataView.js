@@ -111,15 +111,15 @@ define([
             this.panelOpenClose();
         },
         panelOpenClose: function() {
-            var collection = this.editMode ? this.collection : this.actualCollection;
+            var collection = this.editMode ? this.collection : this.actualCollection,
+                headingEl = this.$el.find(".panel-heading.main-parent");
             if (collection && collection.length === 0) {
-                this.$el.find(".panel-heading").addClass("collapsed");
-                this.$el.find(".panel-collapse.collapse").removeClass("in");
                 this.ui.addBusinessMetadata.text("Add");
             } else {
                 this.ui.addBusinessMetadata.text("Edit");
-                this.$el.find(".panel-heading").removeClass("collapsed");
-                this.$el.find(".panel-collapse.collapse").addClass("in");
+                if (headingEl.hasClass("collapsed")) {
+                    headingEl.click();
+                }
             }
         },
         validate: function() {
@@ -164,12 +164,14 @@ define([
                 type: "POST",
                 success: function(data) {
                     Utils.notifySuccess({
-                        content: "One or more Business Metadada attributes" + Messages.getAbbreviationMsg(false, 'editSuccessMessage')
+                        content: "One or more Business Metadada attributes" + Messages.getAbbreviationMsg(true, 'editSuccessMessage')
                     });
                     that.entity.businessAttributes = data;
-                    this.editMode = false;
+                    that.ui.businessMetadataTree.html("");
+                    that.editMode = false;
                     that.fetchCollection();
                     that.onCancel();
+
                 },
                 complete: function(model, response) {
                     //that.hideLoader();
@@ -239,7 +241,11 @@ define([
                 });
                 li += that.associateAttributePanel(obj, attrLi);
             });
-            this.ui.businessMetadataTree.html(li);
+            var html = li;
+            if (html === "") {
+                html = '<div class="col-md-12"> No business metadata have been created yet. To add a business metadata, click <a href="javascript:void(0)" data-id="addBusinessMetadata">here</a></div>';
+            }
+            this.ui.businessMetadataTree.html(html);
         },
         associateAttributePanel: function(obj, tableBody) {
             return '<div class="panel panel-default custom-panel expand_collapse_panel-icon no-border business-metadata-detail-attr">' +
@@ -252,7 +258,11 @@ define([
                 '</div></div>';
         },
         onRender: function() {
-            this.panelOpenClose();
+            if (this.actualCollection && this.actualCollection.length) {
+                this.$el.find(".panel-heading.main-parent").removeClass("collapsed").attr("aria-expanded", "true");
+                this.$el.find("#businessMetadataCollapse").addClass("in").removeAttr("style");
+                this.ui.addBusinessMetadata.text("Edit");
+            }
             this.renderBusinessMetadata();
         }
     });

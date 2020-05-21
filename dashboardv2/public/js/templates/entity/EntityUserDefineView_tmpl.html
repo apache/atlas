@@ -17,7 +17,7 @@
 <div class="panel-group" id="accordion">
     <div class="panel panel-default custom-panel expand_collapse_panel-icon" data-id="userDefine">
         {{#ifCond customAttibutes.length "===" 0}}
-        <div class="panel-heading collapsed" data-toggle="collapse" href={{divId_1.anchor}} aria-expanded="false" style="width: 70%">
+        <div class="panel-heading collapsed" data-toggle="collapse" href={{divId_1.anchor}} {{#ifCond swapItem "===" true}} aria-expanded="true" {{else}} aria-expanded="false" {{/ifCond}} style="width: 70%">
             <h4 class="panel-title">
                 <a>User-defined properties </a>
             </h4>
@@ -38,12 +38,13 @@
         {{#ifCond readOnlyEntity "===" false}}
         <div class="panel-actions">
             {{#ifCond swapItem "!==" true}}
-            <button class="btn btn-action btn-sm" data-id="addAttr" {{#ifCond customAttibutes.length "===" 0}} data-original-title="Add User-defined properties" {{else}} data-original-title="Edit User-defined properties" {{/ifCond}}>
+            <button class="btn btn-action btn-sm" data-id="addAttr">
                 {{#ifCond customAttibutes.length "===" 0}} Add {{else}} Edit {{/ifCond}}
             </button>
             {{/ifCond}}
             {{#ifCond saveAttrItems "===" true}}
-            <button class="btn btn-action btn-sm" data-id="saveAttrItems" data-original-title="Save User-defined properties">Save</button>
+            <button class="btn btn-action btn-sm" data-id="saveAttrItems">Save</button>
+            <button class="btn btn-action btn-sm" data-id="cancel">Cancel</button>
             {{/ifCond}}
         </div>
         {{/ifCond}}
@@ -55,22 +56,7 @@
                         {{#ifCond swapItem "===" true}}
                         <div id="r_entityUserDefinedItemView"></div>
                         {{else}}
-                        <div class="entity-detail-table">
-                            <table class="table">
-                                <tbody>
-                                    {{#each customAttibutes}}
-                                    <tr>
-                                        <td>
-                                            <div class="scroll-y">{{key}}</div>
-                        </div>
-                        </td>
-                        <td>
-                            <div class="scroll-y">{{value}}</div>
-                        </td>
-                        </tr>
-                        {{/each}}
-                        </tbody>
-                        </table>
+                        No properties have been created yet. To add a property, click <a href="javascript:void(0)" data-id="addItem">here</a>
                     </div>
                     {{/ifCond}}
                 </div>

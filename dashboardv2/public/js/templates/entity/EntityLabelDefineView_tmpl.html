@@ -17,7 +17,7 @@
 <div class="panel-group" id="accordion">
     <div class="panel panel-default custom-panel expand_collapse_panel-icon" data-id="userDefineLabel">
         {{#ifCond labels.length "===" 0}}
-        <div class="panel-heading collapsed" data-toggle="collapse" href={{div_1.anchor}} aria-expanded="false" style="width: 70%">
+        <div class="panel-heading collapsed" data-toggle="collapse" href={{div_1.anchor}} {{#ifCond swapItem "===" true}} aria-expanded="true" {{else}} aria-expanded="false" {{/ifCond}} style="width: 70%">
             <h4 class="panel-title">
                 <a>Labels </a>
             </h4>
@@ -38,12 +38,13 @@
         {{#ifCond readOnlyEntity "===" false}}
         <div class="panel-actions">
             {{#ifCond swapItem "!==" true}}
-            <button class="btn btn-action btn-sm" data-id="addLabels" {{#ifCond labels.length "===" 0}} data-original-title="Add User-Defined Labels" {{else}} data-original-title="Edit User-Defined Labels" {{/ifCond}}>
+            <button class="btn btn-action btn-sm" data-id="addLabels">
                 {{#ifCond labels.length "===" 0}} Add {{else}} Edit {{/ifCond}}
             </button>
             {{/ifCond}}
             {{#ifCond saveLabels "===" true}}
-            <button class="btn btn-action btn-sm" data-id="saveLabels" data-original-title="Save User-Defined Labels">Save</button>
+            <button class="btn btn-action btn-sm" data-id="saveLabels">Save</button>
+            <button class="btn btn-action btn-sm" data-id="cancel">Cancel</button>
             {{/ifCond}}
         </div>
         {{/ifCond}}
@@ -56,9 +57,7 @@
                         <select class="form-control" data-id="addLabelOptions" multiple="multiple"></select>
                         {{else}}
                         <div class="badge-container">
-                            {{#each labels}}
-                            <label class="btn btn-action btn-sm btn-blue no-pointer">{{this}}</label>
-                            {{/each}}
+                            No labels have been created yet. To add a labels, click <a href="javascript:void(0)" data-id="addLabels">here</a>
                         </div>
                         {{/ifCond}}
                     </div>
