@@ -215,10 +215,10 @@ public class EntityMutationResponse {
 
     @JsonIgnore
     public void addEntity(EntityOperation op, AtlasEntityHeader header) {
-        // if an entity is already included in CREATE, ignore subsequent UPDATE, PARTIAL_UPDATE
+        // if an entity is already included in CREATE, update the header, to capture propagated classifications
         if (op == EntityOperation.UPDATE || op == EntityOperation.PARTIAL_UPDATE) {
             if (entityHeaderExists(getCreatedEntities(), header.getGuid())) {
-                return;
+                op = EntityOperation.CREATE;
             }
         }
 
