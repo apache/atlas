@@ -93,12 +93,6 @@ public abstract class AtlasHook {
             failedMessagesLogger = null;
         }
 
-        if (!isLoginKeytabBased()) {
-            if (isLoginTicketBased()) {
-                InMemoryJAASConfiguration.setConfigSectionRedirect("KafkaClient", "ticketBased-KafkaClient");
-            }
-        }
-
         metadataNamespace         = getMetadataNamespace(atlasProperties);
         notificationMaxRetries    = atlasProperties.getInt(ATLAS_NOTIFICATION_MAX_RETRIES, 3);
         notificationRetryInterval = atlasProperties.getInt(ATLAS_NOTIFICATION_RETRY_INTERVAL, 1000);
@@ -285,30 +279,6 @@ public abstract class AtlasHook {
             LOG.warn("Failed for UserGroupInformation.getCurrentUser() ", e);
             return System.getProperty("user.name");
         }
-    }
-
-    private static boolean isLoginKeytabBased() {
-        boolean ret = false;
-
-        try {
-            ret = UserGroupInformation.isLoginKeytabBased();
-        } catch (Exception excp) {
-            LOG.warn("Error in determining keytab for KafkaClient-JAAS config", excp);
-        }
-
-        return ret;
-    }
-
-    private static boolean isLoginTicketBased() {
-        boolean ret = false;
-
-        try {
-            ret = UserGroupInformation.isLoginTicketBased();
-        } catch (Exception excp) {
-            LOG.warn("Error in determining ticket-cache for KafkaClient-JAAS config", excp);
-        }
-
-        return ret;
     }
 
     private static String getMetadataNamespace(Configuration config) {
