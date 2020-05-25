@@ -17,7 +17,6 @@
  */
 package org.apache.atlas;
 
-import org.apache.atlas.security.InMemoryJAASConfiguration;
 import org.apache.atlas.security.SecurityUtil;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationConverter;
@@ -109,10 +108,7 @@ public final class ApplicationProperties extends PropertiesConfiguration {
     public static Configuration set(Configuration configuration) throws AtlasException {
         synchronized (ApplicationProperties.class) {
             instance = configuration;
-
-            InMemoryJAASConfiguration.init(instance);
         }
-
         return instance;
     }
 
