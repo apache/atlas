@@ -28,9 +28,10 @@ define(['require',
     'utils/Enums',
     'utils/Messages',
     'moment',
+    'utils/Globals',
     'moment-timezone',
     'daterangepicker'
-], function(require, AddTagModalViewTmpl, AddTimezoneItemView, VTagList, VCommonList, Modal, VEntity, Utils, UrlLinks, Enums, Messages, moment) {
+], function(require, AddTagModalViewTmpl, AddTimezoneItemView, VTagList, VCommonList, Modal, VEntity, Utils, UrlLinks, Enums, Messages, moment, Globals) {
     'use strict';
 
     var AddTagModel = Backbone.Marionette.CompositeView.extend({
@@ -372,7 +373,7 @@ define(['require',
                             "showDropdowns": true,
                             "timePicker": true,
                             locale: {
-                                format: 'MM/DD/YYYY h:mm A'
+                                format: Globals.dateTimeFormat
                             }
                         };
                         if (that.tagModel) {
