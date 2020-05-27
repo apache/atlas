@@ -123,8 +123,8 @@
                 <role>committer</role>
                 <role>PMC</role>
             </roles>
-            <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>https://www.hortonworks.com</organizationUrl>-->
+            <organization></organization>
+            <!--<organizationUrl></organizationUrl>-->
         </developer>
         <developer>
             <id>acmurthy</id>
@@ -135,8 +135,8 @@
                 <role>committer</role>
                 <role>PMC</role>
             </roles>
-            <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>https://www.hortonworks.com</organizationUrl>-->
+            <organization>Cloudera Inc.</organization>
+            <!--<organizationUrl>https://www.cloudera.com</organizationUrl>-->
         </developer>
         <developer>
             <id>ayubpathan</id>
@@ -147,8 +147,8 @@
                 <role>committer</role>
                 <role>PMC</role>
             </roles>
-            <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>https://www.hortonworks.com</organizationUrl>-->
+            <organization>Cloudera Inc.</organization>
+            <!--<organizationUrl>https://www.cloudera.com</organizationUrl>-->
         </developer>
         <developer>
             <id>amestry</id>
@@ -158,8 +158,8 @@
             <roles>
                 <role>committer</role>
             </roles>
-            <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>https://www.hortonworks.com</organizationUrl>-->
+            <organization>Cloudera Inc.</organization>
+            <!--<organizationUrl>https://www.cloudera.com</organizationUrl>-->
         </developer>
         <developer>
             <id>bstortz</id>
@@ -288,7 +288,7 @@
                 <role>PMC</role>
             </roles>
             <organization/>
-            <!--<organizationUrl>https://www.hortonworks.com</organizationUrl>-->
+            <!--<organizationUrl>https://www.cloudera.com</organizationUrl>-->
         </developer>
         <developer>
             <id>yhemanth</id>
@@ -299,8 +299,8 @@
                 <role>committer</role>
                 <role>PMC</role>
             </roles>
-            <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>https://www.hortonworks.com</organizationUrl>-->
+            <organization>Cloudera Inc.</organization>
+            <!--<organizationUrl>https://www.cloudera.com</organizationUrl>-->
         </developer>
         <developer>
             <id>ilasek</id>
@@ -335,8 +335,8 @@
                 <role>committer</role>
                 <role>PMC</role>
             </roles>
-            <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>https://www.hortonworks.com</organizationUrl>-->
+            <organization>Cloudera Inc.</organization>
+            <!--<organizationUrl>https://www.cloudera.com</organizationUrl>-->
         </developer>
         <developer>
             <id>jmaron</id>
@@ -380,8 +380,8 @@
                 <role>committer</role>
                 <role>PMC</role>
             </roles>
-            <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>https://www.hortonworks.com</organizationUrl>-->
+            <organization>Cloudera Inc.</organization>
+            <!--<organizationUrl>https://www.cloudera.com</organizationUrl>-->
         </developer>
         <developer>
             <id>mandy</id>
@@ -437,8 +437,8 @@
             <roles>
                 <role>committer</role>
             </roles>
-            <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>https://www.hortonworks.com</organizationUrl>-->
+            <organization>Cloudera Inc.</organization>
+            <!--<organizationUrl>https://www.cloudera.com</organizationUrl>-->
         </developer>
         <developer>
             <id>sarath</id>
@@ -449,8 +449,8 @@
                 <role>committer</role>
                 <role>PMC</role>
             </roles>
-            <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>https://www.hortonworks.com</organizationUrl>-->
+            <organization>Cloudera Inc.</organization>
+            <!--<organizationUrl>https://www.cloudera.com</organizationUrl>-->
         </developer>
         <developer>
             <id>shwethags</id>
@@ -461,8 +461,8 @@
                 <role>committer</role>
                 <role>PMC</role>
             </roles>
-            <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>https://www.hortonworks.com</organizationUrl>-->
+            <organization>Cloudera Inc.</organization>
+            <!--<organizationUrl>https://www.cloudera.com</organizationUrl>-->
         </developer>
         <developer>
             <id>sriksun</id>
@@ -485,8 +485,8 @@
                 <role>committer</role>
                 <role>PMC</role>
             </roles>
-            <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>https://www.hortonworks.com</organizationUrl>-->
+            <organization>Cloudera Inc.</organization>
+            <!--<organizationUrl>https://www.cloudera.com</organizationUrl>-->
         </developer>
         <developer>
             <id>ssuresh</id>
@@ -497,8 +497,8 @@
                 <role>committer</role>
                 <role>PMC</role>
             </roles>
-            <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>https://www.hortonworks.com</organizationUrl>-->
+            <organization></organization>
+            <!--<organizationUrl></organizationUrl>-->
         </developer>
         <developer>
             <id>tbeerbower</id>
@@ -520,8 +520,8 @@
                 <role>committer</role>
                 <role>PMC</role>
             </roles>
-            <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>https://www.hortonworks.com</organizationUrl>-->
+            <organization></organization>
+            <!--<organizationUrl></organizationUrl>-->
         </developer>
         <developer>
             <id>venkatesh</id>
@@ -543,8 +543,8 @@
                 <role>committer</role>
                 <role>PMC</role>
             </roles>
-            <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>https://www.hortonworks.com</organizationUrl>-->
+            <organization></organization>
+            <!--<organizationUrl></organizationUrl>-->
         </developer>
     </developers>
 
