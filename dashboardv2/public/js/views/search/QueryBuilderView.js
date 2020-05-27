@@ -23,9 +23,10 @@ define(['require',
     'utils/Utils',
     'utils/CommonViewFunction',
     'utils/Enums',
+    'utils/Globals',
     'query-builder',
     'daterangepicker'
-], function(require, Backbone, QueryBuilderTmpl, UserDefineTmpl, Utils, CommonViewFunction, Enums) {
+], function(require, Backbone, QueryBuilderTmpl, UserDefineTmpl, Utils, CommonViewFunction, Enums, Globals) {
 
     var QueryBuilderView = Backbone.Marionette.LayoutView.extend(
         /** @lends QueryBuilderView */
@@ -231,7 +232,7 @@ define(['require',
                 if (isSystemAttr && attrObj.name === "__typeName") {
                     var entityType = [];
                     that.typeHeaders.fullCollection.each(function(model) {
-                        if (model.get('category') == 'ENTITY') {
+                        if ((that.type == true && model.get('category') == 'ENTITY') || (that.tag == true && model.get('category') == "CLASSIFICATION")) {
                             entityType.push({
                                 "id": model.get("name"),
                                 "text": model.get("name")
