@@ -81,7 +81,7 @@ define(['require',
                         "autoApply": true,
                         "autoUpdateInput": false,
                         "locale": {
-                            format: 'YYYY/MM/DD hh:mm:ss',
+                            format: Globals.dateTimeFormat,
                             cancelLabel: 'Clear'
                         },
                     },
@@ -116,7 +116,7 @@ define(['require',
                     this.model.set('endTime', that.ui.endTime.val());
                 }
                 this.ui.startTime.daterangepicker(startDateObj).on('apply.daterangepicker', function(ev, picker) {
-                    that.ui.startTime.val(picker.startDate.format('YYYY/MM/DD hh:mm:ss'));
+                    that.ui.startTime.val(picker.startDate.format(Globals.dateTimeFormat));
                     _.extend(endDateObj, { "minDate": that.ui.startTime.val() })
                     that.endDateInitialize(endDateObj);
                     that.model.set('startTime', that.ui.startTime.val());
@@ -152,7 +152,7 @@ define(['require',
             endDateInitialize: function(option) {
                 var that = this;
                 this.ui.endTime.daterangepicker(option).on('apply.daterangepicker', function(ev, picker) {
-                    that.ui.endTime.val(picker.startDate.format('YYYY/MM/DD hh:mm:ss'));
+                    that.ui.endTime.val(picker.startDate.format(Globals.dateTimeFormat));
                     that.model.set('endTime', that.ui.endTime.val());
                     that.buttonActive({ isButtonActive: true });
                 }).on('cancel.daterangepicker', function(ev, picker) {

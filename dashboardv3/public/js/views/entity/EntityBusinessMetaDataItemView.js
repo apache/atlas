@@ -19,8 +19,9 @@ define(['require',
     'backbone',
     'hbs!tmpl/entity/EntityBusinessMetaDataItemView_tmpl',
     'moment',
+    'utils/Globals',
     'daterangepicker'
-], function(require, Backbone, EntityBusinessMetaDataItemViewTmpl, moment) {
+], function(require, Backbone, EntityBusinessMetaDataItemViewTmpl, moment, Globals) {
     'use strict';
 
     return Backbone.Marionette.ItemView.extend({
@@ -165,12 +166,12 @@ define(['require',
                         var dateStr = [];
                         _.each(val, function(selectedDate) {
                             selectedDate = parseInt(selectedDate);
-                            dateStr.push(moment(selectedDate).format("MM/DD/YYYY"));
+                            dateStr.push(moment(selectedDate).format(Globals.dateFormat));
                         });
                         val = dateStr.join(',');
                     } else if (!isMultiValued && val) {
                         val = parseInt(val);
-                        val = moment(val).format("MM/DD/YYYY");
+                        val = moment(val).format(Globals.dateFormat);
                     }
                 }
                 if (typeName.indexOf("string") > -1) {
@@ -188,7 +189,7 @@ define(['require',
                                 if (val !== "") {
                                     val += ", ";
                                 }
-                                picker.element.val(val += picker.startDate.format('MM/DD/YYYY'));
+                                picker.element.val(val += picker.startDate.format(Globals.dateFormat));
                                 that.$el.find(".custom-col-1[data-id='value']>[data-key]").trigger('change');
                             });
                         }
@@ -263,7 +264,7 @@ define(['require',
             var typeName = value.typeName,
                 value = value.value;
             if (typeName === "date") {
-                return moment(value).format("MM/DD/YYYY");
+                return moment(value).format(Globals.dateFormat);
             } else {
                 return value;
             }

@@ -598,9 +598,9 @@ define(['require',
                         }
                         if (value.typeName === "date") {
                             if (dataValue) {
-                                entityValue = moment(dataValue).format("MM/DD/YYYY");
+                                entityValue = moment(dataValue).format(Globals.dateFormat);
                             } else {
-                                entityValue = moment().format("MM/DD/YYYY");
+                                entityValue = moment().format(Globals.dateFormat);
                             }
                         }
                     }

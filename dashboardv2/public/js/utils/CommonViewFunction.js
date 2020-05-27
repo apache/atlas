@@ -631,13 +631,13 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                                 rule = {};
                             if (apiObj) {
                                 rule = { attributeName: temp[0], operator: mapUiOperatorToAPI(temp[1]), attributeValue: _.trim(temp[2]) }
-                                rule.attributeValue = rule.type === 'date' && formatDate && rule.attributeValue.length ? moment(parseInt(rule.attributeValue)).format('MM/DD/YYYY h:mm A') : rule.attributeValue;
+                                rule.attributeValue = rule.type === 'date' && formatDate && rule.attributeValue.length ? moment(parseInt(rule.attributeValue)).format(Globals.dateTimeFormat) : rule.attributeValue;
                             } else {
                                 rule = { id: temp[0], operator: temp[1], value: _.trim(temp[2]) }
                                 if (temp[3]) {
                                     rule['type'] = temp[3];
                                 }
-                                rule.value = rule.type === 'date' && formatDate && rule.value.length ? moment(parseInt(rule.value)).format('MM/DD/YYYY h:mm A') : rule.value;
+                                rule.value = rule.type === 'date' && formatDate && rule.value.length ? moment(parseInt(rule.value)).format(Globals.dateTimeFormat) : rule.value;
                             }
                             return rule;
                         }

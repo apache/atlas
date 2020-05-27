@@ -25,8 +25,9 @@ define([
     "utils/Utils",
     "utils/Messages",
     "utils/CommonViewFunction",
+    'utils/Globals',
     'moment'
-], function(require, Backbone, EntityBusinessMetaDataView_tmpl, EntityBusinessMetaDataItemView, VEntity, Utils, Messages, CommonViewFunction, moment) {
+], function(require, Backbone, EntityBusinessMetaDataView_tmpl, EntityBusinessMetaDataItemView, VEntity, Utils, Messages, CommonViewFunction, Globals, moment) {
     "use strict";
 
     return Backbone.Marionette.CompositeView.extend({
@@ -228,11 +229,11 @@ define([
                             newVal = val.value;
                             if (newVal.length > 0 && val.typeName.indexOf("date") > -1) {
                                 newVal = _.map(newVal, function(dates) {
-                                    return moment(dates).format("MM/DD/YYYY");
+                                    return moment(dates).format(Globals.dateFormat);
                                 });
                             }
                             if (val.typeName === "date") {
-                                newVal = moment(newVal).format("MM/DD/YYYY");
+                                newVal = moment(newVal).format(Globals.dateFormat);
                             }
 
                         }

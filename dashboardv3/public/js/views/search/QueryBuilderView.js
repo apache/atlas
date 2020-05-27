@@ -270,7 +270,7 @@ define(['require',
                         "showDropdowns": true,
                         "timePicker": true,
                         locale: {
-                            format: 'MM/DD/YYYY h:mm A'
+                            format: Globals.dateTimeFormat
                         }
                     };
                     if (rules) {
