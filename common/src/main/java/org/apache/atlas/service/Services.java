@@ -108,7 +108,8 @@ public class Services {
 
     private boolean isNeededForZipFileMigration(Service svc) {
         return svc.getClass().getSuperclass().getSimpleName().equals("AbstractStorageBasedAuditRepository") ||
-                svc.getClass().getSuperclass().getSimpleName().equals("AbstractNotification");
+                svc.getClass().getSuperclass().getSimpleName().equals("AbstractNotification") ||
+                svc.getClass().getSimpleName().equals("AtlasPatchService");
     }
 
     private boolean isDataMigrationService(Service svc) {
