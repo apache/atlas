@@ -27,6 +27,8 @@ import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanIndexQuery;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
+import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasException;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
@@ -46,6 +48,7 @@ import org.apache.atlas.repository.graphdb.GremlinVersion;
 import org.apache.atlas.repository.graphdb.titan0.query.Titan0GraphQuery;
 import org.apache.atlas.repository.graphdb.utils.IteratorToIterableAdapter;
 import org.apache.atlas.typesystem.types.IDataType;
+import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,6 +69,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.apache.atlas.repository.Constants.INDEX_SEARCH_VERTEX_PREFIX_DEFAULT;
+import static org.apache.atlas.repository.Constants.INDEX_SEARCH_VERTEX_PREFIX_PROPERTY;
+
 
 /**
  * Titan 0.5.4 implementation of AtlasGraph.
@@ -74,6 +80,7 @@ public class Titan0Graph implements AtlasGraph<Titan0Vertex, Titan0Edge> {
     private static final Logger LOG = LoggerFactory.getLogger(Titan0Graph.class);
 
     private final Set<String> multiProperties;
+    private static Configuration APPLICATION_PROPERTIES = null;
 
     public Titan0Graph() {
         //determine multi-properties once at startup
@@ -166,7 +173,8 @@ public class Titan0Graph implements AtlasGraph<Titan0Vertex, Titan0Edge> {
 
     @Override
     public AtlasIndexQuery<Titan0Vertex, Titan0Edge> indexQuery(String fulltextIndex, String graphQuery, int offset) {
-        TitanIndexQuery query = getGraph().indexQuery(fulltextIndex, graphQuery).offset(offset);
+        String prefix = getIndexQueryPrefix();
+        TitanIndexQuery query = getGraph().indexQuery(fulltextIndex, graphQuery).setElementIdentifier(prefix).offset(offset);
         return new Titan0IndexQuery(this, query);
     }
 
@@ -416,5 +424,29 @@ public class Titan0Graph implements AtlasGraph<Titan0Vertex, Titan0Edge> {
 
     public void addMultiProperties(Set<String> names) {
         multiProperties.addAll(names);
+    }
+
+    public String getIndexQueryPrefix() {
+        String ret;
+
+        initApplicationProperties();
+
+        if (APPLICATION_PROPERTIES == null) {
+            ret = INDEX_SEARCH_VERTEX_PREFIX_DEFAULT;
+        } else {
+            ret = APPLICATION_PROPERTIES.getString(INDEX_SEARCH_VERTEX_PREFIX_PROPERTY, INDEX_SEARCH_VERTEX_PREFIX_DEFAULT);
+        }
+
+        return ret;
+    }
+
+    private void initApplicationProperties() {
+        if (APPLICATION_PROPERTIES == null) {
+            try {
+                APPLICATION_PROPERTIES = ApplicationProperties.get();
+            } catch (AtlasException ex) {
+                // ignore
+            }
+        }
     }
 }

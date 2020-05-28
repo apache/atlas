@@ -69,6 +69,7 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
     private static final Logger LOG = LoggerFactory.getLogger(GraphBackedDiscoveryService.class);
 
     private final AtlasGraph graph;
+    private final String indexSearchPrefix;
     private final DefaultGraphPersistenceStrategy graphPersistenceStrategy;
 
     public final static String SCORE = "score";
@@ -93,6 +94,7 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
     GraphBackedDiscoveryService(MetadataRepository metadataRepository, AtlasGraph atlasGraph)
     throws DiscoveryException {
         this.graph = atlasGraph;
+        this.indexSearchPrefix = AtlasGraphUtilsV1.getIndexSearchPrefix();
         this.graphPersistenceStrategy = new DefaultGraphPersistenceStrategy(metadataRepository);
     }
 
@@ -102,7 +104,7 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
     @Override
     @GraphTransaction
     public String searchByFullText(String query, QueryParams queryParams) throws DiscoveryException {
-        String graphQuery = String.format("v.\"%s\":(%s)", Constants.ENTITY_TEXT_PROPERTY_KEY, query);
+        String graphQuery = String.format(indexSearchPrefix + "\"%s\":(%s)", Constants.ENTITY_TEXT_PROPERTY_KEY, query);
         LOG.debug("Full text query: {}", graphQuery);
         Iterator<AtlasIndexQuery.Result<?, ?>> results =graph.indexQuery(Constants.FULLTEXT_INDEX, graphQuery).vertices();
         JSONArray response = new JSONArray();

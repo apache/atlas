@@ -51,23 +51,28 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import static org.apache.atlas.repository.Constants.INDEX_SEARCH_VERTEX_PREFIX_DEFAULT;
+import static org.apache.atlas.repository.Constants.INDEX_SEARCH_VERTEX_PREFIX_PROPERTY;
+
 /**
  * Utility methods for Graph.
  */
 public class AtlasGraphUtilsV1 {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasGraphUtilsV1.class);
 
-    public static final String PROPERTY_PREFIX      = Constants.INTERNAL_PROPERTY_KEY_PREFIX + "type.";
-    public static final String SUPERTYPE_EDGE_LABEL = PROPERTY_PREFIX + ".supertype";
-    public static final String VERTEX_TYPE          = "typeSystem";
+    public static final String PROPERTY_PREFIX             = Constants.INTERNAL_PROPERTY_KEY_PREFIX + "type.";
+    public static final String SUPERTYPE_EDGE_LABEL        = PROPERTY_PREFIX + ".supertype";
+    public static final String VERTEX_TYPE                 = "typeSystem";
 
     private static boolean USE_INDEX_QUERY_TO_FIND_ENTITY_BY_UNIQUE_ATTRIBUTES = false;
+    private static String  INDEX_SEARCH_PREFIX = INDEX_SEARCH_VERTEX_PREFIX_DEFAULT;
 
     static {
         try {
             Configuration conf = ApplicationProperties.get();
 
             USE_INDEX_QUERY_TO_FIND_ENTITY_BY_UNIQUE_ATTRIBUTES = conf.getBoolean("atlas.use.index.query.to.find.entity.by.unique.attributes", USE_INDEX_QUERY_TO_FIND_ENTITY_BY_UNIQUE_ATTRIBUTES);
+            INDEX_SEARCH_PREFIX                                 = conf.getString(INDEX_SEARCH_VERTEX_PREFIX_PROPERTY, INDEX_SEARCH_VERTEX_PREFIX_DEFAULT);
         } catch (Exception excp) {
             LOG.error("Error reading configuration", excp);
         } finally {
@@ -466,12 +471,16 @@ public class AtlasGraphUtilsV1 {
     private static AtlasIndexQuery getIndexQuery(AtlasEntityType entityType, String propertyName, String value) {
         StringBuilder sb = new StringBuilder();
 
-        sb.append("v.\"").append(Constants.TYPE_NAME_PROPERTY_KEY).append("\":").append(entityType.getTypeAndAllSubTypesQryStr())
+        sb.append(INDEX_SEARCH_PREFIX + "\"").append(Constants.TYPE_NAME_PROPERTY_KEY).append("\":").append(entityType.getTypeAndAllSubTypesQryStr())
                 .append(" AND ")
-                .append("v.\"").append(propertyName).append("\":").append(AtlasAttribute.escapeIndexQueryValue(value))
+                .append(INDEX_SEARCH_PREFIX + "\"").append(propertyName).append("\":").append(AtlasAttribute.escapeIndexQueryValue(value))
                 .append(" AND ")
-                .append("v.\"").append(Constants.STATE_PROPERTY_KEY).append("\":ACTIVE");
+                .append(INDEX_SEARCH_PREFIX + "\"").append(Constants.STATE_PROPERTY_KEY).append("\":ACTIVE");
 
         return AtlasGraphProvider.getGraphInstance().indexQuery(Constants.VERTEX_INDEX, sb.toString());
+    }
+
+    public static String getIndexSearchPrefix() {
+        return INDEX_SEARCH_PREFIX;
     }
 }

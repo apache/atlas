@@ -29,6 +29,8 @@ import com.thinkaurelius.titan.core.TitanIndexQuery;
 import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
+import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.groovy.GroovyExpression;
@@ -43,6 +45,7 @@ import org.apache.atlas.repository.graphdb.GremlinVersion;
 import org.apache.atlas.repository.graphdb.titan1.query.Titan1GraphQuery;
 import org.apache.atlas.repository.graphdb.utils.IteratorToIterableAdapter;
 import org.apache.atlas.typesystem.types.IDataType;
+import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.groovy.CompilerCustomizerProvider;
 import org.apache.tinkerpop.gremlin.groovy.DefaultImportCustomizerProvider;
 import org.apache.tinkerpop.gremlin.groovy.jsr223.GremlinGroovyScriptEngine;
@@ -68,12 +71,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.apache.atlas.repository.Constants.INDEX_SEARCH_VERTEX_PREFIX_DEFAULT;
+import static org.apache.atlas.repository.Constants.INDEX_SEARCH_VERTEX_PREFIX_PROPERTY;
+
 /**
  * Titan 1.0.0 implementation of AtlasGraph.
  */
 public class Titan1Graph implements AtlasGraph<Titan1Vertex, Titan1Edge> {
 
     private final ConvertGremlinValueFunction GREMLIN_VALUE_CONVERSION_FUNCTION = new ConvertGremlinValueFunction();
+
+    private static Configuration APPLICATION_PROPERTIES = null;
 
     private final class ConvertGremlinValueFunction implements Function<Object, Object> {
         @Override
@@ -199,7 +207,8 @@ public class Titan1Graph implements AtlasGraph<Titan1Vertex, Titan1Edge> {
 
     @Override
     public AtlasIndexQuery<Titan1Vertex, Titan1Edge> indexQuery(String fulltextIndex, String graphQuery, int offset) {
-        TitanIndexQuery query = getGraph().indexQuery(fulltextIndex, graphQuery).offset(offset);
+        String prefix = getIndexQueryPrefix();
+        TitanIndexQuery query = getGraph().indexQuery(fulltextIndex, graphQuery).setElementIdentifier(prefix).offset(offset);
         return new Titan1IndexQuery(this, query);
     }
 
@@ -427,4 +436,27 @@ public class Titan1Graph implements AtlasGraph<Titan1Vertex, Titan1Edge> {
         multiProperties.addAll(names);
     }
 
+    public String getIndexQueryPrefix() {
+        String ret;
+
+        initApplicationProperties();
+
+        if (APPLICATION_PROPERTIES == null) {
+            ret = INDEX_SEARCH_VERTEX_PREFIX_DEFAULT;
+        } else {
+            ret = APPLICATION_PROPERTIES.getString(INDEX_SEARCH_VERTEX_PREFIX_PROPERTY, INDEX_SEARCH_VERTEX_PREFIX_DEFAULT);
+        }
+
+        return ret;
+    }
+
+    private void initApplicationProperties() {
+        if (APPLICATION_PROPERTIES == null) {
+            try {
+                APPLICATION_PROPERTIES = ApplicationProperties.get();
+            } catch (AtlasException ex) {
+                // ignore
+            }
+        }
+    }
 }

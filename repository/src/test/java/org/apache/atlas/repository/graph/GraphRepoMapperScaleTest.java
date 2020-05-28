@@ -30,6 +30,7 @@ import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery.ComparisionOperator;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.Referenceable;
@@ -59,6 +60,7 @@ public class GraphRepoMapperScaleTest {
 
     private static final String DATABASE_NAME = "foo";
     private static final String TABLE_NAME = "bar";
+    private String indexSearchPrefix;
 
     @Inject
     private GraphBackedMetadataRepository repositoryService;
@@ -79,6 +81,7 @@ public class GraphRepoMapperScaleTest {
         //Make sure we can cleanup the index directory
         Collection<IDataType> typesAdded = TestUtils.createHiveTypes(typeSystem);
         searchIndexer.onAdd(typesAdded);
+        this.indexSearchPrefix = AtlasGraphUtilsV1.getIndexSearchPrefix();
     }
 
     @BeforeMethod
@@ -159,7 +162,7 @@ public class GraphRepoMapperScaleTest {
         long start = System.currentTimeMillis();
         int count = 0;
         try {
-            String queryString = "v.\"" + key + "\":(" + value + ")";
+            String queryString = indexSearchPrefix + "\"" + key + "\":(" + value + ")";
             AtlasIndexQuery query = graph.indexQuery(Constants.VERTEX_INDEX, queryString);
             Iterator<AtlasIndexQuery.Result> result = query.vertices();
             while(result.hasNext()) {
