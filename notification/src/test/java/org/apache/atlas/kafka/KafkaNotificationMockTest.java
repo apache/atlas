@@ -27,6 +27,7 @@ import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.TopicPartition;
+import org.mockito.Mockito;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -274,6 +275,76 @@ public class KafkaNotificationMockTest {
             fail("Failed while getting updated principal value with exception : " + e.getMessage());
         }
 
+    }
+
+    @Test
+    public void testSetKafkaJAASPropertiesForTicketBasedLoginConfig() {
+        Properties properties = new Properties();
+        Configuration configuration = new PropertiesConfiguration();
+
+        final String loginModuleName = "com.sun.security.auth.module.Krb5LoginModule";
+        final String loginModuleControlFlag = "required";
+        final String optionUseKeyTab = "false";
+        final String optionStoreKey = "true";
+        final String optionServiceName = "kafka";
+
+        configuration.setProperty("atlas.jaas.ticketBased-KafkaClient.loginModuleName",loginModuleName);
+        configuration.setProperty("atlas.jaas.ticketBased-KafkaClient.loginModuleControlFlag", loginModuleControlFlag);
+        configuration.setProperty("atlas.jaas.ticketBased-KafkaClient.option.useKeyTab", optionUseKeyTab);
+        configuration.setProperty("atlas.jaas.ticketBased-KafkaClient.option.storeKey", optionStoreKey);
+        configuration.setProperty("atlas.jaas.ticketBased-KafkaClient.option.serviceName",optionServiceName);
+
+        try {
+            KafkaNotification kafkaNotification = new KafkaNotification(configuration);
+            KafkaNotification spyKafkaNotification = Mockito.spy(kafkaNotification);
+            when(spyKafkaNotification.isLoginKeytabBased()).thenReturn(false);
+            when(spyKafkaNotification.isLoginTicketBased()).thenReturn(true);
+            spyKafkaNotification.setKafkaJAASProperties(configuration, properties);
+            String newPropertyValue = properties.getProperty(KafkaNotification.KAFKA_SASL_JAAS_CONFIG_PROPERTY);
+
+            assertTrue(newPropertyValue.contains(loginModuleName), "loginModuleName not present in new property");
+            assertTrue(newPropertyValue.contains(loginModuleControlFlag),"loginModuleControlFlag not present in new property");
+            assertTrue(newPropertyValue.contains("useKeyTab=" + optionUseKeyTab), "useKeyTab not present in new property or value doesn't match");
+            assertTrue(newPropertyValue.contains("storeKey="+ optionStoreKey), "storeKey not present in new property or value doesn't match");
+            assertTrue(newPropertyValue.contains("serviceName=" + optionServiceName), "serviceName not present in new property or value doesn't match");
+        } catch (AtlasException e) {
+            fail("Failed while creating KafkaNotification object with exception : " + e.getMessage());
+        }
+    }
+
+    @Test
+    public void testSetKafkaJAASPropertiesForTicketBasedLoginFallback() {
+        Properties properties = new Properties();
+        Configuration configuration = new PropertiesConfiguration();
+
+        final String loginModuleName = "com.sun.security.auth.module.Krb5LoginModule";
+        final String loginModuleControlFlag = "required";
+        final String optionUseKeyTab = "false";
+        final String optionStoreKey = "true";
+        final String optionServiceName = "kafka";
+
+        configuration.setProperty("atlas.jaas.KafkaClient.loginModuleName",loginModuleName);
+        configuration.setProperty("atlas.jaas.KafkaClient.loginModuleControlFlag", loginModuleControlFlag);
+        configuration.setProperty("atlas.jaas.KafkaClient.option.useKeyTab", optionUseKeyTab);
+        configuration.setProperty("atlas.jaas.KafkaClient.option.storeKey", optionStoreKey);
+        configuration.setProperty("atlas.jaas.KafkaClient.option.serviceName",optionServiceName);
+
+        try {
+            KafkaNotification kafkaNotification = new KafkaNotification(configuration);
+            KafkaNotification spyKafkaNotification = Mockito.spy(kafkaNotification);
+            when(spyKafkaNotification.isLoginKeytabBased()).thenReturn(false);
+            when(spyKafkaNotification.isLoginTicketBased()).thenReturn(true);
+            spyKafkaNotification.setKafkaJAASProperties(configuration, properties);
+            String newPropertyValue = properties.getProperty(KafkaNotification.KAFKA_SASL_JAAS_CONFIG_PROPERTY);
+
+            assertTrue(newPropertyValue.contains(loginModuleName), "loginModuleName not present in new property");
+            assertTrue(newPropertyValue.contains(loginModuleControlFlag),"loginModuleControlFlag not present in new property");
+            assertTrue(newPropertyValue.contains("useKeyTab=" + optionUseKeyTab), "useKeyTab not present in new property or value doesn't match");
+            assertTrue(newPropertyValue.contains("storeKey="+ optionStoreKey), "storeKey not present in new property or value doesn't match");
+            assertTrue(newPropertyValue.contains("serviceName=" + optionServiceName), "serviceName not present in new property or value doesn't match");
+        } catch (AtlasException e) {
+            fail("Failed while creating KafkaNotification object with exception : " + e.getMessage());
+        }
     }
 
     class TestKafkaNotification extends KafkaNotification {

@@ -29,8 +29,6 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationConverter;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.security.UserGroupInformation;
-import org.apache.hadoop.security.alias.CredentialProvider;
-import org.apache.hadoop.security.alias.CredentialProviderFactory;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
@@ -431,12 +429,22 @@ public class KafkaNotification extends AbstractNotification implements Service {
 
             // Required for backward compatability for Hive CLI
             if (!isLoginKeytabBased() && isLoginTicketBased()) {
-                LOG.debug("Using ticketBased-KafkaClient JAAS configuration");
-                jaasClientName = JAAS_TICKET_BASED_CLIENT_NAME;
-            }
-            String keyPrefix = jaasClientName + ".";
+                LOG.debug("Checking if ticketBased-KafkaClient is set");
+                // if ticketBased-KafkaClient property is not specified then use the default client name
+                String        ticketBasedConfigPrefix = JAAS_CONFIG_PREFIX_PARAM + "." + JAAS_TICKET_BASED_CLIENT_NAME;
+                Configuration ticketBasedConfig       = configuration.subset(ticketBasedConfigPrefix);
 
-            String keyParam = keyPrefix + JAAS_CONFIG_LOGIN_MODULE_NAME_PARAM;
+                if(ticketBasedConfig != null && !ticketBasedConfig.isEmpty()) {
+                    LOG.debug("ticketBased-KafkaClient JAAS configuration is set, using it");
+
+                    jaasClientName = JAAS_TICKET_BASED_CLIENT_NAME;
+                } else {
+                    LOG.info("UserGroupInformation.isLoginTicketBased is true, but no JAAS configuration found for client {}. Will use JAAS configuration of client {}", JAAS_TICKET_BASED_CLIENT_NAME, jaasClientName);
+                }
+            }
+
+            String keyPrefix       = jaasClientName + ".";
+            String keyParam        = keyPrefix + JAAS_CONFIG_LOGIN_MODULE_NAME_PARAM;
             String loginModuleName = jaasConfig.getProperty(keyParam);
 
             if (loginModuleName == null) {
@@ -483,7 +491,8 @@ public class KafkaNotification extends AbstractNotification implements Service {
         LOG.debug("<== KafkaNotification.setKafkaJAASProperties()");
     }
 
-    private static boolean isLoginKeytabBased() {
+    @VisibleForTesting
+    boolean isLoginKeytabBased() {
         boolean ret = false;
 
         try {
@@ -495,7 +504,8 @@ public class KafkaNotification extends AbstractNotification implements Service {
         return ret;
     }
 
-    private static boolean isLoginTicketBased() {
+    @VisibleForTesting
+    boolean isLoginTicketBased() {
         boolean ret = false;
 
         try {
