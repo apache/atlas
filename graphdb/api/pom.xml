@@ -24,7 +24,7 @@
     <parent>
         <groupId>org.apache.atlas</groupId>
         <artifactId>atlas-graphdb</artifactId>
-        <version>2.1.0-SNAPSHOT</version>
+        <version>2.1.0</version>
     </parent>
     <artifactId>atlas-graphdb-api</artifactId>
     <description>Apache Atlas Graph Datbase API</description>
