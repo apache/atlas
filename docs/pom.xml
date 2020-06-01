@@ -75,7 +75,16 @@
                 </plugin>
             </plugins>
         </pluginManagement>
+
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-site-plugin</artifactId>
+                <configuration>
+                  <port>8080</port>
+                  <tempWebappDirectory>${basedir}/target/site</tempWebappDirectory>
+                </configuration>
+            </plugin>
             <plugin>
                 <artifactId>maven-resources-plugin</artifactId>
                 <version>2.7</version>
@@ -112,6 +121,7 @@
                         <goals>
                             <goal>install-node-and-npm</goal>
                         </goals>
+                        <phase>pre-site</phase>
                         <configuration>
                             <nodeVersion>${node-for-v2.version}</nodeVersion>
                             <npmVersion>${npm-for-v2.version}</npmVersion>
@@ -122,6 +132,7 @@
                         <goals>
                             <goal>npm</goal>
                         </goals>
+                         <phase>pre-site</phase>
                         <configuration>
                             <arguments>install --no-package-lock</arguments>
                             <arguments>install</arguments>
@@ -132,6 +143,7 @@
                         <goals>
                             <goal>npm</goal>
                         </goals>
+                        <phase>site</phase>
                         <configuration>
                             <arguments>run build</arguments>
                         </configuration>
