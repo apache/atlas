@@ -57,12 +57,14 @@ Build Process
 
 3. After above build commands successfully complete, you should see the following files
 
-   distro/target/apache-atlas-1.0.0-bin.tar.gz
-   distro/target/apache-atlas-1.0.0-hbase-hook.tar.gz
-   distro/target/apache-atlas-1.0.0-hive-hook.tar.gz
-   distro/target/apache-atlas-1.0.0-kafka-hook.tar.gz
-   distro/target/apache-atlas-1.0.0-sources.tar.gz
-   distro/target/apache-atlas-1.0.0-sqoop-hook.tar.gz
-   distro/target/apache-atlas-1.0.0-storm-hook.tar.gz
+   distro/target/apache-atlas-<version>-bin.tar.gz
+   distro/target/apache-atlas-<version>-hbase-hook.tar.gz
+   distro/target/apache-atlas-<version>-hive-hook.tar.gz
+   distro/target/apache-atlas-<version>-impala-hook.tar.gz
+   distro/target/apache-atlas-<version>-kafka-hook.tar.gz
+   distro/target/apache-atlas-<version>-server.tar.gz
+   distro/target/apache-atlas-<version>-sources.tar.gz
+   distro/target/apache-atlas-<version>-sqoop-hook.tar.gz
+   distro/target/apache-atlas-<version>-storm-hook.tar.gz
 
-4. For more details on building and running Apache Atlas, please refer to https://atlas.apache.org/#/Installation
+4. For more details on installing and running Apache Atlas, please refer to https://atlas.apache.org/#/Installation
