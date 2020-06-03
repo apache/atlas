@@ -573,9 +573,6 @@ public abstract class SearchProcessor {
                         attrVal = getCustomAttributeIndexQueryValue(attrVal, true);
                     }
                     break;
-                default:
-                    LOG.warn("{}: unsupported operator. Ignored", op);
-                    break;
             }
         }
 
