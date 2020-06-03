@@ -611,6 +611,9 @@ define(['require',
                         that.collection.fullCollection.remove(deleteTagData);
                         // to update tag list of search tab fetch typeHeaders.
                         that.typeHeaders.fetch({ reset: true });
+                    },
+                    cust_error: function() {
+                        that.changeLoaderState(false);
                     }
                 });
             }
