@@ -18,7 +18,7 @@ From the directory you would like Apache Atlas to be installed, run the followin
 
 <SyntaxHighlighter wrapLines={true} language="powershell" style={theme.dark}>
 {`tar -xzvf apache-atlas-{project.version}-server.tar.gz
-cd atlas-{project.version}`}
+cd apache-atlas-{project.version}`}
 </SyntaxHighlighter>
 
 #### Running Apache Atlas with Local Apache HBase & Apache Solr
@@ -37,7 +37,7 @@ bin/atlas_start.py`}
 
 <SyntaxHighlighter wrapLines={true} style={theme.dark}>
     {`curl -u username:password http://localhost:21000/api/atlas/admin/version
-    {"Description":"Metadata Management and Data Governance Platform over Hadoop","Version":"1.0.0","Name":"apache-atlas"}`}
+    {"Description":"Metadata Management and Data Governance Platform over Hadoop","Version":"2.1.0","Name":"apache-atlas"}`}
 </SyntaxHighlighter>
 
 
