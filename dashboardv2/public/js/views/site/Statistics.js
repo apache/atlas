@@ -101,13 +101,14 @@ define(['require',
                                 that.fetchMetricData({ update: true });
                             }
                         }]
-                    }).open();
-
+                    });
                     modal.on('closeModal', function() {
                         modal.trigger('cancel');
                     });
                     this.modal = modal;
+                    modal.open();
                 }
+
             },
             bindEvents: function() {
                 var that = this;
