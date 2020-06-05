@@ -186,7 +186,7 @@ public class DataMigrationStatusService {
             } catch (Exception e) {
                 LOG.warn("Error updating status. Please rely on log messages.", e);
             } finally {
-                atlasGraph.commit();
+                graph.commit();
             }
         }
 
