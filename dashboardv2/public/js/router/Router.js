@@ -279,15 +279,15 @@ define([
                 }
                 var isinitialView = true,
                     isTypeTagNotExists = false,
-                    tempParam = _.extend({}, paramObj);
+                    tempParam = $.extend(true, {}, paramObj);
                 that.renderViewIfNotExists(that.getHeaderOptions(Header));
                 that.renderViewIfNotExists({
                     view: App.rSideNav,
                     manualRender: function() {
-                        this.view.currentView.RSearchLayoutView.currentView.manualRender(paramObj);
+                        this.view.currentView.RSearchLayoutView.currentView.manualRender(tempParam);
                     },
                     render: function() {
-                        return new SideNavLayoutView(_.extend({ 'value': paramObj }, options));
+                        return new SideNavLayoutView(_.extend({ 'value': tempParam }, options));
                     }
                 });
                 App.rSideNav.currentView.selectTab();
