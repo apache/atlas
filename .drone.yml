@@ -1,0 +1,20 @@
+kind: pipeline
+type: docker
+name: atlas
+
+steps:
+  - name: docker_atlas_raw
+    image: plugins/docker
+    settings:
+      dockerfile: Dockerfile
+      registry: quay.io
+      repo: quay.io/heetch/atlas
+      tags: atlas-raw
+      username:
+        from_secret: org_quay_username
+      password:
+        from_secret: org_quay_password
+    when:
+      event: push
+      branch:
+        - heetch-atlas-2.0
