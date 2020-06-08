@@ -75,7 +75,7 @@ class RegistryBasedLookup implements Lookup {
             return "";
         }
 
-        return et.getQualifiedAttributeName(name);
+        return et.getVertexPropertyName(name);
     }
 
     @Override
