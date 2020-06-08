@@ -619,7 +619,7 @@ public class AtlasGraphUtilsV2 {
             if (ret) {
                 Set<String> indexSet = graph.getVertexIndexKeys();
                 try {
-                    ret = indexSet.contains(entityType.getQualifiedAttributeName(attributeName));
+                    ret = indexSet.contains(entityType.getVertexPropertyName(attributeName));
                 }
                 catch (AtlasBaseException ex) {
                     ret = false;

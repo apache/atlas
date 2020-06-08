@@ -270,7 +270,7 @@ public abstract class SearchProcessor {
                 if (isIndexSearchable(filterCriteria, structType)) {
                     indexFiltered.add(attributeName);
                 } else {
-                    LOG.warn("not using index-search for attribute '{}'; might cause poor performance", structType.getQualifiedAttributeName(attributeName));
+                    LOG.warn("not using index-search for attribute '{}'; might cause poor performance", structType.getVertexPropertyName(attributeName));
 
                     graphFiltered.add(attributeName);
                 }
@@ -437,7 +437,7 @@ public abstract class SearchProcessor {
     }
 
     private boolean isIndexSearchable(FilterCriteria filterCriteria, AtlasStructType structType) throws AtlasBaseException {
-        String      qualifiedName = structType.getQualifiedAttributeName(filterCriteria.getAttributeName());
+        String      qualifiedName = structType.getVertexPropertyName(filterCriteria.getAttributeName());
         Set<String> indexedKeys   = context.getIndexedKeys();
         boolean     ret           = indexedKeys != null && indexedKeys.contains(qualifiedName);
 
@@ -588,7 +588,7 @@ public abstract class SearchProcessor {
 
         try {
             if (OPERATOR_MAP.get(op) != null) {
-                String qualifiedName         = type.getQualifiedAttributeName(attrName);
+                String qualifiedName         = type.getVertexPropertyName(attrName);
                 String escapeIndexQueryValue = AtlasAttribute.escapeIndexQueryValue(attrVal);
 
                 // map '__customAttributes' 'CONTAINS' operator to 'EQ' operator (solr limitation for json serialized string search)

@@ -591,7 +591,7 @@ public class AtlasEntityType extends AtlasStructType {
         return relationshipAttributes.containsKey(attributeName);
     }
 
-    public String getQualifiedAttributeName(String attrName) throws AtlasBaseException {
+    public String getVertexPropertyName(String attrName) throws AtlasBaseException {
         AtlasAttribute ret = getAttribute(attrName);
 
         if (ret == null) {
@@ -599,7 +599,7 @@ public class AtlasEntityType extends AtlasStructType {
         }
 
         if (ret != null) {
-            return ret.getQualifiedName();
+            return ret.getVertexPropertyName();
         }
 
         throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_ATTRIBUTE, attrName, entityDef.getName());

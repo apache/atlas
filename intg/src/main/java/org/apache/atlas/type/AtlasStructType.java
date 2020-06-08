@@ -652,11 +652,11 @@ public class AtlasStructType extends AtlasType {
         return null;
     }
 
-    public String getQualifiedAttributeName(String attrName) throws AtlasBaseException {
+    public String getVertexPropertyName(String attrName) throws AtlasBaseException {
         AtlasAttribute attribute = getAttribute(attrName);
 
         if (attribute != null) {
-            return attribute.getQualifiedName();
+            return attribute.getVertexPropertyName();
         }
 
         throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_ATTRIBUTE, attrName, structDef.getName());
