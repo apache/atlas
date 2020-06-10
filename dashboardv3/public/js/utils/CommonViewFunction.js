@@ -965,9 +965,14 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             pEl.innerText = "";
 
             if (val === '') {
-                classes = 'form-control errorClass';
                 validation = false;
                 pEl.innerText = 'Required!';
+            } else if (val.includes(':')) {
+                validation = false;
+                var errorText = $(".errorMsg[data-id='charSupportMsg']").text();
+                if (errorText && errorText.length === 0) {
+                    pEl.innerText = "These special character '(:)' are not supported.";
+                }
             } else {
                 if (input.tagName === 'INPUT') {
                     var duplicates = datalist.filter(function(c) {
@@ -981,6 +986,9 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                         keyMap.set(val, val);
                     }
                 }
+            }
+            if (validation === false) {
+                classes = 'form-control errorClass';
             }
             input.setAttribute('class', classes);
         }
