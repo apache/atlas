@@ -73,10 +73,10 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
         });
         return uuid;
     };
-    Utils.getBaseUrl = function(url) {
+    Utils.getBaseUrl = function(url, noPop) {
         var path = url.replace(/\/[\w-]+.(jsp|html)|\/+$/ig, ''),
             splitPath = path.split("/");
-        if (splitPath && splitPath[splitPath.length - 1] === "n") {
+        if (noPop !== true && splitPath && splitPath[splitPath.length - 1] === "n") {
             splitPath.pop();
             return splitPath.join("/");
         }
@@ -87,7 +87,7 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
             serviceType,
             status,
             typeName,
-            iconBasePath = Utils.getBaseUrl(window.location.pathname) + Globals.entityImgPath;
+            iconBasePath = Utils.getBaseUrl(window.location.pathname, true) + Globals.entityImgPath;
         if (entityData) {
             typeName = entityData.typeName;
             serviceType = entityData && entityData.serviceType;
@@ -283,7 +283,7 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
         var existingError = $(".ui-pnotify-container.alert-danger .ui-pnotify-text").text();
         if (existingError !== message) {
             Utils.notifyError({
-                html:isHtml,
+                html: isHtml,
                 content: message
             });
         }
