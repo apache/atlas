@@ -156,9 +156,15 @@ define(['require',
                                     name = obj.name,
                                     typeName = options.typeName;
 
-                                return "<li class=" + status + ">" +
-                                    "<a style='color:" + entityColor + "' href=#!/detailPage/" + guid + "?tabActive=relationship>" + name + " (" + typeName + ")</a>" +
-                                    "</li>";
+                                if (typeName === "AtlasGlossaryTerm") {
+                                    return '<li class=' + status + '>' +
+                                        '<a style="color:' + entityColor + '" href="#!/glossary/' + guid + '?guid=' + guid + '&gType=term&viewType=term&fromView=entity">' + name + ' (' + typeName + ')</a>' +
+                                        '</li>';
+                                } else {
+                                    return "<li class=" + status + ">" +
+                                        "<a style='color:" + entityColor + "' href=#!/detailPage/" + guid + "?tabActive=relationship>" + name + " (" + typeName + ")</a>" +
+                                        "</li>";
+                                }
                             },
                             getWithButton = function(obj) {
                                 var options = obj.options,

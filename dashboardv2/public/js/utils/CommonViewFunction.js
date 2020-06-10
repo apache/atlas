@@ -109,13 +109,13 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                         var newVal = val;
                         if (formatStringVal) {
                             newVal = parseInt(val);
-                            if (newVal === NaN) {
+                            if (_.isNaN(newVal)) {
                                 newVal = val;
                             } else {
                                 newVal = numberFormat(newVal);
                             }
                         }
-                        return getHighlightedString(newVal);
+                        return getHighlightedString(_.escape(newVal));
                     }
                 } else {
                     return "N/A";
@@ -179,7 +179,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                     if (_.isString(inputOutputField) || _.isBoolean(inputOutputField) || _.isNumber(inputOutputField)) {
                         var tempVarfor$check = inputOutputField.toString();
                         if (tempVarfor$check.indexOf("$") == -1) {
-                            valueOfArray.push('<span class="json-string">' + getValue(_.escape(inputOutputField)) + '</span>');
+                            valueOfArray.push('<span class="json-string">' + getValue(inputOutputField) + '</span>');
                         }
                     } else if (_.isObject(inputOutputField) && !id) {
                         var attributesList = inputOutputField;
@@ -220,7 +220,11 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                             fetchInputOutputValue(fetchId, defEntity);
                             tempLink += '<div data-id="' + fetchId + '"><div class="value-loader"></div></div>';
                         } else {
-                            tempLink += '<a href="#!/detailPage/' + id + '">' + getValue(name) + '</a>'
+                            if (inputOutputField.typeName == "AtlasGlossaryTerm") {
+                                tempLink += '<a href="#!/glossary/' + id + '?guid=' + id + '&gType=term&viewType=term&fromView=entity">' + getValue(name) + '</a>'
+                            } else {
+                                tempLink += '<a href="#!/detailPage/' + id + '">' + getValue(name) + '</a>'
+                            }
                         }
                     }
                     if (readOnly) {
@@ -250,7 +254,6 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             valueObjectKeysList = _.sortBy(valueObjectKeysList);
         }
         valueObjectKeysList.map(function(key) {
-
             key = _.escape(key);
             if (key == "profileData") {
                 return;
@@ -274,11 +277,15 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             if (_.isObject(valueObject[key])) {
                 val = keyValue
             } else if (Utils.isUrl(keyValue)) {
-                val = '<a target="_blank" class="blue-link" href="' + keyValue + '">' + getValue(keyValue) + '</a>';
+                val = '<a target="_blank" class="blue-link" href="' + _.escape(keyValue) + '">' + getValue(keyValue) + '</a>';
             } else if (key === 'guid' || key === "__guid") {
-                val = '<a title="' + key + '" href="#!/detailPage/' + keyValue + '">' + getValue(keyValue) + '</a>';
+                if (options.fromAdminAudit) {
+                    val = getValue(keyValue);
+                } else {
+                    val = '<a title="' + key + '" href="#!/detailPage/' + _.escape(keyValue) + '">' + getValue(keyValue) + '</a>';
+                }
             } else {
-                val = getValue(_.escape(keyValue));
+                val = getValue(keyValue);
             }
             if (isTable) {
                 var value = val,
