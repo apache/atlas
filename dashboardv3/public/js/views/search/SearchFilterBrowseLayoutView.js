@@ -77,7 +77,6 @@ define([
                     // this.RClassificationTreeRender.currentView.onSearchClassificationNode(showEmpty);
                     // this.REntityTreeRender.currentView.onSearchEntityNode(showEmpty);
                 }
-                this.$(".panel-collapse.collapse").addClass("in");
                 this.entitySearchTree = this.$('[data-id="entitySearchTree"]');
                 this.classificationSearchTree = this.$('[data-id="classificationSearchTree"]');
                 this.termSearchTree = this.$('[data-id="termSearchTree"]');
@@ -93,6 +92,8 @@ define([
                 this.customFilterSearchTree.jstree("search", searchString);
                 this.businessMetadataSearchTree.jstree(true).show_all();
                 this.businessMetadataSearchTree.jstree("search", searchString);
+                this.$(".panel-heading.dash-button-icon").removeClass("collapsed").attr("aria-expanded", true);
+                this.$(".panel-collapse.collapse").addClass("in").attr("aria-expanded", true).css({ height: "auto" });
 
             };
 
@@ -201,7 +202,7 @@ define([
             if (options) {
                 _.extend(this.options, options);
                 this.showHideGlobalFilter();
-                if(!this.options.value){
+                if (!this.options.value) {
                     this.ui.searchNode.val('').trigger('keyup');
                 }
                 if (this.RBusinessMetadataTreeRender.currentView) {
