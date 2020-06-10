@@ -56,7 +56,7 @@ define(['require',
                 events["click " + this.ui.adminEntityClick] = "onClickAdminEntity";
                 events["change " + this.ui.adminType] = "onClickAdminType";
                 events["click " + this.ui.attrFilter] = function(e) {
-                    this.$('.fa-angle-right').toggleClass('fa-angle-down');
+                    this.ui.attrFilter.find('.fa-angle-right').toggleClass('fa-angle-down');
                     this.$('.attributeResultContainer').addClass("overlay");
                     this.$('.attribute-filter-container, .attr-filter-overlay').toggleClass('hide');
                     this.onClickAttrFilter();
@@ -120,7 +120,7 @@ define(['require',
             closeAttributeModel: function() {
                 var that = this;
                 that.$('.attributeResultContainer').removeClass("overlay");
-                that.$('.fa-angle-right').toggleClass('fa-angle-down');
+                that.ui.attrFilter.find('.fa-angle-right').toggleClass('fa-angle-down');
                 that.$('.attribute-filter-container, .attr-filter-overlay').toggleClass('hide');
             },
             getAttributes: function(options) {
@@ -133,7 +133,6 @@ define(['require',
                             "attributeValue": (adminFilter.type == "date" && options.isDateParsed) ? Date.parse(adminFilter.value).toString() : adminFilter.value
                         })
                     })
-                    this.isFilters = null;
                 } else {
                     adminAttributes = [{
                         "attributeName": "userName",
@@ -301,6 +300,7 @@ define(['require',
             },
             onClickAdminType: function(e, value) {
                 this.onlyPurged = e.currentTarget.value === "Purged";
+                this.isFilters = null;
                 this.defaultPagination();
                 this.getAdminCollection();
             },
