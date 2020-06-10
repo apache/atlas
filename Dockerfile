@@ -37,7 +37,7 @@ ENV MAVEN_HOME /usr/share/maven
 
 # Add Java and Maven to the path.
 ENV PATH /usr/java/bin:/usr/local/apache-maven/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-
+ARG PROFILE=-Pdist
 # switch to user ubuntu
 USER ubuntu
 # Working directory
@@ -54,7 +54,7 @@ RUN echo 'package-lock=false' >> ./atlas/.npmrc
 RUN echo 'package-lock.json' >> ./atlas/.gitignore
 
 # Remove -DskipTests if unit tests are to be included
-RUN mvn -T $MVN_JOB -DskipTests -Pdist,embedded-hbase-solr -f ./atlas/pom.xml clean install
+RUN mvn -T $MVN_JOB -DskipTests $PROFILE -f ./atlas/pom.xml clean install
 RUN mkdir -p atlas-bin
 RUN tar xzf /home/ubuntu/atlas/distro/target/*bin.tar.gz --strip-components 1 -C /home/ubuntu/atlas-bin
 

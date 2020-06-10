@@ -18,3 +18,39 @@ steps:
       event: push
       branch:
         - heetch-atlas-2.0
+
+  - name: docker_atlas_embedded_hbase_solr
+    image: plugins/docker
+    settings:
+      build_args:
+        - PROFILE=-Pdist,embedded-hbase-solr
+      dockerfile: Dockerfile
+      registry: quay.io
+      repo: quay.io/heetch/atlas
+      tags: atlas-embedded-hbase-solr
+      username:
+        from_secret: org_quay_username
+      password:
+        from_secret: org_quay_password
+    when:
+      event: push
+      branch:
+        - heetch-atlas-2.0
+
+  - name: docker_atlas_embedded_cassandra_solr
+    image: plugins/docker
+    settings:
+      build_args:
+        - PROFILE=-Pdist,embedded-cassandra-solr
+      dockerfile: Dockerfile
+      registry: quay.io
+      repo: quay.io/heetch/atlas
+      tags: atlas-embedded-cassandra-solr
+      username:
+        from_secret: org_quay_username
+      password:
+        from_secret: org_quay_password
+    when:
+      event: push
+      branch:
+        - heetch-atlas-2.0
