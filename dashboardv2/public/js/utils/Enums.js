@@ -211,6 +211,7 @@ define(['require'], function(require) {
         "__modifiedBy": "Last Modified User",
         "__propagatedClassificationNames": "Propagated Classification(s)",
         "__state": "Status",
+        "__entityStatus": "Entity Status",
         "__timestamp": "Created Timestamp",
         "__typeName": "Type Name"
     };

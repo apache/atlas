@@ -139,7 +139,7 @@ define(['require',
                     return obj;
                 }
                 /* Status / __state */
-                if (isSystemAttr && attrObj.name === "Status" || isSystemAttr && attrObj.name === "__state") {
+                if (isSystemAttr && attrObj.name === "Status" || isSystemAttr && attrObj.name === "__state" || isSystemAttr && attrObj.name === "__entityStatus") {
                     obj.label = (Enums.systemAttributes[attrObj.name] ? Enums.systemAttributes[attrObj.name] : _.escape(attrObj.name.capitalize())) + " (enum)";
                     obj['input'] = 'select';
                     obj['values'] = ['ACTIVE', 'DELETED'];
@@ -356,11 +356,15 @@ define(['require',
                         "__createdBy": 5,
                         "__modifiedBy": 6,
                         "__isIncomplete": 7,
-                        "__state": 8,
                         "__classificationNames": 9,
                         "__propagatedClassificationNames": 10,
                         "__labels": 11,
                         "__customAttributes": 12,
+                    }
+                    if (that.type) {
+                        sortMap["__state"] = 8;
+                    } else {
+                        sortMap["__entityStatus"] = 8;
                     }
                     this.systemAttrArr = _.sortBy(this.systemAttrArr, function(obj) {
                         return sortMap[obj.name]
