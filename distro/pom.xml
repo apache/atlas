@@ -74,9 +74,11 @@ atlas.graph.index.search.solr.wait-searcher=true
         <hbase.embedded>false</hbase.embedded>
         <solr.embedded>false</solr.embedded>
         <cassandra.embedded>false</cassandra.embedded>
+        <atlas.notification.embedded>true</atlas.notification.embedded>
         <elasticsearch.managed>false</elasticsearch.managed>
 
         <entity.repository.properties>atlas.EntityAuditRepository.impl=org.apache.atlas.repository.audit.HBaseBasedAuditRepository</entity.repository.properties>
+        <entity.audit.repository.cassandra.extra.properties/>
     </properties>
 
     <profiles>
@@ -403,6 +405,35 @@ atlas.graph.index.search.solr.wait-searcher=true
                 </plugins>
             </build>
         </profile>
+
+        <!-- profile to configure cassandra and elasticsearch with the distribution -->
+        <profile>
+            <id>cassandra-elasticsearch</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+
+            <properties>
+
+                <graph.storage.backend>cassandra</graph.storage.backend>
+                <entity.repository.properties>atlas.EntityAuditRepository.impl=org.apache.atlas.repository.audit.CassandraBasedAuditRepository</entity.repository.properties>
+                <graph.storage.properties>#Cassandra
+atlas.graph.storage.hostname=localhost
+atlas.graph.storage.conf-file=${sys:atlas.home}/conf/cassandra.yml
+                </graph.storage.properties>
+                <graph.index.backend>elasticsearch</graph.index.backend>
+                <graph.index.properties>#ElasticSearch
+atlas.graph.index.search.hostname=localhost
+atlas.graph.index.search.elasticsearch.client-only=true
+                </graph.index.properties>
+                <entity.audit.repository.cassandra.extra.properties>
+atlas.EntityAuditRepository.keyspace=atlas_audit
+atlas.EntityAuditRepository.replicationFactor=1
+                </entity.audit.repository.cassandra.extra.properties>
+                <atlas.notification.embedded>false</atlas.notification.embedded>
+            </properties>
+        </profile>
+
     </profiles>
 
     <build>
