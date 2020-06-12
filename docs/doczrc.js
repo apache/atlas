@@ -21,6 +21,7 @@ import versions from './docz-lib/config/versions';
 
 module.exports = {
 	title: "Apache Atlas – Data Governance and Metadata framework for Hadoop",
+	description: "Apache Atlas – Data Governance and Metadata framework for Hadoop",
 	files: "**/*.{md,mdx}",
 	base: "/",
 	baseUrl:"./public",
