@@ -22,8 +22,9 @@ define(['require',
     'collection/VEntityList',
     'utils/Utils',
     'utils/UrlLinks',
-    'utils/CommonViewFunction'
-], function(require, Backbone, AdminAuditTableLayoutView_tmpl, VEntityList, Utils, UrlLinks, CommonViewFunction) {
+    'utils/CommonViewFunction',
+    'utils/Enums'
+], function(require, Backbone, AdminAuditTableLayoutView_tmpl, VEntityList, Utils, UrlLinks, CommonViewFunction, Enums) {
     'use strict';
 
     var AdminAuditTableLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -41,20 +42,21 @@ define(['require',
 
             /** ui selector cache */
             ui: {
-                adminEntityClick: "[data-id='adminEntity']",
-                adminType: "[data-id='adminType']",
+                adminPurgedEntityClick: "[data-id='adminPurgedEntity']",
+                adminAuditEntityDetails: "[data-id='adminAuditEntityDetails']",
                 attrFilter: "[data-id='adminAttrFilter']",
                 adminRegion: "[data-id='adminRegion']",
                 attrApply: "[data-id='attrApply']",
                 showDefault: "[data-id='showDefault']",
                 attrClose: "[data-id='attrClose']"
+
             },
             /** ui events hash */
             events: function() {
                 var events = {},
                     that = this;
-                events["click " + this.ui.adminEntityClick] = "onClickAdminEntity";
-                events["change " + this.ui.adminType] = "onClickAdminType";
+                events["click " + this.ui.adminPurgedEntityClick] = "onClickAdminPurgedEntity";
+                events["click " + this.ui.adminAuditEntityDetails] = "showAdminAuditEntity";
                 events["click " + this.ui.attrFilter] = function(e) {
                     this.ui.attrFilter.find('.fa-angle-right').toggleClass('fa-angle-down');
                     this.$('.attributeResultContainer').addClass("overlay");
@@ -104,17 +106,19 @@ define(['require',
                     paginatorOpts: {}
                 };
                 this.isFilters = null;
+                this.adminAuditEntityData = {};
             },
             onRender: function() {
-                var str = '<option>All</option><option>Purged</option>';
-                this.ui.adminType.html(str);
-                this.ui.adminType.select2({});
                 this.ui.adminRegion.hide();
                 this.getAdminCollection();
                 this.entityCollection.comparator = function(model) {
                     return -model.get('timestamp');
                 }
                 this.renderTableLayoutView();
+            },
+            onShow: function() {
+                this.$('.fontLoader').show();
+                this.$('.tableOverlay').show();
             },
             bindEvents: function() {},
             closeAttributeModel: function() {
@@ -133,19 +137,6 @@ define(['require',
                             "attributeValue": (adminFilter.type == "date" && options.isDateParsed) ? Date.parse(adminFilter.value).toString() : adminFilter.value
                         })
                     })
-                } else {
-                    adminAttributes = [{
-                        "attributeName": "userName",
-                        "operator": "=",
-                        "attributeValue": "admin"
-                    }];
-                    if (this.onlyPurged === true) {
-                        adminAttributes.push({
-                            "attributeName": "operation",
-                            "operator": "=",
-                            "attributeValue": "PURGE"
-                        })
-                    }
                 }
                 return adminAttributes;
             },
@@ -163,7 +154,7 @@ define(['require',
                 if (queryBuilderRef.data("queryBuilder")) {
                     var queryBuilder = queryBuilderRef.queryBuilder("getRules");
                     if (queryBuilder) {
-                        that.isFilters = queryBuilder.rules;
+                        that.isFilters = queryBuilder.rules.length ? queryBuilder.rules : null;
                     } else {
                         isFilterValidate = false
                     }
@@ -185,24 +176,27 @@ define(['require',
                         criterion: that.getAttributes(options)
                     };
                 options.isDateParsed = false;
-                var auditQueryParam = {
-                    condition: "AND",
-                    criterion: that.getAttributes(options)
-                };
-                that.searchTableFilters["adminAttrFilters"] = CommonViewFunction.attributeFilter.generateUrl({ value: auditQueryParam, formatedDateToLong: true });
-                this.$('.fontLoader').show();
-                this.$('.tableOverlay').show();
-                $.extend(that.entityCollection.queryParams, { auditFilters: adminParam });
+                if (this.isFilters) {
+                    var auditQueryParam = {
+                        condition: "AND",
+                        criterion: that.getAttributes(options)
+                    };
+                    that.searchTableFilters["adminAttrFilters"] = CommonViewFunction.attributeFilter.generateUrl({ value: auditQueryParam, formatedDateToLong: true });
+                }
+
+                $.extend(that.entityCollection.queryParams, { auditFilters: that.isFilters ? adminParam : null });
                 var apiObj = {
                     sort: false,
                     data: that.entityCollection.queryParams,
                     success: function(dataOrCollection, response) {
+                        that.entityCollection.state.pageSize = that.entityCollection.queryParams.limit || 25;
                         that.entityCollection.fullCollection.reset(dataOrCollection, option);
+                    },
+                    complete: function() {
                         that.$('.fontLoader').hide();
                         that.$('.tableOverlay').hide();
                         that.$('.auditTable').show();
                     },
-                    silent: true,
                     reset: true
                 }
                 this.entityCollection.getAdminData(apiObj);
@@ -217,6 +211,14 @@ define(['require',
                     })));
                 });
             },
+            createTableWithValues: function(tableDetails, isAdminAudit) {
+                var attrTable = CommonViewFunction.propertyTable({
+                    scope: this,
+                    valueObject: tableDetails,
+                    fromAdminAudit: isAdminAudit
+                });
+                return attrTable;
+            },
             getAuditTableColumns: function() {
                 var that = this;
                 return this.entityCollection.constructor.getTableCols({
@@ -230,25 +232,50 @@ define(['require',
                         accordion: false,
                         alwaysVisible: true,
                         expand: function(el, model) {
-                            var adminValues = '<div class="col-sm-6">',
-                                newColumn = '';
+                            var operation = model.get('operation'),
+                                results = model.get('result') || null,
+                                adminText = 'No records found',
+                                adminTypDetails = null;
                             el.attr('colspan', '7');
-                            if (model.attributes.params) {
-                                var guids = model.attributes.result.replace('[', '').replace(']', '').split(',');
-                                _.each(guids, function(adminGuid, index) {
-                                    if (index % 5 == 0 && index != 0) {
-                                        adminValues += '</div><div class="col-sm-6">';
-                                    }
-                                    adminValues += '<a class="blue-link" data-id="adminEntity" >' + adminGuid.trim() + '</a></br>';
-                                })
-                                adminValues += '</div>';
-
-                            } else {
-                                adminValues = '';
+                            if (results) {
+                                var adminValues = null;
+                                if (operation == "PURGE") {
+                                    adminValues = '<ul class="col-sm-6">';
+                                    var guids = results.replace('[', '').replace(']', '').split(',');
+                                    adminTypDetails = Enums.category[operation];
+                                    _.each(guids, function(adminGuid, index) {
+                                        if (index % 5 == 0 && index != 0) {
+                                            adminValues += '</ul><ul class="col-sm-6">';
+                                        }
+                                        adminValues += '<li class="blue-link" data-id="adminPurgedEntity" >' + adminGuid.trim() + '</li>';
+                                    })
+                                    adminValues += '</ul>';
+                                    adminText = '<div class="row"><div class="attr-details"><h4 style="word-break: break-word;">' + adminTypDetails + '</h4>' + adminValues + '</div></div>';
+                                } else {
+                                    var resultData = JSON.parse(results),
+                                        typeName = model.get('params').split(','),
+                                        typeContainer = '';
+                                    _.each(typeName, function(name) {
+                                        var typeData = resultData[name],
+                                            adminValues = (typeName.length == 1) ? '<ul class="col-sm-4">' : '<ul>';
+                                        adminTypDetails = Enums.category[name] + " " + Enums.auditAction[operation];
+                                        typeContainer += '<div class="attr-type-container"><h4 style="word-break: break-word;">' + adminTypDetails + '</h4>';
+                                        _.each(typeData, function(typeDefObj, index) {
+                                            if (index % 5 == 0 && index != 0 && typeName.length == 1) {
+                                                adminValues += '</ul><ul class="col-sm-4">';
+                                            }
+                                            var panelId = typeDefObj.name.split(" ").join("") + model.get('startTime');
+                                            that.adminAuditEntityData[panelId] = typeDefObj;
+                                            adminValues += '<li class="blue-link" data-id="adminAuditEntityDetails" data-auditEntityId=' + panelId + '>' + typeDefObj.name + '</li>';
+                                        });
+                                        adminValues += '</ul>';
+                                        typeContainer += adminValues + '</div>';
+                                    })
+                                    var typeClass = (typeName.length == 1) ? null : "admin-audit-details";
+                                    adminText = '<div class="row"><div class="attr-details ' + typeClass + '">' + typeContainer + '</div></div>';
+                                }
                             }
-                            var adminText = '<div class="row"><div class="col-sm-12 attr-details admin-attr-details"><div class="col-sm-2">Purged Entities: </div><div class="col-sm-10">' + adminValues + '</div></div></div>';
                             $(el).append($('<div>').html(adminText));
-
                         }
                     },
                     userName: {
@@ -292,34 +319,47 @@ define(['require',
                         })
                     }
                 }, this.entityCollection);
-
             },
             defaultPagination: function() {
                 $.extend(this.entityCollection.queryParams, { limit: this.limit, offset: this.offset });
                 this.renderTableLayoutView();
             },
-            onClickAdminType: function(e, value) {
-                this.onlyPurged = e.currentTarget.value === "Purged";
-                this.isFilters = null;
-                this.defaultPagination();
-                this.getAdminCollection();
+            showAdminAuditEntity: function(e) {
+                var typeDefObj = this.adminAuditEntityData[e.target.dataset.auditentityid],
+                    typeDetails = this.createTableWithValues(typeDefObj, true),
+                    view = '<table class="table admin-audit-details bold-key" ><tbody >' + typeDetails + '</tbody></table>',
+                    modalData = {
+                        title: Enums.category[typeDefObj.category] + " Type Details: " + typeDefObj.name,
+                        htmlContent: view,
+                        mainClass: "modal-full-screen",
+                        okCloses: true,
+                        showFooter: false,
+                        width: "40%"
+                    };
+                this.showModal(modalData);
             },
-            onClickAdminEntity: function(e) {
+            onClickAdminPurgedEntity: function(e) {
                 var that = this;
-                require([
-                    'modules/Modal', 'views/audit/AuditTableLayoutView'
-                ], function(Modal, AuditTableLayoutView) {
+                require(['views/audit/AuditTableLayoutView'], function(AuditTableLayoutView) {
                     var obj = {
                             guid: $(e.target).text(),
                         },
-                        modal = new Modal({
+                        modalData = {
                             title: "Purged Entity Details: " + obj.guid,
                             content: new AuditTableLayoutView(obj),
                             mainClass: "modal-full-screen",
                             okCloses: true,
                             showFooter: false,
-                        }).open();
-
+                        };
+                    that.showModal(modalData);
+                });
+            },
+            showModal: function(modalObj, title) {
+                var that = this;
+                require([
+                    'modules/Modal'
+                ], function(Modal) {
+                    var modal = new Modal(modalObj).open();
                     modal.on('closeModal', function() {
                         $('.modal').css({ 'padding-right': '0px !important' });
                         modal.trigger('cancel');
