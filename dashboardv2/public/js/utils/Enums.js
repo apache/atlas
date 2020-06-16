@@ -41,7 +41,24 @@ define(["require", "backbone"], function(require) {
         ENTITY_PURGE: "Entity Purged",
         BUSINESS_ATTRIBUTE_ADD: "Business Attribute(s) Added",
         BUSINESS_ATTRIBUTE_UPDATE: "Business Attribute(s) Updated",
-        BUSINESS_ATTRIBUTE_DELETE: "Business Attribute(s) Deleted"
+        BUSINESS_ATTRIBUTE_DELETE: "Business Attribute(s) Deleted",
+        TYPE_DEF_UPDATE: "Type Updated",
+        TYPE_DEF_CREATE: "Type Created",
+        TYPE_DEF_DELETE: "Type Deleted"
+    }
+
+    Enums.category = {
+        PRIMITIVE: "Primitive",
+        OBJECT_ID_TYPE: "Object Id type",
+        ENUM: "Enum",
+        STRUCT: "Struct",
+        CLASSIFICATION: "Classification",
+        ENTITY: "Entity",
+        ARRAY: "Array",
+        MAP: "Map",
+        RELATIONSHIP: "Relationship",
+        BUSINESS_METADATA: "Business Metadata",
+        PURGE: "Purge Entities"
     }
 
     Enums.entityStateReadOnly = {

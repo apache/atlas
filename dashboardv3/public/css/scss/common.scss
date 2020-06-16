@@ -318,3 +318,13 @@ pre {
         animation: spin 1000ms infinite linear;
     }
 }
+
+.attr-details {
+    ul {
+        list-style: disc;
+
+        li {
+            cursor: pointer;
+        }
+    }
+}

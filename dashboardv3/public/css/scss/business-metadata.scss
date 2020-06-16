@@ -90,6 +90,10 @@
 
 .business-metadata-details,
 .admin-details {
+    .tableOverlay {
+        background-color: transparent;
+    }
+
     .expandable .attr-details {
         max-height: 300px;
         overflow: auto;
@@ -97,8 +101,18 @@
         width: calc(100% - 30px);
     }
 
-    .admin-type-dropdown {
-        width: 100px;
+    .expandable .admin-audit-details {
+        display: flex;
+        flex-wrap: wrap;
+        margin-left: 20px;
+
+        .attr-type-container {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 5px 10px;
+            margin: 5px;
+            width: 32%;
+        }
     }
 
     .expandable .admin-attr-details {
@@ -106,6 +120,11 @@
         margin-left: 20px;
         width: calc(100% - 27px);
     }
+}
+
+.admin-details .expandable .admin-audit-details .attr-type-container {
+    max-height: 200px;
+    overflow: auto;
 }
 
 .tab-pane {
