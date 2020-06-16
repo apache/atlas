@@ -136,6 +136,7 @@ atlas.graph.index.search.solr.wait-searcher=true
                                         <descriptor>src/main/assemblies/atlas-server-package.xml</descriptor>
                                         <descriptor>src/main/assemblies/standalone-package.xml</descriptor>
                                         <descriptor>src/main/assemblies/src-package.xml</descriptor>
+                                        <descriptor>src/main/assemblies/atlas-repair-index-package.xml</descriptor>
                                         <!--<descriptor>src/main/assemblies/migration-exporter.xml</descriptor>-->
                                         <descriptor>src/main/assemblies/classification-updater.xml</descriptor>
                                     </descriptors>
