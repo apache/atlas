@@ -99,7 +99,7 @@ define(['require',
             var el = e.currentTarget;
             this.handleCharSupport(el);
             if (!el.value.trim().includes(':')) {
-                this.items[el.dataset.index].value = _.escape(el.value.trim());
+                this.items[el.dataset.index].value = el.value.trim();
             }
         },
         handleCharSupport: function(el) {

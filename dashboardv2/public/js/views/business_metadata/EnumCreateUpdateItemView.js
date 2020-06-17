@@ -104,8 +104,8 @@ define(["require", "backbone", "hbs!tmpl/business_metadata/EnumCreateUpdateItemV
                     selectedEnum = this.enumDefCollection.fullCollection.findWhere({ name: enumName }),
                     selectedEnumValues = selectedEnum ? selectedEnum.get("elementDefs") : null;
                 _.each(selectedEnumValues, function(enumVal, index) {
-                    selectedValues.push(_.unescape(enumVal.value));
-                    enumValues += "<option>" + enumVal.value + "</option>";
+                    selectedValues.push(enumVal.value);
+                    enumValues += "<option>" + _.escape(enumVal.value) + "</option>";
                 });
 
                 this.ui.enumCancleBtn.removeAttr("disabled");
@@ -197,7 +197,7 @@ define(["require", "backbone", "hbs!tmpl/business_metadata/EnumCreateUpdateItemV
                 _.each(selectedEnumValues, function(inputEnumVal, index) {
                     elementValues.push({
                         ordinal: index + 1,
-                        value: _.escape(inputEnumVal)
+                        value: inputEnumVal
                     });
                 });
 

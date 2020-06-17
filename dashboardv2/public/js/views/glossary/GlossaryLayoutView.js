@@ -85,7 +85,7 @@ define(['require',
                 };
                 events["click " + this.ui.importGlossary] = 'onClickImportGlossary';
                 events["keyup " + this.ui.searchTerm] = function() {
-                    this.ui.termTree.jstree("search", this.ui.searchTerm.val());
+                    this.ui.termTree.jstree("search", _.escape(this.ui.searchTerm.val()));
                 };
                 events["keyup " + this.ui.searchCategory] = function() {
                     this.ui.categoryTree.jstree("search", this.ui.searchCategory.val());

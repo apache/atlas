@@ -429,7 +429,7 @@ define([
                 var notifyObj = {
                     modal: true,
                     html: true,
-                    text: Messages.conformation.deleteMessage + "<b>" + options.model.get('name') + "</b>" + " ?",
+                    text: Messages.conformation.deleteMessage + "<b>" + _.escape(options.model.get('name')) + "</b>" + " ?",
                     ok: function(argument) {
                         that.onDeleteNotifyOk(options);
                     },

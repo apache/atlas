@@ -206,10 +206,7 @@ define(['require',
                                 } else {
                                     this.ui.entityIcon.removeClass('disabled');
                                 }
-                                if (collectionJSON.isIncomplete === true) {
-                                    this.$(".isIncomplete").addClass("show");
-                                }
-                                this.ui.entityIcon.attr('title', _.escape(collectionJSON.typeName)).html('<img src="' + Utils.getEntityIconPath({ entityData: entityData }) + '"/><i class="fa fa-hourglass-half"></i>').find("img").on('error', function() {
+                                this.ui.entityIcon.attr('title', _.escape(collectionJSON.typeName)).html('<img src="' + Utils.getEntityIconPath({ entityData: entityData }) + '"/>').find("img").on('error', function() {
                                     this.src = Utils.getEntityIconPath({ entityData: entityData, errorUrl: this.src });
                                 });
                             } else {
@@ -382,7 +379,7 @@ define(['require',
                 CommonViewFunction.deleteTag(_.extend({}, {
                     guid: that.id,
                     associatedGuid: that.id != entityGuid ? entityGuid : null,
-                    msg: "<div class='ellipsis-with-margin'>Remove: " + "<b>" + _.escape(tagName) + "</b> assignment from" + " " + "<b>" + this.name + "?</b></div>",
+                    msg: "<div class='ellipsis-with-margin'>Remove: " + "<b>" + _.escape(tagName) + "</b> assignment from <b>" + this.name + "?</b></div>",
                     titleMessage: Messages.removeTag,
                     okText: "Remove",
                     showLoader: that.showLoader.bind(that),
@@ -409,7 +406,7 @@ define(['require',
                         relationshipGuid: termObj.relationshipGuid
                     },
                     collection: that.glossaryCollection,
-                    msg: "<div class='ellipsis-with-margin'>Remove: " + "<b>" + _.escape(termName) + "</b> assignment from" + " " + "<b>" + this.name + "?</b></div>",
+                    msg: "<div class='ellipsis-with-margin'>Remove: " + "<b>" + _.escape(termName) + "</b> assignment from <b>" + this.name + "?</b></div>",
                     titleMessage: Messages.glossary.removeTermfromEntity,
                     isEntityView: true,
                     buttonText: "Remove",
@@ -432,11 +429,11 @@ define(['require',
                     val.entityGuid === that.id ? tag['self'].push(val) : tag['propagated'].push(val);
                 });
                 _.each(tag.self, function(val) {
-                    tagData += '<span class="btn btn-action btn-sm btn-icon btn-blue" data-id="tagClick"><span title=' + val.typeName + ' >' + val.typeName + '</span><i class="fa fa-close" data-id="deleteTag" data-type="tag" title="Remove Classification"></i></span>';
+                    tagData += '<span class="btn btn-action btn-sm btn-icon btn-blue" data-id="tagClick"><span>' + val.typeName + '</span><i class="fa fa-close" data-id="deleteTag" data-type="tag" title="Remove Classification"></i></span>';
                 });
                 _.each(tag.propagated, function(val) {
                     var crossButton = '<i class="fa fa-close" data-id="deleteTag" data-entityguid="' + val.entityGuid + '" data-type="tag" title="Remove Classification"></i>';
-                    propagatedTagListData += '<span class="btn btn-action btn-sm btn-icon btn-blue" title=' + val.typeName + ' data-id="tagClick"><span>' + val.typeName + '</span>' + ((that.id !== val.entityGuid && val.entityStatus === "DELETED") ? crossButton : "") + '</span>';
+                    propagatedTagListData += '<span class="btn btn-action btn-sm btn-icon btn-blue" data-id="tagClick"><span>' + val.typeName + '</span>' + ((that.id !== val.entityGuid && val.entityStatus === "DELETED") ? crossButton : "") + '</span>';
                 });
                 propagatedTagListData !== "" ? this.ui.propagatedTagDiv.show() : this.ui.propagatedTagDiv.hide();
                 this.ui.tagList.find("span.btn").remove();
@@ -449,9 +446,7 @@ define(['require',
                 var that = this,
                     termData = "";
                 _.each(data, function(val) {
-                    // if (val.relationshipStatus == "ACTIVE") {
-                    termData += '<span class="btn btn-action btn-sm btn-icon btn-blue" data-id="termClick"><span title=' + _.escape(val.displayText) + '>' + _.escape(val.displayText) + '</span><i class="' + (val.relationshipStatus == "ACTIVE" ? 'fa fa-close' : "") + '" data-id="deleteTerm" data-guid="' + val.guid + '" data-type="term" title="Remove Term"></i></span>';
-                    // }
+                    termData += '<span class="btn btn-action btn-sm btn-icon btn-blue" data-id="termClick"><span>' + _.escape(val.displayText) + '</span><i class="' + (val.relationshipStatus == "ACTIVE" ? 'fa fa-close' : "") + '" data-id="deleteTerm" data-guid="' + val.guid + '" data-type="term" title="Remove Term"></i></span>';
                 });
                 this.ui.termList.find("span.btn").remove();
                 this.ui.termList.prepend(termData);

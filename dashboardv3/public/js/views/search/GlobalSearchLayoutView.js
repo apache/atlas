@@ -305,11 +305,9 @@ define(["require",
                                             }
                                             item.serviceType = Globals.serviceTypeMap[item.typeName];
                                             options.entityData = item;
-                                            var imgEl = $('<img src="' + Utils.getEntityIconPath(options) + '">').on("error", function(error, s) {
+                                            var img = $('<img src="' + Utils.getEntityIconPath(options) + '">').on("error", function(error, s) {
                                                 this.src = Utils.getEntityIconPath(_.extend(options, { errorUrl: this.src }));
                                             });
-
-                                            var img = $('<div class="globalsearchImgItem isIncomplete ' + (item.isIncomplete ? "show" : "") + '"><i class="fa fa-hourglass-half"></i><div>').prepend(imgEl);
 
                                             var span = $("<span>" + getHighlightedTerm(item.itemText) + "</span>").prepend(img);
                                             li = $("<li class='with-icon'>").append(span);

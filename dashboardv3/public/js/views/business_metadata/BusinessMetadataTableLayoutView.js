@@ -296,7 +296,7 @@ define(['require',
                         editable: false,
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
-                                return model.get('description');
+                                return _.escape(model.get('description'));
                             }
                         })
                     },
@@ -351,7 +351,7 @@ define(['require',
                         editable: false,
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
-                                return "<button type='button' data-id='addAttribute' data-guid='" + model.get('guid') + "'' title='' class='btn btn-action btn-xs ' style='margin-bottom: 10px;' data-action='createAttr' data-original-title='Add Business Metadata attribute'><i class='fa fa-plus'></i> Attributes</button>";
+                                return "<button type='button' data-id='addAttribute' data-guid='" + model.get('guid') + "' class='btn btn-action btn-sm' style='margin-bottom: 10px;' data-action='createAttr' data-original-title='Add Business Metadata attribute'><i class='fa fa-plus'></i> Attributes</button>";
                             }
                         })
                     }

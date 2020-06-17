@@ -311,7 +311,7 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
                             attrObj: attrTypeObj
                         }), this.RQueryBuilderEntity);
 
-                        this.ui.entityName.html(that.options.value.type);
+                        this.ui.entityName.html(_.escape(that.options.value.type));
                     }
                 }
 

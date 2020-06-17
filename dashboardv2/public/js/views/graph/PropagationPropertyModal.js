@@ -151,7 +151,7 @@ define(['require',
                 fromEntity = this.lineageData.guidEntityMap[obj.fromEntityId],
                 toEntity = this.lineageData.guidEntityMap[obj.toEntityId];
             if (fromEntity && toEntity) {
-                this.ui.edgeDetailName.html(fromEntity.displayText + " <span class='navigation-font'><i class='fa fa-long-arrow-right fa-color'></i></span> " + toEntity.displayText);
+                this.ui.edgeDetailName.html(_.escape(fromEntity.displayText) + " <span class='navigation-font'><i class='fa fa-long-arrow-right fa-color'></i></span> " + _.escape(toEntity.displayText));
             }
             if (obj && obj.relationshipId) {
                 this.showLoader();

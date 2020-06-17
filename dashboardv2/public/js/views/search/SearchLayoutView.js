@@ -621,7 +621,7 @@ define(['require',
                     _.each(dataList, function(obj) {
                         if (obj) {
                             if (obj.guid) {
-                                obj['id'] = Utils.getName(obj, 'qualifiedName');
+                                obj['id'] = obj.attributes['qualifiedName'];
                             }
                             foundOptions.push(obj);
                         }
@@ -705,7 +705,7 @@ define(['require',
                         }
 
                         if (this.value.term) {
-                            this.ui.termLov.append('<option value="' + this.value.term + '" selected="selected">' + this.value.term + '</option>');
+                            this.ui.termLov.append('<option value="' + _.escape(this.value.term) + '" selected="selected">' + _.escape(this.value.term) + '</option>');
                         }
                         if (this.ui.termLov.data('select2')) {
                             if (this.ui.termLov.val() !== this.value.term) {

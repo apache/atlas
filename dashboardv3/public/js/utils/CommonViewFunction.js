@@ -221,9 +221,9 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                             tempLink += '<div data-id="' + fetchId + '"><div class="value-loader"></div></div>';
                         } else {
                             if (inputOutputField.typeName == "AtlasGlossaryTerm") {
-                                tempLink += '<a href="#!/glossary/' + id + '?guid=' + id + '&gType=term&viewType=term">' + getValue(name) + '</a>'
+                                tempLink += '<a href="#!/glossary/' + id + '?guid=' + id + '&gType=term&viewType=term">' + name + '</a>'
                             } else {
-                                tempLink += '<a href="#!/detailPage/' + id + '">' + getValue(name) + '</a>'
+                                tempLink += '<a href="#!/detailPage/' + id + '">' + name + '</a>'
                             }
                         }
                     }
@@ -254,7 +254,6 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             valueObjectKeysList = _.sortBy(valueObjectKeysList);
         }
         valueObjectKeysList.map(function(key) {
-            key = _.escape(key);
             if (key == "profileData") {
                 return;
             }
@@ -276,8 +275,6 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             var val = "";
             if (_.isObject(valueObject[key])) {
                 val = keyValue
-            } else if (Utils.isUrl(keyValue)) {
-                val = '<a target="_blank" class="blue-link" href="' + _.escape(keyValue) + '">' + getValue(keyValue) + '</a>';
             } else if (key === 'guid' || key === "__guid") {
                 if (options.fromAdminAudit) {
                     val = getValue(keyValue);
@@ -322,9 +319,9 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 var className = "btn btn-action btn-sm btn-blue btn-icon",
                     deleteIcon = "";
                 if (obj.guid === tag.entityGuid) {
-                    deleteIcon = '<i class="fa fa-times" data-id="delete"  data-assetname="' + entityName + '"data-name="' + tag.typeName + '" data-type="tag" data-guid="' + obj.guid + '" ></i>';
+                    deleteIcon = '<i class="fa fa-times" data-id="delete"  data-assetname="' + entityName + '" data-name="' + tag.typeName + '" data-type="tag" data-guid="' + obj.guid + '" ></i>';
                 } else if (obj.guid !== tag.entityGuid && tag.entityStatus === "DELETED") {
-                    deleteIcon = '<i class="fa fa-times" data-id="delete"  data-assetname="' + entityName + '"data-name="' + tag.typeName + '" data-type="tag" data-entityguid="' + tag.entityGuid + '" data-guid="' + obj.guid + '" ></i>';
+                    deleteIcon = '<i class="fa fa-times" data-id="delete"  data-assetname="' + entityName + '" data-name="' + tag.typeName + '" data-type="tag" data-entityguid="' + tag.entityGuid + '" data-guid="' + obj.guid + '" ></i>';
                 } else {
                     className += " propagte-classification";
                 }
@@ -358,9 +355,10 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             entityName = Utils.getName(obj);
         if (terms) {
             terms.map(function(term) {
+                var displayText = _.escape(term.displayText);
                 var className = "btn btn-action btn-sm btn-blue btn-icon",
-                    deleteIcon = '<i class="fa fa-times" data-id="delete"  data-assetname="' + entityName + '"data-name="' + term.displayText + '" data-type="term" data-guid="' + obj.guid + '" data-termGuid="' + term.termGuid + '" ></i>',
-                    termString = '<a class="' + className + '" data-id="termClick"><span title="' + _.escape(term.displayText) + '">' + _.escape(term.displayText) + '</span>' + deleteIcon + '</a>';
+                    deleteIcon = '<i class="fa fa-times" data-id="delete"  data-assetname="' + entityName + '" data-name="' + displayText + '" data-type="term" data-guid="' + obj.guid + '" data-termGuid="' + term.termGuid + '" ></i>',
+                    termString = '<a class="' + className + '" data-id="termClick"><span title="' + displayText + '">' + displayText + '</span>' + deleteIcon + '</a>';
                 if (count >= 1) {
                     popTerm += termString;
                 } else {

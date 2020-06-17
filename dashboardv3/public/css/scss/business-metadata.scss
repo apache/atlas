@@ -21,6 +21,7 @@
 
     >li:first-child {
         font-weight: 600;
+        word-break: break-all;
     }
 
     .business-metadata-tree-child {
@@ -38,6 +39,26 @@
         margin-top: 10px;
         font-weight: 100;
     }
+
+    .custom-table {
+        &:not(.bm-create) {
+            .custom-tr {
+
+                .custom-col-1 {
+                    width: calc(50% - 55px);
+
+                    .select2-selection--multiple .select2-selection__rendered {
+                        overflow: scroll;
+                    }
+                }
+
+                .custom-col-2 {
+                    width: 45px;
+                }
+            }
+        }
+    }
+
 }
 
 .business-metadata-options.dropdown {
@@ -165,6 +186,8 @@
 
         .panel-title {
             font-size: 14px;
+            word-break: break-all;
+            width: inherit;
 
             a:hover {
                 color: #686868 !important;
@@ -175,5 +198,11 @@
 
     .btn-group>button {
         color: #686868 !important;
+    }
+
+    .business-metadata-detail-attr-key {
+        width: 30%;
+        word-break: break-word;
+
     }
 }

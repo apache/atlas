@@ -40,7 +40,6 @@ define([
             RBusinessMetadataTreeRender: '[data-id="r_businessMetadataTreeRender"]'
         },
         ui: {
-            //search
             searchNode: '[data-id="searchNode"]',
             sliderBar: '[data-id="sliderBar"]',
             menuItems: ".menu-items"
@@ -66,16 +65,9 @@ define([
             };
 
             events["keyup " + this.ui.searchNode] = function(e) {
-                // var type = $(e.currentTarget).data("type");
-                // var showEmpty = false;
-                // this.RClassificationTreeRender.currentView.onSearchClassificationNode(showEmpty);
-                // this.REntityTreeRender.currentView.onSearchEntityNode(showEmpty);
-                var searchString = e.target.value;
+                var searchString = _.escape(e.target.value);
                 if (searchString.trim() === "") {
                     this.$(".panel").removeClass("hide");
-                    // showEmpty = true;
-                    // this.RClassificationTreeRender.currentView.onSearchClassificationNode(showEmpty);
-                    // this.REntityTreeRender.currentView.onSearchEntityNode(showEmpty);
                 }
                 this.entitySearchTree = this.$('[data-id="entitySearchTree"]');
                 this.classificationSearchTree = this.$('[data-id="classificationSearchTree"]');
@@ -99,7 +91,6 @@ define([
 
             events["click " + this.ui.menuItems] = function(e) {
                 e.stopPropagation();
-                //this.$('.menu-items').removeClass('open');
             };
             return events;
         },
