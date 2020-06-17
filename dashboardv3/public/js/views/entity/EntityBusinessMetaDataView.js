@@ -25,8 +25,8 @@ define([
     "utils/Utils",
     "utils/Messages",
     "utils/CommonViewFunction",
-    'moment',
-    'utils/Globals'
+    "moment",
+    "utils/Globals"
 ], function(require, Backbone, EntityBusinessMetaDataView_tmpl, EntityBusinessMetaDataItemView, VEntity, Utils, Messages, CommonViewFunction, moment, Globals) {
     "use strict";
 
@@ -237,7 +237,7 @@ define([
                             }
 
                         }
-                        attrLi += "<tr><td>" + _.escape(key) + " (" + _.escape(val.typeName) + ")</td><td>" + _.escape(newVal) + "</td></tr>";
+                        attrLi += "<tr><td class='business-metadata-detail-attr-key'>" + _.escape(key) + " (" + _.escape(val.typeName) + ")</td><td>" + _.escape(newVal) + "</td></tr>";
                     }
                 });
                 li += that.associateAttributePanel(obj, attrLi);
@@ -250,7 +250,7 @@ define([
         },
         associateAttributePanel: function(obj, tableBody) {
             return '<div class="panel panel-default custom-panel expand_collapse_panel-icon no-border business-metadata-detail-attr">' +
-                '<div class="panel-heading" data-toggle="collapse" href="#' + _.escape(obj.get("__internal_UI_businessMetadataName")) + '" aria-expanded="true" style="width: 70%;">' +
+                '<div class="panel-heading" data-toggle="collapse" href="#' + _.escape(obj.get("__internal_UI_businessMetadataName")) + '" aria-expanded="true" style="width: 90%;">' +
                 '<h4 class="panel-title"> <a>' + _.escape(obj.get("__internal_UI_businessMetadataName")) + '</a></h4>' +
                 '<div class="btn-group pull-left"> <button type="button" title="Collapse"><i class="ec-icon fa"></i></button></div>' +
                 '</div>' +

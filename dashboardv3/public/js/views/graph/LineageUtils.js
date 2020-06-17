@@ -326,18 +326,6 @@ define(['require', 'utils/Utils'], function(require, Utils) {
             shapeSvg.attr("stroke", "#fb4200")
         }
 
-        if (node.isIncomplete === true) {
-            parent.attr("class", "node isIncomplete show");
-            parent.insert("foreignObject")
-                .attr("x", "-25")
-                .attr("y", "-25")
-                .attr("width", "50")
-                .attr("height", "50")
-                .append("xhtml:div")
-                .insert("i")
-                .attr("class", "fa fa-hourglass-half");
-        }
-
         if ($defs.select('pattern[id="img_' + imgName + '"]').empty()) {
             var $pattern = $defs.append("pattern")
                 .attr("x", "0%")

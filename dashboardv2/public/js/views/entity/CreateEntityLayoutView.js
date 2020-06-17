@@ -513,7 +513,7 @@ define(['require',
             },
             getSelect: function(object) {
                 var value = object.value,
-                    entityValue = object.entityValue,
+                    entityValue = _.escape(object.entityValue),
                     isAttribute = object.isAttribute,
                     isRelation = object.isRelation;
                 if (value.typeName === "boolean") {
@@ -543,7 +543,7 @@ define(['require',
             },
             getTextArea: function(object) {
                 var value = object.value,
-                    setValue = object.entityValue,
+                    setValue = _.escape(object.entityValue),
                     isAttribute = object.isAttribute,
                     isRelation = object.isRelation,
                     structType = object.structType;
@@ -567,7 +567,7 @@ define(['require',
             },
             getInput: function(object) {
                 var value = object.value,
-                    entityValue = object.entityValue,
+                    entityValue = _.escape(object.entityValue),
                     isAttribute = object.isAttribute,
                     isRelation = object.isRelation;
                 return '<input class="form-control entityInputBox ' + (value.isOptional === true ? "false" : "true") + '"' +

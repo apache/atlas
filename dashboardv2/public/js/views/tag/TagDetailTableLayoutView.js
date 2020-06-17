@@ -207,7 +207,7 @@ define(['require',
                     tagName: tagName,
                     guid: that.guid,
                     associatedGuid: that.guid != entityGuid ? entityGuid : null,
-                    msg: "<div class='ellipsis-with-margin'>Remove: " + "<b>" + _.escape(tagName) + "</b> assignment from" + " " + "<b>" + this.entityName + "?</b></div>",
+                    msg: "<div class='ellipsis-with-margin'>Remove: " + "<b>" + _.escape(tagName) + "</b> assignment from <b>" + this.entityName + "?</b></div>",
                     titleMessage: Messages.removeTag,
                     okText: "Remove",
                     showLoader: function() {

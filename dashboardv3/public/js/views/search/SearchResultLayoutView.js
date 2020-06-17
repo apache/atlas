@@ -723,12 +723,8 @@ define(['require',
                                         }
                                     });
                             }
-                            var img = "",
-                                isIncompleteClass = "isIncomplete search-result-page";
-                            if (obj.isIncomplete === true) {
-                                isIncompleteClass += " show";
-                            }
-                            img = "<div class='" + isIncompleteClass + "'><img data-imgGuid='" + obj.guid + "' class='searchTableLogoLoader'><i class='fa fa-hourglass-half'></i></div>";
+                            var img = "";
+                            img = "<div><img data-imgGuid='" + obj.guid + "' class='searchTableLogoLoader'></div>";
                             getImageData({ imagePath: Utils.getEntityIconPath({ entityData: obj }) });
                             return (img + nameHtml);
                         }
@@ -890,7 +886,7 @@ define(['require',
                                                         if (values[values.length - 1] === "") { values.pop(); }
                                                         if (values[0] === "") { values.shift(); }
                                                         _.each(values, function(names) {
-                                                            valueOfArray.push('<span class="json-string"><a class="btn btn-action btn-sm btn-blue btn-icon" ><span title="" data-original-title="' + names + '" >' + names + '</span></a></span>');
+                                                            valueOfArray.push('<span class="json-string"><a class="btn btn-action btn-sm btn-blue btn-icon" ><span>' + _.escape(names) + '</span></a></span>');
                                                         });
                                                         return valueOfArray.join(' ');
                                                     }
@@ -900,7 +896,7 @@ define(['require',
                                                         valueOfArray = [];
                                                     if (customAttributes) {
                                                         _.each(Object.keys(customAttributes), function(value, index) {
-                                                            valueOfArray.push('<span class="json-string"><a class="btn btn-action btn-sm btn-blue btn-icon" ><span title="" data-original-title="' + value + ' : ' + Object.values(customAttributes)[index] + '" ><span>' + value + '</span> : <span>' + Object.values(customAttributes)[index] + '</span></span></a></span>');
+                                                            valueOfArray.push('<span class="json-string"><a class="btn btn-action btn-sm btn-blue btn-icon" ><span><span>' + _.escape(value) + '</span> : <span>' + _.escape(Object.values(customAttributes)[index]) + '</span></span></a></span>');
                                                         });
                                                         return valueOfArray.join(' ');
                                                     }
@@ -960,7 +956,7 @@ define(['require',
                                     var modelObj = model.toJSON();
                                     if (key == "name") {
                                         var nameHtml = "",
-                                            name = modelObj[key];
+                                            name = _.escape(modelObj[key]);
                                         if (modelObj.guid) {
                                             nameHtml = '<a title="' + name + '" href="#!/detailPage/' + modelObj.guid + (that.fromView ? "?from=" + that.fromView : "") + '">' + name + '</a>';
                                         } else {
@@ -1154,7 +1150,7 @@ define(['require',
                     tagName: tagName,
                     guid: guid,
                     associatedGuid: guid != entityGuid ? entityGuid : null,
-                    msg: "<div class='ellipsis-with-margin'>Remove: " + "<b>" + _.escape(tagName) + "</b> assignment from" + " " + "<b>" + assetName + " ?</b></div>",
+                    msg: "<div class='ellipsis-with-margin'>Remove: " + "<b>" + _.escape(tagName) + "</b> assignment from <b>" + _.escape(assetName) + " ?</b></div>",
                     titleMessage: Messages.removeTag,
                     okText: "Remove",
                     showLoader: that.showLoader.bind(that),
@@ -1184,7 +1180,7 @@ define(['require',
                         relationshipGuid: termObj.relationGuid
                     },
                     collection: that.glossaryCollection,
-                    msg: "<div class='ellipsis-with-margin'>Remove: " + "<b>" + _.escape(termName) + "</b> assignment from" + " " + "<b>" + assetname + "?</b></div>",
+                    msg: "<div class='ellipsis-with-margin'>Remove: " + "<b>" + _.escape(termName) + "</b> assignment from <b>" + _.escape(assetname) + "?</b></div>",
                     titleMessage: Messages.glossary.removeTermfromEntity,
                     isEntityView: true,
                     buttonText: "Remove",

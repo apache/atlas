@@ -233,8 +233,8 @@ define(['require',
                     selectedEnumValues = selectedEnum ? selectedEnum.get('elementDefs') : null,
                     savedValues = [];
                 _.each(selectedEnumValues, function(enumVal, index) {
-                    selectedValues.push(_.unescape(enumVal.value));
-                    enumValues += "<option>" + enumVal.value + "</option>";
+                    selectedValues.push(enumVal.value);
+                    enumValues += "<option>" + _.escape(enumVal.value) + "</option>";
                 });
                 this.ui.enumValueSelector.empty();
                 this.ui.enumValueSelector.append(enumValues);

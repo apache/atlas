@@ -223,7 +223,7 @@ define(['require',
                 };
                 this.loaderStatus(true);
                 var name = this.ui.name.val(),
-                    description = _.escape(this.ui.description.val());
+                    description = this.ui.description.val();
                 var attributeObj = this.collection.toJSON();
                 if (this.collection.length === 1 && this.collection.first().get("name") === "") {
                     attributeObj = [];

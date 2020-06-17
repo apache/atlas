@@ -232,7 +232,7 @@ define(['require',
                                     return activeTagObj.name.toLowerCase() === obj.name.toLowerCase();
                                 });
                                 if (duplicateCheck) {
-                                    duplicateAttributeList.push(obj.name);
+                                    duplicateAttributeList.push(_.escape(obj.name));
                                 } else {
                                     saveObj.attributeDefs.push(obj);
                                 }

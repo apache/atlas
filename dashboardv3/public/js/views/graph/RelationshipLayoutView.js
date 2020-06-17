@@ -146,12 +146,12 @@ define(['require',
             updateRelationshipDetails: function(options) {
                 var data = options.obj.value,
                     typeName = data.typeName || options.obj.name,
-                    searchString = options.searchString,
+                    searchString = _.escape(options.searchString),
                     listString = "",
                     getEntityTypelist = function(options) {
                         var activeEntityColor = "#4a90e2",
                             deletedEntityColor = "#BB5838",
-                            entityTypeHtml = '',
+                            entityTypeHtml = '<pre>',
                             getdefault = function(obj) {
                                 var options = obj.options,
                                     status = (Enums.entityStateReadOnly[options.entityStatus || options.status] ? " deleted-relation" : ''),
@@ -197,13 +197,13 @@ define(['require',
                                 entityTypeHtml = getdefault({
                                     "color": activeEntityColor,
                                     "options": options,
-                                    "name": _.escape(name)
+                                    "name": name
                                 });
                             } else if (options.relationshipStatus == "DELETED") {
                                 entityTypeHtml = getWithButton({
                                     "color": activeEntityColor,
                                     "options": options,
-                                    "name": _.escape(name),
+                                    "name": name,
                                     "relationship": true
                                 })
                             }
@@ -211,18 +211,17 @@ define(['require',
                             entityTypeHtml = getWithButton({
                                 "color": deletedEntityColor,
                                 "options": options,
-                                "name": _.escape(name),
+                                "name": name,
                                 "entity": true
                             })
                         } else {
-
                             entityTypeHtml = getdefault({
                                 "color": activeEntityColor,
                                 "options": options,
-                                "name": _.escape(name)
+                                "name": name
                             });
                         }
-                        return entityTypeHtml;
+                        return entityTypeHtml + '</pre>';
                     };
                 this.ui.searchNode.hide();
                 this.$("[data-id='typeName']").text(typeName);

@@ -207,7 +207,7 @@ define(['require',
                                 className: "searchTableName",
                                 formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                                     fromRaw: function(rawValue, model) {
-                                        var value = model.get('attributes')[key];
+                                        var value = _.escape(model.get('attributes')[key]);
                                         if (key === "name" && model.get('guid')) {
                                             var nameHtml = '<a href="#!/detailPage/' + model.get('guid') + '">' + value + '</a>';
                                             if (model.get('status') && Enums.entityStateReadOnly[model.get('status')]) {
@@ -291,7 +291,7 @@ define(['require',
                 CommonViewFunction.deleteTag({
                     tagName: tagName,
                     guid: guid,
-                    msg: "<div class='ellipsis-with-margin'>Remove: " + "<b>" + _.escape(tagName) + "</b> assignment from" + " " + "<b>" + assetName + " ?</b></div>",
+                    msg: "<div class='ellipsis-with-margin'>Remove: " + "<b>" + _.escape(tagName) + "</b> assignment from <b>" + _.escape(assetName) + " ?</b></div>",
                     titleMessage: Messages.removeTag,
                     okText: "Remove",
                     showLoader: that.showLoader.bind(that),

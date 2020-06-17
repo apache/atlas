@@ -14,9 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 /* common.scss */
-
 .readOnly {
 
     span,
@@ -221,10 +219,18 @@ pre {
 
 .custom-table {
     width: 100%;
+    display: flex;
+
+    tbody {
+        display: flex;
+        flex-flow: column;
+        width: 100%;
+    }
 
     .custom-tr {
         margin-left: 15px;
-        margin-right: 15px;
+        display: flex;
+        width: calc(100% - 15px);
 
         .custom-col-0,
         .custom-col-1,
@@ -242,20 +248,30 @@ pre {
 
 
         .custom-col-0 {
-            text-align: center;
-            vertical-align: middle;
             line-height: 31px;
-            width: 3%;
+            width: 9px;
+            padding: 0px 2px;
         }
 
         .custom-col-1 {
-            width: 39%;
+            width: calc(50% - 90px);
+            flex-grow: 2;
+
+            &:first-child {
+                width: 30% !important;
+                flex-grow: 1;
+            }
         }
 
         .custom-col-2 {
             text-align: center;
-            width: 17%;
-            margin-left: 1%;
+            width: 80px;
+            padding-left: 10px;
+
+            &>button {
+                padding: 7px 10px;
+                margin-bottom: 10px;
+            }
         }
     }
 }

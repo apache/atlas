@@ -72,7 +72,7 @@ define(['require',
         populateLabelOptions: function() {
             var that = this,
                 str = this.labels.map(function(label) {
-                    return "<option selected > " + label + " </option>";
+                    return "<option selected > " + _.escape(label) + " </option>";
                 });
             this.ui.addLabelOptions.html(str);
             var getLabelData = function(data, selectedData) {
@@ -104,7 +104,7 @@ define(['require',
                     delay: 250,
                     data: function(params) {
                         return {
-                            prefixString: _.escape(params.term), // search term
+                            prefixString: params.term, // search term
                             fieldName: '__labels'
                         };
                     },
@@ -131,7 +131,7 @@ define(['require',
             }
         },
         onChangeLabelChange: function() {
-            this.labels = this.ui.addLabelOptions.val().map(function(v) { return _.escape(v) });
+            this.labels = this.ui.addLabelOptions.val();
         },
         handleBtnClick: function() {
             this.swapItem = !this.swapItem;

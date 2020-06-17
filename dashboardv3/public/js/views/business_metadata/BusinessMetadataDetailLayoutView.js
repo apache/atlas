@@ -56,7 +56,7 @@ define(['require',
             renderDetail: function() {
                 this.ui.title.html('<span>' + this.model.get('name') + '</span>');
                 if (this.model.get('description')) {
-                    this.ui.description.text((this.model.get('description')));
+                    this.ui.description.text(this.model.get('description'));
                 }
             }
         });
