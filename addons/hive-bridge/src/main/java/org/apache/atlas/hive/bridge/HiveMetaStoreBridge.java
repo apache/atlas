@@ -768,7 +768,7 @@ public class HiveMetaStoreBridge {
 
         String typeName = HiveDataTypes.HIVE_DB.getName();
 
-        return findEntity(typeName, getDBQualifiedName(metadataNamespace, databaseName));
+        return findEntity(typeName, getDBQualifiedName(metadataNamespace, databaseName), true, true);
     }
 
     /**
@@ -786,7 +786,7 @@ public class HiveMetaStoreBridge {
         String typeName         = HiveDataTypes.HIVE_TABLE.getName();
         String tblQualifiedName = getTableQualifiedName(getMetadataNamespace(), hiveTable.getDbName(), hiveTable.getTableName());
 
-        return findEntity(typeName, tblQualifiedName);
+        return findEntity(typeName, tblQualifiedName, true, true);
     }
 
     private AtlasEntityWithExtInfo findProcessEntity(String qualifiedName) throws Exception{
@@ -796,14 +796,14 @@ public class HiveMetaStoreBridge {
 
         String typeName = HiveDataTypes.HIVE_PROCESS.getName();
 
-        return findEntity(typeName, qualifiedName);
+        return findEntity(typeName, qualifiedName , true , true);
     }
 
-    private AtlasEntityWithExtInfo findEntity(final String typeName, final String qualifiedName) throws AtlasServiceException {
+    private AtlasEntityWithExtInfo findEntity(final String typeName, final String qualifiedName ,  boolean minExtInfo, boolean ignoreRelationship) throws AtlasServiceException {
         AtlasEntityWithExtInfo ret = null;
 
         try {
-            ret = atlasClientV2.getEntityByAttribute(typeName, Collections.singletonMap(ATTRIBUTE_QUALIFIED_NAME, qualifiedName));
+            ret = atlasClientV2.getEntityByAttribute(typeName, Collections.singletonMap(ATTRIBUTE_QUALIFIED_NAME, qualifiedName), minExtInfo, ignoreRelationship);
         } catch (AtlasServiceException e) {
             if(e.getStatus() == ClientResponse.Status.NOT_FOUND) {
                 return null;
@@ -811,8 +811,6 @@ public class HiveMetaStoreBridge {
 
             throw e;
         }
-
-        clearRelationshipAttributes(ret);
 
         return ret;
     }
