@@ -34,6 +34,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.apache.atlas.repository.Constants.CUSTOM_ATTRIBUTES_PROPERTY_KEY;
+
 public class AtlasSolrQueryBuilder {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasSolrQueryBuilder.class);
 
@@ -43,6 +45,8 @@ public class AtlasSolrQueryBuilder {
     private boolean             excludeDeletedEntities;
     private boolean             includeSubtypes;
     private Map<String, String> indexFieldNameCache;
+    public static final char    CUSTOM_ATTR_SEPARATOR      = '=';
+    public static final String  CUSTOM_ATTR_SEARCH_FORMAT  = "\"\\\"%s\\\":\\\"%s\\\"\"";
 
 
     public AtlasSolrQueryBuilder() {
@@ -211,6 +215,14 @@ public class AtlasSolrQueryBuilder {
                 attributeValue = attributeValue.trim();
             }
 
+            if (attributeName.equals(CUSTOM_ATTRIBUTES_PROPERTY_KEY) && operator.equals(Operator.CONTAINS)) {
+                // CustomAttributes stores key value pairs in String format, so ideally it should be 'contains' operator to search for one pair,
+                // for use-case, E1 having key1=value1 and E2 having key1=value2, searching key1=value1 results both E1,E2
+                // surrounding inverted commas to attributeValue works
+                operator       = Operator.EQ;
+                attributeValue = getIndexQueryAttributeValue(attributeValue);
+            }
+
             AtlasAttribute attribute = entityType.getAttribute(attributeName);
 
             if (attribute == null) {
@@ -230,6 +242,8 @@ public class AtlasSolrQueryBuilder {
 
                 throw new AtlasBaseException(msg);
             }
+
+            beginCriteria(queryBuilder);
 
             switch (operator) {
                 case EQ:
@@ -274,8 +288,26 @@ public class AtlasSolrQueryBuilder {
                     LOG.error(msg);
                     throw new AtlasBaseException(msg);
             }
+
+            endCriteria(queryBuilder);
         }
     }
+
+    private String getIndexQueryAttributeValue(String attributeValue) {
+
+        if (StringUtils.isNotEmpty(attributeValue)) {
+            int    separatorIdx = attributeValue.indexOf(CUSTOM_ATTR_SEPARATOR);
+            String key          = separatorIdx != -1 ? attributeValue.substring(0, separatorIdx) : null;
+            String value        = key != null ? attributeValue.substring(separatorIdx + 1) : null;
+
+            if (key != null && value != null) {
+                return String.format(CUSTOM_ATTR_SEARCH_FORMAT, key, value);
+            }
+        }
+
+        return attributeValue;
+    }
+
 
     private void beginCriteria(StringBuilder queryBuilder) {
         queryBuilder.append("( ");
@@ -294,7 +326,7 @@ public class AtlasSolrQueryBuilder {
     }
 
     private void withNotEqual(StringBuilder queryBuilder, String indexFieldName, String attributeValue) {
-        queryBuilder.append("-").append(indexFieldName).append(":").append(attributeValue).append(" ");
+        queryBuilder.append("*:* -").append(indexFieldName).append(":").append(attributeValue).append(" ");
     }
 
     private void withEqual(StringBuilder queryBuilder, String indexFieldName, String attributeValue) {
