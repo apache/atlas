@@ -806,6 +806,9 @@ public class EntityREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.getAuditEvents(" + guid + ", " + startKey + ", " + count + ")");
             }
 
+            // following call enforces authorization for entity-read
+            entitiesStore.getHeaderById(guid);
+
             List<EntityAuditEventV2> ret = new ArrayList<>();
 
             if(auditAction != null) {
