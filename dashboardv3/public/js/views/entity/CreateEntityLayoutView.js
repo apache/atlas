@@ -502,7 +502,7 @@ define(['require',
                     entityLabel = this.capitalize(_.escape(value.name));
 
                 return '<div class=" row ' + value.isOptional + '"><span class="col-sm-3">' +
-                    '<label><span class="' + (value.isOptional ? 'true' : 'false required') + '">' + entityLabel + '</span><span class="center-block ellipsis-with-margin text-gray" title="Data Type : ' + value.typeName + '">' + '(' + Utils.escapeHtml(value.typeName) + ')' + '</span></label></span>' +
+                    '<label><span class="' + (value.isOptional ? 'true' : 'false required') + '">' + entityLabel + '</span><span class="center-block ellipsis-with-margin text-gray" title="Data Type : ' + value.typeName + '">' + '(' + _.escape(value.typeName) + ')' + '</span></label></span>' +
                     '<span class="col-sm-9">' + (this.getElement(object)) +
                     '</input></span></div>';
             },
@@ -516,6 +516,7 @@ define(['require',
             },
             getSelect: function(object) {
                 var value = object.value,
+                    name = _.escape(value.name),
                     entityValue = _.escape(object.entityValue),
                     isAttribute = object.isAttribute,
                     isRelation = object.isRelation;
@@ -524,7 +525,7 @@ define(['require',
                         '" data-type="' + value.typeName +
                         '" data-attribute="' + isAttribute +
                         '" data-relation="' + isRelation +
-                        '" data-key="' + value.name +
+                        '" data-key="' + name +
                         '" data-id="entityInput">' +
                         '<option value="">--Select true or false--</option><option value="true">true</option>' +
                         '<option value="false">false</option></select>';
@@ -539,13 +540,14 @@ define(['require',
                         '" data-type="' + value.typeName +
                         '" data-attribute="' + isAttribute +
                         '" data-relation="' + isRelation +
-                        '" data-key="' + value.name +
+                        '" data-key="' + name +
                         '" data-id="entitySelectData" data-queryData="' + splitTypeName + '">' + (this.guid ? entityValue : "") + '</select>';
                 }
 
             },
             getTextArea: function(object) {
                 var value = object.value,
+                    name = _.escape(value.name),
                     setValue = _.escape(object.entityValue),
                     isAttribute = object.isAttribute,
                     isRelation = object.isRelation,
@@ -561,25 +563,26 @@ define(['require',
 
                 return '<textarea class="form-control entityInputBox ' + (value.isOptional === true ? "false" : "true") + '"' +
                     ' data-type="' + value.typeName + '"' +
-                    ' data-key="' + value.name + '"' +
+                    ' data-key="' + name + '"' +
                     ' data-attribute="' + isAttribute + '"' +
                     ' data-relation="' + isRelation + '"' +
-                    ' placeholder="' + value.name + '"' +
+                    ' placeholder="' + name + '"' +
                     ' data-id="entityInput">' + setValue + '</textarea>';
 
             },
             getInput: function(object) {
                 var value = object.value,
+                    name = _.escape(value.name),
                     entityValue = _.escape(object.entityValue),
                     isAttribute = object.isAttribute,
                     isRelation = object.isRelation;
                 return '<input class="form-control entityInputBox ' + (value.isOptional === true ? "false" : "true") + '"' +
                     ' data-type="' + value.typeName + '"' +
                     ' value="' + entityValue + '"' +
-                    ' data-key="' + value.name + '"' +
+                    ' data-key="' + name + '"' +
                     ' data-attribute="' + isAttribute + '"' +
                     ' data-relation="' + isRelation + '"' +
-                    ' placeholder="' + value.name + '"' +
+                    ' placeholder="' + name + '"' +
                     ' data-id="entityInput">';
             },
             getElement: function(object) {
