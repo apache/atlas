@@ -22,20 +22,6 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
     var Utils = {};
     var prevNetworkErrorTime = 0;
 
-    Utils.escapeHtml = function(string) {
-        var entityMap = {
-            "&": "&amp;",
-            "<": "&lt;",
-            ">": "&gt;",
-            '"': '&quot;',
-            "'": '&#39;',
-            "/": '&#x2F;'
-        };
-        return String(string).replace(/[&<>"'\/]/g, function(s) {
-            return entityMap[s];
-        });
-    }
-
     Utils.generatePopover = function(options) {
         if (options.el) {
             var defaultObj = {
