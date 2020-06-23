@@ -741,6 +741,7 @@
                                 <resource>
                                     <directory>${basedir}/../addons/models/</directory>
                                     <includes>
+                                        <include>0000-Area0/0011-glossary_model.json</include>
                                         <include>0000-Area0/0010-base_model.json</include>
                                         <include>1000-Hadoop/**</include>
                                     </includes>

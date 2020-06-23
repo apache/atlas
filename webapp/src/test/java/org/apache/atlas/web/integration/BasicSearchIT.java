@@ -23,12 +23,16 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import org.apache.atlas.AtlasServiceException;
+import org.apache.atlas.model.discovery.AtlasQuickSearchResult;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
+import org.apache.atlas.model.discovery.QuickSearchParameters;
 import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.impexp.AtlasImportRequest;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.EntityMutationResponse;
+import org.apache.atlas.model.profile.AtlasUserSavedSearch;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.type.AtlasTypeUtil;
@@ -42,15 +46,18 @@ import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.fail;
 
 public class BasicSearchIT extends BaseResourceIT {
+    private AtlasUserSavedSearch userSavedSearch;
 
     @BeforeClass
     @Override
@@ -113,6 +120,13 @@ public class BasicSearchIT extends BaseResourceIT {
         };
     }
 
+    @DataProvider
+    public Object[][] attributeSearchJSONNames() {
+        return new String[][]{
+                {"search-parameters/attribute-filters"}
+        };
+    }
+
     @Test(dataProvider = "basicSearchJSONNames")
     public void testDiscoveryWithSearchParameters(String jsonFile) {
         try {
@@ -137,6 +151,137 @@ public class BasicSearchIT extends BaseResourceIT {
                 }
             }
         } catch (IOException | AtlasServiceException e) {
+            fail(e.getMessage());
+        }
+    }
+
+    @Test(dataProvider = "attributeSearchJSONNames")
+    public void testAttributeSearch(String jsonFile) {
+        try {
+            BasicSearchParametersWithExpectation[] testExpectations =
+                    TestResourceFileUtils.readObjectFromJson(jsonFile, BasicSearchParametersWithExpectation[].class);
+            assertNotNull(testExpectations);
+
+            for (BasicSearchParametersWithExpectation testExpectation : testExpectations) {
+                LOG.info("TestDescription  :{}", testExpectation.testDescription);
+                LOG.info("SearchParameters :{}", testExpectation.searchParameters);
+                SearchParameters parameters = testExpectation.getSearchParameters();
+
+                if (parameters.getEntityFilters() == null || parameters.getEntityFilters().getAttributeName() == null) {
+                    continue;
+                }
+                SearchParameters.FilterCriteria filterCriteria = parameters.getEntityFilters();
+                AtlasSearchResult searchResult = atlasClientV2.attributeSearch(parameters.getTypeName(), filterCriteria.getAttributeName(), filterCriteria.getAttributeValue(), parameters.getLimit(), parameters.getOffset());
+                if (testExpectation.expectedCount > 0) {
+                    assertNotNull(searchResult.getEntities());
+                    assertEquals(searchResult.getEntities().size(), testExpectation.expectedCount);
+                }
+
+                if (testExpectation.searchParameters.getSortBy() != null && !testExpectation.searchParameters.getSortBy().isEmpty()) {
+                    assertNotNull(searchResult.getEntities());
+                    assertEquals(searchResult.getEntities().get(0).getAttribute("name"),
+                            "testtable_1");
+                }
+            }
+        } catch (IOException | AtlasServiceException e) {
+            fail(e.getMessage());
+        }
+    }
+
+    @Test(dataProvider = "attributeSearchJSONNames")
+    public void testSavedSearch(String jsonFile) {
+        try {
+            BasicSearchParametersWithExpectation[] testExpectations =
+                    TestResourceFileUtils.readObjectFromJson(jsonFile, BasicSearchParametersWithExpectation[].class);
+            assertNotNull(testExpectations);
+
+            for (BasicSearchParametersWithExpectation testExpectation : testExpectations) {
+                LOG.info("TestDescription  :{}", testExpectation.testDescription);
+                LOG.info("SearchParameters :{}", testExpectation.searchParameters);
+                SearchParameters parameters = testExpectation.getSearchParameters();
+
+                AtlasUserSavedSearch savedSearch = new AtlasUserSavedSearch();
+                savedSearch.setSearchType(AtlasUserSavedSearch.SavedSearchType.BASIC);
+                savedSearch.setName("basic_test");
+                savedSearch.setGuid("");
+                savedSearch.setSearchParameters(parameters);
+                savedSearch.setOwnerName("admin");
+
+                userSavedSearch = atlasClientV2.addSavedSearch(savedSearch);
+                assertNotNull(userSavedSearch);
+                List<AtlasUserSavedSearch> list = atlasClientV2.getSavedSearches("admin");
+                assertNotNull(list);
+            }
+        } catch (IOException | AtlasServiceException e) {
+            fail(e.getMessage());
+        }
+    }
+
+    @Test(dependsOnMethods = "testSavedSearch")
+    public void testExecuteSavedSearchByName() {
+        try {
+            AtlasSearchResult searchResult = atlasClientV2.executeSavedSearch("admin", "basic_test");
+            assertNotNull(searchResult);
+        } catch (AtlasServiceException e) {
+            fail(e.getMessage());
+        }
+    }
+
+    @Test(dependsOnMethods = "testSavedSearch")
+    public void tesUpdateSavedSearch() {
+        try {
+            userSavedSearch.setSearchType(AtlasUserSavedSearch.SavedSearchType.ADVANCED);
+            userSavedSearch = atlasClientV2.updateSavedSearch(userSavedSearch);
+            assertNotNull(userSavedSearch);
+            assertEquals(userSavedSearch.getSearchType(), AtlasUserSavedSearch.SavedSearchType.ADVANCED);
+        } catch (AtlasServiceException e) {
+            fail(e.getMessage());
+        }
+    }
+
+    @Test(dependsOnMethods = "tesUpdateSavedSearch")
+    public void testExecuteSavedSearchByGuid() {
+        try {
+            AtlasSearchResult searchResult = atlasClientV2.executeSavedSearch(userSavedSearch.getGuid());
+            assertNotNull(searchResult);
+        } catch (AtlasServiceException e) {
+            fail(e.getMessage());
+        }
+    }
+
+    @Test(dependsOnMethods = "testExecuteSavedSearchByGuid")
+    public void testDeleteSavedSearch() {
+        AtlasUserSavedSearch searchAfterDelete = null;
+        try {
+            atlasClientV2.deleteSavedSearch(userSavedSearch.getGuid());
+            searchAfterDelete = atlasClientV2.getSavedSearch("admin", "basic_test");
+        } catch (AtlasServiceException e) {
+            assertNull(searchAfterDelete);
+        }
+    }
+
+    @Test
+    public void testGetQuickSearch() {
+        try {
+            AtlasQuickSearchResult result = atlasClientV2.quickSearch("test", "hdfs_path", false, 2, 0);
+            assertNotNull(result);
+            List<AtlasEntityHeader> list = result.getSearchResults().getEntities();
+            assertEquals(list.size(), 1);
+        } catch (AtlasServiceException e) {
+            fail(e.getMessage());
+        }
+    }
+
+    @Test
+    public void testPostQuickSearch() {
+        try {
+            QuickSearchParameters quickSearchParameters = new QuickSearchParameters();
+            quickSearchParameters.setQuery("test");
+            quickSearchParameters.setTypeName("hdfs_path");
+            AtlasQuickSearchResult result = atlasClientV2.quickSearch(quickSearchParameters);
+            List<AtlasEntityHeader> list = result.getSearchResults().getEntities();
+            assertEquals(list.size(), 1);
+        } catch (AtlasServiceException e) {
             fail(e.getMessage());
         }
     }
