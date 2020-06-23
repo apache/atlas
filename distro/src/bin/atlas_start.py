@@ -26,7 +26,7 @@ ATLAS_COMMAND_OPTS="-Datlas.home=%s"
 ATLAS_CONFIG_OPTS="-Datlas.conf=%s"
 DEFAULT_JVM_HEAP_OPTS="-Xmx1024m"
 DEFAULT_JVM_OPTS="-Dlog4j.configuration=atlas-log4j.xml -Djava.net.preferIPv4Stack=true -server"
-
+DRY=os.getenv("DRY", "false")
 def main():
 
     is_setup = (len(sys.argv)>1) and sys.argv[1] is not None and sys.argv[1] == '-setup'
@@ -145,7 +145,7 @@ def main():
         web_app_path = mc.convertCygwinPath(web_app_path)
     if not is_setup:
         start_atlas_server(atlas_classpath, atlas_pid_file, jvm_logdir, jvm_opts_list, web_app_path)
-        mc.wait_for_startup(confdir, 300)
+        #mc.wait_for_startup(confdir, 300)
         print "Apache Atlas Server started!!!\n"
     else:
         process = mc.java("org.apache.atlas.web.setup.AtlasSetup", [], atlas_classpath, jvm_opts_list, jvm_logdir)
@@ -155,8 +155,13 @@ def main():
 def start_atlas_server(atlas_classpath, atlas_pid_file, jvm_logdir, jvm_opts_list, web_app_path):
     args = ["-app", web_app_path]
     args.extend(sys.argv[1:])
-    process = mc.java("org.apache.atlas.Atlas", args, atlas_classpath, jvm_opts_list, jvm_logdir)
-    mc.writePid(atlas_pid_file, process)
+    if DRY == "false":
+        process = mc.java("org.apache.atlas.Atlas", args, atlas_classpath, jvm_opts_list, jvm_logdir)
+        mc.writePid(atlas_pid_file, process)
+    else :
+        process = mc.java("org.apache.atlas.Atlas", args, atlas_classpath, jvm_opts_list, jvm_logdir)
+        print(process+" #secretstring")
+        #mc.writePid(atlas_pid_file, process)
 
 if __name__ == '__main__':
     try:

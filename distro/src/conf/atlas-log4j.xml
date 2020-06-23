@@ -96,6 +96,7 @@
     <logger name="org.apache.atlas" additivity="false">
         <level value="info"/>
         <appender-ref ref="FILE"/>
+        <appender-ref ref="console"/>
     </logger>
 
     <logger name="org.janusgraph" additivity="false">
