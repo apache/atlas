@@ -56,6 +56,7 @@ SOLR_SHARDS = "SOLR_SHARDS"
 DEFAULT_SOLR_SHARDS = "1"
 SOLR_REPLICATION_FACTOR = "SOLR_REPLICATION_FACTOR"
 DEFAULT_SOLR_REPLICATION_FACTOR = "1"
+DRY=os.getenv("DRY", "false")
 
 ENV_KEYS = ["JAVA_HOME", ATLAS_OPTS, ATLAS_SERVER_OPTS, ATLAS_SERVER_HEAP, ATLAS_LOG, ATLAS_PID, ATLAS_CONF,
             "ATLASCPPATH", ATLAS_DATA, ATLAS_HOME, ATLAS_WEBAPP, HBASE_CONF_DIR, SOLR_PORT, MANAGE_LOCAL_HBASE,
@@ -77,7 +78,7 @@ ATLAS_ENABLE_TLS="atlas.enableTLS"
 ATLAS_SERVER_BIND_ADDRESS="atlas.server.bind.address"
 DEFAULT_ATLAS_SERVER_HOST="localhost"
 
-DEBUG = False
+DEBUG = True
 
 def scriptDir():
     """
@@ -195,6 +196,8 @@ def java(classname, args, classpath, jvm_opts_list, logdir=None):
     commandline.append(classpath)
     commandline.append(classname)
     commandline.extend(args)
+    if DRY == "true":
+        return " ".join(commandline)
     return runProcess(commandline, logdir)
 
 def jar(path):
@@ -245,7 +248,6 @@ def runProcess(commandline, logdir=None, shell=False, wait=False):
     if logdir:
         stdoutFile = open(os.path.join(logdir, timestr + ".out"), "w")
         stderrFile = open(os.path.join(logdir,timestr + ".err"), "w")
-
     p = subprocess.Popen(commandline, stdout=stdoutFile, stderr=stderrFile, shell=shell)
 
     if wait:
