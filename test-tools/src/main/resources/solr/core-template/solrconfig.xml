@@ -434,7 +434,7 @@
           -->
         <lst name="defaults">
             <str name="defType">edismax</str>
-            <str name="qf">7shx_t^3 7qx1_t^3 3pj9_t^3 7cp1_t^3 43r9_t^3 cn9_t^1 79j9_t^3 3vut_t^3 3thh_t^3 3qbp_s^3 7wg5_t^3 7b45_t^3 3nyd_s^3 7vnp_t^3 7rph_t^3 8ydh_t^3 x6t_t^3 7tad_t^3 7jt1_t^3 3mdh_s^3 7e9x_t^3 3rwl_s^3 93wl_t^3 yrp_t^10 7pc5_t^3 7u2t_t^3 3xfp_t^3 426d_t^3 iyt_t^10 3g1x_t^3 40lh_t^3</str>
+            <str name="qf">3eh1_t^3 yrp_t^10 m4l_t^10 kjp_t^10 iyt_t^10 cn9_t^1 x6t_t^3 hdx_t^3 3ksl_s^3 3qbp_s^3 3mdh_s^3 3oqt_s^3 3nyd_t^3 7uv9_t^3 7ldx_t^3</str>
             <str name="hl.fl">*</str>
             <bool name="hl.requireFieldMatch">true</bool>
             <bool name="lowercaseOperators">true</bool>
