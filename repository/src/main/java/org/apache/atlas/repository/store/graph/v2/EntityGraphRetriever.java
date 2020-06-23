@@ -835,7 +835,7 @@ public class EntityGraphRetriever {
     public List<AtlasTermAssignmentHeader> mapAssignedTerms(AtlasVertex entityVertex) {
         List<AtlasTermAssignmentHeader> ret = new ArrayList<>();
 
-        Iterable edges = entityVertex.query().direction(AtlasEdgeDirection.IN).label(Constants.INTERNAL_PROPERTY_KEY_PREFIX + TERM_ASSIGNMENT_LABEL).edges();
+        Iterable edges = entityVertex.query().direction(AtlasEdgeDirection.IN).label(TERM_ASSIGNMENT_LABEL).edges();
 
         if (edges != null) {
             for (final AtlasEdge edge : (Iterable<AtlasEdge>) edges) {
