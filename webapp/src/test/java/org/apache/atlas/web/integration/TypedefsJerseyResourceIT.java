@@ -20,18 +20,20 @@ package org.apache.atlas.web.integration;
 
 import com.sun.jersey.core.util.MultivaluedMapImpl;
 import org.apache.atlas.AtlasClientV2;
-import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.SearchFilter;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.model.typedef.AtlasBusinessMetadataDef;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
+import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef;
+import org.apache.atlas.model.typedef.AtlasTypeDefHeader;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.utils.AuthenticationUtil;
@@ -46,6 +48,7 @@ import javax.ws.rs.core.Response;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 
 import static org.apache.atlas.AtlasErrorCode.TYPE_NAME_NOT_FOUND;
 import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinality;
@@ -101,6 +104,33 @@ public class TypedefsJerseyResourceIT extends BaseResourceIT {
 
         for (AtlasEntityDef entityDef : typeDefinitions.getEntityDefs()) {
             checkIfTypeExists(entityDef.getName());
+        }
+
+        for (AtlasRelationshipDef relationshipDef : typeDefinitions.getRelationshipDefs()) {
+            checkIfTypeExists(relationshipDef.getName());
+        }
+
+        for (AtlasBusinessMetadataDef businessMetadataDef : typeDefinitions.getBusinessMetadataDefs()) {
+            checkIfTypeExists(businessMetadataDef.getName());
+        }
+    }
+
+    @Test
+    public void testGetHeaders() throws Exception {
+        MultivaluedMap<String, String> filterParams = new MultivaluedMapImpl();
+        filterParams.add(SearchFilter.PARAM_TYPE, "ENTITY");
+        List<AtlasTypeDefHeader> headers = clientV2.getAllTypeDefHeaders(new SearchFilter(filterParams));
+        assertNotNull(headers);
+    }
+
+    @Test(dependsOnMethods = "testGetDefinition")
+    public void testDeleteAtlasTypeByName() throws Exception {
+        String typeName = "table";
+        boolean typeExists = atlasClientV2.typeWithNameExists(typeName);
+        if (typeExists) {
+            clientV2.deleteTypeByName(typeName);
+            boolean afterDelete = atlasClientV2.typeWithNameExists(typeName);
+            assertEquals(afterDelete, false);
         }
     }
 
@@ -191,9 +221,21 @@ public class TypedefsJerseyResourceIT extends BaseResourceIT {
                 verifyByNameAndGUID(entityDef);
             }
         }
+
+        if (CollectionUtils.isNotEmpty(typeDefinitions.getRelationshipDefs())) {
+            for (AtlasRelationshipDef relationshipDef : typeDefinitions.getRelationshipDefs()) {
+                verifyByNameAndGUID(relationshipDef);
+            }
+        }
+
+        if (CollectionUtils.isNotEmpty(typeDefinitions.getBusinessMetadataDefs())) {
+            for (AtlasBusinessMetadataDef businessMetadataDef : typeDefinitions.getBusinessMetadataDefs()) {
+                verifyByNameAndGUID(businessMetadataDef);
+            }
+        }
     }
 
-    @Test
+    @Test()
     public void testInvalidGets() throws Exception {
         try {
             AtlasEnumDef byName = clientV2.getEnumDefByName("blah");
@@ -259,6 +301,37 @@ public class TypedefsJerseyResourceIT extends BaseResourceIT {
                     "Should've returned a 404");
         }
 
+        try {
+            AtlasRelationshipDef byName = clientV2.getRelationshipDefByName("blah");
+            fail("Get for invalid name should have reported a failure");
+        } catch (AtlasServiceException e) {
+            assertEquals(e.getStatus().getStatusCode(), Response.Status.NOT_FOUND.getStatusCode(),
+                    "Should've returned a 404");
+        }
+
+        try {
+            AtlasRelationshipDef byGuid = clientV2.getRelationshipDefByGuid("blah");
+            fail("Get for invalid name should have reported a failure");
+        } catch (AtlasServiceException e) {
+            assertEquals(e.getStatus().getStatusCode(), Response.Status.NOT_FOUND.getStatusCode(),
+                    "Should've returned a 404");
+        }
+
+        try {
+            AtlasBusinessMetadataDef byName = clientV2.getBusinessMetadataDefByName("blah");
+            fail("Get for invalid name should have reported a failure");
+        } catch (AtlasServiceException e) {
+            assertEquals(e.getStatus().getStatusCode(), Response.Status.NOT_FOUND.getStatusCode(),
+                    "Should've returned a 404");
+        }
+
+        try {
+            AtlasBusinessMetadataDef byGuid = clientV2.getBusinessMetadataDefGuid("blah");
+            fail("Get for invalid name should have reported a failure");
+        } catch (AtlasServiceException e) {
+            assertEquals(e.getStatus().getStatusCode(), Response.Status.NOT_FOUND.getStatusCode(),
+                    "Should've returned a 404");
+        }
 
     }
 
@@ -339,6 +412,10 @@ public class TypedefsJerseyResourceIT extends BaseResourceIT {
                 byName = clientV2.getClassificationDefByName(typeDef.getName());
             } else if (typeDef.getCategory() == TypeCategory.STRUCT) {
                 byName = clientV2.getStructDefByName(typeDef.getName());
+            }  else if (typeDef.getCategory() == TypeCategory.RELATIONSHIP) {
+                byName = clientV2.getRelationshipDefByName(typeDef.getName());
+            }  else if (typeDef.getCategory() == TypeCategory.BUSINESS_METADATA) {
+                byName = clientV2.getBusinessMetadataDefByName(typeDef.getName());
             }
             assertNotNull(byName);
         } catch (AtlasServiceException e) {
@@ -355,6 +432,10 @@ public class TypedefsJerseyResourceIT extends BaseResourceIT {
                     byGuid = clientV2.getClassificationDefByGuid(typeDef.getGuid());
                 } else if (typeDef.getCategory() == TypeCategory.STRUCT) {
                     byGuid = clientV2.getStructDefByGuid(typeDef.getGuid());
+                } else if (typeDef.getCategory() == TypeCategory.RELATIONSHIP) {
+                    byGuid = clientV2.getRelationshipDefByGuid(typeDef.getGuid());
+                } else if (typeDef.getCategory() == TypeCategory.BUSINESS_METADATA) {
+                    byGuid = clientV2.getBusinessMetadataDefGuid(typeDef.getGuid());
                 }
                 assertNotNull(byGuid);
             } catch (AtlasServiceException e) {
@@ -368,6 +449,8 @@ public class TypedefsJerseyResourceIT extends BaseResourceIT {
         def.getStructDefs().clear();
         def.getClassificationDefs().clear();
         def.getEntityDefs().clear();
+        def.getRelationshipDefs().clear();
+        def.getBusinessMetadataDefs().clear();
     }
 
     private void checkIfTypeExists(String typeName) throws Exception {

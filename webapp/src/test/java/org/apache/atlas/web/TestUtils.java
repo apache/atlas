@@ -56,4 +56,7 @@ public class TestUtils {
         return System.getProperty("projectBaseDir") + "/webapp/target" ;
     }
 
+    public static String getGlossaryType(){
+        return System.getProperty("projectBaseDir") + "/webapp/target/models/0000-Area0/0011-glossary_model.json";
+    }
 }
