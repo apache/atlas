@@ -498,3 +498,13 @@ div.columnmanager-dropdown-container {
         word-break: break-word;
     }
 }
+
+.jstree-wholerow-ul {
+    width: 100%;
+
+    .jstree-anchor {
+        width: calc(100% - 50px);
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+}
