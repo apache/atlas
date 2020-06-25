@@ -707,12 +707,17 @@ define(['require',
                                 }) : null,
                                 updateTabState: true
                             });
+                        },
+                        complete: function() {
+                            that.notificationModal.hideButtonLoader();
+                            that.notificationModal.remove();
                         }
                     },
                     notifyObj = {
                         modal: true,
-                        ok: function(argument) {
-                            that.changeLoaderState(true);
+                        ok: function(obj) {
+                            that.notificationModal = obj;
+                            obj.showButtonLoader();
                             if (type == "Glossary") {
                                 that.glossaryCollection.fullCollection.get(guid).destroy(options, { silent: true, reset: false });
                             } else if (type == "GlossaryCategory") {
@@ -720,8 +725,8 @@ define(['require',
                             } else if (type == "GlossaryTerm") {
                                 new that.glossaryCollection.model().deleteTerm(guid, options);
                             }
-                            that.changeLoaderState(false);
                         },
+                        okCloses: false,
                         cancel: function(argument) {}
                     };
                 if (type == "Glossary") {

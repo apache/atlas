@@ -177,9 +177,12 @@ define(['require',
                     modal: true,
                     html: true,
                     text: Messages.conformation.deleteMessage + "<b>" + _.escape(options.model.get('name')) + "</b>" + " ?",
-                    ok: function(argument) {
+                    ok: function(obj) {
+                        that.notificationModal = obj;
+                        obj.showButtonLoader();
                         that.onDeleteNotifyOk(options);
                     },
+                    okCloses: false,
                     cancel: function(argument) {}
                 }
                 Utils.notifyConfirm(notifyObj);
@@ -194,6 +197,8 @@ define(['require',
                     if (that.collection) {
                         that.collection.remove(model);
                     }
+                    that.notificationModal.hideButtonLoader();
+                    that.notificationModal.remove();
                     Utils.notifySuccess({
                         content: options.model.get('name') + Messages.getAbbreviationMsg(false, 'deleteSuccessMessage')
                     });

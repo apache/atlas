@@ -583,9 +583,12 @@ define(['require',
                 var that = this,
                     notifyObj = {
                         modal: true,
-                        ok: function(argument) {
+                        ok: function(obj) {
+                            that.notificationModal = obj;
+                            obj.showButtonLoader();
                             that.onNotifyOk();
                         },
+                        okCloses: false,
                         cancel: function(argument) {}
                     }
                 var text = "Are you sure you want to delete the classification"
@@ -595,7 +598,6 @@ define(['require',
             onNotifyOk: function(data) {
                 var that = this,
                     deleteTagData = this.collection.fullCollection.findWhere({ name: this.tag });
-                that.changeLoaderState(true);
                 deleteTagData.deleteTag({
                     typeName: that.tag,
                     success: function() {
@@ -612,8 +614,10 @@ define(['require',
                         // to update tag list of search tab fetch typeHeaders.
                         that.typeHeaders.fetch({ reset: true });
                     },
-                    cust_error: function() {
-                        that.changeLoaderState(false);
+                    cust_error: function() {},
+                    complete: function() {
+                        that.notificationModal.hideButtonLoader();
+                        that.notificationModal.remove();
                     }
                 });
             }
