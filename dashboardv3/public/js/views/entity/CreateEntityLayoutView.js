@@ -788,12 +788,15 @@ define(['require',
                                 if (that.searchVent) {
                                     that.searchVent.trigger("Entity:Count:Update");
                                 }
-                                if (model.mutatedEntities && model.mutatedEntities.CREATE && _.isArray(model.mutatedEntities.CREATE) && model.mutatedEntities.CREATE[0] && model.mutatedEntities.CREATE[0].guid) {
-                                    Utils.setUrl({
-                                        url: '#!/detailPage/' + (model.mutatedEntities.CREATE[0].guid),
-                                        mergeBrowserUrl: false,
-                                        trigger: true
-                                    });
+                                if (model.mutatedEntities) {
+                                    var mutatedEntities = model.mutatedEntities.CREATE || model.mutatedEntities.UPDATE;
+                                    if (mutatedEntities && _.isArray(mutatedEntities) && mutatedEntities[0] && mutatedEntities[0].guid) {
+                                        Utils.setUrl({
+                                            url: '#!/detailPage/' + (mutatedEntities[0].guid),
+                                            mergeBrowserUrl: false,
+                                            trigger: true
+                                        });
+                                    }
                                 }
                             }
                         },
