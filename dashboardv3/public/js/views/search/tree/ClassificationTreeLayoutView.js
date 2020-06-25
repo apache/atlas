@@ -814,9 +814,12 @@ define([
             var that = this,
                 notifyObj = {
                     modal: true,
-                    ok: function(argument) {
+                    ok: function(obj) {
+                        that.notificationModal = obj;
+                        obj.showButtonLoader();
                         that.onNotifyOk();
                     },
+                    okCloses: false,
                     cancel: function(argument) {}
                 };
             var text = "Are you sure you want to delete the classification";
@@ -853,6 +856,10 @@ define([
                             delete urlObj.tag;
                             var url = urlObj.type || urlObj.term || urlObj.query ? "#!/search/searchResult" : "#!/search"
                             that.triggerSearch(urlObj, url);
+                        },
+                        complete: function() {
+                            that.notificationModal.hideButtonLoader();
+                            that.notificationModal.remove();
                         }
                     });
                 } else {

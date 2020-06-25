@@ -525,7 +525,6 @@ define([
                                 return obj.termGuid == guid;
                             }), { silent: true });
                         }
-
                         Utils.notifySuccess({
                             content: messageType + Messages.getAbbreviationMsg(false, 'deleteSuccessMessage')
                         });
@@ -541,23 +540,27 @@ define([
                             searchParam = _.extend({}, that.options.value, params);
                             that.triggerSearch(searchParam);
                         }
+                    },
+                    complete: function() {
+                        that.notificationModal.hideButtonLoader();
+                        that.notificationModal.remove();
                     }
                 },
                 notifyObj = {
                     modal: true,
-                    ok: function(argument) {
+                    ok: function(obj) {
+                        that.notificationModal = obj;
+                        obj.showButtonLoader();
                         if (type == "Glossary" || type == "GLOSSARY") {
                             that.glossaryCollection.fullCollection.get(guid).destroy(options, { silent: true, reset: false });
-
                         } else if (type == "GlossaryCategory") {
                             new that.glossaryCollection.model().deleteCategory(guid, options);
 
                         } else if (type == "GlossaryTerm") {
                             new that.glossaryCollection.model().deleteTerm(guid, options);
-
                         }
-
                     },
+                    okCloses: false,
                     cancel: function(argument) {}
                 };
             if (type == "Glossary" || type == "GLOSSARY") {
