@@ -407,22 +407,8 @@ public final class GraphHelper {
         return ret;
     }
 
-    public static List<AtlasEdge> getIncomingClassificationEdges(AtlasVertex classificationVertex) {
-        List<AtlasEdge> ret                = new ArrayList<>();
-        String          classificationName = getTypeName(classificationVertex);
-        Iterable        edges              = classificationVertex.query().direction(AtlasEdgeDirection.IN).label(CLASSIFICATION_LABEL)
-                                                                 .has(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, classificationName).edges();
-        if (edges != null) {
-            Iterator<AtlasEdge> iterator = edges.iterator();
-
-            while (iterator.hasNext()) {
-                AtlasEdge edge = iterator.next();
-
-                ret.add(edge);
-            }
-        }
-
-        return ret;
+    public static boolean hasEntityReferences(AtlasVertex classificationVertex) {
+        return classificationVertex.hasEdges(AtlasEdgeDirection.IN, CLASSIFICATION_LABEL);
     }
 
     public static List<AtlasVertex> getAllPropagatedEntityVertices(AtlasVertex classificationVertex) {
