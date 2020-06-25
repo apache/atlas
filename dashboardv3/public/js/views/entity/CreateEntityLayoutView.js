@@ -439,9 +439,15 @@ define(['require',
                 var that = this;
                 this.$('input[data-type="date"]').each(function() {
                     if (!$(this).data('daterangepicker')) {
-                        var dateObj = { "singleDatePicker": true, "showDropdowns": true };
+                        var dateObj = {
+                            "singleDatePicker": true,
+                            "showDropdowns": true,
+                            locale: {
+                                format: Globals.dateFormat
+                            }
+                        };
                         if (that.guid) {
-                            dateObj["startDate"] = this.value
+                            dateObj["startDate"] = new Date(Number(this.value));
                         }
                         $(this).daterangepicker(dateObj);
                     }
@@ -601,7 +607,7 @@ define(['require',
                         }
                         if (value.typeName === "date") {
                             if (dataValue) {
-                                entityValue = moment(dataValue).format(Globals.dateFormat);
+                                entityValue = moment(dataValue);
                             } else {
                                 entityValue = moment().format(Globals.dateFormat);
                             }
