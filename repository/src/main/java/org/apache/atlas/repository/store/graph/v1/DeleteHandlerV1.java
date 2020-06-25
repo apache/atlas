@@ -156,9 +156,6 @@ public abstract class DeleteHandlerV1 {
                 continue;
             }
 
-            // re-evaluate tag propagation
-            removeTagPropagation(edge);
-
             deleteEdge(edge, isInternal || forceDelete);
         }
     }
@@ -974,10 +971,8 @@ public abstract class DeleteHandlerV1 {
             LOG.debug("Deleting classification vertex", string(classificationVertex));
         }
 
-        List<AtlasEdge> incomingClassificationEdges = getIncomingClassificationEdges(classificationVertex);
-
         // delete classification vertex only if it has no more entity references (direct or propagated)
-        if (CollectionUtils.isEmpty(incomingClassificationEdges)) {
+        if (!hasEntityReferences(classificationVertex)) {
             _deleteVertex(classificationVertex, force);
         }
     }
