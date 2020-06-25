@@ -123,7 +123,7 @@ define([
                             if (response.failedImportInfoList.length > 1) {
                                 var modalTitle = '<div class="back-button importBackBtn" title="Back to import file"><i class="fa fa-angle-left "></i> </div> <div class="modal-name">Error Details</div>';
                                 _.each(response.failedImportInfoList, function(err_obj) {
-                                    errorStr += '<li>' + err_obj.remarks + '</li>';
+                                    errorStr += '<li>' + _.escape(err_obj.remarks) + '</li>';
                                 });
                                 that.ui.errorDetails.append(errorStr);
                                 that.toggleErrorAndDropZoneView({ title: modalTitle, isErrorView: true });

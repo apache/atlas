@@ -417,7 +417,8 @@ div.columnmanager-dropdown-container {
             max-height: 400px;
             min-height: 70px;
             overflow: auto;
-            border-top: 1px solid #DEDEDE
+            border-top: 1px solid #DEDEDE;
+            word-break: break-word;
         }
 
         .ui-pnotify-action-bar {
@@ -489,5 +490,11 @@ div.columnmanager-dropdown-container {
 .input-group {
     .form-control {
         z-index: 1;
+    }
+}
+
+.ui-pnotify-container {
+    .ui-pnotify-text {
+        word-break: break-word;
     }
 }

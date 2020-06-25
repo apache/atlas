@@ -200,9 +200,11 @@
         color: #686868 !important;
     }
 
+    td {
+        word-break: break-word;
+    }
+
     .business-metadata-detail-attr-key {
         width: 30%;
-        word-break: break-word;
-
     }
 }
