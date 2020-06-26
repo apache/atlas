@@ -130,7 +130,7 @@ public class EntitySearchProcessorTest extends BasicTestSetup {
         new EntitySearchProcessor(context);
     }
 
-    @Test
+    @Test(priority = -1)
     public void searchWithNEQ_stringAttr() throws AtlasBaseException {
         String expectedEntityName = "hive_Table_Null_tableType";
         createDummyEntity(expectedEntityName,HIVE_TABLE_TYPE);
@@ -197,4 +197,116 @@ public class EntitySearchProcessorTest extends BasicTestSetup {
 
         assertTrue(nameList.contains("hive_Table_Null_tableType"));
     }
+
+    @Test
+    public void ALLEntityType() throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+        params.setTypeName(SearchParameters.ALL_ENTITY_TYPES);
+        params.setLimit(20);
+
+        SearchContext context = new SearchContext(params, typeRegistry, graph, Collections.<String>emptySet());
+
+        EntitySearchProcessor processor = new EntitySearchProcessor(context);
+        assertEquals(processor.execute().size(), 20);
+    }
+
+    @Test
+    public void ALLEntityTypeWithTag() throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+        params.setTypeName(SearchParameters.ALL_ENTITY_TYPES);
+        params.setClassification(FACT_CLASSIFICATION);
+        params.setLimit(20);
+
+        SearchContext context = new SearchContext(params, typeRegistry, graph, Collections.<String>emptySet());
+
+        EntitySearchProcessor processor = new EntitySearchProcessor(context);
+        assertEquals(processor.execute().size(), 5);
+    }
+
+    @Test
+    public void entityType() throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+        params.setTypeName(DATABASE_TYPE);
+        params.setLimit(20);
+
+        SearchContext context = new SearchContext(params, typeRegistry, graph, Collections.<String>emptySet());
+
+        EntitySearchProcessor processor = new EntitySearchProcessor(context);
+        assertEquals(processor.execute().size(), 3);
+    }
+
+    @Test
+    public void entityTypes() throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+        params.setTypeName(DATABASE_TYPE+","+HIVE_TABLE_TYPE);
+        params.setLimit(20);
+
+        SearchContext context = new SearchContext(params, typeRegistry, graph, Collections.<String>emptySet());
+
+        EntitySearchProcessor processor = new EntitySearchProcessor(context);
+        assertEquals(processor.execute().size(), 14);
+    }
+
+    @Test(expectedExceptions = AtlasBaseException.class, expectedExceptionsMessageRegExp = "Not_Exists: Unknown/invalid typename")
+    public void entityTypesNotAllowed() throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+        params.setTypeName(DATABASE_TYPE+",Not_Exists");
+        params.setLimit(20);
+
+        SearchContext context = new SearchContext(params, typeRegistry, graph, Collections.<String>emptySet());
+    }
+
+    @Test(expectedExceptions = AtlasBaseException.class, expectedExceptionsMessageRegExp = "Attribute tableType not found for type "+DATABASE_TYPE)
+    public void entityFiltersNotAllowed() throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+        params.setTypeName(DATABASE_TYPE+","+HIVE_TABLE_TYPE);
+        SearchParameters.FilterCriteria filterCriteria = getSingleFilterCondition("tableType", SearchParameters.Operator.CONTAINS, "ETL");
+        params.setEntityFilters(filterCriteria);
+        params.setLimit(20);
+
+        SearchContext context = new SearchContext(params, typeRegistry, graph, Collections.<String>emptySet());
+    }
+
+    @Test
+    public void entityTypesAndTag() throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+        params.setTypeName(DATABASE_TYPE+","+HIVE_TABLE_TYPE);
+        params.setClassification(FACT_CLASSIFICATION);
+        params.setLimit(20);
+
+        SearchContext context = new SearchContext(params, typeRegistry, graph, Collections.<String>emptySet());
+
+        EntitySearchProcessor processor = new EntitySearchProcessor(context);
+        assertEquals(processor.execute().size(), 3);
+    }
+
+    @Test
+    public void searchWithEntityTypesAndEntityFilters() throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+        params.setTypeName(DATABASE_TYPE+","+HIVE_TABLE_TYPE);
+        SearchParameters.FilterCriteria filterCriteria = getSingleFilterCondition("owner", SearchParameters.Operator.CONTAINS, "ETL");
+        params.setEntityFilters(filterCriteria);
+        params.setLimit(20);
+
+        SearchContext context = new SearchContext(params, typeRegistry, graph, Collections.<String>emptySet());
+
+        EntitySearchProcessor processor = new EntitySearchProcessor(context);
+        assertEquals(processor.execute().size(), 4);
+    }
+
+    @Test
+    public void searchWithEntityTypesAndEntityFiltersAndTag() throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+        params.setTypeName(DATABASE_TYPE+","+HIVE_TABLE_TYPE);
+        SearchParameters.FilterCriteria filterCriteria = getSingleFilterCondition("owner", SearchParameters.Operator.CONTAINS, "ETL");
+        params.setEntityFilters(filterCriteria);
+        params.setClassification(LOGDATA_CLASSIFICATION);
+        params.setLimit(20);
+
+        SearchContext context = new SearchContext(params, typeRegistry, graph, Collections.<String>emptySet());
+
+        EntitySearchProcessor processor = new EntitySearchProcessor(context);
+        assertEquals(processor.execute().size(), 2);
+    }
+
 }

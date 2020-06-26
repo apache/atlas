@@ -56,12 +56,7 @@ public class SearchAggregatorImpl implements SearchAggregator {
 
         try {
             AtlasGraphIndexClient graphIndexClient    = graph.getGraphIndexClient();
-            String                searchedOnTypeName  = searchParameters.getTypeName();
-            AtlasEntityType       searchForEntityType = null;
-
-            if (searchedOnTypeName != null) {
-                searchForEntityType = typeRegistry.getEntityTypeByName(searchedOnTypeName);
-            }
+            Set<AtlasEntityType>  searchForEntityType = searchContext.getEntityTypes();
 
             Map<String, String> indexFieldNameCache = new HashMap<>();
 

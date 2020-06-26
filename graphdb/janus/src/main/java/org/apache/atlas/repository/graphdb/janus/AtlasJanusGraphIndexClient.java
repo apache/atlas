@@ -175,7 +175,7 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
             Map<String, String>   indexFieldName2PropertyKeyNameMap = new HashMap<>();
             AtlasSolrQueryBuilder solrQueryBuilder                  = new AtlasSolrQueryBuilder();
 
-            solrQueryBuilder.withEntityType(aggregationContext.getSearchForEntityType())
+            solrQueryBuilder.withEntityTypes(aggregationContext.getSearchForEntityTypes())
                             .withQueryString(aggregationContext.getQueryString())
                             .withCriteria(aggregationContext.getFilterCriteria())
                             .withExcludedDeletedEntities(aggregationContext.isExcludeDeletedEntities())

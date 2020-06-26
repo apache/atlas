@@ -67,17 +67,16 @@ public class ClassificationSearchProcessor extends SearchProcessor {
     public ClassificationSearchProcessor(SearchContext context) {
         super(context);
 
-        final AtlasClassificationType classificationType    = context.getClassificationType();
         final FilterCriteria          filterCriteria        = context.getSearchParameters().getTagFilters();
         final Set<String>             indexAttributes       = new HashSet<>();
         final Set<String>             graphAttributes       = new HashSet<>();
         final Set<String>             allAttributes         = new HashSet<>();
-        final Set<String>             typeAndSubTypes       = context.getClassificationTypes();
+        final Set<String>             typeAndSubTypes       = context.getClassificationTypeNames();
         final String                  typeAndSubTypesQryStr = context.getClassificationTypesQryStr();
-        final boolean isBuiltInType                         = context.isBuiltInClassificationType();
         final boolean isWildcardSearch                      = context.isWildCardSearch();
+        final Set<AtlasClassificationType> classificationTypes = context.getClassificationTypes();
 
-        processSearchAttributes(classificationType, filterCriteria, indexAttributes, graphAttributes, allAttributes);
+        processSearchAttributes(classificationTypes, filterCriteria, indexAttributes, graphAttributes, allAttributes);
 
         /* for classification search, if any attribute can't be handled by index query - switch to all filter by Graph query
            There are four cases in the classification type :
@@ -87,19 +86,25 @@ public class ClassificationSearchProcessor extends SearchProcessor {
            4. classification is not present in the search parameter
            each of above cases with either has empty/or not tagFilters
          */
-        final boolean useIndexSearchForEntity = (classificationType != null || isWildcardSearch) &&
+        final boolean useIndexSearchForEntity = (CollectionUtils.isNotEmpty(classificationTypes) || isWildcardSearch) &&
                                                 !context.hasAttributeFilter(filterCriteria)  &&
                                                 (typeAndSubTypesQryStr.length() <= MAX_QUERY_STR_LENGTH_TAGS);
 
         /* If classification's attributes can be applied index filter, we can use direct index
          * to query classification index as well.
          */
-        final boolean useIndexSearchForClassification = (!isBuiltInType && !isWildcardSearch) &&
+        final boolean useIndexSearchForClassification = (CollectionUtils.isNotEmpty(classificationTypes) &&
+                                                         classificationTypes.iterator().next() != SearchContext.MATCH_ALL_NOT_CLASSIFIED &&
+                                                          !isWildcardSearch) &&
                                                         (typeAndSubTypesQryStr.length() <= MAX_QUERY_STR_LENGTH_TAGS) &&
                                                         CollectionUtils.isNotEmpty(indexAttributes) &&
-                                                        canApplyIndexFilter(classificationType, filterCriteria, false);
+                                                        canApplyIndexFilter(classificationTypes, filterCriteria, false);
 
-        traitPredicate    = buildTraitPredict(classificationType);
+        final boolean useGraphSearchForClassification = (CollectionUtils.isNotEmpty(classificationTypes) &&
+                                                        classificationTypes.iterator().next() != SearchContext.MATCH_ALL_NOT_CLASSIFIED &&
+                                                        !isWildcardSearch && CollectionUtils.isNotEmpty(graphAttributes));
+
+        traitPredicate    = buildTraitPredict(classificationTypes);
         isEntityPredicate = SearchPredicateUtil.generateIsEntityVertexPredicate(context.getTypeRegistry());
 
         AtlasGraph graph = context.getGraph();
@@ -115,8 +120,7 @@ public class ClassificationSearchProcessor extends SearchProcessor {
                 // tagFilters is not allowed in wildcard search
                 graphIndexQueryBuilder.addClassificationTypeFilter(queryString);
             } else {
-                if (isBuiltInType) {
-
+                if (classificationTypes.iterator().next() == SearchContext.MATCH_ALL_NOT_CLASSIFIED) {
                     // tagFilters is not allowed in unique classificationType search
                     graphIndexQueryBuilder.addClassificationFilterForBuiltInTypes(queryString);
 
@@ -146,7 +150,7 @@ public class ClassificationSearchProcessor extends SearchProcessor {
             graphIndexQueryBuilder.addActiveStateQueryFilter(queryString);
             graphIndexQueryBuilder.addTypeAndSubTypesQueryFilter(queryString, typeAndSubTypesQryStr);
 
-            constructFilterQuery(queryString, classificationType, filterCriteria, indexAttributes);
+            constructFilterQuery(queryString, classificationTypes, filterCriteria, indexAttributes);
 
             String indexQueryString = STRAY_AND_PATTERN.matcher(queryString).replaceAll(")");
             indexQueryString = STRAY_OR_PATTERN.matcher(indexQueryString).replaceAll(")");
@@ -158,7 +162,7 @@ public class ClassificationSearchProcessor extends SearchProcessor {
                 inMemoryPredicate = inMemoryPredicate == null ? typeNamePredicate : PredicateUtils.andPredicate(inMemoryPredicate, typeNamePredicate);
             }
 
-            Predicate attributePredicate = constructInMemoryPredicate(classificationType, filterCriteria, indexAttributes);
+            Predicate attributePredicate = constructInMemoryPredicate(classificationTypes, filterCriteria, indexAttributes);
 
             if (attributePredicate != null) {
                 inMemoryPredicate = inMemoryPredicate == null ? attributePredicate : PredicateUtils.andPredicate(inMemoryPredicate, attributePredicate);
@@ -170,7 +174,7 @@ public class ClassificationSearchProcessor extends SearchProcessor {
         }
 
         // only registered classification will search with tag filters
-        if (!isWildcardSearch && !isBuiltInType && !graphAttributes.isEmpty()) {
+        if (useGraphSearchForClassification) {
 
             AtlasGremlinQueryProvider queryProvider = AtlasGremlinQueryProvider.INSTANCE;
             AtlasGraphQuery query = graph.query();
@@ -179,7 +183,7 @@ public class ClassificationSearchProcessor extends SearchProcessor {
                 query.in(Constants.TYPE_NAME_PROPERTY_KEY, typeAndSubTypes);
             }
 
-            tagGraphQueryWithAttributes = toGraphFilterQuery(classificationType, filterCriteria, allAttributes, query);
+            tagGraphQueryWithAttributes = toGraphFilterQuery(classificationTypes, filterCriteria, allAttributes, query);
             gremlinQueryBindings       = new HashMap<>();
             StringBuilder gremlinQuery = new StringBuilder();
 
@@ -188,7 +192,7 @@ public class ClassificationSearchProcessor extends SearchProcessor {
             gremlinQuery.append(".as('e').filter(out()");
             gremlinQuery.append(queryProvider.getQuery(AtlasGremlinQueryProvider.AtlasGremlinQuery.BASIC_SEARCH_TYPE_FILTER));
 
-            constructGremlinFilterQuery(gremlinQuery, gremlinQueryBindings, context.getClassificationType(), context.getSearchParameters().getTagFilters());
+           // constructGremlinFilterQuery(gremlinQuery, gremlinQueryBindings, context.getClassificationType(), context.getSearchParameters().getTagFilters());
 
             // After filtering on tags go back to e and output the list of entity vertices
             gremlinQuery.append(").toList()");
