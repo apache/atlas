@@ -31,27 +31,15 @@ import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.Predicate;
 import org.apache.commons.collections.PredicateUtils;
-import org.apache.commons.lang.StringUtils;
-import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.StreamSupport;
 
 import static org.apache.atlas.SortOrder.ASCENDING;
-import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_CLASSIFICATION_TYPES;
-import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_CLASSIFIED;
-import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_NOT_CLASSIFIED;
-import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_WILDCARD_CLASSIFICATION;
-import static org.apache.atlas.repository.Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.TRAIT_NAMES_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.TYPE_NAME_PROPERTY_KEY;
+import static org.apache.atlas.discovery.SearchContext.*;
+import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.ComparisionOperator.EQUAL;
 import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.ComparisionOperator.NOT_EQUAL;
 import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.SortOrder.ASC;
@@ -69,28 +57,28 @@ public class EntitySearchProcessor extends SearchProcessor {
     public EntitySearchProcessor(SearchContext context) {
         super(context);
 
-        final AtlasEntityType entityType      = context.getEntityType();
+        final Set<AtlasEntityType> entityTypes      = context.getEntityTypes();
         final FilterCriteria  filterCriteria  = context.getSearchParameters().getEntityFilters();
         final Set<String>     indexAttributes = new HashSet<>();
         final Set<String>     graphAttributes = new HashSet<>();
         final Set<String>     allAttributes   = new HashSet<>();
-        final Set<String>     typeAndSubTypes       = context.getEntityTypes();
+        final Set<String>     typeAndSubTypes       = context.getEntityTypeNames();
         final String          typeAndSubTypesQryStr = context.getEntityTypesQryStr();
         final String          sortBy                = context.getSearchParameters().getSortBy();
         final SortOrder       sortOrder             = context.getSearchParameters().getSortOrder();
 
-        final AtlasClassificationType classificationType            = context.getClassificationType();
-        final Set<String>             classificationTypeAndSubTypes = context.getClassificationTypes();
-        final boolean                 filterClassification;
+        final Set<AtlasClassificationType> classificationTypes           = context.getClassificationTypes();
+        final Set<String>                  classificationTypeAndSubTypes = context.getClassificationTypeNames();
+        final boolean                      filterClassification;
 
-        if (classificationType != null) {
+        if (CollectionUtils.isNotEmpty(classificationTypes)) {
             filterClassification = !context.needClassificationProcessor();
         } else {
             filterClassification = false;
         }
 
         final Predicate typeNamePredicate;
-        final Predicate traitPredicate    = buildTraitPredict(classificationType);
+        final Predicate traitPredicate    = buildTraitPredict(classificationTypes);
         final Predicate activePredicate   = SearchPredicateUtil.getEQPredicateGenerator()
                                                                .generatePredicate(Constants.STATE_PROPERTY_KEY, "ACTIVE", String.class);
 
@@ -101,10 +89,10 @@ public class EntitySearchProcessor extends SearchProcessor {
             typeNamePredicate = SearchPredicateUtil.generateIsEntityVertexPredicate(context.getTypeRegistry());
         }
 
-        processSearchAttributes(entityType, filterCriteria, indexAttributes, graphAttributes, allAttributes);
+        processSearchAttributes(entityTypes, filterCriteria, indexAttributes, graphAttributes, allAttributes);
 
         final boolean typeSearchByIndex = !filterClassification && typeAndSubTypesQryStr.length() <= MAX_QUERY_STR_LENGTH_TYPES;
-        final boolean attrSearchByIndex = !filterClassification && CollectionUtils.isNotEmpty(indexAttributes) && canApplyIndexFilter(entityType, filterCriteria, false);
+        final boolean attrSearchByIndex = !filterClassification && CollectionUtils.isNotEmpty(indexAttributes) && canApplyIndexFilter(entityTypes, filterCriteria, false);
 
         StringBuilder indexQuery = new StringBuilder();
 
@@ -116,9 +104,9 @@ public class EntitySearchProcessor extends SearchProcessor {
         }
 
         if (attrSearchByIndex) {
-            constructFilterQuery(indexQuery, entityType, filterCriteria, indexAttributes);
+            constructFilterQuery(indexQuery, entityTypes, filterCriteria, indexAttributes);
 
-            Predicate attributePredicate = constructInMemoryPredicate(entityType, filterCriteria, indexAttributes);
+            Predicate attributePredicate = constructInMemoryPredicate(entityTypes, filterCriteria, indexAttributes);
             if (attributePredicate != null) {
                 inMemoryPredicate = PredicateUtils.andPredicate(inMemoryPredicate, attributePredicate);
             }
@@ -149,6 +137,7 @@ public class EntitySearchProcessor extends SearchProcessor {
 
             // If we need to filter on the trait names then we need to build the query and equivalent in-memory predicate
             if (filterClassification) {
+                AtlasClassificationType classificationType = classificationTypes.iterator().next();
                 List<AtlasGraphQuery> orConditions = new LinkedList<>();
 
                 if (classificationType == MATCH_ALL_WILDCARD_CLASSIFICATION || classificationType == MATCH_ALL_CLASSIFIED || classificationType == MATCH_ALL_CLASSIFICATION_TYPES) {
@@ -176,10 +165,10 @@ public class EntitySearchProcessor extends SearchProcessor {
                 }
             }
 
-            graphQuery = toGraphFilterQuery(entityType, filterCriteria, graphAttributes, query);
+            graphQuery = toGraphFilterQuery(entityTypes, filterCriteria, graphAttributes, query);
 
             // Prepare in-memory predicate for attribute filtering
-            Predicate attributePredicate = constructInMemoryPredicate(entityType, filterCriteria, graphAttributes);
+            Predicate attributePredicate = constructInMemoryPredicate(entityTypes, filterCriteria, graphAttributes);
 
             if (attributePredicate != null) {
                 if (graphQueryPredicate != null) {
@@ -199,7 +188,8 @@ public class EntitySearchProcessor extends SearchProcessor {
                 }
             }
             if (sortBy != null && !sortBy.isEmpty()) {
-                AtlasAttribute sortByAttribute = context.getEntityType().getAttribute(sortBy);
+                final AtlasEntityType entityType = context.getEntityTypes().iterator().next();
+                AtlasAttribute sortByAttribute = entityType.getAttribute(sortBy);
 
                 if (sortByAttribute != null) {
                     AtlasGraphQuery.SortOrder qrySortOrder = sortOrder == SortOrder.ASCENDING ? ASC : DESC;
@@ -215,8 +205,7 @@ public class EntitySearchProcessor extends SearchProcessor {
         // Prepare the graph query and in-memory filter for the filtering phase
         filterGraphQueryPredicate = typeNamePredicate;
 
-
-        Predicate attributesPredicate = constructInMemoryPredicate(entityType, filterCriteria, allAttributes);
+        Predicate attributesPredicate = constructInMemoryPredicate(entityTypes, filterCriteria, allAttributes);
 
         if (attributesPredicate != null) {
             filterGraphQueryPredicate = filterGraphQueryPredicate == null ? attributesPredicate :
@@ -265,7 +254,7 @@ public class EntitySearchProcessor extends SearchProcessor {
             SortOrder sortOrder = context.getSearchParameters().getSortOrder();
             String sortBy = context.getSearchParameters().getSortBy();
 
-            final AtlasEntityType entityType = context.getEntityType();
+            final AtlasEntityType entityType = context.getEntityTypes().iterator().next();
             AtlasAttribute sortByAttribute = entityType.getAttribute(sortBy);
             if (sortByAttribute == null) {
                 sortBy = null;

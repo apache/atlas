@@ -18,7 +18,6 @@
 package org.apache.atlas.discovery;
 
 import org.apache.atlas.model.discovery.SearchParameters;
-import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.*;
@@ -53,13 +52,13 @@ public class FreeTextSearchProcessor extends SearchProcessor {
 
         queryString.append(searchParameters.getQuery());
 
-        if (CollectionUtils.isNotEmpty(context.getEntityTypes()) && context.getEntityTypesQryStr().length() <= MAX_QUERY_STR_LENGTH_TYPES) {
+        if (CollectionUtils.isNotEmpty(context.getEntityTypeNames()) && context.getEntityTypesQryStr().length() <= MAX_QUERY_STR_LENGTH_TYPES) {
             queryString.append(AND_STR).append(context.getEntityTypesQryStr());
         }
 
         graphIndexQueryBuilder.addActiveStateQueryFilter(queryString);
 
-        if (CollectionUtils.isNotEmpty(context.getClassificationTypes()) && context.getClassificationTypesQryStr().length() <= MAX_QUERY_STR_LENGTH_TYPES) {
+        if (CollectionUtils.isNotEmpty(context.getClassificationTypeNames()) && context.getClassificationTypesQryStr().length() <= MAX_QUERY_STR_LENGTH_TYPES) {
             queryString.append(AND_STR).append(context.getClassificationTypesQryStr());
         }
 
@@ -138,7 +137,7 @@ public class FreeTextSearchProcessor extends SearchProcessor {
                             continue;
                         }
 
-                        if (context.getClassificationType() != null) {
+                        if (CollectionUtils.isNotEmpty(context.getClassificationTypes())) {
                             List<String> entityClassifications = GraphHelper.getAllTraitNames(vertex);
 
                             if (!context.includeClassificationTypes(entityClassifications)) {

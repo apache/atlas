@@ -25,14 +25,14 @@ import java.util.Map;
 import java.util.Set;
 
 public class AggregationContext {
-    private final String              queryString;
-    private final FilterCriteria      filterCriteria;
-    private final AtlasEntityType     searchForEntityType;
-    private final Set<String>         aggregationFieldNames;
-    private final Set<AtlasAttribute> aggregationAttributes;
-    private final Map<String, String> indexFieldNameCache;
-    private final boolean             excludeDeletedEntities;
-    private final boolean             includeSubTypes;
+    private final String               queryString;
+    private final FilterCriteria       filterCriteria;
+    private final Set<AtlasEntityType> searchForEntityTypes;
+    private final Set<String>          aggregationFieldNames;
+    private final Set<AtlasAttribute>  aggregationAttributes;
+    private final Map<String, String>  indexFieldNameCache;
+    private final boolean              excludeDeletedEntities;
+    private final boolean              includeSubTypes;
 
     /**
      * @param queryString the query string whose aggregation metrics need to be retrieved.
@@ -41,17 +41,17 @@ public class AggregationContext {
      * @param indexFieldNameCache
      * @param excludeDeletedEntities a boolean flag to indicate if the deleted entities need to be excluded in search
      */
-    public AggregationContext(String              queryString,
-                              FilterCriteria      filterCriteria,
-                              AtlasEntityType     searchForEntityType,
-                              Set<String>         aggregationFieldNames,
-                              Set<AtlasAttribute> aggregationAttributes,
-                              Map<String, String> indexFieldNameCache,
-                              boolean             excludeDeletedEntities,
-                              boolean             includeSubTypes) {
+    public AggregationContext(String               queryString,
+                              FilterCriteria       filterCriteria,
+                              Set<AtlasEntityType> searchForEntityType,
+                              Set<String>          aggregationFieldNames,
+                              Set<AtlasAttribute>  aggregationAttributes,
+                              Map<String, String>  indexFieldNameCache,
+                              boolean              excludeDeletedEntities,
+                              boolean              includeSubTypes) {
         this.queryString            = queryString;
         this.filterCriteria         = filterCriteria;
-        this.searchForEntityType    = searchForEntityType;
+        this.searchForEntityTypes   = searchForEntityType;
         this.aggregationFieldNames  = aggregationFieldNames;
         this.aggregationAttributes  = aggregationAttributes;
         this.indexFieldNameCache    = indexFieldNameCache;
@@ -67,8 +67,8 @@ public class AggregationContext {
         return filterCriteria;
     }
 
-    public AtlasEntityType getSearchForEntityType() {
-        return searchForEntityType;
+    public Set<AtlasEntityType> getSearchForEntityTypes() {
+        return searchForEntityTypes;
     }
 
     public Set<String> getAggregationFieldNames() {
