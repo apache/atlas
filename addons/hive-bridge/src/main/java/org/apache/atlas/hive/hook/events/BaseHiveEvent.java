@@ -21,6 +21,7 @@ package org.apache.atlas.hive.hook.events;
 import com.google.common.collect.ImmutableMap;
 import org.apache.atlas.hive.hook.AtlasHiveHookContext;
 import org.apache.atlas.hive.hook.HiveHook.PreprocessAction;
+import org.apache.atlas.utils.PathExtractorContext;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
@@ -31,6 +32,7 @@ import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.notification.HookNotification;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.type.AtlasTypeUtil;
+import org.apache.atlas.utils.AtlasPathExtractorUtil;
 import org.apache.atlas.utils.HdfsNameServiceResolver;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
@@ -76,25 +78,8 @@ public abstract class BaseHiveEvent {
     public static final String HIVE_TYPE_PROCESS_EXECUTION         = "hive_process_execution";
     public static final String HIVE_DB_DDL                         = "hive_db_ddl";
     public static final String HIVE_TABLE_DDL                      = "hive_table_ddl";
-    public static final String HDFS_TYPE_PATH                      = "hdfs_path";
     public static final String HBASE_TYPE_TABLE                    = "hbase_table";
     public static final String HBASE_TYPE_NAMESPACE                = "hbase_namespace";
-    public static final String AWS_S3_BUCKET                       = "aws_s3_bucket";
-    public static final String AWS_S3_PSEUDO_DIR                   = "aws_s3_pseudo_dir";
-    public static final String AWS_S3_OBJECT                       = "aws_s3_object";
-    public static final String AWS_S3_V2_BUCKET                    = "aws_s3_v2_bucket";
-    public static final String AWS_S3_V2_PSEUDO_DIR                = "aws_s3_v2_directory";
-    public static final String ADLS_GEN2_ACCOUNT                   = "adls_gen2_account";
-    public static final String ADLS_GEN2_CONTAINER                 = "adls_gen2_container";
-    public static final String ADLS_GEN2_DIRECTORY                 = "adls_gen2_directory";
-    public static final String ADLS_GEN2_ACCOUNT_HOST_SUFFIX       = ".dfs.core.windows.net";
-
-    public static final String SCHEME_SEPARATOR                    = "://";
-    public static final String S3_SCHEME                           = "s3" + SCHEME_SEPARATOR;
-    public static final String S3A_SCHEME                          = "s3a" + SCHEME_SEPARATOR;
-    public static final String ABFS_SCHEME                         = "abfs" + SCHEME_SEPARATOR;
-    public static final String ABFSS_SCHEME                        = "abfss" + SCHEME_SEPARATOR;
-
     public static final String ATTRIBUTE_QUALIFIED_NAME            = "qualifiedName";
     public static final String ATTRIBUTE_NAME                      = "name";
     public static final String ATTRIBUTE_DESCRIPTION               = "description";
@@ -148,16 +133,10 @@ public abstract class BaseHiveEvent {
     public static final String ATTRIBUTE_URI                       = "uri";
     public static final String ATTRIBUTE_STORAGE_HANDLER           = "storage_handler";
     public static final String ATTRIBUTE_NAMESPACE                 = "namespace";
-    public static final String ATTRIBUTE_OBJECT_PREFIX             = "objectPrefix";
-    public static final String ATTRIBUTE_BUCKET                    = "bucket";
-    public static final String ATTRIBUTE_CONTAINER                 = "container";
     public static final String ATTRIBUTE_HOSTNAME                  = "hostName";
     public static final String ATTRIBUTE_EXEC_TIME                 = "execTime";
     public static final String ATTRIBUTE_DDL_QUERIES               = "ddlQueries";
     public static final String ATTRIBUTE_SERVICE_TYPE              = "serviceType";
-    public static final String ATTRIBUTE_ACCOUNT                   = "account";
-    public static final String ATTRIBUTE_PARENT                    = "parent";
-
     public static final String HBASE_STORAGE_HANDLER_CLASS         = "org.apache.hadoop.hive.hbase.HBaseStorageHandler";
     public static final String HBASE_DEFAULT_NAMESPACE             = "default";
     public static final String HBASE_NAMESPACE_TABLE_DELIMITER     = ":";
@@ -173,14 +152,10 @@ public abstract class BaseHiveEvent {
     public static final String RELATIONSHIP_HIVE_TABLE_PART_KEYS          = "hive_table_partitionkeys";
     public static final String RELATIONSHIP_HIVE_TABLE_COLUMNS            = "hive_table_columns";
     public static final String RELATIONSHIP_HIVE_TABLE_STORAGE_DESC       = "hive_table_storagedesc";
-    public static final String RELATIONSHIP_AWS_S3_BUCKET_S3_PSEUDO_DIRS  = "aws_s3_bucket_aws_s3_pseudo_dirs";
-    public static final String RELATIONSHIP_AWS_S3_V2_CONTAINER_CONTAINED = "aws_s3_v2_container_contained";
     public static final String RELATIONSHIP_HIVE_PROCESS_PROCESS_EXE      = "hive_process_process_executions";
     public static final String RELATIONSHIP_HIVE_DB_DDL_QUERIES           = "hive_db_ddl_queries";
     public static final String RELATIONSHIP_HIVE_TABLE_DDL_QUERIES        = "hive_table_ddl_queries";
     public static final String RELATIONSHIP_HBASE_TABLE_NAMESPACE         = "hbase_table_namespace";
-    public static final String RELATIONSHIP_ADLS_GEN2_ACCOUNT_CONTAINERS  = "adls_gen2_account_containers";
-    public static final String RELATIONSHIP_ADLS_GEN2_PARENT_CHILDREN     = "adls_gen2_parent_children";
 
 
     public static final Map<Integer, String> OWNER_TYPE_TO_ENUM_VALUE = new HashMap<>();
@@ -587,52 +562,21 @@ public abstract class BaseHiveEvent {
     }
 
     protected AtlasEntity getPathEntity(Path path, AtlasEntityExtInfo extInfo) {
-            AtlasEntity ret;
-        String      strPath           = path.toString();
-        String      metadataNamespace = getMetadataNamespace();
+        String               strPath                  = path.toString();
+        String               metadataNamespace        = getMetadataNamespace();
+        boolean              isConvertPathToLowerCase = strPath.startsWith(HDFS_PATH_PREFIX) && context.isConvertHdfsPathToLowerCase();
+        PathExtractorContext pathExtractorContext     = new PathExtractorContext(metadataNamespace, context.getQNameToEntityMap(),
+                                                                                 isConvertPathToLowerCase, context.getAwsS3AtlasModelVersion());
 
-        if (strPath.startsWith(HDFS_PATH_PREFIX) && context.isConvertHdfsPathToLowerCase()) {
-            strPath = strPath.toLowerCase();
-        }
+        AtlasEntityWithExtInfo entityWithExtInfo = AtlasPathExtractorUtil.getPathEntity(path, pathExtractorContext);
 
-        if (isS3Path(strPath)) {
-            if (context.isAwsS3AtlasModelVersionV2()) {
-                ret = addS3PathEntityV2(path, strPath, extInfo);
-            } else {
-                ret = addS3PathEntityV1(path, strPath, extInfo);
-            }
-        } else if (isAbfsPath(strPath)) {
-            ret = addAbfsPathEntity(path, strPath, extInfo);
-        } else {
-            String nameServiceID     = HdfsNameServiceResolver.getNameServiceIDForPath(strPath);
-            String attrPath          = StringUtils.isEmpty(nameServiceID) ? strPath : HdfsNameServiceResolver.getPathWithNameServiceID(strPath);
-            String pathQualifiedName = getQualifiedName(attrPath);
-
-            ret = context.getEntity(pathQualifiedName);
-
-            if (ret == null) {
-                ret = new AtlasEntity(HDFS_TYPE_PATH);
-
-                if (StringUtils.isNotEmpty(nameServiceID)) {
-                    ret.setAttribute(ATTRIBUTE_NAMESERVICE_ID, nameServiceID);
-                }
-
-                String name = Path.getPathWithoutSchemeAndAuthority(path).toString();
-
-                if (strPath.startsWith(HDFS_PATH_PREFIX) && context.isConvertHdfsPathToLowerCase()) {
-                    name = name.toLowerCase();
-                }
-
-                ret.setAttribute(ATTRIBUTE_PATH, attrPath);
-                ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, pathQualifiedName);
-                ret.setAttribute(ATTRIBUTE_NAME, name);
-                ret.setAttribute(ATTRIBUTE_CLUSTER_NAME, metadataNamespace);
-
-                context.putEntity(pathQualifiedName, ret);
+        if (entityWithExtInfo.getReferredEntities() != null){
+            for (AtlasEntity entity : entityWithExtInfo.getReferredEntities().values()) {
+                extInfo.addReferredEntity(entity);
             }
         }
 
-        return ret;
+        return entityWithExtInfo.getEntity();
     }
 
     protected AtlasEntity getHiveProcessEntity(List<AtlasEntity> inputs, List<AtlasEntity> outputs) throws Exception {
@@ -1146,235 +1090,6 @@ public abstract class BaseHiveEvent {
         }
 
         return false;
-    }
-
-    private boolean isS3Path(String strPath) {
-        return strPath != null && (strPath.startsWith(S3_SCHEME) || strPath.startsWith(S3A_SCHEME));
-    }
-
-    private boolean isAbfsPath(String strPath) {
-        return strPath != null && (strPath.startsWith(ABFS_SCHEME) || strPath.startsWith(ABFSS_SCHEME));
-    }
-
-    private AtlasEntity addS3PathEntityV1(Path path, String strPath, AtlasEntityExtInfo extInfo) {
-        String      metadataNamespace   = getMetadataNamespace();
-        String      bucketName          = path.toUri().getAuthority();
-        String      bucketQualifiedName = (path.toUri().getScheme() + SCHEME_SEPARATOR + path.toUri().getAuthority() + QNAME_SEP_METADATA_NAMESPACE).toLowerCase() + metadataNamespace;
-        String      pathQualifiedName   = (strPath + QNAME_SEP_METADATA_NAMESPACE).toLowerCase() + metadataNamespace;
-        AtlasEntity bucketEntity        = context.getEntity(bucketQualifiedName);
-        AtlasEntity ret                 = context.getEntity(pathQualifiedName);
-
-        if (ret == null) {
-            if (bucketEntity == null) {
-                bucketEntity = new AtlasEntity(AWS_S3_BUCKET);
-
-                bucketEntity.setAttribute(ATTRIBUTE_QUALIFIED_NAME, bucketQualifiedName);
-                bucketEntity.setAttribute(ATTRIBUTE_NAME, bucketName);
-
-                context.putEntity(bucketQualifiedName, bucketEntity);
-            }
-
-            extInfo.addReferredEntity(bucketEntity);
-
-            ret = new AtlasEntity(AWS_S3_PSEUDO_DIR);
-
-            ret.setRelationshipAttribute(ATTRIBUTE_BUCKET, AtlasTypeUtil.getAtlasRelatedObjectId(bucketEntity, RELATIONSHIP_AWS_S3_BUCKET_S3_PSEUDO_DIRS));
-            ret.setAttribute(ATTRIBUTE_OBJECT_PREFIX, Path.getPathWithoutSchemeAndAuthority(path).toString().toLowerCase());
-            ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, pathQualifiedName);
-            ret.setAttribute(ATTRIBUTE_NAME, Path.getPathWithoutSchemeAndAuthority(path).toString().toLowerCase());
-
-            context.putEntity(pathQualifiedName, ret);
-        }
-
-        return ret;
-    }
-
-    private AtlasEntity addS3PathEntityV2(Path path, String strPath, AtlasEntityExtInfo extInfo) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> addS3PathEntityV2(strPath={})", strPath);
-        }
-
-        String      metadataNamespace = getMetadataNamespace();
-        String      pathQualifiedName = strPath + QNAME_SEP_METADATA_NAMESPACE + metadataNamespace;
-        AtlasEntity ret               = context.getEntity(pathQualifiedName);
-
-        if (ret == null) {
-            String      bucketName          = path.toUri().getAuthority();
-            String      schemeAndBucketName = (path.toUri().getScheme() + SCHEME_SEPARATOR + bucketName).toLowerCase();
-            String      bucketQualifiedName = schemeAndBucketName + QNAME_SEP_METADATA_NAMESPACE + metadataNamespace;
-            AtlasEntity bucketEntity        = context.getEntity(bucketQualifiedName);
-
-            if (bucketEntity == null) {
-                bucketEntity = new AtlasEntity(AWS_S3_V2_BUCKET);
-
-                bucketEntity.setAttribute(ATTRIBUTE_QUALIFIED_NAME, bucketQualifiedName);
-                bucketEntity.setAttribute(ATTRIBUTE_NAME, bucketName);
-
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("adding entity: typeName={}, qualifiedName={}", bucketEntity.getTypeName(), bucketEntity.getAttribute(ATTRIBUTE_QUALIFIED_NAME));
-                }
-
-                context.putEntity(bucketQualifiedName, bucketEntity);
-            }
-
-            extInfo.addReferredEntity(bucketEntity);
-
-            AtlasRelatedObjectId parentObjId = AtlasTypeUtil.getAtlasRelatedObjectId(bucketEntity, RELATIONSHIP_AWS_S3_V2_CONTAINER_CONTAINED);
-            String               parentPath  = Path.SEPARATOR;
-            String               dirPath     = path.toUri().getPath();
-
-            if (StringUtils.isEmpty(dirPath)) {
-                dirPath = Path.SEPARATOR;
-            }
-
-            for (String subDirName : dirPath.split(Path.SEPARATOR)) {
-                if (StringUtils.isEmpty(subDirName)) {
-                    continue;
-                }
-
-                String subDirPath          = parentPath + subDirName + Path.SEPARATOR;
-                String subDirQualifiedName = schemeAndBucketName + subDirPath + QNAME_SEP_METADATA_NAMESPACE + metadataNamespace;
-
-                ret = new AtlasEntity(AWS_S3_V2_PSEUDO_DIR);
-
-                ret.setRelationshipAttribute(ATTRIBUTE_CONTAINER, parentObjId);
-                ret.setAttribute(ATTRIBUTE_OBJECT_PREFIX, subDirPath);
-                ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, subDirQualifiedName);
-                ret.setAttribute(ATTRIBUTE_NAME, subDirName);
-
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("adding entity: typeName={}, qualifiedName={}", ret.getTypeName(), ret.getAttribute(ATTRIBUTE_QUALIFIED_NAME));
-                }
-
-                context.putEntity(subDirQualifiedName, ret);
-
-                parentObjId = AtlasTypeUtil.getAtlasRelatedObjectId(ret, RELATIONSHIP_AWS_S3_V2_CONTAINER_CONTAINED);
-                parentPath  = subDirPath;
-            }
-
-            if (ret == null) {
-                ret = bucketEntity;
-            }
-        }
-
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== addS3PathEntityV2(strPath={})", strPath);
-        }
-
-        return ret;
-    }
-
-    private AtlasEntity addAbfsPathEntity(Path path, String strPath, AtlasEntityExtInfo extInfo) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> addAbfsPathEntity(strPath={})", strPath);
-        }
-
-        String      metadataNamespace = getMetadataNamespace();
-        String      pathQualifiedName = strPath + QNAME_SEP_METADATA_NAMESPACE + metadataNamespace;
-        AtlasEntity ret               = context.getEntity(pathQualifiedName);
-
-        if (ret == null) {
-            String      abfsScheme               = path.toUri().getScheme();
-            String      storageAcctName          = getAbfsStorageAccountName(path.toUri());
-            String      schemeAndStorageAcctName = (abfsScheme + SCHEME_SEPARATOR + storageAcctName).toLowerCase();
-            String      storageAcctQualifiedName = schemeAndStorageAcctName + QNAME_SEP_METADATA_NAMESPACE + metadataNamespace;
-            AtlasEntity storageAcctEntity        = context.getEntity(storageAcctQualifiedName);
-
-            // create adls-gen2 storage-account entity
-            if (storageAcctEntity == null) {
-                storageAcctEntity = new AtlasEntity(ADLS_GEN2_ACCOUNT);
-
-                storageAcctEntity.setAttribute(ATTRIBUTE_QUALIFIED_NAME, storageAcctQualifiedName);
-                storageAcctEntity.setAttribute(ATTRIBUTE_NAME, storageAcctName);
-
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("adding entity: typeName={}, qualifiedName={}", storageAcctEntity.getTypeName(), storageAcctEntity.getAttribute(ATTRIBUTE_QUALIFIED_NAME));
-                }
-
-                context.putEntity(storageAcctQualifiedName, storageAcctEntity);
-            }
-
-            extInfo.addReferredEntity(storageAcctEntity);
-
-            AtlasRelatedObjectId storageAcctObjId = AtlasTypeUtil.getAtlasRelatedObjectId(storageAcctEntity, RELATIONSHIP_ADLS_GEN2_ACCOUNT_CONTAINERS);
-
-            // create adls-gen2 container entity linking to storage account
-            String      containerName          = path.toUri().getUserInfo();
-            String      schemeAndContainerName = (abfsScheme + SCHEME_SEPARATOR + containerName + QNAME_SEP_METADATA_NAMESPACE + storageAcctName).toLowerCase();
-            String      containerQualifiedName = schemeAndContainerName + QNAME_SEP_METADATA_NAMESPACE + metadataNamespace;
-            AtlasEntity containerEntity        = context.getEntity(containerQualifiedName);
-
-            if (containerEntity == null) {
-                containerEntity = new AtlasEntity(ADLS_GEN2_CONTAINER);
-
-                containerEntity.setAttribute(ATTRIBUTE_QUALIFIED_NAME, containerQualifiedName);
-                containerEntity.setAttribute(ATTRIBUTE_NAME, containerName);
-                containerEntity.setRelationshipAttribute(ATTRIBUTE_ACCOUNT, storageAcctObjId);
-
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("adding entity: typeName={}, qualifiedName={}", containerEntity.getTypeName(), containerEntity.getAttribute(ATTRIBUTE_QUALIFIED_NAME));
-                }
-
-                context.putEntity(containerQualifiedName, containerEntity);
-            }
-
-            extInfo.addReferredEntity(containerEntity);
-
-            // create adls-gen2 directory entity linking to container
-            AtlasRelatedObjectId parentObjId = AtlasTypeUtil.getAtlasRelatedObjectId(containerEntity, RELATIONSHIP_ADLS_GEN2_PARENT_CHILDREN);
-            String               parentPath  = Path.SEPARATOR;
-            String               dirPath     = path.toUri().getPath();
-
-            if (StringUtils.isEmpty(dirPath)) {
-                dirPath = Path.SEPARATOR;
-            }
-
-            for (String subDirName : dirPath.split(Path.SEPARATOR)) {
-                if (StringUtils.isEmpty(subDirName)) {
-                    continue;
-                }
-
-                String subDirPath          = parentPath + subDirName + Path.SEPARATOR;
-                String subDirQualifiedName = schemeAndContainerName + subDirPath + QNAME_SEP_METADATA_NAMESPACE + metadataNamespace;
-
-                ret = new AtlasEntity(ADLS_GEN2_DIRECTORY);
-
-                ret.setRelationshipAttribute(ATTRIBUTE_PARENT, parentObjId);
-                ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, subDirQualifiedName);
-                ret.setAttribute(ATTRIBUTE_NAME, subDirName);
-
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("adding entity: typeName={}, qualifiedName={}", ret.getTypeName(), ret.getAttribute(ATTRIBUTE_QUALIFIED_NAME));
-                }
-
-                context.putEntity(subDirQualifiedName, ret);
-
-                parentObjId = AtlasTypeUtil.getAtlasRelatedObjectId(ret, RELATIONSHIP_ADLS_GEN2_PARENT_CHILDREN);
-                parentPath  = subDirPath;
-            }
-
-            if (ret == null) {
-                ret = storageAcctEntity;
-            }
-        }
-
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== addAbfsPathEntity(strPath={})", strPath);
-        }
-
-        return ret;
-    }
-
-    private String getAbfsStorageAccountName(URI uri) {
-        String ret  = null;
-        String host = uri.getHost();
-
-        // host: "<account_name>.dfs.core.windows.net"
-        if (StringUtils.isNotEmpty(host) && host.contains(ADLS_GEN2_ACCOUNT_HOST_SUFFIX)) {
-            ret = host.substring(0, host.indexOf(ADLS_GEN2_ACCOUNT_HOST_SUFFIX));
-        }
-
-        return ret;
     }
 
     static final class EntityComparator implements Comparator<Entity> {
