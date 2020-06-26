@@ -417,6 +417,14 @@ atlas.graph.index.search.solr.wait-searcher=true
                 <targetPath>bin</targetPath>
             </resource>
             <resource>
+                <directory>src/bin</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>**/startAtlas.sh</include>
+                </includes>
+                <targetPath>bin</targetPath>
+            </resource>
+            <resource>
                 <directory>src/conf</directory>
                 <filtering>true</filtering>
                 <targetPath>conf</targetPath>
