@@ -63,14 +63,13 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptException;
 import java.util.*;
 
-import static org.apache.atlas.AtlasErrorCode.CLASSIFICATION_NOT_FOUND;
-import static org.apache.atlas.AtlasErrorCode.DISCOVERY_QUERY_FAILED;
-import static org.apache.atlas.AtlasErrorCode.UNKNOWN_TYPENAME;
+import static org.apache.atlas.AtlasErrorCode.*;
 import static org.apache.atlas.SortOrder.ASCENDING;
 import static org.apache.atlas.SortOrder.DESCENDING;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
-import static org.apache.atlas.repository.Constants.*;
+import static org.apache.atlas.repository.Constants.ASSET_ENTITY_TYPE;
+import static org.apache.atlas.repository.Constants.OWNER_ATTRIBUTE;
 import static org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery.*;
 
 @Component
@@ -562,7 +561,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
     @Override
     @GraphTransaction
-    public AtlasSearchResult searchRelatedEntities(String guid, String relation, String sortByAttributeName, SortOrder sortOrder,
+    public AtlasSearchResult searchRelatedEntities(String guid, String relation, String sortBy, SortOrder sortOrder,
                                                    boolean excludeDeletedEntities, int limit, int offset) throws AtlasBaseException {
         AtlasSearchResult ret = new AtlasSearchResult(AtlasQueryType.RELATIONSHIP);
 
@@ -592,15 +591,50 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             }
         }
 
-        if (StringUtils.isEmpty(sortByAttributeName)) {
-            sortByAttributeName = DEFAULT_SORT_ATTRIBUTE_NAME;
+        String sortByAttributeName = DEFAULT_SORT_ATTRIBUTE_NAME;
+
+        if (StringUtils.isNotEmpty(sortBy)) {
+            sortByAttributeName = sortBy;
         }
 
-        AtlasAttribute sortByAttribute = entityType.getAttribute(sortByAttributeName);
+        //get entity type of relationship (End vertex entity type) from relationship label
+        Iterator<AtlasEdge> edges         = GraphHelper.getAdjacentEdgesByLabel(entityVertex, AtlasEdgeDirection.BOTH, relation);
+        AtlasEntityType     endEntityType = null;
+
+        if (edges != null && edges.hasNext()) {
+            AtlasEdge   relationEdge = edges.next();
+            AtlasVertex outVertex    = relationEdge.getOutVertex();
+            AtlasVertex inVertex     = relationEdge.getInVertex();
+            String      outVertexId  = outVertex != null ? outVertex.getIdForDisplay() : null;
+            AtlasVertex endVertex    = StringUtils.equals(outVertexId, entityVertex.getIdForDisplay()) ? inVertex : outVertex;
+            String      endTypeName  = GraphHelper.getTypeName(endVertex);
+
+            endEntityType = typeRegistry.getEntityTypeByName(endTypeName);
+        }
+
+        if (endEntityType == null) {
+            ret.setEntities(new ArrayList<>());
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Invalid relation : {} ", relation);
+            }
+
+            return ret;
+        }
+
+        AtlasAttribute sortByAttribute = endEntityType.getAttribute(sortByAttributeName);
 
         if (sortByAttribute == null) {
             sortByAttributeName = null;
             sortOrder           = null;
+
+            if (LOG.isDebugEnabled()) {
+                if (StringUtils.isNotEmpty(sortBy)) {
+                    LOG.debug("Invalid sortBy Attribute {} for entityType {}, Ignoring Sorting", sortBy, endEntityType.getTypeName());
+                } else {
+                    LOG.debug("Invalid Default sortBy Attribute {} for entityType {}, Ignoring Sorting", DEFAULT_SORT_ATTRIBUTE_NAME, endEntityType.getTypeName());
+                }
+            }
         } else {
             sortByAttributeName = sortByAttribute.getVertexPropertyName();
 
