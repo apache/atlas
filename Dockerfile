@@ -64,5 +64,5 @@ ENV MANAGE_LOCAL_HBASE true
 ENV PATH /home/ubuntu/atlas-bin/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 EXPOSE 21000
-
+ENV DRY=true
 CMD ["/bin/bash", "-c", "/home/ubuntu/atlas-bin/bin/atlas_start.py; tail -fF /home/ubuntu/atlas-bin/logs/application.log"]
