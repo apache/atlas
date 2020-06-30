@@ -23,11 +23,13 @@ import org.apache.atlas.SortOrder;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.SearchParameters;
+import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
@@ -60,6 +62,7 @@ public class EntitySearchProcessorTest extends BasicTestSetup {
 
     @Inject
     public GraphBackedSearchIndexer indexer;
+    private String expectedEntityName = "hive_Table_Null_tableType";
 
     @Test
     public void searchTablesByClassification() throws AtlasBaseException {
@@ -132,7 +135,6 @@ public class EntitySearchProcessorTest extends BasicTestSetup {
 
     @Test(priority = -1)
     public void searchWithNEQ_stringAttr() throws AtlasBaseException {
-        String expectedEntityName = "hive_Table_Null_tableType";
         createDummyEntity(expectedEntityName,HIVE_TABLE_TYPE);
         SearchParameters params = new SearchParameters();
         params.setTypeName(HIVE_TABLE_TYPE);
@@ -154,7 +156,7 @@ public class EntitySearchProcessorTest extends BasicTestSetup {
         assertTrue(nameList.contains(expectedEntityName));
     }
 
-    @Test(dependsOnMethods = "searchWithNEQ_stringAttr")
+    @Test
     public void searchWithNEQ_pipeSeperatedAttr() throws AtlasBaseException {
         SearchParameters params = new SearchParameters();
         params.setTypeName(HIVE_TABLE_TYPE);
@@ -173,10 +175,10 @@ public class EntitySearchProcessorTest extends BasicTestSetup {
             nameList.add((String) entityRetriever.toAtlasEntityHeader(vertex, Collections.singleton("name")).getAttribute("name"));
         }
 
-        assertTrue(nameList.contains("hive_Table_Null_tableType"));
+        assertTrue(nameList.contains(expectedEntityName));
     }
 
-    @Test(dependsOnMethods = "searchWithNEQ_stringAttr")
+    @Test
     public void searchWithNEQ_doubleAttr() throws AtlasBaseException {
         SearchParameters params = new SearchParameters();
         params.setTypeName(HIVE_TABLE_TYPE);
@@ -307,6 +309,55 @@ public class EntitySearchProcessorTest extends BasicTestSetup {
 
         EntitySearchProcessor processor = new EntitySearchProcessor(context);
         assertEquals(processor.execute().size(), 2);
+    }
+
+    @Test
+    public void searchWithNotContains_stringAttr() throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+        params.setTypeName(HIVE_TABLE_TYPE);
+        SearchParameters.FilterCriteria filterCriteria = getSingleFilterCondition("tableType", SearchParameters.Operator.NOT_CONTAINS, "Managed");
+        params.setEntityFilters(filterCriteria);
+        params.setLimit(20);
+
+        SearchContext context = new SearchContext(params, typeRegistry, graph, indexer.getVertexIndexKeys());
+        EntitySearchProcessor processor = new EntitySearchProcessor(context);
+        List<AtlasVertex> vertices = processor.execute();
+
+        assertEquals(vertices.size(), 3);
+
+        List<String> nameList = new ArrayList<>();
+        for (AtlasVertex vertex : vertices) {
+            nameList.add((String) entityRetriever.toAtlasEntityHeader(vertex, Collections.singleton("name")).getAttribute("name"));
+        }
+
+        assertTrue(nameList.contains(expectedEntityName));
+    }
+
+    @Test
+    public void searchWithNotContains_pipeSeperatedAttr() throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+        params.setTypeName(HIVE_TABLE_TYPE);
+        SearchParameters.FilterCriteria filterCriteria = getSingleFilterCondition("__classificationNames", SearchParameters.Operator.NOT_CONTAINS, METRIC_CLASSIFICATION);
+        params.setEntityFilters(filterCriteria);
+        params.setLimit(20);
+
+        SearchContext context = new SearchContext(params, typeRegistry, graph, indexer.getVertexIndexKeys());
+        EntitySearchProcessor processor = new EntitySearchProcessor(context);
+        List<AtlasVertex> vertices = processor.execute();
+
+        assertEquals(vertices.size(), 7);
+
+        List<String> nameList = new ArrayList<>();
+        for (AtlasVertex vertex : vertices) {
+            nameList.add((String) entityRetriever.toAtlasEntityHeader(vertex, Collections.singleton("name")).getAttribute("name"));
+        }
+
+        assertTrue(nameList.contains(expectedEntityName));
+    }
+
+    @AfterClass
+    public void teardown() {
+        AtlasGraphProvider.cleanup();
     }
 
 }
