@@ -1,0 +1,52 @@
+{
+    "patches": [
+        {
+            "id":              "TYPEDEF_PATCH_5000_003_001",
+            "description":     "Remove legacy reference attribute 'gsObjects' from gcp_gs_pseudo_dir",
+            "action":          "REMOVE_LEGACY_REF_ATTRIBUTES",
+            "typeName":        "gcp_gs_pseudo_dir_gcp_objects",
+            "applyToVersion":  "1.1",
+            "updateToVersion": "1.2",
+            "params": {
+                "relationshipLabel":    "__gcp_gs_pseudo_dir.gsObjects",
+                "relationshipCategory": "COMPOSITION"
+            }
+        },
+        {
+            "id":              "TYPEDEF_PATCH_5000_003_002",
+            "description":     "Remove legacy reference attribute 'pseudoDirectories' from gcp_gs_bucket",
+            "action":          "REMOVE_LEGACY_REF_ATTRIBUTES",
+            "typeName":        "gcp_gs_bucket_gcp_gs_pseudo_dirs",
+            "applyToVersion":  "1.1",
+            "updateToVersion": "1.2",
+            "params": {
+                "relationshipLabel":    "__gcp_gs_bucket.pseudoDirectories",
+                "relationshipCategory": "COMPOSITION"
+            }
+        },
+        {
+            "id":              "TYPEDEF_PATCH_5000_003_003",
+            "description":     "Remove legacy reference attribute 'avroSchema from gcp_gs_object",
+            "action":          "REMOVE_LEGACY_REF_ATTRIBUTES",
+            "typeName":        "gcp_gs_object_avro_schema",
+            "applyToVersion":  "1.1",
+            "updateToVersion": "1.2",
+            "params": {
+                "relationshipLabel":    "__gcp_gs_object.avroSchema",
+                "relationshipCategory": "ASSOCIATION"
+            }
+        },
+        {
+            "id":              "TYPEDEF_PATCH_5000_003_004",
+            "description":     "Remove legacy reference attribute 'avroSchemas' from gcp_gs_pseudo_dir",
+            "action":          "REMOVE_LEGACY_REF_ATTRIBUTES",
+            "typeName":        "gcp_gs_pseudo_dir_avro_schema",
+            "applyToVersion":  "1.1",
+            "updateToVersion": "1.2",
+            "params": {
+                "relationshipLabel":    "__gcp_gs_pseudo_dir.avroSchemas",
+                "relationshipCategory": "ASSOCIATION"
+            }
+        }
+    ]
+}

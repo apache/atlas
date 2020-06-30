@@ -1,0 +1,103 @@
+{
+  "patches": [
+    {
+      "id":              "TYPEDEF_PATCH_5000_127",
+      "description":     "Set serviceType 'gcp' to gcp_tag",
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "gcp_tag",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "gcp"
+    },
+    {
+      "id":              "TYPEDEF_PATCH_5000_128",
+      "description":     "Set serviceType 'gcp' to gcp_cloud_watch_metric",
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "gcp_cloud_watch_metric",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "gcp"
+    },
+    {
+      "id":              "TYPEDEF_PATCH_5000_129",
+      "description":     "Set serviceType 'gcp' to gcp_gs_bucket_lifeCycleRule",
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "gcp_gs_bucket_lifeCycleRule",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "gcp"
+    },
+    {
+      "id":              "TYPEDEF_PATCH_5000_130",
+      "description":     "Set serviceType 'gcp' to gcp_gs_access_policy",
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "gcp_gs_access_policy",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "gcp"
+    },
+    {
+      "id":              "TYPEDEF_PATCH_5000_131",
+      "description":     "Set serviceType 'gcp' to gcp_gs_object",
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "gcp_gs_object",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "gcp"
+    },
+    {
+      "id":              "TYPEDEF_PATCH_5000_132",
+      "description":     "Set serviceType 'gcp' to gcp_gs_pseudo_dir",
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "gcp_gs_pseudo_dir",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "gcp"
+    },
+    {
+      "id":              "TYPEDEF_PATCH_5000_133",
+      "description":     "Set serviceType 'gcp' to gcp_gs_bucket",
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "gcp_gs_bucket",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "gcp"
+    },
+    {
+      "id":              "TYPEDEF_PATCH_5000_134",
+      "description":     "Set serviceType 'gcp' to gcp_gs_bucket_gcp_gs_pseudo_dirs",
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "gcp_gs_bucket_gcp_gs_pseudo_dirs",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "gcp"
+    },
+    {
+      "id":              "TYPEDEF_PATCH_5000_135",
+      "description":     "Set serviceType 'gcp' to gcp_gs_pseudo_dir_gcp_objects",
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "gcp_gs_pseudo_dir_gcp_objects",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "gcp"
+    },
+    {
+      "id":              "TYPEDEF_PATCH_5000_136",
+      "description":     "Set serviceType 'gcp' to gcp_gs_object_avro_schema",
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "gcp_gs_object_avro_schema",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "gcp"
+    },
+    {
+      "id":              "TYPEDEF_PATCH_5000_137",
+      "description":     "Set serviceType 'gcp' to gcp_gs_pseudo_dir_avro_schema",
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "gcp_gs_pseudo_dir_avro_schema",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "gcp"
+    }
+  ]
+}
