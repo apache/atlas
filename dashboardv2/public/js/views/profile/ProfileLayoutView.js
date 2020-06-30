@@ -80,11 +80,11 @@ define(['require',
                     var value = _.extend({}, that.value, {
                         'guid': that.guid,
                         'searchType': 'relationship',
-                        'profileDBView': true,
                         'typeName': that.typeName
                     });
                     that.RProfileTableOrColumnLayoutView.show(new SearchResultLayoutView({
                         'value': value,
+                        'profileDBView': true,
                         'typeHeaders': that.typeHeaders,
                         'entityDefCollection': that.entityDefCollection,
                         'enumDefCollection': that.enumDefCollection,
