@@ -19,6 +19,7 @@
 package org.apache.atlas.repository.store.graph.v1;
 
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity.Status;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
@@ -61,12 +62,14 @@ public class SoftDeleteHandlerV1 extends DeleteHandlerV1 {
     }
 
     @Override
-    protected void deleteEdge(AtlasEdge edge, boolean force) {
+    protected void deleteEdge(AtlasEdge edge, boolean force) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> SoftDeleteHandlerV1.deleteEdge({}, {})",GraphHelper.string(edge), force);
         }
 
         if (force) {
+            removeTagPropagation(edge);
+
             graphHelper.removeEdge(edge);
         } else {
             Status state = AtlasGraphUtilsV2.getState(edge);
