@@ -66,4 +66,4 @@ ENV PATH /home/ubuntu/atlas-bin/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/us
 EXPOSE 21000
 # This setup allow us to have direct logs
 ENV DRY=true
-CMD ["/bin/bash", "-c", "/home/ubuntu/atlas-bin/bin/startatlas.sh"]
+CMD ["/bin/bash", "-c", "/home/ubuntu/atlas-bin/bin/startAtlas.sh"]
