@@ -26,9 +26,15 @@ import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.EntityMutationResponse;
+import org.apache.atlas.repository.graph.AtlasGraphProvider;
+import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
+import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.commons.collections.CollectionUtils;
 import org.testng.Assert;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
@@ -37,19 +43,23 @@ import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.apache.atlas.model.discovery.SearchParameters.*;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.fail;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
-public class BasicSearchClassificationTest extends BasicTestSetup {
+public class ClassificationSearchProcessorTest extends BasicTestSetup {
 
     @Inject
-    private AtlasDiscoveryService discoveryService;
+    private AtlasGraph graph;
+    @Inject
+    public GraphBackedSearchIndexer indexer;
+    @Inject
+    private EntityGraphRetriever entityRetriever;
 
-    private int    totalEntities                        = 0;
     private int    totalClassifiedEntities              = 0;
-    private int    getTotalClassifiedEntitiesHistorical = 0;
     private int    dimensionTagEntities                 = 10;
     private String dimensionTagDeleteGuid;
     private String dimensionalTagGuid;
@@ -65,14 +75,14 @@ public class BasicSearchClassificationTest extends BasicTestSetup {
     public void searchByALLTag() throws AtlasBaseException {
         SearchParameters params = new SearchParameters();
         params.setClassification(ALL_CLASSIFICATION_TYPES);
+        params.setLimit(20);
 
-        List<AtlasEntityHeader> entityHeaders = discoveryService.searchWithParameters(params).getEntities();
+        SearchContext context = new SearchContext(params, typeRegistry, graph, indexer.getVertexIndexKeys());
+        ClassificationSearchProcessor processor = new ClassificationSearchProcessor(context);
+        List<AtlasVertex> vertices = processor.execute();
 
-        Assert.assertTrue(CollectionUtils.isNotEmpty(entityHeaders));
-
-        totalEntities = getEntityCount();
-        totalClassifiedEntities = entityHeaders.size();
-        getTotalClassifiedEntitiesHistorical = getEntityWithTagCountHistorical();
+        Assert.assertTrue(CollectionUtils.isNotEmpty(vertices));
+        totalClassifiedEntities = vertices.size();
     }
 
     @Test
@@ -81,10 +91,14 @@ public class BasicSearchClassificationTest extends BasicTestSetup {
         params.setClassification(ALL_CLASSIFICATION_TYPES);
         FilterCriteria filterCriteria = getSingleFilterCondition("__timestamp", Operator.LT, String.valueOf(System.currentTimeMillis()));
         params.setTagFilters(filterCriteria);
+        params.setLimit(20);
 
-        List<AtlasEntityHeader> entityHeaders = discoveryService.searchWithParameters(params).getEntities();
+        SearchContext context = new SearchContext(params, typeRegistry, graph, indexer.getVertexIndexKeys());
+        ClassificationSearchProcessor processor = new ClassificationSearchProcessor(context);
+        List<AtlasVertex> vertices = processor.execute();
 
-        assertEquals(entityHeaders.size(), totalClassifiedEntities);
+        Assert.assertTrue(CollectionUtils.isNotEmpty(vertices));
+        assertEquals(vertices.size(), totalClassifiedEntities);
     }
 
     @Test
@@ -95,29 +109,40 @@ public class BasicSearchClassificationTest extends BasicTestSetup {
         params.setTagFilters(filterCriteria);
         params.setLimit(totalClassifiedEntities - 2);
 
-        List<AtlasEntityHeader> entityHeaders = discoveryService.searchWithParameters(params).getEntities();
+        SearchContext context = new SearchContext(params, typeRegistry, graph, indexer.getVertexIndexKeys());
+        ClassificationSearchProcessor processor = new ClassificationSearchProcessor(context);
+        List<AtlasVertex> vertices = processor.execute();
 
-        assertEquals(entityHeaders.size(), totalClassifiedEntities - 2);
+        Assert.assertTrue(CollectionUtils.isNotEmpty(vertices));
+        assertEquals(vertices.size(), totalClassifiedEntities - 2);
     }
 
-    @Test
+    //@Test
     public void searchByNOTCLASSIFIED() throws AtlasBaseException {
         SearchParameters params = new SearchParameters();
         params.setClassification(NO_CLASSIFICATIONS);
+        params.setLimit(20);
 
-        List<AtlasEntityHeader> entityHeaders = discoveryService.searchWithParameters(params).getEntities();
+        SearchContext context = new SearchContext(params, typeRegistry, graph, indexer.getVertexIndexKeys());
+        ClassificationSearchProcessor processor = new ClassificationSearchProcessor(context);
+        List<AtlasVertex> vertices = processor.execute();
 
-        assertEquals(entityHeaders.size(), totalEntities - totalClassifiedEntities);
+        Assert.assertTrue(CollectionUtils.isNotEmpty(vertices));
+        assertEquals(vertices.size(), 20);
     }
 
     @Test
     public void searchByTag() throws AtlasBaseException {
         SearchParameters params = new SearchParameters();
         params.setClassification(DIMENSION_CLASSIFICATION);
+        params.setLimit(20);
 
-        List<AtlasEntityHeader> entityHeaders = discoveryService.searchWithParameters(params).getEntities();
+        SearchContext context = new SearchContext(params, typeRegistry, graph, indexer.getVertexIndexKeys());
+        ClassificationSearchProcessor processor = new ClassificationSearchProcessor(context);
+        List<AtlasVertex> vertices = processor.execute();
 
-        assertEquals(entityHeaders.size(), dimensionTagEntities);
+        Assert.assertTrue(CollectionUtils.isNotEmpty(vertices));
+        assertEquals(vertices.size(), dimensionTagEntities);
     }
 
     @Test
@@ -126,11 +151,23 @@ public class BasicSearchClassificationTest extends BasicTestSetup {
         params.setClassification(DIMENSIONAL_CLASSIFICATION);
         FilterCriteria filterCriteria = getSingleFilterCondition("attr1", Operator.EQ, "Test");
         params.setTagFilters(filterCriteria);
+        params.setLimit(20);
 
-        List<AtlasEntityHeader> entityHeaders = discoveryService.searchWithParameters(params).getEntities();
+        SearchContext context = new SearchContext(params, typeRegistry, graph, indexer.getVertexIndexKeys());
+        ClassificationSearchProcessor processor = new ClassificationSearchProcessor(context);
+        List<AtlasVertex> vertices = processor.execute();
 
-        assertEquals(entityHeaders.size(), 1);
-        assertEquals(entityHeaders.get(0).getGuid(), dimensionalTagGuid);
+        Assert.assertTrue(CollectionUtils.isNotEmpty(vertices));
+        assertEquals(vertices.size(), 1);
+        List<String> guids = vertices.stream().map(g -> {
+            try {
+                return entityRetriever.toAtlasEntityHeader(g).getGuid();
+            } catch (AtlasBaseException e) {
+                fail("Failure in mapping vertex to AtlasEntityHeader");
+            }
+            return "";
+        }).collect(Collectors.toList());
+        Assert.assertTrue(guids.contains(dimensionalTagGuid));
 
     }
 
@@ -141,35 +178,86 @@ public class BasicSearchClassificationTest extends BasicTestSetup {
         params.setClassification(DIMENSION_CLASSIFICATION);
         FilterCriteria filterCriteria = getSingleFilterCondition("__timestamp", Operator.LT, String.valueOf(System.currentTimeMillis()));
         params.setTagFilters(filterCriteria);
+        params.setLimit(20);
 
-        List<AtlasEntityHeader> entityHeaders = discoveryService.searchWithParameters(params).getEntities();
+        SearchContext context = new SearchContext(params, typeRegistry, graph, indexer.getVertexIndexKeys());
+        ClassificationSearchProcessor processor = new ClassificationSearchProcessor(context);
+        List<AtlasVertex> vertices = processor.execute();
 
-        assertEquals(entityHeaders.size(), dimensionTagEntities);
+        Assert.assertTrue(CollectionUtils.isNotEmpty(vertices));
+        assertEquals(vertices.size(), dimensionTagEntities);
     }
 
     @Test
     public void searchByWildcardTag() throws AtlasBaseException {
         SearchParameters params = new SearchParameters();
         params.setClassification("Dimension*");
+        params.setLimit(20);
 
-        List<AtlasEntityHeader> entityHeaders = discoveryService.searchWithParameters(params).getEntities();
+        SearchContext context = new SearchContext(params, typeRegistry, graph, indexer.getVertexIndexKeys());
+        ClassificationSearchProcessor processor = new ClassificationSearchProcessor(context);
+        List<AtlasVertex> vertices = processor.execute();
 
-        assertEquals(entityHeaders.size(), dimensionTagEntities + 1);
+        Assert.assertTrue(CollectionUtils.isNotEmpty(vertices));
+        assertEquals(vertices.size(), dimensionTagEntities + 1);
 
     }
 
-    //@Test
+    @Test
+    public void searchByALLWildcardTag() throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+        params.setClassification("*");
+        params.setLimit(20);
+
+        SearchContext context = new SearchContext(params, typeRegistry, graph, indexer.getVertexIndexKeys());
+        ClassificationSearchProcessor processor = new ClassificationSearchProcessor(context);
+        List<AtlasVertex> vertices = processor.execute();
+
+        Assert.assertTrue(CollectionUtils.isNotEmpty(vertices));
+        assertEquals(vertices.size(),20);
+
+    }
+
+    @Test
+    public void searchWithNotContains() throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+        params.setClassification(DIMENSIONAL_CLASSIFICATION);
+        FilterCriteria filterCriteria = getSingleFilterCondition("attr1", Operator.NOT_CONTAINS, "Test");
+        params.setTagFilters(filterCriteria);
+        params.setLimit(20);
+
+        SearchContext context = new SearchContext(params, typeRegistry, graph, indexer.getVertexIndexKeys());
+        ClassificationSearchProcessor processor = new ClassificationSearchProcessor(context);
+        List<AtlasVertex> vertices = processor.execute();
+
+        Assert.assertTrue(CollectionUtils.isEmpty(vertices));
+    }
+
+
+    @Test
     public void searchByTagAndGraphSysFilters() throws AtlasBaseException {
         SearchParameters params = new SearchParameters();
         params.setClassification(DIMENSION_CLASSIFICATION);
         FilterCriteria filterCriteria = getSingleFilterCondition("__entityStatus", Operator.EQ, "DELETED");
         params.setTagFilters(filterCriteria);
         params.setExcludeDeletedEntities(false);
+        params.setLimit(20);
 
-        List<AtlasEntityHeader> entityHeaders = discoveryService.searchWithParameters(params).getEntities();
+        SearchContext context = new SearchContext(params, typeRegistry, graph, indexer.getVertexIndexKeys());
+        ClassificationSearchProcessor processor = new ClassificationSearchProcessor(context);
+        List<AtlasVertex> vertices = processor.execute();
 
-        assertEquals(entityHeaders.size(), 1);
-        assertEquals(entityHeaders.get(0).getGuid(), dimensionTagDeleteGuid);
+        Assert.assertTrue(CollectionUtils.isNotEmpty(vertices));
+        assertEquals(vertices.size(), 1);
+        List<String> guids = vertices.stream().map(g -> {
+            try {
+                return entityRetriever.toAtlasEntityHeader(g).getGuid();
+            } catch (AtlasBaseException e) {
+                fail("Failure in mapping vertex to AtlasEntityHeader");
+            }
+            return "";
+        }).collect(Collectors.toList());
+        Assert.assertTrue(guids.contains(dimensionTagDeleteGuid));
 
     }
 
@@ -209,21 +297,8 @@ public class BasicSearchClassificationTest extends BasicTestSetup {
 
     }
 
-    private int getEntityCount() throws AtlasBaseException {
-        SearchParameters params = new SearchParameters();
-        params.setTypeName(ALL_ENTITY_TYPES);
-
-        List<AtlasEntityHeader> entityHeaders = discoveryService.searchWithParameters(params).getEntities();
-        return entityHeaders.size();
+    @AfterClass
+    public void teardown() {
+        AtlasGraphProvider.cleanup();
     }
-
-    private int getEntityWithTagCountHistorical() throws AtlasBaseException {
-        SearchParameters params = new SearchParameters();
-        params.setClassification(ALL_CLASSIFICATION_TYPES);
-        params.setExcludeDeletedEntities(false);
-
-        List<AtlasEntityHeader> entityHeaders = discoveryService.searchWithParameters(params).getEntities();
-        return entityHeaders.size();
-    }
-
 }

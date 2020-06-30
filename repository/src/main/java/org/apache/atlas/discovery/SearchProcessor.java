@@ -464,9 +464,9 @@ public abstract class SearchProcessor {
             AtlasType attributeType = structType.getAttributeType(filterCriteria.getAttributeName());
 
             if (AtlasBaseTypeDef.ATLAS_TYPE_STRING.equals(attributeType.getTypeName())) {
-                if (filterCriteria.getOperator() == SearchParameters.Operator.NEQ) {
+                if (filterCriteria.getOperator() == SearchParameters.Operator.NEQ || filterCriteria.getOperator() == SearchParameters.Operator.NOT_CONTAINS) {
                     if (LOG.isDebugEnabled()) {
-                        LOG.debug("NEQ operator found for string attribute {}, deferring to in-memory or graph query (might cause poor performance)", qualifiedName);
+                        LOG.debug("{} operator found for string attribute {}, deferring to in-memory or graph query (might cause poor performance)", filterCriteria.getOperator(), qualifiedName);
                     }
 
                     ret = false;
@@ -633,6 +633,7 @@ public abstract class SearchProcessor {
                     op      = SearchParameters.Operator.NOT_CONTAINS;
                     break;
                 case CONTAINS:
+                case NOT_CONTAINS:
                     if (attrName.equals(CUSTOM_ATTRIBUTES_PROPERTY_KEY)) {
                         attrVal = getCustomAttributeIndexQueryValue(attrVal, true);
                     }
@@ -848,6 +849,8 @@ public abstract class SearchProcessor {
                                     break;
                                 case NOT_NULL:
                                     innerQry.has(qualifiedName, AtlasGraphQuery.ComparisionOperator.NOT_EQUAL, null);
+                                    break;
+                                case NOT_CONTAINS:
                                     break;
                                 default:
                                     LOG.warn("{}: unsupported operator. Ignored", operator);

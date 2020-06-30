@@ -19,10 +19,12 @@ package org.apache.atlas;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.glossary.GlossaryService;
 import org.apache.atlas.model.discovery.SearchParameters;
-import org.apache.atlas.model.instance.AtlasClassification;
-import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.model.glossary.AtlasGlossary;
+import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
+import org.apache.atlas.model.glossary.relations.AtlasGlossaryHeader;
+import org.apache.atlas.model.instance.*;
 import org.apache.atlas.model.typedef.*;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
@@ -42,6 +44,7 @@ import static org.testng.Assert.fail;
 
 public abstract class BasicTestSetup {
 
+    // Entity type //
     protected static final String DATABASE_TYPE     = "hive_db";
     protected static final String HIVE_TABLE_TYPE   = "hive_table";
     private static final   String COLUMN_TYPE       = "hive_column";
@@ -50,6 +53,7 @@ public abstract class BasicTestSetup {
     private static final   String VIEW_TYPE         = "hive_process";
     protected static final String DATASET_SUBTYPE   = "Asset";
 
+    //Classification type //
     public static final String DIMENSION_CLASSIFICATION    = "Dimension";
     public static final String FACT_CLASSIFICATION         = "Fact";
     public static final String PII_CLASSIFICATION          = "PII";
@@ -59,14 +63,21 @@ public abstract class BasicTestSetup {
     public static final String LOGDATA_CLASSIFICATION      = "Log Data";
     public static final String DIMENSIONAL_CLASSIFICATION  = "Dimensional";
 
+    // Glossary type //
+    public static final String SALES_GLOSSARY = "salesGlossary";
+    public static final String SALES_TERM     = "salesTerm";
+
     @Inject
     protected AtlasTypeRegistry typeRegistry;
     @Inject
     protected AtlasTypeDefStore typeDefStore;
     @Inject
     protected AtlasEntityStore entityStore;
+    @Inject
+    protected GlossaryService glossaryService;
 
     private boolean baseLoaded = false;
+    private EntityMutationResponse hiveEntities;
 
     protected void setupTestData() {
         loadBaseModels();
@@ -77,6 +88,7 @@ public abstract class BasicTestSetup {
     private void loadBaseModels() {
         try {
             loadModelFromJson("0000-Area0/0010-base_model.json", typeDefStore, typeRegistry);
+            loadModelFromJson("0000-Area0/0011-glossary_model.json", typeDefStore, typeRegistry);
             baseLoaded = true;
         } catch (IOException | AtlasBaseException e) {
             fail("Base model setup is required for test to run!");
@@ -97,7 +109,7 @@ public abstract class BasicTestSetup {
         AtlasEntity.AtlasEntitiesWithExtInfo hiveTestEntities = hiveTestEntities();
 
         try {
-            entityStore.createOrUpdate(new AtlasEntityStream(hiveTestEntities), false);
+             hiveEntities = entityStore.createOrUpdate(new AtlasEntityStream(hiveTestEntities), false);
         } catch (AtlasBaseException e) {
             fail("Hive entities need to be created for test to run!");
         }
@@ -450,12 +462,13 @@ public abstract class BasicTestSetup {
         return datasetSubType;
     }
 
-    public void createDummyEntity(String name, String type, String... traitNames) throws AtlasBaseException {
+    public EntityMutationResponse createDummyEntity(String name, String type, String... traitNames) throws AtlasBaseException {
         AtlasEntity entity = new AtlasEntity(type);
         entity.setAttribute("name", name);
         entity.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, name);
         entity.setClassifications(Stream.of(traitNames).map(AtlasClassification::new).collect(Collectors.toList()));
-        entityStore.createOrUpdate(new AtlasEntityStream(new AtlasEntity.AtlasEntitiesWithExtInfo(entity)), false);
+        EntityMutationResponse resp = entityStore.createOrUpdate(new AtlasEntityStream(new AtlasEntity.AtlasEntitiesWithExtInfo(entity)), false);
+        return resp;
     }
 
     public SearchParameters.FilterCriteria getSingleFilterCondition(String attName, SearchParameters.Operator op, String attrValue) {
@@ -470,6 +483,24 @@ public abstract class BasicTestSetup {
         criteria.add(f1);
         filterCriteria.setCriterion(criteria);
         return filterCriteria;
+    }
+
+    public void assignGlossary() throws AtlasBaseException {
+        AtlasGlossary glossary = new AtlasGlossary();
+        glossary.setName(SALES_GLOSSARY);
+        glossary = glossaryService.createGlossary(glossary);
+
+        AtlasGlossaryTerm term = new AtlasGlossaryTerm();
+        term.setAnchor(new AtlasGlossaryHeader(glossary.getGuid()));
+        term.setName(SALES_TERM);
+        term = glossaryService.createTerm(term);
+
+        List<AtlasRelatedObjectId> guids = hiveEntities.getCreatedEntities().stream().filter(e -> e.getTypeName().equals(HIVE_TABLE_TYPE))
+                .map(p -> {AtlasRelatedObjectId obj = new AtlasRelatedObjectId();
+                            obj.setGuid(p.getGuid());
+                            obj.setTypeName(p.getTypeName()); return obj;}).collect(Collectors.toList());
+
+        glossaryService.assignTermToEntities(term.getGuid(), guids);
     }
 
 }

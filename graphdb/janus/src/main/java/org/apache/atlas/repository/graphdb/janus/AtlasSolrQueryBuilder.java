@@ -195,11 +195,15 @@ public class AtlasSolrQueryBuilder {
                 if (!indexAttributes.contains(indexAttributeName)) {
                     StringBuilder sb   = new StringBuilder();
 
-                    if (attributeName.equals(CUSTOM_ATTRIBUTES_PROPERTY_KEY) && operator.equals(Operator.CONTAINS)) {
+                    if (attributeName.equals(CUSTOM_ATTRIBUTES_PROPERTY_KEY)) {
                         // CustomAttributes stores key value pairs in String format, so ideally it should be 'contains' operator to search for one pair,
                         // for use-case, E1 having key1=value1 and E2 having key1=value2, searching key1=value1 results both E1,E2
                         // surrounding inverted commas to attributeValue works
-                        operator       = Operator.EQ;
+                        if (operator.equals(Operator.CONTAINS)) {
+                            operator   = Operator.EQ;
+                        } else if (operator.equals(Operator.NOT_CONTAINS)) {
+                            operator   = Operator.NEQ;
+                        }
                         attributeValue = getIndexQueryAttributeValue(attributeValue);
                     }
 
@@ -260,6 +264,9 @@ public class AtlasSolrQueryBuilder {
                     break;
                 case CONTAINS:
                     withContains(queryBuilder, indexFieldName, attributeValue);
+                    break;
+                case NOT_CONTAINS:
+                    withNotContains(queryBuilder, indexFieldName, attributeValue);
                     break;
                 case IS_NULL:
                     withIsNull(queryBuilder, indexFieldName);
@@ -386,6 +393,10 @@ public class AtlasSolrQueryBuilder {
 
     private void withContains(StringBuilder queryBuilder, String indexFieldName, String attributeValue) {
         queryBuilder.append("+").append(indexFieldName).append(":*").append(attributeValue).append("* ");
+    }
+
+    private void withNotContains(StringBuilder queryBuilder, String indexFieldName, String attributeValue) {
+        queryBuilder.append("*:* -").append(indexFieldName).append(":*").append(attributeValue).append("* ");
     }
 
     private void withIsNull(StringBuilder queryBuilder, String indexFieldName) {
