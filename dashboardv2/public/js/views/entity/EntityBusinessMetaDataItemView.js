@@ -115,7 +115,7 @@ define(['require',
                     if (!that.model.has("__internal_UI_businessMetadataName")) {
                         updateObj["__internal_UI_businessMetadataName"] = businessMetadata;
                     }
-                    if (typeName.indexOf("date") > -1) {
+                    if (typeName === "date" || typeName === "array<date>") {
                         if (multi && updateObj[key].value) {
                             var dateValues = updateObj[key].value.split(','),
                                 dateStr = [];
@@ -133,7 +133,7 @@ define(['require',
                 });
                 this.$el.on('keypress', '.select2_only_number .select2-search__field', function() {
                     var typename = $(this).parents(".select2_only_number").find("select[data-typename]").data("typename")
-                    if (typename.indexOf("float") > -1 && event.which == 46) {
+                    if ((typename === "float" || typename === "array<float>") && event.which == 46) {
                         return;
                     }
                     if ((event.which < 48 || event.which > 57)) {
@@ -159,10 +159,10 @@ define(['require',
                 if (!isMultiValued && !_.isEmpty(val)) {
                     val = _.escape(val);
                 }
-                if (!_.isUndefinedNull(val) && typeName.indexOf("boolean") > -1) {
+                if (!_.isUndefinedNull(val) && (typeName === "boolean" || typeName === "array<boolean>")) {
                     val = String(val);
                 }
-                if (typeName.indexOf("date") > -1) {
+                if (typeName === "date" || typeName === "array<date>") {
                     if (isMultiValued && val && val.length) {
                         var dateStr = [];
                         _.each(val, function(selectedDate) {
@@ -175,11 +175,11 @@ define(['require',
                         val = moment(val).format(Globals.dateFormat);
                     }
                 }
-                if (typeName.indexOf("string") > -1) {
+                if (typeName === "string" || typeName === "array<string>") {
                     returnEL = '<' + elType + ' type="text" data-key="' + key + '" data-businessMetadata="' + businessMetadata + '" data-typename="' + typeName + '" data-multi="' + isMultiValued + '" data-tags="true"  placeholder="Enter String" class="form-control" ' + (isMultiValued === false && !_.isUndefinedNull(val) ? 'value="' + val + '"' : "") + '></' + elType + '>';
-                } else if (typeName.indexOf("boolean") > -1) {
+                } else if (typeName === "boolean" || typeName === "array<boolean>") {
                     returnEL = '<select data-key="' + key + '" data-businessMetadata="' + businessMetadata + '" data-typename="' + typeName + '" data-multi="' + isMultiValued + '" class="form-control">' + (isMultiValued ? "" : '<option value="">--Select Value--</option>') + '<option value="true" ' + (!_.isUndefinedNull(val) && val == "true" ? "selected" : "") + '>true</option><option value="false" ' + (!_.isUndefinedNull(val) && val == "false" ? "selected" : "") + '>false</option></select>';
-                } else if (typeName.indexOf("date") > -1) {
+                } else if (typeName === "date" || typeName === "array<date>") {
                     returnEL = '<' + (isMultiValued ? "textarea" : "input") + ' type="text" data-key="' + key + '" data-businessMetadata="' + businessMetadata + '" data-typename="' + typeName + '"data-multi="' + isMultiValued + '" data-type="date" class="form-control" ' + (isMultiValued === false && !_.isUndefinedNull(val) ? 'value="' + val + '"' : "") + '>' + (isMultiValued === true && !_.isUndefinedNull(val) ? val : "") + (isMultiValued ? "</textarea>" : "");
                     setTimeout(function() {
                         var dateObj = { singleDatePicker: true, showDropdowns: true, autoUpdateInput: isMultiValued ? false : true },
@@ -195,7 +195,7 @@ define(['require',
                             });
                         }
                     }, 0);
-                } else if (typeName.indexOf("byte") > -1 || typeName.indexOf("short") > -1 || typeName.indexOf("int") > -1 || typeName.indexOf("float") > -1 || typeName.indexOf("double") > -1 || typeName.indexOf("long") > -1) {
+                } else if (typeName === "byte" || typeName === "array<byte>" || typeName === "short" || typeName === "array<short>" || typeName === "int" || typeName === "array<int>" || typeName === "float" || typeName === "array<float>" || typeName === "double" || typeName === "array<double>" || typeName === "long" || typeName === "array<long>") {
                     allowOnlyNum = true;
                     returnEL = '<' + elType + ' data-key="' + key + '" data-businessMetadata="' + businessMetadata + '" data-typename="' + typeName + '" type="number" data-multi="' + isMultiValued + '" data-tags="true" placeholder="Enter Number" class="form-control" ' + (!_.isUndefinedNull(val) ? 'value="' + val + '"' : "") + '></' + elType + '>';
                 } else if (typeName) {

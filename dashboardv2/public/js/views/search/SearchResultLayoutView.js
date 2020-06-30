@@ -147,7 +147,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'value', 'guid', 'initialView', 'isTypeTagNotExists', 'classificationDefCollection', 'entityDefCollection', 'typeHeaders', 'searchVent', 'enumDefCollection', 'tagCollection', 'searchTableColumns', 'isTableDropDisable', 'fromView', 'glossaryCollection', 'termName', 'businessMetadataDefCollection'));
+                _.extend(this, _.pick(options, 'value', 'guid', 'initialView', 'isTypeTagNotExists', 'classificationDefCollection', 'entityDefCollection', 'typeHeaders', 'searchVent', 'enumDefCollection', 'tagCollection', 'searchTableColumns', 'isTableDropDisable', 'fromView', 'glossaryCollection', 'termName', 'businessMetadataDefCollection', 'profileDBView'));
                 this.entityModel = new VEntity();
                 this.searchCollection = new VSearchList();
                 this.limit = 25;
@@ -250,7 +250,7 @@ define(['require',
                     collection: this.searchCollection,
                     includePagination: false,
                     includeFooterRecords: false,
-                    includeColumnManager: (Utils.getUrlState.isSearchTab() && this.value && this.value.searchType === "basic" && !this.value.profileDBView ? true : false),
+                    includeColumnManager: (Utils.getUrlState.isSearchTab() && this.value && this.value.searchType === "basic" && !this.profileDBView ? true : false),
                     includeOrderAbleColumns: false,
                     includeSizeAbleColumns: false,
                     includeTableLoader: false,
@@ -486,7 +486,8 @@ define(['require',
                         if (dataLength > 0) {
                             that.$('.searchTable').removeClass('noData')
                         }
-                        if (Utils.getUrlState.isSearchTab() && value && !value.profileDBView) {
+
+                        if (Utils.getUrlState.isSearchTab() && value && !that.profileDBView) {
                             var searchString = 'Results for: <span class="filterQuery">' + CommonViewFunction.generateQueryOfFilter(that.value) + "</span>";
                             if (Globals.entityCreate && Globals.entityTypeConfList && Utils.getUrlState.isSearchTab()) {
                                 searchString += "<p>If you do not find the entity in search result below then you can" + '<a href="javascript:void(0)" data-id="createEntity"> create new entity</a></p>';
@@ -510,7 +511,7 @@ define(['require',
                         this.searchCollection.url = UrlLinks.searchApiUrl(value.searchType);
                     }
                     _.extend(this.searchCollection.queryParams, { 'limit': this.limit, 'offset': this.offset, 'query': _.trim(value.query), 'typeName': value.type || null, 'classification': value.tag || null, 'termName': value.term || null });
-                    if (value.profileDBView && value.typeName && value.guid) {
+                    if (this.profileDBView && value.typeName && value.guid) {
                         var profileParam = {};
                         profileParam['guid'] = value.guid;
                         profileParam['relation'] = value.typeName === 'hive_db' ? '__hive_table.db' : '__hbase_table.namespace';
@@ -520,12 +521,12 @@ define(['require',
                     }
                     if (isPostMethod) {
                         this.searchCollection.filterObj = _.extend({}, filterObj);
-                        apiObj['data'] = _.extend(checkBoxValue, filterObj, _.pick(this.searchCollection.queryParams, 'query', 'excludeDeletedEntities', 'limit', 'offset', 'typeName', 'classification', 'termName'))
+                        apiObj['data'] = _.extend(checkBoxValue, filterObj, _.pick(this.searchCollection.queryParams, 'query', 'excludeDeletedEntities', 'limit', 'offset', 'typeName', 'classification', 'termName'));
                         Globals.searchApiCallRef = this.searchCollection.getBasicRearchResult(apiObj);
                     } else {
                         apiObj.data = null;
                         this.searchCollection.filterObj = null;
-                        if (this.value.profileDBView) {
+                        if (this.profileDBView) {
                             _.extend(this.searchCollection.queryParams, checkBoxValue);
                         }
                         Globals.searchApiCallRef = this.searchCollection.fetch(apiObj);
@@ -537,7 +538,7 @@ define(['require',
                         Globals.searchApiCallRef = this.searchCollection.getBasicRearchResult(apiObj);
                     } else {
                         apiObj.data = null;
-                        if (this.value.profileDBView) {
+                        if (this.profileDBView) {
                             _.extend(this.searchCollection.queryParams, checkBoxValue);
                         }
                         Globals.searchApiCallRef = this.searchCollection.fetch(apiObj);
@@ -655,7 +656,7 @@ define(['require',
 
 
                 col['name'] = {
-                    label: this.value && this.value.profileDBView ? "Table Name" : "Name",
+                    label: this.value && this.profileDBView ? "Table Name" : "Name",
                     cell: "html",
                     editable: false,
                     resizeable: true,
@@ -734,7 +735,7 @@ define(['require',
                         }
                     })
                 };
-                if (this.value && this.value.profileDBView) {
+                if (this.value && this.profileDBView) {
                     col['createTime'] = {
                         label: "Date Created",
                         cell: "Html",
@@ -751,7 +752,7 @@ define(['require',
                         })
                     }
                 }
-                if (this.value && !this.value.profileDBView) {
+                if (this.value && !this.profileDBView) {
                     col['description'] = {
                         label: "Description",
                         cell: "String",

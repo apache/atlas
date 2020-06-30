@@ -105,6 +105,7 @@ define([
                     that.metricCollection.fetch({
                         complete: function() {
                             that.entityCountObj = _.first(that.metricCollection.toJSON());
+                            that.fromManualRender = true;
                             that.ui.entitySearchTree.jstree(true).refresh();
                             that.changeLoaderState(false);
                         }

@@ -778,7 +778,7 @@ define(['require',
                         success: function(model, response) {
                             that.modal.$el.find('button.ok').hideButtonLoader();
                             that.modal.close();
-                            var msgType = that.guid ? "editSuccessMessage" : "addSuccessMessage";
+                            var msgType = (model.mutatedEntities && model.mutatedEntities.UPDATE) ? "editSuccessMessage" : "addSuccessMessage";
                             Utils.notifySuccess({
                                 content: "Entity" + Messages.getAbbreviationMsg(false, msgType)
                             });
