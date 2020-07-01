@@ -19,13 +19,13 @@
 package org.apache.atlas.discovery;
 
 
-import com.sun.xml.bind.v2.model.annotation.Quick;
 import org.apache.atlas.SortOrder;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.*;
 import org.apache.atlas.model.profile.AtlasUserSavedSearch;
 
 import java.util.List;
+import java.util.Set;
 
 public interface AtlasDiscoveryService {
     /**
@@ -83,6 +83,7 @@ public interface AtlasDiscoveryService {
      *
      * @param guid unique ID of the entity.
      * @param relation relation name.
+     * @param attributes set of attributes in search result.
      * @param sortByAttribute sort the result using this attribute name, default value is 'name'
      * @param sortOrder sorting order
      * @param excludeDeletedEntities exclude deleted entities in search result.
@@ -90,7 +91,7 @@ public interface AtlasDiscoveryService {
      * @param offset offset to the results returned (for pagination). [ offset >= 0 ]. -1 maps to offset 0.
      * @return AtlasSearchResult
      */
-    AtlasSearchResult searchRelatedEntities(String guid, String relation, String sortByAttribute, SortOrder sortOrder, boolean excludeDeletedEntities, int limit, int offset) throws AtlasBaseException;
+    AtlasSearchResult searchRelatedEntities(String guid, String relation, Set<String> attributes, String sortByAttribute, SortOrder sortOrder, boolean excludeDeletedEntities, int limit, int offset) throws AtlasBaseException;
 
     /**
      *

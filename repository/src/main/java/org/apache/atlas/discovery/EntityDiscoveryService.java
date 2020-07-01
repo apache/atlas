@@ -563,7 +563,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
     @Override
     @GraphTransaction
-    public AtlasSearchResult searchRelatedEntities(String guid, String relation, String sortBy, SortOrder sortOrder,
+    public AtlasSearchResult searchRelatedEntities(String guid, String relation, Set<String> attributes, String sortBy, SortOrder sortOrder,
                                                    boolean excludeDeletedEntities, int limit, int offset) throws AtlasBaseException {
         AtlasSearchResult ret = new AtlasSearchResult(AtlasQueryType.RELATIONSHIP);
 
@@ -685,7 +685,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                     List<AtlasEntityHeader> resultList = new ArrayList<>(vertices.size());
 
                     for (AtlasVertex vertex : vertices) {
-                        resultList.add(entityRetriever.toAtlasEntityHeader(vertex));
+                        resultList.add(entityRetriever.toAtlasEntityHeader(vertex, attributes));
                     }
 
                     ret.setEntities(resultList);
