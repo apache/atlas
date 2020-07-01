@@ -87,7 +87,7 @@ steps:
       branch:
         - heetch-atlas-2.0
 
-  - name: docker_atlas_embedded_hbase_solr_release
+  - name: docker_atlas_embedded_cassandra_solr_release
     image: plugins/docker
     settings:
       build_args:
