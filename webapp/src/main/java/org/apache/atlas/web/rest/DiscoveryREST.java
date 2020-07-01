@@ -55,6 +55,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.util.List;
+import java.util.Set;
 
 /**
  * REST interface for data discovery using dsl or full text search
@@ -344,6 +345,7 @@ public class DiscoveryREST {
      *
      * @param guid            Attribute name
      * @param relation        relationName
+     * @param attributes      set of attributes in search result.
      * @param sortByAttribute sort the result using this attribute name, default value is 'name'
      * @param sortOrder       sorting order
      * @param limit           limit the result set to only include the specified number of entries
@@ -355,13 +357,14 @@ public class DiscoveryREST {
      */
     @GET
     @Path("relationship")
-    public AtlasSearchResult searchRelatedEntities(@QueryParam("guid")                   String    guid,
-                                                   @QueryParam("relation")               String    relation,
-                                                   @QueryParam("sortBy")                 String    sortByAttribute,
-                                                   @QueryParam("sortOrder")              SortOrder sortOrder,
-                                                   @QueryParam("excludeDeletedEntities") boolean   excludeDeletedEntities,
-                                                   @QueryParam("limit")                  int       limit,
-                                                   @QueryParam("offset")                 int       offset) throws AtlasBaseException {
+    public AtlasSearchResult searchRelatedEntities(@QueryParam("guid")                   String      guid,
+                                                   @QueryParam("relation")               String      relation,
+                                                   @QueryParam("attributes")             Set<String> attributes,
+                                                   @QueryParam("sortBy")                 String      sortByAttribute,
+                                                   @QueryParam("sortOrder")              SortOrder   sortOrder,
+                                                   @QueryParam("excludeDeletedEntities") boolean     excludeDeletedEntities,
+                                                   @QueryParam("limit")                  int         limit,
+                                                   @QueryParam("offset")                 int         offset) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
         Servlets.validateQueryParamLength("relation", relation);
         Servlets.validateQueryParamLength("sortBy", sortByAttribute);
@@ -374,7 +377,7 @@ public class DiscoveryREST {
                         ", " + relation + ", " + sortByAttribute + ", " + sortOrder + ", " + excludeDeletedEntities + ", " + ", " + limit + ", " + offset + ")");
             }
 
-            return discoveryService.searchRelatedEntities(guid, relation, sortByAttribute, sortOrder, excludeDeletedEntities, limit, offset);
+            return discoveryService.searchRelatedEntities(guid, relation, attributes, sortByAttribute, sortOrder, excludeDeletedEntities, limit, offset);
         } finally {
             AtlasPerfTracer.log(perf);
         }
