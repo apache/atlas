@@ -72,3 +72,6 @@ distro/solr/*.tgz
 # emacs files
 *#
 *~
+
+dashboardv3/node_modules
+docs/package-lock.json
