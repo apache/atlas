@@ -72,5 +72,3 @@ distro/solr/*.tgz
 # emacs files
 *#
 *~
-# test folder for local run
-release
