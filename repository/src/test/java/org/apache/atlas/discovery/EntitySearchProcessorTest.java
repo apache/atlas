@@ -250,7 +250,7 @@ public class EntitySearchProcessorTest extends BasicTestSetup {
     @Test(expectedExceptions = AtlasBaseException.class, expectedExceptionsMessageRegExp = "Not_Exists: Unknown/invalid typename")
     public void entityTypesNotAllowed() throws AtlasBaseException {
         SearchParameters params = new SearchParameters();
-        params.setTypeName(DATABASE_TYPE+",Not_Exists");
+        params.setTypeName("Not_Exists");
         params.setLimit(20);
 
         SearchContext context = new SearchContext(params, typeRegistry, graph, Collections.<String>emptySet());

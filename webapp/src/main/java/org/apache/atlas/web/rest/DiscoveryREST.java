@@ -326,9 +326,16 @@ public class DiscoveryREST {
                 throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Limit/offset should be non-negative");
             }
 
+            if (StringUtils.isEmpty(parameters.getTypeName()) && !isEmpty(parameters.getEntityFilters())) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "EntityFilters specified without Type name");
+            }
+
+            if (StringUtils.isEmpty(parameters.getClassification()) && !isEmpty(parameters.getTagFilters())) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "TagFilters specified without tag name");
+            }
+
             if (StringUtils.isEmpty(parameters.getTypeName()) && StringUtils.isEmpty(parameters.getClassification()) &&
-                StringUtils.isEmpty(parameters.getQuery()) && StringUtils.isEmpty(parameters.getTermName()) &&
-                isEmpty(parameters.getEntityFilters()) && isEmpty(parameters.getTagFilters())) {
+                StringUtils.isEmpty(parameters.getQuery()) && StringUtils.isEmpty(parameters.getTermName())) {
                 throw new AtlasBaseException(AtlasErrorCode.INVALID_SEARCH_PARAMS);
             }
 

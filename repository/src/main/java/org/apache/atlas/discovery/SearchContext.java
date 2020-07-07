@@ -359,7 +359,7 @@ public class SearchContext {
         Set<String> classificationNames = new HashSet<>();
 
         if (StringUtils.isNotEmpty(classification)) {
-            String[] types                  = classification.split(TYPENAME_DELIMITER);
+            String[] types    = classification.split(TYPENAME_DELIMITER);
             Set<String> names = new HashSet<>(Arrays.asList(types));
 
             names.forEach(name -> {
@@ -370,11 +370,13 @@ public class SearchContext {
             });
 
             // Validate if the classification exists
-            if (CollectionUtils.isEmpty(classificationNames) || classificationNames.size() != names.size()) {
-                if (CollectionUtils.isNotEmpty(classificationNames)) {
-                    names.removeAll(classificationNames);
-                }
-                throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_CLASSIFICATION, String.join(TYPENAME_DELIMITER, names));
+            if (CollectionUtils.isEmpty(classificationNames)) {
+                throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_CLASSIFICATION, classification);
+
+            } else if (classificationNames.size() != names.size()) {
+                names.removeAll(classificationNames);
+
+                LOG.info("Could not search for {} , invalid classifications", String.join(TYPENAME_DELIMITER, names));
             }
         }
 
@@ -398,24 +400,24 @@ public class SearchContext {
                                     getEntityType(n)).filter(Objects::nonNull).collect(Collectors.toSet());
 
             // Validate if the type name is incorrect
-            if (CollectionUtils.isEmpty(entityTypes) || entityTypes.size() != typeNames.size()) {
-                if (CollectionUtils.isNotEmpty(entityTypes)) {
-                    Set<String> validEntityTypes = new HashSet<>();
-                    for (AtlasEntityType entityType : entityTypes) {
-                        String name = entityType.getTypeName();
-                        if (name.equals(MATCH_ALL_ENTITY_TYPES.getTypeName())) {
-                            validEntityTypes.add(ALL_ENTITY_TYPES);
-                            continue;
-                        }
-                        validEntityTypes.add(entityType.getTypeName());
-                    }
+            if (CollectionUtils.isEmpty(entityTypes)) {
+                throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_TYPENAME,typeName);
 
-                    typeNames.removeAll(validEntityTypes);
+            } else if (entityTypes.size() != typeNames.size()) {
+                Set<String> validEntityTypes = new HashSet<>();
+                for (AtlasEntityType entityType : entityTypes) {
+                    String name = entityType.getTypeName();
+                    if (name.equals(MATCH_ALL_ENTITY_TYPES.getTypeName())) {
+                        validEntityTypes.add(ALL_ENTITY_TYPES);
+                        continue;
+                    }
+                    validEntityTypes.add(entityType.getTypeName());
                 }
 
-                throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_TYPENAME, String.join(TYPENAME_DELIMITER, typeNames));
-            }
+                typeNames.removeAll(validEntityTypes);
 
+                LOG.info("Could not search for {} , invalid typeNames", String.join(TYPENAME_DELIMITER, typeNames));
+            }
         }
 
         return entityTypes;
