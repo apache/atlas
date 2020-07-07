@@ -90,6 +90,26 @@
     "classificationDefs": [],
     "entityDefs": [
         {
+            "name":        "ozone_parent",
+            "description": "Atlas entity-type representing parent types (bucket, key) in Ozone",
+            "superTypes":  [
+            ],
+            "serviceType": "ozone",
+            "typeVersion": "1.0",
+            "attributeDefs": [
+            ]
+        },
+        {
+            "name":        "ozone_child",
+            "description": "Atlas entity-type representing child types (key) in Ozone",
+            "superTypes":  [
+            ],
+            "serviceType": "ozone",
+            "typeVersion": "1.0",
+            "attributeDefs": [
+            ]
+        },
+        {
             "name": "ozone_volume",
             "description": "Atlas Type representing an volume in an Ozone Object Store",
             "superTypes": [
@@ -128,7 +148,8 @@
             "name": "ozone_bucket",
             "description": "Atlas Type representing a bucket in an Ozone Object Store Volume",
             "superTypes": [
-                "DataSet"
+                "DataSet",
+                "ozone_parent"
             ],
             "serviceType": "ozone",
             "typeVersion": "1.0",
@@ -171,7 +192,9 @@
             "name": "ozone_key",
             "description": "Atlas Type representing a key in an Ozone Object Store Bucket",
             "superTypes": [
-                "DataSet"
+                "DataSet",
+                "ozone_parent",
+                "ozone_child"
             ],
             "serviceType": "ozone",
             "typeVersion": "1.0",
@@ -240,21 +263,21 @@
             "propagateTags": "NONE"
         },
         {
-            "name": "ozone_bucket_keys",
-            "serviceType": "ozone",
-            "typeVersion": "1.0",
+            "name":                 "ozone_parent_children",
+            "serviceType":          "ozone",
+            "typeVersion":          "1.0",
             "relationshipCategory": "COMPOSITION",
             "endDef1": {
-                "type": "ozone_bucket",
-                "name": "keys",
-                "isContainer": true,
-                "cardinality": "SET"
+                "type":               "ozone_parent",
+                "name":               "children",
+                "isContainer":        true,
+                "cardinality":        "SET"
             },
             "endDef2": {
-                "type": "ozone_key",
-                "name": "bucket",
-                "isContainer": false,
-                "cardinality": "SINGLE"
+                "type":               "ozone_child",
+                "name":               "parent",
+                "isContainer":        false,
+                "cardinality":        "SINGLE"
             },
             "propagateTags": "NONE"
         }

@@ -73,14 +73,14 @@ public class AtlasPathExtractorUtil {
     public static final String RELATIONSHIP_ADLS_GEN2_PARENT_CHILDREN     = "adls_gen2_parent_children";
 
     // Ozone
-    public static final String OZONE_VOLUME                     = "ozone_volume";
-    public static final String OZONE_BUCKET                     = "ozone_bucket";
-    public static final String OZONE_KEY                        = "ozone_key";
-    public static final String OZONE_SCHEME                     = "ofs" + SCHEME_SEPARATOR;
-    public static final String OZONE_3_SCHEME                   = "o3fs" + SCHEME_SEPARATOR;
-    public static final String ATTRIBUTE_VOLUME                 = "volume";
-    public static final String RELATIONSHIP_OZONE_VOLUME_BUCKET = "ozone_volume_buckets";
-    public static final String RELATIONSHIP_OZONE_BUCKET_KEY    = "ozone_bucket_keys";
+    public static final String OZONE_VOLUME                         = "ozone_volume";
+    public static final String OZONE_BUCKET                         = "ozone_bucket";
+    public static final String OZONE_KEY                            = "ozone_key";
+    public static final String OZONE_SCHEME                         = "ofs" + SCHEME_SEPARATOR;
+    public static final String OZONE_3_SCHEME                       = "o3fs" + SCHEME_SEPARATOR;
+    public static final String ATTRIBUTE_VOLUME                     = "volume";
+    public static final String RELATIONSHIP_OZONE_VOLUME_BUCKET     = "ozone_volume_buckets";
+    public static final String RELATIONSHIP_OZONE_PARENT_CHILDREN   = "ozone_parent_children";
 
     public static AtlasEntityWithExtInfo getPathEntity(Path path, PathExtractorContext context) {
         AtlasEntityWithExtInfo entityWithExtInfo = new AtlasEntityWithExtInfo();
@@ -400,13 +400,39 @@ public class AtlasPathExtractorUtil {
 
             extInfo.addReferredEntity(bucketEntity);
 
-            ret = new AtlasEntity(OZONE_KEY);
+            AtlasRelatedObjectId parentObjId = AtlasTypeUtil.getAtlasRelatedObjectId(bucketEntity, RELATIONSHIP_OZONE_PARENT_CHILDREN);
+            String               parentPath  = Path.SEPARATOR;
+            String               dirPath     = path.toUri().getPath();
 
-            ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, pathQualifiedName);
-            ret.setAttribute(ATTRIBUTE_NAME, path.toUri().getPath());
-            ret.setRelationshipAttribute( ATTRIBUTE_BUCKET, AtlasTypeUtil.getAtlasRelatedObjectId(bucketEntity, RELATIONSHIP_OZONE_BUCKET_KEY));
+            if (StringUtils.isEmpty(dirPath)) {
+                dirPath = Path.SEPARATOR;
+            }
 
-            context.putEntity(pathQualifiedName, ret);
+            String keyQNamePrefix = ozoneScheme + SCHEME_SEPARATOR + path.toUri().getAuthority();
+
+            for (String subDirName : dirPath.split(Path.SEPARATOR)) {
+                if (StringUtils.isEmpty(subDirName)) {
+                    continue;
+                }
+
+                String subDirPath          = parentPath + subDirName;
+                String subDirQualifiedName = keyQNamePrefix + subDirPath + QNAME_SEP_METADATA_NAMESPACE + metadataNamespace;
+
+                ret = new AtlasEntity(OZONE_KEY);
+
+                ret.setRelationshipAttribute(ATTRIBUTE_PARENT, parentObjId);
+                ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, subDirQualifiedName);
+                ret.setAttribute(ATTRIBUTE_NAME, subDirName);
+
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("adding entity: typeName={}, qualifiedName={}", ret.getTypeName(), ret.getAttribute(ATTRIBUTE_QUALIFIED_NAME));
+                }
+
+                context.putEntity(subDirQualifiedName, ret);
+
+                parentObjId = AtlasTypeUtil.getAtlasRelatedObjectId(ret, RELATIONSHIP_OZONE_PARENT_CHILDREN);
+                parentPath  = subDirPath + Path.SEPARATOR;;
+            }
         }
 
         if (LOG.isDebugEnabled()) {
