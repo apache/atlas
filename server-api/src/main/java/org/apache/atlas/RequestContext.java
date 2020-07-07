@@ -70,6 +70,7 @@ public class RequestContext {
     private boolean     isInNotificationProcessing = false;
     private boolean     isInTypePatching           = false;
     private boolean     createShellEntityForNonExistingReference = false;
+    private boolean     skipFailedEntities = false;
 
     private RequestContext() {
     }
@@ -205,6 +206,14 @@ public class RequestContext {
 
     public void setCreateShellEntityForNonExistingReference(boolean createShellEntityForNonExistingReference) {
         this.createShellEntityForNonExistingReference = createShellEntityForNonExistingReference;
+    }
+
+    public boolean isSkipFailedEntities() {
+        return skipFailedEntities;
+    }
+
+    public void setSkipFailedEntities(boolean skipFailedEntities) {
+        this.skipFailedEntities = skipFailedEntities;
     }
 
     public void recordEntityUpdate(AtlasEntityHeader entity) {

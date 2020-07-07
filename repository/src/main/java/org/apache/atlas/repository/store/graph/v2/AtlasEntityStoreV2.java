@@ -210,10 +210,24 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         AtlasEntitiesWithExtInfo ret = entityRetriever.toAtlasEntitiesWithExtInfo(guids, isMinExtInfo);
 
         if(ret != null){
-            for(String guid : guids){
-                AtlasEntity entity = ret.getEntity(guid);
+            for(String guid : guids) {
+                try {
+                    AtlasEntity entity = ret.getEntity(guid);
 
-                AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_READ, new AtlasEntityHeader(entity)), "read entity: guid=", guid);
+                    AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_READ, new AtlasEntityHeader(entity)), "read entity: guid=", guid);
+                } catch (AtlasBaseException e) {
+                    if (RequestContext.get().isSkipFailedEntities()) {
+                        if (LOG.isDebugEnabled()) {
+                            LOG.debug("getByIds(): ignoring failure for entity {}: error code={}, message={}", guid, e.getAtlasErrorCode(), e.getMessage());
+                        }
+
+                        ret.removeEntity(guid);
+
+                        continue;
+                    }
+
+                    throw e;
+                }
             }
         }
 
@@ -706,37 +720,50 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         if (CollectionUtils.isEmpty(guids)) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Guid(s) not specified");
         }
+
         if (classification == null) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "classification not specified");
         }
 
-        EntityMutationContext context = new EntityMutationContext();
+        validateAndNormalize(classification);
+
+        EntityMutationContext     context         = new EntityMutationContext();
+        List<AtlasClassification> classifications = Collections.singletonList(classification);
+        List<String>              validGuids      =  new ArrayList<>();
 
         GraphTransactionInterceptor.lockObjectAndReleasePostCommit(guids);
 
         for (String guid : guids) {
-            AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(graph, guid);
+            try {
+                AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(graph, guid);
 
-            if (entityVertex == null) {
-                throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
+                if (entityVertex == null) {
+                    throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
+                }
+
+                AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(entityVertex);
+
+                AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_ADD_CLASSIFICATION, entityHeader, classification),
+                        "add classification: guid=", guid, ", classification=", classification.getTypeName());
+
+                validateEntityAssociations(guid, classifications);
+
+                validGuids.add(guid);
+                context.cacheEntity(guid, entityVertex, typeRegistry.getEntityTypeByName(entityHeader.getTypeName()));
+            } catch (AtlasBaseException abe) {
+                if (RequestContext.get().isSkipFailedEntities()) {
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("addClassification(): ignoring failure for entity {}: error code={}, message={}", guid, abe.getAtlasErrorCode(), abe.getMessage());
+                    }
+
+                    continue;
+                }
+
+                throw abe;
             }
-
-            AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(entityVertex);
-
-            AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_ADD_CLASSIFICATION, entityHeader, classification),
-                                                 "add classification: guid=", guid, ", classification=", classification.getTypeName());
-
-            context.cacheEntity(guid, entityVertex, typeRegistry.getEntityTypeByName(entityHeader.getTypeName()));
         }
 
-
-        validateAndNormalize(classification);
-
-        List<AtlasClassification> classifications = Collections.singletonList(classification);
-
-        for (String guid : guids) {
-            validateEntityAssociations(guid, classifications);
-
+        for (String guid : validGuids) {
             entityGraphMapper.addClassifications(context, guid, classifications);
         }
     }
