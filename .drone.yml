@@ -6,6 +6,8 @@ steps:
   - name: docker_atlas_raw
     image: plugins/docker
     settings:
+      build_args:
+        - MVN_JOB=2
       dockerfile: Dockerfile
       registry: quay.io
       repo: quay.io/heetch/atlas
