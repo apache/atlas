@@ -480,8 +480,8 @@ define(['require',
                             if (id) {
                                 options.$el.jstree('activate_node', id);
                             }
-                            that.changeLoaderState(false);
                         }
+                        that.changeLoaderState(false);
                     },
                     createAction = function(options) {
                         var $el = options.el,
@@ -540,9 +540,7 @@ define(['require',
                             }).on("clear_search.jstree", function(e, data) {
                                 createAction(_.extend({}, options, data));
                             }).bind('loaded.jstree', function(e, data) {
-                                if (that.query[type].isNodeNotFoundAtLoad == true) {
-                                    treeLoaded({ "$el": $el, "type": type });
-                                }
+                                treeLoaded({ "$el": $el, "type": type });
                             });
                     },
                     initializeTermTree = function() {

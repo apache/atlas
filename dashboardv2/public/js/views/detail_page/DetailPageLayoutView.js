@@ -354,6 +354,9 @@ define(['require',
             },
             fetchCollection: function() {
                 this.collection.fetch({ reset: true });
+                if (this.searchVent) {
+                    this.searchVent.trigger('entityList:refresh');
+                }
             },
             getEntityDef: function(entityObj) {
                 if (this.activeEntityDef) {
@@ -382,9 +385,6 @@ define(['require',
                     hideLoader: that.hideLoader.bind(that),
                     tagName: tagName,
                     callback: function() {
-                        if (that.searchVent) {
-                            that.searchVent.trigger("Classification:Count:Update");
-                        }
                         that.fetchCollection();
                     }
                 }));
@@ -466,9 +466,6 @@ define(['require',
                         guid: that.id,
                         tagList: tagList,
                         callback: function() {
-                            if (that.searchVent) {
-                                that.searchVent.trigger("Classification:Count:Update");
-                            }
                             that.fetchCollection();
                         },
                         showLoader: that.showLoader.bind(that),

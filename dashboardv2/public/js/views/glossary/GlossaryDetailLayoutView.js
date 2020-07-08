@@ -174,7 +174,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'guid', 'glossaryCollection', 'glossary', 'collection', 'typeHeaders', 'value', 'entityDefCollection', 'enumDefCollection', 'classificationDefCollection'));
+                _.extend(this, _.pick(options, 'guid', 'glossaryCollection', 'glossary', 'collection', 'typeHeaders', 'value', 'entityDefCollection', 'enumDefCollection', 'classificationDefCollection', 'searchVent'));
                 if (this.value && this.value.gType) {
                     if (this.value.gType == "category") {
                         this.isCategoryView = true;
@@ -241,6 +241,7 @@ define(['require',
                                         "enumDefCollection": that.enumDefCollection,
                                         "classificationDefCollection": that.classificationDefCollection,
                                         "glossaryCollection": that.glossaryCollection,
+                                        "searchVent": that.searchVent,
                                         "getSelectedTermAttribute": function() {
                                             return that.selectedTermAttribute;
                                         },
@@ -376,6 +377,9 @@ define(['require',
                         tagList: tagList,
                         callback: function() {
                             that.getData();
+                            if (that.searchVent) {
+                                that.searchVent.trigger('entityList:refresh');
+                            }
                         },
                         showLoader: that.showLoader.bind(that),
                         hideLoader: that.hideLoader.bind(that),
@@ -398,6 +402,9 @@ define(['require',
                     guid: that.guid,
                     callback: function() {
                         that.getData();
+                        if (that.searchVent) {
+                            that.searchVent.trigger('entityList:refresh');
+                        }
                     }
                 }));
             },
@@ -442,12 +449,7 @@ define(['require',
             },
             renderSearchResultLayoutView: function(options) {
                 var that = this;
-
                 require(['views/search/SearchResultLayoutView'], function(SearchResultLayoutView) {
-                    var value = {
-                        'tag': "PII",
-                        'searchType': 'basic'
-                    };
                     if (that.RSearchResultLayoutView) {
                         that.RSearchResultLayoutView.show(new SearchResultLayoutView(_.extend({}, options, {
                             "value": { "searchType": "basic", "term": that.data.qualifiedName },

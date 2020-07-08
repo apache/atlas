@@ -640,7 +640,7 @@ define(['require',
                     nameCheck = 0,
                     columnToShow = null,
                     col = {};
-                this.value = Utils.getUrlState.getQueryParams() || this.value;
+                this.value = this.fromView === "glossary" ? this.value : Utils.getUrlState.getQueryParams() || this.value;
                 if (this.value && this.value.searchType === "basic" && this.searchTableColumns && (this.searchTableColumns[this.value.type] !== undefined)) {
                     columnToShow = this.searchTableColumns[this.value.type] == null ? [] : this.searchTableColumns[this.value.type];
                 }
@@ -1047,6 +1047,9 @@ define(['require',
                             that.multiSelectEntity = [];
                             that.$('.multiSelectTag,.multiSelectTerm').hide();
                             that.fetchCollection();
+                            if (that.searchVent) {
+                                that.searchVent.trigger('entityList:refresh');
+                            }
                         },
                         tagList: that.getTagList(guid, multiple),
                         showLoader: that.showLoader.bind(that),
@@ -1120,7 +1123,6 @@ define(['require',
                             that.multiSelectEntity = [];
                             that.$('.multiSelectTag,.multiSelectTerm').hide();
                             that.fetchCollection();
-
                         },
                         glossaryCollection: that.glossaryCollection,
                     });
@@ -1143,6 +1145,9 @@ define(['require',
                     hideLoader: that.hideLoader.bind(that),
                     callback: function() {
                         that.fetchCollection();
+                        if (that.searchVent) {
+                            that.searchVent.trigger('entityList:refresh');
+                        }
                     }
                 });
 
@@ -1210,6 +1215,7 @@ define(['require',
                     var view = new CreateEntityLayoutView({
                         entityDefCollection: that.entityDefCollection,
                         typeHeaders: that.typeHeaders,
+                        searchVent: that.searchVent,
                         callback: function() {
                             that.fetchCollection();
                         }

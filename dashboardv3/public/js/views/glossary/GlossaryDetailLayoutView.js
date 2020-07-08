@@ -256,6 +256,7 @@ define(['require',
                                         "enumDefCollection": that.enumDefCollection,
                                         "classificationDefCollection": that.classificationDefCollection,
                                         "glossaryCollection": that.glossaryCollection,
+                                        "searchVent": that.searchVent,
                                         "getSelectedTermAttribute": function() {
                                             return that.selectedTermAttribute;
                                         },
@@ -465,10 +466,6 @@ define(['require',
                 var that = this;
 
                 require(['views/search/SearchResultLayoutView'], function(SearchResultLayoutView) {
-                    var value = {
-                        'tag': "PII",
-                        'searchType': 'basic'
-                    };
                     if (that.RSearchResultLayoutView) {
                         that.RSearchResultLayoutView.show(new SearchResultLayoutView(_.extend({}, options, {
                             "value": { "searchType": "basic", "term": that.data.qualifiedName },
