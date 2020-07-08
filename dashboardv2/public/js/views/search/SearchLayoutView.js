@@ -210,6 +210,9 @@ define(['require',
                 this.listenTo(this.typeHeaders, "reset", function(value) {
                     this.initializeValues();
                 }, this);
+                this.listenTo(this.searchVent, "entityList:refresh", function(model, response) {
+                    this.onRefreshButton();
+                }, this);
             },
             initializeValues: function() {
                 this.renderTypeTagList();

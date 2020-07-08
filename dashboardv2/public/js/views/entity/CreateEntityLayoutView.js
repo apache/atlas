@@ -74,7 +74,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'guid', 'callback', 'showLoader', 'entityDefCollection', 'typeHeaders'));
+                _.extend(this, _.pick(options, 'guid', 'callback', 'showLoader', 'entityDefCollection', 'typeHeaders', 'searchVent'));
                 var that = this,
                     entityTitle, okLabel;
                 this.selectStoreCollection = new Backbone.Collection();
@@ -791,6 +791,9 @@ define(['require',
                                             trigger: true
                                         });
                                     }
+                                    if (that.searchVent) {
+                                        that.searchVent.trigger('entityList:refresh');
+                                    }
                                 }
                             }
                         },
@@ -801,7 +804,6 @@ define(['require',
                             that.modal.$el.find('button.ok').hideButtonLoader();
                         }
                     });
-
                 } catch (e) {
                     Utils.notifyError({
                         content: e.message
