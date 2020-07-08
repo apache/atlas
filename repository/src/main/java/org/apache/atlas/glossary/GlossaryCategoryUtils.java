@@ -27,8 +27,10 @@ import org.apache.atlas.model.glossary.relations.AtlasRelatedTermHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.instance.AtlasStruct;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.ogm.DataAccess;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
+import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.type.AtlasRelationshipType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
@@ -37,12 +39,7 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class GlossaryCategoryUtils extends GlossaryUtils {
@@ -576,4 +573,86 @@ public class GlossaryCategoryUtils extends GlossaryUtils {
         }
     }
 
+    public static String getGlossaryCategoryHeaders() {
+        List<String> ret = new ArrayList<>();
+
+        ret.add("GlossaryName");
+        ret.add("CategoryName");
+        ret.add("ShortDescription");
+        ret.add("LongDescription");
+
+        return String.join(", ", ret);
+    }
+
+    protected List<AtlasGlossaryCategory> getGlossaryCategoryDataList(List<String[]> fileData, List<String> failedTermMsgs) throws AtlasBaseException {
+        List<AtlasGlossaryCategory> glossaryCategories = new ArrayList<>();
+        Map<String, String> glossaryNameCache = new HashMap<>();
+
+        for (String[] record : fileData) {
+            AtlasGlossaryCategory glossaryCategory = new AtlasGlossaryCategory();
+
+            if ((record.length < 1) || StringUtils.isBlank(record[0])) {
+                LOG.error("The GlossaryName is blank for the record : ", Arrays.toString(record));
+                failedTermMsgs.add("The GlossaryName is blank for the record : " + Arrays.toString(record));
+            }
+
+            String glossaryName = record[0];
+            String glossaryGuid;
+
+            if (glossaryNameCache.get(glossaryName) != null) {
+                glossaryGuid = glossaryNameCache.get(glossaryName);
+
+            } else {
+                AtlasVertex vertex = AtlasGraphUtilsV2.findByTypeAndUniquePropertyName(GlossaryUtils.ATLAS_GLOSSARY_TYPENAME, GlossaryUtils.ATLAS_GLOSSARY_TYPENAME + "." + QUALIFIED_NAME_ATTR, glossaryName);
+
+                glossaryGuid = (vertex != null) ? AtlasGraphUtilsV2.getIdFromVertex(vertex) : null;
+            }
+
+            if (glossaryGuid == null) {
+                if (GlossaryService.isNameInvalid(glossaryName)) {
+                    LOG.error("The provided Glossary Name is invalid : " + glossaryName);
+                    failedTermMsgs.add("The provided Glossary Name is invalid : " + glossaryName);
+                } else {
+                    AtlasGlossary glossary = new AtlasGlossary();
+                    glossary.setQualifiedName(glossaryName);
+                    glossary.setName(glossaryName);
+
+                    glossary = dataAccess.save(glossary);
+                    glossaryGuid = glossary.getGuid();
+                }
+            }
+
+            if (glossaryGuid != null) {
+                glossaryNameCache.put(glossaryName, glossaryGuid);
+                glossaryCategory = populateGlossaryCategoryObject(failedTermMsgs, record, glossaryGuid);
+                glossaryCategories.add(glossaryCategory);
+            }
+        }
+
+        if (failedTermMsgs.size() == 0) {
+            return glossaryCategories;
+        } else {
+            throw new AtlasBaseException("The uploaded file has not been processed due to the following errors : " + "\n" + failedTermMsgs.toString());
+        }
+    }
+
+    protected AtlasGlossaryCategory populateGlossaryCategoryObject(List<String> failedCategoryMsgList, String[] record, String glossaryGuid) {
+        AtlasGlossaryCategory ret    = new AtlasGlossaryCategory();
+        int               i      = 0;
+        int               length = record.length;
+
+        ret.setName((length > ++i) ? record[i] : null);
+
+        if (!StringUtils.isNotBlank(ret.getName())) {
+            failedCategoryMsgList.add("\n" + "The CategoryName is blank for provided record: " + Arrays.toString(record));
+        } else {
+            ret.setShortDescription((length > ++i) ? record[i] : null);
+
+            ret.setLongDescription((length > ++i) ? record[i] : null);
+
+            ret.setAnchor(new AtlasGlossaryHeader(glossaryGuid));
+        }
+
+        return ret;
+    }
 }

@@ -1101,12 +1101,68 @@ public class GlossaryService {
         return ret;
     }
 
+    public List<AtlasGlossaryTerm> importGlossaryTermEntitiesData(InputStream inputStream, String fileName) throws AtlasBaseException {
+        List<AtlasGlossaryTerm> ret;
+
+        try {
+            if (StringUtils.isBlank(fileName)) {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_FILE_TYPE, fileName);
+            }
+
+            List<String[]> fileData       = FileUtils.readFileData(fileName, inputStream);
+            List<String>   failedTermMsgs = new ArrayList<>();
+
+            ret = glossaryTermUtils.getGlossaryTermEntitiesDataList(fileData, failedTermMsgs);
+            for (AtlasGlossaryTerm term: ret) {
+                assignTermToEntities(term.getGuid(), new ArrayList<>(term.getAssignedEntities()));
+            }
+        } catch (IOException e) {
+            throw new AtlasBaseException(AtlasErrorCode.FAILED_TO_UPLOAD, e);
+        }
+
+        return null;
+    }
+
     private List<AtlasGlossaryTerm> createGlossaryTerms(List<AtlasGlossaryTerm> glossaryTerms) throws AtlasBaseException {
         List<AtlasGlossaryTerm> ret = new ArrayList<>();
 
         for (AtlasGlossaryTerm glossaryTerm : glossaryTerms) {
             try {
                 ret.add(createTerm(glossaryTerm));
+            } catch (AtlasBaseException e) {
+                throw new AtlasBaseException(AtlasErrorCode.FAILED_TO_CREATE_GLOSSARY_TERM, e);
+            }
+        }
+
+        return ret;
+    }
+
+    public List<AtlasGlossaryCategory> importGlossaryCategoryData(InputStream inputStream, String fileName) throws AtlasBaseException {
+        List<AtlasGlossaryCategory> ret;
+
+        try {
+            if (StringUtils.isBlank(fileName)) {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_FILE_TYPE, fileName);
+            }
+
+            List<String[]> fileData       = FileUtils.readFileData(fileName, inputStream);
+            List<String>   failedCategoryMsgs = new ArrayList<>();
+
+            ret = glossaryCategoryUtils.getGlossaryCategoryDataList(fileData, failedCategoryMsgs);
+            ret = createGlossaryCategories(ret);
+        } catch (IOException e) {
+            throw new AtlasBaseException(AtlasErrorCode.FAILED_TO_UPLOAD, e);
+        }
+
+        return ret;
+    }
+
+    private List<AtlasGlossaryCategory> createGlossaryCategories(List<AtlasGlossaryCategory> glossaryCategories) throws AtlasBaseException {
+        List<AtlasGlossaryCategory> ret = new ArrayList<>();
+
+        for (AtlasGlossaryCategory glossaryCategory : glossaryCategories) {
+            try {
+                ret.add(createCategory(glossaryCategory));
             } catch (AtlasBaseException e) {
                 throw new AtlasBaseException(AtlasErrorCode.FAILED_TO_CREATE_GLOSSARY_TERM, e);
             }

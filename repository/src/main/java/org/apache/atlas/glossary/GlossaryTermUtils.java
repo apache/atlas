@@ -24,10 +24,7 @@ import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
 import org.apache.atlas.model.glossary.relations.AtlasGlossaryHeader;
 import org.apache.atlas.model.glossary.relations.AtlasRelatedTermHeader;
 import org.apache.atlas.model.glossary.relations.AtlasTermCategorizationHeader;
-import org.apache.atlas.model.instance.AtlasObjectId;
-import org.apache.atlas.model.instance.AtlasRelatedObjectId;
-import org.apache.atlas.model.instance.AtlasRelationship;
-import org.apache.atlas.model.instance.AtlasStruct;
+import org.apache.atlas.model.instance.*;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.ogm.DataAccess;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
@@ -581,6 +578,58 @@ public class GlossaryTermUtils extends GlossaryUtils {
         }
     }
 
+    protected List<AtlasGlossaryTerm> getGlossaryTermEntitiesDataList(List<String[]> fileData, List<String> failedTermMsgs) throws AtlasBaseException {
+        List<AtlasGlossaryTerm> glossaryTerms     = new ArrayList<>();
+        Map<String, String>     glossaryNameCache = new HashMap<>();
+
+        for (String[] record : fileData) {
+            AtlasGlossaryTerm glossaryTerm = new AtlasGlossaryTerm();
+
+            if ((record.length < 1) || StringUtils.isBlank(record[0])) {
+                LOG.error("The GlossaryName is blank for the record : ", Arrays.toString(record));
+                failedTermMsgs.add("The GlossaryName is blank for the record : " + Arrays.toString(record));
+            }
+
+            String glossaryName = record[0];
+            String glossaryGuid;
+
+            if (glossaryNameCache.get(glossaryName) != null) {
+                glossaryGuid = glossaryNameCache.get(glossaryName);
+
+            } else {
+                AtlasVertex vertex = AtlasGraphUtilsV2.findByTypeAndUniquePropertyName(GlossaryUtils.ATLAS_GLOSSARY_TYPENAME, GlossaryUtils.ATLAS_GLOSSARY_TYPENAME + "." + QUALIFIED_NAME_ATTR, glossaryName);
+
+                glossaryGuid = (vertex != null) ? AtlasGraphUtilsV2.getIdFromVertex(vertex) : null;
+            }
+
+            if (glossaryGuid == null) {
+                if (GlossaryService.isNameInvalid(glossaryName)) {
+                    LOG.error("The provided Glossary Name is invalid : " + glossaryName);
+                    failedTermMsgs.add("The provided Glossary Name is invalid : " + glossaryName);
+                } else {
+                    AtlasGlossary glossary = new AtlasGlossary();
+                    glossary.setQualifiedName(glossaryName);
+                    glossary.setName(glossaryName);
+
+                    glossary      = dataAccess.save(glossary);
+                    glossaryGuid  = glossary.getGuid();
+                }
+            }
+
+            if (glossaryGuid != null) {
+                glossaryNameCache.put(glossaryName, glossaryGuid);
+                glossaryTerm = populateGlossaryTermEntitiesObject(failedTermMsgs, record, glossaryName, glossaryGuid);
+                glossaryTerms.add(glossaryTerm);
+            }
+        }
+
+        if (failedTermMsgs.size() == 0) {
+            return glossaryTerms;
+        } else {
+            throw new AtlasBaseException("The uploaded file has not been processed due to the following errors : " + "\n" + failedTermMsgs.toString());
+        }
+    }
+
     public static String getGlossaryTermHeaders() {
         List<String> ret = new ArrayList<>();
 
@@ -588,6 +637,8 @@ public class GlossaryTermUtils extends GlossaryUtils {
         ret.add("TermName");
         ret.add("ShortDescription");
         ret.add("LongDescription");
+        ret.add("Categories");
+        ret.add("Classifications");
         ret.add("Examples");
         ret.add("Abbreviation");
         ret.add("Usage");
@@ -605,6 +656,16 @@ public class GlossaryTermUtils extends GlossaryUtils {
         ret.add("Classifies");
         ret.add("PreferredToTerms");
         ret.add("PreferredTerms");
+
+        return String.join(", ", ret);
+    }
+
+    public static String getGlossaryTermEntitiesHeaders() {
+        List<String> ret = new ArrayList<>();
+
+        ret.add("GlossaryName");
+        ret.add("TermName");
+        ret.add("EntityGUIDs");
 
         return String.join(", ", ret);
     }
@@ -677,6 +738,131 @@ public class GlossaryTermUtils extends GlossaryUtils {
         return ret;
     }
 
+    protected Set getAtlasRelatedObjectIdSet(String csvRecord, String termName, String glossaryName, List<String> failedTermMsgs) {
+        Set ret = null;
+
+        if (StringUtils.isNotBlank(csvRecord)) {
+            ret                                     = new HashSet();
+            String                 csvRecordArray[] = csvRecord.split(FileUtils.ESCAPE_CHARACTER + FileUtils.PIPE_CHARACTER);
+            AtlasRelatedObjectId relatedObjectId;
+
+            for (String data : csvRecordArray) {
+                AtlasVertex vertex      = null;
+
+                if (data != "") {
+                    vertex = AtlasGraphUtilsV2.findByGuid(data);
+                } else {
+                    failedTermMsgs.add("\n" + "Either incorrect data specified for Term or Entity does not exist : " +termName);
+                }
+
+                if (vertex != null) {
+                    String entityGuid = AtlasGraphUtilsV2.getIdFromVertex(vertex);
+                    relatedObjectId       = new AtlasRelatedObjectId();
+                    relatedObjectId.setGuid(entityGuid);
+                    ret.add(relatedObjectId);
+                } else {
+                    failedTermMsgs.add("\n" + "The provided Reference Glossary and TermName does not exist in the system " +
+                            data + " for record with TermName  : " + termName + " and GlossaryName : " + glossaryName);
+                }
+            }
+
+            return ret;
+        }
+
+        return ret;
+    }
+
+    protected String getTermGuidByQualifiedName(String qualifiedName, List<String> failedTermMsgs) {
+
+        String termGuid = "";
+
+        AtlasVertex vertex      = null;
+
+        if (qualifiedName != "") {
+            vertex = AtlasGraphUtilsV2.findByTypeAndUniquePropertyName(GlossaryUtils.ATLAS_GLOSSARY_TERM_TYPENAME,
+                    GlossaryUtils.ATLAS_GLOSSARY_TERM_TYPENAME + invalidNameChars[1] + QUALIFIED_NAME_ATTR, qualifiedName);
+        } else {
+            failedTermMsgs.add("\n" + "Either incorrect data specified for Term or Term does not exist : " + qualifiedName);
+        }
+
+        if (vertex != null) {
+            termGuid = AtlasGraphUtilsV2.getIdFromVertex(vertex);
+        } else {
+            failedTermMsgs.add("\n" + "The provided Reference Glossary and TermName does not exist in the system " +
+                    qualifiedName);
+        }
+
+        return termGuid;
+    }
+
+    protected Set getAtlasCategoriesHeaderSet(String csvRecord, String termName, String glossaryName, List<String> failedTermMsgs) {
+        Set ret = null;
+
+        if (StringUtils.isNotBlank(csvRecord)) {
+            ret                                     = new HashSet();
+            String                 csvRecordArray[] = csvRecord.split(FileUtils.ESCAPE_CHARACTER + FileUtils.PIPE_CHARACTER);
+            AtlasTermCategorizationHeader termCategoryHeader;
+
+            for (String data : csvRecordArray) {
+                AtlasVertex vertex      = null;
+                String      dataArray[] = data.split(FileUtils.ESCAPE_CHARACTER + FileUtils.COLON_CHARACTER);
+
+                if ((dataArray.length % 2) == 0) {
+                    vertex = AtlasGraphUtilsV2.findByTypeAndUniquePropertyName(GlossaryUtils.ATLAS_GLOSSARY_CATEGORY_TYPENAME,
+                            GlossaryUtils.ATLAS_GLOSSARY_CATEGORY_TYPENAME + invalidNameChars[1] + QUALIFIED_NAME_ATTR, dataArray[1] + invalidNameChars[0] + dataArray[0]);
+                } else {
+                    failedTermMsgs.add("\n" + "Either incorrect data specified for Term or Category does not exist : " +termName);
+                }
+
+                if (vertex != null) {
+                    String glossaryCategoryGuid = AtlasGraphUtilsV2.getIdFromVertex(vertex);
+                    termCategoryHeader       = new AtlasTermCategorizationHeader();
+                    termCategoryHeader.setCategoryGuid(glossaryCategoryGuid);
+                    ret.add(termCategoryHeader);
+                } else {
+                    failedTermMsgs.add("\n" + "The provided Reference Glossary and Category does not exist in the system " +
+                            dataArray[1] + FileUtils.COLON_CHARACTER + dataArray[0] + " for record with TermName  : " + termName + " and GlossaryName : " + glossaryName);
+                }
+            }
+
+            return ret;
+        }
+
+        return ret;
+    }
+
+    protected List getAtlasClassificationList(String csvRecord, String termName, String glossaryName, List<String> failedTermMsgs) {
+        List ret = null;
+
+        if (StringUtils.isNotBlank(csvRecord)) {
+            ret                                     = new ArrayList<>();
+            String                 csvRecordArray[] = csvRecord.split(FileUtils.ESCAPE_CHARACTER + FileUtils.PIPE_CHARACTER);
+            AtlasClassification termClassification;
+
+            for (String data : csvRecordArray) {
+
+                // TODO check for the existence of the classification here
+
+                if (data == "") {
+                    failedTermMsgs.add("\n" + "Either incorrect data specified for Term or Classification does not exist : " +termName);
+                }
+
+                if (data != "") {
+                    termClassification       = new AtlasClassification();
+                    termClassification.setTypeName(data);
+                    ret.add(termClassification);
+                } else {
+                    failedTermMsgs.add("\n" + "The provided Reference Glossary and Category does not exist in the system " +
+                            data + " for record with TermName  : " + termName + " and GlossaryName : " + glossaryName);
+                }
+            }
+
+            return ret;
+        }
+
+        return ret;
+    }
+
     protected AtlasGlossaryTerm populateGlossaryTermObject(List<String> failedTermMsgList, String[] record, String glossaryGuid) {
         AtlasGlossaryTerm ret    = new AtlasGlossaryTerm();
         int               i      = 0;
@@ -690,6 +876,10 @@ public class GlossaryTermUtils extends GlossaryUtils {
             ret.setShortDescription((length > ++i) ? record[i] : null);
 
             ret.setLongDescription((length > ++i) ? record[i] : null);
+
+            ret.setCategories((length > ++i) ? (Set<AtlasTermCategorizationHeader>) getAtlasCategoriesHeaderSet(record[i], ret.getName(), record[0], failedTermMsgList) : null);
+
+            ret.setClassifications((length > ++i) ? (List<AtlasClassification>) getAtlasClassificationList(record[i], ret.getName(), record[0], failedTermMsgList) : null);
 
             ret.setExamples((length > ++i) ? (List<String>) getListValue(record[i]) : null);
 
@@ -726,6 +916,25 @@ public class GlossaryTermUtils extends GlossaryUtils {
             ret.setPreferredToTerms((length > ++i) ? (Set<AtlasRelatedTermHeader>) getAtlasRelatedTermHeaderSet(record[i], ret.getName(), record[0], failedTermMsgList) : null);
 
             ret.setPreferredTerms((length > ++i) ? (Set<AtlasRelatedTermHeader>) getAtlasRelatedTermHeaderSet(record[i], ret.getName(), record[0], failedTermMsgList) : null);
+        }
+
+        return ret;
+    }
+
+    protected AtlasGlossaryTerm populateGlossaryTermEntitiesObject(List<String> failedTermMsgList, String[] record, String glossaryName, String glossaryGuid) {
+        AtlasGlossaryTerm ret    = new AtlasGlossaryTerm();
+        int               i      = 0;
+        int               length = record.length;
+
+        ret.setName((length > ++i) ? record[i] : null);
+
+        if (!StringUtils.isNotBlank(ret.getName())) {
+            failedTermMsgList.add("\n" + "The TermName is blank for provided record: " + Arrays.toString(record));
+        } else {
+            ret.setQualifiedName(ret.getName()+ "@" + glossaryName);
+            ret.setAnchor(new AtlasGlossaryHeader(glossaryGuid));
+            ret.setAssignedEntities((length > ++i) ? (Set<AtlasRelatedObjectId>) getAtlasRelatedObjectIdSet(record[i], ret.getName(), record[0], failedTermMsgList) : null);
+            ret.setGuid(getTermGuidByQualifiedName(ret.getQualifiedName(), failedTermMsgList));
         }
 
         return ret;
