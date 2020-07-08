@@ -22,6 +22,7 @@ import com.sun.jersey.multipart.FormDataParam;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.SortOrder;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.glossary.GlossaryCategoryUtils;
 import org.apache.atlas.glossary.GlossaryService;
 import org.apache.atlas.glossary.GlossaryTermUtils;
 import org.apache.atlas.model.glossary.AtlasGlossary;
@@ -970,6 +971,42 @@ public class GlossaryREST {
     }
 
     /**
+     * Get sample template for uploading/creating bulk AtlasGlossaryCategory
+     *
+     * @return Template File
+     * @HTTP 400 If the provided fileType is not supported
+     */
+    @GET
+    @Path("/import/categories/template")
+    @Produces(MediaType.APPLICATION_OCTET_STREAM)
+    public StreamingOutput produceCategoriesTemplate() {
+        return new StreamingOutput() {
+            @Override
+            public void write(OutputStream outputStream) throws IOException, WebApplicationException {
+                outputStream.write(GlossaryCategoryUtils.getGlossaryCategoryHeaders().getBytes());
+            }
+        };
+    }
+
+    /**
+     * Get sample template for uploading/creating bulk AtlasGlossaryCategory
+     *
+     * @return Template File
+     * @HTTP 400 If the provided fileType is not supported
+     */
+    @GET
+    @Path("/import/termentities/template")
+    @Produces(MediaType.APPLICATION_OCTET_STREAM)
+    public StreamingOutput produceTermEntitiesTemplate() {
+        return new StreamingOutput() {
+            @Override
+            public void write(OutputStream outputStream) throws IOException, WebApplicationException {
+                outputStream.write(GlossaryTermUtils.getGlossaryTermEntitiesHeaders().getBytes());
+            }
+        };
+    }
+
+    /**
      * Upload glossary file for creating AtlasGlossaryTerms in bulk
      *
      * @param inputStream InputStream of file
@@ -986,5 +1023,43 @@ public class GlossaryREST {
     public List<AtlasGlossaryTerm> importGlossaryData(@FormDataParam("file") InputStream inputStream,
                                                       @FormDataParam("file") FormDataContentDisposition fileDetail) throws AtlasBaseException {
         return glossaryService.importGlossaryData(inputStream, fileDetail.getFileName());
+    }
+
+    /**
+     * Upload glossary file for creating AtlasGlossaryTerms in bulk
+     *
+     * @param inputStream InputStream of file
+     * @param fileDetail  FormDataContentDisposition metadata of file
+     * @return
+     * @throws AtlasBaseException
+     * @HTTP 200 If glossary term creation was successful
+     * @HTTP 400 If Glossary term definition has invalid or missing information
+     * @HTTP 409 If Glossary term already exists (duplicate qualifiedName)
+     */
+    @POST
+    @Path("/import/termentities")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    public List<AtlasGlossaryTerm> importGlossaryTermEntitiesData(@FormDataParam("file") InputStream inputStream,
+                                                      @FormDataParam("file") FormDataContentDisposition fileDetail) throws AtlasBaseException {
+        return glossaryService.importGlossaryTermEntitiesData(inputStream, fileDetail.getFileName());
+    }
+
+    /**
+     * Upload glossary file for creating AtlasGlossaryTerms in bulk
+     *
+     * @param inputStream InputStream of file
+     * @param fileDetail  FormDataContentDisposition metadata of file
+     * @return
+     * @throws AtlasBaseException
+     * @HTTP 200 If glossary term creation was successful
+     * @HTTP 400 If Glossary term definition has invalid or missing information
+     * @HTTP 409 If Glossary term already exists (duplicate qualifiedName)
+     */
+    @POST
+    @Path("/import/categories")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    public List<AtlasGlossaryCategory> importGlossaryCategoriesData(@FormDataParam("file") InputStream inputStream,
+                                                      @FormDataParam("file") FormDataContentDisposition fileDetail) throws AtlasBaseException {
+        return glossaryService.importGlossaryCategoryData(inputStream, fileDetail.getFileName());
     }
 }
