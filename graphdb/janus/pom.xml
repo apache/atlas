@@ -128,6 +128,12 @@
         </dependency>
 
         <dependency>
+            <groupId>org.elasticsearch</groupId>
+            <artifactId>elasticsearch</artifactId>
+            <version>${elasticsearch.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.janusgraph</groupId>
             <artifactId>janusgraph-es</artifactId>
             <version>${janus.version}</version>

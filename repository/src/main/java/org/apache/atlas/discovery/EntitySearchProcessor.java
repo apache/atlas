@@ -31,6 +31,7 @@ import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.Predicate;
 import org.apache.commons.collections.PredicateUtils;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,30 +47,35 @@ import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.SortOrder.ASC;
 import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.SortOrder.DESC;
 
 public class EntitySearchProcessor extends SearchProcessor {
-    private static final Logger LOG      = LoggerFactory.getLogger(EntitySearchProcessor.class);
+    private static final Logger LOG = LoggerFactory.getLogger(EntitySearchProcessor.class);
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("EntitySearchProcessor");
 
     private final AtlasIndexQuery indexQuery;
     private final AtlasGraphQuery graphQuery;
-    private       Predicate       graphQueryPredicate;
-    private       Predicate       filterGraphQueryPredicate;
+    private Predicate graphQueryPredicate;
+    private Predicate filterGraphQueryPredicate;
+    private SearchSourceBuilder sourceBuilder;
 
     public EntitySearchProcessor(SearchContext context) {
         super(context);
 
-        final Set<AtlasEntityType> entityTypes      = context.getEntityTypes();
-        final FilterCriteria  filterCriteria  = context.getSearchParameters().getEntityFilters();
-        final Set<String>     indexAttributes = new HashSet<>();
-        final Set<String>     graphAttributes = new HashSet<>();
-        final Set<String>     allAttributes   = new HashSet<>();
-        final Set<String>     typeAndSubTypes       = context.getEntityTypeNames();
-        final String          typeAndSubTypesQryStr = context.getEntityTypesQryStr();
-        final String          sortBy                = context.getSearchParameters().getSortBy();
-        final SortOrder       sortOrder             = context.getSearchParameters().getSortOrder();
+        sourceBuilder = new SearchSourceBuilder();
 
-        final Set<AtlasClassificationType> classificationTypes           = context.getClassificationTypes();
-        final Set<String>                  classificationTypeAndSubTypes = context.getClassificationTypeNames();
-        final boolean                      filterClassification;
+        final Set<AtlasEntityType> entityTypes = context.getEntityTypes();
+        final FilterCriteria filterCriteria = context.getSearchParameters().getEntityFilters();
+        final Set<String> indexAttributes = new HashSet<>();
+        final Set<String> graphAttributes = new HashSet<>();
+        final Set<String> allAttributes = new HashSet<>();
+        final Set<String> typeAndSubTypes = context.getEntityTypeNames();
+        final String typeAndSubTypesQryStr = context.getEntityTypesQryStr();
+        final String fullTextQuery = context.getSearchParameters().getQuery();
+        final AtlasEntityType entityType = context.getEntityTypes().iterator().next();
+        String sortBy = context.getSearchParameters().getSortBy();
+        SortOrder sortOrder = context.getSearchParameters().getSortOrder();
+
+        final Set<AtlasClassificationType> classificationTypes = context.getClassificationTypes();
+        final Set<String> classificationTypeAndSubTypes = context.getClassificationTypeNames();
+        final boolean filterClassification;
 
         if (CollectionUtils.isNotEmpty(classificationTypes)) {
             filterClassification = !context.needClassificationProcessor();
@@ -78,9 +84,9 @@ public class EntitySearchProcessor extends SearchProcessor {
         }
 
         final Predicate typeNamePredicate;
-        final Predicate traitPredicate    = buildTraitPredict(classificationTypes);
-        final Predicate activePredicate   = SearchPredicateUtil.getEQPredicateGenerator()
-                                                               .generatePredicate(Constants.STATE_PROPERTY_KEY, "ACTIVE", String.class);
+        final Predicate traitPredicate = buildTraitPredict(classificationTypes);
+        final Predicate activePredicate = SearchPredicateUtil.getEQPredicateGenerator()
+                .generatePredicate(Constants.STATE_PROPERTY_KEY, "ACTIVE", String.class);
 
 
         if (!isEntityRootType()) {
@@ -100,11 +106,11 @@ public class EntitySearchProcessor extends SearchProcessor {
         inMemoryPredicate = typeNamePredicate;
 
         if (typeSearchByIndex) {
-            graphIndexQueryBuilder.addTypeAndSubTypesQueryFilter(indexQuery, typeAndSubTypesQryStr);
+            esIndexQueryBuilder.addTypeAndSubTypesQueryFilter(indexQuery, typeAndSubTypesQryStr);
         }
 
         if (attrSearchByIndex) {
-            constructFilterQuery(indexQuery, entityTypes, filterCriteria, indexAttributes);
+            esIndexQueryBuilder.constructFilterQuery(indexQuery, entityTypes, filterCriteria, indexAttributes);
 
             Predicate attributePredicate = constructInMemoryPredicate(entityTypes, filterCriteria, indexAttributes);
             if (attributePredicate != null) {
@@ -116,14 +122,26 @@ public class EntitySearchProcessor extends SearchProcessor {
 
         if (indexQuery.length() > 0) {
 
-            graphIndexQueryBuilder.addActiveStateQueryFilter(indexQuery);
+            esIndexQueryBuilder.addActiveStateQueryFilter(indexQuery);
 
             String indexQueryString = STRAY_AND_PATTERN.matcher(indexQuery).replaceAll(")");
 
             indexQueryString = STRAY_OR_PATTERN.matcher(indexQueryString).replaceAll(")");
             indexQueryString = STRAY_ELIPSIS_PATTERN.matcher(indexQueryString).replaceAll("");
 
-            this.indexQuery = context.getGraph().indexQuery(Constants.VERTEX_INDEX, indexQueryString);
+            AtlasAttribute sortByAttribute = entityType.getAttribute(sortBy);
+            if (sortByAttribute == null) {
+                sortBy = null;
+            } else {
+                sortBy = sortByAttribute.getVertexPropertyName();
+            }
+
+            if (sortOrder == null) {
+                sortOrder = ASCENDING;
+            }
+
+            esIndexQueryBuilder.constructSearchSource(sourceBuilder, indexQueryString, fullTextQuery, sortBy, sortOrder);
+            this.indexQuery = context.getGraph().esIndexQuery(Constants.VERTEX_INDEX, sourceBuilder);
         } else {
             this.indexQuery = null;
         }
@@ -145,7 +163,7 @@ public class EntitySearchProcessor extends SearchProcessor {
                     orConditions.add(query.createChildQuery().has(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, NOT_EQUAL, null));
                 } else if (classificationType == MATCH_ALL_NOT_CLASSIFIED) {
                     orConditions.add(query.createChildQuery().has(TRAIT_NAMES_PROPERTY_KEY, EQUAL, null)
-                                                             .has(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, EQUAL, null));
+                            .has(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, EQUAL, null));
                 } else {
                     orConditions.add(query.createChildQuery().in(TRAIT_NAMES_PROPERTY_KEY, classificationTypeAndSubTypes));
                     orConditions.add(query.createChildQuery().in(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, classificationTypeAndSubTypes));
@@ -188,7 +206,6 @@ public class EntitySearchProcessor extends SearchProcessor {
                 }
             }
             if (sortBy != null && !sortBy.isEmpty()) {
-                final AtlasEntityType entityType = context.getEntityTypes().iterator().next();
                 AtlasAttribute sortByAttribute = entityType.getAttribute(sortBy);
 
                 if (sortByAttribute != null) {
@@ -209,18 +226,18 @@ public class EntitySearchProcessor extends SearchProcessor {
 
         if (attributesPredicate != null) {
             filterGraphQueryPredicate = filterGraphQueryPredicate == null ? attributesPredicate :
-                                        PredicateUtils.andPredicate(filterGraphQueryPredicate, attributesPredicate);
+                    PredicateUtils.andPredicate(filterGraphQueryPredicate, attributesPredicate);
         }
 
         if (filterClassification) {
             filterGraphQueryPredicate = filterGraphQueryPredicate == null ? traitPredicate :
-                                        PredicateUtils.andPredicate(filterGraphQueryPredicate, traitPredicate);
+                    PredicateUtils.andPredicate(filterGraphQueryPredicate, traitPredicate);
         }
 
         // Filter condition for the STATUS
         if (context.getSearchParameters().getExcludeDeletedEntities()) {
             filterGraphQueryPredicate = filterGraphQueryPredicate == null ? activePredicate :
-                                        PredicateUtils.andPredicate(filterGraphQueryPredicate, activePredicate);
+                    PredicateUtils.andPredicate(filterGraphQueryPredicate, activePredicate);
         }
 
     }
@@ -236,12 +253,12 @@ public class EntitySearchProcessor extends SearchProcessor {
         AtlasPerfTracer perf = null;
 
         if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-            perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntitySearchProcessor.execute(" + context +  ")");
+            perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntitySearchProcessor.execute(" + context + ")");
         }
 
         try {
             final int startIdx = context.getSearchParameters().getOffset();
-            final int limit    = context.getSearchParameters().getLimit();
+            final int limit = context.getSearchParameters().getLimit();
 
             // when subsequent filtering stages are involved, query should start at 0 even though startIdx can be higher
             //
@@ -250,19 +267,6 @@ public class EntitySearchProcessor extends SearchProcessor {
             int resultIdx = qryOffset;
 
             final List<AtlasVertex> entityVertices = new ArrayList<>();
-
-            SortOrder sortOrder = context.getSearchParameters().getSortOrder();
-            String sortBy = context.getSearchParameters().getSortBy();
-
-            final AtlasEntityType entityType = context.getEntityTypes().iterator().next();
-            AtlasAttribute sortByAttribute = entityType.getAttribute(sortBy);
-            if (sortByAttribute == null) {
-                sortBy = null;
-            } else {
-                sortBy = sortByAttribute.getVertexPropertyName();
-            }
-
-            if (sortOrder == null) { sortOrder = ASCENDING; }
 
             for (; ret.size() < limit; qryOffset += limit) {
                 entityVertices.clear();
@@ -276,7 +280,7 @@ public class EntitySearchProcessor extends SearchProcessor {
                 final boolean isLastResultPage;
 
                 if (indexQuery != null) {
-                    Iterator<AtlasIndexQuery.Result> idxQueryResult = executeIndexQuery(context, indexQuery, qryOffset, limit);
+                    Iterator<AtlasIndexQuery.Result> idxQueryResult = indexQuery.vertices(qryOffset, limit);
 
                     getVerticesFromIndexQueryResult(idxQueryResult, entityVertices);
 
@@ -341,6 +345,10 @@ public class EntitySearchProcessor extends SearchProcessor {
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== EntitySearchProcessor.filter(): ret.size()={}", entityVertices.size());
         }
+    }
+
+    public boolean isIndexQuery() {
+        return indexQuery != null;
     }
 
     @Override

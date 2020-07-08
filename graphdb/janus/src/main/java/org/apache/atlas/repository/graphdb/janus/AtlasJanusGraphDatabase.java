@@ -279,7 +279,7 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
 
     @Override
     public AtlasGraph<AtlasJanusVertex, AtlasJanusEdge> getGraphBulkLoading() {
-        return new AtlasJanusGraph(getBulkLoadingGraphInstance());
+        return new AtlasJanusGraph(getBulkLoadingGraphInstance(), null);
     }
 
     private static void startLocalSolr() {

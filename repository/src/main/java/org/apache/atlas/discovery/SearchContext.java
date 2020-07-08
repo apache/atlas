@@ -55,38 +55,38 @@ import static org.apache.atlas.model.discovery.SearchParameters.*;
  * possible chaining of processor(s)
  */
 public class SearchContext {
-    private static final Logger LOG      = LoggerFactory.getLogger(SearchContext.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SearchContext.class);
 
-    private final AtlasTypeRegistry       typeRegistry;
-    private final AtlasGraph              graph;
-    private final Set<AtlasEntityType>    entityTypes;
-    private final Set<String>             indexedKeys;
-    private final Set<String>             entityAttributes;
-    private final SearchParameters        searchParameters;
+    private final AtlasTypeRegistry typeRegistry;
+    private final AtlasGraph graph;
+    private final Set<AtlasEntityType> entityTypes;
+    private final Set<String> indexedKeys;
+    private final Set<String> entityAttributes;
+    private final SearchParameters searchParameters;
     private final Set<AtlasClassificationType> classificationTypes;
-    private final Set<String>                  classificationNames;
-    private final Set<String>             typeAndSubTypes;
-    private final Set<String>             classificationTypeAndSubTypes;
-    private final String                  typeAndSubTypesQryStr;
-    private final String                  classificationTypeAndSubTypesQryStr;
-    private boolean                       terminateSearch = false;
-    private SearchProcessor               searchProcessor;
+    private final Set<String> classificationNames;
+    private final Set<String> typeAndSubTypes;
+    private final Set<String> classificationTypeAndSubTypes;
+    private final String typeAndSubTypesQryStr;
+    private final String classificationTypeAndSubTypesQryStr;
+    private boolean terminateSearch = false;
+    private SearchProcessor searchProcessor;
 
     public final static AtlasClassificationType MATCH_ALL_WILDCARD_CLASSIFICATION = new AtlasClassificationType(new AtlasClassificationDef(WILDCARD_CLASSIFICATIONS));
-    public final static AtlasClassificationType MATCH_ALL_CLASSIFIED              = new AtlasClassificationType(new AtlasClassificationDef(ALL_CLASSIFICATIONS));
-    public final static AtlasClassificationType MATCH_ALL_NOT_CLASSIFIED          = new AtlasClassificationType(new AtlasClassificationDef(NO_CLASSIFICATIONS));
-    public final static AtlasClassificationType MATCH_ALL_CLASSIFICATION_TYPES    = AtlasClassificationType.getClassificationRoot();
-    public final static AtlasEntityType         MATCH_ALL_ENTITY_TYPES            = AtlasEntityType.getEntityRoot();
-    public final static String                  TYPENAME_DELIMITER                = ",";
+    public final static AtlasClassificationType MATCH_ALL_CLASSIFIED = new AtlasClassificationType(new AtlasClassificationDef(ALL_CLASSIFICATIONS));
+    public final static AtlasClassificationType MATCH_ALL_NOT_CLASSIFIED = new AtlasClassificationType(new AtlasClassificationDef(NO_CLASSIFICATIONS));
+    public final static AtlasClassificationType MATCH_ALL_CLASSIFICATION_TYPES = AtlasClassificationType.getClassificationRoot();
+    public final static AtlasEntityType MATCH_ALL_ENTITY_TYPES = AtlasEntityType.getEntityRoot();
+    public final static String TYPENAME_DELIMITER = ",";
 
 
     public SearchContext(SearchParameters searchParameters, AtlasTypeRegistry typeRegistry, AtlasGraph graph, Set<String> indexedKeys) throws AtlasBaseException {
-        this.searchParameters   = searchParameters;
-        this.typeRegistry       = typeRegistry;
-        this.graph              = graph;
-        this.indexedKeys        = indexedKeys;
-        this.entityAttributes   = new HashSet<>();
-        this.entityTypes        = getEntityTypes(searchParameters.getTypeName());
+        this.searchParameters = searchParameters;
+        this.typeRegistry = typeRegistry;
+        this.graph = graph;
+        this.indexedKeys = indexedKeys;
+        this.entityAttributes = new HashSet<>();
+        this.entityTypes = getEntityTypes(searchParameters.getTypeName());
         this.classificationNames = getClassificationNames(searchParameters.getClassification());
         this.classificationTypes = getClassificationTypes(this.classificationNames);
 
@@ -117,45 +117,48 @@ public class SearchContext {
         filterStructTypes();
 
         //gather all classifications and its corresponding subtypes
-        Set<String> classificationTypeAndSubTypes  = new HashSet<>();
+        Set<String> classificationTypeAndSubTypes = new HashSet<>();
         String classificationTypeAndSubTypesQryStr = null;
 
-        if (CollectionUtils.isNotEmpty(classificationTypes) && classificationTypes.iterator().next() != MATCH_ALL_NOT_CLASSIFIED ) {
+        if (CollectionUtils.isNotEmpty(classificationTypes) && classificationTypes.iterator().next() != MATCH_ALL_NOT_CLASSIFIED) {
             for (AtlasClassificationType classificationType : classificationTypes) {
 
                 if (classificationType == MATCH_ALL_CLASSIFICATION_TYPES) {
-                    classificationTypeAndSubTypes       = Collections.emptySet();
+                    classificationTypeAndSubTypes = Collections.emptySet();
                     classificationTypeAndSubTypesQryStr = ALL_TYPE_QUERY;
                     break;
                 } else {
                     Set<String> allTypes = searchParameters.getIncludeSubClassifications() ? classificationType.getTypeAndAllSubTypes() : Collections.singleton(classificationType.getTypeName());
-                    classificationTypeAndSubTypes.addAll(allTypes);                }
+                    classificationTypeAndSubTypes.addAll(allTypes);
+                }
             }
 
             if (CollectionUtils.isNotEmpty(classificationTypeAndSubTypes)) {
                 classificationTypeAndSubTypesQryStr = AtlasAttribute.escapeIndexQueryValue(classificationTypeAndSubTypes);
             }
         } else {
-            classificationTypeAndSubTypes       = Collections.emptySet();
+            classificationTypeAndSubTypes = Collections.emptySet();
             classificationTypeAndSubTypesQryStr = "";
         }
-        this.classificationTypeAndSubTypes       = classificationTypeAndSubTypes;
+        this.classificationTypeAndSubTypes = classificationTypeAndSubTypes;
         this.classificationTypeAndSubTypesQryStr = classificationTypeAndSubTypesQryStr;
 
         //gather all types and its corresponding subtypes
-        Set<String> typeAndSubTypes  = new HashSet<>();
+        Set<String> typeAndSubTypes = new HashSet<>();
         String typeAndSubTypesQryStr = null;
+        Set<String> superTypes = new HashSet<>();
 
         if (CollectionUtils.isNotEmpty(entityTypes)) {
             for (AtlasEntityType entityType : entityTypes) {
 
                 if (entityType.equals(MATCH_ALL_ENTITY_TYPES)) {
-                    typeAndSubTypes       = Collections.emptySet();
+                    typeAndSubTypes = Collections.emptySet();
                     typeAndSubTypesQryStr = ALL_TYPE_QUERY;
                     break;
                 } else {
-                    Set<String> allTypes  = searchParameters.getIncludeSubTypes() ? entityType.getTypeAndAllSubTypes() : Collections.singleton(entityType.getTypeName());
+                    Set<String> allTypes = searchParameters.getIncludeSubTypes() ? entityType.getTypeAndAllSubTypes() : Collections.singleton(entityType.getTypeName());
                     typeAndSubTypes.addAll(allTypes);
+                    superTypes.addAll(entityType.getSuperTypes());
                 }
             }
 
@@ -163,17 +166,23 @@ public class SearchContext {
                 typeAndSubTypesQryStr = AtlasAttribute.escapeIndexQueryValue(typeAndSubTypes);
             }
         } else {
-            typeAndSubTypes       = Collections.emptySet();
+            typeAndSubTypes = Collections.emptySet();
             typeAndSubTypesQryStr = "";
         }
-        this.typeAndSubTypes       = typeAndSubTypes;
+        this.typeAndSubTypes = typeAndSubTypes;
         this.typeAndSubTypesQryStr = typeAndSubTypesQryStr;
 
         if (glossaryTermVertex != null) {
             addProcessor(new TermSearchProcessor(this, getAssignedEntities(glossaryTermVertex)));
         }
 
-        if (needFullTextProcessor()) {
+        EntitySearchProcessor entitySearchProcessor = null;
+        if (needEntityProcessor()) {
+            entitySearchProcessor = new EntitySearchProcessor(this);
+        }
+
+        if (needFullTextProcessor() && (needClassificationProcessor() || entitySearchProcessor == null
+                || !entitySearchProcessor.isIndexQuery() || !superTypes.contains(Constants.ATLAN_ASSET_TYPE))) {
             if (AtlasRepositoryConfiguration.isFreeTextSearchEnabled()) {
                 LOG.debug("Using Free Text index based search.");
 
@@ -189,36 +198,62 @@ public class SearchContext {
             addProcessor(new ClassificationSearchProcessor(this));
         }
 
-        if (needEntityProcessor()) {
-            addProcessor(new EntitySearchProcessor(this));
+        if (entitySearchProcessor != null) {
+            addProcessor(entitySearchProcessor);
         }
     }
 
-    public SearchParameters getSearchParameters() { return searchParameters; }
+    public SearchParameters getSearchParameters() {
+        return searchParameters;
+    }
 
-    public AtlasTypeRegistry getTypeRegistry() { return typeRegistry; }
+    public AtlasTypeRegistry getTypeRegistry() {
+        return typeRegistry;
+    }
 
-    public AtlasGraph getGraph() { return graph; }
+    public AtlasGraph getGraph() {
+        return graph;
+    }
 
-    public Set<String> getIndexedKeys() { return indexedKeys; }
+    public Set<String> getIndexedKeys() {
+        return indexedKeys;
+    }
 
-    public Set<String> getEntityAttributes() { return entityAttributes; }
+    public Set<String> getEntityAttributes() {
+        return entityAttributes;
+    }
 
-    public Set<AtlasClassificationType> getClassificationTypes() { return classificationTypes; }
+    public Set<AtlasClassificationType> getClassificationTypes() {
+        return classificationTypes;
+    }
 
-    public Set<String> getEntityTypeNames() { return typeAndSubTypes; }
+    public Set<String> getEntityTypeNames() {
+        return typeAndSubTypes;
+    }
 
-    public Set<String> getClassificationTypeNames() { return classificationTypeAndSubTypes; }
+    public Set<String> getClassificationTypeNames() {
+        return classificationTypeAndSubTypes;
+    }
 
-    public String getEntityTypesQryStr() { return typeAndSubTypesQryStr; }
+    public String getEntityTypesQryStr() {
+        return typeAndSubTypesQryStr;
+    }
 
-    public String getClassificationTypesQryStr() { return classificationTypeAndSubTypesQryStr; }
+    public String getClassificationTypesQryStr() {
+        return classificationTypeAndSubTypesQryStr;
+    }
 
-    public Set<AtlasEntityType> getEntityTypes() { return entityTypes; }
+    public Set<AtlasEntityType> getEntityTypes() {
+        return entityTypes;
+    }
 
-    public SearchProcessor getSearchProcessor() { return searchProcessor; }
+    public SearchProcessor getSearchProcessor() {
+        return searchProcessor;
+    }
 
-    public Set<String> getClassificationNames() {return classificationNames;}
+    public Set<String> getClassificationNames() {
+        return classificationNames;
+    }
 
     public boolean includeEntityType(String entityType) {
         return typeAndSubTypes.isEmpty() || typeAndSubTypes.contains(entityType);
@@ -240,9 +275,13 @@ public class SearchContext {
         return ret;
     }
 
-    public boolean terminateSearch() { return terminateSearch; }
+    public boolean terminateSearch() {
+        return terminateSearch;
+    }
 
-    public void terminateSearch(boolean terminateSearch) { this.terminateSearch = terminateSearch; }
+    public void terminateSearch(boolean terminateSearch) {
+        this.terminateSearch = terminateSearch;
+    }
 
     public StringBuilder toString(StringBuilder sb) {
         if (sb == null) {
@@ -268,10 +307,10 @@ public class SearchContext {
     }
 
     boolean needClassificationProcessor() {
-        return (CollectionUtils.isNotEmpty(classificationTypes) && (CollectionUtils.isEmpty(entityTypes) || hasAttributeFilter(searchParameters.getTagFilters()))) || isWildCardSearch() ;
+        return (CollectionUtils.isNotEmpty(classificationTypes) && (CollectionUtils.isEmpty(entityTypes) || hasAttributeFilter(searchParameters.getTagFilters()))) || isWildCardSearch();
     }
 
-    boolean isWildCardSearch () {
+    boolean isWildCardSearch() {
         if (CollectionUtils.isNotEmpty(classificationNames)) {
             return classificationNames.stream().anyMatch(classification -> classification.contains(WILDCARD_CLASSIFICATIONS));
         }
@@ -317,7 +356,7 @@ public class SearchContext {
 
     public boolean hasAttributeFilter(FilterCriteria filterCriteria) {
         return filterCriteria != null &&
-               (CollectionUtils.isNotEmpty(filterCriteria.getCriterion()) || StringUtils.isNotEmpty(filterCriteria.getAttributeName()));
+                (CollectionUtils.isNotEmpty(filterCriteria.getCriterion()) || StringUtils.isNotEmpty(filterCriteria.getAttributeName()));
     }
 
     private void addProcessor(SearchProcessor processor) {
@@ -337,7 +376,7 @@ public class SearchContext {
             ret = MATCH_ALL_CLASSIFIED;
         } else if (StringUtils.equals(classificationName, MATCH_ALL_NOT_CLASSIFIED.getTypeName())) {
             ret = MATCH_ALL_NOT_CLASSIFIED;
-        } else if (StringUtils.equals(classificationName, ALL_CLASSIFICATION_TYPES)){
+        } else if (StringUtils.equals(classificationName, ALL_CLASSIFICATION_TYPES)) {
             ret = MATCH_ALL_CLASSIFICATION_TYPES;
         } else {
             ret = typeRegistry.getClassificationTypeByName(classificationName);
@@ -359,7 +398,7 @@ public class SearchContext {
         Set<String> classificationNames = new HashSet<>();
 
         if (StringUtils.isNotEmpty(classification)) {
-            String[] types                  = classification.split(TYPENAME_DELIMITER);
+            String[] types = classification.split(TYPENAME_DELIMITER);
             Set<String> names = new HashSet<>(Arrays.asList(types));
 
             names.forEach(name -> {
@@ -383,7 +422,7 @@ public class SearchContext {
 
     private AtlasEntityType getEntityType(String entityName) {
         return StringUtils.equals(entityName, ALL_ENTITY_TYPES) ? MATCH_ALL_ENTITY_TYPES :
-                                                                  typeRegistry.getEntityTypeByName(entityName);
+                typeRegistry.getEntityTypeByName(entityName);
     }
 
     private Set<AtlasEntityType> getEntityTypes(String typeName) throws AtlasBaseException {
@@ -392,10 +431,10 @@ public class SearchContext {
         //split multiple typeNames by comma
         if (StringUtils.isNotEmpty(typeName)) {
 
-            String[] types        = typeName.split(TYPENAME_DELIMITER);
+            String[] types = typeName.split(TYPENAME_DELIMITER);
             Set<String> typeNames = new HashSet<>(Arrays.asList(types));
-            entityTypes           = typeNames.stream().map(n ->
-                                    getEntityType(n)).filter(Objects::nonNull).collect(Collectors.toSet());
+            entityTypes = typeNames.stream().map(n ->
+                    getEntityType(n)).filter(Objects::nonNull).collect(Collectors.toSet());
 
             // Validate if the type name is incorrect
             if (CollectionUtils.isEmpty(entityTypes) || entityTypes.size() != typeNames.size()) {
@@ -421,7 +460,7 @@ public class SearchContext {
         return entityTypes;
     }
 
-    private void filterStructTypes(){
+    private void filterStructTypes() {
         //if typeName contains ALL_ENTITY_TYPES, remove others as OR condition will not effect any other
         if (CollectionUtils.isNotEmpty(entityTypes) && entityTypes.contains(MATCH_ALL_ENTITY_TYPES)) {
             entityTypes.clear();
@@ -452,10 +491,10 @@ public class SearchContext {
 
         if (StringUtils.isNotEmpty(termName)) {
             AtlasEntityType termType = getTermEntityType();
-            AtlasAttribute  attrName = termType.getAttribute(TermSearchProcessor.ATLAS_GLOSSARY_TERM_ATTR_QNAME);
-            AtlasGraphQuery query    = graph.query().has(Constants.ENTITY_TYPE_PROPERTY_KEY, termType.getTypeName())
-                                                    .has(attrName.getVertexPropertyName(), termName)
-                                                    .has(Constants.STATE_PROPERTY_KEY, AtlasEntity.Status.ACTIVE.name());
+            AtlasAttribute attrName = termType.getAttribute(TermSearchProcessor.ATLAS_GLOSSARY_TERM_ATTR_QNAME);
+            AtlasGraphQuery query = graph.query().has(Constants.ENTITY_TYPE_PROPERTY_KEY, termType.getTypeName())
+                    .has(attrName.getVertexPropertyName(), termName)
+                    .has(Constants.STATE_PROPERTY_KEY, AtlasEntity.Status.ACTIVE.name());
 
             Iterator<AtlasVertex> results = query.vertices().iterator();
 
@@ -466,10 +505,10 @@ public class SearchContext {
     }
 
     private List<AtlasVertex> getAssignedEntities(AtlasVertex glossaryTerm) {
-        List<AtlasVertex>   ret      = new ArrayList<>();
-        AtlasEntityType     termType = getTermEntityType();
-        AtlasAttribute      attr     = termType.getRelationshipAttribute(TermSearchProcessor.ATLAS_GLOSSARY_TERM_ATTR_ASSIGNED_ENTITIES, EntityGraphRetriever.TERM_RELATION_NAME);
-        Iterator<AtlasEdge> edges    = GraphHelper.getEdgesForLabel(glossaryTerm, attr.getRelationshipEdgeLabel(), attr.getRelationshipEdgeDirection());
+        List<AtlasVertex> ret = new ArrayList<>();
+        AtlasEntityType termType = getTermEntityType();
+        AtlasAttribute attr = termType.getRelationshipAttribute(TermSearchProcessor.ATLAS_GLOSSARY_TERM_ATTR_ASSIGNED_ENTITIES, EntityGraphRetriever.TERM_RELATION_NAME);
+        Iterator<AtlasEdge> edges = GraphHelper.getEdgesForLabel(glossaryTerm, attr.getRelationshipEdgeLabel(), attr.getRelationshipEdgeDirection());
 
         boolean excludeDeletedEntities = searchParameters.getExcludeDeletedEntities();
         if (edges != null) {
