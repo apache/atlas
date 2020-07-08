@@ -20,6 +20,7 @@ package org.apache.atlas.hive.bridge;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.sun.jersey.api.client.ClientResponse;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClientV2;
@@ -30,6 +31,7 @@ import org.apache.atlas.hook.AtlasHookException;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations;
+import org.apache.atlas.utils.AtlasPathExtractorUtil;
 import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.atlas.utils.HdfsNameServiceResolver;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -37,6 +39,7 @@ import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasStruct;
+import org.apache.atlas.utils.PathExtractorContext;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.collections.CollectionUtils;
 
@@ -87,12 +90,15 @@ public class HiveMetaStoreBridge {
     public static final String CLUSTER_NAME_KEY                = "atlas.cluster.name";
     public static final String HIVE_METADATA_NAMESPACE         = "atlas.metadata.namespace";
     public static final String HDFS_PATH_CONVERT_TO_LOWER_CASE = CONF_PREFIX + "hdfs_path.convert_to_lowercase";
+    public static final String HOOK_AWS_S3_ATLAS_MODEL_VERSION = CONF_PREFIX + "aws_s3.atlas.model.version";
     public static final String DEFAULT_CLUSTER_NAME            = "primary";
     public static final String TEMP_TABLE_PREFIX               = "_temp-";
     public static final String ATLAS_ENDPOINT                  = "atlas.rest.address";
     public static final String SEP                             = ":".intern();
     public static final String HDFS_PATH                       = "hdfs_path";
     public static final String DEFAULT_METASTORE_CATALOG       = "hive";
+
+    public static final String HOOK_AWS_S3_ATLAS_MODEL_VERSION_V2  = "v2";
 
     private static final int    EXIT_CODE_SUCCESS = 0;
     private static final int    EXIT_CODE_FAILED  = 1;
@@ -102,6 +108,8 @@ public class HiveMetaStoreBridge {
     private final Hive          hiveClient;
     private final AtlasClientV2 atlasClientV2;
     private final boolean       convertHdfsPathToLowerCase;
+
+    private String awsS3AtlasModelVersion = null;
 
 
     public static void main(String[] args) {
@@ -216,6 +224,7 @@ public class HiveMetaStoreBridge {
         this.hiveClient                 = Hive.get(hiveConf);
         this.atlasClientV2              = atlasClientV2;
         this.convertHdfsPathToLowerCase = atlasProperties.getBoolean(HDFS_PATH_CONVERT_TO_LOWER_CASE, false);
+        this.awsS3AtlasModelVersion     = atlasProperties.getString(HOOK_AWS_S3_ATLAS_MODEL_VERSION, HOOK_AWS_S3_ATLAS_MODEL_VERSION_V2);
     }
 
     /**
@@ -355,12 +364,17 @@ public class HiveMetaStoreBridge {
                 AtlasEntityWithExtInfo processEntity        = findProcessEntity(processQualifiedName);
 
                 if (processEntity == null) {
-                    String      tableLocation = isConvertHdfsPathToLowerCase() ? lower(table.getDataLocation().toString()) : table.getDataLocation().toString();
-                    String      query         = getCreateTableString(table, tableLocation);
-                    AtlasEntity pathInst      = toHdfsPathEntity(tableLocation);
-                    AtlasEntity tableInst     = tableEntity.getEntity();
-                    AtlasEntity processInst   = new AtlasEntity(HiveDataTypes.HIVE_PROCESS.getName());
-                    long        now           = System.currentTimeMillis();
+                    String tableLocationString = isConvertHdfsPathToLowerCase() ? lower(table.getDataLocation().toString()) : table.getDataLocation().toString();
+                    Path   location            = table.getDataLocation();
+                    String query               = getCreateTableString(table, tableLocationString);
+
+                    PathExtractorContext   pathExtractorCtx  = new PathExtractorContext(getMetadataNamespace(), isConvertHdfsPathToLowerCase(), awsS3AtlasModelVersion);
+                    AtlasEntityWithExtInfo entityWithExtInfo = AtlasPathExtractorUtil.getPathEntity(location, pathExtractorCtx);
+                    AtlasEntity            pathInst          = entityWithExtInfo.getEntity();
+                    AtlasEntity            tableInst         = tableEntity.getEntity();
+                    AtlasEntity            processInst       = new AtlasEntity(HiveDataTypes.HIVE_PROCESS.getName());
+
+                    long now = System.currentTimeMillis();
 
                     processInst.setAttribute(ATTRIBUTE_QUALIFIED_NAME, processQualifiedName);
                     processInst.setAttribute(ATTRIBUTE_NAME, query);
@@ -379,7 +393,12 @@ public class HiveMetaStoreBridge {
                     AtlasEntitiesWithExtInfo createTableProcess = new AtlasEntitiesWithExtInfo();
 
                     createTableProcess.addEntity(processInst);
-                    createTableProcess.addEntity(pathInst);
+
+                    if (pathExtractorCtx.getKnownEntities() != null) {
+                        pathExtractorCtx.getKnownEntities().values().forEach(entity -> createTableProcess.addEntity(entity));
+                    } else {
+                        createTableProcess.addEntity(pathInst);
+                    }
 
                     registerInstances(createTableProcess);
                 } else {
@@ -722,35 +741,6 @@ public class HiveMetaStoreBridge {
 
             ret.add(column);
         }
-        return ret;
-    }
-
-    private AtlasEntity toHdfsPathEntity(String pathUri) {
-        AtlasEntity ret           = new AtlasEntity(HDFS_PATH);
-        String      nameServiceID = HdfsNameServiceResolver.getNameServiceIDForPath(pathUri);
-        Path        path          = new Path(pathUri);
-
-        ret.setAttribute(ATTRIBUTE_NAME, Path.getPathWithoutSchemeAndAuthority(path).toString());
-        ret.setAttribute(ATTRIBUTE_CLUSTER_NAME, metadataNamespace);
-
-        if (StringUtils.isNotEmpty(nameServiceID)) {
-            // Name service resolution is successful, now get updated HDFS path where the host port info is replaced by resolved name service
-            String updatedHdfsPath = HdfsNameServiceResolver.getPathWithNameServiceID(pathUri);
-
-            ret.setAttribute(ATTRIBUTE_PATH, updatedHdfsPath);
-            ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, getHdfsPathQualifiedName(updatedHdfsPath));
-            ret.setAttribute(ATTRIBUTE_NAMESERVICE_ID, nameServiceID);
-        } else {
-            ret.setAttribute(ATTRIBUTE_PATH, pathUri);
-
-            // Only append metadataNamespace for the HDFS path
-            if (pathUri.startsWith(HdfsNameServiceResolver.HDFS_SCHEME)) {
-                ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, getHdfsPathQualifiedName(pathUri));
-            } else {
-                ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, pathUri);
-            }
-        }
-
         return ret;
     }
 
