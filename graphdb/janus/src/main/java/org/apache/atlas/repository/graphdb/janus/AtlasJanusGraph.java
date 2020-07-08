@@ -57,6 +57,8 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.io.IoCore;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONMapper;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONWriter;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.JanusGraphFactory;
@@ -83,9 +85,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.apache.atlas.repository.Constants.INDEX_SEARCH_VERTEX_PREFIX_DEFAULT;
-import static org.apache.atlas.repository.Constants.INDEX_SEARCH_VERTEX_PREFIX_PROPERTY;
+import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graphdb.janus.AtlasJanusGraphDatabase.getGraphInstance;
+import static org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchDatabase.getClient;
 import static org.apache.atlas.type.Constants.STATE_PROPERTY_KEY;
 
 /**
@@ -93,28 +95,29 @@ import static org.apache.atlas.type.Constants.STATE_PROPERTY_KEY;
  */
 public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusEdge> {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasJanusGraph.class);
-    private static final Parameter[] EMPTY_PARAMETER_ARRAY  = new Parameter[0];
+    private static final Parameter[] EMPTY_PARAMETER_ARRAY = new Parameter[0];
 
 
-    private static       Configuration APPLICATION_PROPERTIES = null;
+    private static Configuration APPLICATION_PROPERTIES = null;
 
     private final ConvertGremlinValueFunction GREMLIN_VALUE_CONVERSION_FUNCTION = new ConvertGremlinValueFunction();
-    private final Set<String>                 multiProperties                   = new HashSet<>();
-    private final StandardJanusGraph          janusGraph;
+    private final Set<String> multiProperties = new HashSet<>();
+    private final StandardJanusGraph janusGraph;
+    private final RestHighLevelClient esClient;
     private final ThreadLocal<GremlinGroovyScriptEngine> scriptEngine = ThreadLocal.withInitial(() -> {
         DefaultImportCustomizer.Builder builder = DefaultImportCustomizer.build()
-                                                                         .addClassImports(java.util.function.Function.class)
-                                                                         .addMethodImports(__.class.getMethods())
-                                                                         .addMethodImports(P.class.getMethods());
+                .addClassImports(java.util.function.Function.class)
+                .addMethodImports(__.class.getMethods())
+                .addMethodImports(P.class.getMethods());
         return new GremlinGroovyScriptEngine(builder.create());
     });
 
 
     public AtlasJanusGraph() {
-        this(getGraphInstance());
+        this(getGraphInstance(), getClient());
     }
 
-    public AtlasJanusGraph(JanusGraph graphInstance) {
+    public AtlasJanusGraph(JanusGraph graphInstance, RestHighLevelClient esClient) {
         //determine multi-properties once at startup
         JanusGraphManagement mgmt = null;
 
@@ -135,6 +138,7 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
         }
 
         janusGraph = (StandardJanusGraph) graphInstance;
+        this.esClient = esClient;
     }
 
     @Override
@@ -142,9 +146,9 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
                                                                AtlasVertex<AtlasJanusVertex, AtlasJanusEdge> inVertex,
                                                                String edgeLabel) {
         try {
-            Vertex oV   = outVertex.getV().getWrappedElement();
-            Vertex iV   = inVertex.getV().getWrappedElement();
-            Edge   edge = oV.addEdge(edgeLabel, iV);
+            Vertex oV = outVertex.getV().getWrappedElement();
+            Vertex iV = inVertex.getV().getWrappedElement();
+            Edge edge = oV.addEdge(edgeLabel, iV);
 
             return GraphDbObjectFactory.createEdge(this, edge);
         } catch (SchemaViolationException e) {
@@ -186,7 +190,7 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
     @Override
     public AtlasEdge<AtlasJanusVertex, AtlasJanusEdge> getEdge(String edgeId) {
         Iterator<Edge> it = getGraph().edges(edgeId);
-        Edge           e  = getSingleElement(it, edgeId);
+        Edge e = getSingleElement(it, edgeId);
 
         return GraphDbObjectFactory.createEdge(this, e);
     }
@@ -267,22 +271,27 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
      * Creates an index query.
      *
      * @param indexQueryParameters the parameterObject containing the information needed for creating the index.
-     *
      */
     public AtlasIndexQuery<AtlasJanusVertex, AtlasJanusEdge> indexQuery(GraphIndexQueryParameters indexQueryParameters) {
         return indexQuery(indexQueryParameters.getIndexName(), indexQueryParameters.getGraphQueryString(), indexQueryParameters.getOffset(), indexQueryParameters.getIndexQueryParameters());
     }
 
     private AtlasIndexQuery<AtlasJanusVertex, AtlasJanusEdge> indexQuery(String indexName, String graphQuery, int offset, List<AtlasIndexQueryParameter> indexQueryParameterList) {
-        String               prefix = getIndexQueryPrefix();
-        JanusGraphIndexQuery query  = getGraph().indexQuery(indexName, graphQuery).setElementIdentifier(prefix).offset(offset);
+        String prefix = getIndexQueryPrefix();
+        JanusGraphIndexQuery query = getGraph().indexQuery(indexName, graphQuery).setElementIdentifier(prefix).offset(offset);
 
-        if(indexQueryParameterList != null && indexQueryParameterList.size() > 0) {
-            for(AtlasIndexQueryParameter indexQueryParameter: indexQueryParameterList) {
+        if (indexQueryParameterList != null && indexQueryParameterList.size() > 0) {
+            for (AtlasIndexQueryParameter indexQueryParameter : indexQueryParameterList) {
                 query = query.addParameter(new Parameter(indexQueryParameter.getParameterName(), indexQueryParameter.getParameterValue()));
             }
         }
         return new AtlasJanusIndexQuery(this, query);
+    }
+
+    @Override
+    public AtlasIndexQuery<AtlasJanusVertex, AtlasJanusEdge> esIndexQuery(String indexName, SearchSourceBuilder sourceBuilder) {
+        assert esClient != null;
+        return new AtlasElasticsearchIndexQuery(this, esClient, INDEX_PREFIX + indexName, sourceBuilder);
     }
 
     @Override
@@ -312,8 +321,8 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
 
     @Override
     public AtlasVertex<AtlasJanusVertex, AtlasJanusEdge> getVertex(String vertexId) {
-        Iterator<Vertex> it     = getGraph().vertices(vertexId);
-        Vertex           vertex = getSingleElement(it, vertexId);
+        Iterator<Vertex> it = getGraph().vertices(vertexId);
+        Vertex vertex = getSingleElement(it, vertexId);
 
         return GraphDbObjectFactory.createVertex(this, vertex);
     }
@@ -353,7 +362,7 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
 
     @Override
     public void exportToGson(OutputStream os) throws IOException {
-        GraphSONMapper         mapper  = getGraph().io(IoCore.graphson()).mapper().create();
+        GraphSONMapper mapper = getGraph().io(IoCore.graphson()).mapper().create();
         GraphSONWriter.Builder builder = GraphSONWriter.build();
 
         builder.mapper(mapper);
@@ -434,7 +443,7 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
 
         return Iterables.transform(it,
                 (Function<Vertex, AtlasVertex<AtlasJanusVertex, AtlasJanusEdge>>) input ->
-                    GraphDbObjectFactory.createVertex(AtlasJanusGraph.this, input));
+                        GraphDbObjectFactory.createVertex(AtlasJanusGraph.this, input));
 
     }
 
@@ -457,9 +466,9 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
     }
 
 
-    String getIndexFieldName(AtlasPropertyKey propertyKey, JanusGraphIndex graphIndex, Parameter ... parameters) {
+    String getIndexFieldName(AtlasPropertyKey propertyKey, JanusGraphIndex graphIndex, Parameter... parameters) {
         PropertyKey janusKey = AtlasJanusObjectFactory.createPropertyKey(propertyKey);
-        if(parameters == null) {
+        if (parameters == null) {
             parameters = EMPTY_PARAMETER_ARRAY;
         }
         return janusGraph.getIndexSerializer().getDefaultFieldName(janusKey, parameters, graphIndex.getBackingIndex());
@@ -523,9 +532,9 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
     }
 
     private Set<String> getIndexKeys(Class<? extends Element> janusGraphElementClass) {
-        JanusGraphManagement      mgmt    = getGraph().openManagement();
+        JanusGraphManagement mgmt = getGraph().openManagement();
         Iterable<JanusGraphIndex> indices = mgmt.getGraphIndexes(janusGraphElementClass);
-        Set<String>               result  = new HashSet<String>();
+        Set<String> result = new HashSet<String>();
 
         for (JanusGraphIndex index : indices) {
             result.add(index.name());
@@ -574,6 +583,7 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
             return convertGremlinValue(input);
         }
     }
+
     private Edge getFirstActiveEdge(GraphTraversal gt) {
         while (gt.hasNext()) {
             Edge gremlinEdge = (Edge) gt.next();

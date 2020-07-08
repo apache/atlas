@@ -127,10 +127,12 @@ public abstract class SearchProcessor {
     protected       SearchProcessor        nextProcessor;
     protected       Predicate              inMemoryPredicate;
     protected       GraphIndexQueryBuilder graphIndexQueryBuilder;
+    protected       ESIndexQueryBuilder    esIndexQueryBuilder;
 
     protected SearchProcessor(SearchContext context) {
         this.context = context;
         this.graphIndexQueryBuilder = new GraphIndexQueryBuilder(context);
+        this.esIndexQueryBuilder = new ESIndexQueryBuilder(context);
     }
 
     public void addProcessor(SearchProcessor processor) {
@@ -995,7 +997,7 @@ public abstract class SearchProcessor {
     private static boolean isIndexQuerySpecialChar(char c) {
         switch (c) {
             case '+':
-            case '-':
+//            case '-':
             case '&':
             case '|':
             case '!':
@@ -1011,7 +1013,7 @@ public abstract class SearchProcessor {
             case '*':
             case '?':
             case ':':
-            case '/':
+//            case '/':
             case '#':
             case '$':
             case '%':

@@ -49,6 +49,12 @@ public final class Constants {
     public static final String TYPE_NAME_INTERNAL       = INTERNAL_PROPERTY_KEY_PREFIX + "internal";
     public static final String ASSET_ENTITY_TYPE = "Asset";
     public static final String OWNER_ATTRIBUTE   = "owner";
+    public static final String REF_ASSET_TYPE    = "Referenceable";
+
+    /**
+     * Atlan constants
+     */
+    public static final String Atlan_ENTITY_TYPE = "AtlanAsset";
 
     /**
      * Entity type's super types property key.
@@ -147,6 +153,8 @@ public final class Constants {
      * search backing index name for vertex keys.
      */
     public static final String VERTEX_INDEX = "vertex_index";
+
+    public static final String INDEX_PREFIX = "janusgraph_";
 
     /**
      * search backing index name for edge labels.
