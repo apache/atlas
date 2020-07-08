@@ -989,7 +989,7 @@ public class GlossaryREST {
     }
 
     /**
-     * Get sample template for uploading/creating bulk AtlasGlossaryCategory
+     * Get sample template for assigning entities to AtlasGlossaryTerm
      *
      * @return Template File
      * @HTTP 400 If the provided fileType is not supported
@@ -1026,15 +1026,15 @@ public class GlossaryREST {
     }
 
     /**
-     * Upload glossary file for creating AtlasGlossaryTerms in bulk
+     * Upload glossary file for assigning entities to AtlasGlossaryTerm in bulk
      *
      * @param inputStream InputStream of file
      * @param fileDetail  FormDataContentDisposition metadata of file
      * @return
      * @throws AtlasBaseException
-     * @HTTP 200 If glossary term creation was successful
-     * @HTTP 400 If Glossary term definition has invalid or missing information
-     * @HTTP 409 If Glossary term already exists (duplicate qualifiedName)
+     * @HTTP 200 If glossary term assignment was successful
+     * @HTTP 400 If Glossary term assignment definition has invalid or missing information
+     * @HTTP 409 If Glossary term assignment already exists (duplicate qualifiedName)
      */
     @POST
     @Path("/import/termentities")
@@ -1045,15 +1045,15 @@ public class GlossaryREST {
     }
 
     /**
-     * Upload glossary file for creating AtlasGlossaryTerms in bulk
+     * Upload glossary file for creating AtlasGlossaryCategory in bulk
      *
      * @param inputStream InputStream of file
      * @param fileDetail  FormDataContentDisposition metadata of file
      * @return
      * @throws AtlasBaseException
-     * @HTTP 200 If glossary term creation was successful
-     * @HTTP 400 If Glossary term definition has invalid or missing information
-     * @HTTP 409 If Glossary term already exists (duplicate qualifiedName)
+     * @HTTP 200 If glossary category creation was successful
+     * @HTTP 400 If Glossary category definition has invalid or missing information
+     * @HTTP 409 If Glossary category already exists (duplicate qualifiedName)
      */
     @POST
     @Path("/import/categories")
