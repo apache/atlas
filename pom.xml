@@ -658,7 +658,7 @@
 
         <janus.version>0.5.1</janus.version>
         <tinkerpop.version>3.4.6</tinkerpop.version>
-        <lucene-solr.version>7.3.0</lucene-solr.version>
+        <lucene-solr.version>8.4.0</lucene-solr.version>
 
         <hadoop.version>3.1.1</hadoop.version>
         <hbase.version>2.0.2</hbase.version>

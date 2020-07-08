@@ -28,6 +28,7 @@ import com.google.common.collect.Iterators;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.janusgraph.core.JanusGraphIndexQuery;
 import org.janusgraph.core.JanusGraphVertex;
+import org.janusgraph.util.encoding.LongEncoding;
 
 /**
  * Janus implementation of AtlasIndexQuery.
