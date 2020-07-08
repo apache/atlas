@@ -177,7 +177,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         EntityGraphRetriever entityRetriever = new EntityGraphRetriever(graph, typeRegistry);
 
-        AtlasEntityHeader ret = entityRetriever.toAtlasEntityHeader(guid);
+        AtlasEntityHeader ret = entityRetriever.toAtlasEntityHeaderWithClassifications(guid);
 
         if (ret == null) {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
