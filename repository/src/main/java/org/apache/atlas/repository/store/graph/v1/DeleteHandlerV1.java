@@ -108,7 +108,13 @@ public abstract class DeleteHandlerV1 {
             // Record all deletion candidate entities in RequestContext
             // and gather deletion candidate vertices.
             for (GraphHelper.VertexInfo vertexInfo : getOwnedVertices(instanceVertex)) {
-                requestContext.recordEntityDelete(vertexInfo.getEntity());
+                AtlasEntityHeader entityHeader = vertexInfo.getEntity();
+
+                if (requestContext.isPurgeRequested()) {
+                    entityHeader.setClassifications(entityRetriever.getAllClassifications(vertexInfo.getVertex()));
+                }
+
+                requestContext.recordEntityDelete(entityHeader);
                 deletionCandidateVertices.add(vertexInfo.getVertex());
             }
         }
