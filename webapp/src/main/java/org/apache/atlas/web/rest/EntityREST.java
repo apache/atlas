@@ -21,18 +21,17 @@ import com.sun.jersey.core.header.FormDataContentDisposition;
 import com.sun.jersey.multipart.FormDataParam;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.EntityAuditEvent;
+import org.apache.atlas.authorize.AtlasAuthorizationUtils;
+import org.apache.atlas.authorize.AtlasEntityAccessRequest;
+import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.bulkimport.BulkImportResponse;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2;
-import org.apache.atlas.model.instance.AtlasClassification;
+import org.apache.atlas.model.instance.*;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
-import org.apache.atlas.model.instance.AtlasEntityHeader;
-import org.apache.atlas.model.instance.AtlasEntityHeaders;
-import org.apache.atlas.model.instance.ClassificationAssociateRequest;
-import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.repository.audit.EntityAuditRepository;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
@@ -136,6 +135,36 @@ public class EntityREST {
         }
     }
 
+    /**
+     * Bulk API to create new entities or updates existing entities in Atlas.
+     * Existing entity is matched using its unique guid if supplied or by its unique attributes eg: qualifiedName
+     */
+    @POST
+    @Path("/evaluator")
+    public List<AtlasEvaluatePolicyResponse> evaluatePolicies(List<AtlasEvaluatePolicyRequest> entities) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        List<AtlasEvaluatePolicyResponse> response = new ArrayList();
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.evaluatePolicies()");
+            }
+
+            for (int i=0; i < entities.size(); i++) {
+                try {
+                    AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.valueOf(entities.get(i).getAction()), new AtlasEntityHeader(entities.get(i).getTypeName(), entities.get(i).getEntityGuid(), null)), entities.get(i).getAction() + "guid=", entities.get(i).getEntityGuid());
+                    response.add(new AtlasEvaluatePolicyResponse(entities.get(i).getTypeName(), entities.get(i).getEntityGuid(), entities.get(i).getAction(), true));
+                } catch (AtlasBaseException e) {
+                    response.add(new AtlasEvaluatePolicyResponse(entities.get(i).getTypeName(), entities.get(i).getEntityGuid(), entities.get(i).getAction(), false));
+                }
+            }
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+
+        return response;
+    }
     /**
      * Get entity header given its GUID.
      * @param guid GUID for the entity
