@@ -267,12 +267,12 @@ public class ESIndexQueryBuilder {
             boolQueryBuilder.must().add(QueryBuilders.queryStringQuery(queryString));
 
             QueryStringQueryBuilder fullTextQueryBuilder = QueryBuilders.queryStringQuery(fullTextQuery);
-            fullTextQueryBuilder.fields().put(ATLAN_ASSET_TYPE + ".integrationType", 100F);
-            fullTextQueryBuilder.fields().put(ASSET_ENTITY_TYPE + ".__s_name", 50F);
-            fullTextQueryBuilder.fields().put(ATLAN_ASSET_TYPE + ".displayName", 50F);
-            fullTextQueryBuilder.fields().put(ASSET_ENTITY_TYPE + ".__s_owner", 20F);
+            fullTextQueryBuilder.fields().put(ATLAN_ASSET_TYPE + ".displayName", 500F);
+            fullTextQueryBuilder.fields().put(ASSET_ENTITY_TYPE + ".__s_name", 500F);
+            fullTextQueryBuilder.fields().put(ATLAN_ASSET_TYPE + ".integrationType", 50F);
+            fullTextQueryBuilder.fields().put(ASSET_ENTITY_TYPE + ".__s_owner", 50F);
             fullTextQueryBuilder.fields().put(REF_ASSET_TYPE + ".qualifiedName", 10F);
-            fullTextQueryBuilder.fields().put(ATLAN_ASSET_TYPE + ".status", 5F);
+            fullTextQueryBuilder.fields().put(ATLAN_ASSET_TYPE + ".status", 10F);
             boolQueryBuilder.must().add(fullTextQueryBuilder);
 
             sourceBuilder.query(boolQueryBuilder);
