@@ -106,6 +106,17 @@ public class SearchContext {
             }
         }
 
+        //Wildcard tag with filter will raise an exception with 400 error code
+        if (CollectionUtils.isNotEmpty(classificationNames) && hasAttributeFilter(searchParameters.getTagFilters())) {
+            for (String classificationName : classificationNames){
+                //in case of       '*'  , filters are allowed, but
+                //in case of regex 'PI*', filters are not allowed ( if present in any of the requested tag)
+                if (classificationName.contains(WILDCARD_CLASSIFICATIONS) && !classificationName.equals(WILDCARD_CLASSIFICATIONS)) {
+                    throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "TagFilters specified with wildcard tag name");
+                }
+            }
+        }
+
         // Invalid attributes will raise an exception with 400 error code
         if (CollectionUtils.isNotEmpty(classificationTypes)) {
             for (AtlasClassificationType classificationType : classificationTypes) {
