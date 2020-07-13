@@ -39,14 +39,20 @@ import org.springframework.security.ldap.userdetails.DefaultLdapAuthoritiesPopul
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 public class AtlasLdapAuthenticationProvider extends
         AtlasAbstractAuthenticationProvider {
     private static Logger LOG = LoggerFactory.getLogger(AtlasLdapAuthenticationProvider.class);
     private boolean isDebugEnabled = LOG.isDebugEnabled();
+    // Dirty fix to cache user
+    public static Map<String, Date> cachedWhen = new ConcurrentHashMap<String, Date>();
+    public static Map<String, Authentication> cachedAuthentications = new ConcurrentHashMap<String, Authentication>();
 
     private String ldapURL;
     private String ldapUserDNPattern;
@@ -113,7 +119,7 @@ public class AtlasLdapAuthenticationProvider extends
             BindAuthenticator bindAuthenticator = getBindAuthenticator(
                     userSearch, ldapContextSource);
 
-            LdapAuthenticationProvider ldapAuthenticationProvider = new LdapAuthenticationProvider(
+            CachingLdapAuthenticationProvider ldapAuthenticationProvider = new CachingLdapAuthenticationProvider(
                     bindAuthenticator, defaultLdapAuthoritiesPopulator);
 
             if (userName != null && userPassword != null
