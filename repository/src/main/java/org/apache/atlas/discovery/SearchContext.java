@@ -159,6 +159,7 @@ public class SearchContext {
                     Set<String> allTypes = searchParameters.getIncludeSubTypes() ? entityType.getTypeAndAllSubTypes() : Collections.singleton(entityType.getTypeName());
                     typeAndSubTypes.addAll(allTypes);
                     superTypes.addAll(entityType.getSuperTypes());
+                    superTypes.add(entityType.getTypeName());
                 }
             }
 
