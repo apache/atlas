@@ -18,13 +18,14 @@ artifacts can be found in our published [KEYS file](https://www.apache.org/dist/
 
 | **Version** | **Release Date** | **Tarball** | **GPG** | **Hash** |
 | : ------------- : | : ------------- : | : ------------- : | : ------------- : |: ------------- :|
+| 2.1.0 | 2020-07-15 | [source](https://www.apache.org/dyn/closer.cgi/atlas/2.1.0/apache-atlas-2.1.0-sources.tar.gz) | [signature](https://www.apache.org/dist/atlas/2.1.0/apache-atlas-2.1.0-sources.tar.gz.asc) | [SHA512](https://www.apache.org/dist/atlas/2.1.0/apache-atlas-2.1.0-sources.tar.gz.sha512) |
 | 0.8.4 | 2019-06-21 | [source](https://www.apache.org/dyn/closer.cgi/atlas/0.8.4/apache-atlas-0.8.4-sources.tar.gz) | [signature](https://www.apache.org/dist/atlas/0.8.4/apache-atlas-0.8.4-sources.tar.gz.asc) | [SHA512](https://www.apache.org/dist/atlas/0.8.4/apache-atlas-0.8.4-sources.tar.gz.sha512) |
 | 1.2.0 | 2019-06-07 | [source](https://www.apache.org/dyn/closer.cgi/atlas/1.2.0/apache-atlas-1.2.0-sources.tar.gz) | [signature](https://www.apache.org/dist/atlas/1.2.0/apache-atlas-1.2.0-sources.tar.gz.asc) | [SHA512](https://www.apache.org/dist/atlas/1.2.0/apache-atlas-1.2.0-sources.tar.gz.sha512) |
-| 2.0.0 | 2019-05-13 | [source](https://www.apache.org/dyn/closer.cgi/atlas/2.0.0/apache-atlas-2.0.0-sources.tar.gz) | [signature](https://www.apache.org/dist/atlas/2.0.0/apache-atlas-2.0.0-sources.tar.gz.asc) | [SHA512](https://www.apache.org/dist/atlas/2.0.0/apache-atlas-2.0.0-sources.tar.gz.sha512) |
-| 0.8.3 | 2018-10-31 | [source](https://archive.apache.org/dist/atlas/0.8.3/apache-atlas-0.8.3-sources.tar.gz) | [signature](https://www.apache.org/dist/atlas/0.8.3/apache-atlas-0.8.3-sources.tar.gz.asc) | [SHA512](https://www.apache.org/dist/atlas/0.8.3/apache-atlas-0.8.3-sources.tar.gz.sha512) |
-| 1.1.0 | 2018-09-14 | [source](https://archive.apache.org/dist/atlas/1.1.0/apache-atlas-1.1.0-sources.tar.gz) | [signature](https://www.apache.org/dist/atlas/1.1.0/apache-atlas-1.1.0-sources.tar.gz.asc) | [SHA512](https://www.apache.org/dist/atlas/1.1.0/apache-atlas-1.1.0-sources.tar.gz.sha512) |
-| 1.0.0 | 2018-06-02 | [source](https://archive.apache.org/dist/atlas/1.0.0/apache-atlas-1.0.0-sources.tar.gz) | [signature](https://www.apache.org/dist/atlas/1.0.0/apache-atlas-1.0.0-sources.tar.gz.asc) | [SHA512](https://www.apache.org/dist/atlas/1.0.0/apache-atlas-1.0.0-sources.tar.gz.sha512) |
-| 0.8.2 | 2018-02-05 | [source](https://archive.apache.org/dist/atlas/0.8.2/apache-atlas-0.8.2-sources.tar.gz) | [signature](https://www.apache.org/dist/atlas/0.8.2/apache-atlas-0.8.2-sources.tar.gz.asc) | [SHA512](https://www.apache.org/dist/atlas/0.8.2/apache-atlas-0.8.2-sources.tar.gz.sha512) |
+| 2.0.0 | 2019-05-13 | [source](https://archive.apache.org/dist/atlas/2.0.0/apache-atlas-2.0.0-sources.tar.gz) | [signature](https://archive.apache.org/dist/atlas/2.0.0/apache-atlas-2.0.0-sources.tar.gz.asc) | [SHA512](https://archive.apache.org/dist/atlas/2.0.0/apache-atlas-2.0.0-sources.tar.gz.sha512) |
+| 0.8.3 | 2018-10-31 | [source](https://archive.apache.org/dist/atlas/0.8.3/apache-atlas-0.8.3-sources.tar.gz) | [signature](https://archive.apache.org/dist/atlas/0.8.3/apache-atlas-0.8.3-sources.tar.gz.asc) | [SHA512](https://archive.apache.org/dist/atlas/0.8.3/apache-atlas-0.8.3-sources.tar.gz.sha512) |
+| 1.1.0 | 2018-09-14 | [source](https://archive.apache.org/dist/atlas/1.1.0/apache-atlas-1.1.0-sources.tar.gz) | [signature](https://archive.apache.org/dist/atlas/1.1.0/apache-atlas-1.1.0-sources.tar.gz.asc) | [SHA512](https://archive.apache.org/dist/atlas/1.1.0/apache-atlas-1.1.0-sources.tar.gz.sha512) |
+| 1.0.0 | 2018-06-02 | [source](https://archive.apache.org/dist/atlas/1.0.0/apache-atlas-1.0.0-sources.tar.gz) | [signature](https://archive.apache.org/dist/atlas/1.0.0/apache-atlas-1.0.0-sources.tar.gz.asc) | [SHA512](https://archive.apache.org/dist/atlas/1.0.0/apache-atlas-1.0.0-sources.tar.gz.sha512) |
+| 0.8.2 | 2018-02-05 | [source](https://archive.apache.org/dist/atlas/0.8.2/apache-atlas-0.8.2-sources.tar.gz) | [signature](https://archive.apache.org/dist/atlas/0.8.2/apache-atlas-0.8.2-sources.tar.gz.asc) | [SHA512](https://archive.apache.org/dist/atlas/0.8.2/apache-atlas-0.8.2-sources.tar.gz.sha512) |
 | 0.8.1 | 2017-08-29 | [source](https://archive.apache.org/dist/atlas/0.8.1/apache-atlas-0.8.1-sources.tar.gz) | [signature](https://archive.apache.org/dist/atlas/0.8.1/apache-atlas-0.8.1-sources.tar.gz.asc) | [SHA512](https://archive.apache.org/dist/atlas/0.8.1/apache-atlas-0.8.1-sources.tar.gz.sha512) |
 | 0.7.0-incubating | 2016-07-09 | [source](https://archive.apache.org/dist/atlas/0.7.0-incubating/apache-atlas-0.7-incubating-sources.tar.gz) | [signature](https://archive.apache.org/dist/atlas/0.7.0-incubating/apache-atlas-0.7-incubating-sources.tar.gz.asc) | [SHA512](https://archive.apache.org/dist/atlas/0.7.0-incubating/apache-atlas-0.7-incubating-sources.tar.gz.sha512) |
 | 0.8.0-incubating | 2017-06-26 | [source](https://archive.apache.org/dist/atlas/0.8.0-incubating/apache-atlas-0.8-incubating-sources.tar.gz) | [signature](https://archive.apache.org/dist/atlas/0.8.0-incubating/apache-atlas-0.8-incubating-sources.tar.gz.asc) | [SHA512](https://archive.apache.org/dist/atlas/0.8.0-incubating/apache-atlas-0.8-incubating-sources.tar.gz.sha512) |
@@ -44,26 +45,48 @@ The PGP signature can be verified using PGP or GPG, with the following steps:
    * Download [Apache Atlas KEYS file](https://www.apache.org/dist/atlas/KEYS)
    * Verify the signatures using one of the following:
 
-<SyntaxHighlighter wrapLines={true} language="java" style={theme.dark}>
-% gpg --import KEYS
-% gpg --verify downloaded_file.asc downloaded_file
+<SyntaxHighlighter wrapLines={true} language="shell" style={theme.dark}>
+{`gpg --import KEYS
+gpg --verify downloaded_file.asc downloaded_file`}
 </SyntaxHighlighter>
 
 or
 
-<SyntaxHighlighter wrapLines={true} language="java" style={theme.dark}>
-% pgpk -a KEYS
-% pgpv downloaded_file.asc
+<SyntaxHighlighter wrapLines={true} language="shell" style={theme.dark}>
+{`pgpk -a KEYS
+pgpv downloaded_file.asc`}
 </SyntaxHighlighter>
 
 or
 
-<SyntaxHighlighter wrapLines={true} language="java" style={theme.dark}>
-% pgp -ka KEYS
-% pgp downloaded_file.asc
+<SyntaxHighlighter wrapLines={true} language="shell" style={theme.dark}>
+{`pgp -ka KEYS
+pgp downloaded_file.asc`}
 </SyntaxHighlighter>
 
 ## Release Notes
+**[Atlas 2.1.0](../2.1.0/index) (Released on 2020/07/15)**
+   * Quick Search: provides a simpler search experience with type-ahead suggestions
+   * Business Metadata: enables augmenting entity-types with additional attributes, search entities using these attributes
+   * Labels: ability to add/remove labels on entities, and search entities using labels
+   * Custom Attributes: ability to add entity instance specific custom attributes i.e. attributes not defined in entity-def or business metadata
+   * Entity Purge: added REST APIs to purge deleted entities
+   * Search: ability to find entities by more than one classification
+   * Performance: improvements in lineage retrieval and classification-propagation
+   * Notification: ability to process notificaitons from multiple Kafka topics
+   * Hive Hook: tracks process-executions via hive_process_execution entities
+   * Hive Hook: catures DDL operations via hive_db_ddl and hive_table_ddl entities
+   * Notification: introduced shell entities to record references to non-existing entities in notifications
+   * Spark: added model to capture Spark entities, processes and relationships
+   * AWS S3: introduced updated model to capture AWS S3 entities and relationships
+   * ADLS-Gen2: introduced model to capture Azure Data Lake Storage Gen2 entities and relationships
+   * Dependencies: JanusGraph 0.5.1, Tinkerpop 3.4.6, Spring Framework 4.3.20
+   * Authorization: updated to cover new features, like: business metadata, labels, purge
+   * UI: multiple UI improvements, including a beta UI
+   * Various Bug-fixes and optimizations
+   * <a href="">List of JIRAs resolved in Apache Atlas 2.1.0</a>
+   * [List of JIRAs resolved in Apache Atlas 2.0.0 release](https://issues.apache.org/jira/issues/?jql=project%20%3D%20ATLAS%20AND%20status%20%3D%20Resolved%20AND%20fixVersion%20%3D%202.1.0%20ORDER%20BY%20key%20DESC)
+
 **[Atlas 2.0.0](../2.0.0/index) (Released on 2019/05/14)**
    * Soft-reference attribute implementation.
    * Unique-attributes constraints at graph store-level
