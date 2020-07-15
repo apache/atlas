@@ -39,17 +39,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.DefaultValue;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.WebApplicationException;
+import javax.script.ScriptException;
+import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.StreamingOutput;
 import java.io.IOException;
@@ -648,6 +639,37 @@ public class GlossaryREST {
     }
 
     /**
+     * Get root terms belonging to a specific glossary
+     * @param glossaryGuid unique identifier for glossary
+     * @param limit page size - by default there is no paging
+     * @param offset starting offset for loading terms
+     * @param sort ASC(default) or DESC
+     * @return List of terms associated with the glossary
+     * @throws AtlasBaseException
+     * @HTTP 200 List of glossary terms for the given glossary or an empty list
+     * @HTTP 404 If glossary guid in invalid
+     */
+    @GET
+    @Path("/{glossaryGuid}/terms/headers/optimized")
+    public List<AtlasRelatedTermHeader> getGlossaryTermsHeaderOptimized(@PathParam("glossaryGuid") String glossaryGuid,
+                                                          @DefaultValue("-1") @QueryParam("limit") String limit,
+                                                          @DefaultValue("0") @QueryParam("offset") String offset,
+                                                          @DefaultValue("ASC") @QueryParam("sort") final String sort,
+                                                          @DefaultValue("true") @QueryParam("isRoot") final boolean isRoot) throws AtlasBaseException, ScriptException {
+        Servlets.validateQueryParamLength("glossaryGuid", glossaryGuid);
+        AtlasPerfTracer perf = null;
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "GlossaryREST.getGlossaryRootTermsHeader(" + glossaryGuid + ")");
+            }
+
+            return glossaryService.getGlossaryTermsHeaders(glossaryGuid, Integer.parseInt(offset), Integer.parseInt(limit), toSortOrder(sort), isRoot);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    /**
      * Get term headers belonging to a specific glossary
      * @param glossaryGuid unique identifier for glossary
      * @param limit page size - by default there is no paging
@@ -741,6 +763,37 @@ public class GlossaryREST {
     }
 
     /**
+     * Get the categories belonging to a specific glossary optimized
+     * @param glossaryGuid unique identifier for glossary term
+     * @param limit page size - by default there is no paging
+     * @param offset offset for pagination purpose
+     * @param sort ASC (default) or DESC
+     * @return List of associated categories
+     * @throws AtlasBaseException
+     * @HTTP 200 List of glossary categories for the given glossary or an empty list
+     * @HTTP 404 If glossary guid in invalid
+     */
+    @GET
+    @Path("/{glossaryGuid}/categories/headers/optimized")
+    public List<AtlasRelatedCategoryHeader> getGlossaryCategoriesHeadersOptimized(@PathParam("glossaryGuid") String glossaryGuid,
+                                                                         @DefaultValue("-1") @QueryParam("limit") String limit,
+                                                                         @DefaultValue("0") @QueryParam("offset") String offset,
+                                                                         @DefaultValue("ASC") @QueryParam("sort") final String sort) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("glossaryGuid", glossaryGuid);
+        AtlasPerfTracer perf = null;
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "GlossaryREST.getGlossaryCategoriesHeadersOptimized(" + glossaryGuid + ")");
+            }
+
+            return glossaryService.getGlossaryCategoriesHeadersOptimized(glossaryGuid, Integer.parseInt(offset), Integer.parseInt(limit), toSortOrder(sort));
+
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    /**
      * Get all terms associated with the specific category
      * @param categoryGuid unique identifier for glossary category
      * @param limit page size - by default there is no paging
@@ -766,6 +819,38 @@ public class GlossaryREST {
             }
 
             return glossaryService.getCategoryTerms(categoryGuid, Integer.parseInt(offset), Integer.parseInt(limit), toSortOrder(sort));
+
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    /**
+     * Get all terms associated with the specific category
+     * @param categoryGuid unique identifier for glossary category
+     * @param limit page size - by default there is no paging
+     * @param offset offset for pagination purpose
+     * @param sort ASC (default) or DESC
+     * @return List of associated terms
+     * @throws AtlasBaseException
+     * @HTTP 200 List of terms for the given category or an empty list
+     * @HTTP 404 If glossary category guid in invalid
+     */
+    @GET
+    @Path("/category/{categoryGuid}/terms/optimized")
+    public List<AtlasRelatedTermHeader> getCategoryTermOptimized(@PathParam("categoryGuid") String categoryGuid,
+                                                         @DefaultValue("-1") @QueryParam("limit") String limit,
+                                                         @DefaultValue("0") @QueryParam("offset") String offset,
+                                                         @DefaultValue("ASC") @QueryParam("sort") final String sort) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("categoryGuid", categoryGuid);
+
+        AtlasPerfTracer perf = null;
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "GlossaryREST.getCategoryTerms(" + categoryGuid + ")");
+            }
+
+            return glossaryService.getCategoryTermsHeaders(categoryGuid, Integer.parseInt(offset), Integer.parseInt(limit), toSortOrder(sort));
 
         } finally {
             AtlasPerfTracer.log(perf);
