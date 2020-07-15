@@ -22,6 +22,7 @@ import org.apache.atlas.model.glossary.AtlasGlossary;
 import org.apache.atlas.model.glossary.AtlasGlossaryCategory;
 import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
 import org.apache.atlas.model.glossary.relations.AtlasRelatedTermHeader;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.repository.ogm.DataAccess;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
@@ -88,7 +89,13 @@ public abstract class GlossaryUtils {
         return glossaryCategory;
     }
 
+    public static AtlasEntityHeader getAtlasGlossaryEntityHeaderSkeleton(final String glossaryGuid) {
+        return new AtlasEntityHeader(ATLAS_GLOSSARY_TYPENAME, glossaryGuid, null);
+    }
 
+    public static AtlasEntityHeader getAtlasCategoryEntityHeaderSkeleton(final String categoryGuid) {
+        return new AtlasEntityHeader(ATLAS_GLOSSARY_CATEGORY_TYPENAME, categoryGuid, null);
+    }
 
     protected void createRelationship(AtlasRelationship relationship) throws AtlasBaseException {
         relationshipStore.getOrCreate(relationship);

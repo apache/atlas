@@ -20,6 +20,9 @@ package org.apache.atlas.glossary;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.SortOrder;
 import org.apache.atlas.annotation.GraphTransaction;
+import org.apache.atlas.authorize.AtlasAuthorizationUtils;
+import org.apache.atlas.authorize.AtlasEntityAccessRequest;
+import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.glossary.AtlasGlossary;
 import org.apache.atlas.model.glossary.AtlasGlossaryCategory;
@@ -27,7 +30,11 @@ import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
 import org.apache.atlas.model.glossary.relations.AtlasRelatedCategoryHeader;
 import org.apache.atlas.model.glossary.relations.AtlasRelatedTermHeader;
 import org.apache.atlas.model.glossary.relations.AtlasTermCategorizationHeader;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasRelatedObjectId;
+import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.graph.AtlasGraphProvider;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.ogm.DataAccess;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
@@ -37,6 +44,10 @@ import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.FileUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.tinkerpop.gremlin.process.traversal.Order;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -44,39 +55,32 @@ import org.springframework.stereotype.Service;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.glossary.GlossaryUtils.*;
 
 @Service
 public class GlossaryService {
-    private static final Logger  LOG                 = LoggerFactory.getLogger(GlossaryService.class);
-    private static final boolean DEBUG_ENABLED       = LOG.isDebugEnabled();
-    private static final String  QUALIFIED_NAME_ATTR = "qualifiedName";
+    private static final Logger LOG = LoggerFactory.getLogger(GlossaryService.class);
+    private static final boolean DEBUG_ENABLED = LOG.isDebugEnabled();
+    private static final String QUALIFIED_NAME_ATTR = "qualifiedName";
 
-    private final DataAccess                dataAccess;
-    private final GlossaryTermUtils         glossaryTermUtils;
-    private final GlossaryCategoryUtils     glossaryCategoryUtils;
-    private final AtlasTypeRegistry         atlasTypeRegistry;
+    private final DataAccess dataAccess;
+    private final GlossaryTermUtils glossaryTermUtils;
+    private final GlossaryCategoryUtils glossaryCategoryUtils;
+    private final AtlasTypeRegistry atlasTypeRegistry;
     private final AtlasEntityChangeNotifier entityChangeNotifier;
 
-    private static final char[] invalidNameChars = { '@', '.' };
+    private static final char[] invalidNameChars = {'@', '.'};
 
     @Inject
     public GlossaryService(DataAccess dataAccess, final AtlasRelationshipStore relationshipStore,
                            final AtlasTypeRegistry typeRegistry, AtlasEntityChangeNotifier entityChangeNotifier) {
-        this.dataAccess           = dataAccess;
-        atlasTypeRegistry         = typeRegistry;
-        glossaryTermUtils         = new GlossaryTermUtils(relationshipStore, typeRegistry, dataAccess);
-        glossaryCategoryUtils     = new GlossaryCategoryUtils(relationshipStore, typeRegistry, dataAccess);
+        this.dataAccess = dataAccess;
+        atlasTypeRegistry = typeRegistry;
+        glossaryTermUtils = new GlossaryTermUtils(relationshipStore, typeRegistry, dataAccess);
+        glossaryCategoryUtils = new GlossaryCategoryUtils(relationshipStore, typeRegistry, dataAccess);
         this.entityChangeNotifier = entityChangeNotifier;
     }
 
@@ -95,11 +99,11 @@ public class GlossaryService {
             LOG.debug("==> GlossaryService.getGlossaries({}, {}, {})", limit, offset, sortOrder);
         }
 
-        List<String>     glossaryGuids    = AtlasGraphUtilsV2.findEntityGUIDsByType(GlossaryUtils.ATLAS_GLOSSARY_TYPENAME, sortOrder);
+        List<String> glossaryGuids = AtlasGraphUtilsV2.findEntityGUIDsByType(GlossaryUtils.ATLAS_GLOSSARY_TYPENAME, sortOrder);
         PaginationHelper paginationHelper = new PaginationHelper<>(glossaryGuids, offset, limit);
 
         List<AtlasGlossary> ret;
-        List<String>        guidsToLoad = paginationHelper.getPaginatedList();
+        List<String> guidsToLoad = paginationHelper.getPaginatedList();
         if (CollectionUtils.isNotEmpty(guidsToLoad)) {
             ret = guidsToLoad.stream().map(GlossaryUtils::getGlossarySkeleton).collect(Collectors.toList());
             Iterable<AtlasGlossary> glossaries = dataAccess.load(ret);
@@ -141,7 +145,7 @@ public class GlossaryService {
             if (StringUtils.isEmpty(atlasGlossary.getName())) {
                 throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_QUALIFIED_NAME_CANT_BE_DERIVED);
             }
-            if (isNameInvalid(atlasGlossary.getName())){
+            if (isNameInvalid(atlasGlossary.getName())) {
                 throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME);
             } else {
                 atlasGlossary.setQualifiedName(atlasGlossary.getName());
@@ -179,7 +183,7 @@ public class GlossaryService {
         }
 
         AtlasGlossary atlasGlossary = getGlossarySkeleton(glossaryGuid);
-        AtlasGlossary ret           = dataAccess.load(atlasGlossary);
+        AtlasGlossary ret = dataAccess.load(atlasGlossary);
 
         setInfoForRelations(ret);
 
@@ -207,16 +211,16 @@ public class GlossaryService {
         }
 
         AtlasGlossary atlasGlossary = getGlossarySkeleton(glossaryGuid);
-        AtlasGlossary glossary      = dataAccess.load(atlasGlossary);
+        AtlasGlossary glossary = dataAccess.load(atlasGlossary);
 
         AtlasGlossary.AtlasGlossaryExtInfo ret = new AtlasGlossary.AtlasGlossaryExtInfo(glossary);
 
         // Load all linked terms
         if (CollectionUtils.isNotEmpty(ret.getTerms())) {
             List<AtlasGlossaryTerm> termsToLoad = ret.getTerms()
-                                                     .stream()
-                                                     .map(id -> getAtlasGlossaryTermSkeleton(id.getTermGuid()))
-                                                     .collect(Collectors.toList());
+                    .stream()
+                    .map(id -> getAtlasGlossaryTermSkeleton(id.getTermGuid()))
+                    .collect(Collectors.toList());
             Iterable<AtlasGlossaryTerm> glossaryTerms = dataAccess.load(termsToLoad);
             glossaryTerms.forEach(ret::addTermInfo);
         }
@@ -224,9 +228,9 @@ public class GlossaryService {
         // Load all linked categories
         if (CollectionUtils.isNotEmpty(ret.getCategories())) {
             List<AtlasGlossaryCategory> categoriesToLoad = ret.getCategories()
-                                                              .stream()
-                                                              .map(id -> getAtlasGlossaryCategorySkeleton(id.getCategoryGuid()))
-                                                              .collect(Collectors.toList());
+                    .stream()
+                    .map(id -> getAtlasGlossaryCategorySkeleton(id.getCategoryGuid()))
+                    .collect(Collectors.toList());
             Iterable<AtlasGlossaryCategory> glossaryCategories = dataAccess.load(categoriesToLoad);
             glossaryCategories.forEach(ret::addCategoryInfo);
         }
@@ -310,7 +314,7 @@ public class GlossaryService {
 
 
         AtlasGlossaryTerm atlasGlossary = getAtlasGlossaryTermSkeleton(termGuid);
-        AtlasGlossaryTerm ret           = dataAccess.load(atlasGlossary);
+        AtlasGlossaryTerm ret = dataAccess.load(atlasGlossary);
 
         setInfoForRelations(ret);
 
@@ -335,12 +339,12 @@ public class GlossaryService {
             throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_TERM_QUALIFIED_NAME_CANT_BE_DERIVED);
         }
 
-        if (isNameInvalid(glossaryTerm.getName())){
+        if (isNameInvalid(glossaryTerm.getName())) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME);
         } else {
             // Derive the qualifiedName
-            String        anchorGlossaryGuid = glossaryTerm.getAnchor().getGlossaryGuid();
-            AtlasGlossary glossary           = dataAccess.load(getGlossarySkeleton(anchorGlossaryGuid));
+            String anchorGlossaryGuid = glossaryTerm.getAnchor().getGlossaryGuid();
+            AtlasGlossary glossary = dataAccess.load(getGlossarySkeleton(anchorGlossaryGuid));
             glossaryTerm.setQualifiedName(glossaryTerm.getName() + "@" + glossary.getQualifiedName());
 
             if (LOG.isDebugEnabled()) {
@@ -480,7 +484,6 @@ public class GlossaryService {
         AtlasGlossaryTerm glossaryTerm = dataAccess.load(getAtlasGlossaryTermSkeleton(termGuid));
 
         glossaryTermUtils.processTermAssignments(glossaryTerm, relatedObjectIds);
-
         entityChangeNotifier.onTermAddedToEntities(glossaryTerm, relatedObjectIds);
 
         if (DEBUG_ENABLED) {
@@ -519,7 +522,7 @@ public class GlossaryService {
         }
 
         AtlasGlossaryCategory atlasGlossary = getAtlasGlossaryCategorySkeleton(categoryGuid);
-        AtlasGlossaryCategory ret           = dataAccess.load(atlasGlossary);
+        AtlasGlossaryCategory ret = dataAccess.load(atlasGlossary);
 
         setInfoForRelations(ret);
 
@@ -544,13 +547,13 @@ public class GlossaryService {
         if (StringUtils.isEmpty(glossaryCategory.getName())) {
             throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_CATEGORY_QUALIFIED_NAME_CANT_BE_DERIVED);
         }
-        if (isNameInvalid(glossaryCategory.getName())){
+        if (isNameInvalid(glossaryCategory.getName())) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME);
         } else {
             // Derive the qualifiedName
             String anchorGlossaryGuid = glossaryCategory.getAnchor().getGlossaryGuid();
             AtlasGlossary glossary = dataAccess.load(getGlossarySkeleton(anchorGlossaryGuid));
-            glossaryCategory.setQualifiedName(glossaryCategory.getName()+ "@" + glossary.getQualifiedName());
+            glossaryCategory.setQualifiedName(glossaryCategory.getName() + "@" + glossary.getQualifiedName());
 
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Derived qualifiedName = {}", glossaryCategory.getQualifiedName());
@@ -710,8 +713,8 @@ public class GlossaryService {
             List<AtlasRelatedTermHeader> terms = new ArrayList<>(glossary.getTerms());
             if (sortOrder != null) {
                 terms.sort((o1, o2) -> sortOrder == SortOrder.ASCENDING ?
-                                               o1.getDisplayText().compareTo(o2.getDisplayText()) :
-                                               o2.getDisplayText().compareTo(o1.getDisplayText()));
+                        o1.getDisplayText().compareTo(o2.getDisplayText()) :
+                        o2.getDisplayText().compareTo(o1.getDisplayText()));
             }
             ret = new PaginationHelper<>(terms, offset, limit).getPaginatedList();
         } else {
@@ -722,6 +725,137 @@ public class GlossaryService {
             LOG.debug("<== GlossaryService.getGlossaryTermsHeaders() : {}", ret);
         }
 
+        return ret;
+    }
+
+
+    @GraphTransaction
+    public List<AtlasRelatedTermHeader> getCategoryTermsHeadersOptimized(String categoryGuid, int offset, int limit, SortOrder sortOrder) throws AtlasBaseException {
+        if (Objects.isNull(categoryGuid)) {
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "categoryGuid is null/empty");
+        }
+
+        if (DEBUG_ENABLED) {
+            LOG.debug("==> GlossaryService.getCategoryTermsHeaders({}, {}, {}, {})", categoryGuid, offset, limit, sortOrder);
+        }
+
+        AtlasAuthorizationUtils.verifyAccess(
+                new AtlasEntityAccessRequest(atlasTypeRegistry, AtlasPrivilege.ENTITY_READ, GlossaryUtils.getAtlasCategoryEntityHeaderSkeleton(categoryGuid)));
+
+        List<AtlasRelatedTermHeader> ret = new ArrayList<>();
+        AtlasGraph<Object, Object> graph = AtlasGraphProvider.getGraphInstance();
+
+        GraphTraversal query = graph.V().has(Constants.GUID_PROPERTY_KEY, categoryGuid)
+                .has(Constants.STATE_PROPERTY_KEY, P.within(Constants.ACTIVE_STATE_VALUE))
+                .out(Constants.CATEGORY_TERMS_EDGE_LABEL)
+                .has(Constants.STATE_PROPERTY_KEY, P.within(Constants.ACTIVE_STATE_VALUE));
+
+        runPaginatedTermsQuery(offset, limit, sortOrder, ret, query);
+
+        return ret;
+    }
+
+    @GraphTransaction
+    public List<AtlasRelatedTermHeader> getGlossaryTermsHeadersOptimized(String glossaryGuid, int offset, int limit, SortOrder sortOrder, boolean isRoot) throws AtlasBaseException {
+        if (Objects.isNull(glossaryGuid)) {
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "glossaryGuid is null/empty");
+        }
+
+        if (DEBUG_ENABLED) {
+            LOG.debug("==> GlossaryService.getGlossaryTermsHeaders({}, {}, {}, {}, {})", glossaryGuid, offset, limit, sortOrder, isRoot);
+        }
+
+        AtlasAuthorizationUtils.verifyAccess(
+                new AtlasEntityAccessRequest(atlasTypeRegistry, AtlasPrivilege.ENTITY_READ, GlossaryUtils.getAtlasGlossaryEntityHeaderSkeleton(glossaryGuid)));
+
+        List<AtlasRelatedTermHeader> ret = new ArrayList<>();
+        AtlasGraph<Object, Object> graph = AtlasGraphProvider.getGraphInstance();
+
+        GraphTraversal query = graph.V().has(Constants.GUID_PROPERTY_KEY, glossaryGuid)
+                .has(Constants.STATE_PROPERTY_KEY, P.within(Constants.ACTIVE_STATE_VALUE))
+                .out(Constants.GLOSSARY_TERMS_EDGE_LABEL)
+                .has(Constants.STATE_PROPERTY_KEY, P.within(Constants.ACTIVE_STATE_VALUE));
+
+        if (isRoot) {
+            query = query.where(__.inE(Constants.CATEGORY_TERMS_EDGE_LABEL).count().is(P.eq(0)));
+        }
+
+        runPaginatedTermsQuery(offset, limit, sortOrder, ret, query);
+
+        return ret;
+    }
+
+    private void runPaginatedTermsQuery(int offset, int limit, SortOrder sortOrder, List<AtlasRelatedTermHeader> ret, GraphTraversal baseQuery) {
+        if (sortOrder != null) {
+            Order order = sortOrder == SortOrder.ASCENDING ? Order.asc : Order.desc;
+            baseQuery = baseQuery.order().by(Constants.TERM_DISPLAY_TEXT_KEY, order);
+        }
+
+        Set<Map<String, List<String>>> results = baseQuery
+                .valueMap(Constants.GUID_PROPERTY_KEY, Constants.TERM_DISPLAY_TEXT_KEY)
+                .range(offset, limit + offset).toSet();
+
+        constructTermsHeaders(ret, results);
+    }
+
+    private void constructTermsHeaders(List<AtlasRelatedTermHeader> ret, Set<Map<String, List<String>>> queryResult) {
+        for (Map<String, List<String>> res : queryResult) {
+            AtlasRelatedTermHeader atlasRelatedTermHeader = new AtlasRelatedTermHeader();
+            atlasRelatedTermHeader.setTermGuid(res.get(Constants.GUID_PROPERTY_KEY).get(0));
+            atlasRelatedTermHeader.setDisplayText(res.get(Constants.TERM_DISPLAY_TEXT_KEY).get(0));
+            ret.add(atlasRelatedTermHeader);
+        }
+    }
+
+    @GraphTransaction
+    public List<AtlasRelatedCategoryHeader> getGlossaryCategoriesHeadersOptimized(String glossaryGuid, int offset, int limit, SortOrder sortOrder) throws AtlasBaseException {
+        if (Objects.isNull(glossaryGuid)) {
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "glossaryGuid is null/empty");
+        }
+
+        if (DEBUG_ENABLED) {
+            LOG.debug("==> GlossaryService.getGlossaryCategoriesHeadersOptimized({}, {}, {}, {})", glossaryGuid, offset, limit, sortOrder);
+        }
+
+        AtlasAuthorizationUtils.verifyAccess(
+                new AtlasEntityAccessRequest(atlasTypeRegistry, AtlasPrivilege.ENTITY_READ, GlossaryUtils.getAtlasGlossaryEntityHeaderSkeleton(glossaryGuid)));
+
+        List<AtlasRelatedCategoryHeader> ret = new ArrayList<>();
+        AtlasGraph<Object, Object> graph = AtlasGraphProvider.getGraphInstance();
+
+        GraphTraversal query = graph.V()
+                .has(Constants.GUID_PROPERTY_KEY, glossaryGuid)
+                .has(Constants.STATE_PROPERTY_KEY, P.within(Constants.ACTIVE_STATE_VALUE))
+                .out(Constants.GLOSSARY_CATEGORY_EDGE_LABEL)
+                .has(Constants.STATE_PROPERTY_KEY, P.within(Constants.ACTIVE_STATE_VALUE));
+
+        if (sortOrder != null) {
+            Order order = sortOrder == SortOrder.ASCENDING ? Order.asc : Order.desc;
+            query = query.order().by(Constants.CATEGORY_DISPLAY_TEXT_KEY, order);
+        }
+
+        Set<Map<String, List<String>>> results = query
+                .valueMap(Constants.GUID_PROPERTY_KEY, Constants.CATEGORY_DISPLAY_TEXT_KEY)
+                .range(offset, limit + offset).toSet();
+
+
+        for (Map<String, List<String>> res : results) {
+            AtlasRelatedCategoryHeader atlasRelatedCategoryHeader = new AtlasRelatedCategoryHeader();
+            atlasRelatedCategoryHeader.setCategoryGuid(res.get(Constants.GUID_PROPERTY_KEY).get(0));
+            atlasRelatedCategoryHeader.setDisplayText(res.get(Constants.CATEGORY_DISPLAY_TEXT_KEY).get(0));
+
+            Set<String> parentResults = graph.V()
+                    .has(Constants.GUID_PROPERTY_KEY, atlasRelatedCategoryHeader.getCategoryGuid())
+                    .in(Constants.CATEGORY_PARENT_EDGE_LABEL)
+                    .has(Constants.STATE_PROPERTY_KEY, P.within(Constants.ACTIVE_STATE_VALUE))
+                    .values(Constants.GUID_PROPERTY_KEY).toSet();
+
+            if (!parentResults.isEmpty()) {
+                atlasRelatedCategoryHeader.setParentCategoryGuid(parentResults.iterator().next());
+            }
+
+            ret.add(atlasRelatedCategoryHeader);
+        }
         return ret;
     }
 
@@ -767,8 +901,8 @@ public class GlossaryService {
             List<AtlasRelatedCategoryHeader> categories = new ArrayList<>(glossary.getCategories());
             if (sortOrder != null) {
                 categories.sort((o1, o2) -> sortOrder == SortOrder.ASCENDING ?
-                                                    o1.getDisplayText().compareTo(o2.getDisplayText()) :
-                                                    o2.getDisplayText().compareTo(o1.getDisplayText()));
+                        o1.getDisplayText().compareTo(o2.getDisplayText()) :
+                        o2.getDisplayText().compareTo(o1.getDisplayText()));
             }
             ret = new PaginationHelper<>(categories, offset, limit).getPaginatedList();
         } else {
@@ -824,8 +958,8 @@ public class GlossaryService {
             List<AtlasRelatedTermHeader> terms = new ArrayList<>(glossaryCategory.getTerms());
             if (sortOrder != null) {
                 terms.sort((o1, o2) -> sortOrder == SortOrder.ASCENDING ?
-                                               o1.getDisplayText().compareTo(o2.getDisplayText()) :
-                                               o2.getDisplayText().compareTo(o1.getDisplayText()));
+                        o1.getDisplayText().compareTo(o2.getDisplayText()) :
+                        o2.getDisplayText().compareTo(o1.getDisplayText()));
             }
             ret = new PaginationHelper<>(terms, offset, limit).getPaginatedList();
         } else {
@@ -848,7 +982,7 @@ public class GlossaryService {
             LOG.debug("==> GlossaryService.getRelatedTerms({}, {}, {}, {})", termGuid, offset, limit, sortOrder);
         }
 
-        AtlasGlossaryTerm                                            glossaryTerm = getTerm(termGuid);
+        AtlasGlossaryTerm glossaryTerm = getTerm(termGuid);
         Map<AtlasGlossaryTerm.Relation, Set<AtlasRelatedTermHeader>> ret;
         if (glossaryTerm.hasTerms()) {
             ret = glossaryTerm.getRelatedTerms();
@@ -899,7 +1033,7 @@ public class GlossaryService {
             throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "termGuid is null/empty");
         }
 
-        AtlasGlossaryTerm         glossaryTerm     = dataAccess.load(getAtlasGlossaryTermSkeleton(termGuid));
+        AtlasGlossaryTerm glossaryTerm = dataAccess.load(getAtlasGlossaryTermSkeleton(termGuid));
         Set<AtlasRelatedObjectId> assignedEntities = glossaryTerm.getAssignedEntities();
 
         List<AtlasRelatedObjectId> ret;
@@ -907,8 +1041,8 @@ public class GlossaryService {
             ret = new ArrayList<>(assignedEntities);
             if (sortOrder != null) {
                 ret.sort((o1, o2) -> sortOrder == SortOrder.ASCENDING ?
-                                             o1.getDisplayText().compareTo(o2.getDisplayText()) :
-                                             o2.getDisplayText().compareTo(o1.getDisplayText()));
+                        o1.getDisplayText().compareTo(o2.getDisplayText()) :
+                        o2.getDisplayText().compareTo(o1.getDisplayText()));
             }
             ret = new PaginationHelper<>(assignedEntities, offset, limit).getPaginatedList();
         } else {
@@ -995,9 +1129,9 @@ public class GlossaryService {
 
     private void setDisplayNameForTermCategories(final Set<AtlasTermCategorizationHeader> categorizationHeaders) throws AtlasBaseException {
         List<AtlasGlossaryCategory> categories = categorizationHeaders
-                                                         .stream()
-                                                         .map(id -> getAtlasGlossaryCategorySkeleton(id.getCategoryGuid()))
-                                                         .collect(Collectors.toList());
+                .stream()
+                .map(id -> getAtlasGlossaryCategorySkeleton(id.getCategoryGuid()))
+                .collect(Collectors.toList());
         Map<String, AtlasGlossaryCategory> categoryMap = new HashMap<>();
         dataAccess.load(categories).forEach(c -> categoryMap.put(c.getGuid(), c));
         categorizationHeaders.forEach(c -> c.setDisplayText(categoryMap.get(c.getCategoryGuid()).getName()));
@@ -1005,9 +1139,9 @@ public class GlossaryService {
 
     private void setInfoForRelatedCategories(final Collection<AtlasRelatedCategoryHeader> categoryHeaders) throws AtlasBaseException {
         List<AtlasGlossaryCategory> categories = categoryHeaders
-                                                         .stream()
-                                                         .map(id -> getAtlasGlossaryCategorySkeleton(id.getCategoryGuid()))
-                                                         .collect(Collectors.toList());
+                .stream()
+                .map(id -> getAtlasGlossaryCategorySkeleton(id.getCategoryGuid()))
+                .collect(Collectors.toList());
         Map<String, AtlasGlossaryCategory> categoryMap = new HashMap<>();
         dataAccess.load(categories).forEach(c -> categoryMap.put(c.getGuid(), c));
         for (AtlasRelatedCategoryHeader c : categoryHeaders) {
@@ -1021,9 +1155,9 @@ public class GlossaryService {
 
     private void setInfoForTerms(final Collection<AtlasRelatedTermHeader> termHeaders) throws AtlasBaseException {
         List<AtlasGlossaryTerm> terms = termHeaders
-                                                .stream()
-                                                .map(id -> getAtlasGlossaryTermSkeleton(id.getTermGuid()))
-                                                .collect(Collectors.toList());
+                .stream()
+                .map(id -> getAtlasGlossaryTermSkeleton(id.getTermGuid()))
+                .collect(Collectors.toList());
         Map<String, AtlasGlossaryTerm> termMap = new HashMap<>();
         dataAccess.load(terms).iterator().forEachRemaining(t -> termMap.put(t.getGuid(), t));
 
@@ -1039,9 +1173,9 @@ public class GlossaryService {
     }
 
     static class PaginationHelper<T> {
-        private int     pageStart;
-        private int     pageEnd;
-        private int     maxSize;
+        private int pageStart;
+        private int pageEnd;
+        private int maxSize;
         private List<T> items;
 
         PaginationHelper(Collection<T> items, int offset, int limit) {
@@ -1089,8 +1223,8 @@ public class GlossaryService {
                 throw new AtlasBaseException(AtlasErrorCode.INVALID_FILE_TYPE, fileName);
             }
 
-            List<String[]> fileData       = FileUtils.readFileData(fileName, inputStream);
-            List<String>   failedTermMsgs = new ArrayList<>();
+            List<String[]> fileData = FileUtils.readFileData(fileName, inputStream);
+            List<String> failedTermMsgs = new ArrayList<>();
 
             ret = glossaryTermUtils.getGlossaryTermDataList(fileData, failedTermMsgs);
             ret = createGlossaryTerms(ret);
@@ -1109,11 +1243,11 @@ public class GlossaryService {
                 throw new AtlasBaseException(AtlasErrorCode.INVALID_FILE_TYPE, fileName);
             }
 
-            List<String[]> fileData       = FileUtils.readFileData(fileName, inputStream);
-            List<String>   failedTermMsgs = new ArrayList<>();
+            List<String[]> fileData = FileUtils.readFileData(fileName, inputStream);
+            List<String> failedTermMsgs = new ArrayList<>();
 
             ret = glossaryTermUtils.getGlossaryTermEntitiesDataList(fileData, failedTermMsgs);
-            for (AtlasGlossaryTerm term: ret) {
+            for (AtlasGlossaryTerm term : ret) {
                 assignTermToEntities(term.getGuid(), new ArrayList<>(term.getAssignedEntities()));
             }
         } catch (IOException e) {
@@ -1145,8 +1279,8 @@ public class GlossaryService {
                 throw new AtlasBaseException(AtlasErrorCode.INVALID_FILE_TYPE, fileName);
             }
 
-            List<String[]> fileData       = FileUtils.readFileData(fileName, inputStream);
-            List<String>   failedCategoryMsgs = new ArrayList<>();
+            List<String[]> fileData = FileUtils.readFileData(fileName, inputStream);
+            List<String> failedCategoryMsgs = new ArrayList<>();
 
             ret = glossaryCategoryUtils.getGlossaryCategoryDataList(fileData, failedCategoryMsgs);
             ret = createGlossaryCategories(ret);
