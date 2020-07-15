@@ -50,7 +50,7 @@ WORKDIR $ATLAS_WORKDIR
 RUN mvn clean package $SKIPS $PROFILE -pl '!docs'
 
 RUN mkdir build
-RUN tar xzf distro/target/*bin.tar.gz --strip-components 1 -C $ATLAS_WORKDIR/build
+RUN cp -r distro/target/*bin.tar.gz $ATLAS_WORKDIR/build
 
 ##################################### new image #######################
 FROM ubuntu:18.04
@@ -70,9 +70,14 @@ ENV PATH /usr/java/bin:/usr/local/apache-maven/bin:/usr/local/sbin:/usr/local/bi
 USER ubuntu
 WORKDIR $ATLAS_WORKDIR
 
+RUN mkdir build
 RUN mkdir atlas-bin
 
-COPY --from=build-env /opt/atlas/build ./atlas-bin/
+COPY --from=build-env /opt/atlas/build ./build/
+
+RUN tar xzf build/*bin.tar.gz --strip-components 1 -C $ATLAS_WORKDIR/atlas-bin
+# Clean up
+RUN rm -rf build
 
 # Set env variables, add it to the path, and start Atlas.
 ENV MANAGE_LOCAL_SOLR true
