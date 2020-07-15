@@ -663,7 +663,7 @@ public class GlossaryREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "GlossaryREST.getGlossaryRootTermsHeader(" + glossaryGuid + ")");
             }
 
-            return glossaryService.getGlossaryTermsHeaders(glossaryGuid, Integer.parseInt(offset), Integer.parseInt(limit), toSortOrder(sort), isRoot);
+            return glossaryService.getGlossaryTermsHeadersOptimized(glossaryGuid, Integer.parseInt(offset), Integer.parseInt(limit), toSortOrder(sort), isRoot);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -850,7 +850,7 @@ public class GlossaryREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "GlossaryREST.getCategoryTerms(" + categoryGuid + ")");
             }
 
-            return glossaryService.getCategoryTermsHeaders(categoryGuid, Integer.parseInt(offset), Integer.parseInt(limit), toSortOrder(sort));
+            return glossaryService.getCategoryTermsHeadersOptimized(categoryGuid, Integer.parseInt(offset), Integer.parseInt(limit), toSortOrder(sort));
 
         } finally {
             AtlasPerfTracer.log(perf);

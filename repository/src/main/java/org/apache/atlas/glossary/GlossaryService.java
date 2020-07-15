@@ -726,7 +726,7 @@ public class GlossaryService {
 
 
     @GraphTransaction
-    public List<AtlasRelatedTermHeader> getCategoryTermsHeaders(String categoryGuid, int offset, int limit, SortOrder sortOrder) throws AtlasBaseException {
+    public List<AtlasRelatedTermHeader> getCategoryTermsHeadersOptimized(String categoryGuid, int offset, int limit, SortOrder sortOrder) throws AtlasBaseException {
         if (Objects.isNull(categoryGuid)) {
             throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "categoryGuid is null/empty");
         }
@@ -749,7 +749,7 @@ public class GlossaryService {
     }
 
     @GraphTransaction
-    public List<AtlasRelatedTermHeader> getGlossaryTermsHeaders(String glossaryGuid, int offset, int limit, SortOrder sortOrder, boolean isRoot) throws AtlasBaseException {
+    public List<AtlasRelatedTermHeader> getGlossaryTermsHeadersOptimized(String glossaryGuid, int offset, int limit, SortOrder sortOrder, boolean isRoot) throws AtlasBaseException {
         if (Objects.isNull(glossaryGuid)) {
             throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "glossaryGuid is null/empty");
         }
