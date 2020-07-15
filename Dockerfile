@@ -14,53 +14,70 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM ubuntu:18.04
+FROM maven:3.6.3-jdk-11-slim AS build-env
+ARG PROFILE=-Pdist
+ARG SKIPS="-DskipTests -Drat.skip=true -DskipCheck=true -DskipITs=true -DskipUTs=true -DskipEnunciate=true -Dcheckstyle.skip=true"
 
-# --build-arg MVN_JOB=8 to built with option -T 8 default to 1
-ARG MVN_JOB=1
-# --build-arg BRANCH=master to build specific branc default to master
-ARG BRANCH=master
+ENV ATLAS_WORKDIR=/opt/atlas
+
+## code didn t changed
+ADD 3party-licenses $ATLAS_WORKDIR/3party-licenses
+ADD addons $ATLAS_WORKDIR/addons
+ADD authorization $ATLAS_WORKDIR/authorization
+ADD build-tools $ATLAS_WORKDIR/build-tools
+ADD client $ATLAS_WORKDIR/client
+ADD common $ATLAS_WORKDIR/common
+ADD dev-support $ATLAS_WORKDIR/dev-support
+ADD docs $ATLAS_WORKDIR/docs
+ADD graphdb $ATLAS_WORKDIR/graphdb
+ADD intg $ATLAS_WORKDIR/intg
+ADD notification $ATLAS_WORKDIR/notification
+ADD plugin-classloader $ATLAS_WORKDIR/plugin-classloader
+ADD repository $ATLAS_WORKDIR/repository
+ADD server-api $ATLAS_WORKDIR/server-api
+ADD test-tools $ATLAS_WORKDIR/test-tools
+ADD tools $ATLAS_WORKDIR/tools
+
+## code that changed
+ADD distro $ATLAS_WORKDIR/distro
+ADD dashboardv2 $ATLAS_WORKDIR/dashboardv2
+ADD dashboardv3 $ATLAS_WORKDIR/dashboardv3
+ADD webapp $ATLAS_WORKDIR/webapp
+ADD pom.xml $ATLAS_WORKDIR/pom.xml
+
+WORKDIR $ATLAS_WORKDIR
+
+RUN mvn clean package $SKIPS $PROFILE -pl '!docs'
+
+RUN mkdir build
+RUN tar xzf distro/target/*bin.tar.gz --strip-components 1 -C $ATLAS_WORKDIR/build
+
+##################################### new image #######################
+FROM ubuntu:18.04
+ENV ATLAS_WORKDIR=/home/ubuntu
+
+# Legacy, maybe we can remove this
 # creating user because solr doesn't like to be started as root
 RUN useradd -rm -d /home/ubuntu -s /bin/bash -g root -u 1000 ubuntu
 
-# Install Git, which is missing from the Ubuntu base images.
-RUN apt-get update && apt-get install -y git python vim
+########### install #################
 
-# Install Java.
-RUN apt-get update && apt-get install -y openjdk-8-jdk
+RUN apt-get update && apt-get install -y openjdk-8-jdk python vim
+
 ENV JAVA_HOME /usr/lib/jvm/java-8-openjdk-amd64
-
-# Install Maven.
-
-RUN apt-get update && apt-get install -y maven
-ENV MAVEN_HOME /usr/share/maven
-
-# Add Java and Maven to the path.
 ENV PATH /usr/java/bin:/usr/local/apache-maven/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-ARG PROFILE=-Pdist
-# switch to user ubuntu
+
 USER ubuntu
-# Working directory
-WORKDIR /home/ubuntu
+WORKDIR $ATLAS_WORKDIR
 
-# Memory requirements & -Drat.skip=true to disable license check
-ENV MAVEN_OPTS "-Xms2g -Xmx2g -Drat.skip=true"
-# RUN export MAVEN_OPTS="-Xms2g -Xmx2g"
+RUN mkdir atlas-bin
 
-# Pull down Atlas and build it into /root/atlas-bin.
-RUN git clone https://github.com/heetch/atlas.git -b heetch-atlas-2.0
-
-RUN echo 'package-lock=false' >> ./atlas/.npmrc
-RUN echo 'package-lock.json' >> ./atlas/.gitignore
-
-# Remove -DskipTests if unit tests are to be included
-RUN mvn -T $MVN_JOB -DskipTests $PROFILE -f ./atlas/pom.xml clean install
-RUN mkdir -p atlas-bin
-RUN tar xzf /home/ubuntu/atlas/distro/target/*bin.tar.gz --strip-components 1 -C /home/ubuntu/atlas-bin
+COPY --from=build-env /opt/atlas/build ./atlas-bin/
 
 # Set env variables, add it to the path, and start Atlas.
 ENV MANAGE_LOCAL_SOLR true
 ENV MANAGE_LOCAL_HBASE true
+
 ENV PATH /home/ubuntu/atlas-bin/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 EXPOSE 21000

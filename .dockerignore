@@ -1,0 +1,62 @@
+**/test/
+.gitignore
+.drone.yml
+
+# Maven
+target*
+dependency-reduced-pom.xml
+core*.dmp
+pom.xml.releaseBackup
+
+# IntelliJ
+*.iml
+*.ipr
+*.iws
+.idea
+
+# Eclipse
+.cache
+.classpath
+.project
+.checkstyle
+
+.settings
+.externalToolBuilders
+maven-eclipse.xml
+
+#binary files
+#**/bin/**
+!distro/src/bin/**
+
+#log files
+logs
+*.log
+test-output
+
+#Python
+*.pyc
+
+# review board
+.reviewboardrc
+
+# other files
+.DS_Store
+*.swp
+
+#atlas data directory creates when tests are run from IDE
+**/atlas.data/**
+**/${sys:atlas.data}/**
+
+#hbase package downloaded
+distro/hbase/*.tar.gz
+
+#solr package downloaded
+distro/solr/*.tgz
+
+# Scala-IDE specific
+.cache-main
+.cache-tests
+
+# emacs files
+*#
+*~
