@@ -23,11 +23,13 @@
             <button type="button" title="Collapse"><i class="ec-icon fa"></i></button>
         </div>
     </div>
+    {{#ifCond readOnlyEntity "===" false}}
     <div class="panel-actions">
         <button class="btn btn-action btn-sm" data-id="addBusinessMetadata">Add</button>
         <button class="btn btn-action btn-sm" style="display: none;" data-id="saveBusinessMetadata">Save</button>
         <button class="btn btn-action btn-sm" style="display: none;" data-id="cancel">Cancel</button>
     </div>
+    {{/ifCond}}
     <div id="businessMetadataCollapse" class="panel-collapse collapse">
         <div class="panel-body">
             <div data-id="businessMetadataTree"></div>

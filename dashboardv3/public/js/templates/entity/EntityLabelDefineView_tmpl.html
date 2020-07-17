@@ -56,9 +56,11 @@
                         {{#ifCond swapItem "===" true}}
                         <select class="form-control" data-id="addLabelOptions" multiple="multiple"></select>
                         {{else}}
+                        {{#ifCond readOnlyEntity "===" false}}
                         <div class="badge-container">
                             No labels have been created yet. To add a labels, click <a href="javascript:void(0)" data-id="addLabels">here</a>
                         </div>
+                        {{/ifCond}}
                         {{/ifCond}}
                     </div>
                 </div>
