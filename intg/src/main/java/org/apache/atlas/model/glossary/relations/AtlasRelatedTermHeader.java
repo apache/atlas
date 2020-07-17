@@ -31,6 +31,7 @@ public class AtlasRelatedTermHeader {
     private String expression;
     private String steward;
     private String source;
+    private String qualifiedName;
 
     private AtlasTermRelationshipStatus status;
 
@@ -69,6 +70,14 @@ public class AtlasRelatedTermHeader {
         this.steward = steward;
     }
 
+    public String getQualifiedName() {
+        return qualifiedName;
+    }
+
+    public void setQualifiedName(final String qualifiedName) {
+        this.qualifiedName = qualifiedName;
+    }
+
     public String getSource() {
         return source;
     }
@@ -91,18 +100,19 @@ public class AtlasRelatedTermHeader {
         if (!(o instanceof AtlasRelatedTermHeader)) return false;
         final AtlasRelatedTermHeader that = (AtlasRelatedTermHeader) o;
         return Objects.equals(termGuid, that.termGuid) &&
-                       Objects.equals(relationGuid, that.relationGuid) &&
-                       Objects.equals(description, that.description) &&
-                       Objects.equals(expression, that.expression) &&
-                       Objects.equals(steward, that.steward) &&
-                       Objects.equals(source, that.source) &&
-                       status == that.status;
+                Objects.equals(relationGuid, that.relationGuid) &&
+                Objects.equals(description, that.description) &&
+                Objects.equals(expression, that.expression) &&
+                Objects.equals(steward, that.steward) &&
+                Objects.equals(source, that.source) &&
+                Objects.equals(qualifiedName, that.qualifiedName) &&
+                status == that.status;
     }
 
     @Override
     public int hashCode() {
 
-        return Objects.hash(termGuid, relationGuid, description, expression, steward, source, status);
+        return Objects.hash(termGuid, relationGuid, description, expression, steward, source, qualifiedName, status);
     }
 
     @Override
@@ -115,6 +125,7 @@ public class AtlasRelatedTermHeader {
         sb.append(", expression='").append(expression).append('\'');
         sb.append(", steward='").append(steward).append('\'');
         sb.append(", source='").append(source).append('\'');
+        sb.append(", qualifiedName='").append(qualifiedName).append('\'');
         sb.append(", status=").append(status);
         sb.append('}');
         return sb.toString();

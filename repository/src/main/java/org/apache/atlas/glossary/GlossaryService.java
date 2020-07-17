@@ -30,7 +30,6 @@ import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
 import org.apache.atlas.model.glossary.relations.AtlasRelatedCategoryHeader;
 import org.apache.atlas.model.glossary.relations.AtlasRelatedTermHeader;
 import org.apache.atlas.model.glossary.relations.AtlasTermCategorizationHeader;
-import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
@@ -747,7 +746,7 @@ public class GlossaryService {
 
         GraphTraversal query = graph.V().has(Constants.GUID_PROPERTY_KEY, categoryGuid)
                 .has(Constants.STATE_PROPERTY_KEY, P.within(Constants.ACTIVE_STATE_VALUE))
-                .out(Constants.CATEGORY_TERMS_EDGE_LABEL)
+                .out(CATEGORY_TERMS_EDGE_LABEL)
                 .has(Constants.STATE_PROPERTY_KEY, P.within(Constants.ACTIVE_STATE_VALUE));
 
         runPaginatedTermsQuery(offset, limit, sortOrder, ret, query);
@@ -773,11 +772,11 @@ public class GlossaryService {
 
         GraphTraversal query = graph.V().has(Constants.GUID_PROPERTY_KEY, glossaryGuid)
                 .has(Constants.STATE_PROPERTY_KEY, P.within(Constants.ACTIVE_STATE_VALUE))
-                .out(Constants.GLOSSARY_TERMS_EDGE_LABEL)
+                .out(GLOSSARY_TERMS_EDGE_LABEL)
                 .has(Constants.STATE_PROPERTY_KEY, P.within(Constants.ACTIVE_STATE_VALUE));
 
         if (isRoot) {
-            query = query.where(__.inE(Constants.CATEGORY_TERMS_EDGE_LABEL).count().is(P.eq(0)));
+            query = query.where(__.inE(CATEGORY_TERMS_EDGE_LABEL).count().is(P.eq(0)));
         }
 
         runPaginatedTermsQuery(offset, limit, sortOrder, ret, query);
@@ -788,11 +787,11 @@ public class GlossaryService {
     private void runPaginatedTermsQuery(int offset, int limit, SortOrder sortOrder, List<AtlasRelatedTermHeader> ret, GraphTraversal baseQuery) {
         if (sortOrder != null) {
             Order order = sortOrder == SortOrder.ASCENDING ? Order.asc : Order.desc;
-            baseQuery = baseQuery.order().by(Constants.TERM_DISPLAY_TEXT_KEY, order);
+            baseQuery = baseQuery.order().by(TERM_DISPLAY_TEXT_KEY, order);
         }
 
         Set<Map<String, List<String>>> results = baseQuery
-                .valueMap(Constants.GUID_PROPERTY_KEY, Constants.TERM_DISPLAY_TEXT_KEY)
+                .valueMap(Constants.GUID_PROPERTY_KEY, TERM_DISPLAY_TEXT_KEY, TERM_QUALIFIED_NAME_KEY)
                 .range(offset, limit + offset).toSet();
 
         constructTermsHeaders(ret, results);
@@ -802,7 +801,8 @@ public class GlossaryService {
         for (Map<String, List<String>> res : queryResult) {
             AtlasRelatedTermHeader atlasRelatedTermHeader = new AtlasRelatedTermHeader();
             atlasRelatedTermHeader.setTermGuid(res.get(Constants.GUID_PROPERTY_KEY).get(0));
-            atlasRelatedTermHeader.setDisplayText(res.get(Constants.TERM_DISPLAY_TEXT_KEY).get(0));
+            atlasRelatedTermHeader.setDisplayText(res.get(TERM_DISPLAY_TEXT_KEY).get(0));
+            atlasRelatedTermHeader.setQualifiedName(res.get(TERM_QUALIFIED_NAME_KEY).get(0));
             ret.add(atlasRelatedTermHeader);
         }
     }
@@ -826,27 +826,28 @@ public class GlossaryService {
         GraphTraversal query = graph.V()
                 .has(Constants.GUID_PROPERTY_KEY, glossaryGuid)
                 .has(Constants.STATE_PROPERTY_KEY, P.within(Constants.ACTIVE_STATE_VALUE))
-                .out(Constants.GLOSSARY_CATEGORY_EDGE_LABEL)
+                .out(GLOSSARY_CATEGORY_EDGE_LABEL)
                 .has(Constants.STATE_PROPERTY_KEY, P.within(Constants.ACTIVE_STATE_VALUE));
 
         if (sortOrder != null) {
             Order order = sortOrder == SortOrder.ASCENDING ? Order.asc : Order.desc;
-            query = query.order().by(Constants.CATEGORY_DISPLAY_TEXT_KEY, order);
+            query = query.order().by(CATEGORY_DISPLAY_TEXT_KEY, order);
         }
 
         Set<Map<String, List<String>>> results = query
-                .valueMap(Constants.GUID_PROPERTY_KEY, Constants.CATEGORY_DISPLAY_TEXT_KEY)
+                .valueMap(Constants.GUID_PROPERTY_KEY, CATEGORY_DISPLAY_TEXT_KEY, CATEGORY_QUALIFIED_NAME_KEY)
                 .range(offset, limit + offset).toSet();
 
 
         for (Map<String, List<String>> res : results) {
             AtlasRelatedCategoryHeader atlasRelatedCategoryHeader = new AtlasRelatedCategoryHeader();
             atlasRelatedCategoryHeader.setCategoryGuid(res.get(Constants.GUID_PROPERTY_KEY).get(0));
-            atlasRelatedCategoryHeader.setDisplayText(res.get(Constants.CATEGORY_DISPLAY_TEXT_KEY).get(0));
+            atlasRelatedCategoryHeader.setDisplayText(res.get(CATEGORY_DISPLAY_TEXT_KEY).get(0));
+            atlasRelatedCategoryHeader.setQualifiedName(res.get(CATEGORY_QUALIFIED_NAME_KEY).get(0));
 
             Set<String> parentResults = graph.V()
                     .has(Constants.GUID_PROPERTY_KEY, atlasRelatedCategoryHeader.getCategoryGuid())
-                    .in(Constants.CATEGORY_PARENT_EDGE_LABEL)
+                    .in(CATEGORY_PARENT_EDGE_LABEL)
                     .has(Constants.STATE_PROPERTY_KEY, P.within(Constants.ACTIVE_STATE_VALUE))
                     .values(Constants.GUID_PROPERTY_KEY).toSet();
 

@@ -28,6 +28,7 @@ public class AtlasRelatedCategoryHeader {
     private String relationGuid;
     private String displayText;
     private String description;
+    private String qualifiedName;
 
     public AtlasRelatedCategoryHeader() {
     }
@@ -56,21 +57,30 @@ public class AtlasRelatedCategoryHeader {
         this.displayText = displayText;
     }
 
+    public String getQualifiedName() {
+        return qualifiedName;
+    }
+
+    public void setQualifiedName(final String qualifiedName) {
+        this.qualifiedName = qualifiedName;
+    }
+
     @Override
     public boolean equals(final Object o) {
         if (this == o) return true;
         if (!(o instanceof AtlasRelatedCategoryHeader)) return false;
         final AtlasRelatedCategoryHeader that = (AtlasRelatedCategoryHeader) o;
         return Objects.equals(categoryGuid, that.categoryGuid) &&
-                       Objects.equals(parentCategoryGuid, that.parentCategoryGuid) &&
-                       Objects.equals(relationGuid, that.relationGuid) &&
-                       Objects.equals(description, that.description);
+                Objects.equals(parentCategoryGuid, that.parentCategoryGuid) &&
+                Objects.equals(relationGuid, that.relationGuid) &&
+                Objects.equals(description, that.description) &&
+                Objects.equals(qualifiedName, that.qualifiedName);
     }
 
     @Override
     public int hashCode() {
 
-        return Objects.hash(categoryGuid, parentCategoryGuid, relationGuid, description);
+        return Objects.hash(categoryGuid, parentCategoryGuid, relationGuid, description, qualifiedName);
     }
 
     @Override
@@ -81,6 +91,7 @@ public class AtlasRelatedCategoryHeader {
         sb.append(", relationGuid='").append(relationGuid).append('\'');
         sb.append(", displayText='").append(displayText).append('\'');
         sb.append(", description='").append(description).append('\'');
+        sb.append(", qualifiedName='").append(qualifiedName).append('\'');
         sb.append('}');
         return sb.toString();
     }
