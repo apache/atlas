@@ -47,7 +47,7 @@ ADD pom.xml $ATLAS_WORKDIR/pom.xml
 
 WORKDIR $ATLAS_WORKDIR
 
-RUN mvn clean package $SKIPS $PROFILE -pl '!docs'
+RUN mvn -Djanus.version=0.5.2 -Delasticsearch.version=7.6.0 clean package $SKIPS $PROFILE -pl '!docs'
 
 RUN mkdir build
 RUN cp -r distro/target/*bin.tar.gz $ATLAS_WORKDIR/build

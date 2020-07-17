@@ -9,7 +9,7 @@ steps:
       dockerfile: Dockerfile
       registry: quay.io
       repo: quay.io/heetch/atlas
-      tags: atlas-raw
+      tags: atlas-raw-release-2.1.0-rc3
       username:
         from_secret: org_quay_username
       password:
@@ -17,7 +17,7 @@ steps:
     when:
       event: push
       branch:
-        - heetch-atlas-2.0
+        - heetch-atlas-release-2.1.0-rc3
 
   - name: docker_atlas_raw_release
     image: plugins/docker
@@ -42,7 +42,7 @@ steps:
       dockerfile: Dockerfile
       registry: quay.io
       repo: quay.io/heetch/atlas
-      tags: atlas-embedded-hbase-solr
+      tags: atlas-embedded-hbase-solr-release-2.1.0-rc3
       username:
         from_secret: org_quay_username
       password:
@@ -50,7 +50,7 @@ steps:
     when:
       event: push
       branch:
-        - heetch-atlas-2.0
+        - heetch-atlas-release-2.1.0-rc3
 
   - name: docker_atlas_embedded_hbase_solr_release
     image: plugins/docker
@@ -61,41 +61,6 @@ steps:
       registry: quay.io
       repo: quay.io/heetch/atlas
       auto_tag_suffix: atlas-embedded-hbase-solr
-      auto_tag: true
-      username:
-        from_secret: org_quay_username
-      password:
-        from_secret: org_quay_password
-    when:
-      event: tag
-
-  - name: docker_atlas_embedded_cassandra_solr
-    image: plugins/docker
-    settings:
-      build_args:
-        - PROFILE=-Pdist,embedded-cassandra-solr
-      dockerfile: Dockerfile
-      registry: quay.io
-      repo: quay.io/heetch/atlas
-      tags: atlas-embedded-cassandra-solr
-      username:
-        from_secret: org_quay_username
-      password:
-        from_secret: org_quay_password
-    when:
-      event: push
-      branch:
-        - heetch-atlas-2.0
-
-  - name: docker_atlas_embedded_cassandra_solr_release
-    image: plugins/docker
-    settings:
-      build_args:
-        - PROFILE=-Pdist,embedded-cassandra-solr
-      dockerfile: Dockerfile
-      registry: quay.io
-      repo: quay.io/heetch/atlas
-      auto_tag_suffix: atlas-cassandra-hbase-solr
       auto_tag: true
       username:
         from_secret: org_quay_username
