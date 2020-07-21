@@ -177,8 +177,7 @@ define([
         detailPage: function(id) {
             var that = this;
             if (id) {
-                require(["views/site/Header", "views/detail_page/DetailPageLayoutView", "collection/VEntityList", "views/site/SideNavLayoutView"], function(Header, DetailPageLayoutView, VEntityList, SideNavLayoutView) {
-                    this.entityCollection = new VEntityList([], {});
+                require(["views/site/Header", "views/detail_page/DetailPageLayoutView", "views/site/SideNavLayoutView"], function(Header, DetailPageLayoutView, SideNavLayoutView) {
                     var paramObj = Utils.getUrlState.getQueryParams(),
                         options = _.extend({}, that.preFetchedCollectionLists, that.sharedObj, that.ventObj);
                     that.renderViewIfNotExists(that.getHeaderOptions(Header));
@@ -191,9 +190,18 @@ define([
                             return new SideNavLayoutView(options);
                         }
                     });
-                    App.rContent.show(new DetailPageLayoutView(_.extend({ collection: this.entityCollection, id: id, value: paramObj }, options)));
-                    this.entityCollection.url = UrlLinks.entitiesApiUrl({ guid: id, minExtInfo: true });
-                    this.entityCollection.fetch({ reset: true });
+
+                    var dOptions = _.extend({ id: id, value: paramObj }, options);
+                    that.renderViewIfNotExists({
+                        view: App.rContent,
+                        viewName: "DetailPageLayoutView",
+                        manualRender: function() {
+                            this.view.currentView.manualRender(dOptions);
+                        },
+                        render: function() {
+                            return new DetailPageLayoutView(dOptions);
+                        }
+                    });
                 });
             }
         },

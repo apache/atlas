@@ -369,6 +369,11 @@ button {
         >span {
             padding: 5px;
 
+            &.active {
+                color: $white;
+                background-color: $tag_color;
+            }
+
             &:hover {
                 @include btn-action-hover-effect('default');
             }

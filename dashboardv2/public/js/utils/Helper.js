@@ -346,7 +346,7 @@ define(['require',
     });
     if ($('body').tooltip) {
         $('body').tooltip({
-            selector: '[title]:not(".select2-selection__choice")',
+            selector: '[title]:not(".select2-selection__choice,.select2-selection__rendered")',
             placement: function() {
                 return this.$element.attr("data-placement") || "bottom";
             },

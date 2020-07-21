@@ -51,17 +51,17 @@ require.config({
     'deps': ['marionette'],
 
     onNodeCreated: function(node, config, moduleName, url) {
-        console.log("module " + moduleName + " is about to be loaded");
+        //console.log("module " + moduleName + " is about to be loaded");
         ++modulesLoadCount;
         showModuleLoader();
         node.addEventListener("load", function() {
-            console.log("module " + moduleName + " has been loaded");
+            //console.log("module " + moduleName + " has been loaded");
             --modulesLoadCount;
             hideModuleLoader();
         });
 
         node.addEventListener("error", function() {
-            console.log("module " + moduleName + " could not be loaded");
+            //console.log("module " + moduleName + " could not be loaded");
             --modulesLoadCount;
             hideModuleLoader();
         });
