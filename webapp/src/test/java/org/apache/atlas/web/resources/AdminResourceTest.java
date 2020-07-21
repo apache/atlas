@@ -70,4 +70,23 @@ public class AdminResourceTest {
         assertEquals(entity.get("Status").asText(), "PASSIVE");
 
     }
+
+    @Test
+    public void getHttpHealthActive() throws IOException {
+
+        when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.ACTIVE);
+
+        AdminResource adminResource = new AdminResource(serviceState, null, null, null, null, null, null, null, null, null);
+        Response response = adminResource.getHttpHealth();
+        assertEquals(response.getStatus(), HttpServletResponse.SC_OK);
+    }
+
+    @Test
+    public void getHttpHealthPassive() throws IOException {
+        when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.PASSIVE);
+
+        AdminResource adminResource = new AdminResource(serviceState, null, null, null, null, null, null, null, null, null);
+        Response response = adminResource.getHttpHealth();
+        assertEquals(response.getStatus(), HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+    }
 }

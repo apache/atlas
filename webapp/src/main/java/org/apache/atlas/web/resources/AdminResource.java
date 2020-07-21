@@ -298,6 +298,33 @@ public class AdminResource {
         return response;
     }
 
+    /**
+     * Check if the host is ACTIVE.
+     *
+     * @return HTTP 200 only when the host is active, HTTP 503 otherwise.
+     */
+    @GET
+    @Path("httphealth")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public Response getHttpHealth() {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> AdminResource.getHttpHealth()");
+        }
+
+        Response response;
+        if (serviceState.getState() == ServiceState.ServiceStateValue.ACTIVE) {
+            response = Response.ok().build();
+        } else {
+            response = Response.status(Response.Status.SERVICE_UNAVAILABLE).build();
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== AdminResource.getHttpHealth()");
+        }
+
+        return response;
+    }
+
     @GET
     @Path("session")
     @Produces(Servlets.JSON_MEDIA_TYPE)
