@@ -24,8 +24,9 @@ define(['require',
     'utils/Globals',
     'utils/Enums',
     'utils/Messages',
-    'utils/UrlLinks'
-], function(require, Backbone, DetailPageLayoutViewTmpl, Utils, CommonViewFunction, Globals, Enums, Messages, UrlLinks) {
+    'utils/UrlLinks',
+    'collection/VEntityList'
+], function(require, Backbone, DetailPageLayoutViewTmpl, Utils, CommonViewFunction, Globals, Enums, Messages, UrlLinks, VEntityList) {
     'use strict';
 
     var DetailPageLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -52,6 +53,7 @@ define(['require',
             /** ui selector cache */
             ui: {
                 tagClick: '[data-id="tagClick"]',
+                pTagCountClick: '[data-id="pTagCountClick"]',
                 termClick: '[data-id="termClick"]',
                 propagatedTagDiv: '[data-id="propagatedTagDiv"]',
                 title: '[data-id="title"]',
@@ -84,6 +86,14 @@ define(['require',
                             trigger: true
                         });
                     }
+                };
+                events["click " + this.ui.pTagCountClick] = function(e) {
+                    var tag = $(e.currentTarget).parent().children().first().text();
+                    Utils.setUrl({
+                        url: '#!/detailPage/' + this.id + '?tabActive=classification&filter=' + tag,
+                        mergeBrowserUrl: false,
+                        trigger: true
+                    });
                 };
                 events["click " + this.ui.termClick] = function(e) {
                     if (e.target.nodeName.toLocaleLowerCase() != "i") {
@@ -123,6 +133,9 @@ define(['require',
             initialize: function(options) {
                 _.extend(this, _.pick(options, 'value', 'collection', 'id', 'entityDefCollection', 'typeHeaders', 'enumDefCollection', 'classificationDefCollection', 'glossaryCollection', 'businessMetadataDefCollection', 'searchVent'));
                 $('body').addClass("detail-page");
+                this.collection = new VEntityList([], {});
+                this.collection.url = UrlLinks.entitiesApiUrl({ guid: this.id, minExtInfo: true });
+                this.fetchCollection();
             },
             bindEvents: function() {
                 var that = this;
@@ -219,8 +232,34 @@ define(['require',
                                 this.ui.description.hide();
                             }
                         }
+                        var tags = {
+                            'self': [],
+                            'propagated': [],
+                            'propagatedMap': {},
+                            'combineMap': {}
+                        };
                         if (collectionJSON.classifications) {
-                            this.generateTag(collectionJSON.classifications);
+                            var tagObject = collectionJSON.classifications;
+                            _.each(tagObject, function(val) {
+                                var typeName = val.typeName;
+                                if (val.entityGuid === that.id) {
+                                    tags['self'].push(val)
+                                } else {
+                                    tags['propagated'].push(val);
+                                    if (tags.propagatedMap[typeName]) {
+                                        tags.propagatedMap[typeName]["count"] += tags.propagatedMap[typeName]["count"];
+                                    } else {
+                                        tags.propagatedMap[typeName] = val;
+                                        tags.propagatedMap[typeName]["count"] = 1;
+                                    }
+                                }
+                                if (tags.combineMap[typeName] === undefined) {
+                                    tags.combineMap[typeName] = val;
+                                }
+                            });
+                            tags.self = _.sortBy(tags.self, "typeName");
+                            tags.propagated = _.sortBy(tags.propagated, "typeName");
+                            this.generateTag(tags);
                         } else {
                             this.generateTag([]);
                         }
@@ -247,6 +286,7 @@ define(['require',
                         guid: this.id,
                         entityName: this.name,
                         typeHeaders: this.typeHeaders,
+                        tags: tags,
                         entityDefCollection: this.entityDefCollection,
                         fetchCollection: this.fetchCollection.bind(that),
                         enumDefCollection: this.enumDefCollection,
@@ -344,6 +384,13 @@ define(['require',
                 Utils.showTitleLoader(this.$('.page-title .fontLoader'), this.$('.entityDetail'));
                 this.$('.fontLoader-relative').addClass('show'); // to show tab loader
             },
+            manualRender: function(options) {
+                if (this.id !== options.id) {
+                    _.extend(this, _.pick(options, 'value', 'id'));
+                    this.collection.url = UrlLinks.entitiesApiUrl({ guid: this.id, minExtInfo: true });
+                    this.fetchCollection();
+                }
+            },
             onShow: function() {
                 if (this.value && this.value.tabActive) {
                     this.$('.nav.nav-tabs').find('[role="' + this.value.tabActive + '"]').addClass('active').siblings().removeClass('active');
@@ -420,27 +467,18 @@ define(['require',
             generateTag: function(tagObject) {
                 var that = this,
                     tagData = "",
-                    propagatedTagListData = "",
-                    tag = {
-                        'self': [],
-                        'propagated': []
-                    };
-                _.each(tagObject, function(val) {
-                    val.entityGuid === that.id ? tag['self'].push(val) : tag['propagated'].push(val);
-                });
-                _.each(tag.self, function(val) {
+                    propagatedTagListData = "";
+                _.each(tagObject.self, function(val) {
                     tagData += '<span class="btn btn-action btn-sm btn-icon btn-blue" data-id="tagClick"><span>' + val.typeName + '</span><i class="fa fa-close" data-id="deleteTag" data-type="tag" title="Remove Classification"></i></span>';
                 });
-                _.each(tag.propagated, function(val) {
-                    var crossButton = '<i class="fa fa-close" data-id="deleteTag" data-entityguid="' + val.entityGuid + '" data-type="tag" title="Remove Classification"></i>';
-                    propagatedTagListData += '<span class="btn btn-action btn-sm btn-icon btn-blue" data-id="tagClick"><span>' + val.typeName + '</span>' + ((that.id !== val.entityGuid && val.entityStatus === "DELETED") ? crossButton : "") + '</span>';
+                _.each(tagObject.propagatedMap, function(val, key) {
+                    propagatedTagListData += '<span class="btn btn-action btn-sm btn-icon btn-blue"><span data-id="tagClick">' + val.typeName + '</span>' + (val.count > 1 ? '<span class="active" data-id="pTagCountClick">(' + val.count + ')</span>' : "") + '</span>';
                 });
                 propagatedTagListData !== "" ? this.ui.propagatedTagDiv.show() : this.ui.propagatedTagDiv.hide();
                 this.ui.tagList.find("span.btn").remove();
                 this.ui.propagatedTagList.find("span.btn").remove();
                 this.ui.tagList.prepend(tagData);
                 this.ui.propagatedTagList.html(propagatedTagListData);
-
             },
             generateTerm: function(data) {
                 var that = this,
