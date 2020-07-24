@@ -28,7 +28,7 @@ import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.store.AtlasTypeDefStore;
-import org.apache.atlas.store.DeleteType;
+import org.apache.atlas.DeleteType;
 import org.apache.atlas.web.rest.EntityREST;
 import org.mockito.Mockito;
 import org.testng.Assert;

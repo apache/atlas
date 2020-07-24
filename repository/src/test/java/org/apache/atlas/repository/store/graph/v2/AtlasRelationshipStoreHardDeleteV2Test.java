@@ -18,11 +18,9 @@
 package org.apache.atlas.repository.store.graph.v2;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.atlas.RequestContext;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
-import org.apache.atlas.store.DeleteType;
-import org.testng.annotations.BeforeTest;
+import org.apache.atlas.DeleteType;
 
 import java.util.List;
 
