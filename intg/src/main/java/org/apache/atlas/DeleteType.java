@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.atlas.store;
+package org.apache.atlas;
 
 import org.apache.commons.lang.StringUtils;
 
