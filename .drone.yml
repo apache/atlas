@@ -20,7 +20,7 @@ steps:
         - heetch-atlas-release-2.1.0-rc3
 
   - name: docker_atlas_raw_release
-    image: plugins/docker
+    image: plugins/ecr
     settings:
       dockerfile: Dockerfile
       registry: 074232677442.dkr.ecr.us-east-1.amazonaws.com
@@ -35,7 +35,7 @@ steps:
       event: tag
 
   - name: docker_atlas_embedded_hbase_solr
-    image: plugins/docker
+    image: plugins/ecr
     settings:
       build_args:
         - PROFILE=-Pdist,embedded-hbase-solr
@@ -53,7 +53,7 @@ steps:
         - heetch-atlas-release-2.1.0-rc3
 
   - name: docker_atlas_embedded_hbase_solr_release
-    image: plugins/docker
+    image: plugins/ecr
     settings:
       build_args:
         - PROFILE=-Pdist,embedded-hbase-solr
