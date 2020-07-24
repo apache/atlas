@@ -11,9 +11,9 @@ steps:
       repo: atlas
       registry: 074232677442.dkr.ecr.us-east-1.amazonaws.com
       username:
-        from_secret: org_quay_username
+        from_secret: org_ecr_username
       password:
-        from_secret: org_quay_password
+        from_secret: org_ecr_password
     when:
       event: push
       branch:
@@ -28,9 +28,9 @@ steps:
       auto_tag_suffix: atlas-raw
       auto_tag: true
       username:
-        from_secret: org_quay_username
+        from_secret: org_ecr_username
       password:
-        from_secret: org_quay_password
+        from_secret: org_ecr_password
     when:
       event: tag
 
@@ -44,9 +44,9 @@ steps:
       repo: atlas
       tags: atlas-embedded-hbase-solr-release-2.1.0-rc3
       username:
-        from_secret: org_quay_username
+        from_secret: org_ecr_username
       password:
-        from_secret: org_quay_password
+        from_secret: org_ecr_password
     when:
       event: push
       branch:
@@ -63,8 +63,8 @@ steps:
       auto_tag_suffix: atlas-embedded-hbase-solr
       auto_tag: true
       username:
-        from_secret: org_quay_username
+        from_secret: org_ecr_username
       password:
-        from_secret: org_quay_password
+        from_secret: org_ecr_password
     when:
       event: tag
