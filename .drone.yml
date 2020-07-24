@@ -10,10 +10,10 @@ steps:
       tags: atlas-raw-release-2.1.0-rc3
       repo: atlas
       registry: 074232677442.dkr.ecr.us-east-1.amazonaws.com
-      username:
-        from_secret: org_ecr_username
-      password:
-        from_secret: org_ecr_password
+      access_key:
+        from_secret: org_ecr_access_key
+      secret_key:
+        from_secret: org_ecr_secret_key
     when:
       event: push
       branch:
@@ -27,10 +27,10 @@ steps:
       repo: atlas
       auto_tag_suffix: atlas-raw
       auto_tag: true
-      username:
-        from_secret: org_ecr_username
-      password:
-        from_secret: org_ecr_password
+      access_key:
+        from_secret: org_ecr_access_key
+      secret_key:
+        from_secret: org_ecr_secret_key
     when:
       event: tag
 
@@ -43,10 +43,10 @@ steps:
       registry: 074232677442.dkr.ecr.us-east-1.amazonaws.com
       repo: atlas
       tags: atlas-embedded-hbase-solr-release-2.1.0-rc3
-      username:
-        from_secret: org_ecr_username
-      password:
-        from_secret: org_ecr_password
+      access_key:
+        from_secret: org_ecr_access_key
+      secret_key:
+        from_secret: org_ecr_secret_key
     when:
       event: push
       branch:
@@ -62,9 +62,9 @@ steps:
       repo: atlas
       auto_tag_suffix: atlas-embedded-hbase-solr
       auto_tag: true
-      username:
-        from_secret: org_ecr_username
-      password:
-        from_secret: org_ecr_password
+      access_key:
+        from_secret: org_ecr_access_key
+      secret_key:
+        from_secret: org_ecr_secret_key
     when:
       event: tag
