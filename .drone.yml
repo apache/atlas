@@ -4,12 +4,12 @@ name: atlas
 
 steps:
   - name: docker_atlas_raw
-    image: plugins/docker
+    image: plugins/ecr
     settings:
       dockerfile: Dockerfile
-      registry: quay.io
-      repo: quay.io/heetch/atlas
       tags: atlas-raw-release-2.1.0-rc3
+      repo: atlas
+      registry: 074232677442.dkr.ecr.us-east-1.amazonaws.com
       username:
         from_secret: org_quay_username
       password:
@@ -23,8 +23,8 @@ steps:
     image: plugins/docker
     settings:
       dockerfile: Dockerfile
-      registry: quay.io
-      repo: quay.io/heetch/atlas
+      registry: 074232677442.dkr.ecr.us-east-1.amazonaws.com
+      repo: atlas
       auto_tag_suffix: atlas-raw
       auto_tag: true
       username:
@@ -40,8 +40,8 @@ steps:
       build_args:
         - PROFILE=-Pdist,embedded-hbase-solr
       dockerfile: Dockerfile
-      registry: quay.io
-      repo: quay.io/heetch/atlas
+      registry: 074232677442.dkr.ecr.us-east-1.amazonaws.com
+      repo: atlas
       tags: atlas-embedded-hbase-solr-release-2.1.0-rc3
       username:
         from_secret: org_quay_username
@@ -58,8 +58,8 @@ steps:
       build_args:
         - PROFILE=-Pdist,embedded-hbase-solr
       dockerfile: Dockerfile
-      registry: quay.io
-      repo: quay.io/heetch/atlas
+      registry: 074232677442.dkr.ecr.us-east-1.amazonaws.com
+      repo: atlas
       auto_tag_suffix: atlas-embedded-hbase-solr
       auto_tag: true
       username:
