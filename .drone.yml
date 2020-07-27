@@ -25,8 +25,7 @@ steps:
       dockerfile: Dockerfile
       registry: 074232677442.dkr.ecr.us-east-1.amazonaws.com
       repo: atlas
-      auto_tag_suffix: atlas-raw
-      auto_tag: true
+      tags: ecr-tag-test
       access_key:
         from_secret: org_ecr_access_key
       secret_key:
