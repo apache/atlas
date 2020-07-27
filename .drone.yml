@@ -7,10 +7,11 @@ steps:
     image: plugins/ecr
     settings:
       dockerfile: Dockerfile
-      registry: 074232677442.dkr.ecr.us-east-1.amazonaws.com
+      registry:
+        from_secret: org_ecr_registry
       repo: atlas
       tags: ${DRONE_TAG}-atlas-raw
-
+      region: eu-west-1
     when:
       event: tag
 
@@ -20,7 +21,9 @@ steps:
       build_args:
         - PROFILE=-Pdist,embedded-hbase-solr
       dockerfile: Dockerfile
-      registry: 074232677442.dkr.ecr.us-east-1.amazonaws.com
+      registry:
+        from_secret: org_ecr_registry
+      region: eu-west-1
       repo: atlas
       tags: ${DRONE_TAG}-atlas-embedded-hbase-solr
     when:
