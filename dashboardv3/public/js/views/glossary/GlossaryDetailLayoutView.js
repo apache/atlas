@@ -247,7 +247,36 @@ define(['require',
                                 if (that.isDestroyed) {
                                     return;
                                 }
+                                that.data = data;
                                 if (that.isTermView) {
+                                    var tags = {
+                                        'self': [],
+                                        'propagated': [],
+                                        'propagatedMap': {},
+                                        'combineMap': {}
+                                    };
+                                    if (that.data) {
+                                        var tagObject = that.data.classifications;
+                                        _.each(tagObject, function(val) {
+                                            var typeName = val.typeName;
+                                            if (val.entityGuid === that.guid) {
+                                                tags['self'].push(val)
+                                            } else {
+                                                tags['propagated'].push(val);
+                                                if (tags.propagatedMap[typeName]) {
+                                                    tags.propagatedMap[typeName]["count"] += tags.propagatedMap[typeName]["count"];
+                                                } else {
+                                                    tags.propagatedMap[typeName] = val;
+                                                    tags.propagatedMap[typeName]["count"] = 1;
+                                                }
+                                            }
+                                            if (tags.combineMap[typeName] === undefined) {
+                                                tags.combineMap[typeName] = val;
+                                            }
+                                        });
+                                        tags.self = _.sortBy(tags.self, "typeName");
+                                        tags.propagated = _.sortBy(tags.propagated, "typeName");
+                                    }
                                     var obj = {
                                         "guid": that.guid,
                                         "entityDefCollection": that.entityDefCollection,
@@ -257,6 +286,7 @@ define(['require',
                                         "classificationDefCollection": that.classificationDefCollection,
                                         "glossaryCollection": that.glossaryCollection,
                                         "searchVent": that.searchVent,
+                                        "tags": tags,
                                         "getSelectedTermAttribute": function() {
                                             return that.selectedTermAttribute;
                                         },
@@ -268,7 +298,6 @@ define(['require',
                                     that.renderTagTableLayoutView(obj);
                                     that.renderRelationLayoutView(obj);
                                 }
-                                that.data = data;
                                 that.glossaryCollection.trigger("data:updated", $.extend(true, {}, data));
                                 that.glossary.selectedItem.model = data;
                                 that.glossary.selectedItem.guid = data.guid;
