@@ -20,6 +20,7 @@ package org.apache.atlas.repository.graphdb.janus;
 import com.google.common.base.Preconditions;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Element;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.EdgeLabel;
 import org.janusgraph.core.PropertyKey;
@@ -273,5 +274,39 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
         }
 
         indexBuilder.buildCompositeIndex();
+    }
+
+    @Override
+    public void updateUniqueIndexesForConsistencyLock() {
+        try {
+            setConsistency(this.management, Vertex.class);
+            setConsistency(this.management, Edge.class);
+        } finally {
+            commit();
+        }
+    }
+
+    private static void setConsistency(JanusGraphManagement mgmt, Class<? extends Element> elementType) {
+        LOG.info("setConsistency: {}: Starting...", elementType.getSimpleName());
+        int count = 0;
+
+        try {
+            Iterable<JanusGraphIndex> iterable = mgmt.getGraphIndexes(elementType);
+            for (JanusGraphIndex index : iterable) {
+                if (!index.isCompositeIndex() || !index.isUnique() || mgmt.getConsistency(index) == ConsistencyModifier.LOCK) {
+                    continue;
+                }
+
+                for (PropertyKey propertyKey : index.getFieldKeys()) {
+                    LOG.info("setConsistency: {}: {}", count, propertyKey.name());
+                }
+
+                mgmt.setConsistency(index, ConsistencyModifier.LOCK);
+                count++;
+            }
+        }
+        finally {
+            LOG.info("setConsistency: {}: {}: Done!", elementType.getSimpleName(), count);
+        }
     }
 }
