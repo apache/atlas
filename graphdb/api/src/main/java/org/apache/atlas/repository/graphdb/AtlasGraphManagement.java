@@ -167,4 +167,9 @@ public interface AtlasGraphManagement {
      * @return the encoded name for the index
      */
     String getIndexFieldName(String indexName, AtlasPropertyKey propertyKey, boolean isStringField);
+
+    /**
+     * Set consistency to ConsistencyModifier.LOCK for all vertex and edge indexes.
+     */
+    void updateUniqueIndexesForConsistencyLock();
 }
