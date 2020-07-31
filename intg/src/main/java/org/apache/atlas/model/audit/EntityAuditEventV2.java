@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import org.apache.atlas.model.Clearable;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.type.AtlasType;
@@ -44,7 +45,7 @@ import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditType.EN
 @JsonIgnoreProperties(ignoreUnknown=true)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
-public class EntityAuditEventV2 implements Serializable {
+public class EntityAuditEventV2 implements Serializable, Clearable {
     public enum EntityAuditType { ENTITY_AUDIT_V1, ENTITY_AUDIT_V2 }
 
     public enum EntityAuditActionV2 {
@@ -253,6 +254,19 @@ public class EntityAuditEventV2 implements Serializable {
             ret = AtlasType.fromJson(jsonPartFromDetails, AtlasEntityHeader.class);
         }
         return ret;
+    }
+
+    @JsonIgnore
+    @Override
+    public void clear() {
+        entityId = null;
+        timestamp = 0L;
+        user = null;
+        action = null;
+        details = null;
+        eventKey = null;
+        entity = null;
+        type = null;
     }
 
     private String getJsonPartFromDetails() {
