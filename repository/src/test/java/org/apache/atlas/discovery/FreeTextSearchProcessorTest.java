@@ -57,7 +57,7 @@ public class FreeTextSearchProcessorTest extends BasicTestSetup {
     }
 
     @Test
-    public void searchTablesByName() throws AtlasBaseException, InterruptedException {
+    public void searchTablesByName() throws AtlasBaseException {
         SearchParameters params = new SearchParameters();
         params.setTypeName("hive_table");
         params.setQuery("sales");
@@ -73,7 +73,7 @@ public class FreeTextSearchProcessorTest extends BasicTestSetup {
     }
 
     @Test
-    public void searchByNameSortBy() throws AtlasBaseException, InterruptedException {
+    public void searchByNameSortBy() throws AtlasBaseException {
         SearchParameters params = new SearchParameters();
         params.setTypeName("hive_table");
         params.setQuery("sales");
