@@ -75,6 +75,7 @@ atlas.graph.index.search.solr.wait-searcher=true
         <solr.embedded>false</solr.embedded>
         <cassandra.embedded>false</cassandra.embedded>
         <elasticsearch.managed>false</elasticsearch.managed>
+        <log.console>false</log.console>
 
         <entity.repository.properties>atlas.EntityAuditRepository.impl=org.apache.atlas.repository.audit.HBaseBasedAuditRepository</entity.repository.properties>
     </properties>

@@ -56,10 +56,11 @@ SOLR_SHARDS = "SOLR_SHARDS"
 DEFAULT_SOLR_SHARDS = "1"
 SOLR_REPLICATION_FACTOR = "SOLR_REPLICATION_FACTOR"
 DEFAULT_SOLR_REPLICATION_FACTOR = "1"
+ENABLE_LOGGING_TO_CONSOLE = "ENABLE_LOGGING_TO_CONSOLE"
 
 ENV_KEYS = ["JAVA_HOME", ATLAS_OPTS, ATLAS_SERVER_OPTS, ATLAS_SERVER_HEAP, ATLAS_LOG, ATLAS_PID, ATLAS_CONF,
             "ATLASCPPATH", ATLAS_DATA, ATLAS_HOME, ATLAS_WEBAPP, HBASE_CONF_DIR, SOLR_PORT, MANAGE_LOCAL_HBASE,
-            MANAGE_LOCAL_SOLR, MANAGE_EMBEDDED_CASSANDRA, MANAGE_LOCAL_ELASTICSEARCH]
+            MANAGE_LOCAL_SOLR, MANAGE_EMBEDDED_CASSANDRA, MANAGE_LOCAL_ELASTICSEARCH, ENABLE_LOGGING_TO_CONSOLE]
 IS_WINDOWS = platform.system() == "Windows"
 ON_POSIX = 'posix' in sys.builtin_module_names
 CONF_FILE="atlas-application.properties"
@@ -181,7 +182,7 @@ def executeEnvSh(confDir):
 
         proc.communicate()
 
-def java(classname, args, classpath, jvm_opts_list, logdir=None):
+def java(classname, args, classpath, jvm_opts_list, logdir=None, logconsole=False):
     java_home = os.environ.get("JAVA_HOME", None)
     if java_home:
         prg = os.path.join(java_home, "bin", "java")
@@ -197,9 +198,10 @@ def java(classname, args, classpath, jvm_opts_list, logdir=None):
     commandline.append(classpath)
     commandline.append(classname)
     commandline.extend(args)
-    return runProcess(commandline, logdir)
+    return runProcess(commandline, logdir,
+                      logconsole=logconsole)
 
-def jar(path):
+def jar(path, logconsole=False):
     java_home = os.environ.get("JAVA_HOME", None)
     if java_home:
         prg = os.path.join(java_home, "bin", "jar")
@@ -212,7 +214,8 @@ def jar(path):
     commandline = [prg]
     commandline.append("-xf")
     commandline.append(path)
-    process = runProcess(commandline)
+    process = runProcess(commandline,
+                         logconsole=logconsole)
     process.wait()
 
 def is_exe(fpath):
@@ -233,23 +236,48 @@ def which(program):
 
     return None
 
-def runProcess(commandline, logdir=None, shell=False, wait=False):
+def runProcess(commandline, logdir=None, shell=False, wait=False, logconsole=False):
     """
     Run a process
     :param commandline: command line
+    :param: logdir: directory where logs from stdout and stderr should be saved
+    :logconsole: whether to print outout of stdout and stderr to console
     :return:the return code
     """
     global finished
     debug ("Executing : %s" % str(commandline))
     timestr = time.strftime("atlas.%Y%m%d-%H%M%S")
-    stdoutFile = None
-    stderrFile = None
-    if logdir:
-        stdoutFile = open(os.path.join(logdir, timestr + ".out"), "w")
-        stderrFile = open(os.path.join(logdir,timestr + ".err"), "w")
 
-    p = subprocess.Popen(commandline, stdout=stdoutFile, stderr=stderrFile, shell=shell)
+    if logconsole:
+        stdoutTargetsList = [sys.stdout]
+        stderrTargetsList = [sys.stderr]
 
+        if logdir:
+            stdoutFile = open(os.path.join(logdir, timestr + ".out"), "w")
+            stderrFile = open(os.path.join(logdir,timestr + ".err"), "w")
+
+            stdoutTargetsList.append(stdoutFile)
+            stderrTargetsList.append(stderrFile)
+
+        p = subprocess.Popen(commandline, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=shell)
+
+        for line in p.stdout:
+            for target in stdoutTargetsList:
+                target.write(line)
+
+        for line in p.stderr:
+            for target in stderrTargetsList:
+                target.write(line)
+    else:
+        stdoutFile = None
+        stderrFile = None
+
+        if logdir:
+            stdoutFile = open(os.path.join(logdir, timestr + ".out"), "w")
+            stderrFile = open(os.path.join(logdir,timestr + ".err"), "w")
+
+        p = subprocess.Popen(commandline, stdout=stdoutFile, stderr=stderrFile, shell=shell)
+   
     if wait:
         p.communicate()
 
@@ -420,7 +448,7 @@ def is_hbase_local(confdir):
     confFile = os.path.join(confdir, CONF_FILE)
     return is_hbase(confdir) and grep(confFile, HBASE_STORAGE_LOCAL_CONF_ENTRY) is not None
 
-def run_hbase_action(dir, action, hbase_conf_dir = None, logdir = None, wait=True):
+def run_hbase_action(dir, action, hbase_conf_dir = None, logdir = None, wait=True, logconsole=False):
     if IS_WINDOWS:
         if action == 'start':
             hbaseScript = 'start-hbase.cmd'
@@ -438,7 +466,8 @@ def run_hbase_action(dir, action, hbase_conf_dir = None, logdir = None, wait=Tru
             cmd = [os.path.join(dir, hbaseScript), action, 'master']
 
 
-    return runProcess(cmd, logdir, False, wait)
+    return runProcess(cmd, logdir, False, wait,
+                      logconsole=logconsole)
 
 def is_solr(confdir):
     confdir = os.path.join(confdir, CONF_FILE)
@@ -466,6 +495,12 @@ def is_solr_local_standalone_mode(confdir):
 
 def is_elasticsearch_local():
     if os.environ.get(MANAGE_LOCAL_ELASTICSEARCH, "False").lower() == 'false':
+        return False
+
+    return True
+
+def should_log_to_console():
+    if os.environ.get(ENABLE_LOGGING_TO_CONSOLE, "False").lower() == 'false':
         return False
 
     return True
@@ -532,7 +567,7 @@ def wait_for_startup(confdir, wait):
 
     sys.stdout.write('\n')
 
-def run_zookeeper(dir, action, logdir = None, wait=True):
+def run_zookeeper(dir, action, logdir = None, wait=True, logconsole=False):
     zookeeperScript = "zkServer.sh"
 
     if IS_WINDOWS:
@@ -540,9 +575,10 @@ def run_zookeeper(dir, action, logdir = None, wait=True):
 
     cmd = [os.path.join(dir, zookeeperScript), action, os.path.join(dir, '../../conf/zookeeper/zoo.cfg')]
 
-    return runProcess(cmd, logdir, False, wait)
+    return runProcess(cmd, logdir, False, wait,
+                      logconsole=logconsole)
 
-def start_elasticsearch(dir, logdir = None, wait=True):
+def start_elasticsearch(dir, logdir = None, wait=True, logconsole=False):
 
     elasticsearchScript = "elasticsearch"
 
@@ -551,11 +587,12 @@ def start_elasticsearch(dir, logdir = None, wait=True):
 
     cmd = [os.path.join(dir, elasticsearchScript), '-d', '-p', os.path.join(logdir, 'elasticsearch.pid')]
 
-    processVal = runProcess(cmd, logdir, False, wait)
+    processVal = runProcess(cmd, logdir, False, wait,
+                            logconsole=logconsole)
     sleep(6)
     return processVal
 
-def run_solr(dir, action, zk_url = None, port = None, logdir = None, wait=True):
+def run_solr(dir, action, zk_url = None, port = None, logdir = None, wait=True, logconsole=False):
 
     solrScript = "solr"
 
@@ -573,9 +610,10 @@ def run_solr(dir, action, zk_url = None, port = None, logdir = None, wait=True):
         else:
             cmd = [os.path.join(dir, solrScript), action, '-z', zk_url, '-p', port]
 
-    return runProcess(cmd, logdir, False, wait)
+    return runProcess(cmd, logdir, False, wait,
+                      logconsole=logconsole)
 
-def create_solr_collection(dir, confdir, index, logdir = None, wait=True):
+def create_solr_collection(dir, confdir, index, logdir = None, wait=True, logconsole=False):
     solrScript = "solr"
 
     if IS_WINDOWS:
@@ -583,7 +621,8 @@ def create_solr_collection(dir, confdir, index, logdir = None, wait=True):
 
     cmd = [os.path.join(dir, solrScript), 'create', '-c', index, '-d', confdir,  '-shards',  solrShards(),  '-replicationFactor', solrReplicationFactor()]
 
-    return runProcess(cmd, logdir, False, wait)
+    return runProcess(cmd, logdir, False, wait,
+                      logconsole=logconsole)
 
 def configure_hbase(dir):
     env_conf_dir = os.environ.get(HBASE_CONF_DIR)
@@ -669,7 +708,7 @@ def server_pid_not_running(pid):
 def grep(file, value):
     for line in open(file).readlines():
         if re.match(value, line):
-           return line
+            return line
     return None
 
 def getConfig(file, key):

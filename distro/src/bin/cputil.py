@@ -45,7 +45,9 @@ def main():
                        + os.path.join(web_app_dir, "atlas", "WEB-INF", "lib", "*" )  + p \
                        + os.path.join(atlas_home, "libext", "*")
 
-    process = mc.java("org.apache.atlas.util.CredentialProviderUtility", sys.argv[1:], atlas_classpath, jvm_opts_list)
+    process = mc.java("org.apache.atlas.util.CredentialProviderUtility", sys.argv[1:], atlas_classpath, jvm_opts_list,
+                      logconsole=mc.should_log_to_console())
+
     process.wait()
 
 if __name__ == '__main__':

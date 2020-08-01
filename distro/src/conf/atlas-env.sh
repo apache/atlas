@@ -66,3 +66,6 @@ export MANAGE_EMBEDDED_CASSANDRA=${cassandra.embedded}
 
 # indicates whether or not a local instance of Elasticsearch should be started for Atlas
 export MANAGE_LOCAL_ELASTICSEARCH=${elasticsearch.managed}
+
+# Indicates whether or not allow printing logs to stdout. To be used only with processes not requiring user input.
+export ENABLE_LOGGING_TO_CONSOLE=${log.console}
