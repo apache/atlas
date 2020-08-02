@@ -664,7 +664,7 @@
         <hbase.version>2.0.2</hbase.version>
         <solr.version>7.5.0</solr.version>
         <hive.version>3.1.0</hive.version>
-        <kafka.version>2.0.0</kafka.version>
+        <kafka.version>2.3.1</kafka.version>
         <kafka.scala.binary.version>2.11</kafka.scala.binary.version>
         <calcite.version>1.16.0</calcite.version>
         <zookeeper.version>3.4.6</zookeeper.version>
