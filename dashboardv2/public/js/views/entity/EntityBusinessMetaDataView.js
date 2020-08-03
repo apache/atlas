@@ -262,7 +262,7 @@ define([
                 '<div class="btn-group pull-left"> <button type="button" title="Collapse"><i class="ec-icon fa"></i></button></div>' +
                 '</div>' +
                 '<div id="' + _.escape(obj.get("__internal_UI_businessMetadataName")) + '" class="panel-collapse collapse in">' +
-                '<div class="panel-body"><table class="table">' + tableBody + '</table></div>' +
+                '<div class="panel-body"><table class="table bold-key">' + tableBody + '</table></div>' +
                 '</div></div>';
         },
         onRender: function() {
