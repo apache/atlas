@@ -385,18 +385,25 @@ define(['require',
                 this.$('.fontLoader-relative').addClass('show'); // to show tab loader
             },
             manualRender: function(options) {
-                if (this.id !== options.id) {
+                if (options) {
+                    var oldId = this.id;
                     _.extend(this, _.pick(options, 'value', 'id'));
-                    this.collection.url = UrlLinks.entitiesApiUrl({ guid: this.id, minExtInfo: true });
-                    this.fetchCollection();
+                    if (this.id !== oldId) {
+                        this.collection.url = UrlLinks.entitiesApiUrl({ guid: this.id, minExtInfo: true });
+                        this.fetchCollection();
+                    }
+                    this.updateTab();
                 }
             },
-            onShow: function() {
+            updateTab: function() {
                 if (this.value && this.value.tabActive) {
                     this.$('.nav.nav-tabs').find('[role="' + this.value.tabActive + '"]').addClass('active').siblings().removeClass('active');
                     this.$('.tab-content').find('[role="' + this.value.tabActive + '"]').addClass('active').siblings().removeClass('active');
                     $("html, body").animate({ scrollTop: (this.$('.tab-content').offset().top + 1200) }, 1000);
                 }
+            },
+            onShow: function() {
+                this.updateTab();
             },
             onDestroy: function() {
                 if (!Utils.getUrlState.isDetailPage()) {
