@@ -869,8 +869,18 @@ define(['require',
                                 if (relationshipType && relationshipType.relationshipAttributes && relationshipType.relationshipAttributes.typeName) {
                                     that.$("select[data-for-key=" + keyData + "]").val(relationshipType.relationshipAttributes.typeName).trigger("change");
                                 }
-
                             }
+                        } else {
+                            if (_.isObject(relationshipType) && !_.isArray(relationshipType)) {
+                                relationshipType = [relationshipType];
+                            }
+                            _.each(relationshipType, function(obj) {
+                                if (_.isObject(obj) && obj.guid ) {
+                                    obj['id'] = obj.guid
+                                    select2Options.push(obj);
+                                    selectedValue.push(obj.guid);
+                                }
+                            })
                         }
 
                         // Array of string.
