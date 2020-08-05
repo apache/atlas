@@ -670,7 +670,7 @@ public class AtlasStructType extends AtlasType {
         throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_ATTRIBUTE, attrName, structDef.getName());
     }
 
-    AtlasEntityType getReferencedEntityType(AtlasType type) {
+    static AtlasEntityType getReferencedEntityType(AtlasType type) {
         if (type instanceof AtlasArrayType) {
             type = ((AtlasArrayType)type).getElementType();
         }
@@ -978,6 +978,11 @@ public class AtlasStructType extends AtlasType {
 
         private String getRelationshipEdgeLabel(String relationshipLabel) {
             return (relationshipLabel == null) ? getEdgeLabel(qualifiedName) : relationshipLabel;
+        }
+
+        public AtlasEntityType getReferencedEntityType(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
+            AtlasType type = typeRegistry.getType(attributeDef.getTypeName());
+            return AtlasStructType.getReferencedEntityType(type);
         }
 
         public static String getQualifiedAttributeName(AtlasStructDef structDef, String attrName) {

@@ -83,7 +83,7 @@ public abstract class SearchProcessor {
     public static final String  CUSTOM_ATTR_SEARCH_FORMAT  = "\"\\\"%s\\\":\\\"%s\\\"\"";
     public static final String  CUSTOM_ATTR_SEARCH_FORMAT_GRAPH = "\"%s\":\"%s\"";
     private static final Map<SearchParameters.Operator, String>                            OPERATOR_MAP           = new HashMap<>();
-    private static final Map<SearchParameters.Operator, VertexAttributePredicateGenerator> OPERATOR_PREDICATE_MAP = new HashMap<>();
+    private static final Map<SearchParameters.Operator, ElementAttributePredicateGenerator> OPERATOR_PREDICATE_MAP = new HashMap<>();
 
     static
     {
@@ -632,7 +632,7 @@ public abstract class SearchProcessor {
         Predicate ret = null;
 
         AtlasAttribute                    attribute = type.getAttribute(attrName);
-        VertexAttributePredicateGenerator predicate = OPERATOR_PREDICATE_MAP.get(op);
+        ElementAttributePredicateGenerator predicate = OPERATOR_PREDICATE_MAP.get(op);
 
         if (attribute != null && predicate != null) {
             final AtlasType attrType = attribute.getAttributeType();
