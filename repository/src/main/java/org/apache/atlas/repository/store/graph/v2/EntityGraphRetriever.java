@@ -201,6 +201,10 @@ public class EntityGraphRetriever {
         return toAtlasEntityHeader(getEntityVertex(guid));
     }
 
+    public AtlasEntityHeader toAtlasEntityHeader(String guid, Set<String> attributes) throws AtlasBaseException {
+        return toAtlasEntityHeader(getEntityVertex(guid), attributes);
+    }
+
     public AtlasEntityHeader toAtlasEntityHeader(AtlasVertex entityVertex) throws AtlasBaseException {
         return toAtlasEntityHeader(entityVertex, Collections.<String>emptySet());
     }

@@ -370,6 +370,7 @@ public class DiscoveryREST {
                                                    @QueryParam("sortBy")                 String      sortByAttribute,
                                                    @QueryParam("sortOrder")              SortOrder   sortOrder,
                                                    @QueryParam("excludeDeletedEntities") boolean     excludeDeletedEntities,
+                                                   @QueryParam("getApproximateCount")    boolean     getApproximateCount,
                                                    @QueryParam("limit")                  int         limit,
                                                    @QueryParam("offset")                 int         offset) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
@@ -380,11 +381,11 @@ public class DiscoveryREST {
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.relatedEntitiesSearchUsingGremlin(" + guid +
-                        ", " + relation + ", " + sortByAttribute + ", " + sortOrder + ", " + excludeDeletedEntities + ", " + ", " + limit + ", " + offset + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.relatedEntitiesSearch(" + guid +
+                        ", " + relation + ", " + sortByAttribute + ", " + sortOrder + ", " + excludeDeletedEntities + ", " + getApproximateCount + ", " + limit + ", " + offset + ")");
             }
 
-            return discoveryService.searchRelatedEntities(guid, relation, attributes, sortByAttribute, sortOrder, excludeDeletedEntities, limit, offset);
+            return discoveryService.searchRelatedEntities(guid, relation, attributes, sortByAttribute, sortOrder, excludeDeletedEntities, getApproximateCount, limit, offset);
         } finally {
             AtlasPerfTracer.log(perf);
         }
