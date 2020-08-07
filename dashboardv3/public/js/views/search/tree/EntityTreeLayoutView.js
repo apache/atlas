@@ -242,7 +242,8 @@ define([
                     params["entityFilters"] = null;
                 }
             }
-
+            var getUrl = Utils.getUrlState.isSearchTab();
+            if (!getUrl) { that.typeId = null; }
             if (that.typeId != selectedNodeId) {
                 that.typeId = selectedNodeId;
                 typeValue = name;

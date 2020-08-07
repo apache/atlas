@@ -24,9 +24,10 @@ define(['require',
     'utils/CommonViewFunction',
     'utils/Enums',
     'utils/Globals',
+    'moment',
     'query-builder',
     'daterangepicker'
-], function(require, Backbone, QueryBuilderTmpl, UserDefineTmpl, Utils, CommonViewFunction, Enums, Globals) {
+], function(require, Backbone, QueryBuilderTmpl, UserDefineTmpl, Utils, CommonViewFunction, Enums, Globals, moment) {
 
     var QueryBuilderView = Backbone.Marionette.LayoutView.extend(
         /** @lends QueryBuilderView */
@@ -58,6 +59,22 @@ define(['require',
                 _.extend(this, _.pick(options, 'attrObj', 'value', 'typeHeaders', 'entityDefCollection', 'enumDefCollection', 'classificationDefCollection', 'businessMetadataDefCollection', 'tag', 'type', 'searchTableFilters', 'systemAttrArr', 'adminAttrFilters'));
                 this.attrObj = _.sortBy(this.attrObj, 'name');
                 this.filterType = this.tag ? 'tagFilters' : 'entityFilters';
+                this.defaultRange = "Last 7 Days";
+                this.dateRangesMap = {
+                    'Today': [moment(), moment()],
+                    'Yesterday': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
+                    'Last 7 Days': [moment().subtract(6, 'days'), moment()],
+                    'Last 30 Days': [moment().subtract(29, 'days'), moment()],
+                    'This Month': [moment().startOf('month'), moment().endOf('month')],
+                    'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')],
+                    'Last 3 Months': [moment().subtract(3, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')],
+                    'Last 6 Months': [moment().subtract(6, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')],
+                    'Last 12 Months': [moment().subtract(12, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')],
+                    'This Quarter': [moment().startOf('quarter'), moment().endOf('quarter')],
+                    'Last Quarter': [moment().subtract(1, 'quarter').startOf('quarter'), moment().subtract(1, 'quarter').endOf('quarter')],
+                    'This Year': [moment().startOf('year'), moment().endOf('year')],
+                    'Last Year': [moment().subtract(1, 'year').startOf('year'), moment().subtract(1, 'year').endOf('year')]
+                }
             },
             bindEvents: function() {},
             getOperator: function(type, skipDefault) {
@@ -71,7 +88,7 @@ define(['require',
                     }
                 }
                 if (type === "date") {
-                    obj.operators = ['>', '<'];
+                    obj.operators = ['=', '!=', '>', '<', '>=', '<=', 'TIME_RANGE'];
                 }
                 if (type === "int" || type === "byte" || type === "short" || type === "long" || type === "float" || type === "double") {
                     obj.operators = ['=', '!=', '>', '<', '>=', '<='];
@@ -266,20 +283,7 @@ define(['require',
                 }
                 if (obj.type === "date") {
                     obj['plugin'] = 'daterangepicker';
-                    obj['plugin_config'] = {
-                        "singleDatePicker": true,
-                        "showDropdowns": true,
-                        "timePicker": true,
-                        locale: {
-                            format: Globals.dateTimeFormat
-                        }
-                    };
-                    if (rules) {
-                        var valueObj = _.find(rules, { id: obj.id });
-                        if (valueObj) {
-                            obj.plugin_config["startDate"] = valueObj.value;
-                        }
-                    }
+                    obj['plugin_config'] = this.getDateConfig(rules, obj.id);
                     _.extend(obj, this.getOperator(obj.type));
                     return obj;
                 }
@@ -316,6 +320,86 @@ define(['require',
                     return obj;
                 }
             },
+            getDateConfig: function(ruleObj, id, operator) {
+                var valueObj = ruleObj ? (_.find(ruleObj.rules, { id: id }) || {}) : {},
+                    isTimeRange = (valueObj.operator && valueObj.operator === "TIME_RANGE" && operator === "TIME_RANGE") || (operator === "TIME_RANGE"),
+                    obj = {
+                        opens: "center",
+                        autoApply: true,
+                        autoUpdateInput: false,
+                        timePickerSeconds: true,
+                        timePicker: true,
+                        locale: {
+                            format: Globals.dateTimeFormat
+                        }
+                    };
+
+                if (isTimeRange) {
+                    var defaultRangeDate = this.dateRangesMap[this.defaultRange];
+                    obj.startDate = defaultRangeDate[0];
+                    obj.endDate = defaultRangeDate[1];
+                    obj.singleDatePicker = false;
+                    obj.ranges = this.dateRangesMap;
+                } else {
+                    obj.singleDatePicker = true;
+                    obj.startDate = moment();
+                    obj.endDate = obj.startDate;
+                }
+
+                if (!_.isEmpty(valueObj) && operator === valueObj.operator) {
+                    if (isTimeRange) {
+                        if (valueObj.value.indexOf("-") > -1) {
+                            var dates = valueObj.value.split("-");
+                            obj.startDate = dates[0].trim();
+                            obj.endDate = dates[1].trim();
+                        } else {
+                            var dates = this.dateRangesMap[valueObj.value]
+                            obj.startDate = dates[0];
+                            obj.endDate = dates[1];
+                        }
+                        obj.singleDatePicker = false;
+                    } else {
+                        obj.startDate = moment(valueObj.value);
+                        obj.endDate = moment(valueObj.value);
+                        obj.singleDatePicker = true;
+                    }
+                }
+
+                return obj;
+            },
+            setDateValue: function(rule, rules_widgets) {
+                if (rule.filter.type === "date" && rule.operator.nb_inputs) {
+                    var inputEl = rule.$el.find(".rule-value-container").find("input"),
+                        datepickerEl = rule.$el.find(".rule-value-container").find("input").data("daterangepicker")
+                    inputEl.attr('readonly', true);
+                    if (datepickerEl) {
+                        datepickerEl.remove();
+                        var configObj = this.getDateConfig(rules_widgets, rule.filter.id, rule.operator.type)
+                        inputEl.daterangepicker(configObj);
+                        if (rule.operator.type === "TIME_RANGE") {
+                            rule.value = this.defaultRange;
+                        } else {
+                            rule.value = configObj.startDate.format(Globals.dateTimeFormat);
+                        }
+                        inputEl.on('apply.daterangepicker', function(ev, picker) {
+                            picker.setStartDate(picker.startDate);
+                            picker.setEndDate(picker.endDate);
+                            var valueString = "";
+                            if (picker.chosenLabel) {
+                                if (picker.chosenLabel === "Custom Range") {
+                                    valueString = picker.startDate.format(Globals.dateTimeFormat) + " - " + picker.endDate.format(Globals.dateTimeFormat);
+                                } else {
+                                    valueString = picker.chosenLabel;
+                                }
+                            } else {
+                                valueString = picker.startDate.format(Globals.dateTimeFormat);
+                            }
+                            picker.element.val(valueString);
+                            rule.value = valueString;
+                        });
+                    }
+                }
+            },
             onRender: function() {
                 var that = this,
                     filters = [],
@@ -339,7 +423,7 @@ define(['require',
                     rules_widgets = CommonViewFunction.attributeFilter.extractUrl({ "value": this.searchTableFilters ? this.searchTableFilters["adminAttrFilters"] : null, "formatDate": true });;
                 } else {
                     if (this.value) {
-                        var rules_widgets = CommonViewFunction.attributeFilter.extractUrl({ "value": this.searchTableFilters[this.filterType][(this.tag ? this.value.tag : this.value.type)], "formatDate": true });
+                        rules_widgets = CommonViewFunction.attributeFilter.extractUrl({ "value": this.searchTableFilters[this.filterType][(this.tag ? this.value.tag : this.value.type)], "formatDate": true });
                     }
                     _.each(this.attrObj, function(obj) {
                         var type = that.tag ? that.value.tag : that.value.type;
@@ -415,16 +499,20 @@ define(['require',
                 }
                 filters = _.uniq(filters, 'id');
                 if (filters && !_.isEmpty(filters)) {
-                    this.ui.builder.queryBuilder({
-                        plugins: ['bt-tooltip-errors'],
-                        filters: filters,
-                        select_placeholder: placeHolder,
-                        allow_empty: true,
-                        conditions: ['AND', 'OR'],
-                        allow_groups: true,
-                        allow_empty: true,
-                        templates: {
-                            rule: '<div id="{{= it.rule_id }}" class="rule-container"> \
+                    this.ui.builder.off()
+                        .on("afterUpdateRuleOperator.queryBuilder", function(e, rule) {
+                            that.setDateValue(rule, rules_widgets);
+                        })
+                        .queryBuilder({
+                            plugins: ['bt-tooltip-errors'],
+                            filters: filters,
+                            select_placeholder: placeHolder,
+                            allow_empty: true,
+                            conditions: ['AND', 'OR'],
+                            allow_groups: true,
+                            allow_empty: true,
+                            templates: {
+                                rule: '<div id="{{= it.rule_id }}" class="rule-container"> \
                                       <div class="values-box"><div class="rule-filter-container"></div> \
                                       <div class="rule-operator-container"></div> \
                                       <div class="rule-value-container"></div></div> \
@@ -439,50 +527,58 @@ define(['require',
                                         <div class="error-container"><i class="{{= it.icons.error }}"></i>&nbsp;<span></span></div> \
                                       {{?}} \
                                 </div>'
-                        },
-                        operators: [
-                            { type: '=', nb_inputs: 1, multiple: false, apply_to: ['number', 'string', 'boolean', 'enum'] },
-                            { type: '!=', nb_inputs: 1, multiple: false, apply_to: ['number', 'string', 'boolean', 'enum'] },
-                            { type: '>', nb_inputs: 1, multiple: false, apply_to: ['number', 'string', 'boolean'] },
-                            { type: '<', nb_inputs: 1, multiple: false, apply_to: ['number', 'string', 'boolean'] },
-                            { type: '>=', nb_inputs: 1, multiple: false, apply_to: ['number', 'string', 'boolean'] },
-                            { type: '<=', nb_inputs: 1, multiple: false, apply_to: ['number', 'string', 'boolean'] },
-                            { type: 'contains', nb_inputs: 1, multiple: false, apply_to: ['string'] },
-                            { type: 'like', nb_inputs: 1, multiple: false, apply_to: ['string'] },
-                            { type: 'in', nb_inputs: 1, multiple: false, apply_to: ['string'] },
-                            { type: 'begins_with', nb_inputs: 1, multiple: false, apply_to: ['string'] },
-                            { type: 'ends_with', nb_inputs: 1, multiple: false, apply_to: ['string'] },
-                            { type: 'is_null', nb_inputs: false, multiple: false, apply_to: ['number', 'string', 'boolean', 'enum'] },
-                            { type: 'not_null', nb_inputs: false, multiple: false, apply_to: ['number', 'string', 'boolean', 'enum'] }
-                        ],
-                        lang: {
-                            add_rule: 'Add filter',
-                            add_group: 'Add filter group',
-                            operators: {
-                                not_null: 'is not null'
+                            },
+                            operators: [
+                                { type: '=', nb_inputs: 1, multiple: false, apply_to: ['number', 'string', 'boolean', 'enum'] },
+                                { type: '!=', nb_inputs: 1, multiple: false, apply_to: ['number', 'string', 'boolean', 'enum'] },
+                                { type: '>', nb_inputs: 1, multiple: false, apply_to: ['number', 'string', 'boolean'] },
+                                { type: '<', nb_inputs: 1, multiple: false, apply_to: ['number', 'string', 'boolean'] },
+                                { type: '>=', nb_inputs: 1, multiple: false, apply_to: ['number', 'string', 'boolean'] },
+                                { type: '<=', nb_inputs: 1, multiple: false, apply_to: ['number', 'string', 'boolean'] },
+                                { type: 'contains', nb_inputs: 1, multiple: false, apply_to: ['string'] },
+                                { type: 'like', nb_inputs: 1, multiple: false, apply_to: ['string'] },
+                                { type: 'in', nb_inputs: 1, multiple: false, apply_to: ['string'] },
+                                { type: 'begins_with', nb_inputs: 1, multiple: false, apply_to: ['string'] },
+                                { type: 'ends_with', nb_inputs: 1, multiple: false, apply_to: ['string'] },
+                                { type: 'is_null', nb_inputs: false, multiple: false, apply_to: ['number', 'string', 'boolean', 'enum'] },
+                                { type: 'not_null', nb_inputs: false, multiple: false, apply_to: ['number', 'string', 'boolean', 'enum'] },
+                                { type: 'TIME_RANGE', nb_inputs: 1, multiple: false, apply_to: ['date'] }
+                            ],
+                            lang: {
+                                add_rule: 'Add filter',
+                                add_group: 'Add filter group',
+                                operators: {
+                                    not_null: 'is not null',
+                                    TIME_RANGE: "Time Range"
+                                }
+                            },
+                            icons: {
+                                add_rule: 'fa fa-plus',
+                                remove_rule: 'fa fa-times',
+                                error: 'fa fa-exclamation-triangle'
+                            },
+                            rules: rules_widgets
+                        })
+                        .on("afterCreateRuleInput.queryBuilder", function(e, rule) {
+                            rule.error = null;
+                            if (rule.operator.nb_inputs && rule.filter.id === "__customAttributes") {
+                                rule.$el.addClass("user-define");
+                            } else if (rule.$el.hasClass("user-define")) {
+                                rule.$el.removeClass("user-define");
                             }
-                        },
-                        icons: {
-                            add_rule: 'fa fa-plus',
-                            remove_rule: 'fa fa-times',
-                            error: 'fa fa-exclamation-triangle'
-                        },
-                        rules: rules_widgets
-                    }).on("afterCreateRuleInput.queryBuilder", function(e, rule) {
-                        rule.error = null;
-                        if (rule.operator.nb_inputs && rule.filter.id === "__customAttributes") {
-                            rule.$el.addClass("user-define");
-                        } else if (rule.$el.hasClass("user-define")) {
-                            rule.$el.removeClass("user-define");
-                        }
-                    }).on('validationError.queryBuilder', function(e, rule, error, value) {
-                        // never display error for my custom filter
-                        var errorMsg = error[0];
-                        if (that.queryBuilderLang && that.queryBuilderLang.errors && that.queryBuilderLang.errors[errorMsg]) {
-                            errorMsg = that.queryBuilderLang.errors[errorMsg];
-                        }
-                        rule.$el.find(".error-container span").html(errorMsg);
-                    });
+                            if (rule.filter.type === "date") {
+                                rule.$el.find('.rule-value-container >input').attr('readonly', true);
+                            }
+                            that.setDateValue(rule, rules_widgets);
+                        })
+                        .on('validationError.queryBuilder', function(e, rule, error, value) {
+                            // never display error for my custom filter
+                            var errorMsg = error[0];
+                            if (that.queryBuilderLang && that.queryBuilderLang.errors && that.queryBuilderLang.errors[errorMsg]) {
+                                errorMsg = that.queryBuilderLang.errors[errorMsg];
+                            }
+                            rule.$el.find(".error-container span").html(errorMsg);
+                        });
                     var queryBuilderEl = that.ui.builder.data("queryBuilder");
                     if (queryBuilderEl && queryBuilderEl.lang) {
                         this.queryBuilderLang = queryBuilderEl.lang;
