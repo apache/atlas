@@ -348,7 +348,6 @@ require(['App',
             startApp();
         }
     });
-
     this.businessMetadataDefCollection.fetch({
         complete: function() {
             that.businessMetadataDefCollection.fullCollection.comparator = function(model) {

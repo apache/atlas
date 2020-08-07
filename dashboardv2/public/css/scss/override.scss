@@ -300,7 +300,7 @@
         }
 
         .rule-operator-container {
-            width: 105px;
+            width: 150px;
 
             .form-control {
                 width: 100% !important;
@@ -506,5 +506,27 @@ div.columnmanager-dropdown-container {
         width: calc(100% - 50px);
         overflow: hidden;
         text-overflow: ellipsis;
+    }
+}
+
+.daterangepicker {
+    max-height: 400px;
+    overflow-y: scroll;
+
+    .ranges {
+        max-height: 328px;
+        overflow: auto;
+    }
+
+    .ranges li.active,
+    td.active {
+        background-color: $color_havelock_blue_approx;
+    }
+
+    .drp-buttons {
+        .applyBtn {
+            background-color: $color_havelock_blue_approx;
+            border-color: $color_havelock_blue_approx;
+        }
     }
 }

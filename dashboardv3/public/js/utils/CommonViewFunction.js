@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enums', 'moment', 'utils/Globals'], function(require, Utils, Modal, Messages, Enums, moment, Globals) {
+define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enums', 'moment', 'utils/Globals', 'moment-timezone'], function(require, Utils, Modal, Messages, Enums, moment, Globals) {
     'use strict';
 
     var CommonViewFunction = {};
@@ -387,10 +387,14 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
 
         function objToString(filterObj, type) {
             var generatedQuery = _.map(filterObj.rules, function(obj, key) {
+                var obj = $.extend(true, {}, obj); // not to update the timezone abbr on original obj , copy of obj is used
                 if (_.has(obj, 'condition')) {
                     return '<span class="operator">' + obj.condition + '</span>' + '(' + objToString(obj).join("") + ')';
                 } else {
                     if (isCapsuleView) {
+                        if (obj.type === "date") {
+                            obj.value = obj.value + " (" + moment.tz(moment.tz.guess()).zoneAbbr() + ")";
+                        }
                         return '<div class="capsuleView"><span class="key">' + (Enums.systemAttributes[obj.id] ? Enums.systemAttributes[obj.id] : _.escape(obj.id)) + '</span><span class="operator">' + _.escape(obj.operator) + '</span><span class="value">' + (Enums[obj.id] ? Enums[obj.id][obj.value] : _.escape(obj.value)) + "</span><div class='fa fa-close clear-attr' data-type=" + type + " data-id=" + _.escape(obj.id) + "></div></div>";
                     }
                     return '<span class="key">' + (Enums.systemAttributes[obj.id] ? Enums.systemAttributes[obj.id] : _.escape(obj.id)) + '</span><span class="operator">' + _.escape(obj.operator) + '</span><span class="value">' + (Enums[obj.id] ? Enums[obj.id][obj.value] : _.escape(obj.value)) + "</span>";
@@ -507,6 +511,9 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                                     if (Globals[value[skey].typeName]) {
                                         attributeDefs = Globals[value[skey].typeName].attributeDefs;
                                     }
+                                    if (Globals._ALL_CLASSIFICATION_TYPES && Globals._ALL_CLASSIFICATION_TYPES.attributeDefs) {
+                                        attributeDefs = attributeDefs.concat(Globals._ALL_CLASSIFICATION_TYPES.attributeDefs);
+                                    }
                                 }
                                 val = CommonViewFunction.attributeFilter.generateUrl({ "value": val, "attributeDefs": attributeDefs });
                             } else if (k == "entityFilters") {
@@ -522,6 +529,9 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                                     }
                                     if (Globals[value[skey].typeName]) {
                                         attributeDefs = Globals[value[skey].typeName].attributeDefs;
+                                    }
+                                    if (Globals._ALL_ENTITY_TYPES && Globals._ALL_ENTITY_TYPES.attributeDefs) {
+                                        attributeDefs = attributeDefs.concat(Globals._ALL_ENTITY_TYPES.attributeDefs);
                                     }
                                 }
                                 val = CommonViewFunction.attributeFilter.generateUrl({ "value": val, "attributeDefs": attributeDefs });
@@ -564,7 +574,18 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                         var type = (obj.type || obj.attributeType),
                             //obj.value will come as an object when selected type is Date and operator is isNull or not_null;
                             value = ((_.isString(obj.value) && _.contains(["is_null", "not_null"], obj.operator) && type === 'date') || _.isObject(obj.value) ? "" : _.trim(obj.value || obj.attributeValue)),
-                            url = [(obj.id || obj.attributeName), mapApiOperatorToUI(obj.operator), (type === 'date' && formatedDateToLong && value.length ? Date.parse(value) : value)];
+                            url = [(obj.id || obj.attributeName), mapApiOperatorToUI(obj.operator), value];
+                        if (obj.operator === "TIME_RANGE") {
+                            if (value.indexOf("-") > -1) {
+                                url[2] = value.split('-').map(function(udKey) {
+                                    return Date.parse(udKey.trim()).toString()
+                                }).join(",")
+                            } else {
+                                url[2] = Enums.queryBuilderDateRangeUIValueToAPI[_.trim(value)] || value;
+                            }
+                        } else if (value.length && type === 'date' && formatedDateToLong) {
+                            url[2] = Date.parse(value);
+                        }
                         if (type) {
                             url.push(type);
                         }
@@ -581,30 +602,8 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             }
 
             function mapApiOperatorToUI(oper) {
-                if (oper == "eq") {
-                    return "=";
-                } else if (oper == "neq") {
-                    return "!=";
-                } else if (oper == "lt") {
-                    return "<";
-                } else if (oper == "lte") {
-                    return "<=";
-                } else if (oper == "gt") {
-                    return ">";
-                } else if (oper == "gte") {
-                    return ">=";
-                } else if (oper == "startsWith") {
-                    return "begins_with";
-                } else if (oper == "endsWith") {
-                    return "ends_with";
-                } else if (oper == "contains") {
-                    return "contains";
-                } else if (oper == "notNull") {
-                    return "not_null";
-                } else if (oper == "isNull") {
-                    return "is_null";
-                }
-                return oper;
+                // Enum will be in effect once we click on save search.
+                return Enums.queryBuilderApiOperatorToUI[oper] || oper;
             }
         },
         extractUrl: function(options) {
@@ -614,30 +613,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 spliter = 1,
                 apiObj = options.apiObj,
                 mapUiOperatorToAPI = function(oper) {
-                    if (oper == "=") {
-                        return "eq";
-                    } else if (oper == "!=") {
-                        return "neq";
-                    } else if (oper == "<") {
-                        return "lt";
-                    } else if (oper == "<=") {
-                        return "lte";
-                    } else if (oper == ">") {
-                        return "gt";
-                    } else if (oper == ">=") {
-                        return "gte";
-                    } else if (oper == "begins_with") {
-                        return "startsWith";
-                    } else if (oper == "ends_with") {
-                        return "endsWith";
-                    } else if (oper == "contains") {
-                        return "contains";
-                    } else if (oper == "not_null") {
-                        return "notNull";
-                    } else if (oper == "is_null") {
-                        return "isNull";
-                    }
-                    return oper;
+                    return Enums.queryBuilderUIOperatorToAPI[oper] || oper;
                 },
                 createObject = function(urlObj) {
                     var finalObj = {};
@@ -662,7 +638,17 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                                 if (temp[3]) {
                                     rule['type'] = temp[3];
                                 }
-                                rule.value = rule.type === 'date' && formatDate && rule.value.length ? moment(parseInt(rule.value)).format(Globals.dateTimeFormat) : rule.value;
+                                if (rule.operator === "TIME_RANGE") {
+                                    if (temp[2].indexOf(",") > -1) {
+                                        rule.value = temp[2].split(",").map(function(udKey) {
+                                            return moment(parseInt(udKey.trim())).format(Globals.dateTimeFormat)
+                                        }).join(" - ")
+                                    } else {
+                                        rule.value = Enums.queryBuilderDateRangeAPIValueToUI[_.trim(rule.value)] || rule.value;
+                                    }
+                                } else if (rule.type === 'date' && formatDate && rule.value.length) {
+                                    rule.value = moment(parseInt(rule.value)).format(Globals.dateTimeFormat)
+                                }
                             }
                             return rule;
                         }
