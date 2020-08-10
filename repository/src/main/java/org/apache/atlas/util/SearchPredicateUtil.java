@@ -179,6 +179,40 @@ public class SearchPredicateUtil {
         return ret;
     }
 
+    public static ElementAttributePredicateGenerator getInRangePredicateGenerator() {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> getInRangePredicateGenerator");
+        }
+
+        ElementAttributePredicateGenerator ret = new ElementAttributePredicateGenerator() {
+
+            @Override
+            public Predicate generatePredicate(String attrName, Object attrVal, Class attrClass) {
+                return generatePredicate(attrName, attrVal, attrVal, attrClass);
+            }
+
+            @Override
+            public Predicate generatePredicate(String attrName, Object attrVal, Object attrVal2, Class attrClass) {
+                final Predicate ret;
+
+                if (attrName == null || attrClass == null || attrVal == null || attrVal2 == null) {
+                    ret = ALWAYS_FALSE;
+                } else if (Long.class.isAssignableFrom(attrClass)) {
+                    ret = LongPredicate.getInRangePredicate(attrName, attrClass, (Long) attrVal, (Long) attrVal2);
+                } else {
+                    ret = ALWAYS_FALSE;
+                }
+                return ret;
+            }
+        };
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== getInRangePredicateGenerator");
+        }
+
+        return ret;
+    }
+
     public static ElementAttributePredicateGenerator getGTEPredicateGenerator() {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> getGTEPredicateGenerator");
@@ -768,6 +802,9 @@ public class SearchPredicateUtil {
 
     public interface ElementAttributePredicateGenerator {
         Predicate generatePredicate(String attrName, Object attrVal, Class attrClass);
+        default Predicate generatePredicate(String attrName, Object attrVal, Object attrVal2, Class attrClass) {
+            return generatePredicate(attrName, attrVal, attrClass);
+        }
     }
 
     static abstract class ElementAttributePredicate implements Predicate {
@@ -969,16 +1006,27 @@ public class SearchPredicateUtil {
 
     static abstract class LongPredicate extends ElementAttributePredicate {
         final Long value;
+        final Long value2;
 
         LongPredicate(String attrName, Class attrClass, Long value) {
             super(attrName, attrClass);
 
             this.value = value;
+            this.value2 = null;
+
+        }
+
+        LongPredicate(String attrName, Class attrClass, Long value, Long value2, boolean isNullValid) {
+            super(attrName, attrClass, isNullValid);
+            this.value = value;
+            this.value2 = value2;
+
         }
 
         LongPredicate(String attrName, Class attrClass, Long value, boolean isNullValid) {
             super(attrName, attrClass, isNullValid);
-            this.value = value;
+            this.value  = value;
+            this.value2 = null;
         }
 
         static ElementAttributePredicate getEQPredicate(String attrName, Class attrClass, Long value) {
@@ -1025,6 +1073,14 @@ public class SearchPredicateUtil {
             return new LongPredicate(attrName, attrClass, value) {
                 protected boolean compareValue(Object vertexAttrVal) {
                     return ((Long) vertexAttrVal).compareTo(value) >= 0;
+                }
+            };
+        }
+
+        static ElementAttributePredicate getInRangePredicate(String attrName, Class attrClass, Long rangeStart, Long rangeEnd) {
+            return new LongPredicate(attrName, attrClass, rangeStart, rangeEnd, false) {
+                protected boolean compareValue(Object vertexAttrVal) {
+                    return ((Long) vertexAttrVal).compareTo(value) >= 0 && ((Long) vertexAttrVal).compareTo(value2) <= 0;
                 }
             };
         }

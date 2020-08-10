@@ -443,6 +443,10 @@ public class SearchParameters implements Serializable {
      * Logical comparision operators can only be used with numbers or dates
      * IN, LIKE, startsWith, endsWith, CONTAINS can only be used with strings or text
      */
+
+    /**
+     * NOTE : The names added in the String array should always contain first value in lower case
+     */
     public enum Operator {
         LT(new String[]{"<", "lt"}),
         GT(new String[]{">", "gt"}),
@@ -460,6 +464,7 @@ public class SearchParameters implements Serializable {
         CONTAINS_ALL(new String[]{"containsAll", "CONTAINSALL", "contains_all", "CONTAINS_ALL"}),
         IS_NULL(new String[]{"isNull", "ISNULL", "is_null", "IS_NULL"}),
         NOT_NULL(new String[]{"notNull", "NOTNULL", "not_null", "NOT_NULL"}),
+        TIME_RANGE(new String[]{"timerange", "TIMERANGE","time_range","TIME_RANGE"})
         ;
         static final Map<String, Operator> operatorsMap = new HashMap<>();
 
