@@ -58,9 +58,9 @@ public class TypeDefExample {
             SampleAppConstants.COLUMN_TYPE,
             SampleAppConstants.PROCESS_TYPE,
             SampleAppConstants.PII_TAG,
-            SampleAppConstants.CLASSIFICATION,
+            SampleAppConstants.CLASSIFIED_TAG,
             SampleAppConstants.FINANCE_TAG,
-            SampleAppConstants.METRIC_CLASSIFICATION
+            SampleAppConstants.METRIC_TAG
     };
 
     private final AtlasClientV2 client;
@@ -104,7 +104,7 @@ public class TypeDefExample {
 
             assert (!typesDef.isEmpty());
 
-            System.out.println("Created type [" + typeName + "]");
+            SampleApp.log("Created type: " + typeName);
         }
     }
 
@@ -114,7 +114,7 @@ public class TypeDefExample {
 
             typesDef = null;
 
-            System.out.println("Deleted TypeDef successfully!");
+            SampleApp.log("Deleted TypesDef successfully!");
         }
     }
 
@@ -172,10 +172,10 @@ public class TypeDefExample {
     }
 
     private List<AtlasClassificationDef> createClassificationDefs() {
-        AtlasClassificationDef classification = createTraitTypeDef(SampleAppConstants.CLASSIFICATION, Collections.<String>emptySet(), AtlasTypeUtil.createRequiredAttrDef("tag", "string"));
+        AtlasClassificationDef classification = createTraitTypeDef(SampleAppConstants.CLASSIFIED_TAG, Collections.<String>emptySet(), AtlasTypeUtil.createRequiredAttrDef("tag", "string"));
         AtlasClassificationDef pii            = createTraitTypeDef(SampleAppConstants.PII_TAG, Collections.<String>emptySet());
         AtlasClassificationDef finance        = createTraitTypeDef(SampleAppConstants.FINANCE_TAG, Collections.<String>emptySet());
-        AtlasClassificationDef metric         = createTraitTypeDef(SampleAppConstants.METRIC_CLASSIFICATION, Collections.emptySet());
+        AtlasClassificationDef metric         = createTraitTypeDef(SampleAppConstants.METRIC_TAG, Collections.emptySet());
 
         return Arrays.asList(classification, pii, finance, metric);
     }
@@ -223,7 +223,7 @@ public class TypeDefExample {
 
         for (AtlasEnumDef enumDef : typesDef.getEnumDefs()) {
             if (client.typeWithNameExists(enumDef.getName())) {
-                System.out.println("Type " + enumDef.getName() + " already exists. Skipping");
+                SampleApp.log(enumDef.getName() + ": type already exists. Skipping");
             } else {
                 typesToCreate.getEnumDefs().add(enumDef);
             }
@@ -231,7 +231,7 @@ public class TypeDefExample {
 
         for (AtlasStructDef structDef : typesDef.getStructDefs()) {
             if (client.typeWithNameExists(structDef.getName())) {
-                System.out.println("Type " + structDef.getName() + " already exists. Skipping");
+                SampleApp.log(structDef.getName() + ": type already exists. Skipping");
             } else {
                 typesToCreate.getStructDefs().add(structDef);
             }
@@ -239,7 +239,7 @@ public class TypeDefExample {
 
         for (AtlasEntityDef entityDef : typesDef.getEntityDefs()) {
             if (client.typeWithNameExists(entityDef.getName())) {
-                System.out.println("Type " + entityDef.getName() + " already exists. Skipping");
+                SampleApp.log(entityDef.getName() + ": type already exists. Skipping");
             } else {
                 typesToCreate.getEntityDefs().add(entityDef);
             }
@@ -247,7 +247,7 @@ public class TypeDefExample {
 
         for (AtlasClassificationDef classificationDef : typesDef.getClassificationDefs()) {
             if (client.typeWithNameExists(classificationDef.getName())) {
-                System.out.println("Type " + classificationDef.getName() + " already exists. Skipping");
+                SampleApp.log(classificationDef.getName() + ": type already exists. Skipping");
             } else {
                 typesToCreate.getClassificationDefs().add(classificationDef);
             }
@@ -255,7 +255,7 @@ public class TypeDefExample {
 
         for (AtlasRelationshipDef relationshipDef : typesDef.getRelationshipDefs()) {
             if (client.typeWithNameExists(relationshipDef.getName())) {
-                System.out.println("Type " + relationshipDef.getName() + " already exists. Skipping");
+                SampleApp.log(relationshipDef.getName() + ": type already exists. Skipping");
             } else {
                 typesToCreate.getRelationshipDefs().add(relationshipDef);
             }
@@ -263,7 +263,7 @@ public class TypeDefExample {
 
         for (AtlasBusinessMetadataDef businessMetadataDef : typesDef.getBusinessMetadataDefs()) {
             if (client.typeWithNameExists(businessMetadataDef.getName())) {
-                System.out.println("Type " + businessMetadataDef.getName() + " already exists. Skipping");
+                SampleApp.log(businessMetadataDef.getName() + ": type already exists. Skipping");
             } else {
                 typesToCreate.getBusinessMetadataDefs().add(businessMetadataDef);
             }

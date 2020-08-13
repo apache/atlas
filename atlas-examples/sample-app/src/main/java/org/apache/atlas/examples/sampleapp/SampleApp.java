@@ -22,7 +22,7 @@ import org.apache.atlas.AtlasException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.utils.AuthenticationUtil;
 
-import java.util.Scanner;
+import java.util.Date;
 
 public class SampleApp {
     private AtlasClientV2 client;
@@ -36,17 +36,17 @@ public class SampleApp {
     }
 
     public static void main(String[] args) throws Exception {
-        String[]  basicAuthUsernamePassword = null;
-        String[]  atlasServerUrls           = null;
-        SampleApp sampleApp                 = null;
+        SampleApp sampleApp = null;
 
         try {
-            atlasServerUrls = getServerUrl();
-
             if (!AuthenticationUtil.isKerberosAuthenticationEnabled()) {
-                basicAuthUsernamePassword = getUserInput();
-                sampleApp                 = new SampleApp(atlasServerUrls, basicAuthUsernamePassword);
+                String[] atlasServerUrls           = getServerUrl();
+                String[] basicAuthUsernamePassword = getUserInput();
+
+                sampleApp = new SampleApp(atlasServerUrls, basicAuthUsernamePassword);
             } else {
+                String[] atlasServerUrls = getServerUrl();
+
                 sampleApp = new SampleApp(atlasServerUrls);
             }
 
@@ -75,13 +75,15 @@ public class SampleApp {
             sampleApp.glossaryExample();
 
             entityExample.deleteEntities();
-
-            typeDefExample.removeTypeDefinitions();
         } finally {
             if (sampleApp != null && sampleApp.getClient() != null) {
                 sampleApp.getClient().close();
             }
         }
+    }
+
+    public static void log(String message) {
+        System.out.println("[" + new Date() + "] " + message);
     }
 
     public AtlasClientV2 getClient() {
@@ -99,7 +101,7 @@ public class SampleApp {
 
         discoveryExample.testSearch();
         discoveryExample.quickSearch(entity.getTypeName());
-        discoveryExample.basicSearch(entity.getTypeName(), SampleAppConstants.METRIC_CLASSIFICATION, (String)entity.getAttribute(SampleAppConstants.ATTR_NAME));
+        discoveryExample.basicSearch(entity.getTypeName(), SampleAppConstants.METRIC_TAG, (String)entity.getAttribute(SampleAppConstants.ATTR_NAME));
     }
 
     private void glossaryExample() throws Exception {
@@ -113,39 +115,30 @@ public class SampleApp {
     }
 
     private static String[] getUserInput() {
-        String username = null;
-        String password = null;
-
         try {
-            Scanner scanner = new Scanner(System.in);
+            String  username = System.console().readLine("Enter username: ");
+            char[]  pwChar   = System.console().readPassword("Enter password: ");
+            String  password = (pwChar != null) ? new String(pwChar) : "";
 
-            System.out.println("Enter username for atlas :- ");
-            username = scanner.nextLine();
-
-            System.out.println("Enter password for atlas :- ");
-            password = scanner.nextLine();
+            return new String[] { username, password };
         } catch (Exception e) {
             System.out.print("Error while reading user input");
             System.exit(1);
         }
 
-        return new String[] { username, password };
+        return null; // will not reach here
     }
 
     private static String[] getServerUrl() {
-        String atlasServerUrl = null;
-
         try {
-            Scanner scanner = new Scanner(System.in);
+            String atlasServerUrl = System.console().readLine("Enter Atlas server URL: ");
 
-            System.out.println("Enter url for Atlas server :- ");
-
-            atlasServerUrl = scanner.nextLine();
+            return new String[] { atlasServerUrl };
         } catch (Exception e) {
             System.out.print("Error while reading user input");
             System.exit(1);
         }
 
-        return new String[] { atlasServerUrl };
+        return null; // will not reach here
     }
 }

@@ -56,20 +56,20 @@ public final class SampleAppConstants {
     public static final String ENTITY_TYPE_DATASET = "DataSet";
     public static final String ENTITY_TYPE_PROCESS = "Process";
 
-    public static final String PII_TAG                   = "sample_pii_Tag";
-    public static final String FINANCE_TAG               = "sample_finance_Tag";
-    public static final String CLASSIFICATION            = "classification";
-    public static final String METRIC_CLASSIFICATION     = "Metric";
+    public static final String PII_TAG                   = "SAMPLE_PII";
+    public static final String FINANCE_TAG               = "SAMPLE_FINANCE";
+    public static final String CLASSIFIED_TAG            = "SAMPLE_CLASSIFIED";
+    public static final String METRIC_TAG                = "SAMPLE_METRIC";
 
     public static final String DATABASE_TYPE             = "sample_db_type";
     public static final String PROCESS_TYPE              = "sample_process_type";
     public static final String TABLE_TYPE                = "sample_table_type";
     public static final String COLUMN_TYPE               = "sample_column_type";
 
-    public static final String TABLE_DATABASE_TYPE       = "sample_Table_DB";
-    public static final String TABLE_COLUMNS_TYPE        = "sample_Table_Columns";
-    public static final String ENUM_TABLE_TYPE           = "tableType";
-    public static final String BUSINESS_METADATA_TYPE    = "bmWithAllTypes";
-    public static final String BUSINESS_METADATA_TYPE_MV = "bmWithAllTypesMV";
-    public static final String STRUCT_TYPE_SERDE         = "serdeType";
+    public static final String TABLE_DATABASE_TYPE       = "sample_db_tables";
+    public static final String TABLE_COLUMNS_TYPE        = "sample_table_columns";
+    public static final String ENUM_TABLE_TYPE           = "sample_tableType";
+    public static final String BUSINESS_METADATA_TYPE    = "sample_bmWithAllTypes";
+    public static final String BUSINESS_METADATA_TYPE_MV = "sample_bmWithAllTypesMV";
+    public static final String STRUCT_TYPE_SERDE         = "sample_serdeType";
 }
