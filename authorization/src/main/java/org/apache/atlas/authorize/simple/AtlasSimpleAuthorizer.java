@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Set;
 
 import org.apache.atlas.ApplicationProperties;
@@ -32,12 +33,19 @@ import org.apache.atlas.authorize.simple.AtlasSimpleAuthzPolicy.*;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.AtlasSearchResult.AtlasFullTextResult;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.atlas.authorize.AtlasPrivilege.TYPE_CREATE;
+import static org.apache.atlas.authorize.AtlasPrivilege.TYPE_DELETE;
+import static org.apache.atlas.authorize.AtlasPrivilege.TYPE_READ;
+import static org.apache.atlas.authorize.AtlasPrivilege.TYPE_UPDATE;
 
 
 public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
@@ -61,6 +69,8 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
             inputStream = ApplicationProperties.getFileAsInputStream(ApplicationProperties.get(), "atlas.authorizer.simple.authz.policy.file", "atlas-simple-authz-policy.json");
 
             authzPolicy = AtlasJson.fromJson(inputStream, AtlasSimpleAuthzPolicy.class);
+
+            addImpliedTypeReadPrivilege(authzPolicy);
         } catch (IOException | AtlasException e) {
             LOG.error("SimpleAtlasAuthorizer.init(): initialization failed", e);
 
@@ -313,6 +323,18 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
         }
     }
 
+    @Override
+    public void filterTypesDef(AtlasTypesDefFilterRequest request) throws AtlasAuthorizationException {
+        AtlasTypesDef typesDef = request.getTypesDef();
+
+        filterTypes(request, typesDef.getEnumDefs());
+        filterTypes(request, typesDef.getStructDefs());
+        filterTypes(request, typesDef.getEntityDefs());
+        filterTypes(request, typesDef.getClassificationDefs());
+        filterTypes(request, typesDef.getRelationshipDefs());
+        filterTypes(request, typesDef.getBusinessMetadataDefs());
+    }
+
     private Set<String> getRoles(String userName, Set<String> userGroups) {
         Set<String> ret = new HashSet<>();
 
@@ -466,6 +488,46 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
 
     private boolean isBusinessMetadataMatch(AtlasEntityAccessRequest request, AtlasEntityPermission permission) {
         return AtlasPrivilege.ENTITY_UPDATE_BUSINESS_METADATA.equals(request.getAction()) ? isMatch(request.getBusinessMetadata(), permission.getBusinessMetadata()) : true;
+    }
+
+    private void filterTypes(AtlasAccessRequest request, List<? extends AtlasBaseTypeDef> typeDefs)throws AtlasAuthorizationException {
+        if (typeDefs != null) {
+            for (ListIterator<? extends AtlasBaseTypeDef> iter = typeDefs.listIterator(); iter.hasNext();) {
+                AtlasBaseTypeDef       typeDef     = iter.next();
+                AtlasTypeAccessRequest typeRequest = new AtlasTypeAccessRequest(request.getAction(), typeDef, request.getUser(), request.getUserGroups());
+
+                typeRequest.setClientIPAddress(request.getClientIPAddress());
+                typeRequest.setForwardedAddresses(request.getForwardedAddresses());
+                typeRequest.setRemoteIPAddress(request.getRemoteIPAddress());
+
+                if (!isAccessAllowed(typeRequest)) {
+                    iter.remove();
+                }
+            }
+        }
+    }
+
+    // add TYPE_READ privilege, if at least one of the following is granted: TYPE_CREATE, TYPE_UPDATE, TYPE_DELETE
+    private void addImpliedTypeReadPrivilege(AtlasSimpleAuthzPolicy policy) {
+        if (policy != null && policy.getRoles() != null) {
+            for (AtlasAuthzRole role : policy.getRoles().values()) {
+                if (role.getTypePermissions() == null) {
+                    continue;
+                }
+
+                for (AtlasTypePermission permission : role.getTypePermissions()) {
+                    List<String> privileges = permission.getPrivileges();
+
+                    if (CollectionUtils.isEmpty(privileges) || privileges.contains(TYPE_READ.name())) {
+                        continue;
+                    }
+
+                    if (privileges.contains(TYPE_CREATE.name()) || privileges.contains(TYPE_UPDATE.name()) || privileges.contains(TYPE_DELETE.name())) {
+                        privileges.add(TYPE_READ.name());
+                    }
+                }
+            }
+        }
     }
 }
 
