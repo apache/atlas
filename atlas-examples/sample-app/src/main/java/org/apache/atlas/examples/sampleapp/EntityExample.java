@@ -65,25 +65,25 @@ public class EntityExample {
         if (dbEntity == null) {
             dbEntity = createDatabaseEntity(DATABASE_NAME);
 
-            System.out.println("Created database entity: typeName=" + dbEntity.getTypeName() + ", guid=" + dbEntity.getGuid());
+            SampleApp.log("Created entity: typeName=" + dbEntity.getTypeName() + ", qualifiedName=" + dbEntity.getAttribute(ATTR_QUALIFIED_NAME) + ", guid=" + dbEntity.getGuid());
         }
 
         if (tableEntityCanada == null) {
             tableEntityCanada = createTableEntity(TABLE_NAME + "_CANADA");
 
-            System.out.println("Created table entity : typeName=" + tableEntityCanada.getTypeName() + ", guid=" + tableEntityCanada.getGuid());
+            SampleApp.log("Created entity: typeName=" + tableEntityCanada.getTypeName() + ", qualifiedName=" + tableEntityCanada.getAttribute(ATTR_QUALIFIED_NAME) + ", guid=" + tableEntityCanada.getGuid());
         }
 
         if (tableEntityUS == null) {
             tableEntityUS = createTableEntity(TABLE_NAME + "_US");
 
-            System.out.println("Created table entity : typeName=" + tableEntityUS.getTypeName() + ", guid=" + tableEntityUS.getGuid());
+            SampleApp.log("Created entity: typeName=" + tableEntityUS.getTypeName() + ", qualifiedName=" + tableEntityUS.getAttribute(ATTR_QUALIFIED_NAME) + ", guid=" + tableEntityUS.getGuid());
         }
 
         if (loadProcess == null) {
             loadProcess = createProcessEntity(PROCESS_NAME);
 
-            System.out.println("Created process entity : typeName=" + loadProcess.getTypeName() + ", guid=" + loadProcess.getGuid());
+            SampleApp.log("Created entity: typeName=" + loadProcess.getTypeName() + ", qualifiedName=" + loadProcess.getAttribute(ATTR_QUALIFIED_NAME) + ", guid=" + loadProcess.getGuid());
         }
     }
 
@@ -95,22 +95,23 @@ public class EntityExample {
         AtlasEntityWithExtInfo entity = client.getEntityByGuid(entityGuid);
 
         if (entity != null) {
-            System.out.println("Retrieved entity with guid=" + entityGuid + ": " + entity);
+            SampleApp.log("Retrieved entity with guid=" + entityGuid);
+            SampleApp.log("  " + entity);
         }
     }
 
     public void deleteEntities() throws Exception {
         client.deleteEntityByGuid(loadProcess.getGuid());
 
-        System.out.println("Deleted entity: guid=" + loadProcess.getGuid());
+        SampleApp.log("Deleted entity: guid=" + loadProcess.getGuid());
 
         List<String> entityGuids = Arrays.asList(tableEntityUS.getGuid(), tableEntityCanada.getGuid(), dbEntity.getGuid());
 
         client.deleteEntitiesByGuids(entityGuids);
 
-        System.out.println("Deleted entities:");
+        SampleApp.log("Deleted entities:");
         for (String entityGuid : entityGuids) {
-            System.out.println("  guid=" + entityGuid);
+            SampleApp.log("  guid=" + entityGuid);
         }
     }
 
@@ -119,14 +120,14 @@ public class EntityExample {
                 Arrays.asList(createColumn(COLUMN_TIME_ID, "int", "time id"),
                               createColumn(COLUMN_CUSTOMER_ID, "int", "customer id", SampleAppConstants.PII_TAG),
                               createColumn(COLUMN_COMPANY_ID, "double", "company id", SampleAppConstants.FINANCE_TAG)),
-                SampleAppConstants.METRIC_CLASSIFICATION);
+                SampleAppConstants.METRIC_TAG);
     }
 
     private AtlasEntityHeader createProcessEntity(String processName) throws Exception {
         return createProcess(processName, "hive query for monthly avg salary", "user ETL",
                 asList(tableEntityUS),
                 asList(tableEntityCanada),
-                "create table as select ", "plan", "id", "graph", SampleAppConstants.CLASSIFICATION);
+                "create table as select ", "plan", "id", "graph", SampleAppConstants.CLASSIFIED_TAG);
     }
 
     private AtlasEntityHeader createProcess(String name, String description, String user, List<AtlasEntity> inputs, List<AtlasEntity> outputs,
@@ -193,7 +194,7 @@ public class EntityExample {
                 }
             }
         } catch (AtlasServiceException e) {
-            System.out.println("failed in create entity");
+            SampleApp.log("failed in create entity");
             e.printStackTrace();
         }
 

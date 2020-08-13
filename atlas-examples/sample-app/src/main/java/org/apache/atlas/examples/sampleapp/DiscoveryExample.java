@@ -41,14 +41,14 @@ public class DiscoveryExample {
                 List<AtlasEntityHeader> entities    = result != null ? result.getEntities() : null;
                 int                     resultCount = entities == null ? 0 : entities.size();
 
-                System.out.println("DSL Query: " + dslQuery);
-                System.out.println("  result count: " + resultCount);
+                SampleApp.log("DSL Query: " + dslQuery);
+                SampleApp.log("  result count: " + resultCount);
 
                 for (int i = 0; i < resultCount; i++) {
-                    System.out.println("  result # " + (i + 1) + ": " + entities.get(i));
+                    SampleApp.log("  result # " + (i + 1) + ": " + entities.get(i));
                 }
             } catch (Exception e) {
-                System.out.println("query -: " + dslQuery + " failed");
+                SampleApp.log("query -: " + dslQuery + " failed");
             }
         }
     }
@@ -59,11 +59,11 @@ public class DiscoveryExample {
             List<AtlasEntityHeader> entities    = result != null && result.getSearchResults() != null ? result.getSearchResults().getEntities() : null;
             int                     resultCount = entities == null ? 0 : entities.size();
 
-            System.out.println("Quick search: query-string=" + searchString);
-            System.out.println("  result count: " + resultCount);
+            SampleApp.log("Quick search: query-string=" + searchString);
+            SampleApp.log("  result count: " + resultCount);
 
             for (int i = 0; i < resultCount; i++) {
-                System.out.println("  result # " + (i + 1) + ": " + entities.get(i));
+                SampleApp.log("  result # " + (i + 1) + ": " + entities.get(i));
             }
         } catch (AtlasServiceException e) {
             e.printStackTrace();
@@ -76,11 +76,11 @@ public class DiscoveryExample {
             List<AtlasEntityHeader> entities    = result != null ? result.getEntities() : null;
             int                     resultCount = entities == null ? 0 : entities.size();
 
-            System.out.println("Basic search: typeName=" + typeName + ", classification=" + classification + ", query=" + query);
-            System.out.println("  result count: " + resultCount);
+            SampleApp.log("Basic search: typeName=" + typeName + ", classification=" + classification + ", query=" + query);
+            SampleApp.log("  result count: " + resultCount);
 
             for (int i = 0; i < resultCount; i++) {
-                System.out.println("  result # " + (i + 1) + ": " + entities.get(i));
+                SampleApp.log("  result # " + (i + 1) + ": " + entities.get(i));
             }
         } catch (AtlasServiceException e) {
             e.printStackTrace();

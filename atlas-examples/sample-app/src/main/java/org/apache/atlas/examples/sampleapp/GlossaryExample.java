@@ -51,12 +51,12 @@ public class GlossaryExample {
 
         assert (extInfo != null);
 
-        System.out.println("extra info of Glossary is :- " + extInfo.getGuid() + " name is :- " + extInfo.getName() + " language is :- " + extInfo.getLanguage());
+        SampleApp.log("extra info of Glossary is :- " + extInfo.getGuid() + " name is :- " + extInfo.getName() + " language is :- " + extInfo.getLanguage());
     }
 
     public void createGlossaryTerm() throws Exception {
         if (empSalaryTerm != null) {
-            System.out.println("EmpSalaryTerm: term already exists");
+            SampleApp.log("EmpSalaryTerm: term already exists");
             return;
         }
 
@@ -72,13 +72,13 @@ public class GlossaryExample {
         empSalaryTerm = client.createGlossaryTerm(term);
 
         if (empSalaryTerm != null) {
-            System.out.println("Created term for Employee Salary: " + empSalaryTerm);
+            SampleApp.log("Created term for Employee Salary: " + empSalaryTerm);
         }
     }
 
     public void createGlossaryCategory() throws Exception {
         if (empCompanyCategory != null) {
-            System.out.println("EmpSalaryCategory: category already exists");
+            SampleApp.log("EmpSalaryCategory: category already exists");
             return;
         }
 
@@ -94,7 +94,7 @@ public class GlossaryExample {
         empCompanyCategory = client.createGlossaryCategory(category);
 
         if (empCompanyCategory != null) {
-            System.out.println("Created Category for Employee Category :- " + empCompanyCategory);
+            SampleApp.log("Created Category for Employee Category :- " + empCompanyCategory);
         }
     }
 
@@ -102,7 +102,7 @@ public class GlossaryExample {
         if (empGlossary != null) {
             client.deleteGlossaryByGuid(empGlossary.getGuid());
 
-            System.out.println("empGlossary is not present. Skipping the delete operation.");
+            SampleApp.log("empGlossary is not present. Skipping the delete operation.");
         }
 
         empGlossary        = null;

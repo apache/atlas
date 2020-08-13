@@ -41,8 +41,8 @@ public class LineageExample {
             AtlasEntityHeader fromEntity = guidEntityMap.get(relation.getFromEntityId());
             AtlasEntityHeader toEntity   = guidEntityMap.get(relation.getToEntityId());
 
-            System.out.println(fromEntity.getDisplayText() + "(" + fromEntity.getTypeName() + ") -> " +
-                               toEntity.getDisplayText() + "(" + toEntity.getTypeName() + ")");
+            SampleApp.log(fromEntity.getDisplayText() + "(" + fromEntity.getTypeName() + ") -> " +
+                          toEntity.getDisplayText() + "(" + toEntity.getTypeName() + ")");
         }
     }
 }
