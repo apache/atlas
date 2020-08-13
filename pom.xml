@@ -764,7 +764,7 @@
         <project.build.dashboardv2.gruntBuild>build-minify</project.build.dashboardv2.gruntBuild>
         <project.build.dashboardv3.gruntBuild>build-minify</project.build.dashboardv3.gruntBuild>
         <testng.version>6.9.4</testng.version>
-        <joda-time.version>2.10</joda-time.version>
+        <joda-time.version>2.10.6</joda-time.version>
         <jersey-spring.version>1.19.4</jersey-spring.version>
     </properties>
 
