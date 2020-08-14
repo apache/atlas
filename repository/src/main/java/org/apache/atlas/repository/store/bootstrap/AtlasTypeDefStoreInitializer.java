@@ -443,6 +443,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
             Arrays.sort(typePatchFiles);
 
             PatchHandler[] patchHandlers = new PatchHandler[] {
+                    new UpdateEnumDefPatchHandler(typeDefStore, typeRegistry),
                     new AddAttributePatchHandler(typeDefStore, typeRegistry),
                     new UpdateAttributePatchHandler(typeDefStore, typeRegistry),
                     new RemoveLegacyRefAttributesPatchHandler(typeDefStore, typeRegistry),
@@ -527,6 +528,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
         private String                  updateToVersion;
         private Map<String, Object>     params;
         private List<AtlasAttributeDef> attributeDefs;
+        private List<AtlasEnumElementDef> elementDefs;
         private Map<String, String>     typeDefOptions;
         private String                  serviceType;
         private String attributeName;
@@ -595,6 +597,14 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
             this.attributeDefs = attributeDefs;
         }
 
+        public List<AtlasEnumElementDef> getElementDefs() {
+            return elementDefs;
+        }
+
+        public void setElementDefs(List<AtlasEnumElementDef> elementDefs) {
+            this.elementDefs = elementDefs;
+        }
+
         public Map<String, String> getTypeDefOptions() {
             return typeDefOptions;
         }
@@ -661,13 +671,48 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
         }
     }
 
+    class UpdateEnumDefPatchHandler extends PatchHandler {
+        public UpdateEnumDefPatchHandler(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) {
+            super(typeDefStore, typeRegistry, new String[]{"UPDATE_ENUMDEF"});
+        }
+
+        @Override
+        public PatchStatus applyPatch(TypeDefPatch patch) throws AtlasBaseException {
+            String typeName = patch.getTypeName();
+            AtlasBaseTypeDef typeDef = typeRegistry.getTypeDefByName(typeName);
+            PatchStatus ret;
+            if (typeDef == null) {
+                throw new AtlasBaseException(AtlasErrorCode.PATCH_FOR_UNKNOWN_TYPE, patch.getAction(), typeName);
+            }
+            if (isPatchApplicable(patch, typeDef)) {
+                if (typeDef.getClass().equals(AtlasEnumDef.class)) {
+                    AtlasEnumDef updatedDef = new AtlasEnumDef((AtlasEnumDef) typeDef);
+
+                    for (AtlasEnumElementDef elementDef : patch.getElementDefs()) {
+                        updatedDef.addElement(elementDef);
+                    }
+                    updatedDef.setTypeVersion(patch.getUpdateToVersion());
+                    typeDefStore.updateEnumDefByName(typeName, updatedDef);
+                    ret = APPLIED;
+                } else {
+                    throw new AtlasBaseException(AtlasErrorCode.PATCH_NOT_APPLICABLE_FOR_TYPE, patch.getAction(), typeDef.getClass().getSimpleName());
+                }
+            } else {
+                LOG.info("patch skipped: typeName={}; applyToVersion={}; updateToVersion={}",
+                        patch.getTypeName(), patch.getApplyToVersion(), patch.getUpdateToVersion());
+                ret = SKIPPED;
+            }
+            return ret;
+        }
+    }
+
     class AddAttributePatchHandler extends PatchHandler {
         public AddAttributePatchHandler(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) {
             super(typeDefStore, typeRegistry, new String[] { "ADD_ATTRIBUTE" });
         }
 
-        @Override
-        public PatchStatus applyPatch(TypeDefPatch patch) throws AtlasBaseException {
+            @Override
+            public PatchStatus applyPatch(TypeDefPatch patch) throws AtlasBaseException {
             String           typeName       = patch.getTypeName();
             AtlasBaseTypeDef typeDef        = typeRegistry.getTypeDefByName(typeName);
             PatchStatus      ret;
