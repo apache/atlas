@@ -46,7 +46,7 @@ import java.util.Set;
 @AtlasService
 public class AtlasAuditService {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasAuditService.class);
-    private static final String ENTITY_TYPE_AUDIT_ENTRY = "__AtlasAuditEntry";
+    public static final String ENTITY_TYPE_AUDIT_ENTRY = "__AtlasAuditEntry";
 
     private final DataAccess dataAccess;
     private final AtlasDiscoveryService discoveryService;
