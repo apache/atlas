@@ -228,7 +228,7 @@ public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditReposito
 
     public List<EntityAuditEventV2> listEventsV2(String entityId, EntityAuditActionV2 auditAction, String startKey, short maxResultCount) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("Listing events for entity id {}, operation {}, starting key{}, maximum result count {}", entityId, auditAction.toString(), startKey, maxResultCount);
+            LOG.debug("Listing events for entity id {}, operation {}, starting key{}, maximum result count {}", entityId, auditAction, startKey, maxResultCount);
         }
 
         Table         table   = null;
