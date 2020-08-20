@@ -73,6 +73,13 @@
     </profiles>
 
     <dependencies>
+
+         <dependency>
+                <groupId>net.logstash.log4j</groupId>
+                <artifactId>jsonevent-layout</artifactId>
+                <version>1.7</version>
+         </dependency>
+
         <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-graphdb-impls</artifactId>
