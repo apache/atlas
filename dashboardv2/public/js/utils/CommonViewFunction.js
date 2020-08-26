@@ -102,7 +102,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 }
             },
             getValue = function(val) {
-                if (val) {
+                if (!_.isUndefined(val)) {
                     if ((_.isNumber(val) || !_.isNaN(parseInt(val))) && formatIntVal) {
                         return numberFormat(val);
                     } else {
@@ -612,7 +612,6 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                                 rule = {};
                             if (apiObj) {
                                 rule = { attributeName: temp[0], operator: mapUiOperatorToAPI(temp[1]), attributeValue: _.trim(temp[2]) }
-
                                 rule.attributeValue = rule.type === 'date' && formatDate && rule.attributeValue.length ? moment(parseInt(rule.attributeValue)).format(Globals.dateTimeFormat) : rule.attributeValue;
                             } else {
                                 rule = { id: temp[0], operator: temp[1], value: _.trim(temp[2]) }
