@@ -682,7 +682,7 @@
         <fastutil.version>6.5.16</fastutil.version>
         <guice.version>4.1.0</guice.version>
         <spring.version>4.3.20.RELEASE</spring.version>
-        <spring.security.version>4.2.16.RELEASE</spring.security.version>
+        <spring.security.version>4.2.17.RELEASE</spring.security.version>
 
         <javax.servlet.version>3.1.0</javax.servlet.version>
         <guava.version>25.1-jre</guava.version>
