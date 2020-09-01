@@ -96,11 +96,17 @@ public final class EntityGraphDiscoveryContext {
     }
 
     public AtlasVertex getResolvedEntityVertex(AtlasObjectId objId) {
-        if (objId instanceof AtlasRelatedObjectId) {
+        if (resolvedIdsByUniqAttribs.containsKey(objId)) {
+            return getAtlasVertexFromResolvedIdsByAttribs(objId);
+        } else if (objId instanceof AtlasRelatedObjectId) {
             objId = new AtlasObjectId(objId.getGuid(), objId.getTypeName(), objId.getUniqueAttributes());
         }
-        AtlasVertex vertex = resolvedIdsByUniqAttribs.get(objId);
 
+        return getAtlasVertexFromResolvedIdsByAttribs(objId);
+    }
+
+    private AtlasVertex getAtlasVertexFromResolvedIdsByAttribs(AtlasObjectId objId) {
+        AtlasVertex vertex = resolvedIdsByUniqAttribs.get(objId);
         // check also for sub-types; ref={typeName=Asset; guid=abcd} should match {typeName=hive_table; guid=abcd}
         if (vertex == null) {
             final AtlasEntityType entityType  = typeRegistry.getEntityTypeByName(objId.getTypeName());
