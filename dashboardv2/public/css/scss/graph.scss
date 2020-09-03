@@ -14,188 +14,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 /* graph.scss */
-
-
-/* .graph-bg svg {
-    background-image: linear-gradient(to right, $black -10px, rgba(0, 0, 0, 0) 1px), linear-gradient($black -10px, $color_cararra_approx 1px);
-    background-size: 10px 10px;
-    position: relative;
-} */
-
-.node {
-    cursor: pointer;
-
-    text {
-        font-size: 10px;
-        font-family: $font_1;
-    }
-
-    //transition: opacity 0.3s linear;
-
-    rect {
-        stroke: $color_mountain_mist_approx;
-        fill: $white;
-        stroke-width: 1.5px;
-
-        &.serach-rect {
-            stroke: $color_keppel_approx;
-            fill: transparent;
-            stroke-width: 2.5px
-        }
-    }
-
-    .label {
-        fill: $color_suva_gray_approx;
-
-        &.highlight {
-            cursor: pointer;
-            fill: $color_havelock_blue_approx;
-            text-decoration: underline;
-
-            tspan {
-                font-weight: 400;
-            }
-        }
-    }
-
-    circle {
-        -moz-transition: all 0.3s;
-        -webkit-transition: all 0.3s;
-        transition: all 0.3s;
-        stroke-width: 1.5px;
-
-        &.node-detail-highlight {
-            stroke: $color_havelock_blue_approx;
-            stroke-width: 2px;
-        }
-
-        &.nodeImage {
-            &.green:hover {
-                stroke: #ffb203;
-            }
-
-            &.blue:hover {
-                stroke: #4b91e2;
-            }
-
-            &.currentNode {
-                stroke: #fb4200;
-            }
-
-            &:hover {
-                -moz-transform: scale(1.4);
-                -webkit-transform: scale(1.4);
-                transform: scale(1.4);
-            }
-        }
-    }
-
-    &.active {
-        circle {
-            -moz-transform: scale(1.4);
-            -webkit-transform: scale(1.4);
-            transform: scale(1.4);
-
-            &.nodeImage {
-                &.green {
-                    stroke: #ffb203;
-                }
-
-                &.blue {
-                    stroke: #4b91e2;
-                }
-            }
-        }
-    }
-}
 
 .invisible {
     .node circle {
         transition: all 0s;
     }
 }
-
-.edgePath {
-    .path {
-        cursor: pointer;
-    }
-}
-
-.overlay {}
-
-.link {
-    fill: none;
-    stroke: $color_celeste_approx;
-    stroke-width: 1.5px;
-}
-
-.d3-tip {
-    line-height: 1;
-    font-weight: bold;
-    padding: 12px;
-    background: $black_80;
-    color: $white;
-    z-index: 999;
-    max-width: 300px; //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
-    border-radius: 2px;
-
-    .tip-inner-scroll {
-        overflow: auto;
-        max-height: 300px;
-    }
-
-    /* Creates a small triangle extender for the tooltip */
-    &:after {
-        box-sizing: border-box;
-        display: inline;
-        font-size: 10px;
-        width: 100%;
-        line-height: 1;
-        color: rgba(0, 0, 0, 0.8);
-        position: absolute;
-    }
-
-    /* Nrthward tooltips */
-    &.n:after {
-        content: "\25BC";
-        margin: -1px 0 0 0;
-        top: 100%;
-        left: 0;
-        text-align: center;
-    }
-
-    /* Eastward tooltips */
-    &.e:after {
-        content: "\25C0";
-        margin: -4px 0 0 0;
-        top: 50%;
-        left: -8px;
-    }
-
-    /* Southward tooltips */
-    &.s:after {
-        content: "\25B2";
-        margin: 0 0 1px 0;
-        top: -8px;
-        left: 0;
-        text-align: center;
-    }
-
-    /* Westward tooltips */
-    &.w:after {
-        content: "\25B6";
-        margin: -4px 0 0 -1px;
-        top: 50%;
-        left: 100%;
-    }
-}
-
-g.type-TK>rect {
-    fill: $color_bright_turquoise_approx;
-}
-
 
 .graph-toolbar {
     background-color: $white;
@@ -206,7 +31,7 @@ g.type-TK>rect {
 .legends {
     >i {
         >span {
-            font-family: 'Source Sans Pro';
+            font-family: "Source Sans Pro";
         }
     }
 }
@@ -275,14 +100,12 @@ g.type-TK>rect {
         text-align: left;
 
         &.deleted-relation {
-
             .deleteBtn {
                 padding: 2px 8px !important;
                 margin: 5px 5px !important;
             }
         }
     }
-
 
     .header {
         background: $color_havelock_blue_approx;
@@ -327,7 +150,7 @@ g.type-TK>rect {
     background: white;
 
     &[disabled] {
-        opacity: .3;
+        opacity: 0.3;
     }
 
     &:hover {
@@ -336,8 +159,6 @@ g.type-TK>rect {
         background-color: white !important;
     }
 }
-
-
 
 span#zoom_in {
     border-bottom: 1px solid #625555;
@@ -364,7 +185,7 @@ span#zoom_in {
 }
 
 .active.fullscreen-mode {
-    position: fixed;
+    position: fixed !important;
     height: 100% !important;
     top: 0;
     bottom: 0;
@@ -374,6 +195,11 @@ span#zoom_in {
     padding: 0 !important;
     z-index: 9999;
     overflow: hidden !important;
+    background: white;
+
+    .systemTypeTree {
+        height: 100vh !important;
+    }
 
     .resizeGraph {
         position: fixed;
@@ -393,40 +219,6 @@ span#zoom_in {
     }
 }
 
-@keyframes zoominoutsinglefeatured {
-    0% {
-        transform: scale(1, 1);
-    }
-
-    50% {
-        transform: scale(1.2, 1.2);
-    }
-
-    100% {
-        transform: scale(1, 1);
-    }
-}
-
-.wobble {
-    animation: zoominoutsinglefeatured 1s 5;
-}
-
-.hover {
-
-    g.node {
-        opacity: 0.1 !important;
-    }
-
-    g.edgePath {
-        opacity: 0 !important;
-    }
-
-    g.node.hover-active,
-    g.edgePath.hover-active-node {
-        opacity: 1 !important;
-    }
-}
-
 .lineage-node-detail {
     .table-quickMenu {
         td:nth-child(1n) {
@@ -437,12 +229,7 @@ span#zoom_in {
     }
 }
 
-.hidden-svg {
-    visibility: hidden;
-}
-
 #tab-relationship {
-
     .entity-status {
         &.active {
             color: $color_jungle_green_approx;
@@ -451,12 +238,10 @@ span#zoom_in {
         &.deleted {
             color: $delete_link;
         }
-
     }
 
     .entity-list {
         list-style-position: inside;
-
     }
 }
 
@@ -468,4 +253,17 @@ span#zoom_in {
     to {
         opacity: 0.5;
     }
+}
+
+.mini-map-type-system {
+    background: white;
+    width: 200px;
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+
+    &>svg {
+        box-shadow: 0px 0px 3px 1px #80808080;
+    }
+
 }

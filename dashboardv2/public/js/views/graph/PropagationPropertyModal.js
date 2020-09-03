@@ -147,7 +147,7 @@ define(['require',
 
         onRender: function() {},
         updateEdgeView: function(options) {
-            var obj = options.obj,
+            var obj = options,
                 fromEntity = this.lineageData.guidEntityMap[obj.fromEntityId],
                 toEntity = this.lineageData.guidEntityMap[obj.toEntityId];
             if (fromEntity && toEntity) {
@@ -183,9 +183,9 @@ define(['require',
                         that.ui.propagationOptions.find('.both').show();
                     } else {
                         that.ui.propagationOptions.find('.both').hide();
-                        if (that.edgeInfo.obj.fromEntityId != relationshipObj.end1.guid && relationshipObj.propagateTags == "ONE_TO_TWO") {
+                        if (that.edgeInfo.fromEntityId != relationshipObj.end1.guid && relationshipObj.propagateTags == "ONE_TO_TWO") {
                             isTwoToOne = true;
-                        } else if (that.edgeInfo.obj.fromEntityId == relationshipObj.end1.guid && relationshipObj.propagateTags == "TWO_TO_ONE") {
+                        } else if (that.edgeInfo.fromEntityId == relationshipObj.end1.guid && relationshipObj.propagateTags == "TWO_TO_ONE") {
                             isTwoToOne = true;
                         }
                         if (isTwoToOne) {
@@ -241,7 +241,7 @@ define(['require',
                 relationshipProp = {
                     "propagateTags": that.getPropagationFlow({
                         "relationshipData": _.extend({}, this.apiGuid[entityId].relationship, { 'propagateTags': PropagationValue }),
-                        "graphData": { from: { guid: this.edgeInfo.obj.fromEntityId } }
+                        "graphData": { from: { guid: this.edgeInfo.fromEntityId } }
                     })
                 }
             } else {

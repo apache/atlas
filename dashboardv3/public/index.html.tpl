@@ -68,6 +68,7 @@
     <link href="js/libs/dropzone/css/dropzone.css?bust=<%- bust %>" rel="stylesheet">
     <link href="js/libs/jstree/css/default/default-theme.min.css?bust=<%- bust %>" rel="stylesheet" />
     <link href="js/libs/pretty-checkbox/css/pretty-checkbox.min.css?bust=<%- bust %>" rel="stylesheet" />
+     <link href="js/external_lib/atlas-lineage/dist/styles.css?bust=<%- bust %>" rel="stylesheet">
     <link href="css/style.css?bust=<%- bust %>" rel="stylesheet" />
 </head>
 
