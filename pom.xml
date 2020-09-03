@@ -419,6 +419,16 @@
             <!--<organizationUrl>https://www.ibm.com</organizationUrl>-->
         </developer>
         <developer>
+            <id>nikhil</id>
+            <name>Nikhil Bonte</name>
+            <email>nbonte@apache.org</email>
+            <timezone>Asia/Kolkata</timezone>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <organization>Freestone Infotech</organization>
+        </developer>
+        <developer>
             <id>nixon</id>
             <name>Nixon Rodrigues</name>
             <email>nixon@apache.org</email>
