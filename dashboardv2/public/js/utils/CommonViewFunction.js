@@ -102,7 +102,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 }
             },
             getValue = function(val) {
-                if (!_.isUndefined(val)) {
+                if (!_.isUndefined(val) && !_.isNull(val)) {
                     if ((_.isNumber(val) || !_.isNaN(parseInt(val))) && formatIntVal) {
                         return numberFormat(val);
                     } else {
