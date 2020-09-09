@@ -44,6 +44,7 @@ import org.apache.atlas.model.impexp.MigrationStatus;
 import org.apache.atlas.model.instance.AtlasCheckStateRequest;
 import org.apache.atlas.model.instance.AtlasCheckStateResult;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.metrics.AtlasMetrics;
 import org.apache.atlas.model.patches.AtlasPatch.AtlasPatches;
@@ -109,6 +110,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 
 
 /**
@@ -381,9 +383,11 @@ public class AdminResource {
         acquireExportImportLock("export");
 
         ZipSink exportSink = null;
+        boolean isSuccessful = false;
+        AtlasExportResult result = null;
         try {
             exportSink = new ZipSink(httpServletResponse.getOutputStream());
-            AtlasExportResult result = exportService.run(exportSink, request, AtlasAuthorizationUtils.getCurrentUserName(),
+            result = exportService.run(exportSink, request, AtlasAuthorizationUtils.getCurrentUserName(),
                                                          Servlets.getHostName(httpServletRequest),
                                                          AtlasAuthorizationUtils.getRequestIpAddress(httpServletRequest));
 
@@ -396,6 +400,7 @@ public class AdminResource {
             httpServletResponse.setHeader("Transfer-Encoding", "chunked");
 
             httpServletResponse.getOutputStream().flush();
+            isSuccessful = true;
             return Response.ok().build();
         } catch (IOException excp) {
             LOG.error("export() failed", excp);
@@ -406,6 +411,12 @@ public class AdminResource {
 
             if (exportSink != null) {
                 exportSink.close();
+            }
+
+            if (isSuccessful) {
+                String params = AtlasJson.toJson(result.getRequest().getOptions());
+                List<AtlasObjectId> objectIds = result.getRequest().getItemsToExport();
+                auditImportExportOperations(objectIds, AuditOperation.EXPORT, params);
             }
 
             if (LOG.isDebugEnabled()) {
@@ -455,6 +466,10 @@ public class AdminResource {
                 LOG.debug("<== AdminResource.importData(binary)");
             }
         }
+
+        List<AtlasObjectId> objectIds = result.getExportResult().getRequest().getItemsToExport();
+        String params = String.join(",", result.getProcessedEntities());
+        auditImportExportOperations(objectIds, AuditOperation.IMPORT, params);
 
         return result;
     }
@@ -735,5 +750,18 @@ public class AdminResource {
         }
 
         importExportOperationLock.lock();
+    }
+
+    private void auditImportExportOperations(List<AtlasObjectId> objectIds, AuditOperation auditOperation, String params) throws AtlasBaseException {
+        final String clientIp = RequestContext.get().getClientIPAddress();
+        final Date startTime = new Date(RequestContext.get().getRequestTime());
+        final Date endTime = new Date();
+
+        Map<String, Long> entityCountByType = objectIds.stream().collect(Collectors.groupingBy(AtlasObjectId::getTypeName, Collectors.counting()));
+        int resultCount = objectIds.size();
+
+        auditService.add(RequestContext.get().getUser() == null ? "" : RequestContext.get().getUser(), auditOperation,
+                clientIp != null ? clientIp : "", startTime, endTime, params,
+                AtlasJson.toJson(entityCountByType), resultCount);
     }
 }
