@@ -406,6 +406,13 @@ def wait_for_shutdown(pid, msg, wait):
 
     sys.stdout.write('\n')
 
+def is_berkelydb(confdir):
+    confFile = os.path.join(confdir, CONF_FILE)
+    storageBackEnd = getConfig(confFile, STORAGE_BACKEND_CONF)
+    if storageBackEnd is not None:
+        storageBackEnd = storageBackEnd.strip()
+    return storageBackEnd is not None and storageBackEnd == 'berkeleyje'
+
 def is_hbase(confdir):
     confFile = os.path.join(confdir, CONF_FILE)
     storageBackEnd = getConfig(confFile, STORAGE_BACKEND_CONF)
@@ -469,6 +476,9 @@ def is_elasticsearch_local():
         return False
 
     return True
+
+def is_zookeeper_local(confdir):
+    return is_berkelydb(confdir) or is_cassandra_local(confdir)
 
 def get_solr_zk_url(confdir):
     confdir = os.path.join(confdir, CONF_FILE)

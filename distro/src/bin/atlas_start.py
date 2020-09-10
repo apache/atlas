@@ -122,6 +122,8 @@ def main():
         if mc.is_cassandra_local(confdir):
             print "Cassandra embedded configured."
             mc.configure_cassandra(atlas_home)
+
+        if mc.is_zookeeper_local(confdir):
             mc.configure_zookeeper(atlas_home)
             mc.run_zookeeper(mc.zookeeperBinDir(atlas_home), "start", logdir)
             print "zookeeper started."
