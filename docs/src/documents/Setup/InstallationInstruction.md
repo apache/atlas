@@ -30,6 +30,14 @@ export MANAGE_LOCAL_SOLR=true
 bin/atlas_start.py`}
 </SyntaxHighlighter>
 
+#### Running Apache Atlas with BerkeleyDB & Apache Solr
+To run Apache Atlas with BerkeleyDB, and local instances of Apache Solr and Apache Zookeeper, run following commands:
+
+<SyntaxHighlighter wrapLines={true} language="powershell" style={theme.dark}>
+{`export MANAGE_LOCAL_SOLR=true
+bin/atlas_start.py`}
+</SyntaxHighlighter>
+
 #### Using Apache Atlas
 
   * To verify if Apache Atlas server is up and running, run curl command as shown below:
