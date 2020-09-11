@@ -67,6 +67,7 @@ public class AtlasClientV2 extends AtlasBaseClient {
     private static final String DSL_URI            = DISCOVERY_URI + "/dsl";
     private static final String FULL_TEXT_URI      = DISCOVERY_URI + "/fulltext";
     private static final String BASIC_SEARCH_URI   = DISCOVERY_URI + "/basic";
+    private static final String RELATIONSHIP_URI   = DISCOVERY_URI + "/relationship";
     private static final String FACETED_SEARCH_URI = BASIC_SEARCH_URI;
 
     public AtlasClientV2(String[] baseUrl, String[] basicAuthUserNamePassword) {
@@ -362,17 +363,35 @@ public class AtlasClientV2 extends AtlasBaseClient {
         return callAPI(API_V2.FULL_TEXT_SEARCH, AtlasSearchResult.class, queryParams);
     }
 
-    public AtlasSearchResult basicSearch(final String typeName, final String classification, final String query,
+    public AtlasSearchResult basicSearch(String typeName, String classification, String query, boolean excludeDeletedEntities, int limit, int offset) throws AtlasServiceException {
+        return this.basicSearch(typeName, null, classification, query, excludeDeletedEntities, limit, offset);
+    }
+
+    public AtlasSearchResult basicSearch(final String typeName, final SearchParameters.FilterCriteria entityFilters, final String classification, final String query,
                                          final boolean excludeDeletedEntities, final int limit, final int offset) throws AtlasServiceException {
+        SearchParameters parameters = new SearchParameters();
+        parameters.setTypeName(typeName);
+        parameters.setClassification(classification);
+        parameters.setQuery(query);
+        parameters.setExcludeDeletedEntities(excludeDeletedEntities);
+        parameters.setLimit(limit);
+        parameters.setOffset(offset);
+        if (entityFilters != null){
+            parameters.setEntityFilters(entityFilters);
+        }
+        return callAPI(API_V2.BASIC_SEARCH, AtlasSearchResult.class, parameters);
+    }
+
+    public AtlasSearchResult getRelationship(final String guid, String relation, final boolean excludeDeletedEntities,
+                                        final int limit, final int offset ) throws AtlasServiceException {
         MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
-        queryParams.add("typeName", typeName);
-        queryParams.add("classification", classification);
-        queryParams.add(QUERY, query);
+        queryParams.add("guid", guid);
+        queryParams.add("relation", relation);
         queryParams.add("excludeDeletedEntities", String.valueOf(excludeDeletedEntities));
         queryParams.add(LIMIT, String.valueOf(limit));
         queryParams.add(OFFSET, String.valueOf(offset));
 
-        return callAPI(API_V2.BASIC_SEARCH, AtlasSearchResult.class, queryParams);
+        return callAPI(API_V2.GET_RELATIONSHIP, AtlasSearchResult.class, queryParams);
     }
 
     public AtlasSearchResult facetedSearch(SearchParameters searchParameters) throws AtlasServiceException {
@@ -454,8 +473,9 @@ public class AtlasClientV2 extends AtlasBaseClient {
         public static final API_V2 LINEAGE_INFO               = new API_V2(LINEAGE_URI, HttpMethod.GET, Response.Status.OK);
         public static final API_V2 DSL_SEARCH                 = new API_V2(DSL_URI, HttpMethod.GET, Response.Status.OK);
         public static final API_V2 FULL_TEXT_SEARCH           = new API_V2(FULL_TEXT_URI, HttpMethod.GET, Response.Status.OK);
-        public static final API_V2 BASIC_SEARCH               = new API_V2(BASIC_SEARCH_URI, HttpMethod.GET, Response.Status.OK);
+        public static final API_V2 BASIC_SEARCH               = new API_V2(BASIC_SEARCH_URI, HttpMethod.POST, Response.Status.OK);
         public static final API_V2 FACETED_SEARCH             = new API_V2(FACETED_SEARCH_URI, HttpMethod.POST, Response.Status.OK);
+        public static final API_V2 GET_RELATIONSHIP           = new API_V2(RELATIONSHIP_URI, HttpMethod.GET, Response.Status.OK);
 
         private API_V2(String path, String method, Response.Status status) {
             super(path, method, status);
