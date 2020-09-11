@@ -1,0 +1,12 @@
+version: '3'
+services:
+  atlas-base:
+    build:
+      context: .
+      dockerfile: Dockerfile.atlas-base
+    image: atlas-base
+    networks:
+      - atlas
+
+networks:
+  atlas:
