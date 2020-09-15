@@ -692,7 +692,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
         }
 
         AtlasTypesDef typesDef = new AtlasTypesDef();
-        AtlasBaseTypeDef baseTypeDef = getByName(typeName);
+        AtlasBaseTypeDef baseTypeDef = getByNameNoAuthz(typeName);
 
         if (baseTypeDef instanceof AtlasClassificationDef) {
             typesDef.setClassificationDefs(Collections.singletonList((AtlasClassificationDef) baseTypeDef));
@@ -775,7 +775,27 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
         return getTypeDefFromType(type);
     }
 
+    private AtlasBaseTypeDef getByNameNoAuthz(String name) throws AtlasBaseException {
+        if (StringUtils.isBlank(name)) {
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, "", name);
+        }
+
+        AtlasType type = typeRegistry.getType(name);
+
+        return getTypeDefFromTypeWithNoAuthz(type);
+    }
+
     private AtlasBaseTypeDef getTypeDefFromType(AtlasType type) throws AtlasBaseException {
+        AtlasBaseTypeDef ret = getTypeDefFromTypeWithNoAuthz(type);
+
+        if (ret != null) {
+            AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_READ, ret), "read type ", ret.getName());
+        }
+
+        return ret;
+    }
+
+    private AtlasBaseTypeDef getTypeDefFromTypeWithNoAuthz(AtlasType type) throws AtlasBaseException {
         AtlasBaseTypeDef ret;
         switch (type.getTypeCategory()) {
             case ENUM:
@@ -802,10 +822,6 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
             case MAP:
             default:
                 throw new AtlasBaseException(AtlasErrorCode.SYSTEM_TYPE, type.getTypeCategory().name());
-        }
-
-        if (ret != null) {
-            AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_READ, ret), "read type ", ret.getName());
         }
 
         return ret;
