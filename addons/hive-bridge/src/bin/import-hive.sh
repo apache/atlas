@@ -139,6 +139,7 @@ do
     --database) IMPORT_ARGS="$IMPORT_ARGS --database $1"; shift;;
     --table) IMPORT_ARGS="$IMPORT_ARGS --table $1"; shift;;
     --filename) IMPORT_ARGS="$IMPORT_ARGS --filename $1"; shift;;
+    -deleteNonExisting) IMPORT_ARGS="$IMPORT_ARGS -deleteNonExisting";;
     "") break;;
     *) JVM_ARGS="$JVM_ARGS $option"
   esac
