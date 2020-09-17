@@ -270,6 +270,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
             if (ret == null) {
                 throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, name);
             }
+            return ret;
         }
 
         AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_READ, ret), "read type ", name);
@@ -322,6 +323,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
             if (ret == null) {
                 throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, name);
             }
+            return ret;
         }
 
         AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_READ, ret), "read type ", name);
