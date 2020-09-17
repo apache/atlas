@@ -372,13 +372,16 @@ define(['require',
                             "singleDatePicker": true,
                             "showDropdowns": true,
                             "timePicker": true,
+                            startDate: new Date(),
                             locale: {
                                 format: Globals.dateTimeFormat
                             }
                         };
                         if (that.tagModel) {
-                            var formatDate = Number(this.value);
-                            dateObj["startDate"] = new Date(formatDate);
+                            if (this.value.length) {
+                                var formatDate = Number(this.value);
+                                dateObj["startDate"] = new Date(formatDate);
+                            }
                         }
                         $(this).daterangepicker(dateObj);
                     }

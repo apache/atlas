@@ -236,13 +236,12 @@ define([
                             newVal = val.value;
                             if (newVal.length > 0 && val.typeName.indexOf("date") > -1) {
                                 newVal = _.map(newVal, function(dates) {
-                                    return moment(dates).format(Globals.dateFormat);
+                                    return Utils.formatDate({ date: dates, zone: false, dateFormat: Globals.dateFormat });
                                 });
                             }
                             if (val.typeName === "date") {
-                                newVal = moment(newVal).format(Globals.dateFormat);
+                                newVal = Utils.formatDate({ date: newVal, zone: false, dateFormat: Globals.dateFormat });
                             }
-
                         }
                         attrLi += "<tr><td class='business-metadata-detail-attr-key'>" + _.escape(key) + " (" + _.escape(val.typeName) + ")</td><td>" + _.escape(newVal) + "</td></tr>";
                     }

@@ -166,7 +166,7 @@ define(['require',
                     formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                         fromRaw: function(rawValue, model) {
                             if (rawValue) {
-                                return new Date(rawValue);
+                                return Utils.formatDate({ date: rawValue });
                             } else {
                                 return '-';
                             }
@@ -181,7 +181,7 @@ define(['require',
                     formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                         fromRaw: function(rawValue, model) {
                             if (rawValue) {
-                                return new Date(rawValue);
+                                return Utils.formatDate({ date: rawValue });
                             } else {
                                 return '-';
                             }

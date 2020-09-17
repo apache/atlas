@@ -20,9 +20,10 @@ define(['require',
     'backbone',
     'hbs!tmpl/audit/AuditTableLayoutView_tmpl',
     'collection/VEntityList',
+    'utils/Utils',
     'utils/Enums',
     'utils/UrlLinks'
-], function(require, Backbone, AuditTableLayoutView_tmpl, VEntityList, Enums, UrlLinks) {
+], function(require, Backbone, AuditTableLayoutView_tmpl, VEntityList, Utils, Enums, UrlLinks) {
     'use strict';
 
     var AuditTableLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -200,7 +201,6 @@ define(['require',
                                 view.render();
                                 $(el).append($('<div>').html(view.$el));
                             });
-
                         }
                     },
                     user: {
@@ -214,7 +214,7 @@ define(['require',
                         editable: false,
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
-                                return new Date(rawValue);
+                                return Utils.formatDate({ date: rawValue });
                             }
                         })
                     },

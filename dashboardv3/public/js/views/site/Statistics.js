@@ -30,8 +30,9 @@ define(['require',
     'utils/Enums',
     'moment',
     'utils/Utils',
+    'utils/Globals',
     'moment-timezone'
-], function(require, Backbone, StatTmpl, StatsNotiTable, TopicOffsetTable, EntityTable, Modal, VCommon, UrlLinks, VTagList, CommonViewFunction, Enums, moment, Utils) {
+], function(require, Backbone, StatTmpl, StatsNotiTable, TopicOffsetTable, EntityTable, Modal, VCommon, UrlLinks, VTagList, CommonViewFunction, Enums, moment, Utils, Globals) {
     'use strict';
 
     var StatisticsView = Backbone.Marionette.LayoutView.extend(
@@ -397,7 +398,7 @@ define(['require',
                 if (type == 'time') {
                     return Utils.millisecondsToTime(value);
                 } else if (type == 'day') {
-                    return moment.tz(value, moment.tz.guess()).format("MM/DD/YYYY h:mm A z");
+                    return Utils.formatDate({ date: value, dateFormat: Globals.meridiemFormat })
                 } else if (type == 'number') {
                     return _.numberFormatWithComa(value);
                 } else if (type == 'millisecond') {
