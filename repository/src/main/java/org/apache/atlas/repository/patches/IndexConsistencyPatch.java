@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.repository.patches;
 
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -40,6 +41,11 @@ public class IndexConsistencyPatch extends AtlasPatchHandler {
 
     @Override
     public void apply() throws AtlasBaseException {
+        if (AtlasConfiguration.STORAGE_CONSISTENCY_LOCK_ENABLED.getBoolean() == false) {
+            LOG.info("IndexConsistencyPatch: Not enabled: Skipped!");
+            return;
+        }
+
         AtlasGraph graph = context.getGraph();
 
         try {
