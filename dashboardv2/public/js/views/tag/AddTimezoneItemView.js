@@ -19,10 +19,11 @@ define(['require',
     'backbone',
     'hbs!tmpl/tag/AddTimezoneView_tmpl',
     'moment',
+    'utils/Utils',
     'utils/Globals',
     'moment-timezone',
     'daterangepicker'
-], function(require, Backbone, AddTimezoneViewTmpl, moment, Globals) {
+], function(require, Backbone, AddTimezoneViewTmpl, moment, Utils, Globals) {
     'use strict';
 
     return Backbone.Marionette.ItemView.extend(
@@ -116,7 +117,7 @@ define(['require',
                     this.model.set('endTime', that.ui.endTime.val());
                 }
                 this.ui.startTime.daterangepicker(startDateObj).on('apply.daterangepicker', function(ev, picker) {
-                    that.ui.startTime.val(picker.startDate.format(Globals.dateTimeFormat));
+                    that.ui.startTime.val(Utils.formatDate({ date: picker.startDate, zone: false }));
                     _.extend(endDateObj, { "minDate": that.ui.startTime.val() })
                     that.endDateInitialize(endDateObj);
                     that.model.set('startTime', that.ui.startTime.val());
@@ -152,7 +153,7 @@ define(['require',
             endDateInitialize: function(option) {
                 var that = this;
                 this.ui.endTime.daterangepicker(option).on('apply.daterangepicker', function(ev, picker) {
-                    that.ui.endTime.val(picker.startDate.format(Globals.dateTimeFormat));
+                    that.ui.endTime.val(Utils.formatDate({ date: picker.startDate, zone: false }));
                     that.model.set('endTime', that.ui.endTime.val());
                     that.buttonActive({ isButtonActive: true });
                 }).on('cancel.daterangepicker', function(ev, picker) {

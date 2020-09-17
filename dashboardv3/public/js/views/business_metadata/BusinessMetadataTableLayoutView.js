@@ -318,7 +318,7 @@ define(['require',
                         editable: false,
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
-                                return new Date(model.get('createTime'));
+                                return Utils.formatDate({ date: model.get('createTime') });
                             }
                         })
                     },
@@ -340,7 +340,7 @@ define(['require',
                         editable: false,
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
-                                return new Date(model.get('updateTime'));
+                                return Utils.formatDate({ date: model.get('updateTime') });
                             }
                         })
                     },

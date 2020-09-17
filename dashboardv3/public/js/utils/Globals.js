@@ -42,5 +42,6 @@ define(["require"], function(require) {
     Globals.DEFAULT_UI = "v2";
     Globals.dateFormat = "YYYY/MM/DD";
     Globals.dateTimeFormat = "YYYY/MM/DD HH:mm:ss";
+    Globals.meridiemFormat = "MM/DD/YYYY h:mm A z";
     return Globals;
 });

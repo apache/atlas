@@ -239,7 +239,7 @@ define(['require',
                                                 val = JSON.stringify(val);
                                             }
                                             if (sortedObj.typeName === "date") {
-                                                val = new Date(val)
+                                                val = Utils.formatDate({ date: val });
                                             }
                                             stringValue += "<tr><td class='html-cell string-cell renderable'>" + _.escape(key) + "</td><td class='html-cell string-cell renderable' data-type='" + sortedObj.typeName + "'>" + _.escape(val) + "</td>";
                                         });

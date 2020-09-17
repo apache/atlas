@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 'pnotify.buttons', 'pnotify.confirm'], function(require, Globals, pnotify, Messages, Enums) {
+define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 'moment', 'moment-timezone', 'pnotify.buttons', 'pnotify.confirm'], function(require, Globals, pnotify, Messages, Enums, moment) {
     'use strict';
 
     var Utils = {};
@@ -917,6 +917,38 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
     $.fn.hideButtonLoader = function() {
         $(this).removeClass('button-loader').removeAttr("disabled");
         $(this).siblings("button.cancel").prop("disabled", false);
+    }
+    Utils.formatDate = function(options) {
+        var dateValue = null,
+            dateFormat = Globals.dateTimeFormat,
+            isValidDate = false;
+        if (options) {
+            if (options.dateFormat) {
+                dateFormat = options.dateFormat;
+            }
+            if (options.date) {
+                if (options.date === "-") {
+                    dateValue = options.date;
+                } else {
+                    dateValue = moment(options.date)
+                    if (dateValue._isValid) {
+                        isValidDate = true;
+                        dateValue = dateValue.format(dateFormat);
+                    }
+                }
+            }
+        }
+        if (dateValue !== "-") {
+            if (isValidDate === false && options && options.defaultDate !== false) {
+                dateValue = moment().format(dateFormat);
+            }
+
+            if (!options || options && options.zone !== false) {
+                dateValue += " (" + moment.tz(moment.tz.guess()).zoneAbbr() + ")";
+            }
+        }
+
+        return dateValue;
     }
     return Utils;
 });

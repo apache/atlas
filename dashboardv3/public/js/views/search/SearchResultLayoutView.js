@@ -756,7 +756,7 @@ define(['require',
                             fromRaw: function(rawValue, model) {
                                 var obj = model.toJSON();
                                 if (obj && obj.attributes && obj.attributes.createTime) {
-                                    return new Date(obj.attributes.createTime);
+                                    return Utils.formatDate({ date: obj.attributes.createTime });
                                 } else {
                                     return '-'
                                 }

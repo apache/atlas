@@ -439,11 +439,12 @@ define(['require',
                         var dateObj = {
                             "singleDatePicker": true,
                             "showDropdowns": true,
+                            "startDate": new Date(),
                             locale: {
                                 format: Globals.dateFormat
                             }
                         };
-                        if (that.guid) {
+                        if (that.guid && this.value.length) {
                             dateObj["startDate"] = new Date(Number(this.value));
                         }
                         $(this).daterangepicker(dateObj);
@@ -606,7 +607,7 @@ define(['require',
                             if (dataValue) {
                                 entityValue = moment(dataValue);
                             } else {
-                                entityValue = moment().format(Globals.dateFormat);
+                                entityValue = Utils.formatDate({ zone: false, dateFormat: Globals.dateFormat });
                             }
                         }
                     }
