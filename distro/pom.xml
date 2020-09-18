@@ -67,7 +67,7 @@ atlas.graph.index.search.solr.wait-searcher=true
 # https://www.elastic.co/products/x-pack/security
 #
 # Alternatively, the JanusGraph documentation provides some tips on how to secure Elasticsearch without additional
-# plugins: https://docs.janusgraph.org/latest/elasticsearch.html
+# plugins: https://docs.janusgraph.org/index-backend/elasticsearch
 #atlas.graph.index.search.hostname=localhost
 #atlas.graph.index.search.elasticsearch.client-only=true
         </graph.index.properties>
