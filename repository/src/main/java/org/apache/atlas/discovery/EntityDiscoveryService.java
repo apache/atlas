@@ -569,8 +569,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
     @Override
     @GraphTransaction
-    public AtlasSearchResult searchRelatedEntities(String guid, String relation, Set<String> attributes, String sortBy, SortOrder sortOrder,
-                                                   boolean excludeDeletedEntities, boolean getApproximateCount, int limit, int offset) throws AtlasBaseException {
+    public AtlasSearchResult searchRelatedEntities(String guid, String relation, boolean getApproximateCount, SearchParameters searchParameters) throws AtlasBaseException {
         AtlasSearchResult ret = new AtlasSearchResult(AtlasQueryType.RELATIONSHIP);
 
         if (StringUtils.isEmpty(guid) || StringUtils.isEmpty(relation)) {
@@ -605,6 +604,10 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         }
 
         //validate sortBy attribute
+        String    sortBy           = searchParameters.getSortBy();
+        SortOrder sortOrder        = searchParameters.getSortOrder();
+        int       offset           = searchParameters.getOffset();
+        int       limit            = searchParameters.getLimit();
         String sortByAttributeName = DEFAULT_SORT_ATTRIBUTE_NAME;
 
         if (StringUtils.isNotEmpty(sortBy)) {
@@ -642,7 +645,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         //get relationship(end vertices) vertices
         GraphTraversal gt = graph.V(entityVertex.getId()).bothE(relation).otherV();
 
-        if (excludeDeletedEntities) {
+        if (searchParameters.getExcludeDeletedEntities()) {
             gt.has(Constants.STATE_PROPERTY_KEY, AtlasEntity.Status.ACTIVE.name());
         }
 
@@ -661,8 +664,14 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             Vertex v = (Vertex) gt.next();
 
             if (v != null && v.property(Constants.GUID_PROPERTY_KEY).isPresent()) {
-                String endVertexGuid = v.property(Constants.GUID_PROPERTY_KEY).value().toString();
-                resultList.add(entityRetriever.toAtlasEntityHeader(endVertexGuid, attributes));
+                String endVertexGuid     = v.property(Constants.GUID_PROPERTY_KEY).value().toString();
+                AtlasVertex vertex       = entityRetriever.getEntityVertex(endVertexGuid);
+                AtlasEntityHeader entity = entityRetriever.toAtlasEntityHeader(vertex, searchParameters.getAttributes());
+
+                if (searchParameters.getIncludeClassificationAttributes()) {
+                    entity.setClassifications(entityRetriever.getAllClassifications(vertex));
+                }
+                resultList.add(entity);
             }
         }
 
@@ -677,7 +686,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         if (getApproximateCount) {
             Iterator<AtlasEdge> edges = GraphHelper.getAdjacentEdgesByLabel(entityVertex, AtlasEdgeDirection.BOTH, relation);
 
-            if (excludeDeletedEntities) {
+            if (searchParameters.getExcludeDeletedEntities()) {
                 List<AtlasEdge> edgeList = new ArrayList<>();
                 edges.forEachRemaining(edgeList::add);
 

@@ -364,15 +364,16 @@ public class DiscoveryREST {
      */
     @GET
     @Path("relationship")
-    public AtlasSearchResult searchRelatedEntities(@QueryParam("guid")                   String      guid,
-                                                   @QueryParam("relation")               String      relation,
-                                                   @QueryParam("attributes")             Set<String> attributes,
-                                                   @QueryParam("sortBy")                 String      sortByAttribute,
-                                                   @QueryParam("sortOrder")              SortOrder   sortOrder,
-                                                   @QueryParam("excludeDeletedEntities") boolean     excludeDeletedEntities,
-                                                   @QueryParam("getApproximateCount")    boolean     getApproximateCount,
-                                                   @QueryParam("limit")                  int         limit,
-                                                   @QueryParam("offset")                 int         offset) throws AtlasBaseException {
+    public AtlasSearchResult searchRelatedEntities(@QueryParam("guid")                            String      guid,
+                                                   @QueryParam("relation")                        String      relation,
+                                                   @QueryParam("attributes")                      Set<String> attributes,
+                                                   @QueryParam("sortBy")                          String      sortByAttribute,
+                                                   @QueryParam("sortOrder")                       SortOrder   sortOrder,
+                                                   @QueryParam("excludeDeletedEntities")          boolean     excludeDeletedEntities,
+                                                   @QueryParam("includeClassificationAttributes") boolean     includeClassificationAttributes,
+                                                   @QueryParam("getApproximateCount")             boolean     getApproximateCount,
+                                                   @QueryParam("limit")                           int         limit,
+                                                   @QueryParam("offset")                          int         offset) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
         Servlets.validateQueryParamLength("relation", relation);
         Servlets.validateQueryParamLength("sortBy", sortByAttribute);
@@ -385,7 +386,16 @@ public class DiscoveryREST {
                         ", " + relation + ", " + sortByAttribute + ", " + sortOrder + ", " + excludeDeletedEntities + ", " + getApproximateCount + ", " + limit + ", " + offset + ")");
             }
 
-            return discoveryService.searchRelatedEntities(guid, relation, attributes, sortByAttribute, sortOrder, excludeDeletedEntities, getApproximateCount, limit, offset);
+            SearchParameters parameters = new SearchParameters();
+            parameters.setAttributes(attributes);
+            parameters.setSortBy(sortByAttribute);
+            parameters.setSortOrder(sortOrder);
+            parameters.setExcludeDeletedEntities(excludeDeletedEntities);
+            parameters.setLimit(limit);
+            parameters.setOffset(offset);
+            parameters.setIncludeClassificationAttributes(includeClassificationAttributes);
+            return discoveryService.searchRelatedEntities(guid, relation, getApproximateCount, parameters);
+
         } finally {
             AtlasPerfTracer.log(perf);
         }
