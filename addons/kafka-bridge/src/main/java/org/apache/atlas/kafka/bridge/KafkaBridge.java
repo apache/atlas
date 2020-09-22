@@ -18,12 +18,7 @@
 
 package org.apache.atlas.kafka.bridge;
 
-import kafka.utils.ZKStringSerializer$;
-import kafka.utils.ZkUtils;
-import org.I0Itec.zkclient.ZkClient;
-import org.I0Itec.zkclient.ZkConnection;
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.kafka.common.security.JaasUtils;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClientV2;
 import org.apache.atlas.kafka.model.KafkaDataTypes;
@@ -32,6 +27,7 @@ import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.utils.AuthenticationUtil;
+import org.apache.atlas.utils.KafkaUtils;
 import org.apache.commons.cli.BasicParser;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -53,6 +49,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.regex.Pattern;
 
 public class KafkaBridge {
@@ -74,22 +71,17 @@ public class KafkaBridge {
     private static final String TOPIC                      = "topic";
 
     private static final String FORMAT_KAKFA_TOPIC_QUALIFIED_NAME       = "%s@%s";
-    private static final String ZOOKEEPER_CONNECT                       = "atlas.kafka.zookeeper.connect";
-    private static final String ZOOKEEPER_CONNECTION_TIMEOUT_MS         = "atlas.kafka.zookeeper.connection.timeout.ms";
-    private static final String ZOOKEEPER_SESSION_TIMEOUT_MS            = "atlas.kafka.zookeeper.session.timeout.ms";
-    private static final String DEFAULT_ZOOKEEPER_CONNECT               = "localhost:2181";
-    private static final int    DEFAULT_ZOOKEEPER_SESSION_TIMEOUT_MS    = 10 * 1000;
-    private static final int    DEFAULT_ZOOKEEPER_CONNECTION_TIMEOUT_MS = 10 * 1000;
 
     private final List<String>  availableTopics;
     private final String        metadataNamespace;
     private final AtlasClientV2 atlasClientV2;
-    private final ZkUtils       zkUtils;
+    private final KafkaUtils    kafkaUtils;
 
 
     public static void main(String[] args) {
         int exitCode = EXIT_CODE_FAILED;
         AtlasClientV2 atlasClientV2 = null;
+        KafkaBridge importer = null;
 
         try {
             Options options = new Options();
@@ -118,7 +110,7 @@ public class KafkaBridge {
                 atlasClientV2 = new AtlasClientV2(ugi, ugi.getShortUserName(), urls);
             }
 
-            KafkaBridge importer = new KafkaBridge(atlasConf, atlasClientV2);
+            importer = new KafkaBridge(atlasConf, atlasClientV2);
 
             if (StringUtils.isNotEmpty(fileToImport)) {
                 File f = new File(fileToImport);
@@ -153,21 +145,25 @@ public class KafkaBridge {
             if (atlasClientV2 != null) {
                 atlasClientV2.close();
             }
+            if (importer != null) {
+                importer.close();
+            }
         }
 
         System.exit(exitCode);
     }
 
     public KafkaBridge(Configuration atlasConf, AtlasClientV2 atlasClientV2) throws Exception {
-        String   zookeeperConnect    = getZKConnection(atlasConf);
-        int      sessionTimeOutMs    = atlasConf.getInt(ZOOKEEPER_SESSION_TIMEOUT_MS, DEFAULT_ZOOKEEPER_SESSION_TIMEOUT_MS) ;
-        int      connectionTimeOutMs = atlasConf.getInt(ZOOKEEPER_CONNECTION_TIMEOUT_MS, DEFAULT_ZOOKEEPER_CONNECTION_TIMEOUT_MS);
-        ZkClient zkClient            = new ZkClient(zookeeperConnect, sessionTimeOutMs, connectionTimeOutMs, ZKStringSerializer$.MODULE$);
-
         this.atlasClientV2     = atlasClientV2;
         this.metadataNamespace = getMetadataNamespace(atlasConf);
-        this.zkUtils           = new ZkUtils(zkClient, new ZkConnection(zookeeperConnect), JaasUtils.isZkSecurityEnabled());
-        this.availableTopics   = scala.collection.JavaConversions.seqAsJavaList(zkUtils.getAllTopics());
+        this.kafkaUtils        = new KafkaUtils(atlasConf);
+        this.availableTopics   = kafkaUtils.listAllTopics();
+    }
+
+    public void close() {
+        if (this.kafkaUtils != null) {
+            this.kafkaUtils.close();
+        }
     }
 
     private String getMetadataNamespace(Configuration config) {
@@ -225,7 +221,7 @@ public class KafkaBridge {
     }
 
     @VisibleForTesting
-    AtlasEntity getTopicEntity(String topic, AtlasEntity topicEntity) {
+    AtlasEntity getTopicEntity(String topic, AtlasEntity topicEntity) throws Exception {
         final AtlasEntity ret;
 
         if (topicEntity == null) {
@@ -242,7 +238,12 @@ public class KafkaBridge {
         ret.setAttribute(NAME,topic);
         ret.setAttribute(DESCRIPTION_ATTR, topic);
         ret.setAttribute(URI, topic);
-        ret.setAttribute(PARTITION_COUNT, (Integer) zkUtils.getTopicPartitionCount(topic).get());
+        try {
+            ret.setAttribute(PARTITION_COUNT, kafkaUtils.getPartitionCount(topic));
+        } catch (ExecutionException | InterruptedException e) {
+            LOG.error("Error while getting partition count for topic :" + topic, e);
+            throw new Exception("Error while getting partition count for topic :" + topic, e);
+        }
 
         return ret;
     }
@@ -350,22 +351,5 @@ public class KafkaBridge {
         if (entity != null && entity.getRelationshipAttributes() != null) {
             entity.getRelationshipAttributes().clear();
         }
-    }
-
-    private String getStringValue(String[] vals) {
-        String ret = null;
-        for(String val:vals) {
-            ret = (ret == null) ? val : ret + "," + val;
-        }
-        return  ret;
-    }
-
-    private String getZKConnection(Configuration atlasConf) {
-        String ret = null;
-        ret = getStringValue(atlasConf.getStringArray(ZOOKEEPER_CONNECT));
-        if (StringUtils.isEmpty(ret) ) {
-            ret = DEFAULT_ZOOKEEPER_CONNECT;
-        }
-        return ret;
     }
 }

@@ -25,10 +25,10 @@ import org.apache.atlas.notification.AbstractNotification;
 import org.apache.atlas.notification.NotificationConsumer;
 import org.apache.atlas.notification.NotificationException;
 import org.apache.atlas.service.Service;
+import org.apache.atlas.utils.KafkaUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationConverter;
 import org.apache.commons.lang.StringUtils;
-import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
@@ -42,7 +42,6 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
-import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.Future;
 
@@ -62,17 +61,6 @@ public class KafkaNotification extends AbstractNotification implements Service {
     public    static final String ATLAS_HOOK_TOPIC           = AtlasConfiguration.NOTIFICATION_HOOK_TOPIC_NAME.getString();
     public    static final String ATLAS_ENTITIES_TOPIC       = AtlasConfiguration.NOTIFICATION_ENTITIES_TOPIC_NAME.getString();
     protected static final String CONSUMER_GROUP_ID_PROPERTY = "group.id";
-
-    static final String KAFKA_SASL_JAAS_CONFIG_PROPERTY = "sasl.jaas.config";
-    private static final String JAAS_CONFIG_PREFIX_PARAM = "atlas.jaas";
-    private static final String JAAS_CONFIG_LOGIN_MODULE_NAME_PARAM = "loginModuleName";
-    private static final String JAAS_CONFIG_LOGIN_MODULE_CONTROL_FLAG_PARAM = "loginModuleControlFlag";
-    private static final String JAAS_DEFAULT_LOGIN_MODULE_CONTROL_FLAG = "required";
-    private static final String JAAS_VALID_LOGIN_MODULE_CONTROL_FLAG_OPTIONS = "optional|requisite|sufficient|required";
-    private static final String JAAS_CONFIG_LOGIN_OPTIONS_PREFIX = "option";
-    private static final String JAAS_PRINCIPAL_PROP = "principal";
-    private static final String JAAS_DEFAULT_CLIENT_NAME = "KafkaClient";
-    private static final String JAAS_TICKET_BASED_CLIENT_NAME = "ticketBased-KafkaClient";
 
     private   static final String[] ATLAS_HOOK_CONSUMER_TOPICS     = AtlasConfiguration.NOTIFICATION_HOOK_CONSUMER_TOPIC_NAMES.getStringArray(ATLAS_HOOK_TOPIC);
     private   static final String[] ATLAS_ENTITIES_CONSUMER_TOPICS = AtlasConfiguration.NOTIFICATION_ENTITIES_CONSUMER_TOPIC_NAMES.getStringArray(ATLAS_ENTITIES_TOPIC);
@@ -144,7 +132,7 @@ public class KafkaNotification extends AbstractNotification implements Service {
         // if no value is specified for max.poll.records, set to 1
         properties.put("max.poll.records", kafkaConf.getInt("max.poll.records", 1));
 
-        setKafkaJAASProperties(applicationProperties, properties);
+        KafkaUtils.setKafkaJAASProperties(applicationProperties, properties);
 
         LOG.info("<== KafkaNotification()");
     }
@@ -408,129 +396,6 @@ public class KafkaNotification extends AbstractNotification implements Service {
         } catch (IllegalStateException ex) {
             if (ex.getMessage().equalsIgnoreCase(consumerClosedErrorMsg)) {
                 ret = false;
-            }
-        }
-
-        return ret;
-    }
-
-    void setKafkaJAASProperties(Configuration configuration, Properties kafkaProperties) {
-        LOG.debug("==> KafkaNotification.setKafkaJAASProperties()");
-
-        if(kafkaProperties.containsKey(KAFKA_SASL_JAAS_CONFIG_PROPERTY)) {
-            LOG.debug("JAAS config is already set, returning");
-            return;
-        }
-
-        Properties jaasConfig = ApplicationProperties.getSubsetAsProperties(configuration, JAAS_CONFIG_PREFIX_PARAM);
-        // JAAS Configuration is present then update set those properties in sasl.jaas.config
-        if(jaasConfig != null && !jaasConfig.isEmpty()) {
-            String jaasClientName = JAAS_DEFAULT_CLIENT_NAME;
-
-            // Required for backward compatability for Hive CLI
-            if (!isLoginKeytabBased() && isLoginTicketBased()) {
-                LOG.debug("Checking if ticketBased-KafkaClient is set");
-                // if ticketBased-KafkaClient property is not specified then use the default client name
-                String        ticketBasedConfigPrefix = JAAS_CONFIG_PREFIX_PARAM + "." + JAAS_TICKET_BASED_CLIENT_NAME;
-                Configuration ticketBasedConfig       = configuration.subset(ticketBasedConfigPrefix);
-
-                if(ticketBasedConfig != null && !ticketBasedConfig.isEmpty()) {
-                    LOG.debug("ticketBased-KafkaClient JAAS configuration is set, using it");
-
-                    jaasClientName = JAAS_TICKET_BASED_CLIENT_NAME;
-                } else {
-                    LOG.info("UserGroupInformation.isLoginTicketBased is true, but no JAAS configuration found for client {}. Will use JAAS configuration of client {}", JAAS_TICKET_BASED_CLIENT_NAME, jaasClientName);
-                }
-            }
-
-            String keyPrefix       = jaasClientName + ".";
-            String keyParam        = keyPrefix + JAAS_CONFIG_LOGIN_MODULE_NAME_PARAM;
-            String loginModuleName = jaasConfig.getProperty(keyParam);
-
-            if (loginModuleName == null) {
-                LOG.error("Unable to add JAAS configuration for client [{}] as it is missing param [{}]. Skipping JAAS config for [{}]", jaasClientName, keyParam, jaasClientName);
-                return;
-            }
-
-            keyParam = keyPrefix + JAAS_CONFIG_LOGIN_MODULE_CONTROL_FLAG_PARAM;
-            String controlFlag = jaasConfig.getProperty(keyParam);
-
-            if(StringUtils.isEmpty(controlFlag)) {
-                String validValues = JAAS_VALID_LOGIN_MODULE_CONTROL_FLAG_OPTIONS;
-                controlFlag = JAAS_DEFAULT_LOGIN_MODULE_CONTROL_FLAG;
-                LOG.warn("Unknown JAAS configuration value for ({}) = [{}], valid value are [{}] using the default value, REQUIRED", keyParam, controlFlag, validValues);
-            }
-            String optionPrefix = keyPrefix + JAAS_CONFIG_LOGIN_OPTIONS_PREFIX + ".";
-            String principalOptionKey = optionPrefix + JAAS_PRINCIPAL_PROP;
-            int optionPrefixLen = optionPrefix.length();
-            StringBuffer optionStringBuffer = new StringBuffer();
-            for (String key : jaasConfig.stringPropertyNames()) {
-                if (key.startsWith(optionPrefix)) {
-                    String optionVal = jaasConfig.getProperty(key);
-                    if (optionVal != null) {
-                        optionVal = optionVal.trim();
-
-                        try {
-                            if (key.equalsIgnoreCase(principalOptionKey)) {
-                                optionVal = org.apache.hadoop.security.SecurityUtil.getServerPrincipal(optionVal, (String) null);
-                            }
-                        } catch (IOException e) {
-                            LOG.warn("Failed to build serverPrincipal. Using provided value:[{}]", optionVal);
-                        }
-
-                        optionVal = surroundWithQuotes(optionVal);
-                        optionStringBuffer.append(String.format(" %s=%s", key.substring(optionPrefixLen), optionVal));
-                    }
-                }
-            }
-
-            String newJaasProperty = String.format("%s %s %s ;", loginModuleName.trim(), controlFlag, optionStringBuffer.toString());
-            kafkaProperties.put(KAFKA_SASL_JAAS_CONFIG_PROPERTY, newJaasProperty);
-        }
-
-        LOG.debug("<== KafkaNotification.setKafkaJAASProperties()");
-    }
-
-    @VisibleForTesting
-    boolean isLoginKeytabBased() {
-        boolean ret = false;
-
-        try {
-            ret = UserGroupInformation.isLoginKeytabBased();
-        } catch (Exception excp) {
-            LOG.warn("Error in determining keytab for KafkaClient-JAAS config", excp);
-        }
-
-        return ret;
-    }
-
-    @VisibleForTesting
-    boolean isLoginTicketBased() {
-        boolean ret = false;
-
-        try {
-            ret = UserGroupInformation.isLoginTicketBased();
-        } catch (Exception excp) {
-            LOG.warn("Error in determining ticket-cache for KafkaClient-JAAS config", excp);
-        }
-
-        return ret;
-    }
-
-    private static String surroundWithQuotes(String optionVal) {
-        if(StringUtils.isEmpty(optionVal)) {
-            return optionVal;
-        }
-        String ret = optionVal;
-
-        // For property values which have special chars like "@" or "/", we need to enclose it in
-        // double quotes, so that Kafka can parse it
-        // If the property is already enclosed in double quotes, then do nothing.
-        if(optionVal.indexOf(0) != '"' && optionVal.indexOf(optionVal.length() - 1) != '"') {
-            // If the string as special characters like except _,-
-            final String SPECIAL_CHAR_LIST = "/!@#%^&*";
-            if (StringUtils.containsAny(optionVal, SPECIAL_CHAR_LIST)) {
-                ret = String.format("\"%s\"", optionVal);
             }
         }
 

@@ -140,7 +140,7 @@ public class NotificationHookConsumerTest {
 
         hookConsumer.handleMessage(new AtlasKafkaMessage(message, -1, KafkaNotification.ATLAS_HOOK_TOPIC, -1));
 
-        verify(consumer).commit(any(TopicPartition.class), anyInt());
+        verify(consumer).commit(any(TopicPartition.class), anyLong());
     }
 
     @Test

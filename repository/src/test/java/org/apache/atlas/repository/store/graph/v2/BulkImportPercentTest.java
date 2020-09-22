@@ -55,7 +55,7 @@ public class BulkImportPercentTest {
                 percentHolder.add(d.intValue());
                 return null;
             }
-        }).when(log).info(anyString(), anyFloat(), anyInt(), anyString());
+        }).when(log).info(anyString(), anyInt(), anyLong(), anyString());
     }
 
     @Test
