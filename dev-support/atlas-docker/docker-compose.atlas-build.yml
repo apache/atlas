@@ -12,10 +12,11 @@ services:
     networks:
       - atlas
     volumes:
-      - ~/.m2:/home/atlas/.m2
+      - ~/.m2:/home/atlas/.m2:delegated
       - ./scripts:/home/atlas/scripts
       - ./patches:/home/atlas/patches
       - ./dist:/home/atlas/dist
+      - ./../..:/home/atlas/src:delegated
     depends_on:
       - atlas-base
     environment:
