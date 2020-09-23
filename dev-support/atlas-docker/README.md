@@ -56,10 +56,10 @@ Docker files in this folder create docker images and run them to build Apache At
    4.3. Build Apache Atlas in a container with one of the following commands:
 
         # to build from a specific branch
-        docker run -it --rm -v ${HOME}/.m2:/home/atlas/.m2 -v $(pwd)/scripts:/home/atlas/scripts -v $(pwd)/patches:/home/atlas/patches -v $(pwd)/dist:/home/atlas/dist -e BRANCH=master -e PROFILE=dist,berkeley-solr -e SKIPTESTS=true atlas-build
+        docker run -it --rm -v ${HOME}/.m2:/home/atlas/.m2:delegated -v $(pwd)/scripts:/home/atlas/scripts -v $(pwd)/patches:/home/atlas/patches -v $(pwd)/dist:/home/atlas/dist -e BRANCH=master -e PROFILE=dist,berkeley-solr -e SKIPTESTS=true atlas-build
 
         # to build from local sources
-        docker run -it --rm -v ${HOME}/.m2:/home/atlas/.m2 -v $(pwd)/scripts:/home/atlas/scripts -v $(pwd)/../..:/home/atlas/src -v $(pwd)/dist:/home/atlas/dist -e PROFILE=dist,berkeley-solr -e SKIPTESTS=true atlas-build
+        docker run -it --rm -v ${HOME}/.m2:/home/atlas/.m2:delegated -v $(pwd)/scripts:/home/atlas/scripts -v $(pwd)/../..:/home/atlas/src:delegated -v $(pwd)/dist:/home/atlas/dist -e PROFILE=dist,berkeley-solr -e SKIPTESTS=true atlas-build
 
    Time taken to complete the build might vary (upto an hour), depending on status of ${HOME}/.m2 directory cache.
 

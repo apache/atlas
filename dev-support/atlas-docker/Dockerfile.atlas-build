@@ -42,8 +42,4 @@ VOLUME /home/atlas/src
 
 USER atlas
 
-WORKDIR /home/atlas/git
-
-RUN git clone https://github.com/apache/atlas.git
-
 ENTRYPOINT [ "/home/atlas/scripts/atlas-build.sh" ]

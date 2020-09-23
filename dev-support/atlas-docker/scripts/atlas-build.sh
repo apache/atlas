@@ -21,6 +21,11 @@ then
   BRANCH=master
 fi
 
+if [ "${GIT_URL}" == "" ]
+then
+  GIT_URL=https://github.com/apache/atlas.git
+fi
+
 if [ "${PROFILE}" != "" ]
 then
   ARG_PROFILES="-P${PROFILE}"
@@ -43,12 +48,22 @@ then
 
   cd /home/atlas/src
 else
-  echo "Building from /home/atlas/git/atlas"
+  echo "Building ${BRANCH} branch from ${GIT_URL}"
+
+  cd /home/atlas/git
+
+  if [ -d atlas ]
+  then
+    renamedDir=atlas-`date +"%Y%m%d-%H%M%S"`
+
+    echo "Renaming existing directory `pwd`/atlas to ${renamedDir}"
+
+    mv atlas $renamedDir
+  fi
+
+  git clone --single-branch --branch ${BRANCH} ${GIT_URL}
 
   cd /home/atlas/git/atlas
-
-  git checkout ${BRANCH}
-  git pull
 
   for patch in `ls -1 /home/atlas/patches | sort`
   do
