@@ -30,15 +30,16 @@ import org.testng.annotations.Test;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-import static org.mockito.Mockito.mock;
-import static org.testng.Assert.*;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
 
 public class ZipSinkTest {
     private ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
@@ -46,23 +47,6 @@ public class ZipSinkTest {
     private List<String> defaultExportOrder = new ArrayList<>(Arrays.asList("a", "b", "c", "d"));
     private AtlasExportResult defaultExportResult;
     private String knownEntityGuidFormat = "111-222-333-%s";
-
-    private class MockOutputStream extends OutputStream {
-        List<byte[]> collected = new ArrayList<>();
-
-        @Override
-        public void write(int b) throws IOException {
-        }
-
-        @Override
-        public void write(byte[] bytes) {
-            collected.add(bytes);
-        }
-
-        public List<byte[]> getCollected()  {
-            return collected;
-        }
-    };
 
     private void initZipSinkWithExportOrder() throws AtlasBaseException {
         zipSink = new ZipSink(byteArrayOutputStream);
@@ -146,7 +130,6 @@ public class ZipSinkTest {
 
     @Test
     public void zipWithExactlyTwoEntries_ContentsVerified() throws AtlasBaseException, IOException {
-
         ByteArrayOutputStream byteOutputStream = new ByteArrayOutputStream();
         useZipSinkToCreateEntries(byteOutputStream);
 
@@ -224,27 +207,5 @@ public class ZipSinkTest {
     private boolean compareJsonWithObject(String s, AtlasExportResult defaultExportResult) {
         String json = AtlasType.toJson(defaultExportResult);
         return json.equals(s);
-    }
-
-    @Test
-    public void splitTest() throws IOException {
-        assertSplit("ABCDEFGHIJKLMNOPQRSTUVWXYZ01", 7, new String[] {"ABCDEFG", "HIJKLMN", "OPQRSTU", "VWXYZ01"});
-        assertSplit("ABCDEFGHIJKLMNOPQRSTUVWXYZ", 7, new String[] {"ABCDEFG", "HIJKLMN", "OPQRSTU", "VWXYZ"});
-    }
-
-    private void assertSplit(String msg, int bufferSize, String[] splits) throws IOException {
-        MockOutputStream os = getOutputStream();
-        ZipSink.splitAndWriteBytes(msg, bufferSize, os);
-        assertEquals(os.getCollected().size(), splits.length);
-
-        for (int i = 0; i < os.collected.size(); i++) {
-            byte[] bytes = os.getCollected().get(i);
-            String s = new String(bytes);
-            assertEquals(s, splits[i]);
-        }
-    }
-
-    private MockOutputStream getOutputStream() {
-        return new MockOutputStream();
     }
 }
