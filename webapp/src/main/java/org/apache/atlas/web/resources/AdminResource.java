@@ -468,8 +468,7 @@ public class AdminResource {
         }
 
         List<AtlasObjectId> objectIds = result.getExportResult().getRequest().getItemsToExport();
-        String params = String.join(",", result.getProcessedEntities());
-        auditImportExportOperations(objectIds, AuditOperation.IMPORT, params);
+        auditImportExportOperations(objectIds, AuditOperation.IMPORT, null);
 
         return result;
     }
