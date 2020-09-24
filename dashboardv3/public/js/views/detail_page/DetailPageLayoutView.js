@@ -143,7 +143,13 @@ define(['require',
                     this.entityObject = this.collection.first().toJSON();
                     var collectionJSON = this.entityObject.entity;
                     this.activeEntityDef = this.entityDefCollection.fullCollection.find({ name: collectionJSON.typeName });
-
+                    if (!this.activeEntityDef) {
+                        Utils.backButtonClick();
+                        Utils.notifyError({
+                            content: "Unknown Entity-Type"
+                        });
+                        return true;
+                    }
                     if (collectionJSON && _.startsWith(collectionJSON.typeName, "AtlasGlossary")) {
                         this.$(".termBox").hide();
                     }
