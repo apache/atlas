@@ -528,8 +528,8 @@
         <gson.version>2.5</gson.version>
         <fastutil.version>6.5.16</fastutil.version>
         <guice.version>4.1.0</guice.version>
-        <spring.version>4.3.8.RELEASE</spring.version>
-        <spring.security.version>4.2.4.RELEASE</spring.security.version>
+        <spring.version>4.3.16.RELEASE</spring.version>
+        <spring.security.version>4.2.9.RELEASE</spring.security.version>
 
         <javax.servlet.version>3.1.0</javax.servlet.version>
         <guava.version>19.0</guava.version>
