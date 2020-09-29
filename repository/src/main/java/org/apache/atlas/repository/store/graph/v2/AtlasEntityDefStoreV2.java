@@ -88,6 +88,8 @@ public class AtlasEntityDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEntityDe
             LOG.debug("==> AtlasEntityDefStoreV1.create({}, {})", entityDef, preCreateResult);
         }
 
+        verifyAttributeTypeReadAccess(entityDef.getAttributeDefs());
+
         AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_CREATE, entityDef), "create entity-def ", entityDef.getName());
 
         AtlasVertex vertex = (preCreateResult == null) ? preCreate(entityDef) : preCreateResult;
@@ -172,6 +174,8 @@ public class AtlasEntityDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEntityDe
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasEntityDefStoreV1.update({})", entityDef);
         }
+
+        verifyAttributeTypeReadAccess(entityDef.getAttributeDefs());
 
         validateType(entityDef);
 
