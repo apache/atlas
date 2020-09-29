@@ -16,6 +16,7 @@
 
 FROM atlas-base:latest
 
+ARG ATLAS_VERSION
 
 COPY ./scripts/atlas.sh                              ${ATLAS_SCRIPTS}/
 COPY ./dist/apache-atlas-${ATLAS_VERSION}-bin.tar.gz /tmp/
@@ -25,6 +26,8 @@ RUN tar xfz /tmp/apache-atlas-${ATLAS_VERSION}-bin.tar.gz --directory=/opt/ && \
     rm -f /tmp/apache-atlas-${ATLAS_VERSION}-bin.tar.gz && \
     mkdir -p /var/run/atlas && \
     mkdir -p /var/log/atlas && \
+    rm -rf ${ATLAS_HOME}/logs && \
+    ln -s /var/log/atlas ${ATLAS_HOME}/logs && \
     chown -R atlas:atlas ${ATLAS_HOME}/ /var/run/atlas/ /var/log/atlas/
 
 ENTRYPOINT [ "/home/atlas/scripts/atlas.sh" ]

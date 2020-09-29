@@ -27,10 +27,7 @@ ENV PATH       /usr/java/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/
 # setup atlas group, and users
 RUN mkdir -p /home/atlas/git && \
     mkdir -p /home/atlas/.m2 && \
-    mkdir -p /home/atlas/scripts && \
-    mkdir -p /home/atlas/patches && \
-    mkdir -p /home/atlas/dist && \
-	chown -R atlas:atlas /home/atlas
+    chown -R atlas:atlas /home/atlas
 
 COPY ./scripts/atlas-build.sh /home/atlas/scripts/
 

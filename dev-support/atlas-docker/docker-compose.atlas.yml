@@ -4,6 +4,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.atlas
+      args:
+        - ATLAS_VERSION=${ATLAS_VERSION}
     image: atlas:latest
     container_name: atlas
     hostname: atlas.example.com
@@ -15,6 +17,8 @@ services:
       - "21000:21000"
     depends_on:
       - atlas-base
+    environment:
+      - ATLAS_VERSION
     command:
       - /home/atlas/scripts/atlas.sh
 

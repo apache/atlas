@@ -38,12 +38,24 @@ else
   ARG_SKIPTESTS="-DskipTests=${SKIPTESTS}"
 fi
 
+if [ "${BUILD_HOST_SRC}" == "" ]
+then
+  BUILD_HOST_SRC=true
+fi
+
 export MAVEN_OPTS="-Xms2g -Xmx2g"
 export M2=/home/atlas/.m2
 
 
-if [ -f /home/atlas/src/pom.xml ]
+if [ "${BUILD_HOST_SRC}" == "true" ]
 then
+  if [ ! -f /home/atlas/src/pom.xml ]
+  then
+    echo "ERROR: BUILD_HOST_SRC=${BUILD_HOST_SRC}, but /home/atlas/src/pom.xml is not found "
+
+	exit 1
+  fi
+
   echo "Building from /home/atlas/src"
 
   cd /home/atlas/src
