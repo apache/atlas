@@ -366,6 +366,11 @@ public class AtlasTypeUtil {
                 headerList.add(new AtlasTypeDefHeader(relationshipDef));
             }
         }
+        if (CollectionUtils.isNotEmpty(typesDef.getBusinessMetadataDefs())) {
+            for (AtlasBusinessMetadataDef businessMetadataDef : typesDef.getBusinessMetadataDefs()) {
+                headerList.add(new AtlasTypeDefHeader(businessMetadataDef));
+            }
+        }
 
         return headerList;
     }
