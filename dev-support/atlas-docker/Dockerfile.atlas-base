@@ -17,8 +17,6 @@
 FROM ubuntu:20.04
 
 
-ENV ATLAS_VERSION 3.0.0-SNAPSHOT
-
 # Install curl, wget, tzdata, Python, Java
 RUN apt-get update && \
     DEBIAN_FRONTEND="noninteractive" apt-get -y install curl wget tzdata \

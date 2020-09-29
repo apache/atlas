@@ -20,9 +20,12 @@ services:
     depends_on:
       - atlas-base
     environment:
-      BRANCH: 'master'
-      SKIPTESTS: 'true'
-      PROFILE: 'dist,berkeley-solr'
+      - ATLAS_VERSION
+      - BRANCH
+      - BUILD_HOST_SRC
+      - GIT_URL
+      - PROFILE
+      - SKIPTESTS
 
 networks:
   atlas:
