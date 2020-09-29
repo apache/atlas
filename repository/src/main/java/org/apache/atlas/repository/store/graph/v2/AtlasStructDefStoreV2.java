@@ -98,6 +98,8 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
             LOG.debug("==> AtlasStructDefStoreV1.create({}, {})", structDef, preCreateResult);
         }
 
+        verifyAttributeTypeReadAccess(structDef.getAttributeDefs());
+
         AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_CREATE, structDef), "create struct-def ", structDef.getName());
 
         if (CollectionUtils.isEmpty(structDef.getAttributeDefs())) {
@@ -185,6 +187,9 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasStructDefStoreV1.update({})", structDef);
         }
+
+        verifyAttributeTypeReadAccess(structDef.getAttributeDefs());
+
 
         validateType(structDef);
 
