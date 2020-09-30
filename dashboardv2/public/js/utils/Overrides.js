@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-define(['require', 'utils/Utils', 'marionette', 'backgrid', 'asBreadcrumbs', 'jquery-placeholder'], function(require, Utils) {
+define(['require', 'utils/Utils', 'lossless-json', 'marionette', 'backgrid', 'asBreadcrumbs', 'jquery-placeholder'], function(require, Utils, LosslessJSON) {
     'use strict';
 
     Backbone.$.ajaxSetup({
@@ -42,7 +42,16 @@ define(['require', 'utils/Utils', 'marionette', 'backgrid', 'asBreadcrumbs', 'jq
                     if (options.cust_error) {
                         options.cust_error(that, response);
                     }
-                }
+                },
+                converters: _.extend($.ajaxSettings.converters, {
+                    "text json": function(data) {
+                        try {
+                            return LosslessJSON.parse(data, function(k, v) { return (v.isLosslessNumber) ? v.value : v });
+                        } catch (err) {
+                            return $.parseJSON(data);
+                        }
+                    }
+                })
             })
         ]);
     }
