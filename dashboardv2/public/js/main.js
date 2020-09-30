@@ -181,7 +181,8 @@ require.config({
         'table-dragger': 'libs/table-dragger/table-dragger',
         'jstree': 'libs/jstree/jstree.min',
         'jquery-steps': 'libs/jquery-steps/jquery.steps.min',
-        'dropzone': 'libs/dropzone/js/dropzone-amd-module'
+        'dropzone': 'libs/dropzone/js/dropzone-amd-module',
+        'lossless-json': 'libs/lossless-json/lossless-json'
     },
 
     /**

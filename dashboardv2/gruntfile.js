@@ -110,7 +110,8 @@ module.exports = function(grunt) {
                     'table-dragger.js': { 'table-dragger/dist': 'table-dragger' },
                     'jstree.min.js': { 'jstree/dist': 'jstree' },
                     'jquery.steps.min.js': { 'jquery-steps/build': 'jquery-steps' },
-                    'dropzone-amd-module.js': { 'dropzone/dist': "dropzone/js" }
+                    'dropzone-amd-module.js': { 'dropzone/dist': "dropzone/js" },
+                    'lossless-json.js': { 'lossless-json/dist': 'lossless-json' }
                 }
 
             },
@@ -178,7 +179,8 @@ module.exports = function(grunt) {
                     ],
                     'LICENSE.md': [{ 'backbone.babysitter': 'backbone-babysitter' },
                         { 'backbone.wreqr': 'backbone-wreqr' },
-                        { 'nvd3': 'nvd3/' }
+                        { 'nvd3': 'nvd3/' },
+                        { 'lossless-json': 'lossless-json' }
                     ],
                     'license.txt': [{ 'backbone.marionette': 'backbone-marionette' }],
                     'license': [{ 'table-dragger': 'table-dragger' }],
