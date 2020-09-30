@@ -1352,12 +1352,11 @@ public class EntityGraphRetriever {
                 break;
         }
 
-        if (ret != null) {
-            entity.setRelationshipAttribute(attributeName, ret);
+        // Set Relationship attributes, even if the value is null
+        entity.setRelationshipAttribute(attributeName, ret);
 
-            if (attributeEndDef.getIsLegacyAttribute() && !entity.hasAttribute(attributeName)) {
-                entity.setAttribute(attributeName, toLegacyAttribute(ret));
-            }
+        if (attributeEndDef.getIsLegacyAttribute() && !entity.hasAttribute(attributeName)) {
+            entity.setAttribute(attributeName, toLegacyAttribute(ret));
         }
 
         return ret;
