@@ -137,7 +137,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_GUID_NOT_FOUND, guid);
         }
 
-        AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_READ, ret), "read type ", ret.getName());
+        AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_READ, ret), "read type ", guid);
 
         return ret;
     }
@@ -183,7 +183,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_GUID_NOT_FOUND, guid);
         }
 
-        AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_READ, ret), "read type ", ret.getName());
+        AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_READ, ret), "read type ", guid);
 
         return ret;
     }
@@ -209,7 +209,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_GUID_NOT_FOUND, guid);
         }
 
-        AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_READ, ret), "read type ", ret.getName());
+        AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_READ, ret), "read type ", guid);
 
         return ret;
     }
@@ -235,7 +235,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_GUID_NOT_FOUND, guid);
         }
 
-        AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_READ, ret), "read type ", ret.getName());
+        AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_READ, ret), "read type ", guid);
 
         return ret;
     }
@@ -286,7 +286,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_GUID_NOT_FOUND, guid);
         }
 
-        AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_READ, ret), "read type ", ret.getName());
+        AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_READ, ret), "read type ", guid);
 
         return ret;
     }
@@ -339,7 +339,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_GUID_NOT_FOUND, guid);
         }
 
-        AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_READ, ret), "read type ", ret.getName());
+        AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_READ, ret), "read type ", guid);
 
         return ret;
     }
@@ -765,7 +765,13 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, "", name);
         }
         AtlasType type = typeRegistry.getType(name);
-        return getTypeDefFromType(type);
+        AtlasBaseTypeDef ret = getTypeDefFromTypeWithNoAuthz(type);
+
+        if (ret != null) {
+            AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_READ, ret), "read type ", name);
+        }
+
+        return ret;
     }
 
     @Override
@@ -774,7 +780,13 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_GUID_NOT_FOUND, guid);
         }
         AtlasType type = typeRegistry.getTypeByGuid(guid);
-        return getTypeDefFromType(type);
+        AtlasBaseTypeDef ret = getTypeDefFromTypeWithNoAuthz(type);
+
+        if (ret != null) {
+            AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_READ, ret), "read type ", guid);
+        }
+
+        return ret;
     }
 
     private AtlasBaseTypeDef getByNameNoAuthz(String name) throws AtlasBaseException {
@@ -785,16 +797,6 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
         AtlasType type = typeRegistry.getType(name);
 
         return getTypeDefFromTypeWithNoAuthz(type);
-    }
-
-    private AtlasBaseTypeDef getTypeDefFromType(AtlasType type) throws AtlasBaseException {
-        AtlasBaseTypeDef ret = getTypeDefFromTypeWithNoAuthz(type);
-
-        if (ret != null) {
-            AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_READ, ret), "read type ", ret.getName());
-        }
-
-        return ret;
     }
 
     private AtlasBaseTypeDef getTypeDefFromTypeWithNoAuthz(AtlasType type) throws AtlasBaseException {
