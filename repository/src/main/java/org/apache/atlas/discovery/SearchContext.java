@@ -144,7 +144,7 @@ public class SearchContext {
             }
 
             if (CollectionUtils.isNotEmpty(classificationTypeAndSubTypes)) {
-                classificationTypeAndSubTypesQryStr = AtlasAttribute.escapeIndexQueryValue(classificationTypeAndSubTypes);
+                classificationTypeAndSubTypesQryStr = AtlasAttribute.escapeIndexQueryValue(classificationTypeAndSubTypes, true);
             }
         } else {
             classificationTypeAndSubTypes       = Collections.emptySet();
@@ -171,7 +171,7 @@ public class SearchContext {
             }
 
             if (CollectionUtils.isNotEmpty(typeAndSubTypes)) {
-                typeAndSubTypesQryStr = AtlasAttribute.escapeIndexQueryValue(typeAndSubTypes);
+                typeAndSubTypesQryStr = AtlasAttribute.escapeIndexQueryValue(typeAndSubTypes, true);
             }
         } else {
             typeAndSubTypes       = Collections.emptySet();

@@ -1150,24 +1150,6 @@ public abstract class SearchProcessor {
 
     private static boolean isIndexQuerySpecialChar(char c) {
         switch (c) {
-            case '+':
-            case '-':
-            case '&':
-            case '|':
-            case '!':
-            case '(':
-            case ')':
-            case '{':
-            case '}':
-            case '[':
-            case ']':
-            case '^':
-            case '"':
-            case '~':
-            case '*':
-            case '?':
-            case ':':
-            case '/':
             case '#':
             case '$':
             case '%':

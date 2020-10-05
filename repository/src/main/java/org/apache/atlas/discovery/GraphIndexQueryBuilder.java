@@ -17,9 +17,7 @@
  */
 package org.apache.atlas.discovery;
 
-import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_CLASSIFIED;
 import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_NOT_CLASSIFIED;
-import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_WILDCARD_CLASSIFICATION;
 import static org.apache.atlas.discovery.SearchProcessor.INDEX_SEARCH_PREFIX;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_NAMES_KEY;
 import static org.apache.atlas.repository.Constants.PROPAGATED_CLASSIFICATION_NAMES_KEY;
@@ -39,7 +37,7 @@ public class GraphIndexQueryBuilder {
 
     void addClassificationTypeFilter(StringBuilder indexQuery) {
         if (indexQuery != null && CollectionUtils.isNotEmpty(context.getClassificationNames())) {
-            String classificationNames = AtlasStructType.AtlasAttribute.escapeIndexQueryValue(context.getClassificationNames());
+            String classificationNames = AtlasStructType.AtlasAttribute.escapeIndexQueryValue(context.getClassificationNames(), true);
             if (indexQuery.length() != 0) {
                 indexQuery.append(" AND ");
             }

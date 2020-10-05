@@ -65,7 +65,7 @@ public class AtlasClassificationType extends AtlasStructType {
         super(classificationDef);
 
         this.classificationDef = classificationDef;
-        this.typeQryStr        = AtlasAttribute.escapeIndexQueryValue(Collections.singleton(getTypeName()));
+        this.typeQryStr        = AtlasAttribute.escapeIndexQueryValue(Collections.singleton(getTypeName()), true);
     }
 
     /**
@@ -81,7 +81,7 @@ public class AtlasClassificationType extends AtlasStructType {
         super(classificationDef);
 
         this.classificationDef = classificationDef;
-        this.typeQryStr        = AtlasAttribute.escapeIndexQueryValue(Collections.singleton(getTypeName()));
+        this.typeQryStr        = AtlasAttribute.escapeIndexQueryValue(Collections.singleton(getTypeName()), true);
 
         resolveReferences(typeRegistry);
     }
@@ -264,7 +264,7 @@ public class AtlasClassificationType extends AtlasStructType {
 
     public String getTypeAndAllSubTypesQryStr() {
         if (StringUtils.isEmpty(typeAndAllSubTypesQryStr)) {
-            typeAndAllSubTypesQryStr = AtlasAttribute.escapeIndexQueryValue(typeAndAllSubTypes);
+            typeAndAllSubTypesQryStr = AtlasAttribute.escapeIndexQueryValue(typeAndAllSubTypes, true);
         }
 
         return typeAndAllSubTypesQryStr;
