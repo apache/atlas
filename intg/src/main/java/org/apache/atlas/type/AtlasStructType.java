@@ -936,6 +936,10 @@ public class AtlasStructType extends AtlasType {
         }
 
         public static String escapeIndexQueryValue(Collection<String> values) {
+            return escapeIndexQueryValue(values, false);
+        }
+
+        public static String escapeIndexQueryValue(Collection<String> values, boolean allowWildcard) {
             StringBuilder sb = new StringBuilder();
 
             sb.append(BRACE_OPEN_CHAR);
@@ -943,10 +947,10 @@ public class AtlasStructType extends AtlasType {
             if (CollectionUtils.isNotEmpty(values)) {
                 Iterator<String> iter = values.iterator();
 
-                sb.append(escapeIndexQueryValue(iter.next()));
+                sb.append(escapeIndexQueryValue(iter.next(), allowWildcard));
 
                 while (iter.hasNext()) {
-                    sb.append(SPACE_CHAR).append(escapeIndexQueryValue(iter.next()));
+                    sb.append(SPACE_CHAR).append(escapeIndexQueryValue(iter.next(), allowWildcard));
                 }
             }
 
@@ -956,24 +960,107 @@ public class AtlasStructType extends AtlasType {
         }
 
         public static String escapeIndexQueryValue(String value) {
-            String ret = value;
+            return escapeIndexQueryValue(value, false);
+        }
 
-            if (StringUtils.containsAny(value, IDX_QRY_OFFENDING_CHARS)) {
-                boolean isQuoteAtStart = value.charAt(0) == DOUBLE_QUOTE_CHAR;
-                boolean isQuoteAtEnd   = value.charAt(value.length() - 1) == DOUBLE_QUOTE_CHAR;
+        public static String escapeIndexQueryValue(String value, boolean allowWildcard) {
+            String  ret        = value;
+            boolean quoteValue = false;
 
-                if (!isQuoteAtStart) {
-                    if (!isQuoteAtEnd) {
-                        ret = DOUBLE_QUOTE_CHAR + value + DOUBLE_QUOTE_CHAR;
-                    } else {
-                        ret = DOUBLE_QUOTE_CHAR + value;
+            if (hasIndexQueryEscapeChar(value)) {
+                StringBuilder sb = new StringBuilder();
+
+                for (int i = 0; i < value.length(); i++) {
+                    char c = value.charAt(i);
+
+                    if (!(allowWildcard && c == '*') && isIndexQueryEscapeChar(c)) {
+                        sb.append('\\');
                     }
-                } else if (!isQuoteAtEnd) {
-                    ret = value + DOUBLE_QUOTE_CHAR;
+
+                    if (!quoteValue) {
+                        quoteValue = shouldQuoteIndexQueryForChar(c);
+                    }
+
+                    sb.append(c);
+                }
+
+                ret = sb.toString();
+            } else if (value != null) {
+                for (int i = 0; i < value.length(); i++) {
+                    if (shouldQuoteIndexQueryForChar(value.charAt(i))) {
+                        quoteValue = true;
+
+                        break;
+                    }
                 }
             }
 
+            if (quoteValue) {
+                boolean isQuoteAtStart = ret.charAt(0) == DOUBLE_QUOTE_CHAR;
+                boolean isQuoteAtEnd   = ret.charAt(ret.length() - 1) == DOUBLE_QUOTE_CHAR;
+
+                if (!isQuoteAtStart) {
+                    if (!isQuoteAtEnd) {
+                        ret = DOUBLE_QUOTE_CHAR + ret + DOUBLE_QUOTE_CHAR;
+                    } else {
+                        ret = DOUBLE_QUOTE_CHAR + ret;
+                    }
+                } else if (!isQuoteAtEnd) {
+                    ret = ret + DOUBLE_QUOTE_CHAR;
+                }
+
+            }
+
             return ret;
+        }
+
+        private static boolean hasIndexQueryEscapeChar(String value) {
+            if (value != null) {
+                for (int i = 0; i < value.length(); i++) {
+                    if (isIndexQueryEscapeChar(value.charAt(i))) {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private static boolean isIndexQueryEscapeChar(char c) {
+            switch (c) {
+                case '+':
+                case '-':
+                case '&':
+                case '|':
+                case '!':
+                case '(':
+                case ')':
+                case '{':
+                case '}':
+                case '[':
+                case ']':
+                case '^':
+                case '"':
+                case '~':
+                case '*':
+                case '?':
+                case ':':
+                case '\\':
+                case '/':
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static boolean shouldQuoteIndexQueryForChar(char c) {
+            switch (c) {
+                case '@':
+                case ' ':
+                    return true;
+            }
+
+            return false;
         }
 
         private String getRelationshipEdgeLabel(String relationshipLabel) {
@@ -1024,7 +1111,6 @@ public class AtlasStructType extends AtlasType {
                 new String[] {"%", "_p"}, //titan reserved characters
         };
 
-        private static final char[] IDX_QRY_OFFENDING_CHARS = { '@', '/', ' ', '-' };
         private static final char   BRACE_OPEN_CHAR         = '(';
         private static final char   BRACE_CLOSE_CHAR        = ')';
         private static final char   DOUBLE_QUOTE_CHAR       = '"';

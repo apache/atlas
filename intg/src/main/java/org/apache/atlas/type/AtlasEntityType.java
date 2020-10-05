@@ -100,7 +100,7 @@ public class AtlasEntityType extends AtlasStructType {
         super(entityDef);
 
         this.entityDef            = entityDef;
-        this.typeQryStr           = AtlasAttribute.escapeIndexQueryValue(Collections.singleton(getTypeName()));
+        this.typeQryStr           = AtlasAttribute.escapeIndexQueryValue(Collections.singleton(getTypeName()), true);
         this.displayTextAttribute = entityDef.getOption(AtlasEntityDef.OPTION_DISPLAY_TEXT_ATTRIBUTE);
     }
 
@@ -108,7 +108,7 @@ public class AtlasEntityType extends AtlasStructType {
         super(entityDef);
 
         this.entityDef            = entityDef;
-        this.typeQryStr           = AtlasAttribute.escapeIndexQueryValue(Collections.singleton(getTypeName()));
+        this.typeQryStr           = AtlasAttribute.escapeIndexQueryValue(Collections.singleton(getTypeName()), true);
         this.displayTextAttribute = entityDef.getOption(AtlasEntityDef.OPTION_DISPLAY_TEXT_ATTRIBUTE);
 
         resolveReferences(typeRegistry);
@@ -573,7 +573,7 @@ public class AtlasEntityType extends AtlasStructType {
 
     public String getTypeAndAllSubTypesQryStr() {
         if (StringUtils.isEmpty(typeAndAllSubTypesQryStr)) {
-            typeAndAllSubTypesQryStr = AtlasAttribute.escapeIndexQueryValue(typeAndAllSubTypes);
+            typeAndAllSubTypesQryStr = AtlasAttribute.escapeIndexQueryValue(typeAndAllSubTypes, true);
         }
 
         return typeAndAllSubTypesQryStr;
