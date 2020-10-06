@@ -46,7 +46,7 @@ define(['require', 'utils/Utils', 'lossless-json', 'marionette', 'backgrid', 'as
                 converters: _.extend($.ajaxSettings.converters, {
                     "text json": function(data) {
                         try {
-                            return LosslessJSON.parse(data, function(k, v) { return (v.isLosslessNumber) ? v.value : v });
+                            return LosslessJSON.parse(data, function(k, v) { try { return (v.isLosslessNumber) ? v.valueOf() : v } catch (err) { return v.value } });
                         } catch (err) {
                             return $.parseJSON(data);
                         }
