@@ -152,7 +152,7 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
                     that = this;
 
                 filters.rules = _.filter(rules, function(obj, key) {
-                    return obj.id != $(e.currentTarget).data("id");
+                    return (obj.id + key) != $(e.currentTarget).data("id");
                 });
                 if (filters) {
                     that.updateFilterOptions(filters, filtertype, isTag);

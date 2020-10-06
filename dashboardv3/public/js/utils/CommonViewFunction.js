@@ -405,9 +405,9 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                                 obj.value = obj.value + " (" + moment.tz(moment.tz.guess()).zoneAbbr() + ")";
                             }
                         }
-                        return '<div class="capsuleView"><span class="key">' + (Enums.systemAttributes[obj.id] ? Enums.systemAttributes[obj.id] : _.escape(obj.id)) + '</span><span class="operator">' + _.escape(obj.operator) + '</span><span class="value">' + (Enums[obj.id] ? Enums[obj.id][obj.value] : _.escape(obj.value)) + "</span><div class='fa fa-close clear-attr' data-type=" + type + " data-id=" + _.escape(obj.id) + "></div></div>";
+                        return '<div class="capsuleView"><span class="key">' + (Enums.systemAttributes[obj.id] ? Enums.systemAttributes[obj.id] : _.escape(obj.id)) + '</span><span class="operator">' + _.escape(obj.operator) + '</span><span class="value">' + (Enums[obj.id] ? Enums[obj.id][obj.value] : _.escape(obj.value)) + '</span><div class="fa fa-close clear-attr" data-type=' + type + ' data-id="' + _.escape(obj.id) + key + '"></div></div>';
                     }
-                    return '<span class="key">' + (Enums.systemAttributes[obj.id] ? Enums.systemAttributes[obj.id] : _.escape(obj.id)) + '</span><span class="operator">' + _.escape(obj.operator) + '</span><span class="value">' + (Enums[obj.id] ? Enums[obj.id][obj.value] : _.escape(obj.value)) + "</span>";
+                    return '<span class="key">' + (Enums.systemAttributes[obj.id] ? Enums.systemAttributes[obj.id] : _.escape(obj.id)) + '</span><span class="operator">' + _.escape(obj.operator) + '</span><span class="value">' + (Enums[obj.id] ? Enums[obj.id][obj.value] : _.escape(obj.value)) + '</span>';
                 }
             });
             return generatedQuery;
