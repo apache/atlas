@@ -384,7 +384,7 @@ define([
                     }
                 });
 
-                if (Globals.entityCreate && Utils.getUrlState.isSearchTab()) {
+                if (Utils.getUrlState.isSearchTab()) {
                     App.rNContent.show(new SearchDetailLayoutView(_.extend({ 'value': paramObj, 'initialView': true }, options)));
                 } else {
                     if (App.rNContent.currentView) {

@@ -69,13 +69,14 @@
             </div>
             <div id="r_searchResultTableLayoutView">
                 {{#if isSearchTab}}<h1><b>{{searchType}}</b></h1>{{/if}}
-                {{#if entityCreate}}
                 <div class="entityLink" style="display:none">
-                    <p class="entityLink">Search Atlas for existing entities or
+                    <p class="entityLink">Search Atlas for existing entities
+                        {{#if entityCreate}}
+                        or
                         <a href="javascript:void(0)" data-id='createEntity'> create new entity </a>
+                        {{/if}}
                     </p>
                 </div>
-                {{/if}}
             </div>
             <div class="pagination-box searach-result-pagination row" style="display: none">
                 <div class="col-sm-4">

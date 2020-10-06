@@ -16,11 +16,11 @@
 -->
 <div class="f-right clearfix" data-id="resizable" style="transition: width ease 0.2s;padding-bottom: 41px;">
     <div class="search-container center">
+        {{#if entityCreate}}
         <div class="create-entity">
-            {{#if entityCreate}}
             <div class="inline"><button style="margin-top: 10px" class="btn btn-action btn-sm" data-id="createNewEntity"><i class="fa fa-plus"></i>&nbsp;Create Entity</button></div>
-            {{/if}}
         </div>
+        {{/if}}
         <div class="default-global-search row group-box">
             <div id="r_globalSearchLayoutView" class="global-search-container col-sm-12"></div>
         </div>
