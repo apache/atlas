@@ -206,13 +206,6 @@ define(['require',
                             if (target.children('div').find('a').text() === tag) {
                                 target.addClass('active');
                                 target.parents('ul').addClass('show').removeClass('hide'); // Don't use toggle
-                                if (this.createTag || !manual) {
-                                    if (target.offset()) {
-                                        $('#sidebar-wrapper').animate({
-                                            scrollTop: target.offset().top - 100
-                                        }, 500);
-                                    }
-                                }
                                 return false;
                             }
                         });
