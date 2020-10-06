@@ -221,8 +221,10 @@ define(['require',
                             $tree.jstree('activate_node', obj.guid);
                         }
                     } else {
-                        setDefaultSelector();
-                        $tree.jstree('activate_node', that.glossary.selectedItem.guid);
+                        if (that.glossaryCollection.fullCollection.length) {
+                            setDefaultSelector();
+                            $tree.jstree('activate_node', that.glossary.selectedItem.guid);
+                        }
                     }
                     this.query[this.viewType] = _.extend(obj, _.pick(this.glossary.selectedItem, 'model', 'guid', 'gType', 'type'), { "viewType": this.viewType, "isNodeNotFoundAtLoad": this.query[this.viewType].isNodeNotFoundAtLoad });
                     var url = _.isEmpty(this.glossary.selectedItem) ? '#!/glossary' : '#!/glossary/' + this.glossary.selectedItem.guid;
