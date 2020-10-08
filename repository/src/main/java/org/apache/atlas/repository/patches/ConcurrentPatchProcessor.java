@@ -204,10 +204,6 @@ public abstract class ConcurrentPatchProcessor {
                 return;
             }
 
-            if (AtlasGraphUtilsV2.getState(vertex) != AtlasEntity.Status.ACTIVE) {
-                return;
-            }
-
             String          typeName   = AtlasGraphUtilsV2.getTypeName(vertex);
             AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
             if (entityType == null) {
