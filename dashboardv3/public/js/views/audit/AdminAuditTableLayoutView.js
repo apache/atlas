@@ -127,19 +127,6 @@ define(['require',
                 that.ui.attrFilter.find('.fa-angle-right').toggleClass('fa-angle-down');
                 that.$('.attribute-filter-container, .attr-filter-overlay').toggleClass('hide');
             },
-            getAttributes: function(options) {
-                var adminAttributes = [];
-                if (options.isFilter) {
-                    _.each(options.isFilter, function(adminFilter) {
-                        adminAttributes.push({
-                            "attributeName": adminFilter.id,
-                            "operator": adminFilter.operator,
-                            "attributeValue": (adminFilter.type == "date" && options.isDateParsed) ? Date.parse(adminFilter.value).toString() : adminFilter.value
-                        })
-                    })
-                }
-                return adminAttributes;
-            },
             onClickAttrFilter: function() {
                 var that = this;
                 this.ui.adminRegion.show();
@@ -154,6 +141,7 @@ define(['require',
                 if (queryBuilderRef.data("queryBuilder")) {
                     var queryBuilder = queryBuilderRef.queryBuilder("getRules");
                     if (queryBuilder) {
+                        that.ruleUrl = that.searchTableFilters["adminAttrFilters"] = CommonViewFunction.attributeFilter.generateUrl({ value: queryBuilder, formatedDateToLong: true });
                         that.isFilters = queryBuilder.rules.length ? queryBuilder.rules : null;
                     } else {
                         isFilterValidate = false
@@ -167,24 +155,8 @@ define(['require',
             },
             getAdminCollection: function(option) {
                 var that = this,
-                    options = {
-                        isDateParsed: true,
-                        isFilter: this.isFilters
-                    },
-                    adminParam = {
-                        condition: "AND",
-                        criterion: that.getAttributes(options)
-                    };
-                options.isDateParsed = false;
-                if (this.isFilters) {
-                    var auditQueryParam = {
-                        condition: "AND",
-                        criterion: that.getAttributes(options)
-                    };
-                    that.searchTableFilters["adminAttrFilters"] = CommonViewFunction.attributeFilter.generateUrl({ value: auditQueryParam, formatedDateToLong: true });
-                }
-
-                $.extend(that.entityCollection.queryParams, { auditFilters: that.isFilters ? adminParam : null });
+                    auditFilters = CommonViewFunction.attributeFilter.generateAPIObj(that.ruleUrl);
+                $.extend(that.entityCollection.queryParams, { auditFilters: that.isFilters ? auditFilters : null });
                 var apiObj = {
                     sort: false,
                     data: that.entityCollection.queryParams,

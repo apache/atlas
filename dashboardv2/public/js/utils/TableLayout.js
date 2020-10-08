@@ -459,6 +459,7 @@ define(['require',
                 this.activePage = Math.round(this.pageTo / this.limit);
                 this.ui.activePage.attr('title', "Page " + this.activePage);
                 this.ui.activePage.text(this.activePage);
+                this.ui.showPage.val(this.limit).trigger('change', { "skipViewChange": true });
             },
 
             /**
