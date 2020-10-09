@@ -19,6 +19,7 @@
 package org.apache.atlas.web.resources;
 
 
+import org.apache.atlas.AtlasClientV2;
 import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.impexp.AtlasExportResult;
@@ -82,6 +83,17 @@ public class AdminExportImportTestIT extends BaseResourceIT {
         ZipSource zs = new ZipSource(exportedStream);
         assertNotNull(zs.getExportResult());
         assertTrue(zs.getCreationOrder().size() >= EXPECTED_CREATION_ORDER_SIZE, "expected creationOrderSize > " + EXPECTED_CREATION_ORDER_SIZE + ", but found " + zs.getCreationOrder().size());
+    }
+
+    @Test
+    public void unAuthExportData() throws IOException {
+        AtlasClientV2 unAuthClient = new AtlasClientV2(atlasUrls, new String[]{"admin", "wr0ng_pa55w0rd"});
+        AtlasExportRequest request = TestResourceFileUtils.readObjectFromJson(".", EXPORT_REQUEST_FILE, AtlasExportRequest.class);
+        try {
+            InputStream exportedStream = unAuthClient.exportData(request);
+        } catch(AtlasServiceException e) {
+            assertNotNull(e.getStatus(), "expected server error code in the status");
+        }
     }
 
     private void performImport(String fileToImport, int expectedProcessedEntitiesCount) throws AtlasServiceException {
