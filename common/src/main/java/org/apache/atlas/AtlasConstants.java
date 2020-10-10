@@ -26,6 +26,7 @@ public final class AtlasConstants {
     }
 
     public static final String CLUSTER_NAME_KEY              = "atlas.cluster.name";
+    public static final String METADATA_NAMESPACE_KEY        = "atlas.metadata.namespace";
     public static final String DEFAULT_CLUSTER_NAME          = "primary";
     public static final String SYSTEM_PROPERTY_APP_PORT      = "atlas.app.port";
     public static final String ATLAS_REST_ADDRESS_KEY        = "atlas.rest.address";
