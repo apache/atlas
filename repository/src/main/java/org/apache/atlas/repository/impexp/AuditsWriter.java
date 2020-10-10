@@ -120,13 +120,17 @@ public class AuditsWriter {
     }
 
     public static String getCurrentClusterName() {
+        String ret = StringUtils.EMPTY;
         try {
-            return ApplicationProperties.get().getString(AtlasConstants.CLUSTER_NAME_KEY, CLUSTER_NAME_DEFAULT);
+            ret = ApplicationProperties.get().getString(AtlasConstants.METADATA_NAMESPACE_KEY, StringUtils.EMPTY);
+            if (StringUtils.isEmpty(ret)) {
+                ret = ApplicationProperties.get().getString(AtlasConstants.CLUSTER_NAME_KEY, CLUSTER_NAME_DEFAULT);
+            }
         } catch (AtlasException e) {
             LOG.error("getCurrentClusterName", e);
         }
 
-        return StringUtils.EMPTY;
+        return ret;
     }
 
     static String getServerNameFromFullName(String fullName) {
