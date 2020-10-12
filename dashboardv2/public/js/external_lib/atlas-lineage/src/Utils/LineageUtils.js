@@ -374,7 +374,7 @@ const LineageUtils = {
         reader.addEventListener("load", () => callback(reader.result));
         reader.readAsDataURL(file);
     },
-    imgShapeRender: function (parent, bbox, node, { dagreD3, defsEl, imgBasePath, guid }) {
+    imgShapeRender: function (parent, bbox, node, { dagreD3, defsEl, imgBasePath, guid, isRankdirToBottom }) {
         var that = this,
             viewGuid = guid,
             imageIconPath = this.getEntityIconPath({ entityData: node, imgBasePath }),
@@ -391,7 +391,7 @@ const LineageUtils = {
         var shapeSvg = parent
             .append("circle")
             .attr("fill", "url(#img_" + imgName + ")")
-            .attr("r", "24px")
+            .attr("r", isRankdirToBottom ? "30px" : "24px")
             .attr("data-stroke", node.id)
             .attr("stroke-width", "2px")
             .attr("class", "nodeImage " + (currentNode ? "currentNode" : node.isProcess ? "process" : "node"));
@@ -478,8 +478,8 @@ const LineageUtils = {
                         });
                     }
                 })
-                .attr("x", "4")
-                .attr("y", currentNode ? "3" : "4")
+                .attr("x", isRankdirToBottom ? "11" : "4")
+                .attr("y", isRankdirToBottom ? "20" : currentNode ? "3" : "4")
                 .attr("width", "40")
                 .attr("height", "40");
         }

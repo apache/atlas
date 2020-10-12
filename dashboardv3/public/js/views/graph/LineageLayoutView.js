@@ -134,13 +134,13 @@ define(['require',
             },
             onShow: function() {
                 this.$('.fontLoader').show();
-                this.$el.resizable({
-                    handles: ' s',
-                    minHeight: 375,
-                    stop: function(event, ui) {
-                        ui.element.height(($(this).height()));
-                    },
-                });
+                // this.$el.resizable({
+                //     handles: ' s',
+                //     minHeight: 375,
+                //     stop: function(event, ui) {
+                //         ui.element.height(($(this).height()));
+                //     },
+                // });
             },
             onClickLineageFullscreenToggler: function(e) {
                 var icon = $(e.currentTarget).find('i'),
@@ -152,6 +152,11 @@ define(['require',
                     icon.parent('button').attr("data-original-title", "Default View");
                 }
                 panel.toggleClass('fullscreen-mode');
+                var node = this.$("svg").parent()[0].getBoundingClientRect();
+                this.LineageHelperRef.updateOptions({
+                    width: node.width,
+                    height: node.height
+                });
             },
             onCheckUnwantedEntity: function(e) {
                 var that = this;
@@ -210,6 +215,8 @@ define(['require',
             },
             onClickResetLineage: function() {
                 this.LineageHelperRef.refresh();
+                this.searchNodeObj.selectedNode = "";
+                this.ui.lineageTypeSearch.data({ refresh: true }).val("").trigger("change");
             },
             onClickSaveSvg: function(e, a) {
                 this.LineageHelperRef.exportLineage();
@@ -249,10 +256,6 @@ define(['require',
                 })
             },
             createGraph: function(data) {
-                // if (_.isEmpty(this.g._nodes)) {
-                //     this.$('svg').html('<text x="50%" y="50%" alignment-baseline="middle" text-anchor="middle">No relations to display</text>');
-                //     return;
-                // }
                 var that = this;
                 $('.resizeGraph').css("height", this.$('.svg').height() + "px");
 
@@ -364,9 +367,13 @@ define(['require',
                 }).on('change.select2', function(e) {
                     e.stopPropagation();
                     e.stopImmediatePropagation();
-                    var selectedNode = $('[data-id="typeSearch"]').val();
-                    that.searchNodeObj.selectedNode = selectedNode;
-                    that.LineageHelperRef.searchNode({ guid: selectedNode });
+                    if (!that.ui.lineageTypeSearch.data("refresh")) {
+                        var selectedNode = $('[data-id="typeSearch"]').val();
+                        that.searchNodeObj.selectedNode = selectedNode;
+                        that.LineageHelperRef.searchNode({ guid: selectedNode });
+                    } else {
+                        that.ui.lineageTypeSearch.data("refresh", false);
+                    }
                 });
                 if (this.searchNodeObj.selectedNode) {
                     this.ui.lineageTypeSearch.val(this.searchNodeObj.selectedNode);
