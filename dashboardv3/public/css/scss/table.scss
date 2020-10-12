@@ -41,6 +41,7 @@ tr.empty {
 }
 
 .entity-detail-table,
+.type-node-details,
 .relationship-detail-table {
     position: relative;
 
@@ -62,6 +63,26 @@ tr.empty {
         th:nth-child(1),
         td:nth-child(1) {
             width: 20%;
+        }
+    }
+}
+
+.type-node-details {
+    .header {
+        .pretty.p-switch .state:before {
+            border: 1px solid white;
+        }
+
+        .pretty.p-switch .state label:after {
+            background-color: white !important;
+        }
+
+        .pretty.p-switch.p-fill input:checked~.state label:after {
+            background-color: #4a90e2 !important;
+        }
+
+        .pretty.p-switch.p-fill input:checked~.state.p-primary:before {
+            background-color: white !important;
         }
     }
 }
@@ -96,6 +117,14 @@ tr.empty {
             &:before {
                 content: "\f0dc";
             }
+        }
+    }
+
+    .debuggging-table-header {
+        padding-right: 0px !important;
+
+        button {
+            float: right;
         }
     }
 }

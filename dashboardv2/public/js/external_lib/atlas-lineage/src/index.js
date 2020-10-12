@@ -26,6 +26,7 @@ import "./styles/style.scss";
 
 export default class LineageHelper {
     constructor(options) {
+        this.options = {};
         this._updateOptions(options);
         const { el, manualTrigger = false } = this.options;
         if (el === undefined) {
@@ -33,6 +34,7 @@ export default class LineageHelper {
         }
         this.initReturnObj = {
             init: (arg) => this.init(arg),
+            updateOptions: (options) => this._updateAllOptions(options),
             createGraph: (opt = {}) => this._createGraph(this.options, this.graphOptions, opt),
             clear: (arg) => this.clear(arg),
             refresh: (arg) => this.refresh(arg),
@@ -78,12 +80,27 @@ export default class LineageHelper {
         return this.initReturnObj;
     }
     /**
+     * [updateAllOptions]
+     * @param  {[type]}
+     * @return {[type]}
+     */
+    _updateAllOptions(options) {
+        Object.assign(this.options, options);
+        var svgRect = this.svg.node().getBoundingClientRect();
+        this.graphOptions.width = this.options.width || svgRect.width;
+        this.graphOptions.height = this.options.height || svgRect.height;
+        const { svg, width, height, guid } = this.graphOptions;
+        const { fitToScreen } = this.options;
+        svg.select("g").node().removeAttribute("transform");
+        svg.attr("viewBox", "0 0 " + width + " " + height).attr("enable-background", "new 0 0 " + width + " " + height);
+        this.centerAlign({ fitToScreen, guid });
+    }
+    /**
      * [updateOptions get the options from user and appedn add it in this,option context]
      * @param  {[Object]} options [lib options from user]
      * @return {[null]}         [null]
      */
     _updateOptions(options) {
-        this.options = {};
         Object.assign(this.options, { filterObj: { isProcessHideCheck: false, isDeletedEntityHideCheck: false } }, options);
     }
     /**
@@ -200,7 +217,7 @@ export default class LineageHelper {
             if (node && node.attributes) {
                 downloadFileName = `${node.attributes.qualifiedName || node.attributes.name || "lineage_export"}.png`;
             } else {
-                downloadFileName = "lineage_export.png";
+                downloadFileName = "export.png";
             }
         }
 
@@ -258,6 +275,7 @@ export default class LineageHelper {
         this.svg = select(el);
 
         if (!(el instanceof SVGElement)) {
+            this.svg.selectAll("*").remove();
             this.svg = this.svg
                 .append("svg")
                 .attr("xmlns", "http://www.w3.org/2000/svg")
@@ -385,7 +403,19 @@ export default class LineageHelper {
      * @return {[type]}                  [description]
      */
     _createGraph(
-        { data = {}, imgBasePath, isShowTooltip, isShowHoverPath, onLabelClick, onPathClick, onNodeClick, zoom, fitToScreen },
+        {
+            data = {},
+            imgBasePath,
+            isShowTooltip,
+            isShowHoverPath,
+            onLabelClick,
+            onPathClick,
+            onNodeClick,
+            zoom,
+            fitToScreen,
+            getToolTipContent,
+            toolTipTitle
+        },
         graphOptions,
         { refresh }
     ) {
@@ -393,7 +423,8 @@ export default class LineageHelper {
             this.options.beforeRender();
         }
         const that = this,
-            { svg, g, width, height } = graphOptions;
+            { svg, g, width, height } = graphOptions,
+            isRankdirToBottom = this.options.dagreOptions && this.options.dagreOptions.rankdir === "tb";
 
         if (svg instanceof selection === false) {
             throw new Error("svg is not initialized or something went wrong while creatig graph instance");
@@ -428,6 +459,7 @@ export default class LineageHelper {
         render.shapes().img = function () {
             return LineageUtils.imgShapeRender(...arguments, {
                 ...graphOptions,
+                isRankdirToBottom: isRankdirToBottom,
                 imgBasePath: that._getValueFromUser(imgBasePath),
                 defsEl
             });
@@ -437,19 +469,26 @@ export default class LineageHelper {
             .attr("class", "d3-tip")
             .offset([10, 0])
             .html((d) => {
-                var value = g.node(d);
-                var htmlStr = "";
-                if (value.id !== this.guid) {
-                    htmlStr = "<h5 style='text-align: center;'>" + (value.isLineage ? "Lineage" : "Impact") + "</h5>";
+                if (getToolTipContent && typeof getToolTipContent === "function") {
+                    return getToolTipContent(d, g.node(d));
+                } else {
+                    var value = g.node(d);
+                    var htmlStr = "";
+                    if (toolTipTitle) {
+                        htmlStr = "<h5 style='text-align: center;'>" + toolTipTitle + "</h5>";
+                    } else if (value.id !== this.guid) {
+                        htmlStr = "<h5 style='text-align: center;'>" + (value.isLineage ? "Lineage" : "Impact") + "</h5>";
+                    }
+
+                    htmlStr += "<h5 class='text-center'><span style='color:#359f89'>" + value.toolTipLabel + "</span></h5> ";
+                    if (value.typeName) {
+                        htmlStr += "<h5 class='text-center'><span>(" + value.typeName + ")</span></h5> ";
+                    }
+                    if (value.queryText) {
+                        htmlStr += "<h5>Query: <span style='color:#359f89'>" + value.queryText + "</span></h5> ";
+                    }
+                    return "<div class='tip-inner-scroll'>" + htmlStr + "</div>";
                 }
-                htmlStr += "<h5 class='text-center'><span style='color:#359f89'>" + value.toolTipLabel + "</span></h5> ";
-                if (value.typeName) {
-                    htmlStr += "<h5 class='text-center'><span>(" + value.typeName + ")</span></h5> ";
-                }
-                if (value.queryText) {
-                    htmlStr += "<h5>Query: <span style='color:#359f89'>" + value.queryText + "</span></h5> ";
-                }
-                return "<div class='tip-inner-scroll'>" + htmlStr + "</div>";
             });
 
         svg.call(tooltip);
@@ -463,7 +502,12 @@ export default class LineageHelper {
         //change text postion
         svgGroupEl
             .selectAll("g.nodes g.label")
-            .attr("transform", "translate(2,-35)")
+            .attr("transform", () => {
+                if (isRankdirToBottom) {
+                    return "translate(2,-20)";
+                }
+                return "translate(2,-35)";
+            })
             .on("mouseenter", function (d) {
                 event.preventDefault();
                 select(this).classed("highlight", true);

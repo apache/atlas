@@ -79,6 +79,8 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             sortBy = options.sortBy,
             valueObject = options.valueObject,
             extractJSON = options.extractJSON,
+            getArrayOfStringElement = options.getArrayOfStringElement,
+            getArrayOfStringFormat = options.getArrayOfStringFormat,
             isTable = _.isUndefined(options.isTable) ? true : options.isTable,
             attributeDefs = options.attributeDefs,
             formatIntVal = options.formatIntVal,
@@ -108,6 +110,9 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 return "N/A";
             },
             getValue = function(val, key) {
+                if (options && options.getValue) {
+                    val = options.getValue(val, key);
+                }
                 if (!_.isUndefined(val) && !_.isNull(val)) {
                     if ((_.isNumber(val) || !_.isNaN(parseInt(val))) && formatIntVal) {
                         return numberFormat(val);
@@ -185,7 +190,12 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                     if (_.isString(inputOutputField) || _.isBoolean(inputOutputField) || _.isNumber(inputOutputField)) {
                         var tempVarfor$check = inputOutputField.toString();
                         if (tempVarfor$check.indexOf("$") == -1) {
-                            valueOfArray.push('<span class="json-string">' + getValue(inputOutputField, key) + '</span>');
+                            var tmpVal = getValue(inputOutputField, key)
+                            if (getArrayOfStringElement) {
+                                valueOfArray.push(getArrayOfStringElement(tmpVal, key));
+                            } else {
+                                valueOfArray.push('<span class="json-string">' + tmpVal + '</span>');
+                            }
                         }
                     } else if (_.isObject(inputOutputField) && !id) {
                         var attributesList = inputOutputField;
@@ -251,7 +261,11 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                     }
                 }
                 if (valueOfArray.length) {
-                    subLink = valueOfArray.join(', ');
+                    if (getArrayOfStringFormat) {
+                        subLink = getArrayOfStringFormat(valueOfArray, key);
+                    } else {
+                        subLink = valueOfArray.join(', ');
+                    }
                 }
                 return subLink === "" ? getEmptyString(key) : subLink;
             }
@@ -297,12 +311,17 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 if (_.isObject(valueObject[key]) && !_.isEmpty(valueObject[key])) {
                     var matchedLinkString = val.match(/href|value-loader\w*/g),
                         matchedJson = val.match(/json-value|json-string\w*/g),
+                        matchedKey = val.match(/json-key\w*/g),
                         isMatchLinkStringIsSingle = matchedLinkString && matchedLinkString.length <= 5,
                         isMatchJSONStringIsSingle = matchedJson && matchedJson.length == 1,
                         expandCollapseButton = "";
-                    if ((matchedJson && !isMatchJSONStringIsSingle) || (matchedLinkString && !isMatchLinkStringIsSingle)) {
-                        expandCollapseButton = '<button class="expand-collapse-button"><i class="fa"></i></button>';
-                        htmlTag = '<pre class="shrink code-block ' + (isMatchJSONStringIsSingle ? 'fixed-height' : '') + '">' + expandCollapseButton + '<code>' + val + '</code></pre>';
+                    if ((matchedJson) || (matchedLinkString)) {
+                        var className = "code-block fixed-height";
+                        if (!isMatchJSONStringIsSingle) {
+                            className += " shrink";
+                            expandCollapseButton = '<button class="expand-collapse-button"><i class="fa"></i></button>';
+                        }
+                        htmlTag = '<pre class="' + className + '">' + expandCollapseButton + '<code>' + val + '</code></pre>';
                     }
                 }
                 table += '<tr class="' + appendClass + '"><td>' + (_.escape(key) + listCount) + '</td><td>' + htmlTag + '</td></tr>';

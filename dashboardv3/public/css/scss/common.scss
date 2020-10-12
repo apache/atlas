@@ -180,6 +180,11 @@ pre {
 
         .json-string {
             color: olive;
+
+            &.cursor {
+                cursor: pointer;
+                text-decoration: underline;
+            }
         }
     }
 
@@ -191,6 +196,11 @@ pre {
 .panel-body .memory-details {
     pre {
         &.code-block {
+            &.fixed-height {
+                max-height: 112px;
+                overflow: auto;
+            }
+
             &.shrink {
                 height: 144px;
 
