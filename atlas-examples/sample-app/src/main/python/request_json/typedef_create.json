@@ -1,0 +1,419 @@
+{
+  "enumDefs": [
+    {
+      "category": "ENUM",
+      "name": "tableType",
+      "description": "tableType",
+      "elementDefs": [
+        {
+          "value": "MANAGED",
+          "ordinal": 1
+        },
+        {
+          "value": "EXTERNAL",
+          "ordinal": 2
+        }
+      ]
+    }
+  ],
+  "structDefs": [
+    {
+      "category": "STRUCT",
+      "name": "serdeType",
+      "typeVersion": "1.0",
+      "attributeDefs": [
+        {
+          "name": "name",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isOptional": false,
+          "isUnique": false,
+          "isIndexable": true
+        },
+        {
+          "name": "serde",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isOptional": false,
+          "isUnique": false,
+          "isIndexable": true
+        }
+      ]
+    }
+  ],
+  "classificationDefs": [
+    {
+      "category": "CLASSIFICATION",
+      "name": "classification",
+      "typeVersion": "1.0",
+      "attributeDefs": [
+        {
+          "name": "tag",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isOptional": false,
+          "isUnique": false,
+          "isIndexable": true
+        }
+      ]
+    },
+    {
+      "category": "CLASSIFICATION",
+      "name": "sample_pii_Tag",
+      "typeVersion": "1.0"
+    },
+    {
+      "category": "CLASSIFICATION",
+      "name": "sample_finance_Tag",
+      "typeVersion": "1.0"
+    },
+    {
+      "category": "CLASSIFICATION",
+      "name": "Metric",
+      "typeVersion": "1.0"
+    }
+  ],
+  "entityDefs": [
+    {
+      "category": "ENTITY",
+      "name": "sample_db_type",
+      "typeVersion": "1.0",
+      "attributeDefs": [
+        {
+          "name": "locationUri",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isOptional": true,
+          "isUnique": false,
+          "isIndexable": false
+        },
+        {
+          "name": "createTime",
+          "typeName": "long",
+          "cardinality": "SINGLE",
+          "isOptional": true,
+          "isUnique": false,
+          "isIndexable": false
+        },
+        {
+          "name": "randomTable",
+          "typeName": "array<sample_table_type>",
+          "cardinality": "SET",
+          "isOptional": true,
+          "isUnique": false,
+          "isIndexable": false
+        }
+      ],
+      "superTypes": [
+        "DataSet"
+      ]
+    },
+    {
+      "category": "ENTITY",
+      "name": "sample_table_type",
+      "typeVersion": "1.0",
+      "attributeDefs": [
+        {
+          "name": "createTime",
+          "typeName": "long",
+          "cardinality": "SINGLE",
+          "isOptional": true,
+          "isUnique": false,
+          "isIndexable": false
+        },
+        {
+          "name": "lastAccessTime",
+          "typeName": "date",
+          "cardinality": "SINGLE",
+          "isOptional": true,
+          "isUnique": false,
+          "isIndexable": false
+        },
+        {
+          "name": "temporary",
+          "typeName": "boolean",
+          "cardinality": "SINGLE",
+          "isOptional": true,
+          "isUnique": false,
+          "isIndexable": false
+        },
+        {
+          "name": "db",
+          "typeName": "sample_db_type",
+          "cardinality": "SINGLE",
+          "isOptional": true,
+          "isUnique": false,
+          "isIndexable": false
+        },
+        {
+          "name": "columns",
+          "typeName": "array<sample_column_type>",
+          "cardinality": "SINGLE",
+          "isOptional": true,
+          "isUnique": false,
+          "isIndexable": false
+        },
+        {
+          "name": "tableType",
+          "typeName": "tableType",
+          "cardinality": "SINGLE",
+          "isOptional": true,
+          "isUnique": false,
+          "isIndexable": false
+        },
+        {
+          "name": "serde1",
+          "typeName": "serdeType",
+          "cardinality": "SINGLE",
+          "isOptional": true,
+          "isUnique": false,
+          "isIndexable": false
+        },
+        {
+          "name": "serde2",
+          "typeName": "serdeType",
+          "cardinality": "SINGLE",
+          "isOptional": true,
+          "isUnique": false,
+          "isIndexable": false
+        }
+      ],
+      "superTypes": [
+        "DataSet"
+      ]
+    },
+    {
+      "category": "ENTITY",
+      "name": "sample_column_type",
+      "typeVersion": "1.0",
+      "attributeDefs": [
+        {
+          "name": "dataType",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isOptional": true,
+          "isUnique": false,
+          "isIndexable": false
+        },
+        {
+          "name": "comment",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isOptional": true,
+          "isUnique": false,
+          "isIndexable": false
+        }
+      ],
+      "superTypes": [
+        "DataSet"
+      ]
+    },
+    {
+      "category": "ENTITY",
+      "name": "sample_process_type",
+      "typeVersion": "1.0",
+      "attributeDefs": [
+        {
+          "name": "userName",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isOptional": true,
+          "isUnique": false,
+          "isIndexable": false
+        },
+        {
+          "name": "startTime",
+          "typeName": "long",
+          "cardinality": "SINGLE",
+          "isOptional": true,
+          "isUnique": false,
+          "isIndexable": false
+        },
+        {
+          "name": "endTime",
+          "typeName": "long",
+          "cardinality": "SINGLE",
+          "isOptional": true,
+          "isUnique": false,
+          "isIndexable": false
+        },
+        {
+          "name": "queryText",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isOptional": false,
+          "isUnique": false,
+          "isIndexable": true
+        },
+        {
+          "name": "queryPlan",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isOptional": false,
+          "isUnique": false,
+          "isIndexable": true
+        },
+        {
+          "name": "queryId",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isOptional": false,
+          "isUnique": false,
+          "isIndexable": true
+        },
+        {
+          "name": "queryGraph",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isOptional": false,
+          "isUnique": false,
+          "isIndexable": true
+        }
+      ],
+      "superTypes": [
+        "Process"
+      ]
+    }
+  ],
+  "relationshipDefs": [
+    {
+      "category": "RELATIONSHIP",
+      "name": "sample_Table_DB",
+      "description": "sample_Table_DB",
+      "typeVersion": "1.0",
+      "relationshipCategory": "AGGREGATION",
+      "propagateTags": "NONE",
+      "endDef1": {
+        "type": "sample_table_type",
+        "name": "db",
+        "cardinality": "SINGLE",
+        "isContainer": false,
+        "isLegacyAttribute": false
+      },
+      "endDef2": {
+        "type": "sample_db_type",
+        "name": "tables",
+        "cardinality": "SET",
+        "isContainer": true,
+        "isLegacyAttribute": false
+      }
+    },
+    {
+      "category": "RELATIONSHIP",
+      "name": "sample_Table_Columns",
+      "description": "sample_Table_Columns",
+      "typeVersion": "1.0",
+      "relationshipCategory": "COMPOSITION",
+      "propagateTags": "NONE",
+      "endDef1": {
+        "type": "sample_table_type",
+        "name": "columns",
+        "cardinality": "SET",
+        "isContainer": true,
+        "isLegacyAttribute": false
+      },
+      "endDef2": {
+        "type": "sample_column_type",
+        "name": "table",
+        "cardinality": "SINGLE",
+        "isContainer": false,
+        "isLegacyAttribute": false
+      }
+    }
+  ],
+  "businessMetadataDefs": [
+    {
+      "category": "BUSINESS_METADATA",
+      "name": "bmWithAllTypes",
+      "description": "description",
+      "typeVersion": "1.0",
+      "attributeDefs": [
+        {
+          "name": "attr1",
+          "typeName": "boolean",
+          "cardinality": "SINGLE",
+          "isOptional": true,
+          "isIndexable": false,
+          "includeInNotification": false,
+          "defaultValue": "",
+          "description": "description",
+          "searchWeight": 0,
+          "options": {
+            "applicableEntityTypes": "[\"sample_db_type\",\"sample_table_type\"]",
+            "maxStrLength": "20"
+          }
+        },
+        {
+          "name": "attr2",
+          "typeName": "byte",
+          "cardinality": "SINGLE",
+          "isOptional": true,
+          "isUnique": false,
+          "isIndexable": false,
+          "includeInNotification": false,
+          "defaultValue": "",
+          "description": "description",
+          "searchWeight": 0,
+          "options": {
+            "applicableEntityTypes": "[\"sample_db_type\",\"sample_table_type\"]",
+            "maxStrLength": "20"
+          }
+        },
+        {
+          "name": "attr8",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isOptional": true,
+          "isUnique": false,
+          "isIndexable": false,
+          "includeInNotification": false,
+          "defaultValue": "",
+          "description": "description",
+          "searchWeight": 0,
+          "options": {
+            "applicableEntityTypes": "[\"sample_db_type\",\"sample_table_type\"]",
+            "maxStrLength": "20"
+          }
+        }
+      ]
+    },
+    {
+      "category": "BUSINESS_METADATA",
+      "name": "bmWithAllTypesMV",
+      "description": "description",
+      "typeVersion": "1.0",
+      "attributeDefs": [
+        {
+          "name": "attr11",
+          "typeName": "array<boolean>",
+          "cardinality": "SINGLE",
+          "isOptional": true,
+          "isUnique": false,
+          "isIndexable": false,
+          "defaultValue": "",
+          "description": "description",
+          "searchWeight": 0,
+          "options": {
+            "applicableEntityTypes": "[\"sample_db_type\",\"sample_table_type\"]",
+            "maxStrLength": "20"
+          }
+        },
+        {
+          "name": "attr18",
+          "typeName": "array<string>",
+          "cardinality": "SINGLE",
+          "isOptional": true,
+          "isUnique": false,
+          "isIndexable": false,
+          "defaultValue": "",
+          "description": "description",
+          "searchWeight": 0,
+          "options": {
+            "applicableEntityTypes": "[\"sample_db_type\",\"sample_table_type\"]",
+            "maxStrLength": "20"
+          }
+        }
+      ]
+    }
+  ]
+}

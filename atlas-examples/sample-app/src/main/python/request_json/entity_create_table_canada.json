@@ -1,0 +1,124 @@
+{
+  "referredEntities": {
+    "-222736766326566": {
+      "typeName": "sample_column_type",
+      "attributes": {
+        "qualifiedName": "time_id@cl1",
+        "dataType": "int",
+        "name": "time_id",
+        "comment": "time id"
+      },
+      "guid": "-222736766326566",
+      "isIncomplete": false,
+      "provenanceType": 0,
+      "version": 0,
+      "relationshipAttributes": {
+        "table": {
+          "guid": "-222736766326569",
+          "typeName": "sample_table_type"
+        }
+      },
+      "classifications": [],
+      "proxy": false
+    },
+    "-222736766326567": {
+      "typeName": "sample_column_type",
+      "attributes": {
+        "qualifiedName": "customer_id@cl1",
+        "dataType": "int",
+        "name": "customer_id",
+        "comment": "customer id"
+      },
+      "guid": "-222736766326567",
+      "isIncomplete": false,
+      "provenanceType": 0,
+      "version": 0,
+      "relationshipAttributes": {
+        "table": {
+          "guid": "-222736766326569",
+          "typeName": "sample_table_type"
+        }
+      },
+      "classifications": [{
+        "typeName": "sample_pii_Tag",
+        "entityStatus": "ACTIVE"
+      }],
+      "proxy": false
+    },
+    "-222736766326568": {
+      "typeName": "sample_column_type",
+      "attributes": {
+        "qualifiedName": "company_id@cl1",
+        "dataType": "double",
+        "name": "company_id",
+        "comment": "company id"
+      },
+      "guid": "-222736766326568",
+      "isIncomplete": false,
+      "provenanceType": 0,
+      "version": 0,
+      "relationshipAttributes": {
+        "table": {
+          "guid": "-222736766326569",
+          "typeName": "sample_table_type"
+        }
+      },
+      "classifications": [{
+        "typeName": "sample_finance_Tag",
+        "entityStatus": "ACTIVE"
+      }],
+      "proxy": false
+    }
+  },
+  "entity": {
+    "typeName": "sample_table_type",
+    "attributes": {
+      "serde2": {
+        "typeName": "serdeType",
+        "attributes": {
+          "serde": "serde2",
+          "name": "serde2"
+        }
+      },
+      "tableType": "Managed",
+      "serde1": {
+        "typeName": "serdeType",
+        "attributes": {
+          "serde": "serde1",
+          "name": "serde1"
+        }
+      },
+      "lastAccessTime": "2014-07-11T08:00:00.000Z",
+      "level": 2,
+      "qualifiedName": "employee_table_entity_CANADA@cl1",
+      "name": "employee_table_entity_CANADA",
+      "description": "emp table",
+      "compressed": false
+    },
+    "guid": "-222736766326569",
+    "isIncomplete": false,
+    "provenanceType": 0,
+    "version": 0,
+    "relationshipAttributes": {
+      "columns": [{
+        "guid": "-222736766326566",
+        "typeName": "sample_column_type"
+      }, {
+        "guid": "-222736766326567",
+        "typeName": "sample_column_type"
+      }, {
+        "guid": "-222736766326568",
+        "typeName": "sample_column_type"
+      }],
+      "db": {
+        "guid": "c1e152c4-e40a-4bc9-a8a1-3c09d8d85f17",
+        "typeName": "sample_db_type"
+      }
+    },
+    "classifications": [{
+      "typeName": "Metric",
+      "entityStatus": "ACTIVE"
+    }],
+    "proxy": false
+  }
+}

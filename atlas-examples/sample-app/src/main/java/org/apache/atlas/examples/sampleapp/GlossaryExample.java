@@ -51,7 +51,7 @@ public class GlossaryExample {
 
         assert (extInfo != null);
 
-        SampleApp.log("extra info of Glossary is :- " + extInfo.getGuid() + " name is :- " + extInfo.getName() + " language is :- " + extInfo.getLanguage());
+        SampleApp.log("Glossary extended info: " + extInfo.getGuid() + "; name: " + extInfo.getName() + "; language: " + extInfo.getLanguage());
     }
 
     public void createGlossaryTerm() throws Exception {
