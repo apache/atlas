@@ -1,0 +1,37 @@
+{
+  "entity": {
+    "typeName": "sample_process_type",
+    "attributes": {
+      "queryGraph": "graph",
+      "qualifiedName": "employee_process_entity@cl1",
+      "name": "employee_process_entity",
+      "queryText": "create table as select ",
+      "description": "hive query for monthly avg salary",
+      "startTime": 1596855233685,
+      "queryPlan": "plan",
+      "operationType": "testOperation",
+      "endTime": 1596855243685,
+      "userName": "user ETL",
+      "queryId": "id"
+    },
+    "guid": "-222736766326574",
+    "isIncomplete": false,
+    "provenanceType": 0,
+    "version": 0,
+    "relationshipAttributes": {
+      "outputs": [{
+        "guid": "b0619fb9-b025-4348-8b8a-79e8faa0e789",
+        "typeName": "sample_table_type"
+      }],
+      "inputs": [{
+        "guid": "b49bb0fe-4714-4122-901a-9ac433a89ccd",
+        "typeName": "sample_table_type"
+      }]
+    },
+    "classifications": [{
+      "typeName": "classification",
+      "entityStatus": "ACTIVE"
+    }],
+    "proxy": false
+  }
+}

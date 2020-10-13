@@ -47,6 +47,10 @@ test-output
 
 #Python
 *.pyc
+**/build
+**/dist
+**/apache_atlas.egg-info
+.python-version
 
 # review board
 .reviewboardrc
