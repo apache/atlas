@@ -185,7 +185,7 @@ define(['require',
                             "type": "classification"
                         })
                     );
-                    this.ui.classification.find(".count").html("&nbsp;(" + _.numberFormatWithComa(tagsCount) + ")");
+                    this.ui.classification.find(".count").html("&nbsp;(" + _.numberFormatWithComma(tagsCount) + ")");
                     if (tagEntitiesKeys.length > this.DATA_MAX_LENGTH) {
                         this.closePanel({
                             el: this.ui.classification
@@ -218,7 +218,7 @@ define(['require',
                             if (type == "shell") {
                                 shellEntityCount += intVal
                             }
-                            intVal = _.numberFormatWithComa(intVal)
+                            intVal = _.numberFormatWithComma(intVal)
                             if (stats[key]) {
                                 stats[key][type] = intVal;
                             } else {
@@ -249,10 +249,10 @@ define(['require',
                             })),
                         })
                     );
-                    this.$('[data-id="activeEntity"]').html("&nbsp;(" + _.numberFormatWithComa(activeEntityCount) + ")");
-                    this.$('[data-id="deletedEntity"]').html("&nbsp;(" + _.numberFormatWithComa(deletedEntityCount) + ")");
-                    this.$('[data-id="shellEntity"]').html("&nbsp;(" + _.numberFormatWithComa(shellEntityCount) + ")");
-                    this.ui.entity.find(".count").html("&nbsp;(" + _.numberFormatWithComa(data.general.entityCount) + ")");
+                    this.$('[data-id="activeEntity"]').html("&nbsp;(" + _.numberFormatWithComma(activeEntityCount) + ")");
+                    this.$('[data-id="deletedEntity"]').html("&nbsp;(" + _.numberFormatWithComma(deletedEntityCount) + ")");
+                    this.$('[data-id="shellEntity"]').html("&nbsp;(" + _.numberFormatWithComma(shellEntityCount) + ")");
+                    this.ui.entity.find(".count").html("&nbsp;(" + _.numberFormatWithComma(data.general.entityCount) + ")");
                     if (statsKeys.length > this.DATA_MAX_LENGTH) {
                         this.closePanel({
                             el: this.ui.entity
@@ -320,7 +320,7 @@ define(['require',
                                     pickValueFrom = argument.key;
                                 }
                                 var returnVal = data.Notification[pickValueFrom];
-                                return returnVal ? _.numberFormatWithComa(returnVal) : 0;
+                                return returnVal ? _.numberFormatWithComma(returnVal) : 0;
                             }
                         })
                     );
@@ -400,9 +400,9 @@ define(['require',
                 } else if (type == 'day') {
                     return Utils.formatDate({ date: value, dateFormat: Globals.meridiemFormat })
                 } else if (type == 'number') {
-                    return _.numberFormatWithComa(value);
+                    return _.numberFormatWithComma(value);
                 } else if (type == 'millisecond') {
-                    return _.numberFormatWithComa(value) + " millisecond/s";
+                    return _.numberFormatWithComma(value) + " millisecond/s";
                 } else if (type == "status-html") {
                     return '<span class="connection-status ' + value + '"></span>';
                 } else {

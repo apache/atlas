@@ -126,7 +126,7 @@ define(['require',
                             } else {
                                 deletedEntityCount += intVal;
                             }
-                            intVal = _.numberFormatWithComa(intVal)
+                            intVal = _.numberFormatWithComma(intVal)
                             if (stats[key]) {
                                 stats[key][type] = intVal;
                             } else {
@@ -149,9 +149,9 @@ define(['require',
                             "data": _.pick(stats, (_.keys(stats).sort())),
                         })
                     );
-                    that.$('[data-id="activeEntity"]').html("&nbsp;(" + _.numberFormatWithComa(activeEntityCount) + ")");
-                    that.$('[data-id="deletedEntity"]').html("&nbsp;(" + _.numberFormatWithComa(deletedEntityCount) + ")");
-                    that.ui.entityHeader.html("&nbsp;(" + _.numberFormatWithComa(data.general.entityCount) + ")");
+                    that.$('[data-id="activeEntity"]').html("&nbsp;(" + _.numberFormatWithComma(activeEntityCount) + ")");
+                    that.$('[data-id="deletedEntity"]').html("&nbsp;(" + _.numberFormatWithComma(deletedEntityCount) + ")");
+                    that.ui.entityHeader.html("&nbsp;(" + _.numberFormatWithComma(data.general.entityCount) + ")");
                 }
             },
             renderStats: function(options) {
@@ -214,7 +214,7 @@ define(['require',
                                     pickValueFrom = argument.key;
                                 }
                                 var returnVal = data.Notification[pickValueFrom];
-                                return returnVal ? _.numberFormatWithComa(returnVal) : 0;
+                                return returnVal ? _.numberFormatWithComma(returnVal) : 0;
                             }
                         })
                     );
@@ -246,9 +246,9 @@ define(['require',
                 } else if (type == 'day') {
                     return moment.tz(value, moment.tz.guess()).format("MM/DD/YYYY h:mm A z");
                 } else if (type == 'number') {
-                    return _.numberFormatWithComa(value);
+                    return _.numberFormatWithComma(value);
                 } else if (type == 'millisecond') {
-                    return _.numberFormatWithComa(value) + " millisecond/s";
+                    return _.numberFormatWithComma(value) + " millisecond/s";
                 } else if (type == "status-html") {
                     return '<span class="connection-status ' + value + '"></span>';
                 } else {

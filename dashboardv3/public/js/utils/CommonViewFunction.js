@@ -87,7 +87,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             showListCount = options.showListCount || true,
             highlightString = options.highlightString,
             formatStringVal = options.formatStringVal,
-            numberFormat = options.numberFormat || _.numberFormatWithComa;
+            numberFormat = options.numberFormat || _.numberFormatWithComma;
 
         var table = "",
             getHighlightedString = function(resultStr) {
