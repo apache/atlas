@@ -24,7 +24,7 @@ define(['require',
 ], function(require, Utils, d3) {
     'use strict';
     _.mixin({
-        numberFormatWithComa: function(number) {
+        numberFormatWithComma: function(number) {
             return d3.format(',')(number);
         },
         numberFormatWithBytes: function(number) {
@@ -34,7 +34,7 @@ define(['require',
                 }
                 var i = number == 0 ? 0 : Math.floor(Math.log(number) / Math.log(1024));
                 if (i > 8) {
-                    return _.numberFormatWithComa(number);
+                    return _.numberFormatWithComma(number);
                 }
                 return Number((number / Math.pow(1024, i)).toFixed(2)) + " " + ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"][i];
             } else {

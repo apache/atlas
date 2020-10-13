@@ -102,29 +102,35 @@ define(['require',
         //return options.inverse(this);
     });
 
-    Handlebars.registerHelper('arithmetic', function(val1, operator, val2, options) {
-        var v1 = parseInt(val1) || 0,
-            v2 = parseInt(val2) || 0;
+    Handlebars.registerHelper('arithmetic', function(val1, operator, val2, commaFormat, options) {
+        var v1 = (val1 && parseInt(val1.toString().replace(/\,/g, ''))) || 0,
+            v2 = (val2 && parseInt(val2.toString().replace(/\,/g, ''))) || 0,
+            val = null;
         switch (operator) {
             case '+':
-                return (v1 + v2);
+                val = v1 + v2;
                 break;
             case '-':
-                return (v1 - v2);
+                val = v1 - v2;
                 break;
             case '/':
-                return (v1 / v2);
+                val = v1 / v2;
                 break;
             case '*':
-                return (v1 * v2);
+                val = v1 * v2;
                 break;
             case '%':
-                return (v1 % v2);
+                val = v1 % v2;
                 break;
             default:
-                return 0;
+                val = 0;
                 break;
         }
+        if (commaFormat === false) {
+            return val;
+        }
+        return _.numberFormatWithComma(val);;
+
     });
 
     Handlebars.registerHelper('lookup', function(obj, field, defaulValue) {

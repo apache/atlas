@@ -443,7 +443,7 @@ define([
                                 name: name
                             });
                             var tagEntityCount = that.entityCountObj.tag.tagEntities[name];
-                            var tagname = tagEntityCount ? name + " (" + _.numberFormatWithComa(tagEntityCount) + ")" : name;
+                            var tagname = tagEntityCount ? name + " (" + _.numberFormatWithComma(tagEntityCount) + ")" : name;
 
                             if (that.options.value) {
                                 isSelectedChild = that.options.value.tag ? that.options.value.tag == name : false;
@@ -486,7 +486,7 @@ define([
                 var modelJSON = model.toJSON();
                 var name = modelJSON.name;
                 var tagEntityCount = that.entityCountObj.tag.tagEntities[name];
-                var tagname = tagEntityCount ? name + " (" + _.numberFormatWithComa(tagEntityCount) + ")" : name,
+                var tagname = tagEntityCount ? name + " (" + _.numberFormatWithComma(tagEntityCount) + ")" : name,
                     isSelected = false;
 
                 if (that.options.value) {
