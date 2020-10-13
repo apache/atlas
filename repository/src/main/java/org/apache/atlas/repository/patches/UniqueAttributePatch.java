@@ -18,6 +18,7 @@
 package org.apache.atlas.repository.patches;
 
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.pc.WorkItemManager;
 import org.apache.atlas.repository.Constants;
@@ -164,7 +165,9 @@ public class UniqueAttributePatch extends AtlasPatchHandler {
             LOG.debug("processItem(typeName={}, vertexId={})", typeName, vertexId);
 
             processIndexStringAttribute(vertexId, vertex, typeName, entityType);
-            processUniqueAttribute(vertexId, vertex, typeName, entityType);
+            if (AtlasGraphUtilsV2.getState(vertex) == AtlasEntity.Status.ACTIVE) {
+                processUniqueAttribute(vertexId, vertex, typeName, entityType);
+            }
 
             LOG.debug("processItem(typeName={}, vertexId={}): Done!", typeName, vertexId);
         }
