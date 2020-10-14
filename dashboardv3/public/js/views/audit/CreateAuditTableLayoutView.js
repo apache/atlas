@@ -75,6 +75,13 @@ define(['require',
             createTableWithValues: function(tableDetails) {
                 var attrTable = CommonViewFunction.propertyTable({
                     scope: this,
+                    getValue: function(val, key) {
+                        if (key && key.toLowerCase().indexOf("time") > 0) {
+                            return Utils.formatDate({ date: val });
+                        } else {
+                            return val;
+                        }
+                    },
                     valueObject: tableDetails
                 });
                 return attrTable;
