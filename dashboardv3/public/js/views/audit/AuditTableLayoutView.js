@@ -192,7 +192,6 @@ define(['require',
                             require([
                                 'views/audit/CreateAuditTableLayoutView',
                             ], function(CreateAuditTableLayoutView) {
-
                                 that.action = model.get('action');
                                 // $(el.target).attr('disabled', true);
                                 var eventModel = that.entityCollection.fullCollection.findWhere({ 'eventKey': model.get('eventKey') }).toJSON(),

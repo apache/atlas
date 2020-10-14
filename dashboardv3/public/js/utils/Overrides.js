@@ -211,8 +211,12 @@ define(['require', 'utils/Utils', 'lossless-json', 'marionette', 'backgrid', 'as
         render: function() {
             /* follow along with the original render really... */
             this.$el.empty();
-
+            var isExpand = true;
+            if (this.column.get('isExpandVisible')) {
+                isExpand = this.column.get('isExpandVisible')(this.$el, this.model);
+            }
             this.$toggleEl = $(this.toggle).addClass(this.toggleClass).addClass(this.toggleCollapsedClass);
+            this.$toggleEl = isExpand ? this.$toggleEl : this.$toggleEl.addClass("noToggle");
 
             this.$el.append(this.$toggleEl);
 
@@ -224,6 +228,10 @@ define(['require', 'utils/Utils', 'lossless-json', 'marionette', 'backgrid', 'as
         setToggle: function() {
             var detailsRow = this.$el.data('details');
             var toggle = this.$toggleEl;
+            /* if there's details data is not there/undefined and $toggleEl having noToggle class, no need to expand */
+            if (!detailsRow && this.$toggleEl.hasClass('noToggle')) {
+                return false;
+            }
 
             /* if there's details data already stored, then we'll remove it */
             if (detailsRow) {

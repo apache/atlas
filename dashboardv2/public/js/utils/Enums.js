@@ -44,7 +44,15 @@ define(["require", "backbone"], function(require) {
         BUSINESS_ATTRIBUTE_DELETE: "Business Attribute(s) Deleted",
         TYPE_DEF_UPDATE: "Type Updated",
         TYPE_DEF_CREATE: "Type Created",
-        TYPE_DEF_DELETE: "Type Deleted"
+        TYPE_DEF_DELETE: "Type Deleted",
+        IMPORT: "Import",
+        EXPORT: "Export"
+    }
+    Enums.serverAudits = {
+        SERVER_START: "Server Start",
+        SERVER_STOP: "Server End",
+        SERVER_STATE_ACTIVE: "Server State Active",
+        SERVER_STATE_PASSIVE: "Server Statae Passive"
     }
 
     Enums.category = {
@@ -58,7 +66,9 @@ define(["require", "backbone"], function(require) {
         MAP: "Map",
         RELATIONSHIP: "Relationship",
         BUSINESS_METADATA: "Business Metadata",
-        PURGE: "Purge Entities"
+        PURGE: "Purge Entities",
+        IMPORT: "Import Entities",
+        EXPORT: "Export Entities"
     }
 
     Enums.entityStateReadOnly = {
@@ -261,7 +271,7 @@ define(["require", "backbone"], function(require) {
         "This Month": "THIS_MONTH",
         "Last Month": "LAST_MONTH",
         "This Quarter": "THIS_QUARTER",
-        "Last Quarter":"LAST_QUARTER",
+        "Last Quarter": "LAST_QUARTER",
         "This Year": "THIS_YEAR",
         "Last Year": "LAST_YEAR",
         "Last 3 Months": "LAST_3_MONTHS",
