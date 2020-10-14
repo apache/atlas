@@ -326,6 +326,9 @@ define(['require',
                             typeName: collectionJSON.typeName,
                             value: that.value
                         }));
+                    } else {
+                        this.$('.profileTab').hide();
+                        this.redirectToDefaultTab("profile");
                     }
 
                     if (this.activeEntityDef) {
@@ -333,6 +336,9 @@ define(['require',
                         if (collectionJSON && collectionJSON.typeName === "AtlasServer") {
                             this.$('.replicationTab').show();
                             this.renderReplicationAuditTableLayoutView(obj);
+                        } else {
+                            this.$('.replicationTab').hide();
+                            this.redirectToDefaultTab("raudits");
                         }
                         // To render Schema check attribute "schemaElementsAttribute"
                         var schemaOptions = this.activeEntityDef.get('options');
@@ -342,14 +348,9 @@ define(['require',
                             this.renderSchemaLayoutView(_.extend({}, obj, {
                                 attribute: collectionJSON.relationshipAttributes[schemaElementsAttribute] || collectionJSON.attributes[schemaElementsAttribute]
                             }));
-                        } else if (this.value && this.value.tabActive == "schema") {
-                            Utils.setUrl({
-                                url: Utils.getUrlState.getQueryUrl().queyParams[0],
-                                urlParams: { tabActive: 'properties' },
-                                mergeBrowserUrl: false,
-                                trigger: true,
-                                updateTabState: true
-                            });
+                        } else {
+                            this.$('.schemaTable').hide();
+                            this.redirectToDefaultTab("schema");
                         }
 
                         if (isLineageRender) {
@@ -358,17 +359,11 @@ define(['require',
                                 processCheck: isProcess,
                                 fetchCollection: this.fetchCollection.bind(this),
                             }));
-                        } else if (this.value && this.value.tabActive == "lineage") {
-                            Utils.setUrl({
-                                url: Utils.getUrlState.getQueryUrl().queyParams[0],
-                                urlParams: { tabActive: 'properties' },
-                                mergeBrowserUrl: false,
-                                trigger: true,
-                                updateTabState: true
-                            });
+                        } else {
+                            this.$('.lineageGraph').hide();
+                            this.redirectToDefaultTab("lineage");
                         }
                     }
-
 
                 }, this);
                 this.listenTo(this.collection, 'error', function(model, response) {
@@ -385,6 +380,36 @@ define(['require',
                 this.bindEvents();
                 Utils.showTitleLoader(this.$('.page-title .fontLoader'), this.$('.entityDetail'));
                 this.$('.fontLoader-relative').addClass('show'); // to show tab loader
+            },
+            redirectToDefaultTab: function(tabName) {
+                var regionRef = null;
+                switch (tabName) {
+                    case "schema":
+                        regionRef = this.RSchemaTableLayoutView;
+                        break;
+                    case "lineage":
+                        regionRef = this.RLineageLayoutView;
+                        break;
+                    case "raudits":
+                        regionRef = this.RReplicationAuditTableLayoutView;
+                        break;
+                     case "profile":
+                        regionRef = this.RProfileLayoutView;
+                        break;
+                }
+                if (regionRef) {
+                    regionRef.destroy();
+                    regionRef.$el.empty();
+                }
+                if (this.value && this.value.tabActive == tabName || this.$(".tab-content .tab-pane.active").attr("role") === tabName) {
+                    Utils.setUrl({
+                        url: Utils.getUrlState.getQueryUrl().queyParams[0],
+                        urlParams: { tabActive: 'properties' },
+                        mergeBrowserUrl: false,
+                        trigger: true,
+                        updateTabState: true
+                    });
+                }
             },
             manualRender: function(options) {
                 if (options) {
