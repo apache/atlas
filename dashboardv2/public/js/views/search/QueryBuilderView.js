@@ -359,8 +359,8 @@ define(['require',
                         }
                         obj.singleDatePicker = false;
                     } else {
-                        obj.startDate = moment(valueObj.value);
-                        obj.endDate = moment(valueObj.value);
+                        obj.startDate = moment(Date.parse(valueObj.value));
+                        obj.endDate = obj.startDate;
                         obj.singleDatePicker = true;
                     }
                 }

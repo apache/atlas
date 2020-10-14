@@ -491,7 +491,7 @@ define(['require',
                 if (type == 'time') {
                     return Utils.millisecondsToTime(value);
                 } else if (type == 'day') {
-                    return Utils.formatDate({ date: value, dateFormat: Globals.meridiemFormat })
+                    return Utils.formatDate({ date: value })
                 } else if (type == 'number') {
                     return _.numberFormatWithComma(value);
                 } else if (type == 'millisecond') {

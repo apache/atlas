@@ -922,19 +922,17 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
         var dateValue = null,
             dateFormat = Globals.dateTimeFormat,
             isValidDate = false;
-        if (options) {
-            if (options.dateFormat) {
-                dateFormat = options.dateFormat;
-            }
-            if (options.date) {
-                if (options.date === "-") {
+        if (options && options.date) {
+            dateValue = options.date;
+            if (dateValue !== "-") {
+                dateValue = parseInt(dateValue);
+                if (_.isNaN(dateValue)) {
                     dateValue = options.date;
-                } else {
-                    dateValue = moment(options.date)
-                    if (dateValue._isValid) {
-                        isValidDate = true;
-                        dateValue = dateValue.format(dateFormat);
-                    }
+                }
+                dateValue = moment(dateValue);
+                if (dateValue._isValid) {
+                    isValidDate = true;
+                    dateValue = dateValue.format(dateFormat);
                 }
             }
         }
@@ -942,12 +940,12 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
             if (isValidDate === false && options && options.defaultDate !== false) {
                 dateValue = moment().format(dateFormat);
             }
-
-            if (!options || options && options.zone !== false) {
-                dateValue += " (" + moment.tz(moment.tz.guess()).zoneAbbr() + ")";
+            if (Globals.isDateTimeZone) {
+                if (!options || options && options.zone !== false) {
+                    dateValue += " (" + moment.tz(moment.tz.guess()).zoneAbbr() + ")";
+                }
             }
         }
-
         return dateValue;
     }
     return Utils;

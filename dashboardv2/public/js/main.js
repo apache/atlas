@@ -272,6 +272,16 @@ require(['App',
                 if (response['atlas.ui.default.version'] !== undefined) {
                     Globals.DEFAULT_UI = response['atlas.ui.default.version'];
                 }
+                if (response['atlas.ui.date.format'] !== undefined) {
+                    Globals.dateTimeFormat = response['atlas.ui.date.format'];
+                    var dateFormatSeperated = Globals.dateTimeFormat.split(' ');
+                    if (dateFormatSeperated[0]) {
+                        Globals.dateFormat = dateFormatSeperated[0]; //date
+                    }
+                }
+                if (response['atlas.ui.date.timezone'] !== undefined) {
+                    Globals.isDateTimeZone = response['atlas.ui.date.timezone'];
+                }
             }
             --that.asyncFetchCounter;
             startApp();
