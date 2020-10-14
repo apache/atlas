@@ -32,9 +32,11 @@ public final class SecurityProperties {
     public static final String KEYSTORE_FILE_KEY = "keystore.file";
     public static final String DEFAULT_KEYSTORE_FILE_LOCATION = "target/atlas.keystore";
     public static final String KEYSTORE_PASSWORD_KEY = "keystore.password";
+    public static final String KEYSTORE_TYPE = "keystore.type";
     public static final String TRUSTSTORE_FILE_KEY = "truststore.file";
     public static final String DEFATULT_TRUSTORE_FILE_LOCATION = "target/atlas.keystore";
     public static final String TRUSTSTORE_PASSWORD_KEY = "truststore.password";
+    public static final String TRUSTSTORE_TYPE = "truststore.type";
     public static final String SERVER_CERT_PASSWORD_KEY = "password";
     public static final String CLIENT_AUTH_KEY = "client.auth.enabled";
     public static final String CERT_STORES_CREDENTIAL_PROVIDER_PATH = "cert.stores.credential.provider.path";

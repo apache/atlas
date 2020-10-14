@@ -69,6 +69,8 @@ import static org.apache.atlas.security.SecurityProperties.TRUSTSTORE_FILE_KEY;
 import static org.apache.atlas.security.SecurityProperties.TRUSTSTORE_PASSWORD_KEY;
 import static org.apache.atlas.security.SecurityProperties.ATLAS_SSL_EXCLUDE_PROTOCOLS;
 import static org.apache.atlas.security.SecurityProperties.DEFAULT_EXCLUDE_PROTOCOLS;
+import static org.apache.atlas.security.SecurityProperties.KEYSTORE_TYPE;
+import static org.apache.atlas.security.SecurityProperties.TRUSTSTORE_TYPE;
 import static org.apache.atlas.security.SecurityUtil.getPassword;
 
 
@@ -101,10 +103,12 @@ public class SecureEmbeddedServer extends EmbeddedServer {
         }
 
         SslContextFactory sslContextFactory = new SslContextFactory();
+        sslContextFactory.setKeyStoreType(config.getString(KEYSTORE_TYPE , ATLAS_KEYSTORE_FILE_TYPE_DEFAULT));
         sslContextFactory.setKeyStorePath(config.getString(KEYSTORE_FILE_KEY,
                 System.getProperty(KEYSTORE_FILE_KEY, DEFAULT_KEYSTORE_FILE_LOCATION)));
         sslContextFactory.setKeyStorePassword(getPassword(config, KEYSTORE_PASSWORD_KEY));
         sslContextFactory.setKeyManagerPassword(getPassword(config, SERVER_CERT_PASSWORD_KEY));
+        sslContextFactory.setTrustStoreType(config.getString(TRUSTSTORE_TYPE , ATLAS_TRUSTSTORE_FILE_TYPE_DEFAULT));
         sslContextFactory.setTrustStorePath(config.getString(TRUSTSTORE_FILE_KEY,
                 System.getProperty(TRUSTSTORE_FILE_KEY, DEFATULT_TRUSTORE_FILE_LOCATION)));
         sslContextFactory.setTrustStorePassword(getPassword(config, TRUSTSTORE_PASSWORD_KEY));
@@ -198,7 +202,7 @@ public class SecureEmbeddedServer extends EmbeddedServer {
                     in = getFileInputStream(keyStoreFile);
 
                     if (in != null) {
-                        KeyStore keyStore = KeyStore.getInstance(ATLAS_KEYSTORE_FILE_TYPE_DEFAULT);
+                        KeyStore keyStore = KeyStore.getInstance(getConfiguration().getString(KEYSTORE_TYPE , ATLAS_KEYSTORE_FILE_TYPE_DEFAULT));
 
                         keyStore.load(in, keyStoreFilepwd.toCharArray());
 
@@ -251,7 +255,7 @@ public class SecureEmbeddedServer extends EmbeddedServer {
                     in = getFileInputStream(truststoreFile);
 
                     if (in != null) {
-                        KeyStore trustStore = KeyStore.getInstance(ATLAS_TRUSTSTORE_FILE_TYPE_DEFAULT);
+                        KeyStore trustStore = KeyStore.getInstance(getConfiguration().getString(TRUSTSTORE_TYPE , ATLAS_TRUSTSTORE_FILE_TYPE_DEFAULT));
 
                         trustStore.load(in, trustStoreFilepwd.toCharArray());
 
