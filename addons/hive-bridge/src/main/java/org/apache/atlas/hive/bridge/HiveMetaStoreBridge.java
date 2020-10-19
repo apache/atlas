@@ -91,6 +91,7 @@ public class HiveMetaStoreBridge {
 
     public static final String CONF_PREFIX                     = "atlas.hook.hive.";
     public static final String CLUSTER_NAME_KEY                = "atlas.cluster.name";
+    public static final String HIVE_USERNAME                   = "atlas.hook.hive.default.username";
     public static final String HIVE_METADATA_NAMESPACE         = "atlas.metadata.namespace";
     public static final String HDFS_PATH_CONVERT_TO_LOWER_CASE = CONF_PREFIX + "hdfs_path.convert_to_lowercase";
     public static final String HOOK_AWS_S3_ATLAS_MODEL_VERSION = CONF_PREFIX + "aws_s3.atlas.model.version";
@@ -116,7 +117,6 @@ public class HiveMetaStoreBridge {
     private final boolean       convertHdfsPathToLowerCase;
 
     private String awsS3AtlasModelVersion = null;
-
 
     public static void main(String[] args) {
         int exitCode = EXIT_CODE_FAILED;
@@ -398,7 +398,11 @@ public class HiveMetaStoreBridge {
                     processInst.setAttribute(ATTRIBUTE_CLUSTER_NAME, metadataNamespace);
                     processInst.setRelationshipAttribute(ATTRIBUTE_INPUTS, Collections.singletonList(AtlasTypeUtil.getAtlasRelatedObjectId(pathInst, RELATIONSHIP_DATASET_PROCESS_INPUTS)));
                     processInst.setRelationshipAttribute(ATTRIBUTE_OUTPUTS, Collections.singletonList(AtlasTypeUtil.getAtlasRelatedObjectId(tableInst, RELATIONSHIP_PROCESS_DATASET_OUTPUTS)));
-                    processInst.setAttribute(ATTRIBUTE_USER_NAME, table.getOwner());
+                    String userName = table.getOwner();
+                    if (StringUtils.isEmpty(userName)) {
+                        userName = ApplicationProperties.get().getString(HIVE_USERNAME, "hive");
+                    }
+                    processInst.setAttribute(ATTRIBUTE_USER_NAME, userName);
                     processInst.setAttribute(ATTRIBUTE_START_TIME, now);
                     processInst.setAttribute(ATTRIBUTE_END_TIME, now);
                     processInst.setAttribute(ATTRIBUTE_OPERATION_TYPE, "CREATETABLE");
