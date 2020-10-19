@@ -21,7 +21,6 @@
           xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2 http://maven.apache.org/xsd/assembly-1.1.2.xsd">
     <formats>
         <format>tar.gz</format>
-        <format>dir</format>
     </formats>
     <id>storm-hook</id>
     <baseDirectory>apache-atlas-storm-hook-${project.version}</baseDirectory>

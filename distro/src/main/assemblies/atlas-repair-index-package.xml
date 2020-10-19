@@ -21,7 +21,6 @@
 <assembly>
     <id>atlas-index-repair</id>
     <formats>
-        <format>dir</format>
         <format>zip</format>
     </formats>
 
