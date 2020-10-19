@@ -78,7 +78,7 @@ public class AtlasHiveHookContext {
         this.knownObjects     = knownObjects;
         this.metastoreHook    = metastoreHook;
         this.metastoreEvent   = listenerEvent;
-        this.metastoreHandler = (listenerEvent != null) ? metastoreEvent.getIHMSHandler() : null;
+        this.metastoreHandler = null;
 
         init();
     }
