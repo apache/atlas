@@ -23,6 +23,7 @@ import org.apache.atlas.model.impexp.ExportImportAuditEntry;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.repository.impexp.ExportImportAuditService;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStoreV2;
+import org.apache.atlas.runner.LocalSolrRunner;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.testng.SkipException;
@@ -31,6 +32,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
 import static org.apache.atlas.utils.TestLoadModelUtils.createAtlasEntity;
 import static org.apache.atlas.utils.TestLoadModelUtils.loadBaseModel;
 import static org.apache.atlas.utils.TestLoadModelUtils.loadEntity;
@@ -47,6 +49,17 @@ public class AtlasTestBase {
     protected static final String TABLE_VIEW_GUID = "56415119-7cb0-40dd-ace8-1e50efd54991";
     protected static final String COLUMN_GUID_HIGH = "f87a5320-1529-4369-8d63-b637ebdf2c1c";
 
+    protected void initialize() throws Exception {
+        if (useLocalSolr()) {
+            LocalSolrRunner.start();
+        }
+    }
+
+    protected void cleanup() throws Exception {
+        if (useLocalSolr()) {
+            LocalSolrRunner.stop();
+        }
+    }
 
     protected void basicSetup(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) throws IOException, AtlasBaseException {
         loadBaseModel(typeDefStore, typeRegistry);

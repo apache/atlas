@@ -63,7 +63,9 @@ public class EntitySearchProcessorTest extends BasicTestSetup {
     private EntityGraphRetriever entityRetriever;
 
     @BeforeClass
-    public void setup() {
+    public void setup() throws Exception {
+        super.initialize();
+
         setupTestData();
     }
 
@@ -363,8 +365,10 @@ public class EntitySearchProcessorTest extends BasicTestSetup {
     }
 
     @AfterClass
-    public void teardown() {
+    public void teardown() throws Exception {
         AtlasGraphProvider.cleanup();
+
+        super.cleanup();
     }
 
     @Test

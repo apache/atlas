@@ -496,6 +496,11 @@
             <version>${keycloak.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-testtools</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
 
     <build>

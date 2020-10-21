@@ -29,10 +29,10 @@ import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.repository.AtlasTestBase;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
-import org.apache.atlas.runner.LocalSolrRunner;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.DeleteType;
 import org.apache.atlas.type.AtlasEntityType;
@@ -50,7 +50,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
@@ -62,7 +61,7 @@ import static org.apache.atlas.TestUtilsV2.NAME;
  *
  */
 @Guice(modules = TestModules.TestOnlyModule.class)
-public abstract class InverseReferenceUpdateV2Test {
+public abstract class InverseReferenceUpdateV2Test extends AtlasTestBase {
     @Inject
     AtlasTypeRegistry typeRegistry;
 
@@ -85,6 +84,8 @@ public abstract class InverseReferenceUpdateV2Test {
     public void setUp() throws Exception {
         RequestContext.clear();
         RequestContext.get().setUser(TestUtilsV2.TEST_USER, null);
+
+        super.initialize();
 
         AtlasTypesDef[] testTypesDefs = new AtlasTypesDef[] { TestUtilsV2.defineDeptEmployeeTypes(),
                                                               TestUtilsV2.defineInverseReferenceTestTypes()
@@ -110,9 +111,7 @@ public abstract class InverseReferenceUpdateV2Test {
     public void clear() throws Exception {
         AtlasGraphProvider.cleanup();
 
-        if (useLocalSolr()) {
-            LocalSolrRunner.stop();
-        }
+        super.cleanup();
     }
 
     @BeforeMethod
