@@ -379,6 +379,10 @@ public class EntityGraphRetriever {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
         }
 
+        if (StringUtils.isEmpty(GraphHelper.getTypeName(ret))) {
+            throw new AtlasBaseException(AtlasErrorCode.NO_TYPE_NAME_ON_VERTEX, guid);
+        }
+
         return ret;
     }
 
