@@ -720,8 +720,8 @@
 
         <!--Apache poi and Open csv-->
         <opencsv.version>5.0</opencsv.version>
-        <poi.version>3.17</poi.version>
-        <poi-ooxml.version>3.17</poi-ooxml.version>
+        <poi.version>4.1.1</poi.version>
+        <poi-ooxml.version>4.1.1</poi-ooxml.version>
 
         <javax-inject.version>1</javax-inject.version>
         <jettison.version>1.3.7</jettison.version>
