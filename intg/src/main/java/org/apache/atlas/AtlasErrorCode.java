@@ -170,7 +170,6 @@ public enum AtlasErrorCode {
     INVALID_FILE_TYPE(400, "ATLAS-400-00-098", "The provided file type {0} is not supported."),
     INVALID_BUSINESS_ATTRIBUTES_IMPORT_DATA(400, "ATLAS-400-00-099","The uploaded file was not processed due to following errors : {0}"),
     ATTRIBUTE_NAME_INVALID_CHARS(400, "ATLAS-400-00-09A", "{0}: invalid name. Attribute names must begin with a letter followed by a sequence of letters, numbers, or '_' characters"),
-
     UNAUTHORIZED_ACCESS(403, "ATLAS-403-00-001", "{0} is not authorized to perform {1}"),
 
     // All Not found enums go here
@@ -195,6 +194,7 @@ public enum AtlasErrorCode {
     NO_PROPAGATED_CLASSIFICATIONS_FOUND_FOR_ENTITY(404, "ATLAS-404-00-013", "No propagated classifications associated with entity: {0}"),
     NO_DATA_FOUND(404, "ATLAS-404-00-014", "No data found in the uploaded file"),
     FILE_NAME_NOT_FOUND(404, "ATLAS-404-00-015", "File name should not be blank"),
+    NO_TYPE_NAME_ON_VERTEX(404, "ATLAS-404-00-016", "No typename found for given entity with guid: {0}"),
 
     // All data conflict errors go here
     TYPE_ALREADY_EXISTS(409, "ATLAS-409-00-001", "Given type {0} already exists"),
