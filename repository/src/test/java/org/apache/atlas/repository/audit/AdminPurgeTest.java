@@ -30,7 +30,6 @@ import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStoreV2;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
-import org.apache.atlas.runner.LocalSolrRunner;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.TestResourceFileUtils;
@@ -39,6 +38,7 @@ import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
@@ -48,7 +48,6 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
@@ -72,6 +71,11 @@ public class AdminPurgeTest extends AtlasTestBase {
     @Inject
     private AtlasEntityStoreV2 entityStore;
 
+    @BeforeClass
+    public void initialize() throws Exception {
+        super.initialize();
+    }
+
     @BeforeTest
     public void setupTest() throws IOException, AtlasBaseException {
         RequestContext.clear();
@@ -84,9 +88,7 @@ public class AdminPurgeTest extends AtlasTestBase {
         Thread.sleep(1000);
         AtlasGraphProvider.cleanup();
 
-        if (useLocalSolr()) {
-            LocalSolrRunner.stop();
-        }
+        super.cleanup();
     }
 
     @Test

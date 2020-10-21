@@ -18,7 +18,6 @@
 package org.apache.atlas.discovery;
 
 import org.apache.atlas.ApplicationProperties;
-import org.apache.atlas.AtlasException;
 import org.apache.atlas.BasicTestSetup;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -49,7 +48,9 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
     private AtlasDiscoveryService discoveryService;
 
     @BeforeClass
-    public void setup() throws AtlasException, AtlasBaseException {
+    public void setup() throws Exception {
+        super.initialize();
+
         ApplicationProperties.get().setProperty(ApplicationProperties.ENABLE_FREETEXT_SEARCH_CONF, true);
         setupTestData();
         createDimensionalTaggedEntity("sales");
@@ -332,7 +333,9 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
     }
 
     @AfterClass
-    public void teardown() {
+    public void teardown() throws Exception {
         AtlasGraphProvider.cleanup();
+
+        super.cleanup();
     }
 }

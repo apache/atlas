@@ -39,7 +39,6 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
-import org.apache.atlas.runner.LocalSolrRunner;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -48,6 +47,7 @@ import org.mockito.stubbing.Answer;
 import org.testng.ITestContext;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterTest;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Guice;
@@ -60,7 +60,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.getDefaultImportRequest;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.getZipSource;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.getInputStreamFrom;
@@ -107,6 +106,11 @@ public class ImportServiceTest extends AtlasTestBase {
         this.importService = importService;
     }
 
+    @BeforeClass
+    public void initialize() throws Exception {
+        super.initialize();
+    }
+
     @BeforeTest
     public void setupTest() {
         RequestContext.clear();
@@ -117,9 +121,7 @@ public class ImportServiceTest extends AtlasTestBase {
     public void clear() throws Exception {
         AtlasGraphProvider.cleanup();
 
-        if (useLocalSolr()) {
-            LocalSolrRunner.stop();
-        }
+        super.cleanup();
     }
 
     @AfterTest

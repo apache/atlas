@@ -29,7 +29,7 @@ import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
-import org.apache.atlas.runner.LocalSolrRunner;
+import org.apache.atlas.repository.AtlasTestBase;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasClassificationType;
@@ -39,10 +39,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -52,11 +54,10 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Date;
 
-import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
 import static org.testng.Assert.*;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
-public class AtlasTypeDefGraphStoreTest {
+public class AtlasTypeDefGraphStoreTest extends AtlasTestBase {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasTypeDefGraphStoreTest.class);
 
     @Inject
@@ -69,11 +70,14 @@ public class AtlasTypeDefGraphStoreTest {
         RequestContext.get().setUser(TestUtilsV2.TEST_USER, null);
     }
 
+    @BeforeClass
+    public void initialize() throws Exception {
+        super.initialize();
+    }
+
     @AfterClass
     public void cleanup() throws Exception {
-        if (useLocalSolr()) {
-            LocalSolrRunner.stop();
-        }
+        super.cleanup();
     }
 
     @Test

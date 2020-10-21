@@ -26,6 +26,7 @@ import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
 import org.apache.atlas.model.glossary.relations.AtlasGlossaryHeader;
 import org.apache.atlas.model.instance.*;
 import org.apache.atlas.model.typedef.*;
+import org.apache.atlas.repository.AtlasTestBase;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
 import org.apache.atlas.store.AtlasTypeDefStore;
@@ -42,7 +43,7 @@ import java.util.stream.Stream;
 import static org.apache.atlas.utils.TestLoadModelUtils.loadModelFromJson;
 import static org.testng.Assert.fail;
 
-public abstract class BasicTestSetup {
+public abstract class BasicTestSetup extends AtlasTestBase {
 
     // Entity type //
     protected static final String DATABASE_TYPE     = "hive_db";

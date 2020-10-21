@@ -24,24 +24,24 @@ import org.apache.atlas.AtlasException;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
+import org.apache.atlas.repository.AtlasTestBase;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
-import org.apache.atlas.runner.LocalSolrRunner;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import java.util.Collections;
 
-import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
 
 /**
  * Tests for AtlasEntityStoreV1
  */
 @Guice(modules = TestModules.TestOnlyModule.class)
-public class AtlasEntityDefStoreV2Test {
+public class AtlasEntityDefStoreV2Test extends AtlasTestBase {
 
     @Inject
     private
@@ -69,12 +69,15 @@ public class AtlasEntityDefStoreV2Test {
         }
     }
 
+    @BeforeClass
+    public void initialize() throws Exception {
+        super.initialize();
+    }
+
     @AfterClass
     public void clear() throws Exception {
         AtlasGraphProvider.cleanup();
 
-        if (useLocalSolr()) {
-            LocalSolrRunner.stop();
-        }
+        super.cleanup();
     }
 }

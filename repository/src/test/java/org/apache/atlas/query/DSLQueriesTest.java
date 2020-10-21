@@ -23,7 +23,6 @@ import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
-import org.apache.atlas.runner.LocalSolrRunner;
 import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,7 +39,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
@@ -57,7 +55,8 @@ public class DSLQueriesTest extends BasicTestSetup {
 
     @BeforeClass
     public void setup() throws Exception {
-        LocalSolrRunner.start();
+        super.initialize();
+
         setupTestData();
 
         pollForData();
@@ -127,9 +126,7 @@ public class DSLQueriesTest extends BasicTestSetup {
     public void teardown() throws Exception {
         AtlasGraphProvider.cleanup();
 
-        if (useLocalSolr()) {
-            LocalSolrRunner.stop();
-        }
+        super.cleanup();
     }
 
     @DataProvider(name = "comparisonQueriesProvider")

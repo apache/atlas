@@ -65,7 +65,9 @@ public class ClassificationSearchProcessorTest extends BasicTestSetup {
     private String dimensionalTagGuid;
 
     @BeforeClass
-    public void setup() throws AtlasBaseException {
+    public void setup() throws Exception {
+        super.initialize();
+
         setupTestData();
         createDimensionTaggedEntityAndDelete();
         createDimensionalTaggedEntityWithAttr();
@@ -298,7 +300,9 @@ public class ClassificationSearchProcessorTest extends BasicTestSetup {
     }
 
     @AfterClass
-    public void teardown() {
+    public void teardown() throws Exception {
         AtlasGraphProvider.cleanup();
+
+        super.cleanup();
     }
 }
