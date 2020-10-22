@@ -18,6 +18,7 @@
 package org.apache.atlas.util;
 
 import com.opencsv.CSVReader;
+import com.opencsv.exceptions.CsvValidationException;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.commons.collections.CollectionUtils;
@@ -70,7 +71,7 @@ public class FileUtils {
         return ret;
     }
 
-    public static List<String[]> readCSV(InputStream inputStream) throws IOException {
+    public static List<String[]> readCSV(InputStream inputStream) throws IOException, AtlasBaseException {
         List<String[]> ret = new ArrayList<>();
 
         try (CSVReader csvReader = new CSVReader(new InputStreamReader(inputStream))) {
@@ -87,6 +88,8 @@ public class FileUtils {
                     ret.add(data);
                 }
             }
+        } catch (CsvValidationException e) {
+            throw new AtlasBaseException(AtlasErrorCode.NO_DATA_FOUND, e);
         }
 
         return ret;
