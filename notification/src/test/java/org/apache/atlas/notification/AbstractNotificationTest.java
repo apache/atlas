@@ -112,7 +112,7 @@ public class AbstractNotificationTest {
         }
 
         @Override
-        protected void sendInternal(NotificationType notificationType, List<String> notificationMessages)
+        public void sendInternal(NotificationType notificationType, List<String> notificationMessages)
             throws NotificationException {
 
             type     = notificationType;

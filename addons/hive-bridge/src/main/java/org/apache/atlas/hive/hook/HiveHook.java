@@ -172,6 +172,11 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     public HiveHook() {
     }
 
+    public HiveHook(String name) {
+        super(name);
+    }
+
+
     @Override
     public void run(HookContext hookContext) throws Exception {
         if (LOG.isDebugEnabled()) {

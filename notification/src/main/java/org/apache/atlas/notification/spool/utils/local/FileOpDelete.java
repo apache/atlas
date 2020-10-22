@@ -15,32 +15,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.notification;
+package org.apache.atlas.notification.spool.utils.local;
 
-import org.apache.atlas.AtlasException;
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
 
-import java.util.List;
-
-/**
- * Exception from notification.
- */
-public class NotificationException extends AtlasException {
-    private List<String> failedMessages;
-
-    public NotificationException(Exception e) {
-        super(e);
+public class FileOpDelete extends FileOperation {
+    public FileOpDelete(String source) {
+        super(source);
     }
 
-    public NotificationException(Exception e, String errorMsg) {
-        super(errorMsg, e);
-    }
+    @Override
+    public FileLock run(RandomAccessFile file, FileChannel channel, String json) throws IOException {
+        final FileLock ret;
+        final long     position = find(file, getId());
 
-    public NotificationException(Exception e, List<String> failedMessages) {
-        super(e);
-        this.failedMessages = failedMessages;
-    }
+        if (position < 0) {
+            ret = null;
+        } else {
+            ret = channel.tryLock(position, json.length(), false);
 
-    public List<String> getFailedMessages() {
-        return failedMessages;
+            channel.position(position);
+
+            file.writeBytes(json);
+        }
+
+        return ret;
     }
 }
