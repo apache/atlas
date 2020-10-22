@@ -61,6 +61,14 @@ public interface NotificationInterface {
 
     /**
      *
+     * @param source: Name of the source
+     * @param failedMessagesLogger: Logger for failed messages
+     * @return
+     */
+    void init(String source, Object failedMessagesLogger);
+
+    /**
+     *
      * @param user Name of the user under which the processes is running
      */
     void setCurrentUser(String user);

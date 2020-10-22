@@ -126,6 +126,7 @@ public abstract class AtlasHook {
                     try {
                         LOG.info("==> Shutdown of Atlas Hook");
 
+                        notificationInterface.close();
                         executor.shutdown();
                         executor.awaitTermination(SHUTDOWN_HOOK_WAIT_TIME_MS, TimeUnit.MILLISECONDS);
                         executor = null;
@@ -139,6 +140,15 @@ public abstract class AtlasHook {
         }
 
         LOG.info("Created Atlas Hook");
+    }
+
+    public AtlasHook() {
+        notificationInterface.init(this.getClass().getSimpleName(), failedMessagesLogger);
+    }
+
+    public AtlasHook(String name) {
+        LOG.info("AtlasHook: Spool name: Passed from caller.: {}", name);
+        notificationInterface.init(name, failedMessagesLogger);
     }
 
     /**

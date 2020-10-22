@@ -697,6 +697,7 @@
         <javax.servlet.version>3.1.0</javax.servlet.version>
         <guava.version>25.1-jre</guava.version>
         <antlr4.version>4.7</antlr4.version>
+        <log4j.version>2.8</log4j.version>
 
         <!-- Needed for hooks -->
         <aopalliance.version>1.0</aopalliance.version>
