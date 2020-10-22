@@ -133,6 +133,9 @@ public class AdminResource {
     private static final String DEFAULT_EDITABLE_ENTITY_TYPES  = "hdfs_path";
     private static final String DEFAULT_UI_VERSION             = "atlas.ui.default.version";
     private static final String UI_VERSION_V2                  = "v2";
+    private static final String UI_DATE_TIMEZONE_FORMAT_ENABLED = "atlas.ui.date.timezone.format.enabled";
+    private static final String UI_DATE_FORMAT                 = "atlas.ui.date.format";
+    private static final String UI_DATE_DEFAULT_FORMAT         = "MM/DD/YYYY hh:mm:ss A";
     private static final List TIMEZONE_LIST  = Arrays.asList(TimeZone.getAvailableIDs());
 
     @Context
@@ -159,6 +162,8 @@ public class AdminResource {
     private final  AtlasAuditService        auditService;
     private final  String                   defaultUIVersion;
     private final  EntityAuditRepository    auditRepository;
+    private final  boolean                  isTimezoneFormatEnabled;
+    private final  String                   uiDateFormat;
 
     static {
         try {
@@ -191,9 +196,13 @@ public class AdminResource {
         this.auditRepository           = auditRepository;
 
         if (atlasProperties != null) {
-            defaultUIVersion = atlasProperties.getString(DEFAULT_UI_VERSION, UI_VERSION_V2);
+            this.defaultUIVersion = atlasProperties.getString(DEFAULT_UI_VERSION, UI_VERSION_V2);
+            this.isTimezoneFormatEnabled = atlasProperties.getBoolean(UI_DATE_TIMEZONE_FORMAT_ENABLED, true);
+            this.uiDateFormat = atlasProperties.getString(UI_DATE_FORMAT, UI_DATE_DEFAULT_FORMAT);
         } else {
-            defaultUIVersion = UI_VERSION_V2;
+            this.defaultUIVersion = UI_VERSION_V2;
+            this.isTimezoneFormatEnabled = true;
+            this.uiDateFormat = UI_DATE_DEFAULT_FORMAT;
         }
     }
 
@@ -339,6 +348,8 @@ public class AdminResource {
         responseData.put("userName", userName);
         responseData.put("groups", groups);
         responseData.put("timezones", TIMEZONE_LIST);
+        responseData.put(UI_DATE_TIMEZONE_FORMAT_ENABLED, isTimezoneFormatEnabled);
+        responseData.put(UI_DATE_FORMAT, uiDateFormat);
 
         response = Response.ok(AtlasJson.toV1Json(responseData)).build();
 
