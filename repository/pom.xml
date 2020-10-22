@@ -140,6 +140,12 @@
         <dependency>
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase-client</artifactId>
+            <exclusions>
+            <exclusion>
+                <groupId>com.github.stephenc.findbugs</groupId>
+                <artifactId>findbugs-annotations</artifactId>
+            </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
