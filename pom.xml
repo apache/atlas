@@ -719,7 +719,7 @@
         <!-- Apache commons -->
 
         <!--Apache poi and Open csv-->
-        <opencsv.version>4.6</opencsv.version>
+        <opencsv.version>5.0</opencsv.version>
         <poi.version>3.17</poi.version>
         <poi-ooxml.version>3.17</poi-ooxml.version>
 
