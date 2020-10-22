@@ -21,14 +21,23 @@ package org.apache.atlas.web.service;
 import com.google.common.base.Preconditions;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.RequestContext;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.ha.HAConfiguration;
+import org.apache.atlas.model.audit.AtlasAuditEntry;
+import org.apache.atlas.repository.audit.AtlasAuditService;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Singleton;
+
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.Date;
 
 import static org.apache.atlas.AtlasConstants.ATLAS_MIGRATION_MODE_FILENAME;
 
@@ -42,6 +51,9 @@ import static org.apache.atlas.AtlasConstants.ATLAS_MIGRATION_MODE_FILENAME;
 @Component
 public class ServiceState {
     private static final Logger LOG = LoggerFactory.getLogger(ServiceState.class);
+
+    @Autowired
+    AtlasAuditService auditService;
 
     public enum ServiceStateValue {
         ACTIVE,
@@ -78,9 +90,38 @@ public class ServiceState {
     }
 
     private void setState(ServiceStateValue newState) {
-        Preconditions.checkState(HAConfiguration.isHAEnabled(configuration),
-                "Cannot change state as requested, as HA is not enabled for this instance.");
+        Preconditions.checkState(HAConfiguration.isHAEnabled(configuration), "Cannot change state as requested, as HA is not enabled for this instance.");
+
         state = newState;
+
+        auditServerStatus();
+    }
+
+    private void auditServerStatus() {
+        String userName = RequestContext.getCurrentUser();
+
+        if (userName == null) {
+            userName = StringUtils.EMPTY;
+        }
+
+        if (state == ServiceState.ServiceStateValue.ACTIVE) {
+            String hostName    = StringUtils.EMPTY;
+            String hostAddress = StringUtils.EMPTY;
+            Date   date        = new Date();
+
+            try {
+                hostName    = InetAddress.getLocalHost().getHostName();
+                hostAddress = InetAddress.getLocalHost().getHostAddress();
+            } catch (UnknownHostException e) {
+                LOG.error("Exception occurred during InetAddress retrieval", e);
+            }
+            try {
+                auditService.add(userName, AtlasAuditEntry.AuditOperation.SERVER_START, hostName + ":" + hostAddress, EmbeddedServer.SERVER_START_TIME, date, null, null, 0);
+                auditService.add(userName, AtlasAuditEntry.AuditOperation.SERVER_STATE_ACTIVE, hostName + ":" + hostAddress, date, date, null, null, 0);
+            } catch (AtlasBaseException e) {
+                LOG.error("Exception occurred during audit", e);
+            }
+        }
     }
 
     public void setActive() {

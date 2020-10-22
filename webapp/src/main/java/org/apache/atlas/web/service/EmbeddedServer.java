@@ -20,7 +20,12 @@ package org.apache.atlas.web.service;
 
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.BeanUtil;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.audit.AtlasAuditEntry;
+import org.apache.atlas.repository.audit.AtlasAuditService;
+import org.apache.commons.lang.StringUtils;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -32,6 +37,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.Date;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -43,7 +51,13 @@ public class EmbeddedServer {
 
     public static final String ATLAS_DEFAULT_BIND_ADDRESS = "0.0.0.0";
 
+    public static final Date SERVER_START_TIME = new Date();
+
     protected final Server server;
+
+    private AtlasAuditService auditService;
+
+    private ServiceState serviceState;
 
     public EmbeddedServer(String host, int port, String path) throws IOException {
         int queueSize = AtlasConfiguration.WEBSERVER_QUEUE_SIZE.getInt();
@@ -96,6 +110,9 @@ public class EmbeddedServer {
     public void start() throws AtlasBaseException {
         try {
             server.start();
+
+            auditServerStatus();
+
             server.join();
         } catch(Exception e) {
             throw new AtlasBaseException(AtlasErrorCode.EMBEDDED_SERVER_START, e);
@@ -107,6 +124,38 @@ public class EmbeddedServer {
             server.stop();
         } catch (Exception e) {
             LOG.warn("Error during shutdown", e);
+        }
+    }
+
+    private void auditServerStatus() {
+        auditService = BeanUtil.getBean(AtlasAuditService.class);
+        serviceState = BeanUtil.getBean(ServiceState.class);
+
+        ServiceState.ServiceStateValue serviceStateValue = serviceState.getState();
+        String                         userName          = RequestContext.getCurrentUser();
+
+        if (userName == null) {
+            userName = StringUtils.EMPTY;
+        }
+
+        if (serviceStateValue == ServiceState.ServiceStateValue.ACTIVE) {
+            String hostName    = StringUtils.EMPTY;
+            String hostAddress = StringUtils.EMPTY;
+            Date   date        = new Date();
+
+            try {
+                hostName    = InetAddress.getLocalHost().getHostName();
+                hostAddress = InetAddress.getLocalHost().getHostAddress();
+            } catch (UnknownHostException e) {
+                LOG.error("Exception occurred during InetAddress retrieval", e);
+            }
+
+            try {
+                auditService.add(userName, AtlasAuditEntry.AuditOperation.SERVER_START, hostName + ":" + hostAddress, SERVER_START_TIME, date, null, null, 0);
+                auditService.add(userName, AtlasAuditEntry.AuditOperation.SERVER_STATE_ACTIVE, hostName + ":" + hostAddress, date, date, null, null, 0);
+            } catch (AtlasBaseException e) {
+                LOG.error("Exception occurred during audit", e);
+            }
         }
     }
 }
