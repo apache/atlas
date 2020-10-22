@@ -133,6 +133,12 @@
             <version>${hbase.version}</version>
             <type>jar</type>
             <scope>compile</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.github.stephenc.findbugs</groupId>
+                    <artifactId>findbugs-annotations</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -155,6 +161,12 @@
             <version>${hbase.version}</version>
             <type>jar</type>
             <scope>compile</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.github.stephenc.findbugs</groupId>
+                    <artifactId>findbugs-annotations</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>

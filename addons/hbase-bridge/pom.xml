@@ -176,6 +176,12 @@
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase-common</artifactId>
             <version>${hbase.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.github.stephenc.findbugs</groupId>
+                    <artifactId>findbugs-annotations</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.apache.hbase</groupId>
