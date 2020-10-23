@@ -30,12 +30,6 @@
   <name>Apache Atlas Impala Bridge</name>
   <packaging>jar</packaging>
 
-  <properties>
-    <!-- log4j 2.9 and later are multi-release jars for Java 9. Our Jetty version don't support
-    that. Therefore, we have to use log4j 2.8 in integration test -->
-    <log4j.version>2.8</log4j.version>
-  </properties>
-
   <dependencies>
     <!-- Logging -->
     <dependency>
@@ -68,13 +62,13 @@
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
       <artifactId>log4j-core</artifactId>
-      <version>${log4j.version}</version>
+      <version>${apache.log4j.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
       <artifactId>log4j-api</artifactId>
-      <version>${log4j.version}</version>
+      <version>${apache.log4j.version}</version>
       <scope>test</scope>
     </dependency>
 
@@ -436,12 +430,12 @@
           <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-core</artifactId>
-            <version>${log4j.version}</version>
+            <version>${apache.log4j.version}</version>
           </dependency>
           <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-api</artifactId>
-            <version>${log4j.version}</version>
+            <version>${apache.log4j.version}</version>
           </dependency>
         </dependencies>
         <executions>

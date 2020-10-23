@@ -58,13 +58,13 @@
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-core</artifactId>
-            <version>${log4j.version}</version>
+            <version>${apache.log4j.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-api</artifactId>
-            <version>${log4j.version}</version>
+            <version>${apache.log4j.version}</version>
         </dependency>
 
         <dependency>
@@ -166,7 +166,7 @@
                                 <artifactItem>
                                     <groupId>log4j</groupId>
                                     <artifactId>log4j</artifactId>
-                                    <version>1.2.17</version>
+                                    <version>${log4j.version}</version>
                                 </artifactItem>
                                 <artifactItem>
                                     <groupId>org.apache.kafka</groupId>
