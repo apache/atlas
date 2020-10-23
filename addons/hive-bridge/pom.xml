@@ -202,6 +202,13 @@
             <classifier>tests</classifier>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>${jackson.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <profiles>
@@ -344,6 +351,7 @@
             <plugin>
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-maven-plugin</artifactId>
+                <version>${jetty.version}</version>
                 <configuration>
                     <skip>${skipTests}</skip>
                     <!--only skip int tests -->
@@ -353,10 +361,10 @@
                     </httpConnector>
                     <war>../../webapp/target/atlas-webapp-${project.version}.war</war>
                     <daemon>true</daemon>
-                    <webAppSourceDirectory>../../webapp/src/test/webapp</webAppSourceDirectory>
+                    <webAppSourceDirectory>../../webapp/src/main/webapp</webAppSourceDirectory>
                     <webApp>
                         <contextPath>/</contextPath>
-                        <descriptor>${project.basedir}/../../webapp/src/test/webapp/WEB-INF/web.xml</descriptor>
+                        <descriptor>${project.basedir}/../../webapp/src/main/webapp/WEB-INF/web.xml</descriptor>
                     </webApp>
                     <useTestScope>true</useTestScope>
                     <systemProperties>
@@ -383,7 +391,7 @@
                         </systemProperty>
                         <systemProperty>
                             <name>log4j.configuration</name>
-                            <value>file:///${project.build.directory}/../../../distro/src/conf/atlas-log4j.xml</value>
+                            <value>file:///${project.build.directory}/test-classes/atlas-log4j.xml</value>
                         </systemProperty>
                         <systemProperty>
                             <name>atlas.graphdb.backend</name>
@@ -392,6 +400,10 @@
                         <systemProperty>
                             <key>embedded.solr.directory</key>
                             <value>${project.build.directory}</value>
+                        </systemProperty>
+                        <systemProperty>
+                            <name>solr.log.dir</name>
+                            <value>${project.build.directory}/logs</value>
                         </systemProperty>
                         <systemProperty>
                             <name>org.eclipse.jetty.annotations.maxWait</name>
@@ -404,17 +416,19 @@
                     <daemon>${debug.jetty.daemon}</daemon>
                     <testClassesDirectory>${project.build.testOutputDirectory}</testClassesDirectory>
                     <useTestClasspath>true</useTestClasspath>
+                    <supportedPackagings>jar</supportedPackagings>
                 </configuration>
                 <dependencies>
                     <dependency>
-                        <groupId>org.apache.logging.log4j</groupId>
-                        <artifactId>log4j-core</artifactId>
-                        <version>${apache.log4j.version}</version>
+                        <groupId>org.apache.curator</groupId>
+                        <artifactId>curator-client</artifactId>
+                        <version>${curator.version}</version>
                     </dependency>
+
                     <dependency>
-                        <groupId>org.apache.logging.log4j</groupId>
-                        <artifactId>log4j-api</artifactId>
-                        <version>${apache.log4j.version}</version>
+                        <groupId>org.apache.zookeeper</groupId>
+                        <artifactId>zookeeper</artifactId>
+                        <version>${zookeeper.version}</version>
                     </dependency>
                 </dependencies>
                 <executions>

@@ -41,6 +41,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Date;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -60,14 +61,14 @@ public class EmbeddedServer {
     private ServiceState serviceState;
 
     public EmbeddedServer(String host, int port, String path) throws IOException {
-        int queueSize = AtlasConfiguration.WEBSERVER_QUEUE_SIZE.getInt();
-        LinkedBlockingQueue<Runnable> queue = new LinkedBlockingQueue<>(queueSize);
+        int                           queueSize     = AtlasConfiguration.WEBSERVER_QUEUE_SIZE.getInt();
+        LinkedBlockingQueue<Runnable> queue         = new LinkedBlockingQueue<>(queueSize);
+        int                           minThreads    = AtlasConfiguration.WEBSERVER_MIN_THREADS.getInt();
+        int                           maxThreads    = AtlasConfiguration.WEBSERVER_MAX_THREADS.getInt();
+        long                          keepAliveTime = AtlasConfiguration.WEBSERVER_KEEPALIVE_SECONDS.getLong();
+        ThreadPoolExecutor            executor      = new ThreadPoolExecutor(maxThreads, maxThreads, keepAliveTime, TimeUnit.SECONDS, queue);
+        ExecutorThreadPool            pool          = new ExecutorThreadPool(executor, minThreads);
 
-        int minThreads = AtlasConfiguration.WEBSERVER_MIN_THREADS.getInt();
-        int maxThreads = AtlasConfiguration.WEBSERVER_MAX_THREADS.getInt();
-        long keepAliveTime = AtlasConfiguration.WEBSERVER_KEEPALIVE_SECONDS.getLong();
-        ExecutorThreadPool pool =
-                new ExecutorThreadPool(minThreads, maxThreads, keepAliveTime, TimeUnit.SECONDS, queue);
         server = new Server(pool);
 
         Connector connector = getConnector(host, port);
