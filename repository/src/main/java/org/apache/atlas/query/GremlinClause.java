@@ -62,7 +62,7 @@ enum GremlinClause {
     INLINE_SUM("r.sum({it.value('%s')})"),
     INLINE_MAX("r.max({it.value('%s')}).value('%s')"),
     INLINE_MIN("r.min({it.value('%s')}).value('%s')"),
-    INLINE_GET_PROPERTY("it.value('%s')"),
+    INLINE_GET_PROPERTY("it.property('%s').isPresent() ? it.value('%s') : \"\""),
     INLINE_TRANSFORM_CALL("f(%s)"),
     INLINE_DEFAULT_SORT(".sort()"),
     INLINE_SORT_DESC(".sort{a,b -> b <=> a}"),
