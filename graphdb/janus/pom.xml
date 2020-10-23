@@ -178,11 +178,16 @@
             <version>${janus.version}</version>
         </dependency>
 
-        <!-- JanusGraph 0.2.0 is dependent on solr-solrj 7.0.0 -->
         <dependency>
             <groupId>org.apache.solr</groupId>
             <artifactId>solr-solrj</artifactId>
-            <version>7.0.0</version>
+            <version>${solr.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.codehaus.woodstox</groupId>
+                    <artifactId>woodstox-core-asl</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <!-- CVE Overrides for Lucene -->
         <dependency>

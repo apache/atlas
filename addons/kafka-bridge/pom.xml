@@ -238,6 +238,7 @@
             <plugin>
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-maven-plugin</artifactId>
+                <version>${jetty.version}</version>
                 <configuration>
                     <skip>true</skip>
                     <!--only skip int tests -->
@@ -247,9 +248,10 @@
                     </httpConnector>
                     <war>../../webapp/target/atlas-webapp-${project.version}.war</war>
                     <daemon>true</daemon>
+                    <webAppSourceDirectory>../../webapp/src/main/webapp</webAppSourceDirectory>
                     <webApp>
                         <contextPath>/</contextPath>
-                        <descriptor>${project.basedir}/../../webapp/src/test/webapp/WEB-INF/web.xml</descriptor>
+                        <descriptor>${project.basedir}/../../webapp/src/main/webapp/WEB-INF/web.xml</descriptor>
                         <extraClasspath>${project.basedir}/../../webapp/target/test-classes/</extraClasspath>
                     </webApp>
                     <useTestScope>true</useTestScope>
@@ -288,6 +290,10 @@
                             <value>${project.build.directory}</value>
                         </systemProperty>
                         <systemProperty>
+                            <name>solr.log.dir</name>
+                            <value>${project.build.directory}/logs</value>
+                        </systemProperty>
+                        <systemProperty>
                             <name>org.eclipse.jetty.annotations.maxWait</name>
                             <value>5000</value>
                         </systemProperty>
@@ -295,7 +301,21 @@
                     <stopKey>atlas-stop</stopKey>
                     <stopPort>31001</stopPort>
                     <stopWait>${jetty-maven-plugin.stopWait}</stopWait>
+                    <supportedPackagings>jar</supportedPackagings>
                 </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.apache.curator</groupId>
+                        <artifactId>curator-client</artifactId>
+                        <version>${curator.version}</version>
+                    </dependency>
+
+                    <dependency>
+                        <groupId>org.apache.zookeeper</groupId>
+                        <artifactId>zookeeper</artifactId>
+                        <version>${zookeeper.version}</version>
+                    </dependency>
+                </dependencies>
                 <executions>
                     <execution>
                         <id>start-jetty</id>

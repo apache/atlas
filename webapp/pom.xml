@@ -260,6 +260,11 @@
 
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-servlet</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-webapp</artifactId>
         </dependency>
 
@@ -501,6 +506,24 @@
             <artifactId>atlas-testtools</artifactId>
             <version>${project.version}</version>
         </dependency>
+
+        <dependency>
+          <groupId>org.apache.logging.log4j</groupId>
+          <artifactId>log4j-core</artifactId>
+          <version>${log4j2.version}</version>
+        </dependency>
+
+        <dependency>
+          <groupId>org.apache.logging.log4j</groupId>
+          <artifactId>log4j-web</artifactId>
+          <version>${log4j2.version}</version>
+        </dependency>
+
+       <dependency>
+         <groupId>org.apache.logging.log4j</groupId>
+         <artifactId>log4j-api</artifactId>
+         <version>${log4j2.version}</version>
+       </dependency>
     </dependencies>
 
     <build>
@@ -530,7 +553,7 @@
                         </manifest>
                     </archive>
                     <packagingExcludes>
-                        WEB-INF/lib/junit*.jar,WEB-INF/lib/dom4j-*.jar,${packages.to.exclude}
+                        WEB-INF/lib/dom4j-*.jar,${packages.to.exclude}
                     </packagingExcludes>
                 </configuration>
             </plugin>

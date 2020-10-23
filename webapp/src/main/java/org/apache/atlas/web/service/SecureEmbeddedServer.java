@@ -102,7 +102,7 @@ public class SecureEmbeddedServer extends EmbeddedServer {
             SSLContext.setDefault(sslContext);
         }
 
-        SslContextFactory sslContextFactory = new SslContextFactory();
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStoreType(config.getString(KEYSTORE_TYPE , ATLAS_KEYSTORE_FILE_TYPE_DEFAULT));
         sslContextFactory.setKeyStorePath(config.getString(KEYSTORE_FILE_KEY,
                 System.getProperty(KEYSTORE_FILE_KEY, DEFAULT_KEYSTORE_FILE_LOCATION)));
