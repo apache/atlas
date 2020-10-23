@@ -75,8 +75,10 @@ public class GremlinQueryComposerTest {
 
     @Test
     public void DBasDSelect() {
-        String expected = "def f(r){ t=[['d.name','d.owner']];  r.each({t.add([it.value('DB.name'),it.value('DB.owner')])}); t.unique(); }; " +
-                                  "f(g.V().has('__typeName', 'DB').as('d').has('DB.name').has('DB.owner')";
+        String expected = "def f(r){ t=[['d.name','d.owner']];  r.each({t.add([" +
+                "it.property('DB.name').isPresent() ? it.value('DB.name') : \"\"," +
+                "it.property('DB.owner').isPresent() ? it.value('DB.owner') : \"\"])}); t.unique(); }; " +
+                "f(g.V().has('__typeName', 'DB').as('d')";
         verify("DB as d select d.name, d.owner", expected + ".dedup().limit(25).toList())");
         verify("DB as d select d.name, d.owner limit 10", expected + ".dedup().limit(10).toList())");
         verify("DB as d select d","def f(r){ r }; f(g.V().has('__typeName', 'DB').as('d').dedup().limit(25).toList())");
@@ -86,7 +88,8 @@ public class GremlinQueryComposerTest {
     public void tableSelectColumns() {
         String exMain = "g.V().has('__typeName', 'Table').out('__Table.columns').dedup().limit(10).toList()";
         String exSel = "def f(r){ r }";
-        String exSel1 = "def f(r){ t=[['db.name']];  r.each({t.add([it.value('DB.name')])}); t.unique(); }";
+        String exSel1 = "def f(r){ t=[['db.name']];  r.each({t.add([" +
+                "it.property('DB.name').isPresent() ? it.value('DB.name') : \"\"])}); t.unique(); }";
         verify("Table select columns limit 10", getExpected(exSel, exMain));
 
         String exMain2 = "g.V().has('__typeName', 'Table').out('__Table.db').dedup().limit(25).toList()";
@@ -114,9 +117,12 @@ public class GremlinQueryComposerTest {
     public void groupByOrderBy() {
         verify("Table groupby(owner) select name, owner, clusterName orderby name",
                 "def f(l){ h=[['name','owner','clusterName']]; t=[]; " +
-                        "l.get(0).each({k,r -> L:{  r.each({t.add([it.value('Table.name'),it.value('Table.owner'),it.value('Table.clusterName')])}) } }); " +
+                        "l.get(0).each({k,r -> L:{  r.each({t.add([" +
+                        "it.property('Table.name').isPresent() ? it.value('Table.name') : \"\"," +
+                        "it.property('Table.owner').isPresent() ? it.value('Table.owner') : \"\"," +
+                        "it.property('Table.clusterName').isPresent() ? it.value('Table.clusterName') : \"\"])}) } }); " +
                         "h.plus(t.unique().sort{a,b -> a[0] <=> b[0]}); }; " +
-                        "f(g.V().has('__typeName', 'Table').has('Table.name').has('Table.owner').has('Table.clusterName').group().by('Table.owner').dedup().limit(25).toList())");
+                        "f(g.V().has('__typeName', 'Table').group().by('Table.owner').dedup().limit(25).toList())");
     }
 
     @Test
@@ -133,12 +139,16 @@ public class GremlinQueryComposerTest {
         verify("from DB as d orderby d.owner limit 3", "g.V().has('__typeName', 'DB').as('d').order().by('DB.owner').dedup().limit(3).toList()");
         verify("DB as d orderby d.owner limit 3", "g.V().has('__typeName', 'DB').as('d').order().by('DB.owner').dedup().limit(3).toList()");
 
-        String exSel = "def f(r){ t=[['d.name','d.owner']];  r.each({t.add([it.value('DB.name'),it.value('DB.owner')])}); t.unique(); }";
-        String exMain = "g.V().has('__typeName', 'DB').as('d').has('DB.name').has('DB.owner').order().by('DB.owner').dedup().limit(25).toList()";
+        String exSel = "def f(r){ t=[['d.name','d.owner']];  r.each({t.add([" +
+                "it.property('DB.name').isPresent() ? it.value('DB.name') : \"\"," +
+                "it.property('DB.owner').isPresent() ? it.value('DB.owner') : \"\"])}); t.unique(); }";
+        String exMain = "g.V().has('__typeName', 'DB').as('d').order().by('DB.owner').dedup().limit(25).toList()";
         verify("DB as d select d.name, d.owner orderby (d.owner) limit 25", getExpected(exSel, exMain));
 
         String exMain2 = "g.V().has('__typeName', 'Table').and(__.has('Table.name', eq(\"sales_fact\")),__.has('Table.createTime', gt('1418265300000'))).order().by('Table.createTime').dedup().limit(25).toList()";
-        String exSel2 = "def f(r){ t=[['_col_0','_col_1']];  r.each({t.add([it.value('Table.name'),it.value('Table.createTime')])}); t.unique(); }";
+        String exSel2 = "def f(r){ t=[['_col_0','_col_1']];  r.each({t.add([" +
+                "it.property('Table.name').isPresent() ? it.value('Table.name') : \"\"," +
+                "it.property('Table.createTime').isPresent() ? it.value('Table.createTime') : \"\"])}); t.unique(); }";
         verify("Table where (name = \"sales_fact\" and createTime > \"2014-12-11T02:35:0.0Z\" ) select name as _col_0, createTime as _col_1 orderby _col_1",
                 getExpected(exSel2, exMain2));
     }
@@ -150,8 +160,10 @@ public class GremlinQueryComposerTest {
 
     @Test
     public void fromDBSelect() {
-        String expected = "def f(r){ t=[['DB.name','DB.owner']];  r.each({t.add([it.value('DB.name'),it.value('DB.owner')])}); t.unique(); }; " +
-                                  "f(g.V().has('__typeName', 'DB').has('DB.name').has('DB.owner').dedup().limit(25).toList())";
+        String expected = "def f(r){ t=[['DB.name','DB.owner']];  r.each({t.add([" +
+                "it.property('DB.name').isPresent() ? it.value('DB.name') : \"\"," +
+                "it.property('DB.owner').isPresent() ? it.value('DB.owner') : \"\"])}); t.unique(); }; " +
+                "f(g.V().has('__typeName', 'DB').dedup().limit(25).toList())";
         verify("from DB select DB.name, DB.owner", expected);
     }
 
@@ -162,8 +174,10 @@ public class GremlinQueryComposerTest {
 
     @Test
     public void whereClauseTextContains() {
-        String exMain = "g.V().has('__typeName', 'DB').has('DB.name', eq(\"Reporting\")).has('DB.owner').dedup().limit(25).toList()";
-        String exSel = "def f(r){ t=[['name','owner']];  r.each({t.add([it.value('DB.name'),it.value('DB.owner')])}); t.unique(); }";
+        String exMain = "g.V().has('__typeName', 'DB').has('DB.name', eq(\"Reporting\")).dedup().limit(25).toList()";
+        String exSel = "def f(r){ t=[['name','owner']];  r.each({t.add([" +
+                "it.property('DB.name').isPresent() ? it.value('DB.name') : \"\"," +
+                "it.property('DB.owner').isPresent() ? it.value('DB.owner') : \"\"])}); t.unique(); }";
         verify("from DB where name = \"Reporting\" select name, owner", getExpected(exSel, exMain));
         verify("from DB where (name = \"Reporting\") select name, owner", getExpected(exSel, exMain));
         verify("Table where Asset.name like \"Tab*\"",
@@ -178,23 +192,29 @@ public class GremlinQueryComposerTest {
 
     @Test
     public void whereClauseWithAsTextContains() {
-        String exSel = "def f(r){ t=[['t.name','t.owner']];  r.each({t.add([it.value('Table.name'),it.value('Table.owner')])}); t.unique(); }";
-        String exMain = "g.V().has('__typeName', 'Table').as('t').has('Table.name', eq(\"testtable_1\")).has('Table.owner').dedup().limit(25).toList()";
+        String exSel = "def f(r){ t=[['t.name','t.owner']];  r.each({t.add([" +
+                "it.property('Table.name').isPresent() ? it.value('Table.name') : \"\"," +
+                "it.property('Table.owner').isPresent() ? it.value('Table.owner') : \"\"])}); t.unique(); }";
+        String exMain = "g.V().has('__typeName', 'Table').as('t').has('Table.name', eq(\"testtable_1\")).dedup().limit(25).toList()";
         verify("Table as t where t.name = \"testtable_1\" select t.name, t.owner", getExpected(exSel, exMain));
     }
 
     @Test
     public void whereClauseWithDateCompare() {
-        String exSel = "def f(r){ t=[['t.name','t.owner']];  r.each({t.add([it.value('Table.name'),it.value('Table.owner')])}); t.unique(); }";
-        String exMain = "g.V().has('__typeName', 'Table').as('t').has('Table.createTime', eq('%s')).has('Table.name').has('Table.owner').dedup().limit(25).toList()";
+        String exSel = "def f(r){ t=[['t.name','t.owner']];  r.each({t.add([" +
+                "it.property('Table.name').isPresent() ? it.value('Table.name') : \"\"," +
+                "it.property('Table.owner').isPresent() ? it.value('Table.owner') : \"\"])}); t.unique(); }";
+        String exMain = "g.V().has('__typeName', 'Table').as('t').has('Table.createTime', eq('%s')).dedup().limit(25).toList()";
         verify("Table as t where t.createTime = \"2017-12-12T02:35:58.440Z\" select t.name, t.owner", getExpected(exSel, String.format(exMain, "1513046158440")));
         verify("Table as t where t.createTime = \"2017-12-12\" select t.name, t.owner", getExpected(exSel, String.format(exMain, "1513036800000")));
     }
 
     @Test
     public void subType() {
-        String exMain = "g.V().has('__typeName', within('Asset','Table')).has('Asset.__s_name').has('Asset.__s_owner').dedup().limit(25).toList()";
-        String exSel = "def f(r){ t=[['name','owner']];  r.each({t.add([it.value('Asset.__s_name'),it.value('Asset.__s_owner')])}); t.unique(); }";
+        String exMain = "g.V().has('__typeName', within('Asset','Table')).dedup().limit(25).toList()";
+        String exSel = "def f(r){ t=[['name','owner']];  r.each({t.add([" +
+                "it.property('Asset.__s_name').isPresent() ? it.value('Asset.__s_name') : \"\"," +
+                "it.property('Asset.__s_owner').isPresent() ? it.value('Asset.__s_owner') : \"\"])}); t.unique(); }";
 
         verify("Asset select name, owner", getExpected(exSel, exMain));
     }
@@ -325,13 +345,16 @@ public class GremlinQueryComposerTest {
     @Test
     public void systemAttributes() {
         verify("Table has __state", "g.V().has('__typeName', 'Table').has('__state').dedup().limit(25).toList()");
-        verify("Table select __guid", "def f(r){ t=[['__guid']];  r.each({t.add([it.value('__guid')])}); t.unique(); }; f(g.V().has('__typeName', 'Table').has('__guid').dedup().limit(25).toList())");
+        verify("Table select __guid", "def f(r){ t=[['__guid']];  r.each({t.add([" +
+                "it.property('__guid').isPresent() ? it.value('__guid') : \"\"])}); t.unique(); }; " +
+                "f(g.V().has('__typeName', 'Table').dedup().limit(25).toList())");
         verify("Table as t where t.__state = 'ACTIVE'", "g.V().has('__typeName', 'Table').as('t').has('__state', eq('ACTIVE')).dedup().limit(25).toList()");
     }
 
     @Test
     public void whereComplexAndSelect() {
-        String exSel = "def f(r){ t=[['name']];  r.each({t.add([it.value('Table.name')])}); t.unique(); }";
+        String exSel = "def f(r){ t=[['name']];  r.each({t.add([" +
+                "it.property('Table.name').isPresent() ? it.value('Table.name') : \"\"])}); t.unique(); }";
         String exMain = "g.V().has('__typeName', 'Table').and(__.out('__Table.db').has('DB.name', eq(\"Reporting\")).dedup().in('__Table.db'),__.has('Table.name', eq(\"sales_fact\"))).dedup().limit(25).toList()";
         verify("Table where db.name = \"Reporting\" and name =\"sales_fact\" select name", getExpected(exSel, exMain));
         verify("Table where db.name = \"Reporting\" and name =\"sales_fact\"", exMain);

@@ -87,7 +87,7 @@ class SelectClauseComposer {
     }
 
     public boolean assign(int i, String qualifiedName, GremlinClause clause) {
-        items[i] = clause.get(qualifiedName);
+        items[i] = clause.get(qualifiedName, qualifiedName);
         return true;
     }
 

@@ -253,10 +253,6 @@ public class GremlinQueryComposer {
     public void addSelect(SelectClauseComposer selectClauseComposer) {
         process(selectClauseComposer);
 
-        if (CollectionUtils.isEmpty(context.getErrorList())) {
-            addSelectAttrExistsCheck(selectClauseComposer);
-        }
-
         // If the query contains orderBy and groupBy then the transformation determination is deferred to the method processing orderBy
         if (!(queryMetadata.hasOrderBy() && queryMetadata.hasGroupBy())) {
             addSelectTransformation(selectClauseComposer, null, false);
@@ -382,24 +378,6 @@ public class GremlinQueryComposer {
         return ia.getRaw();
     }
 
-    private void addSelectAttrExistsCheck(final SelectClauseComposer selectClauseComposer) {
-        // For each of the select attributes we need to add a presence check as well, if there's no explicit where for the same
-        // NOTE: One side-effect is that the result table will be empty if any of the attributes is null or empty for the type
-        String[] qualifiedAttributes = selectClauseComposer.getAttributes();
-        if (qualifiedAttributes != null && qualifiedAttributes.length > 0) {
-            for (int i = 0; i < qualifiedAttributes.length; i++) {
-                String                qualifiedAttribute = qualifiedAttributes[i];
-                IdentifierHelper.Info idMetadata         = createInfo(qualifiedAttribute);
-                // Only primitive attributes need to be checked
-                if (idMetadata.isPrimitive() && !selectClauseComposer.isAggregatorIdx(i) && !attributesProcessed.contains(qualifiedAttribute)) {
-                    add(GremlinClause.HAS_PROPERTY, getPropertyForClause(idMetadata));
-                }
-            }
-            // All these checks should be done before the grouping happens (if any)
-            moveToLast(GremlinClause.GROUP_BY);
-        }
-    }
-
     private void process(SelectClauseComposer scc) {
         if (LOG.isDebugEnabled()) {
             LOG.debug("addSelect(items.length={})", scc.getItems() != null ? scc.getItems().length : 0);
@@ -411,6 +389,11 @@ public class GremlinQueryComposer {
 
         for (int i = 0; i < scc.getItems().length; i++) {
             IdentifierHelper.Info ia = createInfo(scc.getItem(i));
+
+            if(StringUtils.isEmpty(ia.getQualifiedName())) {
+                context.getErrorList().add("Unable to find qualified name for " + ia.getAttributeName());
+                continue;
+            }
 
             if (scc.isAggregatorWithArgument(i) && !ia.isPrimitive()) {
                 context.check(false, AtlasErrorCode.INVALID_DSL_SELECT_INVALID_AGG, ia.getQualifiedName());
