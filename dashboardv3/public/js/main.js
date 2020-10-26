@@ -308,8 +308,8 @@ require(['App',
                         Globals.dateFormat = dateFormatSeperated[0]; //date
                     }
                 }
-                if (response['atlas.ui.date.timezone'] !== undefined) {
-                    Globals.isDateTimeZone = response['atlas.ui.date.timezone'];
+                if (response['atlas.ui.date.timezone.format.enabled'] !== undefined) {
+                    Globals.isTimezoneFormatEnabled = response['atlas.ui.date.timezone.format.enabled'];
                 }
             }
             --that.asyncFetchCounter;
