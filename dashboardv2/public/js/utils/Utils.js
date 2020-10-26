@@ -935,7 +935,7 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
             if (isValidDate === false && options && options.defaultDate !== false) {
                 dateValue = moment().format(dateFormat);
             }
-            if (Globals.isDateTimeZone) {
+            if (Globals.isTimezoneFormatEnabled) {
                 if (!options || options && options.zone !== false) {
                     dateValue += " (" + moment.tz(moment.tz.guess()).zoneAbbr() + ")";
                 }

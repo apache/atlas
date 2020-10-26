@@ -44,7 +44,7 @@ define(["require"], function(require) {
     // Date Format
     Globals.dateTimeFormat = "MM/DD/YYYY hh:mm:ss A";
     Globals.dateFormat = "MM/DD/YYYY";
-    Globals.isDateTimeZone = true;
+    Globals.isTimezoneFormatEnabled = true;
 
     return Globals;
 });
