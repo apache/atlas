@@ -19,6 +19,7 @@ package org.apache.atlas.repository.store.graph.v2;
 
 import com.google.common.collect.ImmutableSet;
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.GraphTransactionInterceptor;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtilsV2;
@@ -859,6 +860,7 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
 
         entityStore.createOrUpdate(new AtlasEntityStream(dbEntity), false);
         entityStore.createOrUpdate(new AtlasEntityStream(db2Entity), false);
+        GraphTransactionInterceptor.clearCache();
 
         final AtlasEntity tableEntity = TestUtilsV2.createTableEntity(dbEntity);
 
@@ -873,6 +875,8 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
         createdTblEntity.setAttribute("databaseComposite", null);
 
         final EntityMutationResponse tblUpdateResponse = entityStore.createOrUpdate(new AtlasEntityStream(createdTblEntity), true);
+        GraphTransactionInterceptor.clearCache();
+
         final AtlasEntityHeader      updatedTblHeader  = tblUpdateResponse.getFirstEntityPartialUpdated();
         final AtlasEntity            updatedTblEntity  = getEntityFromStore(updatedTblHeader);
         final AtlasEntity            deletedDb2Entity  = getEntityFromStore(db2Entity.getGuid());
