@@ -23,6 +23,7 @@ import org.aopalliance.intercept.MethodInvocation;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.exception.NotFoundException;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
@@ -53,6 +54,30 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
     private static final ThreadLocal<Map<String, AtlasVertex>>  guidVertexCache            = ThreadLocal.withInitial(() -> new HashMap<>());
 
     private final AtlasGraph graph;
+
+    private static final ThreadLocal<Map<Object, String>> vertexGuidCache =
+            new ThreadLocal<Map<Object, String>>() {
+                @Override
+                public Map<Object, String> initialValue() {
+                    return new HashMap<Object, String>();
+                }
+            };
+
+    private static final ThreadLocal<Map<Object, AtlasEntity.Status>> vertexStateCache =
+            new ThreadLocal<Map<Object, AtlasEntity.Status>>() {
+                @Override
+                public Map<Object, AtlasEntity.Status> initialValue() {
+                    return new HashMap<Object, AtlasEntity.Status>();
+                }
+            };
+
+    private static final ThreadLocal<Map<Object, AtlasEntity.Status>> edgeStateCache =
+            new ThreadLocal<Map<Object, AtlasEntity.Status>>() {
+                @Override
+                public Map<Object, AtlasEntity.Status> initialValue() {
+                    return new HashMap<Object, AtlasEntity.Status>();
+                }
+            };
 
     @Inject
     public GraphTransactionInterceptor(AtlasGraph graph) {
@@ -117,7 +142,7 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
                 // Reset the boolean flags
                 isTxnOpen.set(Boolean.FALSE);
                 innerFailure.set(Boolean.FALSE);
-                guidVertexCache.get().clear();
+                clearCache();
 
                 List<PostTransactionHook> trxHooks = postTransactionHooks.get();
 
@@ -201,6 +226,9 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
 
     public static void clearCache() {
         guidVertexCache.get().clear();
+        vertexGuidCache.get().clear();
+        vertexStateCache.get().clear();
+        edgeStateCache.get().clear();
     }
 
     boolean logException(Throwable t) {
@@ -212,6 +240,72 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
         } else {
             return true;
         }
+    }
+
+    public static void addToVertexGuidCache(Object vertexId, String guid) {
+
+        if (guid == null) {
+            removeFromVertexGuidCache(vertexId);
+        } else {
+            Map<Object, String> cache = vertexGuidCache.get();
+            cache.put(vertexId, guid);
+        }
+    }
+
+    public static void removeFromVertexGuidCache(Object vertexId) {
+        Map<Object, String> cache = vertexGuidCache.get();
+
+        cache.remove(vertexId);
+    }
+
+    public static String getVertexGuidFromCache(Object vertexId) {
+        Map<Object, String> cache = vertexGuidCache.get();
+
+        return cache.get(vertexId);
+    }
+
+    public static void addToVertexStateCache(Object vertexId, AtlasEntity.Status status) {
+
+        if (status == null) {
+            removeFromVertexStateCache(vertexId);
+        } else {
+            Map<Object, AtlasEntity.Status> cache = vertexStateCache.get();
+            cache.put(vertexId, status);
+        }
+    }
+
+    public static void removeFromVertexStateCache(Object vertexId) {
+        Map<Object, AtlasEntity.Status> cache = vertexStateCache.get();
+
+        cache.remove(vertexId);
+    }
+
+    public static AtlasEntity.Status getVertexStateFromCache(Object vertexId) {
+        Map<Object, AtlasEntity.Status> cache = vertexStateCache.get();
+
+        return cache.get(vertexId);
+    }
+
+    public static void addToEdgeStateCache(Object edgeId, AtlasEntity.Status status) {
+
+        if (status == null) {
+            removeFromEdgeStateCache(edgeId);
+        } else {
+            Map<Object, AtlasEntity.Status> cache = edgeStateCache.get();
+            cache.put(edgeId, status);
+        }
+    }
+
+    public static void removeFromEdgeStateCache(Object edgeId) {
+        Map<Object, AtlasEntity.Status> cache = edgeStateCache.get();
+
+        cache.remove(edgeId);
+    }
+
+    public static AtlasEntity.Status getEdgeStateFromCache(Object edgeId) {
+        Map<Object, AtlasEntity.Status> cache = edgeStateCache.get();
+
+        return cache.get(edgeId);
     }
 
     public static abstract class PostTransactionHook {
