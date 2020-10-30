@@ -27,8 +27,8 @@
     <description>Apache Atlas Documentation</description>
     <name>Apache Atlas Documentation</name>
     <properties>
-        <skipTests>true</skipTests>
         <skipSite>false</skipSite>
+        <skipTests>true</skipTests>
     </properties>
     <!-- TODO -->
     <!-- <reporting>
