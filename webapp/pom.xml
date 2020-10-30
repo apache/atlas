@@ -32,9 +32,9 @@
     <packaging>war</packaging>
 
     <properties>
-        <projectBaseDir>${project.basedir}/..</projectBaseDir>
         <debug.jetty.daemon>true</debug.jetty.daemon>
         <log4j.configuration.url>file:///${project.build.directory}/../../distro/src/conf/atlas-log4j.xml</log4j.configuration.url>
+        <projectBaseDir>${project.basedir}/..</projectBaseDir>
     </properties>
 
     <profiles>
