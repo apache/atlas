@@ -124,11 +124,25 @@ define(['require',
                                 var name = ((name ? name : this.entityName));
                                 that.updateName(name);
                                 if (parseDetailsObject) {
-                                    var attributesDetails = parseDetailsObject.attributes,
+                                    var attributesDetails = $.extend(true, {}, parseDetailsObject.attributes),
                                         customAttr = parseDetailsObject.customAttributes,
                                         labelsDetails = parseDetailsObject.labels,
-                                        relationshipAttributes = parseDetailsObject.relationshipAttributes;
+                                        relationshipAttributes = parseDetailsObject.relationshipAttributes,
+                                        bmAttributesDeails = that.entity.businessAttributes ? that.entity.businessAttributes[parseDetailsObject.typeName] : null;
                                     if (attributesDetails) {
+                                        if (bmAttributesDeails) {
+                                            _.each(Object.keys(attributesDetails), function(key) {
+                                                if (bmAttributesDeails[key].typeName.toLowerCase().indexOf("date") > -1) {
+                                                    if (attributesDetails[key].length) { // multiple date values
+                                                        attributesDetails[key] = _.map(attributesDetails[key], function(dateValue) {
+                                                            return Utils.formatDate({ date: dateValue })
+                                                        });
+                                                    } else {
+                                                        attributesDetails[key] = Utils.formatDate({ date: attributesDetails[key] });
+                                                    }
+                                                }
+                                            })
+                                        }
                                         that.ui.attributeDetails.removeClass('hide');
                                         that.action.indexOf("Classification") === -1 ? that.ui.panelAttrHeading.html("Technical properties ") : that.ui.panelAttrHeading.html("Properties ");
                                         var attrTable = that.createTableWithValues(attributesDetails);
