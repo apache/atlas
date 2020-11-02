@@ -128,7 +128,7 @@ def main():
             mc.run_zookeeper(mc.zookeeperBinDir(atlas_home), "start", logdir)
             print "zookeeper started."
 
-        mc.run_solr(mc.solrBinDir(atlas_home), "start", mc.get_solr_zk_url(confdir), mc.solrPort(), logdir)
+        mc.run_solr(mc.solrBinDir(atlas_home), "start", mc.get_solr_zk_url(confdir), mc.solrPort(), logdir, True, mc.solrHomeDir(atlas_home))
         print "solr started."
 
         print "setting up solr collections..."

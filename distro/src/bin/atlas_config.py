@@ -50,7 +50,9 @@ MANAGE_EMBEDDED_CASSANDRA = "MANAGE_EMBEDDED_CASSANDRA"
 MANAGE_LOCAL_ELASTICSEARCH = "MANAGE_LOCAL_ELASTICSEARCH"
 SOLR_BIN = "SOLR_BIN"
 SOLR_CONF = "SOLR_CONF"
+SOLR_HOME = "SOLR_HOME"
 SOLR_PORT = "SOLR_PORT"
+SOLR_DIR = "SOLR_DIR"
 DEFAULT_SOLR_PORT = "9838"
 SOLR_SHARDS = "SOLR_SHARDS"
 DEFAULT_SOLR_SHARDS = "1"
@@ -59,7 +61,7 @@ DEFAULT_SOLR_REPLICATION_FACTOR = "1"
 
 ENV_KEYS = ["JAVA_HOME", ATLAS_OPTS, ATLAS_SERVER_OPTS, ATLAS_SERVER_HEAP, ATLAS_LOG, ATLAS_PID, ATLAS_CONF,
             "ATLASCPPATH", ATLAS_DATA, ATLAS_HOME, ATLAS_WEBAPP, HBASE_CONF_DIR, SOLR_PORT, MANAGE_LOCAL_HBASE,
-            MANAGE_LOCAL_SOLR, MANAGE_EMBEDDED_CASSANDRA, MANAGE_LOCAL_ELASTICSEARCH]
+            MANAGE_LOCAL_SOLR, MANAGE_EMBEDDED_CASSANDRA, MANAGE_LOCAL_ELASTICSEARCH, SOLR_HOME, SOLR_DIR]
 IS_WINDOWS = platform.system() == "Windows"
 ON_POSIX = 'posix' in sys.builtin_module_names
 CONF_FILE="atlas-application.properties"
@@ -107,11 +109,20 @@ def hbaseConfDir(dir):
 def zookeeperBinDir(dir):
     return os.environ.get(SOLR_BIN, os.path.join(dir, "zk", BIN))
 
+def solrDir():
+    return os.environ.get(SOLR_DIR, os.path.join(atlasDir(), "solr"))
+
+def solrServerDir():
+    return os.path.join(solrDir(), "server")
+
 def solrBinDir(dir):
     return os.environ.get(SOLR_BIN, os.path.join(dir, "solr", BIN))
 
 def elasticsearchBinDir(dir):
     return os.environ.get(SOLR_BIN, os.path.join(dir, "elasticsearch", BIN))
+
+def solrHomeDir(dir):
+    return os.environ.get(SOLR_HOME, os.path.join(dir, "data", "solr"))
 
 def solrConfDir(dir):
     return os.environ.get(SOLR_CONF, os.path.join(dir, "solr", CONFIG_SETS_CONF))
@@ -565,7 +576,7 @@ def start_elasticsearch(dir, logdir = None, wait=True):
     sleep(6)
     return processVal
 
-def run_solr(dir, action, zk_url = None, port = None, logdir = None, wait=True):
+def run_solr(dir, action, zk_url = None, port = None, logdir = None, wait=True, homedir = None):
 
     solrScript = "solr"
 
@@ -582,6 +593,19 @@ def run_solr(dir, action, zk_url = None, port = None, logdir = None, wait=True):
             cmd = [os.path.join(dir, solrScript), action, '-z', zk_url]
         else:
             cmd = [os.path.join(dir, solrScript), action, '-z', zk_url, '-p', port]
+
+    if homedir is not None:
+        if not os.path.exists(homedir) :
+            os.makedirs(homedir)
+        #Copy solr.xml from installation directory to the solr home directory
+        srcSolrXmlPath = os.path.join(solrServerDir(), "solr", "solr.xml")
+        destSolrXmlPath = os.path.join(homedir, "solr.xml")
+        if not os.path.exists(destSolrXmlPath) :
+            print "solr.xml doesn't exist in " + homedir + ", copying from " + srcSolrXmlPath
+            copyCmd = ["cp", srcSolrXmlPath, homedir]
+            runProcess(copyCmd, logdir, False, True)
+        cmd.append('-s')
+        cmd.append(homedir)
 
     return runProcess(cmd, logdir, False, wait)
 
