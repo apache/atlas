@@ -67,9 +67,9 @@ Docker files in this folder create docker images and run them to build Apache At
 
    This might take about 10 minutes to complete.
 
-   5.8. Execute following command to install and run Atlas services in a container:
+   5.5. Execute following command to install and run Atlas services in a container:
 
-        docker run -it -d --name atlas --hostname atlas.example.com -p 21000:21000 atlas
+        docker run -it -d --name atlas --hostname atlas.example.com -p 21000:21000 -v $(pwd)/data:/home/atlas/data atlas
 
    This might take few minutes to complete.
 

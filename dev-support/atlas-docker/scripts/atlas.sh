@@ -16,6 +16,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+set -x
 
 if [ ! -e ${ATLAS_HOME}/.setupDone ]
 then
@@ -36,6 +37,7 @@ then
 fi
 
 su -c "cd ${ATLAS_HOME}/bin && ./atlas_start.py" atlas
+ATLAS_PID=`ps -ef  | grep -v grep | grep -i "org.apache.atlas.Atlas" | awk '{print $2}'`
 
 # prevent the container from exiting
-/bin/bash
+tail --pid=$ATLAS_PID -f /dev/null

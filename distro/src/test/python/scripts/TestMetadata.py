@@ -106,7 +106,7 @@ class TestMetadata(unittest.TestCase):
             calls = [
                 call(['atlas_home/hbase/bin/hbase-daemon.sh', '--config', 'atlas_home/hbase/conf', 'start', 'master'],
                      'atlas_home/logs', False, True),
-                call(['atlas_home/solr/bin/solr', 'start', '-z', 'localhost:9838', '-p', '9838'], 'atlas_home/logs',
+                call(['atlas_home/solr/bin/solr', 'start', '-z', 'localhost:9838', '-p', '9838', '-s', 'atlas_home/data/solr'], 'atlas_home/logs',
                      False, True),
                 call(['atlas_home/solr/bin/solr', 'create', '-c', 'vertex_index', '-d',
                       'atlas_home/solr/server/solr/configsets/_default/conf', '-shards', '1', '-replicationFactor',

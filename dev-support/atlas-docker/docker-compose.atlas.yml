@@ -13,6 +13,8 @@ services:
     tty: true
     networks:
       - atlas
+    volumes:
+      - ./data:/home/atlas/data
     ports:
       - "21000:21000"
     depends_on:

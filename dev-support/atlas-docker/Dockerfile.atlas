@@ -26,8 +26,12 @@ RUN tar xfz /tmp/apache-atlas-${ATLAS_VERSION}-bin.tar.gz --directory=/opt/ && \
     rm -f /tmp/apache-atlas-${ATLAS_VERSION}-bin.tar.gz && \
     mkdir -p /var/run/atlas && \
     mkdir -p /var/log/atlas && \
+    mkdir -p /home/atlas/data && \
     rm -rf ${ATLAS_HOME}/logs && \
     ln -s /var/log/atlas ${ATLAS_HOME}/logs && \
+    ln -s /home/atlas/data ${ATLAS_HOME}/data && \
     chown -R atlas:atlas ${ATLAS_HOME}/ /var/run/atlas/ /var/log/atlas/
+
+VOLUME /home/atlas/data
 
 ENTRYPOINT [ "/home/atlas/scripts/atlas.sh" ]
