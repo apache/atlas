@@ -105,7 +105,7 @@ public class AtlasServerService {
 
         AtlasObjectId objectId = getObjectId(server);
         for (String guid : entityGuids) {
-            AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = entityStore.getById(guid, false, true);
+            AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = entityStore.getById(guid, false, false);
             updateAttribute(entityWithExtInfo, attributeName, objectId);
         }
     }
