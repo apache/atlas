@@ -624,6 +624,8 @@ public class AdminResource {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AdminResource.getAtlasAudits(" + auditSearchParameters + ")");
             }
 
+            AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_AUDITS), "Admin Audits");
+
             return auditService.get(auditSearchParameters);
         } finally {
             AtlasPerfTracer.log(perf);
