@@ -54,7 +54,8 @@ public class AtlasPatchManager {
                 new ClassificationTextPatch(context),
                 new FreeTextRequestHandlerPatch(context),
                 new SuggestionsRequestHandlerPatch(context),
-                new IndexConsistencyPatch(context)
+                new IndexConsistencyPatch(context),
+                new ReIndexPatch(context)
         };
 
         try {

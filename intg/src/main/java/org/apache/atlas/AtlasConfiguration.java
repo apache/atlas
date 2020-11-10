@@ -73,7 +73,8 @@ public enum AtlasConfiguration {
     LINEAGE_USING_GREMLIN("atlas.lineage.query.use.gremlin", false),
 
     HTTP_HEADER_SERVER_VALUE("atlas.http.header.server.value","Apache Atlas"),
-    STORAGE_CONSISTENCY_LOCK_ENABLED("atlas.graph.storage.consistency-lock.enabled", true);
+    STORAGE_CONSISTENCY_LOCK_ENABLED("atlas.graph.storage.consistency-lock.enabled", true),
+    REINDEX_PATCH_ENABLED("atlas.patch.reindex.enabled", false);
 
     private static final Configuration APPLICATION_PROPERTIES;
 
