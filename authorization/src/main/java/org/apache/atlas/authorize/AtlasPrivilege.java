@@ -44,7 +44,9 @@ public enum AtlasPrivilege {
      ENTITY_REMOVE_LABEL("entity-remove-label"),
      ENTITY_UPDATE_BUSINESS_METADATA("entity-update-business-metadata"),
 
-     TYPE_READ("type-read");
+     TYPE_READ("type-read"),
+
+     ADMIN_AUDITS("admin-audits");
 
      private final String type;
 
