@@ -25,6 +25,7 @@ import org.apache.atlas.model.impexp.AtlasExportResult;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.model.typedef.AtlasBusinessMetadataDef;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
@@ -162,6 +163,12 @@ public class ExportService {
             AtlasRelationshipDef relationshipDef = typeRegistry.getRelationshipDefByName(relationshipType);
 
             typesDef.getRelationshipDefs().add(relationshipDef);
+        }
+
+        for (String bm : context.businessMetadataTypes) {
+            AtlasBusinessMetadataDef bmDef = typeRegistry.getBusinessMetadataDefByName(bm);
+
+            typesDef.getBusinessMetadataDefs().add(bmDef);
         }
     }
 

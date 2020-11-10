@@ -121,6 +121,7 @@ class ExportTypeProcessor {
 
             addAttributeTypes(entityType, context);
             addRelationshipTypes(entityType, context);
+            addBusinessMetadataType(entityType, context);
 
             if (CollectionUtils.isNotEmpty(entityType.getAllSuperTypes())) {
                 for (String superType : entityType.getAllSuperTypes()) {
@@ -177,6 +178,14 @@ class ExportTypeProcessor {
             context.businessMetadataTypes.add(businessMetadataType.getTypeName());
 
             addAttributeTypes(businessMetadataType, context);
+        }
+    }
+
+    private void addBusinessMetadataType(AtlasEntityType entityType, ExportService.ExportContext context) {
+        for (String bmTypeName : entityType.getBusinessAttributes().keySet()) {
+            AtlasBusinessMetadataType bmType = typeRegistry.getBusinessMetadataTypeByName(bmTypeName);
+
+            addBusinessMetadataType(bmType, context);
         }
     }
 
