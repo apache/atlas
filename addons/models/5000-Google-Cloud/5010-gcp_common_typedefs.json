@@ -1,0 +1,55 @@
+{
+    "enumDefs": [],
+    "structDefs": [
+        {
+            "name":        "gcp_tag",
+            "description": "Atlas Type representing a tag/value pair associated with an GCP object, eg gs bucket",
+            "serviceType": "gcp",
+            "typeVersion": "1.0",
+            "attributeDefs": [
+                {
+                    "name":        "key",
+                    "typeName":    "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional":  false,
+                    "isUnique":    false
+                },
+                {
+                    "name":        "value",
+                    "typeName":    "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional":  false,
+                    "isUnique":    false
+                }
+            ]
+        },
+        {
+            "name":        "gcp_cloud_watch_metric",
+            "description": "Atlas Type representing a metric provided by GCP Cloud Watch",
+            "serviceType": "gcp",
+            "typeVersion": "1.0",
+            "attributeDefs": [
+                {
+                    "name":        "metricName",
+                    "typeName":    "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional":  false,
+                    "isUnique":    false
+                },
+                {
+                    "name":        "scope",
+                    "typeName":    "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional":  false,
+                    "isUnique":    false
+                }
+            ]
+        }
+    ],
+    "classificationDefs": [],
+    "entityDefs": []
+}

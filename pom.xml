@@ -684,7 +684,7 @@
         <sqoop.version>1.4.6.2.3.99.0-195</sqoop.version>
         <storm.version>1.2.0</storm.version>
         <curator.version>4.0.1</curator.version>
-        <elasticsearch.version>5.6.4</elasticsearch.version>
+        <elasticsearch.version>7.6.1</elasticsearch.version>
 
         <json.version>3.2.11</json.version>
         <akka.version>2.3.7</akka.version>
