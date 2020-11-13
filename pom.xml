@@ -693,7 +693,7 @@
         <hppc.version>0.8.1</hppc.version>
         <jackson.databind.version>2.10.5</jackson.databind.version>
         <jackson.version>2.10.5</jackson.version>
-        <janus.version>0.5.1</janus.version>
+        <janus.version>0.5.2</janus.version>
         <javax-inject.version>1</javax-inject.version>
         <javax.servlet.version>3.1.0</javax.servlet.version>
         <jersey-spring.version>1.19.4</jersey-spring.version>
