@@ -23,6 +23,7 @@ import org.apache.atlas.pc.WorkItemBuilder;
 import org.apache.atlas.pc.WorkItemConsumer;
 import org.apache.atlas.pc.WorkItemManager;
 import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasElement;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -53,7 +54,8 @@ public class ReIndexPatch extends AtlasPatchHandler {
 
     @Override
     public void apply() throws AtlasBaseException {
-        if (AtlasConfiguration.REINDEX_PATCH_ENABLED.getBoolean() == false) {
+        if (AtlasConfiguration.REBUILD_INDEX.getBoolean() == false) {
+            LOG.info("ReIndexPatch: Skipped, since not enabled!");
             return;
         }
 
@@ -113,8 +115,8 @@ public class ReIndexPatch extends AtlasPatchHandler {
         }
 
         private static void edges(WorkItemManager manager, AtlasGraph graph) {
-            Iterable<Object> iterable = graph.getEdges();
-            for (Iterator<Object> iter = iterable.iterator(); iter.hasNext(); ) {
+            Iterable<AtlasEdge> iterable = graph.getEdges();
+            for (Iterator<AtlasEdge> iter = iterable.iterator(); iter.hasNext(); ) {
                 manager.checkProduce(iter.next());
             }
         }
@@ -144,9 +146,9 @@ public class ReIndexPatch extends AtlasPatchHandler {
     }
 
     private static class ReindexConsumer extends WorkItemConsumer<AtlasElement> {
-        private List<AtlasElement> list = new ArrayList();
-        private AtlasGraph graph;
-        private String[] indexNames;
+        private final List<AtlasElement> list = new ArrayList();
+        private final String[] indexNames;
+        private final AtlasGraph graph;
         private final AtomicLong counter;
 
         public ReindexConsumer(BlockingQueue queue, AtlasGraph graph, String[] indexNames) {

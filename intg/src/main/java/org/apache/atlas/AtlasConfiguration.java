@@ -74,7 +74,7 @@ public enum AtlasConfiguration {
 
     HTTP_HEADER_SERVER_VALUE("atlas.http.header.server.value","Apache Atlas"),
     STORAGE_CONSISTENCY_LOCK_ENABLED("atlas.graph.storage.consistency-lock.enabled", true),
-    REINDEX_PATCH_ENABLED("atlas.patch.reindex.enabled", false);
+    REBUILD_INDEX("atlas.rebuild.index", false);
 
     private static final Configuration APPLICATION_PROPERTIES;
 
