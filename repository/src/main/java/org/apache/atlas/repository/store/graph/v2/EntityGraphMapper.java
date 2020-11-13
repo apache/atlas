@@ -255,6 +255,10 @@ public class EntityGraphMapper {
         if (entity.getCustomAttributes() != null) {
             setCustomAttributes(vertex, entity);
         }
+
+        if (entity.getLabels() != null) {
+            setLabels(vertex, entity.getLabels());
+        }
     }
 
     public EntityMutationResponse mapAttributesAndClassifications(EntityMutationContext context, final boolean isPartialUpdate, final boolean replaceClassifications, boolean replaceBusinessAttributes) throws AtlasBaseException {
@@ -299,8 +303,6 @@ public class EntityGraphMapper {
                 mapAttributes(updatedEntity, entityType, vertex, updateType, context);
                 setCustomAttributes(vertex,updatedEntity);
 
-                resp.addEntity(updateType, constructHeader(updatedEntity, vertex));
-
                 if (replaceClassifications) {
                     deleteClassifications(guid);
                     addClassifications(context, guid, updatedEntity.getClassifications());
@@ -310,6 +312,7 @@ public class EntityGraphMapper {
                     setBusinessAttributes(vertex, entityType, updatedEntity.getBusinessAttributes());
                 }
 
+                resp.addEntity(updateType, constructHeader(updatedEntity, vertex));
                 reqContext.cache(updatedEntity);
             }
         }
