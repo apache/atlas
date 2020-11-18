@@ -691,6 +691,8 @@
         <hbase.version>2.0.2</hbase.version>
         <hive.version>3.1.0</hive.version>
         <hppc.version>0.8.1</hppc.version>
+        <httpcomponents-httpclient.version>4.5.13</httpcomponents-httpclient.version>
+        <httpcomponents-httpcore.version>4.4.13</httpcomponents-httpcore.version>
         <jackson.databind.version>2.10.5</jackson.databind.version>
         <jackson.version>2.10.5</jackson.version>
         <janus.version>0.5.2</janus.version>
@@ -1597,13 +1599,13 @@
             <dependency>
                 <groupId>org.apache.httpcomponents</groupId>
                 <artifactId>httpclient</artifactId>
-                <version>4.5.4</version>
+                <version>${httpcomponents-httpclient.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>org.apache.httpcomponents</groupId>
                 <artifactId>httpcore</artifactId>
-                <version>4.4.10</version>
+                <version>${httpcomponents-httpcore.version}</version>
             </dependency>
 
             <dependency>
