@@ -312,3 +312,41 @@ span#zoom_in {
         }
     }
 }
+
+.profile-bar {
+    fill: #38bb9b;
+    stroke: #38bb9b;
+    fill-opacity: 0.75;
+}
+
+.axislabel {
+    text-anchor: middle;
+    fill: #999;
+    font: 400 12px Arial, sans-serif;
+}
+
+.grid {
+
+    path,
+    line {
+        stroke: lightgrey;
+        stroke-opacity: 0.7;
+        shape-rendering: crispEdges;
+    }
+}
+
+.d3-tip {
+    table td {
+        padding: 2px 9px 2px 0;
+        vertical-align: middle;
+
+        &.value {
+            text-align: right;
+            font-weight: 700;
+        }
+
+        &.key {
+            font-weight: 400;
+        }
+    }
+}

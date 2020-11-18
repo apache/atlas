@@ -105,7 +105,6 @@ module.exports = function(grunt) {
                     'platform.js': { 'platform': 'platform' },
                     'query-builder.standalone.min.js': { 'jQuery-QueryBuilder/dist/js': 'jQueryQueryBuilder/js' },
                     'daterangepicker.js': { 'bootstrap-daterangepicker': 'bootstrap-daterangepicker/js' },
-                    'nv.d3.min.js': { 'nvd3/build': 'nvd3' },
                     'jquery.sparkline.min.js': { 'jquery-sparkline': 'sparkline' },
                     'table-dragger.js': { 'table-dragger/dist': 'table-dragger' },
                     'jstree.min.js': { 'jstree/dist': 'jstree' },
@@ -154,7 +153,6 @@ module.exports = function(grunt) {
                     }],
                     'query-builder.default.min.css': { 'jQuery-QueryBuilder/dist/css': 'jQueryQueryBuilder/css' },
                     'daterangepicker.css': { 'bootstrap-daterangepicker': 'bootstrap-daterangepicker/css' },
-                    'nv.d3.min.css': { 'nvd3/build': 'nvd3/css' },
                     'pretty-checkbox.min.css': { 'pretty-checkbox/dist': 'pretty-checkbox/css' },
                     'dropzone.css': { 'dropzone/dist': "dropzone/css" }
                 }
@@ -185,7 +183,6 @@ module.exports = function(grunt) {
                     ],
                     'LICENSE.md': [{ 'backbone.babysitter': 'backbone-babysitter' },
                         { 'backbone.wreqr': 'backbone-wreqr' },
-                        { 'nvd3': 'nvd3/' },
                         { 'lossless-json': 'lossless-json' }
                     ],
                     'license.txt': [{ 'backbone.marionette': 'backbone-marionette' }],
