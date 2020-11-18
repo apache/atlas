@@ -64,7 +64,6 @@
     <link href="js/external_lib/pnotify/pnotify.custom.min.css?bust=<%- bust %>" rel="stylesheet">
     <link href="js/libs/jQueryQueryBuilder/css/query-builder.default.min.css?bust=<%- bust %>" rel="stylesheet">
     <link href="js/libs/bootstrap-daterangepicker/css/daterangepicker.css?bust=<%- bust %>" rel="stylesheet">
-    <link rel="stylesheet" href="js/libs/nvd3/css/nv.d3.min.css?bust=<%- bust %>">
     <link href="js/libs/jstree/css/default-dark/default-dark-theme.min.css?bust=<%- bust %>" rel="stylesheet">
     <link href="js/libs/pretty-checkbox/css/pretty-checkbox.min.css?bust=<%- bust %>" rel="stylesheet">
     <link href="js/libs/dropzone/css/dropzone.css?bust=<%- bust %>" rel="stylesheet">

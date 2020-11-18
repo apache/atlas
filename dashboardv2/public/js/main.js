@@ -106,9 +106,6 @@ require.config({
             'deps': ['d3'],
             'exports': ['dagreD3']
         },
-        'nvd3': {
-            'deps': ['d3']
-        },
         'sparkline': {
             'deps': ['jquery'],
             'exports': ['sparkline']
@@ -159,7 +156,6 @@ require.config({
         'd3-tip': 'libs/d3/index',
         'LineageHelper': 'external_lib/atlas-lineage/dist/index',
         'dagreD3': 'libs/dagre-d3/dagre-d3.min',
-        'nvd3': 'libs/nvd3/nv.d3.min',
         'sparkline': 'libs/sparkline/jquery.sparkline.min',
         'tmpl': 'templates',
         'requirejs.text': 'libs/requirejs-text/text',
