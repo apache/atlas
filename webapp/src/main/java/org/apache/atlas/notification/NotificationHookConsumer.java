@@ -809,9 +809,10 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                                 recordFailedMessages();
                             }
                             return;
-                        } else if (e instanceof org.apache.atlas.repository.graphdb.AtlasSchemaViolationException
-                                        || exceptionClassName.equals(EXCEPTION_CLASS_NAME_JANUSGRAPH_EXCEPTION)
-                                        || exceptionClassName.equals(EXCEPTION_CLASS_NAME_PERMANENTLOCKING_EXCEPTION)) {
+                        } else if (e instanceof org.apache.atlas.repository.graphdb.AtlasSchemaViolationException) {
+                            LOG.warn("{}: Continuing: {}", exceptionClassName, e.getMessage());
+                        } else if (exceptionClassName.equals(EXCEPTION_CLASS_NAME_JANUSGRAPH_EXCEPTION)
+                                || exceptionClassName.equals(EXCEPTION_CLASS_NAME_PERMANENTLOCKING_EXCEPTION)) {
                             LOG.warn("{}: Pausing & retry: Try: {}: Pause: {} ms. {}",
                                     exceptionClassName, numRetries, adaptiveWaiter.waitDuration, e.getMessage());
 
