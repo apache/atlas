@@ -81,7 +81,7 @@ function doLogin() {
                     } else if (resp.msgDesc.startsWith("User role credentials is not set properly")) {
                         $("#errorBox .errorMsg").text("User role or credentials is not set properly");
                     } else {
-                        $("#errorBox .errorMsg").text("Error while authentication");
+                        $("#errorBox .errorMsg").text("Error while authenticating");
                     }
                 } catch (err) {
                     $("#errorBox .errorMsg").text("Something went wrong");
