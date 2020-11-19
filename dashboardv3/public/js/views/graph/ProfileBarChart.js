@@ -19,7 +19,7 @@
 define(["require", "d3", "d3-tip"], function(require, d3, d3Tip) {
     "use strict";
     var ProfileBarChart = {
-        render(options) {
+        render: function(options) {
             var el = options.el,
                 type = options.data.key,
                 data = options.data.values,
@@ -117,7 +117,7 @@ define(["require", "d3", "d3-tip"], function(require, d3, d3Tip) {
                     return x(d.value);
                 })
                 .attr("width", x.bandwidth())
-                .attr("y", d => { return height; })
+                .attr("y", function(d) { return height; })
                 .attr("height", 0)
                 .on("click", function(e) {
                     tooltip.hide();
