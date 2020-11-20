@@ -136,6 +136,7 @@ public class AdminResource {
     private static final String UI_DATE_TIMEZONE_FORMAT_ENABLED = "atlas.ui.date.timezone.format.enabled";
     private static final String UI_DATE_FORMAT                 = "atlas.ui.date.format";
     private static final String UI_DATE_DEFAULT_FORMAT         = "MM/DD/YYYY hh:mm:ss A";
+    private static final String OPERATION_STATUS               = "operationStatus";
     private static final List TIMEZONE_LIST  = Arrays.asList(TimeZone.getAvailableIDs());
 
     @Context
@@ -424,9 +425,14 @@ public class AdminResource {
                 exportSink.close();
             }
 
-            if (isSuccessful) {
-                String params = AtlasJson.toJson(result.getRequest().getOptions());
+            if (isSuccessful && CollectionUtils.isNotEmpty(result.getRequest().getItemsToExport())) {
+
+                Map<String, Object> optionMap = result.getRequest().getOptions();
+                optionMap.put(OPERATION_STATUS, result.getOperationStatus().name());
+                String params = AtlasJson.toJson(optionMap);
+
                 List<AtlasObjectId> objectIds = result.getRequest().getItemsToExport();
+
                 auditImportExportOperations(objectIds, AuditOperation.EXPORT, params);
             }
 
@@ -479,7 +485,12 @@ public class AdminResource {
         }
 
         List<AtlasObjectId> objectIds = result.getExportResult().getRequest().getItemsToExport();
-        auditImportExportOperations(objectIds, AuditOperation.IMPORT, null);
+
+        Map<String, Object> optionMap = new HashMap<>();
+        optionMap.put(OPERATION_STATUS, result.getOperationStatus().name());
+        String params = AtlasJson.toJson(optionMap);
+
+        auditImportExportOperations(objectIds, AuditOperation.IMPORT, params);
 
         return result;
     }
