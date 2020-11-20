@@ -506,13 +506,8 @@ public class AdminResource {
 
             final List<AtlasEntityHeader> purgedEntities = resp.getPurgedEntities();
             if(purgedEntities != null && purgedEntities.size() > 0) {
-                final String clientId = RequestContext.get().getClientIPAddress();
-                final Date startTime = new Date(RequestContext.get().getRequestTime());
-                final Date endTime = new Date();
-
-                auditService.add(AtlasAuthorizationUtils.getCurrentUserName(), AuditOperation.PURGE,
-                        clientId != null ? clientId : "", startTime, endTime, guids.toString(),
-                        resp.getPurgedEntitiesIds(), resp.getPurgedEntities().size());
+                auditService.add(AuditOperation.PURGE, guids.toString(), resp.getPurgedEntitiesIds(),
+                        resp.getPurgedEntities().size());
             }
 
             return resp;
@@ -765,15 +760,10 @@ public class AdminResource {
     }
 
     private void auditImportExportOperations(List<AtlasObjectId> objectIds, AuditOperation auditOperation, String params) throws AtlasBaseException {
-        final String clientIp = RequestContext.get().getClientIPAddress();
-        final Date startTime = new Date(RequestContext.get().getRequestTime());
-        final Date endTime = new Date();
 
         Map<String, Long> entityCountByType = objectIds.stream().collect(Collectors.groupingBy(AtlasObjectId::getTypeName, Collectors.counting()));
         int resultCount = objectIds.size();
 
-        auditService.add(RequestContext.get().getUser() == null ? "" : RequestContext.get().getUser(), auditOperation,
-                clientIp != null ? clientIp : "", startTime, endTime, params,
-                AtlasJson.toJson(entityCountByType), resultCount);
+        auditService.add(auditOperation, params, AtlasJson.toJson(entityCountByType), resultCount);
     }
 }

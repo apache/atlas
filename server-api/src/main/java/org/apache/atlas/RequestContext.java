@@ -26,6 +26,7 @@ import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
 import org.apache.commons.lang.StringUtils;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -128,7 +129,21 @@ public class RequestContext {
 
     public static String getCurrentUser() {
         RequestContext context = CURRENT_CONTEXT.get();
-        return context != null ? context.getUser() : null;
+        String ret = context != null ? context.getUser() : null;
+        if (StringUtils.isBlank(ret)) {
+            try {
+                ret = UserGroupInformation.getLoginUser().getShortUserName();
+            } catch (Exception e) {
+                ret = null;
+            }
+            if (StringUtils.isBlank(ret)){
+                ret = System.getProperty("user.name");
+                if (StringUtils.isBlank(ret)) {
+                    ret = "atlas";
+                }
+            }
+        }
+        return ret;
     }
 
     public String getUser() {

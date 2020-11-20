@@ -19,6 +19,7 @@
 package org.apache.atlas.repository.audit;
 
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.AtlasService;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.discovery.AtlasDiscoveryService;
@@ -38,6 +39,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -60,6 +63,27 @@ public class AtlasAuditService {
     @GraphTransaction
     public void save(AtlasAuditEntry entry) throws AtlasBaseException {
         dataAccess.saveNoLoad(entry);
+    }
+
+    public void add(AuditOperation operation, String params, String result, long resultCount) throws AtlasBaseException {
+        final Date startTime = new Date(RequestContext.get().getRequestTime());
+        final Date endTime = new Date();
+        add(operation, startTime, endTime, params, result, resultCount);
+    }
+
+    public void add(AuditOperation operation, Date startTime,
+                         Date endTime, String params, String result, long resultCount) throws AtlasBaseException {
+        String userName = RequestContext.get().getCurrentUser();
+        String clientId = RequestContext.get().getClientIPAddress();
+        if (StringUtils.isEmpty(clientId)) {
+            try {
+                clientId = InetAddress.getLocalHost().getHostName() + ":" +InetAddress.getLocalHost().getHostAddress();
+            } catch (UnknownHostException e) {
+                LOG.error("Exception occurred during InetAddress retrieval", e);
+                clientId = "unknown";
+            }
+        }
+        add(userName, operation, clientId, startTime, endTime, params, result, resultCount);
     }
 
     public void add(String userName, AuditOperation operation, String clientId, Date startTime,

@@ -133,27 +133,12 @@ public class EmbeddedServer {
         serviceState = BeanUtil.getBean(ServiceState.class);
 
         ServiceState.ServiceStateValue serviceStateValue = serviceState.getState();
-        String                         userName          = RequestContext.getCurrentUser();
-
-        if (userName == null) {
-            userName = StringUtils.EMPTY;
-        }
 
         if (serviceStateValue == ServiceState.ServiceStateValue.ACTIVE) {
-            String hostName    = StringUtils.EMPTY;
-            String hostAddress = StringUtils.EMPTY;
             Date   date        = new Date();
-
             try {
-                hostName    = InetAddress.getLocalHost().getHostName();
-                hostAddress = InetAddress.getLocalHost().getHostAddress();
-            } catch (UnknownHostException e) {
-                LOG.error("Exception occurred during InetAddress retrieval", e);
-            }
-
-            try {
-                auditService.add(userName, AtlasAuditEntry.AuditOperation.SERVER_START, hostName + ":" + hostAddress, SERVER_START_TIME, date, null, null, 0);
-                auditService.add(userName, AtlasAuditEntry.AuditOperation.SERVER_STATE_ACTIVE, hostName + ":" + hostAddress, date, date, null, null, 0);
+                auditService.add(AtlasAuditEntry.AuditOperation.SERVER_START, SERVER_START_TIME, date, null, null, 0);
+                auditService.add(AtlasAuditEntry.AuditOperation.SERVER_STATE_ACTIVE, date, date, null, null, 0);
             } catch (AtlasBaseException e) {
                 LOG.error("Exception occurred during audit", e);
             }

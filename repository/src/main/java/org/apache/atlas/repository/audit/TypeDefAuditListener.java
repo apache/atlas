@@ -91,9 +91,6 @@ public class TypeDefAuditListener implements TypeDefChangeListener {
         if (CollectionUtils.isEmpty(baseTypeDefList)) {
             return;
         }
-        final String clientIp = RequestContext.get().getClientIPAddress();
-        final Date startTime = new Date(RequestContext.get().getRequestTime());
-        final Date endTime = new Date();
 
         Map<TypeCategory, List<AtlasBaseTypeDef>> groupByCategoryMap =
                 baseTypeDefList.stream().collect(Collectors.groupingBy(AtlasBaseTypeDef::getCategory));
@@ -105,8 +102,6 @@ public class TypeDefAuditListener implements TypeDefChangeListener {
 
         String typeDefJson = AtlasJson.toJson(groupByCategoryMap);
 
-        auditService.add(RequestContext.get().getUser() == null ? "" : RequestContext.get().getUser(), auditOperation,
-                clientIp != null ? clientIp : "", startTime, endTime, String.join(",", categories),
-                typeDefJson, baseTypeDefList.size());
+        auditService.add(auditOperation, String.join(",", categories), typeDefJson, baseTypeDefList.size());
     }
 }
