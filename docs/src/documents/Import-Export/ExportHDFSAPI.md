@@ -30,10 +30,10 @@ __Sample HDFS Setup__
 
 
 ### Export API Using matchType
-To export entities that represent HDFS path, use the Export API using the _matchType_ option. Details can be found [here](#/ExportAPI).
+To export entities that represent the HDFS path, use the Export API using the _matchType_ option. Details can be found [here](#/ExportAPI).
 
 ### Example Using CURL Calls
-Below are sample CURL calls that performs export operation on the _Sample HDFS Setup_ shown above.
+Below are sample CURL calls perform an export operation on the _Sample HDFS Setup_ shown above.
 
 <SyntaxHighlighter wrapLines={true} language="shell" style={theme.dark}>
 {`curl -X POST -u adminuser:password -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d '{
@@ -48,4 +48,4 @@ Below are sample CURL calls that performs export operation on the _Sample HDFS S
 </SyntaxHighlighter>
 
 ### Automatic Creation of HDFS entities
-Given that HDFS entity creation is a manual process. The Export API offers a mechanism for creation of requested HDFS entities.
+Given that HDFS entity creation is a manual process. The Export API offers a mechanism for the creation of requested HDFS entities.

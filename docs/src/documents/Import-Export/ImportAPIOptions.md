@@ -11,7 +11,7 @@ import SyntaxHighlighter from 'react-syntax-highlighter';
 
 # Import API Options
 
-Import API options are specified as _options_ JSON. Since the API accepts multi-part form data, it is possible to sepecify multipls input streams within the CURL call.
+Import API options are specified as _options_ JSON. Since the API accepts multi-part form data, it is possible to specify multiple input streams within the CURL call.
 
 ### Examples Using CURL Calls
 <SyntaxHighlighter wrapLines={true} language="shell" style={theme.dark}>
@@ -35,7 +35,7 @@ To use the defaults, set the contents of _importOptions.json_ to:
 ### Options
 Following options are supported for Import process:
 
-   * Specify transforms during import operation.
+   * Specify transforms during the import operation.
    * Resume import by specifying starting entity guid.
    * Optionally import type definition.
    * Handling large imports.
@@ -52,7 +52,7 @@ Right now these are the transforms that can be applied:
 
 Example:
 
-The example below applies couple of transforms to the the _qualifiedName_ attribute of hive_table. It converts the value to lower case, then searches for 'cl1', if found, replaces it with 'cl2'.
+The example below applies a couple of transforms to the _qualifiedName_ attribute of hive_table. It converts the value to lower case, then searches for 'cl1', if found, replaces it with 'cl2'.
 
 To use the option, set the contents of _importOptions.json_ to:
 
@@ -70,7 +70,7 @@ Please refer to [ATLAS-1825](https://issues.apache.org/jira/browse/ATLAS-1825) f
 
 When an import operation is in progress and the server goes down, it would be possible to resume import from the last successfully imported entity. This would allow the import to resume from where it left off.
 
-Server-side logging is improved to display the detail of the last successfully imported entity, this includes the index within the import list and the entity's guid. Either can be used specify the point to resume import.
+Server-side logging is improved to display the detail of the last successfully imported entity, this includes the index within the import list and the entity's guid. Either can be used to specify the point to resume import.
 
 To use the option, set the contents of _importOptions.json_ to:
 
@@ -103,19 +103,19 @@ Steps to use the behavior:
 
 The output of Export has _atlas-typedef.json_ that contains the type definitions for the entities exported.
 
-By default (that is if no options is specified), the type definitions are imported and applied to the system being imported to. The entity import is performed after this.
+By default (that is if no options are specified), the type definitions are imported and applied to the system being imported to. The entity import is performed after this.
 
-In some cases, you would not want to modify the type definitions. Import may be better off failing than the types be modified.
+In some cases, you would not want to modify the type definitions. The import may be better off failing than the types be modified.
 
-This option allows for optionally importing of type definition. The option is set to _true_ by default, which means that type definition is imported. With this option set to _false_, type definitions preseneraent in the source will not be imported. In case of mismatch between the entities being imported the types present in the system where the import is being performed, the operation will fail.
+This option allows for optionally importing of the type definition. The option is set to _true_ by default, which means that type definition is imported. With this option set to _false_, type definitions present in the source will not be imported. In case of mismatch between the entities being imported the types present in the system where the import is being performed, the operation will fail.
 
 Table below enumerates the conditions that get addressed as part of type definition import:
 
 |**Condition**|**Action**|
 |-------------|----------|
-| Incoming type does not exist in target system | Type is created. |
-|Type to be imported and type in target system are same | No change |
-|Type to be imported and type in target system differ by some attributes| Target system type is updated to the attributes present in the source.<br /> It is possible that the target system will have attributes in addition to the one present in the source.<br /> In that case, the target system's type attributes will be an union of the attributes.<br /> Attributes in target system will not be deleted to match the source. <br />If the type of the attribute differ, import process will be aborted and exception logged.|
+| Incoming type does not exist in the target system | Type is created. |
+|Type to be imported and type in the target system are same | No change |
+|Type to be imported and type in target system differ by some attributes| Target system type is updated to the attributes present in the source.<br /> It is possible that the target system will have attributes in addition to the one present in the source.<br /> In that case, the target system's type attributes will be a union of the attributes.<br /> Attributes in target system will not be deleted to match the source. <br />If the type of the attribute differ, the import process will be aborted and exception logged.|
 
 To use the option, set the contents of _importOptions.json_ to:
 
@@ -129,7 +129,7 @@ To use the option, set the contents of _importOptions.json_ to:
 
 #### Specifying File to be Imported From Server Location
 
-In scenario where the file to be imported is present at a location on the server, the _importfile_ API can be used. It behaves like the Import API.
+In a scenario where the file to be imported is present at a location on the server, the _importfile_ API can be used. It behaves like the Import API.
 
 To use the option, set the contents of _importOptions.json_ to:
 
@@ -152,10 +152,10 @@ _CURL_
 
 #### Handling Large Imports
 
-By default, the Import Service stores all of the data in memory. This may be limiting for ZIPs containing large amount of data.
+By default, the Import Service stores all of the data in memory. This may be limiting for ZIPs containing a large amount of data.
 
-To configure temporary directory use the application property _atlas.import.temp.directory_. If this property is left blank, default in-memory implementation is used.
+To configure the temporary directory use the application property _atlas.import.temp.directory_. If this property is left blank, the default in-memory implementation is used.
 
 Please ensure that there is sufficient disk space available for the operation.
 
-The contents of the directory created as backing store for the import operation will be erased after the operation is over.
+The contents of the directory created as a backing store for the import operation will be erased after the operation is over.

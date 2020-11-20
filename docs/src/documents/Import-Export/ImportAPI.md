@@ -14,7 +14,7 @@ import SyntaxHighlighter from 'react-syntax-highlighter';
 The general approach is:
    * Consumer makes a ZIP file available for import operation. See details below for the 2 flavors of the API.
    * The API if successful, will return the results of the operation.
-   * Error will be returned on failure of the call.
+   * Error will be returned on the failure of the call.
 
 ### Import ZIP File Using POST
 
@@ -67,9 +67,9 @@ Please see [here](#/ImportAPIOptions) for the available options during import pr
 
 __AtlasImportResult Response__
 The API will return the results of the import operation in the format defined by the _AtlasImportResult_:
-   * _AtlasImportParameters_: This contains a collection of name value pair of the options that are applied during the import operation.
+   * _AtlasImportParameters_: This contains a collection of name-value pair of the options that are applied during the import operation.
    * _Metrics_: Operation metrics. These include details on the number of types imported, number of entities imported, etc.
-   * _Processed Entities_: Contains list of GUIDs for the entities that were processed.
+   * _Processed Entities_: Contains a list of GUIDs for the entities that were processed.
    * _Operation Status_: Overall status of the operation. Values are _SUCCESS_, PARTIAL_SUCCESS, _FAIL_.
 
 ### Examples Using CURL Calls
@@ -93,7 +93,7 @@ The _request_ parameter is optional. If import has to be run without any options
 </SyntaxHighlighter>
 
 
-The call below performs Import of _QuickStart_ database using a ZIP file available on server.
+The call below performs Import of _QuickStart_ database using a ZIP file available on the server.
 
 <SyntaxHighlighter wrapLines={true} language="shell" style={theme.dark}>
 {`curl -X POST -u adminuser:password -H "Cache-Control: no-cache" -d ./importOptions.json
