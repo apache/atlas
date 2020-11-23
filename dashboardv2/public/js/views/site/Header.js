@@ -32,7 +32,8 @@ define(['require',
         templateHelpers: function() {
             return {
                 glossaryImportTempUrl: UrlLinks.glossaryImportTempUrl(),
-                businessMetadataImportTempUrl: UrlLinks.businessMetadataImportTempUrl()
+                businessMetadataImportTempUrl: UrlLinks.businessMetadataImportTempUrl(),
+                apiDocUrl: UrlLinks.apiDocUrl(),
             };
         },
         ui: {
