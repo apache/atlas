@@ -547,6 +547,14 @@
                             <!-- empty groupId/artifactId represents the current build -->
                         </overlay>
                     </overlays>
+
+                    <webResources>
+                        <resource>
+                            <directory>${project.build.directory}/api/v2/apidocs/ui</directory>
+                            <targetPath>apidocs</targetPath>
+                        </resource>
+                    </webResources>
+
                     <archive>
                         <manifest>
                             <addClasspath>true</addClasspath>
@@ -810,6 +818,12 @@
                 <groupId>com.webcohesion.enunciate</groupId>
                 <artifactId>enunciate-maven-plugin</artifactId>
                 <version>${enunciate-maven-plugin.version}</version>
+                <!-- to allow target/api/v2/apidocs/ui to be created before building maven-war-plugin)-->
+                <executions>
+                    <execution>
+                        <phase>generate-resources</phase>
+                    </execution>
+                </executions>
                 <configuration>
                     <configFile>${project.parent.basedir}/build-tools/src/main/resources/enunciate.xml</configFile>
                     <enunciateArtifactId/>

@@ -677,7 +677,7 @@
         <dropwizard-metrics>3.2.2</dropwizard-metrics>
         <elasticsearch.version>6.6.0</elasticsearch.version>
         <entity.repository.impl>org.apache.atlas.repository.audit.InMemoryEntityAuditRepository</entity.repository.impl>
-        <enunciate-maven-plugin.version>2.11.1</enunciate-maven-plugin.version>
+        <enunciate-maven-plugin.version>2.13.2</enunciate-maven-plugin.version>
         <failsafe.version>2.18.1</failsafe.version>
         <falcon.version>0.8</falcon.version>
         <fastutil.version>6.5.16</fastutil.version>

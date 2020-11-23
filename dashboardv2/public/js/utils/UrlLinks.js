@@ -208,6 +208,9 @@ define(['require', 'utils/Enums', 'utils/Utils', 'underscore'], function(require
         businessMetadataImportUrl: function() {
             return this.entitiesApiUrl() + '/businessmetadata/import';
         },
+        apiDocUrl: function() {
+            return this.apiBaseUrl + '/apidocs/index.html';
+        },
         categoryApiUrl: function(options) {
             var guid = options && options.guid,
                 list = options && options.list,
