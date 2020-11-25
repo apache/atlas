@@ -82,8 +82,10 @@ public class EmbeddedServer {
 
         SelectChannelConnector connector = new SelectChannelConnector();
         connector.setPort(port);
-        connector.setResponseBufferSize(bufferSize);
+        connector.setRequestHeaderSize(bufferSize);
+        connector.setResponseHeaderSize(bufferSize);
         connector.setRequestBufferSize(bufferSize);
+        connector.setResponseBufferSize(bufferSize);
         return connector;
     }
 
