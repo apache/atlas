@@ -712,7 +712,7 @@
         <kafka.version>2.0.0</kafka.version>
         <keycloak.version>6.0.1</keycloak.version>
         <log4j.version>1.2.17</log4j.version>
-        <log4j2.version>2.11.0</log4j2.version>
+        <log4j2.version>2.13.2</log4j2.version>
         <lucene-solr.version>7.7.2</lucene-solr.version>
         <maven-site-plugin.version>3.7</maven-site-plugin.version>
         <MaxPermGen>512m</MaxPermGen>
