@@ -1208,6 +1208,15 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                         }
                     }
 
+                    if (!hasUpdates && replaceBusinessAttributes) {
+                        Map<String, Map<String, Object>> currBusinessMetadata = entityRetriever.getBusinessMetadata(vertex);
+                        Map<String, Map<String, Object>> newBusinessMetadata  = entity.getBusinessAttributes();
+
+                        if (!Objects.equals(currBusinessMetadata, newBusinessMetadata)) {
+                            hasUpdates = true;
+                        }
+                    }
+
                     // if classifications are to be replaced, then skip updates only when no change in classifications
                     if (!hasUpdates && replaceClassifications) {
                         List<AtlasClassification> newVal  = entity.getClassifications();
