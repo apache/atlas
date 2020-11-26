@@ -1057,6 +1057,24 @@ public class AtlasStructType extends AtlasType {
             switch (c) {
                 case '@':
                 case ' ':
+                case '+':
+                case '-':
+                case '&':
+                case '|':
+                case '!':
+                case '(':
+                case ')':
+                case '{':
+                case '}':
+                case '[':
+                case ']':
+                case '^':
+                case '"':
+                case '~':
+                case '?':
+                case ':':
+                case '\\':
+                case '/':
                     return true;
             }
 
