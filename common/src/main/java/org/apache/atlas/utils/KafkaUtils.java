@@ -28,6 +28,7 @@ import org.apache.kafka.clients.admin.DescribeTopicsResult;
 import org.apache.kafka.clients.admin.ListTopicsResult;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.admin.TopicDescription;
+import org.apache.kafka.clients.admin.ListTopicsOptions;
 import org.apache.kafka.common.KafkaFuture;
 import org.apache.kafka.common.TopicPartitionInfo;
 import org.apache.kafka.common.errors.TopicExistsException;
@@ -57,12 +58,15 @@ public class KafkaUtils implements AutoCloseable {
     private static final String JAAS_PRINCIPAL_PROP = "principal";
     private static final String JAAS_DEFAULT_CLIENT_NAME = "KafkaClient";
     private static final String JAAS_TICKET_BASED_CLIENT_NAME = "ticketBased-KafkaClient";
+    private static final String IMPORT_INTERNAL_TOPICS = "atlas.hook.kafka.import.internal.topics";
 
     public static final String ATLAS_KAFKA_PROPERTY_PREFIX   = "atlas.kafka";
 
     final protected Properties kafkaConfiguration;
 
     final protected AdminClient adminClient;
+
+    final protected boolean importInternalTopics;
 
     public KafkaUtils(Configuration atlasConfiguration) {
         if(LOG.isDebugEnabled()) {
@@ -72,6 +76,7 @@ public class KafkaUtils implements AutoCloseable {
 
         setKafkaJAASProperties(atlasConfiguration, kafkaConfiguration);
         adminClient = AdminClient.create(this.kafkaConfiguration);
+        importInternalTopics = atlasConfiguration.getBoolean(IMPORT_INTERNAL_TOPICS, false);
 
         if(LOG.isDebugEnabled()) {
             LOG.debug("<== KafkaUtils() ");
@@ -106,7 +111,7 @@ public class KafkaUtils implements AutoCloseable {
         if(LOG.isDebugEnabled()) {
             LOG.debug("==> KafkaUtils.listAllTopics() ");
         }
-        ListTopicsResult listTopicsResult = adminClient.listTopics();
+        ListTopicsResult listTopicsResult = adminClient.listTopics((new ListTopicsOptions()).listInternal(importInternalTopics));
         List<String> topicNameList = new ArrayList<>(listTopicsResult.names().get());
 
         if(LOG.isDebugEnabled()) {
