@@ -26,6 +26,7 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.EntityMutationResponse;
+import org.apache.atlas.utils.AtlasConfigurationUtil;
 import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.atlas.utils.KafkaUtils;
 import org.apache.commons.cli.BasicParser;
@@ -167,7 +168,7 @@ public class KafkaBridge {
     }
 
     private String getMetadataNamespace(Configuration config) {
-        return config.getString(KAFKA_METADATA_NAMESPACE, getClusterName(config));
+        return AtlasConfigurationUtil.getRecentString(config, KAFKA_METADATA_NAMESPACE, getClusterName(config));
     }
 
     private String getClusterName(Configuration config) {
