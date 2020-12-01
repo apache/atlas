@@ -18,14 +18,10 @@
 package org.apache.atlas;
 
 import java.io.InputStream;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.AbstractMap;
 
-import com.sun.jersey.json.impl.provider.entity.JSONArrayProvider;
+import org.apache.atlas.utils.AtlasConfigurationUtil;
 import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.ConfigurationException;
-import org.springframework.cache.interceptor.SimpleKey;
 import org.testng.annotations.Test;
 import static org.testng.Assert.*;
 
@@ -146,5 +142,14 @@ public class ApplicationPropertiesTest {
         assertNotEquals(props.getString(someKey), defaultValue);
         aProps.setDefault(defaultKV, "");
         assertEquals(props.getString(someKey), defaultValue);
+    }
+
+    @Test
+    public void verifyGetLatesttString () throws AtlasException {
+        String key="atlas.metadata.namespace", old_val = "nm-sp-1", new_val = "nm-sp-2";
+        Configuration atlasConf = ApplicationProperties.get("test.properties");
+        assertEquals(atlasConf.getString(key), old_val);
+        assertEquals(AtlasConfigurationUtil.getRecentString(atlasConf, key, old_val), new_val);
+        assertEquals(AtlasConfigurationUtil.getRecentString(atlasConf, "garbage", old_val), old_val);
     }
 }

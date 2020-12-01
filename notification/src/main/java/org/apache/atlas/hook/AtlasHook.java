@@ -26,7 +26,7 @@ import org.apache.atlas.kafka.NotificationProvider;
 import org.apache.atlas.model.notification.HookNotification;
 import org.apache.atlas.notification.NotificationException;
 import org.apache.atlas.notification.NotificationInterface;
-import org.apache.atlas.security.InMemoryJAASConfiguration;
+import org.apache.atlas.utils.AtlasConfigurationUtil;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.security.UserGroupInformation;
@@ -292,7 +292,7 @@ public abstract class AtlasHook {
     }
 
     private static String getMetadataNamespace(Configuration config) {
-        return config.getString(CONF_METADATA_NAMESPACE, getClusterName(config));
+        return AtlasConfigurationUtil.getRecentString(config, CONF_METADATA_NAMESPACE, getClusterName(config));
     }
 
     private static String getClusterName(Configuration config) {

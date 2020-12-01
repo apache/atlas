@@ -36,6 +36,7 @@ import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.utils.AtlasPathExtractorUtil;
 import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.atlas.utils.HdfsNameServiceResolver;
+import org.apache.atlas.utils.AtlasConfigurationUtil;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
@@ -264,7 +265,7 @@ public class HiveMetaStoreBridge {
     }
 
     public String getMetadataNamespace(Configuration config) {
-        return config.getString(HIVE_METADATA_NAMESPACE, getClusterName(config));
+        return AtlasConfigurationUtil.getRecentString(config, HIVE_METADATA_NAMESPACE, getClusterName(config));
     }
 
     private String getClusterName(Configuration config) {
