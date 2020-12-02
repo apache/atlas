@@ -19,7 +19,9 @@ package org.apache.atlas.query;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.discovery.TermSearchProcessor;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.glossary.GlossaryUtils;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.typedef.AtlasStructDef;
@@ -28,7 +30,6 @@ import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +51,6 @@ import java.util.stream.Stream;
 
 import static org.apache.atlas.model.discovery.SearchParameters.ALL_CLASSIFICATIONS;
 import static org.apache.atlas.model.discovery.SearchParameters.NO_CLASSIFICATIONS;
-import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
 
 public class GremlinQueryComposer {
@@ -80,6 +80,7 @@ public class GremlinQueryComposer {
     private int providedLimit  = DEFAULT_QUERY_RESULT_LIMIT;
     private int providedOffset = DEFAULT_QUERY_RESULT_OFFSET;
     private Context context;
+    private boolean isPrimitive = true;
 
     public GremlinQueryComposer(Lookup registryLookup, final AtlasDSL.QueryMetadata qmd, boolean isNestedQuery) {
         this.isNestedQuery = isNestedQuery;
@@ -170,6 +171,32 @@ public class GremlinQueryComposer {
         }
     }
 
+    public void addHasTerm(String typeName, String termName) {
+        if (!isNestedQuery) {
+            addFrom(typeName);
+        }
+
+        String qualifiedAttributeName      = GlossaryUtils.QUALIFIED_NAME_ATTR;
+        String qualifiedAttributeSeperator = String.valueOf(GlossaryUtils.invalidNameChars[0]);
+        String name                        = GlossaryUtils.NAME;
+        String operator                    = SearchParameters.Operator.EQ.toString();
+        String attributeToSearch;
+        String[] terms                     = termName.split(qualifiedAttributeSeperator);
+
+        if (terms.length > 1) {
+            attributeToSearch = TermSearchProcessor.ATLAS_GLOSSARY_TERM_ATTR_MEANINGS + GlossaryUtils.invalidNameChars[1] + qualifiedAttributeName;
+        } else {
+            termName = terms[0];
+            attributeToSearch = TermSearchProcessor.ATLAS_GLOSSARY_TERM_ATTR_MEANINGS + GlossaryUtils.invalidNameChars[1] + name;
+        }
+
+        addWhere(attributeToSearch, operator , termName);
+    }
+
+    public boolean isPrimitive(){
+        return isPrimitive;
+    }
+
     public void addWhere(String lhs, String operator, String rhs) {
         if (LOG.isDebugEnabled()) {
             LOG.debug("addWhere(lhs={}, operator={}, rhs={})", lhs, operator, rhs);
@@ -184,6 +211,7 @@ public class GremlinQueryComposer {
             org = lhsI;
             lhsI = createInfo(lhs);
             lhsI.setTypeName(org.getTypeName());
+            isPrimitive = false;
         }
 
         if (!context.validator.isValidQualifiedName(lhsI.getQualifiedName(), lhsI.getRaw())) {
@@ -222,12 +250,6 @@ public class GremlinQueryComposer {
 
         if (org != null && org.isReferredType()) {
             add(GremlinClause.DEDUP);
-            if (org.getEdgeDirection() != null) {
-                GremlinClause gremlinClauseForEdgeLabel = org.getEdgeDirection().equals(IN) ? GremlinClause.OUT : GremlinClause.IN;
-                add(gremlinClauseForEdgeLabel, org.getEdgeLabel());
-            } else {
-                add(GremlinClause.OUT, org.getEdgeLabel());
-            }
             context.registerActive(currentType);
         }
     }
@@ -584,6 +606,19 @@ public class GremlinQueryComposer {
         queryClauses.add(gcv);
     }
 
+    public void remove(GremlinClause clause) {
+        int index = queryClauses.contains(clause);
+        if (-1 == index) {
+            return;
+        }
+
+        queryClauses.remove(index);
+    }
+
+    public GremlinClauseList getQueryClauses(){
+        return queryClauses;
+    }
+
     private void init() {
         if (!isNestedQuery) {
             add(GremlinClause.G);
@@ -650,6 +685,10 @@ public class GremlinQueryComposer {
 
     private void add(GremlinClause clause, String... args) {
         queryClauses.add(new GremlinClauseValue(clause, clause.get(args)));
+    }
+
+    public void add(GremlinClauseValue gv) {
+        queryClauses.add(gv);
     }
 
     private void add(int idx, GremlinClause clause, String... args) {

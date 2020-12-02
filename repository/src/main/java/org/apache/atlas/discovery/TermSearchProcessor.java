@@ -35,6 +35,7 @@ public class TermSearchProcessor extends SearchProcessor {
     public static final String ATLAS_GLOSSARY_TERM_ENTITY_TYPE            = "AtlasGlossaryTerm";
     public static final String ATLAS_GLOSSARY_TERM_ATTR_QNAME             = "qualifiedName";
     public static final String ATLAS_GLOSSARY_TERM_ATTR_ASSIGNED_ENTITIES = "assignedEntities";
+    public static final String ATLAS_GLOSSARY_TERM_ATTR_MEANINGS          = "meanings";
 
     final List<AtlasVertex> assignedEntities;
 

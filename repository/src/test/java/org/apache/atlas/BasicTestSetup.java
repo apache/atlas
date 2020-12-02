@@ -31,6 +31,7 @@ import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.commons.lang.StringUtils;
 
 import javax.inject.Inject;
 import java.io.IOException;
@@ -67,6 +68,8 @@ public abstract class BasicTestSetup extends AtlasTestBase {
     // Glossary type //
     public static final String SALES_GLOSSARY = "salesGlossary";
     public static final String SALES_TERM     = "salesTerm";
+    public static final String MODERNTRADE_TERM = "modernTrade";
+    public static final String ECOMMERCE_TERM   = "ecommerce";
 
     @Inject
     protected AtlasTypeRegistry typeRegistry;
@@ -80,10 +83,15 @@ public abstract class BasicTestSetup extends AtlasTestBase {
     private boolean baseLoaded = false;
     private EntityMutationResponse hiveEntities;
 
+    private AtlasEntity timeDim;
+    private AtlasEntity productDim;
+    private AtlasEntity loggingFactMonthly;
+
     protected void setupTestData() {
         loadBaseModels();
         loadHiveDataset();
         loadEmployeeDataset();
+        assignGlossary();
     }
 
     private void loadBaseModels() {
@@ -180,7 +188,7 @@ public abstract class BasicTestSetup extends AtlasTestBase {
         sd = storageDescriptor("hdfs://host:8000/apps/warehouse/sales", "TextInputFormat", "TextOutputFormat", true, ImmutableList.of(column("time_id", "int", "time id")));
         entities.add(sd);
 
-        AtlasEntity timeDim = table("time_dim", "time dimension table", salesDB, sd, "John Doe", "External", timeDimColumns,
+        timeDim = table("time_dim", "time dimension table", salesDB, sd, "John Doe", "External", timeDimColumns,
                                     DIMENSION_CLASSIFICATION);
         entities.add(timeDim);
 
@@ -241,7 +249,7 @@ public abstract class BasicTestSetup extends AtlasTestBase {
         sd = storageDescriptor("hdfs://host:8000/apps/warehouse/sales", "TextInputFormat", "TextOutputFormat", true, ImmutableList.of(column("time_id", "int", "time id")));
         entities.add(sd);
 
-        AtlasEntity productDim =
+        productDim =
                 table("product_dim", "product dimension table", salesDB, sd, "John Doe 2", "Managed", productDimColumns,
                       DIMENSION_CLASSIFICATION);
         entities.add(productDim);
@@ -281,7 +289,7 @@ public abstract class BasicTestSetup extends AtlasTestBase {
         sd = storageDescriptor("hdfs://host:8000/apps/warehouse/sales", "TextInputFormat", "TextOutputFormat", true, ImmutableList.of(column("time_id", "int", "time id")));
         entities.add(sd);
 
-        AtlasEntity loggingFactMonthly =
+        loggingFactMonthly =
                 table("logging_fact_monthly_mv", "logging fact monthly materialized view", logDB, sd, "Tim ETL 2",
                       "Managed", logFactColumns, LOGDATA_CLASSIFICATION);
         entities.add(loggingFactMonthly);
@@ -486,22 +494,67 @@ public abstract class BasicTestSetup extends AtlasTestBase {
         return filterCriteria;
     }
 
-    public void assignGlossary() throws AtlasBaseException {
-        AtlasGlossary glossary = new AtlasGlossary();
-        glossary.setName(SALES_GLOSSARY);
-        glossary = glossaryService.createGlossary(glossary);
+    public void assignGlossary() {
+        try {
+            AtlasGlossary glossary = new AtlasGlossary();
+            glossary.setName(SALES_GLOSSARY);
+            glossary = glossaryService.createGlossary(glossary);
 
-        AtlasGlossaryTerm term = new AtlasGlossaryTerm();
-        term.setAnchor(new AtlasGlossaryHeader(glossary.getGuid()));
-        term.setName(SALES_TERM);
-        term = glossaryService.createTerm(term);
+            AtlasGlossaryTerm term = new AtlasGlossaryTerm();
+            term.setAnchor(new AtlasGlossaryHeader(glossary.getGuid()));
+            term.setName(SALES_TERM);
+            term = glossaryService.createTerm(term);
 
-        List<AtlasRelatedObjectId> guids = hiveEntities.getCreatedEntities().stream().filter(e -> e.getTypeName().equals(HIVE_TABLE_TYPE))
-                .map(p -> {AtlasRelatedObjectId obj = new AtlasRelatedObjectId();
-                            obj.setGuid(p.getGuid());
-                            obj.setTypeName(p.getTypeName()); return obj;}).collect(Collectors.toList());
+            AtlasGlossaryTerm modernTrade = new AtlasGlossaryTerm();
+            modernTrade.setAnchor(new AtlasGlossaryHeader(glossary.getGuid()));
+            modernTrade.setName(MODERNTRADE_TERM);
+            modernTrade = glossaryService.createTerm(modernTrade);
 
-        glossaryService.assignTermToEntities(term.getGuid(), guids);
+            AtlasGlossaryTerm ecomm = new AtlasGlossaryTerm();
+            ecomm.setAnchor(new AtlasGlossaryHeader(glossary.getGuid()));
+            ecomm.setName(ECOMMERCE_TERM);
+            ecomm = glossaryService.createTerm(ecomm);
+
+            List<AtlasRelatedObjectId> guids = new ArrayList<>();
+            List<AtlasRelatedObjectId> mordernTradeGuids = new ArrayList<>();
+            List<AtlasRelatedObjectId> ecomGuid = new ArrayList<>();
+
+            for (AtlasEntityHeader p : hiveEntities.getCreatedEntities()) {
+                if (StringUtils.equals(p.getTypeName(), HIVE_TABLE_TYPE)) {
+                    AtlasRelatedObjectId obj = new AtlasRelatedObjectId();
+                    obj.setGuid(p.getGuid());
+                    obj.setTypeName(p.getTypeName());
+                    guids.add(obj);
+
+                    if (p.getAttribute("name").equals(timeDim.getAttribute("name"))) {
+                        timeDim.setGuid(p.getGuid());
+                        AtlasRelatedObjectId obj1 = new AtlasRelatedObjectId();
+                        obj1.setGuid(p.getGuid());
+                        obj1.setTypeName(p.getTypeName());
+                        mordernTradeGuids.add(obj1);
+                    } else if (p.getAttribute("name").equals(productDim.getAttribute("name"))) {
+                        productDim.setGuid(p.getGuid());
+                        AtlasRelatedObjectId obj2 = new AtlasRelatedObjectId();
+                        obj2.setGuid(p.getGuid());
+                        obj2.setTypeName(p.getTypeName());
+                        ecomGuid.add(obj2);
+                    } else if (p.getAttribute("name").equals(loggingFactMonthly.getAttribute("name"))) {
+                        loggingFactMonthly.setGuid(p.getGuid());
+                        AtlasRelatedObjectId obj3 = new AtlasRelatedObjectId();
+                        obj3.setGuid(p.getGuid());
+                        obj3.setTypeName(p.getTypeName());
+                        mordernTradeGuids.add(obj3);
+                    }
+                }
+            }
+
+            glossaryService.assignTermToEntities(term.getGuid(), guids);
+            glossaryService.assignTermToEntities(modernTrade.getGuid(), mordernTradeGuids);
+            glossaryService.assignTermToEntities(ecomm.getGuid(), ecomGuid);
+        } catch (AtlasBaseException e) {
+            fail("Failed to assign glossary term");
+        }
+
     }
 
 }

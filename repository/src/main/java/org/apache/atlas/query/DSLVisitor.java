@@ -24,7 +24,10 @@ import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
 
 public class DSLVisitor extends AtlasDSLParserBaseVisitor<Void> {
     private static final Logger LOG = LoggerFactory.getLogger(DSLVisitor.class);
@@ -188,6 +191,16 @@ public class DSLVisitor extends AtlasDSLParserBaseVisitor<Void> {
         super.visitHasClause(ctx);
     }
 
+    private void visitHasTermClause(GremlinQueryComposer gqc, HasTermClauseContext ctx) {
+        if (ctx.expr() != null) {
+            processExpr(ctx.expr(), gqc);
+        } else if (ctx.identifier() != null) {
+            gqc.addHasTerm(ctx.arithE().getText(), ctx.identifier().getText());
+        }
+        super.visitHasTermClause(ctx);
+    }
+
+
     private void inferFromClause(SingleQrySrcContext ctx) {
         if (ctx.fromExpression() != null) {
             return;
@@ -205,13 +218,30 @@ public class DSLVisitor extends AtlasDSLParserBaseVisitor<Void> {
         if (ctx.expr().compE() != null && ctx.expr().compE().hasClause() != null && ctx.expr().compE().hasClause().arithE() != null) {
             gremlinQueryComposer.addFrom(ctx.expr().compE().hasClause().arithE().getText());
         }
+
+        if (ctx.expr().compE() != null && ctx.expr().compE().hasTermClause() != null && ctx.expr().compE().hasTermClause().arithE() != null) {
+            gremlinQueryComposer.addFrom(ctx.expr().compE().hasTermClause().arithE().getText());
+            return;
+        }
     }
 
     private void processExpr(final ExprContext expr, GremlinQueryComposer gremlinQueryComposer) {
         if (CollectionUtils.isNotEmpty(expr.exprRight())) {
             processExprRight(expr, gremlinQueryComposer);
         } else {
-            processExpr(expr.compE(), gremlinQueryComposer);
+            GremlinQueryComposer nestedProcessor = gremlinQueryComposer.createNestedProcessor();
+            processExpr(expr.compE(), nestedProcessor);
+
+            GremlinClauseList gcl = nestedProcessor.getQueryClauses();
+            if (gcl.size() > 1) {
+                if (nestedProcessor.isPrimitive()) {
+                    nestedProcessor.remove(GremlinClause.NESTED_START);
+                    GremlinQueryComposer.GremlinClauseValue gv = gcl.get(0);
+                    gremlinQueryComposer.add(gv);
+                } else {
+                    gremlinQueryComposer.addAndClauses(Collections.singletonList(nestedProcessor.get()));
+                }
+            }
         }
     }
 
@@ -277,7 +307,7 @@ public class DSLVisitor extends AtlasDSLParserBaseVisitor<Void> {
     }
 
     private void processExpr(final CompEContext compE, final GremlinQueryComposer gremlinQueryComposer) {
-        if (compE != null && compE.isClause() == null && compE.hasClause() == null) {
+        if (compE != null && compE.isClause() == null && compE.hasClause() == null && compE.hasTermClause() == null) {
             ComparisonClauseContext comparisonClause = compE.comparisonClause();
 
             // The nested expression might have ANDs/ORs
@@ -314,6 +344,10 @@ public class DSLVisitor extends AtlasDSLParserBaseVisitor<Void> {
 
         if (compE != null && compE.hasClause() != null) {
             visitHasClause(gremlinQueryComposer, compE.hasClause());
+        }
+
+        if (compE != null && compE.hasTermClause() != null) {
+            visitHasTermClause(gremlinQueryComposer, compE.hasTermClause());
         }
     }
 

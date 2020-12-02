@@ -31,6 +31,7 @@ import org.apache.commons.lang.StringUtils;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
@@ -187,7 +188,7 @@ public class GremlinQueryComposerTest {
         verify("Table where owner like \"*Tab_*\"",
                 "g.V().has('__typeName', 'Table').has('Table.owner', org.janusgraph.core.attribute.Text.textRegex(\".*Tab_.*\")).dedup().limit(25).toList()");
         verify("from Table where (db.name = \"Reporting\")",
-                "g.V().has('__typeName', 'Table').out('__Table.db').has('DB.name', eq(\"Reporting\")).dedup().in('__Table.db').dedup().limit(25).toList()");
+                "g.V().has('__typeName', 'Table').and(__.out('__Table.db').has('DB.name', eq(\"Reporting\")).dedup()).dedup().limit(25).toList()");
     }
 
     @Test
@@ -311,7 +312,7 @@ public class GremlinQueryComposerTest {
                 {"hive_db where hive_db.name='Reporting' and hive_db.createTime < '2017-12-12T02:35:58.440Z'",
                         "g.V().has('__typeName', 'hive_db').and(__.has('hive_db.name', eq('Reporting')),__.has('hive_db.createTime', lt('1513046158440'))).dedup().limit(25).toList()"},
                 {"Table where db.name='Sales' and db.clusterName='cl1'",
-                        "g.V().has('__typeName', 'Table').and(__.out('__Table.db').has('DB.name', eq('Sales')).dedup().in('__Table.db'),__.out('__Table.db').has('DB.clusterName', eq('cl1')).dedup().in('__Table.db')).dedup().limit(25).toList()"},
+                        "g.V().has('__typeName', 'Table').and(__.out('__Table.db').has('DB.name', eq('Sales')).dedup(),__.out('__Table.db').has('DB.clusterName', eq('cl1')).dedup()).dedup().limit(25).toList()"},
         };
     }
 
@@ -320,6 +321,23 @@ public class GremlinQueryComposerTest {
         verify(query, expectedGremlin);
         verify(query.replace("where", " "), expectedGremlin);
     }
+
+    @Test
+    public void glossaryTermQueries() {
+        verify("Table hasTerm sales", "g.V().has('__typeName', 'Table')." +
+                "and(__.in('r:AtlasGlossarySemanticAssignment')." +
+                "has('AtlasGlossaryTerm.name', eq('sales')).dedup())." +
+                "dedup().limit(25).toList()");
+        verify("Table hasTerm \"sales@glossary\"", "g.V().has('__typeName', 'Table')." +
+                "and(__.in('r:AtlasGlossarySemanticAssignment')." +
+                "has('AtlasGlossaryTerm.qualifiedName', eq(\"sales@glossary\")).dedup())." +
+                "dedup().limit(25).toList()");
+        verify("Table hasTerm \"sales@glossary\" and owner = \"fetl\"","g.V().has('__typeName', 'Table')." +
+                "and(__.in('r:AtlasGlossarySemanticAssignment').has('AtlasGlossaryTerm.qualifiedName', eq(\"sales@glossary\")).dedup()" +
+                ",__.has('Table.owner', eq(\"fetl\")))." +
+                "dedup().limit(25).toList()");
+    }
+
 
     @Test
     public void keywordsInWhereClause() {
@@ -355,7 +373,7 @@ public class GremlinQueryComposerTest {
     public void whereComplexAndSelect() {
         String exSel = "def f(r){ t=[['name']];  r.each({t.add([" +
                 "it.property('Table.name').isPresent() ? it.value('Table.name') : \"\"])}); t.unique(); }";
-        String exMain = "g.V().has('__typeName', 'Table').and(__.out('__Table.db').has('DB.name', eq(\"Reporting\")).dedup().in('__Table.db'),__.has('Table.name', eq(\"sales_fact\"))).dedup().limit(25).toList()";
+        String exMain = "g.V().has('__typeName', 'Table').and(__.out('__Table.db').has('DB.name', eq(\"Reporting\")).dedup(),__.has('Table.name', eq(\"sales_fact\"))).dedup().limit(25).toList()";
         verify("Table where db.name = \"Reporting\" and name =\"sales_fact\" select name", getExpected(exSel, exMain));
         verify("Table where db.name = \"Reporting\" and name =\"sales_fact\"", exMain);
     }
@@ -501,12 +519,17 @@ public class GremlinQueryComposerTest {
                 return "__Table.columns";
             if (attributeName.equalsIgnoreCase("db"))
                 return "__Table.db";
+            if (attributeName.equalsIgnoreCase("meanings"))
+                return "r:AtlasGlossarySemanticAssignment";
             else
                 return "__DB.Table";
         }
 
         @Override
         public AtlasRelationshipEdgeDirection getRelationshipEdgeDirection(GremlinQueryComposer.Context context, String attributeName) {
+            if (attributeName.equalsIgnoreCase("meanings")){
+                return IN;
+            }
             return OUT;
         }
 
@@ -522,6 +545,7 @@ public class GremlinQueryComposerTest {
                     (context.getActiveTypeName().equals("Table") && attributeName.equals("__guid")) ||
                     (context.getActiveTypeName().equals("Table") && attributeName.equals("__state")) ||
                     (context.getActiveTypeName().equals("Table") && attributeName.equals("partitionSize")) ||
+                    (context.getActiveTypeName().equals("Table") && attributeName.equals("meanings")) ||
                     (context.getActiveTypeName().equals("hive_db") && attributeName.equals("name")) ||
                     (context.getActiveTypeName().equals("hive_db") && attributeName.equals("owner")) ||
                     (context.getActiveTypeName().equals("hive_db") && attributeName.equals("createTime")) ||
@@ -529,7 +553,9 @@ public class GremlinQueryComposerTest {
                     (context.getActiveTypeName().equals("DB") && attributeName.equals("owner")) ||
                     (context.getActiveTypeName().equals("DB") && attributeName.equals("clusterName")) ||
                     (context.getActiveTypeName().equals("Asset") && attributeName.equals("name")) ||
-                    (context.getActiveTypeName().equals("Asset") && attributeName.equals("owner"));
+                    (context.getActiveTypeName().equals("Asset") && attributeName.equals("owner")) ||
+                    (context.getActiveTypeName().equals("AtlasGlossaryTerm") && attributeName.equals("name")) ||
+                    (context.getActiveTypeName().equals("AtlasGlossaryTerm") && attributeName.equals("qualifiedName"));
         }
 
         @Override
@@ -564,6 +590,10 @@ public class GremlinQueryComposerTest {
 
             if(context.getActiveTypeName().equals("Table") && item.equals("columns")) {
                 return "Column";
+            }
+
+            if(context.getActiveTypeName().equals("Table") && item.equals("meanings")) {
+                return "AtlasGlossaryTerm";
             }
 
             if(context.getActiveTypeName().equals(item)) {

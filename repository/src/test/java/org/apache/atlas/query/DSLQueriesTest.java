@@ -199,6 +199,28 @@ public class DSLQueriesTest extends BasicTestSetup {
         assertSearchResult(searchResult2, expected, query);
     }
 
+    @DataProvider(name = "glossaryTermQueries")
+    private Object[][] glossaryTermQueries() {
+        return new Object[][]{
+                {"hive_table hasTerm modernTrade",2},
+                {"hive_table hasTerm \"modernTrade@salesGlossary\"",2},
+                {"hive_table hasTerm \"modernTrade@salesGlossary\" where hive_table.name = \"time_dim\"",1},
+                {"hive_table hasTerm \"modernTrade@salesGlossary\" select name",2},
+                {"hive_table hasTerm \"modernTrade@salesGlossary\" limit 1",1},
+                {"hive_table hasTerm \"modernTrade@salesGlossary\" or hive_table hasTerm \"ecommerce@salesGlossary\"",3},
+                {"hive_table hasTerm \"modernTrade@salesGlossary\" and hive_table isA Dimension",1},
+                {"hive_table hasTerm \"modernTrade@salesGlossary\" and db.name = \"Sales\" or (hive_table.name = \"sales_fact_monthly_mv\")",2},
+                {"hive_table where hive_table hasTerm \"modernTrade@salesGlossary\"",2},
+                {"hive_table where (name = \"product_dim\" and hive_table hasTerm \"ecommerce@salesGlossary\")",1}
+        };
+    }
+
+    @Test(dataProvider = "glossaryTermQueries")
+    public void glossaryTerm(String query, int expected) throws AtlasBaseException {
+        queryAssert(query, expected, DEFAULT_LIMIT, 0);
+        queryAssert(query.replace("where", " "), expected, DEFAULT_LIMIT, 0);
+    }
+
     @DataProvider(name = "basicProvider")
     private Object[][] basicQueries() {
         return new Object[][]{
@@ -323,6 +345,7 @@ public class DSLQueriesTest extends BasicTestSetup {
                 {"hive_table isa Dimension limit 2 offset 1", 2},
                 {"hive_table isa Dimension limit 3 offset 1", 3},
                 {"hive_table where db.name='Sales' and db.clusterName='cl1'", 4},
+                {"hive_table where name = 'sales_fact_monthly_mv' and db.name = 'Reporting' and columns.name = 'sales'",1},
 
                 {"hive_column where hive_column isa PII", 4},
                 {"hive_column where hive_column isa PII limit 5", 4},
@@ -624,7 +647,9 @@ public class DSLQueriesTest extends BasicTestSetup {
                 {"hive_table select db.name, columns"}, // Can't select more than one referred attribute
                 {"hive_table select owner, columns"}, // Can't select a mix of immediate attribute and referred entity
                 {"hive_table select owner, db.name"}, // Same as above
-                {"hive_order"} // From src should be an Entity or Classification
+                {"hive_order"}, // From src should be an Entity or Classification
+                {"hive_table hasTerm modernTrade@salesGlossary"},//should be encoded with double quotes
+
         };
     }
 
