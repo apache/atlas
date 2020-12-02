@@ -225,6 +225,62 @@ Example: To retrieve all entities that have _Dimension_ classification.
 {`Dimension`}
 </SyntaxHighlighter>
 
+###Non Primitive attribute Filtering
+In the discussion so far we looked at where clauses with primitive types. This section will look at using properties that are non-primitive types.
+
+#### Relationship-based filtering
+In this model, the DB is modeled such that it is aware of all the Table it contains. Table on the other hand is aware of existence of the DB but is not aware of all the other _Table_ instances within the system. Each Table maintains reference of the _DB_ it belongs to.
+
+Similar structure exists within the _hive_ data model.
+
+Example: To retrieve all the instances of the _Table_ belonging to a database named 'Sales':
+
+<SyntaxHighlighter wrapLines={true} language="html" style={theme.dark}>
+{`Table where db.name = "Sales"`}
+</SyntaxHighlighter>
+
+Example: To retrieve all the instances of the _Table_ belonging to a database named 'Sales' and whose column name starts with 'customer':
+
+<SyntaxHighlighter wrapLines={true} language="html" style={theme.dark}>
+{`Table where db.name = "Sales" and columns.name like "customer*"`}
+</SyntaxHighlighter>
+
+The entity Column is modeled in a similar way. Each Table entity has outward edges pointing to Column entity instances corresponding to each column within the table.
+
+Example: To retrieve all the Column entities for a given Table.
+
+<SyntaxHighlighter wrapLines={true} language="html" style={theme.dark}>
+{`Table where name = "time_dim" select columns`}
+</SyntaxHighlighter>
+
+The properties of each _Column_ entity type are displayed.
+
+#### Glossary Term-based Filtering
+In order to retrieve entities based on glossary term, a query would use _hasTerm_ keyword.
+
+To search for entities having a particular glossary term, user needs to add a fully qualified name. i.e _{termName}@{glossaryName}_. In case the user adds only the term name, all the entities with particular term name will be returned, irrespective of which glossary it is in.
+
+Example: To retrieve all entities of type _Table_ having glossary term _savingsAccount@Banking_, below are the possible ways.
+
+<SyntaxHighlighter wrapLines={true} language="html" style={theme.dark}>
+{`from Table hasTerm "savingsAccount@Banking"
+Table hasTerm "savingsAccount@Banking"
+Table hasTerm "savingsAccount"
+Table where Table hasTerm "savingsAccount@Banking"`}
+</SyntaxHighlighter>
+
+Example: To retrieve all entities of type _Table_ having glossary term _savingsAccount@Banking_ and whose name is 'customer'.
+
+<SyntaxHighlighter wrapLines={true} language="html" style={theme.dark}>
+{`from Table hasTerm "savingsAccount@Banking" and name = "customer"`}
+</SyntaxHighlighter>
+
+Example: To retrieve all entities of type _Table_ having glossary term _savingsAccount@Banking_ or tagged with 'Dimension' classification and whose column name starts with 'customer'.
+
+<SyntaxHighlighter wrapLines={true} language="html" style={theme.dark}>
+{`from Table hasTerm "savingsAccount@Banking" or Table isA Dimension and (columns.name like "customer*")`}
+</SyntaxHighlighter>
+
 ### Limit & Offset Clauses
 Often a query yields large number of results. To limit the outcome of the query, the limit and offset clauses are used.
 
@@ -268,6 +324,12 @@ Example: Same results as above except that they are sorted in descending order.
 {`from Column orderby name desc`}
 </SyntaxHighlighter>
 
+Example: To retrieve the entities of type _Column_ filtered with name and associated with 'savingsAccount@Banking' glossary term, that are sorted in ascending order using the name property.
+
+<SyntaxHighlighter wrapLines={true} language="html" style={theme.dark}>
+{`from Column hasTerm "savingsAccount@Banking" and name = "customer_id" orderby name asc`}
+</SyntaxHighlighter>
+
 ### Aggregate Functions
 Let's look at aggregate functions:
 
@@ -299,6 +361,13 @@ Example: To find the number of tables in a database.
 <SyntaxHighlighter wrapLines={true} language="html" style={theme.dark}>
 {`Table where db.name = "Reporting" select count()`}
 </SyntaxHighlighter>
+
+Example: To find the number of terms associated with particular type 'Table'.
+
+<SyntaxHighlighter wrapLines={true} language="html" style={theme.dark}>
+{`Table hasTerm "savingsAccount@Banking" select count() as terms`}
+</SyntaxHighlighter>
+
 
 ### The max Keyword
 Using this keyword it is possible to retrieve the maximum value of a property for an entity.
@@ -346,29 +415,6 @@ Example: To know the number of entities owned by each owner.
 <SyntaxHighlighter wrapLines={true} language="html" style={theme.dark}>
 {`Table groupby(owner) select owner, count()`}
 </SyntaxHighlighter>
-
-### Where Clause With Complex Types
-In the discussion so far we looked at where clauses with primitive types. This section will look at using properties that are non-primitive types.
-
-In this model, the DB is modeled such that it is aware of all the Table it contains. Table on the other hand is aware of existence of the DB but is not aware of all the other _Table_ instances within the system. Each Table maintains reference of the _DB_ it belongs to.
-
-Similar structure exists within the _hive_ data model.
-
-Example: To retrieve all the instances of the _Table_ belonging to a database named 'Sales':
-
-<SyntaxHighlighter wrapLines={true} language="html" style={theme.dark}>
-{`Table where db.name = "Sales"`}
-</SyntaxHighlighter>
-
-The entity Column is modeled in a similar way. Each Table entity has outward edges pointing to Column entity instances corresponding to each column within the table.
-
-Example: To retrieve all the Column entities for a given Table.
-
-<SyntaxHighlighter wrapLines={true} language="html" style={theme.dark}>
-{`Table where name = "time_dim" select columns`}
-</SyntaxHighlighter>
-
-The propeties of each _Column_ entity type are displayed.
 
 ### Using System Attributes
 Each type defined within Atlas gets few attributes by default. These attributes help with internal book keeping of the entities. All the system attributes are prefixed with '__' (double underscore). This helps in identifying them from other attributes.

@@ -54,7 +54,6 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
         ApplicationProperties.get().setProperty(ApplicationProperties.ENABLE_FREETEXT_SEARCH_CONF, true);
         setupTestData();
         createDimensionalTaggedEntity("sales");
-        assignGlossary();
     }
 
     /*  TermSearchProcessor(TSP),
