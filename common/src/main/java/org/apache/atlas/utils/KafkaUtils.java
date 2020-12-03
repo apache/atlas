@@ -58,7 +58,7 @@ public class KafkaUtils implements AutoCloseable {
     private static final String JAAS_PRINCIPAL_PROP = "principal";
     private static final String JAAS_DEFAULT_CLIENT_NAME = "KafkaClient";
     private static final String JAAS_TICKET_BASED_CLIENT_NAME = "ticketBased-KafkaClient";
-    private static final String IMPORT_INTERNAL_TOPICS = "atlas.hook.kafka.import.internal.topics";
+    private static final String IMPORT_INTERNAL_TOPICS = "atlas.kafka.bridge.enable.internal.topics.import";
 
     public static final String ATLAS_KAFKA_PROPERTY_PREFIX   = "atlas.kafka";
 
