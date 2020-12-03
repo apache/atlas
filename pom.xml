@@ -747,7 +747,6 @@
         <testng.version>6.9.4</testng.version>
         <tinkerpop.version>3.4.6</tinkerpop.version>
         <woodstox-core.version>5.0.3</woodstox-core.version>
-        <zkclient.version>0.8</zkclient.version>
         <zookeeper.version>3.4.6</zookeeper.version>
     </properties>
 
@@ -1657,12 +1656,6 @@
                 <version>${project.version}</version>
             </dependency>
 
-            <dependency>
-                <groupId>com.101tec</groupId>
-                <artifactId>zkclient</artifactId>
-                <version>${zkclient.version}</version>
-            </dependency>
-          
           <!-- Fix for cassandra-all tranitive dependency CVE-2017-18640 : https://nvd.nist.gov/vuln/detail/CVE-2017-18640 -->
             <dependency>
                 <groupId>org.yaml</groupId>

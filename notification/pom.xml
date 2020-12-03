@@ -83,11 +83,6 @@
         </dependency>
 
         <dependency>
-            <groupId>com.101tec</groupId>
-            <artifactId>zkclient</artifactId>
-        </dependency>
-
-        <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-intg</artifactId>
             <classifier>tests</classifier>
@@ -177,11 +172,6 @@
                                     <groupId>org.apache.kafka</groupId>
                                     <artifactId>kafka-clients</artifactId>
                                     <version>${kafka.version}</version>
-                                </artifactItem>
-                                <artifactItem>
-                                    <groupId>com.101tec</groupId>
-                                    <artifactId>zkclient</artifactId>
-                                    <version>${zkclient.version}</version>
                                 </artifactItem>
                                 <artifactItem>
                                     <groupId>org.apache.zookeeper</groupId>

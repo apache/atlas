@@ -82,7 +82,7 @@ public class KafkaBridge {
     public static void main(String[] args) {
         int exitCode = EXIT_CODE_FAILED;
         AtlasClientV2 atlasClientV2 = null;
-        KafkaBridge importer = null;
+        KafkaUtils kafkaUtils = null;
 
         try {
             Options options = new Options();
@@ -111,8 +111,9 @@ public class KafkaBridge {
                 atlasClientV2 = new AtlasClientV2(ugi, ugi.getShortUserName(), urls);
             }
 
-            importer = new KafkaBridge(atlasConf, atlasClientV2);
+            kafkaUtils = new KafkaUtils(atlasConf);
 
+            KafkaBridge importer = new KafkaBridge(atlasConf, atlasClientV2, kafkaUtils);
             if (StringUtils.isNotEmpty(fileToImport)) {
                 File f = new File(fileToImport);
 
@@ -146,25 +147,19 @@ public class KafkaBridge {
             if (atlasClientV2 != null) {
                 atlasClientV2.close();
             }
-            if (importer != null) {
-                importer.close();
+            if (kafkaUtils != null) {
+                kafkaUtils.close();
             }
         }
 
         System.exit(exitCode);
     }
 
-    public KafkaBridge(Configuration atlasConf, AtlasClientV2 atlasClientV2) throws Exception {
+    public KafkaBridge(Configuration atlasConf, AtlasClientV2 atlasClientV2, KafkaUtils kafkaUtils) throws Exception {
         this.atlasClientV2     = atlasClientV2;
         this.metadataNamespace = getMetadataNamespace(atlasConf);
-        this.kafkaUtils        = new KafkaUtils(atlasConf);
-        this.availableTopics   = kafkaUtils.listAllTopics();
-    }
-
-    public void close() {
-        if (this.kafkaUtils != null) {
-            this.kafkaUtils.close();
-        }
+        this.kafkaUtils        = kafkaUtils;
+        this.availableTopics   = this.kafkaUtils.listAllTopics();
     }
 
     private String getMetadataNamespace(Configuration config) {

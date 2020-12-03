@@ -103,20 +103,6 @@
         </dependency>
 
         <dependency>
-            <groupId>com.101tec</groupId>
-            <artifactId>zkclient</artifactId>
-            <version>${zkclient.version}</version>
-            <scope>compile</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.kafka</groupId>
-            <artifactId>kafka_${kafka.scala.binary.version}</artifactId>
-            <version>${kafka.version}</version>
-            <scope>compile</scope>
-        </dependency>
-
-        <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-webapp</artifactId>
             <version>${jetty.version}</version>
@@ -203,11 +189,6 @@
                                             <groupId>${project.groupId}</groupId>
                                             <artifactId>atlas-common</artifactId>
                                             <version>${project.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>org.apache.kafka</groupId>
-                                            <artifactId>kafka_${kafka.scala.binary.version}</artifactId>
-                                            <version>${kafka.version}</version>
                                         </artifactItem>
                                         <artifactItem>
                                             <groupId>org.apache.kafka</groupId>
