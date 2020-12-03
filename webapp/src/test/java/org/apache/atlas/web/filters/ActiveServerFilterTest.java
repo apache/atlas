@@ -105,7 +105,9 @@ public class ActiveServerFilterTest {
 
     @Test
     public void adminImportRequestsToPassiveServerShouldToActiveServerAddress() throws IOException, ServletException {
-        String importExportUrls[] = {"api/admin/export", "api/admin/import", "api/admin/importfile"};
+        String importExportUrls[] = {"api/admin/export", "api/admin/import", "api/admin/importfile", "api/admin/audits",
+                "api/admin/purge", "api/admin/expimp/audit", "api/admin/metrics",
+                "api/admin/server/dummy_name", "api/admin/audit/dummy_guid/details"};
 
         for (String partialUrl : importExportUrls) {
             when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.PASSIVE);
