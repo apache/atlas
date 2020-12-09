@@ -16,20 +16,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import logging
 
-from apache_atlas.model.lineage import AtlasLineageInfo
+from apache_atlas.model.enums import LineageDirection
 
 LOG = logging.getLogger('lineage-example')
 
 
 class LineageExample:
-
     def __init__(self, client):
         self.client = client
 
     def lineage(self, guid):
-        direction    = AtlasLineageInfo.lineageDirection_enum.BOTH.name
+        direction    = LineageDirection.BOTH.name
         lineage_info = self.client.lineage.get_lineage_info(guid, direction, 0)
 
         if not lineage_info:
@@ -40,7 +40,7 @@ class LineageExample:
         guid_entity_map = lineage_info.guidEntityMap
 
         for relation in relations:
-            from_entity = guid_entity_map[relation['fromEntityId']]
-            to_entity   = guid_entity_map[relation['toEntityId']]
+            from_entity = guid_entity_map[relation.fromEntityId]
+            to_entity   = guid_entity_map[relation.toEntityId]
 
-            LOG.info("%s (%s) -> %s (%s)", from_entity['displayText'], from_entity['typeName'], to_entity['displayText'], to_entity['typeName'])
+            LOG.info("%s (%s) -> %s (%s)", from_entity.displayText, from_entity.typeName, to_entity.displayText, to_entity.typeName)

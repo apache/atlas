@@ -17,10 +17,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from http import HTTPStatus
-
-from apache_atlas.model.relationship import AtlasRelationshipWithExtInfo, AtlasRelationship
-from apache_atlas.utils import BASE_URI, API, HttpMethod
+from apache_atlas.model.relationship import *
+from apache_atlas.utils              import *
 
 
 class RelationshipClient:

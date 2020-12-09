@@ -17,10 +17,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from http import HTTPStatus
-
-from apache_atlas.model.glossary import AtlasGlossaryCategory, AtlasGlossaryTerm, AtlasGlossary, AtlasGlossaryExtInfo
-from apache_atlas.utils import BASE_URI, API, HttpMethod, APPLICATION_JSON, APPLICATION_OCTET_STREAM, MULTIPART_FORM_DATA
+from apache_atlas.model.glossary import *
+from apache_atlas.utils          import *
 
 
 class GlossaryClient:
@@ -142,7 +140,7 @@ class GlossaryClient:
     def get_related_categories(self, category_guid, sort_by_attribute, limit, offset):
         query_params = {GlossaryClient.LIMIT: limit, GlossaryClient.OFFSET: offset, "sort": sort_by_attribute}
 
-        return self.client.call_api(GlossaryClient.GET_RELATED_CATEGORIES.format_map({'category_guid': category_guid}),
+        return self.client.call_api(GlossaryClient.GET_RELATED_CATEGORIES.format_path({'category_guid': category_guid}),
                                     dict, query_params)
 
     def create_glossary(self, glossary):

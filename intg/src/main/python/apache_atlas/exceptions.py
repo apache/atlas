@@ -17,6 +17,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 class AtlasServiceException(Exception):
     """Exception raised for errors in API calls.
 
@@ -29,14 +30,12 @@ class AtlasServiceException(Exception):
         msg = ""
 
         if api:
-            msg = "Metadata service API {method} : {path} failed".format_map({'method': api.method, 'path': api.path})
+            msg = "Metadata service API {method} : {path} failed".format(**{'method': api.method, 'path': api.path})
 
         if response.content:
             status = response.status_code if response.status_code else -1
             msg    = "Metadata service API with url {url} and method {method} : failed with status {status} and " \
                      "Response Body is :{response}". \
-                      format_map({'url': response.url, 'method': api.method, 'status': status, 'response': response.json()})
+                      format(**{'url': response.url, 'method': api.method, 'status': status, 'response': response.json()})
 
-        self.message = msg
-
-        super().__init__(self.message)
+        Exception.__init__(self, msg)

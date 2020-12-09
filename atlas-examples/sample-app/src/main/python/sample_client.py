@@ -16,17 +16,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import logging
-
-from apache_atlas.base_client import AtlasClient
-
-from typedef_example import TypeDefExample
-from entity_example import EntityExample
-from lineage_example import LineageExample
-from glossary_example import GlossaryExample
-from discovery_example import DiscoveryExample
-from utils import METRIC_CLASSIFICATION, NAME
 import getpass
+
+from apache_atlas.client.base_client import AtlasClient
+from typedef_example                 import TypeDefExample
+from entity_example                  import EntityExample
+from lineage_example                 import LineageExample
+from glossary_example                import GlossaryExample
+from discovery_example               import DiscoveryExample
+from utils                           import METRIC_CLASSIFICATION, NAME
+
 
 LOG = logging.getLogger('sample-example')
 
@@ -36,49 +37,77 @@ class SampleApp:
         self.created_entity = None
 
     def main(self):
-        url      = input("Enter Atlas URL: ")
-        username = input("Enter username: ")
+        # Python3
+        global input
+        try: input = raw_input
+        except NameError: pass
+
+        url      = input('Enter Atlas URL: ')
+        username = input('Enter username: ')
         password = getpass.getpass('Enter password: ')
-        client   = AtlasClient(url, username, password)
 
-        # Typedef examples
-        LOG.info("\n")
-        LOG.info("---------- Creating Sample Types -----------")
-        typedef = TypeDefExample(client)
-        typedef.create_type_def()
-        typedef.print_typedefs()
+        client = AtlasClient(url, (username, password))
 
-        # Entity example
-        LOG.info("\n")
-        LOG.info("---------- Creating Sample Entities -----------")
-        entity = EntityExample(client)
-        entity.create_entities()
+        self.__entity_example(client)
 
-        self.created_entity = entity.get_table_entity()
+        self.__typedef_example(client)
 
-        if self.created_entity and self.created_entity['guid']:
-            entity.get_entity_by_guid(self.created_entity['guid'])
-
-        # Lineage Examples
-        LOG.info("\n")
-        LOG.info("---------- Lineage example -----------")
         self.__lineage_example(client)
 
-        # Discovery Example
-        LOG.info("\n")
-        LOG.info("---------- Search example -----------")
         self.__discovery_example(client)
 
-        # Glossary Examples
-        LOG.info("\n")
-        LOG.info("---------- Glossary Example -----------")
         self.__glossary_example(client)
 
-        LOG.info("\n")
-        LOG.info("---------- Deleting Entities -----------")
-        entity.remove_entities()
+        self.__entity_cleanup()
+
+
+    def __typedef_example(self, client):
+        LOG.info("\n---------- Creating Sample Types -----------")
+
+        typedefExample = TypeDefExample(client)
+
+        typedefExample.create_type_def()
+
+    def __entity_example(self, client):
+        LOG.info("\n---------- Creating Sample Entities -----------")
+
+        self.entityExample = EntityExample(client)
+
+        self.entityExample.create_entities()
+
+        self.created_entity = self.entityExample.get_table_entity()
+
+        if self.created_entity and self.created_entity.guid:
+            self.entityExample.get_entity_by_guid(self.created_entity.guid)
+
+    def __lineage_example(self, client):
+        LOG.info("\n---------- Lineage example -----------")
+
+        lineage = LineageExample(client)
+
+        if self.created_entity:
+            lineage.lineage(self.created_entity.guid)
+        else:
+            LOG.info("Create entity first to get lineage info")
+
+    def __discovery_example(self, client):
+        LOG.info("\n---------- Search example -----------")
+
+        discovery = DiscoveryExample(client)
+
+        discovery.dsl_search()
+
+        if not self.created_entity:
+            LOG.info("Create entity first to get search info")
+            return
+
+        discovery.quick_search(self.created_entity.typeName)
+
+        discovery.basic_search(self.created_entity.typeName, METRIC_CLASSIFICATION, self.created_entity.attributes[NAME])
 
     def __glossary_example(self, client):
+        LOG.info("\n---------- Glossary Example -----------")
+
         glossary     = GlossaryExample(client)
         glossary_obj = glossary.create_glossary()
 
@@ -91,26 +120,10 @@ class SampleApp:
         glossary.create_glossary_category()
         glossary.delete_glossary()
 
-    def __lineage_example(self, client):
-        lineage = LineageExample(client)
+    def __entity_cleanup(self):
+        LOG.info("\n---------- Deleting Entities -----------")
 
-        if self.created_entity:
-            lineage.lineage(self.created_entity['guid'])
-        else:
-            LOG.info("Create entity first to get lineage info")
-
-    def __discovery_example(self, client):
-        discovery = DiscoveryExample(client)
-
-        discovery.dsl_search()
-
-        if not self.created_entity:
-            LOG.info("Create entity first to get search info")
-            return
-
-        discovery.quick_search(self.created_entity['typeName'])
-
-        discovery.basic_search(self.created_entity['typeName'], METRIC_CLASSIFICATION, self.created_entity['attributes'][NAME])
+        self.entityExample.remove_entities()
 
 
 if __name__ == "__main__":

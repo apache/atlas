@@ -17,41 +17,48 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import enum
-
-from apache_atlas.model.entity import AtlasStruct
+from apache_atlas.model.instance import *
+from apache_atlas.utils          import *
 
 
 class AtlasRelationship(AtlasStruct):
+    def __init__(self, attrs={}):
+        AtlasStruct.__init__(self, attrs)
 
-    propagateTags_enum = enum.Enum('propagateTags_enum', 'NONE ONE_TO_TWO TWO_TO_ONE BOTH', module=__name__)
-    status_enum        = enum.Enum('status_enum', 'ACTIVE DELETED', module=__name__)
+        self.guid                             = attrs.get('guid')
+        self.homeId                           = attrs.get('homeId')
+        self.provenanceType                   = attrs.get('provenanceType')
+        self.end1                             = attrs.get('end1')
+        self.end2                             = attrs.get('end2')
+        self.label                            = attrs.get('label')
+        self.propagateTags                    = attrs.get('propagateTags')
+        self.status                           = attrs.get('status')
+        self.createdBy                        = attrs.get('createdBy')
+        self.updatedBy                        = attrs.get('updatedBy')
+        self.createTime                       = attrs.get('createTime')
+        self.updateTime                       = attrs.get('updateTime')
+        self.version                          = attrs.get('version')
+        self.propagatedClassifications        = attrs.get('propagatedClassifications')
+        self.blockedPropagatedClassifications = attrs.get('blockedPropagatedClassifications')
 
-    def __init__(self, typeName=None, attributes=None, guid=None, homeId=None, provenanceType=None, end1=None, end2=None,
-                 label=None, propagateTags=None, status=None, createdBy=None, updatedBy=None, createTime=None, updateTime=None,
-                 version=0, propagatedClassifications=None, blockedPropagatedClassifications=None):
+    def type_coerce_attrs(self):
+        super(AtlasRelationship, self).type_coerce_attrs()
 
-        super().__init__(typeName, attributes)
-
-        self.guid                             = guid
-        self.homeId                           = homeId
-        self.provenanceType                   = provenanceType
-        self.end1                             = end1
-        self.end2                             = end2
-        self.label                            = label
-        self.propagateTags                    = propagateTags if propagateTags is not None else AtlasRelationship.propagateTags_enum.NONE.name
-        self.status                           = status if status is not None else AtlasRelationship.status_enum.ACTIVE.name
-        self.createdBy                        = createdBy
-        self.updatedBy                        = updatedBy
-        self.createTime                       = createTime
-        self.updateTime                       = updateTime
-        self.version                          = version
-        self.propagatedClassifications        = propagatedClassifications if propagatedClassifications is not None else set()
-        self.blockedPropagatedClassifications = blockedPropagatedClassifications if blockedPropagatedClassifications is not None else set()
+        self.end1                             = type_coerce(self.end1, AtlasObjectId)
+        self.end2                             = type_coerce(self.end2, AtlasObjectId)
+        self.propagatedClassifications        = type_coerce_list(self.propagatedClassifications, AtlasClassification)
+        self.blockedPropagatedClassifications = type_coerce_list(self.blockedPropagatedClassifications, AtlasClassification)
 
 
-class AtlasRelationshipWithExtInfo:
+class AtlasRelationshipWithExtInfo(AtlasBase):
+    def __init__(self, attrs={}):
+        AtlasBase.__init__(self, attrs)
 
-    def __init__(self, relationship=None, referredEntities=None):
-        self.relationship     = relationship
-        self.referredEntities = referredEntities if referredEntities is not None else {}
+        self.relationship     = attrs.get('relationship')
+        self.referredEntities = attrs.get('referredEntities')
+
+    def type_coerce_attrs(self):
+        super(AtlasBase, self).type_coerce_attrs()
+
+        self.relationship     = type_coerce(self.relationship, AtlasRelationship)
+        self.referredEntities = type_coerce_dict(self.referredEntities, AtlasEntityHeader)

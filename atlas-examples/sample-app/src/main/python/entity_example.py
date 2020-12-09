@@ -20,7 +20,10 @@
 import json
 import logging
 
-from apache_atlas.model.entity import AtlasEntityWithExtInfo, EntityMutations
+from apache_atlas.model.enums    import EntityOperation
+from apache_atlas.model.instance import AtlasEntityWithExtInfo, EntityMutations, AtlasRelatedObjectId
+from apache_atlas.utils          import type_coerce
+
 
 LOG = logging.getLogger('entity-example')
 
@@ -41,10 +44,10 @@ class EntityExample:
 
     def __init__(self, client):
         self.client              = client
-        self.db_entity           = None
+        self.entity_db           = None
         self.entity_table_us     = None
         self.entity_table_canada = None
-        self.load_process        = None
+        self.entity_process      = None
 
     def create_entities(self):
         self.__create_db()
@@ -58,132 +61,129 @@ class EntityExample:
 
         return None
 
-    def get_entity_by_guid(self, entity_guid):
-        entity_with_ext_info = self.client.entity.get_entity_by_guid(entity_guid)
+    def get_entity_by_guid(self, guid):
+        entity = self.client.entity.get_entity_by_guid(guid)
 
-        if entity_with_ext_info:
-            LOG.info("Entity info is : %s", entity_with_ext_info)
+        LOG.info("Entity(guid=%s): typeName=%s, attr.name=%s", guid, entity.entity.typeName, entity.entity.attributes['name'])
 
     def remove_entities(self):
-        delete_entity_list = [self.load_process['guid'], self.entity_table_us['guid'], self.entity_table_canada['guid'], self.db_entity['guid']]
-        response           = self.client.entity.purge_entities_by_guids(delete_entity_list)
+        entity_list = [ self.entity_process.guid, self.entity_table_us.guid, self.entity_table_canada.guid, self.entity_db.guid ]
 
-        if not response:
-            LOG.info("There is no entity to delete!")
+        self.client.entity.delete_entities_by_guids(entity_list)
 
-        LOG.info("Deletion complete for DB entity: %s, US entity: %s, Canada entity: %s and Process entity: %s",
-                 self.db_entity['typeName'],
-                 self.entity_table_us['typeName'],
-                 self.entity_table_canada['typeName'],
-                 self.load_process['typeName'])
+        response = self.client.entity.purge_entities_by_guids(entity_list)
+
+        if response is not None:
+            LOG.info("Purged entities")
+        else:
+            LOG.info("Purge failed!")
 
     def __create_db(self):
-        if not self.db_entity:
+        if not self.entity_db:
             with open('request_json/entity_create_db.json') as f:
-                entity_db      = json.load(f)
-                self.db_entity = self.__create_db_helper(entity_db)
+                entity = type_coerce(json.load(f), AtlasEntityWithExtInfo)
 
-        if self.db_entity:
-            LOG.info("Created database entity: %s", self.db_entity['typeName'])
+                self.entity_db = self.__create_db_helper(entity)
+
+        if self.entity_db:
+            LOG.info("Created database entity: guid=%s, attr.name=%s", self.entity_db.guid, self.entity_db.attributes['name'])
         else:
-            LOG.info("Database entity not created")
-
-    def __create_db_helper(self, ext_info):
-        instance_entity = ext_info['entity']
-        entity          = self.__create_entity(ext_info)
-
-        if entity and entity['guid']:
-            instance_entity['guid'] = entity['guid']
-
-        return instance_entity
+            LOG.info("Failed to create database entity")
 
     def __create_us_table(self):
         if not self.entity_table_us:
             with open('request_json/entity_create_table_us.json') as f:
-                entity_table_us      = json.load(f)
-                self.entity_table_us = self.__create_table_helper(entity_table_us)
+                entity = type_coerce(json.load(f), AtlasEntityWithExtInfo)
 
-        if self.entity_table_us:
-            LOG.info("Created table entity for US: %s", self.entity_table_us['typeName'])
-        else:
-            LOG.info("Table entity for US not created")
+                self.entity_table_us = self.__create_table_helper(entity)
+
+            if self.entity_table_us:
+                LOG.info("Created US table entity: guid=%s, attr.name=%s", self.entity_table_us.guid, self.entity_table_us.attributes['name'])
+            else:
+                LOG.info("Failed to create US table entity")
 
     def __create_canada_table(self):
         if not self.entity_table_canada:
             with open('request_json/entity_create_table_canada.json') as f:
-                entity_table_canada      = json.load(f)
-                self.entity_table_canada = self.__create_table_helper(entity_table_canada)
+                entity = type_coerce(json.load(f), AtlasEntityWithExtInfo)
 
-        if self.entity_table_canada:
-            LOG.info("Created table entity for Canada: %s", self.entity_table_canada['typeName'])
-        else:
-            LOG.info("Table entity for Canada not created")
+                self.entity_table_canada = self.__create_table_helper(entity)
 
-    def __create_table_helper(self, ext_info):
-        instance_entity = ext_info['entity']
-
-        if self.db_entity:
-            instance_entity['relationshipAttributes']['db']['guid']     = self.db_entity['guid']
-            instance_entity['relationshipAttributes']['db']['typeName'] = self.db_entity['typeName']
-
-        ext_info['entity'] = instance_entity
-
-        entity = self.__create_entity(ext_info)
-
-        if entity and entity['guid']:
-            instance_entity['guid'] = entity['guid']
-
-        return instance_entity
+            if self.entity_table_canada:
+                LOG.info("Created Canada table entity: guid=%s, attr.name=%s", self.entity_table_canada.guid, self.entity_table_canada.attributes['name'])
+            else:
+                LOG.info("Failed to create Canada table entity")
 
     def __create_process(self):
-        if not self.load_process:
+        if not self.entity_process:
             with open('request_json/entity_create_process.json') as f:
-                entity_process    = json.load(f)
-                self.load_process = self.__create_process_helper(entity_process)
+                entity = type_coerce(json.load(f), AtlasEntityWithExtInfo)
 
-        if self.load_process:
-            LOG.info("Created process Entity: %s", self.load_process['typeName'])
+                self.entity_process = self.__create_process_helper(entity)
+
+        if self.entity_process:
+            LOG.info("Created process entity: guid=%s, attr.name=%s", self.entity_process.guid, self.entity_process.attributes['name'])
         else:
-            LOG.info("Process Entity not created")
+            LOG.info("Failed to createa process entity")
 
-    def __create_process_helper(self, ext_info):
-        instance_entity = ext_info['entity']
+    def __create_db_helper(self, entity):
+        self.__create_entity(entity)
+
+        return entity.entity
+
+    def __create_table_helper(self, entity):
+        table = entity.entity
+
+        if self.entity_db:
+            dbId = AtlasRelatedObjectId({ 'guid': self.entity_db.guid })
+
+            LOG.info("setting: table(%s).db=%s", table.guid, dbId)
+
+            table.relationshipAttributes['db'] = dbId
+
+        self.__create_entity(entity)
+
+        return table
+
+    def __create_process_helper(self, entity):
+        process = entity.entity
+
+        process.relationshipAttributes = {}
 
         if self.entity_table_us:
-            input_list = []
-            input_data = {'guid': self.entity_table_us['guid'],
-                          'typeName': self.entity_table_us['typeName']
-                          }
-
-            input_list.append(input_data)
-
-            instance_entity['relationshipAttributes']['inputs'] = input_list
+            process.relationshipAttributes['inputs'] = [ AtlasRelatedObjectId({ 'guid': self.entity_table_us.guid }) ]
 
         if self.entity_table_canada:
-            output_list = []
-            output_data = {'guid': self.entity_table_canada['guid'],
-                           'typeName': self.entity_table_canada['typeName']
-                           }
+            process.relationshipAttributes['outputs'] = [ AtlasRelatedObjectId({'guid': self.entity_table_canada.guid }) ]
 
-            output_list.append(output_data)
+        return self.__create_entity(entity)
 
-            instance_entity['relationshipAttributes']['outputs'] = output_list
-
-        ext_info['entity'] = instance_entity
-
-        return self.__create_entity(ext_info)
-
-    def __create_entity(self, ext_info):
+    def __create_entity(self, entity):
         try:
-            entity      = self.client.entity.create_entity(ext_info)
-            create_enum = EntityMutations.entity_operation_enum.CREATE.name
+            response = self.client.entity.create_entity(entity)
 
-            if entity and entity.mutatedEntities and entity.mutatedEntities[create_enum]:
-                header_list = entity.mutatedEntities[create_enum]
+            guid = None
 
-                if len(header_list) > 0:
-                    return header_list[0]
+            if response and response.mutatedEntities:
+                if EntityOperation.CREATE.name in response.mutatedEntities:
+                    header_list = response.mutatedEntities[EntityOperation.CREATE.name]
+                elif EntityOperation.UPDATE.name in response.mutatedEntities:
+                    header_list = response.mutatedEntities[EntityOperation.UPDATE.name]
+
+                if header_list and len(header_list) > 0:
+                    guid = header_list[0].guid
+            elif response and response.guidAssignments:
+                if entity.entity is not None and entity.entity.guid is not None:
+                    in_guid = entity.entity.guid
+                else:
+                    in_guid = None
+
+                if in_guid and response.guidAssignments[in_guid]:
+                    guid = response.guidAssignments[in_guid]
+
+            if guid:
+                entity.entity.guid = guid
         except Exception as e:
-            LOG.exception("failed to create entity %s", ext_info['entity'])
+            LOG.exception("failed to create entity %s. error=%s", entity, e)
 
-        return None
+        return entity.entity if entity and entity.entity else None

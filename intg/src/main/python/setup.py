@@ -22,18 +22,22 @@ from setuptools import setup, find_packages
 # External dependencies
 requirements = ['requests>=2.24']
 
+long_description = ''
+with open("README.md", "r") as fh:
+    long_description = fh.read()
+
 setup(
     name='apache-atlas',
-    version='0.0.1',
+    version='0.0.2',
     author="Apache Atlas",
     author_email='dev@atlas.apache.org',
     description="Apache Atlas Python Client",
-    long_description="Apache Atlas Python client",
+    long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/apache/atlas/tree/master/intg/src/main/python",
     license='Apache LICENSE 2.0',
     classifiers=[
-        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 2.7",
         "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
     ],
@@ -42,4 +46,5 @@ setup(
     include_package_data=True,
     zip_safe=False,
     keywords='atlas client, apache atlas',
+	python_requires='>=2.7',
 )

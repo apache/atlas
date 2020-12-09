@@ -17,26 +17,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import logging
 import utils
-from apache_atlas.model.discovery import SearchFilter
-from apache_atlas.model.typedef import AtlasTypesDef
 
-import json
+from apache_atlas.utils           import type_coerce
+from apache_atlas.model.discovery import SearchFilter
+from apache_atlas.model.typedef   import AtlasTypesDef
+
 
 LOG = logging.getLogger('sample-example')
 
 
 class TypeDefExample:
-    SAMPLE_APP_TYPES = {
-        utils.PROCESS_TYPE,
-        utils.COLUMN_TYPE,
-        utils.TABLE_TYPE,
+    SAMPLE_APP_TYPES = [
         utils.DATABASE_TYPE,
+        utils.TABLE_TYPE,
+        utils.COLUMN_TYPE,
+        utils.PROCESS_TYPE,
         utils.PII_TAG,
-        utils.CLASSIFICATION,
         utils.FINANCE_TAG,
-        utils.METRIC_CLASSIFICATION}
+        utils.METRIC_CLASSIFICATION
+    ]
 
     def __init__(self, client):
         self.typesDef = None
@@ -46,10 +48,10 @@ class TypeDefExample:
         try:
             if not self.typesDef:
                 with open('request_json/typedef_create.json') as f:
-                    typedef       = json.load(f)
+                    typedef       = type_coerce(json.load(f), AtlasTypesDef)
                     self.typesDef = self.__create(typedef)
         except Exception as e:
-            LOG.exception("Error in creating typeDef.")
+            LOG.exception("Error in creating typeDef", exc_info=e)
 
     def print_typedefs(self):
         for type_name in TypeDefExample.SAMPLE_APP_TYPES:
@@ -63,52 +65,58 @@ class TypeDefExample:
     def remove_typedefs(self):
         if not self.typesDef:
             LOG.info("There is no typeDef to delete.")
-            return
+        else:
+            for type_name in TypeDefExample.SAMPLE_APP_TYPES:
+                self.client.typedef.delete_type_by_name(type_name)
 
-        for type_name in TypeDefExample.SAMPLE_APP_TYPES:
-            self.client.typedef.delete_type_by_name(type_name)
-
-        self.typesDef = None
+            self.typesDef = None
 
         LOG.info("Deleted typeDef successfully!")
 
     def __create(self, type_def):
-        types_to_create = AtlasTypesDef().__dict__
+        types_to_create = AtlasTypesDef()
 
-        for enum_def in type_def['enumDefs']:
-            if self.client.typedef.type_with_name_exists(enum_def['name']):
-                LOG.info("Type with name %s already exists. Skipping.", enum_def['name'])
-            else:
-                types_to_create['enumDefs'].append(enum_def)
+        types_to_create.enumDefs             = []
+        types_to_create.structDefs           = []
+        types_to_create.classificationDefs   = []
+        types_to_create.entityDefs           = []
+        types_to_create.relationshipDefs     = []
+        types_to_create.businessMetadataDefs = []
 
-        for struct_def in type_def['structDefs']:
-            if self.client.typedef.type_with_name_exists(struct_def['name']):
-                LOG.info("Type with name %s already exists. Skipping.", struct_def['name'])
+        for enum_def in type_def.enumDefs:
+            if self.client.typedef.type_with_name_exists(enum_def.name):
+                LOG.info("Type with name %s already exists. Skipping.", enum_def.name)
             else:
-                types_to_create['structDefs'].append(struct_def)
+                types_to_create.enumDefs.append(enum_def)
 
-        for classification_def in type_def['classificationDefs']:
-            if self.client.typedef.type_with_name_exists(classification_def['name']):
-                LOG.info("Type with name %s already exists. Skipping.", classification_def['name'])
+        for struct_def in type_def.structDefs:
+            if self.client.typedef.type_with_name_exists(struct_def.name):
+                LOG.info("Type with name %s already exists. Skipping.", struct_def.name)
             else:
-                types_to_create['classificationDefs'].append(classification_def)
+                types_to_create.structDefs.append(struct_def)
 
-        for entity_def in type_def['entityDefs']:
-            if self.client.typedef.type_with_name_exists(entity_def['name']):
-                LOG.info("Type with name %s already exists. Skipping.", entity_def['name'])
+        for classification_def in type_def.classificationDefs:
+            if self.client.typedef.type_with_name_exists(classification_def.name):
+                LOG.info("Type with name %s already exists. Skipping.", classification_def.name)
             else:
-                types_to_create['entityDefs'].append(entity_def)
+                types_to_create.classificationDefs.append(classification_def)
 
-        for relationship_def in type_def['relationshipDefs']:
-            if self.client.typedef.type_with_name_exists(relationship_def['name']):
-                LOG.info("Type with name %s already exists. Skipping.", relationship_def['name'])
+        for entity_def in type_def.entityDefs:
+            if self.client.typedef.type_with_name_exists(entity_def.name):
+                LOG.info("Type with name %s already exists. Skipping.", entity_def.name)
             else:
-                types_to_create['relationshipDefs'].append(relationship_def)
+                types_to_create.entityDefs.append(entity_def)
 
-        for business_metadata_def in type_def['businessMetadataDefs']:
-            if self.client.typedef.type_with_name_exists(business_metadata_def['name']):
-                LOG.info("Type with name %s already exists. Skipping.", business_metadata_def['name'])
+        for relationship_def in type_def.relationshipDefs:
+            if self.client.typedef.type_with_name_exists(relationship_def.name):
+                LOG.info("Type with name %s already exists. Skipping.", relationship_def.name)
             else:
-                types_to_create['businessMetadataDefs'].append(business_metadata_def)
+                types_to_create.relationshipDefs.append(relationship_def)
+
+        for business_metadata_def in type_def.businessMetadataDefs:
+            if self.client.typedef.type_with_name_exists(business_metadata_def.name):
+                LOG.info("Type with name %s already exists. Skipping.", business_metadata_def.name)
+            else:
+                types_to_create.businessMetadataDefs.append(business_metadata_def)
 
         return self.client.typedef.create_atlas_typedefs(types_to_create)

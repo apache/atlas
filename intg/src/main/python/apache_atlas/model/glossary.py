@@ -17,191 +17,201 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import enum
+import apache_atlas.model.instance
 
-from apache_atlas.utils import AtlasBaseModelObject
+from apache_atlas.model.misc import *
+from apache_atlas.utils      import *
 
 
 class AtlasGlossaryBaseObject(AtlasBaseModelObject):
+    def __init__(self, attrs={}):
+        AtlasBaseModelObject.__init__(self, attrs)
 
-    def __init__(self, guid=None, qualifiedName=None, name=None, shortDescription=None,
-                 longDescription=None, additionalAttributes=None, classifications=None):
+        self.qualifiedName        = attrs.get('qualifiedName')
+        self.name                 = attrs.get('name')
+        self.shortDescription     = attrs.get('shortDescription')
+        self.longDescription      = attrs.get('longDescription')
+        self.additionalAttributes = attrs.get('additionalAttributes')
+        self.classifications      = attrs.get('classifications')
 
-        super().__init__(guid)
+    def type_coerce_attrs(self):
+        super(AtlasGlossaryBaseObject, self).type_coerce_attrs()
 
-        self.qualifiedName        = qualifiedName
-        self.name                 = name
-        self.shortDescription     = shortDescription
-        self.longDescription      = longDescription
-        self.additionalAttributes = additionalAttributes if additionalAttributes is not None else {}
-        self.classifications      = classifications if classifications is not None else []
+        self.classifications = type_coerce_list(self.classifications, apache_atlas.model.instance.AtlasClassification)
 
 
 class AtlasGlossary(AtlasGlossaryBaseObject):
+    def __init__(self, attrs={}):
+        AtlasGlossaryBaseObject.__init__(self, attrs)
 
-    def __init__(self, guid=None, qualifiedName=None, name=None, shortDescription=None, longDescription=None,
-                 additionalAttributes=None, classifications=None, language=None, usage=None, terms=None, categories=None):
+        self.language   = attrs.get('language')
+        self.usage      = attrs.get('usage')
+        self.terms      = attrs.get('terms')
+        self.categories = attrs.get('categories')
 
-        super().__init__(guid, qualifiedName, name, shortDescription, longDescription, additionalAttributes, classifications)
+    def type_coerce_attrs(self):
+        super(AtlasGlossary, self).type_coerce_attrs()
 
-        self.language   = language
-        self.usage      = usage
-        self.terms      = terms if terms is not None else set()
-        self.categories = categories if categories is not None else set()
-
-
-class AtlasRelatedTermHeader:
-    status_enum = enum.Enum('status_enum', 'DRAFT ACTIVE DEPRECATED OBSOLETE OTHER', module=__name__)
-
-    def __init__(self, termGuid=None, relationGuid=None, displayText=None, description=None,
-                 expression=None, steward=None, source=None, status=None):
-        self.termGuid     = termGuid
-        self.relationGuid = relationGuid
-        self.displayText  = displayText
-        self.description  = description
-        self.expression   = expression
-        self.steward      = steward
-        self.source       = source
-        self.status       = status
-
-
-class AtlasRelatedCategoryHeader:
-
-    def __init__(self, categoryGuid=None, parentCategoryGuid=None, relationGuid=None, displayText=None, description=None):
-        self.categoryGuid       = categoryGuid
-        self.parentCategoryGuid = parentCategoryGuid
-        self.relationGuid       = relationGuid
-        self.displayText        = displayText
-        self.description        = description
+        self.terms      = type_coerce_list(self.classifications, AtlasRelatedTermHeader)
+        self.categories = type_coerce_list(self.categories, AtlasRelatedCategoryHeader)
 
 
 class AtlasGlossaryExtInfo(AtlasGlossary):
+    def __init__(self, attrs={}):
+        AtlasGlossary.__init__(self, attrs)
 
-    def __init__(self, guid=None, qualifiedName=None, name=None, shortDescription=None, longDescription=None, additionalAttributes=None,
-                 classifications=None, language=None, usage=None, terms=None, categories=None, termInfo=None, categoryInfo=None):
+        self.termInfo     = attrs.get('termInfo')
+        self.categoryInfo = attrs.get('categoryInfo')
 
-        super().__init__(guid, qualifiedName, name, shortDescription, longDescription,
-                         additionalAttributes, classifications, language, usage, terms, categories)
+    def type_coerce_attrs(self):
+        super(AtlasGlossaryExtInfo, self).type_coerce_attrs()
 
-        self.termInfo     = termInfo if termInfo is not None else {}
-        self.categoryInfo = categoryInfo if categoryInfo is not None else {}
-
-
-class AtlasTermRelationshipStatus(enum.Enum):
-    DRAFT      = 0
-    ACTIVE     = 1
-    DEPRECATED = 2
-    OBSOLETE   = 3
-    OTHER      = 99
-
-
-class AtlasGlossaryTerm(AtlasGlossaryBaseObject):
-
-    def __init__(self, guid=None, qualifiedName=None, name=None, shortDescription=None, longDescription=None,
-                 additionalAttributes=None, classifications=None, examples=None, abbreviation=None, usage=None, anchor=None,
-                 assignedEntities=None, categories=None, seeAlso=None, synonyms=None, antonyms=None, preferredTerms=None,
-                 preferredToTerms=None, replacementTerms=None, replacedBy=None, translationTerms=None, translatedTerms=None,
-                 isA=None, classifies=None, validValues=None, validValuesFor=None):
-
-        super().__init__(guid, qualifiedName, name, shortDescription, longDescription, additionalAttributes, classifications)
-
-        # Core attributes
-        self.examples     = examples if examples is not None else []
-        self.abbreviation = abbreviation
-        self.usage        = usage
-
-        # Attributes derived from relationships
-        self.anchor           = anchor
-        self.assignedEntities = assignedEntities if assignedEntities is not None else set()
-        self.categories       = categories if categories is not None else set()
-
-        # Related Terms
-        self.seeAlso = seeAlso if seeAlso is not None else set()
-
-        # Term Synonyms
-        self.synonyms = synonyms if synonyms is not None else set()
-
-        # Term antonyms
-        self.antonyms = antonyms if antonyms is not None else set()
-
-        # Term preference
-        self.preferredTerms   = preferredTerms if preferredTerms is not None else set()
-        self.preferredToTerms = preferredToTerms if preferredToTerms is not None else set()
-
-        # Term replacements
-        self.replacementTerms = replacementTerms if replacementTerms is not None else set()
-        self.replacedBy       = replacedBy if replacedBy is not None else set()
-
-        # Term translations
-        self.translationTerms = translationTerms if translationTerms is not None else set()
-        self.translatedTerms  = translatedTerms if translatedTerms is not None else set()
-
-        # Term classification
-        self.isA        = isA if isA is not None else set()
-        self.classifies = classifies if classifies is not None else set()
-
-        # Values for terms
-        self.validValues    = validValues if validValues is not None else set()
-        self.validValuesFor = validValuesFor if validValuesFor is not None else set()
-
-
-class AtlasGlossaryHeader:
-
-    def __init__(self, glossaryGuid=None, relationGuid=None, displayText=None):
-        self.glossaryGuid = glossaryGuid if glossaryGuid is not None else ""
-        self.relationGuid = relationGuid
-        self.displayText  = displayText
-
-
-class AtlasObjectId:
-
-    def __init__(self, guid=None, typeName=None, uniqueAttributes=None):
-        self.guid             = guid if guid is not None else ""
-        self.typeName         = typeName
-        self.uniqueAttributes = uniqueAttributes if uniqueAttributes is not None else {}
-
-
-class AtlasRelatedObjectId(AtlasObjectId):
-    entityStatus_enum       = enum.Enum('entityStatus_enum', 'ACTIVE DELETED PURGED', module=__name__)
-    relationshipStatus_enum = enum.Enum('relationshipStatus_enum', 'ACTIVE DELETED', module=__name__)
-
-    def __init__(self, guid=None, typeName=None, uniqueAttributes=None, entityStatus=None, displayText=None,
-                 relationshipType=None, relationshipGuid=None, relationshipStatus=None, relationshipAttributes=None):
-
-        super().__init__(guid, typeName, uniqueAttributes)
-
-        self.entityStatus           = entityStatus
-        self.displayText            = displayText
-        self.relationshipType       = relationshipType
-        self.relationshipGuid       = relationshipGuid
-        self.relationshipStatus     = relationshipStatus
-        self.relationshipAttributes = relationshipAttributes
-
-
-class AtlasTermCategorizationHeader:
-    status_enum = enum.Enum('status_enum', 'DRAFT ACTIVE DEPRECATED OBSOLETE OTHER', module=__name__)
-
-    def __init__(self, categoryGuid=None, relationGuid=None, description=None, displayText=None, status=None):
-        self.categoryGuid = categoryGuid if categoryGuid is not None else ""
-        self.relationGuid = relationGuid
-        self.description  = description
-        self.displayText  = displayText
-        self.status       = status
+        self.termInfo     = type_coerce_dict(self.termInfo, AtlasGlossaryTerm)
+        self.categoryInfo = type_coerce_dict(self.categoryInfo, AtlasGlossaryCategory)
 
 
 class AtlasGlossaryCategory(AtlasGlossaryBaseObject):
-
-    def __init__(self, guid=None, qualifiedName=None, name=None, shortDescription=None, longDescription=None,
-                 additionalAttributes=None, classifications=None, anchor=None, parentCategory=None, childrenCategories=None, terms=None):
-
-        super().__init__(guid, qualifiedName, name, shortDescription, longDescription, additionalAttributes, classifications)
+    def __init__(self, attrs):
+        AtlasGlossaryBaseObject.__init__(self, attrs)
 
         # Inherited attributes from relations
-        self.anchor = anchor
+        self.anchor = attrs.get('anchor')
 
         # Category hierarchy links
-        self.parentCategory     = parentCategory
-        self.childrenCategories = childrenCategories
+        self.parentCategory     = attrs.get('parentCategory')
+        self.childrenCategories = attrs.get('childrenCategories')
 
         # Terms associated with this category
-        self.terms = terms if terms is not None else set()
+        self.terms = attrs.get('terms')
+
+    def type_coerce_attrs(self):
+        super(AtlasGlossaryCategory, self).type_coerce_attrs()
+
+        self.anchor             = type_coerce(self.anchor, AtlasGlossaryHeader)
+        self.parentCategory     = type_coerce(self.parentCategory, AtlasRelatedCategoryHeader)
+        self.childrenCategories = type_coerce_list(self.childrenCategories, AtlasRelatedCategoryHeader)
+        self.terms              = type_coerce_list(self.terms, AtlasRelatedTermHeader)
+
+
+class AtlasGlossaryTerm(AtlasGlossaryBaseObject):
+    def __init__(self, attrs={}):
+        AtlasGlossaryBaseObject.__init__(self, attrs)
+
+        # Core attributes
+        self.examples     = attrs.get('examples')
+        self.abbreviation = attrs.get('abbreviation')
+        self.usage        = attrs.get('usage')
+
+        # Attributes derived from relationships
+        self.anchor           = attrs.get('anchor')
+        self.assignedEntities = attrs.get('assignedEntities')
+        self.categories       = attrs.get('categories')
+
+        # Related Terms
+        self.seeAlso = attrs.get('seeAlso')
+
+        # Term Synonyms
+        self.synonyms = attrs.get('synonyms')
+
+        # Term antonyms
+        self.antonyms = attrs.get('antonyms')
+
+        # Term preference
+        self.preferredTerms   = attrs.get('preferredTerms')
+        self.preferredToTerms = attrs.get('preferredToTerms')
+
+        # Term replacements
+        self.replacementTerms = attrs.get('replacementTerms')
+        self.replacedBy       = attrs.get('replacedBy')
+
+        # Term translations
+        self.translationTerms = attrs.get('translationTerms')
+        self.translatedTerms  = attrs.get('translatedTerms')
+
+        # Term classification
+        self.isA        = attrs.get('isA')
+        self.classifies = attrs.get('classifies')
+
+        # Values for terms
+        self.validValues    = attrs.get('validValues')
+        self.validValuesFor = attrs.get('validValuesFor')
+
+    def type_coerce_attrs(self):
+        super(AtlasGlossaryTerm, self).type_coerce_attrs()
+
+        self.anchor           = type_coerce(self.anchor, AtlasGlossaryHeader)
+        self.assignedEntities = type_coerce_list(self.assignedEntities, apache_atlas.model.instance.AtlasRelatedObjectId)
+        self.categories       = type_coerce_list(self.categories, AtlasTermCategorizationHeader)
+        self.seeAlso          = type_coerce_list(self.seeAlso, AtlasRelatedTermHeader)
+        self.synonyms         = type_coerce_list(self.synonyms, AtlasRelatedTermHeader)
+        self.antonyms         = type_coerce_list(self.antonyms, AtlasRelatedTermHeader)
+        self.preferredTerms   = type_coerce_list(self.preferredTerms, AtlasRelatedTermHeader)
+        self.preferredToTerms = type_coerce_list(self.preferredToTerms, AtlasRelatedTermHeader)
+        self.replacementTerms = type_coerce_list(self.replacementTerms, AtlasRelatedTermHeader)
+        self.replacedBy       = type_coerce_list(self.replacedBy, AtlasRelatedTermHeader)
+        self.translationTerms = type_coerce_list(self.translationTerms, AtlasRelatedTermHeader)
+        self.isA              = type_coerce_list(self.isA, AtlasRelatedTermHeader)
+        self.classifies       = type_coerce_list(self.classifies, AtlasRelatedTermHeader)
+        self.validValues      = type_coerce_list(self.validValues, AtlasRelatedTermHeader)
+        self.validValuesFor   = type_coerce_list(self.validValuesFor, AtlasRelatedTermHeader)
+
+
+class AtlasGlossaryHeader(AtlasBase):
+    def __init__(self, attrs):
+        AtlasBase.__init__(self, attrs)
+
+        self.glossaryGuid = attrs.get('glossaryGuid')
+        self.relationGuid = attrs.get('relationGuid')
+        self.displayText  = attrs.get('displayText')
+
+
+class AtlasRelatedCategoryHeader(AtlasBase):
+    def __init__(self, attrs={}):
+        AtlasBase.__init__(self, attrs)
+
+        self.categoryGuid       = attrs.get('categoryGuid')
+        self.parentCategoryGuid = attrs.get('parentCategoryGuid')
+        self.relationGuid       = attrs.get('relationGuid')
+        self.displayText        = attrs.get('displayText')
+        self.description        = attrs.get('description')
+
+
+class AtlasRelatedTermHeader(AtlasBase):
+    def __init__(self, attrs={}):
+        AtlasBase.__init__(self, attrs)
+
+        self.termGuid     = attrs.get('termGuid')
+        self.relationGuid = attrs.get('relationGuid')
+        self.displayText  = attrs.get('displayText')
+        self.description  = attrs.get('description')
+        self.expression   = attrs.get('expression')
+        self.steward      = attrs.get('steward')
+        self.source       = attrs.get('source')
+        self.status       = attrs.get('status')
+
+class AtlasTermAssignmentHeader(AtlasBase):
+    def __init__(self, attrs={}):
+        AtlasBase.__init__(self, attrs)
+
+        self.termGuid     = attrs.get('termGuid')
+        self.relationGuid = attrs.get('relationGuid')
+        self.description  = attrs.get('description')
+        self.displayText  = attrs.get('displayText')
+        self.expression   = attrs.get('expression')
+        self.createdBy    = attrs.get('createdBy')
+        self.steward      = attrs.get('steward')
+        self.source       = attrs.get('source')
+        self.confidence   = attrs.get('confidence')
+
+
+class AtlasTermCategorizationHeader(AtlasBase):
+    def __init__(self, attrs):
+        AtlasBase.__init__(self, attrs)
+
+        self.categoryGuid = attrs.get('categoryGuid')
+        self.relationGuid = attrs.get('relationGuid')
+        self.description  = attrs.get('description')
+        self.displayText  = attrs.get('displayText')
+        self.status       = attrs.get('status')
+
+
