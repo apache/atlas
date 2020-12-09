@@ -18,6 +18,7 @@
 # limitations under the License.
 
 import logging
+
 from apache_atlas.model.glossary import AtlasGlossary, AtlasGlossaryCategory, AtlasGlossaryTerm, AtlasGlossaryHeader
 
 LOG = logging.getLogger('glossary-example')
@@ -33,7 +34,7 @@ class GlossaryExample:
         self.emp_company_category = None
 
     def create_glossary(self):
-        glossary          = AtlasGlossary(None, None, GlossaryExample.glossaryName, "This is a test Glossary")
+        glossary          = AtlasGlossary({ 'name': GlossaryExample.glossaryName, 'shortDescription': 'This is a test Glossary' })
         self.emp_glossary = self.client.glossary.create_glossary(glossary)
 
         LOG.info("Created glossary with name: %s and guid: %s", self.emp_glossary.name, self.emp_glossary.guid)
@@ -47,16 +48,18 @@ class GlossaryExample:
             LOG.info("Glossary extended info: %s; name: %s; language: %s", ext_info.guid, ext_info.name, ext_info.language)
 
     def create_glossary_term(self):
-        header               = AtlasGlossaryHeader(self.emp_glossary.guid, None, self.emp_glossary.name)
-        term                 = AtlasGlossaryTerm(None, None, "EmpSalaryTerm", None, None, None, None, None, None, None, header)
+        header = AtlasGlossaryHeader({ 'glossaryGuid': self.emp_glossary.guid, 'displayText': self.emp_glossary.name })
+        term   = AtlasGlossaryTerm({ 'name': 'EmpSalaryTerm', 'anchor': header })
+
         self.emp_salary_term = self.client.glossary.create_glossary_term(term)
 
         if self.emp_salary_term:
             LOG.info("Created Term for Employee Salary: %s with guid: %s", self.emp_salary_term.name, self.emp_salary_term.guid)
 
     def create_glossary_category(self):
-        header                    = AtlasGlossaryHeader(self.emp_glossary.guid, None, self.emp_glossary.name)
-        category                  = AtlasGlossaryCategory(None, None, "EmpSalaryCategory", None, None, None, None, header)
+        header   = AtlasGlossaryHeader({ 'glossaryGuid': self.emp_glossary.guid, 'displayText': self.emp_glossary.name })
+        category = AtlasGlossaryCategory({ 'name': 'EmpSalaryCategory', 'anchor': header })
+
         self.emp_company_category = self.client.glossary.create_glossary_category(category)
 
         if self.emp_company_category:

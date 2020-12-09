@@ -17,10 +17,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from http import HTTPStatus
-
-from apache_atlas.model.lineage import AtlasLineageInfo
-from apache_atlas.utils import BASE_URI, API, HttpMethod, attributes_to_params
+from apache_atlas.model.lineage import *
+from apache_atlas.utils         import *
 
 
 class LineageClient:

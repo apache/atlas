@@ -1,37 +1,19 @@
 {
   "entity": {
-    "typeName": "sample_process_type",
+    "typeName":   "sample_process",
     "attributes": {
-      "queryGraph": "graph",
-      "qualifiedName": "employee_process_entity@cl1",
-      "name": "employee_process_entity",
-      "queryText": "create table as select ",
-      "description": "hive query for monthly avg salary",
-      "startTime": 1596855233685,
-      "queryPlan": "plan",
-      "operationType": "testOperation",
-      "endTime": 1596855243685,
-      "userName": "user ETL",
-      "queryId": "id"
+      "name":          "employee_process",
+      "description":   "hive query for monthly avg salary",
+      "qualifiedName": "employee_process@cl1",
+      "userName":      "user ETL",
+      "startTime":     1607476549507,
+      "endTime":       1607476552529,
+      "queryText":     "create table as select ",
+      "queryId":       "<query-id>"
     },
-    "guid": "-222736766326574",
-    "isIncomplete": false,
-    "provenanceType": 0,
-    "version": 0,
     "relationshipAttributes": {
-      "outputs": [{
-        "guid": "b0619fb9-b025-4348-8b8a-79e8faa0e789",
-        "typeName": "sample_table_type"
-      }],
-      "inputs": [{
-        "guid": "b49bb0fe-4714-4122-901a-9ac433a89ccd",
-        "typeName": "sample_table_type"
-      }]
-    },
-    "classifications": [{
-      "typeName": "classification",
-      "entityStatus": "ACTIVE"
-    }],
-    "proxy": false
+      "inputs":  [ { "typeName": "sample_table", "uniqueAttributes": { "qualifiedName": "employee_db.employees_us@cl1"     } } ],
+      "outputs": [ { "typeName": "sample_table", "uniqueAttributes": { "qualifiedName": "employee_db.employees_canada@cl1" } } ]
+    }
   }
 }

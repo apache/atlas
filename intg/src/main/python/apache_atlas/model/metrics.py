@@ -17,21 +17,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-NAME        = "name"
-DESCRIPTION = "description"
+from apache_atlas.utils import *
 
-PII_TAG               = "sample_pii"
-FINANCE_TAG           = "sample_finance"
-METRIC_CLASSIFICATION = "sample_metric"
 
-DATABASE_TYPE = "sample_db"
-PROCESS_TYPE  = "sample_process"
-TABLE_TYPE    = "sample_table"
-COLUMN_TYPE   = "sample_column"
+class AtlasMetrics(AtlasBase):
+    def __init__(self, attrs={}):
+        AtlasBase.__init__(self, attrs)
 
-TABLE_DATABASE_TYPE       = "sample_db_tables"
-TABLE_COLUMNS_TYPE        = "sample_table_columns"
-ENUM_TABLE_TYPE           = "sample_tableType"
-BUSINESS_METADATA_TYPE    = "sample_bm"
-BUSINESS_METADATA_TYPE_MV = "sample_bm_mv"
-STRUCT_TYPE_SERDE         = "sample_serdeType"
+        self.data = attrs.get('data')

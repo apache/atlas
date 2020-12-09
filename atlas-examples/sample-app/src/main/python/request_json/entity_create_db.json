@@ -1,19 +1,15 @@
 {
   "entity": {
-    "typeName": "sample_db_type",
+    "guid":       "-1",
+    "typeName":   "sample_db",
     "attributes": {
-      "owner": "user",
-      "createTime": 1000,
-      "@cl1": "employeeCluster",
-      "qualifiedName": "employee_db_entity@cl1",
-      "name": "employee_db_entity",
-      "description": "employee database",
-      "locationUri": "/tmp"
-    },
-    "guid": "-222736766326565",
-    "isIncomplete": false,
-    "provenanceType": 0,
-    "version": 0,
-    "proxy": false
+      "name":          "employee_db",
+      "qualifiedName": "employee_db@cl1",
+      "description":   "employee database",
+      "owner":         "user",
+      "clusterName":   "cl1",
+      "locationUri":   "/hive/database/employee_db",
+      "createTime":    1607476058882
+    }
   }
 }

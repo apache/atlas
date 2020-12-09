@@ -17,11 +17,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from http import HTTPStatus
-
-from apache_atlas.utils import API, HttpMethod, BASE_URI
-from apache_atlas.model.typedef import AtlasEnumDef, AtlasClassificationDef, AtlasEntityDef, AtlasStructDef, \
-    AtlasRelationshipDef, AtlasBusinessMetadataDef, AtlasTypesDef, AtlasBaseTypeDef
+from apache_atlas.model.typedef import *
+from apache_atlas.utils         import *
 
 
 class TypeDefClient:

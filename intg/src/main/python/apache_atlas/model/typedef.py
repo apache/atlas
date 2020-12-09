@@ -17,185 +17,179 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import enum
+import logging
+
+from apache_atlas.model.enums import *
+from apache_atlas.model.misc  import *
+from apache_atlas.utils       import *
 
 
-class AtlasTypesDef:
-
-    def __init__(self, enumDefs=None, structDefs=None, classificationDefs=None,
-                 entityDefs=None, relationshipDefs=None, businessMetadataDefs=None):
-        self.enumDefs             = enumDefs if enumDefs is not None else []
-        self.structDefs           = structDefs if structDefs is not None else []
-        self.classificationDefs   = classificationDefs if classificationDefs is not None else []
-        self.entityDefs           = entityDefs if entityDefs is not None else []
-        self.relationshipDefs     = relationshipDefs if relationshipDefs is not None else []
-        self.businessMetadataDefs = businessMetadataDefs if businessMetadataDefs is not None else []
+LOG = logging.getLogger('apache_atlas')
 
 
-class AtlasBaseTypeDef:
+class AtlasBaseTypeDef(AtlasBase):
+    def __init__(self, attrs={}):
+        AtlasBase.__init__(self, attrs)
 
-    def __init__(self, category=None, guid=None, createdBy=None, updatedBy=None, createTime=None, updateTime=None,
-                 version=None, name=None, description=None, typeVersion=None, serviceType=None, options=None):
-        self.category    = category
-        self.guid        = guid
-        self.createdBy   = createdBy
-        self.updatedBy   = updatedBy
-        self.createTime  = createTime
-        self.updateTime  = updateTime
-        self.version     = version
-        self.name        = name
-        self.description = description
-        self.typeVersion = typeVersion
-        self.serviceType = serviceType
-        self.options     = options if options is not None else {}
-
-
-category_enum = enum.Enum('category_enum', 'PRIMITIVE OBJECT_ID_TYPE ENUM STRUCT CLASSIFICATION ENTITY ARRAY MAP RELATIONSHIP BUSINESS_METADATA', module=__name__)
+        self.category    = attrs.get('category')
+        self.guid        = attrs.get('guid')
+        self.createdBy   = attrs.get('createdBy')
+        self.updatedBy   = attrs.get('updatedBy')
+        self.createTime  = attrs.get('createTime')
+        self.updateTime  = attrs.get('updateTime')
+        self.version     = attrs.get('version')
+        self.name        = attrs.get('name')
+        self.description = attrs.get('description')
+        self.typeVersion = attrs.get('typeVersion')
+        self.serviceType = attrs.get('serviceType')
+        self.options     = attrs.get('options')
 
 
 class AtlasEnumDef(AtlasBaseTypeDef):
+    def __init__(self, attrs={}):
+        AtlasBaseTypeDef.__init__(self, attrs)
 
-    def __init__(self, category=category_enum.ENUM.name, guid=None, createdBy=None, updatedBy=None, createTime=None,
-                 updateTime=None, version=None, name=None, description=None, typeVersion=None,
-                 serviceType=None, options=None, elementDefs=None, defaultValue=None):
+        self.elementDefs  = attrs.get('elementDefs')
+        self.defaultValue = attrs.get('defaultValue')
 
-        super().__init__(category, guid, createdBy, updatedBy, createTime, updateTime, version, name, description, typeVersion, serviceType, options)
+    def type_coerce_attrs(self):
+        super(AtlasEnumDef, self).type_coerce_attrs()
 
-        self.elementDefs  = elementDefs if elementDefs is not None else []
-        self.defaultValue = defaultValue
-
-
-class AtlasEnumElementDef:
-
-    def __init__(self, value=None, description=None, ordinal=None):
-        self.value       = value
-        self.description = description
-        self.ordinal     = ordinal
+        self.elementDefs = type_coerce_list(self.elementDefs, AtlasEnumElementDef)
 
 
 class AtlasStructDef(AtlasBaseTypeDef):
+    def __init__(self, attrs={}):
+        AtlasBaseTypeDef.__init__(self, attrs)
 
-    def __init__(self, category=category_enum.STRUCT.name, guid=None, createdBy=None, updatedBy=None, createTime=None, updateTime=None, version=None,
-                 name=None, description=None, typeVersion=None, serviceType=None, options=None, attributeDefs=None):
+        self.category      = non_null(attrs.get('category'), TypeCategory.STRUCT.name)
+        self.attributeDefs = attrs.get('attributeDefs')
 
-        super().__init__(category, guid, createdBy, updatedBy, createTime, updateTime, version, name, description, typeVersion, serviceType, options)
+    def type_coerce_attrs(self):
+        super(AtlasStructDef, self).type_coerce_attrs()
 
-        self.attributeDefs = attributeDefs if attributeDefs is not None else []
-
-
-class AtlasAttributeDef:
-    cardinality_enum = enum.Enum('cardinality_enum', 'SINGLE LIST SET', module=__name__)
-    indexType_enum   = enum.Enum('indexType_enum', 'DEFAULT STRING', module=__name__)
-
-    def __init__(self, name=None, typeName=None, isOptional=None, cardinality=None, valuesMinCount=None, valuesMaxCount=None,
-                 isUnique=None, isIndexable=None, includeInNotification=None, defaultValue=None, description=None, searchWeight= -1,
-                 indexType=None, constraints=None, options=None, displayName=None):
-
-        self.name                  = name
-        self.typeName              = typeName
-        self.isOptional            = isOptional
-        self.cardinality           = cardinality
-        self.valuesMinCount        = valuesMinCount
-        self.valuesMaxCount        = valuesMaxCount
-        self.isUnique              = isUnique
-        self.isIndexable           = isIndexable
-        self.includeInNotification = includeInNotification
-        self.defaultValue          = defaultValue
-        self.description           = description
-        self.searchWeight          = searchWeight
-        self.indexType             = indexType
-        self.constraints           = constraints if constraints is not None else []
-        self.options               = options if options is not None else {}
-        self.displayName           = displayName
-
-
-class AtlasConstraintDef:
-
-    def __init__(self, type=None, params=None):
-        self.type   = type
-        self.params = params if params is not None else {}
+        self.attributeDefs = type_coerce_list(self.attributeDefs, AtlasAttributeDef)
 
 
 class AtlasClassificationDef(AtlasStructDef):
+    def __init__(self, attrs={}):
+        AtlasStructDef.__init__(self, attrs)
 
-    def __init__(self, category=category_enum.CLASSIFICATION.name, guid=None, createdBy=None, updatedBy=None, createTime=None, updateTime=None,
-                 version=None, name=None, description=None, typeVersion=None, serviceType=None, options=None,
-                 attributeDefs=None, superTypes=None, entityTypes=None, subTypes=None):
-
-        super().__init__(category, guid, createdBy, updatedBy, createTime, updateTime, version,
-                         name, description, typeVersion, serviceType, options, attributeDefs)
-
-        self.superTypes  = superTypes if superTypes is not None else set()
-        self.entityTypes = entityTypes if entityTypes is not None else set()
-        self.subTypes    = subTypes if subTypes is not None else set()
+        self.category    = TypeCategory.CLASSIFICATION.name
+        self.superTypes  = attrs.get('superTypes')
+        self.entityTypes = attrs.get('entityTypes')
+        self.subTypes    = attrs.get('subTypes')
 
 
 class AtlasEntityDef(AtlasStructDef):
-    def __init__(self, category=category_enum.CLASSIFICATION.name, guid=None, createdBy=None, updatedBy=None, createTime=None, updateTime=None,
-                 version=None, name=None, description=None, typeVersion=None, serviceType=None, options=None,
-                 attributeDefs=None, superTypes=None, subTypes=None, relationshipAttributeDefs=None, businessAttributeDefs=None):
+    def __init__(self, attrs={}):
+        AtlasStructDef.__init__(self, attrs)
 
-        super().__init__(category, guid, createdBy, updatedBy, createTime, updateTime, version,
-                         name, description, typeVersion, serviceType, options, attributeDefs)
+        self.category                  = TypeCategory.ENTITY.name
+        self.superTypes                = attrs.get('superTypes')
+        self.subTypes                  = attrs.get('subTypes')
+        self.relationshipAttributeDefs = attrs.get('relationshipAttributeDefs')
+        self.businessAttributeDefs     = attrs.get('businessAttributeDefs')
 
-        self.superTypes                = superTypes if superTypes is not None else set()
-        self.subTypes                  = subTypes if subTypes is not None else set()
-        self.relationshipAttributeDefs = relationshipAttributeDefs if relationshipAttributeDefs is not None else []
-        self.businessAttributeDefs     = businessAttributeDefs if businessAttributeDefs is not None else {}
+    def type_coerce_attrs(self):
+        super(AtlasEntityDef, self).type_coerce_attrs()
 
-
-class AtlasRelationshipAttributeDef(AtlasAttributeDef):
-    cardinality_enum = enum.Enum('cardinality_enum', 'SINGLE LIST SET', module=__name__)
-    indexType_enum   = enum.Enum('indexType_enum', 'DEFAULT STRING', module=__name__)
-
-    def __init__(self, name=None, typeName=None, isOptional=None, cardinality=None, valuesMinCount=None,
-                 valuesMaxCount=None, isUnique=None, isIndexable=None, includeInNotification=None,
-                 defaultValue=None, description=None, searchWeight=None, indexType=None, constraints=None,
-                 options=None, displayName=None, relationshipTypeName=None, isLegacyAttribute=None):
-
-        super().__init__(name, typeName, isOptional, cardinality, valuesMinCount, valuesMaxCount, isUnique, isIndexable,
-                         includeInNotification, defaultValue, description, searchWeight, indexType, constraints, options, displayName)
-
-        self.relationshipTypeName = relationshipTypeName
-        self.isLegacyAttribute    = isLegacyAttribute
-
-
-class AtlasBusinessMetadataDef(AtlasStructDef):
-
-    def __init__(self, category=category_enum.BUSINESS_METADATA.name, guid=None, createdBy=None, updatedBy=None, createTime=None,
-                 updateTime=None, version=None, name=None, description=None, typeVersion=None,
-                 serviceType=None, options=None, attributeDefs=None):
-
-        super().__init__(category, guid, createdBy, updatedBy, createTime, updateTime, version,
-                         name, description, typeVersion, serviceType, options, attributeDefs)
+        self.relationshipAttributeDefs = type_coerce_list(self.relationshipAttributeDefs, AtlasRelationshipAttributeDef)
+        self.businessAttributeDefs     = type_coerce_dict_list(self.businessAttributeDefs, AtlasAttributeDef)
 
 
 class AtlasRelationshipDef(AtlasStructDef):
-    relationshipCategory_enum = enum.Enum('relationshipCategory_enum', 'ASSOCIATION AGGREGATION COMPOSITION', module=__name__)
-    propagateTags_enum        = enum.Enum('propagateTags_enum', 'NONE ONE_TO_TWO TWO_TO_ONE BOTH', module=__name__)
+    def __init__(self, attrs={}):
+        AtlasStructDef.__init__(self, attrs)
 
-    def __init__(self, category=category_enum.RELATIONSHIP.name, guid=None, createdBy=None, updatedBy=None, createTime=None,
-                 updateTime=None, version=None, name=None, description=None, typeVersion=None,
-                 serviceType=None, options=None, attributeDefs=None, relationshipCategory=None,
-                 relationshipLabel=None, propagateTags=None, endDef1=None, endDef2=None):
-
-        super().__init__(category, guid, createdBy, updatedBy, createTime, updateTime, version,
-                         name, description, typeVersion, serviceType, options, attributeDefs)
-
-        self.relationshipCategory = relationshipCategory
-        self.relationshipLabel    = relationshipLabel
-        self.propagateTags        = propagateTags
-        self.endDef1              = endDef1
-        self.endDef2              = endDef2
+        self.category = TypeCategory.RELATIONSHIP.name
 
 
-class AtlasRelationshipEndDef:
-    cardinality_enum = enum.Enum('cardinality_enum', 'SINGLE LIST SET', module=__name__)
+class AtlasBusinessMetadataDef(AtlasStructDef):
+    def __init__(self, attrs={}):
+        AtlasStructDef.__init__(self, attrs)
 
-    def __init__(self, type=None, name=None, isContainer=None, cardinality=None, isLegacyAttribute=None, description=None):
-        self.type              = type
-        self.name              = name
-        self.isContainer       = isContainer
-        self.cardinality       = cardinality if cardinality is not None else AtlasRelationshipEndDef.cardinality_enum.SINGLE.name
-        self.isLegacyAttribute = isLegacyAttribute
-        self.description       = description
+        self.category = TypeCategory.BUSINESS_METADATA.name
+
+
+class AtlasAttributeDef(AtlasBase):
+    def __init__(self, attrs={}):
+        AtlasBase.__init__(self, attrs)
+
+        self.name                  = attrs.get('name')
+        self.typeName              = attrs.get('typeName')
+        self.isOptional            = attrs.get('isOptional')
+        self.cardinality           = attrs.get('cardinality')
+        self.valuesMinCount        = attrs.get('valuesMinCount')
+        self.valuesMaxCount        = attrs.get('valuesMaxCount')
+        self.isUnique              = attrs.get('isUnique')
+        self.isIndexable           = attrs.get('isIndexable')
+        self.includeInNotification = attrs.get('includeInNotification')
+        self.defaultValue          = attrs.get('defaultValue')
+        self.description           = attrs.get('description')
+        self.searchWeight          = non_null(attrs.get('searchWeight'), -1)
+        self.indexType             = attrs.get('indexType')
+        self.constraints           = attrs.get('constraints')
+        self.options               = attrs.get('options')
+        self.displayName           = attrs.get('displayName')
+
+    def type_coerce_attrs(self):
+        super(AtlasAttributeDef, self).type_coerce_attrs()
+
+        self.constraints = type_coerce_list(self.constraints, AtlasConstraintDef)
+
+
+class AtlasConstraintDef(AtlasBase):
+    def __init__(self, attrs={}):
+        AtlasBase.__init__(self, attrs)
+
+        self.type   = attrs.get('type')
+        self.params = attrs.get('params')
+
+
+class AtlasEnumElementDef(AtlasBase):
+    def __init__(self, attrs={}):
+        AtlasBase.__init__(self, attrs)
+
+        self.value       = attrs.get('value')
+        self.description = attrs.get('description')
+        self.ordinal     = attrs.get('ordinal')
+
+
+class AtlasRelationshipAttributeDef(AtlasAttributeDef):
+    def __init__(self, attrs={}):
+        AtlasAttributeDef.__init__(self, attrs)
+
+        self.relationshipTypeName = attrs.get('relationshipTypeName')
+        self.isLegacyAttribute    = attrs.get('isLegacyAttribute')
+
+
+class AtlasRelationshipEndDef(AtlasBase):
+    def __init__(self, attrs={}):
+        AtlasBase.__init__(self, attrs)
+
+        self.cardinality = non_null(self.cardinality, Cardinality.SINGLE.name)
+
+
+class AtlasTypesDef(AtlasBase):
+    def __init__(self, attrs={}):
+        AtlasBase.__init__(self, attrs)
+
+        self.enumDefs             = attrs.get('enumDefs')
+        self.structDefs           = attrs.get('structDefs')
+        self.classificationDefs   = attrs.get('classificationDefs')
+        self.entityDefs           = attrs.get('entityDefs')
+        self.relationshipDefs     = attrs.get('relationshipDefs')
+        self.businessMetadataDefs = attrs.get('businessMetadataDefs')
+
+    def type_coerce_attrs(self):
+        super(AtlasTypesDef, self).type_coerce_attrs()
+
+        self.enumDefs             = type_coerce_list(self.enumDefs, AtlasEnumDef)
+        self.structDefs           = type_coerce_list(self.structDefs, AtlasStructDef)
+        self.classificationDefs   = type_coerce_list(self.classificationDefs, AtlasClassificationDef)
+        self.entityDefs           = type_coerce_list(self.entityDefs, AtlasEntityDef)
+        self.relationshipDefs     = type_coerce_list(self.relationshipDefs, AtlasRelationshipDef)
+        self.businessMetadataDefs = type_coerce_list(self.businessMetadataDefs, AtlasBusinessMetadataDef)
+
+

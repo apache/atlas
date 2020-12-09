@@ -17,10 +17,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from http import HTTPStatus
-
-from apache_atlas.model.discovery import AtlasSearchResult, AtlasUserSavedSearch, AtlasSuggestionsResult, AtlasQuickSearchResult
-from apache_atlas.utils import API, HttpMethod, BASE_URI
+from apache_atlas.model.discovery import *
+from apache_atlas.utils           import API, HttpMethod, HTTPStatus
 
 
 class DiscoveryClient:
@@ -145,14 +143,14 @@ class DiscoveryClient:
         return self.client.call_api(DiscoveryClient.UPDATE_SAVED_SEARCH, AtlasUserSavedSearch, None, saved_search)
 
     def delete_saved_search(self, guid):
-        return self.client.call_api(DiscoveryClient.DELETE_SAVED_SEARCH.format_map({'guid': guid}))
+        return self.client.call_api(DiscoveryClient.DELETE_SAVED_SEARCH.format_path({'guid': guid}))
 
     def execute_saved_search(self, user_name, search_name):
         query_params = {"user", user_name}
 
-        return self.client.call_api(DiscoveryClient.EXECUTE_SAVED_SEARCH_BY_NAME.format_map({'search_name': search_name}),
+        return self.client.call_api(DiscoveryClient.EXECUTE_SAVED_SEARCH_BY_NAME.format_path({'search_name': search_name}),
                                     AtlasSearchResult, query_params)
 
     def execute_saved_search(self, search_guid):
-        return self.client.call_api(DiscoveryClient.EXECUTE_SAVED_SEARCH_BY_GUID.format_map({'search_guid': search_guid}),
+        return self.client.call_api(DiscoveryClient.EXECUTE_SAVED_SEARCH_BY_GUID.format_path({'search_guid': search_guid}),
                                     AtlasSearchResult)

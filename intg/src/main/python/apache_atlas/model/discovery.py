@@ -18,75 +18,163 @@
 # limitations under the License.
 
 import enum
-import sys
 
-from apache_atlas.utils import AtlasBaseModelObject
-
-
-class SearchFilter:
-    sortType_enum = enum.Enum('sortType_enum', 'NONE ASC DESC', module=__name__)
-
-    def __init__(self, params=None, startIndex=0, maxRows=sys.maxsize, getCount=True, sortBy=None, sortType=None):
-        self.params     = params if params is not None else {}
-        self.startIndex = startIndex
-        self.maxRows    = maxRows
-        self.getCount   = getCount
-        self.sortBy     = sortBy
-        self.sortType   = sortType
+from apache_atlas.model.enums    import *
+from apache_atlas.model.instance import *
+from apache_atlas.utils          import *
 
 
-class AtlasSearchResult:
-    queryType_enum = enum.Enum('queryType_enum', 'DSL FULL_TEXT GREMLIN BASIC ATTRIBUTE RELATIONSHIP', module=__name__)
+class AtlasAggregationEntry(AtlasBase):
+    def __init__(self, attrs={}):
+        AtlasBase.__init__(self, attrs)
 
-    def __init__(self, queryType=None, searchParameters=None, queryText=None, type=None, classification=None,
-                 entities=None, attributes=None, fullTextResult=None, referredEntities=None, approximateCount=None):
-        self.queryType        = queryType if queryType is not None else AtlasSearchResult.queryType_enum.BASIC.name
-        self.searchParameters = searchParameters
-        self.queryText        = queryText
-        self.type             = type
-        self.classification   = classification
-        self.entities         = entities
-        self.attributes       = attributes
-        self.fullTextResult   = fullTextResult if fullTextResult is not None else []
-        self.referredEntities = referredEntities if fullTextResult is not None else {}
-        self.approximateCount = approximateCount
+        self.name = attrs.get('name')
+        self.name = attrs.get('count')
 
 
-class SearchParameters:
-    sortOrder_enum = enum.Enum('sortOrder_enum', 'ASCENDING DESCENDING', module=__name__)
+class AtlasQuickSearchResult(AtlasBase):
+    def __init__(self, attrs={}):
+        AtlasBase.__init__(self, attrs)
 
-    def __init__(self, query=None, typeName=None, classification=None, termName=None, sortBy=None, excludeDeletedEntities=None,
-                 includeClassificationAttributes=None, includeSubTypes=None, includeSubClassifications=None, limit=None,
-                 offset=None, entityFilters=None, tagFilters=None, attributes=None, sortOrder=None):
-        self.query                           = query
-        self.typeName                        = typeName
-        self.classification                  = classification
-        self.termName                        = termName
-        self.sortBy                          = sortBy
-        self.excludeDeletedEntities          = excludeDeletedEntities
-        self.includeClassificationAttributes = includeClassificationAttributes
-        self.includeSubTypes                 = includeSubTypes
-        self.includeSubClassifications       = includeSubClassifications
-        self.limit                           = limit
-        self.offset                          = offset
-        self.entityFilters                   = entityFilters
-        self.tagFilters                      = tagFilters
-        self.attributes                      = attributes if attributes is not None else set()
-        self.sortOrder                       = sortOrder
+        self.searchResults      = attrs.get('searchResults')
+        self.aggregationMetrics = attrs.get('aggregationMetrics')
+
+    def type_coerce_attrs(self):
+        super(AtlasQuickSearchResult, self).type_coerce_attrs()
+
+        self.searchResults      = type_coerce(self.searchResults, AtlasSearchResult)
+        self.aggregationMetrics = type_coerce_dict_list(self.aggregationMetrics, AtlasAggregationEntry)
 
 
-class FilterCriteria:
-    operator_enum = enum.Enum('operator_enum',
-                              '< > <= >= = != in like startsWith endsWith contains not_contains containsAny containsAll isNull notNull',
-                              module=__name__)
-    condition_enum = enum.Enum('condition_enum', 'AND OR', module=__name__)
+class AtlasSearchResult(AtlasBase):
+    def __init__(self, attrs={}):
+        AtlasBase.__init__(self, attrs)
 
-    def __init__(self, attributeName=None, operator=None, attributeValue=None, condition=None, criterion=None):
-        self.attributeName  = attributeName
-        self.operator       = operator
-        self.attributeValue = attributeValue
-        self.condition      = condition
-        self.criterion      = criterion if criterion is not None else []
+        self.queryType        = non_null(attrs.get('queryType'), QueryType.BASIC.name)
+        self.searchParameters = attrs.get('searchParameters')
+        self.queryText        = attrs.get('queryText')
+        self.type             = attrs.get('type')
+        self.classification   = attrs.get('classification')
+        self.entities         = attrs.get('entities')
+        self.attributes       = attrs.get('attributes')
+        self.fullTextResult   = attrs.get('fullTextResult')
+        self.referredEntities = attrs.get('referredEntities')
+        self.approximateCount = non_null(attrs.get('approximateCount'), -1)
+
+    def type_coerce_attrs(self):
+        super(AtlasSearchResult, self).type_coerce_attrs()
+
+        self.entities         = type_coerce_list(self.entities, AtlasEntityHeader)
+        self.attributes       = type_coerce(self.attributes, AttributeSearchResult)
+        self.referredEntities = type_coerce_dict(self.referredEntities, AtlasEntityHeader)
+
+
+class AttributeSearchResult(AtlasBase):
+    def __init__(self, attrs={}):
+        AtlasBase.__init__(self, attrs)
+
+        self.name   = attrs.get('name')
+        self.values = attrs.get('values')
+
+
+class AtlasFullTextResult(AtlasBase):
+    def __init__(self, attrs={}):
+        AtlasBase.__init__(self, attrs)
+
+        self.entity = attrs.get('entity')
+        self.score  = attrs.get('score')
+
+    def type_coerce_attrs(self):
+        super(AtlasFullTextResult, self).type_coerce_attrs()
+
+        self.entity = type_coerce(self.criterion, AtlasEntityHeader)
+
+
+class AtlasSuggestionsResult(AtlasBase):
+    def __init__(self, attrs={}):
+        AtlasBase.__init__(self, attrs)
+
+        self.suggestions  = attrs.get('suggestions')
+        self.prefixString = attrs.get('prefixString')
+        self.fieldName    = attrs.get('fieldName')
+
+
+class QuickSearchParameters(AtlasBase):
+    def __init__(self, attrs={}):
+        AtlasBase.__init__(self, attrs)
+
+        self.query                  = attrs.get('query')
+        self.typeName               = attrs.get('typeName')
+        self.entityFilters          = attrs.get('entityFilters')
+        self.includeSubTypes        = attrs.get('includeSubTypes')
+        self.excludeDeletedEntities = attrs.get('excludeDeletedEntities')
+        self.offset                 = attrs.get('offset')
+        self.limit                  = attrs.get('limit')
+        self.attributes             = attrs.get('attributes')
+
+    def type_coerce_attrs(self):
+        super(QuickSearchParameters, self).type_coerce_attrs()
+
+        self.entityFilters = type_coerce(self.entityFilters, FilterCriteria)
+
+
+class SearchParameters(AtlasBase):
+    def __init__(self, attrs={}):
+        AtlasBase.__init__(self, attrs)
+
+        self.query                           = attrs.get('query')
+        self.typeName                        = attrs.get('typeName')
+        self.classification                  = attrs.get('classification')
+        self.termName                        = attrs.get('termName')
+        self.sortBy                          = attrs.get('sortBy')
+        self.excludeDeletedEntities          = attrs.get('excludeDeletedEntities')
+        self.includeClassificationAttributes = attrs.get('includeClassificationAttributes')
+        self.includeSubTypes                 = non_null(attrs.get('includeSubTypes'), True)
+        self.includeSubClassifications       = non_null(attrs.get('includeSubClassifications'), True)
+        self.limit                           = attrs.get('limit')
+        self.offset                          = attrs.get('offset')
+        self.entityFilters                   = attrs.get('entityFilters')
+        self.tagFilters                      = attrs.get('tagFilters')
+        self.attributes                      = attrs.get('attributes')
+        self.sortOrder                       = attrs.get('sortOrder')
+
+    def type_coerce_attrs(self):
+        super(SearchParameters, self).type_coerce_attrs()
+
+        self.entityFilters = type_coerce(self.entityFilters, FilterCriteria)
+        self.tagFilters    = type_coerce(self.tagFilters, FilterCriteria)
+
+
+class FilterCriteria(AtlasBase):
+    def __init__(self, attrs={}):
+        AtlasBase.__init__(self, attrs)
+
+        self.attributeName  = attrs.get('attributeName')
+        self.operator       = attrs.get('operator')
+        self.attributeValue = attrs.get('attributeValue')
+        self.condition      = attrs.get('condition')
+        self.criterion      = attrs.get('criterion')
+
+    def type_coerce_attrs(self):
+        super(FilterCriteria, self).type_coerce_attrs()
+
+        self.criterion = type_coerce(self.criterion, FilterCriteria)
+
+
+class AtlasUserSavedSearch(AtlasBaseModelObject):
+    def __init__(self, attrs={}):
+        AtlasBaseModelObject.__init__(self, attrs)
+
+        self.ownerName        = attrs.get('ownerName')
+        self.name             = attrs.get('name')
+        self.searchType       = attrs.get('searchType')
+        self.searchParameters = attrs.get('searchParameters')
+        self.uiParameters     = attrs.get('uiParameters')
+
+    def type_coerce_attrs(self):
+        super(AtlasUserSavedSearch, self).type_coerce_attrs()
+
+        self.searchParameters = type_coerce(self.searchParameters, SearchParameters)
 
 
 class Operator(enum.Enum):
@@ -110,66 +198,3 @@ class Operator(enum.Enum):
 
 class SortOrder(enum.Enum):
     sort_order = enum.Enum('sort_order', 'ASCENDING DESCENDING', module=__name__)
-
-
-class AttributeSearchResult:
-
-    def __init__(self, name=None, values=None):
-        self.name   = name
-        self.values = values if values is not None else []
-
-
-class AtlasFullTextResult:
-
-    def __init__(self, entity=None, score=None):
-        self.entity = entity
-        self.score  = score
-
-
-class AtlasQuickSearchResult:
-
-    def __init__(self, searchResults=None, aggregationMetrics=None):
-        self.searchResults      = searchResults
-        self.aggregationMetrics = aggregationMetrics if aggregationMetrics is not None else {}
-
-
-class AtlasAggregationEntry:
-
-    def __init__(self, name=None, count=None):
-        self.name  = name
-        self.count = count
-
-
-class QuickSearchParameters:
-
-    def __init__(self, query=None, typeName=None, entityFilters=None, includeSubTypes=None,
-                 excludeDeletedEntities=None, offset=None, limit=None, attributes=None):
-        self.query                  = query
-        self.typeName               = typeName
-        self.entityFilters          = entityFilters
-        self.includeSubTypes        = includeSubTypes
-        self.excludeDeletedEntities = excludeDeletedEntities
-        self.offset                 = offset
-        self.limit                  = limit
-        self.attributes             = attributes if attributes is not None else set()
-
-
-class AtlasSuggestionsResult:
-
-    def __init__(self, suggestions=None, prefixString=None, fieldName=None):
-        self.suggestions  = suggestions if suggestions is not None else []
-        self.prefixString = prefixString
-        self.fieldName    = fieldName
-
-
-class AtlasUserSavedSearch(AtlasBaseModelObject):
-    saved_search_type_enum = enum.Enum('saved_search_type_enum', 'BASIC ADVANCED', module=__name__)
-
-    def __init__(self, guid=None, ownerName=None, name=None, searchType=None, searchParameters=None, uiParameters=None):
-        super().__init__(guid)
-
-        self.ownerName        = ownerName
-        self.name             = name
-        self.searchType       = searchType
-        self.searchParameters = searchParameters
-        self.uiParameters     = uiParameters

@@ -17,13 +17,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from http import HTTPStatus
-
-from apache_atlas.model.entity import AtlasEntityWithExtInfo, AtlasEntitiesWithExtInfo, AtlasEntityHeader, \
-    AtlasClassifications, AtlasEntityHeaders, EntityMutationResponse
-
-from apache_atlas.utils import API, HttpMethod, BASE_URI, APPLICATION_OCTET_STREAM, APPLICATION_JSON, \
-    MULTIPART_FORM_DATA, attributes_to_params, list_attributes_to_params
+from apache_atlas.model.instance import *
+from apache_atlas.utils          import *
 
 
 class EntityClient:

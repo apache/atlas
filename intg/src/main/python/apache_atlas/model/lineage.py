@@ -17,23 +17,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import enum
+from apache_atlas.model.instance import *
+from apache_atlas.utils          import *
 
 
-class AtlasLineageInfo:
-    lineageDirection_enum = enum.Enum('lineageDirection_enum', 'INPUT OUTPUT BOTH', module=__name__)
+class AtlasLineageInfo(AtlasBase):
+    def __init__(self, attrs={}):
+        AtlasBase.__init__(self, attrs)
 
-    def __init__(self, baseEntityGuid=None, lineageDirection=None, lineageDepth=None, guidEntityMap=None, relations=None):
-        self.baseEntityGuid   = baseEntityGuid
-        self.lineageDirection = lineageDirection
-        self.lineageDepth     = lineageDepth
-        self.guidEntityMap    = guidEntityMap if guidEntityMap is not None else {}
-        self.relations        = relations if relations is not None else set()
+        self.baseEntityGuid   = attrs.get('baseEntityGuid')
+        self.lineageDirection = attrs.get('lineageDirection')
+        self.lineageDepth     = attrs.get('lineageDepth')
+        self.guidEntityMap    = attrs.get('guidEntityMap')
+        self.relations        = attrs.get('relations')
 
 
-class LineageRelation:
+    def type_coerce_attrs(self):
+        super(AtlasLineageInfo, self).type_coerce_attrs()
 
-    def __init__(self, fromEntityId=None, toEntityId=None, relationshipId=None):
-        self.fromEntityId   = fromEntityId
-        self.toEntityId     = toEntityId
-        self.relationshipId = relationshipId
+        self.guidEntityMap = type_coerce_dict(self.guidEntityMap, AtlasEntityHeader)
+        self.relations     = type_coerce_list(self.relations, LineageRelation)
+
+
+class LineageRelation(AtlasBase):
+    def __init__(self, attrs):
+        AtlasBase.__init__(self, attrs)
+
+        self.fromEntityId   = attrs.get('fromEntityId')
+        self.toEntityId     = attrs.get('toEntityId')
+        self.relationshipId = attrs.get('relationshipId')
