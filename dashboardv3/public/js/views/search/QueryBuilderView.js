@@ -193,10 +193,10 @@ define(['require',
                 /* __customAttributes */
                 if (isSystemAttr && attrObj.name === "__customAttributes") {
                     obj["input"] = function(rule) {
-                        return rule.operator.nb_inputs ? that.getUserDefineInput() : null
+                        return (rule && rule.operator && rule.operator.nb_inputs) ? that.getUserDefineInput() : null
                     }
                     obj["valueGetter"] = function(rule) {
-                        if (rule.operator.type === "contains") {
+                        if (rule && rule.operator && rule.operator.type === "contains") {
                             var $el = rule.$el.find('.rule-value-container'),
                                 key = $el.find("[data-type='key']").val(),
                                 val = $el.find("[data-type='value']").val();
@@ -205,13 +205,15 @@ define(['require',
                             } else {
                                 return new Error("Key & Value is Required");
                             }
+                        } else {
+                            return [] // in CommonviewFunction.js value is set to "" for object;
                         }
                     }
                     obj["valueSetter"] = function(rule) {
-                        if (!rule.$el.hasClass("user-define")) {
+                        if (rule && !rule.$el.hasClass("user-define")) {
                             rule.$el.addClass("user-define");
                         }
-                        if (rule.value && !(rule.value instanceof Error)) {
+                        if (rule && rule.value && rule.value.length && !(rule.value instanceof Error)) {
                             var $el = rule.$el.find('.rule-value-container'),
                                 value = rule.value.split("=");
                             if (value) {
@@ -220,7 +222,6 @@ define(['require',
                             }
                         }
                     }
-
                     obj.operators = ['contains', 'is_null', 'not_null'];
                     return obj;
                 }
