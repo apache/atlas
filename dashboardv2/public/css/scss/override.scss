@@ -521,6 +521,14 @@ div.columnmanager-dropdown-container {
     }
 }
 
+.modal {
+    position: absolute;
+}
+
+.modal-open {
+    overflow-y: auto;
+}
+
 .daterangepicker {
     max-height: 400px;
     overflow-y: scroll;
