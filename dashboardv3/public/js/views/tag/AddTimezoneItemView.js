@@ -47,11 +47,11 @@ define(['require',
                 var events = {},
                     that = this;
                 events["change " + this.ui.startTime] = function(e) {
-                    this.model.set({ "startTime": this.ui.startTime.val() });
+                    this.model.set({ "startTime": that.getDateFormat(this.ui.startTime.val()) });
                     this.buttonActive({ isButtonActive: true });
                 };
                 events["change " + this.ui.endTime] = function(e) {
-                    this.model.set({ "endTime": this.ui.endTime.val() });
+                    this.model.set({ "endTime": that.getDateFormat(this.ui.endTime.val()) });
                     this.buttonActive({ isButtonActive: true });
                 };
                 events["change " + this.ui.timeZone] = function(e) {
@@ -76,7 +76,7 @@ define(['require',
                         "singleDatePicker": true,
                         "showDropdowns": true,
                         "timePicker": true,
-                        "timePicker24Hour": true,
+                        "timePicker24Hour": Globals.dateTimeFormat.indexOf("hh") > -1 ? false : true,
                         "timePickerSeconds": true,
                         "startDate": new Date(),
                         "autoApply": true,
@@ -99,37 +99,46 @@ define(['require',
                         startDateObj["autoUpdateInput"] = false;
                     } else {
                         startDateObj["autoUpdateInput"] = true;
-                        startDateObj["startDate"] = this.model.get('startTime');
+                        startDateObj["startDate"] = Utils.formatDate({ date: Date.parse(this.model.get('startTime')), zone: false });
                     }
                     if (_.isEmpty(this.model.get('endTime'))) {
                         endDateObj["autoUpdateInput"] = false;
-                        endDateObj["minDate"] = this.model.get('startTime');
+                        endDateObj["minDate"] = Utils.formatDate({ date: Date.parse(this.model.get('startTime')), zone: false });
                     } else {
                         endDateObj["autoUpdateInput"] = true;
-                        endDateObj["minDate"] = this.model.get('startTime');
-                        endDateObj["startDate"] = this.model.get('endTime');
+                        endDateObj["minDate"] = Utils.formatDate({ date: Date.parse(this.model.get('startTime')), zone: false });
+                        endDateObj["startDate"] = Utils.formatDate({ date: Date.parse(this.model.get('endTime')), zone: false });
                     }
                     if (!_.isEmpty(this.model.get('timeZone'))) {
                         this.ui.timeZone.val(this.model.get('timeZone')).trigger("change", { 'manual': true });
                     }
                 } else {
-                    this.model.set('startTime', that.ui.startTime.val());
-                    this.model.set('endTime', that.ui.endTime.val());
+                    this.model.set('startTime', that.getDateFormat(that.ui.startTime.val()));
+                    this.model.set('endTime', that.getDateFormat(that.ui.endTime.val()));
                 }
                 this.ui.startTime.daterangepicker(startDateObj).on('apply.daterangepicker', function(ev, picker) {
                     that.ui.startTime.val(Utils.formatDate({ date: picker.startDate, zone: false }));
                     _.extend(endDateObj, { "minDate": that.ui.startTime.val() })
                     that.endDateInitialize(endDateObj);
-                    that.model.set('startTime', that.ui.startTime.val());
+                    that.model.set('startTime', that.getDateFormat(that.ui.startTime.val()));
                     that.buttonActive({ isButtonActive: true });
                 }).on('cancel.daterangepicker', function(ev, picker) {
                     that.ui.startTime.val('');
                     delete endDateObj.minDate;
                     that.endDateInitialize(endDateObj);
-                    that.model.set('startTime', that.ui.startTime.val());
+                    that.model.set('startTime', that.getDateFormat(that.ui.startTime.val()));
                 });
                 this.endDateInitialize(endDateObj);
                 this.buttonActive({ isButtonActive: true });
+            },
+            getDateFormat: function(option) {
+                if (option && option.length) {
+                    if (Globals.dateTimeFormat.indexOf("HH") > -1) {
+                        option = option.slice(0, -3); // remove AM/PM from 24hr format
+                    }
+                    return moment(Date.parse(option)).format('YYYY/MM/DD HH:mm:ss');
+                }
+                return "";
             },
             buttonActive: function(option) {
                 var that = this;
@@ -154,11 +163,11 @@ define(['require',
                 var that = this;
                 this.ui.endTime.daterangepicker(option).on('apply.daterangepicker', function(ev, picker) {
                     that.ui.endTime.val(Utils.formatDate({ date: picker.startDate, zone: false }));
-                    that.model.set('endTime', that.ui.endTime.val());
+                    that.model.set('endTime', that.getDateFormat(that.ui.endTime.val()));
                     that.buttonActive({ isButtonActive: true });
                 }).on('cancel.daterangepicker', function(ev, picker) {
                     that.ui.endTime.val('');
-                    that.model.set('endTime', that.ui.endTime.val());
+                    that.model.set('endTime', that.getDateFormat(that.ui.endTime.val()));
                 });
             }
         });
