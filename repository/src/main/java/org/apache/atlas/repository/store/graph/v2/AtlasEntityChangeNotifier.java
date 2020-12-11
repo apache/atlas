@@ -359,7 +359,9 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
         Map<String, List<AtlasClassification>> removedPropagations = context.getRemovedPropagations();
 
         notifyPropagatedEntities(addedPropagations, PROPAGATED_CLASSIFICATION_ADD);
+        context.clearAddedPropagations();
         notifyPropagatedEntities(removedPropagations, PROPAGATED_CLASSIFICATION_DELETE);
+        context.clearRemovePropagations();
     }
 
     @Override
