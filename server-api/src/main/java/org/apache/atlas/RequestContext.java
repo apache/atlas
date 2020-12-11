@@ -329,6 +329,14 @@ public class RequestContext {
         return deletedEntities.values();
     }
 
+    public void clearRemovePropagations() {
+        removedPropagations.clear();
+    }
+
+    public void clearAddedPropagations() {
+        addedPropagations.clear();
+    }
+
     /**
      * Checks if an instance with the given guid is in the cache for this request.  Either returns the instance
      * or null if it is not in the cache.
