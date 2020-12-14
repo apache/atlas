@@ -63,6 +63,7 @@ import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.ENTITY_IMPORT_DELETE;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.ENTITY_IMPORT_UPDATE;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.ENTITY_UPDATE;
+import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.CUSTOM_ATTRIBUTE_UPDATE;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.LABEL_ADD;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.LABEL_DELETE;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.PROPAGATED_CLASSIFICATION_ADD;
@@ -109,7 +110,11 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
 
         FixedBufferList<EntityAuditEventV2> updatedEvents = getAuditEventsList();
         for (AtlasEntity entity : entities) {
-            createEvent(updatedEvents.next(), entity, isImport ? ENTITY_IMPORT_UPDATE : ENTITY_UPDATE);
+            EntityAuditActionV2 action = isImport ? ENTITY_IMPORT_UPDATE :
+                    RequestContext.get().checkIfEntityIsForCustomAttributeUpdate(entity.getGuid()) ? CUSTOM_ATTRIBUTE_UPDATE :
+                    RequestContext.get().checkIfEntityIsForBusinessAttributeUpdate(entity.getGuid()) ? BUSINESS_ATTRIBUTE_UPDATE :
+                            ENTITY_UPDATE;
+            createEvent(updatedEvents.next(), entity, action);
         }
 
         auditRepository.putEventsV2(updatedEvents.toList());
@@ -578,6 +583,12 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
                 break;
             case ENTITY_UPDATE:
                 ret = "Updated: ";
+                break;
+            case CUSTOM_ATTRIBUTE_UPDATE:
+                ret = "Updated custom attribute: ";
+                break;
+            case BUSINESS_ATTRIBUTE_UPDATE:
+                ret = "Updated business attribute: ";
                 break;
             case ENTITY_DELETE:
                 ret = "Deleted: ";

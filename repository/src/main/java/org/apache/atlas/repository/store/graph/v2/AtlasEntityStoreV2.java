@@ -1149,7 +1149,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                     String          guid       = entity.getGuid();
                     AtlasVertex     vertex     = context.getVertex(guid);
                     AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
-                    boolean         hasUpdates = false;
+                    boolean         hasUpdates = false, hasUpdatesInCustAttr = false, hasUpdatesInBusAttr = false;
 
                     if (!hasUpdates) {
                         hasUpdates = entity.getStatus() == AtlasEntity.Status.DELETED; // entity status could be updated during import
@@ -1199,21 +1199,21 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                         }
                     }
 
-                    if (!hasUpdates && entity.getCustomAttributes() != null) {
+                    if (entity.getCustomAttributes() != null) {
                         Map<String, String> currCustomAttributes = getCustomAttributes(vertex);
                         Map<String, String> newCustomAttributes  = entity.getCustomAttributes();
 
                         if (!Objects.equals(currCustomAttributes, newCustomAttributes)) {
-                            hasUpdates = true;
+                            hasUpdatesInCustAttr = true;
                         }
                     }
 
-                    if (!hasUpdates && replaceBusinessAttributes) {
+                    if (replaceBusinessAttributes) {
                         Map<String, Map<String, Object>> currBusinessMetadata = entityRetriever.getBusinessMetadata(vertex);
                         Map<String, Map<String, Object>> newBusinessMetadata  = entity.getBusinessAttributes();
 
                         if (!Objects.equals(currBusinessMetadata, newBusinessMetadata)) {
-                            hasUpdates = true;
+                            hasUpdatesInBusAttr = true;
                         }
                     }
 
@@ -1228,6 +1228,14 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                             if (LOG.isDebugEnabled()) {
                                 LOG.debug("found classifications update: entity(guid={}, typeName={}), currValue={}, newValue={}", guid, entity.getTypeName(), currVal, newVal);
                             }
+                        }
+                    }
+
+                    if(!hasUpdates && (hasUpdatesInCustAttr || hasUpdatesInBusAttr)) {
+                        hasUpdates = true;
+                        if (hasUpdatesInCustAttr ^ hasUpdatesInBusAttr) {
+                            if(hasUpdatesInCustAttr) RequestContext.get().recordEntityWithCustomAttributeUpdate(entity.getGuid());
+                            if(hasUpdatesInBusAttr) RequestContext.get().recordEntityWithBusinessAttributeUpdate(entity.getGuid());
                         }
                     }
 

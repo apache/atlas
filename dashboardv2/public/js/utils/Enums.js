@@ -42,6 +42,7 @@ define(["require", "backbone"], function(require) {
         BUSINESS_ATTRIBUTE_ADD: "Business Attribute(s) Added",
         BUSINESS_ATTRIBUTE_UPDATE: "Business Attribute(s) Updated",
         BUSINESS_ATTRIBUTE_DELETE: "Business Attribute(s) Deleted",
+        CUSTOM_ATTRIBUTE_UPDATE: "User-defined Attribute(s) Updated",
         TYPE_DEF_UPDATE: "Type Updated",
         TYPE_DEF_CREATE: "Type Created",
         TYPE_DEF_DELETE: "Type Deleted",
