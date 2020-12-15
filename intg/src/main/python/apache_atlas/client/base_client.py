@@ -28,10 +28,10 @@ from apache_atlas.client.entity       import EntityClient
 from apache_atlas.client.glossary     import GlossaryClient
 from apache_atlas.client.lineage      import LineageClient
 from apache_atlas.client.relationship import RelationshipClient
+from apache_atlas.client.admin        import AdminClient
 from apache_atlas.client.typedef      import TypeDefClient
 from apache_atlas.exceptions          import AtlasServiceException
 from apache_atlas.utils               import HttpMethod, HTTPStatus, type_coerce
-
 
 LOG = logging.getLogger('apache_atlas')
 
@@ -50,9 +50,9 @@ class AtlasClient:
         self.discovery      = DiscoveryClient(self)
         self.glossary       = GlossaryClient(self)
         self.relationship   = RelationshipClient(self)
+        self.admin          = AdminClient(self)
 
         logging.getLogger("requests").setLevel(logging.WARNING)
-
 
     def call_api(self, api, response_type=None, query_params=None, request_obj=None):
         params = copy.deepcopy(self.request_params)
