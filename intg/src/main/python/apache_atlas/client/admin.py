@@ -17,11 +17,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from apache_atlas.model.admin import *
 from apache_atlas.utils import *
 
 
-class AtlasMetrics(AtlasBase):
-    def __init__(self, attrs={}):
-        AtlasBase.__init__(self, attrs)
+class AdminClient:
+    BASE_ADMIN_URL = BASE_URI + "admin/"
 
-        self.data = attrs.get('data')
+    GET_METRICS_API = API(BASE_ADMIN_URL + "metrics", HttpMethod.GET, HTTPStatus.OK)
+
+    def __init__(self, client):
+        self.client = client
+
+    def get_metrics(self):
+        return self.client.call_api(AdminClient.GET_METRICS_API, AtlasAdminMetrics)
