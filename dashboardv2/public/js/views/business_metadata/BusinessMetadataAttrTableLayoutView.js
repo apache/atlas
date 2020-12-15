@@ -186,6 +186,7 @@ define(['require',
                         label: "Enable Multivalues",
                         cell: "html",
                         editable: false,
+                        sortable: false,
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
                                 var enableMultipleValue = '';
@@ -210,7 +211,7 @@ define(['require',
                             }
                         })
                     },
-                    options: {
+                    applicableEntityTypes: {
                         label: "Entity Type(s)",
                         cell: "html",
                         editable: false,

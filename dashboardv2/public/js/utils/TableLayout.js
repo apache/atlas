@@ -209,19 +209,36 @@ define(['require',
                         val.fullCollection.sort();
                         this.comparator = function(next, previous, data) {
                             var getValue = function(options) {
-                                var next = options.next,
-                                    previous = options.previous,
-                                    order = options.order;
-                                if (next === previous) {
-                                    return null;
-                                } else {
-                                    if (order === -1) {
-                                        return next < previous ? -1 : 1;
+                                    var next = options.next,
+                                        previous = options.previous,
+                                        order = options.order;
+                                    if (next === previous) {
+                                        return null;
                                     } else {
-                                        return next < previous ? 1 : -1;
+                                        if (order === -1) {
+                                            return next < previous ? -1 : 1;
+                                        } else {
+                                            return next < previous ? 1 : -1;
+                                        }
                                     }
-                                }
-                            }
+                                },
+                                getKeyVal = function(model, key) {
+                                    //for nested obj
+                                    var value = null;
+                                    if (model && key) {
+                                        value = model[key];
+                                        if (!value) {
+                                            _.each(model, function(modalValue) {
+                                                if (typeof(modalValue) == "object") {
+                                                    if (!value) {
+                                                        value = getKeyVal(modalValue, key);
+                                                    }
+                                                }
+                                            });
+                                        }
+                                    }
+                                    return Number(value) || value;
+                                };
                             if (val.state && (!_.isNull(val.state.sortKey))) {
                                 var nextValue,
                                     previousValue;
@@ -229,8 +246,8 @@ define(['require',
                                     nextValue = next.get("attributes")[val.state.sortKey];
                                     previousValue = previous.get("attributes")[val.state.sortKey];
                                 } else {
-                                    nextValue = next.attributes[val.state.sortKey];
-                                    previousValue = previous.attributes[val.state.sortKey];
+                                    nextValue = getKeyVal(next.attributes, val.state.sortKey);
+                                    previousValue = getKeyVal(previous.attributes, val.state.sortKey);
                                 }
                                 nextValue = (typeof nextValue === 'string') ? nextValue.toLowerCase() : nextValue;
                                 previousValue = (typeof previousValue === 'string') ? previousValue.toLowerCase() : previousValue;
