@@ -315,6 +315,7 @@ define(['require',
                         cell: "html",
                         renderable: false,
                         editable: false,
+                        sortable: false,
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
                                 var startTime = model.get('startTime') ? parseInt(model.get('startTime')) : null,
