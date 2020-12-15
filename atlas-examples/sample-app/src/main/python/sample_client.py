@@ -48,9 +48,9 @@ class SampleApp:
 
         client = AtlasClient(url, (username, password))
 
-        self.__entity_example(client)
-
         self.__typedef_example(client)
+
+        self.__entity_example(client)
 
         self.__lineage_example(client)
 

@@ -102,7 +102,18 @@ class AtlasRelationshipDef(AtlasStructDef):
     def __init__(self, attrs={}):
         AtlasStructDef.__init__(self, attrs)
 
-        self.category = TypeCategory.RELATIONSHIP.name
+        self.category             = TypeCategory.RELATIONSHIP.name
+        self.relationshipCategory = attrs.get('relationshipCategory');
+        self.relationshipLabel    = attrs.get('relationshipLabel');
+        self.propagateTags        = attrs.get('propagateTags');
+        self.endDef1              = attrs.get('endDef1');
+        self.endDef2              = attrs.get('endDef2');
+
+    def type_coerce_attrs(self):
+        super(AtlasRelationshipDef, self).type_coerce_attrs()
+
+        self.endDef1 = type_coerce(self.endDef1, AtlasRelationshipEndDef)
+        self.endDef2 = type_coerce(self.endDef2, AtlasRelationshipEndDef)
 
 
 class AtlasBusinessMetadataDef(AtlasStructDef):
@@ -168,7 +179,12 @@ class AtlasRelationshipEndDef(AtlasBase):
     def __init__(self, attrs={}):
         AtlasBase.__init__(self, attrs)
 
-        self.cardinality = non_null(self.cardinality, Cardinality.SINGLE.name)
+        self.type              = attrs.get('type')
+        self.name              = attrs.get('name')
+        self.isContainer       = attrs.get('isContainer')
+        self.cardinality       = attrs.get('cardinality')
+        self.isLegacyAttribute = attrs.get('isLegacyAttribute')
+        self.description       = attrs.get('description')
 
 
 class AtlasTypesDef(AtlasBase):
