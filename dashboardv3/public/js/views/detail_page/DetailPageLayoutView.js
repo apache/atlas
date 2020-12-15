@@ -171,6 +171,7 @@ define(['require',
 
                     // check if entity is process
                     var isProcess = false,
+                        typeName = Utils.getName(collectionJSON, 'typeName'),
                         superTypes = Utils.getNestedSuperTypes({ data: this.activeEntityDef.toJSON(), collection: this.entityDefCollection }),
                         isLineageRender = _.find(superTypes, function(type) {
                             if (type === "DataSet" || type === "Process") {
@@ -180,7 +181,9 @@ define(['require',
                                 return true;
                             }
                         });
-
+                    if (!isLineageRender) {
+                        isLineageRender = (typeName === "DataSet" || typeName === "Process") ? true : null;
+                    }
                     if (collectionJSON && collectionJSON.guid) {
                         var tagGuid = collectionJSON.guid;
                         this.readOnly = Enums.entityStateReadOnly[collectionJSON.status];
@@ -194,6 +197,7 @@ define(['require',
                     }
                     if (collectionJSON) {
                         this.name = Utils.getName(collectionJSON);
+
                         if (collectionJSON.attributes) {
                             if (collectionJSON.typeName) {
                                 collectionJSON.attributes.typeName = _.escape(collectionJSON.typeName);
@@ -397,7 +401,7 @@ define(['require',
                     case "raudits":
                         regionRef = this.RReplicationAuditTableLayoutView;
                         break;
-                     case "profile":
+                    case "profile":
                         regionRef = this.RProfileLayoutView;
                         break;
                 }
