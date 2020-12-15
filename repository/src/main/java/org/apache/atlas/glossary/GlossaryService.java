@@ -409,14 +409,10 @@ public class GlossaryService {
 
         AtlasGlossaryTerm storeObject = dataAccess.load(atlasGlossaryTerm);
         if (!storeObject.equals(atlasGlossaryTerm)) {
-            try {
-                atlasGlossaryTerm.setGuid(storeObject.getGuid());
-                atlasGlossaryTerm.setQualifiedName(storeObject.getQualifiedName());
+            atlasGlossaryTerm.setGuid(storeObject.getGuid());
+            atlasGlossaryTerm.setQualifiedName(storeObject.getQualifiedName());
 
-                storeObject = dataAccess.save(atlasGlossaryTerm);
-            } catch (AtlasBaseException e) {
-                LOG.debug("Glossary term had no immediate attr updates. Exception: {}", e.getMessage());
-            }
+            storeObject = dataAccess.save(atlasGlossaryTerm);
 
             glossaryTermUtils.processTermRelations(storeObject, atlasGlossaryTerm, GlossaryUtils.RelationshipOperation.UPDATE);
 
