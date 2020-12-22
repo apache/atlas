@@ -745,7 +745,7 @@
         <surefire.forkCount>2C</surefire.forkCount>
         <surefire.version>2.18.1</surefire.version>
         <testng.version>6.9.4</testng.version>
-        <tinkerpop.version>3.4.6</tinkerpop.version>
+        <tinkerpop.version>3.4.8</tinkerpop.version>
         <woodstox-core.version>5.0.3</woodstox-core.version>
         <zookeeper.version>3.4.6</zookeeper.version>
     </properties>
