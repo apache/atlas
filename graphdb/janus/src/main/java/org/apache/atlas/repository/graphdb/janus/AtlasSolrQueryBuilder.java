@@ -89,7 +89,7 @@ public class AtlasSolrQueryBuilder {
         StringBuilder queryBuilder = new StringBuilder();
         boolean       isAndNeeded  = false;
 
-        if (queryString != null ) {
+        if (StringUtils.isNotEmpty(queryString)) {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Initial query string is {}.", queryString);
             }
