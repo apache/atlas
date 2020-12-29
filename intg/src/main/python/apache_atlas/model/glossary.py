@@ -1,5 +1,4 @@
 #!/usr/bin/env/python
-
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -16,43 +15,45 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-import apache_atlas.model.instance
-
-from apache_atlas.model.misc import *
-from apache_atlas.utils      import *
+from apache_atlas.model.instance import AtlasBase
+from apache_atlas.model.instance import AtlasClassification
+from apache_atlas.model.instance import AtlasRelatedObjectId
+from apache_atlas.model.misc import AtlasBaseModelObject
+from apache_atlas.utils import type_coerce
+from apache_atlas.utils import type_coerce_dict
+from apache_atlas.utils import type_coerce_list
 
 
 class AtlasGlossaryBaseObject(AtlasBaseModelObject):
     def __init__(self, attrs={}):
         AtlasBaseModelObject.__init__(self, attrs)
 
-        self.qualifiedName        = attrs.get('qualifiedName')
-        self.name                 = attrs.get('name')
-        self.shortDescription     = attrs.get('shortDescription')
-        self.longDescription      = attrs.get('longDescription')
+        self.qualifiedName = attrs.get('qualifiedName')
+        self.name = attrs.get('name')
+        self.shortDescription = attrs.get('shortDescription')
+        self.longDescription = attrs.get('longDescription')
         self.additionalAttributes = attrs.get('additionalAttributes')
-        self.classifications      = attrs.get('classifications')
+        self.classifications = attrs.get('classifications')
 
     def type_coerce_attrs(self):
         super(AtlasGlossaryBaseObject, self).type_coerce_attrs()
 
-        self.classifications = type_coerce_list(self.classifications, apache_atlas.model.instance.AtlasClassification)
+        self.classifications = type_coerce_list(self.classifications, AtlasClassification)
 
 
 class AtlasGlossary(AtlasGlossaryBaseObject):
     def __init__(self, attrs={}):
         AtlasGlossaryBaseObject.__init__(self, attrs)
 
-        self.language   = attrs.get('language')
-        self.usage      = attrs.get('usage')
-        self.terms      = attrs.get('terms')
+        self.language = attrs.get('language')
+        self.usage = attrs.get('usage')
+        self.terms = attrs.get('terms')
         self.categories = attrs.get('categories')
 
     def type_coerce_attrs(self):
         super(AtlasGlossary, self).type_coerce_attrs()
 
-        self.terms      = type_coerce_list(self.classifications, AtlasRelatedTermHeader)
+        self.terms = type_coerce_list(self.classifications, AtlasRelatedTermHeader)
         self.categories = type_coerce_list(self.categories, AtlasRelatedCategoryHeader)
 
 
@@ -60,13 +61,13 @@ class AtlasGlossaryExtInfo(AtlasGlossary):
     def __init__(self, attrs={}):
         AtlasGlossary.__init__(self, attrs)
 
-        self.termInfo     = attrs.get('termInfo')
+        self.termInfo = attrs.get('termInfo')
         self.categoryInfo = attrs.get('categoryInfo')
 
     def type_coerce_attrs(self):
         super(AtlasGlossaryExtInfo, self).type_coerce_attrs()
 
-        self.termInfo     = type_coerce_dict(self.termInfo, AtlasGlossaryTerm)
+        self.termInfo = type_coerce_dict(self.termInfo, AtlasGlossaryTerm)
         self.categoryInfo = type_coerce_dict(self.categoryInfo, AtlasGlossaryCategory)
 
 
@@ -78,7 +79,7 @@ class AtlasGlossaryCategory(AtlasGlossaryBaseObject):
         self.anchor = attrs.get('anchor')
 
         # Category hierarchy links
-        self.parentCategory     = attrs.get('parentCategory')
+        self.parentCategory = attrs.get('parentCategory')
         self.childrenCategories = attrs.get('childrenCategories')
 
         # Terms associated with this category
@@ -87,10 +88,10 @@ class AtlasGlossaryCategory(AtlasGlossaryBaseObject):
     def type_coerce_attrs(self):
         super(AtlasGlossaryCategory, self).type_coerce_attrs()
 
-        self.anchor             = type_coerce(self.anchor, AtlasGlossaryHeader)
-        self.parentCategory     = type_coerce(self.parentCategory, AtlasRelatedCategoryHeader)
+        self.anchor = type_coerce(self.anchor, AtlasGlossaryHeader)
+        self.parentCategory = type_coerce(self.parentCategory, AtlasRelatedCategoryHeader)
         self.childrenCategories = type_coerce_list(self.childrenCategories, AtlasRelatedCategoryHeader)
-        self.terms              = type_coerce_list(self.terms, AtlasRelatedTermHeader)
+        self.terms = type_coerce_list(self.terms, AtlasRelatedTermHeader)
 
 
 class AtlasGlossaryTerm(AtlasGlossaryBaseObject):
@@ -98,14 +99,14 @@ class AtlasGlossaryTerm(AtlasGlossaryBaseObject):
         AtlasGlossaryBaseObject.__init__(self, attrs)
 
         # Core attributes
-        self.examples     = attrs.get('examples')
+        self.examples = attrs.get('examples')
         self.abbreviation = attrs.get('abbreviation')
-        self.usage        = attrs.get('usage')
+        self.usage = attrs.get('usage')
 
         # Attributes derived from relationships
-        self.anchor           = attrs.get('anchor')
+        self.anchor = attrs.get('anchor')
         self.assignedEntities = attrs.get('assignedEntities')
-        self.categories       = attrs.get('categories')
+        self.categories = attrs.get('categories')
 
         # Related Terms
         self.seeAlso = attrs.get('seeAlso')
@@ -117,43 +118,43 @@ class AtlasGlossaryTerm(AtlasGlossaryBaseObject):
         self.antonyms = attrs.get('antonyms')
 
         # Term preference
-        self.preferredTerms   = attrs.get('preferredTerms')
+        self.preferredTerms = attrs.get('preferredTerms')
         self.preferredToTerms = attrs.get('preferredToTerms')
 
         # Term replacements
         self.replacementTerms = attrs.get('replacementTerms')
-        self.replacedBy       = attrs.get('replacedBy')
+        self.replacedBy = attrs.get('replacedBy')
 
         # Term translations
         self.translationTerms = attrs.get('translationTerms')
-        self.translatedTerms  = attrs.get('translatedTerms')
+        self.translatedTerms = attrs.get('translatedTerms')
 
         # Term classification
-        self.isA        = attrs.get('isA')
+        self.isA = attrs.get('isA')
         self.classifies = attrs.get('classifies')
 
         # Values for terms
-        self.validValues    = attrs.get('validValues')
+        self.validValues = attrs.get('validValues')
         self.validValuesFor = attrs.get('validValuesFor')
 
     def type_coerce_attrs(self):
         super(AtlasGlossaryTerm, self).type_coerce_attrs()
 
-        self.anchor           = type_coerce(self.anchor, AtlasGlossaryHeader)
-        self.assignedEntities = type_coerce_list(self.assignedEntities, apache_atlas.model.instance.AtlasRelatedObjectId)
-        self.categories       = type_coerce_list(self.categories, AtlasTermCategorizationHeader)
-        self.seeAlso          = type_coerce_list(self.seeAlso, AtlasRelatedTermHeader)
-        self.synonyms         = type_coerce_list(self.synonyms, AtlasRelatedTermHeader)
-        self.antonyms         = type_coerce_list(self.antonyms, AtlasRelatedTermHeader)
-        self.preferredTerms   = type_coerce_list(self.preferredTerms, AtlasRelatedTermHeader)
+        self.anchor = type_coerce(self.anchor, AtlasGlossaryHeader)
+        self.assignedEntities = type_coerce_list(self.assignedEntities, AtlasRelatedObjectId)
+        self.categories = type_coerce_list(self.categories, AtlasTermCategorizationHeader)
+        self.seeAlso = type_coerce_list(self.seeAlso, AtlasRelatedTermHeader)
+        self.synonyms = type_coerce_list(self.synonyms, AtlasRelatedTermHeader)
+        self.antonyms = type_coerce_list(self.antonyms, AtlasRelatedTermHeader)
+        self.preferredTerms = type_coerce_list(self.preferredTerms, AtlasRelatedTermHeader)
         self.preferredToTerms = type_coerce_list(self.preferredToTerms, AtlasRelatedTermHeader)
         self.replacementTerms = type_coerce_list(self.replacementTerms, AtlasRelatedTermHeader)
-        self.replacedBy       = type_coerce_list(self.replacedBy, AtlasRelatedTermHeader)
+        self.replacedBy = type_coerce_list(self.replacedBy, AtlasRelatedTermHeader)
         self.translationTerms = type_coerce_list(self.translationTerms, AtlasRelatedTermHeader)
-        self.isA              = type_coerce_list(self.isA, AtlasRelatedTermHeader)
-        self.classifies       = type_coerce_list(self.classifies, AtlasRelatedTermHeader)
-        self.validValues      = type_coerce_list(self.validValues, AtlasRelatedTermHeader)
-        self.validValuesFor   = type_coerce_list(self.validValuesFor, AtlasRelatedTermHeader)
+        self.isA = type_coerce_list(self.isA, AtlasRelatedTermHeader)
+        self.classifies = type_coerce_list(self.classifies, AtlasRelatedTermHeader)
+        self.validValues = type_coerce_list(self.validValues, AtlasRelatedTermHeader)
+        self.validValuesFor = type_coerce_list(self.validValuesFor, AtlasRelatedTermHeader)
 
 
 class AtlasGlossaryHeader(AtlasBase):
@@ -162,46 +163,47 @@ class AtlasGlossaryHeader(AtlasBase):
 
         self.glossaryGuid = attrs.get('glossaryGuid')
         self.relationGuid = attrs.get('relationGuid')
-        self.displayText  = attrs.get('displayText')
+        self.displayText = attrs.get('displayText')
 
 
 class AtlasRelatedCategoryHeader(AtlasBase):
     def __init__(self, attrs={}):
         AtlasBase.__init__(self, attrs)
 
-        self.categoryGuid       = attrs.get('categoryGuid')
+        self.categoryGuid = attrs.get('categoryGuid')
         self.parentCategoryGuid = attrs.get('parentCategoryGuid')
-        self.relationGuid       = attrs.get('relationGuid')
-        self.displayText        = attrs.get('displayText')
-        self.description        = attrs.get('description')
+        self.relationGuid = attrs.get('relationGuid')
+        self.displayText = attrs.get('displayText')
+        self.description = attrs.get('description')
 
 
 class AtlasRelatedTermHeader(AtlasBase):
     def __init__(self, attrs={}):
         AtlasBase.__init__(self, attrs)
 
-        self.termGuid     = attrs.get('termGuid')
+        self.termGuid = attrs.get('termGuid')
         self.relationGuid = attrs.get('relationGuid')
-        self.displayText  = attrs.get('displayText')
-        self.description  = attrs.get('description')
-        self.expression   = attrs.get('expression')
-        self.steward      = attrs.get('steward')
-        self.source       = attrs.get('source')
-        self.status       = attrs.get('status')
+        self.displayText = attrs.get('displayText')
+        self.description = attrs.get('description')
+        self.expression = attrs.get('expression')
+        self.steward = attrs.get('steward')
+        self.source = attrs.get('source')
+        self.status = attrs.get('status')
+
 
 class AtlasTermAssignmentHeader(AtlasBase):
     def __init__(self, attrs={}):
         AtlasBase.__init__(self, attrs)
 
-        self.termGuid     = attrs.get('termGuid')
+        self.termGuid = attrs.get('termGuid')
         self.relationGuid = attrs.get('relationGuid')
-        self.description  = attrs.get('description')
-        self.displayText  = attrs.get('displayText')
-        self.expression   = attrs.get('expression')
-        self.createdBy    = attrs.get('createdBy')
-        self.steward      = attrs.get('steward')
-        self.source       = attrs.get('source')
-        self.confidence   = attrs.get('confidence')
+        self.description = attrs.get('description')
+        self.displayText = attrs.get('displayText')
+        self.expression = attrs.get('expression')
+        self.createdBy = attrs.get('createdBy')
+        self.steward = attrs.get('steward')
+        self.source = attrs.get('source')
+        self.confidence = attrs.get('confidence')
 
 
 class AtlasTermCategorizationHeader(AtlasBase):
@@ -210,8 +212,6 @@ class AtlasTermCategorizationHeader(AtlasBase):
 
         self.categoryGuid = attrs.get('categoryGuid')
         self.relationGuid = attrs.get('relationGuid')
-        self.description  = attrs.get('description')
-        self.displayText  = attrs.get('displayText')
-        self.status       = attrs.get('status')
-
-
+        self.description = attrs.get('description')
+        self.displayText = attrs.get('displayText')
+        self.status = attrs.get('status')

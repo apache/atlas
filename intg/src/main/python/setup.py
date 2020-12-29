@@ -46,5 +46,5 @@ setup(
     include_package_data=True,
     zip_safe=False,
     keywords='atlas client, apache atlas',
-	python_requires='>=2.7',
+    python_requires='>=2.7',
 )

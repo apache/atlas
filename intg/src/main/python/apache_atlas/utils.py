@@ -1,5 +1,4 @@
 #!/usr/bin/env/python
-
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -16,18 +15,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 import enum
 import time
 
-BASE_URI                 = "api/atlas/"
-APPLICATION_JSON         = 'application/json'
+BASE_URI = "api/atlas/"
+APPLICATION_JSON = 'application/json'
 APPLICATION_OCTET_STREAM = 'application/octet-stream'
-MULTIPART_FORM_DATA      = 'multipart/form-data'
-PREFIX_ATTR              = "attr:"
-PREFIX_ATTR_             = "attr_"
+MULTIPART_FORM_DATA = 'multipart/form-data'
+PREFIX_ATTR = "attr:"
+PREFIX_ATTR_ = "attr_"
 
 s_nextId = milliseconds = int(round(time.time() * 1000)) + 1
+
 
 def next_id():
     global s_nextId
@@ -36,30 +35,34 @@ def next_id():
 
     return "-" + str(s_nextId)
 
+
 def list_attributes_to_params(attributes_list, query_params=None):
-    if not query_params:
+    if query_params is None:
         query_params = {}
 
     for i, attr in enumerate(attributes_list):
         for key, value in attr.items():
-            new_key               = PREFIX_ATTR_ + i + ":" + key
+            new_key = PREFIX_ATTR_ + i + ":" + key
             query_params[new_key] = value
 
     return query_params
 
+
 def attributes_to_params(attributes, query_params=None):
-    if not query_params:
+    if query_params is None:
         query_params = {}
 
     if attributes:
         for key, value in attributes:
-            new_key               = PREFIX_ATTR + key
+            new_key = PREFIX_ATTR + key
             query_params[new_key] = value
 
     return query_params
 
+
 def non_null(obj, defValue):
     return obj if obj is not None else defValue
+
 
 def type_coerce(obj, objType):
     if isinstance(obj, objType):
@@ -73,6 +76,7 @@ def type_coerce(obj, objType):
 
     return ret
 
+
 def type_coerce_list(obj, objType):
     if isinstance(obj, list):
         ret = []
@@ -83,6 +87,7 @@ def type_coerce_list(obj, objType):
 
     return ret
 
+
 def type_coerce_dict(obj, objType):
     if isinstance(obj, dict):
         ret = {}
@@ -92,6 +97,7 @@ def type_coerce_dict(obj, objType):
         ret = None
 
     return ret
+
 
 def type_coerce_dict_list(obj, objType):
     if isinstance(obj, dict):
@@ -106,11 +112,11 @@ def type_coerce_dict_list(obj, objType):
 
 class API:
     def __init__(self, path, method, expected_status, consumes=APPLICATION_JSON, produces=APPLICATION_JSON):
-        self.path            = path
-        self.method          = method
+        self.path = path
+        self.method = method
         self.expected_status = expected_status
-        self.consumes        = consumes
-        self.produces        = produces
+        self.consumes = consumes
+        self.produces = produces
 
     def format_path(self, params):
         return API(self.path.format(**params), self.method, self.expected_status, self.consumes, self.produces)
@@ -124,14 +130,14 @@ class API:
         return API(path, self.method, self.expected_status, self.consumes, self.produces)
 
 
-class HttpMethod(enum.Enum):
-    GET    = "GET"
-    PUT    = "PUT"
-    POST   = "POST"
+class HTTPMethod(enum.Enum):
+    GET = "GET"
+    PUT = "PUT"
+    POST = "POST"
     DELETE = "DELETE"
 
 
 class HTTPStatus:
-    OK                  = 200
-    NO_CONTENT          = 204
+    OK = 200
+    NO_CONTENT = 204
     SERVICE_UNAVAILABLE = 503

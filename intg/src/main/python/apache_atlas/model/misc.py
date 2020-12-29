@@ -1,5 +1,4 @@
 #!/usr/bin/env/python
-
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -16,11 +15,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 import json
 import sys
 
-from apache_atlas.utils import *
+from apache_atlas.utils import next_id
+from apache_atlas.utils import non_null
 
 
 class AtlasBase(dict):
@@ -50,6 +49,7 @@ class AtlasBase(dict):
     def type_coerce_attrs(self):
         pass
 
+
 class AtlasBaseModelObject(AtlasBase):
     def __init__(self, members):
         AtlasBase.__init__(self, members)
@@ -61,24 +61,24 @@ class AtlasBaseModelObject(AtlasBase):
 
 
 class TimeBoundary(AtlasBase):
-    def __init__(self,  attrs={}):
+    def __init__(self, attrs={}):
         AtlasBase.__init__(self, attrs)
 
         self.startTime = attrs.get('startTime')
-        self.endTime   = attrs.get('endTime')
-        self.timeZone  = attrs.get('timeZone')
+        self.endTime = attrs.get('endTime')
+        self.timeZone = attrs.get('timeZone')
 
 
 class Plist(AtlasBase):
-    def __init__(self,  attrs={}):
+    def __init__(self, attrs={}):
         AtlasBase.__init__(self, attrs)
 
-        self.list       = non_null(attrs.get('list'), [])
+        self.list = non_null(attrs.get('list'), [])
         self.startIndex = non_null(attrs.get('startIndex'), 0)
-        self.pageSize   = non_null(attrs.get('pageSize'), 0)
+        self.pageSize = non_null(attrs.get('pageSize'), 0)
         self.totalCount = non_null(attrs.get('totalCount'), 0)
-        self.sortBy     = attrs.get('sortBy')
-        self.sortType   = attrs.get('sortType')
+        self.sortBy = attrs.get('sortBy')
+        self.sortType = attrs.get('sortType')
 
 
 class SearchFilter(AtlasBase):
@@ -86,5 +86,5 @@ class SearchFilter(AtlasBase):
         AtlasBase.__init__(self, attrs)
 
         self.startIndex = non_null(attrs.get('startIndex'), 0)
-        self.maxsize    = non_null(attrs.get('maxsize'), sys.maxsize)
-        self.getCount   = non_null(attrs.get('getCount'), True)
+        self.maxsize = non_null(attrs.get('maxsize'), sys.maxsize)
+        self.getCount = non_null(attrs.get('getCount'), True)

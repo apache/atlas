@@ -1,5 +1,4 @@
 #!/usr/bin/env/python
-
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -16,8 +15,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-from apache_atlas.model.instance import AtlasBase
+from apache_atlas.model.misc import AtlasBase
 
 
 class AtlasAdminMetrics(AtlasBase):
@@ -28,6 +26,6 @@ class AtlasAdminMetrics(AtlasBase):
         _data = attrs.get('data', {})
 
         self.general = _data.get('general', {})
-        self.tag     = _data.get('tag', {})
-        self.entity  = _data.get('entity', {})
-        self.system  = _data.get('system', {})
+        self.tag = _data.get('tag', {})
+        self.entity = _data.get('entity', {})
+        self.system = _data.get('system', {})

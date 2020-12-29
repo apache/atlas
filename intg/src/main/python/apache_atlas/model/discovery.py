@@ -1,5 +1,4 @@
 #!/usr/bin/env/python
-
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -16,12 +15,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 import enum
 
-from apache_atlas.model.enums    import *
-from apache_atlas.model.instance import *
-from apache_atlas.utils          import *
+from apache_atlas.model.enums import QueryType
+from apache_atlas.model.instance import AtlasEntityHeader
+from apache_atlas.model.misc import AtlasBase
+from apache_atlas.model.misc import AtlasBaseModelObject
+from apache_atlas.utils import non_null
+from apache_atlas.utils import type_coerce
+from apache_atlas.utils import type_coerce_dict
+from apache_atlas.utils import type_coerce_dict_list
+from apache_atlas.utils import type_coerce_list
 
 
 class AtlasAggregationEntry(AtlasBase):
@@ -36,13 +40,13 @@ class AtlasQuickSearchResult(AtlasBase):
     def __init__(self, attrs={}):
         AtlasBase.__init__(self, attrs)
 
-        self.searchResults      = attrs.get('searchResults')
+        self.searchResults = attrs.get('searchResults')
         self.aggregationMetrics = attrs.get('aggregationMetrics')
 
     def type_coerce_attrs(self):
         super(AtlasQuickSearchResult, self).type_coerce_attrs()
 
-        self.searchResults      = type_coerce(self.searchResults, AtlasSearchResult)
+        self.searchResults = type_coerce(self.searchResults, AtlasSearchResult)
         self.aggregationMetrics = type_coerce_dict_list(self.aggregationMetrics, AtlasAggregationEntry)
 
 
@@ -50,22 +54,22 @@ class AtlasSearchResult(AtlasBase):
     def __init__(self, attrs={}):
         AtlasBase.__init__(self, attrs)
 
-        self.queryType        = non_null(attrs.get('queryType'), QueryType.BASIC.name)
+        self.queryType = non_null(attrs.get('queryType'), QueryType.BASIC.name)
         self.searchParameters = attrs.get('searchParameters')
-        self.queryText        = attrs.get('queryText')
-        self.type             = attrs.get('type')
-        self.classification   = attrs.get('classification')
-        self.entities         = attrs.get('entities')
-        self.attributes       = attrs.get('attributes')
-        self.fullTextResult   = attrs.get('fullTextResult')
+        self.queryText = attrs.get('queryText')
+        self.type = attrs.get('type')
+        self.classification = attrs.get('classification')
+        self.entities = attrs.get('entities')
+        self.attributes = attrs.get('attributes')
+        self.fullTextResult = attrs.get('fullTextResult')
         self.referredEntities = attrs.get('referredEntities')
         self.approximateCount = non_null(attrs.get('approximateCount'), -1)
 
     def type_coerce_attrs(self):
         super(AtlasSearchResult, self).type_coerce_attrs()
 
-        self.entities         = type_coerce_list(self.entities, AtlasEntityHeader)
-        self.attributes       = type_coerce(self.attributes, AttributeSearchResult)
+        self.entities = type_coerce_list(self.entities, AtlasEntityHeader)
+        self.attributes = type_coerce(self.attributes, AttributeSearchResult)
         self.referredEntities = type_coerce_dict(self.referredEntities, AtlasEntityHeader)
 
 
@@ -73,7 +77,7 @@ class AttributeSearchResult(AtlasBase):
     def __init__(self, attrs={}):
         AtlasBase.__init__(self, attrs)
 
-        self.name   = attrs.get('name')
+        self.name = attrs.get('name')
         self.values = attrs.get('values')
 
 
@@ -82,7 +86,7 @@ class AtlasFullTextResult(AtlasBase):
         AtlasBase.__init__(self, attrs)
 
         self.entity = attrs.get('entity')
-        self.score  = attrs.get('score')
+        self.score = attrs.get('score')
 
     def type_coerce_attrs(self):
         super(AtlasFullTextResult, self).type_coerce_attrs()
@@ -94,23 +98,23 @@ class AtlasSuggestionsResult(AtlasBase):
     def __init__(self, attrs={}):
         AtlasBase.__init__(self, attrs)
 
-        self.suggestions  = attrs.get('suggestions')
+        self.suggestions = attrs.get('suggestions')
         self.prefixString = attrs.get('prefixString')
-        self.fieldName    = attrs.get('fieldName')
+        self.fieldName = attrs.get('fieldName')
 
 
 class QuickSearchParameters(AtlasBase):
     def __init__(self, attrs={}):
         AtlasBase.__init__(self, attrs)
 
-        self.query                  = attrs.get('query')
-        self.typeName               = attrs.get('typeName')
-        self.entityFilters          = attrs.get('entityFilters')
-        self.includeSubTypes        = attrs.get('includeSubTypes')
+        self.query = attrs.get('query')
+        self.typeName = attrs.get('typeName')
+        self.entityFilters = attrs.get('entityFilters')
+        self.includeSubTypes = attrs.get('includeSubTypes')
         self.excludeDeletedEntities = attrs.get('excludeDeletedEntities')
-        self.offset                 = attrs.get('offset')
-        self.limit                  = attrs.get('limit')
-        self.attributes             = attrs.get('attributes')
+        self.offset = attrs.get('offset')
+        self.limit = attrs.get('limit')
+        self.attributes = attrs.get('attributes')
 
     def type_coerce_attrs(self):
         super(QuickSearchParameters, self).type_coerce_attrs()
@@ -122,38 +126,38 @@ class SearchParameters(AtlasBase):
     def __init__(self, attrs={}):
         AtlasBase.__init__(self, attrs)
 
-        self.query                           = attrs.get('query')
-        self.typeName                        = attrs.get('typeName')
-        self.classification                  = attrs.get('classification')
-        self.termName                        = attrs.get('termName')
-        self.sortBy                          = attrs.get('sortBy')
-        self.excludeDeletedEntities          = attrs.get('excludeDeletedEntities')
+        self.query = attrs.get('query')
+        self.typeName = attrs.get('typeName')
+        self.classification = attrs.get('classification')
+        self.termName = attrs.get('termName')
+        self.sortBy = attrs.get('sortBy')
+        self.excludeDeletedEntities = attrs.get('excludeDeletedEntities')
         self.includeClassificationAttributes = attrs.get('includeClassificationAttributes')
-        self.includeSubTypes                 = non_null(attrs.get('includeSubTypes'), True)
-        self.includeSubClassifications       = non_null(attrs.get('includeSubClassifications'), True)
-        self.limit                           = attrs.get('limit')
-        self.offset                          = attrs.get('offset')
-        self.entityFilters                   = attrs.get('entityFilters')
-        self.tagFilters                      = attrs.get('tagFilters')
-        self.attributes                      = attrs.get('attributes')
-        self.sortOrder                       = attrs.get('sortOrder')
+        self.includeSubTypes = non_null(attrs.get('includeSubTypes'), True)
+        self.includeSubClassifications = non_null(attrs.get('includeSubClassifications'), True)
+        self.limit = attrs.get('limit')
+        self.offset = attrs.get('offset')
+        self.entityFilters = attrs.get('entityFilters')
+        self.tagFilters = attrs.get('tagFilters')
+        self.attributes = attrs.get('attributes')
+        self.sortOrder = attrs.get('sortOrder')
 
     def type_coerce_attrs(self):
         super(SearchParameters, self).type_coerce_attrs()
 
         self.entityFilters = type_coerce(self.entityFilters, FilterCriteria)
-        self.tagFilters    = type_coerce(self.tagFilters, FilterCriteria)
+        self.tagFilters = type_coerce(self.tagFilters, FilterCriteria)
 
 
 class FilterCriteria(AtlasBase):
     def __init__(self, attrs={}):
         AtlasBase.__init__(self, attrs)
 
-        self.attributeName  = attrs.get('attributeName')
-        self.operator       = attrs.get('operator')
+        self.attributeName = attrs.get('attributeName')
+        self.operator = attrs.get('operator')
         self.attributeValue = attrs.get('attributeValue')
-        self.condition      = attrs.get('condition')
-        self.criterion      = attrs.get('criterion')
+        self.condition = attrs.get('condition')
+        self.criterion = attrs.get('criterion')
 
     def type_coerce_attrs(self):
         super(FilterCriteria, self).type_coerce_attrs()
@@ -165,11 +169,11 @@ class AtlasUserSavedSearch(AtlasBaseModelObject):
     def __init__(self, attrs={}):
         AtlasBaseModelObject.__init__(self, attrs)
 
-        self.ownerName        = attrs.get('ownerName')
-        self.name             = attrs.get('name')
-        self.searchType       = attrs.get('searchType')
+        self.ownerName = attrs.get('ownerName')
+        self.name = attrs.get('name')
+        self.searchType = attrs.get('searchType')
         self.searchParameters = attrs.get('searchParameters')
-        self.uiParameters     = attrs.get('uiParameters')
+        self.uiParameters = attrs.get('uiParameters')
 
     def type_coerce_attrs(self):
         super(AtlasUserSavedSearch, self).type_coerce_attrs()

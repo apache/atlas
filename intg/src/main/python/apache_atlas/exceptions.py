@@ -1,5 +1,4 @@
 #!/usr/bin/env/python
-
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -32,10 +31,10 @@ class AtlasServiceException(Exception):
         if api:
             msg = "Metadata service API {method} : {path} failed".format(**{'method': api.method, 'path': api.path})
 
-        if response.content:
-            status = response.status_code if response.status_code else -1
-            msg    = "Metadata service API with url {url} and method {method} : failed with status {status} and " \
-                     "Response Body is :{response}". \
-                      format(**{'url': response.url, 'method': api.method, 'status': status, 'response': response.json()})
+        if response.content is not None:
+            status = response.status_code if response.status_code is not None else -1
+            msg = "Metadata service API with url {url} and method {method} : failed with status {status} and " \
+                  "Response Body is :{response}". \
+                format(**{'url': response.url, 'method': api.method, 'status': status, 'response': response.json()})
 
         Exception.__init__(self, msg)

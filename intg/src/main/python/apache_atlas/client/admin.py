@@ -1,5 +1,4 @@
 #!/usr/bin/env/python
-
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -16,15 +15,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-from apache_atlas.model.admin import *
-from apache_atlas.utils import *
+from apache_atlas.model.admin import AtlasAdminMetrics
+from apache_atlas.utils import API
+from apache_atlas.utils import BASE_URI
+from apache_atlas.utils import HTTPMethod
+from apache_atlas.utils import HTTPStatus
 
 
 class AdminClient:
     BASE_ADMIN_URL = BASE_URI + "admin/"
 
-    GET_METRICS_API = API(BASE_ADMIN_URL + "metrics", HttpMethod.GET, HTTPStatus.OK)
+    GET_METRICS_API = API(BASE_ADMIN_URL + "metrics", HTTPMethod.GET, HTTPStatus.OK)
 
     def __init__(self, client):
         self.client = client
