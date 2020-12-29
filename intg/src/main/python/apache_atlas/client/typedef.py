@@ -1,5 +1,4 @@
 #!/usr/bin/env/python
-
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -16,26 +15,34 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-from apache_atlas.model.typedef import *
-from apache_atlas.utils         import *
+from apache_atlas.model.typedef import AtlasBusinessMetadataDef
+from apache_atlas.model.typedef import AtlasClassificationDef
+from apache_atlas.model.typedef import AtlasEntityDef
+from apache_atlas.model.typedef import AtlasEnumDef
+from apache_atlas.model.typedef import AtlasRelationshipDef
+from apache_atlas.model.typedef import AtlasStructDef
+from apache_atlas.model.typedef import AtlasTypesDef
+from apache_atlas.utils import API
+from apache_atlas.utils import BASE_URI
+from apache_atlas.utils import HTTPMethod
+from apache_atlas.utils import HTTPStatus
 
 
 class TypeDefClient:
-    TYPES_API            = BASE_URI + "v2/types/"
-    TYPEDEFS_API         = TYPES_API + "typedefs/"
-    TYPEDEF_BY_NAME      = TYPES_API + "typedef/name"
-    TYPEDEF_BY_GUID      = TYPES_API + "typedef/guid"
+    TYPES_API = BASE_URI + "v2/types/"
+    TYPEDEFS_API = TYPES_API + "typedefs/"
+    TYPEDEF_BY_NAME = TYPES_API + "typedef/name"
+    TYPEDEF_BY_GUID = TYPES_API + "typedef/guid"
     GET_BY_NAME_TEMPLATE = TYPES_API + "{path_type}/name/{name}"
     GET_BY_GUID_TEMPLATE = TYPES_API + "{path_type}/guid/{guid}"
 
-    GET_TYPEDEF_BY_NAME      = API(TYPEDEF_BY_NAME, HttpMethod.GET, HTTPStatus.OK)
-    GET_TYPEDEF_BY_GUID      = API(TYPEDEF_BY_GUID, HttpMethod.GET, HTTPStatus.OK)
-    GET_ALL_TYPE_DEFS        = API(TYPEDEFS_API, HttpMethod.GET, HTTPStatus.OK)
-    GET_ALL_TYPE_DEF_HEADERS = API(TYPEDEFS_API + "headers", HttpMethod.GET, HTTPStatus.OK)
-    CREATE_TYPE_DEFS         = API(TYPEDEFS_API, HttpMethod.POST, HTTPStatus.OK)
-    DELETE_TYPE_DEFS         = API(TYPEDEFS_API, HttpMethod.DELETE, HTTPStatus.NO_CONTENT)
-    DELETE_TYPE_DEF_BY_NAME  = API(TYPEDEF_BY_NAME, HttpMethod.DELETE, HTTPStatus.NO_CONTENT)
+    GET_TYPEDEF_BY_NAME = API(TYPEDEF_BY_NAME, HTTPMethod.GET, HTTPStatus.OK)
+    GET_TYPEDEF_BY_GUID = API(TYPEDEF_BY_GUID, HTTPMethod.GET, HTTPStatus.OK)
+    GET_ALL_TYPE_DEFS = API(TYPEDEFS_API, HTTPMethod.GET, HTTPStatus.OK)
+    GET_ALL_TYPE_DEF_HEADERS = API(TYPEDEFS_API + "headers", HTTPMethod.GET, HTTPStatus.OK)
+    CREATE_TYPE_DEFS = API(TYPEDEFS_API, HTTPMethod.POST, HTTPStatus.OK)
+    DELETE_TYPE_DEFS = API(TYPEDEFS_API, HTTPMethod.DELETE, HTTPStatus.NO_CONTENT)
+    DELETE_TYPE_DEF_BY_NAME = API(TYPEDEF_BY_NAME, HTTPMethod.DELETE, HTTPStatus.NO_CONTENT)
 
     def __init__(self, client):
         self.client = client
@@ -50,9 +57,9 @@ class TypeDefClient:
         try:
             obj = self.client.call_api(TypeDefClient.GET_TYPEDEF_BY_GUID.format_path_with_params(guid), str)
 
-            if not obj:
+            if obj is None:
                 return False
-        except Exception as e:
+        except Exception:
             return False
 
         return True
@@ -61,9 +68,9 @@ class TypeDefClient:
         try:
             obj = self.client.call_api(TypeDefClient.GET_TYPEDEF_BY_NAME.format_path_with_params(name), str)
 
-            if not obj:
+            if obj is None:
                 return False
-        except Exception as e:
+        except Exception:
             return False
 
         return True
@@ -117,14 +124,14 @@ class TypeDefClient:
         return self.client.call_api(TypeDefClient.DELETE_TYPE_DEF_BY_NAME.format_path_with_params(type_name))
 
     def __get_typedef_by_name(self, name, typedef_class):
-        path_type = self.__get_path_for_type(typedef_class);
-        api       = API(TypeDefClient.GET_BY_NAME_TEMPLATE, HttpMethod.GET, HTTPStatus.OK)
+        path_type = self.__get_path_for_type(typedef_class)
+        api = API(TypeDefClient.GET_BY_NAME_TEMPLATE, HTTPMethod.GET, HTTPStatus.OK)
 
         return self.client.call_api(api.format_path({'path_type': path_type, 'name': name}), typedef_class)
 
     def __get_typedef_by_guid(self, guid, typedef_class):
         path_type = self.__get_path_for_type(typedef_class)
-        api       = API(TypeDefClient.GET_BY_GUID_TEMPLATE, HttpMethod.GET, HTTPStatus.OK)
+        api = API(TypeDefClient.GET_BY_GUID_TEMPLATE, HTTPMethod.GET, HTTPStatus.OK)
 
         return self.client.call_api(api.format_path({'path_type': path_type, 'guid': guid}), typedef_class)
 

@@ -1,5 +1,4 @@
 #!/usr/bin/env/python
-
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -16,20 +15,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-from apache_atlas.model.discovery import *
-from apache_atlas.utils           import *
+from apache_atlas.model.discovery import SearchParameters
+from apache_atlas.model.misc import AtlasBaseModelObject
+from apache_atlas.utils import type_coerce
 
 
 class AtlasUserSavedSearch(AtlasBaseModelObject):
     def __init__(self, attrs={}):
         AtlasBaseModelObject.__init__(self, attrs)
 
-        self.ownerName        = attrs.get('ownerName')
-        self.name             = attrs.get('name')
-        self.searchType       = attrs.get('searchType')
+        self.ownerName = attrs.get('ownerName')
+        self.name = attrs.get('name')
+        self.searchType = attrs.get('searchType')
         self.searchParameters = attrs.get('searchParameters')
-        self.uiParameters     = attrs.get('uiParameters')
+        self.uiParameters = attrs.get('uiParameters')
 
     def type_coerce_attrs(self):
         super(AtlasUserSavedSearch, self).type_coerce_attrs()
