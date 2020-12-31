@@ -15,17 +15,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from apache_atlas.model.enums import EntityStatus
-from apache_atlas.model.glossary import AtlasTermAssignmentHeader
-from apache_atlas.model.misc import AtlasBase
-from apache_atlas.model.misc import next_id
-from apache_atlas.model.misc import Plist
-from apache_atlas.model.misc import TimeBoundary
-from apache_atlas.utils import non_null
-from apache_atlas.utils import type_coerce
-from apache_atlas.utils import type_coerce_dict
-from apache_atlas.utils import type_coerce_dict_list
-from apache_atlas.utils import type_coerce_list
+import apache_atlas
+
+from apache_atlas.model.enums import *
+from apache_atlas.model.misc import *
+from apache_atlas.utils import *
 
 
 class AtlasStruct(AtlasBase):
@@ -68,7 +62,7 @@ class AtlasEntity(AtlasStruct):
         super(AtlasEntity, self).type_coerce_attrs()
 
         self.classifications = type_coerce_list(self.classifications, AtlasClassification)
-        self.meanings = type_coerce_list(self.meanings, AtlasTermAssignmentHeader)
+        self.meanings = type_coerce_list(self.meanings, apache_atlas.model.glossary.AtlasTermAssignmentHeader)
 
     def get_relationship_attribute(self, name):
         return self.relationshipAttributes[
@@ -158,7 +152,7 @@ class AtlasEntityHeader(AtlasStruct):
         super(AtlasEntityHeader, self).type_coerce_attrs()
 
         self.classifications = type_coerce_list(self.classifications, AtlasClassification)
-        self.meanings = type_coerce_list(self.meanings, AtlasTermAssignmentHeader)
+        self.meanings = type_coerce_list(self.meanings, apache_atlas.model.glossary.AtlasTermAssignmentHeader)
 
 
 class AtlasClassification(AtlasStruct):
