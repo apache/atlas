@@ -440,6 +440,16 @@
             <organization>Freestone Infotech</organization>
         </developer>
         <developer>
+            <id>pinal</id>
+            <name>Pinal Shah</name>
+            <email>pinal@apache.org</email>
+            <timezone>Asia/Kolkata</timezone>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <organization>Freestone Infotech</organization>
+        </developer>
+        <developer>
             <id>rmani</id>
             <name>Ramesh Mani</name>
             <email>rmani@apache.org</email>
