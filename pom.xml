@@ -706,7 +706,7 @@
         <httpcomponents-httpcore.version>4.4.13</httpcomponents-httpcore.version>
         <jackson.databind.version>2.10.5</jackson.databind.version>
         <jackson.version>2.10.5</jackson.version>
-        <janus.version>0.5.2</janus.version>
+        <janus.version>0.5.3</janus.version>
         <javax-inject.version>1</javax-inject.version>
         <javax.servlet.version>3.1.0</javax.servlet.version>
         <jersey-spring.version>1.19.4</jersey-spring.version>
