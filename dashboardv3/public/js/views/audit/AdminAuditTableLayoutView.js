@@ -167,10 +167,10 @@ define(['require',
             getAdminCollection: function(option) {
                 var that = this,
                     auditFilters = CommonViewFunction.attributeFilter.generateAPIObj(that.ruleUrl);
-                $.extend(that.entityCollection.queryParams, { auditFilters: that.isFilters ? auditFilters : null });
+                $.extend(that.entityCollection.queryParams, { auditFilters: that.isFilters ? auditFilters : null, limit: that.entityCollection.queryParams.limit || that.limit, offset: that.entityCollection.queryParams.offset || that.offset, sortBy: "startTime", sortOrder: "DESCENDING" });
                 var apiObj = {
                     sort: false,
-                    data: that.entityCollection.queryParams,
+                    data: _.pick(that.entityCollection.queryParams, 'auditFilters', 'limit', 'offset', 'sortBy', 'sortOrder'),
                     success: function(dataOrCollection, response) {
                         that.entityCollection.state.pageSize = that.entityCollection.queryParams.limit || 25;
                         that.entityCollection.fullCollection.reset(dataOrCollection, option);
@@ -371,7 +371,7 @@ define(['require',
                 var adminValues = "",
                     adminTypDetails = (obj.operation === 'IMPORT') ? Enums.category[obj.operation] : Enums.category[obj.operation] + " And Options",
                     resultData = obj.results ? JSON.parse(obj.results) : null,
-                    paramsData = (obj.model && obj.model.get('params')) ? { params: [obj.model.get('params')] } : null;
+                    paramsData = (obj.model && obj.model.get('params') && obj.model.get('params').length) ? { params: [obj.model.get('params')] } : null;
 
                 if (resultData) {
                     adminValues += this.showImportExportTable(resultData, obj.operation);
