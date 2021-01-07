@@ -23,6 +23,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.typedef.AtlasStructDef;
+import org.apache.atlas.repository.Constants;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasType;
@@ -191,25 +192,30 @@ public class GremlinQueryComposer {
 
         if (lhsI.isDate()) {
             rhs = parseDate(rhs);
-        } else if (lhsI.isNumeric()) {
+        } else if (lhsI.isNumeric() && !StringUtils.equals(lhsI.getAttributeName(), Constants.IS_INCOMPLETE_PROPERTY_KEY)) {
             rhs = parseNumber(rhs, this.context);
         }
 
         rhs = addQuotesIfNecessary(lhsI, rhs);
-        SearchParameters.Operator op = SearchParameters.Operator.fromString(operator);
-        if (op == SearchParameters.Operator.LIKE) {
-            final AtlasStructType.AtlasAttribute attribute = context.getActiveEntityType().getAttribute(lhsI.getAttributeName());
-            final AtlasStructDef.AtlasAttributeDef.IndexType indexType = attribute.getAttributeDef().getIndexType();
 
-            if (indexType == AtlasStructDef.AtlasAttributeDef.IndexType.STRING || !containsNumberAndLettersOnly(rhs)) {
-                add(GremlinClause.STRING_CONTAINS, getPropertyForClause(lhsI), IdentifierHelper.getFixedRegEx(rhs));
-            } else {
-                add(GremlinClause.TEXT_CONTAINS, getPropertyForClause(lhsI), IdentifierHelper.getFixedRegEx(rhs));
-            }
-        } else if (op == SearchParameters.Operator.IN) {
-            add(GremlinClause.HAS_OPERATOR, getPropertyForClause(lhsI), "within", rhs);
+        SearchParameters.Operator op = SearchParameters.Operator.fromString(operator);
+        if (StringUtils.equals(lhsI.getAttributeName(), Constants.IS_INCOMPLETE_PROPERTY_KEY)) {
+            addForIsIncompleteClause(lhsI, op, rhs);
         } else {
-            add(GremlinClause.HAS_OPERATOR, getPropertyForClause(lhsI), op.getSymbols()[1], rhs);
+            if (op == SearchParameters.Operator.LIKE) {
+                final AtlasStructType.AtlasAttribute attribute = context.getActiveEntityType().getAttribute(lhsI.getAttributeName());
+                final AtlasStructDef.AtlasAttributeDef.IndexType indexType = attribute.getAttributeDef().getIndexType();
+
+                if (indexType == AtlasStructDef.AtlasAttributeDef.IndexType.STRING || !containsNumberAndLettersOnly(rhs)) {
+                    add(GremlinClause.STRING_CONTAINS, getPropertyForClause(lhsI), IdentifierHelper.getFixedRegEx(rhs));
+                } else {
+                    add(GremlinClause.TEXT_CONTAINS, getPropertyForClause(lhsI), IdentifierHelper.getFixedRegEx(rhs));
+                }
+            } else if (op == SearchParameters.Operator.IN) {
+                add(GremlinClause.HAS_OPERATOR, getPropertyForClause(lhsI), "within", rhs);
+            } else {
+                add(GremlinClause.HAS_OPERATOR, getPropertyForClause(lhsI), op.getSymbols()[1], rhs);
+            }
         }
         // record that the attribute has been processed so that the select clause doesn't add a attr presence check
         attributesProcessed.add(lhsI.getQualifiedName());
@@ -224,6 +230,30 @@ public class GremlinQueryComposer {
             }
             context.registerActive(currentType);
         }
+    }
+
+    private void addForIsIncompleteClause(IdentifierHelper.Info lhsI,SearchParameters.Operator op, String rhs ) {
+        GremlinClause clause = GremlinClause.HAS_OPERATOR;
+        rhs = rhs.replace("'", "").replace("\"", "");
+        switch (op) {
+            case EQ:
+                if (IdentifierHelper.isCompleteValue(rhs)) {
+                    clause = GremlinClause.HAS_NOT_PROPERTY;
+                } else if (IdentifierHelper.isInCompleteValue(rhs)) {
+                    rhs    = Constants.INCOMPLETE_ENTITY_VALUE.toString();
+                }
+                break;
+
+            case NEQ:
+                if (IdentifierHelper.isCompleteValue(rhs)) {
+                    op     = SearchParameters.Operator.EQ;
+                    rhs    = Constants.INCOMPLETE_ENTITY_VALUE.toString();
+                } else if (IdentifierHelper.isInCompleteValue(rhs)) {
+                    clause = GremlinClause.HAS_NOT_PROPERTY;
+                }
+                break;
+        }
+        add(clause, getPropertyForClause(lhsI), op.getSymbols()[1], rhs);
     }
 
     private boolean containsNumberAndLettersOnly(String rhs) {
