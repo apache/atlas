@@ -673,6 +673,7 @@
         <checkstyle.failOnViolation>false</checkstyle.failOnViolation>
         <codehaus.woodstox.stax2-api.version>3.1.4</codehaus.woodstox.stax2-api.version>
         <commons-cli.version>1.4</commons-cli.version>
+        <commons-codec.version>1.14</commons-codec.version>
         <commons-collections.version>3.2.2</commons-collections.version>
         <commons-collections4.version>4.4</commons-collections4.version>
         <commons-conf.version>1.10</commons-conf.version>
@@ -698,7 +699,7 @@
         <guice.version>4.1.0</guice.version>
         <hadoop.hdfs-client.version>${hadoop.version}</hadoop.hdfs-client.version>
         <hadoop.version>3.1.1</hadoop.version>
-        <hbase.version>2.0.2</hbase.version>
+        <hbase.version>2.3.3</hbase.version>
         <hive.version>3.1.0</hive.version>
         <hppc.version>0.8.1</hppc.version>
         <httpcomponents-httpclient.version>4.5.13</httpcomponents-httpclient.version>
@@ -721,8 +722,8 @@
         <kafka.version>2.0.0</kafka.version>
         <keycloak.version>6.0.1</keycloak.version>
         <log4j.version>1.2.17</log4j.version>
-        <log4j2.version>2.13.2</log4j2.version>
-        <lucene-solr.version>7.7.2</lucene-solr.version>
+        <log4j2.version>2.13.3</log4j2.version>
+        <lucene-solr.version>8.6.3</lucene-solr.version>
         <maven-site-plugin.version>3.7</maven-site-plugin.version>
         <MaxPermGen>512m</MaxPermGen>
         <node-for-v2.version>v12.16.0</node-for-v2.version>
@@ -745,19 +746,19 @@
         <skipTests>false</skipTests>
         <skipUTs>false</skipUTs>
         <slf4j.version>1.7.30</slf4j.version>
-        <solr-test-framework.version>7.7.2</solr-test-framework.version>
-        <solr.version>7.7.2</solr.version>
+        <solr-test-framework.version>8.6.3</solr-test-framework.version>
+        <solr.version>8.6.3</solr.version>
         <spray.version>1.3.1</spray.version>
         <spring.security.version>4.2.17.RELEASE</spring.security.version>
         <spring.version>4.3.29.RELEASE</spring.version>
         <sqoop.version>1.4.6.2.3.99.0-195</sqoop.version>
-        <storm.version>1.2.0</storm.version>
+        <storm.version>2.1.0</storm.version>
         <surefire.forkCount>2C</surefire.forkCount>
         <surefire.version>2.18.1</surefire.version>
         <testng.version>6.9.4</testng.version>
         <tinkerpop.version>3.4.8</tinkerpop.version>
         <woodstox-core.version>5.0.3</woodstox-core.version>
-        <zookeeper.version>3.4.6</zookeeper.version>
+        <zookeeper.version>3.5.7</zookeeper.version>
     </properties>
 
     <modules>

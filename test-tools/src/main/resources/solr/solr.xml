@@ -36,12 +36,15 @@
         <bool name="genericCoreNodeNames">${genericCoreNodeNames:true}</bool>
         <int name="distribUpdateConnTimeout">${distribUpdateConnTimeout:15000}</int>
         <int name="distribUpdateSoTimeout">${distribUpdateSoTimeout:120000}</int>
+        <str name="zkCredentialsProvider">${zkCredentialsProvider:org.apache.solr.common.cloud.DefaultZkCredentialsProvider}</str>
+        <str name="zkACLProvider">${zkACLProvider:org.apache.solr.common.cloud.DefaultZkACLProvider}</str>
     </solrcloud>
 
     <shardHandlerFactory name="shardHandlerFactory"
                          class="HttpShardHandlerFactory">
         <int name="socketTimeout">${socketTimeout:120000}</int>
         <int name="connTimeout">${connTimeout:15000}</int>
+        <str name="shardsWhitelist">${solr.shardsWhitelist:}</str>
     </shardHandlerFactory>
 
 </solr>
