@@ -41,6 +41,10 @@
                     <artifactId>*</artifactId>
                 </exclusion>
                 <exclusion>
+                    <groupId>org.noggit</groupId>
+                    <artifactId>noggit</artifactId>
+                </exclusion>
+                <exclusion>
                     <groupId>org.apache.tinkerpop</groupId>
                     <artifactId>gremlin-shaded</artifactId>
                 </exclusion>
