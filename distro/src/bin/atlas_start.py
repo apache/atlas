@@ -28,9 +28,6 @@ DEFAULT_JVM_HEAP_OPTS="-Xmx1024m"
 DEFAULT_JVM_OPTS="-Dlog4j.configuration=atlas-log4j.xml -Djava.net.preferIPv4Stack=true -server"
 
 def main():
-
-    is_setup = (len(sys.argv)>1) and sys.argv[1] is not None and sys.argv[1] == '-setup'
-
     atlas_home = mc.atlasDir()
     confdir = mc.dirMustExist(mc.confDir(atlas_home))
     mc.executeEnvSh(confdir)
@@ -47,10 +44,7 @@ def main():
         jvm_logdir = logdir
 
     #create sys property for conf dirs
-    if not is_setup:
-        jvm_opts_list = (ATLAS_LOG_OPTS % (jvm_logdir, "application")).split()
-    else:
-        jvm_opts_list = (ATLAS_LOG_OPTS % (jvm_logdir, "atlas_setup")).split()
+    jvm_opts_list = (ATLAS_LOG_OPTS % (jvm_logdir, "application")).split()
 
     cmd_opts = (ATLAS_COMMAND_OPTS % jvm_atlas_home)
     jvm_opts_list.extend(cmd_opts.split())
@@ -103,8 +97,6 @@ def main():
        pf.close()
        if pid != "":
            if mc.exist_pid((int)(pid)):
-               if is_setup:
-                   print "Cannot run setup when server is running."
                mc.server_already_running(pid)
            else:
                mc.server_pid_not_running(pid)
@@ -145,13 +137,10 @@ def main():
     web_app_path = os.path.join(web_app_dir, "atlas")
     if (mc.isCygwin()):
         web_app_path = mc.convertCygwinPath(web_app_path)
-    if not is_setup:
-        start_atlas_server(atlas_classpath, atlas_pid_file, jvm_logdir, jvm_opts_list, web_app_path)
-        mc.wait_for_startup(confdir, 300)
-        print "Apache Atlas Server started!!!\n"
-    else:
-        process = mc.java("org.apache.atlas.web.setup.AtlasSetup", [], atlas_classpath, jvm_opts_list, jvm_logdir)
-        return process.wait()
+    
+    start_atlas_server(atlas_classpath, atlas_pid_file, jvm_logdir, jvm_opts_list, web_app_path)
+    mc.wait_for_startup(confdir, 300)
+    print "Apache Atlas Server started!!!\n"
 
 
 def start_atlas_server(atlas_classpath, atlas_pid_file, jvm_logdir, jvm_opts_list, web_app_path):
