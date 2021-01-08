@@ -186,7 +186,7 @@ def executeEnvSh(confDir):
         proc = subprocess.Popen(command, stdout = subprocess.PIPE)
 
         for line in proc.stdout:
-            (key, _, value) = line.strip().partition("=")
+            (key, _, value) = line.decode('utf8').strip().partition("=")
             if key in ENV_KEYS:
                 os.environ[key] = value
 
@@ -317,15 +317,15 @@ def read_input(name, exe):
             exe.stdin.write(cred + "\n")
 
 def debug(text):
-    if DEBUG: print '[DEBUG] ' + text
+    if DEBUG: print('[DEBUG] ' + text)
 
 
 def error(text):
-    print '[ERROR] ' + text
+    print('[ERROR] ' + text)
     sys.stdout.flush()
 
 def info(text):
-    print text
+    print(text)
     sys.stdout.flush()
 
 
@@ -517,7 +517,7 @@ def get_atlas_url_port(confdir):
         else:
             port = getConfigWithDefault(confdir, ATLAS_HTTP_PORT, DEFAULT_ATLAS_HTTP_PORT)
 
-    print "starting atlas on port %s" % port
+    print("starting atlas on port %s" % port)
     return port
 
 def get_atlas_url_host(confdir):
@@ -525,7 +525,7 @@ def get_atlas_url_host(confdir):
     host = getConfigWithDefault(confdir, ATLAS_SERVER_BIND_ADDRESS, DEFAULT_ATLAS_SERVER_HOST)
     if (host == '0.0.0.0'):
         host = DEFAULT_ATLAS_SERVER_HOST
-    print "starting atlas on host %s" % host
+    print("starting atlas on host %s" % host)
     return host
 
 def wait_for_startup(confdir, wait):
@@ -601,7 +601,7 @@ def run_solr(dir, action, zk_url = None, port = None, logdir = None, wait=True, 
         srcSolrXmlPath = os.path.join(solrServerDir(), "solr", "solr.xml")
         destSolrXmlPath = os.path.join(homedir, "solr.xml")
         if not os.path.exists(destSolrXmlPath) :
-            print "solr.xml doesn't exist in " + homedir + ", copying from " + srcSolrXmlPath
+            print("solr.xml doesn't exist in " + homedir + ", copying from " + srcSolrXmlPath)
             copyCmd = ["cp", srcSolrXmlPath, homedir]
             runProcess(copyCmd, logdir, False, True)
         cmd.append('-s')
@@ -694,11 +694,11 @@ def configure_cassandra(dir):
         os.remove(tmpl_file)
 
 def server_already_running(pid):
-    print "Atlas server is already running under process %s" % pid
+    print("Atlas server is already running under process %s" % pid)
     sys.exit()
 
 def server_pid_not_running(pid):
-    print "The Server is no longer running with pid %s" %pid
+    print("The Server is no longer running with pid %s" %pid)
 
 def grep(file, value):
     for line in open(file).readlines():

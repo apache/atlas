@@ -98,49 +98,49 @@ def main():
 
     if os.path.isfile(atlas_pid_file):
        #Check if process listed in atlas.pid file is still running
-       pf = file(atlas_pid_file, 'r')
+       pf = open(atlas_pid_file, 'r')
        pid = pf.read().strip()
        pf.close()
        if pid != "":
            if mc.exist_pid((int)(pid)):
                if is_setup:
-                   print "Cannot run setup when server is running."
+                   print("Cannot run setup when server is running.")
                mc.server_already_running(pid)
            else:
                mc.server_pid_not_running(pid)
 
     if is_hbase and mc.is_hbase_local(confdir):
-        print "configured for local hbase."
+        print("configured for local hbase.")
         mc.configure_hbase(atlas_home)
         mc.run_hbase_action(mc.hbaseBinDir(atlas_home), "start", hbase_conf_dir, logdir)
-        print "hbase started."
+        print("hbase started.")
 
     #solr setup
     if mc.is_solr_local(confdir):
-        print "configured for local solr."
+        print("configured for local solr.")
 
         if mc.is_cassandra_local(confdir):
-            print "Cassandra embedded configured."
+            print("Cassandra embedded configured.")
             mc.configure_cassandra(atlas_home)
 
         if mc.is_zookeeper_local(confdir):
             mc.configure_zookeeper(atlas_home)
             mc.run_zookeeper(mc.zookeeperBinDir(atlas_home), "start", logdir)
-            print "zookeeper started."
+            print("zookeeper started.")
 
         mc.run_solr(mc.solrBinDir(atlas_home), "start", mc.get_solr_zk_url(confdir), mc.solrPort(), logdir, True, mc.solrHomeDir(atlas_home))
-        print "solr started."
+        print("solr started.")
 
-        print "setting up solr collections..."
+        print("setting up solr collections...")
         mc.create_solr_collection(mc.solrBinDir(atlas_home), mc.solrConfDir(atlas_home), "vertex_index", logdir)
         mc.create_solr_collection(mc.solrBinDir(atlas_home), mc.solrConfDir(atlas_home), "edge_index", logdir)
         mc.create_solr_collection(mc.solrBinDir(atlas_home), mc.solrConfDir(atlas_home), "fulltext_index", logdir)
 
     #elasticsearch setup
     if mc.is_elasticsearch_local():
-        print "configured for local elasticsearch."
+        print("configured for local elasticsearch.")
         mc.start_elasticsearch(mc.elasticsearchBinDir(atlas_home), logdir)
-        print "elasticsearch started."
+        print("elasticsearch started.")
 
     web_app_path = os.path.join(web_app_dir, "atlas")
     if (mc.isCygwin()):
@@ -148,7 +148,7 @@ def main():
     if not is_setup:
         start_atlas_server(atlas_classpath, atlas_pid_file, jvm_logdir, jvm_opts_list, web_app_path)
         mc.wait_for_startup(confdir, 300)
-        print "Apache Atlas Server started!!!\n"
+        print("Apache Atlas Server started!!!\n")
     else:
         process = mc.java("org.apache.atlas.web.setup.AtlasSetup", [], atlas_classpath, jvm_opts_list, jvm_logdir)
         return process.wait()
@@ -164,8 +164,8 @@ if __name__ == '__main__':
     try:
         returncode = main()
     except Exception as e:
-        print "Exception: %s " % str(e)
-        print traceback.format_exc()
+        print("Exception: %s " % str(e))
+        print(traceback.format_exc())
         returncode = -1
 
     sys.exit(returncode)
