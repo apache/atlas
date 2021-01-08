@@ -182,8 +182,8 @@ atlas.graph.storage.lock.wait-time=300
                 <solr.folder>solr-${solr.version}</solr.folder>
                 <solr.tar>https://archive.apache.org/dist/lucene/solr/${solr.version}/solr-${solr.version}.tgz</solr.tar>
                 <zk.dir>${project.build.directory}/zk</zk.dir>
-                <zk.folder>zookeeper-${zookeeper.version}</zk.folder>
-                <zk.tar>https://archive.apache.org/dist/zookeeper/zookeeper-${zookeeper.version}/zookeeper-${zookeeper.version}.tar.gz</zk.tar>
+                <zk.folder>apache-zookeeper-${zookeeper.version}-bin</zk.folder>
+                <zk.tar>https://archive.apache.org/dist/zookeeper/zookeeper-${zookeeper.version}/apache-zookeeper-${zookeeper.version}-bin.tar.gz</zk.tar>
             </properties>
             <build>
                 <plugins>
@@ -429,8 +429,8 @@ atlas.graph.storage.conf-file=${sys:atlas.home}/conf/cassandra.yml
                 <solr.folder>solr-${solr.version}</solr.folder>
                 <solr.tar>https://archive.apache.org/dist/lucene/solr/${solr.version}/solr-${solr.version}.tgz</solr.tar>
                 <zk.dir>${project.build.directory}/zk</zk.dir>
-                <zk.folder>zookeeper-${zookeeper.version}</zk.folder>
-                <zk.tar>https://archive.apache.org/dist/zookeeper/zookeeper-${zookeeper.version}/zookeeper-${zookeeper.version}.tar.gz</zk.tar>
+                <zk.folder>apache-zookeeper-${zookeeper.version}-bin</zk.folder>
+                <zk.tar>https://archive.apache.org/dist/zookeeper/zookeeper-${zookeeper.version}/apache-zookeeper-${zookeeper.version}-bin.tar.gz</zk.tar>
             </properties>
             <build>
                 <plugins>
