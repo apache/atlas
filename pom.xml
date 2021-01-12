@@ -715,8 +715,8 @@
         <hppc.version>0.8.1</hppc.version>
         <httpcomponents-httpclient.version>4.5.13</httpcomponents-httpclient.version>
         <httpcomponents-httpcore.version>4.4.13</httpcomponents-httpcore.version>
-        <jackson.databind.version>2.10.5</jackson.databind.version>
-        <jackson.version>2.10.5</jackson.version>
+        <jackson.databind.version>2.11.3</jackson.databind.version>
+        <jackson.version>2.11.3</jackson.version>
         <janus.version>0.5.3</janus.version>
         <javax-inject.version>1</javax-inject.version>
         <javax.servlet.version>3.1.0</javax.servlet.version>
