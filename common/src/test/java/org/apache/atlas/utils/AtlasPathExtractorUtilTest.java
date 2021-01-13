@@ -304,17 +304,17 @@ public class AtlasPathExtractorUtilTest {
     }
 
     private void verifyABFSAdlsGen2Dir(String abfsScheme, String path, AtlasEntity entity){
-        String pathQName = abfsScheme + "data@razrangersan/tmp/cdp-demo/sample.csv/" + QNAME_METADATA_NAMESPACE;
+        String pathQName = abfsScheme + "data@razrangersan/tmp/cdp-demo/sample.csv" + QNAME_METADATA_NAMESPACE;
         String entityQName = (String) entity.getAttribute(ATTRIBUTE_QUALIFIED_NAME);
 
         if (pathQName.equalsIgnoreCase(entityQName)){
             assertEquals(entity.getAttribute(ATTRIBUTE_NAME), "sample.csv");
         } else {
-            pathQName = abfsScheme + "data@razrangersan/tmp/cdp-demo/" + QNAME_METADATA_NAMESPACE;
+            pathQName = abfsScheme + "data@razrangersan/tmp/cdp-demo" + QNAME_METADATA_NAMESPACE;
             if (pathQName.equalsIgnoreCase(entityQName)){
                 assertEquals(entity.getAttribute(ATTRIBUTE_NAME), "cdp-demo");
             } else {
-                assertEquals(entity.getAttribute(ATTRIBUTE_QUALIFIED_NAME), abfsScheme + "data@razrangersan/tmp/" + QNAME_METADATA_NAMESPACE);
+                assertEquals(entity.getAttribute(ATTRIBUTE_QUALIFIED_NAME), abfsScheme + "data@razrangersan/tmp" + QNAME_METADATA_NAMESPACE);
                 assertEquals(entity.getAttribute(ATTRIBUTE_NAME), "tmp");
             }
         }
