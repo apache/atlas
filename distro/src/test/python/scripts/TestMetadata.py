@@ -43,12 +43,12 @@ class TestMetadata(unittest.TestCase):
 
     # The getConfig mock has to be configured here to return the expected mock values
     def get_config_mock_side_effect(*args, **kwargs):
-        print "get_config_mock_side_effect (" + args[2] + ")"
+        print("get_config_mock_side_effect (" + args[2] + ")")
         return TestMetadata.mock_values.get(args[2])
 
     # The getConfig mock has to be configured here to return the expected mock values
     def get_default_config_mock_side_effect(*args, **kwargs):
-        print "get_default_config_mock_side_effect (" + args[3] + ")"
+        print("get_default_config_mock_side_effect (" + args[3] + ")")
         return TestMetadata.mock_values.get(args[3])
 
     @patch.object(mc, "runProcess")
