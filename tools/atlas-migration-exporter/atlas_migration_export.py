@@ -107,10 +107,10 @@ def main():
            mc.server_pid_not_running(pid)
 
     if is_hbase and mc.is_hbase_local(confdir):
-        print "configured for local hbase."
+        print("configured for local hbase.")
         mc.configure_hbase(atlas_home)
         mc.run_hbase_action(mc.hbaseBinDir(atlas_home), "start", hbase_conf_dir, logdir)
-        print "hbase started."
+        print("hbase started.")
 
     web_app_path = os.path.join(web_app_dir, "atlas")
     if (mc.isCygwin()):
@@ -147,8 +147,8 @@ if __name__ == '__main__':
     try:
         returncode = main()
     except Exception as e:
-        print "Exception: %s " % str(e)
-        print traceback.format_exc()
+        print("Exception: %s " % str(e))
+        print(traceback.format_exc())
         returncode = -1
 
     sys.exit(returncode)
