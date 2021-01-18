@@ -16,10 +16,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from apache_atlas.model.admin import AtlasAdminMetrics
-from apache_atlas.utils import API
-from apache_atlas.utils import BASE_URI
-from apache_atlas.utils import HTTPMethod
-from apache_atlas.utils import HTTPStatus
+from apache_atlas.utils import API, BASE_URI, HTTPStatus, HTTPMethod
 
 
 class AdminClient:

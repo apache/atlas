@@ -170,11 +170,11 @@ class EntityClient:
         return self.client.call_api(EntityClient.UPDATE_ENTITY, EntityMutationResponse, None, atlas_entities)
 
     def partial_update_entity_by_guid(self, entity_guid, attr_value, attr_name):
-        query_params = {"name", attr_name}
+        query_params = {"name": attr_name}
 
         return self.client.call_api(
             EntityClient.PARTIAL_UPDATE_ENTITY_BY_GUID.format_path({'entity_guid': entity_guid}),
-            EntityMutationResponse, attr_value, query_params)
+            EntityMutationResponse, query_params, attr_value)
 
     def delete_entity_by_guid(self, guid):
         return self.client.call_api(EntityClient.DELETE_ENTITY_BY_GUID.format_path_with_params(guid),

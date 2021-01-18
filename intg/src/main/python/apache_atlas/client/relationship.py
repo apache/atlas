@@ -47,7 +47,7 @@ class RelationshipClient:
                                     AtlasRelationshipWithExtInfo, query_params)
 
     def create_relationship(self, relationship):
-        return self.client.call_api(RelationshipClient.CREATE_RELATIONSHIP, AtlasRelationship, relationship)
+        return self.client.call_api(RelationshipClient.CREATE_RELATIONSHIP, AtlasRelationship, None, relationship)
 
     def update_relationship(self, relationship):
         return self.client.call_api(RelationshipClient.UPDATE_RELATIONSHIP, AtlasRelationship, relationship)
