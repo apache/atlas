@@ -15,13 +15,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from apache_atlas.model.instance import AtlasBase
-from apache_atlas.model.instance import AtlasClassification
-from apache_atlas.model.instance import AtlasRelatedObjectId
-from apache_atlas.model.misc import AtlasBaseModelObject
-from apache_atlas.utils import type_coerce
-from apache_atlas.utils import type_coerce_dict
-from apache_atlas.utils import type_coerce_list
+# This is to avoid the circular dependencies that instance.py and glossary.py has.
+import apache_atlas.model.instance as instance
+from apache_atlas.model.misc import AtlasBase, AtlasBaseModelObject
+from apache_atlas.utils import type_coerce, type_coerce_dict, type_coerce_list
 
 
 class AtlasGlossaryBaseObject(AtlasBaseModelObject):
@@ -38,7 +35,7 @@ class AtlasGlossaryBaseObject(AtlasBaseModelObject):
     def type_coerce_attrs(self):
         super(AtlasGlossaryBaseObject, self).type_coerce_attrs()
 
-        self.classifications = type_coerce_list(self.classifications, AtlasClassification)
+        self.classifications = type_coerce_list(self.classifications, instance.AtlasClassification)
 
 
 class AtlasGlossary(AtlasGlossaryBaseObject):
@@ -141,7 +138,7 @@ class AtlasGlossaryTerm(AtlasGlossaryBaseObject):
         super(AtlasGlossaryTerm, self).type_coerce_attrs()
 
         self.anchor = type_coerce(self.anchor, AtlasGlossaryHeader)
-        self.assignedEntities = type_coerce_list(self.assignedEntities, AtlasRelatedObjectId)
+        self.assignedEntities = type_coerce_list(self.assignedEntities, instance.AtlasRelatedObjectId)
         self.categories = type_coerce_list(self.categories, AtlasTermCategorizationHeader)
         self.seeAlso = type_coerce_list(self.seeAlso, AtlasRelatedTermHeader)
         self.synonyms = type_coerce_list(self.synonyms, AtlasRelatedTermHeader)

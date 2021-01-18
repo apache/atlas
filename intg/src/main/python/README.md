@@ -16,7 +16,7 @@ Verify if apache-atlas client is installed:
 
 Package      Version
 ------------ ---------
-apache-atlas 0.0.3
+apache-atlas 0.0.4
 ```
 
 ## Usage
@@ -28,7 +28,8 @@ apache-atlas 0.0.3
 import time
 
 from apache_atlas.client.base_client import AtlasClient
-from apache_atlas.model.instance     import *
+from apache_atlas.model.instance     import AtlasEntity, AtlasEntityWithExtInfo, AtlasEntitiesWithExtInfo, AtlasRelatedObjectId
+from apache_atlas.model.enums        import EntityOperation
 
 
 ## Step 1: create a client to connect to Apache Atlas server

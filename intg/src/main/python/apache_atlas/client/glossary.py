@@ -86,10 +86,14 @@ class GlossaryClient:
     OFFSET = "offset"
     STATUS = "Status"
 
+    DEFAULT_LIMIT = -1
+    DEFAULT_OFFSET = 0
+    DEFAULT_SORT = "ASC"
+
     def __init__(self, client):
         self.client = client
 
-    def get_all_glossaries(self, sort_by_attribute, limit, offset):
+    def get_all_glossaries(self, sort_by_attribute=DEFAULT_SORT, limit=DEFAULT_LIMIT, offset=DEFAULT_OFFSET):
         query_params = {"sort": sort_by_attribute, GlossaryClient.LIMIT: limit, GlossaryClient.OFFSET: offset}
 
         return self.client.call_api(GlossaryClient.GET_ALL_GLOSSARIES, list, query_params)
@@ -106,7 +110,8 @@ class GlossaryClient:
         return self.client.call_api(GlossaryClient.GET_GLOSSARY_TERM.format_path_with_params(term_guid),
                                     AtlasGlossaryTerm)
 
-    def get_glossary_terms(self, glossary_guid, sort_by_attribute, limit, offset):
+    def get_glossary_terms(self, glossary_guid, sort_by_attribute=DEFAULT_SORT,
+                           limit=DEFAULT_LIMIT, offset=DEFAULT_OFFSET):
         query_params = {"glossaryGuid": glossary_guid, GlossaryClient.LIMIT: limit, GlossaryClient.OFFSET: offset,
                         "sort": sort_by_attribute}
 
