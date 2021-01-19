@@ -63,6 +63,11 @@ public class NoopEntityAuditRepository implements EntityAuditRepository {
     }
 
     @Override
+    public List<EntityAuditEventV2> listEventsV2(String entityId, EntityAuditEventV2.EntityAuditActionV2 auditAction, String sortByColumn, boolean sortOrderDesc, int offset, short limit) throws AtlasBaseException {
+        return Collections.emptyList();
+    }
+
+    @Override
     public List<EntityAuditEventV2> listEventsV2(String entityId, EntityAuditEventV2.EntityAuditActionV2 auditAction, String startKey, short maxResultCount) {
         return Collections.emptyList();
     }
