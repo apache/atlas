@@ -79,6 +79,19 @@ public interface EntityAuditRepository {
      */
     List<EntityAuditEventV2> listEventsV2(String entityId, EntityAuditEventV2.EntityAuditActionV2 auditAction, String startKey, short maxResultCount) throws AtlasBaseException;
 
+    /**
+     * List events for the given entity id in sorted order of given column. Returns n results
+     * @param entityId entity id
+     * @param auditAction operation to be used for search at HBase column
+     * @param sortByColumn name of column on which sorting is required
+     * @param sortOrderDesc flag to set sort order descending
+     * @param offset event list is truncated by removing offset number of items, used for pagination
+     * @param limit  Max numbers of events to be returned
+     * @return list of events
+     * @throws AtlasBaseException
+     */
+    List<EntityAuditEventV2> listEventsV2(String entityId, EntityAuditEventV2.EntityAuditActionV2 auditAction, String sortByColumn, boolean sortOrderDesc, int offset, short limit) throws AtlasBaseException;
+
     /***
      * List events for given time range where classifications have been added, deleted or updated.
      * @param fromTimestamp from timestamp
