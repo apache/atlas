@@ -18,7 +18,7 @@
 
 package org.apache.atlas.query;
 
-enum GremlinClause {
+public enum GremlinClause {
     AS("as('%s')"),
     DEDUP("dedup()"),
     G("g"),
@@ -45,8 +45,6 @@ enum GremlinClause {
     TO_LIST("toList()"),
     STRING_CONTAINS("has('%s', org.janusgraph.core.attribute.Text.textRegex(%s))"),
     TEXT_CONTAINS("has('%s', org.janusgraph.core.attribute.Text.textContainsRegex(%s))"),
-    TEXT_PREFIX("has('%s', org.janusgraph.core.attribute.Text.textContainsPrefix(%s))"),
-    TEXT_SUFFIX("has('%s', org.janusgraph.core.attribute.Text.textContainsRegex(\".*\" + %s))"),
     TRAIT("outE('classifiedAs').has('__name', within('%s')).outV()"),
     ANY_TRAIT("or(has('__traitNames'), has('__propagatedTraitNames'))"),
     NO_TRAIT("and(hasNot('__traitNames'), hasNot('__propagatedTraitNames'))"),
@@ -70,6 +68,7 @@ enum GremlinClause {
     // idx of the tuple field to be sorted on
     INLINE_TUPLE_SORT_ASC(".sort{a,b -> a[%s] <=> b[%s]}"),
     INLINE_TUPLE_SORT_DESC(".sort{a,b -> b[%s] <=> a[%s]}"),
+    TERM("and(__.in('r:AtlasGlossarySemanticAssignment').has('AtlasGlossaryTerm.%s', eq('%s')).dedup())"),
     V("V()"),
     VALUE_MAP("valueMap(%s)");
 

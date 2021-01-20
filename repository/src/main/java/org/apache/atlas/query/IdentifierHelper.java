@@ -127,6 +127,7 @@ public class IdentifierHelper {
     public static boolean isInCompleteValue(String s) {
         return StringUtils.isNotEmpty(s) && (StringUtils.equals(s, "1") || StringUtils.equalsIgnoreCase(s, "true"));
     }
+
     public static class Info {
         private String   raw;
         private String   actual;

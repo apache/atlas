@@ -188,7 +188,7 @@ public class GremlinQueryComposerTest {
         verify("Table where owner like \"*Tab_*\"",
                 "g.V().has('__typeName', 'Table').has('Table.owner', org.janusgraph.core.attribute.Text.textRegex(\".*Tab_.*\")).dedup().limit(25).toList()");
         verify("from Table where (db.name = \"Reporting\")",
-                "g.V().has('__typeName', 'Table').and(__.out('__Table.db').has('DB.name', eq(\"Reporting\")).dedup()).dedup().limit(25).toList()");
+                "g.V().has('__typeName', 'Table').out('__Table.db').has('DB.name', eq(\"Reporting\")).dedup().in('__Table.db').dedup().limit(25).toList()");
     }
 
     @Test
@@ -312,7 +312,9 @@ public class GremlinQueryComposerTest {
                 {"hive_db where hive_db.name='Reporting' and hive_db.createTime < '2017-12-12T02:35:58.440Z'",
                         "g.V().has('__typeName', 'hive_db').and(__.has('hive_db.name', eq('Reporting')),__.has('hive_db.createTime', lt('1513046158440'))).dedup().limit(25).toList()"},
                 {"Table where db.name='Sales' and db.clusterName='cl1'",
-                        "g.V().has('__typeName', 'Table').and(__.out('__Table.db').has('DB.name', eq('Sales')).dedup(),__.out('__Table.db').has('DB.clusterName', eq('cl1')).dedup()).dedup().limit(25).toList()"},
+                        "g.V().has('__typeName', 'Table').and(__.out('__Table.db').has('DB.name', eq('Sales')).dedup().in('__Table.db'),__.out('__Table.db').has('DB.clusterName', eq('cl1')).dedup().in('__Table.db')).dedup().limit(25).toList()"},
+                {"hive_db where (hive_db.name='Reporting' or ((hive_db.name='Reporting' and hive_db.createTime > '2017-12-12T02:35:58.440Z') and (hive_db.name='Reporting' and hive_db.createTime < '2017-12-12T02:35:58.440Z')))",
+                        "g.V().has('__typeName', 'hive_db').or(__.has('hive_db.name', eq('Reporting')),__.and(__.and(__.has('hive_db.name', eq('Reporting')),__.has('hive_db.createTime', gt('1513046158440'))),__.and(__.has('hive_db.name', eq('Reporting')),__.has('hive_db.createTime', lt('1513046158440'))))).dedup().limit(25).toList()"}
         };
     }
 
@@ -330,12 +332,16 @@ public class GremlinQueryComposerTest {
                 "dedup().limit(25).toList()");
         verify("Table hasTerm \"sales@glossary\"", "g.V().has('__typeName', 'Table')." +
                 "and(__.in('r:AtlasGlossarySemanticAssignment')." +
-                "has('AtlasGlossaryTerm.qualifiedName', eq(\"sales@glossary\")).dedup())." +
+                "has('AtlasGlossaryTerm.qualifiedName', eq('sales@glossary')).dedup())." +
                 "dedup().limit(25).toList()");
-        verify("Table hasTerm \"sales@glossary\" and owner = \"fetl\"","g.V().has('__typeName', 'Table')." +
-                "and(__.in('r:AtlasGlossarySemanticAssignment').has('AtlasGlossaryTerm.qualifiedName', eq(\"sales@glossary\")).dedup()" +
-                ",__.has('Table.owner', eq(\"fetl\")))." +
-                "dedup().limit(25).toList()");
+        verify("Table hasTerm \"sales@glossary\" and owner = \"fetl\"",
+                "g.V().has('__typeName', 'Table')" +
+                        ".and(" +
+                            "__.and(" +
+                                "__.in('r:AtlasGlossarySemanticAssignment').has('AtlasGlossaryTerm.qualifiedName', eq('sales@glossary'))" +
+                                ".dedup())," +
+                                "__.has('Table.owner', eq(\"fetl\"))" +
+                        ").dedup().limit(25).toList()");
     }
 
 
@@ -373,7 +379,7 @@ public class GremlinQueryComposerTest {
     public void whereComplexAndSelect() {
         String exSel = "def f(r){ t=[['name']];  r.each({t.add([" +
                 "it.property('Table.name').isPresent() ? it.value('Table.name') : \"\"])}); t.unique(); }";
-        String exMain = "g.V().has('__typeName', 'Table').and(__.out('__Table.db').has('DB.name', eq(\"Reporting\")).dedup(),__.has('Table.name', eq(\"sales_fact\"))).dedup().limit(25).toList()";
+        String exMain = "g.V().has('__typeName', 'Table').and(__.out('__Table.db').has('DB.name', eq(\"Reporting\")).dedup().in('__Table.db'),__.has('Table.name', eq(\"sales_fact\"))).dedup().limit(25).toList()";
         verify("Table where db.name = \"Reporting\" and name =\"sales_fact\" select name", getExpected(exSel, exMain));
         verify("Table where db.name = \"Reporting\" and name =\"sales_fact\"", exMain);
     }

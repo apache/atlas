@@ -17,20 +17,23 @@
  */
 package org.apache.atlas.query;
 
-import org.apache.atlas.type.AtlasEntityType;
-
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
-class GremlinClauseList {
+public class GremlinClauseList {
     private final List<GremlinQueryComposer.GremlinClauseValue> list;
+    private final Map<Integer, List<GremlinClauseList>>         subClauses;
 
     GremlinClauseList() {
-        this.list = new LinkedList<>();
+        this.list       = new LinkedList<>();
+        this.subClauses = new LinkedHashMap<>();
     }
 
-    public void add(GremlinQueryComposer.GremlinClauseValue g) {
-        list.add(g);
+    public void add(GremlinQueryComposer.GremlinClauseValue clauseValue) {
+        list.add(clauseValue);
     }
 
     public void add(int idx, GremlinQueryComposer.GremlinClauseValue g) {
@@ -38,11 +41,11 @@ class GremlinClauseList {
     }
 
     public void add(GremlinClause clause, String... args) {
-        list.add(new GremlinQueryComposer.GremlinClauseValue(clause, clause.get(args)));
+        list.add(new GremlinQueryComposer.GremlinClauseValue(clause, args));
     }
 
     public void add(int i, GremlinClause clause, String... args) {
-        list.add(i, new GremlinQueryComposer.GremlinClauseValue(clause, clause.get(args)));
+        list.add(i, new GremlinQueryComposer.GremlinClauseValue(clause, args));
     }
 
     public GremlinQueryComposer.GremlinClauseValue getAt(int i) {
@@ -50,7 +53,7 @@ class GremlinClauseList {
     }
 
     public String getValue(int i) {
-        return list.get(i).getValue();
+        return list.get(i).getClauseWithValue();
     }
 
     public GremlinQueryComposer.GremlinClauseValue get(int i) {
@@ -89,5 +92,30 @@ class GremlinClauseList {
         GremlinQueryComposer.GremlinClauseValue gcv = get(index);
         list.remove(index);
         return gcv;
+    }
+
+    public List<GremlinQueryComposer.GremlinClauseValue> getList() {
+        return list;
+    }
+
+    public void addSubClauses(int index, GremlinClauseList queryClauses) {
+        if (!this.subClauses.containsKey(index)) {
+            this.subClauses.put(index, new ArrayList<>());
+        }
+
+        this.subClauses.get(index).add(queryClauses);
+    }
+
+    public boolean hasSubClause(int i) {
+        return subClauses.containsKey(i);
+    }
+
+    public List<GremlinClauseList> getSubClauses(int i) {
+        return subClauses.get(i);
+    }
+
+    @Override
+    public String toString() {
+        return String.format("list.size: %d, subClauses.size: %d", this.size(), this.subClauses.size());
     }
 }
