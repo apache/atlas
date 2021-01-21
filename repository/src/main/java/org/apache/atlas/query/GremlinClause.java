@@ -25,6 +25,7 @@ public enum GremlinClause {
     GROUP_BY("group().by('%s')"),
     HAS("has('%s', %s)"),
     HAS_OPERATOR("has('%s', %s(%s))"),
+    HAS_NOT_OPERATOR("or(__.has('%s', neq(%s)), __.hasNot('%s'))"),
     HAS_PROPERTY("has('%s')"),
     WHERE("where(%s)"),
     HAS_NOT_PROPERTY("hasNot('%s')"),

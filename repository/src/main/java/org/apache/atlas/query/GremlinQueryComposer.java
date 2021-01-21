@@ -219,6 +219,10 @@ public class GremlinQueryComposer {
                 }
             } else if (op == SearchParameters.Operator.IN) {
                 add(GremlinClause.HAS_OPERATOR, getPropertyForClause(lhsI), "within", rhs);
+            } else if (op == SearchParameters.Operator.NEQ) {
+                String propertyName = getPropertyForClause(lhsI);
+
+                add(GremlinClause.HAS_NOT_OPERATOR, propertyName, rhs, propertyName);
             } else {
                 Object normalizedRhs = getNormalizedAttrVal(lhsI, IdentifierHelper.removeQuotes(rhs));
 

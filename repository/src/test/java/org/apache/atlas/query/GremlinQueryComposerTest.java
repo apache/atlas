@@ -385,6 +385,12 @@ public class GremlinQueryComposerTest {
     }
 
     @Test
+    public void whereClauseWithNEQCondition() {
+        verify("Table where owner != 'random'",
+                "g.V().has('__typeName', 'Table').or(__.has('Table.owner', neq('random')), __.hasNot('Table.owner')).dedup().limit(25).toList()");
+    }
+
+    @Test
     public void invalidQueries() {
         verify("hdfs_path like h1", "");
     }
