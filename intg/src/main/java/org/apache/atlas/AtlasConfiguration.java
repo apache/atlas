@@ -75,6 +75,7 @@ public enum AtlasConfiguration {
     HTTP_HEADER_SERVER_VALUE("atlas.http.header.server.value","Apache Atlas"),
     STORAGE_CONSISTENCY_LOCK_ENABLED("atlas.graph.storage.consistency-lock.enabled", true),
     REBUILD_INDEX("atlas.rebuild.index", false),
+    STORE_DIFFERENTIAL_AUDITS("atlas.entity.audit.differential", false),
     DSL_EXECUTOR_TRAVERSAL("atlas.dsl.executor.traversal", true);
 
     private static final Configuration APPLICATION_PROPERTIES;
@@ -93,6 +94,10 @@ public enum AtlasConfiguration {
     AtlasConfiguration(String propertyName, Object defaultValue) {
         this.propertyName = propertyName;
         this.defaultValue = defaultValue;
+    }
+
+    public String getPropertyName() {
+        return propertyName;
     }
 
     public int getInt() {

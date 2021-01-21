@@ -47,11 +47,13 @@ import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 import java.nio.charset.StandardCharsets;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.apache.atlas.AtlasConfiguration.STORE_DIFFERENTIAL_AUDITS;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.BUSINESS_ATTRIBUTE_UPDATE;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.CLASSIFICATION_ADD;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.CLASSIFICATION_DELETE;
@@ -106,14 +108,30 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
 
     @Override
     public void onEntitiesUpdated(List<AtlasEntity> entities, boolean isImport) throws AtlasBaseException {
-        MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
-
+        RequestContext                      reqContext    = RequestContext.get();
+        MetricRecorder                      metric        = reqContext.startMetricRecord("entityAudit");
         FixedBufferList<EntityAuditEventV2> updatedEvents = getAuditEventsList();
-        for (AtlasEntity entity : entities) {
-            EntityAuditActionV2 action = isImport ? ENTITY_IMPORT_UPDATE :
-                    RequestContext.get().checkIfEntityIsForCustomAttributeUpdate(entity.getGuid()) ? CUSTOM_ATTRIBUTE_UPDATE :
-                    RequestContext.get().checkIfEntityIsForBusinessAttributeUpdate(entity.getGuid()) ? BUSINESS_ATTRIBUTE_UPDATE :
-                            ENTITY_UPDATE;
+        Collection<AtlasEntity>             updatedEntites;
+
+        if (STORE_DIFFERENTIAL_AUDITS.getBoolean()) {
+            updatedEntites = reqContext.getDifferentialEntities();
+        } else {
+            updatedEntites = entities;
+        }
+
+        for (AtlasEntity entity : updatedEntites) {
+            final EntityAuditActionV2 action;
+
+            if (isImport) {
+                action = ENTITY_IMPORT_UPDATE;
+            } else if (reqContext.checkIfEntityIsForCustomAttributeUpdate(entity.getGuid())) {
+                action = CUSTOM_ATTRIBUTE_UPDATE;
+            } else if (reqContext.checkIfEntityIsForBusinessAttributeUpdate(entity.getGuid())) {
+                action = BUSINESS_ATTRIBUTE_UPDATE;
+            } else {
+                action = ENTITY_UPDATE;
+            }
+
             createEvent(updatedEvents.next(), entity, action);
         }
 

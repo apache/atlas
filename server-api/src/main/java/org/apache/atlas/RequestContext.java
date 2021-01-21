@@ -53,6 +53,7 @@ public class RequestContext {
     private final Map<String, AtlasEntityHeader>         deletedEntities      = new HashMap<>();
     private final Map<String, AtlasEntity>               entityCache          = new HashMap<>();
     private final Map<String, AtlasEntityWithExtInfo>    entityExtInfoCache   = new HashMap<>();
+    private final Map<String, AtlasEntity>               diffEntityCache      = new HashMap<>();
     private final Map<String, List<AtlasClassification>> addedPropagations    = new HashMap<>();
     private final Map<String, List<AtlasClassification>> removedPropagations  = new HashMap<>();
     private final AtlasPerfMetrics                       metrics              = isMetricsEnabled ? new AtlasPerfMetrics() : null;
@@ -114,6 +115,7 @@ public class RequestContext {
         this.deletedEntities.clear();
         this.entityCache.clear();
         this.entityExtInfoCache.clear();
+        this.diffEntityCache.clear();
         this.addedPropagations.clear();
         this.removedPropagations.clear();
         this.entitiesToSkipUpdate.clear();
@@ -344,6 +346,17 @@ public class RequestContext {
         }
     }
 
+    public void cacheDifferentialEntity(AtlasEntity entity) {
+        if (entity != null && entity.getGuid() != null) {
+            diffEntityCache.put(entity.getGuid(), entity);
+        }
+    }
+
+    public AtlasEntity getDifferentialEntity(String guid) {
+        return diffEntityCache.get(guid);
+    }
+
+    public Collection<AtlasEntity> getDifferentialEntities() { return diffEntityCache.values(); }
 
     public Collection<AtlasEntityHeader> getUpdatedEntities() {
         return updatedEntities.values();
