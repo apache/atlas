@@ -17,6 +17,8 @@
  */
 package org.apache.atlas.discovery;
 
+import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.GraphHelper;
@@ -40,6 +42,8 @@ public class FreeTextSearchProcessor extends SearchProcessor {
     private static final Logger PERF_LOG                    = AtlasPerfTracer.getPerfLogger("FreeTextSearchProcessor");
     public  static final String SOLR_QT_PARAMETER           = "qt"; // org.apache.solr.common.params.CommonParams.QT;
     public  static final String SOLR_REQUEST_HANDLER_NAME   = "/freetext";
+
+    private static final boolean IS_SOLR_INDEX_BACKEND = isSolrIndexBackend();
 
     private final AtlasIndexQuery indexQuery;
 
@@ -70,7 +74,9 @@ public class FreeTextSearchProcessor extends SearchProcessor {
     private GraphIndexQueryParameters prepareGraphIndexQueryParameters(SearchContext context, StringBuilder queryString) {
         List<AtlasIndexQueryParameter> parameters = new ArrayList<>();
 
-        parameters.add(context.getGraph().indexQueryParameter(SOLR_QT_PARAMETER, SOLR_REQUEST_HANDLER_NAME));
+        if (IS_SOLR_INDEX_BACKEND) {
+            parameters.add(context.getGraph().indexQueryParameter(SOLR_QT_PARAMETER, SOLR_REQUEST_HANDLER_NAME));
+        }
 
         return new GraphIndexQueryParameters(Constants.VERTEX_INDEX, queryString.toString(), 0, parameters);
     }
@@ -174,5 +180,17 @@ public class FreeTextSearchProcessor extends SearchProcessor {
     @Override
     public long getResultCount() {
         return indexQuery.vertexTotals();
+    }
+
+    private static boolean isSolrIndexBackend() {
+        try {
+            String indexBackEnd = ApplicationProperties.get().getString(ApplicationProperties.INDEX_BACKEND_CONF);
+
+            return ApplicationProperties.INDEX_BACKEND_SOLR.equalsIgnoreCase(indexBackEnd);
+        } catch (AtlasException e) {
+            LOG.error("Failed to get application property {}. Assuming Solr index backend", ApplicationProperties.INDEX_BACKEND_SOLR, e);
+        }
+
+        return true; // default to Solr
     }
 }
