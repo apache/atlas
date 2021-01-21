@@ -106,30 +106,37 @@ public class AtlasJanusGraphTraversal extends AtlasGraphTraversal<AtlasJanusVert
 
     @Override
     public Map<String, Collection<AtlasJanusVertex>> getAtlasVertexMap() {
-        List list = getResultList();
-        if (CollectionUtils.isEmpty(list) || !(list.get(0) instanceof Map)) {
-            return Collections.emptyMap();
-        }
+        List                                      list = getResultList();
+        Map<String, Collection<AtlasJanusVertex>> ret;
 
-        Map<String, Collection<AtlasJanusVertex>> ret = new HashMap<>();
-        Map map = (Map) list.get(0);
-        for (Object key : map.keySet()) {
-            if (!(key instanceof String)) {
-                continue;
-            }
+        if (CollectionUtils.isNotEmpty(list) && (list.get(0) instanceof Map)) {
+            Map map = (Map) list.get(0);
 
-            Object value = map.get(key);
-            if (value instanceof List) {
-                Collection<AtlasJanusVertex> values = new ArrayList<>();
-                for (Object o : (List) value) {
-                    if (o instanceof Vertex) {
-                        values.add(GraphDbObjectFactory.createVertex((AtlasJanusGraph) atlasGraph, (Vertex) o));
-                    } else {
-                        LOG.warn("{} is not a vertex.", o.getClass().getSimpleName());
-                    }
+            ret = new HashMap<>(map.size());
+
+            for (Object key : map.keySet()) {
+                if (!(key instanceof String)) {
+                    continue;
                 }
-                ret.put((String) key, values);
+
+                Object value = map.get(key);
+
+                if (value instanceof List) {
+                    Collection<AtlasJanusVertex> values = new ArrayList<>();
+
+                    for (Object o : (List) value) {
+                        if (o instanceof Vertex) {
+                            values.add(GraphDbObjectFactory.createVertex((AtlasJanusGraph) atlasGraph, (Vertex) o));
+                        } else {
+                            LOG.warn("{} is not a vertex.", o.getClass().getSimpleName());
+                        }
+                    }
+
+                    ret.put((String) key, values);
+                }
             }
+        } else {
+            ret = Collections.emptyMap();
         }
 
         return ret;

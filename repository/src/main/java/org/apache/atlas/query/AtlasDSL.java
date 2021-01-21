@@ -121,7 +121,7 @@ public class AtlasDSL {
         }
 
         public GremlinQuery translate() throws AtlasBaseException {
-            QueryMetadata queryMetadata        = new QueryMetadata(queryContext);
+            QueryMetadata        queryMetadata = new QueryMetadata(queryContext);
             GremlinQueryComposer queryComposer = new GremlinQueryComposer(typeRegistry, queryMetadata, limit, offset);
 
             queryContext.accept(new DSLVisitor(queryComposer));
@@ -132,13 +132,13 @@ public class AtlasDSL {
         }
 
         private void processErrorList(GremlinQueryComposer gremlinQueryComposer) throws AtlasBaseException {
-            if (CollectionUtils.isEmpty(gremlinQueryComposer.getErrorList())) {
-                return;
-            }
+            if (CollectionUtils.isNotEmpty(gremlinQueryComposer.getErrorList())) {
+                final String errorMessage = StringUtils.join(gremlinQueryComposer.getErrorList(), ", ");
 
-            final String errorMessage = StringUtils.join(gremlinQueryComposer.getErrorList(), ", ");
-            LOG.warn("DSL Errors: {}", errorMessage);
-            throw new AtlasBaseException(AtlasErrorCode.INVALID_DSL_QUERY, this.query, errorMessage);
+                LOG.warn("DSL Errors: {}", errorMessage);
+
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_DSL_QUERY, this.query, errorMessage);
+            }
         }
     }
 

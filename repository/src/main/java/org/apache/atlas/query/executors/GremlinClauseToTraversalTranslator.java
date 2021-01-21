@@ -57,10 +57,13 @@ public class GremlinClauseToTraversalTranslator {
 
         public AtlasGraphTraversal process(GremlinClauseList clauseList) {
             Stack<List<AtlasGraphTraversal>> subTraversals = new Stack<>();
-            AtlasGraphTraversal ret = process(null, subTraversals, clauseList);
+            AtlasGraphTraversal              ret           = process(null, subTraversals, clauseList);
+
             if (!subTraversals.isEmpty()) {
                 String errorMessage = "Sub-traversals found not to be empty! " + subTraversals.toString();
+
                 LOG.warn(errorMessage);
+
                 throw new RuntimeException(errorMessage);
             }
 
@@ -71,12 +74,13 @@ public class GremlinClauseToTraversalTranslator {
                                             Stack<List<AtlasGraphTraversal>> collected,
                                             GremlinClauseList clauseList) {
             int size = clauseList.getList().size();
-            for (int index = 0; index < size; index++) {
 
+            for (int index = 0; index < size; index++) {
                 if (clauseList.hasSubClause(index)) {
                     List<GremlinClauseList> subClauses = clauseList.getSubClauses(index);
 
                     collected.push(new ArrayList<>());
+
                     for (GremlinClauseList sc : subClauses) {
                         process(traversal, collected, sc);
                     }
@@ -91,9 +95,9 @@ public class GremlinClauseToTraversalTranslator {
         private AtlasGraphTraversal traverse(AtlasGraphTraversal traversal,
                                              Stack<List<AtlasGraphTraversal>> trLists,
                                              GremlinQueryComposer.GremlinClauseValue clauseValue) {
-
             GremlinClause clause = clauseValue.getClause();
-            String[] values = clauseValue.getValues();
+            String[]      values = clauseValue.getValues();
+
             switch (clause) {
                 case G:
                     break;
@@ -109,6 +113,7 @@ public class GremlinClauseToTraversalTranslator {
                 case AND: {
                     if (trLists != null && !trLists.peek().isEmpty()) {
                         List<AtlasGraphTraversal> subTraversals = trLists.pop();
+
                         traversal.and(subTraversals.toArray(new Traversal[0]));
                     } else {
                         throw new RuntimeException("subTraversals not expected to be NULL: " + clause.toString());
@@ -119,6 +124,7 @@ public class GremlinClauseToTraversalTranslator {
                 case OR: {
                     if (trLists != null && !trLists.peek().isEmpty()) {
                         List<AtlasGraphTraversal> subTraversals = trLists.pop();
+
                         traversal.or(subTraversals.toArray(new Traversal[0]));
                     } else {
                         throw new RuntimeException("subTraversals not expected to be NULL: " + clause.toString());
@@ -136,6 +142,7 @@ public class GremlinClauseToTraversalTranslator {
 
                 case HAS_OPERATOR:
                     P predicate = getPredicate(values[1], values[2], clauseValue.getRawValue());
+
                     traversal.has(values[0], predicate);
                     break;
 
@@ -185,11 +192,13 @@ public class GremlinClauseToTraversalTranslator {
 
                 case NESTED_START:
                     traversal = traversal.startAnonymousTraversal();
+
                     trLists.peek().add(traversal);
                     break;
 
                 case HAS_TYPE_WITHIN:
                     String[] subTypes = StringUtils.split(removeRedundantQuotes(values[0]), ',');
+
                     traversal.has("__typeName", P.within(subTypes));
                     break;
 
@@ -215,8 +224,10 @@ public class GremlinClauseToTraversalTranslator {
 
                 case RANGE:
                     traversal.dedup();
+
                     long low  = Long.parseLong(values[1]);
                     long high = low + Long.parseLong(values[2]);
+
                     traversal.range(Scope.global, low, high);
                     break;
 
@@ -229,11 +240,12 @@ public class GremlinClauseToTraversalTranslator {
 
                 case TERM:
                     String term = String.format("AtlasGlossaryTerm.%s", values[0]);
+
                     traversal.and(
                             traversal.startAnonymousTraversal()
-                            .in(org.apache.atlas.repository.Constants.TERM_ASSIGNMENT_LABEL)
-                            .has(term, P.eq(values[1]))
-                            .dedup()
+                                     .in(org.apache.atlas.repository.Constants.TERM_ASSIGNMENT_LABEL)
+                                     .has(term, P.eq(values[1]))
+                                     .dedup()
                             );
                     break;
 
@@ -276,6 +288,7 @@ public class GremlinClauseToTraversalTranslator {
 
         private String[] csvToArray(String strRhs) {
             String csvRow = StringUtils.replaceEach(strRhs, new String[]{"[", "]", "'"}, new String[]{"", "", ""});
+
             return csvRow.split(",");
         }
 

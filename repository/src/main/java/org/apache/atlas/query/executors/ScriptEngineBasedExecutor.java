@@ -19,6 +19,8 @@ package org.apache.atlas.query.executors;
 
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
+import org.apache.atlas.model.discovery.AtlasSearchResult.AttributeSearchResult;
+import org.apache.atlas.model.discovery.AtlasSearchResult.AtlasQueryType;
 import org.apache.atlas.query.AtlasDSL;
 import org.apache.atlas.query.GremlinQuery;
 import org.apache.atlas.query.QueryParams;
@@ -37,6 +39,7 @@ import java.util.Map;
 
 public class ScriptEngineBasedExecutor implements DSLQueryExecutor {
     private static final Logger LOG = LoggerFactory.getLogger(ScriptEngineBasedExecutor.class);
+
     private final AtlasTypeRegistry     typeRegistry;
     private final AtlasGraph            graph;
     private final EntityGraphRetriever  entityRetriever;
@@ -49,11 +52,11 @@ public class ScriptEngineBasedExecutor implements DSLQueryExecutor {
 
     @Override
     public AtlasSearchResult execute(String dslQuery, int limit, int offset) throws AtlasBaseException {
-        AtlasSearchResult ret          = new AtlasSearchResult(dslQuery, AtlasSearchResult.AtlasQueryType.DSL);
-        GremlinQuery gremlinQuery = toGremlinQuery(dslQuery, limit, offset);
+        AtlasSearchResult ret          = new AtlasSearchResult(dslQuery, AtlasQueryType.DSL);
+        GremlinQuery      gremlinQuery = toGremlinQuery(dslQuery, limit, offset);
         String            queryStr     = gremlinQuery.queryStr();
+        Object            result       = graph.executeGremlinScript(queryStr, false);
 
-        Object result = graph.executeGremlinScript(queryStr, false);
         if (result instanceof List && CollectionUtils.isNotEmpty((List)result)) {
             List   queryResult  = (List) result;
             Object firstElement = queryResult.get(0);
@@ -79,6 +82,7 @@ public class ScriptEngineBasedExecutor implements DSLQueryExecutor {
                             if (value instanceof List && CollectionUtils.isNotEmpty((List)value)) {
                                 for (Object o : (List) value) {
                                     Object entry = o;
+
                                     if (entry instanceof AtlasVertex) {
                                         ret.addEntity(entityRetriever.toAtlasEntityHeader((AtlasVertex) entry));
                                     }
@@ -96,8 +100,8 @@ public class ScriptEngineBasedExecutor implements DSLQueryExecutor {
     }
 
     private GremlinQuery toGremlinQuery(String query, int limit, int offset) throws AtlasBaseException {
-        QueryParams params       = QueryParams.getNormalizedParams(limit, offset);
-        GremlinQuery                gremlinQuery = new AtlasDSL.Translator(query, typeRegistry, params.offset(), params.limit()).translate();
+        QueryParams  params       = QueryParams.getNormalizedParams(limit, offset);
+        GremlinQuery gremlinQuery = new AtlasDSL.Translator(query, typeRegistry, params.offset(), params.limit()).translate();
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("Translated Gremlin Query: {}", gremlinQuery.queryStr());
@@ -106,13 +110,14 @@ public class ScriptEngineBasedExecutor implements DSLQueryExecutor {
         return gremlinQuery;
     }
 
-    private AtlasSearchResult.AttributeSearchResult toAttributesResult(List results, GremlinQuery query) {
-        AtlasSearchResult.AttributeSearchResult ret = new AtlasSearchResult.AttributeSearchResult();
-        List<String> names = (List<String>) results.get(0);
-        List<List<Object>> values = extractValues(results.subList(1, results.size()));
+    private AttributeSearchResult toAttributesResult(List results, GremlinQuery query) {
+        AttributeSearchResult ret    = new AttributeSearchResult();
+        List<String>          names  = (List<String>) results.get(0);
+        List<List<Object>>    values = extractValues(results.subList(1, results.size()));
 
         ret.setName(names);
         ret.setValues(values);
+
         return ret;
     }
 
@@ -121,22 +126,25 @@ public class ScriptEngineBasedExecutor implements DSLQueryExecutor {
 
         for (Object obj : results) {
             if (obj instanceof Map) {
-                Map map = (Map) obj;
+                Map          map  = (Map) obj;
                 List<Object> list = new ArrayList<>();
+
                 if (MapUtils.isNotEmpty(map)) {
                     for (Object key : map.keySet()) {
                         Object vals = map.get(key);
+
                         if(vals instanceof List) {
                             List l = (List) vals;
+
                             list.addAll(l);
                         }
-
                     }
 
                     values.add(list);
                 }
             } else if (obj instanceof List) {
                 List list = (List) obj;
+
                 if (CollectionUtils.isNotEmpty(list)) {
                     values.add(list);
                 }

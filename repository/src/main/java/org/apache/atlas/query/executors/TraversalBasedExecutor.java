@@ -56,8 +56,8 @@ public class TraversalBasedExecutor implements DSLQueryExecutor {
 
     @Override
     public AtlasSearchResult execute(String dslQuery, int limit, int offset) throws AtlasBaseException {
-        AtlasSearchResult ret = new AtlasSearchResult(dslQuery, AtlasSearchResult.AtlasQueryType.DSL);
-        GremlinQuery gremlinQuery = toTraversal(dslQuery, limit, offset);
+        AtlasSearchResult                           ret            = new AtlasSearchResult(dslQuery, AtlasSearchResult.AtlasQueryType.DSL);
+        GremlinQuery                                gremlinQuery   = toTraversal(dslQuery, limit, offset);
         AtlasGraphTraversal<AtlasVertex, AtlasEdge> graphTraversal = gremlinQuery.getTraversal();
 
         if (LOG.isDebugEnabled()) {
@@ -65,6 +65,7 @@ public class TraversalBasedExecutor implements DSLQueryExecutor {
         }
 
         List<AtlasVertex> resultList = graphTraversal.getAtlasVertexList();
+
         return (CollectionUtils.isNotEmpty(resultList))
                 ? getSearchResult(ret, gremlinQuery, resultList)
                 : getSearchResult(ret, gremlinQuery, graphTraversal.getAtlasVertexMap());
@@ -106,12 +107,13 @@ public class TraversalBasedExecutor implements DSLQueryExecutor {
 
     private GremlinQuery toTraversal(String query, int limit, int offset) throws AtlasBaseException {
         QueryParams params = QueryParams.getNormalizedParams(limit, offset);
+
         query = getStringWithLimitOffset(query, params);
 
         AtlasDSL.Translator dslTranslator = new AtlasDSL.Translator(query, typeRegistry, params.offset(), params.limit());
-        GremlinQuery gremlinQuery = dslTranslator.translate();
+        GremlinQuery        gremlinQuery  = dslTranslator.translate();
+        AtlasGraphTraversal result        = GremlinClauseToTraversalTranslator.run(this.graph, gremlinQuery.getClauses());
 
-        AtlasGraphTraversal result = GremlinClauseToTraversalTranslator.run(this.graph, gremlinQuery.getClauses());
         gremlinQuery.setResult(result);
 
         return gremlinQuery;

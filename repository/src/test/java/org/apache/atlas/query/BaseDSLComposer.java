@@ -38,20 +38,22 @@ import static org.mockito.Mockito.when;
 import static org.testng.FileAssert.fail;
 
 public class BaseDSLComposer {
-    protected AtlasTypeRegistry registry = mock(AtlasTypeRegistry.class);
+    protected final AtlasTypeRegistry registry = mock(AtlasTypeRegistry.class);
 
     protected AtlasDSLParser.QueryContext getParsedQuery(String query) {
         AtlasDSLParser.QueryContext queryContext = null;
+
         try {
             queryContext = AtlasDSL.Parser.parse(query);
         } catch (AtlasBaseException e) {
             fail(e.getMessage());
         }
+
         return queryContext;
     }
 
     public static class TestLookup implements org.apache.atlas.query.Lookup {
-        AtlasTypeRegistry registry;
+        final AtlasTypeRegistry registry;
 
         TestLookup(AtlasTypeRegistry typeRegistry) {
             this.registry = typeRegistry;
@@ -59,34 +61,38 @@ public class BaseDSLComposer {
 
         @Override
         public AtlasType getType(String typeName) throws AtlasBaseException {
-            AtlasType type;
+            final AtlasType type;
+
             if(typeName.equals("PII") || typeName.equals("Dimension")) {
                 type = mock(AtlasType.class);
+
                 when(type.getTypeCategory()).thenReturn(TypeCategory.CLASSIFICATION);
             } else {
                 type = mock(AtlasEntityType.class);
+
                 when(type.getTypeCategory()).thenReturn(TypeCategory.ENTITY);
 
-                AtlasStructType.AtlasAttribute attr = mock(AtlasStructType.AtlasAttribute.class);
-                AtlasStructDef.AtlasAttributeDef def = mock(AtlasStructDef.AtlasAttributeDef.class);
+                AtlasStructType.AtlasAttribute   attr = mock(AtlasStructType.AtlasAttribute.class);
+                AtlasStructDef.AtlasAttributeDef def  = mock(AtlasStructDef.AtlasAttributeDef.class);
+
                 when(def.getIndexType()).thenReturn(AtlasStructDef.AtlasAttributeDef.IndexType.DEFAULT);
                 when(attr.getAttributeDef()).thenReturn(def);
 
                 AtlasStructType.AtlasAttribute attr_s = mock(AtlasStructType.AtlasAttribute.class);
                 AtlasStructDef.AtlasAttributeDef def_s = mock(AtlasStructDef.AtlasAttributeDef.class);
+
                 when(def_s.getIndexType()).thenReturn(AtlasStructDef.AtlasAttributeDef.IndexType.STRING);
-
                 when(attr_s.getAttributeDef()).thenReturn(def_s);
-
                 when(((AtlasEntityType) type).getAttribute(anyString())).thenReturn(attr);
                 when(((AtlasEntityType) type).getAttribute(eq("name"))).thenReturn(attr_s);
-
             }
 
             if(typeName.equals("PIII")) {
                 throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND);
             }
+
             when(type.getTypeName()).thenReturn(typeName);
+
             return type;
         }
 
@@ -100,13 +106,15 @@ public class BaseDSLComposer {
                 throw new AtlasBaseException("Invalid attribute");
             }
 
-            if(name.contains("."))
+            if(name.contains(".")) {
                 return name;
+            }
 
-            if(!context.getActiveTypeName().equals(name))
+            if(!context.getActiveTypeName().equals(name)) {
                 return String.format("%s.%s", context.getActiveTypeName(), name);
-            else
+            } else {
                 return name;
+            }
         }
 
         @Override
@@ -122,21 +130,23 @@ public class BaseDSLComposer {
 
         @Override
         public String getRelationshipEdgeLabel(GremlinQueryComposer.Context context, String attributeName) {
-            if (attributeName.equalsIgnoreCase("columns"))
+            if (attributeName.equalsIgnoreCase("columns")) {
                 return "__Table.columns";
-            if (attributeName.equalsIgnoreCase("db"))
+            } else if (attributeName.equalsIgnoreCase("db")) {
                 return "__Table.db";
-            if (attributeName.equalsIgnoreCase("meanings"))
+            } else if (attributeName.equalsIgnoreCase("meanings")) {
                 return "r:AtlasGlossarySemanticAssignment";
-            else
+            } else {
                 return "__DB.Table";
+            }
         }
 
         @Override
         public AtlasRelationshipEdgeDirection getRelationshipEdgeDirection(GremlinQueryComposer.Context context, String attributeName) {
-            if (attributeName.equalsIgnoreCase("meanings")){
+            if (attributeName.equalsIgnoreCase("meanings")) {
                 return IN;
             }
+
             return OUT;
         }
 
@@ -173,6 +183,7 @@ public class BaseDSLComposer {
         @Override
         public String getTypeAndSubTypes(GremlinQueryComposer.Context context) {
             String[] str = new String[]{"'Asset'", "'Table'"};
+
             return StringUtils.join(str, ",");
         }
 
@@ -183,30 +194,21 @@ public class BaseDSLComposer {
 
         @Override
         public String getTypeFromEdge(GremlinQueryComposer.Context context, String item) {
-            if(context.getActiveTypeName().equals("DB") && item.equals("Table")) {
+            if (context.getActiveTypeName().equals("DB") && item.equals("Table")) {
                 return "Table";
-            }
-
-            if(context.getActiveTypeName().equals("Table") && item.equals("Column")) {
+            } else if (context.getActiveTypeName().equals("Table") && item.equals("Column")) {
                 return "Column";
-            }
-
-            if(context.getActiveTypeName().equals("Table") && item.equals("db")) {
+            } else if (context.getActiveTypeName().equals("Table") && item.equals("db")) {
                 return "DB";
-            }
-
-            if(context.getActiveTypeName().equals("Table") && item.equals("columns")) {
+            } else if (context.getActiveTypeName().equals("Table") && item.equals("columns")) {
                 return "Column";
-            }
-
-            if(context.getActiveTypeName().equals("Table") && item.equals("meanings")) {
+            } else if (context.getActiveTypeName().equals("Table") && item.equals("meanings")) {
                 return "AtlasGlossaryTerm";
-            }
-
-            if(context.getActiveTypeName().equals(item)) {
+            } else if (context.getActiveTypeName().equals(item)) {
                 return null;
+            } else {
+                return context.getActiveTypeName();
             }
-            return context.getActiveTypeName();
         }
 
         @Override
