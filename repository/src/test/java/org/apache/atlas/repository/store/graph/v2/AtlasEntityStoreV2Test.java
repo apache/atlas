@@ -18,6 +18,7 @@
 package org.apache.atlas.repository.store.graph.v2;
 
 import com.google.common.collect.ImmutableSet;
+import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.GraphTransactionInterceptor;
 import org.apache.atlas.RequestContext;
@@ -61,6 +62,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.apache.atlas.AtlasConfiguration.STORE_DIFFERENTIAL_AUDITS;
 import static org.apache.atlas.AtlasErrorCode.INVALID_CUSTOM_ATTRIBUTE_KEY_CHARACTERS;
 import static org.apache.atlas.AtlasErrorCode.INVALID_CUSTOM_ATTRIBUTE_KEY_LENGTH;
 import static org.apache.atlas.AtlasErrorCode.INVALID_CUSTOM_ATTRIBUTE_VALUE;
@@ -854,6 +856,45 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
     }
 
     @Test
+    public void testDifferentialEntitiesOnUpdate () throws Exception {
+
+        ApplicationProperties.get().setProperty(STORE_DIFFERENTIAL_AUDITS.getPropertyName(), true);
+        init();
+        // test for entity attributes
+
+        AtlasEntity dbEntity = new AtlasEntity(TestUtilsV2.DATABASE_TYPE);
+        dbEntity.setAttribute("name", TestUtilsV2.randomString(10));
+        dbEntity.setAttribute("description", "us db");
+        dbEntity.setAttribute("namespace", "db namespace");
+        dbEntity.setAttribute("cluster", "Fenton_Cluster");
+
+        EntityStream           dbStream        = new AtlasEntityStream(new AtlasEntitiesWithExtInfo(dbEntity));
+        EntityMutationResponse response        = entityStore.createOrUpdate(dbStream, false);
+        AtlasEntityHeader      dbHeader        = response.getFirstEntityCreated();
+        AtlasEntity            createdDbEntity = getEntityFromStore(dbHeader);
+
+        assertEquals(RequestContext.get().getDifferentialEntities().size(), 0);
+
+        // update the db entity
+        dbEntity = new AtlasEntity(TestUtilsV2.DATABASE_TYPE);
+        dbEntity.setGuid(createdDbEntity.getGuid());
+        dbEntity.setAttribute("description", "new description");
+
+        dbStream = new AtlasEntityStream(new AtlasEntitiesWithExtInfo(dbEntity));
+
+        response = entityStore.createOrUpdate(dbStream, true);
+        dbHeader = response.getFirstEntityPartialUpdated();
+        AtlasEntity updatedDbEntity = getEntityFromStore(dbHeader);
+
+        assertEquals(RequestContext.get().getDifferentialEntities().size(), 1);
+        AtlasEntity diffEntity = RequestContext.get().getDifferentialEntity(updatedDbEntity.getGuid());
+        assertNotNull(diffEntity.getAttribute("description"));
+        Assert.assertNull(diffEntity.getAttribute("namespace"));
+        Assert.assertNull(diffEntity.getAttribute("name"));
+        ApplicationProperties.get().setProperty(STORE_DIFFERENTIAL_AUDITS.getPropertyName(), false);
+    }
+
+    @Test
     public void testSetObjectIdAttrToNull() throws Exception {
         final AtlasEntity dbEntity  = TestUtilsV2.createDBEntity();
         final AtlasEntity db2Entity = TestUtilsV2.createDBEntity();
@@ -1004,7 +1045,10 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
     }
 
     @Test (dependsOnMethods = "testCreate")
-    public void addCustomAttributesToEntity() throws AtlasBaseException {
+    public void addCustomAttributesToEntity() throws Exception {
+
+        ApplicationProperties.get().setProperty(STORE_DIFFERENTIAL_AUDITS.getPropertyName(), true);
+        init();
         AtlasEntity tblEntity = getEntityFromStore(tblEntityGuid);
 
         Map<String, String> customAttributes = new HashMap<>();
@@ -1017,10 +1061,13 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
         tblEntity.setCustomAttributes(customAttributes);
 
         entityStore.createOrUpdate(new AtlasEntityStream(tblEntity), false);
+        assertEquals(RequestContext.get().getDifferentialEntities().size(), 1);
 
         tblEntity = getEntityFromStore(tblEntityGuid);
 
         assertEquals(customAttributes, tblEntity.getCustomAttributes());
+
+        ApplicationProperties.get().setProperty(STORE_DIFFERENTIAL_AUDITS.getPropertyName(), false);
     }
 
     @Test (dependsOnMethods = "addCustomAttributesToEntity")

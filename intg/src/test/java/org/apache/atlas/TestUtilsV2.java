@@ -566,6 +566,7 @@ public final class TestUtilsV2 {
     public static final String SERDE_TYPE = "serdeType";
     public static final String COLUMNS_MAP = "columnsMap";
     public static final String COLUMNS_ATTR_NAME = "columns";
+    public static final String TABLE_ATTR_NAME = "table";
     public static final String ENTITY_TYPE_WITH_SIMPLE_ATTR = "entity_with_simple_attr";
     public static final String ENTITY_TYPE_WITH_NESTED_COLLECTION_ATTR = "entity_with_nested_collection_attr";
     public static final String ENTITY_TYPE_WITH_COMPLEX_COLLECTION_ATTR = "entity_with_complex_collection_attr";
