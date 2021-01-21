@@ -58,22 +58,24 @@ public class TraversalComposerTest extends BaseDSLComposer {
 
     private void verify(String dsl, String expected) {
         AtlasDSLParser.QueryContext queryContext = getParsedQuery(dsl);
-        String actual = getTraversalAsStr(queryContext);
+        String                      actual       = getTraversalAsStr(queryContext);
+
         assertEquals(actual, expected, dsl);
     }
 
     private String getTraversalAsStr(AtlasDSLParser.QueryContext queryContext) {
-        org.apache.atlas.query.Lookup lookup = new TestLookup(registry);
-        GremlinQueryComposer.Context context = new GremlinQueryComposer.Context(lookup);
-        AtlasDSL.QueryMetadata queryMetadata = new AtlasDSL.QueryMetadata(queryContext);
+        org.apache.atlas.query.Lookup lookup               = new TestLookup(registry);
+        GremlinQueryComposer.Context  context              = new GremlinQueryComposer.Context(lookup);
+        AtlasDSL.QueryMetadata        queryMetadata        = new AtlasDSL.QueryMetadata(queryContext);
+        GremlinQueryComposer          gremlinQueryComposer = new GremlinQueryComposer(lookup, context, queryMetadata);
+        DSLVisitor                    qv                   = new DSLVisitor(gremlinQueryComposer);
 
-        GremlinQueryComposer gremlinQueryComposer = new GremlinQueryComposer(lookup, context, queryMetadata);
-        DSLVisitor qv = new DSLVisitor(gremlinQueryComposer);
         qv.visit(queryContext);
 
         gremlinQueryComposer.get();
 
         AtlasGraphTraversal traversal = GremlinClauseToTraversalTranslator.run(graph, gremlinQueryComposer.clauses());
+
         return traversal.toString();
     }
 }

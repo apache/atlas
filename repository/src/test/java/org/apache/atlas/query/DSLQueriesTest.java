@@ -55,6 +55,7 @@ public class DSLQueriesTest extends BasicTestSetup {
     private static final Logger LOG = LoggerFactory.getLogger(DSLQueriesTest.class);
 
     private final int DEFAULT_LIMIT = 25;
+
     @Inject
     private EntityDiscoveryService discoveryService;
 
@@ -78,38 +79,44 @@ public class DSLQueriesTest extends BasicTestSetup {
                 {"Employee", 4},
         };
 
-        int pollingAttempts = 5;
-        int pollingBackoff  = 0; // in msecs
-
+        int     pollingAttempts = 5;
+        int     pollingBackoff  = 0; // in msecs
         boolean success;
 
         for (int attempt = 0; attempt < pollingAttempts; attempt++, pollingBackoff += attempt * 5000) {
             LOG.debug("Polling -- Attempt {}, Backoff {}", attempt, pollingBackoff);
 
             success = false;
+
             for (Object[] verificationQuery : basicVerificationQueries) {
-                String query = (String) verificationQuery[0];
-                int expected = (int) verificationQuery[1];
+                String query    = (String) verificationQuery[0];
+                int    expected = (int) verificationQuery[1];
 
                 try {
                     AtlasSearchResult result = discoveryService.searchUsingDslQuery(query, 25, 0);
+
                     if (result.getEntities() == null || result.getEntities().isEmpty()) {
                         LOG.warn("DSL {} returned no entities", query);
+
                         success = false;
                     } else if (result.getEntities().size() != expected) {
                         LOG.warn("DSL {} returned unexpected number of entities. Expected {} Actual {}", query, expected, result.getEntities().size());
+
                         success = false;
                     } else {
                         success = true;
                     }
                 } catch (AtlasBaseException e) {
                     LOG.error("Got exception for DSL {}, errorCode: {}", query, e.getAtlasErrorCode());
+
                     waitOrBailout(pollingAttempts, pollingBackoff, attempt);
                 }
             }
+
             // DSL queries were successful
             if (success) {
                 LOG.info("Polling was success");
+
                 break;
             } else {
                 waitOrBailout(pollingAttempts, pollingBackoff, attempt);
@@ -120,9 +127,11 @@ public class DSLQueriesTest extends BasicTestSetup {
     private void waitOrBailout(final int pollingAttempts, final int pollingBackoff, final int attempt) throws InterruptedException {
         if (attempt == pollingAttempts - 1) {
             LOG.error("Polling failed after {} attempts", pollingAttempts);
+
             throw new SkipException("Polling for test data was unsuccessful");
         } else {
             LOG.warn("Waiting for {} before polling again", pollingBackoff);
+
             Thread.sleep(pollingBackoff);
         }
     }
@@ -197,9 +206,11 @@ public class DSLQueriesTest extends BasicTestSetup {
     @Test(dataProvider = "comparisonQueriesProvider")
     public void comparison(String query, int expected) throws AtlasBaseException {
         AtlasSearchResult searchResult = discoveryService.searchUsingDslQuery(query, DEFAULT_LIMIT, 0);
+
         assertSearchResult(searchResult, expected, query);
 
         AtlasSearchResult searchResult2 = discoveryService.searchUsingDslQuery(query.replace("where", " "), DEFAULT_LIMIT, 0);
+
         assertSearchResult(searchResult2, expected, query);
     }
 
@@ -222,6 +233,7 @@ public class DSLQueriesTest extends BasicTestSetup {
     @Test(dataProvider = "glossaryTermQueries")
     public void glossaryTerm(String query, int expected, ListValidator lvExpected) throws AtlasBaseException {
         AtlasSearchResult result = queryAssert(query, expected, DEFAULT_LIMIT, 0);
+
         if (lvExpected == null) {
             return;
         }
@@ -301,7 +313,9 @@ public class DSLQueriesTest extends BasicTestSetup {
 
     private AtlasSearchResult queryAssert(String query, final int expected, final int limit, final int offset) throws AtlasBaseException {
         AtlasSearchResult searchResult = discoveryService.searchUsingDslQuery(query, limit, offset);
+
         assertSearchResult(searchResult, expected, query);
+
         return searchResult;
     }
 
@@ -494,9 +508,11 @@ public class DSLQueriesTest extends BasicTestSetup {
     @Test(dataProvider = "orderByProvider")
     public void orderBy(String query, int expected, String attributeName, boolean ascending) throws AtlasBaseException {
         AtlasSearchResult  searchResult = queryAssert(query, expected, DEFAULT_LIMIT, 0);
+
         assertSortOrder(query, attributeName, ascending, searchResult.getEntities());
 
         searchResult = queryAssert(query.replace("where", " "), expected, DEFAULT_LIMIT, 0);
+
         assertSortOrder(query, attributeName, ascending, searchResult.getEntities());
     }
 
@@ -506,15 +522,16 @@ public class DSLQueriesTest extends BasicTestSetup {
         }
 
         AtlasEntityHeader prev = null;
+
         for (AtlasEntityHeader current : entities) {
             if (prev != null && current.hasAttribute(attributeName)) {
-                String lhs = (String) prev.getAttribute(attributeName);
-                String rhs = (String) current.getAttribute(attributeName);
-                int compResult = lhs.compareTo(rhs);
+                String lhs        = (String) prev.getAttribute(attributeName);
+                String rhs        = (String) current.getAttribute(attributeName);
+                int    compResult = lhs.compareTo(rhs);
+
                 if (ascending) {
                     assertTrue(compResult <= 0, query);
-                }
-                else {
+                } else {
                     assertTrue(compResult >= 0, query);
                 }
             }
@@ -690,11 +707,13 @@ public class DSLQueriesTest extends BasicTestSetup {
     @Test(dataProvider = "errorQueriesProvider", expectedExceptions = { AtlasBaseException.class })
     public void errorQueries(String query) throws AtlasBaseException {
         LOG.debug(query);
+
         discoveryService.searchUsingDslQuery(query, DEFAULT_LIMIT, 0);
     }
 
     private void queryAssert(String query, TableValidator fv) throws AtlasBaseException {
         AtlasSearchResult searchResult = discoveryService.searchUsingDslQuery(query, DEFAULT_LIMIT, 0);
+
         assertNotNull(searchResult);
         assertNull(searchResult.getEntities());
 
@@ -703,6 +722,7 @@ public class DSLQueriesTest extends BasicTestSetup {
 
     private void assertSearchResult(AtlasSearchResult searchResult, int expected, String query) {
         assertNotNull(searchResult);
+
         if(expected == 0) {
             assertTrue(searchResult.getAttributes() == null || CollectionUtils.isEmpty(searchResult.getAttributes().getValues()));
             assertNull(searchResult.getEntities(), query);
@@ -724,7 +744,7 @@ public class DSLQueriesTest extends BasicTestSetup {
             }
         }
 
-        public String[] fieldNames;
+        public String[]             fieldNames;
         public List<NameValueEntry> values = new ArrayList<>();
 
         public TableValidator() {
@@ -736,16 +756,19 @@ public class DSLQueriesTest extends BasicTestSetup {
 
         public TableValidator header(String... fieldNames) {
             this.fieldNames = fieldNames;
+
             return this;
         }
 
         public TableValidator row(Object... values) {
             NameValueEntry obj = new NameValueEntry();
+
             for (int i = 0; i < fieldNames.length; i++) {
                 obj.setFieldValue(fieldNames[i], values[i]);
             }
 
             this.values.add(obj);
+
             return this;
         }
 
@@ -755,14 +778,15 @@ public class DSLQueriesTest extends BasicTestSetup {
             assertEquals(actual.values.size(), expected.values.size());
 
             Map<String, Object> actualKeyItemsForCompare = new HashMap<>();
-            Map<String, Object> expectedItemsForCompare = new HashMap<>();
+            Map<String, Object> expectedItemsForCompare  = new HashMap<>();
+
             for (int i = 0; i < actual.values.size(); i++) {
                 getMapFrom(expectedItemsForCompare, expected.values.get(i).items);
                 getMapFrom(actualKeyItemsForCompare, actual.values.get(i).items);
             }
 
             for (String key : actualKeyItemsForCompare.keySet()) {
-                Object actualValue = actualKeyItemsForCompare.get(key);
+                Object actualValue   = actualKeyItemsForCompare.get(key);
                 Object expectedValue = expectedItemsForCompare.get(key);
 
                 assertNotNull(actualValue, "Key: " + key + ": Failed!");
@@ -773,6 +797,7 @@ public class DSLQueriesTest extends BasicTestSetup {
         private static Map<String, Object> getMapFrom(Map<String, Object> valuesMap, Map<String, Object> linkedHashMap) {
             for (Map.Entry<String, Object> entry : linkedHashMap.entrySet()) {
                 String key = entry.getValue().toString();
+
                 valuesMap.put(key, linkedHashMap);
                 break;
             }
@@ -782,10 +807,12 @@ public class DSLQueriesTest extends BasicTestSetup {
 
         public static TableValidator from(AtlasSearchResult.AttributeSearchResult searchResult) {
             TableValidator fv = new TableValidator();
+
             fv.header(searchResult.getName().toArray(new String[]{}));
 
             for (int i = 0; i < searchResult.getValues().size(); i++) {
                 List list = searchResult.getValues().get(i);
+
                 fv.row(list.toArray());
             }
 
@@ -803,6 +830,7 @@ public class DSLQueriesTest extends BasicTestSetup {
             String errorMessage = String.format("Expected: %s\r\nActual: %s", expected.values, actual.values);
 
             assertEquals(actual.values.size(), expected.values.size(), errorMessage);
+
             if (expected.values.size() > 0) {
                 for (String expectedVal : expected.values) {
                     assertTrue(actual.values.contains(expectedVal), errorMessage);

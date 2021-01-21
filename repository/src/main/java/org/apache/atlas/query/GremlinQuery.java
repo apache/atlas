@@ -30,9 +30,9 @@ public class GremlinQuery {
     private AtlasGraphTraversal traversal;
 
     public GremlinQuery(String gremlinQuery, AtlasDSL.QueryMetadata queryMetadata, GremlinClauseList clauses, SelectClauseComposer selectComposer) {
-        this.queryStr = gremlinQuery;
-        this.queryMetadata = queryMetadata;
-        this.clauses = clauses;
+        this.queryStr       = gremlinQuery;
+        this.queryMetadata  = queryMetadata;
+        this.clauses        = clauses;
         this.selectComposer = selectComposer;
     }
 

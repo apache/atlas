@@ -34,11 +34,9 @@ public class SelectClauseComposer {
     private static final String MAX_STR = "max";
     private static final String SUM_STR = "sum";
 
-
     private final String[]                     labels;
     private final String[]                     attributes;
     private final String[]                     items;
-
     private final int                          countIdx;
     private final int                          sumIdx;
     private final int                          minIdx;
@@ -51,6 +49,10 @@ public class SelectClauseComposer {
     private       boolean                      isSelectNoop         = false;
     private       int                          introducedTypesCount = 0;
 
+    public enum AggregatorFlag {
+        NONE, COUNT, MIN, MAX, SUM
+    }
+
     public SelectClauseComposer(String[] labels, String[] attributes, String[] items, int countIdx, int sumIdx, int minIdx, int maxIdx) {
         this.labels     = labels;
         this.attributes = Arrays.copyOf(attributes, attributes.length);
@@ -59,22 +61,26 @@ public class SelectClauseComposer {
         this.sumIdx     = sumIdx;
         this.minIdx     = minIdx;
         this.maxIdx     = maxIdx;
+
         int aggCount = 0;
+
         if (countIdx != -1) {
             this.aggregatorFlags.put(countIdx, AggregatorFlag.COUNT);
             aggCount++;
         }
+
         if (sumIdx != -1) {
             this.aggregatorFlags.put(sumIdx, AggregatorFlag.SUM);
             aggCount++;
         }
+
         if (maxIdx != -1) {
             this.aggregatorFlags.put(maxIdx, AggregatorFlag.MAX);
             aggCount++;
         }
+
         if (minIdx != -1) {
             this.aggregatorFlags.put(minIdx, AggregatorFlag.MIN);
-
             aggCount++;
         }
 
@@ -83,9 +89,9 @@ public class SelectClauseComposer {
 
     public static boolean isKeyword(String s) {
         return COUNT_STR.equals(s) ||
-                MIN_STR.equals(s) ||
-                MAX_STR.equals(s) ||
-                SUM_STR.equals(s);
+               MIN_STR.equals(s) ||
+               MAX_STR.equals(s) ||
+               SUM_STR.equals(s);
     }
 
     public String[] getItems() {
@@ -95,21 +101,27 @@ public class SelectClauseComposer {
 
     public boolean updateAsApplicable(int currentIndex, String propertyForClause, String qualifiedName) {
         boolean ret = false;
+
         if (currentIndex == getCountIdx()) {
             ret = assign(currentIndex, COUNT_STR, GremlinClause.INLINE_COUNT.get(), GremlinClause.INLINE_ASSIGNMENT);
+
             this.isNumericAggregator.add(currentIndex);
         } else if (currentIndex == getMinIdx()) {
             ret = assign(currentIndex, MIN_STR, propertyForClause,  GremlinClause.INLINE_ASSIGNMENT, GremlinClause.INLINE_MIN);
+
             this.isNumericAggregator.add(currentIndex);
         } else if (currentIndex == getMaxIdx()) {
             ret = assign(currentIndex, MAX_STR, propertyForClause, GremlinClause.INLINE_ASSIGNMENT, GremlinClause.INLINE_MAX);
+
             this.isNumericAggregator.add(currentIndex);
         } else if (currentIndex == getSumIdx()) {
             ret = assign(currentIndex, SUM_STR, propertyForClause, GremlinClause.INLINE_ASSIGNMENT, GremlinClause.INLINE_SUM);
+
             this.isNumericAggregator.add(currentIndex);
         }
 
         attributes[currentIndex] = qualifiedName;
+
         return ret;
     }
 
@@ -117,9 +129,9 @@ public class SelectClauseComposer {
         return attributes;
     }
 
-
     public boolean assign(int i, String qualifiedName, GremlinClause clause) {
         items[i] = clause.get(qualifiedName, qualifiedName);
+
         return true;
     }
 
@@ -161,57 +173,32 @@ public class SelectClauseComposer {
 
     public int getAttrIndex(String attr) {
         int ret = -1;
+
         for (int i = 0; i < attributes.length; i++) {
             if (attributes[i].equals(attr)) {
                 ret = i;
+
                 break;
             }
         }
+
         return ret;
-    }
-
-    private boolean assign(String item, String assignExpr) {
-        itemAssignmentExprs.put(item, assignExpr);
-        return true;
-    }
-
-    private boolean assign(int i, String s, String p1, GremlinClause clause) {
-        items[i] = s;
-        return assign(items[i], clause.get(s, p1));
-
-    }
-
-    private boolean assign(int i, String s, String p1, GremlinClause inline, GremlinClause clause) {
-        items[i] = s;
-        return assign(items[i], inline.get(s, clause.get(p1, p1)));
     }
 
     public int getCountIdx() {
         return countIdx;
     }
 
-
     public int getSumIdx() {
         return sumIdx;
     }
-
 
     public int getMaxIdx() {
         return maxIdx;
     }
 
-
     public int getMinIdx() {
         return minIdx;
-
-    }
-
-    private String getJoinedQuotedStr(String[] elements) {
-        StringJoiner joiner = new StringJoiner(",");
-        Arrays.stream(elements)
-              .map(x -> x.contains("'") ? "\"" + x + "\"" : "'" + x + "'")
-              .forEach(joiner::add);
-        return joiner.toString();
     }
 
     public boolean isAggregatorWithArgument(int i) {
@@ -241,6 +228,7 @@ public class SelectClauseComposer {
     public boolean getIsSelectNoop() {
         return this.isSelectNoop;
     }
+
     public void setIsSelectNoop(boolean isSelectNoop) {
         this.isSelectNoop = isSelectNoop;
     }
@@ -273,7 +261,32 @@ public class SelectClauseComposer {
         this.isPrimitiveAttr.add(i);
     }
 
-    public enum AggregatorFlag {
-        NONE, COUNT, MIN, MAX, SUM
+
+    private boolean assign(String item, String assignExpr) {
+        itemAssignmentExprs.put(item, assignExpr);
+
+        return true;
+    }
+
+    private boolean assign(int i, String s, String p1, GremlinClause clause) {
+        items[i] = s;
+
+        return assign(items[i], clause.get(s, p1));
+    }
+
+    private boolean assign(int i, String s, String p1, GremlinClause inline, GremlinClause clause) {
+        items[i] = s;
+
+        return assign(items[i], inline.get(s, clause.get(p1, p1)));
+    }
+
+    private String getJoinedQuotedStr(String[] elements) {
+        StringJoiner joiner = new StringJoiner(",");
+
+        Arrays.stream(elements)
+                .map(x -> x.contains("'") ? "\"" + x + "\"" : "'" + x + "'")
+                .forEach(joiner::add);
+
+        return joiner.toString();
     }
 }

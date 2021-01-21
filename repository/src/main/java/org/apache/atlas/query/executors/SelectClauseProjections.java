@@ -19,6 +19,7 @@ package org.apache.atlas.query.executors;
 
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
+import org.apache.atlas.model.discovery.AtlasSearchResult.AttributeSearchResult;
 import org.apache.atlas.query.GremlinQuery;
 import org.apache.atlas.query.SelectClauseComposer;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -46,13 +47,13 @@ public class SelectClauseProjections {
     public static AtlasSearchResult usingList(final GremlinQuery queryInfo,
                                              final EntityGraphRetriever entityRetriever,
                                              final Collection<AtlasVertex> resultList) throws AtlasBaseException {
-        AtlasSearchResult ret = new AtlasSearchResult();
-        SelectClauseComposer SelectClauseInfo  = queryInfo.getSelectComposer();
-        AtlasSearchResult.AttributeSearchResult attributeSearchResult = new AtlasSearchResult.AttributeSearchResult();
+        AtlasSearchResult     ret                   = new AtlasSearchResult();
+        SelectClauseComposer  selectClauseInfo      = queryInfo.getSelectComposer();
+        AttributeSearchResult attributeSearchResult = new AttributeSearchResult();
 
-        attributeSearchResult.setName(Arrays.stream(SelectClauseInfo.getLabels()).collect(Collectors.toList()));
+        attributeSearchResult.setName(Arrays.stream(selectClauseInfo.getLabels()).collect(Collectors.toList()));
 
-        Collection<List<Object>> values = getProjectionRows(resultList, SelectClauseInfo, entityRetriever);
+        Collection<List<Object>> values = getProjectionRows(resultList, selectClauseInfo, entityRetriever);
 
         if (values instanceof List) {
             attributeSearchResult.setValues((List) values);
@@ -68,32 +69,37 @@ public class SelectClauseProjections {
     public static AtlasSearchResult usingMap(final GremlinQuery gremlinQuery,
                                              final EntityGraphRetriever entityRetriever,
                                              final Map<String, Collection<AtlasVertex>> resultMap) throws AtlasBaseException {
-        AtlasSearchResult ret = new AtlasSearchResult();
-        SelectClauseComposer  selectClauseInfo  = gremlinQuery.getSelectComposer();
-        AtlasSearchResult.AttributeSearchResult attributeSearchResult = new AtlasSearchResult.AttributeSearchResult();
+        AtlasSearchResult     ret                   = new AtlasSearchResult();
+        SelectClauseComposer  selectClauseInfo      = gremlinQuery.getSelectComposer();
+        AttributeSearchResult attributeSearchResult = new AttributeSearchResult();
 
         attributeSearchResult.setName(Arrays.stream(selectClauseInfo.getLabels()).collect(Collectors.toList()));
 
         List<List<Object>> values = new ArrayList<>();
+
         for (Collection<AtlasVertex> value : resultMap.values()) {
             Collection<List<Object>> projectionRows = getProjectionRows(value, selectClauseInfo, entityRetriever);
+
             values.addAll(projectionRows);
         }
 
         attributeSearchResult.setValues(getSublistForGroupBy(gremlinQuery, values));
         ret.setAttributes(attributeSearchResult);
+
         return ret;
     }
 
     private static List<List<Object>> getSublistForGroupBy(GremlinQuery gremlinQuery, List<List<Object>> values) {
-        int startIndex = gremlinQuery.getQueryMetadata().getResolvedOffset() - 1 ;
+        int startIndex = gremlinQuery.getQueryMetadata().getResolvedOffset() - 1;
+
         if (startIndex < 0) {
             startIndex = 0;
         }
 
         int endIndex = startIndex + gremlinQuery.getQueryMetadata().getResolvedLimit();
+
         if (startIndex >= values.size()) {
-            endIndex = 0;
+            endIndex   = 0;
             startIndex = 0;
         }
 
@@ -124,6 +130,7 @@ public class SelectClauseProjections {
                 } else {
                     if (selectClauseComposer.isPrimitiveAttribute(idx)) {
                         String propertyName = selectClauseComposer.getAttribute(idx);
+
                         row.add(vertex.getProperty(propertyName, Object.class));
                     } else {
                         row.add(entityRetriever.toAtlasEntityHeaderWithClassifications(vertex));
@@ -143,15 +150,18 @@ public class SelectClauseProjections {
         }
 
         final String propertyName = selectClauseComposer.getAttribute(idx);
-        double sum = 0;
+        double       sum          = 0;
+
         for (AtlasVertex vertex : vertices) {
             Number value = vertex.getProperty(propertyName, Number.class);
+
             if (value != null) {
                 sum += value.doubleValue();
             } else {
                 LOG.warn("Property: {} for vertex: {} not found!", propertyName, vertex.getId());
             }
         }
+
         return sum;
     }
 
@@ -160,6 +170,7 @@ public class SelectClauseProjections {
 
         if (selectClauseComposer.isNumericAggregator(idx)) {
             AtlasVertex maxV = Collections.max(vertices, new VertexPropertyComparator(propertyName));
+
             return maxV.getProperty(propertyName, Object.class);
         } else {
             return Collections.max(vertices.stream().map(v -> v.getProperty(propertyName, String.class))
@@ -173,6 +184,7 @@ public class SelectClauseProjections {
 
         if (selectClauseComposer.isNumericAggregator(idx)) {
             AtlasVertex minV = Collections.min(vertices, new VertexPropertyComparator(propertyName));
+
             return minV.getProperty(propertyName, Object.class);
         } else {
             return Collections.min(vertices.stream()
@@ -200,34 +212,24 @@ public class SelectClauseProjections {
                 return -1;
             } else if (p2 == null) {
                 return 1;
-            }
-
-            if (p1 instanceof String && p2 instanceof String) {
-                return ((String) p1).compareTo((String) p2);
-            }
-            if (p1 instanceof Byte && p2 instanceof Byte) {
-                return ((Byte) p1).compareTo((Byte) p2);
-            }
-            if (p1 instanceof Short && p2 instanceof Short) {
-                return ((Short) p1).compareTo((Short) p2);
-            }
-            if (p1 instanceof Integer && p2 instanceof Integer) {
-                return ((Integer) p1).compareTo((Integer) p2);
-            }
-            if (p1 instanceof Float && p2 instanceof Float) {
-                return ((Float) p1).compareTo((Float) p2);
-            }
-            if (p1 instanceof Double && p2 instanceof Double) {
-                return ((Double) p1).compareTo((Double) p2);
-            }
-            if (p1 instanceof Long && p2 instanceof Long) {
-                return ((Long) p1).compareTo((Long) p2);
-            }
-            if (p1 instanceof BigInteger && p2 instanceof BigInteger) {
-                return ((BigInteger) p1).compareTo((BigInteger) p2);
-            }
-            if (p1 instanceof BigDecimal && p2 instanceof BigDecimal) {
-                return ((BigDecimal) p1).compareTo((BigDecimal) p2);
+            } else if (p1 instanceof String) {
+                return (p2 instanceof String) ? ((String) p1).compareTo((String) p2) : 0;
+            } else if (p1 instanceof Integer) {
+                return (p2 instanceof Integer) ? ((Integer) p1).compareTo((Integer) p2) : 0;
+            } else if (p1 instanceof Long) {
+                return (p2 instanceof Long) ? ((Long) p1).compareTo((Long) p2) : 0;
+            } else if (p1 instanceof Short) {
+                return (p2 instanceof Short) ? ((Short) p1).compareTo((Short) p2) : 0;
+            } else if (p1 instanceof Float) {
+                return (p2 instanceof Float) ? ((Float) p1).compareTo((Float) p2) : 0;
+            } else if (p1 instanceof Double) {
+                return (p2 instanceof Double) ? ((Double) p1).compareTo((Double) p2) : 0;
+            } else if (p1 instanceof Byte) {
+                return (p2 instanceof Byte) ? ((Byte) p1).compareTo((Byte) p2) : 0;
+            } else if (p1 instanceof BigInteger) {
+                return (p2 instanceof BigInteger) ? ((BigInteger) p1).compareTo((BigInteger) p2) : 0;
+            } else if (p1 instanceof BigDecimal) {
+                return (p2 instanceof BigDecimal) ? ((BigDecimal) p1).compareTo((BigDecimal) p2) : 0;
             }
 
             return 0;
