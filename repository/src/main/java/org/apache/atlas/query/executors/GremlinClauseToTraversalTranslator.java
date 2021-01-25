@@ -146,6 +146,12 @@ public class GremlinClauseToTraversalTranslator {
                     traversal.has(values[0], predicate);
                     break;
 
+                case HAS_NOT_OPERATOR:
+                    traversal.or(
+                            traversal.startAnonymousTraversal().has(values[0], P.neq(values[1])),
+                            traversal.startAnonymousTraversal().hasNot(values[0]));
+                    break;
+
                 case HAS_TYPE:
                     traversal.has(Constants.TYPE_NAME_PROPERTY_KEY, values[0]);
                     break;

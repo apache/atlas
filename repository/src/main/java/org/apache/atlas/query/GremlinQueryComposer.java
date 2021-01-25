@@ -181,6 +181,7 @@ public class GremlinQueryComposer {
         String                currentType = context.getActiveTypeName();
         IdentifierHelper.Info org         = null;
         IdentifierHelper.Info lhsI        = createInfo(lhs);
+        boolean rhsIsNotDateOrNumOrBool   = false;
 
         if (!lhsI.isPrimitive()) {
             introduceType(lhsI);
@@ -197,8 +198,12 @@ public class GremlinQueryComposer {
 
         if (lhsI.isDate()) {
             rhs = parseDate(rhs);
-        } else if (lhsI.isNumeric() && !StringUtils.equals(lhsI.getAttributeName(), Constants.IS_INCOMPLETE_PROPERTY_KEY)) {
-            rhs = parseNumber(rhs, this.context);
+        } else if (lhsI.isNumeric()) {
+            if(!StringUtils.equals(lhsI.getAttributeName(), Constants.IS_INCOMPLETE_PROPERTY_KEY)) {
+                rhs = parseNumber(rhs, this.context);
+            }
+        } else if (!IdentifierHelper.isTrueOrFalse(rhs)) {
+            rhsIsNotDateOrNumOrBool = true;
         }
 
         rhs = addQuotesIfNecessary(lhsI, rhs);
@@ -219,7 +224,7 @@ public class GremlinQueryComposer {
                 }
             } else if (op == SearchParameters.Operator.IN) {
                 add(GremlinClause.HAS_OPERATOR, getPropertyForClause(lhsI), "within", rhs);
-            } else if (op == SearchParameters.Operator.NEQ) {
+            } else if (op == SearchParameters.Operator.NEQ && rhsIsNotDateOrNumOrBool) {
                 String propertyName = getPropertyForClause(lhsI);
 
                 add(GremlinClause.HAS_NOT_OPERATOR, propertyName, rhs, propertyName);

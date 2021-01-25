@@ -229,7 +229,7 @@ public abstract class BasicTestSetup extends AtlasTestBase {
                                          ImmutableList.of(salesFactDaily), "create table as select ", "plan", "id", "graph", ETL_CLASSIFICATION);
         entities.add(loadSalesDaily);
 
-        AtlasEntity logDB = database("Logging", "logging database", "Tim ETL", "hdfs://host:8000/apps/warehouse/logging");
+        AtlasEntity logDB = database("Logging", null, "Tim ETL", "hdfs://host:8000/apps/warehouse/logging");
         entities.add(logDB);
 
         sd = storageDescriptor("hdfs://host:8000/apps/warehouse/sales", "TextInputFormat", "TextOutputFormat", true, ImmutableList.of(column("time_id", "int", "time id")));
