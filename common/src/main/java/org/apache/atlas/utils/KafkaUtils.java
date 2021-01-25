@@ -126,13 +126,9 @@ public class KafkaUtils implements AutoCloseable {
             LOG.debug("==> KafkaUtils.getPartitionCount({})", topicName);
         }
 
+        List<TopicPartitionInfo> partitionList = getPartitionList(topicName);
         Integer partitionCount = null;
-        DescribeTopicsResult describeTopicsResult =  adminClient.describeTopics(Collections.singleton(topicName));
-        Map<String, KafkaFuture<TopicDescription>> futureMap = describeTopicsResult.values();
-        for(Map.Entry<String, KafkaFuture<TopicDescription>> futureEntry : futureMap.entrySet()) {
-            KafkaFuture<TopicDescription> topicDescriptionFuture = futureEntry.getValue();
-            TopicDescription topicDescription = topicDescriptionFuture.get();
-            List<TopicPartitionInfo> partitionList = topicDescription.partitions();
+        if(partitionList != null) {
             partitionCount = partitionList.size();
         }
 
@@ -141,6 +137,39 @@ public class KafkaUtils implements AutoCloseable {
         }
 
         return partitionCount;
+    }
+
+    public Integer getReplicationFactor(String topicName) throws ExecutionException, InterruptedException {
+        if(LOG.isDebugEnabled()) {
+            LOG.debug("==> KafkaUtils.getReplicationFactor({})", topicName);
+        }
+
+        List<TopicPartitionInfo> partitionList = getPartitionList(topicName);
+        Integer replicationFactor = null;
+        if(partitionList != null) {
+            replicationFactor = partitionList.stream().mapToInt(x -> x.replicas().size()).max().getAsInt();
+        }
+
+        if(LOG.isDebugEnabled()) {
+            LOG.debug("<== KafkaUtils.getReplicationFactor returning for topic {} with replicationFactor {}", topicName, replicationFactor);
+        }
+
+        return replicationFactor;
+    }
+
+    private List<TopicPartitionInfo> getPartitionList(String topicName) throws ExecutionException, InterruptedException {
+        List<TopicPartitionInfo> partitionList = null;
+
+        DescribeTopicsResult describeTopicsResult =  adminClient.describeTopics(Collections.singleton(topicName));
+        if(describeTopicsResult != null) {
+            Map<String, KafkaFuture<TopicDescription>> futureMap = describeTopicsResult.values();
+            for (Map.Entry<String, KafkaFuture<TopicDescription>> futureEntry : futureMap.entrySet()) {
+                KafkaFuture<TopicDescription> topicDescriptionFuture = futureEntry.getValue();
+                TopicDescription topicDescription = topicDescriptionFuture.get();
+                partitionList = topicDescription.partitions();
+            }
+        }
+        return partitionList;
     }
 
     public void close() {

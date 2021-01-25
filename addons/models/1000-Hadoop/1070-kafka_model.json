@@ -163,6 +163,14 @@
                     "cardinality": "SINGLE",
                     "isUnique": false,
                     "isIndexable": false
+                },
+                {
+                    "name": "replicationFactor",
+                    "typeName": "int",
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "isUnique": false
                 }
             ]
         },

@@ -66,6 +66,7 @@ public class KafkaBridge {
     private static final String ATTRIBUTE_QUALIFIED_NAME   = "qualifiedName";
     private static final String DESCRIPTION_ATTR           = "description";
     private static final String PARTITION_COUNT            = "partitionCount";
+    private static final String REPLICATION_FACTOR         = "replicationFactor";
     private static final String NAME                       = "name";
     private static final String URI                        = "uri";
     private static final String CLUSTERNAME                = "clusterName";
@@ -236,9 +237,10 @@ public class KafkaBridge {
         ret.setAttribute(URI, topic);
         try {
             ret.setAttribute(PARTITION_COUNT, kafkaUtils.getPartitionCount(topic));
+            ret.setAttribute(REPLICATION_FACTOR, kafkaUtils.getReplicationFactor(topic));
         } catch (ExecutionException | InterruptedException e) {
-            LOG.error("Error while getting partition count for topic :" + topic, e);
-            throw new Exception("Error while getting partition count for topic :" + topic, e);
+            LOG.error("Error while getting partition data for topic :" + topic, e);
+            throw new Exception("Error while getting partition data for topic :" + topic, e);
         }
 
         return ret;
