@@ -54,24 +54,23 @@ import java.util.concurrent.ExecutionException;
 import java.util.regex.Pattern;
 
 public class KafkaBridge {
-    private static final Logger LOG = LoggerFactory.getLogger(KafkaBridge.class);
-
-    private static final int    EXIT_CODE_SUCCESS          = 0;
-    private static final int    EXIT_CODE_FAILED           = 1;
-    private static final String ATLAS_ENDPOINT             = "atlas.rest.address";
-    private static final String DEFAULT_ATLAS_URL          = "http://localhost:21000/";
-    private static final String CLUSTER_NAME_KEY           = "atlas.cluster.name";
-    private static final String KAFKA_METADATA_NAMESPACE   = "atlas.metadata.namespace";
-    private static final String DEFAULT_CLUSTER_NAME       = "primary";
-    private static final String ATTRIBUTE_QUALIFIED_NAME   = "qualifiedName";
-    private static final String DESCRIPTION_ATTR           = "description";
-    private static final String PARTITION_COUNT            = "partitionCount";
-    private static final String NAME                       = "name";
-    private static final String URI                        = "uri";
-    private static final String CLUSTERNAME                = "clusterName";
-    private static final String TOPIC                      = "topic";
-
-    private static final String FORMAT_KAKFA_TOPIC_QUALIFIED_NAME       = "%s@%s";
+    private static final Logger LOG                               = LoggerFactory.getLogger(KafkaBridge.class);
+    private static final int    EXIT_CODE_SUCCESS                 = 0;
+    private static final int    EXIT_CODE_FAILED                  = 1;
+    private static final String ATLAS_ENDPOINT                    = "atlas.rest.address";
+    private static final String DEFAULT_ATLAS_URL                 = "http://localhost:21000/";
+    private static final String CLUSTER_NAME_KEY                  = "atlas.cluster.name";
+    private static final String KAFKA_METADATA_NAMESPACE          = "atlas.metadata.namespace";
+    private static final String DEFAULT_CLUSTER_NAME              = "primary";
+    private static final String ATTRIBUTE_QUALIFIED_NAME          = "qualifiedName";
+    private static final String DESCRIPTION_ATTR                  = "description";
+    private static final String PARTITION_COUNT                   = "partitionCount";
+    private static final String REPLICATION_FACTOR                = "replicationFactor";
+    private static final String NAME                              = "name";
+    private static final String URI                               = "uri";
+    private static final String CLUSTERNAME                       = "clusterName";
+    private static final String TOPIC                             = "topic";
+    private static final String FORMAT_KAKFA_TOPIC_QUALIFIED_NAME = "%s@%s";
 
     private final List<String>  availableTopics;
     private final String        metadataNamespace;
@@ -80,9 +79,9 @@ public class KafkaBridge {
 
 
     public static void main(String[] args) {
-        int exitCode = EXIT_CODE_FAILED;
+        int           exitCode      = EXIT_CODE_FAILED;
         AtlasClientV2 atlasClientV2 = null;
-        KafkaUtils kafkaUtils = null;
+        KafkaUtils    kafkaUtils    = null;
 
         try {
             Options options = new Options();
@@ -114,14 +113,15 @@ public class KafkaBridge {
             kafkaUtils = new KafkaUtils(atlasConf);
 
             KafkaBridge importer = new KafkaBridge(atlasConf, atlasClientV2, kafkaUtils);
+
             if (StringUtils.isNotEmpty(fileToImport)) {
                 File f = new File(fileToImport);
 
                 if (f.exists() && f.canRead()) {
                     BufferedReader br   = new BufferedReader(new FileReader(f));
-                    String         line = null;
+                    String         line;
 
-                    while((line = br.readLine()) != null) {
+                    while ((line = br.readLine()) != null) {
                         topicToImport = line.trim();
 
                         importer.importTopic(topicToImport);
@@ -138,15 +138,19 @@ public class KafkaBridge {
             }
         } catch(ParseException e) {
             LOG.error("Failed to parse arguments. Error: ", e.getMessage());
+
             printUsage();
         } catch(Exception e) {
             System.out.println("ImportKafkaEntities failed. Please check the log file for the detailed error message");
+
             e.printStackTrace();
+
             LOG.error("ImportKafkaEntities failed", e);
         } finally {
             if (atlasClientV2 != null) {
                 atlasClientV2.close();
             }
+
             if (kafkaUtils != null) {
                 kafkaUtils.close();
             }
@@ -175,16 +179,18 @@ public class KafkaBridge {
 
         if (StringUtils.isNotEmpty(topicToImport)) {
             List<String> topics_subset = new ArrayList<>();
-            for(String topic : topics) {
+
+            for (String topic : topics) {
                 if (Pattern.compile(topicToImport).matcher(topic).matches()) {
                     topics_subset.add(topic);
                 }
             }
+
             topics = topics_subset;
         }
 
         if (CollectionUtils.isNotEmpty(topics)) {
-            for(String topic : topics) {
+            for (String topic : topics) {
                 createOrUpdateTopic(topic);
             }
         }
@@ -234,11 +240,14 @@ public class KafkaBridge {
         ret.setAttribute(NAME,topic);
         ret.setAttribute(DESCRIPTION_ATTR, topic);
         ret.setAttribute(URI, topic);
+
         try {
             ret.setAttribute(PARTITION_COUNT, kafkaUtils.getPartitionCount(topic));
+            ret.setAttribute(REPLICATION_FACTOR, kafkaUtils.getReplicationFactor(topic));
         } catch (ExecutionException | InterruptedException e) {
-            LOG.error("Error while getting partition count for topic :" + topic, e);
-            throw new Exception("Error while getting partition count for topic :" + topic, e);
+            LOG.error("Error while getting partition data for topic :" + topic, e);
+
+            throw new Exception("Error while getting partition data for topic :" + topic, e);
         }
 
         return ret;
@@ -254,6 +263,7 @@ public class KafkaBridge {
 
         try {
             ret = findEntityInAtlas(KafkaDataTypes.KAFKA_TOPIC.getName(), topicQualifiedName);
+
             clearRelationshipAttributes(ret);
         } catch (Exception e) {
             ret = null; // entity doesn't exist in Atlas
@@ -288,7 +298,7 @@ public class KafkaBridge {
 
     @VisibleForTesting
     AtlasEntityWithExtInfo updateEntityInAtlas(AtlasEntityWithExtInfo entity) throws Exception {
-        AtlasEntityWithExtInfo ret      = null;
+        AtlasEntityWithExtInfo ret;
         EntityMutationResponse response = atlasClientV2.updateEntity(entity);
 
         if (response != null) {
