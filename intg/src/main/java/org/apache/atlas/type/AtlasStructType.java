@@ -960,10 +960,14 @@ public class AtlasStructType extends AtlasType {
         }
 
         public static String escapeIndexQueryValue(String value) {
-            return escapeIndexQueryValue(value, false);
+            return escapeIndexQueryValue(value, false, true);
         }
 
         public static String escapeIndexQueryValue(String value, boolean allowWildcard) {
+            return escapeIndexQueryValue(value, allowWildcard, true);
+        }
+
+        public static String escapeIndexQueryValue(String value, boolean allowWildcard, boolean shouldQuote) {
             String  ret        = value;
             boolean quoteValue = false;
 
@@ -977,7 +981,7 @@ public class AtlasStructType extends AtlasType {
                         sb.append('\\');
                     }
 
-                    if (!quoteValue) {
+                    if (shouldQuote && !quoteValue) {
                         quoteValue = shouldQuoteIndexQueryForChar(c);
                     }
 
@@ -987,7 +991,7 @@ public class AtlasStructType extends AtlasType {
                 ret = sb.toString();
             } else if (value != null) {
                 for (int i = 0; i < value.length(); i++) {
-                    if (shouldQuoteIndexQueryForChar(value.charAt(i))) {
+                    if (shouldQuote && shouldQuoteIndexQueryForChar(value.charAt(i))) {
                         quoteValue = true;
 
                         break;
@@ -1047,7 +1051,45 @@ public class AtlasStructType extends AtlasType {
                 case ':':
                 case '\\':
                 case '/':
+                case ' ':
                     return true;
+            }
+
+            return false;
+        }
+
+        public static boolean hastokenizeChar(String value) {
+            if (value != null) {
+                for (int i = 0; i < value.length(); i++) {
+                    if (hastokenizeChar(value, i)) {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+
+        private static boolean hastokenizeChar(String value, int i) {
+            char c = value.charAt(i);
+            if (!Character.isLetterOrDigit(c)) {
+                switch (c) {
+                    case '_':
+                        return false;
+                    case '.':
+                    case ':':
+                    case '\'':
+                        if (i > 0 && !Character.isAlphabetic(value.charAt(i - 1))) {
+                            return true;
+                        }
+                        if (i < value.length() - 1 && !Character.isAlphabetic(value.charAt(i + 1))) {
+                            return true;
+                        }
+                        return false;
+                }
+
+                return true;
             }
 
             return false;

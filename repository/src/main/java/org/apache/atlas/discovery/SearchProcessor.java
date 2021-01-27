@@ -26,6 +26,7 @@ import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria;
 import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria.Condition;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
@@ -459,26 +460,31 @@ public abstract class SearchProcessor {
     }
 
     private boolean isIndexSearchable(FilterCriteria filterCriteria, AtlasStructType structType) throws AtlasBaseException {
-        String      qualifiedName = structType.getVertexPropertyName(filterCriteria.getAttributeName());
-        Set<String> indexedKeys   = context.getIndexedKeys();
-        boolean     ret           = indexedKeys != null && indexedKeys.contains(qualifiedName);
+        String      attributeName  = filterCriteria.getAttributeName();
+        String      attributeValue = filterCriteria.getAttributeValue();
+        AtlasType   attributeType  = structType.getAttributeType(attributeName);
+        String      typeName       = attributeType.getTypeName();
+        String      qualifiedName  = structType.getVertexPropertyName(attributeName);
+        Set<String> indexedKeys    = context.getIndexedKeys();
+        boolean     ret            = indexedKeys != null && indexedKeys.contains(qualifiedName);
+
+        SearchParameters.Operator                  operator  = filterCriteria.getOperator();
+        AtlasStructDef.AtlasAttributeDef.IndexType indexType = structType.getAttributeDef(attributeName).getIndexType();
 
         if (ret) { // index exists
             // for string type attributes, don't use index query in the following cases:
             //   - operation is NEQ, as it might return fewer entries due to tokenization of vertex property value
             //   - value-to-compare has special characters
-            AtlasType attributeType = structType.getAttributeType(filterCriteria.getAttributeName());
-
-            if (AtlasBaseTypeDef.ATLAS_TYPE_STRING.equals(attributeType.getTypeName())) {
-                if (filterCriteria.getOperator() == SearchParameters.Operator.NEQ || filterCriteria.getOperator() == SearchParameters.Operator.NOT_CONTAINS) {
+            if (AtlasBaseTypeDef.ATLAS_TYPE_STRING.equals(typeName)) {
+                if (operator == SearchParameters.Operator.NEQ || operator == SearchParameters.Operator.NOT_CONTAINS) {
                     if (LOG.isDebugEnabled()) {
-                        LOG.debug("{} operator found for string attribute {}, deferring to in-memory or graph query (might cause poor performance)", filterCriteria.getOperator(), qualifiedName);
+                        LOG.debug("{} operator found for string attribute {}, deferring to in-memory or graph query (might cause poor performance)", operator, qualifiedName);
                     }
 
                     ret = false;
-                } else if (hasIndexQuerySpecialChar(filterCriteria.getAttributeValue()) && !isPipeSeparatedSystemAttribute(filterCriteria.getAttributeName())) {
+                } else if (operator == SearchParameters.Operator.CONTAINS && AtlasAttribute.hastokenizeChar(attributeValue) && indexType == null) { // indexType = TEXT
                     if (LOG.isDebugEnabled()) {
-                        LOG.debug("special characters found in filter value {}, deferring to in-memory or graph query (might cause poor performance)", filterCriteria.getAttributeValue());
+                        LOG.debug("{} operator found for string (TEXT) attribute {} and special characters found in filter value {}, deferring to in-memory or graph query (might cause poor performance)", attributeValue);
                     }
 
                     ret = false;
@@ -488,7 +494,7 @@ public abstract class SearchProcessor {
 
         if (LOG.isDebugEnabled()) {
             if (!ret) {
-                LOG.debug("Not using index query for: attribute='{}', operator='{}', value='{}'", qualifiedName, filterCriteria.getOperator(), filterCriteria.getAttributeValue());
+                LOG.debug("Not using index query for: attribute='{}', operator='{}', value='{}'", qualifiedName, operator, attributeValue);
             }
         }
 
@@ -788,14 +794,36 @@ public abstract class SearchProcessor {
                         ret = String.format(OPERATOR_MAP.get(op), qualifiedName, rangeStartIndexQueryValue, rangeEndIndexQueryValue);
                     }
                 } else {
-                     // map '__customAttributes' 'CONTAINS' operator to 'EQ' operator (solr limitation for json serialized string search)
-                     // map '__customAttributes' value from 'key1=value1' to '\"key1\":\"value1\"' (escape special characters and surround with quotes)
-                     String escapeIndexQueryValue = AtlasAttribute.escapeIndexQueryValue(attrVal);
-                     if (attrName.equals(CUSTOM_ATTRIBUTES_PROPERTY_KEY) && op == SearchParameters.Operator.CONTAINS) {
-                         ret = String.format(OPERATOR_MAP.get(op), qualifiedName, getCustomAttributeIndexQueryValue(escapeIndexQueryValue, false));
-                     } else {
-                          ret = String.format(OPERATOR_MAP.get(op), qualifiedName, escapeIndexQueryValue);
-                     }
+                    String escapeIndexQueryValue;
+                    boolean replaceWildcardChar = false;
+
+                    AtlasStructDef.AtlasAttributeDef def = type.getAttributeDef(attrName);
+
+                    //when wildcard search -> escape special Char, don't quote
+                    //      when  tokenized characters + index field Type TEXT -> remove wildcard '*' from query
+                    if (!isPipeSeparatedSystemAttribute(attrName)
+                            && (op == SearchParameters.Operator.CONTAINS || op == SearchParameters.Operator.STARTS_WITH || op == SearchParameters.Operator.ENDS_WITH)
+                            && def.getTypeName().equalsIgnoreCase(AtlasBaseTypeDef.ATLAS_TYPE_STRING)) {
+
+                        escapeIndexQueryValue  = AtlasAttribute.escapeIndexQueryValue(attrVal, false, false);
+                        if (def.getIndexType() == null && AtlasAttribute.hastokenizeChar(attrVal)) {
+                            replaceWildcardChar = true;
+                        }
+                    } else {
+                        escapeIndexQueryValue = AtlasAttribute.escapeIndexQueryValue(attrVal);
+                    }
+
+                    String operatorStr = OPERATOR_MAP.get(op);
+                    if (replaceWildcardChar) {
+                        operatorStr = operatorStr.replace("*", "");
+                    }
+
+                    // map '__customAttributes' value from 'key1=value1' to '\"key1\":\"value1\"' (escape special characters and surround with quotes)
+                    if (attrName.equals(CUSTOM_ATTRIBUTES_PROPERTY_KEY) && op == SearchParameters.Operator.CONTAINS) {
+                        ret = String.format(operatorStr, qualifiedName, getCustomAttributeIndexQueryValue(escapeIndexQueryValue, false));
+                    } else {
+                        ret = String.format(operatorStr, qualifiedName, escapeIndexQueryValue);
+                    }
                 }
             }
         } catch (AtlasBaseException ex) {
