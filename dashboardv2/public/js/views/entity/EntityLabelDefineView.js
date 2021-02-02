@@ -126,7 +126,7 @@ define(['require',
             if (!state.id) {
                 return state.text;
             }
-            if (!state.element) {
+            if (!state.element && state.text.trim() !== "") {
                 return $("<span>Add<strong> '" + _.escape(state.text) + "'</strong></span>");
             }
         },
@@ -151,7 +151,7 @@ define(['require',
         saveUserDefinedLabels: function() {
             var that = this;
             var entityJson = that.entityModel.toJSON();
-            if (entityJson.labels !== undefined || this.labels.length !== 0) {
+            if ((entityJson.labels && entityJson.labels.length !== 0) || this.labels.length !== 0) {
                 var payload = this.labels;
                 that.entityModel.saveEntityLabels(entityJson.guid, {
                     data: JSON.stringify(payload),

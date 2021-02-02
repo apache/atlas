@@ -133,7 +133,20 @@ define(['require',
     $("body").on('click', '.btn', function() {
         $(this).blur();
     });
-
+    $('body').on('keyup input', '.modal-body', function(e) {
+        var $this = $(this),
+            $footerButton = $this.parents(".modal").find('.modal-footer button.ok'),
+            requiredInputField = _.filter($this.find('input'), function($e) {
+                if ($e.getAttribute('placeholder') && $e.getAttribute('placeholder').indexOf('require') >= 0) {
+                    return ($e.value.trim() == "");
+                }
+            });
+        if (requiredInputField.length > 0) {
+            $footerButton.attr("disabled", "true");
+        } else {
+            $footerButton.removeAttr("disabled");
+        }
+    });
     $.fn.select2.amd.define("TagHideDeleteButtonAdapter", [
             "select2/utils",
             "select2/selection/multiple",

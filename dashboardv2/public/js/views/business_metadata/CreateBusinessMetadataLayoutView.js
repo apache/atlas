@@ -180,7 +180,7 @@ define(['require',
                 }
                 validationFileds.each(function(elements) {
                     $(this).removeClass('errorValidate');
-                    if (validationFileds[elements].value == '' || validationFileds[elements].value == null) {
+                    if (validationFileds[elements].value.trim() == '' || validationFileds[elements].value == null) {
                         if (validationFileds[elements].style.display != 'none') {
                             $(validationFileds[elements]).addClass('errorValidate');
                             $(this).addClass('errorValidate');
