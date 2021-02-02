@@ -652,14 +652,6 @@ define([
                         allowCancel: true
                     }).open();
                 modal.$el.find("button.ok").attr("disabled", "true");
-                view.ui.tagName.on("keyup", function(e) {
-                    modal.$el.find("button.ok").removeAttr("disabled");
-                });
-                view.ui.tagName.on("keyup", function(e) {
-                    if ((e.keyCode == 8 || e.keyCode == 32 || e.keyCode == 46) && e.currentTarget.value.trim() == "") {
-                        modal.$el.find("button.ok").attr("disabled", "true");
-                    }
-                });
                 modal.on("shownModal", function() {
                     view.ui.parentTag.select2({
                         multiple: true,

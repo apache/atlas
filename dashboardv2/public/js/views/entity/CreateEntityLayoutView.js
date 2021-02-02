@@ -150,7 +150,7 @@ define(['require',
                 });
 
                 this.ui.entityInputData.on('keyup change', 'input.true,select.true', function(e) {
-                    if (this.value !== "") {
+                    if (this.value.trim() !== "") {
                         if ($(this).data('select2')) {
                             $(this).data('select2').$container.find('.select2-selection').removeClass("errorClass");
                         } else {
@@ -293,6 +293,7 @@ define(['require',
                         that.subAttributeData(data)
                     },
                     complete: function() {
+                        that.modal.$el.find('button.ok').prop("disabled", true);
                         //that.initilizeElements();
                     },
                     silent: true
