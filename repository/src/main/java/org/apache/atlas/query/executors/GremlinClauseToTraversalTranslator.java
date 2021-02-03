@@ -248,12 +248,10 @@ public class GremlinClauseToTraversalTranslator {
 
                 case TERM:
                     String term = String.format("AtlasGlossaryTerm.%s", values[0]);
-
-                    traversal.and(
-                            traversal.startAnonymousTraversal()
-                                     .in(org.apache.atlas.repository.Constants.TERM_ASSIGNMENT_LABEL)
-                                     .has(term, P.eq(values[1]))
-                                     .dedup()
+                    traversal.where(
+                             traversal.startAnonymousTraversal()
+                            .in(org.apache.atlas.repository.Constants.TERM_ASSIGNMENT_LABEL)
+                            .has(term, P.eq(values[1]))
                             );
                     break;
 

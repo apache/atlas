@@ -334,21 +334,17 @@ public class GremlinQueryComposerTest {
 
     @Test
     public void glossaryTermQueries() {
-        verify("Table hasTerm sales", "g.V().has('__typeName', 'Table')." +
-                "and(__.in('r:AtlasGlossarySemanticAssignment')." +
-                "has('AtlasGlossaryTerm.name', eq('sales')).dedup())." +
-                "dedup().limit(25).toList()");
+        verify("Table hasTerm sales", "g.V().has('__typeName', 'Table')" +
+                ".where(in('r:AtlasGlossarySemanticAssignment').has('AtlasGlossaryTerm.name', 'sales'))" +
+                ".dedup().limit(25).toList()");
         verify("Table hasTerm \"sales@glossary\"", "g.V().has('__typeName', 'Table')." +
-                "and(__.in('r:AtlasGlossarySemanticAssignment')." +
-                "has('AtlasGlossaryTerm.qualifiedName', eq('sales@glossary')).dedup())." +
-                "dedup().limit(25).toList()");
+                "where(in('r:AtlasGlossarySemanticAssignment').has('AtlasGlossaryTerm.qualifiedName', 'sales@glossary'))" +
+                ".dedup().limit(25).toList()");
         verify("Table hasTerm \"sales@glossary\" and owner = \"fetl\"",
                 "g.V().has('__typeName', 'Table')" +
                         ".and(" +
-                            "__.and(" +
-                                "__.in('r:AtlasGlossarySemanticAssignment').has('AtlasGlossaryTerm.qualifiedName', eq('sales@glossary'))" +
-                                ".dedup())," +
-                                "__.has('Table.owner', eq(\"fetl\"))" +
+                            "__.where(in('r:AtlasGlossarySemanticAssignment').has('AtlasGlossaryTerm.qualifiedName', 'sales@glossary'))" +
+                            ",__.has('Table.owner', eq(\"fetl\"))" +
                         ").dedup().limit(25).toList()");
     }
 
