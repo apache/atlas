@@ -226,7 +226,8 @@ public class DSLQueriesTest extends BasicTestSetup {
                 {"hive_table hasTerm \"modernTrade@salesGlossary\" and hive_table isA Dimension",1, new ListValidator( "time_dim")},
                 {"hive_table hasTerm \"modernTrade@salesGlossary\" and db.name = \"Sales\" or (hive_table.name = \"sales_fact_monthly_mv\")", 2, new ListValidator("sales_fact_monthly_mv", "time_dim")},
                 {"hive_table where hive_table hasTerm \"modernTrade@salesGlossary\"", 2, new ListValidator("logging_fact_monthly_mv", "time_dim")},
-                {"hive_table where (name = \"product_dim\" and hive_table hasTerm \"ecommerce@salesGlossary\")", 1, new ListValidator("product_dim")}
+                {"hive_table where (name = \"product_dim\" and hive_table hasTerm \"ecommerce@salesGlossary\")", 1, new ListValidator("product_dim")},
+                {"hive_table where (name = 'product_dim' and hive_table hasTerm 'ecommerce@salesGlossary')", 1, new ListValidator("product_dim")}
         };
     }
 
@@ -283,14 +284,16 @@ public class DSLQueriesTest extends BasicTestSetup {
                 {"DataSet where name='sales_fact'", 1},
                 {"Asset where name='sales_fact'", 1},
                 {"hive_db _NOT_CLASSIFIED", 3},
-                {"_CLASSIFIED", 23}
+                {"_CLASSIFIED", 23},
+                {"hive_db where name = [\"Reporting\",\"Sales\"]", 2},
+                {"hive_db where name = ['Reporting', 'Sales']", 2},
         };
     }
 
     @Test(dataProvider = "basicProvider")
     public void basic(String query, int expected) throws AtlasBaseException {
         queryAssert(query, expected, DEFAULT_LIMIT, 0);
-//        queryAssert(query.replace("where", " "), expected, DEFAULT_LIMIT, 0);
+        queryAssert(query.replace("where", " "), expected, DEFAULT_LIMIT, 0);
     }
 
     @DataProvider(name = "systemAttributesProvider")

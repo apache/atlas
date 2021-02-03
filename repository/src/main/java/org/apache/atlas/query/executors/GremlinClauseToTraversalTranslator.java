@@ -48,6 +48,8 @@ public class GremlinClauseToTraversalTranslator {
         private static final String EDGE_NAME_CLASSIFIED_AS          = "classifiedAs";
         private static final String EDGE_NAME_TRAIT_NAMES            = "__traitNames";
         private static final String EDGE_NAME_PROPAGATED_TRAIT_NAMES = "__propagatedTraitNames";
+        private static final String[] STR_TOKEN_SEARCH               = new String[]{"[", "]", "'", "\""};
+        private static final String[] STR_TOKEN_REPLACE              = new String[]{"", "", "", ""};
 
         private final AtlasGraph graph;
 
@@ -293,8 +295,7 @@ public class GremlinClauseToTraversalTranslator {
         }
 
         private String[] csvToArray(String strRhs) {
-            String csvRow = StringUtils.replaceEach(strRhs, new String[]{"[", "]", "'"}, new String[]{"", "", ""});
-
+            String csvRow = StringUtils.replaceEach(strRhs, STR_TOKEN_SEARCH, STR_TOKEN_REPLACE);
             return csvRow.split(",");
         }
 

@@ -41,6 +41,14 @@ import static org.testng.Assert.fail;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
 public class GremlinQueryComposerTest {
     @Test
+    public void withinClause() {
+        String expected1 = "g.V().has('__typeName', within('Asset','Table')).has('Asset.__s_name', within('t1','t2','t3')).dedup().limit(25).toList()";
+        String expected2 = "g.V().has('__typeName', within('Asset','Table')).has('Asset.__s_name', within(\"t1\",\"t2\",\"t3\")).dedup().limit(25).toList()";
+        verify("Asset where name=['t1', 't2', 't3']", expected1);
+        verify("Asset where name=[\"t1\", \"t2\", \"t3\"]", expected2);
+    }
+
+    @Test
     public void classification() {
         String expected = "g.V().outE('classifiedAs').has('__name', within('PII')).outV().dedup().limit(25).toList()";
         verify("PII", expected);
