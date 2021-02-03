@@ -69,7 +69,8 @@ public enum GremlinClause {
     // idx of the tuple field to be sorted on
     INLINE_TUPLE_SORT_ASC(".sort{a,b -> a[%s] <=> b[%s]}"),
     INLINE_TUPLE_SORT_DESC(".sort{a,b -> b[%s] <=> a[%s]}"),
-    TERM("and(__.in('r:AtlasGlossarySemanticAssignment').has('AtlasGlossaryTerm.%s', eq('%s')).dedup())"),
+    TERM("where(in('r:AtlasGlossarySemanticAssignment').has('AtlasGlossaryTerm.%s', '%s'))"),
+
     V("V()"),
     VALUE_MAP("valueMap(%s)");
 
