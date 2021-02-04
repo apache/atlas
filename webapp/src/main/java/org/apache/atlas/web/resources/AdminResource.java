@@ -390,7 +390,7 @@ public class AdminResource {
 
         AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_EXPORT), "export");
 
-        boolean preventMultipleRequests = request != null
+        boolean preventMultipleRequests = request != null && request.getOptions() != null
                 && !(request.getOptions().containsKey(AtlasExportRequest.OPTION_SKIP_LINEAGE)
                      || request.getOptions().containsKey(AtlasExportRequest.OPTION_KEY_REPLICATED_TO));
         if (preventMultipleRequests) {
@@ -455,7 +455,8 @@ public class AdminResource {
 
         try {
             AtlasImportRequest request = AtlasType.fromJson(jsonData, AtlasImportRequest.class);
-            preventMultipleRequests = request != null && !request.getOptions().containsKey(AtlasImportRequest.OPTION_KEY_REPLICATED_FROM);
+            preventMultipleRequests = request != null && request.getOptions() != null
+                    && !request.getOptions().containsKey(AtlasImportRequest.OPTION_KEY_REPLICATED_FROM);
             if (preventMultipleRequests) {
                 acquireExportImportLock("import");
             }
@@ -537,7 +538,8 @@ public class AdminResource {
 
         try {
             AtlasImportRequest request = AtlasType.fromJson(jsonData, AtlasImportRequest.class);
-            preventMultipleRequests = request != null && request.getOptions().containsKey(AtlasImportRequest.OPTION_KEY_REPLICATED_FROM);
+            preventMultipleRequests = request != null && request.getOptions() != null
+                    && request.getOptions().containsKey(AtlasImportRequest.OPTION_KEY_REPLICATED_FROM);
 
             if (preventMultipleRequests) {
                 acquireExportImportLock("importFile");
@@ -783,16 +785,19 @@ public class AdminResource {
     }
 
     private void addToExportOperationAudits(boolean isSuccessful, AtlasExportResult result) throws AtlasBaseException {
-        if (isSuccessful && CollectionUtils.isNotEmpty(result.getRequest().getItemsToExport())) {
-
-            Map<String, Object> optionMap = result.getRequest().getOptions();
-            optionMap.put(OPERATION_STATUS, result.getOperationStatus().name());
-            String params = AtlasJson.toJson(optionMap);
-
-            List<AtlasObjectId> objectIds = result.getRequest().getItemsToExport();
-
-            auditImportExportOperations(objectIds, AuditOperation.EXPORT, params);
+        if (!isSuccessful
+                || CollectionUtils.isEmpty(result.getRequest().getItemsToExport())
+                || result.getRequest().getOptions() == null) {
+            return;
         }
+
+        Map<String, Object> optionMap = result.getRequest().getOptions();
+        optionMap.put(OPERATION_STATUS, result.getOperationStatus().name());
+        String params = AtlasJson.toJson(optionMap);
+
+        List<AtlasObjectId> objectIds = result.getRequest().getItemsToExport();
+
+        auditImportExportOperations(objectIds, AuditOperation.EXPORT, params);
     }
 
     private void auditImportExportOperations(List<AtlasObjectId> objectIds, AuditOperation auditOperation, String params) throws AtlasBaseException {
