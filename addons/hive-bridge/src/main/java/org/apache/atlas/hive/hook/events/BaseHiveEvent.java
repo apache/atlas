@@ -1035,6 +1035,7 @@ public abstract class BaseHiveEvent {
         Collections.sort(sortedEntities, entityComparator);
 
         Set<String> dataSetsProcessed = new HashSet<>();
+        Map<String, Table> tableMap   = new HashMap<>();
 
         for (Entity entity : sortedEntities) {
             if (ignoreHDFSPaths && (Entity.Type.DFS_DIR.equals(entity.getType()) || Entity.Type.LOCAL_DIR.equals(entity.getType()))) {
@@ -1046,8 +1047,14 @@ public abstract class BaseHiveEvent {
 
             try {
                 if (entity.getType() == Entity.Type.PARTITION || entity.getType() == Entity.Type.TABLE) {
-                    Table table = getHive().getTable(entity.getTable().getDbName(), entity.getTable().getTableName());
+                    String tableKey = entity.getTable().getDbName() + "." + entity.getTable().getTableName();
+                    Table  table    = tableMap.get(tableKey);
 
+                    if (table == null) {
+                        table = getHive().getTable(entity.getTable().getDbName(), entity.getTable().getTableName());
+
+                        tableMap.put(tableKey, table); //since there could be several partitions in a table, store it to avoid hive calls.
+                    }
                     if (table != null) {
                         createTime    = getTableCreateTime(table);
                         qualifiedName = getQualifiedName(table);
