@@ -134,17 +134,21 @@ define(['require',
         $(this).blur();
     });
     $('body').on('keyup input', '.modal-body', function(e) {
-        var $this = $(this),
-            $footerButton = $this.parents(".modal").find('.modal-footer button.ok'),
-            requiredInputField = _.filter($this.find('input'), function($e) {
-                if ($e.getAttribute('placeholder') && $e.getAttribute('placeholder').indexOf('require') >= 0) {
-                    return ($e.value.trim() == "");
-                }
-            });
-        if (requiredInputField.length > 0) {
-            $footerButton.attr("disabled", "true");
-        } else {
-            $footerButton.removeAttr("disabled");
+        var target = e.target,
+            isGlossary = (e.target.dataset.id === "searchTerm" || e.target.dataset.id === "searchCategory") ? true : false; // assign term/category modal
+        if ((target.type === "text" || target.type === "textarea") && !isGlossary) {
+            var $this = $(this),
+                $footerButton = $this.parents(".modal").find('.modal-footer button.ok'),
+                requiredInputField = _.filter($this.find('input'), function($e) {
+                    if ($e.getAttribute('placeholder') && $e.getAttribute('placeholder').indexOf('require') >= 0) {
+                        return ($e.value.trim() == "");
+                    }
+                });
+            if (requiredInputField.length > 0) {
+                $footerButton.attr("disabled", "true");
+            } else {
+                $footerButton.removeAttr("disabled");
+            }
         }
     });
     $.fn.select2.amd.define("TagHideDeleteButtonAdapter", [

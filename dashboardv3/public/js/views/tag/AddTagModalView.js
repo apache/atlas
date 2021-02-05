@@ -136,12 +136,14 @@ define(['require',
             this.modal.open();
             this.modal.$el.find('button.ok').attr("disabled", true);
             this.on('ok', function() {
-                if (this.validateValues()) {
-                    if (this.hideLoader) {
-                        this.hideLoader();
+                if (this.ui.checkTimeZone.is(':checked')) {
+                    if (this.validateValues()) {
+                        if (this.hideLoader) {
+                            this.hideLoader();
+                        };
+                        return;
                     };
-                    return;
-                };
+                }
                 that.modal.$el.find('button.ok').showButtonLoader();
                 var tagName = this.tagModel ? this.tagModel.typeName : this.ui.addTagOptions.val(),
                     tagAttributes = {},
