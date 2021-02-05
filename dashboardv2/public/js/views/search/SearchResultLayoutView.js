@@ -271,6 +271,10 @@ define(['require',
                         emptyText: 'No Records found!',
                         className: 'table table-hover backgrid table-quickMenu colSort'
                     },
+                    sortOpts: {
+                        sortColumn: "name",
+                        sortDirection: "ascending"
+                    },
                     filterOpts: {},
                     paginatorOpts: {}
                 };
