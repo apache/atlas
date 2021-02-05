@@ -201,6 +201,12 @@ define(['require',
                 _.extend(this, options.atlasPaginationOpts);
                 _.extend(this.gridOpts, options.gridOpts, { collection: this.collection, columns: this.columns });
                 _.extend(this.sortOpts, options.sortOpts);
+                if (this.isApiSorting) {
+                    //after audit sorting pagination values
+                    if (this.offset === 0) {
+                        this.limit = this.count || this.limit;
+                    }
+                }
                 if (this.includeAtlasTableSorting) {
                     var oldSortingRef = this.collection.setSorting;
                     this.collection.setSorting = function() {
@@ -298,9 +304,13 @@ define(['require',
                 which in turn removes chevrons from every 'sortable' header-cells*/
                 this.listenTo(this.collection, "backgrid:sorted", function(column, direction, collection) {
                     // backgrid:sorted fullCollection trigger required for icon chage
-                    this.collection.fullCollection.trigger("backgrid:sorted", column, direction, collection)
-                    if (this.includeAtlasTableSorting && this.updateFullCollectionManually) {
-                        this.collection.fullCollection.reset(collection.toJSON(), { silent: true });
+                    if (this.isApiSorting) {
+                        column.set("direction", direction);
+                    } else {
+                        this.collection.fullCollection.trigger("backgrid:sorted", column, direction, collection)
+                        if (this.includeAtlasTableSorting && this.updateFullCollectionManually) {
+                            this.collection.fullCollection.reset(collection.toJSON(), { silent: true });
+                        }
                     }
                 }, this);
                 this.listenTo(this, "grid:refresh", function() {
@@ -376,7 +386,7 @@ define(['require',
                 });
                 if (this.showDefaultTableSorted) {
                     this.grid.render();
-                    if (this.collection.fullCollection.length > 1) {
+                    if (this.collection.fullCollection.length > 1 || this.isApiSorting) {
                         this.grid.sort(this.sortOpts.sortColumn, this.sortOpts.sortDirection);
                     }
                     this.rTableList.show(this.grid);
@@ -471,6 +481,11 @@ define(['require',
                 } else if (!isFirstPage && options && options.previous) {
                     this.pageTo = this.pageTo - this.limit;
                     this.pageFrom = (this.pageTo - this.limit) + 1;
+                }
+                if (this.isApiSorting && !this.pageTo && !this.pageFrom) {
+                    this.limit = this.count;
+                    this.pageTo = (this.offset + this.limit);
+                    this.pageFrom = this.offset + 1;
                 }
                 this.ui.pageRecordText.html("Showing  <u>" + this.collection.length + " records</u> From " + this.pageFrom + " - " + this.pageTo);
                 this.activePage = Math.round(this.pageTo / this.limit);
