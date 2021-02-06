@@ -96,9 +96,9 @@
         {
             "name":        "aws_s3_pseudo_dir",
             "description": "Atlas Type representing a Pseudo-Directory (prefix) in an S3 Object Store Bucket",
-            "superTypes":  [ "DataSet" ],
+            "superTypes":  [ "DataSet","Path" ],
             "serviceType": "aws",
-            "typeVersion": "1.0",
+            "typeVersion": "1.1",
             "attributeDefs": [
                 {
                     "name":        "objectPrefix",

@@ -18,7 +18,7 @@
 
 package org.apache.atlas.repository.patches;
 
-import org.apache.atlas.model.patches.AtlasPatch;
+import org.apache.atlas.model.patches.AtlasPatch.AtlasPatches;
 import org.apache.atlas.model.patches.AtlasPatch.PatchStatus;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
@@ -28,7 +28,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import javax.inject.Inject;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.APPLIED;
 import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.SKIPPED;
@@ -37,26 +40,35 @@ import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.SKIPPED;
 public class AtlasPatchManager {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasPatchManager.class);
 
-    private final PatchContext context;
+    private final PatchContext            context;
+    private final List<AtlasPatchHandler> handlers = new ArrayList<>();
 
     @Inject
     public AtlasPatchManager(AtlasGraph atlasGraph, AtlasTypeRegistry typeRegistry, GraphBackedSearchIndexer indexer, EntityGraphMapper entityGraphMapper) {
         this.context = new PatchContext(atlasGraph, typeRegistry, indexer, entityGraphMapper);
     }
 
-    public AtlasPatch.AtlasPatches getAllPatches() {
+    @PostConstruct
+    public void init() {
+        LOG.info("==> AtlasPatchManager.init()");
+
+        // register all java patches here
+        handlers.add(new UniqueAttributePatch(context));
+        handlers.add(new ClassificationTextPatch(context));
+        handlers.add(new FreeTextRequestHandlerPatch(context));
+        handlers.add(new SuggestionsRequestHandlerPatch(context));
+        handlers.add(new IndexConsistencyPatch(context));
+        handlers.add(new ReIndexPatch(context));
+
+        LOG.info("<== AtlasPatchManager.init()");
+    }
+
+    public AtlasPatches getAllPatches() {
         return context.getPatchRegistry().getAllPatches();
     }
 
     public void applyAll() {
-        final AtlasPatchHandler handlers[] = {
-                new UniqueAttributePatch(context),
-                new ClassificationTextPatch(context),
-                new FreeTextRequestHandlerPatch(context),
-                new SuggestionsRequestHandlerPatch(context),
-                new IndexConsistencyPatch(context),
-                new ReIndexPatch(context)
-        };
+        LOG.info("==> AtlasPatchManager.applyAll()");
 
         try {
             for (AtlasPatchHandler handler : handlers) {
@@ -70,9 +82,18 @@ public class AtlasPatchManager {
                     handler.apply();
                 }
             }
-        }
-        catch (Exception ex) {
+        } catch (Exception ex) {
             LOG.error("Error applying patches.", ex);
         }
+
+        LOG.info("<== AtlasPatchManager.applyAll()");
+    }
+
+    public void addPatchHandler(AtlasPatchHandler patchHandler) {
+        handlers.add(patchHandler);
+    }
+
+    public PatchContext getContext() {
+        return this.context;
     }
 }

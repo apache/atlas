@@ -86,10 +86,11 @@
         {
             "name": "fs_path",
             "superTypes": [
-                "DataSet"
+                "DataSet",
+                "Path"
             ],
             "serviceType": "file_system",
-            "typeVersion": "1.0",
+            "typeVersion": "1.1",
             "attributeDefs": [
                 {
                     "name": "path",
