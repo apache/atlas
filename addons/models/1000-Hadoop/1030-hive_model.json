@@ -718,6 +718,23 @@
                 "cardinality": "SINGLE"
             },
             "propagateTags": "NONE"
+        },
+        {
+            "name": "hive_db_location",
+            "serviceType": "hive",
+            "typeVersion": "1.0",
+            "relationshipCategory": "ASSOCIATION",
+            "endDef1": {
+                "type": "hive_db",
+                "name": "locationPath",
+                "cardinality": "SINGLE"
+            },
+            "endDef2": {
+                "type": "Path",
+                "name": "hiveDb",
+                "cardinality": "SINGLE"
+            },
+            "propagateTags": "NONE"
         }
     ]
 }

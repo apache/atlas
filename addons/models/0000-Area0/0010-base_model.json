@@ -217,6 +217,14 @@
       ]
     },
     {
+      "name": "Path",
+      "superTypes": [
+        "DataSet"
+      ],
+      "serviceType": "atlas_core",
+      "typeVersion": "1.0"
+    },
+    {
       "name": "AtlasServer",
       "serviceType": "atlas_core",
       "typeVersion": "1.0",

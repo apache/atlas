@@ -97,6 +97,11 @@ public class CreateDatabase extends BaseHiveEvent {
                     if (dbDDLEntity != null) {
                         ret.addEntity(dbDDLEntity);
                     }
+
+                    AtlasEntity dbLocationEntity = createHiveLocationEntity(dbEntity, ret);
+                    if (dbLocationEntity != null) {
+                        ret.addEntity(dbLocationEntity);
+                    }
                 } else {
                     LOG.error("CreateDatabase.getEntities(): failed to retrieve db");
                 }

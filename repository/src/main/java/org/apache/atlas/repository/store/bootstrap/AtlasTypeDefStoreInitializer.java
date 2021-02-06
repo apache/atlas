@@ -43,6 +43,8 @@ import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.patches.SuperTypesUpdatePatch;
+import org.apache.atlas.repository.patches.AtlasPatchManager;
 import org.apache.atlas.repository.patches.AtlasPatchRegistry;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasEntityType;
@@ -94,14 +96,16 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
     private final AtlasTypeRegistry typeRegistry;
     private final Configuration     conf;
     private final AtlasGraph        graph;
+    private final AtlasPatchManager patchManager;
 
     @Inject
     public AtlasTypeDefStoreInitializer(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry,
-                                        AtlasGraph graph, Configuration conf) {
+                                        AtlasGraph graph, Configuration conf, AtlasPatchManager patchManager) {
         this.typeDefStore  = typeDefStore;
         this.typeRegistry  = typeRegistry;
         this.conf          = conf;
         this.graph         = graph;
+        this.patchManager  = patchManager;
     }
 
     @PostConstruct
@@ -449,7 +453,8 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
                     new RemoveLegacyRefAttributesPatchHandler(typeDefStore, typeRegistry),
                     new UpdateTypeDefOptionsPatchHandler(typeDefStore, typeRegistry),
                     new SetServiceTypePatchHandler(typeDefStore, typeRegistry),
-                    new UpdateAttributeMetadataHandler(typeDefStore, typeRegistry)
+                    new UpdateAttributeMetadataHandler(typeDefStore, typeRegistry),
+                    new AddSuperTypePatchHandler(typeDefStore, typeRegistry)
             };
 
             Map<String, PatchHandler> patchHandlerRegistry = new HashMap<>();
@@ -532,6 +537,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
         private Map<String, String>     typeDefOptions;
         private String                  serviceType;
         private String attributeName;
+        private Set<String> superTypes;
 
         public String getId() {
             return id;
@@ -624,6 +630,14 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
         public String getAttributeName() { return attributeName; }
 
         public void setAttributeName(String attributeName) { this.attributeName = attributeName; }
+
+        public Set<String> getSuperTypes() {
+            return superTypes;
+        }
+
+        public void setSuperTypes(Set<String> superTypes) {
+            this.superTypes = superTypes;
+        }
     }
 
     /**
@@ -1134,6 +1148,60 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
                     }
                 }
             }
+        }
+    }
+
+    class AddSuperTypePatchHandler extends PatchHandler {
+
+        public AddSuperTypePatchHandler(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) {
+            super(typeDefStore, typeRegistry, new String[] {"ADD_SUPER_TYPES"});
+        }
+
+        @Override
+        public PatchStatus applyPatch(TypeDefPatch patch) throws AtlasBaseException {
+            String           typeName = patch.getTypeName();
+            AtlasBaseTypeDef typeDef  = typeRegistry.getTypeDefByName(typeName);
+            PatchStatus      ret;
+
+            if (typeDef == null) {
+                throw new AtlasBaseException(AtlasErrorCode.PATCH_FOR_UNKNOWN_TYPE, patch.getAction(), typeName);
+            }
+
+            Set<String> superTypesToBeAdded = patch.getSuperTypes();
+
+            if (CollectionUtils.isNotEmpty(superTypesToBeAdded) && isPatchApplicable(patch, typeDef)) {
+                if (typeDef.getClass().equals(AtlasEntityDef.class)) {
+                    AtlasEntityDef updatedDef = new AtlasEntityDef((AtlasEntityDef)typeDef);
+
+                    for (String superType : superTypesToBeAdded) {
+                        updatedDef.addSuperType(superType);
+                    }
+
+                    updatedDef.setTypeVersion(patch.getUpdateToVersion());
+
+                    typeDefStore.updateEntityDefByName(typeName, updatedDef);
+
+                    LOG.info("Update entities of {} with new supertypes", typeName);
+
+                    // add to java patch handlers to update entity supertypes
+                    patchManager.addPatchHandler(new SuperTypesUpdatePatch(patchManager.getContext(), patch.getId(), typeName));
+
+                    ret = APPLIED;
+                } else {
+                    throw new AtlasBaseException(AtlasErrorCode.PATCH_NOT_APPLICABLE_FOR_TYPE, patch.getAction(), typeDef.getClass().getSimpleName());
+                }
+            } else {
+                if (CollectionUtils.isEmpty(superTypesToBeAdded)) {
+                    LOG.info("patch skipped: No superTypes provided to add for typeName={}", patch.getTypeName());
+                } else {
+                    LOG.info("patch skipped: typeName={}; applyToVersion={}; updateToVersion={}",
+                            patch.getTypeName(), patch.getApplyToVersion(), patch.getUpdateToVersion());
+                }
+
+                ret = SKIPPED;
+            }
+
+            return ret;
         }
     }
 }
