@@ -70,7 +70,9 @@ public class FixedBufferList<T extends Clearable> {
         this.buffer.ensureCapacity(newCapacity);
         instantiateItems(oldCapacity, newCapacity);
 
-        LOG.info("FixedBufferList: Requested: {} From: {} To:{}", requestedCapacity, oldCapacity, newCapacity);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("FixedBufferList: Requested: {} From: {} To:{}", requestedCapacity, oldCapacity, newCapacity);
+        }
     }
 
     private void instantiateItems(int startIndex, int maxSize) {
