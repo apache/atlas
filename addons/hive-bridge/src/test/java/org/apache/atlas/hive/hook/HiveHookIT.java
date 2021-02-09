@@ -67,7 +67,8 @@ import static org.testng.AssertJUnit.assertEquals;
 public class HiveHookIT extends HiveITBase {
     private static final Logger LOG = LoggerFactory.getLogger(HiveHookIT.class);
 
-    private static final String PART_FILE  = "2015-01-01";
+    private static final String PART_FILE      = "2015-01-01";
+    private static final String PATH_TYPE_NAME = "Path";
 
     private Driver driverWithNoHook;
 
@@ -138,16 +139,6 @@ public class HiveHookIT extends HiveITBase {
         String hdfsLocation = "hdfs://localhost:8020/warehouse/tablespace/external/hive/reports.db";
         alterDatabaseLocation(dbName, hdfsLocation);
         assertDatabaseLocationRelationship(dbId);
-
-        //AWS location
-        String s3Location = "s3://localhost:8020/warehouse/tablespace/external/hive/reports.db";
-        alterDatabaseLocation(dbName, s3Location);
-        assertDatabaseLocationRelationship(dbId);
-
-        //ABFS location
-        String abfsLocation = "abfs://localhost:8020/warehouse/tablespace/external/hive/reports.db";
-        alterDatabaseLocation(dbName, abfsLocation);
-        assertDatabaseLocationRelationship(dbId);
     }
 
     //alter database location
@@ -158,18 +149,30 @@ public class HiveHookIT extends HiveITBase {
     }
 
     public void assertDatabaseLocationRelationship(String dbId) throws Exception {
-        AtlasEntity dbEntity = atlasClientV2.getEntityByGuid(dbId).getEntity();
-        AtlasEntityDef pathEntityDef = atlasClientV2.getEntityDefByName("Path");
+        AtlasEntity    dbEntity      = atlasClientV2.getEntityByGuid(dbId).getEntity();
+        AtlasEntityDef pathEntityDef = getPathEntityDefWithAllSubTypes();
 
-        //Check if dbEntity has location attribute
         assertTrue(dbEntity.hasAttribute(ATTRIBUTE_LOCATION));
-        //Check if dbEntity has value for location attribute
+
         assertNotNull(dbEntity.getAttribute(ATTRIBUTE_LOCATION));
-        //Check if dbEntity has location relationship attribute
-        assertEquals(((List) dbEntity.getRelationshipAttribute(ATTRIBUTE_LOCATION_PATH)).size(), 1);
+
+        assertNotNull(dbEntity.getRelationshipAttribute(ATTRIBUTE_LOCATION_PATH));
+
         AtlasObjectId locationEntityObject = toAtlasObjectId(dbEntity.getRelationshipAttribute(ATTRIBUTE_LOCATION_PATH));
-        //Check if location relationship attribute is subtype of "Path"
         assertTrue(pathEntityDef.getSubTypes().contains(locationEntityObject.getTypeName()));
+    }
+
+    public AtlasEntityDef getPathEntityDefWithAllSubTypes() throws Exception {
+        Set<String>     possiblePathSubTypes = new HashSet<>(Arrays.asList("fs_path", "hdfs_path", "aws_s3_pseudo_dir", "aws_s3_v2_directory", "adls_gen2_directory"));
+        AtlasEntityDef  pathEntityDef        = atlasClientV2.getEntityDefByName(PATH_TYPE_NAME);
+
+        if(pathEntityDef == null) {
+            pathEntityDef = new AtlasEntityDef(PATH_TYPE_NAME);
+        }
+
+        pathEntityDef.setSubTypes(possiblePathSubTypes);
+
+        return pathEntityDef;
     }
 
     @Test
