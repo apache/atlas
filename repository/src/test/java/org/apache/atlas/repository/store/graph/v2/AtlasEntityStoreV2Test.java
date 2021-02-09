@@ -105,11 +105,11 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
         super.setUp();
 
         AtlasTypesDef[] testTypesDefs = new AtlasTypesDef[] { TestUtilsV2.defineDeptEmployeeTypes(),
-                                                              TestUtilsV2.defineHiveTypes(),
-                                                              TestUtilsV2.defineTypeWithNestedCollectionAttributes(),
-                                                              TestUtilsV2.defineEnumTypes(),
-                                                              TestUtilsV2.defineBusinessMetadataTypes()
-                                                            };
+                TestUtilsV2.defineHiveTypes(),
+                TestUtilsV2.defineTypeWithNestedCollectionAttributes(),
+                TestUtilsV2.defineEnumTypes(),
+                TestUtilsV2.defineBusinessMetadataTypes()
+        };
         createTypesDef(testTypesDefs);
 
         deptEntity                 = TestUtilsV2.createDeptEg2();
@@ -128,7 +128,7 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
     }
     @BeforeTest
     public void init() throws Exception {
-        entityStore = new AtlasEntityStoreV2(graph, deleteDelegate, typeRegistry, mockChangeNotifier, graphMapper);
+        entityStore = new AtlasEntityStoreV2(graph, deleteDelegate, restoreHandlerV1, typeRegistry, mockChangeNotifier, graphMapper);
         RequestContext.clear();
         RequestContext.get().setUser(TestUtilsV2.TEST_USER, null);
 
@@ -624,10 +624,10 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
         String mapAttrName = randomStrWithReservedChars();
 
         AtlasEntityDef typeDefinition =
-            AtlasTypeUtil.createClassTypeDef(typeName, "Special chars test type", ImmutableSet.<String>of(),
-                AtlasTypeUtil.createOptionalAttrDef(strAttrName, "string"),
-                AtlasTypeUtil.createOptionalAttrDef(arrayAttrName, "array<string>"),
-                AtlasTypeUtil.createOptionalAttrDef(mapAttrName, "map<string,string>"));
+                AtlasTypeUtil.createClassTypeDef(typeName, "Special chars test type", ImmutableSet.<String>of(),
+                        AtlasTypeUtil.createOptionalAttrDef(strAttrName, "string"),
+                        AtlasTypeUtil.createOptionalAttrDef(arrayAttrName, "array<string>"),
+                        AtlasTypeUtil.createOptionalAttrDef(mapAttrName, "map<string,string>"));
 
         AtlasTypesDef atlasTypesDef = new AtlasTypesDef(null, null, null, Arrays.asList(typeDefinition));
         typeDefStore.createTypesDef(atlasTypesDef);
@@ -803,8 +803,8 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
         entitiesInfo.addReferredEntity(columnEntity3);
 
         tableEntity.setAttribute(COLUMNS_ATTR_NAME, Arrays.asList(AtlasTypeUtil.getAtlasObjectId(columnEntity1),
-                                                                  AtlasTypeUtil.getAtlasObjectId(columnEntity2),
-                                                                  AtlasTypeUtil.getAtlasObjectId(columnEntity3)));
+                AtlasTypeUtil.getAtlasObjectId(columnEntity2),
+                AtlasTypeUtil.getAtlasObjectId(columnEntity3)));
 
         init();
 

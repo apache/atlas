@@ -30,6 +30,7 @@ import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.migration.DataMigrationStatusService;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
+import org.apache.atlas.repository.store.graph.v1.RestoreHandlerV1;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStoreV2;
 import org.apache.atlas.repository.store.graph.v2.AtlasRelationshipStoreV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
@@ -124,13 +125,14 @@ public class MigrationImport extends ImportStrategy {
         FullTextMapperV2Nop fullTextMapperV2 = new FullTextMapperV2Nop();
         IAtlasEntityChangeNotifier entityChangeNotifier = new EntityChangeNotifierNop();
         DeleteHandlerDelegate deleteDelegate = new DeleteHandlerDelegate(graph, typeRegistry, null);
+        RestoreHandlerV1 restoreHandlerV1 = new RestoreHandlerV1(graph, typeRegistry);
         AtlasFormatConverters formatConverters = new AtlasFormatConverters(typeRegistry);
 
         AtlasInstanceConverter instanceConverter = new AtlasInstanceConverter(graph, typeRegistry, formatConverters);
         AtlasRelationshipStore relationshipStore = new AtlasRelationshipStoreV2(graph, typeRegistry, deleteDelegate, entityChangeNotifier);
-        EntityGraphMapper entityGraphMapper = new EntityGraphMapper(deleteDelegate, typeRegistry, graph, relationshipStore, entityChangeNotifier, instanceConverter, fullTextMapperV2, null);
+        EntityGraphMapper entityGraphMapper = new EntityGraphMapper(deleteDelegate, restoreHandlerV1, typeRegistry, graph, relationshipStore, entityChangeNotifier, instanceConverter, fullTextMapperV2, null);
 
-        return new AtlasEntityStoreV2(graph, deleteDelegate, typeRegistry, entityChangeNotifier, entityGraphMapper);
+        return new AtlasEntityStoreV2(graph, deleteDelegate, restoreHandlerV1, typeRegistry, entityChangeNotifier, entityGraphMapper);
     }
 
     private void shutdownEntityCreationManager(EntityCreationManager creationManager) {

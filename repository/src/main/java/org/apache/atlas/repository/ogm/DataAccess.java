@@ -18,6 +18,7 @@
 package org.apache.atlas.repository.ogm;
 
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.AtlasBaseModelObject;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -25,6 +26,7 @@ import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
+import org.apache.atlas.store.DeleteType;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -203,6 +205,14 @@ public class DataAccess {
 
     public void deleteUsingGuid(String guid) throws AtlasBaseException {
         entityStore.deleteById(guid);
+    }
+
+    public void delete(String guid, boolean force) throws  AtlasBaseException {
+        if (force) {
+            RequestContext requestContext = RequestContext.get();
+            requestContext.setDeleteType(DeleteType.HARD);
+        }
+        delete(guid);
     }
 
     public void delete(String guid) throws AtlasBaseException {
