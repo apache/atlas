@@ -66,6 +66,7 @@ define([
             filterToggler: '[data-id="filter-toggler"]',
             settingToggler: '[data-id="setting-toggler"]',
             searchToggler: '[data-id="search-toggler"]',
+            labelFullName: '[data-id="labelFullName"]',
             reset: '[data-id="reset"]',
             fullscreenToggler: '[data-id="fullScreen-toggler"]',
             noValueToggle: "[data-id='noValueToggle']",
@@ -85,6 +86,7 @@ define([
             events["click " + this.ui.saveSvg] = 'onClickSaveSvg';
             events["click " + this.ui.fullscreenToggler] = "onClickFullscreenToggler";
             events["click " + this.ui.reset] = "onClickReset";
+            events["change " + this.ui.labelFullName] = "onClickLabelFullName";
             events["click " + this.ui.noValueToggle] = function() {
                 this.showAllProperties = !this.showAllProperties;
                 this.ui.noValueToggle.attr("data-original-title", (this.showAllProperties ? "Hide" : "Show") + " empty values");
@@ -101,6 +103,7 @@ define([
          */
         initialize: function(options) {
             _.extend(this, _.pick(options, "entityDefCollection"));
+            this.labelFullText = false;
         },
         onShow: function() {
             this.$(".fontLoader").show();
@@ -324,10 +327,16 @@ define([
         onClickSearchToggler: function() {
             this.toggleBoxPanel({ el: this.ui.searchBox });
         },
+        onClickLabelFullName: function() {
+            this.labelFullText = !this.labelFullText;
+            this.LineageHelperRef.displayFullName({ bLabelFullText : this.labelFullText });
+        },
         onClickReset: function() {
             this.fetchGraphData({ refresh: true });
             this.ui.typeSearch.data({ refresh: true }).val("").trigger("change");
             this.ui.filterServiceType.data({ refresh: true }).val("").trigger("change");
+            this.ui.labelFullName.prop("checked", false);
+            this.labelFullText = false;
         },
         onClickSaveSvg: function(e, a) {
             this.LineageHelperRef.exportLineage({ downloadFileName: "TypeSystemView" });
@@ -347,6 +356,7 @@ define([
                 width: node.width,
                 height: node.height
             });
+            this.calculateLineageDetailPanelHeight();
         },
         updateDetails: function(data) {
             this.$("[data-id='typeName']").text(Utils.getName(data));
@@ -429,6 +439,7 @@ define([
                 onNodeClick: function(d) {
                     that.onClickNodeToggler();
                     that.updateDetails(that.LineageHelperRef.getNode(d.clickedData, true));
+                    that.calculateLineageDetailPanelHeight();
                 },
                 beforeRender: function() {
                     that.$(".fontLoader").show();
@@ -497,6 +508,18 @@ define([
                         }
                     });
             }
+        },
+        calculateLineageDetailPanelHeight: function(){
+            this.ui.typeSystemTreeViewPage.find('tbody').removeAttr('style');
+            var $panel = this.ui.typeSystemTreeViewPage.find('.fix-box'),
+                $parentHeight = this.ui.typeSystemTreeViewPage.height() - 48, // 48px is the Panels top from the parent container
+                $tBody = $panel.find('tbody'),
+                panelHeight = $tBody.height() + 37; //37px is height of Panel Header
+                if($parentHeight < panelHeight){
+                    panelHeight = $parentHeight;
+                }
+                $panel.css('height', panelHeight  + 'px');
+                $tBody.css('height', '100%');
         }
     });
     return TypeSystemTreeView;

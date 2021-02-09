@@ -162,8 +162,6 @@
     }
 }
 
-
-
 span#zoom_in {
     border-bottom: 1px solid #625555;
 }
@@ -203,6 +201,7 @@ span#zoom_in {
 
     .systemTypeTree {
         height: 100vh !important;
+        padding: 10px;
     }
 
     .resizeGraph {
@@ -281,32 +280,39 @@ span#zoom_in {
 
 
 .box-panel.fix-box {
-    position: fixed;
-    top: 0;
+    position: absolute;
+    top: 37px;
     right: 0;
     bottom: 0;
-    height: 100vh;
-    max-height: 100vh;
+    height: auto;
+    max-height: initial;
     z-index: 999;
     bottom: 0;
     width: 400px;
-    overflow: auto;
-    border-radius: 0px;
+    overflow: hidden;
+    border-radius: 10px;
     margin: 0 !important;
 
-    &.slide-from-left.size-lg {
-        left: -413px;
+    &.slide-from-right.size-lg {
+        right: -413px;
 
         &.show-box-panel {
-            left: 0;
-            margin: 0 !important;
+            right: 0px;
         }
     }
 
     .body {
+
+        position: relative;
+
+        table{
+            position: relative;
+            height: 100%;
+        }
         tbody {
             overflow: auto;
-            height: calc(100vh - 48px);
+            height: auto;
+            display: block;
             position: absolute;
             padding-bottom: 15px;
         }

@@ -68,6 +68,7 @@ define(['require',
                 saveSvg: '[data-id="saveSvg"]',
                 resetLineage: '[data-id="resetLineage"]',
                 onZoomIn: '[data-id="zoom-in"]',
+                labelFullName: '[data-id="labelFullName"]',
                 onZoomOut: '[data-id="zoom-out"]'
             },
             templateHelpers: function() {
@@ -91,6 +92,7 @@ define(['require',
                 events["click " + this.ui.resetLineage] = 'onClickResetLineage';
                 events["click " + this.ui.onZoomIn] = 'onClickZoomIn';
                 events["click " + this.ui.onZoomOut] = 'onClickZoomOut';
+                events["change " + this.ui.labelFullName] = "onClickLabelFullName";
                 return events;
             },
 
@@ -112,11 +114,12 @@ define(['require',
                 this.searchNodeObj = {
                     selectedNode: ''
                 }
+                this.labelFullText = false;
             },
             onRender: function() {
                 var that = this;
                 this.ui.searchToggler.prop("disabled", true);
-                this.$graphButtonsEl = this.$(".graph-button-group button,select[data-id='selectDepth']")
+                this.$graphButtonsEl = this.$(".graph-button-group button, select[data-id='selectDepth']")
                 this.fetchGraphData();
                 if (this.layoutRendered) {
                     this.layoutRendered();
@@ -157,6 +160,7 @@ define(['require',
                     width: node.width,
                     height: node.height
                 });
+                this.calculateLineageDetailPanelHeight();
             },
             onCheckUnwantedEntity: function(e) {
                 var that = this;
@@ -217,6 +221,8 @@ define(['require',
                 this.LineageHelperRef.refresh();
                 this.searchNodeObj.selectedNode = "";
                 this.ui.lineageTypeSearch.data({ refresh: true }).val("").trigger("change");
+                this.ui.labelFullName.prop("checked", false);
+                this.labelFullText = false;
             },
             onClickSaveSvg: function(e, a) {
                 this.LineageHelperRef.exportLineage();
@@ -226,6 +232,10 @@ define(['require',
             },
             onClickZoomOut: function() {
                 this.LineageHelperRef.zoomOut();
+            },
+            onClickLabelFullName: function() {
+                this.labelFullText = !this.labelFullText;
+                this.LineageHelperRef.displayFullName({ bLabelFullText : this.labelFullText });
             },
             fetchGraphData: function(options) {
                 var that = this,
@@ -290,6 +300,7 @@ define(['require',
                     onNodeClick: function(d) {
                         that.onClickNodeToggler();
                         that.updateRelationshipDetails({ guid: d.clickedData });
+                        that.calculateLineageDetailPanelHeight();
                     },
                     onLabelClick: function(d) {
                         var guid = d.clickedData;
@@ -418,6 +429,18 @@ define(['require',
                     "attributeDefs": attributeDefs,
                     "sortBy": false
                 }));
+            },
+            calculateLineageDetailPanelHeight: function(){
+                var $parentContainer = $('#tab-lineage .resizeGraph'),
+                    $panel = $parentContainer.find('.fix-box');
+                var $parentHeight = $parentContainer.find('.fix-box, tbody').removeAttr('style').height() - 48, // 48px is the Panels top from the parent container
+                    $tBody = $panel.find('tbody'),
+                    panelHeight = $tBody.height() + 100; 
+                if($parentHeight < panelHeight){
+                    panelHeight = $parentHeight;
+                }
+                $panel.css('height', panelHeight  + 'px');
+                $tBody.css('height', '100%');
             }
         });
     return LineageLayoutView;

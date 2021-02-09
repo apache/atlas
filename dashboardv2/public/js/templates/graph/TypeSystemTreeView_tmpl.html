@@ -15,7 +15,7 @@
  * limitations under the License.
 -->
 <div id="typeSystemTreeViewPage" data-id="typeSystemTreeViewPage" class="systemTypeTree" style="height: calc(100vh - 180px); width: 100%; position: relative;overflow: hidden;">
-    <div class="box-panel size-lg type-node-details fix-box slide-from-left lineage-node-detail">
+    <div class="box-panel size-lg type-node-details fix-box slide-from-right lineage-node-detail">
         <div class="header clearfix">
             <div class="typeDetailHeader">
                 <h4 style="padding-right: 67px;"><span data-id="typeName"></span></h4>
@@ -91,6 +91,14 @@
                     <input type="checkbox" class="pull-left" data-id="showTooltip" value="" />
                     <div class="state p-primary">
                         <label>Show node details on hover</label>
+                    </div>
+                </div>
+            </div>
+            <div class="showTooltip form-group text-left col-sm-12">
+                <div class="pretty p-switch p-fill">
+                    <input type="checkbox" class="pull-left" data-id="labelFullName" value="" id="labelFullName"/>
+                    <div class="state p-primary">
+                        <label>Display fullname</label>
                     </div>
                 </div>
             </div>
