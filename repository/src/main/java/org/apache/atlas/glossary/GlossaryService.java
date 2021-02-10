@@ -407,6 +407,11 @@ public class GlossaryService {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME);
         }
 
+        String qualifiedName = getDuplicateGlossaryRelatedTerm(atlasGlossaryTerm);
+        if (StringUtils.isNotEmpty(qualifiedName)) {
+            throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_TERM_ALREADY_EXISTS, qualifiedName);
+        }
+
         AtlasGlossaryTerm storeObject = dataAccess.load(atlasGlossaryTerm);
         if (!storeObject.equals(atlasGlossaryTerm)) {
             atlasGlossaryTerm.setGuid(storeObject.getGuid());
@@ -1028,6 +1033,30 @@ public class GlossaryService {
 
     public static boolean isNameInvalid(String name) {
         return StringUtils.containsAny(name, invalidNameChars);
+    }
+
+    private String getDuplicateGlossaryRelatedTerm(AtlasGlossaryTerm atlasGlossaryTerm) throws AtlasBaseException {
+
+        Map<AtlasGlossaryTerm.Relation, Set<AtlasRelatedTermHeader>> relatedTermsMap = atlasGlossaryTerm.getRelatedTerms();
+        for (Map.Entry<AtlasGlossaryTerm.Relation, Set<AtlasRelatedTermHeader>> relatedTermsMapEntry : relatedTermsMap.entrySet()) {
+            Set<AtlasRelatedTermHeader> termHeaders = relatedTermsMapEntry.getValue();
+
+            if (CollectionUtils.isNotEmpty(termHeaders)) {
+                List<AtlasRelatedTermHeader> duplicateTermHeaders = termHeaders.stream()
+                        .collect(Collectors.groupingBy(AtlasRelatedTermHeader::getTermGuid))
+                        .values().stream()
+                        .filter(duplicates -> duplicates.size() > 1)
+                        .flatMap(Collection::stream)
+                        .collect(Collectors.toList());
+
+                if (CollectionUtils.isNotEmpty(duplicateTermHeaders) && duplicateTermHeaders.size() > 0) {
+                    String dupTermGuid = duplicateTermHeaders.get(0).getTermGuid();
+                    AtlasGlossaryTerm glossaryTerm = getTerm(dupTermGuid);
+                    return glossaryTerm.getQualifiedName();
+                }
+            }
+        }
+        return StringUtils.EMPTY;
     }
 
     private String getDisplayText(AtlasGlossaryTerm term) {
