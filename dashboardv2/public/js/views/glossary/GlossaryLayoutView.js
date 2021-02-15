@@ -156,6 +156,7 @@ define(['require',
                 }
                 if (this.isAssignView && this.glossaryCollection.fullCollection.length) {
                     this.generateTree();
+                    this.disableNodesList = this.getDisableNodes();
                 } else {
                     this.getGlossary();
                 }
@@ -186,10 +187,12 @@ define(['require',
                     this.$('.category-view').show();
                     this.$('.term-view').hide();
                     this.viewType = "category";
+                    this.$('.dropdown-toggle').attr('disabled', 'disabled');
                 } else {
                     this.$('.term-view').show();
                     this.$('.category-view').hide();
                     this.viewType = "term";
+                    this.$('.dropdown-toggle').removeAttr('disabled');
                 }
                 var setDefaultSelector = function() {
                     if (!that.value) {
@@ -439,6 +442,17 @@ define(['require',
                     this.triggerUrl();
                 }
             },
+            getDisableNodes: function() {
+                var disableNodesSelection = [];
+                if (this.options && this.options.isAssignAttributeRelationView) {
+                    var disableTerms = (this.options.termData && this.options.selectedTermAttribute) ? this.options.termData[this.options.selectedTermAttribute] : null;
+                    disableNodesSelection = _.map(disableTerms, function(obj) {
+                        return obj.termGuid;
+                    });
+                    disableNodesSelection.push(this.options.termData.guid);
+                }
+                return disableNodesSelection;
+            },
             generateTree: function() {
                 var $termTree = this.ui.termTree,
                     $categoryTree = this.ui.categoryTree,
@@ -453,7 +467,11 @@ define(['require',
                                     return;
                                 }
                                 if (that.isAssignView) {
-                                    return obj != "Glossary" ? true : false;
+                                    var isDisableNode = false;
+                                    if (that.disableNodesList) {
+                                        isDisableNode = (that.disableNodesList.indexOf(node.original.guid) > -1) ? true : false;
+                                    }
+                                    return (obj != "Glossary" && !isDisableNode) ? true : false;
                                 } else {
                                     return obj != "NoAction" ? true : false;
                                 }
@@ -545,6 +563,7 @@ define(['require',
                                 treeLoaded({ "$el": $el, "type": type });
                             });
                     },
+
                     initializeTermTree = function() {
                         if ($termTree.data('jstree')) {
                             $('.termPopover').popover('destroy');
