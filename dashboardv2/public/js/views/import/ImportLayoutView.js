@@ -55,10 +55,10 @@ define([
                 _.extend(this, _.pick(options, "callback", "isGlossary"));
                 var that = this;
                 this.modal = new Modal({
-                    title: this.isGlossary ? "Import Glossary" : "Import Business Metadata",
+                    title: this.isGlossary ? "Import Glossary Term" : "Import Business Metadata",
                     content: this,
                     cancelText: "Cancel",
-                    okText: "upload",
+                    okText: "Upload",
                     allowCancel: true,
                     okCloses: false,
                     mainClass: "dropzone-modal"
@@ -75,7 +75,7 @@ define([
             bindEvents: function() {
                 var that = this;
                 $('body').on('click', '.importBackBtn', function() {
-                    var modalTitle = that.isGlossary ? "Import Glossary" : "Import Business Metadata";
+                    var modalTitle = that.isGlossary ? "Import Glossary Term" : "Import Business Metadata";
                     that.toggleErrorAndDropZoneView({ title: modalTitle, isErrorView: false });
                 });
             },
@@ -143,7 +143,7 @@ define([
                         Utils.defaultErrorHandler(null, responseObj, { defaultErrorMessage: (response.errorMessage) || response });
                         that.modal.$el.find("button.ok").attr("disabled", false);
                     },
-                    dictDefaultMessage: "Drop files here or click to upload.",
+                    dictDefaultMessage: "Drop files here or click to upload(.csv, .xls, .xlsx).",
                     headers: headers
                 });
             },

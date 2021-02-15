@@ -80,7 +80,10 @@ define([
             };
             events["click " + this.ui.importGlossary] = function(e) {
                 e.stopPropagation();
-                that.onClickImportGlossary();
+                var $target = $(e.target);
+                if ($target.parents(".disable-list-option").length == 0 && $target.hasClass("disable-list-option") == false) {
+                    that.onClickImportGlossary();
+                }
             };
             events['click ' + this.ui.downloadTemplate] = function(e) {
                 e.stopPropagation();
@@ -117,6 +120,13 @@ define([
             this.ui.showGlossaryType.attr("data-original-title", (this.isTermView ? "Show Category" : "Show Term"));
             this.ui.showGlossaryType.tooltip('hide');
             this.ui.showGlossaryType.find("i").toggleClass("switch-button");
+            if (this.isTermView) {
+                this.ui.importGlossary.removeClass("disable-list-option").find('a').attr("href", "javascript:void(0)");
+                this.ui.downloadTemplate.removeClass("disable-list-option").find('a').attr("href", UrlLinks.glossaryImportTempUrl());
+            } else {
+                this.ui.importGlossary.addClass("disable-list-option").find('a').removeAttr("href");
+                this.ui.downloadTemplate.addClass("disable-list-option").find('a').removeAttr("href");
+            }
             this.ui.termSearchTree.jstree(true).refresh();
         },
         initialize: function(options) {

@@ -253,6 +253,17 @@
                 }
             }
 
+            .disable-list-option {
+
+                &,
+                &:focus,
+                &:hover * {
+                    background-color: transparent !important;
+                    color: $gray !important;
+                    cursor: not-allowed;
+                }
+            }
+
             .clear-icon {
                 color: $color_ironside_gray_approx !important;
                 position: absolute;
