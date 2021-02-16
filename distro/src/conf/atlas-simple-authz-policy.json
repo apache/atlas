@@ -15,13 +15,14 @@
       ],
       "entityPermissions": [
         {
-          "privileges":      [ ".*" ],
-          "entityTypes":     [ ".*" ],
-          "entityIds":       [ ".*" ],
-          "classifications": [ ".*" ],
-          "labels" : [ ".*" ],
-          "businessMetadata" : [ ".*" ],
-          "attributes" :[ ".*" ]
+          "privileges":            [ ".*" ],
+          "entityTypes":           [ ".*" ],
+          "entityIds":             [ ".*" ],
+          "entityClassifications": [ ".*" ],
+          "labels":                [ ".*" ],
+          "businessMetadata":      [ ".*" ],
+          "attributes":            [ ".*" ],
+          "classifications":       [ ".*" ]
         }
       ],
       "relationshipPermissions": [
@@ -41,10 +42,13 @@
     "DATA_SCIENTIST": {
       "entityPermissions": [
         {
-          "privileges":      [ "entity-read", "entity-read-classification" ],
-          "entityTypes":     [ ".*" ],
-          "entityIds":       [ ".*" ],
-          "classifications": [ ".*" ]
+          "privileges":            [ "entity-read", "entity-read-classification" ],
+          "entityTypes":           [ ".*" ],
+          "entityIds":             [ ".*" ],
+          "entityClassifications": [ ".*" ],
+          "labels":                [ ".*" ],
+          "businessMetadata":      [ ".*" ],
+          "attributes":            [ ".*" ]
         }
       ]
     },
@@ -52,10 +56,14 @@
     "DATA_STEWARD": {
       "entityPermissions": [
         {
-          "privileges":      [ "entity-read", "entity-create", "entity-update", "entity-read-classification", "entity-add-classification", "entity-update-classification", "entity-remove-classification" ],
-          "entityTypes":     [ ".*" ],
-          "entityIds":       [ ".*" ],
-          "classifications": [ ".*" ]
+          "privileges":            [ "entity-read", "entity-create", "entity-update", "entity-read-classification", "entity-add-classification", "entity-update-classification", "entity-remove-classification" ],
+          "entityTypes":           [ ".*" ],
+          "entityIds":             [ ".*" ],
+          "entityClassifications": [ ".*" ],
+          "labels":                [ ".*" ],
+          "businessMetadata":      [ ".*" ],
+          "attributes":            [ ".*" ],
+          "classifications":       [ ".*" ]
         }
       ],
       "relationshipPermissions": [
