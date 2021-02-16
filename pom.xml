@@ -752,7 +752,7 @@
         <spring.security.version>4.2.17.RELEASE</spring.security.version>
         <spring.version>4.3.29.RELEASE</spring.version>
         <sqoop.version>1.4.6.2.3.99.0-195</sqoop.version>
-        <storm.version>2.1.0</storm.version>
+        <storm.version>2.2.0</storm.version>
         <surefire.forkCount>2C</surefire.forkCount>
         <surefire.version>2.18.1</surefire.version>
         <testng.version>6.9.4</testng.version>
