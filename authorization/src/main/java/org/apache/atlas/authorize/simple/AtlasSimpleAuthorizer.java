@@ -42,6 +42,9 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.atlas.authorize.AtlasPrivilege.ENTITY_ADD_CLASSIFICATION;
+import static org.apache.atlas.authorize.AtlasPrivilege.ENTITY_REMOVE_CLASSIFICATION;
+import static org.apache.atlas.authorize.AtlasPrivilege.ENTITY_UPDATE_CLASSIFICATION;
 import static org.apache.atlas.authorize.AtlasPrivilege.TYPE_CREATE;
 import static org.apache.atlas.authorize.AtlasPrivilege.TYPE_DELETE;
 import static org.apache.atlas.authorize.AtlasPrivilege.TYPE_READ;
@@ -52,6 +55,12 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasSimpleAuthorizer.class);
 
     private final static String WILDCARD_ASTERISK = "*";
+
+    private final static Set<AtlasPrivilege> CLASSIFICATION_PRIVILEGES = new HashSet<AtlasPrivilege>() {{
+                                                                                add(ENTITY_ADD_CLASSIFICATION);
+                                                                                add(ENTITY_REMOVE_CLASSIFICATION);
+                                                                                add(ENTITY_UPDATE_CLASSIFICATION);
+                                                                            }};
 
     private AtlasSimpleAuthzPolicy authzPolicy;
 
@@ -233,43 +242,38 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
             LOG.debug("==> SimpleAtlasAuthorizer.isAccessAllowed({})", request);
         }
 
+        boolean           ret            = false;
         final String      action         = request.getAction() != null ? request.getAction().getType() : null;
         final Set<String> entityTypes    = request.getEntityTypeAndAllSuperTypes();
         final String      entityId       = request.getEntityId();
-        final String      classification = request.getClassification() != null ? request.getClassification().getTypeName() : null;
         final String      attribute      = request.getAttributeName();
         final Set<String> entClsToAuthz  = new HashSet<>(request.getEntityClassifications());
         final Set<String> roles          = getRoles(request.getUser(), request.getUserGroups());
-        boolean hasEntityAccess          = false;
-        boolean hasClassificationsAccess = false;
 
         for (String role : roles) {
             List<AtlasEntityPermission> permissions = getEntityPermissionsForRole(role);
 
             if (permissions != null) {
                 for (AtlasEntityPermission permission : permissions) {
-                    // match entity-type/entity-id/label/business-metadata/attribute
-                    if (isMatchAny(entityTypes, permission.getEntityTypes()) && isMatch(entityId, permission.getEntityIds()) && isMatch(attribute, permission.getAttributes())
-                         && isLabelMatch(request, permission) && isBusinessMetadataMatch(request, permission)) {
-                        // match permission/classification
-                        if (!hasEntityAccess) {
-                            if (isMatch(action, permission.getPrivileges()) && isMatch(classification, permission.getClassifications())) {
-                                hasEntityAccess = true;
-                            }
-                        }
+                    if (isMatch(action, permission.getPrivileges()) && isMatchAny(entityTypes, permission.getEntityTypes()) &&
+                        isMatch(entityId, permission.getEntityIds()) && isMatch(attribute, permission.getAttributes()) &&
+                        isLabelMatch(request, permission) && isBusinessMetadataMatch(request, permission) && isClassificationMatch(request, permission)) {
 
-                        // match entity-classifications
-                        for (Iterator<String> iter = entClsToAuthz.iterator(); iter.hasNext();) {
+                        // 1. entity could have multiple classifications
+                        // 2. access for these classifications could be granted by multiple AtlasEntityPermission entries
+                        // 3. classifications allowed by the current permission will be removed from entClsToAuthz
+                        // 4. request will be allowed once entClsToAuthz is empty i.e. user has permission for all classifications
+                        for (Iterator<String> iter = entClsToAuthz.iterator(); iter.hasNext(); ) {
                             String entityClassification = iter.next();
 
-                            if (isMatchAny(request.getClassificationTypeAndAllSuperTypes(entityClassification), permission.getClassifications())) {
+                            if (isMatchAny(request.getClassificationTypeAndAllSuperTypes(entityClassification), permission.getEntityClassifications())) {
                                 iter.remove();
                             }
                         }
 
-                        hasClassificationsAccess = CollectionUtils.isEmpty(entClsToAuthz);
+                        ret = CollectionUtils.isEmpty(entClsToAuthz);
 
-                        if (hasEntityAccess && hasClassificationsAccess) {
+                        if (ret) {
                             break;
                         }
                     }
@@ -277,11 +281,9 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
             }
         }
 
-        boolean ret = hasEntityAccess && hasClassificationsAccess;
-
         if (LOG.isDebugEnabled()) {
             if (!ret) {
-                LOG.debug("hasEntityAccess={}; hasClassificationsAccess={}, classificationsWithNoAccess={}", hasEntityAccess, hasClassificationsAccess, entClsToAuthz);
+                LOG.debug("isAccessAllowed={}; classificationsWithNoAccess={}", ret, entClsToAuthz);
             }
 
             LOG.debug("<== SimpleAtlasAuthorizer.isAccessAllowed({}): {}", request, ret);
@@ -488,6 +490,10 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
 
     private boolean isBusinessMetadataMatch(AtlasEntityAccessRequest request, AtlasEntityPermission permission) {
         return AtlasPrivilege.ENTITY_UPDATE_BUSINESS_METADATA.equals(request.getAction()) ? isMatch(request.getBusinessMetadata(), permission.getBusinessMetadata()) : true;
+    }
+
+    private boolean isClassificationMatch(AtlasEntityAccessRequest request, AtlasEntityPermission permission) {
+        return (CLASSIFICATION_PRIVILEGES.contains(request.getAction()) && request.getClassification() != null) ? isMatch(request.getClassification().getTypeName(), permission.getClassifications()) : true;
     }
 
     private void filterTypes(AtlasAccessRequest request, List<? extends AtlasBaseTypeDef> typeDefs)throws AtlasAuthorizationException {
