@@ -1104,7 +1104,9 @@ public class GlossaryService {
             try {
                 ret.add(createTerm(glossaryTerm));
             } catch (AtlasBaseException e) {
-                throw new AtlasBaseException(AtlasErrorCode.FAILED_TO_CREATE_GLOSSARY_TERM, e);
+                if (!e.getAtlasErrorCode().equals(AtlasErrorCode.GLOSSARY_TERM_ALREADY_EXISTS)) {
+                    throw new AtlasBaseException(AtlasErrorCode.FAILED_TO_CREATE_GLOSSARY_TERM, e);
+                }
             }
         }
 
