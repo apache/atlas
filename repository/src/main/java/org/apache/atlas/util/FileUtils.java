@@ -62,7 +62,7 @@ public class FileUtils {
         } else if (extension.equalsIgnoreCase(XLS.name()) || extension.equalsIgnoreCase(XLSX.name())) {
             ret = readExcel(inputStream, extension);
         } else {
-            throw new AtlasBaseException(AtlasErrorCode.INVALID_FILE_TYPE);
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_FILE_TYPE, fileName);
         }
 
         if (CollectionUtils.isEmpty(ret)) {

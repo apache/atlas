@@ -167,9 +167,10 @@ public enum AtlasErrorCode {
     INVALID_BUSINESS_METADATA_NAME_FOR_ENTITY_TYPE(400, "ATLAS-400-00-095", "Invalid business-metadata: {0} specified for entity, applicable business-metadata: {1}"),
     BUSINESS_METADATA_ATTRIBUTE_DOES_NOT_EXIST(400, "ATLAS-400-00-096", "Business-metadata attribute does not exist in entity: {0}"),
     BUSINESS_METADATA_ATTRIBUTE_ALREADY_EXISTS(400, "ATLAS-400-00-097", "Business-metadata attribute already exists in entity: {0}"),
-    INVALID_FILE_TYPE(400, "ATLAS-400-00-098", "The provided file type {0} is not supported."),
+    INVALID_FILE_TYPE(400, "ATLAS-400-00-098", "The provided file type: {0} is not supported. Expected file formats are .csv and .xls."),
     INVALID_BUSINESS_ATTRIBUTES_IMPORT_DATA(400, "ATLAS-400-00-099","The uploaded file was not processed due to following errors : {0}"),
     ATTRIBUTE_NAME_INVALID_CHARS(400, "ATLAS-400-00-09A", "{0}: invalid name. Attribute names must begin with a letter followed by a sequence of letters, numbers, or '_' characters"),
+    NO_DATA_FOUND(400, "ATLAS-400-00-09B", "No data found in the uploaded file"),
     UNAUTHORIZED_ACCESS(403, "ATLAS-403-00-001", "{0} is not authorized to perform {1}"),
 
     // All Not found enums go here
@@ -192,9 +193,8 @@ public enum AtlasErrorCode {
     INVALID_LINEAGE_ENTITY_TYPE(404, "ATLAS-404-00-011", "Given instance guid {0} with type {1} is not a valid lineage entity type."),
     INSTANCE_GUID_DELETED(404, "ATLAS-404-00-012", "Given instance guid {0} has been deleted"),
     NO_PROPAGATED_CLASSIFICATIONS_FOUND_FOR_ENTITY(404, "ATLAS-404-00-013", "No propagated classifications associated with entity: {0}"),
-    NO_DATA_FOUND(404, "ATLAS-404-00-014", "No data found in the uploaded file"),
-    FILE_NAME_NOT_FOUND(404, "ATLAS-404-00-015", "File name should not be blank"),
-    NO_TYPE_NAME_ON_VERTEX(404, "ATLAS-404-00-016", "No typename found for given entity with guid: {0}"),
+    FILE_NAME_NOT_FOUND(404, "ATLAS-404-00-014", "File name should not be blank"),
+    NO_TYPE_NAME_ON_VERTEX(404, "ATLAS-404-00-015", "No typename found for given entity with guid: {0}"),
 
     // All data conflict errors go here
     TYPE_ALREADY_EXISTS(409, "ATLAS-409-00-001", "Given type {0} already exists"),
@@ -203,7 +203,7 @@ public enum AtlasErrorCode {
     RELATIONSHIP_ALREADY_EXISTS(409, "ATLAS-409-00-004", "relationship {0} already exists between entities {1} and {2}"),
     TYPE_HAS_RELATIONSHIPS(409, "ATLAS-409-00-005", "Given type {0} has associated relationshipDefs"),
     SAVED_SEARCH_ALREADY_EXISTS(409, "ATLAS-409-00-006", "search named {0} already exists for user {1}"),
-    GLOSSARY_ALREADY_EXISTS(409, "ATLAS-409-00-007", "Glossary with qualifiedName {0} already exists"),
+    GLOSSARY_ALREADY_EXISTS(409, "ATLAS-409-00-007", "Glossary with name {0} already exists"),
     GLOSSARY_TERM_ALREADY_EXISTS(409, "ATLAS-409-00-009", "Glossary term with qualifiedName {0} already exists"),
     GLOSSARY_CATEGORY_ALREADY_EXISTS(409, "ATLAS-409-00-00A", "Glossary category with qualifiedName {0} already exists"),
 
