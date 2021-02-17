@@ -40,6 +40,7 @@ import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.util.FileUtils;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.utils.TestLoadModelUtils;
 import org.apache.commons.collections.CollectionUtils;
@@ -957,6 +958,20 @@ public class GlossaryServiceTest {
             fail("Error occurred : Failed to recognize the empty file.");
         } catch (AtlasBaseException e) {
             assertEquals(e.getMessage(),"No data found in the uploaded file");
+        }
+    }
+
+    @Test
+    public void testFileExtension() throws IOException {
+        InputStream inputStream = getFile(CSV_FILES, "incorrectEXT.py");
+        final String userDir  = System.getProperty("user.dir");
+        String       filePath = getTestFilePath(userDir, CSV_FILES, "incorrectEXT.py");
+        File         f          = new File(filePath);
+        try {
+            FileUtils.readFileData("incorrectEXT.py", inputStream);
+            fail("Error occurred : Incorrect file extension.");
+        } catch (AtlasBaseException e) {
+            assertEquals(e.getMessage(),"The provided file type: " + f.getName() + " is not supported. Expected file formats are .csv and .xls.");
         }
     }
 

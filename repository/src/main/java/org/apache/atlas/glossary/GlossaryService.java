@@ -149,7 +149,7 @@ public class GlossaryService {
         }
 
         if (glossaryExists(atlasGlossary)) {
-            throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_ALREADY_EXISTS, atlasGlossary.getQualifiedName());
+            throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_ALREADY_EXISTS, atlasGlossary.getName());
         }
 
         AtlasGlossary storeObject = dataAccess.save(atlasGlossary);
