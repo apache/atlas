@@ -246,6 +246,7 @@ define(['require',
             },
             onRender: function() {
                 var that = this;
+                this.checkEntityImage = {};
                 this.commonTableOptions = {
                     collection: this.searchCollection,
                     includePagination: false,
@@ -707,6 +708,7 @@ define(['require',
                             var getImageData = function(options) {
                                 var imagePath = options.imagePath,
                                     returnImgUrl = null;
+                                that.checkEntityImage[model.get('guid')] = false;
                                 $.ajax({
                                         "url": imagePath,
                                         "method": "get",
@@ -718,6 +720,7 @@ define(['require',
                                                 "imagePath": Utils.getEntityIconPath({ entityData: obj, errorUrl: imagePath })
                                             });
                                         } else if (data) {
+                                            that.checkEntityImage[model.get('guid')] = imagePath;
                                             returnImgUrl = imagePath;
                                             that.$("img[data-imgGuid='" + obj.guid + "']").removeClass("searchTableLogoLoader").attr("src", imagePath);
                                         }
@@ -725,7 +728,13 @@ define(['require',
                             }
                             var img = "";
                             img = "<div><img data-imgGuid='" + obj.guid + "' class='searchTableLogoLoader'></div>";
-                            getImageData({ imagePath: Utils.getEntityIconPath({ entityData: obj }) });
+                            if (that.checkEntityImage[model.get('guid')] == undefined) {
+                                getImageData({ imagePath: Utils.getEntityIconPath({ entityData: obj }) });
+                            } else {
+                                if (that.checkEntityImage[model.get('guid')] != false) {
+                                    img = "<div><img data-imgGuid='" + obj.guid + "' src='" + that.checkEntityImage[model.get('guid')] + "'></div>";
+                                }
+                            }
                             return (img + nameHtml);
                         }
                     })
