@@ -130,7 +130,6 @@ public class NotificationHookConsumerKafkaTest {
         ExceptionThrowingCommitConsumer        consumer                 = createNewConsumerThatThrowsExceptionInCommit(kafkaNotification, true);
         NotificationHookConsumer               notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil);
         NotificationHookConsumer.HookConsumer  hookConsumer             = notificationHookConsumer.new HookConsumer(consumer);
-        NotificationHookConsumer.FailedCommitOffsetRecorder failedCommitOffsetRecorder = hookConsumer.failedCommitOffsetRecorder;
 
         produceMessage(new HookNotificationV1.EntityCreateRequest("test_user2", createEntity()));
 
@@ -143,15 +142,11 @@ public class NotificationHookConsumerKafkaTest {
             assertTrue(true, "ExceptionThrowing consumer throws an excepion.");
         }
 
-        assertTrue(failedCommitOffsetRecorder.getCurrentOffset() > -1);
-
         consumer.disableCommitExpcetion();
 
         produceMessage(new HookNotificationV1.EntityCreateRequest("test_user1", createEntity()));
         consumeOneMessage(consumer, hookConsumer);
         consumeOneMessage(consumer, hookConsumer);
-
-        assertNull(failedCommitOffsetRecorder.getCurrentOffset());
 
         reset(atlasEntityStore);
     }
