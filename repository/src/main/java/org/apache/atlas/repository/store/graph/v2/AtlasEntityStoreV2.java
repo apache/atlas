@@ -214,9 +214,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         if(ret != null){
             for(String guid : guids) {
+                AtlasEntity entity = ret.getEntity(guid);
                 try {
-                    AtlasEntity entity = ret.getEntity(guid);
-
                     AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_READ, new AtlasEntityHeader(entity)), "read entity: guid=", guid);
                 } catch (AtlasBaseException e) {
                     if (RequestContext.get().isSkipFailedEntities()) {
@@ -224,7 +223,10 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                             LOG.debug("getByIds(): ignoring failure for entity {}: error code={}, message={}", guid, e.getAtlasErrorCode(), e.getMessage());
                         }
 
+                        //Remove from referred entities
                         ret.removeEntity(guid);
+                        //Remove from entities
+                        ret.removeEntity(entity);
 
                         continue;
                     }
