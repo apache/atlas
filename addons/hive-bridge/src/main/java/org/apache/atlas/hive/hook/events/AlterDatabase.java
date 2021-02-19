@@ -61,6 +61,8 @@ public class AlterDatabase extends CreateDatabase {
             AtlasEntity dbEntity = toDbEntity(newDb);
 
             ret.addEntity(dbEntity);
+
+            addLocationEntities(dbEntity, ret);
         } else {
             LOG.error("AlterDatabase.getEntities(): failed to retrieve db");
         }
