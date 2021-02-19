@@ -390,5 +390,8 @@ define(['require',
             container: 'body'
         });
     }
-
+    //For closing the modal on browsers navigation
+    $(window).on('popstate', function(){
+        $('body').find('.modal-dialog .close').click();
+    });
 })
