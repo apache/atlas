@@ -27,7 +27,7 @@ To run Apache Atlas with local Apache HBase & Apache Solr instances that are sta
 <SyntaxHighlighter wrapLines={true} language="powershell" style={theme.dark}>
 {`export MANAGE_LOCAL_HBASE=true
 export MANAGE_LOCAL_SOLR=true
-bin/atlas_start.py`}
+/distro/src/bin/atlas_start.py`}
 </SyntaxHighlighter>
 
 #### Running Apache Atlas with BerkeleyDB & Apache Solr
