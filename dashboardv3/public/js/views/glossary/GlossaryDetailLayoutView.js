@@ -171,7 +171,7 @@ define(['require',
                     Utils.backButtonClick();
                 }
                 events["click " + this.ui.addTerm] = 'onClickAddTermBtn';
-                events["click " + this.ui.addCategory] = 'onClickAddCategoryBtn';
+                events["click " + this.ui.addCategory] = 'onClickAddTermBtn';
                 events["click " + this.ui.addTag] = 'onClickAddTagBtn';
                 return events;
             },
@@ -351,60 +351,63 @@ define(['require',
                 this.ui.tagList.find("span.btn").remove();
                 this.ui.tagList.prepend(tagData);
             },
-            onClickAddTermBtn: function(e) {
-                var that = this;
-                require(['views/glossary/AssignTermLayoutView'], function(AssignTermLayoutView) {
-                    var glossary = that.glossaryCollection;
-                    if (that.value && that.value.gId) {
-                        var foundModel = that.glossaryCollection.find({ guid: that.value.gId });
-                        if (foundModel) {
-                            glossary = new VGlossaryList([foundModel.toJSON()], {
-                                comparator: function(item) {
-                                    return item.get("name");
-                                }
-                            });
-                        }
+            getCategoryTermCount: function(collection, matchString) {
+                var terms = 0;
+                _.each(collection, function(model) {
+                    if (model.get(matchString)) {
+                        terms += model.get(matchString).length;
                     }
-
-                    var view = new AssignTermLayoutView({
-                        categoryData: that.data,
-                        associatedTerms: that.data && that.data.terms && that.data.terms.length > 0 ? that.data.terms : [],
-                        isCategoryView: that.isCategoryView,
-                        callback: function() {
-                            that.getData();
-                        },
-                        glossaryCollection: glossary
-                    });
-                    view.modal.on('ok', function() {
-                        that.hideLoader();
-                    });
                 });
+                return terms;
             },
-            onClickAddCategoryBtn: function(e) {
+            onClickAddTermBtn: function(e) {
+                var glossary = this.glossaryCollection;
+                if (this.value && this.value.gId) {
+                    var foundModel = this.glossaryCollection.find({ guid: this.value.gId });
+                    if (foundModel) {
+                        glossary = new VGlossaryList([foundModel.toJSON()], {
+                            comparator: function(item) {
+                                return item.get("name");
+                            }
+                        });
+                    }
+                }
+                var obj = {
+                        callback: function() {
+                            this.getData();
+                        },
+                        glossaryCollection: glossary,
+                    },
+                    emptyListMessage = this.isCategoryView ? "There are no available terms that can be associated with this category" : "There are no available categories that can be associated with this term";
+
+                if (this.isCategoryView) {
+                    obj = _.extend(obj, {
+                        categoryData: this.data,
+                        associatedTerms: (this.data && this.data.terms && this.data.terms.length > 0) ? this.data.terms : [],
+                        isCategoryView: this.isCategoryView,
+                    });
+                } else {
+                    obj = _.extend(obj, {
+                        termData: this.data,
+                        isTermView: this.isTermView,
+                    });
+                }
+                if (this.getCategoryTermCount(glossary.fullCollection.models, this.isCategoryView ? "terms" : "categories")) {
+                    this.AssignTermLayoutViewModal(obj);
+                } else {
+                    Utils.notifyInfo({
+                        content: emptyListMessage
+                    });
+                }
+            },
+            AssignTermLayoutViewModal: function(termCategoryObj) {
                 var that = this;
                 require(['views/glossary/AssignTermLayoutView'], function(AssignTermLayoutView) {
-                    var glossary = that.glossaryCollection;
-                    if (that.value && that.value.gId) {
-                        var foundModel = that.glossaryCollection.find({ guid: that.value.gId });
-                        if (foundModel) {
-                            glossary = new VGlossaryList([foundModel.toJSON()], {
-                                comparator: function(item) {
-                                    return item.get("name");
-                                }
-                            });
-                        }
-                    }
-                    var view = new AssignTermLayoutView({
-                        termData: that.data,
-                        isTermView: that.isTermView,
-                        callback: function() {
-                            that.getData();
-                        },
-                        glossaryCollection: glossary
-                    });
+                    var view = new AssignTermLayoutView(termCategoryObj);
                     view.modal.on('ok', function() {
                         that.hideLoader();
                     });
+
                 });
             },
             onClickAddTagBtn: function(e) {
