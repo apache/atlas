@@ -153,7 +153,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'value', 'guid', 'initialView', 'isTypeTagNotExists', 'classificationDefCollection', 'entityDefCollection', 'typeHeaders', 'searchVent', 'enumDefCollection', 'tagCollection', 'searchTableColumns', 'isTableDropDisable', 'fromView', 'glossaryCollection', 'termName', 'businessMetadataDefCollection', 'profileDBView'));
+                _.extend(this, _.pick(options, 'value', 'guid', 'initialView', 'isTypeTagNotExists', 'classificationDefCollection', 'entityDefCollection', 'typeHeaders', 'searchVent', 'categoryEvent', 'enumDefCollection', 'tagCollection', 'searchTableColumns', 'isTableDropDisable', 'fromView', 'glossaryCollection', 'termName', 'businessMetadataDefCollection', 'profileDBView'));
                 this.entityModel = new VEntity();
                 this.searchCollection = new VSearchList();
                 this.limit = 25;
@@ -248,13 +248,17 @@ define(['require',
                 }, this);
                 this.listenTo(this.searchCollection, "backgrid:sorted", function(model, response) {
                     this.checkTableFetch();
-                }, this)
+                }, this);
+                this.listenTo(this.categoryEvent, "Sucess:TermSearchResultPage", function() {
+                    this.glossaryCollection.fetch({ reset: true });
+                });
             },
             onRender: function() {
                 var that = this;
                 if (Utils.getUrlState.isSearchTab()) {
                     this.$(".action-box").hide();
                 }
+
                 this.checkEntityImage = {};
                 this.commonTableOptions = {
                     collection: this.searchCollection,
@@ -1134,32 +1138,57 @@ define(['require',
                     that.addTagModalView(guid);
                 }
             },
+            //This function checks for the lenght of Available terms and modal for adding terms is displayed accordingly.
+            assignTermModalView: function(glossaryCollection, obj) {
+                var that = this,
+                    terms = 0;
+                _.each(glossaryCollection.fullCollection.models, function(model) {
+                    if (model.get('terms')) {
+                        terms += model.get('terms').length;
+                    };
+                });
+                if (terms) {
+                    require(['views/glossary/AssignTermLayoutView'], function(AssignTermLayoutView) {
+                        var view = new AssignTermLayoutView({
+                            guid: obj.guid,
+                            multiple: obj.multiple,
+                            associatedTerms: obj.associatedTerms,
+                            callback: function() {
+                                that.multiSelectEntity = [];
+                                that.$('.multiSelectTag,.multiSelectTerm').hide();
+                                that.fetchCollection();
+                            },
+                            glossaryCollection: glossaryCollection,
+                        });
+                    });
+                } else {
+                    Utils.notifyInfo({
+                        content: "There are no available terms"
+                    });
+                }
+            },
             onClickAddTermBtn: function(e) {
                 var that = this,
                     guid = "",
                     entityGuid = $(e.currentTarget).data("guid"),
-                    associatedTerms = undefined,
-                    multiple = undefined,
-                    isTermMultiSelect = $(e.currentTarget).hasClass('multiSelectTerm');
-                if (isTermMultiSelect && this.multiSelectEntity && this.multiSelectEntity.length) {
-                    multiple = this.multiSelectEntity;
-                } else if (entityGuid) {
-                    associatedTerms = this.searchCollection.find({ guid: entityGuid }).get('meanings');
-                }
-                require(['views/glossary/AssignTermLayoutView'], function(AssignTermLayoutView) {
-                    var view = new AssignTermLayoutView({
+                    obj = {
                         guid: entityGuid,
-                        multiple: multiple,
-                        associatedTerms: associatedTerms,
-                        callback: function() {
-                            that.multiSelectEntity = [];
-                            that.$('.multiSelectTag,.multiSelectTerm').hide();
-                            that.fetchCollection();
-
-                        },
-                        glossaryCollection: that.glossaryCollection,
-                    });
+                        multiple: undefined,
+                        associatedTerms: undefined,
+                    },
+                    isTermMultiSelect = $(e.currentTarget).hasClass('multiSelectTerm');
+                this.glossaryCollection.fetch({
+                    success: function(glossaryCollection) {
+                        that.assignTermModalView(glossaryCollection, obj);
+                    },
+                    reset: true,
                 });
+                if (isTermMultiSelect && this.multiSelectEntity && this.multiSelectEntity.length) {
+                    obj.multiple = this.multiSelectEntity;
+                } else if (entityGuid) {
+                    obj.associatedTerms = this.searchCollection.find({ guid: entityGuid }).get('meanings');
+                }
+
             },
             onClickTagCross: function(e) {
                 var that = this,
