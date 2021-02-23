@@ -558,29 +558,46 @@ define(['require',
                     });
                 });
             },
-            onClickAddTermBtn: function(e) {
+            assignTermModalView: function(glossaryCollection, obj) {
                 var that = this,
-                    entityGuid = that.id,
-                    entityObj = this.collection.first().get('entity'),
-                    associatedTerms = [];
-                if (entityObj && entityObj.relationshipAttributes && entityObj.relationshipAttributes.meanings) {
-                    associatedTerms = entityObj.relationshipAttributes.meanings;
-                }
-                require(['views/glossary/AssignTermLayoutView'], function(AssignTermLayoutView) {
-                    var view = new AssignTermLayoutView({
-                        guid: that.id,
-                        callback: function() {
-                            that.fetchCollection();
-                        },
-                        associatedTerms: associatedTerms,
-                        showLoader: that.showLoader.bind(that),
-                        hideLoader: that.hideLoader.bind(that),
-                        glossaryCollection: that.glossaryCollection
-                    });
-                    view.modal.on('ok', function() {
-                        Utils.showTitleLoader(that.$('.page-title .fontLoader'), that.$('.entityDetail'));
-                    });
+                    terms = 0;
+                _.each(glossaryCollection.fullCollection.models, function(model) {
+                    if (model.get('terms')) {
+                        terms += model.get('terms').length;
+                    };
                 });
+                if (terms) {
+                    require(['views/glossary/AssignTermLayoutView'], function(AssignTermLayoutView) {
+                        var view = new AssignTermLayoutView({
+                            guid: obj.guid,
+                            callback: function() {
+                                that.fetchCollection();
+                            },
+                            associatedTerms: obj.associatedTerms,
+                            showLoader: that.showLoader.bind(that),
+                            hideLoader: that.hideLoader.bind(that),
+                            glossaryCollection: glossaryCollection
+                        });
+                        view.modal.on('ok', function() {
+                            Utils.showTitleLoader(that.$('.page-title .fontLoader'), that.$('.entityDetail'));
+                        });
+                    });
+                } else {
+                    Utils.notifyInfo({
+                        content: "There are no available terms that can be associated with this entity"
+                    });
+                }
+            },
+            onClickAddTermBtn: function(e) {
+                var entityObj = this.collection.first().get('entity'),
+                    obj = {
+                        guid: this.id,
+                        associatedTerms: [],
+                    };
+                this.assignTermModalView(this.glossaryCollection, obj);
+                if (entityObj && entityObj.relationshipAttributes && entityObj.relationshipAttributes.meanings) {
+                    obj.associatedTerms = entityObj.relationshipAttributes.meanings;
+                }
             },
             renderEntityDetailTableLayoutView: function(obj) {
                 var that = this;
