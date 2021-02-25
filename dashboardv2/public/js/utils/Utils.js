@@ -28,7 +28,8 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
                 placement: 'auto bottom',
                 html: true,
                 animation: false,
-                container: 'body'
+                container: 'body',
+                sanitize: false
             };
             if (options.viewFixedPopover || options.contentClass) {
                 defaultObj.template = '<div class="popover ' + (options.viewFixedPopover ? 'fixed-popover' : '') + ' fade bottom"><div class="arrow"></div><h3 class="popover-title"></h3><div class="' + (options.contentClass ? options.contentClass : '') + ' popover-content"></div></div>';
