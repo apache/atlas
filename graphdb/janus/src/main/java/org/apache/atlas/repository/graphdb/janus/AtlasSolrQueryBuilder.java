@@ -381,7 +381,7 @@ public class AtlasSolrQueryBuilder {
         //[ == inclusive
         //} == exclusive
         //+__timestamp_l:[* TO <attributeValue>}
-        queryBuilder.append("+").append(indexFieldName).append(":[ * TO").append(attributeValue).append("} ");
+        queryBuilder.append("+").append(indexFieldName).append(":[ * TO ").append(attributeValue).append("} ");
     }
 
     private void withLessthanOrEqual(StringBuilder queryBuilder, String indexFieldName, String attributeValue) {
