@@ -71,6 +71,8 @@ public class AtlasRelationshipDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasRe
             throw new AtlasBaseException(AtlasErrorCode.TYPE_MATCH_FAILED, relationshipDef.getName(), TypeCategory.RELATIONSHIP.name());
         }
 
+        AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_CREATE, relationshipDef), "create relationship-def ", relationshipDef.getName());
+
         AtlasVertex relationshipDefVertex = typeDefStore.findTypeVertexByName(relationshipDef.getName());
 
         if (relationshipDefVertex != null) {
@@ -136,7 +138,6 @@ public class AtlasRelationshipDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasRe
         verifyTypeReadAccess(relationshipDef.getEndDef1().getType());
         verifyTypeReadAccess(relationshipDef.getEndDef2().getType());
 
-        AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_CREATE, relationshipDef), "create relationship-def ", relationshipDef.getName());
 
         AtlasVertex vertex = (preCreateResult == null) ? preCreate(relationshipDef) : preCreateResult;
 
