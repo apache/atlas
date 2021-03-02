@@ -63,7 +63,9 @@ public class AtlasEntityDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEntityDe
             throw new AtlasBaseException(AtlasErrorCode.TYPE_MATCH_FAILED, entityDef.getName(), TypeCategory.CLASS.name());
         }
 
+        verifyAttributeTypeReadAccess(entityDef.getAttributeDefs());
 
+        AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_CREATE, entityDef), "create entity-def ", entityDef.getName());
 
         AtlasVertex ret = typeDefStore.findTypeVertexByName(entityDef.getName());
 
@@ -87,10 +89,6 @@ public class AtlasEntityDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEntityDe
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasEntityDefStoreV1.create({}, {})", entityDef, preCreateResult);
         }
-
-        verifyAttributeTypeReadAccess(entityDef.getAttributeDefs());
-
-        AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_CREATE, entityDef), "create entity-def ", entityDef.getName());
 
         AtlasVertex vertex = (preCreateResult == null) ? preCreate(entityDef) : preCreateResult;
 
