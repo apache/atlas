@@ -723,9 +723,10 @@
         <keycloak.version>6.0.1</keycloak.version>
         <log4j.version>1.2.17</log4j.version>
         <log4j2.version>2.13.3</log4j2.version>
-        <lucene-solr.version>8.6.3</lucene-solr.version>
+        <lucene-solr.version>8.8.1</lucene-solr.version>
         <maven-site-plugin.version>3.7</maven-site-plugin.version>
         <MaxPermGen>512m</MaxPermGen>
+        <metrics-core.version>4.1.18</metrics-core.version>
         <node-for-v2.version>v12.16.0</node-for-v2.version>
         <npm-for-v2.version>6.13.7</npm-for-v2.version>
         <opencsv.version>5.0</opencsv.version>
@@ -746,8 +747,8 @@
         <skipTests>false</skipTests>
         <skipUTs>false</skipUTs>
         <slf4j.version>1.7.30</slf4j.version>
-        <solr-test-framework.version>8.6.3</solr-test-framework.version>
-        <solr.version>8.6.3</solr.version>
+        <solr-test-framework.version>${lucene-solr.version}</solr-test-framework.version>
+        <solr.version>${lucene-solr.version}</solr.version>
         <spray.version>1.3.1</spray.version>
         <spring.security.version>4.2.17.RELEASE</spring.security.version>
         <spring.version>4.3.29.RELEASE</spring.version>
@@ -1587,6 +1588,13 @@
                 <artifactId>enunciate-core-annotations</artifactId>
                 <version>${enunciate-maven-plugin.version}</version>
             </dependency>
+
+            <dependency>
+                <groupId>io.dropwizard.metrics</groupId>
+                <artifactId>metrics-core</artifactId>
+                <version>${metrics-core.version}</version>
+            </dependency>
+
 
             <!-- supports simple auth handler -->
             <dependency>
