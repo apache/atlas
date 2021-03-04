@@ -685,7 +685,7 @@
         <commons-validator.version>1.6</commons-validator.version>
         <curator.version>4.0.1</curator.version>
         <doxia.version>1.8</doxia.version>
-        <dropwizard-metrics>3.2.2</dropwizard-metrics>
+        <dropwizard-metrics>4.1.18</dropwizard-metrics>
         <elasticsearch.version>6.8.3</elasticsearch.version>
         <entity.repository.impl>org.apache.atlas.repository.audit.InMemoryEntityAuditRepository</entity.repository.impl>
         <enunciate-maven-plugin.version>2.13.2</enunciate-maven-plugin.version>
@@ -726,7 +726,6 @@
         <lucene-solr.version>8.8.1</lucene-solr.version>
         <maven-site-plugin.version>3.7</maven-site-plugin.version>
         <MaxPermGen>512m</MaxPermGen>
-        <metrics-core.version>4.1.18</metrics-core.version>
         <node-for-v2.version>v12.16.0</node-for-v2.version>
         <npm-for-v2.version>6.13.7</npm-for-v2.version>
         <opencsv.version>5.0</opencsv.version>
@@ -1588,13 +1587,6 @@
                 <artifactId>enunciate-core-annotations</artifactId>
                 <version>${enunciate-maven-plugin.version}</version>
             </dependency>
-
-            <dependency>
-                <groupId>io.dropwizard.metrics</groupId>
-                <artifactId>metrics-core</artifactId>
-                <version>${metrics-core.version}</version>
-            </dependency>
-
 
             <!-- supports simple auth handler -->
             <dependency>
