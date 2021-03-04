@@ -696,8 +696,9 @@
         <commons-validator.version>1.6</commons-validator.version>
         <curator.version>4.3.0</curator.version>
         <doxia.version>1.8</doxia.version>
-        <dropwizard-metrics>3.2.2</dropwizard-metrics>
+        <dropwizard-metrics>3.2.6</dropwizard-metrics>
         <elasticsearch.version>6.8.15</elasticsearch.version>
+        <elasticsearch.version>6.8.3</elasticsearch.version>
         <entity.repository.impl>org.apache.atlas.repository.audit.InMemoryEntityAuditRepository</entity.repository.impl>
         <enunciate-maven-plugin.version>2.13.2</enunciate-maven-plugin.version>
         <failsafe.version>2.18.1</failsafe.version>
@@ -737,7 +738,6 @@
         <lucene-solr.version>8.8.1</lucene-solr.version>
         <maven-site-plugin.version>3.7</maven-site-plugin.version>
         <MaxPermGen>512m</MaxPermGen>
-        <metrics-core.version>4.1.18</metrics-core.version>
         <node-for-v2.version>v12.16.0</node-for-v2.version>
         <npm-for-v2.version>6.13.7</npm-for-v2.version>
         <opencsv.version>5.0</opencsv.version>
@@ -1569,12 +1569,22 @@
                 <version>${enunciate-maven-plugin.version}</version>
             </dependency>
 
+            <!-- Dropwizard Metrics -->
             <dependency>
                 <groupId>io.dropwizard.metrics</groupId>
                 <artifactId>metrics-core</artifactId>
-                <version>${metrics-core.version}</version>
+                <version>${dropwizard-metrics}</version>
             </dependency>
-
+            <dependency>
+                <groupId>io.dropwizard.metrics</groupId>
+                <artifactId>metrics-graphite</artifactId>
+                <version>${dropwizard-metrics}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.dropwizard.metrics</groupId>
+                <artifactId>metrics-ganglia</artifactId>
+                <version>${dropwizard-metrics}</version>
+            </dependency>
 
             <!-- supports simple auth handler -->
             <dependency>
