@@ -75,6 +75,7 @@ public class RequestContext {
     private boolean     isInTypePatching           = false;
     private boolean     createShellEntityForNonExistingReference = false;
     private boolean     skipFailedEntities = false;
+    private String      currentTypePatchAction = "";
 
     private RequestContext() {
     }
@@ -235,6 +236,14 @@ public class RequestContext {
 
     public void setSkipFailedEntities(boolean skipFailedEntities) {
         this.skipFailedEntities = skipFailedEntities;
+    }
+
+    public String getCurrentTypePatchAction() {
+        return currentTypePatchAction;
+    }
+
+    public void setCurrentTypePatchAction(String currentTypePatchAction) {
+        this.currentTypePatchAction = currentTypePatchAction;
     }
 
     public void recordEntityUpdate(AtlasEntityHeader entity) {
