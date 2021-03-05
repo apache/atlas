@@ -203,6 +203,11 @@ public final class Constants {
     public static final Integer INCOMPLETE_ENTITY_VALUE   = Integer.valueOf(1);
 
     /*
+     * typedef patch constants
+     */
+    public static final String  TYPEDEF_PATCH_ADD_MANDATORY_ATTRIBUTE   = "ADD_MANDATORY_ATTRIBUTE";
+
+    /*
      * All supported file-format extensions for Bulk Imports through file upload
      */
     public enum SupportedFileExtensions { XLSX, XLS, CSV }

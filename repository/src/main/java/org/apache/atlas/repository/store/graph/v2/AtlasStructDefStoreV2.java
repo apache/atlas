@@ -442,8 +442,8 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
                         continue;
                     }
 
-                    // new attribute - only allow if optional
-                    if (!attributeDef.getIsOptional()) {
+                    // new attribute - allow optional by default or allow mandatory only with typedef patch ADD_MANDATORY_ATTRIBUTE
+                    if (!attributeDef.getIsOptional() && !isInAddMandatoryAttributePatch()) {
                         throw new AtlasBaseException(AtlasErrorCode.CANNOT_ADD_MANDATORY_ATTRIBUTE, structDef.getName(), attributeDef.getName());
                     }
                 }
@@ -468,6 +468,11 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
         }
 
         AtlasGraphUtilsV2.setEncodedProperty(vertex, encodedStructDefPropertyKey, attrNames);
+    }
+
+    public static boolean isInAddMandatoryAttributePatch() {
+        return RequestContext.get().isInTypePatching() &&
+                StringUtils.equals(Constants.TYPEDEF_PATCH_ADD_MANDATORY_ATTRIBUTE, RequestContext.get().getCurrentTypePatchAction());
     }
 
     public static void updateVertexAddReferences(AtlasStructDef structDef, AtlasVertex vertex,

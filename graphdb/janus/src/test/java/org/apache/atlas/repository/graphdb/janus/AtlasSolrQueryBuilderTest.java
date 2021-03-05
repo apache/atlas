@@ -200,7 +200,7 @@ public class AtlasSolrQueryBuilderTest {
 
         processSearchParameters(fileName, underTest);
 
-        Assert.assertEquals(underTest.build(), "+t10  AND  -__state_index:DELETED AND  +__typeName__index:(hive_table )  AND  ( ( +created__index:[ * TO100}  ) )");
+        Assert.assertEquals(underTest.build(), "+t10  AND  -__state_index:DELETED AND  +__typeName__index:(hive_table )  AND  ( ( +created__index:[ * TO 100}  ) )");
     }
 
     @Test
