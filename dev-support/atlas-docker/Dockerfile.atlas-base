@@ -17,9 +17,9 @@
 FROM ubuntu:20.04
 
 
-# Install curl, wget, tzdata, Python, Java
+# Install tzdata, Python, Java
 RUN apt-get update && \
-    DEBIAN_FRONTEND="noninteractive" apt-get -y install curl wget tzdata \
+    DEBIAN_FRONTEND="noninteractive" apt-get -y install tzdata \
     python python3 python3-pip openjdk-8-jdk bc iputils-ping ssh pdsh
 
 # Set environment variables
@@ -33,6 +33,12 @@ ENV PATH          /usr/java/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bi
 # setup groups, users, directories
 RUN groupadd atlas && \
     useradd -g atlas -ms /bin/bash atlas && \
+    groupadd hadoop && \
+    useradd -g hadoop -ms /bin/bash hdfs && \
+    useradd -g hadoop -ms /bin/bash yarn && \
+    useradd -g hadoop -ms /bin/bash hive && \
+    useradd -g hadoop -ms /bin/bash hbase && \
+    useradd -g hadoop -ms /bin/bash kafka && \
     mkdir -p /home/atlas/dist && \
     mkdir -p /home/atlas/scripts && \
     chown -R atlas:atlas /home/atlas

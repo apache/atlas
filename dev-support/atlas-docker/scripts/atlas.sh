@@ -31,6 +31,17 @@ then
 
   echo "admin=ADMIN::${encryptedPwd}" > ${ATLAS_HOME}/conf/users-credentials.properties
 
+  sed -i "s/atlas.graph.storage.hostname=.*$/atlas.graph.storage.hostname=atlas-zk.example.com:2181/"             /opt/atlas/conf/atlas-application.properties
+  sed -i "s/atlas.audit.hbase.zookeeper.quorum=.*$/atlas.audit.hbase.zookeeper.quorum=atlas-zk.example.com:2181/" /opt/atlas/conf/atlas-application.properties
+
+  sed -i "s/^atlas.graph.index.search.solr.mode=cloud/# atlas.graph.index.search.solr.mode=cloud/"                                              /opt/atlas/conf/atlas-application.properties
+  sed -i "s/^# *atlas.graph.index.search.solr.mode=http/atlas.graph.index.search.solr.mode=http/"                                               /opt/atlas/conf/atlas-application.properties
+  sed -i "s/^.*atlas.graph.index.search.solr.http-urls=.*$/atlas.graph.index.search.solr.http-urls=http:\/\/atlas-solr.example.com:8983\/solr/" /opt/atlas/conf/atlas-application.properties
+
+  sed -i "s/atlas.notification.embedded=.*$/atlas.notification.embedded=false/"                            /opt/atlas/conf/atlas-application.properties
+  sed -i "s/atlas.kafka.zookeeper.connect=.*$/atlas.kafka.zookeeper.connect=atlas-zk.example.com:2181/"    /opt/atlas/conf/atlas-application.properties
+  sed -i "s/atlas.kafka.bootstrap.servers=.*$/atlas.kafka.bootstrap.servers=atlas-kafka.example.com:9092/" /opt/atlas/conf/atlas-application.properties
+
   chown -R atlas:atlas ${ATLAS_HOME}/
 
   touch ${ATLAS_HOME}/.setupDone

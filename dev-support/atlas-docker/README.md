@@ -23,54 +23,28 @@ Docker files in this folder create docker images and run them to build Apache At
 
 ## Usage
 
-1. Ensure that you have recent version of Docker installed from [docker.io](http://www.docker.io) (as of this writing: Engine 19.03, Compose 1.26.2).
+1. Ensure that you have recent version of Docker installed from [docker.io](http://www.docker.io) (as of this writing: Engine 20.10.5, Compose 1.28.5).
+   Make sure to configure docker with at least 6gb of memory.
 
 2. Set this folder as your working directory.
 
 3. Update environment variables in .env file, if necessary
 
-4. Using docker-compose is the simpler way to build and deploy Apache Atlas in containers.
+4. Execute following command to download necessary archives to setup Atlas/HDFS/HBase/Kafka services:
+     ./download-archives.sh
 
-   4.1. Execute following command to build Apache Atlas:
+5. Build and deploy Apache Atlas in containers using docker-compose
+
+   5.1. Execute following command to build Apache Atlas:
 
         docker-compose -f docker-compose.atlas-base.yml -f docker-compose.atlas-build.yml up
 
    Time taken to complete the build might vary (upto an hour), depending on status of ${HOME}/.m2 directory cache.
 
-   4.2. Execute following command to install and start Atlas in a container:
+   5.2. Execute following command to install and start Atlas and dependent services (Solr, HBase, Kafka) in containers:
 
-        docker-compose -f docker-compose.atlas-base.yml -f docker-compose.atlas.yml up -d
+        docker-compose -f docker-compose.atlas-base.yml -f docker-compose.atlas.yml -f docker-compose.atlas-hadoop.yml -f docker-compose.atlas-hbase.yml -f docker-compose.atlas-kafka.yml up -d
 
    Apache Atlas will be installed at /opt/atlas/, and logs are at /var/logs/atlas directory.
-
-5. Alternatively docker command can be used to build and deploy Apache Atlas.
-
-   5.1. Execute following command to build Docker image **atlas-base**:
-
-        docker build -f Dockerfile.atlas-base -t atlas-base .
-
-   This might take about 10 minutes to complete.
-
-   5.2. Execute following command to build Docker image **atlas-build**:
-
-        docker build -f Dockerfile.atlas-build -t atlas-build .
-
-   5.3. Build Apache Atlas in a container with one of the following commands:
-
-        docker run -it --rm -v ${HOME}/.m2:/home/atlas/.m2:delegated -v $(pwd)/scripts:/home/atlas/scripts -v $(pwd)/../..:/home/atlas/src:delegated -v $(pwd)/patches:/home/atlas/patches -v $(pwd)/dist:/home/atlas/dist --env-file ./.env atlas-build
-
-   Time taken to complete the build might vary (upto an hour), depending on status of ${HOME}/.m2 directory cache.
-
-   5.4. Execute following command to build Docker image **atlas**:
-
-        docker build -f Dockerfile.atlas --build-arg ATLAS_VERSION=3.0.0-SNAPSHOT -t atlas .
-
-   This might take about 10 minutes to complete.
-
-   5.5. Execute following command to install and run Atlas services in a container:
-
-        docker run -it -d --name atlas --hostname atlas.example.com -p 21000:21000 -v $(pwd)/data:/home/atlas/data atlas
-
-   This might take few minutes to complete.
 
 6. Atlas Admin can be accessed at http://localhost:21000 (admin/atlasR0cks!)

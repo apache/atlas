@@ -65,7 +65,6 @@ atlas.graph.index.search.solr.wait-searcher=true
 #for distributed mode, specify zookeeper quorum here
 atlas.graph.storage.hostname=
 atlas.graph.storage.hbase.regions-per-server=1
-atlas.graph.storage.lock.wait-time=10000
 
 #In order to use Cassandra as a backend, comment out the hbase specific properties above, and uncomment the
 #the following properties
@@ -333,7 +332,6 @@ atlas.graph.index.search.solr.wait-searcher=true
 #for distributed mode, specify zookeeper quorum here
 atlas.graph.storage.hostname=localhost
 atlas.graph.storage.hbase.regions-per-server=1
-atlas.graph.storage.lock.wait-time=10000
                 </graph.storage.properties>
                 <hbase.dir>${project.build.directory}/hbase</hbase.dir>
                 <hbase.embedded>true</hbase.embedded>
