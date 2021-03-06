@@ -17,23 +17,25 @@
 FROM atlas-base:latest
 
 ARG ATLAS_VERSION
+ARG HBASE_VERSION
 
-COPY ./scripts/atlas.sh                              ${ATLAS_SCRIPTS}/
-COPY ./dist/apache-atlas-${ATLAS_VERSION}-bin.tar.gz /home/atlas/dist/
 
-RUN tar xfz /home/atlas/dist/apache-atlas-${ATLAS_VERSION}-bin.tar.gz --directory=/opt/ && \
-    ln -s /opt/apache-atlas-${ATLAS_VERSION} ${ATLAS_HOME} && \
-    rm -f /home/atlas/dist/apache-atlas-${ATLAS_VERSION}-bin.tar.gz && \
-    mkdir -p /var/run/atlas /var/log/atlas /home/atlas/data ${ATLAS_HOME}/hbase/conf && \
-    rm -rf ${ATLAS_HOME}/logs && \
-    ln -s /var/log/atlas ${ATLAS_HOME}/logs && \
-    ln -s /home/atlas/data ${ATLAS_HOME}/data && \
-    chown -R atlas:atlas ${ATLAS_HOME}/ /var/run/atlas/ /var/log/atlas/
+COPY ./downloads/hbase-${HBASE_VERSION}-bin.tar.gz     /home/atlas/dist/
 
-COPY ./scripts/hbase-site.xml ${ATLAS_HOME}/hbase/conf/
+COPY ./scripts/atlas-hbase-setup.sh                    /home/atlas/scripts/
+COPY ./scripts/atlas-hbase.sh                          /home/atlas/scripts/
+COPY ./scripts/hbase-site.xml                          /home/atlas/scripts/
 
-VOLUME /home/atlas/data
+RUN tar xvfz /home/atlas/dist/hbase-${HBASE_VERSION}-bin.tar.gz --directory=/opt/ && \
+    ln -s /opt/hbase-${HBASE_VERSION} /opt/hbase && \
+    rm -f /home/atlas/dist/hbase-${HBASE_VERSION}-bin.tar.gz
 
-EXPOSE 21000
+ENV HBASE_HOME /opt/hbase
+ENV PATH       /usr/java/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/hbase/bin
 
-ENTRYPOINT [ "/home/atlas/scripts/atlas.sh" ]
+EXPOSE 16000
+EXPOSE 16010
+EXPOSE 16020
+EXPOSE 16030
+
+ENTRYPOINT [ "/home/atlas/scripts/atlas-hbase.sh" ]

@@ -17,23 +17,21 @@
 FROM atlas-base:latest
 
 ARG ATLAS_VERSION
+ARG KAFKA_VERSION
 
-COPY ./scripts/atlas.sh                              ${ATLAS_SCRIPTS}/
-COPY ./dist/apache-atlas-${ATLAS_VERSION}-bin.tar.gz /home/atlas/dist/
 
-RUN tar xfz /home/atlas/dist/apache-atlas-${ATLAS_VERSION}-bin.tar.gz --directory=/opt/ && \
-    ln -s /opt/apache-atlas-${ATLAS_VERSION} ${ATLAS_HOME} && \
-    rm -f /home/atlas/dist/apache-atlas-${ATLAS_VERSION}-bin.tar.gz && \
-    mkdir -p /var/run/atlas /var/log/atlas /home/atlas/data ${ATLAS_HOME}/hbase/conf && \
-    rm -rf ${ATLAS_HOME}/logs && \
-    ln -s /var/log/atlas ${ATLAS_HOME}/logs && \
-    ln -s /home/atlas/data ${ATLAS_HOME}/data && \
-    chown -R atlas:atlas ${ATLAS_HOME}/ /var/run/atlas/ /var/log/atlas/
+COPY ./downloads/kafka_2.12-${KAFKA_VERSION}.tgz         /home/atlas/dist/
 
-COPY ./scripts/hbase-site.xml ${ATLAS_HOME}/hbase/conf/
+COPY ./scripts/atlas-kafka-setup.sh                     /home/atlas/scripts/
+COPY ./scripts/atlas-kafka.sh                           /home/atlas/scripts/
 
-VOLUME /home/atlas/data
+RUN tar xvfz /home/atlas/dist/kafka_2.12-${KAFKA_VERSION}.tgz --directory=/opt/ && \
+    ln -s /opt/kafka_2.12-${KAFKA_VERSION} /opt/kafka && \
+    rm -f /home/atlas/dist/kafka_2.12-${KAFKA_VERSION}.tgz
 
-EXPOSE 21000
+ENV KAFKA_HOME /opt/kafka
+ENV PATH       /usr/java/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/kafka/bin
 
-ENTRYPOINT [ "/home/atlas/scripts/atlas.sh" ]
+EXPOSE 9092
+
+ENTRYPOINT [ "/home/atlas/scripts/atlas-kafka.sh" ]

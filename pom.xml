@@ -698,7 +698,7 @@
         <guava.version>25.1-jre</guava.version>
         <guice.version>4.1.0</guice.version>
         <hadoop.hdfs-client.version>${hadoop.version}</hadoop.hdfs-client.version>
-        <hadoop.version>3.1.1</hadoop.version>
+        <hadoop.version>3.3.0</hadoop.version>
         <hbase.version>2.3.3</hbase.version>
         <hive.version>3.1.0</hive.version>
         <hppc.version>0.8.1</hppc.version>
