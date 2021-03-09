@@ -55,7 +55,8 @@ define([
             addBusinessMetadata: "[data-id='addBusinessMetadata']",
             saveBusinessMetadata: "[data-id='saveBusinessMetadata']",
             businessMetadataTree: "[data-id='businessMetadataTree']",
-            cancel: "[data-id='cancel']"
+            cancel: "[data-id='cancel']",
+            businessMetadataHeader: ".businessMetaDataPanel .panel-heading.main-parent"
         },
         events: function() {
             var events = {};
@@ -63,6 +64,7 @@ define([
             events["click " + this.ui.addBusinessMetadata] = "onAddBusinessMetadata";
             events["click " + this.ui.saveBusinessMetadata] = "onSaveBusinessMetadata";
             events["click " + this.ui.cancel] = "onCancel";
+            events["click " + this.ui.businessMetadataHeader] = "onHeaderClick";
             return events;
         },
         initialize: function(options) {
@@ -88,6 +90,23 @@ define([
                 }));
             this.collection = new Backbone.Collection();
             this.entityModel = new VEntity();
+        },
+        onHeaderClick: function() {
+            var that = this;
+            $('.businessMetaDataPanel').on("hidden.bs.collapse", function(e) {
+                that.ui.cancel.hide();
+                that.ui.saveBusinessMetadata.hide();
+                that.ui.addBusinessMetadata.show();
+                that.editMode = false;
+                that.ui.businessMetadataTree.show();
+                that.$(".editBox").hide();
+                that.updateToActualData();
+                if (that.collection && that.collection.length === 0) {
+                    that.ui.addBusinessMetadata.text("Add");
+                } else {
+                    that.ui.addBusinessMetadata.text("Edit");
+                }
+            });
         },
         updateToActualData: function(options) {
             var silent = options && options.silent || false;

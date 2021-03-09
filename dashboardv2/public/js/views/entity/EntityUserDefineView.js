@@ -44,7 +44,8 @@ define(['require',
             addAttr: "[data-id='addAttr']",
             saveAttrItems: "[data-id='saveAttrItems']",
             cancel: "[data-id='cancel']",
-            addItem: "[data-id='addItem']"
+            addItem: "[data-id='addItem']",
+            userDefineHeader: ".userDefinePanel .panel-heading"
         },
         events: function() {
             var events = {};
@@ -52,6 +53,7 @@ define(['require',
             events["click " + this.ui.addItem] = 'onAddAttrClick';
             events["click " + this.ui.saveAttrItems] = 'onEditAttrClick';
             events["click " + this.ui.cancel] = 'onCancelClick';
+            events["click " + this.ui.userDefineHeader] = 'onHeaderClick';
             return events;
         },
         initialize: function(options) {
@@ -79,6 +81,19 @@ define(['require',
                 REntityUserDefinedItemView: "#r_entityUserDefinedItemView"
             });
             this.renderEntityUserDefinedItems();
+        },
+        onHeaderClick: function() {
+            var that = this;
+            $(".userDefinePanel").on("hidden.bs.collapse", function() {
+                that.swapItem = false;
+                that.saveAttrItems = false;
+                that.initialCall = false;
+                that.render();
+                if (that.customAttibutes.length > 0) {
+                    $('.userDefinePanel').find(that.ui.userDefineHeader.attr('href')).removeClass('in');
+                    that.ui.userDefineHeader.addClass('collapsed').attr('aria-expanded', false);
+                }
+            });
         },
         onAddAttrClick: function() {
             this.swapItem = !this.swapItem;

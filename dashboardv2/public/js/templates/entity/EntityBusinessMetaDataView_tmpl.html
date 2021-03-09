@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
 -->
-<div class="panel panel-default custom-panel expand_collapse_panel-icon">
+<div class="panel panel-default custom-panel expand_collapse_panel-icon businessMetaDataPanel" style="position:relative;">
     <div class="panel-heading main-parent collapsed" data-toggle="collapse" href="#businessMetadataCollapse" aria-expanded="false" style="width: 70%;">
         <h4 class="panel-title">
             <a>Business Metadata</a>
@@ -24,7 +24,7 @@
         </div>
     </div>
     {{#ifCond readOnlyEntity "===" false}}
-    <div class="panel-actions">
+    <div class="panel-actions detailpage-panel-button">
         <button class="btn btn-action btn-sm" data-id="addBusinessMetadata">Add</button>
         <button class="btn btn-action btn-sm" style="display: none;" data-id="saveBusinessMetadata">Save</button>
         <button class="btn btn-action btn-sm" style="display: none;" data-id="cancel">Cancel</button>
