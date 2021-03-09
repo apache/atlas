@@ -390,7 +390,7 @@ const LineageUtils = {
         }
         var shapeSvg = parent
             .append("circle")
-            .attr("fill", "url(#img_" + imgName + ")")
+            .attr("fill", "url(#img_" + encodeURI(imgName) + ")")
             .attr("r", isRankdirToBottom ? "30px" : "24px")
             .attr("data-stroke", node.id)
             .attr("stroke-width", "2px")
