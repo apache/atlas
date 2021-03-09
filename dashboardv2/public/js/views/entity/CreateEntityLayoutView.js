@@ -57,8 +57,7 @@ define(['require',
                 toggleRequired: 'input[name="toggleRequired"]',
                 assetName: "[data-id='assetName']",
                 entityInput: "[data-id='entityInput']",
-                entitySelectionBox: "[data-id='entitySelectionBox']",
-
+                entitySelectionBox: "[data-id='entitySelectionBox']"
             },
             /** ui events hash */
             events: function() {
@@ -434,22 +433,30 @@ define(['require',
                 that.initilizeElements();
             },
             initilizeElements: function() {
-                var that = this;
+                var that = this,
+                    $createTime = this.modal.$el.find('input[name="createTime"]'),
+                    dateObj = {
+                        "singleDatePicker": true,
+                        "showDropdowns": true,
+                        "startDate": new Date(),
+                        locale: {
+                            format: Globals.dateFormat
+                        }
+                    };
                 this.$('input[data-type="date"]').each(function() {
                     if (!$(this).data('daterangepicker')) {
-                        var dateObj = {
-                            "singleDatePicker": true,
-                            "showDropdowns": true,
-                            "startDate": new Date(),
-                            locale: {
-                                format: Globals.dateFormat
-                            }
-                        };
                         if (that.guid && this.value.length) {
                             dateObj["startDate"] = new Date(Number(this.value));
                         }
+                        if ($(this).attr('name') === "modifiedTime") {
+                            dateObj["minDate"] = $createTime.val();
+                        }
                         $(this).daterangepicker(dateObj);
                     }
+                });
+                modifiedDateObj = _.extend({}, dateObj);
+                $createTime.on('apply.daterangepicker', function(ev, picker) {
+                    that.modal.$el.find('input[name="modifiedTime"]').daterangepicker(_.extend(modifiedDateObj, { "minDate": $createTime.val() }));
                 });
                 this.initializeValidation();
                 if (this.ui.entityInputData.find('fieldset').length > 0 && this.ui.entityInputData.find('select.true,input.true').length === 0) {
@@ -588,6 +595,7 @@ define(['require',
                     ' data-attribute="' + isAttribute + '"' +
                     ' data-relation="' + isRelation + '"' +
                     ' placeholder="' + name + '"' +
+                    ' name="' + name + '"' +
                     ' data-id="entityInput">';
             },
             getElement: function(object) {
@@ -849,7 +857,7 @@ define(['require',
                     if (that.guid) {
                         var dataValue = that.entityData.get("entity").attributes[keyData],
                             entities = that.entityData.get("entity").attributes,
-                            relationshipType = that.entityData.get("entity").relationshipAttributes[keyData],
+                            relationshipType = that.entityData.get("entity").relationshipAttributes ? that.entityData.get("entity").relationshipAttributes[keyData] : null,
                             referredEntities = that.entityData.get("referredEntities"),
                             selectedValue = [],
                             select2Options = [];
