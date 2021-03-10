@@ -197,6 +197,15 @@
       "typeVersion": "1.0",
       "attributeDefs": [
         {
+          "name":        "accountId",
+          "typeName":    "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional":  true,
+          "isUnique":    false,
+          "searchWeight" : 5
+        },
+		{
           "name":        "creationTime",
           "typeName":    "date",
           "cardinality": "SINGLE",
