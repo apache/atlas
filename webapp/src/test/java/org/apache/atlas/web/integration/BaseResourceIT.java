@@ -24,6 +24,8 @@ import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasClientV2;
 import org.apache.atlas.AtlasServiceException;
+import org.apache.atlas.kafka.AtlasKafkaMessage;
+import org.apache.atlas.kafka.KafkaNotification;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
@@ -31,24 +33,36 @@ import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations;
-import org.apache.atlas.model.typedef.*;
+import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.model.typedef.AtlasBusinessMetadataDef;
+import org.apache.atlas.model.typedef.AtlasClassificationDef;
+import org.apache.atlas.model.typedef.AtlasEntityDef;
+import org.apache.atlas.model.typedef.AtlasEnumDef;
+import org.apache.atlas.model.typedef.AtlasRelationshipDef;
+import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinality;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef;
+import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.notification.NotificationConsumer;
 import org.apache.atlas.notification.NotificationInterface;
+import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.type.AtlasTypeUtil;
+import org.apache.atlas.utils.AuthenticationUtil;
+import org.apache.atlas.utils.ParamChecker;
 import org.apache.atlas.v1.model.instance.Id;
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.v1.model.instance.Struct;
-import org.apache.atlas.v1.model.typedef.*;
-import org.apache.atlas.v1.model.typedef.EnumTypeDefinition.EnumValue;
-import org.apache.atlas.notification.NotificationConsumer;
-import org.apache.atlas.kafka.*;
 import org.apache.atlas.v1.model.notification.EntityNotificationV1;
-import org.apache.atlas.type.AtlasType;
-import org.apache.atlas.type.AtlasTypeUtil;
+import org.apache.atlas.v1.model.typedef.AttributeDefinition;
+import org.apache.atlas.v1.model.typedef.ClassTypeDefinition;
+import org.apache.atlas.v1.model.typedef.EnumTypeDefinition;
+import org.apache.atlas.v1.model.typedef.EnumTypeDefinition.EnumValue;
+import org.apache.atlas.v1.model.typedef.Multiplicity;
+import org.apache.atlas.v1.model.typedef.StructTypeDefinition;
+import org.apache.atlas.v1.model.typedef.TraitTypeDefinition;
+import org.apache.atlas.v1.model.typedef.TypesDef;
 import org.apache.atlas.v1.typesystem.types.utils.TypesUtil;
-import org.apache.atlas.utils.AuthenticationUtil;
-import org.apache.atlas.utils.ParamChecker;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.RandomStringUtils;
 import org.slf4j.Logger;
@@ -66,6 +80,8 @@ import java.util.Map;
 import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_PARAM_ATTRIBUTE;
 import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_INVERSE_REF;
 import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_OWNED_REF;
+import static org.apache.atlas.type.AtlasTypeUtil.createBusinessMetadataDef;
+import static org.apache.atlas.type.AtlasTypeUtil.createOptionalAttrDef;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
@@ -157,6 +173,22 @@ public abstract class BaseResourceIT {
                 LOG.warn("Type with name {} already exists. Skipping", classificationDef.getName());
             } else  {
                 toCreate.getClassificationDefs().add(classificationDef);
+            }
+        }
+
+        for (AtlasRelationshipDef relationshipDef : typesDef.getRelationshipDefs()) {
+            if (atlasClientV2.typeWithNameExists(relationshipDef.getName())) {
+                LOG.warn("Type with name {} already exists. Skipping", relationshipDef.getName());
+            } else {
+                toCreate.getRelationshipDefs().add(relationshipDef);
+            }
+        }
+
+        for (AtlasBusinessMetadataDef businessMetadataDef : typesDef.getBusinessMetadataDefs()) {
+            if (atlasClientV2.typeWithNameExists(businessMetadataDef.getName())) {
+                LOG.warn("Type with name {} already exists. Skipping", businessMetadataDef.getName());
+            } else {
+                toCreate.getBusinessMetadataDefs().add(businessMetadataDef);
             }
         }
 
@@ -440,11 +472,33 @@ public abstract class BaseResourceIT {
         AtlasClassificationDef secTrait     = AtlasTypeUtil.createTraitTypeDef(SEC_TAG, Collections.<String>emptySet());
         AtlasClassificationDef financeTrait = AtlasTypeUtil.createTraitTypeDef(FINANCE_TAG, Collections.<String>emptySet());
 
+        //bussinessmetadata
+        String _description = "_description";
+        Map<String, String> options = new HashMap<>();
+        options.put("maxStrLength", "20");
+        AtlasBusinessMetadataDef bmNoApplicableTypes = createBusinessMetadataDef("bmNoApplicableTypes", _description, "1.0",
+                createOptionalAttrDef("attr0", "string", options, _description));
+
+
+        AtlasBusinessMetadataDef bmNoAttributes = createBusinessMetadataDef("bmNoAttributes", _description, "1.0", null);
+
+        options.put("applicableEntityTypes", "[\"" + DATABASE_TYPE_V2 + "\",\"" + HIVE_TABLE_TYPE_V2 + "\"]");
+
+        AtlasBusinessMetadataDef bmWithAllTypes = createBusinessMetadataDef("bmWithAllTypes", _description, "1.0",
+                createOptionalAttrDef("attr1", AtlasBusinessMetadataDef.ATLAS_TYPE_BOOLEAN, options, _description),
+                createOptionalAttrDef("attr2", AtlasBusinessMetadataDef.ATLAS_TYPE_BYTE, options, _description),
+                createOptionalAttrDef("attr8", AtlasBusinessMetadataDef.ATLAS_TYPE_STRING, options, _description));
+
+        AtlasBusinessMetadataDef bmWithAllTypesMV = createBusinessMetadataDef("bmWithAllTypesMV", _description, "1.0",
+                createOptionalAttrDef("attr11", "array<boolean>", options, _description),
+                createOptionalAttrDef("attr18", "array<string>", options, _description));
+
         AtlasTypesDef typesDef = new AtlasTypesDef(Collections.singletonList(enumDef),
                 Collections.singletonList(structTypeDef),
                 Arrays.asList(classificationTrait, piiTrait, phiTrait, pciTrait, soxTrait, secTrait, financeTrait),
-                Arrays.asList(dbClsTypeDef, columnClsDef, tblClsDef, loadProcessClsDef));
-
+                Arrays.asList(dbClsTypeDef, columnClsDef, tblClsDef, loadProcessClsDef),
+                new ArrayList<>(),
+                Arrays.asList(bmNoApplicableTypes, bmNoAttributes, bmWithAllTypes, bmWithAllTypesMV));
         batchCreateTypes(typesDef);
     }
 
@@ -549,6 +603,7 @@ public abstract class BaseResourceIT {
 
         return tableInstance;
     }
+
     protected Referenceable createHiveDBInstanceBuiltIn(String dbName) {
         Referenceable databaseInstance = new Referenceable(DATABASE_TYPE_BUILTIN);
 
@@ -559,7 +614,6 @@ public abstract class BaseResourceIT {
 
         return databaseInstance;
     }
-
 
     protected Referenceable createHiveDBInstanceV1(String dbName) {
         Referenceable databaseInstance = new Referenceable(DATABASE_TYPE);
@@ -583,7 +637,6 @@ public abstract class BaseResourceIT {
 
         return atlasEntity;
     }
-
 
     public interface Predicate {
 

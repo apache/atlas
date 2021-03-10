@@ -40,7 +40,12 @@ public class AtlasAuditEntry extends AtlasBaseModelObject implements Serializabl
         PURGE("PURGE"),
         EXPORT("EXPORT"),
         IMPORT("IMPORT"),
-        IMPORT_DELETE_REPL("IMPORT_DELETE_REPL");
+        IMPORT_DELETE_REPL("IMPORT_DELETE_REPL"),
+        TYPE_DEF_CREATE("TYPE_DEF_CREATE"),
+        TYPE_DEF_UPDATE("TYPE_DEF_UPDATE"),
+        TYPE_DEF_DELETE("TYPE_DEF_DELETE"),
+        SERVER_START("SERVER_START"),
+        SERVER_STATE_ACTIVE("SERVER_STATE_ACTIVE");
 
         private final String type;
 

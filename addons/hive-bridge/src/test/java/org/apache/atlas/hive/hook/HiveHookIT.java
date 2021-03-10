@@ -32,6 +32,7 @@ import org.apache.atlas.model.instance.*;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.lineage.AtlasLineageInfo;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
+import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.commons.collections.CollectionUtils;
@@ -61,11 +62,13 @@ import java.util.*;
 import static org.apache.atlas.AtlasClient.NAME;
 import static org.apache.atlas.hive.hook.events.BaseHiveEvent.*;
 import static org.testng.Assert.*;
+import static org.testng.AssertJUnit.assertEquals;
 
 public class HiveHookIT extends HiveITBase {
     private static final Logger LOG = LoggerFactory.getLogger(HiveHookIT.class);
 
-    private static final String PART_FILE  = "2015-01-01";
+    private static final String PART_FILE      = "2015-01-01";
+    private static final String PATH_TYPE_NAME = "Path";
 
     private Driver driverWithNoHook;
 
@@ -115,6 +118,61 @@ public class HiveHookIT extends HiveITBase {
         dbEntity = atlasClientV2.getEntityByGuid(dbId).getEntity();
 
         Assert.assertEquals(dbEntity.getAttribute(ATTRIBUTE_QUALIFIED_NAME) , dbName.toLowerCase() + "@" + CLUSTER_NAME);
+    }
+
+    @Test
+    public void testPathEntityDefAvailable() throws Exception {
+        //Check if Path entity definition created or not
+        AtlasEntityDef pathEntityDef = atlasClientV2.getEntityDefByName("Path");
+        assertNotNull(pathEntityDef);
+    }
+
+    @Test
+    public void testCreateDatabaseWithLocation() throws Exception {
+        String dbName = dbName();
+        String query  = "CREATE DATABASE " + dbName;
+
+        runCommand(query);
+        String dbId = assertDatabaseIsRegistered(dbName);
+
+        //HDFS Location
+        String hdfsLocation = "hdfs://localhost:8020/warehouse/tablespace/external/hive/reports.db";
+        alterDatabaseLocation(dbName, hdfsLocation);
+        assertDatabaseLocationRelationship(dbId);
+    }
+
+    //alter database location
+    public void alterDatabaseLocation(String dbName, String location) throws Exception {
+        int timeDelay = 5000;
+        String query = String.format("ALTER DATABASE %s SET LOCATION \"%s\"", dbName, location);
+        runCommandWithDelay(query, timeDelay);
+    }
+
+    public void assertDatabaseLocationRelationship(String dbId) throws Exception {
+        AtlasEntity    dbEntity      = atlasClientV2.getEntityByGuid(dbId).getEntity();
+        AtlasEntityDef pathEntityDef = getPathEntityDefWithAllSubTypes();
+
+        assertTrue(dbEntity.hasAttribute(ATTRIBUTE_LOCATION));
+
+        assertNotNull(dbEntity.getAttribute(ATTRIBUTE_LOCATION));
+
+        assertNotNull(dbEntity.getRelationshipAttribute(ATTRIBUTE_LOCATION_PATH));
+
+        AtlasObjectId locationEntityObject = toAtlasObjectId(dbEntity.getRelationshipAttribute(ATTRIBUTE_LOCATION_PATH));
+        assertTrue(pathEntityDef.getSubTypes().contains(locationEntityObject.getTypeName()));
+    }
+
+    public AtlasEntityDef getPathEntityDefWithAllSubTypes() throws Exception {
+        Set<String>     possiblePathSubTypes = new HashSet<>(Arrays.asList("fs_path", "hdfs_path", "aws_s3_pseudo_dir", "aws_s3_v2_directory", "adls_gen2_directory"));
+        AtlasEntityDef  pathEntityDef        = atlasClientV2.getEntityDefByName(PATH_TYPE_NAME);
+
+        if(pathEntityDef == null) {
+            pathEntityDef = new AtlasEntityDef(PATH_TYPE_NAME);
+        }
+
+        pathEntityDef.setSubTypes(possiblePathSubTypes);
+
+        return pathEntityDef;
     }
 
     @Test

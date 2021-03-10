@@ -17,7 +17,6 @@
  */
 package org.apache.atlas;
 
-import org.apache.atlas.security.InMemoryJAASConfiguration;
 import org.apache.atlas.security.SecurityUtil;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationConverter;
@@ -35,6 +34,7 @@ import java.net.URL;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.Iterator;
 import java.util.Properties;
+import static org.apache.atlas.security.SecurityProperties.HADOOP_SECURITY_CREDENTIAL_PROVIDER_PATH;
 
 /**
  * Application properties used by Atlas.
@@ -58,6 +58,8 @@ public final class ApplicationProperties extends PropertiesConfiguration {
     public static final String  STORAGE_BACKEND_HBASE2          = "hbase2";
     public static final String  INDEX_BACKEND_SOLR              = "solr";
     public static final String  LDAP_TYPE                       =  "atlas.authentication.method.ldap.type";
+    public static final String  LDAP                            =  "LDAP";
+    public static final String  AD                              =  "AD";
     public static final String  LDAP_AD_BIND_PASSWORD           =  "atlas.authentication.method.ldap.ad.bind.password";
     public static final String  LDAP_BIND_PASSWORD              =  "atlas.authentication.method.ldap.bind.password";
     public static final String  MASK_LDAP_PASSWORD              =  "********";
@@ -65,6 +67,7 @@ public final class ApplicationProperties extends PropertiesConfiguration {
     public static final boolean DEFAULT_SOLR_WAIT_SEARCHER      = true;
     public static final boolean DEFAULT_INDEX_MAP_NAME          = false;
     public static final AtlasRunMode DEFAULT_ATLAS_RUN_MODE     = AtlasRunMode.PROD;
+    public static final String INDEX_SEARCH_MAX_RESULT_SET_SIZE = "atlas.graph.index.search.max-result-set-size";
 
     public static final SimpleEntry<String, String> DB_CACHE_CONF               = new SimpleEntry<>("atlas.graph.cache.db-cache", "true");
     public static final SimpleEntry<String, String> DB_CACHE_CLEAN_WAIT_CONF    = new SimpleEntry<>("atlas.graph.cache.db-cache-clean-wait", "20");
@@ -108,10 +111,7 @@ public final class ApplicationProperties extends PropertiesConfiguration {
     public static Configuration set(Configuration configuration) throws AtlasException {
         synchronized (ApplicationProperties.class) {
             instance = configuration;
-
-            InMemoryJAASConfiguration.init(instance);
         }
-
         return instance;
     }
 
@@ -281,17 +281,17 @@ public final class ApplicationProperties extends PropertiesConfiguration {
 
         if (StringUtils.isNotEmpty(ldapType)) {
             try {
-                if (ldapType.equalsIgnoreCase("ldap")) {
+                if (ldapType.equalsIgnoreCase(LDAP)) {
                     String maskPasssword = configuration.getString(LDAP_BIND_PASSWORD);
                     if (MASK_LDAP_PASSWORD.equals(maskPasssword)) {
-                        String password = SecurityUtil.getPassword(configuration, LDAP_BIND_PASSWORD);
+                        String password = SecurityUtil.getPassword(configuration, LDAP_BIND_PASSWORD, HADOOP_SECURITY_CREDENTIAL_PROVIDER_PATH);
                         configuration.clearProperty(LDAP_BIND_PASSWORD);
                         configuration.addProperty(LDAP_BIND_PASSWORD, password);
                     }
-                } else if (ldapType.equalsIgnoreCase("ad")) {
+                } else if (ldapType.equalsIgnoreCase(AD)) {
                     String maskPasssword = configuration.getString(LDAP_AD_BIND_PASSWORD);
                     if (MASK_LDAP_PASSWORD.equals(maskPasssword)) {
-                        String password = SecurityUtil.getPassword(configuration, LDAP_AD_BIND_PASSWORD);
+                        String password = SecurityUtil.getPassword(configuration, LDAP_AD_BIND_PASSWORD, HADOOP_SECURITY_CREDENTIAL_PROVIDER_PATH);
                         configuration.clearProperty(LDAP_AD_BIND_PASSWORD);
                         configuration.addProperty(LDAP_AD_BIND_PASSWORD, password);
                     }
@@ -353,6 +353,14 @@ public final class ApplicationProperties extends PropertiesConfiguration {
                 LOG.info("Setting index.search.map-name property '" + DEFAULT_INDEX_MAP_NAME + "'");
             }
         }
+
+        // setting value for 'atlas.graph.index.search.max-result-set-size' (default = 500000)
+        int indexMaxResultSetSize = getInt(INDEX_SEARCH_MAX_RESULT_SET_SIZE, 500000);
+
+        clearPropertyDirect(INDEX_SEARCH_MAX_RESULT_SET_SIZE);
+        addPropertyDirect(INDEX_SEARCH_MAX_RESULT_SET_SIZE, indexMaxResultSetSize);
+
+        LOG.info("Setting " + INDEX_SEARCH_MAX_RESULT_SET_SIZE + " = " + indexMaxResultSetSize);
 
         setDbCacheConfDefaults();
     }

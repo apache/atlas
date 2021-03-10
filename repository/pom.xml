@@ -70,6 +70,12 @@
         </dependency>
 
         <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+            <version>${commons-codec.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>joda-time</groupId>
             <artifactId>joda-time</artifactId>
         </dependency>
@@ -140,6 +146,12 @@
         <dependency>
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase-client</artifactId>
+            <exclusions>
+            <exclusion>
+                <groupId>com.github.stephenc.findbugs</groupId>
+                <artifactId>findbugs-annotations</artifactId>
+            </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -242,6 +254,13 @@
             <version>${poi-ooxml.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
 
     <profiles>
@@ -257,6 +276,7 @@
                     <groupId>org.apache.atlas</groupId>
                     <artifactId>atlas-testtools</artifactId>
                     <version>${project.version}</version>
+                    <scope>test</scope>
                     <exclusions>
                         <exclusion>
                             <groupId>com.fasterxml.jackson.core</groupId>

@@ -18,14 +18,8 @@
 package org.apache.atlas.type;
 
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_DATE;
-import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_LONG;
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_STRING;
-import static org.apache.atlas.type.Constants.CREATED_BY_KEY;
-import static org.apache.atlas.type.Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY;
-import static org.apache.atlas.type.Constants.MODIFIED_BY_KEY;
-import static org.apache.atlas.type.Constants.STATE_PROPERTY_KEY;
-import static org.apache.atlas.type.Constants.TIMESTAMP_PROPERTY_KEY;
-import static org.apache.atlas.type.Constants.TYPE_NAME_PROPERTY_KEY;
+import static org.apache.atlas.type.Constants.*;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -71,7 +65,7 @@ public class AtlasClassificationType extends AtlasStructType {
         super(classificationDef);
 
         this.classificationDef = classificationDef;
-        this.typeQryStr        = AtlasAttribute.escapeIndexQueryValue(Collections.singleton(getTypeName()));
+        this.typeQryStr        = AtlasAttribute.escapeIndexQueryValue(Collections.singleton(getTypeName()), true);
     }
 
     /**
@@ -87,7 +81,7 @@ public class AtlasClassificationType extends AtlasStructType {
         super(classificationDef);
 
         this.classificationDef = classificationDef;
-        this.typeQryStr        = AtlasAttribute.escapeIndexQueryValue(Collections.singleton(getTypeName()));
+        this.typeQryStr        = AtlasAttribute.escapeIndexQueryValue(Collections.singleton(getTypeName()), true);
 
         resolveReferences(typeRegistry);
     }
@@ -270,7 +264,7 @@ public class AtlasClassificationType extends AtlasStructType {
 
     public String getTypeAndAllSubTypesQryStr() {
         if (StringUtils.isEmpty(typeAndAllSubTypesQryStr)) {
-            typeAndAllSubTypesQryStr = AtlasAttribute.escapeIndexQueryValue(typeAndAllSubTypes);
+            typeAndAllSubTypesQryStr = AtlasAttribute.escapeIndexQueryValue(typeAndAllSubTypes, true);
         }
 
         return typeAndAllSubTypesQryStr;
@@ -515,7 +509,8 @@ public class AtlasClassificationType extends AtlasStructType {
             add(new AtlasAttributeDef(MODIFICATION_TIMESTAMP_PROPERTY_KEY, ATLAS_TYPE_DATE, false, true));
             add(new AtlasAttributeDef(MODIFIED_BY_KEY, ATLAS_TYPE_STRING, false, true));
             add(new AtlasAttributeDef(CREATED_BY_KEY, ATLAS_TYPE_STRING, false, true));
-            add(new AtlasAttributeDef(STATE_PROPERTY_KEY, ATLAS_TYPE_STRING, false, true));
+            add(new AtlasAttributeDef(CLASSIFICATION_ENTITY_STATUS_PROPERTY_KEY, ATLAS_TYPE_STRING, false, true));
+
         }};
 
         AtlasClassificationDef classificationDef = new AtlasClassificationDef(CLASSIFICATION_ROOT_NAME, "Root classification for system attributes", "1.0", attributeDefs);

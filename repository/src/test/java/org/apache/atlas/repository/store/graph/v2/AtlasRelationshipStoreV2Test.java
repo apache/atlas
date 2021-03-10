@@ -30,6 +30,7 @@ import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.repository.AtlasTestBase;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
@@ -37,9 +38,8 @@ import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
-import org.apache.atlas.runner.LocalSolrRunner;
 import org.apache.atlas.store.AtlasTypeDefStore;
-import org.apache.atlas.store.DeleteType;
+import org.apache.atlas.DeleteType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
@@ -61,7 +61,6 @@ import static org.apache.atlas.TestRelationshipUtilsV2.getDepartmentEmployeeInst
 import static org.apache.atlas.TestRelationshipUtilsV2.getDepartmentEmployeeTypes;
 import static org.apache.atlas.TestRelationshipUtilsV2.getInverseReferenceTestTypes;
 import static org.apache.atlas.TestUtilsV2.NAME;
-import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
 import static org.apache.atlas.type.AtlasTypeUtil.getAtlasObjectId;
 import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertEquals;
@@ -70,7 +69,7 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
-public abstract class AtlasRelationshipStoreV2Test {
+public abstract class AtlasRelationshipStoreV2Test extends AtlasTestBase {
 
     @Inject
     AtlasTypeRegistry typeRegistry;
@@ -103,6 +102,8 @@ public abstract class AtlasRelationshipStoreV2Test {
 
     @BeforeClass
     public void setUp() throws Exception {
+        super.initialize();
+
         new GraphBackedSearchIndexer(typeRegistry);
 
         // create employee relationship types
@@ -140,9 +141,7 @@ public abstract class AtlasRelationshipStoreV2Test {
     public void clear() throws Exception {
         AtlasGraphProvider.cleanup();
 
-        if (useLocalSolr()) {
-            LocalSolrRunner.stop();
-        }
+        super.cleanup();
     }
 
     @Test

@@ -22,15 +22,12 @@ import org.apache.atlas.model.migration.MigrationImportStatus;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
-import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
-import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Date;
-import java.util.Iterator;
 
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getEncodedProperty;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.setEncodedProperty;
@@ -47,8 +44,8 @@ public class DataMigrationStatusService {
         this.migrationStatusVertexManagement = new MigrationStatusVertexManagement(AtlasGraphProvider.getGraphInstance());
     }
 
-    public DataMigrationStatusService(AtlasGraph atlasGraph) {
-        this.migrationStatusVertexManagement = new MigrationStatusVertexManagement(atlasGraph);
+    public DataMigrationStatusService(AtlasGraph graph) {
+        this.migrationStatusVertexManagement = new MigrationStatusVertexManagement(graph);
     }
 
 
@@ -76,13 +73,11 @@ public class DataMigrationStatusService {
     }
 
     public MigrationImportStatus getStatus() {
-        if (this.status != null &&
-                StringUtils.isEmpty(this.status.getOperationStatus()) &&
-                this.migrationStatusVertexManagement.exists(this.status.getName())) {
+        if (this.status != null && this.migrationStatusVertexManagement.exists(this.status.getName())) {
             return getCreate(this.status);
-        } else {
-            return this.status;
         }
+
+        return this.status;
     }
 
     public MigrationImportStatus getByName(String name) {
@@ -115,18 +110,18 @@ public class DataMigrationStatusService {
         public static final String PROPERTY_KEY_POSITION = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "migration.position");
         public static final String PROPERTY_KEY_STATUS = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "migration.status");
 
-        private AtlasGraph atlasGraph;
+        private AtlasGraph graph;
         private AtlasVertex vertex;
 
-        public MigrationStatusVertexManagement(AtlasGraph atlasGraph) {
-            this.atlasGraph = atlasGraph;
+        public MigrationStatusVertexManagement(AtlasGraph graph) {
+            this.graph = graph;
         }
 
         public MigrationImportStatus createOrUpdate(MigrationImportStatus status) {
             this.vertex = findByNameInternal(status.getName());
 
             if (this.vertex == null) {
-                this.vertex = atlasGraph.addVertex();
+                this.vertex = graph.addVertex();
                 LOG.info("MigrationStatusVertexManagement: Vertex created!");
                 updateVertex(this.vertex, status);
             }
@@ -156,29 +151,20 @@ public class DataMigrationStatusService {
         public void delete(String name) {
             try {
                 AtlasVertex vertex = findByNameInternal(name);
-                atlasGraph.removeVertex(vertex);
+                graph.removeVertex(vertex);
                 this.vertex = null;
             } finally {
-                atlasGraph.commit();
+                graph.commit();
             }
         }
 
         private AtlasVertex findByNameInternal(String name) {
             try {
-                String idxQueryString = String.format("%s\"%s\":\"%s\"", AtlasGraphUtilsV2.getIndexSearchPrefix(), Constants.GUID_PROPERTY_KEY, name);
-                AtlasIndexQuery idxQuery = atlasGraph.indexQuery(Constants.VERTEX_INDEX, idxQueryString);
-                Iterator<AtlasIndexQuery.Result<Object, Object>> results = idxQuery.vertices();
-
-                AtlasIndexQuery.Result<?, ?> qryResult = results.hasNext() ? results.next() : null;
-                if (qryResult != null) {
-                    return qryResult.getVertex();
-                } else {
-                    return null;
-                }
+                return AtlasGraphUtilsV2.findByGuid(graph, name);
             } catch (Exception e) {
                 LOG.error("MigrationStatusVertexManagement.findByNameInternal: Failed!", e);
             } finally {
-                atlasGraph.commit();
+                graph.commit();
             }
 
             return null;
@@ -190,7 +176,7 @@ public class DataMigrationStatusService {
             } catch (Exception e) {
                 LOG.warn("Error updating status. Please rely on log messages.", e);
             } finally {
-                atlasGraph.commit();
+                graph.commit();
             }
         }
 
@@ -200,7 +186,7 @@ public class DataMigrationStatusService {
             } catch (Exception e) {
                 LOG.warn("Error updating status. Please rely on log messages.", e);
             } finally {
-                atlasGraph.commit();
+                graph.commit();
             }
         }
 
@@ -219,7 +205,7 @@ public class DataMigrationStatusService {
             } catch (Exception ex) {
                 LOG.error("Error updating MigrationImportStatus vertex. Status may not be persisted correctly.", ex);
             } finally {
-                atlasGraph.commit();
+                graph.commit();
             }
         }
 

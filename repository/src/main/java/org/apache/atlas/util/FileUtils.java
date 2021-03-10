@@ -18,6 +18,7 @@
 package org.apache.atlas.util;
 
 import com.opencsv.CSVReader;
+import com.opencsv.exceptions.CsvValidationException;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.commons.collections.CollectionUtils;
@@ -25,6 +26,7 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -60,7 +62,7 @@ public class FileUtils {
         } else if (extension.equalsIgnoreCase(XLS.name()) || extension.equalsIgnoreCase(XLSX.name())) {
             ret = readExcel(inputStream, extension);
         } else {
-            throw new AtlasBaseException(AtlasErrorCode.INVALID_FILE_TYPE);
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_FILE_TYPE, fileName);
         }
 
         if (CollectionUtils.isEmpty(ret)) {
@@ -70,7 +72,7 @@ public class FileUtils {
         return ret;
     }
 
-    public static List<String[]> readCSV(InputStream inputStream) throws IOException {
+    public static List<String[]> readCSV(InputStream inputStream) throws IOException, AtlasBaseException {
         List<String[]> ret = new ArrayList<>();
 
         try (CSVReader csvReader = new CSVReader(new InputStreamReader(inputStream))) {
@@ -87,6 +89,8 @@ public class FileUtils {
                     ret.add(data);
                 }
             }
+        } catch (CsvValidationException e) {
+            throw new AtlasBaseException(AtlasErrorCode.NO_DATA_FOUND, e);
         }
 
         return ret;
@@ -124,7 +128,7 @@ public class FileUtils {
         for (int c = row.getFirstCellNum(); c < row.getLastCellNum(); c++) {
             Cell cell = row.getCell(c);
 
-            if (cell != null && cell.getCellType() != Cell.CELL_TYPE_BLANK) {
+            if (cell != null && cell.getCellType() != CellType.BLANK) {
                 return false;
             }
         }

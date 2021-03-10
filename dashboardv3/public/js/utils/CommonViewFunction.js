@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enums', 'moment', 'utils/Globals'], function(require, Utils, Modal, Messages, Enums, moment, Globals) {
+define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enums', 'moment', 'utils/Globals', 'moment-timezone'], function(require, Utils, Modal, Messages, Enums, moment, Globals) {
     'use strict';
 
     var CommonViewFunction = {};
@@ -79,13 +79,15 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             sortBy = options.sortBy,
             valueObject = options.valueObject,
             extractJSON = options.extractJSON,
+            getArrayOfStringElement = options.getArrayOfStringElement,
+            getArrayOfStringFormat = options.getArrayOfStringFormat,
             isTable = _.isUndefined(options.isTable) ? true : options.isTable,
             attributeDefs = options.attributeDefs,
             formatIntVal = options.formatIntVal,
             showListCount = options.showListCount || true,
             highlightString = options.highlightString,
             formatStringVal = options.formatStringVal,
-            numberFormat = options.numberFormat || _.numberFormatWithComa;
+            numberFormat = options.numberFormat || _.numberFormatWithComma;
 
         var table = "",
             getHighlightedString = function(resultStr) {
@@ -101,24 +103,33 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                     return resultStr;
                 }
             },
-            getValue = function(val) {
-                if (val) {
+            getEmptyString = function(key) {
+                if (options.getEmptyString) {
+                    return options.getEmptyString(key);
+                }
+                return "N/A";
+            },
+            getValue = function(val, key) {
+                if (options && options.getValue) {
+                    val = options.getValue(val, key);
+                }
+                if (!_.isUndefined(val) && !_.isNull(val)) {
                     if ((_.isNumber(val) || !_.isNaN(parseInt(val))) && formatIntVal) {
                         return numberFormat(val);
                     } else {
                         var newVal = val;
                         if (formatStringVal) {
                             newVal = parseInt(val);
-                            if (newVal === NaN) {
+                            if (_.isNaN(newVal)) {
                                 newVal = val;
                             } else {
                                 newVal = numberFormat(newVal);
                             }
                         }
-                        return getHighlightedString(newVal);
+                        return getHighlightedString(_.escape(newVal));
                     }
                 } else {
-                    return "N/A";
+                    return getEmptyString(key);
                 }
             },
             fetchInputOutputValue = function(id, defEntity) {
@@ -179,7 +190,12 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                     if (_.isString(inputOutputField) || _.isBoolean(inputOutputField) || _.isNumber(inputOutputField)) {
                         var tempVarfor$check = inputOutputField.toString();
                         if (tempVarfor$check.indexOf("$") == -1) {
-                            valueOfArray.push('<span class="json-string">' + getValue(_.escape(inputOutputField)) + '</span>');
+                            var tmpVal = getValue(inputOutputField, key)
+                            if (getArrayOfStringElement) {
+                                valueOfArray.push(getArrayOfStringElement(tmpVal, key));
+                            } else {
+                                valueOfArray.push('<span class="json-string">' + tmpVal + '</span>');
+                            }
                         }
                     } else if (_.isObject(inputOutputField) && !id) {
                         var attributesList = inputOutputField;
@@ -220,7 +236,11 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                             fetchInputOutputValue(fetchId, defEntity);
                             tempLink += '<div data-id="' + fetchId + '"><div class="value-loader"></div></div>';
                         } else {
-                            tempLink += '<a href="#!/detailPage/' + id + '">' + getValue(name) + '</a>'
+                            if (inputOutputField.typeName == "AtlasGlossaryTerm") {
+                                tempLink += '<a href="#!/glossary/' + id + '?guid=' + id + '&gType=term&viewType=term">' + name + '</a>'
+                            } else {
+                                tempLink += '<a href="#!/detailPage/' + id + '">' + name + '</a>'
+                            }
                         }
                     }
                     if (readOnly) {
@@ -241,17 +261,19 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                     }
                 }
                 if (valueOfArray.length) {
-                    subLink = valueOfArray.join(', ');
+                    if (getArrayOfStringFormat) {
+                        subLink = getArrayOfStringFormat(valueOfArray, key);
+                    } else {
+                        subLink = valueOfArray.join(', ');
+                    }
                 }
-                return subLink === "" ? "N/A" : subLink;
+                return subLink === "" ? getEmptyString(key) : subLink;
             }
         var valueObjectKeysList = _.keys(valueObject);
         if (_.isUndefined(sortBy) || sortBy == true) {
             valueObjectKeysList = _.sortBy(valueObjectKeysList);
         }
         valueObjectKeysList.map(function(key) {
-
-            key = _.escape(key);
             if (key == "profileData") {
                 return;
             }
@@ -261,7 +283,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             if (defEntity && defEntity.typeName) {
                 var defEntityType = defEntity.typeName.toLocaleLowerCase();
                 if (defEntityType === 'date') {
-                    keyValue = keyValue > 0 ? new Date(keyValue) : "";
+                    keyValue = keyValue > 0 ? Utils.formatDate({ date: keyValue }) : null;
                 } else if (_.isObject(keyValue)) {
                     keyValue = extractObject({ "keyValue": keyValue, "key": key, 'defEntity': defEntity });
                 }
@@ -273,12 +295,14 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             var val = "";
             if (_.isObject(valueObject[key])) {
                 val = keyValue
-            } else if (Utils.isUrl(keyValue)) {
-                val = '<a target="_blank" class="blue-link" href="' + keyValue + '">' + getValue(keyValue) + '</a>';
             } else if (key === 'guid' || key === "__guid") {
-                val = '<a title="' + key + '" href="#!/detailPage/' + keyValue + '">' + getValue(keyValue) + '</a>';
+                if (options.guidHyperLink === false) {
+                    val = getValue(keyValue, key);
+                } else {
+                    val = '<a title="' + key + '" href="#!/detailPage/' + _.escape(keyValue) + '">' + getValue(keyValue, key) + '</a>';
+                }
             } else {
-                val = getValue(_.escape(keyValue));
+                val = getValue(keyValue, key);
             }
             if (isTable) {
                 var value = val,
@@ -287,12 +311,17 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 if (_.isObject(valueObject[key]) && !_.isEmpty(valueObject[key])) {
                     var matchedLinkString = val.match(/href|value-loader\w*/g),
                         matchedJson = val.match(/json-value|json-string\w*/g),
+                        matchedKey = val.match(/json-key\w*/g),
                         isMatchLinkStringIsSingle = matchedLinkString && matchedLinkString.length <= 5,
                         isMatchJSONStringIsSingle = matchedJson && matchedJson.length == 1,
                         expandCollapseButton = "";
-                    if ((matchedJson && !isMatchJSONStringIsSingle) || (matchedLinkString && !isMatchLinkStringIsSingle)) {
-                        expandCollapseButton = '<button class="expand-collapse-button"><i class="fa"></i></button>';
-                        htmlTag = '<pre class="shrink code-block ' + (isMatchJSONStringIsSingle ? 'fixed-height' : '') + '">' + expandCollapseButton + '<code>' + val + '</code></pre>';
+                    if ((matchedJson) || (matchedLinkString)) {
+                        var className = "code-block fixed-height";
+                        if (!isMatchJSONStringIsSingle) {
+                            className += " shrink";
+                            expandCollapseButton = '<button class="expand-collapse-button"><i class="fa"></i></button>';
+                        }
+                        htmlTag = '<pre class="' + className + '">' + expandCollapseButton + '<code>' + val + '</code></pre>';
                     }
                 }
                 table += '<tr class="' + appendClass + '"><td>' + (_.escape(key) + listCount) + '</td><td>' + htmlTag + '</td></tr>';
@@ -315,9 +344,9 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 var className = "btn btn-action btn-sm btn-blue btn-icon",
                     deleteIcon = "";
                 if (obj.guid === tag.entityGuid) {
-                    deleteIcon = '<i class="fa fa-times" data-id="delete"  data-assetname="' + entityName + '"data-name="' + tag.typeName + '" data-type="tag" data-guid="' + obj.guid + '" ></i>';
+                    deleteIcon = '<i class="fa fa-times" data-id="delete"  data-assetname="' + entityName + '" data-name="' + tag.typeName + '" data-type="tag" data-guid="' + obj.guid + '" ></i>';
                 } else if (obj.guid !== tag.entityGuid && tag.entityStatus === "DELETED") {
-                    deleteIcon = '<i class="fa fa-times" data-id="delete"  data-assetname="' + entityName + '"data-name="' + tag.typeName + '" data-type="tag" data-entityguid="' + tag.entityGuid + '" data-guid="' + obj.guid + '" ></i>';
+                    deleteIcon = '<i class="fa fa-times" data-id="delete"  data-assetname="' + entityName + '" data-name="' + tag.typeName + '" data-type="tag" data-entityguid="' + tag.entityGuid + '" data-guid="' + obj.guid + '" ></i>';
                 } else {
                     className += " propagte-classification";
                 }
@@ -351,9 +380,10 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             entityName = Utils.getName(obj);
         if (terms) {
             terms.map(function(term) {
+                var displayText = _.escape(term.displayText);
                 var className = "btn btn-action btn-sm btn-blue btn-icon",
-                    deleteIcon = '<i class="fa fa-times" data-id="delete"  data-assetname="' + entityName + '"data-name="' + term.displayText + '" data-type="term" data-guid="' + obj.guid + '" data-termGuid="' + term.termGuid + '" ></i>',
-                    termString = '<a class="' + className + '" data-id="termClick"><span title="' + _.escape(term.displayText) + '">' + _.escape(term.displayText) + '</span>' + deleteIcon + '</a>';
+                    deleteIcon = '<i class="fa fa-times" data-id="delete"  data-assetname="' + entityName + '" data-name="' + displayText + '" data-type="term" data-guid="' + obj.guid + '" data-termGuid="' + term.termGuid + '" ></i>',
+                    termString = '<a class="' + className + '" data-id="termClick"><span title="' + displayText + '">' + displayText + '</span>' + deleteIcon + '</a>';
                 if (count >= 1) {
                     popTerm += termString;
                 } else {
@@ -382,13 +412,21 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
 
         function objToString(filterObj, type) {
             var generatedQuery = _.map(filterObj.rules, function(obj, key) {
+                var obj = $.extend(true, {}, obj); // not to update the timezone abbr on original obj , copy of obj is used
                 if (_.has(obj, 'condition')) {
                     return '<span class="operator">' + obj.condition + '</span>' + '(' + objToString(obj).join("") + ')';
                 } else {
                     if (isCapsuleView) {
-                        return '<div class="capsuleView"><span class="key">' + (Enums.systemAttributes[obj.id] ? Enums.systemAttributes[obj.id] : _.escape(obj.id)) + '</span><span class="operator">' + _.escape(obj.operator) + '</span><span class="value">' + (Enums[obj.id] ? Enums[obj.id][obj.value] : _.escape(obj.value)) + "</span><div class='fa fa-close clear-attr' data-type=" + type + " data-id=" + _.escape(obj.id) + "></div></div>";
+                        if (obj.type === "date") {
+                            if (Enums.queryBuilderDateRangeUIValueToAPI[obj.value]) {
+                                obj.value = Enums.queryBuilderDateRangeUIValueToAPI[obj.value];
+                            } else {
+                                obj.value = obj.value + " (" + moment.tz(moment.tz.guess()).zoneAbbr() + ")";
+                            }
+                        }
+                        return '<div class="capsuleView"><span class="key">' + (Enums.systemAttributes[obj.id] ? Enums.systemAttributes[obj.id] : _.escape(obj.id)) + '</span><span class="operator">' + _.escape(obj.operator) + '</span><span class="value">' + (Enums[obj.id] ? Enums[obj.id][obj.value] : _.escape(obj.value)) + '</span><div class="fa fa-close clear-attr" data-type=' + type + ' data-id="' + _.escape(obj.id) + key + '"></div></div>';
                     }
-                    return '<span class="key">' + (Enums.systemAttributes[obj.id] ? Enums.systemAttributes[obj.id] : _.escape(obj.id)) + '</span><span class="operator">' + _.escape(obj.operator) + '</span><span class="value">' + (Enums[obj.id] ? Enums[obj.id][obj.value] : _.escape(obj.value)) + "</span>";
+                    return '<span class="key">' + (Enums.systemAttributes[obj.id] ? Enums.systemAttributes[obj.id] : _.escape(obj.id)) + '</span><span class="operator">' + _.escape(obj.operator) + '</span><span class="value">' + (Enums[obj.id] ? Enums[obj.id][obj.value] : _.escape(obj.value)) + '</span>';
                 }
             });
             return generatedQuery;
@@ -491,9 +529,9 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                             } else if (k == "tagFilters") {
                                 if (classificationDefCollection) {
                                     var classificationDef = classificationDefCollection.fullCollection.findWhere({ 'name': value[skey].classification }),
-                                        attributeDefs = []
+                                        attributeDefs = [];
                                     if (classificationDef) {
-                                        Utils.getNestedSuperTypeObj({
+                                        attributeDefs = Utils.getNestedSuperTypeObj({
                                             collection: classificationDefCollection,
                                             attrMerge: true,
                                             data: classificationDef.toJSON()
@@ -501,6 +539,9 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                                     }
                                     if (Globals[value[skey].typeName]) {
                                         attributeDefs = Globals[value[skey].typeName].attributeDefs;
+                                    }
+                                    if (Globals._ALL_CLASSIFICATION_TYPES && Globals._ALL_CLASSIFICATION_TYPES.attributeDefs) {
+                                        attributeDefs = attributeDefs.concat(Globals._ALL_CLASSIFICATION_TYPES.attributeDefs);
                                     }
                                 }
                                 val = CommonViewFunction.attributeFilter.generateUrl({ "value": val, "attributeDefs": attributeDefs });
@@ -517,6 +558,9 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                                     }
                                     if (Globals[value[skey].typeName]) {
                                         attributeDefs = Globals[value[skey].typeName].attributeDefs;
+                                    }
+                                    if (Globals._ALL_ENTITY_TYPES && Globals._ALL_ENTITY_TYPES.attributeDefs) {
+                                        attributeDefs = attributeDefs.concat(Globals._ALL_ENTITY_TYPES.attributeDefs);
                                     }
                                 }
                                 val = CommonViewFunction.attributeFilter.generateUrl({ "value": val, "attributeDefs": attributeDefs });
@@ -559,7 +603,18 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                         var type = (obj.type || obj.attributeType),
                             //obj.value will come as an object when selected type is Date and operator is isNull or not_null;
                             value = ((_.isString(obj.value) && _.contains(["is_null", "not_null"], obj.operator) && type === 'date') || _.isObject(obj.value) ? "" : _.trim(obj.value || obj.attributeValue)),
-                            url = [(obj.id || obj.attributeName), mapApiOperatorToUI(obj.operator), (type === 'date' && formatedDateToLong && value.length ? Date.parse(value) : value)];
+                            url = [(obj.id || obj.attributeName), mapApiOperatorToUI(obj.operator), value];
+                        if (obj.operator === "TIME_RANGE") {
+                            if (value.indexOf("-") > -1) {
+                                url[2] = value.split('-').map(function(udKey) {
+                                    return Date.parse(udKey.trim()).toString()
+                                }).join(",")
+                            } else {
+                                url[2] = Enums.queryBuilderDateRangeUIValueToAPI[_.trim(value)] || value;
+                            }
+                        } else if (value.length && type === 'date' && formatedDateToLong) {
+                            url[2] = Date.parse(value);
+                        }
                         if (type) {
                             url.push(type);
                         }
@@ -576,30 +631,8 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             }
 
             function mapApiOperatorToUI(oper) {
-                if (oper == "eq") {
-                    return "=";
-                } else if (oper == "neq") {
-                    return "!=";
-                } else if (oper == "lt") {
-                    return "<";
-                } else if (oper == "lte") {
-                    return "<=";
-                } else if (oper == "gt") {
-                    return ">";
-                } else if (oper == "gte") {
-                    return ">=";
-                } else if (oper == "startsWith") {
-                    return "begins_with";
-                } else if (oper == "endsWith") {
-                    return "ends_with";
-                } else if (oper == "contains") {
-                    return "contains";
-                } else if (oper == "notNull") {
-                    return "not_null";
-                } else if (oper == "isNull") {
-                    return "is_null";
-                }
-                return oper;
+                // Enum will be in effect once we click on save search.
+                return Enums.queryBuilderApiOperatorToUI[oper] || oper;
             }
         },
         extractUrl: function(options) {
@@ -609,30 +642,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 spliter = 1,
                 apiObj = options.apiObj,
                 mapUiOperatorToAPI = function(oper) {
-                    if (oper == "=") {
-                        return "eq";
-                    } else if (oper == "!=") {
-                        return "neq";
-                    } else if (oper == "<") {
-                        return "lt";
-                    } else if (oper == "<=") {
-                        return "lte";
-                    } else if (oper == ">") {
-                        return "gt";
-                    } else if (oper == ">=") {
-                        return "gte";
-                    } else if (oper == "begins_with") {
-                        return "startsWith";
-                    } else if (oper == "ends_with") {
-                        return "endsWith";
-                    } else if (oper == "contains") {
-                        return "contains";
-                    } else if (oper == "not_null") {
-                        return "notNull";
-                    } else if (oper == "is_null") {
-                        return "isNull";
-                    }
-                    return oper;
+                    return Enums.queryBuilderUIOperatorToAPI[oper] || oper;
                 },
                 createObject = function(urlObj) {
                     var finalObj = {};
@@ -651,13 +661,23 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                                 rule = {};
                             if (apiObj) {
                                 rule = { attributeName: temp[0], operator: mapUiOperatorToAPI(temp[1]), attributeValue: _.trim(temp[2]) }
-                                rule.attributeValue = rule.type === 'date' && formatDate && rule.attributeValue.length ? moment(parseInt(rule.attributeValue)).format('MM/DD/YYYY h:mm A') : rule.attributeValue;
+                                rule.attributeValue = rule.type === 'date' && formatDate && rule.attributeValue.length ? Utils.formatDate({ date: parseInt(rule.attributeValue), zone: false }) : rule.attributeValue;
                             } else {
                                 rule = { id: temp[0], operator: temp[1], value: _.trim(temp[2]) }
                                 if (temp[3]) {
                                     rule['type'] = temp[3];
                                 }
-                                rule.value = rule.type === 'date' && formatDate && rule.value.length ? moment(parseInt(rule.value)).format('MM/DD/YYYY h:mm A') : rule.value;
+                                if (rule.operator === "TIME_RANGE") {
+                                    if (temp[2].indexOf(",") > -1) {
+                                        rule.value = temp[2].split(",").map(function(udKey) {
+                                            return Utils.formatDate({ date: parseInt(udKey.trim()), zone: false })
+                                        }).join(" - ")
+                                    } else {
+                                        rule.value = Enums.queryBuilderDateRangeAPIValueToUI[_.trim(rule.value)] || rule.value;
+                                    }
+                                } else if (rule.type === 'date' && formatDate && rule.value.length) {
+                                    rule.value = Utils.formatDate({ date: parseInt(rule.value), zone: false })
+                                }
                             }
                             return rule;
                         }
@@ -711,20 +731,6 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 "allowCancel": true
             }).open();
             modal.$el.find('button.ok').attr("disabled", "true");
-            if (model) {
-                view.$('input,textarea').on('keyup', function(e) {
-                    modal.$el.find('button.ok').attr("disabled", false);
-                });
-            } else {
-                view.ui.name.on('keyup', function(e) {
-                    modal.$el.find('button.ok').attr("disabled", false);
-                });
-            }
-            view.ui.name.on('keyup', function(e) {
-                if ((e.keyCode == 8 || e.keyCode == 32 || e.keyCode == 46) && e.currentTarget.value.trim() == "") {
-                    modal.$el.find('button.ok').attr("disabled", true);
-                }
-            });
             modal.on('ok', function() {
                 modal.$el.find('button.ok').showButtonLoader();
                 CommonViewFunction.createEditGlossaryCategoryTermSubmit(_.extend({ "ref": view, "modal": modal }, options));
@@ -958,9 +964,14 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             pEl.innerText = "";
 
             if (val === '') {
-                classes = 'form-control errorClass';
                 validation = false;
                 pEl.innerText = 'Required!';
+            } else if (val.includes(':')) {
+                validation = false;
+                var errorText = $(".errorMsg[data-id='charSupportMsg']").text();
+                if (errorText && errorText.length === 0) {
+                    pEl.innerText = "These special character '(:)' are not supported.";
+                }
             } else {
                 if (input.tagName === 'INPUT') {
                     var duplicates = datalist.filter(function(c) {
@@ -974,6 +985,9 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                         keyMap.set(val, val);
                     }
                 }
+            }
+            if (validation === false) {
+                classes = 'form-control errorClass';
             }
             input.setAttribute('class', classes);
         }
@@ -1005,45 +1019,44 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
         return list.join(',');
     }
     CommonViewFunction.fetchRootEntityAttributes = function(options) {
-            $.ajax({
-                url: options.url,
-                methods: 'GET',
-                dataType: 'json',
-                delay: 250,
-                cache: true,
-                success: function(response) {
-                    if (response) {
-                        Globals[options.entity] = Object.assign(response, { name: options.entity, guid: options.entity });;
-                    }
-                },
-                complete: function(response) {
-                    if (options.callback) {
-                        options.callback(response);
-                    }
+        $.ajax({
+            url: options.url,
+            methods: 'GET',
+            dataType: 'json',
+            cache: true,
+            success: function(response) {
+                if (response) {
+                    _.each(options.entity, function(rootEntity) {
+                        Globals[rootEntity] = $.extend(true, {}, response, { name: rootEntity, guid: rootEntity });
+                    });
                 }
-            });
-        },
-        CommonViewFunction.fetchRootClassificationAttributes = function(options) {
-            $.ajax({
-                url: options.url,
-                methods: 'GET',
-                dataType: 'json',
-                delay: 250,
-                cache: true,
-                success: function(response) {
-                    if (response) {
-                        _.each(options.classification, function(rootClassification) {
-                            var responseData = $.extend(true, {}, response);
-                            Globals[rootClassification] = Object.assign(responseData, { name: rootClassification, guid: rootClassification });
-                        });
-                    }
-                },
-                complete: function(response) {
-                    if (options.callback) {
-                        options.callback(response);
-                    }
+            },
+            complete: function(response) {
+                if (options.callback) {
+                    options.callback(response);
                 }
-            });
-        }
+            }
+        });
+    }
+    CommonViewFunction.fetchRootClassificationAttributes = function(options) {
+        $.ajax({
+            url: options.url,
+            methods: 'GET',
+            dataType: 'json',
+            cache: true,
+            success: function(response) {
+                if (response) {
+                    _.each(options.classification, function(rootClassification) {
+                        Globals[rootClassification] = $.extend(true, {}, response, { name: rootClassification, guid: rootClassification });
+                    });
+                }
+            },
+            complete: function(response) {
+                if (options.callback) {
+                    options.callback(response);
+                }
+            }
+        });
+    }
     return CommonViewFunction;
 });

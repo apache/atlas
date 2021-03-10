@@ -26,7 +26,7 @@ import org.apache.atlas.kafka.NotificationProvider;
 import org.apache.atlas.model.notification.HookNotification;
 import org.apache.atlas.notification.NotificationException;
 import org.apache.atlas.notification.NotificationInterface;
-import org.apache.atlas.security.InMemoryJAASConfiguration;
+import org.apache.atlas.utils.AtlasConfigurationUtil;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.security.UserGroupInformation;
@@ -93,12 +93,6 @@ public abstract class AtlasHook {
             failedMessagesLogger = null;
         }
 
-        if (!isLoginKeytabBased()) {
-            if (isLoginTicketBased()) {
-                InMemoryJAASConfiguration.setConfigSectionRedirect("KafkaClient", "ticketBased-KafkaClient");
-            }
-        }
-
         metadataNamespace         = getMetadataNamespace(atlasProperties);
         notificationMaxRetries    = atlasProperties.getInt(ATLAS_NOTIFICATION_MAX_RETRIES, 3);
         notificationRetryInterval = atlasProperties.getInt(ATLAS_NOTIFICATION_RETRY_INTERVAL, 1000);
@@ -132,6 +126,7 @@ public abstract class AtlasHook {
                     try {
                         LOG.info("==> Shutdown of Atlas Hook");
 
+                        notificationInterface.close();
                         executor.shutdown();
                         executor.awaitTermination(SHUTDOWN_HOOK_WAIT_TIME_MS, TimeUnit.MILLISECONDS);
                         executor = null;
@@ -145,6 +140,15 @@ public abstract class AtlasHook {
         }
 
         LOG.info("Created Atlas Hook");
+    }
+
+    public AtlasHook() {
+        notificationInterface.init(this.getClass().getSimpleName(), failedMessagesLogger);
+    }
+
+    public AtlasHook(String name) {
+        LOG.info("AtlasHook: Spool name: Passed from caller.: {}", name);
+        notificationInterface.init(name, failedMessagesLogger);
     }
 
     /**
@@ -287,32 +291,8 @@ public abstract class AtlasHook {
         }
     }
 
-    private static boolean isLoginKeytabBased() {
-        boolean ret = false;
-
-        try {
-            ret = UserGroupInformation.isLoginKeytabBased();
-        } catch (Exception excp) {
-            LOG.warn("Error in determining keytab for KafkaClient-JAAS config", excp);
-        }
-
-        return ret;
-    }
-
-    private static boolean isLoginTicketBased() {
-        boolean ret = false;
-
-        try {
-            ret = UserGroupInformation.isLoginTicketBased();
-        } catch (Exception excp) {
-            LOG.warn("Error in determining ticket-cache for KafkaClient-JAAS config", excp);
-        }
-
-        return ret;
-    }
-
     private static String getMetadataNamespace(Configuration config) {
-        return config.getString(CONF_METADATA_NAMESPACE, getClusterName(config));
+        return AtlasConfigurationUtil.getRecentString(config, CONF_METADATA_NAMESPACE, getClusterName(config));
     }
 
     private static String getClusterName(Configuration config) {

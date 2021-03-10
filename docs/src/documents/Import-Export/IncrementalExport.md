@@ -31,7 +31,7 @@ New _fetchType_ added to indicate incremental export. This option can be used wi
 
 #### Getting Change Marker
 
-The very first call to export with _fetchType_ set to _incremental_ should be made with _changeMarker_ set to 0. This will perform a full export. The _AtlasExportResult_ will have the _changeMarker_ set to a value. This is the value that should be used for subsequent call to Export.
+The very first call to export with _fetchType_ set to _incremental_ should be made with _changeMarker_ set to 0. This will perform a full export. The _AtlasExportResult_ will have the _changeMarker_ set to a value. This is the value that should be used for a subsequent call to Export.
 
 #### Skip Lineage Option
 
@@ -39,5 +39,5 @@ Export can be performed by skipping lineage information. This avoids all lineage
 
 #### Benefit of Incremental Export
 
-The real benefit of incremental export comes when export is done with _skipLineage_ option set to _true_. This greatly improves performance when fetching entities that have changed since the last export.
+The real benefit of incremental export comes when the export is done with _skipLineage_ option set to _true_. This greatly improves performance when fetching entities that have changed since the last export.
 

@@ -253,10 +253,6 @@ public class AtlasRepositoryConfiguration {
             try {
                 isFreeTextSearchEnabled = ApplicationProperties.get().getBoolean(ApplicationProperties.ENABLE_FREETEXT_SEARCH_CONF, true);
 
-                if (isFreeTextSearchEnabled) { // currently free-text is supported only for Solr
-                    isFreeTextSearchEnabled = ApplicationProperties.INDEX_BACKEND_SOLR.equalsIgnoreCase(ApplicationProperties.get().getString(ApplicationProperties.INDEX_BACKEND_CONF));
-                }
-
                 if (isFreeTextSearchEnabled) { // if free-text is enabled, disable full-text - to avoid performance penalty
                     isFullTextSearchEnabled = false;
                 } else {

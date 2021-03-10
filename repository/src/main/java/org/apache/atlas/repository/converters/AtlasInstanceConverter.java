@@ -384,6 +384,8 @@ public class AtlasInstanceConverter {
             case ENTITY_CREATE:
                 return EntityAuditEvent.EntityAuditAction.ENTITY_CREATE;
             case ENTITY_UPDATE:
+            case BUSINESS_ATTRIBUTE_UPDATE:
+            case CUSTOM_ATTRIBUTE_UPDATE:
                 return EntityAuditEvent.EntityAuditAction.ENTITY_UPDATE;
             case ENTITY_DELETE:
                 return EntityAuditEvent.EntityAuditAction.ENTITY_DELETE;

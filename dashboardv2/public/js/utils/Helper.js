@@ -23,8 +23,22 @@ define(['require',
 ], function(require, Utils, d3) {
     'use strict';
     _.mixin({
-        numberFormatWithComa: function(number) {
+        numberFormatWithComma: function(number) {
             return d3.format(',')(number);
+        },
+        numberFormatWithBytes: function(number) {
+            if (number > -1) {
+                if (number === 0) {
+                    return "0 Bytes";
+                }
+                var i = number == 0 ? 0 : Math.floor(Math.log(number) / Math.log(1024));
+                if (i > 8) {
+                    return _.numberFormatWithComma(number);
+                }
+                return Number((number / Math.pow(1024, i)).toFixed(2)) + " " + ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"][i];
+            } else {
+                return number;
+            }
         },
         isEmptyArray: function(val) {
             if (val && _.isArray(val)) {
@@ -113,83 +127,102 @@ define(['require',
     $("body").on('click', '.btn', function() {
         $(this).blur();
     });
-    $.fn.select2.amd.define("TagHideDeleteButtonAdapter", [
-            "select2/utils",
-            "select2/selection/multiple",
-            "select2/selection/placeholder",
-            "select2/selection/eventRelay",
-            "select2/selection/search",
-        ],
-        function(Utils, MultipleSelection, Placeholder, EventRelay, SelectionSearch) {
+    $('body').on('keyup input', '.modal-body', function(e) {
+        var target = e.target,
+            isGlossary = (e.target.dataset.id === "searchTerm" || e.target.dataset.id === "searchCategory") ? true : false; // assign term/category modal
+        if ((target.type === "text" || target.type === "textarea") && !isGlossary) {
+            var $this = $(this),
+                $footerButton = $this.parents(".modal").find('.modal-footer button.ok'),
+                requiredInputField = _.filter($this.find('input'), function($e) {
+                    if ($e.getAttribute('placeholder') && $e.getAttribute('placeholder').indexOf('require') >= 0) {
+                        return ($e.value.trim() == "");
+                    }
+                });
+            if (requiredInputField.length > 0) {
+                $footerButton.attr("disabled", "true");
+            } else {
+                $footerButton.removeAttr("disabled");
+            }
+        }
+    });
+    if ($.fn.select2) {
+        $.fn.select2.amd.define("TagHideDeleteButtonAdapter", [
+                "select2/utils",
+                "select2/selection/multiple",
+                "select2/selection/placeholder",
+                "select2/selection/eventRelay",
+                "select2/selection/search",
+            ],
+            function(Utils, MultipleSelection, Placeholder, EventRelay, SelectionSearch) {
 
-            // Decorates MultipleSelection with Placeholder
+                // Decorates MultipleSelection with Placeholder
 
-            var adapter = Utils.Decorate(MultipleSelection, Placeholder);
-            adapter = Utils.Decorate(adapter, SelectionSearch);
-            adapter = Utils.Decorate(adapter, EventRelay);
+                var adapter = Utils.Decorate(MultipleSelection, Placeholder);
+                adapter = Utils.Decorate(adapter, SelectionSearch);
+                adapter = Utils.Decorate(adapter, EventRelay);
 
-            adapter.prototype.render = function() {
-                // Use selection-box from SingleSelection adapter
-                // This implementation overrides the default implementation
-                var $search = $(
-                    '<li class="select2-search select2-search--inline">' +
-                    '<input class="select2-search__field" type="search" tabindex="-1"' +
-                    ' autocomplete="off" autocorrect="off" autocapitalize="none"' +
-                    ' spellcheck="false" role="textbox" aria-autocomplete="list" />' +
-                    '</li>'
-                );
+                adapter.prototype.render = function() {
+                    // Use selection-box from SingleSelection adapter
+                    // This implementation overrides the default implementation
+                    var $search = $(
+                        '<li class="select2-search select2-search--inline">' +
+                        '<input class="select2-search__field" type="search" tabindex="-1"' +
+                        ' autocomplete="off" autocorrect="off" autocapitalize="none"' +
+                        ' spellcheck="false" role="textbox" aria-autocomplete="list" />' +
+                        '</li>'
+                    );
 
-                this.$searchContainer = $search;
-                this.$search = $search.find('input');
-                var $selection = MultipleSelection.prototype.render.call(this);
-                this._transferTabIndex();
-                return $selection;
-            };
+                    this.$searchContainer = $search;
+                    this.$search = $search.find('input');
+                    var $selection = MultipleSelection.prototype.render.call(this);
+                    this._transferTabIndex();
+                    return $selection;
+                };
 
-            adapter.prototype.update = function(data) {
-                // copy and modify SingleSelection adapter
-                var that = this;
-                this.clear();
-                if (data.length === 0) {
+                adapter.prototype.update = function(data) {
+                    // copy and modify SingleSelection adapter
+                    var that = this;
+                    this.clear();
+                    if (data.length === 0) {
+                        this.$selection.find('.select2-selection__rendered')
+                            .append(this.$searchContainer);
+                        this.$search.attr('placeholder', this.options.get("placeholder"));
+                        return;
+                    }
+                    this.$search.attr('placeholder', '');
+                    var $rendered = this.$selection.find('.select2-selection__rendered'),
+                        $selectionContainer = [];
+                    if (data.length > 0) {
+                        _.each(data, function(obj) {
+                            var $container = $('<li class="select2-selection__choice"></li>'),
+                                formatted = that.display(obj, $rendered),
+                                $remove = $('<span class="select2-selection__choice__remove" role="presentation">&times;</span>'),
+                                allowRemoveAttr = $(obj.element).data("allowremove"),
+                                allowRemove = obj.allowRemove === undefined ? allowRemoveAttr : obj.allowRemove;
+                            if (allowRemove === undefined || allowRemove !== false) {
+                                $container.append($remove);
+                            }
+                            $container.data("data", obj);
+                            $container.append(formatted);
+                            $selectionContainer.push($container);
+                        });
+                        Utils.appendMany($rendered, $selectionContainer);
+                    }
+
+
+                    var searchHadFocus = this.$search[0] == document.activeElement;
+                    this.$search.attr('placeholder', '');
                     this.$selection.find('.select2-selection__rendered')
                         .append(this.$searchContainer);
-                    this.$search.attr('placeholder', this.options.get("placeholder"));
-                    return;
-                }
-                this.$search.attr('placeholder', '');
-                var $rendered = this.$selection.find('.select2-selection__rendered'),
-                    $selectionContainer = [];
-                if (data.length > 0) {
-                    _.each(data, function(obj) {
-                        var $container = $('<li class="select2-selection__choice"></li>'),
-                            formatted = that.display(obj, $rendered),
-                            $remove = $('<span class="select2-selection__choice__remove" role="presentation">&times;</span>'),
-                            allowRemoveAttr = $(obj.element).data("allowremove"),
-                            allowRemove = obj.allowRemove === undefined ? allowRemoveAttr : obj.allowRemove;
-                        if (allowRemove === undefined || allowRemove !== false) {
-                            $container.append($remove);
-                        }
-                        $container.data("data", obj);
-                        $container.append(formatted);
-                        $selectionContainer.push($container);
-                    });
-                    Utils.appendMany($rendered, $selectionContainer);
-                }
+                    this.resizeSearch();
+                    if (searchHadFocus) {
+                        this.$search.focus();
+                    }
+                };
+                return adapter;
+            });
 
 
-                var searchHadFocus = this.$search[0] == document.activeElement;
-                this.$search.attr('placeholder', '');
-                this.$selection.find('.select2-selection__rendered')
-                    .append(this.$searchContainer);
-                this.resizeSearch();
-                if (searchHadFocus) {
-                    this.$search.focus();
-                }
-            };
-            return adapter;
-        });
-
-    if ($.fn.select2) {
         $.fn.select2.amd.define("ServiceTypeFilterDropdownAdapter", [
                 "select2/utils",
                 "select2/dropdown",
@@ -331,12 +364,15 @@ define(['require',
     });
     if ($('body').tooltip) {
         $('body').tooltip({
-            selector: '[title]:not(".select2-selection__choice")',
+            selector: '[title]:not(".select2-selection__choice,.select2-selection__rendered")',
             placement: function() {
                 return this.$element.attr("data-placement") || "bottom";
             },
             container: 'body'
         });
     }
-
+    //For closing the modal on browsers navigation
+    $(window).on('popstate', function(){
+        $('body').find('.modal-dialog .close').click();
+    });
 })

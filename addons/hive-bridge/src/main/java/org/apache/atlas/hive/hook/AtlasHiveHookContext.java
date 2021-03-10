@@ -157,6 +157,7 @@ public class AtlasHiveHookContext {
 
     public Collection<AtlasEntity> getEntities() { return qNameEntityMap.values(); }
 
+    public Map<String, AtlasEntity> getQNameToEntityMap() { return qNameEntityMap; }
 
     public String getMetadataNamespace() {
         return hook.getMetadataNamespace();
@@ -168,8 +169,8 @@ public class AtlasHiveHookContext {
         return hook.isConvertHdfsPathToLowerCase();
     }
 
-    public boolean isAwsS3AtlasModelVersionV2() {
-        return hook.isAwsS3AtlasModelVersionV2();
+    public String getAwsS3AtlasModelVersion() {
+        return hook.getAwsS3AtlasModelVersion();
     }
 
     public boolean getSkipHiveColumnLineageHive20633() {

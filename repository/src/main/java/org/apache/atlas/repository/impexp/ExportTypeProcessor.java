@@ -19,9 +19,13 @@
 package org.apache.atlas.repository.impexp;
 
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.glossary.GlossaryService;
 import org.apache.atlas.model.TypeCategory;
+import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasBusinessMetadataType;
@@ -37,15 +41,21 @@ import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 class ExportTypeProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(ExportTypeProcessor.class);
+    private static final String RELATIONSHIP_ATTR_MEANINGS = "meanings";
 
     private AtlasTypeRegistry typeRegistry;
+    private GlossaryService glossaryService;
 
-    ExportTypeProcessor(AtlasTypeRegistry typeRegistry) {
+    ExportTypeProcessor(AtlasTypeRegistry typeRegistry, GlossaryService glossaryService) {
         this.typeRegistry = typeRegistry;
+        this.glossaryService = glossaryService;
     }
 
     public void addTypes(AtlasEntity entity, ExportService.ExportContext context) {
@@ -54,6 +64,34 @@ class ExportTypeProcessor {
         if(CollectionUtils.isNotEmpty(entity.getClassifications())) {
             for (AtlasClassification c : entity.getClassifications()) {
                 addClassificationType(c.getTypeName(), context);
+            }
+        }
+
+        addTerms(entity, context);
+    }
+
+    private void addTerms(AtlasEntity entity, ExportService.ExportContext context) {
+        Object relAttrMeanings = entity.getRelationshipAttribute(RELATIONSHIP_ATTR_MEANINGS);
+        if (relAttrMeanings == null || !(relAttrMeanings instanceof List)) {
+            return;
+        }
+
+        List list = (List) relAttrMeanings;
+        if (CollectionUtils.isEmpty(list)) {
+            return;
+        }
+
+        for (Object objectId : list) {
+            if (objectId instanceof AtlasRelatedObjectId) {
+                AtlasRelatedObjectId termObjectId = (AtlasRelatedObjectId) objectId;
+
+                try {
+                    AtlasGlossaryTerm term = glossaryService.getTerm(termObjectId.getGuid());
+                    context.termsGlossary.put(termObjectId.getGuid(), term.getAnchor().getGlossaryGuid());
+                }
+                catch (AtlasBaseException e) {
+                    LOG.warn("Error fetching term details: {}", termObjectId);
+                }
             }
         }
     }
@@ -121,6 +159,7 @@ class ExportTypeProcessor {
 
             addAttributeTypes(entityType, context);
             addRelationshipTypes(entityType, context);
+            addBusinessMetadataType(entityType, context);
 
             if (CollectionUtils.isNotEmpty(entityType.getAllSuperTypes())) {
                 for (String superType : entityType.getAllSuperTypes()) {
@@ -177,6 +216,14 @@ class ExportTypeProcessor {
             context.businessMetadataTypes.add(businessMetadataType.getTypeName());
 
             addAttributeTypes(businessMetadataType, context);
+        }
+    }
+
+    private void addBusinessMetadataType(AtlasEntityType entityType, ExportService.ExportContext context) {
+        for (String bmTypeName : entityType.getBusinessAttributes().keySet()) {
+            AtlasBusinessMetadataType bmType = typeRegistry.getBusinessMetadataTypeByName(bmTypeName);
+
+            addBusinessMetadataType(bmType, context);
         }
     }
 

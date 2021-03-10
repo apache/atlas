@@ -147,7 +147,7 @@ define(['require',
                 var validate = true;
 
                 this.modal.$el.find(".attributeInput").each(function() {
-                    if ($(this).val() === "") {
+                    if ($(this).val().trim() === "") {
                         $(this).css('borderColor', "red")
                         validate = false;
                     }
@@ -228,7 +228,7 @@ define(['require',
                                     return activeTagObj.name.toLowerCase() === obj.name.toLowerCase();
                                 });
                                 if (duplicateCheck) {
-                                    duplicateAttributeList.push(obj.name);
+                                    duplicateAttributeList.push(_.escape(obj.name));
                                 } else {
                                     saveObj.attributeDefs.push(obj);
                                 }

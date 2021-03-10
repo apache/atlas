@@ -111,7 +111,7 @@ public class SecureEmbeddedServerTestBase {
             Assert.fail("Should have thrown an exception");
         } catch (IOException e) {
             Assert.assertEquals(e.getMessage(),
-                    "No credential provider path configured for storage of certificate store passwords");
+                    "No credential provider path cert.stores.credential.provider.path configured for storage of certificate store passwords");
         } finally {
             if (secureEmbeddedServer != null) {
                 secureEmbeddedServer.server.stop();

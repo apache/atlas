@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-define(['require'], function(require) {
+define(["require", "backbone"], function(require) {
     'use strict';
 
     var Enums = {};
@@ -41,7 +41,35 @@ define(['require'], function(require) {
         ENTITY_PURGE: "Entity Purged",
         BUSINESS_ATTRIBUTE_ADD: "Business Attribute(s) Added",
         BUSINESS_ATTRIBUTE_UPDATE: "Business Attribute(s) Updated",
-        BUSINESS_ATTRIBUTE_DELETE: "Business Attribute(s) Deleted"
+        BUSINESS_ATTRIBUTE_DELETE: "Business Attribute(s) Deleted",
+        CUSTOM_ATTRIBUTE_UPDATE: "User-defined Attribute(s) Updated",
+        TYPE_DEF_UPDATE: "Type Updated",
+        TYPE_DEF_CREATE: "Type Created",
+        TYPE_DEF_DELETE: "Type Deleted",
+        IMPORT: "Import",
+        EXPORT: "Export"
+    }
+    Enums.serverAudits = {
+        SERVER_START: "Server Start",
+        SERVER_STOP: "Server End",
+        SERVER_STATE_ACTIVE: "Server State Active",
+        SERVER_STATE_PASSIVE: "Server Statae Passive"
+    }
+
+    Enums.category = {
+        PRIMITIVE: "Primitive",
+        OBJECT_ID_TYPE: "Object Id type",
+        ENUM: "Enum",
+        STRUCT: "Struct",
+        CLASSIFICATION: "Classification",
+        ENTITY: "Entity",
+        ARRAY: "Array",
+        MAP: "Map",
+        RELATIONSHIP: "Relationship",
+        BUSINESS_METADATA: "Business Metadata",
+        PURGE: "Purge Entities",
+        IMPORT: "Import Entities",
+        EXPORT: "Export Entities"
     }
 
     Enums.entityStateReadOnly = {
@@ -211,6 +239,7 @@ define(['require'], function(require) {
         "__modifiedBy": "Last Modified User",
         "__propagatedClassificationNames": "Propagated Classification(s)",
         "__state": "Status",
+        "__entityStatus": "Entity Status",
         "__timestamp": "Created Timestamp",
         "__typeName": "Type Name"
     };
@@ -218,5 +247,40 @@ define(['require'], function(require) {
         0: "false",
         1: "true"
     };
+
+    Enums.queryBuilderUIOperatorToAPI = {
+        "=": "eq",
+        "!=": "neq",
+        "<": "lt",
+        "<=": "lte",
+        ">": "gt",
+        ">=": "gte",
+        "begins_with": "startsWith",
+        "ends_with": "endsWith",
+        "not_null": "notNull",
+        "is_null": "isNull",
+        "TIME_RANGE": "timerange"
+    };
+
+    Enums.queryBuilderApiOperatorToUI = _.invert(Enums.queryBuilderUIOperatorToAPI);
+
+    Enums.queryBuilderDateRangeUIValueToAPI = {
+        "Today": "TODAY",
+        "Yesterday": "YESTERDAY",
+        "Last 7 Days": "LAST_7_DAYS",
+        "Last 30 Days": "LAST_30_DAYS",
+        "This Month": "THIS_MONTH",
+        "Last Month": "LAST_MONTH",
+        "This Quarter": "THIS_QUARTER",
+        "Last Quarter": "LAST_QUARTER",
+        "This Year": "THIS_YEAR",
+        "Last Year": "LAST_YEAR",
+        "Last 3 Months": "LAST_3_MONTHS",
+        "Last 6 Months": "LAST_6_MONTHS",
+        "Last 12 Months": "LAST_12_MONTHS"
+    };
+
+    Enums.queryBuilderDateRangeAPIValueToUI = _.invert(Enums.queryBuilderDateRangeUIValueToAPI);
+
     return Enums;
 });

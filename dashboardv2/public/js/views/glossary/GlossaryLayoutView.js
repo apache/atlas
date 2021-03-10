@@ -85,7 +85,7 @@ define(['require',
                 };
                 events["click " + this.ui.importGlossary] = 'onClickImportGlossary';
                 events["keyup " + this.ui.searchTerm] = function() {
-                    this.ui.termTree.jstree("search", this.ui.searchTerm.val());
+                    this.ui.termTree.jstree("search", _.escape(this.ui.searchTerm.val()));
                 };
                 events["keyup " + this.ui.searchCategory] = function() {
                     this.ui.categoryTree.jstree("search", this.ui.searchCategory.val());
@@ -142,9 +142,11 @@ define(['require',
                         that[$(this).find('a').data('fn')](e)
                     });
                 }
-                this.importVent.on("Import:Glossary:Update", function(options) {
-                    that.getGlossary();
-                });
+                if (this.importVent) {
+                    this.importVent.on("Import:Glossary:Update", function(options) {
+                        that.getGlossary();
+                    });
+                }
             },
             onRender: function() {
                 this.changeLoaderState(true);
@@ -219,8 +221,10 @@ define(['require',
                             $tree.jstree('activate_node', obj.guid);
                         }
                     } else {
-                        setDefaultSelector();
-                        $tree.jstree('activate_node', that.glossary.selectedItem.guid);
+                        if (that.glossaryCollection.fullCollection.length) {
+                            setDefaultSelector();
+                            $tree.jstree('activate_node', that.glossary.selectedItem.guid);
+                        }
                     }
                     this.query[this.viewType] = _.extend(obj, _.pick(this.glossary.selectedItem, 'model', 'guid', 'gType', 'type'), { "viewType": this.viewType, "isNodeNotFoundAtLoad": this.query[this.viewType].isNodeNotFoundAtLoad });
                     var url = _.isEmpty(this.glossary.selectedItem) ? '#!/glossary' : '#!/glossary/' + this.glossary.selectedItem.guid;
@@ -478,8 +482,8 @@ define(['require',
                             if (id) {
                                 options.$el.jstree('activate_node', id);
                             }
-                            that.changeLoaderState(false);
                         }
+                        that.changeLoaderState(false);
                     },
                     createAction = function(options) {
                         var $el = options.el,
@@ -538,9 +542,7 @@ define(['require',
                             }).on("clear_search.jstree", function(e, data) {
                                 createAction(_.extend({}, options, data));
                             }).bind('loaded.jstree', function(e, data) {
-                                if (that.query[type].isNodeNotFoundAtLoad == true) {
-                                    treeLoaded({ "$el": $el, "type": type });
-                                }
+                                treeLoaded({ "$el": $el, "type": type });
                             });
                     },
                     initializeTermTree = function() {
@@ -705,12 +707,17 @@ define(['require',
                                 }) : null,
                                 updateTabState: true
                             });
+                        },
+                        complete: function() {
+                            that.notificationModal.hideButtonLoader();
+                            that.notificationModal.remove();
                         }
                     },
                     notifyObj = {
                         modal: true,
-                        ok: function(argument) {
-                            that.changeLoaderState(true);
+                        ok: function(obj) {
+                            that.notificationModal = obj;
+                            obj.showButtonLoader();
                             if (type == "Glossary") {
                                 that.glossaryCollection.fullCollection.get(guid).destroy(options, { silent: true, reset: false });
                             } else if (type == "GlossaryCategory") {
@@ -718,8 +725,8 @@ define(['require',
                             } else if (type == "GlossaryTerm") {
                                 new that.glossaryCollection.model().deleteTerm(guid, options);
                             }
-                            that.changeLoaderState(false);
                         },
+                        okCloses: false,
                         cancel: function(argument) {}
                     };
                 if (type == "Glossary") {

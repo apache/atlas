@@ -54,13 +54,15 @@ public abstract class AtlasGraphTraversal<V extends AtlasVertex, E extends Atlas
 
     public abstract Map<String, Collection<V>> getAtlasVertexMap();
 
-    public abstract List<E> getAtlasEdgeList();
-
     public abstract Set<E> getAtlasEdgeSet();
 
     public abstract Map<String, E> getAtlasEdgeMap();
 
     public abstract TextPredicate textPredicate();
+
+    public abstract AtlasGraphTraversal textRegEx(String key, String value);
+
+    public abstract AtlasGraphTraversal textContainsRegEx(String value, String removeRedundantQuotes);
 
     public interface TextPredicate {
 

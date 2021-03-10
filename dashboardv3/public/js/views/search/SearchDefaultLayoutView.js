@@ -133,6 +133,8 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
                 this.hidenFilter = false;
                 this.tagAttributeLength = 0;
                 this.entityAttributeLength = 0;
+                this.tagEntityCheck = false;
+                this.typeEntityCheck = false;
             },
             bindEvents: function() {},
             onRender: function() {
@@ -150,7 +152,7 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
                     that = this;
 
                 filters.rules = _.filter(rules, function(obj, key) {
-                    return obj.id != $(e.currentTarget).data("id");
+                    return (obj.id + key) != $(e.currentTarget).data("id");
                 });
                 if (filters) {
                     that.updateFilterOptions(filters, filtertype, isTag);
@@ -247,6 +249,8 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
                         businessMetadataDefCollection: that.options.businessMetadataDefCollection,
                         searchTableFilters: that.checkEntityFilter(that.options)
                     };
+                this.tagEntityCheck = false;
+                this.typeEntityCheck = false;
                 if (that.options.value) {
                     this.ui.checkDeletedEntity.prop('checked', this.options.value.includeDE ? this.options.value.includeDE : false);
                     this.ui.checkSubClassification.prop('checked', this.options.value.excludeSC ? this.options.value.excludeSC : false);
@@ -307,7 +311,7 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
                             attrObj: attrTypeObj
                         }), this.RQueryBuilderEntity);
 
-                        this.ui.entityName.html(that.options.value.type);
+                        this.ui.entityName.html(_.escape(that.options.value.type));
                     }
                 }
 
@@ -338,10 +342,32 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
                 filterPopupStatus();
 
                 function searchAttribute() {
-                    if (queryBuilderRef.data("queryBuilder")) {
-                        var rule = queryBuilderRef.queryBuilder("getRules");
+                    var queryBuilderObj = queryBuilderRef.data("queryBuilder");
+                    if (queryBuilderObj) {
+                        var ruleWithInvalid = queryBuilderObj.getRules({ allow_invalid: true }),
+                            rule = queryBuilderObj.getRules();
+                        rule ? that.updateFilterOptions(rule, filtertype, isTag) : isFilterValidate = false;
+                        if (ruleWithInvalid && ruleWithInvalid.rules.length === 1 && ruleWithInvalid.rules[0].id === null) {
+                            isFilterValidate = true;
+                            queryBuilderObj.clearErrors();
+                        }
+                        if (rule && rule.rules) {
+                            if (!that.tagEntityCheck) {
+                                var state = _.find(rule.rules, { id: "__state" });
+                                if (state) {
+                                    that.typeEntityCheck = (state.value === "ACTIVE" && state.operator === "=") || (state.value === "DELETED" && state.operator === "!=") ? false : true;
+                                    that.options.value.includeDE = that.typeEntityCheck;
+                                }
+                            }
+                            if (!that.typeEntityCheck) {
+                                var entityStatus = _.find(rule.rules, { id: "__entityStatus" });
+                                if (entityStatus) {
+                                    that.tagEntityCheck = (entityStatus.value === "ACTIVE" && entityStatus.operator === "=") || (entityStatus.value === "DELETED" && entityStatus.operator === "!=") ? false : true;
+                                    that.options.value.includeDE = that.tagEntityCheck
+                                }
+                            }
+                        }
                     }
-                    rule ? that.updateFilterOptions(rule, filtertype, isTag) : isFilterValidate = false;
                 }
 
                 function filterPopupStatus() {
@@ -359,9 +385,6 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
                 var that = this,
                     col = new Set();
                 _.map(rule.rules, function(obj, key) {
-                    if (obj.id === "__state") {
-                        that.options.value.includeDE = (obj.value === "ACTIVE" && obj.operator === "=") || (obj.value === "DELETED" && obj.operator === "!=") ? false : true;
-                    }
                     if (_.has(obj, "condition")) {
                         return that.getIdFromRuleObj(obj);
                     } else {
@@ -411,7 +434,6 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
                     },
                     updatedUrl;
 
-
                 if (this.options.value) {
                     if (this.options.value.tag) {
                         params["tag"] = this.options.value.tag;
@@ -429,7 +451,7 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
                     if (columnList) {
                         params["attributes"] = columnList.join(",");
                     }
-                    params["includeDE"] = _.isUndefinedNull(this.options.value.includeDE) ? false : this.options.value.includeDE;
+                    params['includeDE'] = _.isUndefinedNull(this.options.value.includeDE) ? false : this.options.value.includeDE;
                     params["excludeST"] = _.isUndefinedNull(this.options.value.excludeST) ? false : this.options.value.excludeST;
                     params["excludeSC"] = _.isUndefinedNull(this.options.value.excludeSC) ? false : this.options.value.excludeSC;
                 }

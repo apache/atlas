@@ -95,6 +95,10 @@ public class BulkImportResponse {
             this(parentObjectName, childObjectName, importStatus, "",-1);
         }
 
+        public ImportInfo( ImportStatus importStatus, String remarks) {
+            this("","", importStatus, remarks, -1);
+        }
+
         public ImportInfo( ImportStatus importStatus, String remarks, Integer rowNumber) {
             this("","", importStatus, remarks, rowNumber);
         }

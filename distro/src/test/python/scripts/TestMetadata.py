@@ -43,12 +43,12 @@ class TestMetadata(unittest.TestCase):
 
     # The getConfig mock has to be configured here to return the expected mock values
     def get_config_mock_side_effect(*args, **kwargs):
-        print "get_config_mock_side_effect (" + args[2] + ")"
+        print("get_config_mock_side_effect (" + args[2] + ")")
         return TestMetadata.mock_values.get(args[2])
 
     # The getConfig mock has to be configured here to return the expected mock values
     def get_default_config_mock_side_effect(*args, **kwargs):
-        print "get_default_config_mock_side_effect (" + args[3] + ")"
+        print("get_default_config_mock_side_effect (" + args[3] + ")")
         return TestMetadata.mock_values.get(args[3])
 
     @patch.object(mc, "runProcess")
@@ -106,7 +106,7 @@ class TestMetadata(unittest.TestCase):
             calls = [
                 call(['atlas_home/hbase/bin/hbase-daemon.sh', '--config', 'atlas_home/hbase/conf', 'start', 'master'],
                      'atlas_home/logs', False, True),
-                call(['atlas_home/solr/bin/solr', 'start', '-z', 'localhost:9838', '-p', '9838'], 'atlas_home/logs',
+                call(['atlas_home/solr/bin/solr', 'start', '-z', 'localhost:9838', '-p', '9838', '-s', 'atlas_home/data/solr'], 'atlas_home/logs',
                      False, True),
                 call(['atlas_home/solr/bin/solr', 'create', '-c', 'vertex_index', '-d',
                       'atlas_home/solr/server/solr/configsets/_default/conf', '-shards', '1', '-replicationFactor',

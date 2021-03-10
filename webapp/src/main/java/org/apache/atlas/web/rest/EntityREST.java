@@ -21,6 +21,9 @@ import com.sun.jersey.core.header.FormDataContentDisposition;
 import com.sun.jersey.multipart.FormDataParam;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.EntityAuditEvent;
+import org.apache.atlas.authorize.AtlasAuthorizationUtils;
+import org.apache.atlas.authorize.AtlasEntityAccessRequest;
+import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.bulkimport.BulkImportResponse;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
@@ -798,7 +801,10 @@ public class EntityREST {
     @Path("{guid}/audit")
     public List<EntityAuditEventV2> getAuditEvents(@PathParam("guid") String guid, @QueryParam("startKey") String startKey,
                                                    @QueryParam("auditAction") EntityAuditActionV2 auditAction,
-                                                   @QueryParam("count") @DefaultValue("100") short count) throws AtlasBaseException {
+                                                   @QueryParam("count") @DefaultValue("100") short count,
+                                                   @QueryParam("offset") @DefaultValue("-1") int offset,
+                                                   @QueryParam("sortBy") String sortBy,
+                                                   @QueryParam("sortOrder") String sortOrder) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
         try {
@@ -806,9 +812,24 @@ public class EntityREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.getAuditEvents(" + guid + ", " + startKey + ", " + count + ")");
             }
 
+            // Enforces authorization for entity-read
+            try {
+                entitiesStore.getHeaderById(guid);
+            } catch (AtlasBaseException e) {
+                if (e.getAtlasErrorCode() == AtlasErrorCode.INSTANCE_GUID_NOT_FOUND) {
+                    AtlasEntityHeader entityHeader = getEntityHeaderFromPurgedAudit(guid);
+
+                    AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_READ, entityHeader), "read entity audit: guid=", guid);
+                } else {
+                    throw e;
+                }
+            }
+
             List<EntityAuditEventV2> ret = new ArrayList<>();
 
-            if(auditAction != null) {
+            if (sortBy != null || offset > -1) {
+                ret = auditRepository.listEventsV2(guid, auditAction, sortBy, StringUtils.equalsIgnoreCase(sortOrder, "desc"), offset, count);
+            } else if(auditAction != null) {
                 ret = auditRepository.listEventsV2(guid, auditAction, startKey, count);
             } else {
                 List events = auditRepository.listEvents(guid, startKey, count);
@@ -1228,5 +1249,16 @@ public class EntityREST {
                                                  @FormDataParam("file") FormDataContentDisposition fileDetail) throws AtlasBaseException {
 
         return entitiesStore.bulkCreateOrUpdateBusinessAttributes(uploadedInputStream, fileDetail.getFileName());
+    }
+
+    private AtlasEntityHeader getEntityHeaderFromPurgedAudit(String guid) throws AtlasBaseException {
+        List<EntityAuditEventV2> auditEvents = auditRepository.listEventsV2(guid, EntityAuditActionV2.ENTITY_PURGE, null, (short)1);
+        AtlasEntityHeader        ret         = CollectionUtils.isNotEmpty(auditEvents) ? auditEvents.get(0).getEntityHeader() : null;
+
+        if (ret == null) {
+            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
+        }
+
+        return ret;
     }
 }

@@ -24,6 +24,7 @@ import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.utils.AtlasPerfTracer;
+import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,10 +32,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_CLASSIFIED;
-import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_ENTITY_TYPES;
 import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_NOT_CLASSIFIED;
-import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_WILDCARD_CLASSIFICATION;
 
 
 public class FullTextSearchProcessor extends SearchProcessor {
@@ -53,29 +51,28 @@ public class FullTextSearchProcessor extends SearchProcessor {
 
         // if search includes entity-type criteria, adding a filter here can help avoid unnecessary
         // processing (and rejection) by subsequent EntitySearchProcessor
-        if (context.getEntityType() != null && context.getEntityType() != MATCH_ALL_ENTITY_TYPES) {
-            String typeAndSubTypeNamesQryStr = context.getEntityType().getTypeAndAllSubTypesQryStr();
+        if (CollectionUtils.isNotEmpty(context.getEntityTypes())) {
+            String typeAndSubTypeNamesQryStr = context.getEntityTypesQryStr();
 
             if (typeAndSubTypeNamesQryStr.length() <= MAX_QUERY_STR_LENGTH_TYPES) {
                 queryString.append(AND_STR).append(typeAndSubTypeNamesQryStr);
             } else {
                 LOG.warn("'{}' has too many subtypes (query-string-length={}) to include in index-query; might cause poor performance",
-                         context.getEntityType().getTypeName(), typeAndSubTypeNamesQryStr.length());
+                         searchParameters.getTypeName(), typeAndSubTypeNamesQryStr.length());
             }
         }
 
         // if search includes classification criteria, adding a filter here can help avoid unnecessary
         // processing (and rejection) by subsequent ClassificationSearchProcessor or EntitySearchProcessor
-        if (context.getClassificationType() != null && context.getClassificationType() != MATCH_ALL_WILDCARD_CLASSIFICATION &&
-                                                       context.getClassificationType() != MATCH_ALL_CLASSIFIED &&
-                                                       context.getClassificationType() != MATCH_ALL_NOT_CLASSIFIED) {
-            String typeAndSubTypeNamesStr = context.getClassificationType().getTypeAndAllSubTypesQryStr();
+        if (CollectionUtils.isNotEmpty(context.getClassificationTypes()) &&
+                                                       context.getClassificationTypes().iterator().next() != MATCH_ALL_NOT_CLASSIFIED) {
+            String typeAndSubTypeNamesStr = context.getClassificationTypesQryStr();
 
             if (typeAndSubTypeNamesStr.length() <= MAX_QUERY_STR_LENGTH_TAGS) {
                 queryString.append(AND_STR).append(typeAndSubTypeNamesStr);
             } else {
                 LOG.warn("'{}' has too many subtypes (query-string-length={}) to include in index-query; might cause poor performance",
-                        context.getClassificationType().getTypeName(), typeAndSubTypeNamesStr.length());
+                        searchParameters.getClassification(), typeAndSubTypeNamesStr.length());
             }
         }
 

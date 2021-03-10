@@ -82,8 +82,7 @@ public class CuratorFactoryTest {
         curatorFactory.enhanceBuilderWithSecurityParameters(zookeeperProperties, builder);
         verify(builder).aclProvider(argThat(new ArgumentMatcher<ACLProvider>() {
             @Override
-            public boolean matches(Object o) {
-                ACLProvider aclProvider = (ACLProvider) o;
+            public boolean matches(ACLProvider aclProvider) {
                 ACL acl = aclProvider.getDefaultAcl().get(0);
                 return acl.getId().getId().equals("myclient@EXAMPLE.COM")
                         && acl.getId().getScheme().equals("sasl");

@@ -544,16 +544,6 @@ public class AtlasTypeDefGraphStoreV2 extends AtlasTypeDefGraphStore {
     }
 
     public static String getCurrentUser() {
-        String ret = RequestContext.getCurrentUser();
-
-        if (StringUtils.isBlank(ret)) {
-            ret = System.getProperty("user.name");
-
-            if (StringUtils.isBlank(ret)) {
-                ret = "atlas";
-            }
-        }
-
-        return ret;
+        return RequestContext.getCurrentUser();
     }
 }

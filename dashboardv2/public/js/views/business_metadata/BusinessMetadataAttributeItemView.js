@@ -65,7 +65,7 @@ define(['require',
                     var obj = { options: this.model.get('options') || {} };
                     delete obj.enumValues;
                     delete obj.options.maxStrLength;
-                    if (e.target.value.trim() === 'enumeration' || e.target.value.trim() === 'Enumeration') {
+                    if (e.target.value.trim().toLowerCase() === 'enumeration') {
                         this.ui.enumTypeSelectorContainer.show();
                         this.ui.enumTypeSelector.show();
                         this.emumTypeSelectDisplay();
@@ -73,13 +73,13 @@ define(['require',
                         this.ui.stringLengthValue.hide();
                     } else {
                         obj.typeName = e.target.value.trim();
-                        if (e.target.value.trim() === 'string' || e.target.value.trim() === 'String') {
+                        if (e.target.value.trim().toLowerCase() === 'string') {
                             this.ui.stringLengthContainer.show();
                             this.ui.stringLengthValue.show();
                             this.ui.enumTypeSelectorContainer.hide();
                             this.ui.enumTypeSelector.hide();
                             this.ui.enumValueSelectorContainer.hide();
-                            obj.options["maxStrLength"] = e.target.value.trim();
+                            obj.options["maxStrLength"] = this.ui.stringLengthValue.val()
                         } else {
                             this.ui.enumTypeSelectorContainer.hide();
                             this.ui.enumTypeSelector.hide();
@@ -233,8 +233,8 @@ define(['require',
                     selectedEnumValues = selectedEnum ? selectedEnum.get('elementDefs') : null,
                     savedValues = [];
                 _.each(selectedEnumValues, function(enumVal, index) {
-                    selectedValues.push(_.unescape(enumVal.value));
-                    enumValues += "<option>" + enumVal.value + "</option>";
+                    selectedValues.push(enumVal.value);
+                    enumValues += "<option>" + _.escape(enumVal.value) + "</option>";
                 });
                 this.ui.enumValueSelector.empty();
                 this.ui.enumValueSelector.append(enumValues);

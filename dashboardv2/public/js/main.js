@@ -99,9 +99,16 @@ require.config({
             'deps': ['d3'],
             'exports': ['d3-tip']
         },
+        'LineageHelper': {
+            'deps': ['d3'],
+        },
         'dagreD3': {
             'deps': ['d3'],
             'exports': ['dagreD3']
+        },
+        'sparkline': {
+            'deps': ['jquery'],
+            'exports': ['sparkline']
         },
         'pnotify': {
             'exports': ['pnotify']
@@ -120,13 +127,6 @@ require.config({
         },
         'moment': {
             'exports': ['moment']
-        },
-        'nvd3': {
-            'deps': ['d3']
-        },
-        'sparkline': {
-            'deps': ['jquery'],
-            'exports': ['sparkline']
         },
         'jstree': {
             'deps': ['jquery']
@@ -154,12 +154,14 @@ require.config({
         'asBreadcrumbs': 'libs/jquery-asBreadcrumbs/js/jquery-asBreadcrumbs.min',
         'd3': 'libs/d3/d3.min',
         'd3-tip': 'libs/d3/index',
+        'LineageHelper': 'external_lib/atlas-lineage/dist/index',
+        'dagreD3': 'libs/dagre-d3/dagre-d3.min',
+        'sparkline': 'libs/sparkline/jquery.sparkline.min',
         'tmpl': 'templates',
         'requirejs.text': 'libs/requirejs-text/text',
         'handlebars': 'external_lib/require-handlebars-plugin/js/handlebars',
         'hbs': 'external_lib/require-handlebars-plugin/js/hbs',
         'i18nprecompile': 'external_lib/require-handlebars-plugin/js/i18nprecompile',
-        'dagreD3': 'libs/dagre-d3/dagre-d3.min',
         'select2': 'libs/select2/select2.full.min',
         'backgrid-select-all': 'libs/backgrid-select-all/backgrid-select-all.min',
         'moment': 'libs/moment/js/moment.min',
@@ -172,12 +174,11 @@ require.config({
         'platform': 'libs/platform/platform',
         'query-builder': 'libs/jQueryQueryBuilder/js/query-builder.standalone.min',
         'daterangepicker': 'libs/bootstrap-daterangepicker/js/daterangepicker',
-        'nvd3': 'libs/nvd3/nv.d3.min',
-        'sparkline': 'libs/sparkline/jquery.sparkline.min',
         'table-dragger': 'libs/table-dragger/table-dragger',
         'jstree': 'libs/jstree/jstree.min',
         'jquery-steps': 'libs/jquery-steps/jquery.steps.min',
-        'dropzone': 'libs/dropzone/js/dropzone-amd-module'
+        'dropzone': 'libs/dropzone/js/dropzone-amd-module',
+        'lossless-json': 'libs/lossless-json/lossless-json'
     },
 
     /**
@@ -267,6 +268,16 @@ require(['App',
                 if (response['atlas.ui.default.version'] !== undefined) {
                     Globals.DEFAULT_UI = response['atlas.ui.default.version'];
                 }
+                if (response['atlas.ui.date.format'] !== undefined) {
+                    Globals.dateTimeFormat = response['atlas.ui.date.format'];
+                    var dateFormatSeperated = Globals.dateTimeFormat.split(' ');
+                    if (dateFormatSeperated[0]) {
+                        Globals.dateFormat = dateFormatSeperated[0]; //date
+                    }
+                }
+                if (response['atlas.ui.date.timezone.format.enabled'] !== undefined) {
+                    Globals.isTimezoneFormatEnabled = response['atlas.ui.date.timezone.format.enabled'];
+                }
             }
             --that.asyncFetchCounter;
             startApp();
@@ -331,15 +342,13 @@ require(['App',
         }
     });
 
-    Enums.addOnEntities.forEach(function(addOnEntity) {
-        CommonViewFunction.fetchRootEntityAttributes({
-            url: UrlLinks.rootEntityDefUrl(addOnEntity),
-            entity: addOnEntity,
-            callback: function() {
-                --that.asyncFetchCounter;
-                startApp();
-            }
-        });
+    CommonViewFunction.fetchRootEntityAttributes({
+        url: UrlLinks.rootEntityDefUrl(Enums.addOnEntities[0]),
+        entity: Enums.addOnEntities,
+        callback: function() {
+            --that.asyncFetchCounter;
+            startApp();
+        }
     });
 
     CommonViewFunction.fetchRootClassificationAttributes({

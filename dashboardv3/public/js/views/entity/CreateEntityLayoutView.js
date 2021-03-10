@@ -151,7 +151,7 @@ define(['require',
                 });
 
                 this.ui.entityInputData.on('keyup change', 'input.true,select.true', function(e) {
-                    if (this.value !== "") {
+                    if (this.value.trim() !== "") {
                         if ($(this).data('select2')) {
                             $(this).data('select2').$container.find('.select2-selection').removeClass("errorClass");
                         } else {
@@ -294,6 +294,7 @@ define(['require',
                         that.subAttributeData(data)
                     },
                     complete: function() {
+                        that.modal.$el.find('button.ok').prop("disabled", true);
                         //that.initilizeElements();
                     },
                     silent: true
@@ -439,9 +440,16 @@ define(['require',
                 var that = this;
                 this.$('input[data-type="date"]').each(function() {
                     if (!$(this).data('daterangepicker')) {
-                        var dateObj = { "singleDatePicker": true, "showDropdowns": true };
-                        if (that.guid) {
-                            dateObj["startDate"] = this.value
+                        var dateObj = {
+                            "singleDatePicker": true,
+                            "showDropdowns": true,
+                            "startDate": new Date(),
+                            locale: {
+                                format: Globals.dateFormat
+                            }
+                        };
+                        if (that.guid && this.value.length) {
+                            dateObj["startDate"] = new Date(Number(this.value));
                         }
                         $(this).daterangepicker(dateObj);
                     }
@@ -502,7 +510,7 @@ define(['require',
                     entityLabel = this.capitalize(_.escape(value.name));
 
                 return '<div class=" row ' + value.isOptional + '"><span class="col-sm-3">' +
-                    '<label><span class="' + (value.isOptional ? 'true' : 'false required') + '">' + entityLabel + '</span><span class="center-block ellipsis-with-margin text-gray" title="Data Type : ' + value.typeName + '">' + '(' + Utils.escapeHtml(value.typeName) + ')' + '</span></label></span>' +
+                    '<label><span class="' + (value.isOptional ? 'true' : 'false required') + '">' + entityLabel + '</span><span class="center-block ellipsis-with-margin text-gray" title="Data Type : ' + value.typeName + '">' + '(' + _.escape(value.typeName) + ')' + '</span></label></span>' +
                     '<span class="col-sm-9">' + (this.getElement(object)) +
                     '</input></span></div>';
             },
@@ -516,7 +524,8 @@ define(['require',
             },
             getSelect: function(object) {
                 var value = object.value,
-                    entityValue = object.entityValue,
+                    name = _.escape(value.name),
+                    entityValue = _.escape(object.entityValue),
                     isAttribute = object.isAttribute,
                     isRelation = object.isRelation;
                 if (value.typeName === "boolean") {
@@ -524,7 +533,7 @@ define(['require',
                         '" data-type="' + value.typeName +
                         '" data-attribute="' + isAttribute +
                         '" data-relation="' + isRelation +
-                        '" data-key="' + value.name +
+                        '" data-key="' + name +
                         '" data-id="entityInput">' +
                         '<option value="">--Select true or false--</option><option value="true">true</option>' +
                         '<option value="false">false</option></select>';
@@ -539,14 +548,15 @@ define(['require',
                         '" data-type="' + value.typeName +
                         '" data-attribute="' + isAttribute +
                         '" data-relation="' + isRelation +
-                        '" data-key="' + value.name +
+                        '" data-key="' + name +
                         '" data-id="entitySelectData" data-queryData="' + splitTypeName + '">' + (this.guid ? entityValue : "") + '</select>';
                 }
 
             },
             getTextArea: function(object) {
                 var value = object.value,
-                    setValue = object.entityValue,
+                    name = _.escape(value.name),
+                    setValue = _.escape(object.entityValue),
                     isAttribute = object.isAttribute,
                     isRelation = object.isRelation,
                     structType = object.structType;
@@ -561,25 +571,26 @@ define(['require',
 
                 return '<textarea class="form-control entityInputBox ' + (value.isOptional === true ? "false" : "true") + '"' +
                     ' data-type="' + value.typeName + '"' +
-                    ' data-key="' + value.name + '"' +
+                    ' data-key="' + name + '"' +
                     ' data-attribute="' + isAttribute + '"' +
                     ' data-relation="' + isRelation + '"' +
-                    ' placeholder="' + value.name + '"' +
+                    ' placeholder="' + name + '"' +
                     ' data-id="entityInput">' + setValue + '</textarea>';
 
             },
             getInput: function(object) {
                 var value = object.value,
-                    entityValue = object.entityValue,
+                    name = _.escape(value.name),
+                    entityValue = _.escape(object.entityValue),
                     isAttribute = object.isAttribute,
                     isRelation = object.isRelation;
                 return '<input class="form-control entityInputBox ' + (value.isOptional === true ? "false" : "true") + '"' +
                     ' data-type="' + value.typeName + '"' +
                     ' value="' + entityValue + '"' +
-                    ' data-key="' + value.name + '"' +
+                    ' data-key="' + name + '"' +
                     ' data-attribute="' + isAttribute + '"' +
                     ' data-relation="' + isRelation + '"' +
-                    ' placeholder="' + value.name + '"' +
+                    ' placeholder="' + name + '"' +
                     ' data-id="entityInput">';
             },
             getElement: function(object) {
@@ -598,9 +609,10 @@ define(['require',
                         }
                         if (value.typeName === "date") {
                             if (dataValue) {
-                                entityValue = moment(dataValue).format("MM/DD/YYYY");
+                                entityValue = moment(dataValue);
                             } else {
-                                entityValue = moment().format("MM/DD/YYYY");
+                                entityValue = Utils.formatDate({ zone: false, dateFormat: Globals.dateFormat });
+
                             }
                         }
                     }
@@ -769,7 +781,7 @@ define(['require',
                         success: function(model, response) {
                             that.modal.$el.find('button.ok').hideButtonLoader();
                             that.modal.close();
-                            var msgType = that.guid ? "editSuccessMessage" : "addSuccessMessage";
+                            var msgType = (model.mutatedEntities && model.mutatedEntities.UPDATE) ? "editSuccessMessage" : "addSuccessMessage";
                             Utils.notifySuccess({
                                 content: "Entity" + Messages.getAbbreviationMsg(false, msgType)
                             });
@@ -779,12 +791,15 @@ define(['require',
                                 if (that.searchVent) {
                                     that.searchVent.trigger("Entity:Count:Update");
                                 }
-                                if (model.mutatedEntities && model.mutatedEntities.CREATE && _.isArray(model.mutatedEntities.CREATE) && model.mutatedEntities.CREATE[0] && model.mutatedEntities.CREATE[0].guid) {
-                                    Utils.setUrl({
-                                        url: '#!/detailPage/' + (model.mutatedEntities.CREATE[0].guid),
-                                        mergeBrowserUrl: false,
-                                        trigger: true
-                                    });
+                                if (model.mutatedEntities) {
+                                    var mutatedEntities = model.mutatedEntities.CREATE || model.mutatedEntities.UPDATE;
+                                    if (mutatedEntities && _.isArray(mutatedEntities) && mutatedEntities[0] && mutatedEntities[0].guid) {
+                                        Utils.setUrl({
+                                            url: '#!/detailPage/' + (mutatedEntities[0].guid),
+                                            mergeBrowserUrl: false,
+                                            trigger: true
+                                        });
+                                    }
                                 }
                             }
                         },

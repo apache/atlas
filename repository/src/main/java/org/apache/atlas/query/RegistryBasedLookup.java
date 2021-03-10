@@ -22,6 +22,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.type.*;
+import org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.*;
@@ -35,6 +36,7 @@ import static org.apache.atlas.model.discovery.SearchParameters.ALL_ENTITY_TYPES
 
 class RegistryBasedLookup implements Lookup {
     private static final Map<String, String> NUMERIC_ATTRIBUTES = new HashMap<String, String>() {{
+            put(AtlasBaseTypeDef.ATLAS_TYPE_BYTE, "");
             put(AtlasBaseTypeDef.ATLAS_TYPE_SHORT, "");
             put(AtlasBaseTypeDef.ATLAS_TYPE_INT, "");
             put(AtlasBaseTypeDef.ATLAS_TYPE_LONG, "L");
@@ -74,7 +76,7 @@ class RegistryBasedLookup implements Lookup {
             return "";
         }
 
-        return et.getQualifiedAttributeName(name);
+        return et.getVertexPropertyName(name);
     }
 
     @Override
@@ -119,6 +121,21 @@ class RegistryBasedLookup implements Lookup {
         AtlasStructType.AtlasAttribute attr = getAttribute(et, attributeName);
 
         return (attr != null) ? attr.getRelationshipEdgeLabel() : "";
+    }
+
+    @Override
+    public AtlasRelationshipEdgeDirection getRelationshipEdgeDirection(GremlinQueryComposer.Context context, String attributeName) {
+        AtlasEntityType entityType  = context.getActiveEntityType();
+        AtlasStructType.AtlasAttribute attribute = null;
+        AtlasRelationshipEdgeDirection ret = null;
+
+        if (entityType != null) {
+            attribute = entityType.getRelationshipAttribute(attributeName, null);
+            if (attribute != null) {
+                ret = attribute.getRelationshipEdgeDirection();
+            }
+        }
+        return ret;
     }
 
     @Override

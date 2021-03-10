@@ -180,6 +180,11 @@ pre {
 
         .json-string {
             color: olive;
+
+            &.cursor {
+                cursor: pointer;
+                text-decoration: underline;
+            }
         }
     }
 
@@ -191,6 +196,11 @@ pre {
 .panel-body .memory-details {
     pre {
         &.code-block {
+            &.fixed-height {
+                max-height: 112px;
+                overflow: auto;
+            }
+
             &.shrink {
                 height: 144px;
 
@@ -219,10 +229,18 @@ pre {
 
 .custom-table {
     width: 100%;
+    display: flex;
+
+    tbody {
+        display: flex;
+        flex-flow: column;
+        width: 100%;
+    }
 
     .custom-tr {
         margin-left: 15px;
-        margin-right: 15px;
+        display: flex;
+        width: calc(100% - 15px);
 
         .custom-col-0,
         .custom-col-1,
@@ -239,22 +257,25 @@ pre {
 
 
         .custom-col-0 {
-            text-align: center;
-            vertical-align: middle;
             line-height: 31px;
-            width: 3%;
+            width: 9px;
+            padding: 0px 2px;
         }
 
         .custom-col-1 {
-            width: 39%;
-            margin-bottom: 10px;
+            width: calc(50% - 90px);
+            flex-grow: 2;
+
+            &:first-child {
+                width: 30% !important;
+                flex-grow: 1;
+            }
         }
 
         .custom-col-2 {
             text-align: center;
-            width: 17%;
-            padding-left: 1%;
-            margin-bottom: 10px;
+            width: 80px;
+            padding-left: 10px;
 
             &>button {
                 padding: 7px 10px;
@@ -305,5 +326,15 @@ pre {
         width: 26px;
         font-size: 11px;
         animation: spin 1000ms infinite linear;
+    }
+}
+
+.attr-details {
+    ul {
+        list-style: disc;
+
+        li {
+            cursor: pointer;
+        }
     }
 }

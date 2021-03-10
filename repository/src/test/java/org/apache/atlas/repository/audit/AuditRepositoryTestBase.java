@@ -158,6 +158,39 @@ public class AuditRepositoryTestBase {
 
         assertEquals(events.size(), 0);
     }
+    
+    @Test
+    public void testSortListV2() throws Exception {
+        String                 id1            = "id1" + rand();
+        long                   ts             = System.currentTimeMillis();
+        AtlasEntity          entity         = new AtlasEntity(rand());
+        List<EntityAuditEventV2> expectedEvents = new ArrayList<>(3);
+
+        expectedEvents.add(new EntityAuditEventV2(id1, ts, "user-a", EntityAuditEventV2.EntityAuditActionV2.ENTITY_UPDATE, "details-1", entity));
+        expectedEvents.add(new EntityAuditEventV2(id1, ts+1, "user-C", EntityAuditEventV2.EntityAuditActionV2.ENTITY_DELETE, "details-2", entity));
+        expectedEvents.add(new EntityAuditEventV2(id1, ts+2, "User-b", EntityAuditEventV2.EntityAuditActionV2.ENTITY_CREATE, "details-3", entity));
+        for(EntityAuditEventV2 event : expectedEvents) {
+            eventRepository.putEventsV2(event);
+        }
+
+        List<EntityAuditEventV2> events = eventRepository.listEventsV2(id1, null, "timestamp", false, 0, (short) 2);
+        assertEquals(events.size(), 2);
+        assertEventV2Equals(events.get(0), expectedEvents.get(0));
+        assertEventV2Equals(events.get(1), expectedEvents.get(1));
+
+        events = eventRepository.listEventsV2(id1, null, "user", false, 0, (short) 3);
+        assertEquals(events.size(), 3);
+        assertEventV2Equals(events.get(0), expectedEvents.get(0));
+        assertEventV2Equals(events.get(1), expectedEvents.get(2));
+        assertEventV2Equals(events.get(2), expectedEvents.get(1));
+
+        events = eventRepository.listEventsV2(id1, null, "action", false, 0, (short) 3);
+        assertEquals(events.size(), 3);
+        assertEventV2Equals(events.get(0), expectedEvents.get(2));
+        assertEventV2Equals(events.get(1), expectedEvents.get(1));
+        assertEventV2Equals(events.get(2), expectedEvents.get(0));
+
+    }
 
     protected void assertEventV2Equals(EntityAuditEventV2 actual, EntityAuditEventV2 expected) {
         if (expected != null) {

@@ -11,7 +11,8 @@ export default [
                     "Glossary",
                     "Classification Propagation",
                     "Notifications",
-                    "High Availability"
+                    "High Availability",
+                    "Business Metadata"
                 ]
             },
             {
@@ -86,7 +87,7 @@ export default [
             "Download",
             {
                 name: "Whats New",
-                menu: ["WhatsNew-2.0", "WhatsNew-1.0"]
+                menu: ["WhatsNew-2.1", "WhatsNew-2.0", "WhatsNew-1.0"]
             },
             "Migration"
         ]

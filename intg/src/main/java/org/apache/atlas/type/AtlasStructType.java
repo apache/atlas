@@ -652,11 +652,11 @@ public class AtlasStructType extends AtlasType {
         return null;
     }
 
-    public String getQualifiedAttributeName(String attrName) throws AtlasBaseException {
+    public String getVertexPropertyName(String attrName) throws AtlasBaseException {
         AtlasAttribute attribute = getAttribute(attrName);
 
         if (attribute != null) {
-            return attribute.getQualifiedName();
+            return attribute.getVertexPropertyName();
         }
 
         throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_ATTRIBUTE, attrName, structDef.getName());
@@ -670,7 +670,7 @@ public class AtlasStructType extends AtlasType {
         throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_ATTRIBUTE, attrName, structDef.getName());
     }
 
-    AtlasEntityType getReferencedEntityType(AtlasType type) {
+    static AtlasEntityType getReferencedEntityType(AtlasType type) {
         if (type instanceof AtlasArrayType) {
             type = ((AtlasArrayType)type).getElementType();
         }
@@ -936,6 +936,10 @@ public class AtlasStructType extends AtlasType {
         }
 
         public static String escapeIndexQueryValue(Collection<String> values) {
+            return escapeIndexQueryValue(values, false);
+        }
+
+        public static String escapeIndexQueryValue(Collection<String> values, boolean allowWildcard) {
             StringBuilder sb = new StringBuilder();
 
             sb.append(BRACE_OPEN_CHAR);
@@ -943,10 +947,10 @@ public class AtlasStructType extends AtlasType {
             if (CollectionUtils.isNotEmpty(values)) {
                 Iterator<String> iter = values.iterator();
 
-                sb.append(escapeIndexQueryValue(iter.next()));
+                sb.append(escapeIndexQueryValue(iter.next(), allowWildcard));
 
                 while (iter.hasNext()) {
-                    sb.append(SPACE_CHAR).append(escapeIndexQueryValue(iter.next()));
+                    sb.append(SPACE_CHAR).append(escapeIndexQueryValue(iter.next(), allowWildcard));
                 }
             }
 
@@ -956,28 +960,176 @@ public class AtlasStructType extends AtlasType {
         }
 
         public static String escapeIndexQueryValue(String value) {
-            String ret = value;
+            return escapeIndexQueryValue(value, false, true);
+        }
 
-            if (StringUtils.containsAny(value, IDX_QRY_OFFENDING_CHARS)) {
-                boolean isQuoteAtStart = value.charAt(0) == DOUBLE_QUOTE_CHAR;
-                boolean isQuoteAtEnd   = value.charAt(value.length() - 1) == DOUBLE_QUOTE_CHAR;
+        public static String escapeIndexQueryValue(String value, boolean allowWildcard) {
+            return escapeIndexQueryValue(value, allowWildcard, true);
+        }
+
+        public static String escapeIndexQueryValue(String value, boolean allowWildcard, boolean shouldQuote) {
+            String  ret        = value;
+            boolean quoteValue = false;
+
+            if (hasIndexQueryEscapeChar(value)) {
+                StringBuilder sb = new StringBuilder();
+
+                for (int i = 0; i < value.length(); i++) {
+                    char c = value.charAt(i);
+
+                    if (!(allowWildcard && c == '*') && isIndexQueryEscapeChar(c)) {
+                        sb.append('\\');
+                    }
+
+                    if (shouldQuote && !quoteValue) {
+                        quoteValue = shouldQuoteIndexQueryForChar(c);
+                    }
+
+                    sb.append(c);
+                }
+
+                ret = sb.toString();
+            } else if (value != null) {
+                for (int i = 0; i < value.length(); i++) {
+                    if (shouldQuote && shouldQuoteIndexQueryForChar(value.charAt(i))) {
+                        quoteValue = true;
+
+                        break;
+                    }
+                }
+            }
+
+            if (quoteValue) {
+                boolean isQuoteAtStart = ret.charAt(0) == DOUBLE_QUOTE_CHAR;
+                boolean isQuoteAtEnd   = ret.charAt(ret.length() - 1) == DOUBLE_QUOTE_CHAR;
 
                 if (!isQuoteAtStart) {
                     if (!isQuoteAtEnd) {
-                        ret = DOUBLE_QUOTE_CHAR + value + DOUBLE_QUOTE_CHAR;
+                        ret = DOUBLE_QUOTE_CHAR + ret + DOUBLE_QUOTE_CHAR;
                     } else {
-                        ret = DOUBLE_QUOTE_CHAR + value;
+                        ret = DOUBLE_QUOTE_CHAR + ret;
                     }
                 } else if (!isQuoteAtEnd) {
-                    ret = value + DOUBLE_QUOTE_CHAR;
+                    ret = ret + DOUBLE_QUOTE_CHAR;
                 }
+
             }
 
             return ret;
         }
 
+        private static boolean hasIndexQueryEscapeChar(String value) {
+            if (value != null) {
+                for (int i = 0; i < value.length(); i++) {
+                    if (isIndexQueryEscapeChar(value.charAt(i))) {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private static boolean isIndexQueryEscapeChar(char c) {
+            switch (c) {
+                case '+':
+                case '-':
+                case '&':
+                case '|':
+                case '!':
+                case '(':
+                case ')':
+                case '{':
+                case '}':
+                case '[':
+                case ']':
+                case '^':
+                case '"':
+                case '~':
+                case '*':
+                case '?':
+                case ':':
+                case '\\':
+                case '/':
+                case ' ':
+                    return true;
+            }
+
+            return false;
+        }
+
+        public static boolean hastokenizeChar(String value) {
+            if (value != null) {
+                for (int i = 0; i < value.length(); i++) {
+                    if (hastokenizeChar(value, i)) {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+
+        private static boolean hastokenizeChar(String value, int i) {
+            char c = value.charAt(i);
+            if (!Character.isLetterOrDigit(c)) {
+                switch (c) {
+                    case '_':
+                        return false;
+                    case '.':
+                    case ':':
+                    case '\'':
+                        if (i > 0 && !Character.isAlphabetic(value.charAt(i - 1))) {
+                            return true;
+                        }
+                        if (i < value.length() - 1 && !Character.isAlphabetic(value.charAt(i + 1))) {
+                            return true;
+                        }
+                        return false;
+                }
+
+                return true;
+            }
+
+            return false;
+        }
+
+        private static boolean shouldQuoteIndexQueryForChar(char c) {
+            switch (c) {
+                case '@':
+                case ' ':
+                case '+':
+                case '-':
+                case '&':
+                case '|':
+                case '!':
+                case '(':
+                case ')':
+                case '{':
+                case '}':
+                case '[':
+                case ']':
+                case '^':
+                case '"':
+                case '~':
+                case '?':
+                case ':':
+                case '\\':
+                case '/':
+                    return true;
+            }
+
+            return false;
+        }
+
         private String getRelationshipEdgeLabel(String relationshipLabel) {
             return (relationshipLabel == null) ? getEdgeLabel(qualifiedName) : relationshipLabel;
+        }
+
+        public AtlasEntityType getReferencedEntityType(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
+            AtlasType type = typeRegistry.getType(attributeDef.getTypeName());
+            return AtlasStructType.getReferencedEntityType(type);
         }
 
         public static String getQualifiedAttributeName(AtlasStructDef structDef, String attrName) {
@@ -1019,7 +1171,6 @@ public class AtlasStructType extends AtlasType {
                 new String[] {"%", "_p"}, //titan reserved characters
         };
 
-        private static final char[] IDX_QRY_OFFENDING_CHARS = { '@', '/', ' ', '-' };
         private static final char   BRACE_OPEN_CHAR         = '(';
         private static final char   BRACE_CLOSE_CHAR        = ')';
         private static final char   DOUBLE_QUOTE_CHAR       = '"';

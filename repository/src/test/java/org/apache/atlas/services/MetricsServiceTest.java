@@ -21,10 +21,10 @@ import org.apache.atlas.RequestContext;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.metrics.AtlasMetrics;
+import org.apache.atlas.repository.AtlasTestBase;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.impexp.ImportService;
 import org.apache.atlas.repository.impexp.ZipFileResourceTestUtils;
-import org.apache.atlas.runner.LocalSolrRunner;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.AtlasMetricsCounter;
@@ -45,7 +45,6 @@ import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
 import static org.apache.atlas.model.metrics.AtlasMetrics.*;
 import static org.apache.atlas.utils.TestLoadModelUtils.loadModelFromJson;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.runImportWithNoParameters;
@@ -62,7 +61,7 @@ import static org.apache.atlas.services.MetricsService.TAG;
 import static org.testng.Assert.*;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
-public class MetricsServiceTest {
+public class MetricsServiceTest extends AtlasTestBase {
 
     public static final String IMPORT_FILE = "metrics-entities-data.zip";
 
@@ -121,8 +120,10 @@ public class MetricsServiceTest {
     }};
 
     @BeforeClass
-    public void setup() {
+    public void setup() throws Exception {
         RequestContext.clear();
+
+        super.initialize();
 
         loadModelFilesAndImportTestData();
 
@@ -142,9 +143,7 @@ public class MetricsServiceTest {
     public void clear() throws Exception {
         AtlasGraphProvider.cleanup();
 
-        if (useLocalSolr()) {
-            LocalSolrRunner.stop();
-        }
+        super.cleanup();
     }
 
     @Test

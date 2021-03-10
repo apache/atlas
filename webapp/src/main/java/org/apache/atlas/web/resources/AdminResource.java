@@ -22,7 +22,6 @@ import com.sun.jersey.multipart.FormDataParam;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasErrorCode;
-import org.apache.atlas.RequestContext;
 import org.apache.atlas.authorize.AtlasAdminAccessRequest;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasEntityAccessRequest;
@@ -44,6 +43,7 @@ import org.apache.atlas.model.impexp.MigrationStatus;
 import org.apache.atlas.model.instance.AtlasCheckStateRequest;
 import org.apache.atlas.model.instance.AtlasCheckStateResult;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.metrics.AtlasMetrics;
 import org.apache.atlas.model.patches.AtlasPatch.AtlasPatches;
@@ -101,7 +101,6 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -109,6 +108,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 
 
 /**
@@ -131,6 +131,10 @@ public class AdminResource {
     private static final String DEFAULT_EDITABLE_ENTITY_TYPES  = "hdfs_path";
     private static final String DEFAULT_UI_VERSION             = "atlas.ui.default.version";
     private static final String UI_VERSION_V2                  = "v2";
+    private static final String UI_DATE_TIMEZONE_FORMAT_ENABLED = "atlas.ui.date.timezone.format.enabled";
+    private static final String UI_DATE_FORMAT                 = "atlas.ui.date.format";
+    private static final String UI_DATE_DEFAULT_FORMAT         = "MM/DD/YYYY hh:mm:ss A";
+    private static final String OPERATION_STATUS               = "operationStatus";
     private static final List TIMEZONE_LIST  = Arrays.asList(TimeZone.getAvailableIDs());
 
     @Context
@@ -157,6 +161,8 @@ public class AdminResource {
     private final  AtlasAuditService        auditService;
     private final  String                   defaultUIVersion;
     private final  EntityAuditRepository    auditRepository;
+    private final  boolean                  isTimezoneFormatEnabled;
+    private final  String                   uiDateFormat;
 
     static {
         try {
@@ -189,9 +195,13 @@ public class AdminResource {
         this.auditRepository           = auditRepository;
 
         if (atlasProperties != null) {
-            defaultUIVersion = atlasProperties.getString(DEFAULT_UI_VERSION, UI_VERSION_V2);
+            this.defaultUIVersion = atlasProperties.getString(DEFAULT_UI_VERSION, UI_VERSION_V2);
+            this.isTimezoneFormatEnabled = atlasProperties.getBoolean(UI_DATE_TIMEZONE_FORMAT_ENABLED, true);
+            this.uiDateFormat = atlasProperties.getString(UI_DATE_FORMAT, UI_DATE_DEFAULT_FORMAT);
         } else {
-            defaultUIVersion = UI_VERSION_V2;
+            this.defaultUIVersion = UI_VERSION_V2;
+            this.isTimezoneFormatEnabled = true;
+            this.uiDateFormat = UI_DATE_DEFAULT_FORMAT;
         }
     }
 
@@ -337,6 +347,8 @@ public class AdminResource {
         responseData.put("userName", userName);
         responseData.put("groups", groups);
         responseData.put("timezones", TIMEZONE_LIST);
+        responseData.put(UI_DATE_TIMEZONE_FORMAT_ENABLED, isTimezoneFormatEnabled);
+        responseData.put(UI_DATE_FORMAT, uiDateFormat);
 
         response = Response.ok(AtlasJson.toV1Json(responseData)).build();
 
@@ -378,12 +390,19 @@ public class AdminResource {
 
         AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_EXPORT), "export");
 
-        acquireExportImportLock("export");
+        boolean preventMultipleRequests = request != null && request.getOptions() != null
+                && !(request.getOptions().containsKey(AtlasExportRequest.OPTION_SKIP_LINEAGE)
+                     || request.getOptions().containsKey(AtlasExportRequest.OPTION_KEY_REPLICATED_TO));
+        if (preventMultipleRequests) {
+            acquireExportImportLock("export");
+        }
 
         ZipSink exportSink = null;
+        boolean isSuccessful = false;
+        AtlasExportResult result = null;
         try {
             exportSink = new ZipSink(httpServletResponse.getOutputStream());
-            AtlasExportResult result = exportService.run(exportSink, request, AtlasAuthorizationUtils.getCurrentUserName(),
+            result = exportService.run(exportSink, request, AtlasAuthorizationUtils.getCurrentUserName(),
                                                          Servlets.getHostName(httpServletRequest),
                                                          AtlasAuthorizationUtils.getRequestIpAddress(httpServletRequest));
 
@@ -396,17 +415,22 @@ public class AdminResource {
             httpServletResponse.setHeader("Transfer-Encoding", "chunked");
 
             httpServletResponse.getOutputStream().flush();
+            isSuccessful = true;
             return Response.ok().build();
         } catch (IOException excp) {
             LOG.error("export() failed", excp);
 
             throw new AtlasBaseException(excp);
         } finally {
-            releaseExportImportLock();
+            if (preventMultipleRequests) {
+                releaseExportImportLock();
+            }
 
             if (exportSink != null) {
                 exportSink.close();
             }
+
+            addToExportOperationAudits(isSuccessful, result);
 
             if (LOG.isDebugEnabled()) {
                 LOG.debug("<== AdminResource.export()");
@@ -426,11 +450,16 @@ public class AdminResource {
 
         AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_IMPORT), "importData");
 
-        acquireExportImportLock("import");
         AtlasImportResult result = null;
+        boolean preventMultipleRequests = true;
 
         try {
             AtlasImportRequest request = AtlasType.fromJson(jsonData, AtlasImportRequest.class);
+            preventMultipleRequests = request != null && request.getOptions() != null
+                    && !request.getOptions().containsKey(AtlasImportRequest.OPTION_KEY_REPLICATED_FROM);
+            if (preventMultipleRequests) {
+                acquireExportImportLock("import");
+            }
 
             result = importService.run(inputStream, request, Servlets.getUserName(httpServletRequest),
                     Servlets.getHostName(httpServletRequest),
@@ -449,12 +478,16 @@ public class AdminResource {
 
             throw new AtlasBaseException(excp);
         } finally {
-            releaseExportImportLock();
+            if (preventMultipleRequests) {
+                releaseExportImportLock();
+            }
 
             if (LOG.isDebugEnabled()) {
                 LOG.debug("<== AdminResource.importData(binary)");
             }
         }
+
+        addToImportOperationAudits(result);
 
         return result;
     }
@@ -481,13 +514,8 @@ public class AdminResource {
 
             final List<AtlasEntityHeader> purgedEntities = resp.getPurgedEntities();
             if(purgedEntities != null && purgedEntities.size() > 0) {
-                final String clientId = RequestContext.get().getClientIPAddress();
-                final Date startTime = new Date(RequestContext.get().getRequestTime());
-                final Date endTime = new Date();
-
-                auditService.add(AtlasAuthorizationUtils.getCurrentUserName(), AuditOperation.PURGE,
-                        clientId != null ? clientId : "", startTime, endTime, guids.toString(),
-                        resp.getPurgedEntitiesIds(), resp.getPurgedEntities().size());
+                auditService.add(AuditOperation.PURGE, guids.toString(), resp.getPurgedEntitiesIds(),
+                        resp.getPurgedEntities().size());
             }
 
             return resp;
@@ -505,13 +533,18 @@ public class AdminResource {
         }
 
         AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_IMPORT), "importFile");
-
-        acquireExportImportLock("importFile");
-
+        boolean preventMultipleRequests = true;
         AtlasImportResult result;
 
         try {
             AtlasImportRequest request = AtlasType.fromJson(jsonData, AtlasImportRequest.class);
+            preventMultipleRequests = request != null && request.getOptions() != null
+                    && request.getOptions().containsKey(AtlasImportRequest.OPTION_KEY_REPLICATED_FROM);
+
+            if (preventMultipleRequests) {
+                acquireExportImportLock("importFile");
+            }
+
             result = importService.run(request, AtlasAuthorizationUtils.getCurrentUserName(),
                                        Servlets.getHostName(httpServletRequest),
                                        AtlasAuthorizationUtils.getRequestIpAddress(httpServletRequest));
@@ -528,7 +561,9 @@ public class AdminResource {
 
             throw new AtlasBaseException(excp);
         } finally {
-            releaseExportImportLock();
+            if (preventMultipleRequests) {
+                releaseExportImportLock();
+            }
 
             if (LOG.isDebugEnabled()) {
                 LOG.debug("<== AdminResource.importFile()");
@@ -598,6 +633,8 @@ public class AdminResource {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AdminResource.getAtlasAudits(" + auditSearchParameters + ")");
             }
+
+            AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_AUDITS), "Admin Audits");
 
             return auditService.get(auditSearchParameters);
         } finally {
@@ -735,5 +772,39 @@ public class AdminResource {
         }
 
         importExportOperationLock.lock();
+    }
+
+    private void addToImportOperationAudits(AtlasImportResult result) throws AtlasBaseException {
+        List<AtlasObjectId> objectIds = result.getExportResult().getRequest().getItemsToExport();
+
+        Map<String, Object> optionMap = new HashMap<>();
+        optionMap.put(OPERATION_STATUS, result.getOperationStatus().name());
+        String params = AtlasJson.toJson(optionMap);
+
+        auditImportExportOperations(objectIds, AuditOperation.IMPORT, params);
+    }
+
+    private void addToExportOperationAudits(boolean isSuccessful, AtlasExportResult result) throws AtlasBaseException {
+        if (!isSuccessful
+                || CollectionUtils.isEmpty(result.getRequest().getItemsToExport())
+                || result.getRequest().getOptions() == null) {
+            return;
+        }
+
+        Map<String, Object> optionMap = result.getRequest().getOptions();
+        optionMap.put(OPERATION_STATUS, result.getOperationStatus().name());
+        String params = AtlasJson.toJson(optionMap);
+
+        List<AtlasObjectId> objectIds = result.getRequest().getItemsToExport();
+
+        auditImportExportOperations(objectIds, AuditOperation.EXPORT, params);
+    }
+
+    private void auditImportExportOperations(List<AtlasObjectId> objectIds, AuditOperation auditOperation, String params) throws AtlasBaseException {
+
+        Map<String, Long> entityCountByType = objectIds.stream().collect(Collectors.groupingBy(AtlasObjectId::getTypeName, Collectors.counting()));
+        int resultCount = objectIds.size();
+
+        auditService.add(auditOperation, params, AtlasJson.toJson(entityCountByType), resultCount);
     }
 }

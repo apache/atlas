@@ -206,13 +206,6 @@ define(['require',
                             if (target.children('div').find('a').text() === tag) {
                                 target.addClass('active');
                                 target.parents('ul').addClass('show').removeClass('hide'); // Don't use toggle
-                                if (this.createTag || !manual) {
-                                    if (target.offset()) {
-                                        $('#sidebar-wrapper').animate({
-                                            scrollTop: target.offset().top - 100
-                                        }, 500);
-                                    }
-                                }
                                 return false;
                             }
                         });
@@ -374,14 +367,6 @@ define(['require',
                             allowCancel: true,
                         }).open();
                     modal.$el.find('button.ok').attr("disabled", "true");
-                    view.ui.tagName.on('keyup', function(e) {
-                        modal.$el.find('button.ok').removeAttr("disabled");
-                    });
-                    view.ui.tagName.on('keyup', function(e) {
-                        if ((e.keyCode == 8 || e.keyCode == 32 || e.keyCode == 46) && e.currentTarget.value.trim() == "") {
-                            modal.$el.find('button.ok').attr("disabled", "true");
-                        }
-                    });
                     modal.on('shownModal', function() {
                         view.ui.parentTag.select2({
                             multiple: true,
@@ -447,7 +432,7 @@ define(['require',
                             return activeTagObj.name.toLowerCase() === obj.name.toLowerCase();
                         });
                         if (duplicateCheck) {
-                            duplicateAttributeList.push(obj.name);
+                            duplicateAttributeList.push(_.escape(obj.name));
                         }
                     });
                     var notifyObj = {
@@ -583,9 +568,12 @@ define(['require',
                 var that = this,
                     notifyObj = {
                         modal: true,
-                        ok: function(argument) {
+                        ok: function(obj) {
+                            that.notificationModal = obj;
+                            obj.showButtonLoader();
                             that.onNotifyOk();
                         },
+                        okCloses: false,
                         cancel: function(argument) {}
                     }
                 var text = "Are you sure you want to delete the classification"
@@ -595,7 +583,6 @@ define(['require',
             onNotifyOk: function(data) {
                 var that = this,
                     deleteTagData = this.collection.fullCollection.findWhere({ name: this.tag });
-                that.changeLoaderState(true);
                 deleteTagData.deleteTag({
                     typeName: that.tag,
                     success: function() {
@@ -611,6 +598,11 @@ define(['require',
                         that.collection.fullCollection.remove(deleteTagData);
                         // to update tag list of search tab fetch typeHeaders.
                         that.typeHeaders.fetch({ reset: true });
+                    },
+                    cust_error: function() {},
+                    complete: function() {
+                        that.notificationModal.hideButtonLoader();
+                        that.notificationModal.remove();
                     }
                 });
             }

@@ -17,10 +17,12 @@
  */
 define(['require',
     'backbone',
+    'utils/Utils',
     'hbs!tmpl/entity/EntityBusinessMetaDataItemView_tmpl',
     'moment',
+    'utils/Globals',
     'daterangepicker'
-], function(require, Backbone, EntityBusinessMetaDataItemViewTmpl, moment) {
+], function(require, Backbone, Utils, EntityBusinessMetaDataItemViewTmpl, moment, Globals) {
     'use strict';
 
     return Backbone.Marionette.ItemView.extend({
@@ -114,7 +116,7 @@ define(['require',
                     if (!that.model.has("__internal_UI_businessMetadataName")) {
                         updateObj["__internal_UI_businessMetadataName"] = businessMetadata;
                     }
-                    if (typeName.indexOf("date") > -1) {
+                    if (typeName === "date" || typeName === "array<date>") {
                         if (multi && updateObj[key].value) {
                             var dateValues = updateObj[key].value.split(','),
                                 dateStr = [];
@@ -132,7 +134,7 @@ define(['require',
                 });
                 this.$el.on('keypress', '.select2_only_number .select2-search__field', function() {
                     var typename = $(this).parents(".select2_only_number").find("select[data-typename]").data("typename")
-                    if (typename.indexOf("float") > -1 && event.which == 46) {
+                    if ((typename === "float" || typename === "array<float>") && event.which == 46) {
                         return;
                     }
                     if ((event.which < 48 || event.which > 57)) {
@@ -152,35 +154,37 @@ define(['require',
                     val = options.val.value,
                     isMultiValued = typeName && typeName.indexOf("array<") === 0,
                     businessMetadata = options.businessMetadata,
-                    allowOnlyNum = false;
+                    allowOnlyNum = false,
+                    isEnum = false;
                 var elType = isMultiValued ? "select" : "input";
                 if (!isMultiValued && !_.isEmpty(val)) {
                     val = _.escape(val);
                 }
-                if (!_.isUndefinedNull(val) && typeName.indexOf("boolean") > -1) {
+                if (!_.isUndefinedNull(val) && (typeName === "boolean" || typeName === "array<boolean>")) {
                     val = String(val);
                 }
-                if (typeName.indexOf("date") > -1) {
+                if (typeName === "date" || typeName === "array<date>") {
                     if (isMultiValued && val && val.length) {
                         var dateStr = [];
                         _.each(val, function(selectedDate) {
                             selectedDate = parseInt(selectedDate);
-                            dateStr.push(moment(selectedDate).format("MM/DD/YYYY"));
+                            dateStr.push(Utils.formatDate({ date: selectedDate, zone: false, dateFormat: Globals.dateFormat }));
                         });
                         val = dateStr.join(',');
                     } else if (!isMultiValued && val) {
                         val = parseInt(val);
-                        val = moment(val).format("MM/DD/YYYY");
+                        val = Utils.formatDate({ date: val, zone: false, dateFormat: Globals.dateFormat });
+
                     }
                 }
-                if (typeName.indexOf("string") > -1) {
-                    returnEL = '<' + elType + ' type="text" data-key="' + key + '" data-businessMetadata="' + businessMetadata + '" data-typename="' + typeName + '" data-multi="' + isMultiValued + '" data-tags="true"  placeholder="Enter String" class="form-control" ' + (!_.isUndefinedNull(val) ? 'value="' + val + '"' : "") + '></' + elType + '>';
-                } else if (typeName.indexOf("boolean") > -1) {
+                if (typeName === "string" || typeName === "array<string>") {
+                    returnEL = '<' + elType + ' type="text" data-key="' + key + '" data-businessMetadata="' + businessMetadata + '" data-typename="' + typeName + '" data-multi="' + isMultiValued + '" data-tags="true"  placeholder="Enter String" class="form-control" ' + (isMultiValued === false && !_.isUndefinedNull(val) ? 'value="' + val + '"' : "") + '></' + elType + '>';
+                } else if (typeName === "boolean" || typeName === "array<boolean>") {
                     returnEL = '<select data-key="' + key + '" data-businessMetadata="' + businessMetadata + '" data-typename="' + typeName + '" data-multi="' + isMultiValued + '" class="form-control">' + (isMultiValued ? "" : '<option value="">--Select Value--</option>') + '<option value="true" ' + (!_.isUndefinedNull(val) && val == "true" ? "selected" : "") + '>true</option><option value="false" ' + (!_.isUndefinedNull(val) && val == "false" ? "selected" : "") + '>false</option></select>';
-                } else if (typeName.indexOf("date") > -1) {
+                } else if (typeName === "date" || typeName === "array<date>") {
                     returnEL = '<' + (isMultiValued ? "textarea" : "input") + ' type="text" data-key="' + key + '" data-businessMetadata="' + businessMetadata + '" data-typename="' + typeName + '"data-multi="' + isMultiValued + '" data-type="date" class="form-control" ' + (isMultiValued === false && !_.isUndefinedNull(val) ? 'value="' + val + '"' : "") + '>' + (isMultiValued === true && !_.isUndefinedNull(val) ? val : "") + (isMultiValued ? "</textarea>" : "");
                     setTimeout(function() {
-                        var dateObj = { singleDatePicker: true, showDropdowns: true, autoUpdateInput: isMultiValued ? false : true },
+                        var dateObj = { singleDatePicker: true, showDropdowns: true, autoUpdateInput: isMultiValued ? false : true, locale: { format: Globals.dateFormat } },
                             dateEl = that.$el.find('[data-type="date"][data-key="' + key + '"]').daterangepicker(dateObj);
                         if (isMultiValued) {
                             dateEl.on("apply.daterangepicker", function(ev, picker) {
@@ -188,15 +192,16 @@ define(['require',
                                 if (val !== "") {
                                     val += ", ";
                                 }
-                                picker.element.val(val += picker.startDate.format('MM/DD/YYYY'));
+                                picker.element.val(val += Utils.formatDate({ date: picker.startDate, zone: false, dateFormat: Globals.dateFormat }));
                                 that.$el.find(".custom-col-1[data-id='value']>[data-key]").trigger('change');
                             });
                         }
                     }, 0);
-                } else if (typeName.indexOf("byte") > -1 || typeName.indexOf("short") > -1 || typeName.indexOf("int") > -1 || typeName.indexOf("float") > -1 || typeName.indexOf("double") > -1 || typeName.indexOf("long") > -1) {
+                } else if (typeName === "byte" || typeName === "array<byte>" || typeName === "short" || typeName === "array<short>" || typeName === "int" || typeName === "array<int>" || typeName === "float" || typeName === "array<float>" || typeName === "double" || typeName === "array<double>" || typeName === "long" || typeName === "array<long>") {
                     allowOnlyNum = true;
                     returnEL = '<' + elType + ' data-key="' + key + '" data-businessMetadata="' + businessMetadata + '" data-typename="' + typeName + '" type="number" data-multi="' + isMultiValued + '" data-tags="true" placeholder="Enter Number" class="form-control" ' + (!_.isUndefinedNull(val) ? 'value="' + val + '"' : "") + '></' + elType + '>';
                 } else if (typeName) {
+                    isEnum = true;
                     var modTypeName = typeName;
                     if (isMultiValued) {
                         var multipleType = typeName.match("array<(.*)>");
@@ -208,30 +213,31 @@ define(['require',
                     if (foundEnumType) {
                         var enumOptions = "";
                         _.forEach(foundEnumType.get("elementDefs"), function(obj) {
-                            enumOptions += '<option value="' + obj.value + '">' + obj.value + '</option>'
+                            enumOptions += '<option value="' + _.escape(obj.value) + '">' + _.escape(obj.value) + '</option>'
                         });
-                        returnEL = '<select data-key="' + key + '" data-businessMetadata="' + businessMetadata + '" data-typename="' + typeName + '" data-multi="' + isMultiValued + '" >' + enumOptions + '</select>';
+                        returnEL = '<select data-key="' + key + '" data-businessMetadata="' + businessMetadata + '" data-typename="' + typeName + '" data-multi="' + isMultiValued + '" data-enum="true">' + enumOptions + '</select>';
                     }
-                    setTimeout(function() {
-                        if (!isMultiValued) {
-                            var selectEl = that.$el.find('.custom-col-1[data-id="value"] select[data-key="' + key + '"]');
-                            selectEl.val((val || ""));
-                            selectEl.select2();
-                        }
-                    }, 0);
                 }
-                if (isMultiValued) {
+                if (isEnum || elType === "select") {
                     setTimeout(function() {
-                        var selectEl = that.$el.find('.custom-col-1[data-id="value"] select[data-key="' + key + '"][data-multi="true"]');
-                        var data = val && val.length && (_.isArray(val) ? val : val.split(",")) || [];
+                        var selectEl = that.$el.find('.custom-col-1[data-id="value"] select[data-key="' + key + '"]');
+                        var data = [];
+                        if (selectEl.data("multi")) {
+                            data = val && val.length && (_.isArray(val) ? val : val.split(",")) || [];
+                        } else {
+                            data = _.unescape(val);
+                        }
                         if (allowOnlyNum) {
                             selectEl.parent().addClass("select2_only_number");
                         }
-                        selectEl.select2({
+                        var opt = {
                             tags: selectEl.data("tags") ? true : false,
-                            multiple: true,
-                            data: data
-                        });
+                            multiple: selectEl.data("multi")
+                        }
+                        if (!selectEl.data("enum")) {
+                            opt.data = data;
+                        }
+                        selectEl.select2(opt);
                         selectEl.val(data).trigger("change");
                     }, 0);
                 }
@@ -263,7 +269,8 @@ define(['require',
             var typeName = value.typeName,
                 value = value.value;
             if (typeName === "date") {
-                return moment(value).format("MM/DD/YYYY");
+                return Utils.formatDate({ date: value, zone: false, dateFormat: Globals.dateFormat });
+
             } else {
                 return value;
             }

@@ -73,8 +73,11 @@ public class GraphQueryTest extends AbstractGraphDatabaseTest {
         graph.commit();
         pause(); //pause to let the index get updated
 
-        assertQueryMatches(q, v1, v3, v4);
-
+        // Janusgraph 0.5.3 introduced changes to NOT-EQUAL operator
+        // https://github.com/JanusGraph/janusgraph/issues/2205
+        // Earlier behavior doesn't check if property exists, so all vertices without this property was also returned in 'neq'.
+        // Now 'neq' checks if property exists and property is not-equal to property value
+        assertQueryMatches(q, v1, v4);
     }
 
     @Test

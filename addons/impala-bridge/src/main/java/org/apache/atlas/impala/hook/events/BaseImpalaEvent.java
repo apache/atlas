@@ -528,6 +528,9 @@ public abstract class BaseImpalaEvent {
             queryStr = queryStr.toLowerCase().trim();
         }
 
+        Long startTime = getQueryStartTime();
+        Long endTime   = getQueryEndTime();
+
         ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, getQualifiedName(inputs, outputs));
         ret.setAttribute(ATTRIBUTE_INPUTS, getObjectIds(inputs));
         ret.setAttribute(ATTRIBUTE_OUTPUTS,  getObjectIds(outputs));
@@ -537,8 +540,8 @@ public abstract class BaseImpalaEvent {
         // We are setting an empty value to these attributes, since now we have a new entity type called impala process
         // execution which captures these values. We have to set empty values here because these attributes are
         // mandatory attributes for impala process entity type.
-        ret.setAttribute(ATTRIBUTE_START_TIME, EMPTY_ATTRIBUTE_VALUE);
-        ret.setAttribute(ATTRIBUTE_END_TIME, EMPTY_ATTRIBUTE_VALUE);
+        ret.setAttribute(ATTRIBUTE_START_TIME, startTime);
+        ret.setAttribute(ATTRIBUTE_END_TIME, endTime);
         ret.setAttribute(ATTRIBUTE_USER_NAME, EMPTY_ATTRIBUTE_VALUE);
         ret.setAttribute(ATTRIBUTE_QUERY_TEXT, EMPTY_ATTRIBUTE_VALUE);
         ret.setAttribute(ATTRIBUTE_QUERY_ID, EMPTY_ATTRIBUTE_VALUE);

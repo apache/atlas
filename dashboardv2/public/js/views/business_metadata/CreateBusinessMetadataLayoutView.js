@@ -180,7 +180,7 @@ define(['require',
                 }
                 validationFileds.each(function(elements) {
                     $(this).removeClass('errorValidate');
-                    if (validationFileds[elements].value == '' || validationFileds[elements].value == null) {
+                    if (validationFileds[elements].value.trim() == '' || validationFileds[elements].value == null) {
                         if (validationFileds[elements].style.display != 'none') {
                             $(validationFileds[elements]).addClass('errorValidate');
                             $(this).addClass('errorValidate');
@@ -223,7 +223,7 @@ define(['require',
                 };
                 this.loaderStatus(true);
                 var name = this.ui.name.val(),
-                    description = _.escape(this.ui.description.val());
+                    description = this.ui.description.val();
                 var attributeObj = this.collection.toJSON();
                 if (this.collection.length === 1 && this.collection.first().get("name") === "") {
                     attributeObj = [];

@@ -47,6 +47,7 @@ public enum AtlasConfiguration {
     NOTIFICATION_MESSAGE_COMPRESSION_ENABLED("atlas.notification.message.compression.enabled", true),
     NOTIFICATION_SPLIT_MESSAGE_SEGMENTS_WAIT_TIME_SECONDS("atlas.notification.split.message.segments.wait.time.seconds", 15 * 60),
     NOTIFICATION_SPLIT_MESSAGE_BUFFER_PURGE_INTERVAL_SECONDS("atlas.notification.split.message.buffer.purge.interval.seconds", 5 * 60),
+    NOTIFICATION_FIXED_BUFFER_ITEMS_INCREMENT_COUNT("atlas.notification.fixed.buffer.items.increment.count", 10),
 
     NOTIFICATION_CREATE_SHELL_ENTITY_FOR_NON_EXISTING_REF("atlas.notification.consumer.create.shell.entity.for.non-existing.ref", true),
     REST_API_CREATE_SHELL_ENTITY_FOR_NON_EXISTING_REF("atlas.rest.create.shell.entity.for.non-existing.ref", false),
@@ -71,7 +72,11 @@ public enum AtlasConfiguration {
     MIGRATION_IMPORT_START_POSITION("atlas.migration.import.start.position", 0),
     LINEAGE_USING_GREMLIN("atlas.lineage.query.use.gremlin", false),
 
-    HTTP_HEADER_SERVER_VALUE("atlas.http.header.server.value","Apache Atlas");
+    HTTP_HEADER_SERVER_VALUE("atlas.http.header.server.value","Apache Atlas"),
+    STORAGE_CONSISTENCY_LOCK_ENABLED("atlas.graph.storage.consistency-lock.enabled", true),
+    REBUILD_INDEX("atlas.rebuild.index", false),
+    STORE_DIFFERENTIAL_AUDITS("atlas.entity.audit.differential", false),
+    DSL_EXECUTOR_TRAVERSAL("atlas.dsl.executor.traversal", true);
 
     private static final Configuration APPLICATION_PROPERTIES;
 
@@ -89,6 +94,10 @@ public enum AtlasConfiguration {
     AtlasConfiguration(String propertyName, Object defaultValue) {
         this.propertyName = propertyName;
         this.defaultValue = defaultValue;
+    }
+
+    public String getPropertyName() {
+        return propertyName;
     }
 
     public int getInt() {

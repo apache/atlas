@@ -21,6 +21,7 @@ import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.impexp.AtlasImportResult;
+import org.apache.atlas.model.typedef.AtlasBusinessMetadataDef;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
@@ -54,6 +55,7 @@ public class TypeAttributeDifference {
         updateClassificationDef(typeDefinitionMap.getClassificationDefs(), result);
         updateEntityDef(typeDefinitionMap.getEntityDefs(), result);
         updateRelationshipDefs(typeDefinitionMap.getRelationshipDefs(), result);
+        updateBusinessMetadataDefs(typeDefinitionMap.getBusinessMetadataDefs(), result);
     }
 
     private void updateEntityDef(List<AtlasEntityDef> entityDefs, AtlasImportResult result) throws AtlasBaseException {
@@ -104,6 +106,16 @@ public class TypeAttributeDifference {
             if (existing != null && addAttributes(existing, def)) {
                 typeDefStore.updateRelationshipDefByName(existing.getName(), existing);
                 result.incrementMeticsCounter("typedef:relationshipdef:update");
+            }
+        }
+    }
+
+    private void updateBusinessMetadataDefs(List<AtlasBusinessMetadataDef> businessMetadataDefs, AtlasImportResult result) throws AtlasBaseException {
+        for (AtlasBusinessMetadataDef def : businessMetadataDefs) {
+            AtlasBusinessMetadataDef existing = typeRegistry.getBusinessMetadataDefByName(def.getName());
+            if (existing != null && addAttributes(existing, def)) {
+                typeDefStore.updateStructDefByName(existing.getName(), existing);
+                result.incrementMeticsCounter("typedef:businessmetadatadef:update");
             }
         }
     }

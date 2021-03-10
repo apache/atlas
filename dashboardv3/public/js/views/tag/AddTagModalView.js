@@ -28,9 +28,10 @@ define(['require',
     'utils/Enums',
     'utils/Messages',
     'moment',
+    'utils/Globals',
     'moment-timezone',
     'daterangepicker'
-], function(require, AddTagModalViewTmpl, AddTimezoneItemView, VTagList, VCommonList, Modal, VEntity, Utils, UrlLinks, Enums, Messages, moment) {
+], function(require, AddTagModalViewTmpl, AddTimezoneItemView, VTagList, VCommonList, Modal, VEntity, Utils, UrlLinks, Enums, Messages, moment, Globals) {
     'use strict';
 
     var AddTagModel = Backbone.Marionette.CompositeView.extend({
@@ -135,6 +136,14 @@ define(['require',
             this.modal.open();
             this.modal.$el.find('button.ok').attr("disabled", true);
             this.on('ok', function() {
+                if (this.ui.checkTimeZone.is(':checked')) {
+                    if (this.validateValues()) {
+                        if (this.hideLoader) {
+                            this.hideLoader();
+                        };
+                        return;
+                    };
+                }
                 that.modal.$el.find('button.ok').showButtonLoader();
                 var tagName = this.tagModel ? this.tagModel.typeName : this.ui.addTagOptions.val(),
                     tagAttributes = {},
@@ -246,6 +255,33 @@ define(['require',
             });
             this.bindEvents();
         },
+        validateValues: function(attributeDefs) {
+            var isValidate = true,
+                applyErrorClass = function(scope) {
+                    if (this.value == '' || this.value == null || this.value.indexOf('Select Timezone') > -1) {
+                        $(this).addClass('errorValidate');
+                        if (isValidate) { isValidate = false; }
+                    } else {
+                        $(this).removeClass('errorValidate');
+                    }
+                };
+
+            this.$el.find('.start-time').each(function(element) {
+                applyErrorClass.call(this);
+            });
+            this.$el.find('.end-time').each(function(element) {
+                applyErrorClass.call(this);
+            });
+            this.$el.find('.time-zone').each(function(element) {
+                applyErrorClass.call(this);
+            });
+            if (!isValidate) {
+                Utils.notifyInfo({
+                    content: "Please fill the details"
+                });
+                return true;
+            }
+        },
 
         onRender: function() {
             var that = this;
@@ -354,7 +390,7 @@ define(['require',
                         var str = '<option value=""' + (!that.tagModel ? 'selected' : '') + '>-- Select ' + typeName + " --</option>";
                         var enumValue = typeNameValue.get('elementDefs');
                         _.each(enumValue, function(key, value) {
-                            str += '<option ' + ((that.tagModel && key.value === that.tagModel.attributes[name]) ? 'selected' : '') + '>' + key.value + '</option>';
+                            str += '<option ' + ((that.tagModel && key.value === that.tagModel.attributes[name]) ? 'selected' : '') + '>' + _.escape(key.value) + '</option>';
                         })
                         that.ui.tagAttribute.append('<div class="form-group"><label>' + name + '</label>' + ' (' + typeName + ')' +
                             '<select class="form-control attributeInputVal attrName" data-key="' + name + '">' + str + '</select></div>');
@@ -371,13 +407,16 @@ define(['require',
                             "singleDatePicker": true,
                             "showDropdowns": true,
                             "timePicker": true,
+                            startDate: new Date(),
                             locale: {
-                                format: 'MM/DD/YYYY h:mm A'
+                                format: Globals.dateTimeFormat
                             }
                         };
                         if (that.tagModel) {
-                            var formatDate = Number(this.value);
-                            dateObj["startDate"] = new Date(formatDate);
+                            if (this.value.length) {
+                                var formatDate = Number(this.value);
+                                dateObj["startDate"] = new Date(formatDate);
+                            }
                         }
                         $(this).daterangepicker(dateObj);
                     }
@@ -392,7 +431,7 @@ define(['require',
             }
         },
         getElement: function(labelName, typeName) {
-            var value = this.tagModel && this.tagModel.attributes ? (this.tagModel.attributes[labelName] || "") : "",
+            var value = this.tagModel && this.tagModel.attributes ? (this.tagModel.attributes[_.unescape(labelName)] || "") : "",
                 isTypeNumber = typeName === "int" || typeName === "byte" || typeName === "short" || typeName === "double" || typeName === "float",
                 inputClassName = "form-control attributeInputVal attrName";
             if (isTypeNumber) {
@@ -404,7 +443,7 @@ define(['require',
                     '<option value="true">true</option>' +
                     '<option value="false">false</option></select>';
             } else {
-                return '<input type="text" value="' + value + '" class="' + inputClassName + '" data-key="' + labelName + '" data-type="' + typeName + '"/>';
+                return '<input type="text" value="' + _.escape(value) + '" class="' + inputClassName + '" data-key="' + labelName + '" data-type="' + typeName + '"/>';
             }
 
         },

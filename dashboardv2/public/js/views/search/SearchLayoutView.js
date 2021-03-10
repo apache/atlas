@@ -133,6 +133,8 @@ define(['require',
                 } else {
                     this.setInitialEntityVal = true;
                 }
+                this.tagEntityCheck = false;
+                this.typeEntityCheck = false;
                 this.bindEvents();
             },
             renderSaveSearch: function() {
@@ -207,6 +209,9 @@ define(['require',
             bindEvents: function(param) {
                 this.listenTo(this.typeHeaders, "reset", function(value) {
                     this.initializeValues();
+                }, this);
+                this.listenTo(this.searchVent, "entityList:refresh", function(model, response) {
+                    this.onRefreshButton();
                 }, this);
             },
             initializeValues: function() {
@@ -447,9 +452,6 @@ define(['require',
 
                 function getIdFromRuleObject(rule) {
                     _.map(rule.rules, function(obj, key) {
-                        if (obj.id === "__state") {
-                            that.value.includeDE = (obj.value === "ACTIVE" && obj.operator === "=") || (obj.value === "DELETED" && obj.operator === "!=") ? false : true;
-                        }
                         if (_.has(obj, 'condition')) {
                             return getIdFromRuleObject(obj);
                         } else {
@@ -470,6 +472,32 @@ define(['require',
                             this.searchTableColumns[this.value.type] = ["selected", "name", "owner", "description", "tag", "typeName"]
                         }
                         this.searchTableColumns[this.value.type] = _.sortBy(_.union(this.searchTableColumns[this.value.type], getIdFromRuleObject(rule)));
+                    }
+                    if (rule.rules) {
+                        if (!isTag && !that.tagEntityCheck) {
+                            var state = _.find(rule.rules, { id: "__state" });
+                            if (state) {
+                                that.typeEntityCheck = (state.value === "ACTIVE" && state.operator === "=") || (state.value === "DELETED" && state.operator === "!=") ? false : true;
+                                that.value.includeDE = that.typeEntityCheck;
+                            } else if (that.typeEntityCheck) {
+                                that.typeEntityCheck = false;
+                                if (!that.tagEntityCheck) {
+                                    that.value.includeDE = false;
+                                }
+                            }
+                        }
+                        if (isTag && !that.typeEntityCheck) {
+                            var entityStatus = _.find(rule.rules, { id: "__entityStatus" });
+                            if (entityStatus) {
+                                that.tagEntityCheck = (entityStatus.value === "ACTIVE" && entityStatus.operator === "=") || (entityStatus.value === "DELETED" && entityStatus.operator === "!=") ? false : true;
+                                that.value.includeDE = that.tagEntityCheck
+                            } else if (that.tagEntityCheck) {
+                                that.tagEntityCheck = false;
+                                if (!that.typeEntityCheck) {
+                                    that.value.includeDE = false;
+                                }
+                            }
+                        }
                     }
                     this.attrModal.modal.close();
                     if ($(e.currentTarget).hasClass('search')) {
@@ -517,7 +545,7 @@ define(['require',
                     var name = Utils.getName(model.toJSON(), 'name');
                     if (model.get('category') == 'ENTITY' && (serviceTypeToBefiltered && serviceTypeToBefiltered.length ? _.contains(serviceTypeToBefiltered, model.get('serviceType')) : true)) {
                         var entityCount = (that.entityCountObj.entity.entityActive[name] || 0) + (that.entityCountObj.entity.entityDeleted[name] || 0);
-                        typeStr += '<option value="' + (name) + '" data-name="' + (name) + '">' + (name) + ' ' + (entityCount ? "(" + _.numberFormatWithComa(entityCount) + ")" : '') + '</option>';
+                        typeStr += '<option value="' + (name) + '" data-name="' + (name) + '">' + (name) + ' ' + (entityCount ? "(" + _.numberFormatWithComma(entityCount) + ")" : '') + '</option>';
                     }
                     if (isTypeOnly == undefined && model.get('category') == 'CLASSIFICATION') {
                         var tagEntityCount = that.entityCountObj.tag.tagEntities[name];
@@ -526,7 +554,7 @@ define(['require',
                                 foundNewClassification = true;
                             }
                         }
-                        tagStr += '<option value="' + (name) + '" data-name="' + (name) + '">' + (name) + ' ' + (tagEntityCount ? "(" + _.numberFormatWithComa(tagEntityCount) + ")" : '') + '</option>';
+                        tagStr += '<option value="' + (name) + '" data-name="' + (name) + '">' + (name) + ' ' + (tagEntityCount ? "(" + _.numberFormatWithComma(tagEntityCount) + ")" : '') + '</option>';
                     }
                 });
 
@@ -596,7 +624,7 @@ define(['require',
                     _.each(dataList, function(obj) {
                         if (obj) {
                             if (obj.guid) {
-                                obj['id'] = Utils.getName(obj, 'qualifiedName');
+                                obj['id'] = obj.attributes['qualifiedName'];
                             }
                             foundOptions.push(obj);
                         }
@@ -680,7 +708,7 @@ define(['require',
                         }
 
                         if (this.value.term) {
-                            this.ui.termLov.append('<option value="' + this.value.term + '" selected="selected">' + this.value.term + '</option>');
+                            this.ui.termLov.append('<option value="' + _.escape(this.value.term) + '" selected="selected">' + _.escape(this.value.term) + '</option>');
                         }
                         if (this.ui.termLov.data('select2')) {
                             if (this.ui.termLov.val() !== this.value.term) {

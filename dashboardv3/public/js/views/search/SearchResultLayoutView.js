@@ -153,7 +153,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'value', 'guid', 'initialView', 'isTypeTagNotExists', 'classificationDefCollection', 'entityDefCollection', 'typeHeaders', 'searchVent', 'enumDefCollection', 'tagCollection', 'searchTableColumns', 'isTableDropDisable', 'fromView', 'glossaryCollection', 'termName', 'businessMetadataDefCollection'));
+                _.extend(this, _.pick(options, 'value', 'guid', 'initialView', 'isTypeTagNotExists', 'classificationDefCollection', 'entityDefCollection', 'typeHeaders', 'searchVent', 'categoryEvent', 'enumDefCollection', 'tagCollection', 'searchTableColumns', 'isTableDropDisable', 'fromView', 'glossaryCollection', 'termName', 'businessMetadataDefCollection', 'profileDBView'));
                 this.entityModel = new VEntity();
                 this.searchCollection = new VSearchList();
                 this.limit = 25;
@@ -248,18 +248,23 @@ define(['require',
                 }, this);
                 this.listenTo(this.searchCollection, "backgrid:sorted", function(model, response) {
                     this.checkTableFetch();
-                }, this)
+                }, this);
+                this.listenTo(this.categoryEvent, "Sucess:TermSearchResultPage", function() {
+                    this.glossaryCollection.fetch({ reset: true });
+                });
             },
             onRender: function() {
                 var that = this;
                 if (Utils.getUrlState.isSearchTab()) {
                     this.$(".action-box").hide();
                 }
+
+                this.checkEntityImage = {};
                 this.commonTableOptions = {
                     collection: this.searchCollection,
                     includePagination: false,
                     includeFooterRecords: false,
-                    includeColumnManager: (Utils.getUrlState.isSearchTab() && this.value && this.value.searchType === "basic" && !this.value.profileDBView ? true : false),
+                    includeColumnManager: (Utils.getUrlState.isSearchTab() && this.value && this.value.searchType === "basic" && !this.profileDBView ? true : false),
                     includeOrderAbleColumns: false,
                     includeSizeAbleColumns: false,
                     includeTableLoader: false,
@@ -279,6 +284,10 @@ define(['require',
                     gridOpts: {
                         emptyText: 'No Records found!',
                         className: 'table table-hover backgrid table-quickMenu colSort'
+                    },
+                    sortOpts: {
+                        sortColumn: "name",
+                        sortDirection: "ascending"
                     },
                     filterOpts: {},
                     paginatorOpts: {}
@@ -496,7 +505,7 @@ define(['require',
                             that.$('.searchTable').removeClass('noData')
                         }
 
-                        if (Utils.getUrlState.isSearchTab() && value && !value.profileDBView) {
+                        if (Utils.getUrlState.isSearchTab() && value && !that.profileDBView) {
                             // var searchString = 'Results for: <span class="filterQuery">' + CommonViewFunction.generateQueryOfFilter(that.value, true) + "</span>";
                             var isCapsuleView = true;
                             var searchString = '<span class="filterQuery">' + CommonViewFunction.generateQueryOfFilter(that.value, isCapsuleView) + "</span>";
@@ -522,7 +531,7 @@ define(['require',
                         this.searchCollection.url = UrlLinks.searchApiUrl(value.searchType);
                     }
                     _.extend(this.searchCollection.queryParams, { 'limit': this.limit, 'offset': this.offset, 'query': _.trim(value.query), 'typeName': value.type || null, 'classification': value.tag || null, 'termName': value.term || null });
-                    if (value.profileDBView && value.typeName && value.guid) {
+                    if (this.profileDBView && value.typeName && value.guid) {
                         var profileParam = {};
                         profileParam['guid'] = value.guid;
                         profileParam['relation'] = value.typeName === 'hive_db' ? '__hive_table.db' : '__hbase_table.namespace';
@@ -532,12 +541,12 @@ define(['require',
                     }
                     if (isPostMethod) {
                         this.searchCollection.filterObj = _.extend({}, filterObj);
-                        apiObj['data'] = _.extend(checkBoxValue, filterObj, _.pick(this.searchCollection.queryParams, 'query', 'excludeDeletedEntities', 'limit', 'offset', 'typeName', 'classification', 'termName'))
+                        apiObj['data'] = _.extend(checkBoxValue, filterObj, _.pick(this.searchCollection.queryParams, 'query', 'excludeDeletedEntities', 'limit', 'offset', 'typeName', 'classification', 'termName'));
                         Globals.searchApiCallRef = this.searchCollection.getBasicRearchResult(apiObj);
                     } else {
                         apiObj.data = null;
                         this.searchCollection.filterObj = null;
-                        if (this.value.profileDBView) {
+                        if (this.profileDBView) {
                             _.extend(this.searchCollection.queryParams, checkBoxValue);
                         }
                         Globals.searchApiCallRef = this.searchCollection.fetch(apiObj);
@@ -549,7 +558,7 @@ define(['require',
                         Globals.searchApiCallRef = this.searchCollection.getBasicRearchResult(apiObj);
                     } else {
                         apiObj.data = null;
-                        if (this.value.profileDBView) {
+                        if (this.profileDBView) {
                             _.extend(this.searchCollection.queryParams, checkBoxValue);
                         }
                         Globals.searchApiCallRef = this.searchCollection.fetch(apiObj);
@@ -575,6 +584,14 @@ define(['require',
                     });
                 var columns = new columnCollection((that.searchCollection.dynamicTable ? that.getDaynamicColumns(that.searchCollection.toJSON()) : that.getFixedDslColumn()));
                 columns.setPositions().sort();
+                if (this.searchType == "Advanced Search" && columns.length) {
+                    //for dsl search with Select clause, default column to be use as sorting
+                    var tableColumnNames = Object.keys(that.searchCollection.toJSON()[0]);
+                    that.commonTableOptions['sortOpts'] = {
+                        sortColumn: tableColumnNames[0],
+                        sortDirection: "ascending"
+                    };
+                }
                 var table = new TableLayout(_.extend({}, that.commonTableOptions, {
                     columns: columns
                 }));
@@ -668,7 +685,7 @@ define(['require',
 
 
                 col['name'] = {
-                    label: this.value && this.value.profileDBView ? "Table Name" : "Name",
+                    label: this.value && this.profileDBView ? "Table Name" : "Name",
                     cell: "html",
                     editable: false,
                     resizeable: true,
@@ -680,6 +697,17 @@ define(['require',
                             var obj = model.toJSON(),
                                 nameHtml = "",
                                 name = Utils.getName(obj);
+                            if (!obj.attributes || obj.attributes.serviceType === undefined) {
+                                if (Globals.serviceTypeMap[obj.typeName] === undefined && that.entityDefCollection) {
+                                    var defObj = that.entityDefCollection.fullCollection.find({ name: obj.typeName });
+                                    if (defObj) {
+                                        Globals.serviceTypeMap[obj.typeName] = defObj.get('serviceType');
+                                    }
+                                }
+                            } else if (Globals.serviceTypeMap[obj.typeName] === undefined) {
+                                Globals.serviceTypeMap[obj.typeName] = obj.attributes ? obj.attributes.serviceType : null;
+                            }
+                            obj.serviceType = Globals.serviceTypeMap[obj.typeName];
                             if (obj.guid) {
                                 if (obj.guid == "-1") {
                                     nameHtml = '<span title="' + name + '">' + name + '</span>';
@@ -696,6 +724,7 @@ define(['require',
                             var getImageData = function(options) {
                                 var imagePath = options.imagePath,
                                     returnImgUrl = null;
+                                that.checkEntityImage[model.get('guid')] = false;
                                 $.ajax({
                                         "url": imagePath,
                                         "method": "get",
@@ -707,18 +736,21 @@ define(['require',
                                                 "imagePath": Utils.getEntityIconPath({ entityData: obj, errorUrl: imagePath })
                                             });
                                         } else if (data) {
+                                            that.checkEntityImage[model.get('guid')] = imagePath;
                                             returnImgUrl = imagePath;
                                             that.$("img[data-imgGuid='" + obj.guid + "']").removeClass("searchTableLogoLoader").attr("src", imagePath);
                                         }
                                     });
                             }
-                            var img = "",
-                                isIncompleteClass = "isIncomplete search-result-page";
-                            if (obj.isIncomplete === true) {
-                                isIncompleteClass += " show";
+                            var img = "";
+                            img = "<div><img data-imgGuid='" + obj.guid + "' class='searchTableLogoLoader'></div>";
+                            if (that.checkEntityImage[model.get('guid')] == undefined) {
+                                getImageData({ imagePath: Utils.getEntityIconPath({ entityData: obj }) });
+                            } else {
+                                if (that.checkEntityImage[model.get('guid')] != false) {
+                                    img = "<div><img data-imgGuid='" + obj.guid + "' src='" + that.checkEntityImage[model.get('guid')] + "'></div>";
+                                }
                             }
-                            img = "<div class='" + isIncompleteClass + "'><img data-imgGuid='" + obj.guid + "' class='searchTableLogoLoader'><i class='fa fa-hourglass-half'></i></div>";
-                            getImageData({ imagePath: Utils.getEntityIconPath({ entityData: obj }) });
                             return (img + nameHtml);
                         }
                     })
@@ -740,7 +772,7 @@ define(['require',
                         }
                     })
                 };
-                if (this.value && this.value.profileDBView) {
+                if (this.value && this.profileDBView) {
                     col['createTime'] = {
                         label: "Date Created",
                         cell: "Html",
@@ -749,7 +781,7 @@ define(['require',
                             fromRaw: function(rawValue, model) {
                                 var obj = model.toJSON();
                                 if (obj && obj.attributes && obj.attributes.createTime) {
-                                    return new Date(obj.attributes.createTime);
+                                    return Utils.formatDate({ date: obj.attributes.createTime });
                                 } else {
                                     return '-'
                                 }
@@ -757,7 +789,7 @@ define(['require',
                         })
                     }
                 }
-                if (this.value && !this.value.profileDBView) {
+                if (this.value && !this.profileDBView) {
                     col['description'] = {
                         label: "Description",
                         cell: "String",
@@ -879,7 +911,7 @@ define(['require',
                                                         if (values[values.length - 1] === "") { values.pop(); }
                                                         if (values[0] === "") { values.shift(); }
                                                         _.each(values, function(names) {
-                                                            valueOfArray.push('<span class="json-string"><a class="btn btn-action btn-sm btn-blue btn-icon" ><span title="" data-original-title="' + names + '" >' + names + '</span></a></span>');
+                                                            valueOfArray.push('<span class="json-string"><a class="btn btn-action btn-sm btn-blue btn-icon" ><span>' + _.escape(names) + '</span></a></span>');
                                                         });
                                                         return valueOfArray.join(' ');
                                                     }
@@ -889,7 +921,7 @@ define(['require',
                                                         valueOfArray = [];
                                                     if (customAttributes) {
                                                         _.each(Object.keys(customAttributes), function(value, index) {
-                                                            valueOfArray.push('<span class="json-string"><a class="btn btn-action btn-sm btn-blue btn-icon" ><span title="" data-original-title="' + value + ' : ' + Object.values(customAttributes)[index] + '" ><span>' + value + '</span> : <span>' + Object.values(customAttributes)[index] + '</span></span></a></span>');
+                                                            valueOfArray.push('<span class="json-string"><a class="btn btn-action btn-sm btn-blue btn-icon" ><span><span>' + _.escape(value) + '</span> : <span>' + _.escape(Object.values(customAttributes)[index]) + '</span></span></a></span>');
                                                         });
                                                         return valueOfArray.join(' ');
                                                     }
@@ -949,7 +981,7 @@ define(['require',
                                     var modelObj = model.toJSON();
                                     if (key == "name") {
                                         var nameHtml = "",
-                                            name = modelObj[key];
+                                            name = _.escape(modelObj[key]);
                                         if (modelObj.guid) {
                                             nameHtml = '<a title="' + name + '" href="#!/detailPage/' + modelObj.guid + (that.fromView ? "?from=" + that.fromView : "") + '">' + name + '</a>';
                                         } else {
@@ -1106,32 +1138,57 @@ define(['require',
                     that.addTagModalView(guid);
                 }
             },
+            //This function checks for the lenght of Available terms and modal for adding terms is displayed accordingly.
+            assignTermModalView: function(glossaryCollection, obj) {
+                var that = this,
+                    terms = 0;
+                _.each(glossaryCollection.fullCollection.models, function(model) {
+                    if (model.get('terms')) {
+                        terms += model.get('terms').length;
+                    };
+                });
+                if (terms) {
+                    require(['views/glossary/AssignTermLayoutView'], function(AssignTermLayoutView) {
+                        var view = new AssignTermLayoutView({
+                            guid: obj.guid,
+                            multiple: obj.multiple,
+                            associatedTerms: obj.associatedTerms,
+                            callback: function() {
+                                that.multiSelectEntity = [];
+                                that.$('.multiSelectTag,.multiSelectTerm').hide();
+                                that.fetchCollection();
+                            },
+                            glossaryCollection: glossaryCollection,
+                        });
+                    });
+                } else {
+                    Utils.notifyInfo({
+                        content: "There are no available terms"
+                    });
+                }
+            },
             onClickAddTermBtn: function(e) {
                 var that = this,
                     guid = "",
                     entityGuid = $(e.currentTarget).data("guid"),
-                    associatedTerms = undefined,
-                    multiple = undefined,
-                    isTermMultiSelect = $(e.currentTarget).hasClass('multiSelectTerm');
-                if (isTermMultiSelect && this.multiSelectEntity && this.multiSelectEntity.length) {
-                    multiple = this.multiSelectEntity;
-                } else if (entityGuid) {
-                    associatedTerms = this.searchCollection.find({ guid: entityGuid }).get('meanings');
-                }
-                require(['views/glossary/AssignTermLayoutView'], function(AssignTermLayoutView) {
-                    var view = new AssignTermLayoutView({
+                    obj = {
                         guid: entityGuid,
-                        multiple: multiple,
-                        associatedTerms: associatedTerms,
-                        callback: function() {
-                            that.multiSelectEntity = [];
-                            that.$('.multiSelectTag,.multiSelectTerm').hide();
-                            that.fetchCollection();
-
-                        },
-                        glossaryCollection: that.glossaryCollection,
-                    });
+                        multiple: undefined,
+                        associatedTerms: undefined,
+                    },
+                    isTermMultiSelect = $(e.currentTarget).hasClass('multiSelectTerm');
+                this.glossaryCollection.fetch({
+                    success: function(glossaryCollection) {
+                        that.assignTermModalView(glossaryCollection, obj);
+                    },
+                    reset: true,
                 });
+                if (isTermMultiSelect && this.multiSelectEntity && this.multiSelectEntity.length) {
+                    obj.multiple = this.multiSelectEntity;
+                } else if (entityGuid) {
+                    obj.associatedTerms = this.searchCollection.find({ guid: entityGuid }).get('meanings');
+                }
+
             },
             onClickTagCross: function(e) {
                 var that = this,
@@ -1143,7 +1200,7 @@ define(['require',
                     tagName: tagName,
                     guid: guid,
                     associatedGuid: guid != entityGuid ? entityGuid : null,
-                    msg: "<div class='ellipsis-with-margin'>Remove: " + "<b>" + _.escape(tagName) + "</b> assignment from" + " " + "<b>" + assetName + " ?</b></div>",
+                    msg: "<div class='ellipsis-with-margin'>Remove: " + "<b>" + _.escape(tagName) + "</b> assignment from <b>" + _.escape(assetName) + " ?</b></div>",
                     titleMessage: Messages.removeTag,
                     okText: "Remove",
                     showLoader: that.showLoader.bind(that),
@@ -1173,7 +1230,7 @@ define(['require',
                         relationshipGuid: termObj.relationGuid
                     },
                     collection: that.glossaryCollection,
-                    msg: "<div class='ellipsis-with-margin'>Remove: " + "<b>" + _.escape(termName) + "</b> assignment from" + " " + "<b>" + assetname + "?</b></div>",
+                    msg: "<div class='ellipsis-with-margin'>Remove: " + "<b>" + _.escape(termName) + "</b> assignment from <b>" + _.escape(assetname) + "?</b></div>",
                     titleMessage: Messages.glossary.removeTermfromEntity,
                     isEntityView: true,
                     buttonText: "Remove",

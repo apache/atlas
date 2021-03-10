@@ -24,10 +24,12 @@ define(['require',
     'utils/Messages',
     'utils/Globals',
     'moment',
+    'utils/UrlLinks',
     'collection/VCommonList',
-    'models/VEntity',
+    'collection/VEntityList',
+    'd3',
     'sparkline'
-], function(require, Backbone, ProfileTableLayoutViewTmpl, VProfileList, Utils, Messages, Globals, moment, VCommonList, VEntity, sparkline) {
+], function(require, Backbone, ProfileTableLayoutViewTmpl, VProfileList, Utils, Messages, Globals, moment, UrlLinks, VCommonList, VEntityList, d3, sparkline) {
     'use strict';
 
     var ProfileTableLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -57,67 +59,86 @@ define(['require',
             initialize: function(options) {
                 _.extend(this, _.pick(options, 'profileData', 'guid', 'entityDetail'));
                 var that = this;
-                this.entityModel = new VEntity();
                 this.profileCollection = new VCommonList([], {
                     comparator: function(item) {
                         return item.get('position') || 999;
                     }
                 });
-                _.each(this.entityDetail.columns, function(obj) {
-                    if (obj.attributes.profileData !== null) {
-                        var profileObj = Utils.getProfileTabType(obj.attributes.profileData.attributes, true);
-                        var changeValueObj = {}
-                        if (profileObj && profileObj.type) {
-                            if (profileObj.type === "numeric") {
-                                changeValueObj['averageLength'] = 0;
-                                changeValueObj['maxLength'] = 0;
-                            }
-                            if (profileObj.type === "string") {
-                                changeValueObj['minValue'] = 0;
-                                changeValueObj['maxValue'] = 0;
-                                changeValueObj['meanValue'] = 0;
-                                changeValueObj['medianValue'] = 0;
-                            }
-                            if (profileObj.type === "date") {
-                                changeValueObj['averageLength'] = 0;
-                                changeValueObj['maxLength'] = 0;
-                                changeValueObj['minValue'] = 0;
-                                changeValueObj['maxValue'] = 0;
-                                changeValueObj['meanValue'] = 0;
-                                changeValueObj['medianValue'] = 0;
-                            }
-                        }
 
-                        that.profileCollection.fullCollection.add(_.extend({}, obj.attributes, obj.attributes.profileData.attributes, changeValueObj, { guid: obj.guid, position: obj.attributes ? obj.attributes.position : null }));
-                    }
-                });
                 this.bindEvents();
             },
             onRender: function() {
                 this.fetchEntity();
-                this.renderTableLayoutView();
-                if (this.entityDetail) {
-                    if (this.guid && this.entityDetail.name) {
-                        this.$('.table_name .graphval').html('<b><a href="#!/detailPage/' + this.guid + '">' + this.entityDetail.name + '</a></b>');
-                    }
-                    var profileData = this.entityDetail.profileData;
-                    if (profileData && profileData.attributes && profileData.attributes.rowCount) {
-                        this.$('.rowValue .graphval').html('<b>' + d3.format("2s")(profileData.attributes.rowCount).replace('G', 'B') + '</b>');
-                    }
-                    this.$('.table_created .graphval').html('<b>' + (this.entityDetail.createTime ? moment(this.entityDetail.createTime).format("LL") : "--") + '</b>');
-                }
             },
             fetchEntity: function(argument) {
                 var that = this;
-                this.entityModel.getEntity(this.entityDetail.db.guid, {
-                    success: function(data) {
-                        var entity = data.entity;
-                        if (entity.attributes) {
-                            if (entity.guid) {
-                                that.$('.db_name .graphval').html('<b><a href="#!/detailPage/' + entity.guid + "?profile=true" + '">' + Utils.getName(entity) + '</a></b>');
+                this.collection = new VEntityList([], {});
+                this.collection.url = UrlLinks.entitiesApiUrl({ guid: this.guid, minExtInfo: false });
+                this.collection.fetch({
+                    success: function(response) {
+                        that.entityObject = that.collection.first().toJSON();
+
+                        var collectionJSON = that.entityObject.entity;
+                        that.entityDetail = collectionJSON.attributes;
+
+                        Utils.findAndMergeRefEntity({
+                            attributeObject: collectionJSON.attributes,
+                            referredEntities: that.entityObject.referredEntities
+                        });
+
+                        Utils.findAndMergeRefEntity({
+                            attributeObject: collectionJSON.relationshipAttributes,
+                            referredEntities: that.entityObject.referredEntities
+                        });
+
+                        var columns = collectionJSON.relationshipAttributes.columns || collectionJSON.attributes.columns,
+                            db = collectionJSON.relationshipAttributes.db || collectionJSON.attributes.db
+
+                        that.renderTableLayoutView();
+                        if (that.entityDetail) {
+                            if (that.guid && that.entityDetail.name) {
+                                that.$('.table_name .graphval').html('<b><a href="#!/detailPage/' + that.guid + '">' + that.entityDetail.name + '</a></b>');
                             }
+                            if (db) {
+                                that.$('.db_name .graphval').html('<b><a href="#!/detailPage/' + db.guid + "?profile=true" + '">' + Utils.getName(db) + '</a></b>');
+                            }
+                            var profileData = that.entityDetail.profileData;
+                            if (profileData && profileData.attributes && profileData.attributes.rowCount) {
+                                that.$('.rowValue .graphval').html('<b>' + d3.format("2s")(profileData.attributes.rowCount).replace('G', 'B') + '</b>');
+                            }
+                            that.$('.table_created .graphval').html('<b>' + (that.entityDetail.createTime ? moment(that.entityDetail.createTime).format("LL") : "--") + '</b>');
                         }
-                    }
+
+                        _.each(columns, function(obj) {
+                            if (obj.attributes && obj.attributes.profileData) {
+                                var profileObj = Utils.getProfileTabType(obj.attributes.profileData.attributes, true);
+                                var changeValueObj = {}
+                                if (profileObj && profileObj.type) {
+                                    if (profileObj.type === "numeric") {
+                                        changeValueObj['averageLength'] = 0;
+                                        changeValueObj['maxLength'] = 0;
+                                    }
+                                    if (profileObj.type === "string") {
+                                        changeValueObj['minValue'] = 0;
+                                        changeValueObj['maxValue'] = 0;
+                                        changeValueObj['meanValue'] = 0;
+                                        changeValueObj['medianValue'] = 0;
+                                    }
+                                    if (profileObj.type === "date") {
+                                        changeValueObj['averageLength'] = 0;
+                                        changeValueObj['maxLength'] = 0;
+                                        changeValueObj['minValue'] = 0;
+                                        changeValueObj['maxValue'] = 0;
+                                        changeValueObj['meanValue'] = 0;
+                                        changeValueObj['medianValue'] = 0;
+                                    }
+                                }
+
+                                that.profileCollection.fullCollection.add(_.extend({}, obj.attributes, obj.attributes.profileData.attributes, changeValueObj, { guid: obj.guid, position: obj.attributes ? obj.attributes.position : null }));
+                            }
+                        });
+                    },
+                    reset: false
                 });
             },
             bindEvents: function() {

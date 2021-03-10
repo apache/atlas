@@ -171,8 +171,7 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
             "/n/js/**",
             "/ieerror.html",
             "/migration-status.html",
-            "/api/atlas/admin/status",
-            "/api/atlas/admin/metrics"));
+            "/api/atlas/admin/status"));
 
         if (!keycloakEnabled) {
             matchers.add("/login.jsp");

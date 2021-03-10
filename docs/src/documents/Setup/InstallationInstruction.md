@@ -18,7 +18,7 @@ From the directory you would like Apache Atlas to be installed, run the followin
 
 <SyntaxHighlighter wrapLines={true} language="powershell" style={theme.dark}>
 {`tar -xzvf apache-atlas-{project.version}-server.tar.gz
-cd atlas-{project.version}`}
+cd apache-atlas-{project.version}`}
 </SyntaxHighlighter>
 
 #### Running Apache Atlas with Local Apache HBase & Apache Solr
@@ -30,6 +30,14 @@ export MANAGE_LOCAL_SOLR=true
 bin/atlas_start.py`}
 </SyntaxHighlighter>
 
+#### Running Apache Atlas with BerkeleyDB & Apache Solr
+To run Apache Atlas with BerkeleyDB, and local instances of Apache Solr and Apache Zookeeper, run following commands:
+
+<SyntaxHighlighter wrapLines={true} language="powershell" style={theme.dark}>
+{`export MANAGE_LOCAL_SOLR=true
+bin/atlas_start.py`}
+</SyntaxHighlighter>
+
 #### Using Apache Atlas
 
   * To verify if Apache Atlas server is up and running, run curl command as shown below:
@@ -37,7 +45,7 @@ bin/atlas_start.py`}
 
 <SyntaxHighlighter wrapLines={true} style={theme.dark}>
     {`curl -u username:password http://localhost:21000/api/atlas/admin/version
-    {"Description":"Metadata Management and Data Governance Platform over Hadoop","Version":"1.0.0","Name":"apache-atlas"}`}
+    {"Description":"Metadata Management and Data Governance Platform over Hadoop","Version":"2.1.0","Name":"apache-atlas"}`}
 </SyntaxHighlighter>
 
 
@@ -150,7 +158,7 @@ By default, Apache Atlas uses JanusGraph as the graph repository and is the only
 * Start Apache Solr in cloud mode.
 
 SolrCloud mode uses a ZooKeeper Service as a highly available, central location for cluster management. For a small cluster, running with an existing ZooKeeper quorum should be fine. For larger clusters, you would want to run separate multiple ZooKeeper quorum with at least 3 servers.
-  Note: Apache Atlas currently supports Apache Solr in "cloud" mode only. "http" mode is not supported. For more information, refer Apache Solr documentation - https://cwiki.apache.org/confluence/display/solr/SolrCloud
+  For more information, refer Apache Solr documentation - https://cwiki.apache.org/confluence/display/solr/SolrCloud
 
 
    * For e.g., to bring up an Apache Solr node listening on port 8983 on a machine, you can use the command:
@@ -196,6 +204,21 @@ Pre-requisites for running Apache Solr in cloud mode
   * Disk - If the number of entities that need to be stored are large, plan to have at least 500 GB free space in the volume where Apache Solr is going to store the index data
   * SolrCloud has support for replication and sharding. It is highly recommended to use SolrCloud with at least two Apache Solr nodes running on different servers with replication enabled.
     If using SolrCloud, then you also need ZooKeeper installed and configured with 3 or 5 ZooKeeper nodes
+
+  * Start Apache Solr in http mode - alternative setup to Solr in cloud mode.
+
+  Solr Standalone is used for a single instance, and it keeps configuration information on the file system. It does not require zookeeper and provides high performance for medium size index.
+  Can be consider as a good option for fast prototyping as well as valid configuration for development environments. In some cases it demonstrates a better performance than solr cloud mode in production grade setup of Atlas.
+
+   * Change ATLAS configuration to point to Standalone Apache Solr instance setup. Please make sure the following configurations are set to the below values in ATLAS_HOME/conf/atlas-application.properties
+
+<SyntaxHighlighter wrapLines={true} language="powershell" style={theme.dark}>
+{`atlas.graph.index.search.backend=solr
+atlas.graph.index.search.solr.mode=http
+atlas.graph.index.search.solr.http-urls=<a single or list of URLs for the Solr instances must be provided.> eg: localhost:2181,10.1.6.5:2181`}
+</SyntaxHighlighter>
+
+  Note: Solr standalone can be run in embedded mode using `embedded-hbase-solr` profile.
 
 *Configuring Elasticsearch as the indexing backend for the Graph Repository (Tech Preview)*
 

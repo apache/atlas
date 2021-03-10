@@ -22,13 +22,6 @@
             {{/unless}}
         </div>
     </div>
-    {{#if includeAtlasPagination}}
-    <div class="row form-group pagination-box filter-box">
-        <div class="col-sm-4">
-            <span class="labelShowRecord pull-left" data-id="pageRecordText"> </span>
-        </div>
-    </div>
-    {{/if}}
     <div class="position-relative thick-border">
         <div data-id="r_tableList" class="table-responsive tableBorder"> </div>
         {{#if includeTableLoader}}
@@ -70,7 +63,10 @@
     </div>
     {{/if}} {{#if includeAtlasPagination}}
     <div class="row pagination-box">
-        <div class="col-sm-offset-4 col-sm-8">
+        <div class="col-sm-4">
+            <span class="labelShowRecord pull-left" data-id="pageRecordText"> </span>
+        </div>
+        <div class="col-sm-8">
             <div class="inline-content-fr">
                 <div class="backgrid-paginator inline">
                     <ul class="" data-id="paginationDiv" style="display:none">

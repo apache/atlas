@@ -171,7 +171,7 @@ define(['require',
                     Utils.backButtonClick();
                 }
                 events["click " + this.ui.addTerm] = 'onClickAddTermBtn';
-                events["click " + this.ui.addCategory] = 'onClickAddCategoryBtn';
+                events["click " + this.ui.addCategory] = 'onClickAddTermBtn';
                 events["click " + this.ui.addTag] = 'onClickAddTagBtn';
                 return events;
             },
@@ -247,7 +247,36 @@ define(['require',
                                 if (that.isDestroyed) {
                                     return;
                                 }
+                                that.data = data;
                                 if (that.isTermView) {
+                                    var tags = {
+                                        'self': [],
+                                        'propagated': [],
+                                        'propagatedMap': {},
+                                        'combineMap': {}
+                                    };
+                                    if (that.data) {
+                                        var tagObject = that.data.classifications;
+                                        _.each(tagObject, function(val) {
+                                            var typeName = val.typeName;
+                                            if (val.entityGuid === that.guid) {
+                                                tags['self'].push(val)
+                                            } else {
+                                                tags['propagated'].push(val);
+                                                if (tags.propagatedMap[typeName]) {
+                                                    tags.propagatedMap[typeName]["count"] += tags.propagatedMap[typeName]["count"];
+                                                } else {
+                                                    tags.propagatedMap[typeName] = val;
+                                                    tags.propagatedMap[typeName]["count"] = 1;
+                                                }
+                                            }
+                                            if (tags.combineMap[typeName] === undefined) {
+                                                tags.combineMap[typeName] = val;
+                                            }
+                                        });
+                                        tags.self = _.sortBy(tags.self, "typeName");
+                                        tags.propagated = _.sortBy(tags.propagated, "typeName");
+                                    }
                                     var obj = {
                                         "guid": that.guid,
                                         "entityDefCollection": that.entityDefCollection,
@@ -256,6 +285,8 @@ define(['require',
                                         "enumDefCollection": that.enumDefCollection,
                                         "classificationDefCollection": that.classificationDefCollection,
                                         "glossaryCollection": that.glossaryCollection,
+                                        "searchVent": that.searchVent,
+                                        "tags": tags,
                                         "getSelectedTermAttribute": function() {
                                             return that.selectedTermAttribute;
                                         },
@@ -267,7 +298,6 @@ define(['require',
                                     that.renderTagTableLayoutView(obj);
                                     that.renderRelationLayoutView(obj);
                                 }
-                                that.data = data;
                                 that.glossaryCollection.trigger("data:updated", $.extend(true, {}, data));
                                 that.glossary.selectedItem.model = data;
                                 that.glossary.selectedItem.guid = data.guid;
@@ -296,7 +326,7 @@ define(['require',
                     categories = "";
                 _.each(data, function(val) {
                     var name = _.escape(val.displayText);
-                    categories += '<span data-guid="' + val.categoryGuid + '"" class="btn btn-action btn-sm btn-icon btn-blue" data-id="categoryClick"><span  title=' + name + '>' + name + '</span><i class="fa fa-close" data-id="removeCategory" data-type="category" title="Remove Category"></i></span>';
+                    categories += '<span data-guid="' + val.categoryGuid + '" class="btn btn-action btn-sm btn-icon btn-blue" data-id="categoryClick"><span>' + name + '</span><i class="fa fa-close" data-id="removeCategory" data-type="category" title="Remove Category"></i></span>';
                 });
                 this.ui.categoryList.find("span.btn").remove();
                 this.ui.categoryList.prepend(categories);
@@ -306,7 +336,7 @@ define(['require',
                     terms = "";
                 _.each(data, function(val) {
                     var name = _.escape(val.displayText);
-                    terms += '<span data-guid="' + val.termGuid + '"" class="btn btn-action btn-sm btn-icon btn-blue" data-id="termClick"><span title=' + name + '>' + name + '</span><i class="fa fa-close" data-id="removeTerm" data-type="term" title="Remove Term"></i></span>';
+                    terms += '<span data-guid="' + val.termGuid + '" class="btn btn-action btn-sm btn-icon btn-blue" data-id="termClick"><span>' + name + '</span><i class="fa fa-close" data-id="removeTerm" data-type="term" title="Remove Term"></i></span>';
                 });
                 this.ui.termList.find("span.btn").remove();
                 this.ui.termList.prepend(terms);
@@ -316,65 +346,68 @@ define(['require',
                 var that = this,
                     tagData = "";
                 _.each(tagObject, function(val) {
-                    tagData += '<span class="btn btn-action btn-sm btn-icon btn-blue" data-id="tagClickTerm"><span title=' + val.typeName + '>' + val.typeName + '</span><i class="fa fa-close" data-id="removeTagTerm" data-type="tag" title="Remove Classification"></i></span>';
+                    tagData += '<span class="btn btn-action btn-sm btn-icon btn-blue" data-id="tagClickTerm"><span>' + val.typeName + '</span><i class="fa fa-close" data-id="removeTagTerm" data-type="tag" title="Remove Classification"></i></span>';
                 });
                 this.ui.tagList.find("span.btn").remove();
                 this.ui.tagList.prepend(tagData);
             },
-            onClickAddTermBtn: function(e) {
-                var that = this;
-                require(['views/glossary/AssignTermLayoutView'], function(AssignTermLayoutView) {
-                    var glossary = that.glossaryCollection;
-                    if (that.value && that.value.gId) {
-                        var foundModel = that.glossaryCollection.find({ guid: that.value.gId });
-                        if (foundModel) {
-                            glossary = new VGlossaryList([foundModel.toJSON()], {
-                                comparator: function(item) {
-                                    return item.get("name");
-                                }
-                            });
-                        }
+            getCategoryTermCount: function(collection, matchString) {
+                var terms = 0;
+                _.each(collection, function(model) {
+                    if (model.get(matchString)) {
+                        terms += model.get(matchString).length;
                     }
-
-                    var view = new AssignTermLayoutView({
-                        categoryData: that.data,
-                        associatedTerms: that.data && that.data.terms && that.data.terms.length > 0 ? that.data.terms : [],
-                        isCategoryView: that.isCategoryView,
-                        callback: function() {
-                            that.getData();
-                        },
-                        glossaryCollection: glossary
-                    });
-                    view.modal.on('ok', function() {
-                        that.hideLoader();
-                    });
                 });
+                return terms;
             },
-            onClickAddCategoryBtn: function(e) {
+            onClickAddTermBtn: function(e) {
+                var glossary = this.glossaryCollection;
+                if (this.value && this.value.gId) {
+                    var foundModel = this.glossaryCollection.find({ guid: this.value.gId });
+                    if (foundModel) {
+                        glossary = new VGlossaryList([foundModel.toJSON()], {
+                            comparator: function(item) {
+                                return item.get("name");
+                            }
+                        });
+                    }
+                }
+                var obj = {
+                        callback: function() {
+                            this.getData();
+                        },
+                        glossaryCollection: glossary,
+                    },
+                    emptyListMessage = this.isCategoryView ? "There are no available terms that can be associated with this category" : "There are no available categories that can be associated with this term";
+
+                if (this.isCategoryView) {
+                    obj = _.extend(obj, {
+                        categoryData: this.data,
+                        associatedTerms: (this.data && this.data.terms && this.data.terms.length > 0) ? this.data.terms : [],
+                        isCategoryView: this.isCategoryView,
+                    });
+                } else {
+                    obj = _.extend(obj, {
+                        termData: this.data,
+                        isTermView: this.isTermView,
+                    });
+                }
+                if (this.getCategoryTermCount(glossary.fullCollection.models, this.isCategoryView ? "terms" : "categories")) {
+                    this.AssignTermLayoutViewModal(obj);
+                } else {
+                    Utils.notifyInfo({
+                        content: emptyListMessage
+                    });
+                }
+            },
+            AssignTermLayoutViewModal: function(termCategoryObj) {
                 var that = this;
                 require(['views/glossary/AssignTermLayoutView'], function(AssignTermLayoutView) {
-                    var glossary = that.glossaryCollection;
-                    if (that.value && that.value.gId) {
-                        var foundModel = that.glossaryCollection.find({ guid: that.value.gId });
-                        if (foundModel) {
-                            glossary = new VGlossaryList([foundModel.toJSON()], {
-                                comparator: function(item) {
-                                    return item.get("name");
-                                }
-                            });
-                        }
-                    }
-                    var view = new AssignTermLayoutView({
-                        termData: that.data,
-                        isTermView: that.isTermView,
-                        callback: function() {
-                            that.getData();
-                        },
-                        glossaryCollection: glossary
-                    });
+                    var view = new AssignTermLayoutView(termCategoryObj);
                     view.modal.on('ok', function() {
                         that.hideLoader();
                     });
+
                 });
             },
             onClickAddTagBtn: function(e) {
@@ -407,7 +440,7 @@ define(['require',
                     tagName = $(e.currentTarget).text(),
                     termName = this.data.name;
                 CommonViewFunction.deleteTag(_.extend({}, {
-                    msg: "<div class='ellipsis-with-margin'>Remove: " + "<b>" + _.escape(tagName) + "</b> assignment from" + " " + "<b>" + _.escape(termName) + "?</b></div>",
+                    msg: "<div class='ellipsis-with-margin'>Remove: " + "<b>" + _.escape(tagName) + "</b> assignment from <b>" + _.escape(termName) + "?</b></div>",
                     titleMessage: Messages.removeTag,
                     okText: "Remove",
                     showLoader: that.showLoader.bind(that),
@@ -431,7 +464,7 @@ define(['require',
                     selectedGuid: guid,
                     model: that.data,
                     collection: that.glossaryCollection,
-                    msg: "<div class='ellipsis-with-margin'>Remove: " + "<b>" + _.escape(name) + "</b> assignment from" + " " + "<b>" + _.escape(that.data.name) + "?</b></div>",
+                    msg: "<div class='ellipsis-with-margin'>Remove: " + "<b>" + _.escape(name) + "</b> assignment from <b>" + _.escape(that.data.name) + "?</b></div>",
                     titleMessage: Messages.glossary[that.isTermView ? "removeCategoryfromTerm" : "removeTermfromCategory"],
                     isCategoryView: that.isCategoryView,
                     isTermView: that.isTermView,
@@ -454,7 +487,7 @@ define(['require',
                 require(['views/tag/TagDetailTableLayoutView'], function(TagDetailTableLayoutView) {
                     if (that.RTagTableLayoutView) {
                         that.RTagTableLayoutView.show(new TagDetailTableLayoutView(_.extend({}, options, {
-                            "entityName": that.ui.title.text(),
+                            "entityName": _.escape(that.ui.title.text()),
                             "fetchCollection": that.getData.bind(that),
                             "entity": that.data
                         })));
@@ -465,10 +498,6 @@ define(['require',
                 var that = this;
 
                 require(['views/search/SearchResultLayoutView'], function(SearchResultLayoutView) {
-                    var value = {
-                        'tag': "PII",
-                        'searchType': 'basic'
-                    };
                     if (that.RSearchResultLayoutView) {
                         that.RSearchResultLayoutView.show(new SearchResultLayoutView(_.extend({}, options, {
                             "value": { "searchType": "basic", "term": that.data.qualifiedName },

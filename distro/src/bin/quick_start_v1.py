@@ -34,11 +34,11 @@ if __name__ == '__main__':
     try:
         returncode = main()
         if returncode == 0:
-            print "Example data added to Apache Atlas Server!!!\n"
+            print("Example data added to Apache Atlas Server!!!\n")
         else:
-            print "No data was added to the Apache Atlas Server.\n"
+            print("No data was added to the Apache Atlas Server.\n")
     except Exception as e:
-        print "Exception: %s " % str(e)
+        print("Exception: %s " % str(e))
         returncode = -1
 
     sys.exit(returncode)

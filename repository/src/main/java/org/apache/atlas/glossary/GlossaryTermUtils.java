@@ -623,7 +623,8 @@ public class GlossaryTermUtils extends GlossaryUtils {
                 if ((recordArray.length % 2) == 0) {
                     ret.put(recordArray[0], recordArray[1]);
                 } else {
-                    failedTermMsgs.add("\n" + "The Data in the uploaded file is incorrectly specified  : " + csvRecord);
+                    failedTermMsgs.add("\n" + "The Data in the uploaded file is incorrectly specified  : " + csvRecord
+                            + "\n" + "AdditionalAttributes needs to be a key:value pair");
                 }
             }
         }

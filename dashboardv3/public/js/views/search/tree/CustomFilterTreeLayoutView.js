@@ -429,10 +429,13 @@ define([
                 var notifyObj = {
                     modal: true,
                     html: true,
-                    text: Messages.conformation.deleteMessage + "<b>" + options.model.get('name') + "</b>" + " ?",
-                    ok: function(argument) {
+                    text: Messages.conformation.deleteMessage + "<b>" + _.escape(options.model.get('name')) + "</b>" + " ?",
+                    ok: function(obj) {
+                        that.notificationModal = obj;
+                        obj.showButtonLoader();
                         that.onDeleteNotifyOk(options);
                     },
+                    okCloses: false,
                     cancel: function(argument) {}
                 }
                 Utils.notifyConfirm(notifyObj);
@@ -451,6 +454,10 @@ define([
                         Utils.notifySuccess({
                             content: options.model.attributes.name + Messages.getAbbreviationMsg(false, 'deleteSuccessMessage')
                         });
+                    },
+                    complete: function() {
+                        that.notificationModal.hideButtonLoader();
+                        that.notificationModal.remove();
                     }
                 });
             } else {

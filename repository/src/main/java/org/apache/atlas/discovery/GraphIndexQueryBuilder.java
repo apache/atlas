@@ -17,15 +17,15 @@
  */
 package org.apache.atlas.discovery;
 
-import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_CLASSIFIED;
 import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_NOT_CLASSIFIED;
-import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_WILDCARD_CLASSIFICATION;
 import static org.apache.atlas.discovery.SearchProcessor.INDEX_SEARCH_PREFIX;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_NAMES_KEY;
 import static org.apache.atlas.repository.Constants.PROPAGATED_CLASSIFICATION_NAMES_KEY;
 import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 
 import org.apache.atlas.repository.Constants;
+import org.apache.atlas.type.AtlasStructType;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 
 public class GraphIndexQueryBuilder {
@@ -36,20 +36,20 @@ public class GraphIndexQueryBuilder {
     }
 
     void addClassificationTypeFilter(StringBuilder indexQuery) {
-        if (indexQuery != null && StringUtils.isNotEmpty(context.getSearchParameters().getClassification())) {
-            String classificationName = context.getSearchParameters().getClassification();
+        if (indexQuery != null && CollectionUtils.isNotEmpty(context.getClassificationNames())) {
+            String classificationNames = AtlasStructType.AtlasAttribute.escapeIndexQueryValue(context.getClassificationNames(), true);
             if (indexQuery.length() != 0) {
                 indexQuery.append(" AND ");
             }
 
-            indexQuery.append("(").append(INDEX_SEARCH_PREFIX).append('\"').append(CLASSIFICATION_NAMES_KEY).append('\"').append(':').append(classificationName)
+            indexQuery.append("(").append(INDEX_SEARCH_PREFIX).append('\"').append(CLASSIFICATION_NAMES_KEY).append('\"').append(':').append(classificationNames)
                 .append(" OR ").append(INDEX_SEARCH_PREFIX).append('\"').append(PROPAGATED_CLASSIFICATION_NAMES_KEY)
-                .append('\"').append(':').append(classificationName).append(")");
+                .append('\"').append(':').append(classificationNames).append(")");
         }
     }
 
     void addClassificationAndSubTypesQueryFilter(StringBuilder indexQuery) {
-        if (indexQuery != null && StringUtils.isNotEmpty(context.getSearchParameters().getClassification())) {
+        if (indexQuery != null && CollectionUtils.isNotEmpty(context.getClassificationTypes())) {
             String classificationTypesQryStr = context.getClassificationTypesQryStr();
 
             if (indexQuery.length() != 0) {
@@ -63,17 +63,8 @@ public class GraphIndexQueryBuilder {
     }
 
     void addClassificationFilterForBuiltInTypes(StringBuilder indexQuery) {
-        if (indexQuery != null && context.getClassificationType() != null) {
-            if (context.getClassificationType() == MATCH_ALL_WILDCARD_CLASSIFICATION || context.getClassificationType() == MATCH_ALL_CLASSIFIED) {
-                if (indexQuery.length() != 0) {
-                    indexQuery.append(" AND ");
-                }
-                indexQuery.append("(").append(INDEX_SEARCH_PREFIX).append("\"")
-                    .append(CLASSIFICATION_NAMES_KEY).append("\"").append(":" + "[* TO *]")
-                    .append(" OR ").append(INDEX_SEARCH_PREFIX).append("\"")
-                    .append(PROPAGATED_CLASSIFICATION_NAMES_KEY).append("\"").append(":" + "[* TO *]").append(")");
-
-            } else if (context.getClassificationType() == MATCH_ALL_NOT_CLASSIFIED) {
+        if (indexQuery != null && CollectionUtils.isNotEmpty(context.getClassificationTypes())) {
+            if (context.getClassificationTypes().iterator().next() == MATCH_ALL_NOT_CLASSIFIED) {
                 if (indexQuery.length() != 0) {
                     indexQuery.append(" AND ");
                 }

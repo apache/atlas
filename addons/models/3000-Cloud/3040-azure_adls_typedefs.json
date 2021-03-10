@@ -112,7 +112,7 @@
         "Asset"
       ],
       "serviceType": "azure",
-      "typeVersion": "1.0",
+      "typeVersion": "1.1",
       "attributeDefs": [
         {
           "name":        "resourceGroup",
@@ -240,6 +240,14 @@
           "isIndexable": false,
           "isOptional":  true,
           "isUnique":    false
+        },
+        {
+          "name":         "skuName",
+          "typeName":     "string",
+          "cardinality":  "SINGLE",
+          "isIndexable":  true,
+          "isOptional":   true,
+          "isUnique":     false
         }
       ]
     },
@@ -251,7 +259,7 @@
         "adls_gen2_parent"
       ],
       "serviceType": "azure",
-      "typeVersion": "1.0",
+      "typeVersion": "1.1",
       "attributeDefs": [
         {
           "name":        "url",
@@ -284,6 +292,22 @@
           "isIndexable": false,
           "isOptional":  true,
           "isUnique":    false
+        },
+        {
+          "name":         "lastModifiedTime",
+          "typeName":     "date",
+          "cardinality":  "SINGLE",
+          "isIndexable":  true,
+          "isOptional":   true,
+          "isUnique":     false
+        },
+        {
+          "name":         "publicAccess",
+          "typeName":     "string",
+          "cardinality":  "SINGLE",
+          "isIndexable":  true,
+          "isOptional":   true,
+          "isUnique":     false
         }
       ]
     },
@@ -293,10 +317,11 @@
       "superTypes":  [
         "DataSet",
         "adls_gen2_parent",
-        "adls_gen2_child"
+        "adls_gen2_child",
+        "Path"
       ],
       "serviceType": "azure",
-      "typeVersion": "1.0",
+      "typeVersion": "1.3",
       "attributeDefs": [
         {
           "name":        "eTag",
@@ -312,7 +337,7 @@
           "cardinality": "SINGLE",
           "isIndexable": true,
           "isOptional":  true,
-          "isUnique":    true
+          "isUnique":    false
         },
         {
           "name":        "contentEncoding",
@@ -337,6 +362,76 @@
           "isIndexable": true,
           "isOptional":  true,
           "isUnique":    false
+        },
+        {
+          "name":         "lastModifiedTime",
+          "typeName":     "date",
+          "cardinality":  "SINGLE",
+          "isIndexable":  true,
+          "isOptional":   true,
+          "isUnique":     false
+        },
+        {
+          "name":         "creationTime",
+          "typeName":     "date",
+          "cardinality":  "SINGLE",
+          "isIndexable":  true,
+          "isOptional":   true,
+          "isUnique":     false
+        },
+        {
+          "name":         "contentLength",
+          "typeName":     "long",
+          "cardinality":  "SINGLE",
+          "isIndexable":  true,
+          "isOptional":   true
+        },
+        {
+          "name":         "contentMd5",
+          "typeName":     "string",
+          "cardinality":  "SINGLE",
+          "isIndexable":  true,
+          "isOptional":   true,
+          "isUnique":     false
+        },
+        {
+          "name":         "accessTier",
+          "typeName":     "string",
+          "cardinality":  "SINGLE",
+          "isIndexable":  true,
+          "isOptional":   true,
+          "isUnique":     false
+        },
+        {
+          "name":         "prefix",
+          "typeName":     "string",
+          "cardinality":  "SINGLE",
+          "isIndexable":  true,
+          "isOptional":   true,
+          "isUnique":     false
+        },
+        {
+          "name":         "remainingRetentionDays",
+          "typeName":     "long",
+          "cardinality":  "SINGLE",
+          "isIndexable":  true,
+          "isOptional":   true
+        },
+        {
+          "name":         "type",
+          "typeName":     "string",
+          "cardinality":  "SINGLE",
+          "isIndexable":  true,
+          "isOptional":   true,
+          "isUnique":     false
+        },
+        {
+          "name":         "additionalProperties",
+          "typeName":     "map<string,string>",
+          "cardinality":  "SINGLE",
+          "isIndexable":  false,
+          "isOptional":   true,
+          "isUnique":     false
         }
       ]
     },
@@ -348,7 +443,7 @@
         "adls_gen2_child"
       ],
       "serviceType": "azure",
-      "typeVersion": "1.0",
+      "typeVersion": "1.2",
       "attributeDefs": [
         {
           "name":        "url",
@@ -379,8 +474,8 @@
           "typeName":    "string",
           "cardinality": "SINGLE",
           "isIndexable": true,
-          "isOptional":  false,
-          "isUnique":    true
+          "isOptional":  true,
+          "isUnique":    false
         },
         {
           "name":        "additionalProperties",
@@ -389,6 +484,84 @@
           "isIndexable": false,
           "isOptional":  true,
           "isUnique":    false
+        },
+        {
+          "name":         "lastModifiedTime",
+          "typeName":     "date",
+          "cardinality":  "SINGLE",
+          "isIndexable":  true,
+          "isOptional":   true,
+          "isUnique":     false
+        },
+        {
+          "name":         "creationTime",
+          "typeName":     "date",
+          "cardinality":  "SINGLE",
+          "isIndexable":  true,
+          "isOptional":   true,
+          "isUnique":     false
+        },
+        {
+          "name":         "contentLength",
+          "typeName":     "long",
+          "cardinality":  "SINGLE",
+          "isIndexable":  true,
+          "isOptional":   true
+        },
+        {
+          "name":         "contentMd5",
+          "typeName":     "string",
+          "cardinality":  "SINGLE",
+          "isIndexable":  true,
+          "isOptional":   true,
+          "isUnique":     false
+        },
+        {
+          "name":         "accessTier",
+          "typeName":     "string",
+          "cardinality":  "SINGLE",
+          "isIndexable":  true,
+          "isOptional":   true,
+          "isUnique":     false
+        },
+        {
+          "name":         "prefix",
+          "typeName":     "string",
+          "cardinality":  "SINGLE",
+          "isIndexable":  true,
+          "isOptional":   true,
+          "isUnique":     false
+        },
+        {
+          "name":         "remainingRetentionDays",
+          "typeName":     "long",
+          "cardinality":  "SINGLE",
+          "isIndexable":  true,
+          "isOptional":   true
+        },
+        {
+          "name":         "contentEncoding",
+          "typeName":     "string",
+          "cardinality":  "SINGLE",
+          "isIndexable":  true,
+          "isOptional":   true,
+          "isUnique":     false
+        },
+        {
+          "name":         "contentDisposition",
+          "typeName":     "string",
+          "cardinality":  "SINGLE",
+          "isIndexable":  true,
+          "isOptional":   true,
+          "isUnique":     false
+        },
+        {
+          "name":         "cacheControl",
+          "typeName":     "string",
+          "cardinality":  "SINGLE",
+          "isIndexable":  true,
+          "isOptional":   true,
+          "isUnique":     false
         }
       ]
     }
@@ -411,7 +584,7 @@
         "isContainer":        false,
         "cardinality":        "SINGLE"
       },
-      "propagateTags": "ONE_TO_TWO"
+      "propagateTags": "NONE"
     },
     {
       "name":                 "adls_gen2_parent_children",
@@ -430,7 +603,7 @@
         "isContainer":        false,
         "cardinality":        "SINGLE"
       },
-      "propagateTags": "ONE_TO_TWO"
+      "propagateTags": "NONE"
     }
   ]
 }

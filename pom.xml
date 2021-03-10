@@ -123,8 +123,8 @@
                 <role>committer</role>
                 <role>PMC</role>
             </roles>
-            <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>https://www.hortonworks.com</organizationUrl>-->
+            <organization></organization>
+            <!--<organizationUrl></organizationUrl>-->
         </developer>
         <developer>
             <id>acmurthy</id>
@@ -135,8 +135,8 @@
                 <role>committer</role>
                 <role>PMC</role>
             </roles>
-            <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>https://www.hortonworks.com</organizationUrl>-->
+            <organization>Cloudera Inc.</organization>
+            <!--<organizationUrl>https://www.cloudera.com</organizationUrl>-->
         </developer>
         <developer>
             <id>ayubpathan</id>
@@ -147,8 +147,8 @@
                 <role>committer</role>
                 <role>PMC</role>
             </roles>
-            <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>https://www.hortonworks.com</organizationUrl>-->
+            <organization>Cloudera Inc.</organization>
+            <!--<organizationUrl>https://www.cloudera.com</organizationUrl>-->
         </developer>
         <developer>
             <id>amestry</id>
@@ -158,8 +158,8 @@
             <roles>
                 <role>committer</role>
             </roles>
-            <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>https://www.hortonworks.com</organizationUrl>-->
+            <organization>Cloudera Inc.</organization>
+            <!--<organizationUrl>https://www.cloudera.com</organizationUrl>-->
         </developer>
         <developer>
             <id>bstortz</id>
@@ -176,14 +176,14 @@
         <developer>
             <id>chyzer</id>
             <name>Chris Hyzer</name>
-            <email>chyzer@aetna.com</email>
+            <email>tjbchris@apache.org</email>
             <timezone>America/New_York</timezone>
             <roles>
                 <role>committer</role>
                 <role>PMC</role>
             </roles>
-            <organization>Aetna Inc.</organization>
-            <!--<organizationUrl>https://www.aetna.com</organizationUrl>-->
+            <organization>Travelers Inc.</organization>
+            <!--<organizationUrl>http://www.travelers.com</organizationUrl>-->
         </developer>
         <developer>
             <id>dmarkwat</id>
@@ -269,14 +269,14 @@
         <developer>
             <id>gsenia</id>
             <name>Greg Senia</name>
-            <email>gsenia@aetna.com</email>
+            <email>gsenia@apache.org</email>
             <timezone>America/New_York</timezone>
             <roles>
                 <role>committer</role>
                 <role>PMC</role>
             </roles>
-            <organization>Aetna Inc.</organization>
-            <!--<organizationUrl>https://www.aetna.com</organizationUrl>-->
+            <organization>New York Life Insurance</organization>
+            <!--<organizationUrl>http://www.newyorklife.com</organizationUrl>-->
         </developer>
         <developer>
             <id>rhbutani</id>
@@ -288,7 +288,7 @@
                 <role>PMC</role>
             </roles>
             <organization/>
-            <!--<organizationUrl>https://www.hortonworks.com</organizationUrl>-->
+            <!--<organizationUrl>https://www.cloudera.com</organizationUrl>-->
         </developer>
         <developer>
             <id>yhemanth</id>
@@ -299,8 +299,8 @@
                 <role>committer</role>
                 <role>PMC</role>
             </roles>
-            <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>https://www.hortonworks.com</organizationUrl>-->
+            <organization>Cloudera Inc.</organization>
+            <!--<organizationUrl>https://www.cloudera.com</organizationUrl>-->
         </developer>
         <developer>
             <id>ilasek</id>
@@ -335,8 +335,8 @@
                 <role>committer</role>
                 <role>PMC</role>
             </roles>
-            <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>https://www.hortonworks.com</organizationUrl>-->
+            <organization>Cloudera Inc.</organization>
+            <!--<organizationUrl>https://www.cloudera.com</organizationUrl>-->
         </developer>
         <developer>
             <id>jmaron</id>
@@ -380,8 +380,8 @@
                 <role>committer</role>
                 <role>PMC</role>
             </roles>
-            <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>https://www.hortonworks.com</organizationUrl>-->
+            <organization>Cloudera Inc.</organization>
+            <!--<organizationUrl>https://www.cloudera.com</organizationUrl>-->
         </developer>
         <developer>
             <id>mandy</id>
@@ -419,6 +419,16 @@
             <!--<organizationUrl>https://www.ibm.com</organizationUrl>-->
         </developer>
         <developer>
+            <id>nbonte</id>
+            <name>Nikhil Bonte</name>
+            <email>nbonte@apache.org</email>
+            <timezone>Asia/Kolkata</timezone>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <organization>Freestone Infotech</organization>
+        </developer>
+        <developer>
             <id>nixon</id>
             <name>Nixon Rodrigues</name>
             <email>nixon@apache.org</email>
@@ -430,6 +440,16 @@
             <organization>Freestone Infotech</organization>
         </developer>
         <developer>
+            <id>pinal</id>
+            <name>Pinal Shah</name>
+            <email>pinal@apache.org</email>
+            <timezone>Asia/Kolkata</timezone>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <organization>Freestone Infotech</organization>
+        </developer>
+        <developer>
             <id>rmani</id>
             <name>Ramesh Mani</name>
             <email>rmani@apache.org</email>
@@ -437,8 +457,8 @@
             <roles>
                 <role>committer</role>
             </roles>
-            <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>https://www.hortonworks.com</organizationUrl>-->
+            <organization>Cloudera Inc.</organization>
+            <!--<organizationUrl>https://www.cloudera.com</organizationUrl>-->
         </developer>
         <developer>
             <id>sarath</id>
@@ -449,8 +469,8 @@
                 <role>committer</role>
                 <role>PMC</role>
             </roles>
-            <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>https://www.hortonworks.com</organizationUrl>-->
+            <organization>Cloudera Inc.</organization>
+            <!--<organizationUrl>https://www.cloudera.com</organizationUrl>-->
         </developer>
         <developer>
             <id>shwethags</id>
@@ -461,8 +481,8 @@
                 <role>committer</role>
                 <role>PMC</role>
             </roles>
-            <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>https://www.hortonworks.com</organizationUrl>-->
+            <organization>Cloudera Inc.</organization>
+            <!--<organizationUrl>https://www.cloudera.com</organizationUrl>-->
         </developer>
         <developer>
             <id>sriksun</id>
@@ -485,8 +505,8 @@
                 <role>committer</role>
                 <role>PMC</role>
             </roles>
-            <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>https://www.hortonworks.com</organizationUrl>-->
+            <organization>Cloudera Inc.</organization>
+            <!--<organizationUrl>https://www.cloudera.com</organizationUrl>-->
         </developer>
         <developer>
             <id>ssuresh</id>
@@ -497,8 +517,8 @@
                 <role>committer</role>
                 <role>PMC</role>
             </roles>
-            <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>https://www.hortonworks.com</organizationUrl>-->
+            <organization></organization>
+            <!--<organizationUrl></organizationUrl>-->
         </developer>
         <developer>
             <id>tbeerbower</id>
@@ -520,8 +540,8 @@
                 <role>committer</role>
                 <role>PMC</role>
             </roles>
-            <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>https://www.hortonworks.com</organizationUrl>-->
+            <organization></organization>
+            <!--<organizationUrl></organizationUrl>-->
         </developer>
         <developer>
             <id>venkatesh</id>
@@ -543,8 +563,8 @@
                 <role>committer</role>
                 <role>PMC</role>
             </roles>
-            <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>https://www.hortonworks.com</organizationUrl>-->
+            <organization></organization>
+            <!--<organizationUrl></organizationUrl>-->
         </developer>
     </developers>
 
@@ -563,12 +583,12 @@
                 <activeByDefault>false</activeByDefault>
             </activation>
             <properties>
-                <graph.storage.backend>hbase2</graph.storage.backend>
-                <graph.index.backend>solr</graph.index.backend>
-                <solr.zk.address>localhost:9983</solr.zk.address>
-                <graph.storage.hostname>localhost</graph.storage.hostname>
                 <entity.repository.impl>org.apache.atlas.repository.audit.HBaseBasedAuditRepository
                 </entity.repository.impl>
+                <graph.index.backend>solr</graph.index.backend>
+                <graph.storage.backend>hbase2</graph.storage.backend>
+                <graph.storage.hostname>localhost</graph.storage.hostname>
+                <solr.zk.address>localhost:9983</solr.zk.address>
             </properties>
         </profile>
 
@@ -603,13 +623,13 @@
                 </property>
             </activation>
             <properties>
-                <graphGroup>org.apache.atlas</graphGroup>
-                <graphArtifact>atlas-graphdb-janus</graphArtifact>
-                <skipDocs>false</skipDocs>
-                <graphdb.backend.impl>org.apache.atlas.repository.graphdb.janus.AtlasJanusGraphDatabase</graphdb.backend.impl>
+                <distro.exclude.packages>WEB-INF/lib/je-*.jar,WEB-INF/lib/solr-test-framework-*.jar, WEB-INF/lib/jts-*.jar,WEB-INF/lib/logback-*.jar,WEB-INF/lib/dom4j-*.jar,WEB-INF/lib/ant-*.jar</distro.exclude.packages>
                 <graph.index.backend>solr</graph.index.backend>
+                <graphArtifact>atlas-graphdb-janus</graphArtifact>
+                <graphdb.backend.impl>org.apache.atlas.repository.graphdb.janus.AtlasJanusGraphDatabase</graphdb.backend.impl>
+                <graphGroup>org.apache.atlas</graphGroup>
+                <skipDocs>false</skipDocs>
                 <tests.solr.embedded>true</tests.solr.embedded>
-                <distro.exclude.packages>WEB-INF/lib/je-*.jar,WEB-INF/lib/solr-test-framework-*.jar, WEB-INF/lib/jts-*.jar,WEB-INF/lib/logback-*.jar,WEB-INF/lib/dom4j-*.jar</distro.exclude.packages>
             </properties>
         </profile>
 
@@ -622,14 +642,13 @@
                 </property>
             </activation>
             <properties>
-                <!-- Define graph dependency type/version -->
-                <graphGroup>org.apache.atlas</graphGroup>
-                <graphArtifact>atlas-graphdb-janus</graphArtifact>
-                <skipDocs>false</skipDocs>
-                <graphdb.backend.impl>org.apache.atlas.repository.graphdb.janus.AtlasJanusGraphDatabase</graphdb.backend.impl>
+                <distro.exclude.packages>WEB-INF/lib/je-*.jar,WEB-INF/lib/solr-test-framework-*.jar, WEB-INF/lib/jts-*.jar,WEB-INF/lib/logback-*.jar,WEB-INF/lib/dom4j-*.jar,WEB-INF/lib/ant-*.jar</distro.exclude.packages>
                 <graph.index.backend>solr</graph.index.backend>
+                <graphArtifact>atlas-graphdb-janus</graphArtifact>
+                <graphdb.backend.impl>org.apache.atlas.repository.graphdb.janus.AtlasJanusGraphDatabase</graphdb.backend.impl>
+                <graphGroup>org.apache.atlas</graphGroup>
+                <skipDocs>false</skipDocs>
                 <tests.solr.embedded>true</tests.solr.embedded>
-                <distro.exclude.packages>WEB-INF/lib/je-*.jar,WEB-INF/lib/solr-test-framework-*.jar, WEB-INF/lib/jts-*.jar,WEB-INF/lib/logback-*.jar,WEB-INF/lib/dom4j-*.jar</distro.exclude.packages>
             </properties>
         </profile>
 
@@ -644,128 +663,102 @@
     </profiles>
 
     <properties>
-        <!-- platform encoding override -->
-        <skipTests>false</skipTests>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <node-for-v2.version>v12.16.0</node-for-v2.version>
-        <npm-for-v2.version>6.13.7</npm-for-v2.version>
-        <slf4j.version>1.7.21</slf4j.version>
-        <jetty.version>9.3.14.v20161028</jetty.version>
-        <jetty.jsp.version>9.2.12.v20150709</jetty.jsp.version>
-        <jersey.version>1.19</jersey.version>
-        <jsr.version>1.1</jsr.version>
-
-        <janus.version>0.5.1</janus.version>
-        <tinkerpop.version>3.4.6</tinkerpop.version>
-        <lucene-solr.version>7.3.0</lucene-solr.version>
-
-        <hadoop.version>3.1.1</hadoop.version>
-        <hbase.version>2.0.2</hbase.version>
-        <solr.version>7.5.0</solr.version>
-        <hive.version>3.1.0</hive.version>
-        <kafka.version>2.0.0</kafka.version>
-        <kafka.scala.binary.version>2.11</kafka.scala.binary.version>
-        <calcite.version>1.16.0</calcite.version>
-        <zookeeper.version>3.4.6</zookeeper.version>
-        <falcon.version>0.8</falcon.version>
-        <sqoop.version>1.4.6.2.3.99.0-195</sqoop.version>
-        <storm.version>1.2.0</storm.version>
-        <curator.version>4.0.1</curator.version>
-        <elasticsearch.version>5.6.4</elasticsearch.version>
-
-        <json.version>3.2.11</json.version>
-        <log4j.version>1.2.17</log4j.version>
         <akka.version>2.3.7</akka.version>
-        <spray.version>1.3.1</spray.version>
-        <gson.version>2.5</gson.version>
-        <fastutil.version>6.5.16</fastutil.version>
-        <guice.version>4.1.0</guice.version>
-        <spring.version>4.3.20.RELEASE</spring.version>
-        <spring.security.version>4.2.13.RELEASE</spring.security.version>
-
-        <javax.servlet.version>3.1.0</javax.servlet.version>
-        <guava.version>25.1-jre</guava.version>
+        <antlr4.plugin.version>4.5</antlr4.plugin.version>
         <antlr4.version>4.7</antlr4.version>
-
-        <!-- Needed for hooks -->
         <aopalliance.version>1.0</aopalliance.version>
-        <jackson.version>2.9.9</jackson.version>
-        <jackson.databind.version>2.10.0</jackson.databind.version>
-
-        <!-- Apache commons -->
-        <commons-conf.version>1.10</commons-conf.version>
-        <commons-conf2.version>2.2</commons-conf2.version>
+        <aspectj.runtime.version>1.8.7</aspectj.runtime.version>
+        <atlas.surefire.options></atlas.surefire.options>
+        <calcite.version>1.16.0</calcite.version>
+        <checkstyle.failOnViolation>false</checkstyle.failOnViolation>
+        <codehaus.woodstox.stax2-api.version>3.1.4</codehaus.woodstox.stax2-api.version>
+        <commons-cli.version>1.4</commons-cli.version>
+        <commons-codec.version>1.14</commons-codec.version>
         <commons-collections.version>3.2.2</commons-collections.version>
         <commons-collections4.version>4.4</commons-collections4.version>
-        <commons-logging.version>1.1.3</commons-logging.version>
-        <commons-lang.version>2.6</commons-lang.version>
-        <commons-validator.version>1.6</commons-validator.version>
-        <commons-cli.version>1.4</commons-cli.version>
+        <commons-conf.version>1.10</commons-conf.version>
+        <commons-conf2.version>2.2</commons-conf2.version>
         <commons-el.version>1.0</commons-el.version>
         <commons-io.version>2.6</commons-io.version>
-        <!-- Apache commons -->
-
-        <!--Apache poi and Open csv-->
-        <opencsv.version>4.6</opencsv.version>
-        <poi.version>3.17</poi.version>
-        <poi-ooxml.version>3.17</poi-ooxml.version>
-
-        <javax-inject.version>1</javax-inject.version>
-        <jettison.version>1.3.7</jettison.version>
-        <paranamer.version>2.7</paranamer.version>
-        <zkclient.version>0.8</zkclient.version>
-        <enunciate-maven-plugin.version>2.11.1</enunciate-maven-plugin.version>
-        <antlr4.plugin.version>4.5</antlr4.plugin.version>
-        <maven-site-plugin.version>3.7</maven-site-plugin.version>
+        <commons-lang.version>2.6</commons-lang.version>
+        <commons-logging.version>1.1.3</commons-logging.version>
+        <commons-validator.version>1.6</commons-validator.version>
+        <curator.version>4.0.1</curator.version>
         <doxia.version>1.8</doxia.version>
         <dropwizard-metrics>3.2.2</dropwizard-metrics>
-        <!-- hadoop.hdfs-client.version should same as hadoop version -->
-        <hadoop.hdfs-client.version>${hadoop.version}</hadoop.hdfs-client.version>
-
-        <!-- Storm dependencies -->
-        <codehaus.woodstox.stax2-api.version>3.1.4</codehaus.woodstox.stax2-api.version>
-        <woodstox-core.version>5.0.3</woodstox-core.version>
-        <hppc.version>0.8.1</hppc.version>
-        <!-- Storm dependencies -->
-
-        <!-- keycloak dependencies -->
-        <keycloak.version>6.0.1</keycloak.version>
-        <!-- keycloak dependencies -->
-
-        <PermGen>64m</PermGen>
-        <MaxPermGen>512m</MaxPermGen>
-
-        <!-- skips checkstyle and find bugs -->
-        <skipCheck>false</skipCheck>
-        <checkstyle.failOnViolation>false</checkstyle.failOnViolation>
-        <skipUTs>false</skipUTs>
-        <skipITs>false</skipITs>
-        <skipDocs>true</skipDocs>
-        <skipSite>true</skipSite>
-        <skipEnunciate>false</skipEnunciate>
-        <projectBaseDir>${project.basedir}</projectBaseDir>
-        <jetty-maven-plugin.stopWait>10</jetty-maven-plugin.stopWait>
-
-        <!-- The following graph.{storage|index}.backend definitions dictate the backends for test
-             resources in intg and each of the graph profiles. They do not affect packaging
-             which is handled by defaults and profiles set in atlas-distro POM -->
-        <graph.storage.backend>berkeleyje</graph.storage.backend>
-        <graph.index.backend>solr</graph.index.backend>
-
+        <elasticsearch.version>6.8.3</elasticsearch.version>
         <entity.repository.impl>org.apache.atlas.repository.audit.InMemoryEntityAuditRepository</entity.repository.impl>
-
-        <surefire.version>2.18.1</surefire.version>
-        <surefire.forkCount>2C</surefire.forkCount>
+        <enunciate-maven-plugin.version>2.13.2</enunciate-maven-plugin.version>
         <failsafe.version>2.18.1</failsafe.version>
-        <atlas.surefire.options></atlas.surefire.options>
-
-        <aspectj.runtime.version>1.8.7</aspectj.runtime.version>
+        <falcon.version>0.8</falcon.version>
+        <fastutil.version>6.5.16</fastutil.version>
+        <graph.index.backend>solr</graph.index.backend>
+        <graph.storage.backend>berkeleyje</graph.storage.backend>
+        <gson.version>2.5</gson.version>
+        <guava.version>25.1-jre</guava.version>
+        <guice.version>4.1.0</guice.version>
+        <hadoop.hdfs-client.version>${hadoop.version}</hadoop.hdfs-client.version>
+        <hadoop.version>3.1.1</hadoop.version>
+        <hbase.version>2.3.3</hbase.version>
+        <hive.version>3.1.0</hive.version>
+        <hppc.version>0.8.1</hppc.version>
+        <httpcomponents-httpclient.version>4.5.13</httpcomponents-httpclient.version>
+        <httpcomponents-httpcore.version>4.4.13</httpcomponents-httpcore.version>
+        <jackson.databind.version>2.10.5</jackson.databind.version>
+        <jackson.version>2.10.5</jackson.version>
+        <janus.version>0.5.3</janus.version>
+        <javax-inject.version>1</javax-inject.version>
+        <javax.servlet.version>3.1.0</javax.servlet.version>
+        <jersey-spring.version>1.19.4</jersey-spring.version>
+        <jersey.version>1.19</jersey.version>
+        <jettison.version>1.3.7</jettison.version>
+        <jetty-maven-plugin.stopWait>10</jetty-maven-plugin.stopWait>
+        <jetty.version>9.4.31.v20200723</jetty.version>
+        <joda-time.version>2.10.6</joda-time.version>
+        <json.version>3.2.11</json.version>
+        <jsr.version>1.1</jsr.version>
+        <junit.version>4.13</junit.version>
+        <kafka.scala.binary.version>2.11</kafka.scala.binary.version>
+        <kafka.version>2.0.0</kafka.version>
+        <keycloak.version>6.0.1</keycloak.version>
+        <log4j.version>1.2.17</log4j.version>
+        <log4j2.version>2.13.3</log4j2.version>
+        <lucene-solr.version>8.6.3</lucene-solr.version>
+        <maven-site-plugin.version>3.7</maven-site-plugin.version>
+        <MaxPermGen>512m</MaxPermGen>
+        <node-for-v2.version>v12.16.0</node-for-v2.version>
+        <npm-for-v2.version>6.13.7</npm-for-v2.version>
+        <opencsv.version>5.0</opencsv.version>
+        <paranamer.version>2.7</paranamer.version>
+        <PermGen>64m</PermGen>
+        <poi-ooxml.version>4.1.1</poi-ooxml.version>
+        <poi.version>4.1.1</poi.version>
         <project.build.dashboardv2.gruntBuild>build-minify</project.build.dashboardv2.gruntBuild>
         <project.build.dashboardv3.gruntBuild>build-minify</project.build.dashboardv3.gruntBuild>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <projectBaseDir>${project.basedir}</projectBaseDir>
+        <skipCheck>false</skipCheck>
+        <skipDocs>true</skipDocs>
+        <skipEnunciate>false</skipEnunciate>
+        <skipITs>false</skipITs>
+        <skipSite>true</skipSite>
+        <skipTests>false</skipTests>
+        <skipUTs>false</skipUTs>
+        <slf4j.version>1.7.30</slf4j.version>
+        <solr-test-framework.version>8.6.3</solr-test-framework.version>
+        <solr.version>8.6.3</solr.version>
+        <spray.version>1.3.1</spray.version>
+        <spring.security.version>4.2.17.RELEASE</spring.security.version>
+        <spring.version>4.3.29.RELEASE</spring.version>
+        <sqoop.version>1.4.6.2.3.99.0-195</sqoop.version>
+        <storm.version>2.1.0</storm.version>
+        <surefire.forkCount>2C</surefire.forkCount>
+        <surefire.version>2.18.1</surefire.version>
         <testng.version>6.9.4</testng.version>
-        <joda-time.version>2.10</joda-time.version>
-        <jersey-spring.version>1.19.4</jersey-spring.version>
+        <tinkerpop.version>3.4.8</tinkerpop.version>
+        <woodstox-core.version>5.0.3</woodstox-core.version>
+        <zookeeper.version>3.5.7</zookeeper.version>
     </properties>
 
     <modules>
@@ -800,11 +793,13 @@
         <module>addons/hbase-testing-util</module>
         <module>addons/kafka-bridge</module>
         <module>tools/classification-updater</module>
+        <module>tools/atlas-index-repair</module>
         <module>addons/impala-hook-api</module>
         <module>addons/impala-bridge-shim</module>
         <module>addons/impala-bridge</module>
 
         <module>distro</module>
+        <module>atlas-examples</module>
     </modules>
 
     <repositories>
@@ -871,22 +866,6 @@
             </dependency>
 
             <dependency>
-                <groupId>org.eclipse.jetty</groupId>
-                <artifactId>jetty-jsp</artifactId>
-                <version>${jetty.jsp.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>javax.servlet</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.glassfish</groupId>
-                        <artifactId>javax.el</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-
-            <dependency>
                 <groupId>org.glassfish</groupId>
                 <artifactId>javax.el</artifactId>
                 <version>3.0.0</version>
@@ -914,7 +893,7 @@
             <dependency>
                 <groupId>log4j</groupId>
                 <artifactId>log4j</artifactId>
-                <version>1.2.17</version>
+                <version>${log4j.version}</version>
                 <scope>compile</scope>
                 <exclusions>
                     <exclusion>
@@ -1041,6 +1020,12 @@
                 <groupId>org.apache.hadoop</groupId>
                 <artifactId>hadoop-minikdc</artifactId>
                 <version>${hadoop.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>junit</groupId>
+                        <artifactId>junit</artifactId>
+                    </exclusion>
+                </exclusions>
                 <scope>test</scope>
             </dependency>
 
@@ -1217,14 +1202,48 @@
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-server</artifactId>
                 <version>${jetty.version}</version>
-                <scope>compile</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-util</artifactId>
+                <version>${jetty.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-util-ajax</artifactId>
+                <version>${jetty.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-io</artifactId>
+                <version>${jetty.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-http</artifactId>
+                <version>${jetty.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-security</artifactId>
+                <version>${jetty.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-webapp</artifactId>
                 <version>${jetty.version}</version>
-                <scope>compile</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-servlet</artifactId>
+                <version>${jetty.version}</version>
             </dependency>
 
             <dependency>
@@ -1573,13 +1592,13 @@
             <dependency>
                 <groupId>org.apache.httpcomponents</groupId>
                 <artifactId>httpclient</artifactId>
-                <version>4.5.3</version>
+                <version>${httpcomponents-httpclient.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>org.apache.httpcomponents</groupId>
                 <artifactId>httpcore</artifactId>
-                <version>4.4.1</version>
+                <version>${httpcomponents-httpcore.version}</version>
             </dependency>
 
             <dependency>
@@ -1648,10 +1667,11 @@
                 <version>${project.version}</version>
             </dependency>
 
+          <!-- Fix for cassandra-all tranitive dependency CVE-2017-18640 : https://nvd.nist.gov/vuln/detail/CVE-2017-18640 -->
             <dependency>
-                <groupId>com.101tec</groupId>
-                <artifactId>zkclient</artifactId>
-                <version>${zkclient.version}</version>
+                <groupId>org.yaml</groupId>
+                <artifactId>snakeyaml</artifactId>
+                <version>1.26</version>
             </dependency>
 
         </dependencies>

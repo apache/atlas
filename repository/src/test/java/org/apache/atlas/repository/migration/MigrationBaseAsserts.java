@@ -20,29 +20,29 @@ package org.apache.atlas.repository.migration;
 
 import com.google.inject.Inject;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.repository.AtlasTestBase;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.*;
 import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
-import org.apache.atlas.runner.LocalSolrRunner;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.TestResourceFileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 
 import java.io.IOException;
 import java.util.Iterator;
 
-import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
 import static org.apache.atlas.utils.TestLoadModelUtils.loadModelFromJson;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
-public class MigrationBaseAsserts {
+public class MigrationBaseAsserts extends AtlasTestBase {
     private   static final String TYPE_NAME_PROPERTY   = "__typeName";
     private   static final String R_GUID_PROPERTY_NAME = "_r__guid";
     protected static final String ASSERT_NAME_PROPERTY = "Asset.name";
@@ -67,13 +67,16 @@ public class MigrationBaseAsserts {
         this.migrator = migrator;
     }
 
+    @BeforeClass
+    public void initialize() throws Exception {
+        super.initialize();
+    }
+
     @AfterClass
     public void clear() throws Exception {
         AtlasGraphProvider.cleanup();
 
-        if (useLocalSolr()) {
-            LocalSolrRunner.stop();
-        }
+        super.cleanup();
     }
 
     protected void loadTypesFromJson() throws IOException, AtlasBaseException {

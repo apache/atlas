@@ -19,7 +19,7 @@ During Import Process, entity transforms are required to make changes to the ent
 
 A transformation framework allows a mechanism to selectively transform an entity or specific attributes of that entity.
 
-To achieve this, the framework, provides:
+To achieve this, the framework provides:
 
 * Way to set a condition that needs to be satisfied for a transformation to be applied.
 * Action to be taken on the entity once the condition is met.
@@ -28,14 +28,14 @@ The existing transformation frameworks allowed this to happen.
 
 #### Reason for New Transformation Framework
 
-While the existing framework provided the basic benefits of transformation framework, it did not have support for some of the commonly used Atlas types. Which meant that users of this framework would have to meticulously define transformations for every type they are working with. This can be tedious and potentially error prone.
+While the existing framework provided the basic benefits of the transformation framework, it did not have support for some of the commonly used Atlas types. Which meant that users of this framework would have to meticulously define transformations for every type they are working with. This can be tedious and potentially error-prone.
 The new framework addresses this problem by providing built-in transformations for some of the commonly used types. It can also be extended to accommodate new types.
 
 #### Approach
 
 The approach used by the new transformation framework creates a transformation by:
 * Specifying a condition.
-* Specifying action(s) to be taken if condition is met.
+* Specifying action(s) to be taken if the condition is met.
 
 ##### Conditions
 
@@ -55,12 +55,12 @@ HAS_VALUE                 | Entity attribute has value. |
 ##### Actions
 
 |**Action Type**        | *Description**                                 |
--------------------|----------------------------------------------|
-ADD_CLASSIFICATION | Add classifiction                            |
-REPLACE_PREFIX     | Replace value starting with another value.   |
-TO_LOWER           | Convert value of an attribute to lower case. |
-SET                | Set the value of an attribute                |
-CLEAR              | Clear value of an attribute                  |
+-------------------|------------------------------------------------|
+ADD_CLASSIFICATION | Add classification                             |
+REPLACE_PREFIX     | Replace value starting with another value.     |
+TO_LOWER           | Convert a value of an attribute to lower case. |
+SET                | Set the value of an attribute                  |
+CLEAR              | Clear value of an attribute                    |
 
 #### Built-in Transforms
 
@@ -79,7 +79,7 @@ During import, hive_db entity whose _qualifiedName_ is _stocks@cl1_ will get the
 }`}
 </SyntaxHighlighter>
 
-Every imported entity will get the classification by simply changing the condition. The __entity is special condition which matches entity.
+Every imported entity will get the classification by simply changing the condition. The __entity is a special condition which matches entity.
 
 
 <SyntaxHighlighter wrapLines={true} language="json" style={theme.dark}>
@@ -93,7 +93,7 @@ Every imported entity will get the classification by simply changing the conditi
 }`}
 </SyntaxHighlighter>
 
-To add classification to only the top-level entity (entity that is used as starting point for an export), use:
+To add the classification to only the top-level entity (an entity that is used as a starting point for an export), use:
 
 <SyntaxHighlighter wrapLines={true} language="json" style={theme.dark}>
 {`{

@@ -63,12 +63,21 @@
 .modal-body {
     position: relative;
     padding: 15px;
-    max-height: calc(100vh - 200px);
+    max-height: calc(100vh - 215px);
     min-height: 70px;
     overflow: auto;
 
     .btn+.btn {
         margin-bottom: 2px;
+    }
+
+    .admin-audit-details {
+        border: 1px solid #ddd;
+        border-radius: 4px;
+
+        tr>td:nth-child(2) {
+            text-align: right;
+        }
     }
 }
 
@@ -77,7 +86,6 @@
     height: 80vh;
 
     .modal-content {
-        height: inherit;
         width: 100%;
     }
 
@@ -300,7 +308,7 @@
         }
 
         .rule-operator-container {
-            width: 105px;
+            width: 150px;
 
             .form-control {
                 width: 100% !important;
@@ -417,7 +425,8 @@ div.columnmanager-dropdown-container {
             max-height: 400px;
             min-height: 70px;
             overflow: auto;
-            border-top: 1px solid #DEDEDE
+            border-top: 1px solid #DEDEDE;
+            word-break: break-word;
         }
 
         .ui-pnotify-action-bar {
@@ -472,6 +481,10 @@ div.columnmanager-dropdown-container {
         font-size: large;
         font-weight: bold;
     }
+
+    .noToggle {
+        color: $gray;
+    }
 }
 
 .backgrid-internal-table {
@@ -489,5 +502,51 @@ div.columnmanager-dropdown-container {
 .input-group {
     .form-control {
         z-index: 1;
+    }
+}
+
+.ui-pnotify-container {
+    .ui-pnotify-text {
+        word-break: break-word;
+    }
+}
+
+.jstree-wholerow-ul {
+    width: 100%;
+
+    .jstree-anchor {
+        width: calc(100% - 50px);
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+}
+
+.modal {
+    position: absolute;
+}
+
+.modal-open {
+    overflow-y: auto;
+}
+
+.daterangepicker {
+    max-height: 400px;
+    overflow-y: scroll;
+
+    .ranges {
+        max-height: 328px;
+        overflow: auto;
+    }
+
+    .ranges li.active,
+    td.active {
+        background-color: $color_havelock_blue_approx;
+    }
+
+    .drp-buttons {
+        .applyBtn {
+            background-color: $color_havelock_blue_approx;
+            border-color: $color_havelock_blue_approx;
+        }
     }
 }

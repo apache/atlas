@@ -21,7 +21,6 @@
 <assembly>
     <id>migration-exporter</id>
     <formats>
-        <format>dir</format>
         <format>zip</format>
     </formats>
 

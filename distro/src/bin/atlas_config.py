@@ -50,7 +50,9 @@ MANAGE_EMBEDDED_CASSANDRA = "MANAGE_EMBEDDED_CASSANDRA"
 MANAGE_LOCAL_ELASTICSEARCH = "MANAGE_LOCAL_ELASTICSEARCH"
 SOLR_BIN = "SOLR_BIN"
 SOLR_CONF = "SOLR_CONF"
+SOLR_HOME = "SOLR_HOME"
 SOLR_PORT = "SOLR_PORT"
+SOLR_DIR = "SOLR_DIR"
 DEFAULT_SOLR_PORT = "9838"
 SOLR_SHARDS = "SOLR_SHARDS"
 DEFAULT_SOLR_SHARDS = "1"
@@ -59,14 +61,16 @@ DEFAULT_SOLR_REPLICATION_FACTOR = "1"
 
 ENV_KEYS = ["JAVA_HOME", ATLAS_OPTS, ATLAS_SERVER_OPTS, ATLAS_SERVER_HEAP, ATLAS_LOG, ATLAS_PID, ATLAS_CONF,
             "ATLASCPPATH", ATLAS_DATA, ATLAS_HOME, ATLAS_WEBAPP, HBASE_CONF_DIR, SOLR_PORT, MANAGE_LOCAL_HBASE,
-            MANAGE_LOCAL_SOLR, MANAGE_EMBEDDED_CASSANDRA, MANAGE_LOCAL_ELASTICSEARCH]
+            MANAGE_LOCAL_SOLR, MANAGE_EMBEDDED_CASSANDRA, MANAGE_LOCAL_ELASTICSEARCH, SOLR_HOME, SOLR_DIR]
 IS_WINDOWS = platform.system() == "Windows"
 ON_POSIX = 'posix' in sys.builtin_module_names
 CONF_FILE="atlas-application.properties"
 STORAGE_BACKEND_CONF="atlas.graph.storage.backend"
 HBASE_STORAGE_LOCAL_CONF_ENTRY="atlas.graph.storage.hostname\s*=\s*localhost"
 SOLR_INDEX_CONF_ENTRY="atlas.graph.index.search.backend\s*=\s*solr"
-SOLR_INDEX_LOCAL_CONF_ENTRY="atlas.graph.index.search.solr.zookeeper-url\s*=\s*localhost"
+SOLR_INDEX_MODE_CONF_ENTRY="atlas.graph.index.search.solr.mode"
+SOLR_INDEX_LOCAL_STANDALONE_CONF_ENTRY="atlas.graph.index.search.solr.http-urls\s*=(http|https)://localhost"
+SOLR_INDEX_LOCAL_CLOUD_CONF_ENTRY="atlas.graph.index.search.solr.zookeeper-url\s*=\s*localhost"
 SOLR_INDEX_ZK_URL="atlas.graph.index.search.solr.zookeeper-url"
 TOPICS_TO_CREATE="atlas.notification.topics"
 ATLAS_HTTP_PORT="atlas.server.http.port"
@@ -105,11 +109,20 @@ def hbaseConfDir(dir):
 def zookeeperBinDir(dir):
     return os.environ.get(SOLR_BIN, os.path.join(dir, "zk", BIN))
 
+def solrDir():
+    return os.environ.get(SOLR_DIR, os.path.join(atlasDir(), "solr"))
+
+def solrServerDir():
+    return os.path.join(solrDir(), "server")
+
 def solrBinDir(dir):
     return os.environ.get(SOLR_BIN, os.path.join(dir, "solr", BIN))
 
 def elasticsearchBinDir(dir):
     return os.environ.get(SOLR_BIN, os.path.join(dir, "elasticsearch", BIN))
+
+def solrHomeDir(dir):
+    return os.environ.get(SOLR_HOME, os.path.join(dir, "data", "solr"))
 
 def solrConfDir(dir):
     return os.environ.get(SOLR_CONF, os.path.join(dir, "solr", CONFIG_SETS_CONF))
@@ -173,7 +186,7 @@ def executeEnvSh(confDir):
         proc = subprocess.Popen(command, stdout = subprocess.PIPE)
 
         for line in proc.stdout:
-            (key, _, value) = line.strip().partition("=")
+            (key, _, value) = line.decode('utf8').strip().partition("=")
             if key in ENV_KEYS:
                 os.environ[key] = value
 
@@ -304,15 +317,15 @@ def read_input(name, exe):
             exe.stdin.write(cred + "\n")
 
 def debug(text):
-    if DEBUG: print '[DEBUG] ' + text
+    if DEBUG: print('[DEBUG] ' + text)
 
 
 def error(text):
-    print '[ERROR] ' + text
+    print('[ERROR] ' + text)
     sys.stdout.flush()
 
 def info(text):
-    print text
+    print(text)
     sys.stdout.flush()
 
 
@@ -404,6 +417,13 @@ def wait_for_shutdown(pid, msg, wait):
 
     sys.stdout.write('\n')
 
+def is_berkelydb(confdir):
+    confFile = os.path.join(confdir, CONF_FILE)
+    storageBackEnd = getConfig(confFile, STORAGE_BACKEND_CONF)
+    if storageBackEnd is not None:
+        storageBackEnd = storageBackEnd.strip()
+    return storageBackEnd is not None and storageBackEnd == 'berkeleyje'
+
 def is_hbase(confdir):
     confFile = os.path.join(confdir, CONF_FILE)
     storageBackEnd = getConfig(confFile, STORAGE_BACKEND_CONF)
@@ -453,13 +473,23 @@ def is_solr_local(confdir):
         return False
 
     confdir = os.path.join(confdir, CONF_FILE)
-    return grep(confdir, SOLR_INDEX_CONF_ENTRY) is not None and grep(confdir, SOLR_INDEX_LOCAL_CONF_ENTRY) is not None
+    return is_solr_local_cloud_mode(confdir) or is_solr_local_standalone_mode(confdir)
+
+def is_solr_local_cloud_mode(confdir):
+    return grep(confdir, SOLR_INDEX_CONF_ENTRY) is not None and getConfig(confdir, SOLR_INDEX_MODE_CONF_ENTRY) == 'cloud' and grep(confdir, SOLR_INDEX_LOCAL_CLOUD_CONF_ENTRY) is not None
+
+
+def is_solr_local_standalone_mode(confdir):
+    return grep(confdir, SOLR_INDEX_CONF_ENTRY) is not None and getConfig(confdir, SOLR_INDEX_MODE_CONF_ENTRY) == 'http' and grep(confdir, SOLR_INDEX_LOCAL_STANDALONE_CONF_ENTRY) is not None
 
 def is_elasticsearch_local():
     if os.environ.get(MANAGE_LOCAL_ELASTICSEARCH, "False").lower() == 'false':
         return False
 
     return True
+
+def is_zookeeper_local(confdir):
+    return is_berkelydb(confdir) or is_cassandra_local(confdir)
 
 def get_solr_zk_url(confdir):
     confdir = os.path.join(confdir, CONF_FILE)
@@ -487,7 +517,7 @@ def get_atlas_url_port(confdir):
         else:
             port = getConfigWithDefault(confdir, ATLAS_HTTP_PORT, DEFAULT_ATLAS_HTTP_PORT)
 
-    print "starting atlas on port %s" % port
+    print("starting atlas on port %s" % port)
     return port
 
 def get_atlas_url_host(confdir):
@@ -495,7 +525,7 @@ def get_atlas_url_host(confdir):
     host = getConfigWithDefault(confdir, ATLAS_SERVER_BIND_ADDRESS, DEFAULT_ATLAS_SERVER_HOST)
     if (host == '0.0.0.0'):
         host = DEFAULT_ATLAS_SERVER_HOST
-    print "starting atlas on host %s" % host
+    print("starting atlas on host %s" % host)
     return host
 
 def wait_for_startup(confdir, wait):
@@ -546,7 +576,7 @@ def start_elasticsearch(dir, logdir = None, wait=True):
     sleep(6)
     return processVal
 
-def run_solr(dir, action, zk_url = None, port = None, logdir = None, wait=True):
+def run_solr(dir, action, zk_url = None, port = None, logdir = None, wait=True, homedir = None):
 
     solrScript = "solr"
 
@@ -563,6 +593,19 @@ def run_solr(dir, action, zk_url = None, port = None, logdir = None, wait=True):
             cmd = [os.path.join(dir, solrScript), action, '-z', zk_url]
         else:
             cmd = [os.path.join(dir, solrScript), action, '-z', zk_url, '-p', port]
+
+    if homedir is not None:
+        if not os.path.exists(homedir) :
+            os.makedirs(homedir)
+        #Copy solr.xml from installation directory to the solr home directory
+        srcSolrXmlPath = os.path.join(solrServerDir(), "solr", "solr.xml")
+        destSolrXmlPath = os.path.join(homedir, "solr.xml")
+        if not os.path.exists(destSolrXmlPath) :
+            print("solr.xml doesn't exist in " + homedir + ", copying from " + srcSolrXmlPath)
+            copyCmd = ["cp", srcSolrXmlPath, homedir]
+            runProcess(copyCmd, logdir, False, True)
+        cmd.append('-s')
+        cmd.append(homedir)
 
     return runProcess(cmd, logdir, False, wait)
 
@@ -651,11 +694,11 @@ def configure_cassandra(dir):
         os.remove(tmpl_file)
 
 def server_already_running(pid):
-    print "Atlas server is already running under process %s" % pid
+    print("Atlas server is already running under process %s" % pid)
     sys.exit()
 
 def server_pid_not_running(pid):
-    print "The Server is no longer running with pid %s" %pid
+    print("The Server is no longer running with pid %s" %pid)
 
 def grep(file, value):
     for line in open(file).readlines():

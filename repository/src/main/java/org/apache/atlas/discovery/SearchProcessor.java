@@ -17,13 +17,16 @@
  */
 package org.apache.atlas.discovery;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.SortOrder;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria;
 import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria.Condition;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
@@ -39,25 +42,21 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.Predicate;
 import org.apache.commons.collections.PredicateUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.regex.Pattern;
 
+import static org.apache.atlas.SortOrder.ASCENDING;
 import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_CLASSIFICATION_TYPES;
-import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_CLASSIFIED;
 import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_NOT_CLASSIFIED;
-import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_WILDCARD_CLASSIFICATION;
-import static org.apache.atlas.repository.Constants.CLASSIFICATION_NAMES_KEY;
-import static org.apache.atlas.repository.Constants.CLASSIFICATION_NAME_DELIMITER;
-import static org.apache.atlas.repository.Constants.CUSTOM_ATTRIBUTES_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.LABELS_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.PROPAGATED_CLASSIFICATION_NAMES_KEY;
-import static org.apache.atlas.repository.Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.TRAIT_NAMES_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.util.SearchPredicateUtil.*;
 
 public abstract class SearchProcessor {
@@ -80,7 +79,7 @@ public abstract class SearchProcessor {
     public static final String  CUSTOM_ATTR_SEARCH_FORMAT  = "\"\\\"%s\\\":\\\"%s\\\"\"";
     public static final String  CUSTOM_ATTR_SEARCH_FORMAT_GRAPH = "\"%s\":\"%s\"";
     private static final Map<SearchParameters.Operator, String>                            OPERATOR_MAP           = new HashMap<>();
-    private static final Map<SearchParameters.Operator, VertexAttributePredicateGenerator> OPERATOR_PREDICATE_MAP = new HashMap<>();
+    private static final Map<SearchParameters.Operator, ElementAttributePredicateGenerator> OPERATOR_PREDICATE_MAP = new HashMap<>();
 
     static
     {
@@ -126,6 +125,9 @@ public abstract class SearchProcessor {
 
         OPERATOR_MAP.put(SearchParameters.Operator.NOT_NULL, INDEX_SEARCH_PREFIX + "\"%s\":[* TO *]");
         OPERATOR_PREDICATE_MAP.put(SearchParameters.Operator.NOT_NULL, getNotNullPredicateGenerator());
+
+        OPERATOR_MAP.put(SearchParameters.Operator.TIME_RANGE, INDEX_SEARCH_PREFIX + "\"%s\": [%s TO %s]");
+        OPERATOR_PREDICATE_MAP.put(SearchParameters.Operator.TIME_RANGE, getInRangePredicateGenerator());
     }
 
     protected final SearchContext          context;
@@ -150,11 +152,19 @@ public abstract class SearchProcessor {
     public abstract long getResultCount();
 
     protected boolean isEntityRootType() {
-        return context.getEntityType() == SearchContext.MATCH_ALL_ENTITY_TYPES;
+        //always size will be one if in case of _ALL_ENTITY_TYPES
+        if (CollectionUtils.isNotEmpty(context.getEntityTypes())) {
+            return context.getEntityTypes().iterator().next() == SearchContext.MATCH_ALL_ENTITY_TYPES;
+        }
+        return false;
     }
 
     protected boolean isClassificationRootType() {
-        return context.getClassificationType() == SearchContext.MATCH_ALL_CLASSIFICATION_TYPES;
+        //always size will be one if in case of _ALL_CLASSIFICATION_TYPES
+        if (CollectionUtils.isNotEmpty(context.getClassificationTypes())) {
+            return context.getClassificationTypes().iterator().next() == SearchContext.MATCH_ALL_CLASSIFICATION_TYPES;
+        }
+        return false;
     }
 
     protected boolean isSystemAttribute(String attrName) {
@@ -192,9 +202,14 @@ public abstract class SearchProcessor {
         }
     }
 
-    protected Predicate buildTraitPredict(AtlasClassificationType classificationType) {
+    protected Predicate buildTraitPredict(Set<AtlasClassificationType> classificationTypes) {
         Predicate traitPredicate;
-        if (classificationType == MATCH_ALL_WILDCARD_CLASSIFICATION || classificationType == MATCH_ALL_CLASSIFIED || classificationType == MATCH_ALL_CLASSIFICATION_TYPES) {
+        AtlasClassificationType classificationType = null;
+        if (CollectionUtils.isNotEmpty(classificationTypes)) {
+            classificationType = classificationTypes.iterator().next();
+        }
+
+        if (classificationType == MATCH_ALL_CLASSIFICATION_TYPES) {
             traitPredicate = PredicateUtils.orPredicate(SearchPredicateUtil.getNotEmptyPredicateGenerator().generatePredicate(TRAIT_NAMES_PROPERTY_KEY, null, List.class),
                 SearchPredicateUtil.getNotEmptyPredicateGenerator().generatePredicate(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, null, List.class));
         } else if (classificationType == MATCH_ALL_NOT_CLASSIFIED) {
@@ -202,20 +217,27 @@ public abstract class SearchProcessor {
                 SearchPredicateUtil.getIsNullOrEmptyPredicateGenerator().generatePredicate(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, null, List.class));
         } else if (context.isWildCardSearch()) {
             //For wildcard search __classificationNames which of String type is taken instead of _traitNames which is of Array type
-            //No need to escape, as classification Names only support letters,numbers,space and underscore
-            String regexString = getRegexString("\\|" + context.getClassificationName() + "\\|");
-            traitPredicate = PredicateUtils.orPredicate(SearchPredicateUtil.getRegexPredicateGenerator().generatePredicate(CLASSIFICATION_NAMES_KEY, regexString, String.class),
-                    SearchPredicateUtil.getRegexPredicateGenerator().generatePredicate(PROPAGATED_CLASSIFICATION_NAMES_KEY, regexString, String.class));
+            Set<String> classificationNames = context.getClassificationNames();
+            List<Predicate> predicates = new ArrayList<>();
+
+            classificationNames.forEach(classificationName -> {
+                //No need to escape, as classification Names only support letters,numbers,space and underscore
+                String regexString = getRegexString("\\|" + classificationName + "\\|");
+                predicates.add(SearchPredicateUtil.getRegexPredicateGenerator().generatePredicate(CLASSIFICATION_NAMES_KEY, regexString, String.class));
+                predicates.add(SearchPredicateUtil.getRegexPredicateGenerator().generatePredicate(PROPAGATED_CLASSIFICATION_NAMES_KEY, regexString, String.class));
+            });
+
+            traitPredicate = PredicateUtils.anyPredicate(predicates);
         } else {
-            traitPredicate = PredicateUtils.orPredicate(SearchPredicateUtil.getContainsAnyPredicateGenerator().generatePredicate(TRAIT_NAMES_PROPERTY_KEY, context.getClassificationTypes(), List.class),
-                SearchPredicateUtil.getContainsAnyPredicateGenerator().generatePredicate(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, context.getClassificationTypes(), List.class));
+            traitPredicate = PredicateUtils.orPredicate(SearchPredicateUtil.getContainsAnyPredicateGenerator().generatePredicate(TRAIT_NAMES_PROPERTY_KEY, context.getClassificationTypeNames(), List.class),
+                SearchPredicateUtil.getContainsAnyPredicateGenerator().generatePredicate(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, context.getClassificationTypeNames(), List.class));
         }
         return traitPredicate;
     }
 
 
-    protected void processSearchAttributes(AtlasStructType structType, FilterCriteria filterCriteria, Set<String> indexFiltered, Set<String> graphFiltered, Set<String> allAttributes) {
-        if (structType == null || filterCriteria == null) {
+    protected void processSearchAttributes(Set<? extends AtlasStructType> structTypes, FilterCriteria filterCriteria, Set<String> indexFiltered, Set<String> graphFiltered, Set<String> allAttributes) {
+        if (CollectionUtils.isEmpty(structTypes) || filterCriteria == null) {
             return;
         }
 
@@ -224,7 +246,7 @@ public abstract class SearchProcessor {
 
         if (filterCondition != null && CollectionUtils.isNotEmpty(criterion)) {
             for (SearchParameters.FilterCriteria criteria : criterion) {
-                processSearchAttributes(structType, criteria, indexFiltered, graphFiltered, allAttributes);
+                processSearchAttributes(structTypes, criteria, indexFiltered, graphFiltered, allAttributes);
             }
         } else if (StringUtils.isNotEmpty(filterCriteria.getAttributeName())) {
             String attributeName = filterCriteria.getAttributeName();
@@ -264,20 +286,23 @@ public abstract class SearchProcessor {
             }
 
             try {
-                if (isIndexSearchable(filterCriteria, structType)) {
-                    indexFiltered.add(attributeName);
-                } else {
-                    LOG.warn("not using index-search for attribute '{}'; might cause poor performance", structType.getQualifiedAttributeName(attributeName));
+                for (AtlasStructType structType : structTypes) {
+                    String qualifiedName = structType.getVertexPropertyName(attributeName);
+                    if (isIndexSearchable(filterCriteria, structType)) {
+                        indexFiltered.add(qualifiedName);
+                    } else {
+                        LOG.warn("not using index-search for attribute '{}'; might cause poor performance", structType.getVertexPropertyName(attributeName));
 
-                    graphFiltered.add(attributeName);
+                        graphFiltered.add(qualifiedName);
+                    }
+
+                    if (structType instanceof AtlasEntityType && !isSystemAttribute(attributeName)) {
+                        // Capture the entity attributes
+                        context.getEntityAttributes().add(attributeName);
+                    }
+
+                    allAttributes.add(qualifiedName);
                 }
-
-                if (structType instanceof AtlasEntityType && !isSystemAttribute(attributeName)) {
-                    // Capture the entity attributes
-                    context.getEntityAttributes().add(attributeName);
-                }
-
-                allAttributes.add(attributeName);
             } catch (AtlasBaseException e) {
                 LOG.warn(e.getMessage());
             }
@@ -295,7 +320,7 @@ public abstract class SearchProcessor {
     //      (AND (OR idx-att1=x idx-attr1=y) non-idx-attr=z)
     //      (AND (OR idx-att1=x idx-attr1=y) non-idx-attr=z (AND idx-attr2=xyz idx-attr2=abc))
     //
-    protected boolean canApplyIndexFilter(AtlasStructType structType, FilterCriteria filterCriteria, boolean insideOrCondition) {
+    protected boolean canApplyIndexFilter(Set<? extends AtlasStructType> structTypes, FilterCriteria filterCriteria, boolean insideOrCondition) {
         if (!context.hasAttributeFilter(filterCriteria)) {
             return true;
         }
@@ -311,7 +336,7 @@ public abstract class SearchProcessor {
 
             // If we have nested criterion let's find any nested ORs with non-indexed attr
             for (FilterCriteria criteria : criterion) {
-                ret = canApplyIndexFilter(structType, criteria, insideOrCondition);
+                ret = canApplyIndexFilter(structTypes, criteria, insideOrCondition);
 
                 if (!ret) {
                     break;
@@ -319,10 +344,11 @@ public abstract class SearchProcessor {
             }
         } else if (StringUtils.isNotEmpty(filterCriteria.getAttributeName())) {
             try {
-
-
-                if (insideOrCondition && !isIndexSearchable(filterCriteria, structType)) {
-                    ret = false;
+                for (AtlasStructType structType : structTypes) {
+                    if (insideOrCondition && !isIndexSearchable(filterCriteria, structType)) {
+                        ret = false;
+                        break;
+                    }
                 }
             } catch (AtlasBaseException e) {
                 LOG.warn(e.getMessage());
@@ -335,7 +361,7 @@ public abstract class SearchProcessor {
     protected void filterWhiteSpaceClassification(List<AtlasVertex> entityVertices) {
         if (CollectionUtils.isNotEmpty(entityVertices)) {
             final Iterator<AtlasVertex> it              = entityVertices.iterator();
-            final Set<String>           typeAndSubTypes = context.getClassificationTypes();
+            final Set<String>           typeAndSubTypes = context.getClassificationTypeNames();
 
             while (it.hasNext()) {
                 AtlasVertex  entityVertex        = it.next();
@@ -360,13 +386,13 @@ public abstract class SearchProcessor {
         }
     }
 
-    protected void constructFilterQuery(StringBuilder indexQuery, AtlasStructType type, FilterCriteria filterCriteria, Set<String> indexAttributes) {
+    protected void constructFilterQuery(StringBuilder indexQuery, Set<? extends AtlasStructType> structTypes, FilterCriteria filterCriteria, Set<String> indexAttributes) {
         if (filterCriteria != null) {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Processing Filters");
             }
 
-            String filterQuery = toIndexQuery(type, filterCriteria, indexAttributes, 0);
+            String filterQuery = toIndexQuery(structTypes, filterCriteria, indexAttributes, 0);
 
             if (StringUtils.isNotEmpty(filterQuery)) {
                 if (indexQuery.length() > 0) {
@@ -378,14 +404,14 @@ public abstract class SearchProcessor {
         }
     }
 
-    protected Predicate constructInMemoryPredicate(AtlasStructType type, FilterCriteria filterCriteria, Set<String> indexAttributes) {
+    protected Predicate constructInMemoryPredicate(Set<? extends AtlasStructType> structTypes, FilterCriteria filterCriteria, Set<String> indexAttributes) {
         Predicate ret = null;
         if (filterCriteria != null) {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Processing Filters");
             }
 
-            ret = toInMemoryPredicate(type, filterCriteria, indexAttributes);
+            ret = toInMemoryPredicate(structTypes, filterCriteria, indexAttributes);
         }
         return ret;
     }
@@ -434,26 +460,31 @@ public abstract class SearchProcessor {
     }
 
     private boolean isIndexSearchable(FilterCriteria filterCriteria, AtlasStructType structType) throws AtlasBaseException {
-        String      qualifiedName = structType.getQualifiedAttributeName(filterCriteria.getAttributeName());
-        Set<String> indexedKeys   = context.getIndexedKeys();
-        boolean     ret           = indexedKeys != null && indexedKeys.contains(qualifiedName);
+        String      attributeName  = filterCriteria.getAttributeName();
+        String      attributeValue = filterCriteria.getAttributeValue();
+        AtlasType   attributeType  = structType.getAttributeType(attributeName);
+        String      typeName       = attributeType.getTypeName();
+        String      qualifiedName  = structType.getVertexPropertyName(attributeName);
+        Set<String> indexedKeys    = context.getIndexedKeys();
+        boolean     ret            = indexedKeys != null && indexedKeys.contains(qualifiedName);
+
+        SearchParameters.Operator                  operator  = filterCriteria.getOperator();
+        AtlasStructDef.AtlasAttributeDef.IndexType indexType = structType.getAttributeDef(attributeName).getIndexType();
 
         if (ret) { // index exists
             // for string type attributes, don't use index query in the following cases:
             //   - operation is NEQ, as it might return fewer entries due to tokenization of vertex property value
             //   - value-to-compare has special characters
-            AtlasType attributeType = structType.getAttributeType(filterCriteria.getAttributeName());
-
-            if (AtlasBaseTypeDef.ATLAS_TYPE_STRING.equals(attributeType.getTypeName())) {
-                if (filterCriteria.getOperator() == SearchParameters.Operator.NEQ) {
+            if (AtlasBaseTypeDef.ATLAS_TYPE_STRING.equals(typeName)) {
+                if (operator == SearchParameters.Operator.NEQ || operator == SearchParameters.Operator.NOT_CONTAINS) {
                     if (LOG.isDebugEnabled()) {
-                        LOG.debug("NEQ operator found for string attribute {}, deferring to in-memory or graph query (might cause poor performance)", qualifiedName);
+                        LOG.debug("{} operator found for string attribute {}, deferring to in-memory or graph query (might cause poor performance)", operator, qualifiedName);
                     }
 
                     ret = false;
-                } else if (hasIndexQuerySpecialChar(filterCriteria.getAttributeValue()) && !isPipeSeparatedSystemAttribute(filterCriteria.getAttributeName())) {
+                } else if (operator == SearchParameters.Operator.CONTAINS && AtlasAttribute.hastokenizeChar(attributeValue) && indexType == null) { // indexType = TEXT
                     if (LOG.isDebugEnabled()) {
-                        LOG.debug("special characters found in filter value {}, deferring to in-memory or graph query (might cause poor performance)", filterCriteria.getAttributeValue());
+                        LOG.debug("{} operator found for string (TEXT) attribute {} and special characters found in filter value {}, deferring to in-memory or graph query (might cause poor performance)", attributeValue);
                     }
 
                     ret = false;
@@ -463,24 +494,27 @@ public abstract class SearchProcessor {
 
         if (LOG.isDebugEnabled()) {
             if (!ret) {
-                LOG.debug("Not using index query for: attribute='{}', operator='{}', value='{}'", qualifiedName, filterCriteria.getOperator(), filterCriteria.getAttributeValue());
+                LOG.debug("Not using index query for: attribute='{}', operator='{}', value='{}'", qualifiedName, operator, attributeValue);
             }
         }
 
         return ret;
     }
 
-    private String toIndexQuery(AtlasStructType type, FilterCriteria criteria, Set<String> indexAttributes, int level) {
-        return toIndexQuery(type, criteria, indexAttributes, new StringBuilder(), level);
+    private String toIndexQuery(Set<? extends AtlasStructType> structTypes, FilterCriteria criteria, Set<String> indexAttributes, int level) {
+        return toIndexQuery(structTypes, criteria, indexAttributes, new StringBuilder(), level);
     }
 
-    private String toIndexQuery(AtlasStructType type, FilterCriteria criteria, Set<String> indexAttributes, StringBuilder sb, int level) {
+    private String toIndexQuery(Set<? extends AtlasStructType> structTypes, FilterCriteria criteria, Set<String> indexAttributes, StringBuilder sb, int level) {
+        Set<String> filterAttributes = new HashSet<>();
+        filterAttributes.addAll(indexAttributes);
+
         Condition condition = criteria.getCondition();
         if (condition != null && CollectionUtils.isNotEmpty(criteria.getCriterion())) {
             StringBuilder nestedExpression = new StringBuilder();
 
             for (FilterCriteria filterCriteria : criteria.getCriterion()) {
-                String nestedQuery = toIndexQuery(type, filterCriteria, indexAttributes, level + 1);
+                String nestedQuery = toIndexQuery(structTypes, filterCriteria, filterAttributes, level + 1);
 
                 if (StringUtils.isNotEmpty(nestedQuery)) {
                     if (nestedExpression.length() > 0) {
@@ -499,19 +533,48 @@ public abstract class SearchProcessor {
             } else {
                 return EMPTY_STRING;
             }
-        } else if (indexAttributes.contains(criteria.getAttributeName())){
-            return toIndexExpression(type, criteria.getAttributeName(), criteria.getOperator(), criteria.getAttributeValue());
-        } else {
-            return EMPTY_STRING;
+        } else if (StringUtils.isNotEmpty(criteria.getAttributeName())) {
+            try {
+                if (criteria.getOperator() == SearchParameters.Operator.TIME_RANGE) {
+                    criteria = processDateRange(criteria);
+                }
+                ArrayList<String> orExpQuery = new ArrayList<>();
+                for (AtlasStructType structType : structTypes) {
+                    String name = structType.getVertexPropertyName(criteria.getAttributeName());
+
+                    if (filterAttributes.contains(name)) {
+                        String nestedQuery = toIndexExpression(structType, criteria.getAttributeName(), criteria.getOperator(), criteria.getAttributeValue());
+                        orExpQuery.add(nestedQuery);
+                        filterAttributes.remove(name);
+                    }
+                }
+
+                if (CollectionUtils.isNotEmpty(orExpQuery)) {
+                    if (orExpQuery.size() > 1) {
+                        String orExpStr = StringUtils.join(orExpQuery, " "+Condition.OR.name()+" ");
+                        return BRACE_OPEN_STR + " " + orExpStr + " " + BRACE_CLOSE_STR;
+                    } else {
+                        return orExpQuery.iterator().next();
+                    }
+                } else {
+                    return EMPTY_STRING;
+                }
+            } catch (AtlasBaseException e) {
+                LOG.warn(e.getMessage());
+            }
         }
+        return EMPTY_STRING;
     }
 
-    private Predicate toInMemoryPredicate(AtlasStructType type, FilterCriteria criteria, Set<String> indexAttributes) {
+    private Predicate toInMemoryPredicate(Set<? extends AtlasStructType> structTypes, FilterCriteria criteria, Set<String> indexAttributes) {
+        Set<String> filterAttributes = new HashSet<>();
+        filterAttributes.addAll(indexAttributes);
+
         if (criteria.getCondition() != null && CollectionUtils.isNotEmpty(criteria.getCriterion())) {
             List<Predicate> predicates = new ArrayList<>();
 
             for (FilterCriteria filterCriteria : criteria.getCriterion()) {
-                Predicate predicate = toInMemoryPredicate(type, filterCriteria, indexAttributes);
+                Predicate predicate = toInMemoryPredicate(structTypes, filterCriteria, filterAttributes);
 
                 if (predicate != null) {
                     predicates.add(predicate);
@@ -525,22 +588,154 @@ public abstract class SearchProcessor {
                     return PredicateUtils.anyPredicate(predicates);
                 }
             }
-        } else if (indexAttributes.contains(criteria.getAttributeName())) {
-            String                    attrName  = criteria.getAttributeName();
-            String                    attrValue = criteria.getAttributeValue();
-            SearchParameters.Operator operator  = criteria.getOperator();
+        } else if (StringUtils.isNotEmpty(criteria.getAttributeName())) {
+            try {
+                ArrayList<Predicate> predicates = new ArrayList<>();
+                for (AtlasStructType structType : structTypes) {
+                    String name = structType.getVertexPropertyName(criteria.getAttributeName());
 
-            //process attribute value and attribute operator for pipeSeperated fields
-            if (isPipeSeparatedSystemAttribute(attrName)) {
-                FilterCriteria processedCriteria = processPipeSeperatedSystemAttribute(attrName, operator, attrValue);
-                attrValue                        = processedCriteria.getAttributeValue();
-                operator                         = processedCriteria.getOperator();
+                    if (filterAttributes.contains(name)) {
+                        String attrName                    = criteria.getAttributeName();
+                        String attrValue                   = criteria.getAttributeValue();
+                        SearchParameters.Operator operator = criteria.getOperator();
+
+                        if (operator == SearchParameters.Operator.TIME_RANGE) {
+                            FilterCriteria processedRangeCriteria = processDateRange(criteria);
+                            attrValue                             = processedRangeCriteria.getAttributeValue();
+                        }
+                        //process attribute value and attribute operator for pipeSeperated fields
+                        if (isPipeSeparatedSystemAttribute(attrName)) {
+                            FilterCriteria processedCriteria = processPipeSeperatedSystemAttribute(attrName, operator, attrValue);
+                            attrValue                        = processedCriteria.getAttributeValue();
+                            operator                         = processedCriteria.getOperator();
+                        }
+
+                        predicates.add(toInMemoryPredicate(structType, attrName, operator, attrValue));
+                        filterAttributes.remove(name);
+                    }
+                }
+
+                if (CollectionUtils.isNotEmpty(predicates)) {
+                    if (predicates.size() > 1) {
+                        return PredicateUtils.anyPredicate(predicates);
+                    } else {
+                        return predicates.iterator().next();
+                    }
+                }
+            } catch (AtlasBaseException e) {
+                LOG.warn(e.getMessage());
             }
+        }
+        return null;
+    }
 
-            return toInMemoryPredicate(type, attrName, operator, attrValue);
+    @VisibleForTesting
+    public FilterCriteria processDateRange(FilterCriteria criteria) {
+        String attrName = criteria.getAttributeName();
+        SearchParameters.Operator op = criteria.getOperator();
+        String attrVal = criteria.getAttributeValue();
+        FilterCriteria ret = new FilterCriteria();
+        final LocalDateTime now = LocalDateTime.now();
+        final LocalDateTime startTime;
+        final LocalDateTime endTime;
+
+        switch (attrVal) {
+            case "LAST_7_DAYS":
+                startTime = now.minusDays(6).withHour(0).withMinute(0).withSecond(0).withNano(0);
+                endTime   = startTime.plusDays(7).minusNanos(1);
+                break;
+
+            case "LAST_30_DAYS":
+                startTime = now.minusDays(29).withHour(0).withMinute(0).withSecond(0).withNano(0);
+                endTime   = startTime.plusDays(30).minusNanos(1);
+                break;
+
+            case "LAST_MONTH":
+                startTime = now.minusMonths(1).withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+                endTime   = startTime.plusMonths(1).minusNanos(1);
+                break;
+
+            case "THIS_MONTH":
+                startTime = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+                endTime   = startTime.plusMonths(1).minusNanos(1);
+                break;
+
+            case "TODAY":
+                startTime = now.withHour(0).withMinute(0).withSecond(0).withNano(0);
+                endTime   = startTime.plusDays(1).minusNanos(1);
+                break;
+                
+            case "YESTERDAY":
+                startTime = now.minusDays(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+                endTime   = startTime.plusDays(1).minusNanos(1);
+                break;
+
+            case "THIS_YEAR":
+                startTime = now.withDayOfYear(1).withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+                endTime   = startTime.plusYears(1).minusNanos(1);
+                break;
+
+            case "LAST_YEAR":
+                startTime = now.minusYears(1).withDayOfYear(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+                endTime   = startTime.plusYears(1).minusNanos(1);
+                break;
+
+            case "THIS_QUARTER":
+                startTime = now.minusMonths(1).withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+                endTime   = startTime.plusMonths(3).minusNanos(1);
+                break;
+
+            case "LAST_QUARTER":
+                startTime = now.minusMonths(4).withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+                endTime   = startTime.plusMonths(3).minusNanos(1);
+                break;
+
+            case "LAST_3_MONTHS":
+                startTime = now.minusMonths(3).withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+                endTime   = startTime.plusMonths(3).minusNanos(1);
+                break;
+
+            case "LAST_6_MONTHS":
+                startTime = now.minusMonths(6).withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+                endTime   = startTime.plusMonths(6).minusNanos(1);
+                break;
+
+            case "LAST_12_MONTHS":
+                startTime = now.minusMonths(12).withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+                endTime   = startTime.plusMonths(12).minusNanos(1);
+                break;
+
+            default:
+                startTime = null;
+                endTime   = null;
+                break;
         }
 
-        return null;
+        if (startTime == null || endTime == null) {
+            String[] rangeAttr = attrVal.split(ATTRIBUTE_VALUE_DELIMITER);
+            boolean numeric = true;
+            if (rangeAttr.length != 2) {
+                LOG.error("Separator invalid");
+            } else {
+                try {
+                    Long parsestartTime = Long.parseLong(String.valueOf(rangeAttr[0]));
+                    Long parseendTime = Long.parseLong(String.valueOf(rangeAttr[1]));
+                } catch (NumberFormatException e) {
+                    numeric = false;
+                    if (!numeric) {
+                        LOG.error("Attributes passed need to be LONG");
+                    }
+                }
+            }
+        }else {
+            attrVal = Timestamp.valueOf(startTime).getTime() + ATTRIBUTE_VALUE_DELIMITER + Timestamp.valueOf(endTime).getTime();
+        }
+
+        ret.setAttributeName(attrName);
+        ret.setOperator(op);
+        ret.setAttributeValue(attrVal);
+
+        return ret;
     }
 
     private FilterCriteria processPipeSeperatedSystemAttribute(String attrName, SearchParameters.Operator op, String attrVal) {
@@ -566,12 +761,10 @@ public abstract class SearchProcessor {
                     op      = SearchParameters.Operator.NOT_CONTAINS;
                     break;
                 case CONTAINS:
+                case NOT_CONTAINS:
                     if (attrName.equals(CUSTOM_ATTRIBUTES_PROPERTY_KEY)) {
                         attrVal = getCustomAttributeIndexQueryValue(attrVal, true);
                     }
-                    break;
-                default:
-                    LOG.warn("{}: unsupported operator. Ignored", op);
                     break;
             }
         }
@@ -583,20 +776,54 @@ public abstract class SearchProcessor {
         return ret;
     }
 
-    private String toIndexExpression(AtlasStructType type, String attrName, SearchParameters.Operator op, String attrVal) {
+    private String toIndexExpression(AtlasStructType type, String attrName, SearchParameters.Operator op, String attrVal) throws AtlasBaseException{
         String ret = EMPTY_STRING;
 
         try {
             if (OPERATOR_MAP.get(op) != null) {
-                String qualifiedName         = type.getQualifiedAttributeName(attrName);
-                String escapeIndexQueryValue = AtlasAttribute.escapeIndexQueryValue(attrVal);
-
-                // map '__customAttributes' 'CONTAINS' operator to 'EQ' operator (solr limitation for json serialized string search)
-                // map '__customAttributes' value from 'key1=value1' to '\"key1\":\"value1\"' (escape special characters and surround with quotes)
-                if (attrName.equals(CUSTOM_ATTRIBUTES_PROPERTY_KEY) && op == SearchParameters.Operator.CONTAINS) {
-                    ret = String.format(OPERATOR_MAP.get(op), qualifiedName, getCustomAttributeIndexQueryValue(escapeIndexQueryValue, false));
+                String rangeStart = "";
+                String rangeEnd = "";
+                String qualifiedName = type.getVertexPropertyName(attrName);
+                if (op == SearchParameters.Operator.TIME_RANGE) {
+                    String[] parts = attrVal.split(ATTRIBUTE_VALUE_DELIMITER);
+                    if (parts.length == 2) {
+                        rangeStart = parts[0];
+                        rangeEnd = parts[1];
+                        String rangeStartIndexQueryValue = AtlasAttribute.escapeIndexQueryValue(rangeStart);
+                        String rangeEndIndexQueryValue = AtlasAttribute.escapeIndexQueryValue(rangeEnd);
+                        ret = String.format(OPERATOR_MAP.get(op), qualifiedName, rangeStartIndexQueryValue, rangeEndIndexQueryValue);
+                    }
                 } else {
-                    ret = String.format(OPERATOR_MAP.get(op), qualifiedName, escapeIndexQueryValue);
+                    String escapeIndexQueryValue;
+                    boolean replaceWildcardChar = false;
+
+                    AtlasStructDef.AtlasAttributeDef def = type.getAttributeDef(attrName);
+
+                    //when wildcard search -> escape special Char, don't quote
+                    //      when  tokenized characters + index field Type TEXT -> remove wildcard '*' from query
+                    if (!isPipeSeparatedSystemAttribute(attrName)
+                            && (op == SearchParameters.Operator.CONTAINS || op == SearchParameters.Operator.STARTS_WITH || op == SearchParameters.Operator.ENDS_WITH)
+                            && def.getTypeName().equalsIgnoreCase(AtlasBaseTypeDef.ATLAS_TYPE_STRING)) {
+
+                        escapeIndexQueryValue  = AtlasAttribute.escapeIndexQueryValue(attrVal, false, false);
+                        if (def.getIndexType() == null && AtlasAttribute.hastokenizeChar(attrVal)) {
+                            replaceWildcardChar = true;
+                        }
+                    } else {
+                        escapeIndexQueryValue = AtlasAttribute.escapeIndexQueryValue(attrVal);
+                    }
+
+                    String operatorStr = OPERATOR_MAP.get(op);
+                    if (replaceWildcardChar) {
+                        operatorStr = operatorStr.replace("*", "");
+                    }
+
+                    // map '__customAttributes' value from 'key1=value1' to '\"key1\":\"value1\"' (escape special characters and surround with quotes)
+                    if (attrName.equals(CUSTOM_ATTRIBUTES_PROPERTY_KEY) && op == SearchParameters.Operator.CONTAINS) {
+                        ret = String.format(operatorStr, qualifiedName, getCustomAttributeIndexQueryValue(escapeIndexQueryValue, false));
+                    } else {
+                        ret = String.format(operatorStr, qualifiedName, escapeIndexQueryValue);
+                    }
                 }
             }
         } catch (AtlasBaseException ex) {
@@ -630,14 +857,14 @@ public abstract class SearchProcessor {
 
     private Predicate toInMemoryPredicate(AtlasStructType type, String attrName, SearchParameters.Operator op, String attrVal) {
         Predicate ret = null;
-
         AtlasAttribute                    attribute = type.getAttribute(attrName);
-        VertexAttributePredicateGenerator predicate = OPERATOR_PREDICATE_MAP.get(op);
+        ElementAttributePredicateGenerator predicate = OPERATOR_PREDICATE_MAP.get(op);
 
         if (attribute != null && predicate != null) {
             final AtlasType attrType = attribute.getAttributeType();
             final Class     attrClass;
             final Object    attrValue;
+            Object attrValue2 = null;
 
             // Some operators support null comparison, thus the parsing has to be conditional
             switch (attrType.getTypeName()) {
@@ -668,7 +895,21 @@ public abstract class SearchProcessor {
                 case AtlasBaseTypeDef.ATLAS_TYPE_LONG:
                 case AtlasBaseTypeDef.ATLAS_TYPE_DATE:
                     attrClass = Long.class;
-                    attrValue = StringUtils.isEmpty(attrVal) ? null : Long.parseLong(attrVal);
+                    String rangeStart = "";
+                    String rangeEnd   = "";
+                    if (op == SearchParameters.Operator.TIME_RANGE) {
+                        String[] parts = attrVal.split(ATTRIBUTE_VALUE_DELIMITER);
+                        if (parts.length == 2) {
+                            rangeStart = parts[0];
+                            rangeEnd   = parts[1];
+                        }
+                    }
+                    if (StringUtils.isNotEmpty(rangeStart) && StringUtils.isNotEmpty(rangeEnd)) {
+                        attrValue  = Long.parseLong(rangeStart);
+                        attrValue2 = Long.parseLong(rangeEnd);
+                    } else {
+                        attrValue = StringUtils.isEmpty(attrVal) ? null : Long.parseLong(attrVal);
+                    }
                     break;
                 case AtlasBaseTypeDef.ATLAS_TYPE_FLOAT:
                     attrClass = Float.class;
@@ -696,20 +937,28 @@ public abstract class SearchProcessor {
             }
 
             String vertexPropertyName = attribute.getVertexPropertyName();
-            ret = predicate.generatePredicate(
-                    StringUtils.isEmpty(vertexPropertyName) ? attribute.getQualifiedName() : vertexPropertyName,
-                    attrValue, attrClass);
+            if (attrValue != null && attrValue2 != null) {
+                ret = predicate.generatePredicate(StringUtils.isEmpty(vertexPropertyName) ? attribute.getQualifiedName() : vertexPropertyName,
+                        attrValue, attrValue2, attrClass);
+            } else {
+                ret = predicate.generatePredicate(
+                        StringUtils.isEmpty(vertexPropertyName) ? attribute.getQualifiedName() : vertexPropertyName,
+                        attrValue, attrClass);
+            }
         }
 
         return ret;
     }
 
-    protected AtlasGraphQuery toGraphFilterQuery(AtlasStructType type, FilterCriteria criteria, Set<String> graphAttributes, AtlasGraphQuery query) {
+    protected AtlasGraphQuery toGraphFilterQuery(Set<? extends AtlasStructType> structTypes, FilterCriteria criteria, Set<String> graphAttributes, AtlasGraphQuery query) {
+        Set<String> filterAttributes = new HashSet<>();
+        filterAttributes.addAll(graphAttributes);
+
         if (criteria != null) {
             if (criteria.getCondition() != null) {
                 if (criteria.getCondition() == Condition.AND) {
                     for (FilterCriteria filterCriteria : criteria.getCriterion()) {
-                        AtlasGraphQuery nestedQuery = toGraphFilterQuery(type, filterCriteria, graphAttributes, context.getGraph().query());
+                        AtlasGraphQuery nestedQuery = toGraphFilterQuery(structTypes, filterCriteria, filterAttributes, context.getGraph().query());
 
                         query.addConditionsFrom(nestedQuery);
                     }
@@ -717,7 +966,7 @@ public abstract class SearchProcessor {
                     List<AtlasGraphQuery> orConditions = new LinkedList<>();
 
                     for (FilterCriteria filterCriteria : criteria.getCriterion()) {
-                        AtlasGraphQuery nestedQuery = toGraphFilterQuery(type, filterCriteria, graphAttributes, context.getGraph().query());
+                        AtlasGraphQuery nestedQuery = toGraphFilterQuery(structTypes, filterCriteria, filterAttributes, context.getGraph().query());
 
                         orConditions.add(context.getGraph().query().createChildQuery().addConditionsFrom(nestedQuery));
                     }
@@ -726,60 +975,82 @@ public abstract class SearchProcessor {
                         query.or(orConditions);
                     }
                 }
-            } else if (graphAttributes.contains(criteria.getAttributeName())) {
-                String                    attrName  = criteria.getAttributeName();
-                String                    attrValue = criteria.getAttributeValue();
-                SearchParameters.Operator operator  = criteria.getOperator();
+            } else if (StringUtils.isNotEmpty(criteria.getAttributeName())) {
+                try {
+                    ArrayList<AtlasGraphQuery> queries = new ArrayList<>();
+                    for (AtlasStructType structType : structTypes) {
+                        String qualifiedName = structType.getVertexPropertyName(criteria.getAttributeName());
+                        if (filterAttributes.contains(qualifiedName)) {
 
-                //process attribute value and attribute operator for pipeSeperated fields
-                if (isPipeSeparatedSystemAttribute(attrName)) {
-                    FilterCriteria processedCriteria = processPipeSeperatedSystemAttribute(attrName, operator, attrValue);
-                    attrValue                        = processedCriteria.getAttributeValue();
-                    operator                         = processedCriteria.getOperator();
-                }
+                            String attrName                    = criteria.getAttributeName();
+                            String attrValue                   = criteria.getAttributeValue();
+                            SearchParameters.Operator operator = criteria.getOperator();
 
-                final String qualifiedName           =  type.getAttribute(attrName).getVertexPropertyName();
+                            //process attribute value and attribute operator for pipeSeperated fields
+                            if (isPipeSeparatedSystemAttribute(attrName)) {
+                                FilterCriteria processedCriteria = processPipeSeperatedSystemAttribute(attrName, operator, attrValue);
+                                attrValue = processedCriteria.getAttributeValue();
+                                operator = processedCriteria.getOperator();
+                            }
 
-                switch (operator) {
-                    case LT:
-                        query.has(qualifiedName, AtlasGraphQuery.ComparisionOperator.LESS_THAN, attrValue);
-                        break;
-                    case LTE:
-                        query.has(qualifiedName, AtlasGraphQuery.ComparisionOperator.LESS_THAN_EQUAL, attrValue);
-                        break;
-                    case GT:
-                        query.has(qualifiedName, AtlasGraphQuery.ComparisionOperator.GREATER_THAN, attrValue);
-                        break;
-                    case GTE:
-                        query.has(qualifiedName, AtlasGraphQuery.ComparisionOperator.GREATER_THAN_EQUAL, attrValue);
-                        break;
-                    case EQ:
-                        query.has(qualifiedName, AtlasGraphQuery.ComparisionOperator.EQUAL, attrValue);
-                        break;
-                    case NEQ:
-                        query.has(qualifiedName, AtlasGraphQuery.ComparisionOperator.NOT_EQUAL, attrValue);
-                        break;
-                    case LIKE:
-                        query.has(qualifiedName, AtlasGraphQuery.MatchingOperator.REGEX, attrValue);
-                        break;
-                    case CONTAINS:
-                        query.has(qualifiedName, AtlasGraphQuery.MatchingOperator.REGEX, getContainsRegex(attrValue));
-                        break;
-                    case STARTS_WITH:
-                        query.has(qualifiedName, AtlasGraphQuery.MatchingOperator.PREFIX, attrValue);
-                        break;
-                    case ENDS_WITH:
-                        query.has(qualifiedName, AtlasGraphQuery.MatchingOperator.REGEX, getSuffixRegex(attrValue));
-                        break;
-                    case IS_NULL:
-                        query.has(qualifiedName, AtlasGraphQuery.ComparisionOperator.EQUAL, null);
-                        break;
-                    case NOT_NULL:
-                        query.has(qualifiedName, AtlasGraphQuery.ComparisionOperator.NOT_EQUAL, null);
-                        break;
-                    default:
-                        LOG.warn("{}: unsupported operator. Ignored", operator);
-                        break;
+                            AtlasGraphQuery innerQry = context.getGraph().query().createChildQuery();
+                            switch (operator) {
+                                case LT:
+                                    innerQry.has(qualifiedName, AtlasGraphQuery.ComparisionOperator.LESS_THAN, attrValue);
+                                    break;
+                                case LTE:
+                                    innerQry.has(qualifiedName, AtlasGraphQuery.ComparisionOperator.LESS_THAN_EQUAL, attrValue);
+                                    break;
+                                case GT:
+                                    innerQry.has(qualifiedName, AtlasGraphQuery.ComparisionOperator.GREATER_THAN, attrValue);
+                                    break;
+                                case GTE:
+                                    innerQry.has(qualifiedName, AtlasGraphQuery.ComparisionOperator.GREATER_THAN_EQUAL, attrValue);
+                                    break;
+                                case EQ:
+                                    innerQry.has(qualifiedName, AtlasGraphQuery.ComparisionOperator.EQUAL, attrValue);
+                                    break;
+                                case NEQ:
+                                    innerQry.has(qualifiedName, AtlasGraphQuery.ComparisionOperator.NOT_EQUAL, attrValue);
+                                    break;
+                                case LIKE:
+                                    innerQry.has(qualifiedName, AtlasGraphQuery.MatchingOperator.REGEX, attrValue);
+                                    break;
+                                case CONTAINS:
+                                    innerQry.has(qualifiedName, AtlasGraphQuery.MatchingOperator.REGEX, getContainsRegex(attrValue));
+                                    break;
+                                case STARTS_WITH:
+                                    innerQry.has(qualifiedName, AtlasGraphQuery.MatchingOperator.PREFIX, attrValue);
+                                    break;
+                                case ENDS_WITH:
+                                    innerQry.has(qualifiedName, AtlasGraphQuery.MatchingOperator.REGEX, getSuffixRegex(attrValue));
+                                    break;
+                                case IS_NULL:
+                                    innerQry.has(qualifiedName, AtlasGraphQuery.ComparisionOperator.EQUAL, null);
+                                    break;
+                                case NOT_NULL:
+                                    innerQry.has(qualifiedName, AtlasGraphQuery.ComparisionOperator.NOT_EQUAL, null);
+                                    break;
+                                case NOT_CONTAINS:
+                                    break;
+                                default:
+                                    LOG.warn("{}: unsupported operator. Ignored", operator);
+                                    break;
+                            }
+                            queries.add(context.getGraph().query().createChildQuery().addConditionsFrom(innerQry));
+                            filterAttributes.remove(qualifiedName);
+                        }
+                    }
+
+                    if (CollectionUtils.isNotEmpty(queries)) {
+                        if (queries.size() > 1) {
+                            return context.getGraph().query().createChildQuery().or(queries);
+                        } else {
+                            return queries.iterator().next();
+                        }
+                    }
+                } catch (AtlasBaseException e) {
+                    LOG.warn(e.getMessage());
                 }
             }
         }
@@ -907,24 +1178,6 @@ public abstract class SearchProcessor {
 
     private static boolean isIndexQuerySpecialChar(char c) {
         switch (c) {
-            case '+':
-            case '-':
-            case '&':
-            case '|':
-            case '!':
-            case '(':
-            case ')':
-            case '{':
-            case '}':
-            case '[':
-            case ']':
-            case '^':
-            case '"':
-            case '~':
-            case '*':
-            case '?':
-            case ':':
-            case '/':
             case '#':
             case '$':
             case '%':
@@ -986,4 +1239,31 @@ public abstract class SearchProcessor {
         return defaultValue;
     }
 
+    private static String getSortByAttribute(SearchContext context) {
+        if (CollectionUtils.isNotEmpty(context.getEntityTypes())) {
+            final AtlasEntityType entityType = context.getEntityTypes().iterator().next();
+            String sortBy = context.getSearchParameters().getSortBy();
+            AtlasStructType.AtlasAttribute sortByAttribute = entityType.getAttribute(sortBy);
+            if (sortByAttribute != null) {
+                return sortByAttribute.getVertexPropertyName();
+            }
+        }
+        return null;
+    }
+
+    private static Order getSortOrderAttribute(SearchContext context) {
+        SortOrder sortOrder = context.getSearchParameters().getSortOrder();
+        if (sortOrder == null) sortOrder = ASCENDING;
+
+        return sortOrder == SortOrder.ASCENDING ? Order.asc : Order.desc;
+    }
+
+    protected static Iterator<AtlasIndexQuery.Result> executeIndexQuery(SearchContext context, AtlasIndexQuery indexQuery, int qryOffset, int limit) {
+        String sortBy = getSortByAttribute(context);
+        if (sortBy != null && !sortBy.isEmpty()) {
+            Order sortOrder = getSortOrderAttribute(context);
+            return indexQuery.vertices(qryOffset, limit, sortBy, sortOrder);
+        }
+        return indexQuery.vertices(qryOffset, limit);
+    }
 }

@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 import org.apache.atlas.repository.graphdb.AtlasEdge;
@@ -103,6 +104,35 @@ public class AtlasJanusElement<T extends Element> implements AtlasElement {
         while(it.hasNext()) {
             Property<String> property = it.next();
             property.remove();
+        }
+    }
+
+    @Override
+    public void removePropertyValue(String propertyName, Object propertyValue) {
+        Iterator<? extends Property<Object>> it = getWrappedElement().properties(propertyName);
+
+        while (it.hasNext()) {
+            Property currentProperty      = it.next();
+            Object   currentPropertyValue = currentProperty.value();
+
+            if (Objects.equals(currentPropertyValue, propertyValue)) {
+                currentProperty.remove();
+                break;
+            }
+        }
+    }
+
+    @Override
+    public void removeAllPropertyValue(String propertyName, Object propertyValue) {
+        Iterator<? extends Property<Object>> it = getWrappedElement().properties(propertyName);
+
+        while (it.hasNext()) {
+            Property currentProperty      = it.next();
+            Object   currentPropertyValue = currentProperty.value();
+
+            if (Objects.equals(currentPropertyValue, propertyValue)) {
+                currentProperty.remove();
+            }
         }
     }
 

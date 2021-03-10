@@ -76,14 +76,6 @@ define(['require',
                 });
                 this.modal.open();
                 modal.$el.find('button.ok').attr("disabled", "true");
-                this.ui.saveAsName.on('keyup', function(e) {
-                    modal.$el.find('button.ok').removeAttr("disabled");
-                });
-                this.ui.saveAsName.on('keyup', function(e) {
-                    if ((e.keyCode == 8 || e.keyCode == 32 || e.keyCode == 46) && e.currentTarget.value.trim() == "") {
-                        modal.$el.find('button.ok').attr("disabled", "true");
-                    }
-                });
                 modal.on('ok', function() {
                     modal.$el.find('button.ok').attr("disabled", "true");
                     that.onCreateButton();

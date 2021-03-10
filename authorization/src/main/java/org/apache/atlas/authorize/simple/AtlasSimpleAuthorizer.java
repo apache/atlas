@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Set;
 
 import org.apache.atlas.ApplicationProperties;
@@ -32,6 +33,8 @@ import org.apache.atlas.authorize.simple.AtlasSimpleAuthzPolicy.*;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.AtlasSearchResult.AtlasFullTextResult;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
@@ -39,11 +42,25 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.atlas.authorize.AtlasPrivilege.ENTITY_ADD_CLASSIFICATION;
+import static org.apache.atlas.authorize.AtlasPrivilege.ENTITY_REMOVE_CLASSIFICATION;
+import static org.apache.atlas.authorize.AtlasPrivilege.ENTITY_UPDATE_CLASSIFICATION;
+import static org.apache.atlas.authorize.AtlasPrivilege.TYPE_CREATE;
+import static org.apache.atlas.authorize.AtlasPrivilege.TYPE_DELETE;
+import static org.apache.atlas.authorize.AtlasPrivilege.TYPE_READ;
+import static org.apache.atlas.authorize.AtlasPrivilege.TYPE_UPDATE;
+
 
 public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasSimpleAuthorizer.class);
 
     private final static String WILDCARD_ASTERISK = "*";
+
+    private final static Set<AtlasPrivilege> CLASSIFICATION_PRIVILEGES = new HashSet<AtlasPrivilege>() {{
+                                                                                add(ENTITY_ADD_CLASSIFICATION);
+                                                                                add(ENTITY_REMOVE_CLASSIFICATION);
+                                                                                add(ENTITY_UPDATE_CLASSIFICATION);
+                                                                            }};
 
     private AtlasSimpleAuthzPolicy authzPolicy;
 
@@ -61,6 +78,8 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
             inputStream = ApplicationProperties.getFileAsInputStream(ApplicationProperties.get(), "atlas.authorizer.simple.authz.policy.file", "atlas-simple-authz-policy.json");
 
             authzPolicy = AtlasJson.fromJson(inputStream, AtlasSimpleAuthzPolicy.class);
+
+            addImpliedTypeReadPrivilege(authzPolicy);
         } catch (IOException | AtlasException e) {
             LOG.error("SimpleAtlasAuthorizer.init(): initialization failed", e);
 
@@ -223,43 +242,38 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
             LOG.debug("==> SimpleAtlasAuthorizer.isAccessAllowed({})", request);
         }
 
+        boolean           ret            = false;
         final String      action         = request.getAction() != null ? request.getAction().getType() : null;
         final Set<String> entityTypes    = request.getEntityTypeAndAllSuperTypes();
         final String      entityId       = request.getEntityId();
-        final String      classification = request.getClassification() != null ? request.getClassification().getTypeName() : null;
         final String      attribute      = request.getAttributeName();
         final Set<String> entClsToAuthz  = new HashSet<>(request.getEntityClassifications());
         final Set<String> roles          = getRoles(request.getUser(), request.getUserGroups());
-        boolean hasEntityAccess          = false;
-        boolean hasClassificationsAccess = false;
 
         for (String role : roles) {
             List<AtlasEntityPermission> permissions = getEntityPermissionsForRole(role);
 
             if (permissions != null) {
                 for (AtlasEntityPermission permission : permissions) {
-                    // match entity-type/entity-id/label/business-metadata/attribute
-                    if (isMatchAny(entityTypes, permission.getEntityTypes()) && isMatch(entityId, permission.getEntityIds()) && isMatch(attribute, permission.getAttributes())
-                         && isLabelMatch(request, permission) && isBusinessMetadataMatch(request, permission)) {
-                        // match permission/classification
-                        if (!hasEntityAccess) {
-                            if (isMatch(action, permission.getPrivileges()) && isMatch(classification, permission.getClassifications())) {
-                                hasEntityAccess = true;
-                            }
-                        }
+                    if (isMatch(action, permission.getPrivileges()) && isMatchAny(entityTypes, permission.getEntityTypes()) &&
+                        isMatch(entityId, permission.getEntityIds()) && isMatch(attribute, permission.getAttributes()) &&
+                        isLabelMatch(request, permission) && isBusinessMetadataMatch(request, permission) && isClassificationMatch(request, permission)) {
 
-                        // match entity-classifications
-                        for (Iterator<String> iter = entClsToAuthz.iterator(); iter.hasNext();) {
+                        // 1. entity could have multiple classifications
+                        // 2. access for these classifications could be granted by multiple AtlasEntityPermission entries
+                        // 3. classifications allowed by the current permission will be removed from entClsToAuthz
+                        // 4. request will be allowed once entClsToAuthz is empty i.e. user has permission for all classifications
+                        for (Iterator<String> iter = entClsToAuthz.iterator(); iter.hasNext(); ) {
                             String entityClassification = iter.next();
 
-                            if (isMatchAny(request.getClassificationTypeAndAllSuperTypes(entityClassification), permission.getClassifications())) {
+                            if (isMatchAny(request.getClassificationTypeAndAllSuperTypes(entityClassification), permission.getEntityClassifications())) {
                                 iter.remove();
                             }
                         }
 
-                        hasClassificationsAccess = CollectionUtils.isEmpty(entClsToAuthz);
+                        ret = CollectionUtils.isEmpty(entClsToAuthz);
 
-                        if (hasEntityAccess && hasClassificationsAccess) {
+                        if (ret) {
                             break;
                         }
                     }
@@ -267,11 +281,9 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
             }
         }
 
-        boolean ret = hasEntityAccess && hasClassificationsAccess;
-
         if (LOG.isDebugEnabled()) {
             if (!ret) {
-                LOG.debug("hasEntityAccess={}; hasClassificationsAccess={}, classificationsWithNoAccess={}", hasEntityAccess, hasClassificationsAccess, entClsToAuthz);
+                LOG.debug("isAccessAllowed={}; classificationsWithNoAccess={}", ret, entClsToAuthz);
             }
 
             LOG.debug("<== SimpleAtlasAuthorizer.isAccessAllowed({}): {}", request, ret);
@@ -311,6 +323,18 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== SimpleAtlasAuthorizer.scrubSearchResults({}): {}", request, result);
         }
+    }
+
+    @Override
+    public void filterTypesDef(AtlasTypesDefFilterRequest request) throws AtlasAuthorizationException {
+        AtlasTypesDef typesDef = request.getTypesDef();
+
+        filterTypes(request, typesDef.getEnumDefs());
+        filterTypes(request, typesDef.getStructDefs());
+        filterTypes(request, typesDef.getEntityDefs());
+        filterTypes(request, typesDef.getClassificationDefs());
+        filterTypes(request, typesDef.getRelationshipDefs());
+        filterTypes(request, typesDef.getBusinessMetadataDefs());
     }
 
     private Set<String> getRoles(String userName, Set<String> userGroups) {
@@ -466,6 +490,50 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
 
     private boolean isBusinessMetadataMatch(AtlasEntityAccessRequest request, AtlasEntityPermission permission) {
         return AtlasPrivilege.ENTITY_UPDATE_BUSINESS_METADATA.equals(request.getAction()) ? isMatch(request.getBusinessMetadata(), permission.getBusinessMetadata()) : true;
+    }
+
+    private boolean isClassificationMatch(AtlasEntityAccessRequest request, AtlasEntityPermission permission) {
+        return (CLASSIFICATION_PRIVILEGES.contains(request.getAction()) && request.getClassification() != null) ? isMatch(request.getClassification().getTypeName(), permission.getClassifications()) : true;
+    }
+
+    private void filterTypes(AtlasAccessRequest request, List<? extends AtlasBaseTypeDef> typeDefs)throws AtlasAuthorizationException {
+        if (typeDefs != null) {
+            for (ListIterator<? extends AtlasBaseTypeDef> iter = typeDefs.listIterator(); iter.hasNext();) {
+                AtlasBaseTypeDef       typeDef     = iter.next();
+                AtlasTypeAccessRequest typeRequest = new AtlasTypeAccessRequest(request.getAction(), typeDef, request.getUser(), request.getUserGroups());
+
+                typeRequest.setClientIPAddress(request.getClientIPAddress());
+                typeRequest.setForwardedAddresses(request.getForwardedAddresses());
+                typeRequest.setRemoteIPAddress(request.getRemoteIPAddress());
+
+                if (!isAccessAllowed(typeRequest)) {
+                    iter.remove();
+                }
+            }
+        }
+    }
+
+    // add TYPE_READ privilege, if at least one of the following is granted: TYPE_CREATE, TYPE_UPDATE, TYPE_DELETE
+    private void addImpliedTypeReadPrivilege(AtlasSimpleAuthzPolicy policy) {
+        if (policy != null && policy.getRoles() != null) {
+            for (AtlasAuthzRole role : policy.getRoles().values()) {
+                if (role.getTypePermissions() == null) {
+                    continue;
+                }
+
+                for (AtlasTypePermission permission : role.getTypePermissions()) {
+                    List<String> privileges = permission.getPrivileges();
+
+                    if (CollectionUtils.isEmpty(privileges) || privileges.contains(TYPE_READ.name())) {
+                        continue;
+                    }
+
+                    if (privileges.contains(TYPE_CREATE.name()) || privileges.contains(TYPE_UPDATE.name()) || privileges.contains(TYPE_DELETE.name())) {
+                        privileges.add(TYPE_READ.name());
+                    }
+                }
+            }
+        }
     }
 }
 

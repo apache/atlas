@@ -31,21 +31,9 @@
 
     <!-- by default configure hbase and solr with the distribution -->
     <properties>
-
-        <graph.storage.backend>hbase2</graph.storage.backend>
-        <graph.storage.properties>#Hbase
-#For standalone mode , specify localhost
-#for distributed mode, specify zookeeper quorum here
-atlas.graph.storage.hostname=
-atlas.graph.storage.hbase.regions-per-server=1
-atlas.graph.storage.lock.wait-time=10000
-
-#In order to use Cassandra as a backend, comment out the hbase specific properties above, and uncomment the
-#the following properties
-#atlas.graph.storage.clustername=
-#atlas.graph.storage.port=
-
-        </graph.storage.properties>
+        <cassandra.embedded>false</cassandra.embedded>
+        <elasticsearch.managed>false</elasticsearch.managed>
+        <entity.repository.properties>atlas.EntityAuditRepository.impl=org.apache.atlas.repository.audit.HBaseBasedAuditRepository</entity.repository.properties>
         <graph.index.backend>solr</graph.index.backend>
         <graph.index.properties>#Solr
 #Solr cloud mode properties
@@ -71,12 +59,21 @@ atlas.graph.index.search.solr.wait-searcher=true
 #atlas.graph.index.search.hostname=localhost
 #atlas.graph.index.search.elasticsearch.client-only=true
         </graph.index.properties>
+        <graph.storage.backend>hbase2</graph.storage.backend>
+        <graph.storage.properties>#Hbase
+#For standalone mode , specify localhost
+#for distributed mode, specify zookeeper quorum here
+atlas.graph.storage.hostname=
+atlas.graph.storage.hbase.regions-per-server=1
+atlas.graph.storage.lock.wait-time=10000
+
+#In order to use Cassandra as a backend, comment out the hbase specific properties above, and uncomment the
+#the following properties
+#atlas.graph.storage.clustername=
+#atlas.graph.storage.port=
+        </graph.storage.properties>
         <hbase.embedded>false</hbase.embedded>
         <solr.embedded>false</solr.embedded>
-        <cassandra.embedded>false</cassandra.embedded>
-        <elasticsearch.managed>false</elasticsearch.managed>
-
-        <entity.repository.properties>atlas.EntityAuditRepository.impl=org.apache.atlas.repository.audit.HBaseBasedAuditRepository</entity.repository.properties>
     </properties>
 
     <profiles>
@@ -136,11 +133,105 @@ atlas.graph.index.search.solr.wait-searcher=true
                                         <descriptor>src/main/assemblies/atlas-server-package.xml</descriptor>
                                         <descriptor>src/main/assemblies/standalone-package.xml</descriptor>
                                         <descriptor>src/main/assemblies/src-package.xml</descriptor>
+                                        <descriptor>src/main/assemblies/atlas-repair-index-package.xml</descriptor>
                                         <!--<descriptor>src/main/assemblies/migration-exporter.xml</descriptor>-->
                                         <descriptor>src/main/assemblies/classification-updater.xml</descriptor>
                                     </descriptors>
                                     <finalName>apache-atlas-${project.version}</finalName>
                                     <tarLongFileMode>gnu</tarLongFileMode>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- profile to configure berkeley and solr with the distribution -->
+        <profile>
+            <id>berkeley-solr</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <cassandra.embedded>false</cassandra.embedded>
+                <entity.repository.properties>atlas.EntityAuditRepository.impl=org.apache.atlas.repository.audit.NoopEntityAuditRepository</entity.repository.properties>
+                <graph.index.backend>solr</graph.index.backend>
+                <graph.index.properties>#Solr
+#Solr cloud mode properties
+atlas.graph.index.search.solr.mode=cloud
+atlas.graph.index.search.solr.zookeeper-url=localhost:2181
+atlas.graph.index.search.solr.zookeeper-connect-timeout=60000
+atlas.graph.index.search.solr.zookeeper-session-timeout=60000
+atlas.graph.index.search.solr.wait-searcher=true
+
+#Solr http mode properties
+#atlas.graph.index.search.solr.mode=http
+#atlas.graph.index.search.solr.http-urls=http://localhost:8983/solr
+                </graph.index.properties>
+                <graph.storage.backend>berkeleyje</graph.storage.backend>
+                <graph.storage.properties>#Berkeley
+atlas.graph.storage.directory=${sys:atlas.home}/data/berkeley
+atlas.graph.storage.lock.clean-expired=true
+atlas.graph.storage.lock.expiry-time=500
+atlas.graph.storage.lock.wait-time=300
+                </graph.storage.properties>
+                <hbase.embedded>false</hbase.embedded>
+                <solr.dir>${project.build.directory}/solr</solr.dir>
+                <solr.embedded>true</solr.embedded>
+                <solr.folder>solr-${solr.version}</solr.folder>
+                <solr.tar>https://archive.apache.org/dist/lucene/solr/${solr.version}/solr-${solr.version}.tgz</solr.tar>
+                <zk.dir>${project.build.directory}/zk</zk.dir>
+                <zk.folder>apache-zookeeper-${zookeeper.version}-bin</zk.folder>
+                <zk.tar>https://archive.apache.org/dist/zookeeper/zookeeper-${zookeeper.version}/apache-zookeeper-${zookeeper.version}-bin.tar.gz</zk.tar>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>1.7</version>
+                        <executions>
+                            <!-- package solr -->
+                            <execution>
+                                <id>solr</id>
+                                <phase>generate-resources</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <configuration>
+                                    <target name="Download SOLR">
+                                        <mkdir dir="${solr.dir}" />
+                                        <mkdir dir="${project.basedir}/solr" />
+                                        <get src="${solr.tar}" dest="${project.basedir}/solr/${solr.folder}.tgz" usetimestamp="true" verbose="true" skipexisting="true" />
+                                        <untar src="${project.basedir}/solr/${solr.folder}.tgz" dest="${project.build.directory}/solr.temp" compression="gzip" />
+                                        <copy todir="${solr.dir}">
+                                            <fileset dir="${project.build.directory}/solr.temp/${solr.folder}">
+                                                <include name="**/*" />
+                                            </fileset>
+                                        </copy>
+                                    </target>
+                                </configuration>
+                            </execution>
+                            <!-- package zookeeper -->
+                            <execution>
+                                <id>zk</id>
+                                <phase>generate-resources</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <configuration>
+                                    <target name="Download zookeeper">
+                                        <mkdir dir="${zk.dir}" />
+                                        <mkdir dir="${project.basedir}/zk" />
+                                        <get src="${zk.tar}" dest="${project.basedir}/zk/${zk.folder}.tgz" usetimestamp="true" verbose="true" skipexisting="true" />
+                                        <untar src="${project.basedir}/zk/${zk.folder}.tgz" dest="${project.build.directory}/zk.temp" compression="gzip" />
+                                        <copy todir="${zk.dir}">
+                                            <fileset dir="${project.build.directory}/zk.temp/${zk.folder}">
+                                                <include name="**/*" />
+                                            </fileset>
+                                        </copy>
+                                    </target>
                                 </configuration>
                             </execution>
                         </executions>
@@ -156,6 +247,17 @@ atlas.graph.index.search.solr.wait-searcher=true
                 <activeByDefault>false</activeByDefault>
             </activation>
             <properties>
+                <cassandra.embedded>false</cassandra.embedded>
+                <elasticsearch.dir>${project.build.directory}/elasticsearch</elasticsearch.dir>
+                <elasticsearch.folder>elasticsearch-${elasticsearch.version}</elasticsearch.folder>
+                <elasticsearch.managed>true</elasticsearch.managed>
+                <elasticsearch.tar>https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${elasticsearch.version}.tar.gz</elasticsearch.tar>
+                <entity.repository.properties>atlas.EntityAuditRepository.impl=org.apache.atlas.repository.audit.NoopEntityAuditRepository</entity.repository.properties>
+                <graph.index.backend>elasticsearch</graph.index.backend>
+                <graph.index.properties>#ElasticSearch
+atlas.graph.index.search.hostname=localhost
+atlas.graph.index.search.elasticsearch.client-only=true
+                </graph.index.properties>
                 <graph.storage.backend>berkeleyje</graph.storage.backend>
                 <graph.storage.properties>#Berkeley
 atlas.graph.storage.directory=${sys:atlas.home}/data/berkeley
@@ -163,19 +265,6 @@ atlas.graph.storage.lock.clean-expired=true
 atlas.graph.storage.lock.expiry-time=500
 atlas.graph.storage.lock.wait-time=300
                 </graph.storage.properties>
-                <graph.index.backend>elasticsearch</graph.index.backend>
-                <graph.index.properties>#ElasticSearch
-atlas.graph.index.search.hostname=localhost
-atlas.graph.index.search.elasticsearch.client-only=true
-                </graph.index.properties>
-		        <entity.repository.properties>atlas.EntityAuditRepository.impl=org.apache.atlas.repository.audit.NoopEntityAuditRepository</entity.repository.properties>
-
-                <elasticsearch.managed>true</elasticsearch.managed>
-                <cassandra.embedded>false</cassandra.embedded>
-                <elasticsearch.dir>${project.build.directory}/elasticsearch</elasticsearch.dir>
-                <elasticsearch.tar>https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${elasticsearch.version}.tar.gz</elasticsearch.tar>
-                <elasticsearch.folder>elasticsearch-${elasticsearch.version}</elasticsearch.folder>
-
             </properties>
             <build>
                 <plugins>
@@ -226,13 +315,7 @@ atlas.graph.index.search.elasticsearch.client-only=true
                 <activeByDefault>false</activeByDefault>
             </activation>
             <properties>
-                <graph.storage.properties>#Hbase
-#For standalone mode , specify localhost
-#for distributed mode, specify zookeeper quorum here
-atlas.graph.storage.hostname=localhost
-atlas.graph.storage.hbase.regions-per-server=1
-atlas.graph.storage.lock.wait-time=10000
-                </graph.storage.properties>
+                <cassandra.embedded>false</cassandra.embedded>
                 <graph.index.properties>#Solr
 #Solr cloud mode properties
 atlas.graph.index.search.solr.mode=cloud
@@ -245,18 +328,21 @@ atlas.graph.index.search.solr.wait-searcher=true
 #atlas.graph.index.search.solr.mode=http
 #atlas.graph.index.search.solr.http-urls=http://localhost:8983/solr
                 </graph.index.properties>
-
-                <cassandra.embedded>false</cassandra.embedded>
-                <hbase.embedded>true</hbase.embedded>
-                <solr.embedded>true</solr.embedded>
-
+                <graph.storage.properties>#Hbase
+#For standalone mode , specify localhost
+#for distributed mode, specify zookeeper quorum here
+atlas.graph.storage.hostname=localhost
+atlas.graph.storage.hbase.regions-per-server=1
+atlas.graph.storage.lock.wait-time=10000
+                </graph.storage.properties>
                 <hbase.dir>${project.build.directory}/hbase</hbase.dir>
-                <hbase.tar>https://archive.apache.org/dist/hbase/${hbase.version}/hbase-${hbase.version}-bin.tar.gz</hbase.tar>
+                <hbase.embedded>true</hbase.embedded>
                 <hbase.folder>hbase-${hbase.version}</hbase.folder>
-
+                <hbase.tar>https://archive.apache.org/dist/hbase/${hbase.version}/hbase-${hbase.version}-bin.tar.gz</hbase.tar>
                 <solr.dir>${project.build.directory}/solr</solr.dir>
-                <solr.tar>https://archive.apache.org/dist/lucene/solr/${solr.version}/solr-${solr.version}.tgz</solr.tar>
+                <solr.embedded>true</solr.embedded>
                 <solr.folder>solr-${solr.version}</solr.folder>
+                <solr.tar>https://archive.apache.org/dist/lucene/solr/${solr.version}/solr-${solr.version}.tgz</solr.tar>
             </properties>
             <build>
                 <plugins>
@@ -319,11 +405,8 @@ atlas.graph.index.search.solr.wait-searcher=true
                 <activeByDefault>false</activeByDefault>
             </activation>
             <properties>
-                <graph.storage.backend>embeddedcassandra</graph.storage.backend>
+                <cassandra.embedded>true</cassandra.embedded>
                 <entity.repository.properties>atlas.EntityAuditRepository.impl=org.apache.atlas.repository.audit.CassandraBasedAuditRepository</entity.repository.properties>
-                <graph.storage.properties>#Cassandra
-atlas.graph.storage.conf-file=${sys:atlas.home}/conf/cassandra.yml
-                </graph.storage.properties>
                 <graph.index.properties>#Solr
 #Solr cloud mode properties
 atlas.graph.index.search.solr.mode=cloud
@@ -336,18 +419,18 @@ atlas.graph.index.search.solr.wait-searcher=true
 #atlas.graph.index.search.solr.mode=http
 #atlas.graph.index.search.solr.http-urls=http://localhost:8983/solr
                 </graph.index.properties>
-
-                <cassandra.embedded>true</cassandra.embedded>
+                <graph.storage.backend>embeddedcassandra</graph.storage.backend>
+                <graph.storage.properties>#Cassandra
+atlas.graph.storage.conf-file=${sys:atlas.home}/conf/cassandra.yml
+                </graph.storage.properties>
                 <hbase.embedded>false</hbase.embedded>
                 <solr.embedded>true</solr.embedded>
-
                 <solr.dir>${project.build.directory}/solr</solr.dir>
-                <solr.tar>https://archive.apache.org/dist/lucene/solr/${solr.version}/solr-${solr.version}.tgz</solr.tar>
                 <solr.folder>solr-${solr.version}</solr.folder>
-
+                <solr.tar>https://archive.apache.org/dist/lucene/solr/${solr.version}/solr-${solr.version}.tgz</solr.tar>
                 <zk.dir>${project.build.directory}/zk</zk.dir>
-                <zk.tar>https://archive.apache.org/dist/zookeeper/zookeeper-${zookeeper.version}/zookeeper-${zookeeper.version}.tar.gz</zk.tar>
-                <zk.folder>zookeeper-${zookeeper.version}</zk.folder>
+                <zk.folder>apache-zookeeper-${zookeeper.version}-bin</zk.folder>
+                <zk.tar>https://archive.apache.org/dist/zookeeper/zookeeper-${zookeeper.version}/apache-zookeeper-${zookeeper.version}-bin.tar.gz</zk.tar>
             </properties>
             <build>
                 <plugins>

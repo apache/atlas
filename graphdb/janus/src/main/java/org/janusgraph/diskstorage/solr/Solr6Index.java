@@ -143,7 +143,7 @@ public class Solr6Index implements IndexProvider {
     private static Solr6Index instance = null;
     public static final ConfigOption<Boolean> CREATE_SOLR_CLIENT_PER_REQUEST = new ConfigOption(SOLR_NS, "create-client-per-request", "when false, allows the sharing of solr client across other components.", org.janusgraph.diskstorage.configuration.ConfigOption.Type.LOCAL, false);
 
-    private enum Mode {
+    public enum Mode {
         HTTP, CLOUD;
 
         public static Mode parse(String mode) {
@@ -183,7 +183,6 @@ public class Solr6Index implements IndexProvider {
     private final boolean waitSearcher;
     private final boolean kerberosEnabled;
 
-
     public Solr6Index(final Configuration config) throws BackendException {
         // Add Kerberos-enabled SolrHttpClientBuilder
         HttpClientUtil.setHttpClientBuilder(new Krb5HttpClientBuilder().getBuilder());
@@ -215,6 +214,19 @@ public class Solr6Index implements IndexProvider {
             logger.info("Solr Client will be shared for direct interation with SOLR.");
         }
         Solr6Index.instance = this;
+    }
+
+    public static Mode getSolrMode() {
+        Solr6Index solr6Index = Solr6Index.instance;
+        Mode       ret        = (solr6Index != null) ? Mode.parse(solr6Index.configuration.get(SOLR_MODE)) : null;
+
+        if (ret == null) {
+            logger.warn("SolrMode is not set. Assuming {}", Mode.CLOUD);
+
+            ret = Mode.CLOUD;
+        }
+
+        return ret;
     }
 
     public static SolrClient getSolrClient() {
@@ -262,13 +274,35 @@ public class Solr6Index implements IndexProvider {
         Mode mode = Mode.parse(configuration.get(SOLR_MODE));
         switch (mode) {
             case CLOUD:
-                final CloudSolrClient cloudServer = new CloudSolrClient.Builder()
+                /* ATLAS-2920: Update JanusGraph Solr clients to use all zookeeper entries – start */
+                List<String> zkHosts = new ArrayList<>();
+                String       chroot  = null;
+                String[]     zkUrls  = configuration.get(ZOOKEEPER_URLS);
+
+                if (zkUrls != null) {
+                    for (int i = zkUrls.length - 1; i >= 0; i--) {
+                        String zkUrl     = zkUrls[i];
+                        int    idxChroot = zkUrl.indexOf(CHROOT_START_CHAR);
+
+                        if (idxChroot != -1) {
+                            if (chroot == null) {
+                                chroot = zkUrl.substring(idxChroot);
+                            }
+
+                            zkUrl = zkUrl.substring(0, idxChroot);
+                        }
+
+                        zkHosts.add(zkUrl);
+                    }
+                }
+                /* ATLAS-2920: - end */
+
+                final CloudSolrClient cloudServer = new CloudSolrClient.Builder().withZkHost(zkHosts).withZkChroot(chroot)
                         .withLBHttpSolrClientBuilder(
                                 new LBHttpSolrClient.Builder()
                                         .withHttpSolrClientBuilder(new HttpSolrClient.Builder().withInvariantParams(clientParams))
                                         .withBaseSolrUrls(configuration.get(HTTP_URLS))
                         )
-                        .withZkHost(getZookeeperURLs(configuration))
                         .sendUpdatesOnlyToShardLeaders()
                         .build();
                 cloudServer.connect();
@@ -1228,35 +1262,4 @@ public class Solr6Index implements IndexProvider {
             logger.info("Exiting solr wait");
         }
     }
-
-    /* ATLAS-2920: Update JanusGraph Solr clients to use all zookeeper entries – start */
-    private static List<String> getZookeeperURLs(Configuration config) {
-        List<String> ret     = null;
-        String[]     zkHosts = config.get(ZOOKEEPER_URLS);
-
-        if (zkHosts != null) {
-            ret = new ArrayList<>(zkHosts.length);
-
-            for (int i = 0; i < zkHosts.length; i++) {
-                String zkHost = zkHosts[i];
-
-                if (StringUtils.isEmpty(zkHost)) {
-                    continue;
-                }
-
-                int idxSlash = zkHost.indexOf(CHROOT_START_CHAR);
-
-                if (idxSlash != -1 && i < zkHosts.length - 1) {
-                    zkHost = zkHost.substring(0, idxSlash);
-                }
-
-                if (StringUtils.isNotEmpty(zkHost)) {
-                    ret.add(zkHost);
-                }
-            }
-        }
-
-        return ret;
-    }
-    /* ATLAS-2920 – end */
 }

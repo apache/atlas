@@ -68,6 +68,8 @@ public class CreateDatabase extends BaseHiveEvent {
             AtlasEntity dbEntity = toDbEntity(db);
 
             ret.addEntity(dbEntity);
+
+            addLocationEntities(dbEntity, ret);
         } else {
             LOG.error("CreateDatabase.getEntities(): failed to retrieve db");
         }
@@ -97,6 +99,8 @@ public class CreateDatabase extends BaseHiveEvent {
                     if (dbDDLEntity != null) {
                         ret.addEntity(dbDDLEntity);
                     }
+
+                    addLocationEntities(dbEntity, ret);
                 } else {
                     LOG.error("CreateDatabase.getEntities(): failed to retrieve db");
                 }
@@ -106,5 +110,13 @@ public class CreateDatabase extends BaseHiveEvent {
         addProcessedEntities(ret);
 
         return ret;
+    }
+
+    public void addLocationEntities(AtlasEntity dbEntity, AtlasEntitiesWithExtInfo ret) {
+        AtlasEntity dbLocationEntity = createHiveLocationEntity(dbEntity, ret);
+
+        if (dbLocationEntity != null) {
+            ret.addEntity(dbLocationEntity);
+        }
     }
 }

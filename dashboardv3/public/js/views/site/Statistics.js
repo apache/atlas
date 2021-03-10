@@ -30,8 +30,9 @@ define(['require',
     'utils/Enums',
     'moment',
     'utils/Utils',
+    'utils/Globals',
     'moment-timezone'
-], function(require, Backbone, StatTmpl, StatsNotiTable, TopicOffsetTable, EntityTable, Modal, VCommon, UrlLinks, VTagList, CommonViewFunction, Enums, moment, Utils) {
+], function(require, Backbone, StatTmpl, StatsNotiTable, TopicOffsetTable, EntityTable, Modal, VCommon, UrlLinks, VTagList, CommonViewFunction, Enums, moment, Utils, Globals) {
     'use strict';
 
     var StatisticsView = Backbone.Marionette.LayoutView.extend(
@@ -83,18 +84,20 @@ define(['require',
                             that.fetchMetricData({ update: true });
                         }
                     }]
-                }).open();
-
+                });
                 modal.on('closeModal', function() {
                     modal.trigger('cancel');
                 });
                 this.modal = modal;
+                modal.open();
             },
             bindEvents: function() {
                 var that = this;
-                this.$el.on('click', '.linkClicked', function() {
-                    that.modal.close();
-                })
+                if (this.modal) {
+                    this.$el.on('click', '.linkClicked', function() {
+                        that.modal.close();
+                    })
+                }
             },
             fetchMetricData: function(options) {
                 var that = this;
@@ -182,7 +185,7 @@ define(['require',
                             "type": "classification"
                         })
                     );
-                    this.ui.classification.find(".count").html("&nbsp;(" + _.numberFormatWithComa(tagsCount) + ")");
+                    this.ui.classification.find(".count").html("&nbsp;(" + _.numberFormatWithComma(tagsCount) + ")");
                     if (tagEntitiesKeys.length > this.DATA_MAX_LENGTH) {
                         this.closePanel({
                             el: this.ui.classification
@@ -215,7 +218,7 @@ define(['require',
                             if (type == "shell") {
                                 shellEntityCount += intVal
                             }
-                            intVal = _.numberFormatWithComa(intVal)
+                            intVal = _.numberFormatWithComma(intVal)
                             if (stats[key]) {
                                 stats[key][type] = intVal;
                             } else {
@@ -246,10 +249,10 @@ define(['require',
                             })),
                         })
                     );
-                    this.$('[data-id="activeEntity"]').html("&nbsp;(" + _.numberFormatWithComa(activeEntityCount) + ")");
-                    this.$('[data-id="deletedEntity"]').html("&nbsp;(" + _.numberFormatWithComa(deletedEntityCount) + ")");
-                    this.$('[data-id="shellEntity"]').html("&nbsp;(" + _.numberFormatWithComa(shellEntityCount) + ")");
-                    this.ui.entity.find(".count").html("&nbsp;(" + _.numberFormatWithComa(data.general.entityCount) + ")");
+                    this.$('[data-id="activeEntity"]').html("&nbsp;(" + _.numberFormatWithComma(activeEntityCount) + ")");
+                    this.$('[data-id="deletedEntity"]').html("&nbsp;(" + _.numberFormatWithComma(deletedEntityCount) + ")");
+                    this.$('[data-id="shellEntity"]').html("&nbsp;(" + _.numberFormatWithComma(shellEntityCount) + ")");
+                    this.ui.entity.find(".count").html("&nbsp;(" + _.numberFormatWithComma(data.general.entityCount) + ")");
                     if (statsKeys.length > this.DATA_MAX_LENGTH) {
                         this.closePanel({
                             el: this.ui.entity
@@ -317,7 +320,7 @@ define(['require',
                                     pickValueFrom = argument.key;
                                 }
                                 var returnVal = data.Notification[pickValueFrom];
-                                return returnVal ? _.numberFormatWithComa(returnVal) : 0;
+                                return returnVal ? _.numberFormatWithComma(returnVal) : 0;
                             }
                         })
                     );
@@ -382,7 +385,8 @@ define(['require',
                     var memoryTable = CommonViewFunction.propertyTable({
                         scope: this,
                         formatStringVal: true,
-                        valueObject: systemMemoryData
+                        valueObject: systemMemoryData,
+                        numberFormat: _.numberFormatWithBytes
                     });
                     that.ui.memoryCard.html(
                         memoryTable);
@@ -394,11 +398,11 @@ define(['require',
                 if (type == 'time') {
                     return Utils.millisecondsToTime(value);
                 } else if (type == 'day') {
-                    return moment.tz(value, moment.tz.guess()).format("MM/DD/YYYY h:mm A z");
+                    return Utils.formatDate({ date: value })
                 } else if (type == 'number') {
-                    return _.numberFormatWithComa(value);
+                    return _.numberFormatWithComma(value);
                 } else if (type == 'millisecond') {
-                    return _.numberFormatWithComa(value) + " millisecond/s";
+                    return _.numberFormatWithComma(value) + " millisecond/s";
                 } else if (type == "status-html") {
                     return '<span class="connection-status ' + value + '"></span>';
                 } else {

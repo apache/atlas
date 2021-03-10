@@ -22,11 +22,13 @@ import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.EntityAuditEvent;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.ConditionalOnAtlasProperty;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
@@ -46,6 +48,7 @@ import org.apache.hadoop.hbase.filter.BinaryComparator;
 import org.apache.hadoop.hbase.filter.BinaryPrefixComparator;
 import org.apache.hadoop.hbase.filter.CompareFilter;
 import org.apache.hadoop.hbase.filter.Filter;
+import org.apache.hadoop.hbase.filter.MultiRowRangeFilter;
 import org.apache.hadoop.hbase.filter.PageFilter;
 import org.apache.hadoop.hbase.filter.SingleColumnValueFilter;
 import org.apache.hadoop.hbase.io.compress.Compression;
@@ -226,11 +229,12 @@ public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditReposito
         }
     }
 
+    @Override
     public List<EntityAuditEventV2> listEventsV2(String entityId, EntityAuditActionV2 auditAction, String startKey, short maxResultCount) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("Listing events for entity id {}, operation {}, starting key{}, maximum result count {}", entityId, auditAction.toString(), startKey, maxResultCount);
         }
-
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("listSortedEventsV2");
         Table         table   = null;
         ResultScanner scanner = null;
 
@@ -316,9 +320,120 @@ public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditReposito
             try {
                 close(scanner);
                 close(table);
+                RequestContext.get().endMetricRecord(metric);
             } catch (AtlasException e) {
                 throw new AtlasBaseException(e);
             }
+        }
+    }
+
+    @Override
+    public List<EntityAuditEventV2> listEventsV2(String entityId, EntityAuditEventV2.EntityAuditActionV2 auditAction, String sortByColumn, boolean sortOrderDesc, int offset, short limit) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> HBaseBasedAuditRepository.listEventsV2(entityId={}, auditAction={}, sortByColumn={}, sortOrderDesc={}, offset={}, limit={})", entityId, auditAction, sortByColumn, offset, limit);
+        }
+
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("listEventsV2");
+
+        if (sortByColumn == null) {
+            sortByColumn = EntityAuditEventV2.SORT_COLUMN_TIMESTAMP;
+        }
+
+        if (offset < 0) {
+            offset = 0;
+        }
+
+        if (limit < 0) {
+            limit = 100;
+        }
+
+        try (Table table = connection.getTable(tableName)) {
+            /*
+             * HBase Does not support query with sorted results. To support this API inmemory sort has to be performed.
+             * Audit entry can potentially have entire entity dumped into it. Loading entire audit entries for an entity can be
+             * memory intensive. Therefore we load audit entries with limited columns first, perform sort on this light weight list,
+             * then get the relevant section by removing offsets and reducing to limits. With this reduced list we create
+             * MultiRowRangeFilter and then again scan the table to get all the columns from the table this time.
+             */
+            Scan scan = new Scan().setReversed(true)
+                                  .setCaching(DEFAULT_CACHING)
+                                  .setSmall(true)
+                                  .setStopRow(Bytes.toBytes(entityId))
+                                  .setStartRow(getKey(entityId, Long.MAX_VALUE, Integer.MAX_VALUE))
+                                  .addColumn(COLUMN_FAMILY, COLUMN_ACTION)
+                                  .addColumn(COLUMN_FAMILY, COLUMN_USER);
+
+            if (auditAction != null) {
+                Filter filterAction = new SingleColumnValueFilter(COLUMN_FAMILY, COLUMN_ACTION, CompareFilter.CompareOp.EQUAL, new BinaryComparator(Bytes.toBytes(auditAction.toString())));
+
+                scan.setFilter(filterAction);
+            }
+
+            List<EntityAuditEventV2> events = new ArrayList<>();
+
+            try (ResultScanner scanner = table.getScanner(scan)) {
+                for (Result result = scanner.next(); result != null; result = scanner.next()) {
+                    EntityAuditEventV2 event = fromKeyV2(result.getRow());
+
+                    event.setUser(getResultString(result, COLUMN_USER));
+                    event.setAction(EntityAuditActionV2.fromString(getResultString(result, COLUMN_ACTION)));
+
+                    events.add(event);
+                }
+            }
+
+            EntityAuditEventV2.sortEvents(events, sortByColumn, sortOrderDesc);
+
+            events = events.subList(Math.min(events.size(), offset), Math.min(events.size(), offset + limit));
+
+            if (events.size() > 0) {
+                List<MultiRowRangeFilter.RowRange> ranges = new ArrayList<>();
+
+                events.forEach(e -> {
+                    ranges.add(new MultiRowRangeFilter.RowRange(e.getEventKey(), true, e.getEventKey(), true));
+                });
+
+                scan = new Scan().setReversed(true)
+                                 .setCaching(DEFAULT_CACHING)
+                                 .setSmall(true)
+                                 .setStopRow(Bytes.toBytes(entityId))
+                                 .setStartRow(getKey(entityId, Long.MAX_VALUE, Integer.MAX_VALUE))
+                                 .setFilter(new MultiRowRangeFilter(ranges));
+
+                try (ResultScanner scanner = table.getScanner(scan)) {
+                    events = new ArrayList<>();
+
+                    for (Result result = scanner.next(); result != null; result = scanner.next()) {
+                        EntityAuditEventV2 event = fromKeyV2(result.getRow());
+
+                        event.setUser(getResultString(result, COLUMN_USER));
+                        event.setAction(EntityAuditActionV2.fromString(getResultString(result, COLUMN_ACTION)));
+                        event.setDetails(getResultString(result, COLUMN_DETAIL));
+
+                        if (persistEntityDefinition) {
+                            String colDef = getResultString(result, COLUMN_DEFINITION);
+
+                            if (colDef != null) {
+                                event.setEntityDefinition(colDef);
+                            }
+                        }
+
+                        events.add(event);
+                    }
+                }
+
+                EntityAuditEventV2.sortEvents(events, sortByColumn, sortOrderDesc);
+            }
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("<== HBaseBasedAuditRepository.listEventsV2(entityId={}, auditAction={}, sortByColumn={}, sortOrderDesc={}, offset={}, limit={}): #recored returned {}", entityId, auditAction, sortByColumn, offset, limit, events.size());
+            }
+
+            return events;
+        } catch (IOException e) {
+            throw new AtlasBaseException(e);
+        } finally {
+            RequestContext.get().endMetricRecord(metric);
         }
     }
 

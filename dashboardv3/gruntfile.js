@@ -94,7 +94,7 @@ module.exports = function(grunt) {
                     'backgrid-sizeable-columns.js': { 'backgrid-sizeable-columns': 'backgrid-sizeable-columns/js' },
                     'Backgrid.ColumnManager.js': { 'backgrid-columnmanager/src': 'backgrid-columnmanager/js' },
                     'jquery-asBreadcrumbs.min.js': { 'jquery-asBreadcrumbs/dist': 'jquery-asBreadcrumbs/js' },
-                    'd3.min.js': { 'd3': 'd3' },
+                    'd3.min.js': { 'd3/dist': 'd3' },
                     'index.js': { 'd3-tip': 'd3/' },
                     'dagre-d3.min.js': { 'dagre-d3/dist': 'dagre-d3' },
                     'select2.full.min.js': { 'select2/dist/js': 'select2' },
@@ -105,12 +105,12 @@ module.exports = function(grunt) {
                     'platform.js': { 'platform': 'platform' },
                     'query-builder.standalone.min.js': { 'jQuery-QueryBuilder/dist/js': 'jQueryQueryBuilder/js' },
                     'daterangepicker.js': { 'bootstrap-daterangepicker': 'bootstrap-daterangepicker/js' },
-                    'nv.d3.min.js': { 'nvd3/build': 'nvd3' },
                     'jquery.sparkline.min.js': { 'jquery-sparkline': 'sparkline' },
                     'table-dragger.js': { 'table-dragger/dist': 'table-dragger' },
                     'jstree.min.js': { 'jstree/dist': 'jstree' },
                     'jquery.steps.min.js': { 'jquery-steps/build': 'jquery-steps' },
-                    'dropzone-amd-module.js': { 'dropzone/dist': "dropzone/js" }
+                    'dropzone-amd-module.js': { 'dropzone/dist': "dropzone/js" },
+                    'lossless-json.js': { 'lossless-json/dist': 'lossless-json' }
                 }
 
             },
@@ -153,7 +153,6 @@ module.exports = function(grunt) {
                     }],
                     'query-builder.default.min.css': { 'jQuery-QueryBuilder/dist/css': 'jQueryQueryBuilder/css' },
                     'daterangepicker.css': { 'bootstrap-daterangepicker': 'bootstrap-daterangepicker/css' },
-                    'nv.d3.min.css': { 'nvd3/build': 'nvd3/css' },
                     'pretty-checkbox.min.css': { 'pretty-checkbox/dist': 'pretty-checkbox/css' },
                     'dropzone.css': { 'dropzone/dist': "dropzone/css" }
                 }
@@ -184,7 +183,7 @@ module.exports = function(grunt) {
                     ],
                     'LICENSE.md': [{ 'backbone.babysitter': 'backbone-babysitter' },
                         { 'backbone.wreqr': 'backbone-wreqr' },
-                        { 'nvd3': 'nvd3/' }
+                        { 'lossless-json': 'lossless-json' }
                     ],
                     'license.txt': [{ 'backbone.marionette': 'backbone-marionette' }],
                     'license': [{ 'table-dragger': 'table-dragger' }],
@@ -223,7 +222,7 @@ module.exports = function(grunt) {
             build: {
                 expand: true,
                 cwd: modulesPath,
-                src: ['**', '!**/scss/**', "!index.html.tpl"],
+                src: ['**', '!**/scss/**', "!**/atlas-lineage/**", "**/atlas-lineage/dist/**", "!index.html.tpl"],
                 dest: distPath
             }
         },

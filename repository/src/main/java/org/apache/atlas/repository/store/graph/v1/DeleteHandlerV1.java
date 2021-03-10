@@ -36,7 +36,7 @@ import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
-import org.apache.atlas.store.DeleteType;
+import org.apache.atlas.DeleteType;
 import org.apache.atlas.type.*;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection;
@@ -108,7 +108,13 @@ public abstract class DeleteHandlerV1 {
             // Record all deletion candidate entities in RequestContext
             // and gather deletion candidate vertices.
             for (GraphHelper.VertexInfo vertexInfo : getOwnedVertices(instanceVertex)) {
-                requestContext.recordEntityDelete(vertexInfo.getEntity());
+                AtlasEntityHeader entityHeader = vertexInfo.getEntity();
+
+                if (requestContext.isPurgeRequested()) {
+                    entityHeader.setClassifications(entityRetriever.getAllClassifications(vertexInfo.getVertex()));
+                }
+
+                requestContext.recordEntityDelete(entityHeader);
                 deletionCandidateVertices.add(vertexInfo.getVertex());
             }
         }
@@ -155,9 +161,6 @@ public abstract class DeleteHandlerV1 {
 
                 continue;
             }
-
-            // re-evaluate tag propagation
-            removeTagPropagation(edge);
 
             deleteEdge(edge, isInternal || forceDelete);
         }
@@ -958,10 +961,13 @@ public abstract class DeleteHandlerV1 {
                     deleteRelationship(edge);
                 } else {
                     AtlasVertex    outVertex = edge.getOutVertex();
-                    AtlasVertex    inVertex  = edge.getInVertex();
-                    AtlasAttribute attribute = getAttributeForEdge(edge.getLabel());
 
-                    deleteEdgeBetweenVertices(outVertex, inVertex, attribute);
+                    if (!isDeletedEntity(outVertex)) {
+                        AtlasVertex inVertex = edge.getInVertex();
+                        AtlasAttribute attribute = getAttributeForEdge(edge.getLabel());
+
+                        deleteEdgeBetweenVertices(outVertex, inVertex, attribute);
+                    }
                 }
             }
         }
@@ -969,15 +975,26 @@ public abstract class DeleteHandlerV1 {
         _deleteVertex(instanceVertex, force);
     }
 
+    private boolean isDeletedEntity(AtlasVertex entityVertex) {
+        boolean            ret      = false;
+        String             outGuid  = GraphHelper.getGuid(entityVertex);
+        AtlasEntity.Status outState = GraphHelper.getStatus(entityVertex);
+
+        //If the reference vertex is marked for deletion, skip updating the reference
+        if (outState == AtlasEntity.Status.DELETED || (outGuid != null && RequestContext.get().isDeletedEntity(outGuid))) {
+            ret = true;
+        }
+
+        return ret;
+    }
+
     public void deleteClassificationVertex(AtlasVertex classificationVertex, boolean force) {
         if (LOG.isDebugEnabled()) {
             LOG.debug("Deleting classification vertex", string(classificationVertex));
         }
 
-        List<AtlasEdge> incomingClassificationEdges = getIncomingClassificationEdges(classificationVertex);
-
         // delete classification vertex only if it has no more entity references (direct or propagated)
-        if (CollectionUtils.isEmpty(incomingClassificationEdges)) {
+        if (!hasEntityReferences(classificationVertex)) {
             _deleteVertex(classificationVertex, force);
         }
     }
@@ -993,42 +1010,39 @@ public abstract class DeleteHandlerV1 {
         }
         entityVertex.addListProperty(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, classificationName);
 
-        String propClsNames = entityVertex.getProperty(PROPAGATED_CLASSIFICATION_NAMES_KEY, String.class);
-
-        propClsNames = StringUtils.isEmpty(propClsNames) ? CLASSIFICATION_NAME_DELIMITER + classificationName
-                                                         : (propClsNames + classificationName);
-
-        propClsNames = propClsNames + CLASSIFICATION_NAME_DELIMITER;
-        entityVertex.setProperty(PROPAGATED_CLASSIFICATION_NAMES_KEY, propClsNames);
+        entityVertex.setProperty(PROPAGATED_CLASSIFICATION_NAMES_KEY, getDelimitedPropagatedClassificationNames(entityVertex, classificationName));
     }
 
-    private void removeFromPropagatedClassificationNames(AtlasVertex entityVertex, String classificationName) {
+    public void removeFromPropagatedClassificationNames(AtlasVertex entityVertex, String classificationName) {
         if (entityVertex != null && StringUtils.isNotEmpty(classificationName)) {
-            List<String> propagatedTraitNames = getTraitNames(entityVertex, true);
-
-            propagatedTraitNames.remove(classificationName);
-
-            setPropagatedClassificationNames(entityVertex, propagatedTraitNames);
-        }
-    }
-
-    private void setPropagatedClassificationNames(AtlasVertex entityVertex, List<String> classificationNames) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Adding property {} = \"{}\" to vertex {}", PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, classificationNames, string(entityVertex));
-        }
-
-        entityVertex.removeProperty(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY);
-        entityVertex.removeProperty(PROPAGATED_CLASSIFICATION_NAMES_KEY);
-
-        if (CollectionUtils.isNotEmpty(classificationNames)) {
-            for (String classificationName : classificationNames) {
-                entityVertex.addListProperty(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, classificationName);
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Removing from property: {} value: {} in vertex: {}", PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, classificationName, string(entityVertex));
             }
 
-            String propClsName = CLASSIFICATION_NAME_DELIMITER + StringUtils.join(classificationNames, CLASSIFICATION_NAME_DELIMITER) + CLASSIFICATION_NAME_DELIMITER;
+            entityVertex.removePropertyValue(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, classificationName);
 
-            entityVertex.setProperty(PROPAGATED_CLASSIFICATION_NAMES_KEY, propClsName);
+            List<String> propagatedTraitNames = getPropagatedTraitNames(entityVertex);
+
+            if (CollectionUtils.isNotEmpty(propagatedTraitNames)) {
+                propagatedTraitNames.remove(classificationName);
+
+                String propClsName = CLASSIFICATION_NAME_DELIMITER + StringUtils.join(propagatedTraitNames, CLASSIFICATION_NAME_DELIMITER) + CLASSIFICATION_NAME_DELIMITER;
+
+                entityVertex.setProperty(PROPAGATED_CLASSIFICATION_NAMES_KEY, propClsName);
+            }
         }
+    }
+
+    private String getDelimitedPropagatedClassificationNames(AtlasVertex entityVertex, String classificationName) {
+        String ret = entityVertex.getProperty(PROPAGATED_CLASSIFICATION_NAMES_KEY, String.class);
+
+        if (StringUtils.isEmpty(ret)) {
+            ret = CLASSIFICATION_NAME_DELIMITER + classificationName + CLASSIFICATION_NAME_DELIMITER;
+        } else {
+            ret = ret + classificationName + CLASSIFICATION_NAME_DELIMITER;
+        }
+
+        return ret;
     }
 
     /**

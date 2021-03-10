@@ -212,7 +212,7 @@ public abstract class TinkerpopGraphQuery<V, E> implements AtlasGraphQuery<V, E>
         Preconditions.checkArgument(limit >= 0, "Limit must be non-negative");
 
         // Compute the overall result by combining the results of all the AndConditions (nested within OR) together.
-        Set<AtlasVertex<V, E>> result = new HashSet<>();
+        Set<AtlasVertex<V, E>> result = new LinkedHashSet<>();
         long resultIdx = 0;
         for(AndCondition andExpr : queryCondition.getAndTerms()) {
             if (result.size() == limit) {

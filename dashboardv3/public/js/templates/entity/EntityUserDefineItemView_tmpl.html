@@ -41,7 +41,9 @@
             <p class="errorMsg" data-id="charSupportMsg"></p>
         </td>
     </tr>
+    {{#if allValueRemovedUpdate}}
+    All properties has been removed. To add a property, click <a href="javascript:void(0)" data-id="addItem">here</a>{{else}}
     {{#ifCond items.length "===" 0}}
     No properties have been created yet. To add a property, click <a href="javascript:void(0)" data-id="addItem">here</a>
-    {{/ifCond}}
+    {{/ifCond}}{{/if}}
 </table>

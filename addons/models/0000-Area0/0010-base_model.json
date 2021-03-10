@@ -25,6 +25,26 @@
         {
           "ordinal": 4,
           "value": "IMPORT_DELETE_REPL"
+        },
+        {
+          "ordinal": 5,
+          "value": "TYPE_DEF_CREATE"
+        },
+        {
+          "ordinal": 6,
+          "value": "TYPE_DEF_UPDATE"
+        },
+        {
+          "ordinal": 7,
+          "value": "TYPE_DEF_DELETE"
+        },
+        {
+          "ordinal": 8,
+          "value": "SERVER_START"
+        },
+        {
+          "ordinal": 9,
+          "value": "SERVER_STATE_ACTIVE"
         }
       ]
     }
@@ -195,6 +215,14 @@
           "isUnique": false
         }
       ]
+    },
+    {
+      "name": "Path",
+      "superTypes": [
+        "DataSet"
+      ],
+      "serviceType": "atlas_core",
+      "typeVersion": "1.0"
     },
     {
       "name": "AtlasServer",

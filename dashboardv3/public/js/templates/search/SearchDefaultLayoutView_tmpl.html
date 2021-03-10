@@ -16,11 +16,11 @@
 -->
 <div class="f-right clearfix" data-id="resizable" style="transition: width ease 0.2s;padding-bottom: 41px;">
     <div class="search-container center">
+        {{#if entityCreate}}
         <div class="create-entity">
-            {{#if entityCreate}}
             <div class="inline"><button style="margin-top: 10px" class="btn btn-action btn-sm" data-id="createNewEntity"><i class="fa fa-plus"></i>&nbsp;Create Entity</button></div>
-            {{/if}}
         </div>
+        {{/if}}
         <div class="default-global-search row group-box">
             <div id="r_globalSearchLayoutView" class="global-search-container col-sm-12"></div>
         </div>
@@ -30,7 +30,7 @@
         <button class="btn-action btn-sm  attribute-filter-text" data-id='attrFilter'> <i class="fa fa-angle-right"></i> Filters</button>
         <button class='btn-action btn-sm' data-id='clearQuerySearch'>Clear</button>
         <div class="attribute-filter-container hide">
-            <div class="panel panel-default expand_collapse_panel-icon" data-id="includeExclude">
+            <div class="panel panel-default expand_collapse_panel-icon" data-id="includeExclude" style="margin-bottom: 0px;">
                 <div class="panel-heading" data-toggle="collapse" href="#collapseIncludeExclude" aria-expanded="true">
                     <h4 class="panel-title">
                         <a>Include/Exclude</a>
@@ -40,8 +40,8 @@
                     </div>
                 </div>
                 <div id="collapseIncludeExclude" class="panel-collapse collapse in">
-                    <div class="panel-body">
-                        <div class="form-group filter-box">
+                    <div class="panel-body" style="padding: 4px 15px;">
+                        <div class="form-group filter-box" style="margin: 0;">
                             <div class="entity-detail-table-toggle">
                                 <div class="pretty p-switch p-fill">
                                     <input type="checkbox" data-id="checkDeletedEntity" data-value="includeDE" id="historicalentities" />

@@ -62,6 +62,7 @@ public class AtlasTypeRegistry {
         commonIndexFieldNameCache = new HashMap<>();
 
         resolveReferencesForRootTypes();
+        resolveIndexFieldNamesForRootTypes();
     }
 
     // used only by AtlasTransientTypeRegistry
@@ -72,6 +73,7 @@ public class AtlasTypeRegistry {
         commonIndexFieldNameCache = other.commonIndexFieldNameCache;
 
         resolveReferencesForRootTypes();
+        resolveIndexFieldNamesForRootTypes();
     }
 
     public Collection<String> getAllTypeNames() { return registryData.allTypes.getAllTypeNames(); }
@@ -272,6 +274,22 @@ public class AtlasTypeRegistry {
         } catch (AtlasBaseException e) {
             LOG.error("Failed to initialize root types", e);
             throw new RuntimeException(e);
+        }
+    }
+
+    private void resolveIndexFieldNamesForRootTypes() {
+        for (AtlasStructType structType : Arrays.asList(AtlasEntityType.ENTITY_ROOT, AtlasClassificationType.CLASSIFICATION_ROOT)) {
+            for (AtlasAttribute attribute : structType.getAllAttributes().values()) {
+                String indexFieldName = getIndexFieldName(attribute.getVertexPropertyName());
+
+                if (StringUtils.isNotEmpty(indexFieldName)) {
+                    attribute.setIndexFieldName(indexFieldName);
+                }
+
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Attribute {} with index name {} is added", attribute.getVertexPropertyName(), attribute.getIndexFieldName());
+                }
+            }
         }
     }
 
@@ -732,10 +750,6 @@ public class AtlasTypeRegistry {
             }
 
             if (typeDef != null) {
-                if (this.isRegisteredType(typeDef.getName())) {
-                    throw new AtlasBaseException(AtlasErrorCode.TYPE_ALREADY_EXISTS, typeDef.getName());
-                }
-
                 if (typeDef.getClass().equals(AtlasEnumDef.class)) {
                     AtlasEnumDef enumDef = (AtlasEnumDef) typeDef;
 

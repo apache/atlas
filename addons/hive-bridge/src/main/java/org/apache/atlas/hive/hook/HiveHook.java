@@ -77,7 +77,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     private static final int     nameCacheDatabaseMaxCount;
     private static final int     nameCacheTableMaxCount;
     private static final int     nameCacheRebuildIntervalSeconds;
-    private static final boolean isAwsS3AtlasModelVersionV2;
+    private static final String  awsS3AtlasModelVersion;
 
     private static final boolean                       skipHiveColumnLineageHive20633;
     private static final int                           skipHiveColumnLineageHive20633InputsThreshold;
@@ -101,7 +101,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         nameCacheDatabaseMaxCount       = atlasProperties.getInt(HOOK_NAME_CACHE_DATABASE_COUNT, 10000);
         nameCacheTableMaxCount          = atlasProperties.getInt(HOOK_NAME_CACHE_TABLE_COUNT, 10000);
         nameCacheRebuildIntervalSeconds = atlasProperties.getInt(HOOK_NAME_CACHE_REBUID_INTERVAL_SEC, 60 * 60); // 60 minutes default
-        isAwsS3AtlasModelVersionV2      = StringUtils.equalsIgnoreCase(atlasProperties.getString(HOOK_AWS_S3_ATLAS_MODEL_VERSION, HOOK_AWS_S3_ATLAS_MODEL_VERSION_V2), HOOK_AWS_S3_ATLAS_MODEL_VERSION_V2);
+        awsS3AtlasModelVersion          = atlasProperties.getString(HOOK_AWS_S3_ATLAS_MODEL_VERSION, HOOK_AWS_S3_ATLAS_MODEL_VERSION_V2);
         skipHiveColumnLineageHive20633                = atlasProperties.getBoolean(HOOK_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633, false);
         skipHiveColumnLineageHive20633InputsThreshold = atlasProperties.getInt(HOOK_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633_INPUTS_THRESHOLD, 15); // skip if avg # of inputs is > 15
         hiveProcessPopulateDeprecatedAttributes       = atlasProperties.getBoolean(HOOK_HIVE_PROCESS_POPULATE_DEPRECATED_ATTRIBUTES, false);
@@ -164,6 +164,11 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     public HiveHook() {
     }
 
+    public HiveHook(String name) {
+        super(name);
+    }
+
+
     @Override
     public void run(HookContext hookContext) throws Exception {
         if (LOG.isDebugEnabled()) {
@@ -196,10 +201,12 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
 
                 case DROPTABLE:
                 case DROPVIEW:
+                case DROP_MATERIALIZED_VIEW:
                     event = new DropTable(context);
                 break;
 
                 case CREATETABLE_AS_SELECT:
+                case CREATE_MATERIALIZED_VIEW:
                 case CREATEVIEW:
                 case ALTERVIEW_AS:
                 case LOAD:
@@ -257,7 +264,9 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         return convertHdfsPathToLowerCase;
     }
 
-    public boolean isAwsS3AtlasModelVersionV2() { return isAwsS3AtlasModelVersionV2; }
+    public String getAwsS3AtlasModelVersion() {
+        return awsS3AtlasModelVersion;
+    }
 
     public boolean getSkipHiveColumnLineageHive20633() {
         return skipHiveColumnLineageHive20633;

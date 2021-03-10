@@ -35,6 +35,7 @@ import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations.EntityOperation;
 import org.apache.atlas.model.notification.EntityNotification;
+import org.apache.atlas.repository.audit.AtlasAuditService;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
@@ -59,6 +60,8 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.PROPAGATED_CLASSIFICATION_ADD;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.PROPAGATED_CLASSIFICATION_DELETE;
@@ -356,7 +359,9 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
         Map<String, List<AtlasClassification>> removedPropagations = context.getRemovedPropagations();
 
         notifyPropagatedEntities(addedPropagations, PROPAGATED_CLASSIFICATION_ADD);
+        context.clearAddedPropagations();
         notifyPropagatedEntities(removedPropagations, PROPAGATED_CLASSIFICATION_DELETE);
+        context.clearRemovePropagations();
     }
 
     @Override
@@ -402,8 +407,17 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
         return listener.getClass().getSimpleName();
     }
 
+    private static final Predicate<AtlasEntityHeader> PRED_IS_NOT_TYPE_AUDIT_ENTITY = obj -> !obj.getTypeName().equals(AtlasAuditService.ENTITY_TYPE_AUDIT_ENTRY);
+
+    private boolean skipAuditEntries(List<AtlasEntityHeader> entityHeaders) {
+        return CollectionUtils.isEmpty(entityHeaders) || !entityHeaders.stream().anyMatch(PRED_IS_NOT_TYPE_AUDIT_ENTITY);
+    }
+
     private void notifyListeners(List<AtlasEntityHeader> entityHeaders, EntityOperation operation, boolean isImport) throws AtlasBaseException {
         if (CollectionUtils.isEmpty(entityHeaders)) {
+            return;
+        }
+        if (skipAuditEntries(entityHeaders)) {
             return;
         }
 

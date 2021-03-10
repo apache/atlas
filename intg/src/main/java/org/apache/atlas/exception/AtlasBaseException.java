@@ -19,7 +19,6 @@ package org.apache.atlas.exception;
 
 import org.apache.atlas.AtlasErrorCode;
 
-import javax.ws.rs.core.Response;
 import java.util.List;
 
 /**

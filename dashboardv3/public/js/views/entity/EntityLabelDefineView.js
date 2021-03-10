@@ -44,13 +44,15 @@ define(['require',
         ui: {
             addLabelOptions: "[data-id='addLabelOptions']",
             addLabels: "[data-id='addLabels']",
-            saveLabels: "[data-id='saveLabels']"
+            saveLabels: "[data-id='saveLabels']",
+            cancel: "[data-id='cancel']"
         },
         events: function() {
             var events = {};
             events["change " + this.ui.addLabelOptions] = 'onChangeLabelChange';
             events["click " + this.ui.addLabels] = 'handleBtnClick';
             events["click " + this.ui.saveLabels] = 'saveUserDefinedLabels';
+            events["click " + this.ui.cancel] = 'onCancelClick';
             return events;
         },
         initialize: function(options) {
@@ -70,7 +72,7 @@ define(['require',
         populateLabelOptions: function() {
             var that = this,
                 str = this.labels.map(function(label) {
-                    return "<option selected > " + label + " </option>";
+                    return "<option selected > " + _.escape(label) + " </option>";
                 });
             this.ui.addLabelOptions.html(str);
             var getLabelData = function(data, selectedData) {
@@ -102,7 +104,7 @@ define(['require',
                     delay: 250,
                     data: function(params) {
                         return {
-                            prefixString: _.escape(params.term), // search term
+                            prefixString: params.term, // search term
                             fieldName: '__labels'
                         };
                     },
@@ -124,12 +126,12 @@ define(['require',
             if (!state.id) {
                 return state.text;
             }
-            if (!state.element) {
+            if (!state.element && state.text.trim() !== "") {
                 return $("<span>Add<strong> '" + _.escape(state.text) + "'</strong></span>");
             }
         },
         onChangeLabelChange: function() {
-            this.labels = this.ui.addLabelOptions.val().map(function(v) { return _.escape(v) });
+            this.labels = this.ui.addLabelOptions.val();
         },
         handleBtnClick: function() {
             this.swapItem = !this.swapItem;
@@ -140,10 +142,16 @@ define(['require',
             }
             this.render();
         },
+        onCancelClick: function() {
+            this.labels = this.entityModel.get("labels") || [];
+            this.swapItem = false;
+            this.saveLabels = false;
+            this.render();
+        },
         saveUserDefinedLabels: function() {
             var that = this;
             var entityJson = that.entityModel.toJSON();
-            if (entityJson.labels !== undefined || this.labels.length !== 0) {
+            if ((entityJson.labels && entityJson.labels.length !== 0) || this.labels.length !== 0) {
                 var payload = this.labels;
                 that.entityModel.saveEntityLabels(entityJson.guid, {
                     data: JSON.stringify(payload),

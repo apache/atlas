@@ -42,7 +42,7 @@ def main():
     atlas_pid_file = mc.pidFile(atlas_home)
 
     try:
-        pf = file(atlas_pid_file, 'r')
+        pf = open(atlas_pid_file, 'r')
         pid = int(pf.read().strip())
         pf.close()
     except:
@@ -60,7 +60,7 @@ def main():
 
     mc.wait_for_shutdown(pid, "stopping atlas", 30)
     if not mc.exist_pid(pid):
-        print "Apache Atlas Server stopped!!!\n"
+        print("Apache Atlas Server stopped!!!\n")
 
     # assuming kill worked since process check on windows is more involved...
     if os.path.exists(atlas_pid_file):
@@ -68,10 +68,9 @@ def main():
 
     # stop solr
     if mc.is_solr_local(confdir):
+        mc.run_solr(mc.solrBinDir(atlas_home), "stop", None, mc.solrPort(), None, True, mc.solrHomeDir(atlas_home))
 
-        mc.run_solr(mc.solrBinDir(atlas_home), "stop", None, mc.solrPort(), None, True)
-
-    if mc.is_cassandra_local(confdir):
+    if mc.is_zookeeper_local(confdir):
         mc.run_zookeeper(mc.zookeeperBinDir(atlas_home), "stop")
 
     # stop elasticsearch
@@ -79,7 +78,7 @@ def main():
         logdir = os.path.join(atlas_home, 'logs')
         elastic_pid_file = os.path.join(logdir, 'elasticsearch.pid')
         try:
-            pf = file(elastic_pid_file, 'r')
+            pf = open(elastic_pid_file, 'r')
             pid = int(pf.read().strip())
             pf.close()
         except:
@@ -98,7 +97,7 @@ def main():
 
         mc.wait_for_shutdown(pid, "stopping elasticsearch", 30)
         if not mc.exist_pid(pid):
-            print "Elasticsearch stopped!!!\n"
+            print("Elasticsearch stopped!!!\n")
 
         # assuming kill worked since process check on windows is more involved...
         if os.path.exists(elastic_pid_file):
@@ -128,8 +127,8 @@ if __name__ == '__main__':
     try:
         returncode = main()
     except Exception as e:
-        print "Exception: %s " % str(e)
-        print traceback.format_exc()
+        print("Exception: %s " % str(e))
+        print(traceback.format_exc())
         returncode = -1
 
     sys.exit(returncode)

@@ -23,10 +23,10 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
-import org.apache.atlas.store.DeleteType;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
 import org.apache.commons.lang.StringUtils;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,11 +53,14 @@ public class RequestContext {
     private final Map<String, AtlasEntityHeader>         deletedEntities      = new HashMap<>();
     private final Map<String, AtlasEntity>               entityCache          = new HashMap<>();
     private final Map<String, AtlasEntityWithExtInfo>    entityExtInfoCache   = new HashMap<>();
+    private final Map<String, AtlasEntity>               diffEntityCache      = new HashMap<>();
     private final Map<String, List<AtlasClassification>> addedPropagations    = new HashMap<>();
     private final Map<String, List<AtlasClassification>> removedPropagations  = new HashMap<>();
     private final AtlasPerfMetrics                       metrics              = isMetricsEnabled ? new AtlasPerfMetrics() : null;
     private       List<EntityGuidPair>                   entityGuidInRequest  = null;
     private final Set<String>                            entitiesToSkipUpdate = new HashSet<>();
+    private final Set<String>                            onlyCAUpdateEntities = new HashSet<>();
+    private final Set<String>                            onlyBAUpdateEntities = new HashSet<>();
 
     private String       user;
     private Set<String>  userGroups;
@@ -71,6 +74,8 @@ public class RequestContext {
     private boolean     isInNotificationProcessing = false;
     private boolean     isInTypePatching           = false;
     private boolean     createShellEntityForNonExistingReference = false;
+    private boolean     skipFailedEntities = false;
+    private String      currentTypePatchAction = "";
 
     private RequestContext() {
     }
@@ -111,9 +116,12 @@ public class RequestContext {
         this.deletedEntities.clear();
         this.entityCache.clear();
         this.entityExtInfoCache.clear();
+        this.diffEntityCache.clear();
         this.addedPropagations.clear();
         this.removedPropagations.clear();
         this.entitiesToSkipUpdate.clear();
+        this.onlyCAUpdateEntities.clear();
+        this.onlyBAUpdateEntities.clear();
 
         if (metrics != null && !metrics.isEmpty()) {
             METRICS.debug(metrics.toString());
@@ -128,7 +136,21 @@ public class RequestContext {
 
     public static String getCurrentUser() {
         RequestContext context = CURRENT_CONTEXT.get();
-        return context != null ? context.getUser() : null;
+        String ret = context != null ? context.getUser() : null;
+        if (StringUtils.isBlank(ret)) {
+            try {
+                ret = UserGroupInformation.getLoginUser().getShortUserName();
+            } catch (Exception e) {
+                ret = null;
+            }
+            if (StringUtils.isBlank(ret)){
+                ret = System.getProperty("user.name");
+                if (StringUtils.isBlank(ret)) {
+                    ret = "atlas";
+                }
+            }
+        }
+        return ret;
     }
 
     public String getUser() {
@@ -208,6 +230,22 @@ public class RequestContext {
         this.createShellEntityForNonExistingReference = createShellEntityForNonExistingReference;
     }
 
+    public boolean isSkipFailedEntities() {
+        return skipFailedEntities;
+    }
+
+    public void setSkipFailedEntities(boolean skipFailedEntities) {
+        this.skipFailedEntities = skipFailedEntities;
+    }
+
+    public String getCurrentTypePatchAction() {
+        return currentTypePatchAction;
+    }
+
+    public void setCurrentTypePatchAction(String currentTypePatchAction) {
+        this.currentTypePatchAction = currentTypePatchAction;
+    }
+
     public void recordEntityUpdate(AtlasEntityHeader entity) {
         if (entity != null && entity.getGuid() != null && ! entitiesToSkipUpdate.contains(entity.getGuid())) {
             updatedEntities.put(entity.getGuid(), entity);
@@ -218,6 +256,26 @@ public class RequestContext {
         if(! StringUtils.isEmpty(guid)) {
             entitiesToSkipUpdate.add(guid);
         }
+    }
+
+    public void recordEntityWithCustomAttributeUpdate(String guid) {
+        if(! StringUtils.isEmpty(guid)) {
+            onlyCAUpdateEntities.add(guid);
+        }
+    }
+
+    public void recordEntityWithBusinessAttributeUpdate(String guid) {
+        if(! StringUtils.isEmpty(guid)) {
+            onlyBAUpdateEntities.add(guid);
+        }
+    }
+
+    public boolean checkIfEntityIsForCustomAttributeUpdate(String guid) {
+        return StringUtils.isNotEmpty(guid) && onlyCAUpdateEntities.contains(guid);
+    }
+
+    public boolean checkIfEntityIsForBusinessAttributeUpdate(String guid) {
+        return StringUtils.isNotEmpty(guid) && onlyBAUpdateEntities.contains(guid);
     }
 
     public void recordEntityDelete(AtlasEntityHeader entity) {
@@ -297,6 +355,17 @@ public class RequestContext {
         }
     }
 
+    public void cacheDifferentialEntity(AtlasEntity entity) {
+        if (entity != null && entity.getGuid() != null) {
+            diffEntityCache.put(entity.getGuid(), entity);
+        }
+    }
+
+    public AtlasEntity getDifferentialEntity(String guid) {
+        return diffEntityCache.get(guid);
+    }
+
+    public Collection<AtlasEntity> getDifferentialEntities() { return diffEntityCache.values(); }
 
     public Collection<AtlasEntityHeader> getUpdatedEntities() {
         return updatedEntities.values();
@@ -304,6 +373,14 @@ public class RequestContext {
 
     public Collection<AtlasEntityHeader> getDeletedEntities() {
         return deletedEntities.values();
+    }
+
+    public void clearRemovePropagations() {
+        removedPropagations.clear();
+    }
+
+    public void clearAddedPropagations() {
+        addedPropagations.clear();
     }
 
     /**

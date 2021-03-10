@@ -22,16 +22,16 @@ The release of 0.8.3 includes the following improvements to Export and Import AP
    * New [ExportImportAudits](#/ExportImportAudits) for Export & Import operations.
 
 ### Background
-The Import-Export APIs for Atlas facilitate transfer of data to and from a cluster that has Atlas provisioned.
+The Import-Export APIs for Atlas facilitate the transfer of data to and from a cluster that has Atlas provisioned.
 
 The APIs when integrated with backup and/or disaster recovery process will ensure participation of Atlas.
 
 ### Introduction
-There are 2 broad categories viz. Export & Import. The details of the APIs are discussed below.
+There are 2 broad categories viz. Export & Import. The details of the APIs are as discussed below.
 
 The APIs are available only to _admin_ user.
 
-Only a single import or export operation can be performed at a given time. The operations have a potential for generating large amount. They can also put pressure on resources. This restriction tries to alleviate this problem.
+Only a single import or export operation can be performed at a given time. The operations have the potential for generating large amount of data. They can also put pressure on resources. This restriction tries to alleviate this problem.
 
 For Import-Export APIs relating to HDFS path, can be found [here](#/ExportHDFSAPI).
 

@@ -45,7 +45,7 @@ public class HiveMetastoreHookImpl extends MetaStoreEventListener {
     public HiveMetastoreHookImpl(Configuration config) {
         super(config);
 
-        this.hiveHook = new HiveHook();
+        this.hiveHook = new HiveHook(this.getClass().getSimpleName());
         this.hook     = new HiveMetastoreHook();
     }
 

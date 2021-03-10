@@ -40,7 +40,6 @@ define([
             RBusinessMetadataTreeRender: '[data-id="r_businessMetadataTreeRender"]'
         },
         ui: {
-            //search
             searchNode: '[data-id="searchNode"]',
             sliderBar: '[data-id="sliderBar"]',
             menuItems: ".menu-items"
@@ -66,18 +65,10 @@ define([
             };
 
             events["keyup " + this.ui.searchNode] = function(e) {
-                // var type = $(e.currentTarget).data("type");
-                // var showEmpty = false;
-                // this.RClassificationTreeRender.currentView.onSearchClassificationNode(showEmpty);
-                // this.REntityTreeRender.currentView.onSearchEntityNode(showEmpty);
-                var searchString = e.target.value;
+                var searchString = _.escape(e.target.value);
                 if (searchString.trim() === "") {
                     this.$(".panel").removeClass("hide");
-                    // showEmpty = true;
-                    // this.RClassificationTreeRender.currentView.onSearchClassificationNode(showEmpty);
-                    // this.REntityTreeRender.currentView.onSearchEntityNode(showEmpty);
                 }
-                this.$(".panel-collapse.collapse").addClass("in");
                 this.entitySearchTree = this.$('[data-id="entitySearchTree"]');
                 this.classificationSearchTree = this.$('[data-id="classificationSearchTree"]');
                 this.termSearchTree = this.$('[data-id="termSearchTree"]');
@@ -93,12 +84,13 @@ define([
                 this.customFilterSearchTree.jstree("search", searchString);
                 this.businessMetadataSearchTree.jstree(true).show_all();
                 this.businessMetadataSearchTree.jstree("search", searchString);
+                this.$(".panel-heading.dash-button-icon").removeClass("collapsed").attr("aria-expanded", true);
+                this.$(".panel-collapse.collapse").addClass("in").attr("aria-expanded", true).css({ height: "auto" });
 
             };
 
             events["click " + this.ui.menuItems] = function(e) {
                 e.stopPropagation();
-                //this.$('.menu-items').removeClass('open');
             };
             return events;
         },
@@ -201,6 +193,9 @@ define([
             if (options) {
                 _.extend(this.options, options);
                 this.showHideGlobalFilter();
+                if (!this.options.value) {
+                    this.ui.searchNode.val('').trigger('keyup');
+                }
                 if (this.RBusinessMetadataTreeRender.currentView) {
                     this.RBusinessMetadataTreeRender.currentView.manualRender(this.options);
                 }

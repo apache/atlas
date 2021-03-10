@@ -17,20 +17,54 @@
  */
 package org.apache.atlas.query;
 
-public class GremlinQuery {
-    private final String queryStr;
-    private final boolean hasSelect;
+import org.apache.atlas.repository.graphdb.AtlasGraphTraversal;
 
-    public GremlinQuery(String text, boolean hasSelect) {
-        this.queryStr = text;
-        this.hasSelect = hasSelect;
+import java.util.Objects;
+
+public class GremlinQuery {
+    private final String                 queryStr;
+    private final AtlasDSL.QueryMetadata queryMetadata;
+    private final GremlinClauseList      clauses;
+    private final SelectClauseComposer   selectComposer;
+
+    private AtlasGraphTraversal traversal;
+
+    public GremlinQuery(String gremlinQuery, AtlasDSL.QueryMetadata queryMetadata, GremlinClauseList clauses, SelectClauseComposer selectComposer) {
+        this.queryStr       = gremlinQuery;
+        this.queryMetadata  = queryMetadata;
+        this.clauses        = clauses;
+        this.selectComposer = selectComposer;
     }
 
     public String queryStr() {
         return queryStr;
     }
 
+    public GremlinClauseList getClauses() {
+        return clauses;
+    }
+
+    public SelectClauseComposer getSelectComposer() {
+        return selectComposer;
+    }
+
+    public boolean hasValidSelectClause() {
+        return Objects.nonNull(selectComposer) && !selectComposer.getIsSelectNoop();
+    }
+
+    public AtlasDSL.QueryMetadata getQueryMetadata() {
+        return queryMetadata;
+    }
+
+    public void setResult(AtlasGraphTraversal traversal) {
+        this.traversal = traversal;
+    }
+
+    public AtlasGraphTraversal getTraversal() {
+        return traversal;
+    }
+
     public boolean hasSelectList() {
-        return hasSelect;
+        return queryMetadata.hasSelect();
     }
 }

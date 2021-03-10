@@ -24,8 +24,22 @@ define(['require',
 ], function(require, Utils, d3) {
     'use strict';
     _.mixin({
-        numberFormatWithComa: function(number) {
+        numberFormatWithComma: function(number) {
             return d3.format(',')(number);
+        },
+        numberFormatWithBytes: function(number) {
+            if (number > -1) {
+                if (number === 0) {
+                    return "0 Bytes";
+                }
+                var i = number == 0 ? 0 : Math.floor(Math.log(number) / Math.log(1024));
+                if (i > 8) {
+                    return _.numberFormatWithComma(number);
+                }
+                return Number((number / Math.pow(1024, i)).toFixed(2)) + " " + ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"][i];
+            } else {
+                return number;
+            }
         },
         isEmptyArray: function(val) {
             if (val && _.isArray(val)) {
@@ -119,7 +133,24 @@ define(['require',
     $("body").on('click', '.btn', function() {
         $(this).blur();
     });
-
+    $('body').on('keyup input', '.modal-body', function(e) {
+        var target = e.target,
+            isGlossary = (e.target.dataset.id === "searchTerm" || e.target.dataset.id === "searchCategory") ? true : false; // assign term/category modal
+        if ((target.type === "text" || target.type === "textarea") && !isGlossary) {
+            var $this = $(this),
+                $footerButton = $this.parents(".modal").find('.modal-footer button.ok'),
+                requiredInputField = _.filter($this.find('input'), function($e) {
+                    if ($e.getAttribute('placeholder') && $e.getAttribute('placeholder').indexOf('require') >= 0) {
+                        return ($e.value.trim() == "");
+                    }
+                });
+            if (requiredInputField.length > 0) {
+                $footerButton.attr("disabled", "true");
+            } else {
+                $footerButton.removeAttr("disabled");
+            }
+        }
+    });
     $.fn.select2.amd.define("TagHideDeleteButtonAdapter", [
             "select2/utils",
             "select2/selection/multiple",
@@ -352,12 +383,15 @@ define(['require',
     });
     if ($('body').tooltip) {
         $('body').tooltip({
-            selector: '[title]:not(".select2-selection__choice")',
+            selector: '[title]:not(".select2-selection__choice,.select2-selection__rendered")',
             placement: function() {
                 return this.$element.attr("data-placement") || "bottom";
             },
             container: 'body'
         });
     }
-
+    //For closing the modal on browsers navigation
+    $(window).on('popstate', function(){
+        $('body').find('.modal-dialog .close').click();
+    });
 })

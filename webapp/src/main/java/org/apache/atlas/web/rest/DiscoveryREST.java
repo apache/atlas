@@ -55,6 +55,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.util.List;
+import java.util.Set;
 
 /**
  * REST interface for data discovery using dsl or full text search
@@ -325,9 +326,16 @@ public class DiscoveryREST {
                 throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Limit/offset should be non-negative");
             }
 
+            if (StringUtils.isEmpty(parameters.getTypeName()) && !isEmpty(parameters.getEntityFilters())) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "EntityFilters specified without Type name");
+            }
+
+            if (StringUtils.isEmpty(parameters.getClassification()) && !isEmpty(parameters.getTagFilters())) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "TagFilters specified without tag name");
+            }
+
             if (StringUtils.isEmpty(parameters.getTypeName()) && StringUtils.isEmpty(parameters.getClassification()) &&
-                StringUtils.isEmpty(parameters.getQuery()) && StringUtils.isEmpty(parameters.getTermName()) &&
-                isEmpty(parameters.getEntityFilters()) && isEmpty(parameters.getTagFilters())) {
+                StringUtils.isEmpty(parameters.getQuery()) && StringUtils.isEmpty(parameters.getTermName())) {
                 throw new AtlasBaseException(AtlasErrorCode.INVALID_SEARCH_PARAMS);
             }
 
@@ -344,6 +352,7 @@ public class DiscoveryREST {
      *
      * @param guid            Attribute name
      * @param relation        relationName
+     * @param attributes      set of attributes in search result.
      * @param sortByAttribute sort the result using this attribute name, default value is 'name'
      * @param sortOrder       sorting order
      * @param limit           limit the result set to only include the specified number of entries
@@ -355,13 +364,16 @@ public class DiscoveryREST {
      */
     @GET
     @Path("relationship")
-    public AtlasSearchResult searchRelatedEntities(@QueryParam("guid")                   String    guid,
-                                                   @QueryParam("relation")               String    relation,
-                                                   @QueryParam("sortBy")                 String    sortByAttribute,
-                                                   @QueryParam("sortOrder")              SortOrder sortOrder,
-                                                   @QueryParam("excludeDeletedEntities") boolean   excludeDeletedEntities,
-                                                   @QueryParam("limit")                  int       limit,
-                                                   @QueryParam("offset")                 int       offset) throws AtlasBaseException {
+    public AtlasSearchResult searchRelatedEntities(@QueryParam("guid")                            String      guid,
+                                                   @QueryParam("relation")                        String      relation,
+                                                   @QueryParam("attributes")                      Set<String> attributes,
+                                                   @QueryParam("sortBy")                          String      sortByAttribute,
+                                                   @QueryParam("sortOrder")                       SortOrder   sortOrder,
+                                                   @QueryParam("excludeDeletedEntities")          boolean     excludeDeletedEntities,
+                                                   @QueryParam("includeClassificationAttributes") boolean     includeClassificationAttributes,
+                                                   @QueryParam("getApproximateCount")             boolean     getApproximateCount,
+                                                   @QueryParam("limit")                           int         limit,
+                                                   @QueryParam("offset")                          int         offset) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
         Servlets.validateQueryParamLength("relation", relation);
         Servlets.validateQueryParamLength("sortBy", sortByAttribute);
@@ -370,11 +382,20 @@ public class DiscoveryREST {
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.relatedEntitiesSearchUsingGremlin(" + guid +
-                        ", " + relation + ", " + sortByAttribute + ", " + sortOrder + ", " + excludeDeletedEntities + ", " + ", " + limit + ", " + offset + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.relatedEntitiesSearch(" + guid +
+                        ", " + relation + ", " + sortByAttribute + ", " + sortOrder + ", " + excludeDeletedEntities + ", " + getApproximateCount + ", " + limit + ", " + offset + ")");
             }
 
-            return discoveryService.searchRelatedEntities(guid, relation, sortByAttribute, sortOrder, excludeDeletedEntities, limit, offset);
+            SearchParameters parameters = new SearchParameters();
+            parameters.setAttributes(attributes);
+            parameters.setSortBy(sortByAttribute);
+            parameters.setSortOrder(sortOrder);
+            parameters.setExcludeDeletedEntities(excludeDeletedEntities);
+            parameters.setLimit(limit);
+            parameters.setOffset(offset);
+            parameters.setIncludeClassificationAttributes(includeClassificationAttributes);
+            return discoveryService.searchRelatedEntities(guid, relation, getApproximateCount, parameters);
+
         } finally {
             AtlasPerfTracer.log(perf);
         }

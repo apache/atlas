@@ -100,7 +100,7 @@ public class AtlasEntityType extends AtlasStructType {
         super(entityDef);
 
         this.entityDef            = entityDef;
-        this.typeQryStr           = AtlasAttribute.escapeIndexQueryValue(Collections.singleton(getTypeName()));
+        this.typeQryStr           = AtlasAttribute.escapeIndexQueryValue(Collections.singleton(getTypeName()), true);
         this.displayTextAttribute = entityDef.getOption(AtlasEntityDef.OPTION_DISPLAY_TEXT_ATTRIBUTE);
     }
 
@@ -108,7 +108,7 @@ public class AtlasEntityType extends AtlasStructType {
         super(entityDef);
 
         this.entityDef            = entityDef;
-        this.typeQryStr           = AtlasAttribute.escapeIndexQueryValue(Collections.singleton(getTypeName()));
+        this.typeQryStr           = AtlasAttribute.escapeIndexQueryValue(Collections.singleton(getTypeName()), true);
         this.displayTextAttribute = entityDef.getOption(AtlasEntityDef.OPTION_DISPLAY_TEXT_ATTRIBUTE);
 
         resolveReferences(typeRegistry);
@@ -573,7 +573,7 @@ public class AtlasEntityType extends AtlasStructType {
 
     public String getTypeAndAllSubTypesQryStr() {
         if (StringUtils.isEmpty(typeAndAllSubTypesQryStr)) {
-            typeAndAllSubTypesQryStr = AtlasAttribute.escapeIndexQueryValue(typeAndAllSubTypes);
+            typeAndAllSubTypesQryStr = AtlasAttribute.escapeIndexQueryValue(typeAndAllSubTypes, true);
         }
 
         return typeAndAllSubTypesQryStr;
@@ -591,7 +591,7 @@ public class AtlasEntityType extends AtlasStructType {
         return relationshipAttributes.containsKey(attributeName);
     }
 
-    public String getQualifiedAttributeName(String attrName) throws AtlasBaseException {
+    public String getVertexPropertyName(String attrName) throws AtlasBaseException {
         AtlasAttribute ret = getAttribute(attrName);
 
         if (ret == null) {
@@ -599,7 +599,7 @@ public class AtlasEntityType extends AtlasStructType {
         }
 
         if (ret != null) {
-            return ret.getQualifiedName();
+            return ret.getVertexPropertyName();
         }
 
         throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_ATTRIBUTE, attrName, entityDef.getName());

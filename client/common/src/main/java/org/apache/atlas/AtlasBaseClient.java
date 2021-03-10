@@ -37,10 +37,10 @@ import com.sun.jersey.multipart.MultiPart;
 import com.sun.jersey.multipart.file.FileDataBodyPart;
 import com.sun.jersey.multipart.file.StreamDataBodyPart;
 import com.sun.jersey.multipart.impl.MultiPartWriter;
-import org.apache.atlas.model.impexp.AtlasServer;
 import org.apache.atlas.model.impexp.AtlasExportRequest;
 import org.apache.atlas.model.impexp.AtlasImportRequest;
 import org.apache.atlas.model.impexp.AtlasImportResult;
+import org.apache.atlas.model.impexp.AtlasServer;
 import org.apache.atlas.model.metrics.AtlasMetrics;
 import org.apache.atlas.security.SecureClientUtils;
 import org.apache.atlas.type.AtlasType;
@@ -66,7 +66,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ConnectException;
 import java.net.URI;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 
@@ -478,16 +477,16 @@ public abstract class AtlasBaseClient {
     public InputStream exportData(AtlasExportRequest request) throws AtlasServiceException {
         try {
             return (InputStream) callAPI(EXPORT, Object.class, request);
-        } catch (Exception e) {
-            LOG.error("error writing to file", e);
+        } catch (AtlasServiceException e) {
+            LOG.error("error in export API call", e);
             throw new AtlasServiceException(e);
         }
     }
 
     public void exportData(AtlasExportRequest request, String absolutePath) throws AtlasServiceException {
         OutputStream fileOutputStream = null;
+        InputStream inputStream = exportData(request);
         try {
-            InputStream inputStream = exportData(request);
             fileOutputStream = new FileOutputStream(new File(absolutePath));
             byte[] buffer = new byte[8 * 1024];
             int bytesRead;

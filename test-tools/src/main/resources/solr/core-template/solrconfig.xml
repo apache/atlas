@@ -428,6 +428,44 @@
 
     </requestHandler>
 
+    <requestHandler name="/freetext" class="solr.SearchHandler">
+        <!-- default values for query parameters can be specified, these
+             will be overridden by parameters in the request
+          -->
+		<!--
+          35x_t   __guid
+          f0l_t   __typeName
+          i6d_l   __timestamp
+          jr9_t   __state
+          lc5_t   __classificationsText
+          mx1_t   __classificationNames
+          iyt_l   __modificationTimestamp
+          zk5_t  __customAttributes
+          1151_t  __labels
+          ohx_t  __propagatedClassificationNames
+          3thh_s  Asset.__s_name
+          3z0l_s  Asset.__s_owner
+          3wn9_t  Asset.description
+          3v2d_s  Asset.__s_displayName
+          3xfp_s  Asset.__s_userDescription
+          3mdh_t  Referenceable.qualifiedName
+          c45h_t  hive_serde.name
+          cb9h_t  hive_process.queryText
+          c83p_t  hive_process.userName
+         -->
+        <lst name="defaults">
+            <str name="defType">edismax</str>
+            <str name="qf">35x_t f0l_t i6d_l jr9_t lc5_t mx1_t iyt_l zk5_t 1151_t ohx_t 3thh_s 3z0l_s 3wn9_t 3v2d_s 3xfp_s 3mdh_t c45h_t cb9h_t c83p_t</str>
+            <str name="hl.fl">*</str>
+            <bool name="hl.requireFieldMatch">true</bool>
+            <bool name="lowercaseOperators">true</bool>
+            <str name="echoParams">explicit</str>
+            <int name="rows">10</int>
+
+        </lst>
+
+    </requestHandler>
+
   <!-- A request handler that returns indented JSON by default -->
   <requestHandler name="/query" class="solr.SearchHandler">
      <lst name="defaults">

@@ -23,7 +23,7 @@ See [here](#/ExportHDFSAPI) for details on exporting *hdfs_path* entities.
 | _URL_ |_api/atlas/admin/export_ |
 | _Method_ |_POST_ |
 | _URL Parameters_ |_None_ |
-| _Data Parameters_| The class _AtlasExportRequest_ is used to specify the items to export. The list of _AtlasObjectId_(s) allow for specifying the multiple items to export in a session. The _AtlasObjectId_ is a tuple of entity type, name of unique attribute, value of unique attribute. Several items can be specified. See examples below.|
+| _Data Parameters_| The class _AtlasExportRequest_ is used to specify the items to export. The list of _AtlasObjectId_(s) allows for specifying the multiple items to export in a session. The _AtlasObjectId_ is a tuple of entity type, name of unique attribute, value of unique attribute. Several items can be specified. See examples below.|
 | _Success Response_|File stream as _application/zip_.|
 |_Error Response_|Errors that are handled within the system will be returned as _AtlasBaseException_. |
 | _Notes_ | Consumer could choose to consume the output of the API by programmatically using _java.io.ByteOutputStream_ or by manually, save the contents of the stream to a file on the disk.|
@@ -39,10 +39,10 @@ __Method Signature__
 ### Additional Options
 It is possible to specify additional parameters for the _Export_ operation.
 
-Current implementation has 2 options. Both are optional:
+The current implementation has 2 options. Both are optional:
 
 
-* _matchType_ This option configures the approach used for fetching the starting entity. It has follow values:
+* _matchType_ This option configures the approach used for fetching the starting entity. It has the following values:
     * _startsWith_ Search for an entity that is prefixed with the specified criteria.
     * _endsWith_ Search for an entity that is suffixed with the specified criteria.
     * _contains_ Search for an entity that has the specified criteria as a sub-string.
@@ -52,20 +52,20 @@ Current implementation has 2 options. Both are optional:
 
 
 
-* _fetchType_ This option configures the approach used for fetching entities. It has following values:
+* _fetchType_ This option configures the approach used for fetching entities. It has the following values:
     * _FULL_: This fetches all the entities that are connected directly and indirectly to the starting entity. E.g. If a starting entity specified is a table, then this option will fetch the table, database and all the other tables within the database.
     * _CONNECTED_: This fetches all the etnties that are connected directly to the starting entity. E.g. If a starting entity specified is a table, then this option will fetch the table and the database entity only.
     *  _INCREMENTAL_: See [here](#/IncrementalExport) for details.
 
 
 
-If no _matchType_ is specified, exact match is used. Which means, that the entire string is used in the search criteria.
+If no _matchType_ is specified, an exact match is used. Which means, that the entire string is used in the search criteria.
 
-Searching using _matchType_ applies for all types of entities. It is particularly useful for matching entities of type hdfs_path (see [here](#/ExportHDFSAPI)).
+Searching using _matchType_ applies to all types of entities. It is particularly useful for matching entities of type hdfs_path (see [here](#/ExportHDFSAPI)).
 
 The _fetchType_ option defaults to _FULL_.
 
-For complete example see section below.
+For a complete example see the section below.
 
 ### Contents of Exported ZIP File
 

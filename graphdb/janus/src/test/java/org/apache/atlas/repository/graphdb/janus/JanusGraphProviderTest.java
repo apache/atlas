@@ -21,11 +21,14 @@ import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.graph.GraphSandboxUtil;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.runner.LocalSolrRunner;
 import org.apache.commons.configuration.Configuration;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
+
+import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
 
 
 @Test
@@ -37,6 +40,10 @@ public class JanusGraphProviderTest {
     @BeforeTest
     public void setUp() throws Exception {
         GraphSandboxUtil.create();
+
+        if (useLocalSolr()) {
+            LocalSolrRunner.start();
+        }
 
         //First get Instance
         graph         = new AtlasJanusGraph();
@@ -55,6 +62,10 @@ public class JanusGraphProviderTest {
             graph.clear();
         } catch (Exception e) {
             e.printStackTrace();
+        }
+
+        if (useLocalSolr()) {
+            LocalSolrRunner.stop();
         }
     }
 

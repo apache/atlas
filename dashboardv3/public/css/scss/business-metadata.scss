@@ -21,6 +21,7 @@
 
     >li:first-child {
         font-weight: 600;
+        word-break: break-all;
     }
 
     .business-metadata-tree-child {
@@ -38,6 +39,26 @@
         margin-top: 10px;
         font-weight: 100;
     }
+
+    .custom-table {
+        &:not(.bm-create) {
+            .custom-tr {
+
+                .custom-col-1 {
+                    width: calc(50% - 55px);
+
+                    .select2-selection--multiple .select2-selection__rendered {
+                        overflow: scroll;
+                    }
+                }
+
+                .custom-col-2 {
+                    width: 45px;
+                }
+            }
+        }
+    }
+
 }
 
 .business-metadata-options.dropdown {
@@ -69,6 +90,10 @@
 
 .business-metadata-details,
 .admin-details {
+    .tableOverlay {
+        background-color: transparent;
+    }
+
     .expandable .attr-details {
         max-height: 300px;
         overflow: auto;
@@ -76,8 +101,18 @@
         width: calc(100% - 30px);
     }
 
-    .admin-type-dropdown {
-        width: 100px;
+    .expandable .admin-audit-details {
+        display: flex;
+        flex-wrap: wrap;
+        margin-left: 20px;
+
+        .attr-type-container {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 5px 10px;
+            margin: 5px;
+            width: 32%;
+        }
     }
 
     .expandable .admin-attr-details {
@@ -85,6 +120,25 @@
         margin-left: 20px;
         width: calc(100% - 27px);
     }
+
+    .import-export .admin-audit-details {
+        display: table;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+
+        tr>td:nth-child(2) {
+            text-align: right;
+        }
+    }
+}
+
+.admin-details .expandable .admin-audit-details .attr-type-container {
+    max-height: 200px;
+    overflow: auto;
+}
+
+.admin-details .attributeResultContainer {
+    float: left;
 }
 
 .tab-pane {
@@ -134,32 +188,12 @@
 
 .business-metadata-attr-tableOverlay {
     position: absolute;
-    width: 100%;
+    width: calc(100% - 40px);
     height: 100%;
     background: #808080;
     z-index: 99;
     display: none;
     opacity: 0.2;
-}
-
-.business-metadata-details {
-    .backgrid {
-        td.expandable-content {
-            max-width: none;
-            background: #f8f8f8;
-
-            div {
-
-                table {
-                    width: 100%;
-                }
-            }
-        }
-
-        tbody>tr:last-child>td {
-            border-bottom: none;
-        }
-    }
 }
 
 .business-metadata-attr-page {
@@ -185,6 +219,8 @@
 
         .panel-title {
             font-size: 14px;
+            word-break: break-all;
+            width: inherit;
 
             a:hover {
                 color: #686868 !important;
@@ -195,5 +231,13 @@
 
     .btn-group>button {
         color: #686868 !important;
+    }
+
+    td {
+        word-break: break-word;
+    }
+
+    .business-metadata-detail-attr-key {
+        width: 30%;
     }
 }

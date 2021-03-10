@@ -54,6 +54,8 @@ class AtlasEnumDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEnumDef> {
 
         validateType(enumDef);
 
+        AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_CREATE, enumDef), "create enum-def ", enumDef.getName());
+
         AtlasVertex vertex = typeDefStore.findTypeVertexByName(enumDef.getName());
 
         if (vertex != null) {
@@ -77,7 +79,6 @@ class AtlasEnumDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEnumDef> {
           LOG.debug("==> AtlasEnumDefStoreV2.create({}, {})", enumDef, preCreateResult);
         }
 
-        AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_CREATE, enumDef), "create enum-def ", enumDef.getName());
 
         AtlasVertex vertex = (preCreateResult == null) ? preCreate(enumDef) : preCreateResult;
 

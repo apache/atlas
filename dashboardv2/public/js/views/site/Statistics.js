@@ -28,10 +28,12 @@ define(['require',
     'collection/VTagList',
     'utils/CommonViewFunction',
     'utils/Enums',
+    'utils/MigrationEnums',
     'moment',
     'utils/Utils',
+    'utils/Globals',
     'moment-timezone'
-], function(require, Backbone, StatTmpl, StatsNotiTable, TopicOffsetTable, EntityTable, Modal, VCommon, UrlLinks, VTagList, CommonViewFunction, Enums, moment, Utils) {
+], function(require, Backbone, StatTmpl, StatsNotiTable, TopicOffsetTable, EntityTable, Modal, VCommon, UrlLinks, VTagList, CommonViewFunction, Enums, MigrationEnums, moment, Utils, Globals) {
     'use strict';
 
     var StatisticsView = Backbone.Marionette.LayoutView.extend(
@@ -57,15 +59,17 @@ define(['require',
                 memoryCard: "[data-id='memory-card']",
                 memoryPoolUsage: "[data-id='memory-pool-usage-card']",
                 statisticsRefresh: "[data-id='statisticsRefresh']",
-                notificationDetails: "[data-id='notificationDetails']"
+                notificationDetails: "[data-id='notificationDetails']",
+                migrationProgressBar: "[data-id='migrationProgressBar']",
+                migrationProgressBarValue: "[data-id='migrationProgressBarValue']"
             },
             /** ui events hash */
             events: function() {
                 var events = {};
                 events["click " + this.ui.statisticsRefresh] = function(e) {
-                    this.$('.statsContainer,.statsNotificationContainer,.statisticsRefresh').addClass('hide');
-                    this.$('.statsLoader,.statsNotificationLoader').addClass('show');
+                    this.showLoader();
                     this.fetchMetricData();
+                    this.fetchStatusData();
                 };
                 return events;
             },
@@ -77,7 +81,11 @@ define(['require',
                 _.extend(this, options);
                 var that = this;
                 this.DATA_MAX_LENGTH = 25;
-                if (this.isMigrationView !== true) {
+                this.loaderCount = 0;
+                if (this.isMigrationView) {
+                    this.migrationImportStatus = new VTagList();
+                    this.migrationImportStatus.url = UrlLinks.migrationStatusApiUrl();
+                } else {
                     var modal = new Modal({
                         title: 'Statistics',
                         content: this,
@@ -94,12 +102,12 @@ define(['require',
                                 that.fetchMetricData({ update: true });
                             }
                         }]
-                    }).open();
-
+                    });
                     modal.on('closeModal', function() {
                         modal.trigger('cancel');
                     });
                     this.modal = modal;
+                    modal.open();
                 }
 
             },
@@ -111,8 +119,54 @@ define(['require',
                     })
                 }
             },
+            fetchStatusData: function() {
+                var that = this;
+                ++this.loaderCount;
+                that.migrationImportStatus.fetch({
+                    success: function(data) {
+                        var data = _.first(data.toJSON()),
+                            migrationStatus = data.MigrationStatus || null,
+                            operationStatus = migrationStatus.operationStatus,
+                            showProgress = true,
+                            totalProgress = 0,
+                            progressMessage = "";
+                        if (migrationStatus) {
+                            if (MigrationEnums.migrationStatus[operationStatus] === "DONE") {
+                                showProgress = false;
+                            } else if (MigrationEnums.migrationStatus[operationStatus] === "IN_PROGRESS" || MigrationEnums.migrationStatus[operationStatus] === "STARTED") {
+                                var currentIndex = migrationStatus.currentIndex || 0,
+                                    totalCount = migrationStatus.totalCount || 0;
+                                totalProgress = Math.ceil((migrationStatus.currentIndex / migrationStatus.totalCount) * 100)
+                                progressMessage = totalProgress + "%";
+                                that.ui.migrationProgressBar.removeClass("progress-bar-danger");
+                                that.ui.migrationProgressBar.addClass("progress-bar-success");
+                            } else if (MigrationEnums.migrationStatus[operationStatus] === "FAIL") {
+                                totalProgress = "100";
+                                progressMessage = "Failed";
+                                that.ui.migrationProgressBar.addClass("progress-bar-danger");
+                                that.ui.migrationProgressBar.removeClass("progress-bar-success");
+                            }
+                            if (showProgress) {
+                                that.$el.find(".statistics-header>.progress").removeClass("hide");
+                                that.$el.find(".statistics-header>.successStatus").addClass("hide");
+                                that.ui.migrationProgressBar.css({ width: totalProgress + '%' });
+                                that.ui.migrationProgressBarValue.text(progressMessage);
+                            } else {
+                                that.$el.find(".statistics-header>.progress").addClass("hide");
+                                that.$el.find(".statistics-header>.successStatus").removeClass("hide");
+                            }
+                        }
+
+                    },
+                    complete: function() {
+                        --that.loaderCount;
+                        that.hideLoader();
+                    }
+                });
+            },
             fetchMetricData: function(options) {
                 var that = this;
+                ++this.loaderCount;
                 this.metricCollection.fetch({
                     success: function(data) {
                         var data = _.first(data.toJSON());
@@ -120,11 +174,6 @@ define(['require',
                         that.renderEntities({ data: data });
                         that.renderSystemDeatils({ data: data });
                         that.renderClassifications({ data: data });
-                        that.$('.statsContainer,.statsNotificationContainer').removeClass('hide');
-                        if (that.isMigrationView) {
-                            that.$('.statisticsRefresh').removeClass('hide');
-                        }
-                        that.$('.statsLoader,.statsNotificationLoader').removeClass('show');
                         if (options && options.update) {
                             if (that.modal) {
                                 that.modal.$el.find('.header-button .fa-refresh').prop('disabled', false).removeClass('fa-spin');
@@ -133,11 +182,37 @@ define(['require',
                                 content: "Metric data is refreshed"
                             })
                         }
+                    },
+                    complete: function() {
+                        --that.loaderCount;
+                        that.hideLoader()
                     }
                 });
             },
+            hideLoader: function() {
+                if (this.loaderCount === 0) {
+                    var className = ".statsContainer";
+                    if (this.isMigrationView) {
+                        className += ",.statistics-header";
+                    }
+                    this.$(className).removeClass('hide');
+                    this.$('.statsLoader').removeClass('show');
+                }
+            },
+            showLoader: function() {
+                var className = ".statsContainer";
+                if (this.isMigrationView) {
+                    className += ",.statistics-header";
+                }
+                this.$(className).addClass('hide');
+                this.$('.statsLoader').addClass('show');
+            },
             onRender: function() {
                 this.bindEvents();
+                if (this.isMigrationView) {
+                    this.showLoader();
+                    this.fetchStatusData();
+                }
                 this.fetchMetricData();
             },
             closePanel: function(options) {
@@ -202,7 +277,7 @@ define(['require',
                             "type": "classification"
                         })
                     );
-                    this.ui.classification.find(".count").html("&nbsp;(" + _.numberFormatWithComa(tagsCount) + ")");
+                    this.ui.classification.find(".count").html("&nbsp;(" + _.numberFormatWithComma(tagsCount) + ")");
                     if (tagEntitiesKeys.length > this.DATA_MAX_LENGTH) {
                         this.closePanel({
                             el: this.ui.classification
@@ -235,7 +310,7 @@ define(['require',
                             if (type == "shell") {
                                 shellEntityCount += intVal
                             }
-                            intVal = _.numberFormatWithComa(intVal)
+                            intVal = _.numberFormatWithComma(intVal)
                             if (stats[key]) {
                                 stats[key][type] = intVal;
                             } else {
@@ -266,10 +341,10 @@ define(['require',
                             })),
                         })
                     );
-                    this.$('[data-id="activeEntity"]').html("&nbsp;(" + _.numberFormatWithComa(activeEntityCount) + ")");
-                    this.$('[data-id="deletedEntity"]').html("&nbsp;(" + _.numberFormatWithComa(deletedEntityCount) + ")");
-                    this.$('[data-id="shellEntity"]').html("&nbsp;(" + _.numberFormatWithComa(shellEntityCount) + ")");
-                    this.ui.entity.find(".count").html("&nbsp;(" + _.numberFormatWithComa(data.general.entityCount) + ")");
+                    this.$('[data-id="activeEntity"]').html("&nbsp;(" + _.numberFormatWithComma(activeEntityCount) + ")");
+                    this.$('[data-id="deletedEntity"]').html("&nbsp;(" + _.numberFormatWithComma(deletedEntityCount) + ")");
+                    this.$('[data-id="shellEntity"]').html("&nbsp;(" + _.numberFormatWithComma(shellEntityCount) + ")");
+                    this.ui.entity.find(".count").html("&nbsp;(" + _.numberFormatWithComma(data.general.entityCount) + ")");
                     if (statsKeys.length > this.DATA_MAX_LENGTH) {
                         this.closePanel({
                             el: this.ui.entity
@@ -337,7 +412,7 @@ define(['require',
                                     pickValueFrom = argument.key;
                                 }
                                 var returnVal = data.Notification[pickValueFrom];
-                                return returnVal ? _.numberFormatWithComa(returnVal) : 0;
+                                return returnVal ? _.numberFormatWithComma(returnVal) : 0;
                             }
                         })
                     );
@@ -403,7 +478,8 @@ define(['require',
                     var memoryTable = CommonViewFunction.propertyTable({
                         scope: this,
                         formatStringVal: true,
-                        valueObject: systemMemoryData
+                        valueObject: systemMemoryData,
+                        numberFormat: _.numberFormatWithBytes
                     });
                     that.ui.memoryCard.html(
                         memoryTable);
@@ -415,11 +491,11 @@ define(['require',
                 if (type == 'time') {
                     return Utils.millisecondsToTime(value);
                 } else if (type == 'day') {
-                    return moment.tz(value, moment.tz.guess()).format("MM/DD/YYYY h:mm A z");
+                    return Utils.formatDate({ date: value })
                 } else if (type == 'number') {
-                    return _.numberFormatWithComa(value);
+                    return _.numberFormatWithComma(value);
                 } else if (type == 'millisecond') {
-                    return _.numberFormatWithComa(value) + " millisecond/s";
+                    return _.numberFormatWithComma(value) + " millisecond/s";
                 } else if (type == "status-html") {
                     return '<span class="connection-status ' + value + '"></span>';
                 } else {

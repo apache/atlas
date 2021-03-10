@@ -17,8 +17,9 @@
  */
 package org.apache.atlas.discovery;
 
+import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.model.discovery.SearchParameters;
-import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.*;
@@ -26,7 +27,6 @@ import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.solr.common.params.CommonParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,8 +40,10 @@ import java.util.*;
 public class FreeTextSearchProcessor extends SearchProcessor {
     private static final Logger LOG                         = LoggerFactory.getLogger(FreeTextSearchProcessor.class);
     private static final Logger PERF_LOG                    = AtlasPerfTracer.getPerfLogger("FreeTextSearchProcessor");
-    public  static final String SOLR_QT_PARAMETER           = CommonParams.QT;
+    public  static final String SOLR_QT_PARAMETER           = "qt"; // org.apache.solr.common.params.CommonParams.QT;
     public  static final String SOLR_REQUEST_HANDLER_NAME   = "/freetext";
+
+    private static final boolean IS_SOLR_INDEX_BACKEND = isSolrIndexBackend();
 
     private final AtlasIndexQuery indexQuery;
 
@@ -53,11 +55,13 @@ public class FreeTextSearchProcessor extends SearchProcessor {
 
         queryString.append(searchParameters.getQuery());
 
-        if (CollectionUtils.isNotEmpty(context.getEntityTypes()) && context.getEntityTypesQryStr().length() <= MAX_QUERY_STR_LENGTH_TYPES) {
+        if (CollectionUtils.isNotEmpty(context.getEntityTypeNames()) && context.getEntityTypesQryStr().length() <= MAX_QUERY_STR_LENGTH_TYPES) {
             queryString.append(AND_STR).append(context.getEntityTypesQryStr());
         }
 
-        if (CollectionUtils.isNotEmpty(context.getClassificationTypes()) && context.getClassificationTypesQryStr().length() <= MAX_QUERY_STR_LENGTH_TYPES) {
+        graphIndexQueryBuilder.addActiveStateQueryFilter(queryString);
+
+        if (CollectionUtils.isNotEmpty(context.getClassificationTypeNames()) && context.getClassificationTypesQryStr().length() <= MAX_QUERY_STR_LENGTH_TYPES) {
             queryString.append(AND_STR).append(context.getClassificationTypesQryStr());
         }
 
@@ -70,7 +74,9 @@ public class FreeTextSearchProcessor extends SearchProcessor {
     private GraphIndexQueryParameters prepareGraphIndexQueryParameters(SearchContext context, StringBuilder queryString) {
         List<AtlasIndexQueryParameter> parameters = new ArrayList<>();
 
-        parameters.add(context.getGraph().indexQueryParameter(SOLR_QT_PARAMETER, SOLR_REQUEST_HANDLER_NAME));
+        if (IS_SOLR_INDEX_BACKEND) {
+            parameters.add(context.getGraph().indexQueryParameter(SOLR_QT_PARAMETER, SOLR_REQUEST_HANDLER_NAME));
+        }
 
         return new GraphIndexQueryParameters(Constants.VERTEX_INDEX, queryString.toString(), 0, parameters);
     }
@@ -90,9 +96,8 @@ public class FreeTextSearchProcessor extends SearchProcessor {
         }
 
         try {
-            final int     startIdx   = context.getSearchParameters().getOffset();
-            final int     limit      = context.getSearchParameters().getLimit();
-            final boolean activeOnly = context.getSearchParameters().getExcludeDeletedEntities();
+            final int startIdx = context.getSearchParameters().getOffset();
+            final int limit    = context.getSearchParameters().getLimit();
 
             // query to start at 0, even though startIdx can be higher - because few results in earlier retrieval could
             // have been dropped: like vertices of non-entity or non-active-entity
@@ -112,7 +117,7 @@ public class FreeTextSearchProcessor extends SearchProcessor {
                         break;
                     }
 
-                    Iterator<AtlasIndexQuery.Result> idxQueryResult = indexQuery.vertices(qryOffset, limit);
+                    Iterator<AtlasIndexQuery.Result> idxQueryResult = executeIndexQuery(context, indexQuery, qryOffset, limit);
 
                     final boolean isLastResultPage;
                     int resultCount = 0;
@@ -137,11 +142,7 @@ public class FreeTextSearchProcessor extends SearchProcessor {
                             continue;
                         }
 
-                        if (activeOnly && AtlasGraphUtilsV2.getState(vertex) != AtlasEntity.Status.ACTIVE) {
-                            continue;
-                        }
-
-                        if (context.getClassificationType() != null) {
+                        if (CollectionUtils.isNotEmpty(context.getClassificationTypes())) {
                             List<String> entityClassifications = GraphHelper.getAllTraitNames(vertex);
 
                             if (!context.includeClassificationTypes(entityClassifications)) {
@@ -179,5 +180,17 @@ public class FreeTextSearchProcessor extends SearchProcessor {
     @Override
     public long getResultCount() {
         return indexQuery.vertexTotals();
+    }
+
+    private static boolean isSolrIndexBackend() {
+        try {
+            String indexBackEnd = ApplicationProperties.get().getString(ApplicationProperties.INDEX_BACKEND_CONF);
+
+            return ApplicationProperties.INDEX_BACKEND_SOLR.equalsIgnoreCase(indexBackEnd);
+        } catch (AtlasException e) {
+            LOG.error("Failed to get application property {}. Assuming Solr index backend", ApplicationProperties.INDEX_BACKEND_SOLR, e);
+        }
+
+        return true; // default to Solr
     }
 }

@@ -254,9 +254,14 @@ define([
                 popoverOptions: {
                     selector: '.classificationPopover',
                     content: function() {
-                        var type = $(this).data('detail'),
-                            liString = " <li><i class='fa fa-plus'></i><a href='javascript:void(0)' data-fn='onClickCreateTag'>Create Sub-classification</a></li><li><i class='fa fa-list-alt'></i><a href='javascript:void(0)' data-fn='onViewEdit'>View/Edit</a></li><li><i class='fa fa-trash-o'></i><a href='javascript:void(0)' data-fn='onDelete'>Delete</a></li><li><i class='fa fa-search'></i><a href='javascript:void(0)' data-fn='onSelectedSearch'>Search</a></li>"
-                        return "<ul>" + liString + "</ul>";
+                        var name = this.dataset.name || null,
+                            searchString = "<li><i class='fa fa-search'></i><a href='javascript:void(0)' data-fn='onSelectedSearch'>Search</a></li>";
+                        if (name && Enums.addOnClassification.includes(name)) {
+                            return "<ul>" + searchString + "</ul>";
+                        } else {
+                            var liString = " <li><i class='fa fa-plus'></i><a href='javascript:void(0)' data-fn='onClickCreateTag'>Create Sub-classification</a></li><li><i class='fa fa-list-alt'></i><a href='javascript:void(0)' data-fn='onViewEdit'>View/Edit</a></li><li><i class='fa fa-trash-o'></i><a href='javascript:void(0)' data-fn='onDelete'>Delete</a></li>";
+                            return "<ul>" + liString + searchString + "</ul>";
+                        }
                     }
                 }
             });
@@ -438,7 +443,7 @@ define([
                                 name: name
                             });
                             var tagEntityCount = that.entityCountObj.tag.tagEntities[name];
-                            var tagname = tagEntityCount ? name + " (" + _.numberFormatWithComa(tagEntityCount) + ")" : name;
+                            var tagname = tagEntityCount ? name + " (" + _.numberFormatWithComma(tagEntityCount) + ")" : name;
 
                             if (that.options.value) {
                                 isSelectedChild = that.options.value.tag ? that.options.value.tag == name : false;
@@ -481,7 +486,7 @@ define([
                 var modelJSON = model.toJSON();
                 var name = modelJSON.name;
                 var tagEntityCount = that.entityCountObj.tag.tagEntities[name];
-                var tagname = tagEntityCount ? name + " (" + _.numberFormatWithComa(tagEntityCount) + ")" : name,
+                var tagname = tagEntityCount ? name + " (" + _.numberFormatWithComma(tagEntityCount) + ")" : name,
                     isSelected = false;
 
                 if (that.options.value) {
@@ -581,9 +586,10 @@ define([
                         },
                         node_customize: {
                             default: function(el) {
-                                var aTag = $(el).find(">a.jstree-anchor");
-                                aTag.append("<span class='tree-tooltip'>" + aTag.text() + "</span>");
-                                $(el).append('<div class="tools"><i class="fa fa-ellipsis-h classificationPopover" rel="popover"></i></div>');
+                                var aTag = $(el).find(">a.jstree-anchor"),
+                                    nameText = aTag.text();
+                                aTag.append("<span class='tree-tooltip'>" + nameText + "</span>");
+                                $(el).append('<div class="tools"><i class="fa fa-ellipsis-h classificationPopover" rel="popover" data-name=' + nameText + '></i></div>');
                             }
                         },
                         core: {
@@ -646,14 +652,6 @@ define([
                         allowCancel: true
                     }).open();
                 modal.$el.find("button.ok").attr("disabled", "true");
-                view.ui.tagName.on("keyup", function(e) {
-                    modal.$el.find("button.ok").removeAttr("disabled");
-                });
-                view.ui.tagName.on("keyup", function(e) {
-                    if ((e.keyCode == 8 || e.keyCode == 32 || e.keyCode == 46) && e.currentTarget.value.trim() == "") {
-                        modal.$el.find("button.ok").attr("disabled", "true");
-                    }
-                });
                 modal.on("shownModal", function() {
                     view.ui.parentTag.select2({
                         multiple: true,
@@ -718,7 +716,7 @@ define([
                         return activeTagObj.name.toLowerCase() === obj.name.toLowerCase();
                     });
                     if (duplicateCheck) {
-                        duplicateAttributeList.push(obj.name);
+                        duplicateAttributeList.push(_.escape(obj.name));
                     }
                 });
                 var notifyObj = {
@@ -808,9 +806,12 @@ define([
             var that = this,
                 notifyObj = {
                     modal: true,
-                    ok: function(argument) {
+                    ok: function(obj) {
+                        that.notificationModal = obj;
+                        obj.showButtonLoader();
                         that.onNotifyOk();
                     },
+                    okCloses: false,
                     cancel: function(argument) {}
                 };
             var text = "Are you sure you want to delete the classification";
@@ -847,6 +848,10 @@ define([
                             delete urlObj.tag;
                             var url = urlObj.type || urlObj.term || urlObj.query ? "#!/search/searchResult" : "#!/search"
                             that.triggerSearch(urlObj, url);
+                        },
+                        complete: function() {
+                            that.notificationModal.hideButtonLoader();
+                            that.notificationModal.remove();
                         }
                     });
                 } else {

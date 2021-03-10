@@ -24,8 +24,9 @@ define(['require',
     'utils/Globals',
     'utils/Enums',
     'utils/Messages',
-    'utils/UrlLinks'
-], function(require, Backbone, DetailPageLayoutViewTmpl, Utils, CommonViewFunction, Globals, Enums, Messages, UrlLinks) {
+    'utils/UrlLinks',
+    'collection/VEntityList'
+], function(require, Backbone, DetailPageLayoutViewTmpl, Utils, CommonViewFunction, Globals, Enums, Messages, UrlLinks, VEntityList) {
     'use strict';
 
     var DetailPageLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -52,6 +53,7 @@ define(['require',
             /** ui selector cache */
             ui: {
                 tagClick: '[data-id="tagClick"]',
+                pTagCountClick: '[data-id="pTagCountClick"]',
                 termClick: '[data-id="termClick"]',
                 propagatedTagDiv: '[data-id="propagatedTagDiv"]',
                 title: '[data-id="title"]',
@@ -84,6 +86,14 @@ define(['require',
                             trigger: true
                         });
                     }
+                };
+                events["click " + this.ui.pTagCountClick] = function(e) {
+                    var tag = $(e.currentTarget).parent().children().first().text();
+                    Utils.setUrl({
+                        url: '#!/detailPage/' + this.id + '?tabActive=classification&filter=' + tag,
+                        mergeBrowserUrl: false,
+                        trigger: true
+                    });
                 };
                 events["click " + this.ui.termClick] = function(e) {
                     if (e.target.nodeName.toLocaleLowerCase() != "i") {
@@ -123,6 +133,9 @@ define(['require',
             initialize: function(options) {
                 _.extend(this, _.pick(options, 'value', 'collection', 'id', 'entityDefCollection', 'typeHeaders', 'enumDefCollection', 'classificationDefCollection', 'glossaryCollection', 'businessMetadataDefCollection', 'searchVent'));
                 $('body').addClass("detail-page");
+                this.collection = new VEntityList([], {});
+                this.collection.url = UrlLinks.entitiesApiUrl({ guid: this.id, minExtInfo: true });
+                this.fetchCollection();
             },
             bindEvents: function() {
                 var that = this;
@@ -130,7 +143,13 @@ define(['require',
                     this.entityObject = this.collection.first().toJSON();
                     var collectionJSON = this.entityObject.entity;
                     this.activeEntityDef = this.entityDefCollection.fullCollection.find({ name: collectionJSON.typeName });
-
+                    if (!this.activeEntityDef) {
+                        Utils.backButtonClick();
+                        Utils.notifyError({
+                            content: "Unknown Entity-Type"
+                        });
+                        return true;
+                    }
                     if (collectionJSON && _.startsWith(collectionJSON.typeName, "AtlasGlossary")) {
                         this.$(".termBox").hide();
                     }
@@ -152,6 +171,7 @@ define(['require',
 
                     // check if entity is process
                     var isProcess = false,
+                        typeName = Utils.getName(collectionJSON, 'typeName'),
                         superTypes = Utils.getNestedSuperTypes({ data: this.activeEntityDef.toJSON(), collection: this.entityDefCollection }),
                         isLineageRender = _.find(superTypes, function(type) {
                             if (type === "DataSet" || type === "Process") {
@@ -161,7 +181,9 @@ define(['require',
                                 return true;
                             }
                         });
-
+                    if (!isLineageRender) {
+                        isLineageRender = (typeName === "DataSet" || typeName === "Process") ? true : null;
+                    }
                     if (collectionJSON && collectionJSON.guid) {
                         var tagGuid = collectionJSON.guid;
                         this.readOnly = Enums.entityStateReadOnly[collectionJSON.status];
@@ -175,6 +197,7 @@ define(['require',
                     }
                     if (collectionJSON) {
                         this.name = Utils.getName(collectionJSON);
+
                         if (collectionJSON.attributes) {
                             if (collectionJSON.typeName) {
                                 collectionJSON.attributes.typeName = _.escape(collectionJSON.typeName);
@@ -193,16 +216,20 @@ define(['require',
                                     titleName += '<button title="Deleted" class="btn btn-action btn-md deleteBtn"><i class="fa fa-trash"></i> Deleted</button>';
                                 }
                                 this.ui.title.html(titleName);
-                                var entityData = _.extend({ "serviceType": this.activeEntityDef && this.activeEntityDef.get('serviceType'), "isProcess": isProcess }, collectionJSON);
+                                if (collectionJSON.attributes.serviceType === undefined) {
+                                    if (Globals.serviceTypeMap[collectionJSON.typeName] === undefined && this.activeEntityDef) {
+                                        Globals.serviceTypeMap[collectionJSON.typeName] = this.activeEntityDef.get('serviceType');
+                                    }
+                                } else if (Globals.serviceTypeMap[collectionJSON.typeName] === undefined) {
+                                    Globals.serviceTypeMap[collectionJSON.typeName] = collectionJSON.attributes.serviceType;
+                                }
+                                var entityData = _.extend({ "serviceType": Globals.serviceTypeMap[collectionJSON.typeName], "isProcess": isProcess }, collectionJSON);
                                 if (this.readOnly) {
                                     this.ui.entityIcon.addClass('disabled');
                                 } else {
                                     this.ui.entityIcon.removeClass('disabled');
                                 }
-                                if (collectionJSON.isIncomplete === true) {
-                                    this.$(".isIncomplete").addClass("show");
-                                }
-                                this.ui.entityIcon.attr('title', _.escape(collectionJSON.typeName)).html('<img src="' + Utils.getEntityIconPath({ entityData: entityData }) + '"/><i class="fa fa-hourglass-half"></i>').find("img").on('error', function() {
+                                this.ui.entityIcon.attr('title', _.escape(collectionJSON.typeName)).html('<img src="' + Utils.getEntityIconPath({ entityData: entityData }) + '"/>').find("img").on('error', function() {
                                     this.src = Utils.getEntityIconPath({ entityData: entityData, errorUrl: this.src });
                                 });
                             } else {
@@ -215,8 +242,34 @@ define(['require',
                                 this.ui.description.hide();
                             }
                         }
+                        var tags = {
+                            'self': [],
+                            'propagated': [],
+                            'propagatedMap': {},
+                            'combineMap': {}
+                        };
                         if (collectionJSON.classifications) {
-                            this.generateTag(collectionJSON.classifications);
+                            var tagObject = collectionJSON.classifications;
+                            _.each(tagObject, function(val) {
+                                var typeName = val.typeName;
+                                if (val.entityGuid === that.id) {
+                                    tags['self'].push(val)
+                                } else {
+                                    tags['propagated'].push(val);
+                                    if (tags.propagatedMap[typeName]) {
+                                        tags.propagatedMap[typeName]["count"] += tags.propagatedMap[typeName]["count"];
+                                    } else {
+                                        tags.propagatedMap[typeName] = val;
+                                        tags.propagatedMap[typeName]["count"] = 1;
+                                    }
+                                }
+                                if (tags.combineMap[typeName] === undefined) {
+                                    tags.combineMap[typeName] = val;
+                                }
+                            });
+                            tags.self = _.sortBy(tags.self, "typeName");
+                            tags.propagated = _.sortBy(tags.propagated, "typeName");
+                            this.generateTag(tags);
                         } else {
                             this.generateTag([]);
                         }
@@ -243,6 +296,7 @@ define(['require',
                         guid: this.id,
                         entityName: this.name,
                         typeHeaders: this.typeHeaders,
+                        tags: tags,
                         entityDefCollection: this.entityDefCollection,
                         fetchCollection: this.fetchCollection.bind(that),
                         enumDefCollection: this.enumDefCollection,
@@ -280,6 +334,9 @@ define(['require',
                             typeName: collectionJSON.typeName,
                             value: that.value
                         }));
+                    } else {
+                        this.$('.profileTab').hide();
+                        this.redirectToDefaultTab("profile");
                     }
 
                     if (this.activeEntityDef) {
@@ -287,6 +344,9 @@ define(['require',
                         if (collectionJSON && collectionJSON.typeName === "AtlasServer") {
                             this.$('.replicationTab').show();
                             this.renderReplicationAuditTableLayoutView(obj);
+                        } else {
+                            this.$('.replicationTab').hide();
+                            this.redirectToDefaultTab("raudits");
                         }
                         // To render Schema check attribute "schemaElementsAttribute"
                         var schemaOptions = this.activeEntityDef.get('options');
@@ -296,14 +356,9 @@ define(['require',
                             this.renderSchemaLayoutView(_.extend({}, obj, {
                                 attribute: collectionJSON.relationshipAttributes[schemaElementsAttribute] || collectionJSON.attributes[schemaElementsAttribute]
                             }));
-                        } else if (this.value && this.value.tabActive == "schema") {
-                            Utils.setUrl({
-                                url: Utils.getUrlState.getQueryUrl().queyParams[0],
-                                urlParams: { tabActive: 'properties' },
-                                mergeBrowserUrl: false,
-                                trigger: true,
-                                updateTabState: true
-                            });
+                        } else {
+                            this.$('.schemaTable').hide();
+                            this.redirectToDefaultTab("schema");
                         }
 
                         if (isLineageRender) {
@@ -312,17 +367,11 @@ define(['require',
                                 processCheck: isProcess,
                                 fetchCollection: this.fetchCollection.bind(this),
                             }));
-                        } else if (this.value && this.value.tabActive == "lineage") {
-                            Utils.setUrl({
-                                url: Utils.getUrlState.getQueryUrl().queyParams[0],
-                                urlParams: { tabActive: 'properties' },
-                                mergeBrowserUrl: false,
-                                trigger: true,
-                                updateTabState: true
-                            });
+                        } else {
+                            this.$('.lineageGraph').hide();
+                            this.redirectToDefaultTab("lineage");
                         }
                     }
-
 
                 }, this);
                 this.listenTo(this.collection, 'error', function(model, response) {
@@ -340,12 +389,56 @@ define(['require',
                 Utils.showTitleLoader(this.$('.page-title .fontLoader'), this.$('.entityDetail'));
                 this.$('.fontLoader-relative').addClass('show'); // to show tab loader
             },
-            onShow: function() {
+            redirectToDefaultTab: function(tabName) {
+                var regionRef = null;
+                switch (tabName) {
+                    case "schema":
+                        regionRef = this.RSchemaTableLayoutView;
+                        break;
+                    case "lineage":
+                        regionRef = this.RLineageLayoutView;
+                        break;
+                    case "raudits":
+                        regionRef = this.RReplicationAuditTableLayoutView;
+                        break;
+                    case "profile":
+                        regionRef = this.RProfileLayoutView;
+                        break;
+                }
+                if (regionRef) {
+                    regionRef.destroy();
+                    regionRef.$el.empty();
+                }
+                if (this.value && this.value.tabActive == tabName || this.$(".tab-content .tab-pane.active").attr("role") === tabName) {
+                    Utils.setUrl({
+                        url: Utils.getUrlState.getQueryUrl().queyParams[0],
+                        urlParams: { tabActive: 'properties' },
+                        mergeBrowserUrl: false,
+                        trigger: true,
+                        updateTabState: true
+                    });
+                }
+            },
+            manualRender: function(options) {
+                if (options) {
+                    var oldId = this.id;
+                    _.extend(this, _.pick(options, 'value', 'id'));
+                    if (this.id !== oldId) {
+                        this.collection.url = UrlLinks.entitiesApiUrl({ guid: this.id, minExtInfo: true });
+                        this.fetchCollection();
+                    }
+                    this.updateTab();
+                }
+            },
+            updateTab: function() {
                 if (this.value && this.value.tabActive) {
                     this.$('.nav.nav-tabs').find('[role="' + this.value.tabActive + '"]').addClass('active').siblings().removeClass('active');
                     this.$('.tab-content').find('[role="' + this.value.tabActive + '"]').addClass('active').siblings().removeClass('active');
                     $("html, body").animate({ scrollTop: (this.$('.tab-content').offset().top + 1200) }, 1000);
                 }
+            },
+            onShow: function() {
+                this.updateTab();
             },
             onDestroy: function() {
                 if (!Utils.getUrlState.isDetailPage()) {
@@ -375,7 +468,7 @@ define(['require',
                 CommonViewFunction.deleteTag(_.extend({}, {
                     guid: that.id,
                     associatedGuid: that.id != entityGuid ? entityGuid : null,
-                    msg: "<div class='ellipsis-with-margin'>Remove: " + "<b>" + _.escape(tagName) + "</b> assignment from" + " " + "<b>" + this.name + "?</b></div>",
+                    msg: "<div class='ellipsis-with-margin'>Remove: " + "<b>" + _.escape(tagName) + "</b> assignment from <b>" + this.name + "?</b></div>",
                     titleMessage: Messages.removeTag,
                     okText: "Remove",
                     showLoader: that.showLoader.bind(that),
@@ -402,7 +495,7 @@ define(['require',
                         relationshipGuid: termObj.relationshipGuid
                     },
                     collection: that.glossaryCollection,
-                    msg: "<div class='ellipsis-with-margin'>Remove: " + "<b>" + _.escape(termName) + "</b> assignment from" + " " + "<b>" + this.name + "?</b></div>",
+                    msg: "<div class='ellipsis-with-margin'>Remove: " + "<b>" + _.escape(termName) + "</b> assignment from <b>" + this.name + "?</b></div>",
                     titleMessage: Messages.glossary.removeTermfromEntity,
                     isEntityView: true,
                     buttonText: "Remove",
@@ -416,35 +509,24 @@ define(['require',
             generateTag: function(tagObject) {
                 var that = this,
                     tagData = "",
-                    propagatedTagListData = "",
-                    tag = {
-                        'self': [],
-                        'propagated': []
-                    };
-                _.each(tagObject, function(val) {
-                    val.entityGuid === that.id ? tag['self'].push(val) : tag['propagated'].push(val);
+                    propagatedTagListData = "";
+                _.each(tagObject.self, function(val) {
+                    tagData += '<span class="btn btn-action btn-sm btn-icon btn-blue" data-id="tagClick"><span>' + val.typeName + '</span><i class="fa fa-close" data-id="deleteTag" data-type="tag" title="Remove Classification"></i></span>';
                 });
-                _.each(tag.self, function(val) {
-                    tagData += '<span class="btn btn-action btn-sm btn-icon btn-blue" data-id="tagClick"><span title=' + val.typeName + ' >' + val.typeName + '</span><i class="fa fa-close" data-id="deleteTag" data-type="tag" title="Remove Classification"></i></span>';
-                });
-                _.each(tag.propagated, function(val) {
-                    var crossButton = '<i class="fa fa-close" data-id="deleteTag" data-entityguid="' + val.entityGuid + '" data-type="tag" title="Remove Classification"></i>';
-                    propagatedTagListData += '<span class="btn btn-action btn-sm btn-icon btn-blue" title=' + val.typeName + ' data-id="tagClick"><span>' + val.typeName + '</span>' + ((that.id !== val.entityGuid && val.entityStatus === "DELETED") ? crossButton : "") + '</span>';
+                _.each(tagObject.propagatedMap, function(val, key) {
+                    propagatedTagListData += '<span class="btn btn-action btn-sm btn-icon btn-blue"><span data-id="tagClick">' + val.typeName + '</span>' + (val.count > 1 ? '<span class="active" data-id="pTagCountClick">(' + val.count + ')</span>' : "") + '</span>';
                 });
                 propagatedTagListData !== "" ? this.ui.propagatedTagDiv.show() : this.ui.propagatedTagDiv.hide();
                 this.ui.tagList.find("span.btn").remove();
                 this.ui.propagatedTagList.find("span.btn").remove();
                 this.ui.tagList.prepend(tagData);
                 this.ui.propagatedTagList.html(propagatedTagListData);
-
             },
             generateTerm: function(data) {
                 var that = this,
                     termData = "";
                 _.each(data, function(val) {
-                    // if (val.relationshipStatus == "ACTIVE") {
-                    termData += '<span class="btn btn-action btn-sm btn-icon btn-blue" data-id="termClick"><span title=' + _.escape(val.displayText) + '>' + _.escape(val.displayText) + '</span><i class="' + (val.relationshipStatus == "ACTIVE" ? 'fa fa-close' : "") + '" data-id="deleteTerm" data-guid="' + val.guid + '" data-type="term" title="Remove Term"></i></span>';
-                    // }
+                    termData += '<span class="btn btn-action btn-sm btn-icon btn-blue" data-id="termClick"><span>' + _.escape(val.displayText) + '</span><i class="' + (val.relationshipStatus == "ACTIVE" ? 'fa fa-close' : "") + '" data-id="deleteTerm" data-guid="' + val.guid + '" data-type="term" title="Remove Term"></i></span>';
                 });
                 this.ui.termList.find("span.btn").remove();
                 this.ui.termList.prepend(termData);
@@ -483,27 +565,54 @@ define(['require',
                     });
                 });
             },
+            //This function checks for the lenght of Available terms and modal for adding terms is displayed accordingly.
+            assignTermModalView: function(glossaryCollection, obj) {
+                var that = this,
+                    terms = 0;
+                _.each(glossaryCollection.fullCollection.models, function(model) {
+                    if (model.get('terms')) {
+                        terms += model.get('terms').length;
+                    };
+                });
+                if (terms) {
+                    require(['views/glossary/AssignTermLayoutView'], function(AssignTermLayoutView) {
+                        var view = new AssignTermLayoutView({
+                            guid: obj.guid,
+                            callback: function() {
+                                that.fetchCollection();
+                            },
+                            associatedTerms: obj.associatedTerms,
+                            showLoader: that.showLoader.bind(that),
+                            hideLoader: that.hideLoader.bind(that),
+                            glossaryCollection: glossaryCollection
+                        });
+                        view.modal.on('ok', function() {
+                            Utils.showTitleLoader(that.$('.page-title .fontLoader'), that.$('.entityDetail'));
+                        });
+                    });
+                } else {
+                    Utils.notifyInfo({
+                        content: "There are no available terms that can be associated with this entity"
+                    });
+                }
+            },
             onClickAddTermBtn: function(e) {
                 var that = this,
-                    entityGuid = that.id,
-                    associatedTerms = this.collection.first().get('entity').relationshipAttributes.meanings;
-
-
-                require(['views/glossary/AssignTermLayoutView'], function(AssignTermLayoutView) {
-                    var view = new AssignTermLayoutView({
-                        guid: that.id,
-                        callback: function() {
-                            that.fetchCollection();
-                        },
-                        associatedTerms: associatedTerms,
-                        showLoader: that.showLoader.bind(that),
-                        hideLoader: that.hideLoader.bind(that),
-                        glossaryCollection: that.glossaryCollection
-                    });
-                    view.modal.on('ok', function() {
-                        Utils.showTitleLoader(that.$('.page-title .fontLoader'), that.$('.entityDetail'));
-                    });
+                    entityObj = this.collection.first().get('entity'),
+                    glossaryData = null,
+                    obj = {
+                        guid: this.id,
+                        associatedTerms: [],
+                    };
+                this.glossaryCollection.fetch({
+                    success: function(glossaryCollection) {
+                        that.assignTermModalView(glossaryCollection, obj);
+                    },
+                    reset: true,
                 });
+                if (entityObj && entityObj.relationshipAttributes && entityObj.relationshipAttributes.meanings) {
+                    obj.associatedTerms = entityObj.relationshipAttributes.meanings;
+                }
             },
             renderEntityDetailTableLayoutView: function(obj) {
                 var that = this;

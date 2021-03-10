@@ -147,11 +147,11 @@ define(['require',
 
         onRender: function() {},
         updateEdgeView: function(options) {
-            var obj = options.obj,
+            var obj = options,
                 fromEntity = this.lineageData.guidEntityMap[obj.fromEntityId],
                 toEntity = this.lineageData.guidEntityMap[obj.toEntityId];
             if (fromEntity && toEntity) {
-                this.ui.edgeDetailName.html(fromEntity.displayText + " <span class='navigation-font'><i class='fa fa-long-arrow-right fa-color'></i></span> " + toEntity.displayText);
+                this.ui.edgeDetailName.html(_.escape(fromEntity.displayText) + " <span class='navigation-font'><i class='fa fa-long-arrow-right fa-color'></i></span> " + _.escape(toEntity.displayText));
             }
             if (obj && obj.relationshipId) {
                 this.showLoader();
@@ -183,9 +183,9 @@ define(['require',
                         that.ui.propagationOptions.find('.both').show();
                     } else {
                         that.ui.propagationOptions.find('.both').hide();
-                        if (that.edgeInfo.obj.fromEntityId != relationshipObj.end1.guid && relationshipObj.propagateTags == "ONE_TO_TWO") {
+                        if (that.edgeInfo.fromEntityId != relationshipObj.end1.guid && relationshipObj.propagateTags == "ONE_TO_TWO") {
                             isTwoToOne = true;
-                        } else if (that.edgeInfo.obj.fromEntityId == relationshipObj.end1.guid && relationshipObj.propagateTags == "TWO_TO_ONE") {
+                        } else if (that.edgeInfo.fromEntityId == relationshipObj.end1.guid && relationshipObj.propagateTags == "TWO_TO_ONE") {
                             isTwoToOne = true;
                         }
                         if (isTwoToOne) {
@@ -241,7 +241,7 @@ define(['require',
                 relationshipProp = {
                     "propagateTags": that.getPropagationFlow({
                         "relationshipData": _.extend({}, this.apiGuid[entityId].relationship, { 'propagateTags': PropagationValue }),
-                        "graphData": { from: { guid: this.edgeInfo.obj.fromEntityId } }
+                        "graphData": { from: { guid: this.edgeInfo.fromEntityId } }
                     })
                 }
             } else {

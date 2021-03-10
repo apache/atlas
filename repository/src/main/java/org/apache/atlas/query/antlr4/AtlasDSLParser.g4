@@ -50,6 +50,8 @@ comparisonClause: arithE operator arithE ;
 
 isClause: arithE (K_ISA | K_IS) identifier ;
 
+hasTermClause: arithE K_HASTERM (identifier | expr );
+
 hasClause: arithE K_HAS identifier ;
 
 countClause: K_COUNT K_LPAREN K_RPAREN ;
@@ -70,6 +72,7 @@ compE: comparisonClause
     | maxClause
     | minClause
     | sumClause
+    | hasTermClause
     ;
 
 expr: compE exprRight* ;

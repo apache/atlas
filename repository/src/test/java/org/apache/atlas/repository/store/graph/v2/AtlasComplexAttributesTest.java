@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.repository.store.graph.v2;
 
+import org.apache.atlas.GraphTransactionInterceptor;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -645,6 +646,7 @@ public class AtlasComplexAttributesTest extends AtlasEntityTestBase {
 
         AtlasEntityHeader entityDeleted = response.getFirstDeletedEntityByTypeName(ENTITY_TYPE_WITH_COMPLEX_COLLECTION_ATTR);
 
+        GraphTransactionInterceptor.clearCache();
         AtlasEntityWithExtInfo deletedEntityWithExtInfo = entityStore.getById(entityDeleted.getGuid());
         AtlasVertex            deletedEntityVertex      = AtlasGraphUtilsV2.findByGuid(entityDeleted.getGuid());
         Iterator<AtlasEdge>    edges                    = deletedEntityVertex.getEdges(AtlasEdgeDirection.OUT).iterator();

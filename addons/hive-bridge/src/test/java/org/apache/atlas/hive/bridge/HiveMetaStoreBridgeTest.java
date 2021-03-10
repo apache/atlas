@@ -119,7 +119,7 @@ public class HiveMetaStoreBridgeTest {
 
         when(atlasClientV2.getEntityByAttribute(HiveDataTypes.HIVE_TABLE.getName(),
                 Collections.singletonMap(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
-                HiveMetaStoreBridge.getTableQualifiedName(METADATA_NAMESPACE, TEST_DB_NAME, TEST_TABLE_NAME))))
+                HiveMetaStoreBridge.getTableQualifiedName(METADATA_NAMESPACE, TEST_DB_NAME, TEST_TABLE_NAME)), true, true ))
                 .thenReturn(new AtlasEntity.AtlasEntityWithExtInfo(
                         getEntity(HiveDataTypes.HIVE_TABLE.getName(), AtlasClient.GUID, "82e06b34-9151-4023-aa9d-b82103a50e77")));
 
@@ -131,7 +131,7 @@ public class HiveMetaStoreBridgeTest {
 
         when(atlasClientV2.getEntityByAttribute(HiveDataTypes.HIVE_PROCESS.getName(),
             Collections.singletonMap(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
-                    processQualifiedName)))
+                    processQualifiedName), true ,true))
         .thenReturn(new AtlasEntity.AtlasEntityWithExtInfo(
                 getEntity(HiveDataTypes.HIVE_PROCESS.getName(), AtlasClient.GUID, "82e06b34-9151-4023-aa9d-b82103a50e77")));
 
@@ -150,7 +150,7 @@ public class HiveMetaStoreBridgeTest {
 
         when(atlasClientV2.getEntityByAttribute(HiveDataTypes.HIVE_DB.getName(),
                 Collections.singletonMap(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
-                        HiveMetaStoreBridge.getDBQualifiedName(METADATA_NAMESPACE, TEST_DB_NAME))))
+                        HiveMetaStoreBridge.getDBQualifiedName(METADATA_NAMESPACE, TEST_DB_NAME)), true, true))
                 .thenReturn((new AtlasEntity.AtlasEntityWithExtInfo(
                         getEntity(HiveDataTypes.HIVE_DB.getName(), AtlasClient.GUID, "72e06b34-9151-4023-aa9d-b82103a50e76"))));
 
@@ -184,7 +184,7 @@ public class HiveMetaStoreBridgeTest {
 
         when(atlasClientV2.getEntityByAttribute(HiveDataTypes.HIVE_TABLE.getName(),
                 Collections.singletonMap(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
-                        HiveMetaStoreBridge.getTableQualifiedName(METADATA_NAMESPACE, TEST_DB_NAME, TEST_TABLE_NAME))))
+                        HiveMetaStoreBridge.getTableQualifiedName(METADATA_NAMESPACE, TEST_DB_NAME, TEST_TABLE_NAME)), true, true))
         .thenReturn(new AtlasEntity.AtlasEntityWithExtInfo(
                         getEntity(HiveDataTypes.HIVE_TABLE.getName(), AtlasClient.GUID, "82e06b34-9151-4023-aa9d-b82103a50e77")));
 
@@ -192,7 +192,7 @@ public class HiveMetaStoreBridgeTest {
 
         when(atlasClientV2.getEntityByAttribute(HiveDataTypes.HIVE_PROCESS.getName(),
                 Collections.singletonMap(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
-                        processQualifiedName)))
+                        processQualifiedName), true, true))
         .thenReturn(new AtlasEntity.AtlasEntityWithExtInfo(
                         getEntity(HiveDataTypes.HIVE_PROCESS.getName(), AtlasClient.GUID, "82e06b34-9151-4023-aa9d-b82103a50e77")));
 
@@ -310,7 +310,7 @@ public class HiveMetaStoreBridgeTest {
         return table;
     }
 
-    private class MatchesReferenceableProperty extends ArgumentMatcher<Object> {
+    private class MatchesReferenceableProperty implements ArgumentMatcher<Object> {
         private final String attrName;
         private final Object attrValue;
 

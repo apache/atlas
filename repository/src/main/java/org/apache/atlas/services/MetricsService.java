@@ -19,10 +19,16 @@ package org.apache.atlas.services;
 
 import org.apache.atlas.annotation.AtlasService;
 import org.apache.atlas.annotation.GraphTransaction;
+import org.apache.atlas.authorize.AtlasAuthorizationUtils;
+import org.apache.atlas.authorize.AtlasTypesDefFilterRequest;
 import org.apache.atlas.model.instance.AtlasEntity.Status;
 import org.apache.atlas.model.metrics.AtlasMetrics;
+import org.apache.atlas.model.typedef.AtlasClassificationDef;
+import org.apache.atlas.model.typedef.AtlasEntityDef;
+import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
+import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.AtlasMetricJVMUtil;
@@ -32,6 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -86,8 +93,11 @@ public class MetricsService {
     @SuppressWarnings("unchecked")
     @GraphTransaction
     public AtlasMetrics getMetrics() {
-        Collection<String> entityDefNames               = typeRegistry.getAllEntityDefNames();
-        Collection<String> classificationDefNames       = typeRegistry.getAllClassificationDefNames();
+
+        final AtlasTypesDef typesDef = getTypesDef();
+
+        Collection<AtlasEntityDef> entityDefs = typesDef.getEntityDefs();
+        Collection<AtlasClassificationDef> classificationDefs = typesDef.getClassificationDefs();
         Map<String, Long>  activeEntityCount            = new HashMap<>();
         Map<String, Long>  deletedEntityCount           = new HashMap<>();
         Map<String, Long>  shellEntityCount             = new HashMap<>();
@@ -97,22 +107,22 @@ public class MetricsService {
         Map<String, Long> shellEntityCountTypeAndSubTypes = new HashMap<>();
 
 
-        long               unusedTypeCount        = 0;
-        long               totalEntities          = 0;
+        long unusedTypeCount = 0;
+        long totalEntities = 0;
 
-        if (entityDefNames != null) {
-            for (String entityDefName : entityDefNames) {
-                long activeCount  = getTypeCount(entityDefName, ACTIVE);
-                long deletedCount = getTypeCount(entityDefName, DELETED);
-                long shellCount = getTypeShellCount(entityDefName);
+        if (entityDefs != null) {
+            for (AtlasEntityDef entityDef : entityDefs) {
+                long activeCount  = getTypeCount(entityDef.getName(), ACTIVE);
+                long deletedCount = getTypeCount(entityDef.getName(), DELETED);
+                long shellCount = getTypeShellCount(entityDef.getName());
 
                 if (activeCount > 0) {
-                    activeEntityCount.put(entityDefName, activeCount);
+                    activeEntityCount.put(entityDef.getName(), activeCount);
                     totalEntities += activeCount;
                 }
 
                 if (deletedCount > 0) {
-                    deletedEntityCount.put(entityDefName, deletedCount);
+                    deletedEntityCount.put(entityDef.getName(), deletedCount);
                     totalEntities += deletedCount;
                 }
 
@@ -120,41 +130,44 @@ public class MetricsService {
                     unusedTypeCount++;
                 }
 
-                if(shellCount>0){
-                    shellEntityCount.put(entityDefName, shellCount);
+                if (shellCount > 0) {
+                    shellEntityCount.put(entityDef.getName(), shellCount);
+                }
+            }
+
+
+            for (AtlasEntityDef entityDef : entityDefs) {
+                AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entityDef.getName());
+
+                long entityActiveCount = 0;
+                long entityDeletedCount = 0;
+                long entityShellCount = 0;
+
+                for (String type : entityType.getTypeAndAllSubTypes()) {
+                    entityActiveCount += activeEntityCount.get(type) == null ? 0 : activeEntityCount.get(type);
+                    entityDeletedCount += deletedEntityCount.get(type) == null ? 0 : deletedEntityCount.get(type);
+                    entityShellCount += shellEntityCount.get(type) == null ? 0 : shellEntityCount.get(type);
+                }
+
+                if (entityActiveCount > 0) {
+                    activeEntityCountTypeAndSubTypes.put(entityType.getTypeName(), entityActiveCount);
+                }
+                if (entityDeletedCount > 0) {
+                    deletedEntityCountTypeAndSubTypes.put(entityType.getTypeName(), entityDeletedCount);
+                }
+                if (entityShellCount > 0) {
+                    shellEntityCountTypeAndSubTypes.put(entityType.getTypeName(), entityShellCount);
                 }
             }
         }
 
-        Collection<AtlasEntityType> allEntityTypes = typeRegistry.getAllEntityTypes();
-        for (AtlasEntityType entityType : allEntityTypes) {
-            long entityActiveCount  = 0;
-            long entityDeletedCount = 0;
-            long entityShellCount   = 0;
 
-            for (String type : entityType.getTypeAndAllSubTypes()) {
-                entityActiveCount  += activeEntityCount.get(type) == null ? 0 : activeEntityCount.get(type);
-                entityDeletedCount += deletedEntityCount.get(type) == null ? 0 : deletedEntityCount.get(type);
-                entityShellCount   += shellEntityCount.get(type) == null ? 0 : shellEntityCount.get(type);
-            }
-
-            if (entityActiveCount > 0) {
-                activeEntityCountTypeAndSubTypes.put(entityType.getTypeName(), entityActiveCount);
-            }
-            if (entityDeletedCount > 0) {
-                deletedEntityCountTypeAndSubTypes.put(entityType.getTypeName(), entityDeletedCount);
-            }
-            if (entityShellCount > 0) {
-                shellEntityCountTypeAndSubTypes.put(entityType.getTypeName(), entityShellCount);
-            }
-        }
-
-        if (classificationDefNames != null) {
-            for (String classificationDefName : classificationDefNames) {
-                long count = getTypeCount(classificationDefName, ACTIVE);
+        if (classificationDefs != null) {
+            for (AtlasClassificationDef classificationDef : classificationDefs) {
+                long count = getTypeCount(classificationDef.getName(), ACTIVE);
 
                 if (count > 0) {
-                    taggedEntityCount.put(classificationDefName, count);
+                    taggedEntityCount.put(classificationDef.getName(), count);
                 }
             }
         }
@@ -226,4 +239,23 @@ public class MetricsService {
 
         return CollectionUtils.isNotEmpty(allTagNames) ? allTagNames.size() : 0;
     }
+
+    private AtlasTypesDef getTypesDef() {
+        AtlasTypesDef ret = new AtlasTypesDef();
+
+        Collection<AtlasEntityDef> entityDefs = typeRegistry.getAllEntityDefs();
+        if (CollectionUtils.isNotEmpty(entityDefs)) {
+            ret.getEntityDefs().addAll(entityDefs);
+        }
+
+        Collection<AtlasClassificationDef> classificationTypes = typeRegistry.getAllClassificationDefs();
+        if (CollectionUtils.isNotEmpty(classificationTypes)) {
+            ret.getClassificationDefs().addAll(classificationTypes);
+        }
+
+        AtlasAuthorizationUtils.filterTypesDef(new AtlasTypesDefFilterRequest(ret));
+
+        return ret;
+    }
+
 }
