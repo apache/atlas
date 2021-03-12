@@ -60,7 +60,7 @@ class DiscoveryClient:
         self.client = client
 
     def dsl_search(self, query):
-        query_params = {DiscoveryClient.QUERY, query}
+        query_params = {DiscoveryClient.QUERY: query}
 
         return self.client.call_api(DiscoveryClient.DSL_SEARCH, AtlasSearchResult, query_params)
 
@@ -70,7 +70,7 @@ class DiscoveryClient:
         return self.client.call_api(DiscoveryClient.DSL_SEARCH, AtlasSearchResult, query_params)
 
     def full_text_search(self, query):
-        query_params = {DiscoveryClient.QUERY, query}
+        query_params = {DiscoveryClient.QUERY: query}
 
         return self.client.call_api(DiscoveryClient.FULL_TEXT_SEARCH, AtlasSearchResult, query_params)
 
@@ -131,12 +131,12 @@ class DiscoveryClient:
         return self.client.call_api(DiscoveryClient.GET_SUGGESTIONS, AtlasSuggestionsResult, query_params)
 
     def get_saved_searches(self, user_name):
-        query_params = {"user", user_name}
+        query_params = {"user": user_name}
 
         return self.client.call_api(DiscoveryClient.GET_SAVED_SEARCHES, list, query_params)
 
     def get_saved_search(self, user_name, search_name):
-        query_params = {"user", user_name}
+        query_params = {"user": user_name}
 
         return self.client.call_api(DiscoveryClient.GET_SAVED_SEARCH.format_path({'search_name': search_name}),
                                     AtlasUserSavedSearch, query_params)
@@ -151,7 +151,7 @@ class DiscoveryClient:
         return self.client.call_api(DiscoveryClient.DELETE_SAVED_SEARCH.format_path({'guid': guid}))
 
     def execute_saved_search_with_user_name(self, user_name, search_name):
-        query_params = {"user", user_name}
+        query_params = {"user": user_name}
 
         return self.client.call_api(
             DiscoveryClient.EXECUTE_SAVED_SEARCH_BY_NAME.format_path({'search_name': search_name}),
