@@ -15,8 +15,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# This is to avoid the circular dependencies that instance.py and glossary.py has.
-import apache_atlas.model.instance as instance
 from apache_atlas.model.misc import AtlasBase, AtlasBaseModelObject
 from apache_atlas.utils import type_coerce, type_coerce_dict, type_coerce_list
 
@@ -33,8 +31,9 @@ class AtlasGlossaryBaseObject(AtlasBaseModelObject):
         self.classifications = attrs.get('classifications')
 
     def type_coerce_attrs(self):
+        # This is to avoid the circular dependencies that instance.py and glossary.py has.
+        import apache_atlas.model.instance as instance
         super(AtlasGlossaryBaseObject, self).type_coerce_attrs()
-
         self.classifications = type_coerce_list(self.classifications, instance.AtlasClassification)
 
 
