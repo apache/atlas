@@ -37,7 +37,7 @@ setup(
     url="https://github.com/apache/atlas/tree/master/intg/src/main/python",
     license='Apache LICENSE 2.0',
     classifiers=[
-        "Programming Language :: Python :: 2.7",
+        "Programming Language :: Python :: 3.6",
         "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
     ],
@@ -46,5 +46,5 @@ setup(
     include_package_data=True,
     zip_safe=False,
     keywords='atlas client, apache atlas',
-    python_requires='>=2.7',
+    python_requires='>=3.6',
 )
