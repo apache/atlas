@@ -43,16 +43,27 @@ class AtlasStruct(AtlasBase):
 
 
 class AtlasEntity(AtlasStruct):
-    def __init__(self, attrs={}):
+    def __init__(self, attrs=None):
         AtlasStruct.__init__(self, attrs)
-
+        if attrs is None:
+            attrs = {}
         self.guid = attrs.get('guid')
+        self.homeId = attrs.get('homeId')
         self.relationshipAttributes = attrs.get('relationshipAttributes')
         self.classifications = attrs.get('classifications')
         self.meanings = attrs.get('meanings')
         self.customAttributes = attrs.get('customAttributes')
         self.businessAttributes = attrs.get('businessAttributes')
         self.labels = attrs.get('labels')
+        self.status = attrs.get('status')
+        self.isIncomplete = attrs.get('isIncomplete')
+        self.provenanceType = attrs.get('provenanceType')
+        self.proxy = attrs.get('proxy')
+        self.version = attrs.get('version')
+        self.createdBy = attrs.get('createdBy')
+        self.updatedBy = attrs.get('updatedBy')
+        self.createTime = attrs.get('createTime')
+        self.updateTime = attrs.get('updateTime')
 
         if self.guid is None:
             self.guid = next_id()
