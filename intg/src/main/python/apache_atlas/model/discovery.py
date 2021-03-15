@@ -29,7 +29,9 @@ from apache_atlas.utils import type_coerce_list
 
 
 class AtlasAggregationEntry(AtlasBase):
-    def __init__(self, attrs={}):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasBase.__init__(self, attrs)
 
         self.name = attrs.get('name')
@@ -37,7 +39,9 @@ class AtlasAggregationEntry(AtlasBase):
 
 
 class AtlasQuickSearchResult(AtlasBase):
-    def __init__(self, attrs={}):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasBase.__init__(self, attrs)
 
         self.searchResults = attrs.get('searchResults')
@@ -51,7 +55,9 @@ class AtlasQuickSearchResult(AtlasBase):
 
 
 class AtlasSearchResult(AtlasBase):
-    def __init__(self, attrs={}):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasBase.__init__(self, attrs)
 
         self.queryType = non_null(attrs.get('queryType'), QueryType.BASIC.name)
@@ -74,7 +80,9 @@ class AtlasSearchResult(AtlasBase):
 
 
 class AttributeSearchResult(AtlasBase):
-    def __init__(self, attrs={}):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasBase.__init__(self, attrs)
 
         self.name = attrs.get('name')
@@ -82,7 +90,9 @@ class AttributeSearchResult(AtlasBase):
 
 
 class AtlasFullTextResult(AtlasBase):
-    def __init__(self, attrs={}):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasBase.__init__(self, attrs)
 
         self.entity = attrs.get('entity')
@@ -95,7 +105,9 @@ class AtlasFullTextResult(AtlasBase):
 
 
 class AtlasSuggestionsResult(AtlasBase):
-    def __init__(self, attrs={}):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasBase.__init__(self, attrs)
 
         self.suggestions = attrs.get('suggestions')
@@ -104,7 +116,9 @@ class AtlasSuggestionsResult(AtlasBase):
 
 
 class QuickSearchParameters(AtlasBase):
-    def __init__(self, attrs={}):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasBase.__init__(self, attrs)
 
         self.query = attrs.get('query')
@@ -123,7 +137,9 @@ class QuickSearchParameters(AtlasBase):
 
 
 class SearchParameters(AtlasBase):
-    def __init__(self, attrs={}):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasBase.__init__(self, attrs)
 
         self.query = attrs.get('query')
@@ -150,7 +166,9 @@ class SearchParameters(AtlasBase):
 
 
 class FilterCriteria(AtlasBase):
-    def __init__(self, attrs={}):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasBase.__init__(self, attrs)
 
         self.attributeName = attrs.get('attributeName')
@@ -166,7 +184,9 @@ class FilterCriteria(AtlasBase):
 
 
 class AtlasUserSavedSearch(AtlasBaseModelObject):
-    def __init__(self, attrs={}):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasBaseModelObject.__init__(self, attrs)
 
         self.ownerName = attrs.get('ownerName')

@@ -21,7 +21,9 @@ from apache_atlas.utils import type_coerce
 
 
 class AtlasUserSavedSearch(AtlasBaseModelObject):
-    def __init__(self, attrs={}):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasBaseModelObject.__init__(self, attrs)
 
         self.ownerName = attrs.get('ownerName')

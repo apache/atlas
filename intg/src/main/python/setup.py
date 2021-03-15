@@ -28,7 +28,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name='apache-atlas',
-    version='0.0.6',
+    version='0.0.11',
     author="Apache Atlas",
     author_email='dev@atlas.apache.org',
     description="Apache Atlas Python Client",
