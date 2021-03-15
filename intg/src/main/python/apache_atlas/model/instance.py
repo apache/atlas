@@ -22,7 +22,9 @@ from apache_atlas.utils import non_null, type_coerce, type_coerce_dict, type_coe
 
 
 class AtlasStruct(AtlasBase):
-    def __init__(self, attrs={}):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasBase.__init__(self, attrs)
 
         self.typeName = attrs.get('typeName')
@@ -44,9 +46,10 @@ class AtlasStruct(AtlasBase):
 
 class AtlasEntity(AtlasStruct):
     def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasStruct.__init__(self, attrs)
-        if attrs is None:
-            attrs = {}
+
         self.guid = attrs.get('guid')
         self.homeId = attrs.get('homeId')
         self.relationshipAttributes = attrs.get('relationshipAttributes')
@@ -90,7 +93,9 @@ class AtlasEntity(AtlasStruct):
 
 
 class AtlasEntityExtInfo(AtlasBase):
-    def __init__(self, attrs={}):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasBase.__init__(self, attrs)
 
         self.referredEntities = attrs.get('referredEntities')
@@ -112,7 +117,9 @@ class AtlasEntityExtInfo(AtlasBase):
 
 
 class AtlasEntityWithExtInfo(AtlasEntityExtInfo):
-    def __init__(self, attrs={}):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasEntityExtInfo.__init__(self, attrs)
 
         self.entity = attrs.get('entity')
@@ -124,7 +131,9 @@ class AtlasEntityWithExtInfo(AtlasEntityExtInfo):
 
 
 class AtlasEntitiesWithExtInfo(AtlasEntityExtInfo):
-    def __init__(self, attrs={}):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasEntityExtInfo.__init__(self, attrs)
 
         self.entities = attrs.get('entities')
@@ -142,7 +151,9 @@ class AtlasEntitiesWithExtInfo(AtlasEntityExtInfo):
 
 
 class AtlasEntityHeader(AtlasStruct):
-    def __init__(self, attrs={}):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasStruct.__init__(self, attrs)
 
         self.guid = attrs.get('guid')
@@ -166,7 +177,9 @@ class AtlasEntityHeader(AtlasStruct):
 
 
 class AtlasClassification(AtlasStruct):
-    def __init__(self, attrs={}):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasStruct.__init__(self, attrs)
 
         self.entityGuid = attrs.get('entityGuid')
@@ -182,7 +195,9 @@ class AtlasClassification(AtlasStruct):
 
 
 class AtlasObjectId(AtlasBase):
-    def __init__(self, attrs={}):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasBase.__init__(self, attrs)
 
         self.guid = attrs.get('guid')
@@ -191,7 +206,9 @@ class AtlasObjectId(AtlasBase):
 
 
 class AtlasRelatedObjectId(AtlasObjectId):
-    def __init__(self, attrs={}):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasObjectId.__init__(self, attrs)
 
         self.entityStatus = attrs.get('entityStatus')
@@ -208,7 +225,9 @@ class AtlasRelatedObjectId(AtlasObjectId):
 
 
 class AtlasClassifications(Plist):
-    def __init__(self, attrs={}):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         Plist.__init__(self, attrs)
 
     def type_coerce_attrs(self):
@@ -218,7 +237,9 @@ class AtlasClassifications(Plist):
 
 
 class AtlasEntityHeaders(AtlasBase):
-    def __init__(self, attrs={}):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasBase.__init__(self, attrs)
 
         self.guidHeaderMap = attrs.get('guidHeaderMap')
@@ -230,7 +251,9 @@ class AtlasEntityHeaders(AtlasBase):
 
 
 class EntityMutationResponse(AtlasBase):
-    def __init__(self, attrs={}):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasBase.__init__(self, attrs)
 
         self.mutatedEntities = attrs.get('mutatedEntities')
@@ -246,7 +269,9 @@ class EntityMutationResponse(AtlasBase):
 
 
 class EntityMutations(AtlasBase):
-    def __init__(self, attrs={}):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasBase.__init__(self, attrs)
 
         self.entity_mutations = attrs.get('entity_mutations')
@@ -258,7 +283,9 @@ class EntityMutations(AtlasBase):
 
 
 class EntityMutation(AtlasBase):
-    def __init__(self, attrs={}):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasBase.__init__(self, attrs)
 
         self.op = attrs.get('op')
@@ -271,7 +298,9 @@ class EntityMutation(AtlasBase):
 
 
 class AtlasCheckStateRequest(AtlasBase):
-    def __init__(self, attrs={}):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasBase.__init__(self, attrs)
 
         self.entityGuids = attrs.get('entityGuids')
@@ -280,7 +309,9 @@ class AtlasCheckStateRequest(AtlasBase):
 
 
 class AtlasCheckStateResult(AtlasBase):
-    def __init__(self, attrs={}):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasBase.__init__(self, attrs)
 
         self.entitiesScanned = attrs.get('entitiesScanned')
@@ -298,7 +329,9 @@ class AtlasCheckStateResult(AtlasBase):
 
 
 class AtlasEntityState(AtlasBase):
-    def __init__(self, attrs={}):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasBase.__init__(self, attrs)
 
         self.guid = attrs.get('guid')

@@ -20,9 +20,10 @@ from apache_atlas.model.misc import AtlasBase
 
 class AtlasAdminMetrics(AtlasBase):
     def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasBase.__init__(self, attrs)
 
-        attrs = attrs or {}
         _data = attrs.get('data', {})
 
         self.general = _data.get('general', {})

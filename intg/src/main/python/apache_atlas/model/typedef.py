@@ -28,7 +28,9 @@ LOG = logging.getLogger('apache_atlas')
 
 
 class AtlasBaseTypeDef(AtlasBase):
-    def __init__(self, attrs={}):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasBase.__init__(self, attrs)
 
         self.category = attrs.get('category')
@@ -46,7 +48,9 @@ class AtlasBaseTypeDef(AtlasBase):
 
 
 class AtlasEnumDef(AtlasBaseTypeDef):
-    def __init__(self, attrs={}):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasBaseTypeDef.__init__(self, attrs)
 
         self.elementDefs = attrs.get('elementDefs')
@@ -59,7 +63,9 @@ class AtlasEnumDef(AtlasBaseTypeDef):
 
 
 class AtlasStructDef(AtlasBaseTypeDef):
-    def __init__(self, attrs={}):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasBaseTypeDef.__init__(self, attrs)
 
         self.category = non_null(attrs.get('category'), TypeCategory.STRUCT.name)
@@ -72,7 +78,9 @@ class AtlasStructDef(AtlasBaseTypeDef):
 
 
 class AtlasClassificationDef(AtlasStructDef):
-    def __init__(self, attrs={}):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasStructDef.__init__(self, attrs)
 
         self.category = TypeCategory.CLASSIFICATION.name
@@ -82,7 +90,9 @@ class AtlasClassificationDef(AtlasStructDef):
 
 
 class AtlasEntityDef(AtlasStructDef):
-    def __init__(self, attrs={}):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasStructDef.__init__(self, attrs)
 
         self.category = TypeCategory.ENTITY.name
@@ -99,7 +109,9 @@ class AtlasEntityDef(AtlasStructDef):
 
 
 class AtlasRelationshipDef(AtlasStructDef):
-    def __init__(self, attrs={}):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasStructDef.__init__(self, attrs)
 
         self.category = TypeCategory.RELATIONSHIP.name
@@ -117,14 +129,18 @@ class AtlasRelationshipDef(AtlasStructDef):
 
 
 class AtlasBusinessMetadataDef(AtlasStructDef):
-    def __init__(self, attrs={}):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasStructDef.__init__(self, attrs)
 
         self.category = TypeCategory.BUSINESS_METADATA.name
 
 
 class AtlasAttributeDef(AtlasBase):
-    def __init__(self, attrs={}):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasBase.__init__(self, attrs)
 
         self.name = attrs.get('name')
@@ -151,7 +167,9 @@ class AtlasAttributeDef(AtlasBase):
 
 
 class AtlasConstraintDef(AtlasBase):
-    def __init__(self, attrs={}):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasBase.__init__(self, attrs)
 
         self.type = attrs.get('type')
@@ -159,7 +177,9 @@ class AtlasConstraintDef(AtlasBase):
 
 
 class AtlasEnumElementDef(AtlasBase):
-    def __init__(self, attrs={}):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasBase.__init__(self, attrs)
 
         self.value = attrs.get('value')
@@ -168,7 +188,9 @@ class AtlasEnumElementDef(AtlasBase):
 
 
 class AtlasRelationshipAttributeDef(AtlasAttributeDef):
-    def __init__(self, attrs={}):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasAttributeDef.__init__(self, attrs)
 
         self.relationshipTypeName = attrs.get('relationshipTypeName')
@@ -176,7 +198,9 @@ class AtlasRelationshipAttributeDef(AtlasAttributeDef):
 
 
 class AtlasRelationshipEndDef(AtlasBase):
-    def __init__(self, attrs={}):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasBase.__init__(self, attrs)
 
         self.type = attrs.get('type')
@@ -188,7 +212,9 @@ class AtlasRelationshipEndDef(AtlasBase):
 
 
 class AtlasTypesDef(AtlasBase):
-    def __init__(self, attrs={}):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasBase.__init__(self, attrs)
 
         self.enumDefs = attrs.get('enumDefs')

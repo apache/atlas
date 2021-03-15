@@ -20,7 +20,9 @@ from apache_atlas.utils import type_coerce, type_coerce_dict, type_coerce_list
 
 
 class AtlasGlossaryBaseObject(AtlasBaseModelObject):
-    def __init__(self, attrs={}):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasBaseModelObject.__init__(self, attrs)
 
         self.qualifiedName = attrs.get('qualifiedName')
@@ -33,12 +35,15 @@ class AtlasGlossaryBaseObject(AtlasBaseModelObject):
     def type_coerce_attrs(self):
         # This is to avoid the circular dependencies that instance.py and glossary.py has.
         import apache_atlas.model.instance as instance
+
         super(AtlasGlossaryBaseObject, self).type_coerce_attrs()
         self.classifications = type_coerce_list(self.classifications, instance.AtlasClassification)
 
 
 class AtlasGlossary(AtlasGlossaryBaseObject):
-    def __init__(self, attrs={}):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasGlossaryBaseObject.__init__(self, attrs)
 
         self.language = attrs.get('language')
@@ -54,7 +59,9 @@ class AtlasGlossary(AtlasGlossaryBaseObject):
 
 
 class AtlasGlossaryExtInfo(AtlasGlossary):
-    def __init__(self, attrs={}):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasGlossary.__init__(self, attrs)
 
         self.termInfo = attrs.get('termInfo')
@@ -68,7 +75,9 @@ class AtlasGlossaryExtInfo(AtlasGlossary):
 
 
 class AtlasGlossaryCategory(AtlasGlossaryBaseObject):
-    def __init__(self, attrs):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasGlossaryBaseObject.__init__(self, attrs)
 
         # Inherited attributes from relations
@@ -91,7 +100,9 @@ class AtlasGlossaryCategory(AtlasGlossaryBaseObject):
 
 
 class AtlasGlossaryTerm(AtlasGlossaryBaseObject):
-    def __init__(self, attrs={}):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasGlossaryBaseObject.__init__(self, attrs)
 
         # Core attributes
@@ -136,6 +147,9 @@ class AtlasGlossaryTerm(AtlasGlossaryBaseObject):
     def type_coerce_attrs(self):
         super(AtlasGlossaryTerm, self).type_coerce_attrs()
 
+        # This is to avoid the circular dependencies that instance.py and glossary.py has.
+        import apache_atlas.model.instance as instance
+
         self.anchor = type_coerce(self.anchor, AtlasGlossaryHeader)
         self.assignedEntities = type_coerce_list(self.assignedEntities, instance.AtlasRelatedObjectId)
         self.categories = type_coerce_list(self.categories, AtlasTermCategorizationHeader)
@@ -154,7 +168,9 @@ class AtlasGlossaryTerm(AtlasGlossaryBaseObject):
 
 
 class AtlasGlossaryHeader(AtlasBase):
-    def __init__(self, attrs):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasBase.__init__(self, attrs)
 
         self.glossaryGuid = attrs.get('glossaryGuid')
@@ -163,7 +179,9 @@ class AtlasGlossaryHeader(AtlasBase):
 
 
 class AtlasRelatedCategoryHeader(AtlasBase):
-    def __init__(self, attrs={}):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasBase.__init__(self, attrs)
 
         self.categoryGuid = attrs.get('categoryGuid')
@@ -174,7 +192,9 @@ class AtlasRelatedCategoryHeader(AtlasBase):
 
 
 class AtlasRelatedTermHeader(AtlasBase):
-    def __init__(self, attrs={}):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasBase.__init__(self, attrs)
 
         self.termGuid = attrs.get('termGuid')
@@ -188,7 +208,9 @@ class AtlasRelatedTermHeader(AtlasBase):
 
 
 class AtlasTermAssignmentHeader(AtlasBase):
-    def __init__(self, attrs={}):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasBase.__init__(self, attrs)
 
         self.termGuid = attrs.get('termGuid')
@@ -203,7 +225,9 @@ class AtlasTermAssignmentHeader(AtlasBase):
 
 
 class AtlasTermCategorizationHeader(AtlasBase):
-    def __init__(self, attrs):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasBase.__init__(self, attrs)
 
         self.categoryGuid = attrs.get('categoryGuid')

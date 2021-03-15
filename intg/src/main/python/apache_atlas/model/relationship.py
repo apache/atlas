@@ -26,7 +26,9 @@ from apache_atlas.utils import type_coerce_list
 
 
 class AtlasRelationship(AtlasStruct):
-    def __init__(self, attrs={}):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasStruct.__init__(self, attrs)
 
         self.guid = attrs.get('guid')
@@ -56,7 +58,9 @@ class AtlasRelationship(AtlasStruct):
 
 
 class AtlasRelationshipWithExtInfo(AtlasBase):
-    def __init__(self, attrs={}):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasBase.__init__(self, attrs)
 
         self.relationship = attrs.get('relationship')

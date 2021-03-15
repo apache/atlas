@@ -61,7 +61,9 @@ class AtlasBaseModelObject(AtlasBase):
 
 
 class TimeBoundary(AtlasBase):
-    def __init__(self, attrs={}):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasBase.__init__(self, attrs)
 
         self.startTime = attrs.get('startTime')
@@ -70,7 +72,9 @@ class TimeBoundary(AtlasBase):
 
 
 class Plist(AtlasBase):
-    def __init__(self, attrs={}):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasBase.__init__(self, attrs)
 
         self.list = non_null(attrs.get('list'), [])
@@ -82,7 +86,9 @@ class Plist(AtlasBase):
 
 
 class SearchFilter(AtlasBase):
-    def __init__(self, attrs={}):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasBase.__init__(self, attrs)
 
         self.startIndex = non_null(attrs.get('startIndex'), 0)

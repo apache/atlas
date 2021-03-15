@@ -22,7 +22,9 @@ from apache_atlas.utils import type_coerce_list
 
 
 class AtlasLineageInfo(AtlasBase):
-    def __init__(self, attrs={}):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasBase.__init__(self, attrs)
 
         self.baseEntityGuid = attrs.get('baseEntityGuid')
@@ -39,7 +41,9 @@ class AtlasLineageInfo(AtlasBase):
 
 
 class LineageRelation(AtlasBase):
-    def __init__(self, attrs):
+    def __init__(self, attrs=None):
+        attrs = attrs or {}
+
         AtlasBase.__init__(self, attrs)
 
         self.fromEntityId = attrs.get('fromEntityId')

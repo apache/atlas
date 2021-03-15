@@ -57,7 +57,7 @@ class DiscoveryExample:
 
     def basic_search(self, type_name, classification, query):
         try:
-            result = self.client.discovery.basic_search(type_name, classification, query, False, 2, 0)
+            result = self.client.discovery.basic_search(type_name, classification, query, False, None, 'ASCENDING', 2, 0)
 
             if result:
                 LOG.info("Basic-search result: %s", result)

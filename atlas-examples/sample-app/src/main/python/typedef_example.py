@@ -22,7 +22,7 @@ import logging
 import utils
 
 from apache_atlas.utils           import type_coerce
-from apache_atlas.model.discovery import SearchFilter
+from apache_atlas.model.misc      import SearchFilter
 from apache_atlas.model.typedef   import AtlasTypesDef
 
 
