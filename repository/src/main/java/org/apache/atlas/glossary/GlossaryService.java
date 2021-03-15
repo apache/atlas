@@ -1120,7 +1120,7 @@ public class GlossaryService {
             ret = glossaryTermUtils.getGlossaryTermDataList(fileData, failedTermMsgs);
             ret = createGlossaryTerms(ret);
         } catch (IOException e) {
-            throw new AtlasBaseException(AtlasErrorCode.FAILED_TO_UPLOAD, e);
+            throw new AtlasBaseException(AtlasErrorCode.FAILED_TO_UPLOAD, fileName);
         }
 
         return ret;
@@ -1134,7 +1134,7 @@ public class GlossaryService {
                 ret.add(createTerm(glossaryTerm));
             } catch (AtlasBaseException e) {
                 if (!e.getAtlasErrorCode().equals(AtlasErrorCode.GLOSSARY_TERM_ALREADY_EXISTS)) {
-                    throw new AtlasBaseException(AtlasErrorCode.FAILED_TO_CREATE_GLOSSARY_TERM, e);
+                    throw new AtlasBaseException(AtlasErrorCode.FAILED_TO_CREATE_GLOSSARY_TERM, glossaryTerm.getName());
                 }
             }
         }
