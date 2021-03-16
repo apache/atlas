@@ -53,7 +53,7 @@ define(["require", "backbone"], function(require) {
         SERVER_START: "Server Start",
         SERVER_STOP: "Server End",
         SERVER_STATE_ACTIVE: "Server State Active",
-        SERVER_STATE_PASSIVE: "Server Statae Passive"
+        SERVER_STATE_PASSIVE: "Server State Passive"
     }
 
     Enums.category = {
