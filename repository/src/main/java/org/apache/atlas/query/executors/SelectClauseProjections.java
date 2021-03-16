@@ -24,6 +24,7 @@ import org.apache.atlas.query.GremlinQuery;
 import org.apache.atlas.query.SelectClauseComposer;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -130,8 +131,8 @@ public class SelectClauseProjections {
                 } else {
                     if (selectClauseComposer.isPrimitiveAttribute(idx)) {
                         String propertyName = selectClauseComposer.getAttribute(idx);
-
-                        row.add(vertex.getProperty(propertyName, Object.class));
+                        Object value = vertex.getProperty(propertyName, Object.class);
+                        row.add(value != null ? value : StringUtils.EMPTY);
                     } else {
                         row.add(entityRetriever.toAtlasEntityHeaderWithClassifications(vertex));
                     }
