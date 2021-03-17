@@ -225,27 +225,6 @@ define(['require',
                     obj.operators = ['contains', 'is_null', 'not_null'];
                     return obj;
                 }
-                /* __labels */
-                if (isSystemAttr && attrObj.name === "__labels") {
-                    obj["plugin"] = "select2";
-                    obj["input"] = 'select';
-                    obj["plugin_config"] = {
-                        placeholder: "Enter Label(s)",
-                        tags: true,
-                        "language": {
-                            "noResults": function() { return ''; }
-                        },
-                        multiple: false
-                    };
-                    obj["valueSetter"] = function(rule) {
-                        if (rule && !_.isEmpty(rule.value)) {
-                            var newOption = new Option(rule.value, rule.value, true, false);
-                            return rule.$el.find('.rule-value-container select').append(newOption);
-                        }
-                    }
-                    _.extend(obj, this.getOperator("string"));
-                    return obj;
-                }
                 /* __typeName */
                 if (isSystemAttr && attrObj.name === "__typeName") {
                     var entityType = [];
