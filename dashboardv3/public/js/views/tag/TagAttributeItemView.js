@@ -69,8 +69,8 @@ define(['require',
                 if (this.parentView.collection.models.length > 0) {
                     this.model.destroy();
                 }
-                if (this.parentView.collection.models.length == 0 && tagName != "") {
-                    this.parentView.$el.parent().next().find('button.ok').removeAttr("disabled");
+                if (this.parentView.$el.find('input').length === 1) {
+                    $(this.ui.close).hide();
                 }
             }
         });
