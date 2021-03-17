@@ -26,8 +26,9 @@ define([
     "collection/VSearchList",
     "collection/VGlossaryList",
     "utils/Enums",
+    "collection/VTagList",
     "jstree"
-], function(require, ClassificationTreeLayoutViewTmpl, Utils, Messages, Globals, UrlLinks, CommonViewFunction, VSearchList, VGlossaryList, Enums) {
+], function(require, ClassificationTreeLayoutViewTmpl, Utils, Messages, Globals, UrlLinks, CommonViewFunction, VSearchList, VGlossaryList, Enums, VTagList) {
     "use strict";
 
     var ClassificationTreeLayoutView = Marionette.LayoutView.extend({
@@ -162,10 +163,29 @@ define([
         },
         onRender: function() {
             this.changeLoaderState(true);
-            this.renderClassificationTree();
+            this.checkTagOnRefresh();
             this.createClassificationAction();
             this.ui.clearWildCard.addClass('hide-icon');
             this.changeLoaderState(false);
+        },
+        checkTagOnRefresh: function() {
+            var that = this,
+                tagName = (this.options && this.options.value) ? this.options.value.tag : null,
+                presentTag = this.classificationDefCollection.fullCollection.findWhere({ name: tagName }),
+                tag = new VTagList();
+            if (!presentTag && tagName) {
+                tag.url = UrlLinks.classificationDefApiUrl(tagName);
+                tag.fetch({
+                    success: function(dataOrCollection, tagDetails) {
+                        that.classificationDefCollection.fullCollection.add(tagDetails);
+                    },
+                    cust_error: function(model, response) {
+                        that.renderClassificationTree();
+                    }
+                });
+            } else {
+                this.renderClassificationTree();
+            }
         },
         changeLoaderState: function(showLoader) {
             if (showLoader) {
@@ -184,6 +204,7 @@ define([
                 "reset add remove",
                 function() {
                     if (this.ui.classificationSearchTree.jstree(true)) {
+                        that.classificationTreeUpdate = true;
                         that.ui.classificationSearchTree.jstree(true).refresh();
                     } else {
                         this.renderClassificationTree();
@@ -442,7 +463,7 @@ define([
                             var child = collection.find({
                                 name: name
                             });
-                            var tagEntityCount = that.entityCountObj.tag.tagEntities[name];
+                            var tagEntityCount = that.entityCountObj?that.entityCountObj.tag.tagEntities[name]:null;
                             var tagname = tagEntityCount ? name + " (" + _.numberFormatWithComma(tagEntityCount) + ")" : name;
 
                             if (that.options.value) {
@@ -483,10 +504,11 @@ define([
                     return tagData;
                 }
             collection.each(function(model) {
-                var modelJSON = model.toJSON();
-                var name = modelJSON.name;
-                var tagEntityCount = that.entityCountObj.tag.tagEntities[name];
-                var tagname = tagEntityCount ? name + " (" + _.numberFormatWithComma(tagEntityCount) + ")" : name,
+                var modelJSON = model.toJSON(),
+                    name = modelJSON.name,
+                    tagEntityCount = that.entityCountObj?that.entityCountObj.tag.tagEntities[name]:null,
+                    tagname = tagEntityCount ? name + " (" + _.numberFormatWithComma(tagEntityCount) + ")" : name,
+                    isSelectedChildted = false,
                     isSelected = false;
 
                 if (that.options.value) {
@@ -540,22 +562,22 @@ define([
         pushRootClassificationToJstree: function(data) {
             var that = this;
             _.each(Enums.addOnClassification, function(addOnClassification) {
-                var rootClassification = Globals[addOnClassification];
-                var isSelected = that.options.value && that.options.value.tag ? that.options.value.tag == rootClassification.name : false;
-                var rootClassificationNode = {
-                    text: _.escape(rootClassification.name),
-                    name: rootClassification.name,
-                    type: rootClassification.category,
-                    gType: "Classification",
-                    guid: rootClassification.guid,
-                    id: rootClassification.guid,
-                    model: rootClassification,
-                    children: [],
-                    icon: "fa fa-tag",
-                    state: {
-                        selected: isSelected
+                var rootClassification = Globals[addOnClassification],
+                    isSelected = (that.options.value && that.options.value.tag) ? that.options.value.tag == rootClassification.name : false,
+                    rootClassificationNode = {
+                        text: _.escape(rootClassification.name),
+                        name: rootClassification.name,
+                        type: rootClassification.category,
+                        gType: "Classification",
+                        guid: rootClassification.guid,
+                        id: rootClassification.guid,
+                        model: rootClassification,
+                        children: [],
+                        icon: "fa fa-tag",
+                        state: {
+                            selected: isSelected
+                        }
                     }
-                }
                 data.push(rootClassificationNode);
             });
             return data;
@@ -798,7 +820,7 @@ define([
         onViewEditClassification: function() {
             var selectedNode = this.ui.classificationSearchTree.jstree("get_selected", true);
             if (selectedNode && selectedNode[0]) {
-                var url = "#!/tag/tagAttribute/" + selectedNode[0].original.name;
+                var url = "#!/tag/tagAttribute/" + selectedNode[0].original.name + "?tag=" + selectedNode[0].original.name;
                 this.onClassificationUpdate(url);
             }
         },

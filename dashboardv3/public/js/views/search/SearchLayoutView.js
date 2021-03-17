@@ -93,7 +93,7 @@ define(['require',
             initialize: function(options) {
                 _.extend(this, _.pick(options, 'value', 'typeHeaders', 'searchVent', 'entityDefCollection', 'enumDefCollection', 'classificationDefCollection', 'searchTableColumns', 'searchTableFilters', 'metricCollection', 'onSubmit'));
                 this.type = "dsl";
-                this.entityCountObj = _.first(this.metricCollection.toJSON());
+                this.entityCountObj = _.first(this.metricCollection.toJSON()) || { entity: { entityActive: {}, entityDeleted: {} }, tag: { tagEntities: {} } };
                 this.filterTypeSelected = [];
                 var param = Utils.getUrlState.getQueryParams();
                 this.query = {
