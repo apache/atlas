@@ -53,7 +53,7 @@ define([
         initialize: function(options) {
             _.extend(
                 this,
-                _.pick(options, "entityDefCollection", "typeHeaders", "enumDefCollection", "classificationDefCollection", "metricCollection", "businessMetadataDefCollection")
+                _.pick(options, "entityDefCollection", "typeHeaders", "enumDefCollection", "classificationDefCollection", "metricCollection", "classificationAndMetricEvent", "businessMetadataDefCollection")
             );
             this.showRegions();
             this.bindCommonEvents();
@@ -72,6 +72,7 @@ define([
                 classificationDefCollection: this.classificationDefCollection,
                 glossaryCollection: this.glossaryCollection,
                 metricCollection: this.metricCollection,
+                classificationAndMetricEvent: this.classificationAndMetricEvent,
                 businessMetadataDefCollection: this.businessMetadataDefCollection
             };
             this.ventObj = {
@@ -267,8 +268,9 @@ define([
         },
         renderDefaultSearchLayoutView: function(opt) {
             var that = this;
-            require(["views/site/Header", "views/search/SearchDefaultLayoutView", "views/site/SideNavLayoutView"], function(Header, SearchDefaultLayoutView, SideNavLayoutView) {
+            require(["views/site/Header", "views/search/SearchDefaultLayoutView", "views/site/SideNavLayoutView", "collection/VTagList"], function(Header, SearchDefaultLayoutView, SideNavLayoutView, VTagList) {
                 var paramObj = Utils.getUrlState.getQueryParams();
+                tag = new VTagList();
                 if (paramObj && (paramObj.type || paramObj.tag || paramObj.term || paramObj.query || paramObj.udKeys || paramObj.udLabels) === undefined) {
                     Utils.setUrl({
                         url: "#!/search",
@@ -297,6 +299,7 @@ define([
                         if (paramObj.tagFilters) {
                             paramObj.tagFilters = null;
                         }
+                        renderSearchView();
                     } else {
                         var tagValidate = paramObj.tag,
                             isTagPresent = false;
@@ -317,59 +320,78 @@ define([
                                 }
                             });
                             if (!isTagPresent) {
-                                paramObj.tag = null;
+                                tag.url = UrlLinks.classificationDefApiUrl(tagValidate);
+                                tag.fetch({
+                                    success: function(tagCollection) {
+                                        isTagPresent = true;
+                                    },
+                                    cust_error: function(model, response) {
+                                        paramObj.tag = null;
+                                    },
+                                    complete: function() {
+                                        renderSearchView.call();
+                                    }
+                                });
+                            } else {
+                                renderSearchView();
                             }
+                        } else {
+                            renderSearchView();
                         }
                     }
+                } else {
+                    renderSearchView();
+                }
 
-                }
-                var isinitialView = true,
-                    isTypeTagNotExists = false,
-                    tempParam = _.extend({}, paramObj);
-                if (paramObj) {
-                    isinitialView =
-                        (
-                            paramObj.type ||
-                            (paramObj.dslChecked == "true" ? "" : paramObj.tag || paramObj.term) ||
-                            (paramObj.query ? paramObj.query.trim() : "")
-                        ).length === 0;
-                }
-                var options = _.extend({
-                        value: paramObj,
-                        initialView: isinitialView,
-                        fromDefaultSearch: opt ? (opt && !opt.fromSearchResultView) : true,
-                        fromSearchResultView: (opt && opt.fromSearchResultView) || false,
-                        fromCustomFilterView: (opt && opt.fromCustomFilterView) || false,
-                        isTypeTagNotExists: paramObj && (paramObj.type != tempParam.type || tempParam.tag != paramObj.tag)
-                    },
-                    that.preFetchedCollectionLists,
-                    that.sharedObj,
-                    that.ventObj
-                );
-                that.renderViewIfNotExists(
-                    that.getHeaderOptions(Header, {
-                        fromDefaultSearch: options.fromDefaultSearch
-                    })
-                );
-                that.renderViewIfNotExists({
-                    view: App.rSideNav,
-                    manualRender: function() {
-                        this.view.currentView.manualRender(options);
-                    },
-                    render: function() {
-                        return new SideNavLayoutView(options);
+                function renderSearchView() {
+                    var isinitialView = true,
+                        isTypeTagNotExists = false,
+                        tempParam = _.extend({}, paramObj);
+                    if (paramObj) {
+                        isinitialView =
+                            (
+                                paramObj.type ||
+                                (paramObj.dslChecked == "true" ? "" : paramObj.tag || paramObj.term) ||
+                                (paramObj.query ? paramObj.query.trim() : "")
+                            ).length === 0;
                     }
-                });
-                that.renderViewIfNotExists({
-                    view: App.rContent,
-                    viewName: "SearchDefaultlLayoutView",
-                    manualRender: function() {
-                        this.view.currentView.manualRender(options);
-                    },
-                    render: function() {
-                        return new SearchDefaultLayoutView(options);
-                    }
-                });
+                    var options = _.extend({
+                            value: paramObj,
+                            initialView: isinitialView,
+                            fromDefaultSearch: opt ? (opt && !opt.fromSearchResultView) : true,
+                            fromSearchResultView: (opt && opt.fromSearchResultView) || false,
+                            fromCustomFilterView: (opt && opt.fromCustomFilterView) || false,
+                            isTypeTagNotExists: paramObj && (paramObj.type != tempParam.type || tempParam.tag != paramObj.tag)
+                        },
+                        that.preFetchedCollectionLists,
+                        that.sharedObj,
+                        that.ventObj
+                    );
+                    that.renderViewIfNotExists(
+                        that.getHeaderOptions(Header, {
+                            fromDefaultSearch: options.fromDefaultSearch
+                        })
+                    );
+                    that.renderViewIfNotExists({
+                        view: App.rSideNav,
+                        manualRender: function() {
+                            this.view.currentView.manualRender(options);
+                        },
+                        render: function() {
+                            return new SideNavLayoutView(options);
+                        }
+                    });
+                    that.renderViewIfNotExists({
+                        view: App.rContent,
+                        viewName: "SearchDefaultlLayoutView",
+                        manualRender: function() {
+                            this.view.currentView.manualRender(options);
+                        },
+                        render: function() {
+                            return new SearchDefaultLayoutView(options);
+                        }
+                    });
+                }
             });
         },
         administrator: function() {
@@ -390,6 +412,25 @@ define([
                 App.rContent.show(new AdministratorLayoutView(_.extend({ value: paramObj, guid: null }, options)));
             });
         },
+        devDebugging: function() {
+            var that = this;
+            require(["views/site/Header", "views/site/SideNavLayoutView", 'views/dev_debug/DevDebuggingLayoutView'], function(Header, SideNavLayoutView, DevDebuggingLayoutView) {
+                var paramObj = Utils.getUrlState.getQueryParams(),
+                    options = _.extend({}, that.preFetchedCollectionLists, that.sharedObj, that.ventObj);
+                that.renderViewIfNotExists(that.getHeaderOptions(Header));
+                that.renderViewIfNotExists({
+                    view: App.rSideNav,
+                    manualRender: function() {
+                        this.view.currentView.manualRender(options);
+                    },
+                    render: function() {
+                        return new SideNavLayoutView(options);
+                    }
+                });
+                App.rContent.show(new DevDebuggingLayoutView(options));
+            });
+        },
+
         businessMetadataDetailPage: function(guid) {
             var that = this;
             require(["views/site/Header", "views/site/SideNavLayoutView", "views/business_metadata/BusinessMetadataContainerLayoutView", ], function(Header, SideNavLayoutView, BusinessMetadataContainerLayoutView) {

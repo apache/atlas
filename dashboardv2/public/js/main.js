@@ -205,7 +205,7 @@ require(['App',
     'select2'
 ], function(App, Router, Helper, CommonViewFunction, Globals, UrlLinks, VEntityList, VTagList, Enums) {
     var that = this;
-    this.asyncFetchCounter = 7 + (Enums.addOnEntities.length + 1);
+    this.asyncFetchCounter = 5 + (Enums.addOnEntities.length + 1);
     // entity
     this.entityDefCollection = new VEntityList();
     this.entityDefCollection.url = UrlLinks.entitiesDefApiUrl();
@@ -222,6 +222,7 @@ require(['App',
     this.metricCollection = new VTagList();
     this.metricCollection.url = UrlLinks.metricsApiUrl();
     this.metricCollection.modelAttrName = "data";
+    this.classificationAndMetricEvent = new Backbone.Wreqr.EventAggregator();
     // businessMetadata
     this.businessMetadataDefCollection = new VEntityList();
     this.businessMetadataDefCollection.url = UrlLinks.businessMetadataDefApiUrl();
@@ -233,6 +234,7 @@ require(['App',
         enumDefCollection: this.enumDefCollection,
         classificationDefCollection: this.classificationDefCollection,
         metricCollection: this.metricCollection,
+        classificationAndMetricEvent: this.classificationAndMetricEvent,
         businessMetadataDefCollection: this.businessMetadataDefCollection
     });
 
@@ -294,6 +296,7 @@ require(['App',
         }
     });
     this.typeHeaders.fetch({
+        async: true,
         complete: function() {
             that.typeHeaders.fullCollection.comparator = function(model) {
                 return model.get('name').toLowerCase();
@@ -314,23 +317,22 @@ require(['App',
         }
     });
     this.classificationDefCollection.fetch({
+        async: true,
         complete: function() {
             that.classificationDefCollection.fullCollection.comparator = function(model) {
                 return model.get('name').toLowerCase();
             };
             that.classificationDefCollection.fullCollection.sort({ silent: true });
-            --that.asyncFetchCounter;
-            startApp();
+            that.classificationAndMetricEvent.trigger("classification:Update:ClassificationTab");
+            that.classificationAndMetricEvent.trigger("classification:Update:Search");
         }
     });
-
     this.metricCollection.fetch({
-        complete: function() {
-            --that.asyncFetchCounter;
-            startApp();
+        async: true,
+        success: function() {
+            that.classificationAndMetricEvent.trigger("metricCollection:Update");
         }
     });
-
     this.businessMetadataDefCollection.fetch({
         complete: function() {
             that.businessMetadataDefCollection.fullCollection.comparator = function(model) {
@@ -341,7 +343,6 @@ require(['App',
             startApp();
         }
     });
-
     CommonViewFunction.fetchRootEntityAttributes({
         url: UrlLinks.rootEntityDefUrl(Enums.addOnEntities[0]),
         entity: Enums.addOnEntities,
@@ -350,7 +351,6 @@ require(['App',
             startApp();
         }
     });
-
     CommonViewFunction.fetchRootClassificationAttributes({
         url: UrlLinks.rootClassificationDefUrl(Enums.addOnClassification[0]),
         classification: Enums.addOnClassification,
