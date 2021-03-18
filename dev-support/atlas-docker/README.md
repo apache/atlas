@@ -43,7 +43,7 @@ Docker files in this folder create docker images and run them to build Apache At
 
    5.2. Execute following command to install and start Atlas and dependent services (Solr, HBase, Kafka) in containers:
 
-        docker-compose -f docker-compose.atlas-base.yml -f docker-compose.atlas.yml -f docker-compose.atlas-hadoop.yml -f docker-compose.atlas-hbase.yml -f docker-compose.atlas-kafka.yml up -d
+        docker-compose -f docker-compose.atlas-base.yml -f docker-compose.atlas.yml -f docker-compose.atlas-hadoop.yml -f docker-compose.atlas-hbase.yml -f docker-compose.atlas-kafka.yml -f docker-compose.atlas-hive.yml up -d
 
    Apache Atlas will be installed at /opt/atlas/, and logs are at /var/logs/atlas directory.
 

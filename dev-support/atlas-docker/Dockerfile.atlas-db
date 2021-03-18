@@ -1,5 +1,3 @@
-#!/bin/bash
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -16,12 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-echo "export JAVA_HOME=${JAVA_HOME}" >> ${HBASE_HOME}/conf/hbase-env.sh
+FROM postgres:12
 
-cat <<EOF > /etc/ssh/ssh_config
-Host *
-   StrictHostKeyChecking no
-   UserKnownHostsFile=/dev/null
-EOF
-
-chown -R hbase:hadoop /opt/hbase/
+# Copy DB init script
+USER 0
+RUN  mkdir -p /docker-entrypoint-initdb.d
+COPY config/init_postgres.sh /docker-entrypoint-initdb.d/
+RUN chown -R postgres:postgres /docker-entrypoint-initdb.d/
+ENV POSTGRES_PASSWORD atlasR0cks!

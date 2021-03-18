@@ -16,12 +16,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-echo "export JAVA_HOME=${JAVA_HOME}" >> ${HBASE_HOME}/conf/hbase-env.sh
 
-cat <<EOF > /etc/ssh/ssh_config
-Host *
-   StrictHostKeyChecking no
-   UserKnownHostsFile=/dev/null
-EOF
+set -e
 
-chown -R hbase:hadoop /opt/hbase/
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
+    CREATE USER hive WITH PASSWORD 'atlasR0cks!';
+    CREATE DATABASE hive;
+    GRANT ALL PRIVILEGES ON DATABASE hive TO hive;
+EOSQL

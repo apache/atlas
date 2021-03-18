@@ -16,7 +16,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-echo "export JAVA_HOME=${JAVA_HOME}" >> ${HBASE_HOME}/conf/hbase-env.sh
+echo "export JAVA_HOME=${JAVA_HOME}" >> ${HADOOP_HOME}/etc/hadoop/hadoop-env.sh
 
 cat <<EOF > /etc/ssh/ssh_config
 Host *
@@ -24,4 +24,22 @@ Host *
    UserKnownHostsFile=/dev/null
 EOF
 
-chown -R hbase:hadoop /opt/hbase/
+cat <<EOF > ${HADOOP_HOME}/etc/hadoop/core-site.xml
+<configuration>
+  <property>
+    <name>fs.defaultFS</name>
+    <value>hdfs://atlas-hadoop:9000</value>
+  </property>
+</configuration>
+EOF
+
+cp ${ATLAS_SCRIPTS}/hive-site.xml ${HIVE_HOME}/conf/hive-site.xml
+cp ${ATLAS_SCRIPTS}/hive-site.xml ${HIVE_HOME}/conf/hiveserver2-site.xml
+su -c "${HIVE_HOME}/bin/schematool -dbType postgres -initSchema" hive
+
+mkdir -p /opt/hive/logs
+chown -R hive:hadoop /opt/hive/
+chmod g+w /opt/hive/logs
+
+cd ${ATLAS_HOME}/atlas-hive-plugin
+./enable-hive-plugin.sh
