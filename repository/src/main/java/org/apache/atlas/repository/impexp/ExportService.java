@@ -20,11 +20,13 @@ package org.apache.atlas.repository.impexp;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.glossary.GlossaryService;
 import org.apache.atlas.model.impexp.AtlasExportRequest;
 import org.apache.atlas.model.impexp.AtlasExportResult;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.model.typedef.AtlasBusinessMetadataDef;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
@@ -37,6 +39,7 @@ import org.apache.atlas.repository.util.UniqueList;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.AtlasGremlinQueryProvider;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -64,14 +67,17 @@ public class ExportService {
     private final EntityGraphRetriever      entityGraphRetriever;
     private       ExportTypeProcessor       exportTypeProcessor;
     private final HdfsPathEntityCreator     hdfsPathEntityCreator;
+    private final GlossaryService           glossaryService;
 
     @Inject
     public ExportService(final AtlasTypeRegistry typeRegistry, AtlasGraph graph,
-                         AuditsWriter auditsWriter, HdfsPathEntityCreator hdfsPathEntityCreator) {
+                         AuditsWriter auditsWriter, HdfsPathEntityCreator hdfsPathEntityCreator,
+                         GlossaryService glossaryService) {
         this.typeRegistry         = typeRegistry;
         this.entityGraphRetriever = new EntityGraphRetriever(graph, this.typeRegistry);
         this.auditsWriter         = auditsWriter;
         this.hdfsPathEntityCreator = hdfsPathEntityCreator;
+        this.glossaryService = glossaryService;
         this.startEntityFetchByExportRequest = new StartEntityFetchByExportRequest(graph, typeRegistry, AtlasGremlinQueryProvider.INSTANCE);
         this.entitiesExtractor = new EntitiesExtractor(graph, typeRegistry);
     }
@@ -83,7 +89,7 @@ public class ExportService {
                 hostName, startTime, getCurrentChangeMarker());
 
         ExportContext context = new ExportContext(result, exportSink);
-        exportTypeProcessor = new ExportTypeProcessor(typeRegistry);
+        exportTypeProcessor = new ExportTypeProcessor(typeRegistry, glossaryService);
 
         try {
             LOG.info("==> export(user={}, from={})", userName, requestingIP);
@@ -162,6 +168,12 @@ public class ExportService {
             AtlasRelationshipDef relationshipDef = typeRegistry.getRelationshipDefByName(relationshipType);
 
             typesDef.getRelationshipDefs().add(relationshipDef);
+        }
+
+        for (String bm : context.businessMetadataTypes) {
+            AtlasBusinessMetadataDef bmDef = typeRegistry.getBusinessMetadataDefByName(bm);
+
+            typesDef.getBusinessMetadataDefs().add(bmDef);
         }
     }
 
@@ -257,8 +269,12 @@ public class ExportService {
     }
 
     public void processEntity(AtlasEntityWithExtInfo entityWithExtInfo, ExportContext context) throws AtlasBaseException {
-        addEntity(entityWithExtInfo, context);
         exportTypeProcessor.addTypes(entityWithExtInfo.getEntity(), context);
+        if (MapUtils.isNotEmpty(context.termsGlossary)) {
+            addGlossaryEntities(context);
+        }
+
+        addEntity(entityWithExtInfo, context);
 
         context.guidsProcessed.add(entityWithExtInfo.getEntity().getGuid());
         entitiesExtractor.get(entityWithExtInfo.getEntity(), context);
@@ -273,6 +289,28 @@ public class ExportService {
         }
     }
 
+    private void addGlossaryEntities(ExportContext context) {
+        try {
+            for (String termGuid : context.termsGlossary.keySet()) {
+                try {
+                    String glossaryGuid = context.termsGlossary.get(termGuid);
+                    if (!context.sink.hasEntity(glossaryGuid)) {
+                        AtlasEntity glossary = entityGraphRetriever.toAtlasEntity(glossaryGuid);
+                        addEntity(new AtlasEntityWithExtInfo(glossary), context);
+                    }
+
+                    if (!context.sink.hasEntity(termGuid)) {
+                        AtlasEntity term = entityGraphRetriever.toAtlasEntity(termGuid);
+                        addEntity(new AtlasEntityWithExtInfo(term), context);
+                    }
+                } catch (AtlasBaseException exception) {
+                    LOG.error("Error fetching Glossary for term: {}", termGuid);
+                }
+            }
+        } finally {
+            context.clearTerms();
+        }
+    }
 
     private void addEntity(AtlasEntityWithExtInfo entityWithExtInfo, ExportContext context) throws AtlasBaseException {
         if(context.sink.hasEntity(entityWithExtInfo.getEntity().getGuid())) {
@@ -348,6 +386,8 @@ public class ExportService {
         final Set<String>                     enumTypes           = new HashSet<>();
         final Set<String>                     relationshipTypes   = new HashSet<>();
         final Set<String>                     businessMetadataTypes = new HashSet<>();
+        final Map<String, String>             termsGlossary      = new HashMap<>();
+
         final AtlasExportResult               result;
         private final ZipSink                 sink;
 
@@ -463,6 +503,10 @@ public class ExportService {
 
         public void addToEntityCreationOrder(String guid) {
             entityCreationOrder.add(guid);
+        }
+
+        public void clearTerms() {
+            termsGlossary.clear();
         }
     }
 }

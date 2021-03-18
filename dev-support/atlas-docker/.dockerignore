@@ -1,0 +1,5 @@
+*
+!config
+!dist/apache-atlas-*-bin.tar.gz
+!downloads/*
+!scripts/*

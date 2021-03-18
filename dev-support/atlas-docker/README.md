@@ -17,31 +17,34 @@ specific language governing permissions and limitations
 under the License.
 -->
 
-# atlas_docker
-
 ## Overview
 
-The Dockerfile in this folder can be used to build a Docker image running
-the latest Atlas master branch in standalone mode. It does this by setting
-up necessary dependencies, checking out the master branch of Atlas from
-GitHub, and then building Atlas. By default, this image will start the Atlas
-on port 21000.
+Docker files in this folder create docker images and run them to build Apache Atlas, deploy Apache Atlas and dependent services in containers.
 
 ## Usage
 
+1. Ensure that you have recent version of Docker installed from [docker.io](http://www.docker.io) (as of this writing: Engine 20.10.5, Compose 1.28.5).
+   Make sure to configure docker with at least 6gb of memory.
 
-1. Ensure that you have a recent version of Docker installed from
-   [docker.io](http://www.docker.io).
 2. Set this folder as your working directory.
-3. Type `docker build -t atlas_docker .` to build a Docker image called **atlas_docker**.
-   This may take 20 minutes or more the first time you run the command since it will
-   create a Maven repository inside the image as well as checkout the master branch
-   of Atlas. Note that by default unit tests are skipped, to run unit tests within
-   the image remove the '-DskipTests' in the Dockerfile
-4. When this completes successfully, you can run `docker run -it -p 21000:21000 atlas_docker`
-   to access an Atlas server running inside of a container created from the
-   **atlas_docker** image. Alternatively, you can type `docker run -it atlas_docker
-   bash` to start a container without a running Atlas. Within this environment,
-   Atlas is built in /root/atlas-bin.
-5. When you run command `docker run -it -p 21000:21000 atlas_docker` successfully, you can
-   access Atlas UI from a browser at http://localhost:21000.
+
+3. Update environment variables in .env file, if necessary
+
+4. Execute following command to download necessary archives to setup Atlas/HDFS/HBase/Kafka services:
+     ./download-archives.sh
+
+5. Build and deploy Apache Atlas in containers using docker-compose
+
+   5.1. Execute following command to build Apache Atlas:
+
+        docker-compose -f docker-compose.atlas-base.yml -f docker-compose.atlas-build.yml up
+
+   Time taken to complete the build might vary (upto an hour), depending on status of ${HOME}/.m2 directory cache.
+
+   5.2. Execute following command to install and start Atlas and dependent services (Solr, HBase, Kafka) in containers:
+
+        docker-compose -f docker-compose.atlas-base.yml -f docker-compose.atlas.yml -f docker-compose.atlas-hadoop.yml -f docker-compose.atlas-hbase.yml -f docker-compose.atlas-kafka.yml up -d
+
+   Apache Atlas will be installed at /opt/atlas/, and logs are at /var/logs/atlas directory.
+
+6. Atlas Admin can be accessed at http://localhost:21000 (admin/atlasR0cks!)

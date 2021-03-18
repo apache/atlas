@@ -310,7 +310,7 @@ public class HiveMetaStoreBridgeTest {
         return table;
     }
 
-    private class MatchesReferenceableProperty extends ArgumentMatcher<Object> {
+    private class MatchesReferenceableProperty implements ArgumentMatcher<Object> {
         private final String attrName;
         private final Object attrValue;
 

@@ -41,6 +41,11 @@ public class AtlasServiceException extends Exception {
         super(e);
     }
 
+    public AtlasServiceException(AtlasServiceException e) {
+        super(e);
+        this.status = e.status;
+    }
+
     public ClientResponse.Status getStatus() {
         return status;
     }

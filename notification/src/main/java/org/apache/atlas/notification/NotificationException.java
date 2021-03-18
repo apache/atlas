@@ -31,6 +31,10 @@ public class NotificationException extends AtlasException {
         super(e);
     }
 
+    public NotificationException(Exception e, String errorMsg) {
+        super(errorMsg, e);
+    }
+
     public NotificationException(Exception e, List<String> failedMessages) {
         super(e);
         this.failedMessages = failedMessages;

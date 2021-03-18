@@ -17,11 +17,12 @@
  */
 define(['require',
     'backbone',
+    'utils/Utils',
     'hbs!tmpl/entity/EntityBusinessMetaDataItemView_tmpl',
     'moment',
     'utils/Globals',
     'daterangepicker'
-], function(require, Backbone, EntityBusinessMetaDataItemViewTmpl, moment, Globals) {
+], function(require, Backbone, Utils, EntityBusinessMetaDataItemViewTmpl, moment, Globals) {
     'use strict';
 
     return Backbone.Marionette.ItemView.extend({
@@ -167,12 +168,12 @@ define(['require',
                         var dateStr = [];
                         _.each(val, function(selectedDate) {
                             selectedDate = parseInt(selectedDate);
-                            dateStr.push(moment(selectedDate).format(Globals.dateFormat));
+                            dateStr.push(Utils.formatDate({ date: selectedDate, zone: false, dateFormat: Globals.dateFormat }));
                         });
                         val = dateStr.join(',');
                     } else if (!isMultiValued && val) {
                         val = parseInt(val);
-                        val = moment(val).format(Globals.dateFormat);
+                        val = Utils.formatDate({ date: val, zone: false, dateFormat: Globals.dateFormat });
                     }
                 }
                 if (typeName === "string" || typeName === "array<string>") {
@@ -182,7 +183,7 @@ define(['require',
                 } else if (typeName === "date" || typeName === "array<date>") {
                     returnEL = '<' + (isMultiValued ? "textarea" : "input") + ' type="text" data-key="' + key + '" data-businessMetadata="' + businessMetadata + '" data-typename="' + typeName + '"data-multi="' + isMultiValued + '" data-type="date" class="form-control" ' + (isMultiValued === false && !_.isUndefinedNull(val) ? 'value="' + val + '"' : "") + '>' + (isMultiValued === true && !_.isUndefinedNull(val) ? val : "") + (isMultiValued ? "</textarea>" : "");
                     setTimeout(function() {
-                        var dateObj = { singleDatePicker: true, showDropdowns: true, autoUpdateInput: isMultiValued ? false : true },
+                        var dateObj = { singleDatePicker: true, showDropdowns: true, autoUpdateInput: isMultiValued ? false : true, locale: { format: Globals.dateFormat } },
                             dateEl = that.$el.find('[data-type="date"][data-key="' + key + '"]').daterangepicker(dateObj);
                         if (isMultiValued) {
                             dateEl.on("apply.daterangepicker", function(ev, picker) {
@@ -190,7 +191,7 @@ define(['require',
                                 if (val !== "") {
                                     val += ", ";
                                 }
-                                picker.element.val(val += picker.startDate.format(Globals.dateFormat));
+                                picker.element.val(val += Utils.formatDate({ date: picker.startDate, zone: false, dateFormat: Globals.dateFormat }));
                                 that.$el.find(".custom-col-1[data-id='value']>[data-key]").trigger('change');
                             });
                         }
@@ -267,7 +268,7 @@ define(['require',
             var typeName = value.typeName,
                 value = value.value;
             if (typeName === "date") {
-                return moment(value).format(Globals.dateFormat);
+                return Utils.formatDate({ date: value, zone: false, dateFormat: Globals.dateFormat });
             } else {
                 return value;
             }

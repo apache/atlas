@@ -36,6 +36,7 @@ import static org.apache.atlas.model.discovery.SearchParameters.ALL_ENTITY_TYPES
 
 class RegistryBasedLookup implements Lookup {
     private static final Map<String, String> NUMERIC_ATTRIBUTES = new HashMap<String, String>() {{
+            put(AtlasBaseTypeDef.ATLAS_TYPE_BYTE, "");
             put(AtlasBaseTypeDef.ATLAS_TYPE_SHORT, "");
             put(AtlasBaseTypeDef.ATLAS_TYPE_INT, "");
             put(AtlasBaseTypeDef.ATLAS_TYPE_LONG, "L");

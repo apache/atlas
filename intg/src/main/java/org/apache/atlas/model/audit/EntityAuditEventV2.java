@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import org.apache.atlas.model.Clearable;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.type.AtlasType;
@@ -30,6 +31,8 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.io.Serializable;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Objects;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
@@ -44,7 +47,11 @@ import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditType.EN
 @JsonIgnoreProperties(ignoreUnknown=true)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
-public class EntityAuditEventV2 implements Serializable {
+public class EntityAuditEventV2 implements Serializable, Clearable {
+    public static final String SORT_COLUMN_USER      = "user";
+    public static final String SORT_COLUMN_ACTION    = "action";
+    public static final String SORT_COLUMN_TIMESTAMP = "timestamp";
+
     public enum EntityAuditType { ENTITY_AUDIT_V1, ENTITY_AUDIT_V2 }
 
     public enum EntityAuditActionV2 {
@@ -53,7 +60,7 @@ public class EntityAuditEventV2 implements Serializable {
         CLASSIFICATION_ADD, CLASSIFICATION_DELETE, CLASSIFICATION_UPDATE,
         PROPAGATED_CLASSIFICATION_ADD, PROPAGATED_CLASSIFICATION_DELETE, PROPAGATED_CLASSIFICATION_UPDATE,
         TERM_ADD, TERM_DELETE, LABEL_ADD, LABEL_DELETE, ENTITY_PURGE,
-        BUSINESS_ATTRIBUTE_UPDATE;
+        BUSINESS_ATTRIBUTE_UPDATE, CUSTOM_ATTRIBUTE_UPDATE;
 
         public static EntityAuditActionV2 fromString(String strValue) {
             switch (strValue) {
@@ -96,6 +103,8 @@ public class EntityAuditEventV2 implements Serializable {
                     return LABEL_DELETE;
                 case "BUSINESS_ATTRIBUTE_UPDATE":
                     return BUSINESS_ATTRIBUTE_UPDATE;
+                case "CUSTOM_ATTRIBUTE_UPDATE":
+                    return CUSTOM_ATTRIBUTE_UPDATE;
             }
 
             throw new IllegalArgumentException("No enum constant " + EntityAuditActionV2.class.getCanonicalName() + "." + strValue);
@@ -255,6 +264,19 @@ public class EntityAuditEventV2 implements Serializable {
         return ret;
     }
 
+    @JsonIgnore
+    @Override
+    public void clear() {
+        entityId = null;
+        timestamp = 0L;
+        user = null;
+        action = null;
+        details = null;
+        eventKey = null;
+        entity = null;
+        type = null;
+    }
+
     private String getJsonPartFromDetails() {
         String ret = null;
         if(StringUtils.isNotEmpty(details)) {
@@ -265,5 +287,59 @@ public class EntityAuditEventV2 implements Serializable {
         }
 
         return ret;
+    }
+
+    public static class UserComparator implements Comparator<EntityAuditEventV2> {
+        @Override
+        public int compare(EntityAuditEventV2 me, EntityAuditEventV2 other) {
+            int ret = String.CASE_INSENSITIVE_ORDER.compare(me.getUser(), other.getUser());
+
+            if (ret == 0) {
+                ret = Long.compare(me.getTimestamp(), other.getTimestamp());
+            }
+
+            return ret;
+        }
+    }
+
+    public static class ActionComparator implements Comparator<EntityAuditEventV2> {
+        @Override
+        public int compare(EntityAuditEventV2 me, EntityAuditEventV2 other) {
+            int ret = String.CASE_INSENSITIVE_ORDER.compare(me.getAction().toString(), other.getAction().toString());
+
+            if (ret == 0) {
+                ret = Long.compare(me.getTimestamp(), other.getTimestamp());
+            }
+
+            return ret;
+        }
+    }
+
+    public static class TimestampComparator implements Comparator<EntityAuditEventV2> {
+        @Override
+        public int compare(EntityAuditEventV2 me, EntityAuditEventV2 other) {
+            return Long.compare(me.getTimestamp(), other.getTimestamp());
+        }
+    }
+
+    public static void sortEvents(List<EntityAuditEventV2> events, String sortByColumn, boolean sortOrderDesc) {
+        final Comparator<EntityAuditEventV2> comparator;
+
+        switch (sortByColumn.toLowerCase()) {
+            case SORT_COLUMN_USER:
+                comparator = new EntityAuditEventV2.UserComparator();
+                break;
+
+            case SORT_COLUMN_ACTION:
+                comparator = new EntityAuditEventV2.ActionComparator();
+                break;
+
+            case SORT_COLUMN_TIMESTAMP:
+            default:
+                comparator = new EntityAuditEventV2.TimestampComparator();
+                break;
+        }
+
+        events.sort(sortOrderDesc ? comparator.reversed() : comparator);
     }
 }

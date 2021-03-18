@@ -18,13 +18,14 @@
 
 package org.apache.atlas.query;
 
-enum GremlinClause {
+public enum GremlinClause {
     AS("as('%s')"),
     DEDUP("dedup()"),
     G("g"),
     GROUP_BY("group().by('%s')"),
     HAS("has('%s', %s)"),
     HAS_OPERATOR("has('%s', %s(%s))"),
+    HAS_NOT_OPERATOR("or(__.has('%s', neq(%s)), __.hasNot('%s'))"),
     HAS_PROPERTY("has('%s')"),
     WHERE("where(%s)"),
     HAS_NOT_PROPERTY("hasNot('%s')"),
@@ -45,8 +46,6 @@ enum GremlinClause {
     TO_LIST("toList()"),
     STRING_CONTAINS("has('%s', org.janusgraph.core.attribute.Text.textRegex(%s))"),
     TEXT_CONTAINS("has('%s', org.janusgraph.core.attribute.Text.textContainsRegex(%s))"),
-    TEXT_PREFIX("has('%s', org.janusgraph.core.attribute.Text.textContainsPrefix(%s))"),
-    TEXT_SUFFIX("has('%s', org.janusgraph.core.attribute.Text.textContainsRegex(\".*\" + %s))"),
     TRAIT("outE('classifiedAs').has('__name', within('%s')).outV()"),
     ANY_TRAIT("or(has('__traitNames'), has('__propagatedTraitNames'))"),
     NO_TRAIT("and(hasNot('__traitNames'), hasNot('__propagatedTraitNames'))"),
@@ -62,7 +61,7 @@ enum GremlinClause {
     INLINE_SUM("r.sum({it.value('%s')})"),
     INLINE_MAX("r.max({it.value('%s')}).value('%s')"),
     INLINE_MIN("r.min({it.value('%s')}).value('%s')"),
-    INLINE_GET_PROPERTY("it.value('%s')"),
+    INLINE_GET_PROPERTY("it.property('%s').isPresent() ? it.value('%s') : \"\""),
     INLINE_TRANSFORM_CALL("f(%s)"),
     INLINE_DEFAULT_SORT(".sort()"),
     INLINE_SORT_DESC(".sort{a,b -> b <=> a}"),
@@ -70,6 +69,8 @@ enum GremlinClause {
     // idx of the tuple field to be sorted on
     INLINE_TUPLE_SORT_ASC(".sort{a,b -> a[%s] <=> b[%s]}"),
     INLINE_TUPLE_SORT_DESC(".sort{a,b -> b[%s] <=> a[%s]}"),
+    TERM("where(in('r:AtlasGlossarySemanticAssignment').has('AtlasGlossaryTerm.%s', '%s'))"),
+
     V("V()"),
     VALUE_MAP("valueMap(%s)");
 

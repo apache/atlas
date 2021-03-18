@@ -123,6 +123,8 @@ public class AtlasClientV2 extends AtlasBaseClient {
     private static final String RELATIONSHIPS_URI        = BASE_URI + "v2/relationship/";
     private static final String BULK_HEADERS             = "bulk/headers";
     private static final String BULK_SET_CLASSIFICATIONS = "bulk/setClassifications";
+    private static final String RELATIONSHIP_URI         = DISCOVERY_URI + "/relationship";
+
 
     //Glossary APIs
     private static final String GLOSSARY_URI         = BASE_URI + "v2/glossary";
@@ -664,16 +666,22 @@ public class AtlasClientV2 extends AtlasBaseClient {
     }
 
     public AtlasSearchResult basicSearch(String typeName, String classification, String query, boolean excludeDeletedEntities, int limit, int offset) throws AtlasServiceException {
-        MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
+        return this.basicSearch(typeName, null, classification, query, excludeDeletedEntities, limit, offset);
+    }
 
-        queryParams.add("typeName", typeName);
-        queryParams.add("classification", classification);
-        queryParams.add(QUERY, query);
-        queryParams.add("excludeDeletedEntities", String.valueOf(excludeDeletedEntities));
-        queryParams.add(LIMIT, String.valueOf(limit));
-        queryParams.add(OFFSET, String.valueOf(offset));
+    public AtlasSearchResult basicSearch(String typeName, SearchParameters.FilterCriteria entityFilters, String classification, String query, boolean excludeDeletedEntities, int limit, int offset) throws AtlasServiceException {
+        SearchParameters parameters = new SearchParameters();
+        parameters.setTypeName(typeName);
+        parameters.setClassification(classification);
+        parameters.setQuery(query);
+        parameters.setExcludeDeletedEntities(excludeDeletedEntities);
+        parameters.setLimit(limit);
+        parameters.setOffset(offset);
+        if (entityFilters != null){
+            parameters.setEntityFilters(entityFilters);
+        }
 
-        return callAPI(API_V2.BASIC_SEARCH, AtlasSearchResult.class, queryParams);
+        return callAPI(API_V2.BASIC_SEARCH, AtlasSearchResult.class, parameters);
     }
 
     public AtlasSearchResult facetedSearch(SearchParameters searchParameters) throws AtlasServiceException {
@@ -1202,7 +1210,7 @@ public class AtlasClientV2 extends AtlasBaseClient {
         // Discovery APIs
         public static final API_V2 DSL_SEARCH                  = new API_V2(DSL_SEARCH_URI, HttpMethod.GET, Response.Status.OK);
         public static final API_V2 FULL_TEXT_SEARCH            = new API_V2(FULL_TEXT_SEARCH_URI, HttpMethod.GET, Response.Status.OK);
-        public static final API_V2 BASIC_SEARCH                = new API_V2(BASIC_SEARCH_URI, HttpMethod.GET, Response.Status.OK);
+        public static final API_V2 BASIC_SEARCH                = new API_V2(BASIC_SEARCH_URI, HttpMethod.POST, Response.Status.OK);
         public static final API_V2 FACETED_SEARCH              = new API_V2(FACETED_SEARCH_URI, HttpMethod.POST, Response.Status.OK);
         public static final API_V2 ATTRIBUTE_SEARCH            = new API_V2(DISCOVERY_URI+ "/attribute", HttpMethod.GET, Response.Status.OK);
         public static final API_V2 RELATIONSHIP_SEARCH         = new API_V2(DISCOVERY_URI+ "/relationship", HttpMethod.GET, Response.Status.OK);

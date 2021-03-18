@@ -28,6 +28,7 @@ import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.type.AtlasTypeUtil;
+import org.apache.atlas.utils.AtlasConfigurationUtil;
 import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.commons.cli.BasicParser;
 import org.apache.commons.cli.CommandLine;
@@ -222,7 +223,7 @@ public class HBaseBridge {
     }
 
     private String getMetadataNamespace(Configuration config) {
-        return config.getString(HBASE_METADATA_NAMESPACE, getClusterName(config));
+        return AtlasConfigurationUtil.getRecentString(config, HBASE_METADATA_NAMESPACE, getClusterName(config));
     }
 
     private String getClusterName(Configuration config) {

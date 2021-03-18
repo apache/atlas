@@ -56,7 +56,7 @@ fi
 ATLASCPPATH=${ATLASCPPATH}:${ATLAS_CONF_DIR}
 
 # log dir for applications
-ATLAS_LOG_DIR="${ATLAS_LOG_DIR:-$BASEDIR/logs}"
+ATLAS_LOG_DIR="${ATLAS_LOG_DIR:-/var/log/atlas}"
 export ATLAS_LOG_DIR
 LOGFILE="$ATLAS_LOG_DIR/import-hive.log"
 
@@ -139,6 +139,7 @@ do
     --database) IMPORT_ARGS="$IMPORT_ARGS --database $1"; shift;;
     --table) IMPORT_ARGS="$IMPORT_ARGS --table $1"; shift;;
     --filename) IMPORT_ARGS="$IMPORT_ARGS --filename $1"; shift;;
+    -deleteNonExisting) IMPORT_ARGS="$IMPORT_ARGS -deleteNonExisting";;
     "") break;;
     *) JVM_ARGS="$JVM_ARGS $option"
   esac

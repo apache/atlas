@@ -31,6 +31,11 @@ define(['require',
             RGlobalSearchLayoutView: "#r_globalSearchLayoutView",
             RFilterBrowserLayoutView: "#r_filterBrowserLayoutView"
         },
+        templateHelpers: function() {
+            return {
+                apiDocUrl: UrlLinks.apiDocUrl(),
+            };
+        },
         ui: {
             backButton: "[data-id='backButton']",
             menuHamburger: "[data-id='menuHamburger']",

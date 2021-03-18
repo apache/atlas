@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 'pnotify.buttons', 'pnotify.confirm'], function(require, Globals, pnotify, Messages, Enums) {
+define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 'moment', 'moment-timezone', 'pnotify.buttons', 'pnotify.confirm'], function(require, Globals, pnotify, Messages, Enums, moment) {
     'use strict';
 
     var Utils = {};
@@ -28,7 +28,8 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
                 placement: 'auto bottom',
                 html: true,
                 animation: false,
-                container: 'body'
+                container: 'body',
+                sanitize: false
             };
             if (options.viewFixedPopover || options.contentClass) {
                 defaultObj.template = '<div class="popover ' + (options.viewFixedPopover ? 'fixed-popover' : '') + ' fade bottom"><div class="arrow"></div><h3 class="popover-title"></h3><div class="' + (options.contentClass ? options.contentClass : '') + ' popover-content"></div></div>';
@@ -912,6 +913,36 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
     $.fn.hideButtonLoader = function() {
         $(this).removeClass('button-loader').removeAttr("disabled");
         $(this).siblings("button.cancel").prop("disabled", false);
+    }
+    Utils.formatDate = function(options) {
+        var dateValue = null,
+            dateFormat = Globals.dateTimeFormat,
+            isValidDate = false;
+        if (options && options.date) {
+            dateValue = options.date;
+            if (dateValue !== "-") {
+                dateValue = parseInt(dateValue);
+                if (_.isNaN(dateValue)) {
+                    dateValue = options.date;
+                }
+                dateValue = moment(dateValue);
+                if (dateValue._isValid) {
+                    isValidDate = true;
+                    dateValue = dateValue.format(dateFormat);
+                }
+            }
+        }
+        if (dateValue !== "-") {
+            if (isValidDate === false && options && options.defaultDate !== false) {
+                dateValue = moment().format(dateFormat);
+            }
+            if (Globals.isTimezoneFormatEnabled) {
+                if (!options || options && options.zone !== false) {
+                    dateValue += " (" + moment.tz(moment.tz.guess()).zoneAbbr() + ")";
+                }
+            }
+        }
+        return dateValue;
     }
     return Utils;
 });

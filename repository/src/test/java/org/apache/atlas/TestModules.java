@@ -114,6 +114,8 @@ public class TestModules {
 
         @Override
         protected void configure() {
+            GraphSandboxUtil.create();
+
             if (useLocalSolr()) {
                 try {
                     LocalSolrRunner.start();
@@ -121,8 +123,6 @@ public class TestModules {
                     //ignore
                 }
             }
-
-            GraphSandboxUtil.create();
 
             bindAuditRepository(binder());
 

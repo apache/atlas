@@ -146,10 +146,11 @@
       "description": "Atlas Type representing a directory in an S3 Object Store",
       "superTypes":  [
         "aws_s3_v2_object",
-        "aws_s3_v2_container"
+        "aws_s3_v2_container",
+        "Path"
       ],
       "serviceType": "aws",
-      "typeVersion": "1.0",
+      "typeVersion": "1.1",
       "attributeDefs": [
         {
           "name":        "objectPrefix",

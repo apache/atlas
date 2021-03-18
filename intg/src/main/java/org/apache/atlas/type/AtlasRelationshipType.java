@@ -92,19 +92,36 @@ public class AtlasRelationshipType extends AtlasStructType {
         String end1TypeName = relationshipDef.getEndDef1() != null ? relationshipDef.getEndDef1().getType() : null;
         String end2TypeName = relationshipDef.getEndDef2() != null ? relationshipDef.getEndDef2().getType() : null;
 
-        AtlasType type1 = typeRegistry.getType(end1TypeName);
-        AtlasType type2 = typeRegistry.getType(end2TypeName);
-
-        if (type1 instanceof AtlasEntityType) {
-            end1Type = (AtlasEntityType) type1;
+        if (StringUtils.isEmpty(end1TypeName)) {
+            throw new AtlasBaseException(AtlasErrorCode.MISSING_MANDATORY_ATTRIBUTE, "endDef1", "type");
         } else {
-            throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_INVALID_END_TYPE, getTypeName(), end1TypeName);
+            AtlasType type1 = typeRegistry.getType(end1TypeName);
+
+            if (type1 instanceof AtlasEntityType) {
+                end1Type = (AtlasEntityType) type1;
+            } else {
+                throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_INVALID_END_TYPE, getTypeName(), end1TypeName);
+            }
         }
 
-        if (type2 instanceof AtlasEntityType) {
-            end2Type = (AtlasEntityType) type2;
+        if (StringUtils.isEmpty(end2TypeName)) {
+            throw new AtlasBaseException(AtlasErrorCode.MISSING_MANDATORY_ATTRIBUTE, "endDef2", "type");
         } else {
-            throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_INVALID_END_TYPE, getTypeName(), end2TypeName);
+            AtlasType type2 = typeRegistry.getType(end2TypeName);
+
+            if (type2 instanceof AtlasEntityType) {
+                end2Type = (AtlasEntityType) type2;
+            } else {
+                throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_INVALID_END_TYPE, getTypeName(), end2TypeName);
+            }
+        }
+
+        if (StringUtils.isEmpty(relationshipDef.getEndDef1().getName())) {
+            throw new AtlasBaseException(AtlasErrorCode.MISSING_MANDATORY_ATTRIBUTE, "endDef1", "name");
+        }
+
+        if (StringUtils.isEmpty(relationshipDef.getEndDef2().getName())) {
+            throw new AtlasBaseException(AtlasErrorCode.MISSING_MANDATORY_ATTRIBUTE, "endDef2", "name");
         }
 
         validateAtlasRelationshipDef(relationshipDef);

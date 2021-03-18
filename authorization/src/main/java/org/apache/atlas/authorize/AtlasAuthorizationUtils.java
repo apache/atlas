@@ -199,6 +199,28 @@ public class AtlasAuthorizationUtils {
         return ret;
     }
 
+    public static void filterTypesDef(AtlasTypesDefFilterRequest request) {
+        MetricRecorder metric  = RequestContext.get().startMetricRecord("filterTypesDef");
+        String        userName = getCurrentUserName();
+
+        if (StringUtils.isNotEmpty(userName) && !RequestContext.get().isImportInProgress()) {
+            try {
+                AtlasAuthorizer authorizer = AtlasAuthorizerFactory.getAtlasAuthorizer();
+
+                request.setUser(getCurrentUserName(), getCurrentUserGroups());
+                request.setClientIPAddress(RequestContext.get().getClientIPAddress());
+                request.setForwardedAddresses(RequestContext.get().getForwardedAddresses());
+                request.setRemoteIPAddress(RequestContext.get().getClientIPAddress());
+
+                authorizer.filterTypesDef(request);
+            } catch (AtlasAuthorizationException e) {
+                LOG.error("Unable to obtain AtlasAuthorizer", e);
+            }
+        }
+
+        RequestContext.get().endMetricRecord(metric);
+    }
+
     public static List<String> getForwardedAddressesFromRequest(HttpServletRequest httpServletRequest){
         String ipAddress = httpServletRequest.getHeader("X-FORWARDED-FOR");
         String[] forwardedAddresses = null ;

@@ -139,6 +139,8 @@ K_TRUE: T R U E ;
 
 K_FALSE: F A L S E ;
 
+K_HASTERM: H A S T E R M;
+
 KEYWORD: K_LIKE
         | K_DOT
         | K_SELECT
@@ -162,6 +164,7 @@ KEYWORD: K_LIKE
         | K_DESC
         | K_ASC
         | K_COUNT
+        | K_HASTERM
         ;
 
 ID: STRING

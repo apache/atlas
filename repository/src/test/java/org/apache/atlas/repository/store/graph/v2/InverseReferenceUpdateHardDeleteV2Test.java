@@ -20,7 +20,7 @@ package org.apache.atlas.repository.store.graph.v2;
 import com.google.common.collect.ImmutableList;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
-import org.apache.atlas.store.DeleteType;
+import org.apache.atlas.DeleteType;
 import org.apache.atlas.type.AtlasTypeUtil;
 
 import java.util.Map;

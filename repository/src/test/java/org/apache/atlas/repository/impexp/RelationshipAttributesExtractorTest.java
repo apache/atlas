@@ -28,7 +28,6 @@ import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.repository.AtlasTestBase;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStoreV2;
-import org.apache.atlas.runner.LocalSolrRunner;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.testng.ITestContext;
@@ -49,7 +48,6 @@ import java.util.Map;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.getZipSource;
 import static org.apache.atlas.utils.TestLoadModelUtils.loadModelFromJson;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.runImportWithNoParameters;
@@ -105,7 +103,9 @@ public class RelationshipAttributesExtractorTest extends AtlasTestBase {
     private AtlasEntityStoreV2 entityStore;
 
     @BeforeClass
-    public void setup() throws IOException, AtlasBaseException {
+    public void setup() throws Exception {
+        super.initialize();
+
         loadBaseModel();
         loadHiveModel();
     }
@@ -120,9 +120,7 @@ public class RelationshipAttributesExtractorTest extends AtlasTestBase {
     public void clear() throws Exception {
         AtlasGraphProvider.cleanup();
 
-        if (useLocalSolr()) {
-            LocalSolrRunner.stop();
-        }
+        super.cleanup();
     }
 
     @DataProvider(name = "hiveDb")

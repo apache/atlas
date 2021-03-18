@@ -19,23 +19,59 @@ package org.apache.atlas.kafka;
 
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.notification.LogConfigUtils;
+import org.apache.atlas.notification.NotificationInterface;
+import org.apache.atlas.notification.spool.AtlasFileSpool;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.File;
 
 /**
  * Provider class for Notification interfaces
  */
 public class NotificationProvider {
-    private static KafkaNotification kafka;
+    private static final Logger LOG = LoggerFactory.getLogger(NotificationProvider.class);
 
-    public static KafkaNotification get() {
-        if (kafka == null) {
+    private static final String CONF_ATLAS_HOOK_SPOOL_ENABLED    = "atlas.hook.spool.enabled";
+    private static final String CONF_ATLAS_HOOK_SPOOL_DIR        = "atlas.hook.spool.dir";
+
+    private static final boolean CONF_ATLAS_HOOK_SPOOL_ENABLED_DEFAULT = false;
+
+    private static NotificationInterface notificationProvider;
+
+    public static NotificationInterface get() {
+        if (notificationProvider == null) {
             try {
-                Configuration applicationProperties = ApplicationProperties.get();
-                kafka = new KafkaNotification(applicationProperties);
+                Configuration     conf     = ApplicationProperties.get();
+                KafkaNotification kafka    = new KafkaNotification(conf);
+                String            spoolDir = getSpoolDir(conf);
+
+                if (isSpoolingEnabled(conf) && StringUtils.isNotEmpty(spoolDir)) {
+                    LOG.info("Notification spooling is enabled: spool directory={}", spoolDir);
+
+                    conf.setProperty(CONF_ATLAS_HOOK_SPOOL_DIR, spoolDir);
+
+                    notificationProvider = new AtlasFileSpool(conf, kafka);
+                } else {
+                    LOG.info("Notification spooling is not enabled");
+
+                    notificationProvider = kafka;
+                }
             } catch (AtlasException e) {
                 throw new RuntimeException(e);
             }
         }
-        return kafka;
+        return notificationProvider;
+    }
+
+    private static boolean isSpoolingEnabled(Configuration configuration) {
+        return configuration.getBoolean(CONF_ATLAS_HOOK_SPOOL_ENABLED, CONF_ATLAS_HOOK_SPOOL_ENABLED_DEFAULT);
+    }
+
+    private static String getSpoolDir(Configuration configuration) {
+        return configuration.getString(CONF_ATLAS_HOOK_SPOOL_DIR);
     }
 }

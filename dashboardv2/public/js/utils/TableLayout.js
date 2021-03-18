@@ -201,6 +201,12 @@ define(['require',
                 _.extend(this, options.atlasPaginationOpts);
                 _.extend(this.gridOpts, options.gridOpts, { collection: this.collection, columns: this.columns });
                 _.extend(this.sortOpts, options.sortOpts);
+                if (this.isApiSorting) {
+                    //after audit sorting pagination values
+                    if (this.offset === 0) {
+                        this.limit = this.count || this.limit;
+                    }
+                }
                 if (this.includeAtlasTableSorting) {
                     var oldSortingRef = this.collection.setSorting;
                     this.collection.setSorting = function() {
@@ -209,19 +215,36 @@ define(['require',
                         val.fullCollection.sort();
                         this.comparator = function(next, previous, data) {
                             var getValue = function(options) {
-                                var next = options.next,
-                                    previous = options.previous,
-                                    order = options.order;
-                                if (next === previous) {
-                                    return null;
-                                } else {
-                                    if (order === -1) {
-                                        return next < previous ? -1 : 1;
+                                    var next = options.next,
+                                        previous = options.previous,
+                                        order = options.order;
+                                    if (next === previous) {
+                                        return null;
                                     } else {
-                                        return next < previous ? 1 : -1;
+                                        if (order === -1) {
+                                            return next < previous ? -1 : 1;
+                                        } else {
+                                            return next < previous ? 1 : -1;
+                                        }
                                     }
-                                }
-                            }
+                                },
+                                getKeyVal = function(model, key) {
+                                    //for nested obj
+                                    var value = null;
+                                    if (model && key) {
+                                        value = model[key];
+                                        if (!value) {
+                                            _.each(model, function(modalValue) {
+                                                if (typeof(modalValue) == "object") {
+                                                    if (!value) {
+                                                        value = getKeyVal(modalValue, key);
+                                                    }
+                                                }
+                                            });
+                                        }
+                                    }
+                                    return Number(value) || value;
+                                };
                             if (val.state && (!_.isNull(val.state.sortKey))) {
                                 var nextValue,
                                     previousValue;
@@ -229,8 +252,8 @@ define(['require',
                                     nextValue = next.get("attributes")[val.state.sortKey];
                                     previousValue = previous.get("attributes")[val.state.sortKey];
                                 } else {
-                                    nextValue = next.attributes[val.state.sortKey];
-                                    previousValue = previous.attributes[val.state.sortKey];
+                                    nextValue = getKeyVal(next.attributes, val.state.sortKey);
+                                    previousValue = getKeyVal(previous.attributes, val.state.sortKey);
                                 }
                                 nextValue = (typeof nextValue === 'string') ? nextValue.toLowerCase() : nextValue;
                                 previousValue = (typeof previousValue === 'string') ? previousValue.toLowerCase() : previousValue;
@@ -281,9 +304,13 @@ define(['require',
                 which in turn removes chevrons from every 'sortable' header-cells*/
                 this.listenTo(this.collection, "backgrid:sorted", function(column, direction, collection) {
                     // backgrid:sorted fullCollection trigger required for icon chage
-                    this.collection.fullCollection.trigger("backgrid:sorted", column, direction, collection)
-                    if (this.includeAtlasTableSorting && this.updateFullCollectionManually) {
-                        this.collection.fullCollection.reset(collection.toJSON(), { silent: true });
+                    if (this.isApiSorting) {
+                        column.set("direction", direction);
+                    } else {
+                        this.collection.fullCollection.trigger("backgrid:sorted", column, direction, collection)
+                        if (this.includeAtlasTableSorting && this.updateFullCollectionManually) {
+                            this.collection.fullCollection.reset(collection.toJSON(), { silent: true });
+                        }
                     }
                 }, this);
                 this.listenTo(this, "grid:refresh", function() {
@@ -359,7 +386,7 @@ define(['require',
                 });
                 if (this.showDefaultTableSorted) {
                     this.grid.render();
-                    if (this.collection.fullCollection.length > 1) {
+                    if (this.collection.fullCollection.length > 1 || this.isApiSorting) {
                         this.grid.sort(this.sortOpts.sortColumn, this.sortOpts.sortDirection);
                     }
                     this.rTableList.show(this.grid);
@@ -455,10 +482,16 @@ define(['require',
                     this.pageTo = this.pageTo - this.limit;
                     this.pageFrom = (this.pageTo - this.limit) + 1;
                 }
+                if (this.isApiSorting && !this.pageTo && !this.pageFrom) {
+                    this.limit = this.count;
+                    this.pageTo = (this.offset + this.limit);
+                    this.pageFrom = this.offset + 1;
+                }
                 this.ui.pageRecordText.html("Showing  <u>" + this.collection.length + " records</u> From " + this.pageFrom + " - " + this.pageTo);
                 this.activePage = Math.round(this.pageTo / this.limit);
                 this.ui.activePage.attr('title', "Page " + this.activePage);
                 this.ui.activePage.text(this.activePage);
+                this.ui.showPage.val(this.limit).trigger('change', { "skipViewChange": true });
             },
 
             /**

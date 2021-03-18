@@ -90,9 +90,9 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'value', 'typeHeaders', 'searchVent', 'entityDefCollection', 'enumDefCollection', 'classificationDefCollection', 'businessMetadataDefCollection', 'searchTableColumns', 'searchTableFilters', 'metricCollection'));
+                _.extend(this, _.pick(options, 'value', 'typeHeaders', 'searchVent', 'entityDefCollection', 'enumDefCollection', 'classificationDefCollection', 'businessMetadataDefCollection', 'searchTableColumns', 'searchTableFilters', 'metricCollection', 'classificationAndMetricEvent'));
                 this.type = "basic";
-                this.entityCountObj = _.first(this.metricCollection.toJSON());
+                this.entityCountObj = _.first(this.metricCollection.toJSON()) || { entity: { entityActive: {}, entityDeleted: {} }, tag: { tagEntities: {} } };
                 this.selectedFilter = {
                     'basic': [],
                     'dsl': []
@@ -207,12 +207,19 @@ define(['require',
                 });
             },
             bindEvents: function(param) {
+                var that = this;
                 this.listenTo(this.typeHeaders, "reset", function(value) {
                     this.initializeValues();
                 }, this);
                 this.listenTo(this.searchVent, "entityList:refresh", function(model, response) {
                     this.onRefreshButton();
                 }, this);
+                this.classificationAndMetricEvent.on("classification:Update:Search", function(options) {
+                    that.entityCountObj = _.first(that.metricCollection.toJSON());
+                    that.value = Utils.getUrlState.getQueryParams() || {};
+                    if (!that.value.type) that.setInitialEntityVal = true;
+                    that.initializeValues();
+                });
             },
             initializeValues: function() {
                 this.renderTypeTagList();
@@ -545,7 +552,7 @@ define(['require',
                     var name = Utils.getName(model.toJSON(), 'name');
                     if (model.get('category') == 'ENTITY' && (serviceTypeToBefiltered && serviceTypeToBefiltered.length ? _.contains(serviceTypeToBefiltered, model.get('serviceType')) : true)) {
                         var entityCount = (that.entityCountObj.entity.entityActive[name] || 0) + (that.entityCountObj.entity.entityDeleted[name] || 0);
-                        typeStr += '<option value="' + (name) + '" data-name="' + (name) + '">' + (name) + ' ' + (entityCount ? "(" + _.numberFormatWithComa(entityCount) + ")" : '') + '</option>';
+                        typeStr += '<option value="' + (name) + '" data-name="' + (name) + '">' + (name) + ' ' + (entityCount ? "(" + _.numberFormatWithComma(entityCount) + ")" : '') + '</option>';
                     }
                     if (isTypeOnly == undefined && model.get('category') == 'CLASSIFICATION') {
                         var tagEntityCount = that.entityCountObj.tag.tagEntities[name];
@@ -554,7 +561,7 @@ define(['require',
                                 foundNewClassification = true;
                             }
                         }
-                        tagStr += '<option value="' + (name) + '" data-name="' + (name) + '">' + (name) + ' ' + (tagEntityCount ? "(" + _.numberFormatWithComa(tagEntityCount) + ")" : '') + '</option>';
+                        tagStr += '<option value="' + (name) + '" data-name="' + (name) + '">' + (name) + ' ' + (tagEntityCount ? "(" + _.numberFormatWithComma(tagEntityCount) + ")" : '') + '</option>';
                     }
                 });
 
@@ -743,24 +750,29 @@ define(['require',
                     params['term'] = termLovValue || null;
                     var entityFilterObj = this.searchTableFilters['entityFilters'],
                         tagFilterObj = this.searchTableFilters['tagFilters'];
-                    if (this.value.tag) {
-                        params['tagFilters'] = tagFilterObj[this.value.tag]
+                    params['includeDE'] = false;
+                    params['excludeST'] = false;
+                    params['excludeSC'] = false;
+                    if (this.value) {
+                        if (this.value.tag) {
+                            params['tagFilters'] = tagFilterObj[this.value.tag]
+                        }
+                        if (this.value.type) {
+                            params['entityFilters'] = entityFilterObj[this.value.type]
+                        }
+                        var columnList = this.value.type && this.searchTableColumns ? this.searchTableColumns[this.value.type] : null;
+                        if (columnList) {
+                            params['attributes'] = columnList.join(',');
+                        }
+                        params['includeDE'] = _.isUndefinedNull(this.value.includeDE) ? false : this.value.includeDE;
+                        params['excludeST'] = _.isUndefinedNull(this.value.excludeST) ? false : this.value.excludeST;
+                        params['excludeSC'] = _.isUndefinedNull(this.value.excludeSC) ? false : this.value.excludeSC;
                     }
-                    if (this.value.type) {
-                        params['entityFilters'] = entityFilterObj[this.value.type]
-                    }
-                    var columnList = this.value && this.value.type && this.searchTableColumns ? this.searchTableColumns[this.value.type] : null;
-                    if (columnList) {
-                        params['attributes'] = columnList.join(',');
-                    }
-                    params['includeDE'] = _.isUndefinedNull(this.value.includeDE) ? false : this.value.includeDE;
-                    params['excludeST'] = _.isUndefinedNull(this.value.excludeST) ? false : this.value.excludeST;
-                    params['excludeSC'] = _.isUndefinedNull(this.value.excludeSC) ? false : this.value.excludeSC;
                 }
-                if (!_.isUndefinedNull(this.value.pageLimit)) {
+                if (this.value && !_.isUndefinedNull(this.value.pageLimit)) {
                     params['pageLimit'] = this.value.pageLimit;
                 }
-                if (!_.isUndefinedNull(this.value.pageOffset)) {
+                if (this.value && !_.isUndefinedNull(this.value.pageOffset)) {
                     if (!_.isUndefinedNull(this.query[this.type]) && this.query[this.type].query != value) {
                         params['pageOffset'] = 0;
                     } else {

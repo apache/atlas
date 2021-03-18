@@ -59,7 +59,7 @@ public class HdfsPathEntityCreator {
     }
 
     public AtlasEntity.AtlasEntityWithExtInfo getCreateEntity(AtlasObjectId item) throws AtlasBaseException {
-        if(!item.getUniqueAttributes().containsKey(HDFS_PATH_ATTRIBUTE_NAME_PATH)) {
+        if(item.getUniqueAttributes() == null || !item.getUniqueAttributes().containsKey(HDFS_PATH_ATTRIBUTE_NAME_PATH)) {
             return null;
         }
 

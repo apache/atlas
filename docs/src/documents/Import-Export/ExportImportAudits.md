@@ -13,7 +13,7 @@ import SyntaxHighlighter from 'react-syntax-highlighter';
 
 #### Background
 
-The new audits for Export and Import operations also have corresponding REST APIs to programatically fetch the audit entries.
+The new audits for Export and Import operations also have corresponding REST APIs to programmatically fetch the audit entries.
 
 #### REST APIs
 

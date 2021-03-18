@@ -18,6 +18,8 @@
 package org.apache.atlas.notification;
 
 import java.util.List;
+import java.util.Map;
+
 import org.apache.kafka.common.TopicPartition;
 import org.apache.atlas.kafka.AtlasKafkaMessage;
 
@@ -55,5 +57,10 @@ public interface NotificationConsumer<T> {
     List<AtlasKafkaMessage<T>> receive(long timeoutMilliSeconds);
 
 
-
+    /**
+     * Fetch data for the topics from Kafka, if lastCommittedOffset same as message
+     * received offset, it will proceed with commit.
+     * @return List containing kafka message and partionId and offset.
+     */
+    List<AtlasKafkaMessage<T>> receiveWithCheckedCommit(Map<TopicPartition, Long> lastCommittedPartitionOffset);
 }

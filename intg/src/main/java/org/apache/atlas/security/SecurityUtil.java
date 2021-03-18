@@ -40,12 +40,27 @@ public class SecurityUtil {
      * @throws IOException
      */
     public static String getPassword(org.apache.commons.configuration.Configuration config, String key) throws IOException {
+        return getPassword(config, key, CERT_STORES_CREDENTIAL_PROVIDER_PATH);
+    }
+
+
+    /**
+     * Retrieves a password from a configured credential provider or prompts for the password and stores it in the
+     * configured credential provider.
+     *
+     * @param config           application configuration
+     * @param key              the key/alias for the password.
+     * @param pathPropertyName property of path
+     * @return the password.
+     * @throws IOException
+     */
+    public static String getPassword(org.apache.commons.configuration.Configuration config, String key, String pathPropertyName) throws IOException {
 
         String password;
 
-        String provider = config.getString(CERT_STORES_CREDENTIAL_PROVIDER_PATH);
+        String provider = config.getString(pathPropertyName);
         if (provider != null) {
-            LOG.info("Attempting to retrieve password for key {} from configured credential provider path {}", key, provider);
+            LOG.info("Attempting to retrieve password for key {} from {} configured credential provider path {}", key, pathPropertyName, provider);
             Configuration c = new Configuration();
             c.set(CredentialProviderFactory.CREDENTIAL_PROVIDER_PATH, provider);
             CredentialProvider credentialProvider = CredentialProviderFactory.getProviders(c).get(0);
@@ -58,7 +73,7 @@ public class SecurityUtil {
             }
 
         } else {
-            throw new IOException("No credential provider path configured for storage of certificate store passwords");
+            throw new IOException("No credential provider path " + pathPropertyName + " configured for storage of certificate store passwords");
         }
 
         return password;

@@ -76,6 +76,10 @@ public abstract class AbstractNotification implements NotificationInterface {
     protected AbstractNotification() {
     }
 
+    @Override
+    public void init(String source, Object failedMessagesLogger) {
+    }
+
     // ----- NotificationInterface -------------------------------------------
 
     @Override
@@ -108,7 +112,7 @@ public abstract class AbstractNotification implements NotificationInterface {
      *
      * @throws NotificationException if an error occurs while sending
      */
-    protected abstract void sendInternal(NotificationType type, List<String> messages) throws NotificationException;
+    public abstract void sendInternal(NotificationType type, List<String> messages) throws NotificationException;
 
 
     // ----- utility methods -------------------------------------------------

@@ -101,4 +101,8 @@ public interface AtlasAuthorizer {
             entity.getMeaningNames().clear();
         }
     }
+
+    default
+    void filterTypesDef(AtlasTypesDefFilterRequest request) throws AtlasAuthorizationException {
+    }
 }

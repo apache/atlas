@@ -42,6 +42,8 @@
                 <exclude>**/${sys:atlas.data}/**</exclude>
                 <exclude>**/atlas.data/**</exclude>
                 <exclude>**/*.patch</exclude>
+                <exclude>dev-support/atlas-docker/data/**</exclude>
+                <exclude>dev-support/atlas-docker/dist/**</exclude>
             </excludes>
         </fileSet>
     </fileSets>

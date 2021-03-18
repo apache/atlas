@@ -75,6 +75,16 @@ define(['require',
             createTableWithValues: function(tableDetails) {
                 var attrTable = CommonViewFunction.propertyTable({
                     scope: this,
+                    getValue: function(val, key) {
+                        if (key && key.toLowerCase().indexOf("time") > 0) {
+                            return Utils.formatDate({ date: val });
+                        } else if (key && key.toLowerCase().indexOf("position") === 0 && val === 0) {
+                            //if position value is 0 we are showing N/A
+                            return "N/A";
+                        } else {
+                            return val;
+                        }
+                    },
                     valueObject: tableDetails
                 });
                 return attrTable;
@@ -117,11 +127,25 @@ define(['require',
                                 var name = ((name ? name : this.entityName));
                                 that.updateName(name);
                                 if (parseDetailsObject) {
-                                    var attributesDetails = parseDetailsObject.attributes,
+                                    var attributesDetails = $.extend(true, {}, parseDetailsObject.attributes),
                                         customAttr = parseDetailsObject.customAttributes,
                                         labelsDetails = parseDetailsObject.labels,
-                                        relationshipAttributes = parseDetailsObject.relationshipAttributes;
+                                        relationshipAttributes = parseDetailsObject.relationshipAttributes,
+                                        bmAttributesDeails = that.entity.businessAttributes ? that.entity.businessAttributes[parseDetailsObject.typeName] : null;
                                     if (attributesDetails) {
+                                        if (bmAttributesDeails) {
+                                            _.each(Object.keys(attributesDetails), function(key) {
+                                                if (bmAttributesDeails[key].typeName.toLowerCase().indexOf("date") > -1) {
+                                                    if (attributesDetails[key].length) { // multiple date values
+                                                        attributesDetails[key] = _.map(attributesDetails[key], function(dateValue) {
+                                                            return Utils.formatDate({ date: dateValue })
+                                                        });
+                                                    } else {
+                                                        attributesDetails[key] = Utils.formatDate({ date: attributesDetails[key] });
+                                                    }
+                                                }
+                                            })
+                                        }
                                         that.ui.attributeDetails.removeClass('hide');
                                         that.action.indexOf("Classification") === -1 ? that.ui.panelAttrHeading.html("Technical properties ") : that.ui.panelAttrHeading.html("Properties ");
                                         var attrTable = that.createTableWithValues(attributesDetails);

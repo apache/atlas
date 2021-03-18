@@ -40,7 +40,11 @@ define(["require"], function(require) {
     Globals.serviceTypeMap = {};
     Globals.entityImgPath = "/img/entity-icon/";
     Globals.DEFAULT_UI = "v2";
-    Globals.dateFormat = "YYYY/MM/DD";
-    Globals.dateTimeFormat = "YYYY/MM/DD HH:mm:ss";
+
+    // Date Format
+    Globals.dateTimeFormat = "MM/DD/YYYY hh:mm:ss A";
+    Globals.dateFormat = "MM/DD/YYYY";
+    Globals.isTimezoneFormatEnabled = true;
+
     return Globals;
 });

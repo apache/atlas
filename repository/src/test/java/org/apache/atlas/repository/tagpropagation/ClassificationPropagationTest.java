@@ -33,12 +33,12 @@ import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageRelation;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.repository.AtlasTestBase;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.impexp.ImportService;
 import org.apache.atlas.repository.impexp.ZipFileResourceTestUtils;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
-import org.apache.atlas.runner.LocalSolrRunner;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
@@ -60,7 +60,6 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.apache.atlas.AtlasErrorCode.PROPAGATED_CLASSIFICATION_REMOVAL_NOT_SUPPORTED;
-import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
 import static org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
 import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.BOTH;
 import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.NONE;
@@ -74,7 +73,7 @@ import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
-public class ClassificationPropagationTest {
+public class ClassificationPropagationTest extends AtlasTestBase {
     public static final String HDFS_PATH_EMPLOYEES     = "HDFS_PATH_EMPLOYEES";
     public static final String EMPLOYEES1_TABLE        = "EMPLOYEES1_TABLE";
     public static final String EMPLOYEES2_TABLE        = "EMPLOYEES2_TABLE";
@@ -113,8 +112,10 @@ public class ClassificationPropagationTest {
     private AtlasLineageInfo lineageInfo;
 
     @BeforeClass
-    public void setup() {
+    public void setup() throws Exception {
         RequestContext.clear();
+
+        super.initialize();
 
         loadModelFilesAndImportTestData();
     }
@@ -123,9 +124,7 @@ public class ClassificationPropagationTest {
     public void clear() throws Exception {
         AtlasGraphProvider.cleanup();
 
-        if (useLocalSolr()) {
-            LocalSolrRunner.stop();
-        }
+        super.cleanup();
     }
 
     /** This test uses the lineage graph:

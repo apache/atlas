@@ -27,7 +27,6 @@ import org.apache.atlas.repository.graphdb.GraphDatabase;
 import org.apache.atlas.repository.graphdb.janus.serializer.BigDecimalSerializer;
 import org.apache.atlas.repository.graphdb.janus.serializer.BigIntegerSerializer;
 import org.apache.atlas.repository.graphdb.janus.serializer.TypeCategorySerializer;
-import org.apache.atlas.runner.LocalSolrRunner;
 import org.apache.atlas.typesystem.types.DataTypes.TypeCategory;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.configuration.Configuration;
@@ -45,6 +44,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -80,11 +80,11 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
     }
 
     public static Configuration getConfiguration() throws AtlasException {
-        startLocalSolr();
-
         Configuration configProperties = ApplicationProperties.get();
 
         if (isEmbeddedSolr()) { // AtlasJanusGraphIndexClient.performRequestHandlerAction() fails for embedded-solr; disable freetext until this issue is resolved
+            startEmbeddedSolr();
+
             configProperties.setProperty(ApplicationProperties.ENABLE_FREETEXT_SEARCH_CONF, false);
         }
 
@@ -264,10 +264,12 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
             t.printStackTrace();
         }
 
-        try {
-            LocalSolrRunner.stop();
-        } catch (Throwable t) {
-            LOG.warn("Could not stop local solr server", t);
+        if (isEmbeddedSolr()) {
+            try {
+                stopEmbeddedSolr();
+            } catch (Throwable t) {
+                LOG.warn("Could not stop local solr server", t);
+            }
         }
     }
 
@@ -282,18 +284,38 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
         return new AtlasJanusGraph(getBulkLoadingGraphInstance());
     }
 
-    private static void startLocalSolr() {
-        if (isEmbeddedSolr()) {
-            try {
-                LocalSolrRunner.start();
+    private static void startEmbeddedSolr() throws AtlasException {
+        LOG.info("==> startEmbeddedSolr()");
 
-                Configuration configuration = ApplicationProperties.get();
-                configuration.clearProperty(SOLR_ZOOKEEPER_URL);
-                configuration.setProperty(SOLR_ZOOKEEPER_URL, LocalSolrRunner.getZookeeperUrls());
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to start embedded solr cloud server. Aborting!", e);
-            }
+        try {
+            Class<?> localSolrRunnerClz = Class.forName("org.apache.atlas.runner.LocalSolrRunner");
+            Method   startMethod        = localSolrRunnerClz.getMethod("start");
+
+            startMethod.invoke(null);
+        } catch (Exception excp) {
+            LOG.error("startEmbeddedSolr(): failed", excp);
+
+            throw new AtlasException("startEmbeddedSolr(): failed", excp);
         }
+
+        LOG.info("<== startEmbeddedSolr()");
+    }
+
+    private static void stopEmbeddedSolr() throws AtlasException {
+        LOG.info("==> stopEmbeddedSolr()");
+
+        try {
+            Class<?> localSolrRunnerClz = Class.forName("org.apache.atlas.runner.LocalSolrRunner");
+            Method   stopMethod         = localSolrRunnerClz.getMethod("stop");
+
+            stopMethod.invoke(null);
+        } catch (Exception excp) {
+            LOG.error("stopEmbeddedSolr(): failed", excp);
+
+            throw new AtlasException("stopEmbeddedSolr(): failed", excp);
+        }
+
+        LOG.info("<== stopEmbeddedSolr()");
     }
 
     public static boolean isEmbeddedSolr() {

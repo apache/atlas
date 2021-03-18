@@ -34,6 +34,7 @@ import java.net.URL;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.Iterator;
 import java.util.Properties;
+import static org.apache.atlas.security.SecurityProperties.HADOOP_SECURITY_CREDENTIAL_PROVIDER_PATH;
 
 /**
  * Application properties used by Atlas.
@@ -57,6 +58,8 @@ public final class ApplicationProperties extends PropertiesConfiguration {
     public static final String  STORAGE_BACKEND_HBASE2          = "hbase2";
     public static final String  INDEX_BACKEND_SOLR              = "solr";
     public static final String  LDAP_TYPE                       =  "atlas.authentication.method.ldap.type";
+    public static final String  LDAP                            =  "LDAP";
+    public static final String  AD                              =  "AD";
     public static final String  LDAP_AD_BIND_PASSWORD           =  "atlas.authentication.method.ldap.ad.bind.password";
     public static final String  LDAP_BIND_PASSWORD              =  "atlas.authentication.method.ldap.bind.password";
     public static final String  MASK_LDAP_PASSWORD              =  "********";
@@ -278,17 +281,17 @@ public final class ApplicationProperties extends PropertiesConfiguration {
 
         if (StringUtils.isNotEmpty(ldapType)) {
             try {
-                if (ldapType.equalsIgnoreCase("ldap")) {
+                if (ldapType.equalsIgnoreCase(LDAP)) {
                     String maskPasssword = configuration.getString(LDAP_BIND_PASSWORD);
                     if (MASK_LDAP_PASSWORD.equals(maskPasssword)) {
-                        String password = SecurityUtil.getPassword(configuration, LDAP_BIND_PASSWORD);
+                        String password = SecurityUtil.getPassword(configuration, LDAP_BIND_PASSWORD, HADOOP_SECURITY_CREDENTIAL_PROVIDER_PATH);
                         configuration.clearProperty(LDAP_BIND_PASSWORD);
                         configuration.addProperty(LDAP_BIND_PASSWORD, password);
                     }
-                } else if (ldapType.equalsIgnoreCase("ad")) {
+                } else if (ldapType.equalsIgnoreCase(AD)) {
                     String maskPasssword = configuration.getString(LDAP_AD_BIND_PASSWORD);
                     if (MASK_LDAP_PASSWORD.equals(maskPasssword)) {
-                        String password = SecurityUtil.getPassword(configuration, LDAP_AD_BIND_PASSWORD);
+                        String password = SecurityUtil.getPassword(configuration, LDAP_AD_BIND_PASSWORD, HADOOP_SECURITY_CREDENTIAL_PROVIDER_PATH);
                         configuration.clearProperty(LDAP_AD_BIND_PASSWORD);
                         configuration.addProperty(LDAP_AD_BIND_PASSWORD, password);
                     }

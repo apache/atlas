@@ -35,6 +35,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -498,10 +499,10 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
                 return validateResponseForSuccess(v2request.process(solrClient));
 
             case HTTP:
-                Collection<ContentStream> contentStreams = ClientUtils.toContentStreams(actionPayLoad, "application/json; charset=UTF-8");
-                GenericSolrRequest        request        = new GenericSolrRequest(SolrRequest.METHOD.POST, String.format("/%s/config", collectionName), null);
+                GenericSolrRequest          request       = new GenericSolrRequest(SolrRequest.METHOD.POST, String.format("/%s/config", collectionName), null);
+                RequestWriter.ContentWriter contentWriter = new RequestWriter.StringPayloadContentWriter(actionPayLoad, "application/json; charset=UTF-8");
 
-                request.setContentStreams(contentStreams);
+                request.setContentWriter(contentWriter);
                 request.setUseV2(false);
 
                 return validateResponseForSuccess(request.process(solrClient));

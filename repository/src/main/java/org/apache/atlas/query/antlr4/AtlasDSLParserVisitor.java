@@ -94,6 +94,12 @@ public interface AtlasDSLParserVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitIsClause(AtlasDSLParser.IsClauseContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link AtlasDSLParser#hasTermClause}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitHasTermClause(AtlasDSLParser.HasTermClauseContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link AtlasDSLParser#hasClause}.
 	 * @param ctx the parse tree
 	 * @return the visitor result

@@ -45,7 +45,8 @@ define(['require',
             addLabelOptions: "[data-id='addLabelOptions']",
             addLabels: "[data-id='addLabels']",
             saveLabels: "[data-id='saveLabels']",
-            cancel: "[data-id='cancel']"
+            cancel: "[data-id='cancel']",
+            labelsHeader: ".labelsPanel .panel-heading"
         },
         events: function() {
             var events = {};
@@ -53,6 +54,7 @@ define(['require',
             events["click " + this.ui.addLabels] = 'handleBtnClick';
             events["click " + this.ui.saveLabels] = 'saveUserDefinedLabels';
             events["click " + this.ui.cancel] = 'onCancelClick';
+            events["click " + this.ui.labelsHeader] = 'onHeaderClick';
             return events;
         },
         initialize: function(options) {
@@ -69,6 +71,19 @@ define(['require',
             this.populateLabelOptions();
         },
         bindEvents: function() {},
+        onHeaderClick: function() {
+            var that = this;
+            $(".labelsPanel").on("hidden.bs.collapse", function() {
+                that.labels = that.entityModel.get("labels") || [];
+                that.swapItem = false;
+                that.saveLabels = false;
+                that.render();
+                if (that.labels.length > 0) {
+                    $('.labelsPanel').find(that.ui.labelsHeader.attr('href')).removeClass('in');
+                    that.ui.labelsHeader.addClass('collapsed').attr('aria-expanded', false);
+                }
+            });
+        },
         populateLabelOptions: function() {
             var that = this,
                 str = this.labels.map(function(label) {
@@ -126,7 +141,7 @@ define(['require',
             if (!state.id) {
                 return state.text;
             }
-            if (!state.element) {
+            if (!state.element && state.text.trim() !== "") {
                 return $("<span>Add<strong> '" + _.escape(state.text) + "'</strong></span>");
             }
         },
@@ -151,7 +166,7 @@ define(['require',
         saveUserDefinedLabels: function() {
             var that = this;
             var entityJson = that.entityModel.toJSON();
-            if (entityJson.labels !== undefined || this.labels.length !== 0) {
+            if ((entityJson.labels && entityJson.labels.length !== 0) || this.labels.length !== 0) {
                 var payload = this.labels;
                 that.entityModel.saveEntityLabels(entityJson.guid, {
                     data: JSON.stringify(payload),

@@ -83,6 +83,7 @@ public abstract class BaseHiveEvent {
     public static final String ATTRIBUTE_OWNER                     = "owner";
     public static final String ATTRIBUTE_CLUSTER_NAME              = "clusterName";
     public static final String ATTRIBUTE_LOCATION                  = "location";
+    public static final String ATTRIBUTE_LOCATION_PATH             = "locationPath";
     public static final String ATTRIBUTE_PARAMETERS                = "parameters";
     public static final String ATTRIBUTE_OWNER_TYPE                = "ownerType";
     public static final String ATTRIBUTE_COMMENT                   = "comment";
@@ -94,6 +95,7 @@ public abstract class BaseHiveEvent {
     public static final String ATTRIBUTE_TEMPORARY                 = "temporary";
     public static final String ATTRIBUTE_RETENTION                 = "retention";
     public static final String ATTRIBUTE_DB                        = "db";
+    public static final String ATTRIBUTE_HIVE_DB                   = "hiveDb";
     public static final String ATTRIBUTE_STORAGEDESC               = "sd";
     public static final String ATTRIBUTE_PARTITION_KEYS            = "partitionKeys";
     public static final String ATTRIBUTE_COLUMNS                   = "columns";
@@ -151,6 +153,7 @@ public abstract class BaseHiveEvent {
     public static final String RELATIONSHIP_HIVE_TABLE_STORAGE_DESC       = "hive_table_storagedesc";
     public static final String RELATIONSHIP_HIVE_PROCESS_PROCESS_EXE      = "hive_process_process_executions";
     public static final String RELATIONSHIP_HIVE_DB_DDL_QUERIES           = "hive_db_ddl_queries";
+    public static final String RELATIONSHIP_HIVE_DB_LOCATION              = "hive_db_location";
     public static final String RELATIONSHIP_HIVE_TABLE_DDL_QUERIES        = "hive_table_ddl_queries";
     public static final String RELATIONSHIP_HBASE_TABLE_NAMESPACE         = "hbase_table_namespace";
 
@@ -689,6 +692,33 @@ public abstract class BaseHiveEvent {
         return hiveDDL;
     }
 
+    protected AtlasEntity createHiveLocationEntity(AtlasEntity dbEntity, AtlasEntitiesWithExtInfo extInfoEntity) {
+        AtlasEntity ret          = null;
+        String      locationUri  = (String)dbEntity.getAttribute(ATTRIBUTE_LOCATION);
+
+        if (StringUtils.isNotEmpty(locationUri)) {
+            Path path = null;
+
+            try {
+                path = new Path(locationUri);
+            } catch (IllegalArgumentException excp) {
+                LOG.warn("failed to create Path from locationUri {}", locationUri, excp);
+            }
+
+            if (path != null) {
+                ret = getPathEntity(path, extInfoEntity);
+
+                if (ret != null) {
+                    AtlasRelatedObjectId dbRelatedObjectId = AtlasTypeUtil.getAtlasRelatedObjectId(dbEntity, RELATIONSHIP_HIVE_DB_LOCATION);
+
+                    ret.setRelationshipAttribute(ATTRIBUTE_HIVE_DB, dbRelatedObjectId);
+                }
+            }
+        }
+
+        return ret;
+    }
+
     protected String getMetadataNamespace() {
         return context.getMetadataNamespace();
     }
@@ -1005,6 +1035,7 @@ public abstract class BaseHiveEvent {
         Collections.sort(sortedEntities, entityComparator);
 
         Set<String> dataSetsProcessed = new HashSet<>();
+        Map<String, Table> tableMap   = new HashMap<>();
 
         for (Entity entity : sortedEntities) {
             if (ignoreHDFSPaths && (Entity.Type.DFS_DIR.equals(entity.getType()) || Entity.Type.LOCAL_DIR.equals(entity.getType()))) {
@@ -1016,8 +1047,14 @@ public abstract class BaseHiveEvent {
 
             try {
                 if (entity.getType() == Entity.Type.PARTITION || entity.getType() == Entity.Type.TABLE) {
-                    Table table = getHive().getTable(entity.getTable().getDbName(), entity.getTable().getTableName());
+                    String tableKey = entity.getTable().getDbName() + "." + entity.getTable().getTableName();
+                    Table  table    = tableMap.get(tableKey);
 
+                    if (table == null) {
+                        table = getHive().getTable(entity.getTable().getDbName(), entity.getTable().getTableName());
+
+                        tableMap.put(tableKey, table); //since there could be several partitions in a table, store it to avoid hive calls.
+                    }
                     if (table != null) {
                         createTime    = getTableCreateTime(table);
                         qualifiedName = getQualifiedName(table);

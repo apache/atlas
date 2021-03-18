@@ -23,7 +23,7 @@ define(['require',
 ], function(require, Utils, d3) {
     'use strict';
     _.mixin({
-        numberFormatWithComa: function(number) {
+        numberFormatWithComma: function(number) {
             return d3.format(',')(number);
         },
         numberFormatWithBytes: function(number) {
@@ -33,7 +33,7 @@ define(['require',
                 }
                 var i = number == 0 ? 0 : Math.floor(Math.log(number) / Math.log(1024));
                 if (i > 8) {
-                    return _.numberFormatWithComa(number);
+                    return _.numberFormatWithComma(number);
                 }
                 return Number((number / Math.pow(1024, i)).toFixed(2)) + " " + ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"][i];
             } else {
@@ -126,6 +126,24 @@ define(['require',
     });
     $("body").on('click', '.btn', function() {
         $(this).blur();
+    });
+    $('body').on('keyup input', '.modal-body', function(e) {
+        var target = e.target,
+            isGlossary = (e.target.dataset.id === "searchTerm" || e.target.dataset.id === "searchCategory") ? true : false; // assign term/category modal
+        if ((target.type === "text" || target.type === "textarea") && !isGlossary) {
+            var $this = $(this),
+                $footerButton = $this.parents(".modal").find('.modal-footer button.ok'),
+                requiredInputField = _.filter($this.find('input'), function($e) {
+                    if ($e.getAttribute('placeholder') && $e.getAttribute('placeholder').indexOf('require') >= 0) {
+                        return ($e.value.trim() == "");
+                    }
+                });
+            if (requiredInputField.length > 0) {
+                $footerButton.attr("disabled", "true");
+            } else {
+                $footerButton.removeAttr("disabled");
+            }
+        }
     });
     if ($.fn.select2) {
         $.fn.select2.amd.define("TagHideDeleteButtonAdapter", [
@@ -353,5 +371,8 @@ define(['require',
             container: 'body'
         });
     }
-
+    //For closing the modal on browsers navigation
+    $(window).on('popstate', function(){
+        $('body').find('.modal-dialog .close').click();
+    });
 })

@@ -14,7 +14,9 @@
 
 package org.apache.atlas.runner;
 
+import org.apache.atlas.ApplicationProperties;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.configuration.Configuration;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.ArrayUtils;
@@ -42,6 +44,9 @@ public class LocalSolrRunner {
     private   static final String   SOLR_XML           = "solr.xml";
     private   static final String   TEMPLATE_DIRECTORY = "core-template";
     protected static final String[] COLLECTIONS        = readCollections();
+
+    // from org.apache.atlas.repository.graphdb.janus.AtlasJanusGraphDatabase
+    public static final String SOLR_ZOOKEEPER_URL = "atlas.graph.index.search.solr.zookeeper-url";
 
     private static final Logger LOG = LoggerFactory.getLogger(LocalSolrRunner.class);
 
@@ -76,6 +81,15 @@ public class LocalSolrRunner {
             miniSolrCloudCluster.uploadConfigSet(coreConfigPath, coreName);
 
             LOG.info("Uploading solr configurations for core: '{}', configPath: '{}'", coreName, coreConfigPath);
+        }
+
+        try {
+            Configuration configuration = ApplicationProperties.get();
+
+            configuration.clearProperty(SOLR_ZOOKEEPER_URL);
+            configuration.setProperty(SOLR_ZOOKEEPER_URL, LocalSolrRunner.getZookeeperUrls());
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to start embedded solr cloud server. Aborting!", e);
         }
 
         LOG.info("<== LocalSolrRunner.start()");

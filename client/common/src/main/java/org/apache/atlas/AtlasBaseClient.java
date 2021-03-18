@@ -477,16 +477,16 @@ public abstract class AtlasBaseClient {
     public InputStream exportData(AtlasExportRequest request) throws AtlasServiceException {
         try {
             return (InputStream) callAPI(EXPORT, Object.class, request);
-        } catch (Exception e) {
-            LOG.error("error writing to file", e);
+        } catch (AtlasServiceException e) {
+            LOG.error("error in export API call", e);
             throw new AtlasServiceException(e);
         }
     }
 
     public void exportData(AtlasExportRequest request, String absolutePath) throws AtlasServiceException {
         OutputStream fileOutputStream = null;
+        InputStream inputStream = exportData(request);
         try {
-            InputStream inputStream = exportData(request);
             fileOutputStream = new FileOutputStream(new File(absolutePath));
             byte[] buffer = new byte[8 * 1024];
             int bytesRead;

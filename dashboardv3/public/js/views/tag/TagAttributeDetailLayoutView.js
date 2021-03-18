@@ -151,7 +151,7 @@ define(['require',
                 var validate = true;
 
                 this.modal.$el.find(".attributeInput").each(function() {
-                    if ($(this).val() === "") {
+                    if ($(this).val().trim() === "") {
                         $(this).css('borderColor', "red")
                         validate = false;
                     }

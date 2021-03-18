@@ -33,6 +33,7 @@ import org.apache.atlas.model.notification.HookNotification.EntityCreateRequestV
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.sqoop.model.SqoopDataTypes;
 import org.apache.atlas.type.AtlasTypeUtil;
+import org.apache.atlas.utils.AtlasConfigurationUtil;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.sqoop.SqoopJobDataPublisher;
@@ -86,7 +87,8 @@ public class SqoopHook extends SqoopJobDataPublisher {
     public void publish(SqoopJobDataPublisher.Data data) throws AtlasHookException {
         try {
             Configuration atlasProperties   = ApplicationProperties.get();
-            String        metadataNamespace = atlasProperties.getString(ATLAS_METADATA_NAMESPACE, getClusterName(atlasProperties));
+            String        metadataNamespace =
+                    AtlasConfigurationUtil.getRecentString(atlasProperties, ATLAS_METADATA_NAMESPACE, getClusterName(atlasProperties));
 
             AtlasEntity entDbStore   = toSqoopDBStoreEntity(data);
             AtlasEntity entHiveDb    = toHiveDatabaseEntity(metadataNamespace, data.getHiveDB());

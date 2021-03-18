@@ -102,6 +102,22 @@ public class InMemoryEntityAuditRepository implements EntityAuditRepository {
     }
 
     @Override
+    public List<EntityAuditEventV2> listEventsV2(String entityId, EntityAuditEventV2.EntityAuditActionV2 auditAction, String sortByColumn, boolean sortOrderDesc, int offset, short limit) throws AtlasBaseException {
+        List<EntityAuditEventV2> events     = new ArrayList<>();
+        SortedMap<String, EntityAuditEventV2> subMap = auditEventsV2.tailMap(entityId);
+        for (EntityAuditEventV2 event : subMap.values()) {
+            if (event.getEntityId().equals(entityId)) {
+                events.add(event);
+            }
+        }
+        EntityAuditEventV2.sortEvents(events, sortByColumn, sortOrderDesc);
+        events = events.subList(
+                Math.min(events.size(), offset),
+                Math.min(events.size(), offset + limit));
+        return events;
+    }
+
+    @Override
     public List<EntityAuditEventV2> listEventsV2(String entityId, EntityAuditEventV2.EntityAuditActionV2 auditAction, String startKey, short maxResults) {
         List<EntityAuditEventV2> events     = new ArrayList<>();
         String                   myStartKey = startKey;

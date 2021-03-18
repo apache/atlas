@@ -750,10 +750,6 @@ public class AtlasTypeRegistry {
             }
 
             if (typeDef != null) {
-                if (this.isRegisteredType(typeDef.getName())) {
-                    throw new AtlasBaseException(AtlasErrorCode.TYPE_ALREADY_EXISTS, typeDef.getName());
-                }
-
                 if (typeDef.getClass().equals(AtlasEnumDef.class)) {
                     AtlasEnumDef enumDef = (AtlasEnumDef) typeDef;
 

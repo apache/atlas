@@ -39,7 +39,9 @@ define(['require',
             regions: {
                 RBusinessMetadataTableLayoutView: "#r_businessMetadataTableLayoutView",
                 REnumTableLayoutView: '#r_enumTableLayoutView',
-                RAdminTableLayoutView: '#r_adminTableLayoutView'
+                RAdminTableLayoutView: '#r_adminTableLayoutView',
+                RTypeSystemTreeLayoutView: '#r_typeSystemTreeLayoutView',
+
             },
 
             /** ui selector cache */
@@ -81,6 +83,7 @@ define(['require',
             bindEvents: function() {
                 this.renderEnumLayoutView();
                 this.renderAdminLayoutView();
+                this.renderTypeSystemTreeLayoutView();
             },
             onRender: function() {
                 this.renderBusinessMetadataLayoutView();
@@ -111,6 +114,15 @@ define(['require',
                         enumDefCollection: that.enumDefCollection
                     });
                     that.RAdminTableLayoutView.show(view);
+                });
+            },
+            renderTypeSystemTreeLayoutView: function(obj) {
+                var that = this;
+                require(["views/graph/TypeSystemTreeView"], function(TypeSystemTreeView) {
+                    var view = new TypeSystemTreeView({
+                        entityDefCollection: that.entityDefCollection
+                    });
+                    that.RTypeSystemTreeLayoutView.show(view);
                 });
             }
         });

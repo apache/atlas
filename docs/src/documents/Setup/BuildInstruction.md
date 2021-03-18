@@ -55,6 +55,17 @@ Using the embedded-hbase-solr profile will configure Apache Atlas so that an Apa
 
 >NOTE: This distribution profile is only intended to be used for single node development not in production.
 
+### Packaging Apache Atlas with BerkeleyDB & Apache Solr
+To create Apache Atlas package that includes BerkeleyDB and Apache Solr, build with the berkeley-solr profile as shown below:
+
+<SyntaxHighlighter wrapLines={true} language="powershell" style={theme.dark}>
+{`mvn clean -DskipTests package -Pdist,berkeley-solr`}
+</SyntaxHighlighter>
+
+Using the berkeley-solr profile will configure Apache Atlas so that instances of Apache Solr and Apache Zookeeper will be started and stopped along with the Apache Atlas server.
+
+>NOTE: This distribution profile is only intended to be used for single node development not in production.
+
 ### Packaging Apache Atlas with embedded Apache Cassandra & Apache Solr
 To create Apache Atlas package that includes Apache Cassandra and Apache Solr, build with the embedded-cassandra-solr profile as shown below:
 

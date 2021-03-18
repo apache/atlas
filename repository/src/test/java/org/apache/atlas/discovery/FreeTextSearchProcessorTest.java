@@ -52,7 +52,9 @@ public class FreeTextSearchProcessorTest extends BasicTestSetup {
     private EntityGraphRetriever entityRetriever;
 
     @BeforeClass
-    public void setup() {
+    public void setup() throws Exception {
+        super.initialize();
+
         setupTestData();
     }
 
@@ -131,8 +133,10 @@ public class FreeTextSearchProcessorTest extends BasicTestSetup {
     }
 
     @AfterClass
-    public void teardown() {
+    public void teardown() throws Exception {
         AtlasGraphProvider.cleanup();
+
+        super.cleanup();
     }
 
 }

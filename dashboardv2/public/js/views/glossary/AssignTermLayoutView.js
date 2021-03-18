@@ -137,7 +137,12 @@ define(['require',
                             return isMatch
                         },
                         onFinished: function(event, currentIndex) {
-                            that.assignTerm();
+                            var $assignBtn = $(this).find('a[href="#finish"]');
+                            if(!$assignBtn.attr('disabled')){
+                                $assignBtn.attr('disabled', true).showButtonLoader();
+                                $assignBtn.parent().attr('aria-disabled','true').addClass('disabled');
+                                that.assignTerm();
+                            }
                         },
                         onCanceled: function(event) {
                             that.modal.trigger('cancel');
@@ -146,7 +151,6 @@ define(['require',
                 }
             },
             assignTerm: function() {
-                this.modal.$el.find('button.ok').showButtonLoader();
                 this.assignTermError = false;
                 var that = this,
                     data = [],
@@ -165,7 +169,9 @@ define(['require',
                             }
                         },
                         cust_error: function() {
-                            that.modal.$el.find('button.ok').hideButtonLoader();
+                            var $assignBtn = that.$el.find('a[href="#finish"]');
+                            $assignBtn.removeAttr('disabled').hideButtonLoader();
+                            $assignBtn.parent().attr('aria-disabled','false').removeClass('disabled');
                             that.assignTermError = true;
                         }
                     },

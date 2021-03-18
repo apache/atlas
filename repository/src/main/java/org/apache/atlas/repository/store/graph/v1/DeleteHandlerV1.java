@@ -36,7 +36,7 @@ import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
-import org.apache.atlas.store.DeleteType;
+import org.apache.atlas.DeleteType;
 import org.apache.atlas.type.*;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection;
@@ -961,15 +961,31 @@ public abstract class DeleteHandlerV1 {
                     deleteRelationship(edge);
                 } else {
                     AtlasVertex    outVertex = edge.getOutVertex();
-                    AtlasVertex    inVertex  = edge.getInVertex();
-                    AtlasAttribute attribute = getAttributeForEdge(edge.getLabel());
 
-                    deleteEdgeBetweenVertices(outVertex, inVertex, attribute);
+                    if (!isDeletedEntity(outVertex)) {
+                        AtlasVertex inVertex = edge.getInVertex();
+                        AtlasAttribute attribute = getAttributeForEdge(edge.getLabel());
+
+                        deleteEdgeBetweenVertices(outVertex, inVertex, attribute);
+                    }
                 }
             }
         }
 
         _deleteVertex(instanceVertex, force);
+    }
+
+    private boolean isDeletedEntity(AtlasVertex entityVertex) {
+        boolean            ret      = false;
+        String             outGuid  = GraphHelper.getGuid(entityVertex);
+        AtlasEntity.Status outState = GraphHelper.getStatus(entityVertex);
+
+        //If the reference vertex is marked for deletion, skip updating the reference
+        if (outState == AtlasEntity.Status.DELETED || (outGuid != null && RequestContext.get().isDeletedEntity(outGuid))) {
+            ret = true;
+        }
+
+        return ret;
     }
 
     public void deleteClassificationVertex(AtlasVertex classificationVertex, boolean force) {

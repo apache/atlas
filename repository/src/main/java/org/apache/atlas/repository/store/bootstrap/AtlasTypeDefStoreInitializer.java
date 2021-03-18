@@ -28,6 +28,7 @@ import org.apache.atlas.authorize.AtlasAuthorizerFactory;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
+import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.patches.AtlasPatch.PatchStatus;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasBusinessMetadataDef;
@@ -41,8 +42,12 @@ import org.apache.atlas.model.typedef.AtlasRelationshipEndDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.patches.AddMandatoryAttributesPatch;
+import org.apache.atlas.repository.patches.SuperTypesUpdatePatch;
+import org.apache.atlas.repository.patches.AtlasPatchManager;
 import org.apache.atlas.repository.patches.AtlasPatchRegistry;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasEntityType;
@@ -94,14 +99,16 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
     private final AtlasTypeRegistry typeRegistry;
     private final Configuration     conf;
     private final AtlasGraph        graph;
+    private final AtlasPatchManager patchManager;
 
     @Inject
     public AtlasTypeDefStoreInitializer(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry,
-                                        AtlasGraph graph, Configuration conf) {
+                                        AtlasGraph graph, Configuration conf, AtlasPatchManager patchManager) {
         this.typeDefStore  = typeDefStore;
         this.typeRegistry  = typeRegistry;
         this.conf          = conf;
         this.graph         = graph;
+        this.patchManager  = patchManager;
     }
 
     @PostConstruct
@@ -443,12 +450,15 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
             Arrays.sort(typePatchFiles);
 
             PatchHandler[] patchHandlers = new PatchHandler[] {
+                    new UpdateEnumDefPatchHandler(typeDefStore, typeRegistry),
                     new AddAttributePatchHandler(typeDefStore, typeRegistry),
                     new UpdateAttributePatchHandler(typeDefStore, typeRegistry),
                     new RemoveLegacyRefAttributesPatchHandler(typeDefStore, typeRegistry),
                     new UpdateTypeDefOptionsPatchHandler(typeDefStore, typeRegistry),
                     new SetServiceTypePatchHandler(typeDefStore, typeRegistry),
-                    new UpdateAttributeMetadataHandler(typeDefStore, typeRegistry)
+                    new UpdateAttributeMetadataHandler(typeDefStore, typeRegistry),
+                    new AddSuperTypePatchHandler(typeDefStore, typeRegistry),
+                    new AddMandatoryAttributePatchHandler(typeDefStore, typeRegistry)
             };
 
             Map<String, PatchHandler> patchHandlerRegistry = new HashMap<>();
@@ -527,9 +537,11 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
         private String                  updateToVersion;
         private Map<String, Object>     params;
         private List<AtlasAttributeDef> attributeDefs;
+        private List<AtlasEnumElementDef> elementDefs;
         private Map<String, String>     typeDefOptions;
         private String                  serviceType;
         private String attributeName;
+        private Set<String> superTypes;
 
         public String getId() {
             return id;
@@ -595,6 +607,14 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
             this.attributeDefs = attributeDefs;
         }
 
+        public List<AtlasEnumElementDef> getElementDefs() {
+            return elementDefs;
+        }
+
+        public void setElementDefs(List<AtlasEnumElementDef> elementDefs) {
+            this.elementDefs = elementDefs;
+        }
+
         public Map<String, String> getTypeDefOptions() {
             return typeDefOptions;
         }
@@ -614,6 +634,14 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
         public String getAttributeName() { return attributeName; }
 
         public void setAttributeName(String attributeName) { this.attributeName = attributeName; }
+
+        public Set<String> getSuperTypes() {
+            return superTypes;
+        }
+
+        public void setSuperTypes(Set<String> superTypes) {
+            this.superTypes = superTypes;
+        }
     }
 
     /**
@@ -661,13 +689,48 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
         }
     }
 
+    class UpdateEnumDefPatchHandler extends PatchHandler {
+        public UpdateEnumDefPatchHandler(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) {
+            super(typeDefStore, typeRegistry, new String[]{"UPDATE_ENUMDEF"});
+        }
+
+        @Override
+        public PatchStatus applyPatch(TypeDefPatch patch) throws AtlasBaseException {
+            String typeName = patch.getTypeName();
+            AtlasBaseTypeDef typeDef = typeRegistry.getTypeDefByName(typeName);
+            PatchStatus ret;
+            if (typeDef == null) {
+                throw new AtlasBaseException(AtlasErrorCode.PATCH_FOR_UNKNOWN_TYPE, patch.getAction(), typeName);
+            }
+            if (isPatchApplicable(patch, typeDef)) {
+                if (typeDef.getClass().equals(AtlasEnumDef.class)) {
+                    AtlasEnumDef updatedDef = new AtlasEnumDef((AtlasEnumDef) typeDef);
+
+                    for (AtlasEnumElementDef elementDef : patch.getElementDefs()) {
+                        updatedDef.addElement(elementDef);
+                    }
+                    updatedDef.setTypeVersion(patch.getUpdateToVersion());
+                    typeDefStore.updateEnumDefByName(typeName, updatedDef);
+                    ret = APPLIED;
+                } else {
+                    throw new AtlasBaseException(AtlasErrorCode.PATCH_NOT_APPLICABLE_FOR_TYPE, patch.getAction(), typeDef.getClass().getSimpleName());
+                }
+            } else {
+                LOG.info("patch skipped: typeName={}; applyToVersion={}; updateToVersion={}",
+                        patch.getTypeName(), patch.getApplyToVersion(), patch.getUpdateToVersion());
+                ret = SKIPPED;
+            }
+            return ret;
+        }
+    }
+
     class AddAttributePatchHandler extends PatchHandler {
         public AddAttributePatchHandler(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) {
             super(typeDefStore, typeRegistry, new String[] { "ADD_ATTRIBUTE" });
         }
 
-        @Override
-        public PatchStatus applyPatch(TypeDefPatch patch) throws AtlasBaseException {
+            @Override
+            public PatchStatus applyPatch(TypeDefPatch patch) throws AtlasBaseException {
             String           typeName       = patch.getTypeName();
             AtlasBaseTypeDef typeDef        = typeRegistry.getTypeDefByName(typeName);
             PatchStatus      ret;
@@ -725,6 +788,113 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
             }
 
             return ret;
+        }
+    }
+
+    class AddMandatoryAttributePatchHandler extends PatchHandler {
+        public AddMandatoryAttributePatchHandler(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) {
+            super(typeDefStore, typeRegistry, new String[] { Constants.TYPEDEF_PATCH_ADD_MANDATORY_ATTRIBUTE });
+        }
+
+        @Override
+        public PatchStatus applyPatch(TypeDefPatch patch) throws AtlasBaseException {
+            String           typeName  = patch.getTypeName();
+            AtlasBaseTypeDef typeDef   = typeRegistry.getTypeDefByName(typeName);
+            PatchStatus      ret;
+
+            if (typeDef == null) {
+                throw new AtlasBaseException(AtlasErrorCode.PATCH_FOR_UNKNOWN_TYPE, patch.getAction(), typeName);
+            }
+
+            if (isPatchApplicable(patch, typeDef)) {
+                List<AtlasAttributeDef> attributesToAdd = getAttributesToAdd(patch, (AtlasStructDef) typeDef);
+
+                if (CollectionUtils.isEmpty(attributesToAdd)) {
+                    LOG.info("patch skipped: typeName={}; mandatory attributes are not valid in patch {}",patch.getTypeName(), patch.getId());
+
+                    ret = SKIPPED;
+                } else {
+                    try {
+                        RequestContext.get().setInTypePatching(true);
+
+                        RequestContext.get().setCurrentTypePatchAction(Constants.TYPEDEF_PATCH_ADD_MANDATORY_ATTRIBUTE);
+
+                        if (typeDef.getClass().equals(AtlasEntityDef.class)) {
+                            AtlasEntityDef updatedDef = new AtlasEntityDef((AtlasEntityDef) typeDef);
+
+                            updateTypeDefWithPatch(patch, updatedDef, attributesToAdd);
+
+                            typeDefStore.updateEntityDefByName(typeName, updatedDef);
+                        } else if (typeDef.getClass().equals(AtlasClassificationDef.class)) {
+                            AtlasClassificationDef updatedDef = new AtlasClassificationDef((AtlasClassificationDef) typeDef);
+
+                            updateTypeDefWithPatch(patch, updatedDef, attributesToAdd);
+
+                            typeDefStore.updateClassificationDefByName(typeName, updatedDef);
+                        } else if (typeDef.getClass().equals(AtlasStructDef.class)) {
+                            AtlasStructDef updatedDef = new AtlasStructDef((AtlasStructDef) typeDef);
+
+                            updateTypeDefWithPatch(patch, updatedDef, attributesToAdd);
+
+                            typeDefStore.updateStructDefByName(typeName, updatedDef);
+                        } else {
+                            throw new AtlasBaseException(AtlasErrorCode.PATCH_NOT_APPLICABLE_FOR_TYPE, patch.getAction(), typeDef.getClass().getSimpleName());
+                        }
+
+                        LOG.info("adding a Java patch to update entities of {} with new mandatory attributes", typeName);
+
+                        // Java patch handler to add mandatory attributes
+                        patchManager.addPatchHandler(new AddMandatoryAttributesPatch(patchManager.getContext(), patch.getId(), typeName, attributesToAdd));
+
+                        ret = APPLIED;
+                    } finally {
+                        RequestContext.get().setInTypePatching(false);
+
+                        RequestContext.clear();
+                    }
+                }
+            } else {
+                LOG.info("patch skipped: typeName={}; applyToVersion={}; updateToVersion={}",
+                        patch.getTypeName(), patch.getApplyToVersion(), patch.getUpdateToVersion());
+
+                ret = SKIPPED;
+
+            }
+
+            return ret;
+        }
+
+        // Validate mandatory attribute with non-empty default value if PRIMITIVE, not unique and doesn't exists
+        private List<AtlasAttributeDef> getAttributesToAdd(TypeDefPatch patch, AtlasStructDef updatedDef) throws AtlasBaseException {
+            List<AtlasAttributeDef> ret = new ArrayList<>();
+
+            for (AtlasAttributeDef attributeDef : patch.getAttributeDefs()) {
+                TypeCategory attributeType = typeRegistry.getType(attributeDef.getTypeName()).getTypeCategory();
+
+                if (updatedDef.hasAttribute(attributeDef.getName())) {
+                    LOG.warn("AddMandatoryAttributePatchHandler(id={}, typeName={}, attribute={}): already exists in type {}. Ignoring attribute", patch.getId(), patch.getTypeName(), attributeDef.getName(), updatedDef.getName());
+                } else if (attributeDef.getIsOptional()) {
+                    LOG.warn("AddMandatoryAttributePatchHandler(id={}, typeName={}, attribute={}): is not mandatory attribute. Ignoring attribute", patch.getId(), patch.getTypeName(), attributeDef.getName());
+                } else if (StringUtils.isEmpty(attributeDef.getDefaultValue())) {
+                    LOG.warn("AddMandatoryAttributePatchHandler(id={}, typeName={}, attribute={}): default value is missing. Ignoring attribute", patch.getId(), patch.getTypeName(), attributeDef.getName());
+                } else if (!TypeCategory.PRIMITIVE.equals(attributeType)) {
+                    LOG.warn("AddMandatoryAttributePatchHandler(id={}, typeName={}, attribute={}): type {} is not primitive. Ignoring attribute", patch.getId(), patch.getTypeName(), attributeDef.getName(), attributeDef.getTypeName());
+                } else if (attributeDef.getIsUnique()) {
+                    LOG.warn("AddMandatoryAttributePatchHandler(id={}, typeName={}, attribute={}): is not unique. Ignoring attribute", patch.getId(), patch.getTypeName(), attributeDef.getName());
+                } else {
+                    ret.add(attributeDef);
+                }
+            }
+
+            return ret;
+        }
+
+        private void updateTypeDefWithPatch(TypeDefPatch patch, AtlasStructDef updatedDef, List<AtlasAttributeDef> attributesToAdd) {
+            for (AtlasAttributeDef attributeDef : attributesToAdd) {
+                updatedDef.addAttribute(attributeDef);
+            }
+
+            updatedDef.setTypeVersion(patch.getUpdateToVersion());
         }
     }
 
@@ -1089,6 +1259,60 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
                     }
                 }
             }
+        }
+    }
+
+    class AddSuperTypePatchHandler extends PatchHandler {
+
+        public AddSuperTypePatchHandler(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) {
+            super(typeDefStore, typeRegistry, new String[] {"ADD_SUPER_TYPES"});
+        }
+
+        @Override
+        public PatchStatus applyPatch(TypeDefPatch patch) throws AtlasBaseException {
+            String           typeName = patch.getTypeName();
+            AtlasBaseTypeDef typeDef  = typeRegistry.getTypeDefByName(typeName);
+            PatchStatus      ret;
+
+            if (typeDef == null) {
+                throw new AtlasBaseException(AtlasErrorCode.PATCH_FOR_UNKNOWN_TYPE, patch.getAction(), typeName);
+            }
+
+            Set<String> superTypesToBeAdded = patch.getSuperTypes();
+
+            if (CollectionUtils.isNotEmpty(superTypesToBeAdded) && isPatchApplicable(patch, typeDef)) {
+                if (typeDef.getClass().equals(AtlasEntityDef.class)) {
+                    AtlasEntityDef updatedDef = new AtlasEntityDef((AtlasEntityDef)typeDef);
+
+                    for (String superType : superTypesToBeAdded) {
+                        updatedDef.addSuperType(superType);
+                    }
+
+                    updatedDef.setTypeVersion(patch.getUpdateToVersion());
+
+                    typeDefStore.updateEntityDefByName(typeName, updatedDef);
+
+                    LOG.info("Update entities of {} with new supertypes", typeName);
+
+                    // add to java patch handlers to update entity supertypes
+                    patchManager.addPatchHandler(new SuperTypesUpdatePatch(patchManager.getContext(), patch.getId(), typeName));
+
+                    ret = APPLIED;
+                } else {
+                    throw new AtlasBaseException(AtlasErrorCode.PATCH_NOT_APPLICABLE_FOR_TYPE, patch.getAction(), typeDef.getClass().getSimpleName());
+                }
+            } else {
+                if (CollectionUtils.isEmpty(superTypesToBeAdded)) {
+                    LOG.info("patch skipped: No superTypes provided to add for typeName={}", patch.getTypeName());
+                } else {
+                    LOG.info("patch skipped: typeName={}; applyToVersion={}; updateToVersion={}",
+                            patch.getTypeName(), patch.getApplyToVersion(), patch.getUpdateToVersion());
+                }
+
+                ret = SKIPPED;
+            }
+
+            return ret;
         }
     }
 }

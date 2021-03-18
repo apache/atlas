@@ -136,6 +136,14 @@ define(['require',
             this.modal.open();
             this.modal.$el.find('button.ok').attr("disabled", true);
             this.on('ok', function() {
+                if (this.ui.checkTimeZone.is(':checked')) {
+                    if (this.validateValues()) {
+                        if (this.hideLoader) {
+                            this.hideLoader();
+                        };
+                        return;
+                    };
+                }
                 that.modal.$el.find('button.ok').showButtonLoader();
                 var tagName = this.tagModel ? this.tagModel.typeName : this.ui.addTagOptions.val(),
                     tagAttributes = {},
@@ -246,6 +254,33 @@ define(['require',
                 this.modal.trigger('cancel');
             });
             this.bindEvents();
+        },
+        validateValues: function(attributeDefs) {
+            var isValidate = true,
+                applyErrorClass = function(scope) {
+                    if (this.value == '' || this.value == null || this.value.indexOf('Select Timezone') > -1) {
+                        $(this).addClass('errorValidate');
+                        if (isValidate) { isValidate = false; }
+                    } else {
+                        $(this).removeClass('errorValidate');
+                    }
+                };
+
+            this.$el.find('.start-time').each(function(element) {
+                applyErrorClass.call(this);
+            });
+            this.$el.find('.end-time').each(function(element) {
+                applyErrorClass.call(this);
+            });
+            this.$el.find('.time-zone').each(function(element) {
+                applyErrorClass.call(this);
+            });
+            if (!isValidate) {
+                Utils.notifyInfo({
+                    content: "Please fill the details"
+                });
+                return true;
+            }
         },
 
         onRender: function() {
@@ -372,13 +407,16 @@ define(['require',
                             "singleDatePicker": true,
                             "showDropdowns": true,
                             "timePicker": true,
+                            startDate: new Date(),
                             locale: {
                                 format: Globals.dateTimeFormat
                             }
                         };
                         if (that.tagModel) {
-                            var formatDate = Number(this.value);
-                            dateObj["startDate"] = new Date(formatDate);
+                            if (this.value.length) {
+                                var formatDate = Number(this.value);
+                                dateObj["startDate"] = new Date(formatDate);
+                            }
                         }
                         $(this).daterangepicker(dateObj);
                     }

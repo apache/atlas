@@ -34,9 +34,7 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -70,6 +68,11 @@ class AtlasClassificationDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasClassif
             throw new AtlasBaseException(AtlasErrorCode.TYPE_MATCH_FAILED, classificationDef.getName(), TypeCategory.TRAIT.name());
         }
 
+        verifyTypeReadAccess(classificationDef.getSuperTypes());
+        verifyTypeReadAccess(classificationDef.getEntityTypes());
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_CREATE, classificationDef), "create classification-def ", classificationDef.getName());
+
         AtlasVertex ret = typeDefStore.findTypeVertexByName(classificationDef.getName());
 
         if (ret != null) {
@@ -92,8 +95,6 @@ class AtlasClassificationDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasClassif
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasClassificationDefStoreV1.create({}, {})", classificationDef, preCreateResult);
         }
-
-        AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_CREATE, classificationDef), "create classification-def ", classificationDef.getName());
 
         AtlasVertex vertex = (preCreateResult == null) ? preCreate(classificationDef) : preCreateResult;
 
@@ -176,6 +177,9 @@ class AtlasClassificationDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasClassif
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasClassificationDefStoreV1.update({})", classifiDef);
         }
+
+        verifyTypeReadAccess(classifiDef.getSuperTypes());
+        verifyTypeReadAccess(classifiDef.getEntityTypes());
 
         validateType(classifiDef);
 

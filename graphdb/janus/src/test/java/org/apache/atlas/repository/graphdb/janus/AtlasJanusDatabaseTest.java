@@ -30,6 +30,7 @@ import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery.ComparisionOperator;
 import org.apache.atlas.repository.graphdb.AtlasPropertyKey;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.runner.LocalSolrRunner;
 import org.apache.atlas.typesystem.types.DataTypes.TypeCategory;
 import org.apache.commons.configuration.Configuration;
 import org.testng.annotations.AfterClass;
@@ -45,6 +46,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
 import static org.apache.atlas.repository.graphdb.janus.AtlasJanusGraphDatabase.initJanusGraph;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -61,8 +63,12 @@ public class AtlasJanusDatabaseTest {
 
     private AtlasGraph<?, ?> atlasGraph;
 
-    private <V, E> AtlasGraph<V, E> getGraph() {
+    private <V, E> AtlasGraph<V, E> getGraph() throws Exception {
         GraphSandboxUtil.create();
+
+        if (useLocalSolr()) {
+            LocalSolrRunner.start();
+        }
 
         if (atlasGraph == null) {
             AtlasJanusGraphDatabase db = new AtlasJanusGraphDatabase();
@@ -83,10 +89,14 @@ public class AtlasJanusDatabaseTest {
     }
 
     @AfterClass
-    public void cleanup() {
+    public void cleanup() throws Exception {
         if (atlasGraph != null) {
             atlasGraph.clear();
             atlasGraph = null;
+        }
+
+        if (useLocalSolr()) {
+            LocalSolrRunner.stop();
         }
     }
 
@@ -115,7 +125,7 @@ public class AtlasJanusDatabaseTest {
     }
 
     @Test
-    public <V, E> void testPropertyDataTypes() {
+    public <V, E> void testPropertyDataTypes() throws Exception {
 
         // primitives
         AtlasGraph<V, E> graph = getGraph();
@@ -177,7 +187,7 @@ public class AtlasJanusDatabaseTest {
     }
 
     @Test
-    public <V, E> void testMultiplicityOnePropertySupport() {
+    public <V, E> void testMultiplicityOnePropertySupport() throws Exception {
 
         AtlasGraph<V, E> graph = (AtlasGraph<V, E>) getGraph();
 
@@ -213,7 +223,7 @@ public class AtlasJanusDatabaseTest {
     }
 
     @Test
-    public <V, E> void testRemoveEdge() {
+    public <V, E> void testRemoveEdge() throws Exception {
 
         AtlasGraph<V, E> graph = (AtlasGraph<V, E>) getGraph();
         AtlasVertex<V, E> v1 = graph.addVertex();
@@ -235,7 +245,7 @@ public class AtlasJanusDatabaseTest {
     }
 
     @Test
-    public <V, E> void testRemoveVertex() {
+    public <V, E> void testRemoveVertex() throws Exception {
 
         AtlasGraph<V, E> graph = (AtlasGraph<V, E>) getGraph();
 
@@ -249,7 +259,7 @@ public class AtlasJanusDatabaseTest {
     }
 
     @Test
-    public <V, E> void testGetEdges() {
+    public <V, E> void testGetEdges() throws Exception {
 
         AtlasGraph<V, E> graph = (AtlasGraph<V, E>) getGraph();
         AtlasVertex<V, E> v1 = graph.addVertex();
@@ -285,7 +295,7 @@ public class AtlasJanusDatabaseTest {
     }
 
     @Test
-    public <V, E> void testMultiplictyManyPropertySupport() {
+    public <V, E> void testMultiplictyManyPropertySupport() throws Exception {
 
         AtlasGraph<V, E> graph = getGraph();
 
@@ -324,7 +334,7 @@ public class AtlasJanusDatabaseTest {
     }
 
     @Test
-    public <V, E> void testListProperties() throws AtlasException {
+    public <V, E> void testListProperties() throws Exception {
 
         AtlasGraph<V, E> graph = getGraph();
         AtlasVertex<V, E> vertex = graph.addVertex();
@@ -347,7 +357,7 @@ public class AtlasJanusDatabaseTest {
     }
 
     @Test
-    public <V, E> void testRemoveProperty() {
+    public <V, E> void testRemoveProperty() throws Exception {
 
         AtlasGraph<V, E> graph = getGraph();
         AtlasVertex<V, E> vertex = graph.addVertex();
@@ -375,7 +385,7 @@ public class AtlasJanusDatabaseTest {
     }
 
     @Test
-    public <V, E> void getGetGraphQueryForVertices() {
+    public <V, E> void getGetGraphQueryForVertices() throws Exception {
 
         AtlasGraph<V, E> graph = getGraph();
 
@@ -410,7 +420,7 @@ public class AtlasJanusDatabaseTest {
     }
 
     private <V, E> void testExecuteGraphQuery(String property, ComparisionOperator op, Object value,
-            AtlasVertex<V, E>... expected) {
+            AtlasVertex<V, E>... expected) throws Exception {
         AtlasGraph<V, E> graph = getGraph();
         AtlasGraphQuery<V, E> query = graph.query();
         if (op != null) {
@@ -427,7 +437,7 @@ public class AtlasJanusDatabaseTest {
     }
 
     @Test
-    public <V, E> void testAddMultManyPropertyValueTwice() {
+    public <V, E> void testAddMultManyPropertyValueTwice() throws Exception {
 
         AtlasGraph<V, E> graph = getGraph();
         String vertexId;

@@ -801,7 +801,10 @@ public class EntityREST {
     @Path("{guid}/audit")
     public List<EntityAuditEventV2> getAuditEvents(@PathParam("guid") String guid, @QueryParam("startKey") String startKey,
                                                    @QueryParam("auditAction") EntityAuditActionV2 auditAction,
-                                                   @QueryParam("count") @DefaultValue("100") short count) throws AtlasBaseException {
+                                                   @QueryParam("count") @DefaultValue("100") short count,
+                                                   @QueryParam("offset") @DefaultValue("-1") int offset,
+                                                   @QueryParam("sortBy") String sortBy,
+                                                   @QueryParam("sortOrder") String sortOrder) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
         try {
@@ -824,7 +827,9 @@ public class EntityREST {
 
             List<EntityAuditEventV2> ret = new ArrayList<>();
 
-            if(auditAction != null) {
+            if (sortBy != null || offset > -1) {
+                ret = auditRepository.listEventsV2(guid, auditAction, sortBy, StringUtils.equalsIgnoreCase(sortOrder, "desc"), offset, count);
+            } else if(auditAction != null) {
                 ret = auditRepository.listEventsV2(guid, auditAction, startKey, count);
             } else {
                 List events = auditRepository.listEvents(guid, startKey, count);

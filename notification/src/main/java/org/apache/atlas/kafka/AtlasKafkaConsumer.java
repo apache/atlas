@@ -20,12 +20,14 @@ package org.apache.atlas.kafka;
 import org.apache.atlas.notification.AbstractNotificationConsumer;
 import org.apache.atlas.notification.AtlasNotificationMessageDeserializer;
 import org.apache.atlas.notification.NotificationInterface;
+import org.apache.commons.collections.MapUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -63,37 +65,12 @@ public class AtlasKafkaConsumer<T> extends AbstractNotificationConsumer<T> {
 
     @Override
     public List<AtlasKafkaMessage<T>> receive(long timeoutMilliSeconds) {
+        return receive(this.pollTimeoutMilliSeconds, null);
+    }
 
-        List<AtlasKafkaMessage<T>> messages = new ArrayList();
-
-        ConsumerRecords<?, ?> records = kafkaConsumer != null ? kafkaConsumer.poll(timeoutMilliSeconds) : null;
-
-        if (records != null) {
-            for (ConsumerRecord<?, ?> record : records) {
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Received Message topic ={}, partition ={}, offset = {}, key = {}, value = {}",
-                            record.topic(), record.partition(), record.offset(), record.key(), record.value());
-                }
-
-                T message = null;
-
-                try {
-                    message = deserializer.deserialize(record.value().toString());
-                } catch (OutOfMemoryError excp) {
-                    LOG.error("Ignoring message that failed to deserialize: topic={}, partition={}, offset={}, key={}, value={}",
-                              record.topic(), record.partition(), record.offset(), record.key(), record.value(), excp);
-                }
-
-                if (message == null) {
-                    continue;
-                }
-
-                messages.add(new AtlasKafkaMessage(message, record.offset(), record.topic(), record.partition()));
-            }
-        }
-
-        return messages;
-
+    @Override
+    public List<AtlasKafkaMessage<T>> receiveWithCheckedCommit(Map<TopicPartition, Long> lastCommittedPartitionOffset) {
+        return receive(this.pollTimeoutMilliSeconds, lastCommittedPartitionOffset);
     }
 
 
@@ -119,5 +96,49 @@ public class AtlasKafkaConsumer<T> extends AbstractNotificationConsumer<T> {
         if (kafkaConsumer != null) {
             kafkaConsumer.wakeup();
         }
+    }
+
+    private List<AtlasKafkaMessage<T>> receive(long timeoutMilliSeconds, Map<TopicPartition, Long> lastCommittedPartitionOffset) {
+        List<AtlasKafkaMessage<T>> messages = new ArrayList();
+
+        ConsumerRecords<?, ?> records = kafkaConsumer != null ? kafkaConsumer.poll(timeoutMilliSeconds) : null;
+
+        if (records != null) {
+            for (ConsumerRecord<?, ?> record : records) {
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Received Message topic ={}, partition ={}, offset = {}, key = {}, value = {}",
+                            record.topic(), record.partition(), record.offset(), record.key(), record.value());
+                }
+
+                TopicPartition topicPartition = new TopicPartition(record.topic(), record.partition());
+                if (MapUtils.isNotEmpty(lastCommittedPartitionOffset)
+                        && lastCommittedPartitionOffset.containsKey(topicPartition)
+                        && record.offset() < lastCommittedPartitionOffset.get(topicPartition)) {
+
+                    commit(topicPartition, record.offset());
+                    LOG.info("Skipping already processed message: topic={}, partition={} offset={}. Last processed offset={}",
+                                record.topic(), record.partition(), record.offset(), lastCommittedPartitionOffset.get(topicPartition));
+                    continue;
+                }
+
+                T message = null;
+
+                try {
+                    message = deserializer.deserialize(record.value().toString());
+                } catch (OutOfMemoryError excp) {
+                    LOG.error("Ignoring message that failed to deserialize: topic={}, partition={}, offset={}, key={}, value={}",
+                            record.topic(), record.partition(), record.offset(), record.key(), record.value(), excp);
+                }
+
+                if (message == null) {
+                    continue;
+                }
+
+                messages.add(new AtlasKafkaMessage(message, record.offset(), record.topic(), record.partition()));
+            }
+        }
+
+        return messages;
+
     }
 }

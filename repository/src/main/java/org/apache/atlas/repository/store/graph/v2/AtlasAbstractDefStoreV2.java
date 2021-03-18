@@ -20,16 +20,23 @@ package org.apache.atlas.repository.store.graph.v2;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.authorize.AtlasAuthorizationUtils;
+import org.apache.atlas.authorize.AtlasPrivilege;
+import org.apache.atlas.authorize.AtlasTypeAccessRequest;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.query.AtlasDSL;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasDefStore;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -52,6 +59,48 @@ import java.util.regex.Pattern;
     public AtlasAbstractDefStoreV2(AtlasTypeDefGraphStoreV2 typeDefStore, AtlasTypeRegistry typeRegistry) {
         this.typeDefStore = typeDefStore;
         this.typeRegistry = typeRegistry;
+    }
+
+    public void verifyTypesReadAccess(Collection<? extends AtlasType> types) throws AtlasBaseException {
+        if (CollectionUtils.isNotEmpty(types)) {
+            for (AtlasType type : types) {
+                AtlasBaseTypeDef def = typeRegistry.getTypeDefByName(type.getTypeName());
+                if (def != null) {
+                    AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_READ, def), "read type-def of category ", def.getCategory(), " ", def.getName());
+                }
+            }
+        }
+    }
+
+    public void verifyTypeReadAccess(Collection<String> types) throws AtlasBaseException {
+        if (CollectionUtils.isNotEmpty(types)) {
+            for (String type : types) {
+                AtlasBaseTypeDef def = typeRegistry.getTypeDefByName(type);
+                if (def != null) {
+                    AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_READ, def), "read type-def of category ", def.getCategory(), " ", def.getName());
+                }
+            }
+        }
+    }
+
+    public void verifyTypeReadAccess(String type) throws AtlasBaseException {
+        if (StringUtils.isNotEmpty(type)) {
+                AtlasBaseTypeDef def = typeRegistry.getTypeDefByName(type);
+                if (def != null) {
+                    AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_READ, def), "read type-def of category ", def.getCategory(), " ", def.getName());
+                }
+        }
+    }
+
+    public void verifyAttributeTypeReadAccess(Collection<AtlasStructDef.AtlasAttributeDef> types) throws AtlasBaseException {
+        if (CollectionUtils.isNotEmpty(types)) {
+            for (AtlasStructDef.AtlasAttributeDef attributeDef : types) {
+                AtlasBaseTypeDef def = typeRegistry.getTypeDefByName(attributeDef.getTypeName());
+                if (def != null) {
+                    AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_READ, def), "read type-def of category ", def.getCategory(), " ", def.getName());
+                }
+            }
+        }
     }
 
     public void validateType(AtlasBaseTypeDef typeDef) throws AtlasBaseException {

@@ -315,7 +315,7 @@ public class AtlasPathExtractorUtil {
                     continue;
                 }
 
-                String subDirPath          = parentPath + subDirName + Path.SEPARATOR;
+                String subDirPath          = parentPath + subDirName;
                 String subDirQualifiedName = schemeAndContainerName + subDirPath + QNAME_SEP_METADATA_NAMESPACE + metadataNamespace;
 
                 ret = new AtlasEntity(ADLS_GEN2_DIRECTORY);
@@ -331,7 +331,7 @@ public class AtlasPathExtractorUtil {
                 context.putEntity(subDirQualifiedName, ret);
 
                 parentObjId = AtlasTypeUtil.getAtlasRelatedObjectId(ret, RELATIONSHIP_ADLS_GEN2_PARENT_CHILDREN);
-                parentPath  = subDirPath;
+                parentPath  = subDirPath + Path.SEPARATOR;
             }
 
             if (ret == null) {

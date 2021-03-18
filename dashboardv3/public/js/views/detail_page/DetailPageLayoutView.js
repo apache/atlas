@@ -143,7 +143,13 @@ define(['require',
                     this.entityObject = this.collection.first().toJSON();
                     var collectionJSON = this.entityObject.entity;
                     this.activeEntityDef = this.entityDefCollection.fullCollection.find({ name: collectionJSON.typeName });
-
+                    if (!this.activeEntityDef) {
+                        Utils.backButtonClick();
+                        Utils.notifyError({
+                            content: "Unknown Entity-Type"
+                        });
+                        return true;
+                    }
                     if (collectionJSON && _.startsWith(collectionJSON.typeName, "AtlasGlossary")) {
                         this.$(".termBox").hide();
                     }
@@ -165,6 +171,7 @@ define(['require',
 
                     // check if entity is process
                     var isProcess = false,
+                        typeName = Utils.getName(collectionJSON, 'typeName'),
                         superTypes = Utils.getNestedSuperTypes({ data: this.activeEntityDef.toJSON(), collection: this.entityDefCollection }),
                         isLineageRender = _.find(superTypes, function(type) {
                             if (type === "DataSet" || type === "Process") {
@@ -174,7 +181,9 @@ define(['require',
                                 return true;
                             }
                         });
-
+                    if (!isLineageRender) {
+                        isLineageRender = (typeName === "DataSet" || typeName === "Process") ? true : null;
+                    }
                     if (collectionJSON && collectionJSON.guid) {
                         var tagGuid = collectionJSON.guid;
                         this.readOnly = Enums.entityStateReadOnly[collectionJSON.status];
@@ -188,6 +197,7 @@ define(['require',
                     }
                     if (collectionJSON) {
                         this.name = Utils.getName(collectionJSON);
+
                         if (collectionJSON.attributes) {
                             if (collectionJSON.typeName) {
                                 collectionJSON.attributes.typeName = _.escape(collectionJSON.typeName);
@@ -324,6 +334,9 @@ define(['require',
                             typeName: collectionJSON.typeName,
                             value: that.value
                         }));
+                    } else {
+                        this.$('.profileTab').hide();
+                        this.redirectToDefaultTab("profile");
                     }
 
                     if (this.activeEntityDef) {
@@ -331,6 +344,9 @@ define(['require',
                         if (collectionJSON && collectionJSON.typeName === "AtlasServer") {
                             this.$('.replicationTab').show();
                             this.renderReplicationAuditTableLayoutView(obj);
+                        } else {
+                            this.$('.replicationTab').hide();
+                            this.redirectToDefaultTab("raudits");
                         }
                         // To render Schema check attribute "schemaElementsAttribute"
                         var schemaOptions = this.activeEntityDef.get('options');
@@ -340,14 +356,9 @@ define(['require',
                             this.renderSchemaLayoutView(_.extend({}, obj, {
                                 attribute: collectionJSON.relationshipAttributes[schemaElementsAttribute] || collectionJSON.attributes[schemaElementsAttribute]
                             }));
-                        } else if (this.value && this.value.tabActive == "schema") {
-                            Utils.setUrl({
-                                url: Utils.getUrlState.getQueryUrl().queyParams[0],
-                                urlParams: { tabActive: 'properties' },
-                                mergeBrowserUrl: false,
-                                trigger: true,
-                                updateTabState: true
-                            });
+                        } else {
+                            this.$('.schemaTable').hide();
+                            this.redirectToDefaultTab("schema");
                         }
 
                         if (isLineageRender) {
@@ -356,17 +367,11 @@ define(['require',
                                 processCheck: isProcess,
                                 fetchCollection: this.fetchCollection.bind(this),
                             }));
-                        } else if (this.value && this.value.tabActive == "lineage") {
-                            Utils.setUrl({
-                                url: Utils.getUrlState.getQueryUrl().queyParams[0],
-                                urlParams: { tabActive: 'properties' },
-                                mergeBrowserUrl: false,
-                                trigger: true,
-                                updateTabState: true
-                            });
+                        } else {
+                            this.$('.lineageGraph').hide();
+                            this.redirectToDefaultTab("lineage");
                         }
                     }
-
 
                 }, this);
                 this.listenTo(this.collection, 'error', function(model, response) {
@@ -384,19 +389,56 @@ define(['require',
                 Utils.showTitleLoader(this.$('.page-title .fontLoader'), this.$('.entityDetail'));
                 this.$('.fontLoader-relative').addClass('show'); // to show tab loader
             },
-            manualRender: function(options) {
-                if (this.id !== options.id) {
-                    _.extend(this, _.pick(options, 'value', 'id'));
-                    this.collection.url = UrlLinks.entitiesApiUrl({ guid: this.id, minExtInfo: true });
-                    this.fetchCollection();
+            redirectToDefaultTab: function(tabName) {
+                var regionRef = null;
+                switch (tabName) {
+                    case "schema":
+                        regionRef = this.RSchemaTableLayoutView;
+                        break;
+                    case "lineage":
+                        regionRef = this.RLineageLayoutView;
+                        break;
+                    case "raudits":
+                        regionRef = this.RReplicationAuditTableLayoutView;
+                        break;
+                    case "profile":
+                        regionRef = this.RProfileLayoutView;
+                        break;
+                }
+                if (regionRef) {
+                    regionRef.destroy();
+                    regionRef.$el.empty();
+                }
+                if (this.value && this.value.tabActive == tabName || this.$(".tab-content .tab-pane.active").attr("role") === tabName) {
+                    Utils.setUrl({
+                        url: Utils.getUrlState.getQueryUrl().queyParams[0],
+                        urlParams: { tabActive: 'properties' },
+                        mergeBrowserUrl: false,
+                        trigger: true,
+                        updateTabState: true
+                    });
                 }
             },
-            onShow: function() {
+            manualRender: function(options) {
+                if (options) {
+                    var oldId = this.id;
+                    _.extend(this, _.pick(options, 'value', 'id'));
+                    if (this.id !== oldId) {
+                        this.collection.url = UrlLinks.entitiesApiUrl({ guid: this.id, minExtInfo: true });
+                        this.fetchCollection();
+                    }
+                    this.updateTab();
+                }
+            },
+            updateTab: function() {
                 if (this.value && this.value.tabActive) {
                     this.$('.nav.nav-tabs').find('[role="' + this.value.tabActive + '"]').addClass('active').siblings().removeClass('active');
                     this.$('.tab-content').find('[role="' + this.value.tabActive + '"]').addClass('active').siblings().removeClass('active');
                     $("html, body").animate({ scrollTop: (this.$('.tab-content').offset().top + 1200) }, 1000);
                 }
+            },
+            onShow: function() {
+                this.updateTab();
             },
             onDestroy: function() {
                 if (!Utils.getUrlState.isDetailPage()) {
@@ -523,29 +565,54 @@ define(['require',
                     });
                 });
             },
+            //This function checks for the lenght of Available terms and modal for adding terms is displayed accordingly.
+            assignTermModalView: function(glossaryCollection, obj) {
+                var that = this,
+                    terms = 0;
+                _.each(glossaryCollection.fullCollection.models, function(model) {
+                    if (model.get('terms')) {
+                        terms += model.get('terms').length;
+                    };
+                });
+                if (terms) {
+                    require(['views/glossary/AssignTermLayoutView'], function(AssignTermLayoutView) {
+                        var view = new AssignTermLayoutView({
+                            guid: obj.guid,
+                            callback: function() {
+                                that.fetchCollection();
+                            },
+                            associatedTerms: obj.associatedTerms,
+                            showLoader: that.showLoader.bind(that),
+                            hideLoader: that.hideLoader.bind(that),
+                            glossaryCollection: glossaryCollection
+                        });
+                        view.modal.on('ok', function() {
+                            Utils.showTitleLoader(that.$('.page-title .fontLoader'), that.$('.entityDetail'));
+                        });
+                    });
+                } else {
+                    Utils.notifyInfo({
+                        content: "There are no available terms that can be associated with this entity"
+                    });
+                }
+            },
             onClickAddTermBtn: function(e) {
                 var that = this,
-                    entityGuid = that.id,
                     entityObj = this.collection.first().get('entity'),
-                    associatedTerms = [];
-                if (entityObj && entityObj.relationshipAttributes && entityObj.relationshipAttributes.meanings) {
-                    associatedTerms = entityObj.relationshipAttributes.meanings;
-                }
-                require(['views/glossary/AssignTermLayoutView'], function(AssignTermLayoutView) {
-                    var view = new AssignTermLayoutView({
-                        guid: that.id,
-                        callback: function() {
-                            that.fetchCollection();
-                        },
-                        associatedTerms: associatedTerms,
-                        showLoader: that.showLoader.bind(that),
-                        hideLoader: that.hideLoader.bind(that),
-                        glossaryCollection: that.glossaryCollection
-                    });
-                    view.modal.on('ok', function() {
-                        Utils.showTitleLoader(that.$('.page-title .fontLoader'), that.$('.entityDetail'));
-                    });
+                    glossaryData = null,
+                    obj = {
+                        guid: this.id,
+                        associatedTerms: [],
+                    };
+                this.glossaryCollection.fetch({
+                    success: function(glossaryCollection) {
+                        that.assignTermModalView(glossaryCollection, obj);
+                    },
+                    reset: true,
                 });
+                if (entityObj && entityObj.relationshipAttributes && entityObj.relationshipAttributes.meanings) {
+                    obj.associatedTerms = entityObj.relationshipAttributes.meanings;
+                }
             },
             renderEntityDetailTableLayoutView: function(obj) {
                 var that = this;

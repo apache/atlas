@@ -23,8 +23,8 @@ define(['require',
     'utils/Messages',
     'utils/Globals',
     'utils/UrlLinks',
-    'models/VTag'
-], function(require, Backbone, TagLayoutViewTmpl, Utils, Messages, Globals, UrlLinks, VTag) {
+    'collection/VTagList'
+], function(require, Backbone, TagLayoutViewTmpl, Utils, Messages, Globals, UrlLinks, VTagList) {
     'use strict';
 
     var TagLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -49,6 +49,7 @@ define(['require',
                 tagView: 'input[name="tagView"]',
                 expandArrow: '[data-id="expandArrow"]',
                 tagTreeLoader: '[data-id="tagTreeLoader"]',
+                tagTreeTextLoader: '[data-id="tagTreeTextLoader"]',
                 tagTreeView: '[data-id="tagTreeView"]'
             },
             /** ui events hash */
@@ -68,7 +69,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'tag', 'collection', 'typeHeaders', 'value', 'enumDefCollection'));
+                _.extend(this, _.pick(options, 'tag', 'collection', 'typeHeaders', 'value', 'enumDefCollection', 'classificationAndMetricEvent'));
                 this.viewType = "flat";
                 this.query = {
                     flat: {
@@ -87,6 +88,7 @@ define(['require',
                 var that = this;
                 this.listenTo(this.collection.fullCollection, "reset add remove", function() {
                     this.tagsGenerator();
+                    this.changeLoaderTextState(false);
                 }, this);
                 this.ui.tagsList.on('click', 'li.parent-node a', function() {
                     that.setUrl(this.getAttribute("href"));
@@ -95,12 +97,36 @@ define(['require',
                     that.$('.tagPopover').popover('hide');
                     that[$(this).find('a').data('fn')](e)
                 });
+                this.classificationAndMetricEvent.on("classification:Update:ClassificationTab", function(options) {
+                    that.changeLoaderTextState(false);
+                });
             },
             onRender: function() {
                 var that = this;
+                this.changeLoaderTextState(false);
                 this.changeLoaderState(true);
                 this.bindEvents();
-                this.tagsGenerator();
+                this.checkTagOnRefresh();
+            },
+            checkTagOnRefresh: function() {
+                var that = this,
+                    tagName = this.options.tag,
+                    presentTag = this.collection.fullCollection.findWhere({ name: tagName }),
+                    tag = new VTagList();
+                if (!presentTag && tagName) {
+                    tag.url = UrlLinks.classicationApiUrl(tagName);
+                    tag.fetch({
+                        success: function(dataOrCollection, tagDetails) {
+                            that.collection.fullCollection.add(tagDetails);
+                            that.changeLoaderTextState(true);
+                        },
+                        cust_error: function(model, response) {
+                            that.tagsGenerator();
+                        }
+                    });
+                } else {
+                    this.tagsGenerator();
+                }
             },
             changeLoaderState: function(showLoader) {
                 if (showLoader) {
@@ -109,6 +135,13 @@ define(['require',
                 } else {
                     this.ui.tagTreeLoader.hide();
                     this.ui.tagTreeView.show();
+                }
+            },
+            changeLoaderTextState: function(showLoader) {
+                if (showLoader) {
+                    this.ui.tagTreeTextLoader.show();
+                } else {
+                    this.ui.tagTreeTextLoader.hide();
                 }
             },
             fetchCollections: function() {
@@ -123,6 +156,7 @@ define(['require',
                 this.query[this.viewType].tagName = this.tag;
                 if (options && options.viewType) {
                     this.viewType = options.viewType;
+                    this.changeLoaderTextState(false);
                 }
                 if (!this.createTag) {
                     this.setValues(true);
@@ -206,16 +240,10 @@ define(['require',
                             if (target.children('div').find('a').text() === tag) {
                                 target.addClass('active');
                                 target.parents('ul').addClass('show').removeClass('hide'); // Don't use toggle
-                                if (this.createTag || !manual) {
-                                    if (target.offset()) {
-                                        $('#sidebar-wrapper').animate({
-                                            scrollTop: target.offset().top - 100
-                                        }, 500);
-                                    }
-                                }
                                 return false;
                             }
                         });
+
                     }
                 }
             },
@@ -374,14 +402,6 @@ define(['require',
                             allowCancel: true,
                         }).open();
                     modal.$el.find('button.ok').attr("disabled", "true");
-                    view.ui.tagName.on('keyup', function(e) {
-                        modal.$el.find('button.ok').removeAttr("disabled");
-                    });
-                    view.ui.tagName.on('keyup', function(e) {
-                        if ((e.keyCode == 8 || e.keyCode == 32 || e.keyCode == 46) && e.currentTarget.value.trim() == "") {
-                            modal.$el.find('button.ok').attr("disabled", "true");
-                        }
-                    });
                     modal.on('shownModal', function() {
                         view.ui.parentTag.select2({
                             multiple: true,

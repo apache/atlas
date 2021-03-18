@@ -30,6 +30,7 @@ import org.testng.annotations.Test;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import static org.mockito.Mockito.mock;
@@ -222,6 +223,11 @@ public class AbstractNotificationConsumerTest {
                 tempMessageList.add(new AtlasKafkaMessage(deserializer.deserialize((String) json), -1, TEST_TOPIC_NAME, -1));
             }
             return tempMessageList;
+        }
+
+        @Override
+        public List<AtlasKafkaMessage<TestMessage>> receiveWithCheckedCommit(Map<TopicPartition, Long> lastCommittedPartitionOffset) {
+            return receive();
         }
     }
 

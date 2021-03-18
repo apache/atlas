@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.repository.audit;
 
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.EntityAuditEvent.EntityAuditAction;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
@@ -36,6 +37,7 @@ import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
+import org.apache.atlas.utils.FixedBufferList;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -45,13 +47,13 @@ import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.apache.atlas.AtlasConfiguration.STORE_DIFFERENTIAL_AUDITS;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.BUSINESS_ATTRIBUTE_UPDATE;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.CLASSIFICATION_ADD;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.CLASSIFICATION_DELETE;
@@ -63,6 +65,7 @@ import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.ENTITY_IMPORT_DELETE;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.ENTITY_IMPORT_UPDATE;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.ENTITY_UPDATE;
+import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.CUSTOM_ATTRIBUTE_UPDATE;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.LABEL_ADD;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.LABEL_DELETE;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.PROPAGATED_CLASSIFICATION_ADD;
@@ -74,6 +77,9 @@ import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV
 @Component
 public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
     private static final Logger LOG = LoggerFactory.getLogger(EntityAuditListenerV2.class);
+    private static final ThreadLocal<FixedBufferList<EntityAuditEventV2>> AUDIT_EVENTS_BUFFER =
+            ThreadLocal.withInitial(() -> new FixedBufferList<>(EntityAuditEventV2.class,
+                    AtlasConfiguration.NOTIFICATION_FIXED_BUFFER_ITEMS_INCREMENT_COUNT.getInt()));
 
     private final EntityAuditRepository  auditRepository;
     private final AtlasTypeRegistry      typeRegistry;
@@ -90,32 +96,46 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
     public void onEntitiesAdded(List<AtlasEntity> entities, boolean isImport) throws AtlasBaseException {
         MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
 
-        List<EntityAuditEventV2> events = new ArrayList<>();
-
+        FixedBufferList<EntityAuditEventV2> entitiesAdded = getAuditEventsList();
         for (AtlasEntity entity : entities) {
-            EntityAuditEventV2 event = createEvent(entity, isImport ? ENTITY_IMPORT_CREATE : ENTITY_CREATE);
-
-            events.add(event);
+            createEvent(entitiesAdded.next(), entity, isImport ? ENTITY_IMPORT_CREATE : ENTITY_CREATE);
         }
 
-        auditRepository.putEventsV2(events);
+        auditRepository.putEventsV2(entitiesAdded.toList());
 
         RequestContext.get().endMetricRecord(metric);
     }
 
     @Override
     public void onEntitiesUpdated(List<AtlasEntity> entities, boolean isImport) throws AtlasBaseException {
-        MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
+        RequestContext                      reqContext    = RequestContext.get();
+        MetricRecorder                      metric        = reqContext.startMetricRecord("entityAudit");
+        FixedBufferList<EntityAuditEventV2> updatedEvents = getAuditEventsList();
+        Collection<AtlasEntity>             updatedEntites;
 
-        List<EntityAuditEventV2> events = new ArrayList<>();
-
-        for (AtlasEntity entity : entities) {
-            EntityAuditEventV2 event = createEvent(entity, isImport ? ENTITY_IMPORT_UPDATE : ENTITY_UPDATE);
-
-            events.add(event);
+        if (STORE_DIFFERENTIAL_AUDITS.getBoolean()) {
+            updatedEntites = reqContext.getDifferentialEntities();
+        } else {
+            updatedEntites = entities;
         }
 
-        auditRepository.putEventsV2(events);
+        for (AtlasEntity entity : updatedEntites) {
+            final EntityAuditActionV2 action;
+
+            if (isImport) {
+                action = ENTITY_IMPORT_UPDATE;
+            } else if (reqContext.checkIfEntityIsForCustomAttributeUpdate(entity.getGuid())) {
+                action = CUSTOM_ATTRIBUTE_UPDATE;
+            } else if (reqContext.checkIfEntityIsForBusinessAttributeUpdate(entity.getGuid())) {
+                action = BUSINESS_ATTRIBUTE_UPDATE;
+            } else {
+                action = ENTITY_UPDATE;
+            }
+
+            createEvent(updatedEvents.next(), entity, action);
+        }
+
+        auditRepository.putEventsV2(updatedEvents.toList());
 
         RequestContext.get().endMetricRecord(metric);
     }
@@ -124,15 +144,12 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
     public void onEntitiesDeleted(List<AtlasEntity> entities, boolean isImport) throws AtlasBaseException {
         MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
 
-        List<EntityAuditEventV2> events = new ArrayList<>();
-
+        FixedBufferList<EntityAuditEventV2> deletedEntities = getAuditEventsList();
         for (AtlasEntity entity : entities) {
-            EntityAuditEventV2 event = createEvent(entity, isImport ? ENTITY_IMPORT_DELETE : ENTITY_DELETE, "Deleted entity");
-
-            events.add(event);
+            createEvent(deletedEntities.next(), entity, isImport ? ENTITY_IMPORT_DELETE : ENTITY_DELETE, "Deleted entity");
         }
 
-        auditRepository.putEventsV2(events);
+        auditRepository.putEventsV2(deletedEntities.toList());
 
         RequestContext.get().endMetricRecord(metric);
     }
@@ -141,14 +158,12 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
     public void onEntitiesPurged(List<AtlasEntity> entities) throws AtlasBaseException {
         MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
 
-        List<EntityAuditEventV2> events = new ArrayList<>();
-
+        FixedBufferList<EntityAuditEventV2> eventsPurged = getAuditEventsList();
         for (AtlasEntity entity : entities) {
-            EntityAuditEventV2 event = createEvent(entity, ENTITY_PURGE);
-            events.add(event);
+            createEvent(eventsPurged.next(), entity, ENTITY_PURGE);
         }
 
-        auditRepository.putEventsV2(events);
+        auditRepository.putEventsV2(eventsPurged.toList());
 
         RequestContext.get().endMetricRecord(metric);
     }
@@ -158,17 +173,16 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
         if (CollectionUtils.isNotEmpty(classifications)) {
             MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
 
-            List<EntityAuditEventV2> events = new ArrayList<>();
-
+            FixedBufferList<EntityAuditEventV2> classificationsAdded = getAuditEventsList();
             for (AtlasClassification classification : classifications) {
                 if (entity.getGuid().equals(classification.getEntityGuid())) {
-                    events.add(createEvent(entity, CLASSIFICATION_ADD, "Added classification: " + AtlasType.toJson(classification)));
+                    createEvent(classificationsAdded.next(), entity, CLASSIFICATION_ADD, "Added classification: " + AtlasType.toJson(classification));
                 } else {
-                    events.add(createEvent(entity, PROPAGATED_CLASSIFICATION_ADD, "Added propagated classification: " + AtlasType.toJson(classification)));
+                    createEvent(classificationsAdded.next(), entity, PROPAGATED_CLASSIFICATION_ADD, "Added propagated classification: " + AtlasType.toJson(classification));
                 }
             }
 
-            auditRepository.putEventsV2(events);
+            auditRepository.putEventsV2(classificationsAdded.toList());
 
             RequestContext.get().endMetricRecord(metric);
         }
@@ -177,20 +191,20 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
     @Override
     public void onClassificationsAdded(List<AtlasEntity> entities, List<AtlasClassification> classifications) throws AtlasBaseException {
         if (CollectionUtils.isNotEmpty(classifications)) {
-            MetricRecorder           metric = RequestContext.get().startMetricRecord("entityAudit");
-            List<EntityAuditEventV2> events = Collections.synchronizedList(new ArrayList<>());
+            MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
+            FixedBufferList<EntityAuditEventV2> events = getAuditEventsList();
 
             for (AtlasClassification classification : classifications) {
                 for (AtlasEntity entity : entities) {
                     if (entity.getGuid().equals(classification.getEntityGuid())) {
-                        events.add(createEvent(entity, CLASSIFICATION_ADD, "Added classification: " + AtlasType.toJson(classification)));
+                        createEvent(events.next(), entity, CLASSIFICATION_ADD, "Added classification: " + AtlasType.toJson(classification));
                     } else {
-                        events.add(createEvent(entity, PROPAGATED_CLASSIFICATION_ADD, "Added propagated classification: " + AtlasType.toJson(classification)));
+                        createEvent(events.next(), entity, PROPAGATED_CLASSIFICATION_ADD, "Added propagated classification: " + AtlasType.toJson(classification));
                     }
                 }
             }
 
-            auditRepository.putEventsV2(events);
+            auditRepository.putEventsV2(events.toList());
 
             RequestContext.get().endMetricRecord(metric);
         }
@@ -201,24 +215,24 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
         if (CollectionUtils.isNotEmpty(classifications)) {
             MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
 
-            List<EntityAuditEventV2> events = new ArrayList<>();
-            String                   guid   = entity.getGuid();
+            FixedBufferList<EntityAuditEventV2> events = getAuditEventsList();
+            String guid = entity.getGuid();
 
             for (AtlasClassification classification : classifications) {
                 if (guid.equals(classification.getEntityGuid())) {
-                    events.add(createEvent(entity, CLASSIFICATION_UPDATE, "Updated classification: " + AtlasType.toJson(classification)));
+                    createEvent(events.next(), entity, CLASSIFICATION_UPDATE, "Updated classification: " + AtlasType.toJson(classification));
                 } else {
                     if (isPropagatedClassificationAdded(guid, classification)) {
-                        events.add(createEvent(entity, PROPAGATED_CLASSIFICATION_ADD, "Added propagated classification: " + AtlasType.toJson(classification)));
+                        createEvent(events.next(), entity, PROPAGATED_CLASSIFICATION_ADD, "Added propagated classification: " + AtlasType.toJson(classification));
                     } else if (isPropagatedClassificationDeleted(guid, classification)) {
-                        events.add(createEvent(entity, PROPAGATED_CLASSIFICATION_DELETE, "Deleted propagated classification: " + classification.getTypeName()));
+                        createEvent(events.next(), entity, PROPAGATED_CLASSIFICATION_DELETE, "Deleted propagated classification: " + classification.getTypeName());
                     } else {
-                        events.add(createEvent(entity, PROPAGATED_CLASSIFICATION_UPDATE, "Updated propagated classification: " + AtlasType.toJson(classification)));
+                        createEvent(events.next(), entity, PROPAGATED_CLASSIFICATION_UPDATE, "Updated propagated classification: " + AtlasType.toJson(classification));
                     }
                 }
             }
 
-            auditRepository.putEventsV2(events);
+            auditRepository.putEventsV2(events.toList());
 
             RequestContext.get().endMetricRecord(metric);
         }
@@ -227,19 +241,19 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
     @Override
     public void onClassificationsDeleted(AtlasEntity entity, List<AtlasClassification> classifications) throws AtlasBaseException {
         if (CollectionUtils.isNotEmpty(classifications)) {
-            MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
+            MetricRecorder metric = RequestContext.get().startMetricRecord("onClassificationsDeleted");
 
-            List<EntityAuditEventV2> events = new ArrayList<>();
+            FixedBufferList<EntityAuditEventV2> events = getAuditEventsList();
 
             for (AtlasClassification classification : classifications) {
                 if (StringUtils.equals(entity.getGuid(), classification.getEntityGuid())) {
-                    events.add(createEvent(entity, CLASSIFICATION_DELETE, "Deleted classification: " + classification.getTypeName()));
+                    createEvent(events.next(), entity, CLASSIFICATION_DELETE, "Deleted classification: " + classification.getTypeName());
                 } else {
-                    events.add(createEvent(entity, PROPAGATED_CLASSIFICATION_DELETE, "Deleted propagated classification: " + classification.getTypeName()));
+                    createEvent(events.next(), entity, PROPAGATED_CLASSIFICATION_DELETE, "Deleted propagated classification: " + classification.getTypeName());
                 }
             }
 
-            auditRepository.putEventsV2(events);
+            auditRepository.putEventsV2(events.toList());
 
             RequestContext.get().endMetricRecord(metric);
         }
@@ -248,20 +262,20 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
     @Override
     public void onClassificationsDeleted(List<AtlasEntity> entities, List<AtlasClassification> classifications) throws AtlasBaseException {
         if (CollectionUtils.isNotEmpty(classifications) && CollectionUtils.isNotEmpty(entities)) {
-            MetricRecorder           metric = RequestContext.get().startMetricRecord("entityAudit");
-            List<EntityAuditEventV2> events = Collections.synchronizedList(new ArrayList<>());
+            MetricRecorder metric = RequestContext.get().startMetricRecord("onClassificationsDeleted");
+            FixedBufferList<EntityAuditEventV2> events = getAuditEventsList();
 
             for (AtlasClassification classification : classifications) {
                 for (AtlasEntity entity : entities) {
                     if (StringUtils.equals(entity.getGuid(), classification.getEntityGuid())) {
-                        events.add(createEvent(entity, CLASSIFICATION_DELETE, "Deleted classification: " + classification.getTypeName()));
+                        createEvent(events.next(), entity, CLASSIFICATION_DELETE, "Deleted classification: " + classification.getTypeName());
                     } else {
-                        events.add(createEvent(entity, PROPAGATED_CLASSIFICATION_DELETE, "Deleted propagated classification: " + classification.getTypeName()));
+                        createEvent(events.next(), entity, PROPAGATED_CLASSIFICATION_DELETE, "Deleted propagated classification: " + classification.getTypeName());
                     }
                 }
             }
 
-            auditRepository.putEventsV2(events);
+            auditRepository.putEventsV2(events.toList());
 
             RequestContext.get().endMetricRecord(metric);
         }
@@ -270,19 +284,19 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
     @Override
     public void onTermAdded(AtlasGlossaryTerm term, List<AtlasRelatedObjectId> entities) throws AtlasBaseException {
         if (term != null && CollectionUtils.isNotEmpty(entities)) {
-            MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
+            MetricRecorder metric = RequestContext.get().startMetricRecord("onTermAdded");
 
-            List<EntityAuditEventV2> events = new ArrayList<>();
+            FixedBufferList<EntityAuditEventV2> events = getAuditEventsList();
 
             for (AtlasRelatedObjectId relatedObjectId : entities) {
                 AtlasEntity entity = instanceConverter.getAndCacheEntity(relatedObjectId.getGuid());
 
                 if (entity != null) {
-                    events.add(createEvent(entity, TERM_ADD, "Added term: " + term.toAuditString()));
+                    createEvent(events.next(), entity, TERM_ADD, "Added term: " + term.toAuditString());
                 }
             }
 
-            auditRepository.putEventsV2(events);
+            auditRepository.putEventsV2(events.toList());
 
             RequestContext.get().endMetricRecord(metric);
         }
@@ -291,19 +305,19 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
     @Override
     public void onTermDeleted(AtlasGlossaryTerm term, List<AtlasRelatedObjectId> entities) throws AtlasBaseException {
         if (term != null && CollectionUtils.isNotEmpty(entities)) {
-            MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
+            MetricRecorder metric = RequestContext.get().startMetricRecord("onTermDeleted");
 
-            List<EntityAuditEventV2> events = new ArrayList<>();
+            FixedBufferList<EntityAuditEventV2> events = getAuditEventsList();
 
             for (AtlasRelatedObjectId relatedObjectId : entities) {
                 AtlasEntity entity = instanceConverter.getAndCacheEntity(relatedObjectId.getGuid());
 
                 if (entity != null) {
-                    events.add(createEvent(entity, TERM_DELETE, "Deleted term: " + term.toAuditString()));
+                    createEvent(events.next(), entity, TERM_DELETE, "Deleted term: " + term.toAuditString());
                 }
             }
 
-            auditRepository.putEventsV2(events);
+            auditRepository.putEventsV2(events.toList());
 
             RequestContext.get().endMetricRecord(metric);
         }
@@ -312,15 +326,15 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
     @Override
     public void onLabelsAdded(AtlasEntity entity, Set<String> labels) throws AtlasBaseException {
         if (CollectionUtils.isNotEmpty(labels)) {
-            MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
+            MetricRecorder metric = RequestContext.get().startMetricRecord("onLabelsAdded");
 
-            List<EntityAuditEventV2> events = new ArrayList<>();
+            FixedBufferList<EntityAuditEventV2> events = getAuditEventsList();
 
             String addedLabels = StringUtils.join(labels, " ");
 
-            events.add(createEvent(entity, LABEL_ADD, "Added labels: " + addedLabels));
+            createEvent(events.next(), entity, LABEL_ADD, "Added labels: " + addedLabels);
 
-            auditRepository.putEventsV2(events);
+            auditRepository.putEventsV2(events.toList());
 
             RequestContext.get().endMetricRecord(metric);
         }
@@ -329,15 +343,15 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
     @Override
     public void onLabelsDeleted(AtlasEntity entity, Set<String> labels) throws AtlasBaseException {
         if (CollectionUtils.isNotEmpty(labels)) {
-            MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
+            MetricRecorder metric = RequestContext.get().startMetricRecord("onLabelsDeleted");
 
-            List<EntityAuditEventV2> events = new ArrayList<>();
+            FixedBufferList<EntityAuditEventV2> events = getAuditEventsList();
 
             String deletedLabels = StringUtils.join(labels, " ");
 
-            events.add(createEvent(entity, LABEL_DELETE, "Deleted labels: " + deletedLabels));
+            createEvent(events.next(), entity, LABEL_DELETE, "Deleted labels: " + deletedLabels);
 
-            auditRepository.putEventsV2(events);
+            auditRepository.putEventsV2(events.toList());
 
             RequestContext.get().endMetricRecord(metric);
         }
@@ -376,33 +390,38 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
         if (MapUtils.isNotEmpty(updatedBusinessAttributes)) {
             MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
 
-            List<EntityAuditEventV2> auditEvents = new ArrayList<>();
+            FixedBufferList<EntityAuditEventV2> events = getAuditEventsList();
 
             for (Map.Entry<String, Map<String, Object>> entry : updatedBusinessAttributes.entrySet()) {
                 String              bmName     = entry.getKey();
                 Map<String, Object> attributes = entry.getValue();
                 String              details    = AtlasJson.toJson(new AtlasStruct(bmName, attributes));
-                EntityAuditEventV2  auditEvent = createEvent(entity, BUSINESS_ATTRIBUTE_UPDATE, "Updated business attributes: " + details);
 
-                auditEvents.add(auditEvent);
+                createEvent(events.next(), entity, BUSINESS_ATTRIBUTE_UPDATE, "Updated business attributes: " + details);
             }
 
-            auditRepository.putEventsV2(auditEvents);
+            auditRepository.putEventsV2(events.toList());
 
             RequestContext.get().endMetricRecord(metric);
         }
     }
 
 
-    private EntityAuditEventV2 createEvent(AtlasEntity entity, EntityAuditActionV2 action, String details) {
-        return new EntityAuditEventV2(entity.getGuid(), RequestContext.get().getRequestTime(),
-                                      RequestContext.get().getUser(), action, details, entity);
+    private EntityAuditEventV2 createEvent(EntityAuditEventV2 entityAuditEventV2, AtlasEntity entity, EntityAuditActionV2 action, String details) {
+        entityAuditEventV2.setEntityId(entity.getGuid());
+        entityAuditEventV2.setTimestamp(RequestContext.get().getRequestTime());
+        entityAuditEventV2.setUser(RequestContext.get().getUser());
+        entityAuditEventV2.setAction(action);
+        entityAuditEventV2.setDetails(details);
+        entityAuditEventV2.setEntity(entity);
+
+        return entityAuditEventV2;
     }
 
-    private EntityAuditEventV2 createEvent(AtlasEntity entity, EntityAuditActionV2 action) {
+    private EntityAuditEventV2 createEvent(EntityAuditEventV2 event, AtlasEntity entity, EntityAuditActionV2 action) {
         String detail = getAuditEventDetail(entity, action);
 
-        return createEvent(entity, action, detail);
+        return createEvent(event, entity, action, detail);
     }
 
     private String getAuditEventDetail(AtlasEntity entity, EntityAuditActionV2 action) {
@@ -583,6 +602,12 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
             case ENTITY_UPDATE:
                 ret = "Updated: ";
                 break;
+            case CUSTOM_ATTRIBUTE_UPDATE:
+                ret = "Updated custom attribute: ";
+                break;
+            case BUSINESS_ATTRIBUTE_UPDATE:
+                ret = "Updated business attribute: ";
+                break;
             case ENTITY_DELETE:
                 ret = "Deleted: ";
                 break;
@@ -618,5 +643,12 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
         }
 
         return ret;
+    }
+
+    private FixedBufferList<EntityAuditEventV2> getAuditEventsList() {
+        FixedBufferList<EntityAuditEventV2> ret = AUDIT_EVENTS_BUFFER.get();
+        ret.reset();
+        return ret;
+
     }
 }

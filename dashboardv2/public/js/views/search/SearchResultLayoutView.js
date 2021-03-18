@@ -15,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 define(['require',
     'backbone',
     'table-dragger',
@@ -246,6 +245,7 @@ define(['require',
             },
             onRender: function() {
                 var that = this;
+                this.checkEntityImage = {};
                 this.commonTableOptions = {
                     collection: this.searchCollection,
                     includePagination: false,
@@ -270,6 +270,10 @@ define(['require',
                     gridOpts: {
                         emptyText: 'No Records found!',
                         className: 'table table-hover backgrid table-quickMenu colSort'
+                    },
+                    sortOpts: {
+                        sortColumn: "name",
+                        sortDirection: "ascending"
                     },
                     filterOpts: {},
                     paginatorOpts: {}
@@ -564,6 +568,14 @@ define(['require',
                     });
                 var columns = new columnCollection((that.searchCollection.dynamicTable ? that.getDaynamicColumns(that.searchCollection.toJSON()) : that.getFixedDslColumn()));
                 columns.setPositions().sort();
+                if (this.searchType == "Advanced Search" && columns.length) {
+                    //for dsl search with Select clause, default column to be use as sorting
+                    var tableColumnNames = Object.keys(that.searchCollection.toJSON()[0]);
+                    that.commonTableOptions['sortOpts'] = {
+                        sortColumn: tableColumnNames[0],
+                        sortDirection: "ascending"
+                    };
+                }
                 var table = new TableLayout(_.extend({}, that.commonTableOptions, {
                     columns: columns
                 }));
@@ -668,7 +680,7 @@ define(['require',
                             var obj = model.toJSON(),
                                 nameHtml = "",
                                 name = Utils.getName(obj);
-                            if (obj.attributes.serviceType === undefined) {
+                            if (!obj.attributes || obj.attributes.serviceType === undefined) {
                                 if (Globals.serviceTypeMap[obj.typeName] === undefined && that.entityDefCollection) {
                                     var defObj = that.entityDefCollection.fullCollection.find({ name: obj.typeName });
                                     if (defObj) {
@@ -676,7 +688,7 @@ define(['require',
                                     }
                                 }
                             } else if (Globals.serviceTypeMap[obj.typeName] === undefined) {
-                                Globals.serviceTypeMap[obj.typeName] = obj.attributes.serviceType;
+                                Globals.serviceTypeMap[obj.typeName] = obj.attributes ? obj.attributes.serviceType : null;
                             }
                             obj.serviceType = Globals.serviceTypeMap[obj.typeName];
                             if (obj.guid) {
@@ -695,6 +707,7 @@ define(['require',
                             var getImageData = function(options) {
                                 var imagePath = options.imagePath,
                                     returnImgUrl = null;
+                                that.checkEntityImage[model.get('guid')] = false;
                                 $.ajax({
                                         "url": imagePath,
                                         "method": "get",
@@ -706,6 +719,7 @@ define(['require',
                                                 "imagePath": Utils.getEntityIconPath({ entityData: obj, errorUrl: imagePath })
                                             });
                                         } else if (data) {
+                                            that.checkEntityImage[model.get('guid')] = imagePath;
                                             returnImgUrl = imagePath;
                                             that.$("img[data-imgGuid='" + obj.guid + "']").removeClass("searchTableLogoLoader").attr("src", imagePath);
                                         }
@@ -713,7 +727,13 @@ define(['require',
                             }
                             var img = "";
                             img = "<div><img data-imgGuid='" + obj.guid + "' class='searchTableLogoLoader'></div>";
-                            getImageData({ imagePath: Utils.getEntityIconPath({ entityData: obj }) });
+                            if (that.checkEntityImage[model.get('guid')] == undefined) {
+                                getImageData({ imagePath: Utils.getEntityIconPath({ entityData: obj }) });
+                            } else {
+                                if (that.checkEntityImage[model.get('guid')] != false) {
+                                    img = "<div><img data-imgGuid='" + obj.guid + "' src='" + that.checkEntityImage[model.get('guid')] + "'></div>";
+                                }
+                            }
                             return (img + nameHtml);
                         }
                     })
@@ -744,7 +764,7 @@ define(['require',
                             fromRaw: function(rawValue, model) {
                                 var obj = model.toJSON();
                                 if (obj && obj.attributes && obj.attributes.createTime) {
-                                    return new Date(obj.attributes.createTime);
+                                    return Utils.formatDate({ date: obj.attributes.createTime });
                                 } else {
                                     return '-'
                                 }
@@ -1102,31 +1122,52 @@ define(['require',
                     that.addTagModalView(guid);
                 }
             },
+            //This function checks for the lenght of Available terms and modal for adding terms is displayed accordingly.
+            assignTermModalView: function(glossaryCollection, obj) {
+                var that = this,
+                    terms = 0;
+                _.each(glossaryCollection.fullCollection.models, function(model) {
+                    if (model.get('terms')) {
+                        terms += model.get('terms').length;
+                    };
+                });
+                if (terms) {
+                    require(['views/glossary/AssignTermLayoutView'], function(AssignTermLayoutView) {
+                        var view = new AssignTermLayoutView({
+                            guid: obj.guid,
+                            multiple: obj.multiple,
+                            associatedTerms: obj.associatedTerms,
+                            callback: function() {
+                                that.multiSelectEntity = [];
+                                that.$('.multiSelectTag,.multiSelectTerm').hide();
+                                that.fetchCollection();
+                            },
+                            glossaryCollection: glossaryCollection,
+                        });
+                    });
+                } else {
+                    Utils.notifyInfo({
+                        content: "There are no available terms"
+                    });
+                }
+            },
             onClickAddTermBtn: function(e) {
                 var that = this,
                     guid = "",
                     entityGuid = $(e.currentTarget).data("guid"),
-                    associatedTerms = undefined,
-                    multiple = undefined,
-                    isTermMultiSelect = $(e.currentTarget).hasClass('multiSelectTerm');
-                if (isTermMultiSelect && this.multiSelectEntity && this.multiSelectEntity.length) {
-                    multiple = this.multiSelectEntity;
-                } else if (entityGuid) {
-                    associatedTerms = this.searchCollection.find({ guid: entityGuid }).get('meanings');
-                }
-                require(['views/glossary/AssignTermLayoutView'], function(AssignTermLayoutView) {
-                    var view = new AssignTermLayoutView({
+                    obj = {
                         guid: entityGuid,
-                        multiple: multiple,
-                        associatedTerms: associatedTerms,
-                        callback: function() {
-                            that.multiSelectEntity = [];
-                            that.$('.multiSelectTag,.multiSelectTerm').hide();
-                            that.fetchCollection();
-                        },
-                        glossaryCollection: that.glossaryCollection,
-                    });
-                });
+                        multiple: undefined,
+                        associatedTerms: undefined,
+                    },
+                    isTermMultiSelect = $(e.currentTarget).hasClass('multiSelectTerm');
+
+                that.assignTermModalView(this.glossaryCollection, obj);
+                if (isTermMultiSelect && this.multiSelectEntity && this.multiSelectEntity.length) {
+                    obj.multiple = this.multiSelectEntity;
+                } else if (entityGuid) {
+                    obj.associatedTerms = this.searchCollection.find({ guid: entityGuid }).get('meanings');
+                }
             },
             onClickTagCross: function(e) {
                 var that = this,

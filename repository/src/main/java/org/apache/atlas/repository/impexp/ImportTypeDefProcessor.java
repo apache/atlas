@@ -19,6 +19,7 @@ package org.apache.atlas.repository.impexp;
 
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.impexp.AtlasImportResult;
+import org.apache.atlas.model.typedef.AtlasBusinessMetadataDef;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
@@ -72,6 +73,10 @@ public class ImportTypeDefProcessor {
         for (AtlasRelationshipDef def : typesDef.getRelationshipDefs()) {
             def.setGuid(null);
         }
+
+        for (AtlasBusinessMetadataDef def : typesDef.getBusinessMetadataDefs()) {
+            def.setGuid(null);
+        }
     }
 
     private void updateMetricsForTypesDef(AtlasTypesDef typeDefinitionMap, AtlasImportResult result) {
@@ -80,5 +85,6 @@ public class ImportTypeDefProcessor {
         result.incrementMeticsCounter("typedef:entitydef", typeDefinitionMap.getEntityDefs().size());
         result.incrementMeticsCounter("typedef:struct", typeDefinitionMap.getStructDefs().size());
         result.incrementMeticsCounter("typedef:relationship", typeDefinitionMap.getRelationshipDefs().size());
+        result.incrementMeticsCounter("typedef:businessmetadata", typeDefinitionMap.getBusinessMetadataDefs().size());
     }
 }

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-define(['require', 'utils/Utils', 'marionette', 'backgrid', 'asBreadcrumbs', 'jquery-placeholder'], function(require, Utils) {
+define(['require', 'utils/Utils', 'lossless-json', 'marionette', 'backgrid', 'asBreadcrumbs', 'jquery-placeholder'], function(require, Utils, LosslessJSON) {
     'use strict';
 
     Backbone.$.ajaxSetup({
@@ -42,7 +42,16 @@ define(['require', 'utils/Utils', 'marionette', 'backgrid', 'asBreadcrumbs', 'jq
                     if (options.cust_error) {
                         options.cust_error(that, response);
                     }
-                }
+                },
+                converters: _.extend($.ajaxSettings.converters, {
+                    "text json": function(data) {
+                        try {
+                            return LosslessJSON.parse(data, function(k, v) { try { return (v.isLosslessNumber) ? v.valueOf() : v } catch (err) { return v.value } });
+                        } catch (err) {
+                            return $.parseJSON(data);
+                        }
+                    }
+                })
             })
         ]);
     }
@@ -202,8 +211,12 @@ define(['require', 'utils/Utils', 'marionette', 'backgrid', 'asBreadcrumbs', 'jq
         render: function() {
             /* follow along with the original render really... */
             this.$el.empty();
-
+            var isExpand = true;
+            if (this.column.get('isExpandVisible')) {
+                isExpand = this.column.get('isExpandVisible')(this.$el, this.model);
+            }
             this.$toggleEl = $(this.toggle).addClass(this.toggleClass).addClass(this.toggleCollapsedClass);
+            this.$toggleEl = isExpand ? this.$toggleEl : this.$toggleEl.addClass("noToggle");
 
             this.$el.append(this.$toggleEl);
 
@@ -215,6 +228,10 @@ define(['require', 'utils/Utils', 'marionette', 'backgrid', 'asBreadcrumbs', 'jq
         setToggle: function() {
             var detailsRow = this.$el.data('details');
             var toggle = this.$toggleEl;
+            /* if there's details data is not there/undefined and $toggleEl having noToggle class, no need to expand */
+            if (!detailsRow && this.$toggleEl.hasClass('noToggle')) {
+                return false;
+            }
 
             /* if there's details data already stored, then we'll remove it */
             if (detailsRow) {

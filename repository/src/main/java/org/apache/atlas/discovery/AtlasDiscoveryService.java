@@ -83,15 +83,11 @@ public interface AtlasDiscoveryService {
      *
      * @param guid unique ID of the entity.
      * @param relation relation name.
-     * @param attributes set of attributes in search result.
-     * @param sortByAttribute sort the result using this attribute name, default value is 'name'
-     * @param sortOrder sorting order
-     * @param excludeDeletedEntities exclude deleted entities in search result.
-     * @param limit number of resultant rows (for pagination). [ limit > 0 ] and [ limit < maxlimit ]. -1 maps to atlas.search.defaultlimit property.
-     * @param offset offset to the results returned (for pagination). [ offset >= 0 ]. -1 maps to offset 0.
+     * @param getApproximateCount
+     * @param searchParameters
      * @return AtlasSearchResult
      */
-    AtlasSearchResult searchRelatedEntities(String guid, String relation, Set<String> attributes, String sortByAttribute, SortOrder sortOrder, boolean excludeDeletedEntities, int limit, int offset) throws AtlasBaseException;
+     AtlasSearchResult searchRelatedEntities(String guid, String relation, boolean getApproximateCount, SearchParameters searchParameters) throws AtlasBaseException;
 
     /**
      *

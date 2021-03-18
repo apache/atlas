@@ -205,29 +205,31 @@ public class AtlasSimpleAuthzPolicy implements Serializable {
     public static class AtlasEntityPermission implements Serializable {
         private static final long serialVersionUID = 1L;
 
-        private List<String> privileges;       // name of AtlasPrivilege enum, wildcards supported
-        private List<String> entityTypes;      // name of entity-type, wildcards supported
-        private List<String> entityIds;        // value of entity-unique attribute, wildcards supported
-        private List<String> classifications;  // name of classification-type, wildcards supported
-        private List<String> labels;           // labels, wildcards supported
-        private List<String> businessMetadata; // name of business-metadata, wildcards supported
-        private List<String> attributes;       // name of entity-attribute, wildcards supported
+        private List<String> privileges;            // name of AtlasPrivilege enum, wildcards supported
+        private List<String> entityTypes;           // name of entity-type, wildcards supported
+        private List<String> entityIds;             // value of entity-unique attribute, wildcards supported
+        private List<String> entityClassifications; // name of entity classification-type, wildcards supported
+        private List<String> labels;                // labels, wildcards supported
+        private List<String> businessMetadata;      // name of business-metadata, wildcards supported
+        private List<String> attributes;            // name of entity-attribute, wildcards supported
+        private List<String> classifications;       // name of classification-type, wildcards supported
 
         public AtlasEntityPermission() {
         }
 
         public AtlasEntityPermission(List<String> privileges, List<String> entityTypes, List<String> entityIds, List<String> classifications, List<String> attributes) {
-            this(privileges, entityTypes, entityIds, classifications, attributes, null, null);
+            this(privileges, entityTypes, entityIds, classifications, attributes, null, null, null);
         }
 
-        public AtlasEntityPermission(List<String> privileges, List<String> entityTypes, List<String> entityIds, List<String> classifications, List<String> labels, List<String> businessMetadata, List<String> attributes) {
-            this.privileges       = privileges;
-            this.entityTypes      = entityTypes;
-            this.entityIds        = entityIds;
-            this.classifications  = classifications;
-            this.labels           = labels;
-            this.businessMetadata = businessMetadata;
-            this.attributes       = attributes;
+        public AtlasEntityPermission(List<String> privileges, List<String> entityTypes, List<String> entityIds, List<String> entityClassifications, List<String> labels, List<String> businessMetadata, List<String> attributes, List<String> classifications) {
+            this.privileges            = privileges;
+            this.entityTypes           = entityTypes;
+            this.entityIds             = entityIds;
+            this.entityClassifications = entityClassifications;
+            this.labels                = labels;
+            this.businessMetadata      = businessMetadata;
+            this.attributes            = attributes;
+            this.classifications       = classifications;
         }
 
         public List<String> getPrivileges() {
@@ -254,12 +256,12 @@ public class AtlasSimpleAuthzPolicy implements Serializable {
             this.entityIds = entityIds;
         }
 
-        public List<String> getClassifications() {
-            return classifications;
+        public List<String> getEntityClassifications() {
+            return entityClassifications;
         }
 
-        public void setClassifications(List<String> classifications) {
-            this.classifications = classifications;
+        public void setEntityClassifications(List<String> entityClassifications) {
+            this.entityClassifications = entityClassifications;
         }
 
         public List<String> getLabels() {
@@ -284,6 +286,14 @@ public class AtlasSimpleAuthzPolicy implements Serializable {
 
         public void setAttributes(List<String> attributes) {
             this.attributes = attributes;
+        }
+
+        public List<String> getClassifications() {
+            return classifications;
+        }
+
+        public void setClassifications(List<String> classifications) {
+            this.classifications = classifications;
         }
     }
 

@@ -43,8 +43,8 @@ public abstract class ConcurrentPatchProcessor {
     private static final String BATCH_SIZE_PROPERTY  = "atlas.patch.batchSize";
     private static final String ATLAS_SOLR_SHARDS    = "ATLAS_SOLR_SHARDS";
     private static final String WORKER_NAME_PREFIX   = "patchWorkItem";
-    private static final int    NUM_WORKERS;
-    private static final int    BATCH_SIZE;
+    public static final int    NUM_WORKERS;
+    public static final int    BATCH_SIZE;
 
     private final EntityGraphMapper        entityGraphMapper;
     private final AtlasGraph               graph;
@@ -61,7 +61,7 @@ public abstract class ConcurrentPatchProcessor {
             numWorkers = config.getInt(NUM_WORKERS_PROPERTY, config.getInt(ATLAS_SOLR_SHARDS, 1) * 3);
             batchSize  = config.getInt(BATCH_SIZE_PROPERTY, 300);
 
-            LOG.info("UniqueAttributePatch: {}={}, {}={}", NUM_WORKERS_PROPERTY, numWorkers, BATCH_SIZE_PROPERTY, batchSize);
+            LOG.info("ConcurrentPatchProcessor: {}={}, {}={}", NUM_WORKERS_PROPERTY, numWorkers, BATCH_SIZE_PROPERTY, batchSize);
         } catch (Exception e) {
             LOG.error("Error retrieving configuration.", e);
         }
@@ -201,10 +201,6 @@ public abstract class ConcurrentPatchProcessor {
             }
 
             if (AtlasGraphUtilsV2.isTypeVertex(vertex)) {
-                return;
-            }
-
-            if (AtlasGraphUtilsV2.getState(vertex) != AtlasEntity.Status.ACTIVE) {
                 return;
             }
 

@@ -63,7 +63,7 @@ fi
 ATLASCPPATH=${ATLASCPPATH}:${ATLAS_CONF_DIR}
 
 # log dir for applications
-ATLAS_LOG_DIR="${ATLAS_LOG_DIR:-$BASEDIR/logs}"
+ATLAS_LOG_DIR="${ATLAS_LOG_DIR:-/var/log/atlas}"
 export ATLAS_LOG_DIR
 LOGFILE="$ATLAS_LOG_DIR/import-kafka.log"
 

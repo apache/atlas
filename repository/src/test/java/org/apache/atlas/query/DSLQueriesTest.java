@@ -22,8 +22,8 @@ import org.apache.atlas.TestModules;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
-import org.apache.atlas.runner.LocalSolrRunner;
 import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,11 +36,14 @@ import org.testng.annotations.Test;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
-import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
@@ -52,12 +55,14 @@ public class DSLQueriesTest extends BasicTestSetup {
     private static final Logger LOG = LoggerFactory.getLogger(DSLQueriesTest.class);
 
     private final int DEFAULT_LIMIT = 25;
+
     @Inject
     private EntityDiscoveryService discoveryService;
 
     @BeforeClass
     public void setup() throws Exception {
-        LocalSolrRunner.start();
+        super.initialize();
+
         setupTestData();
 
         pollForData();
@@ -74,38 +79,44 @@ public class DSLQueriesTest extends BasicTestSetup {
                 {"Employee", 4},
         };
 
-        int pollingAttempts = 5;
-        int pollingBackoff  = 0; // in msecs
-
+        int     pollingAttempts = 5;
+        int     pollingBackoff  = 0; // in msecs
         boolean success;
 
         for (int attempt = 0; attempt < pollingAttempts; attempt++, pollingBackoff += attempt * 5000) {
             LOG.debug("Polling -- Attempt {}, Backoff {}", attempt, pollingBackoff);
 
             success = false;
+
             for (Object[] verificationQuery : basicVerificationQueries) {
-                String query = (String) verificationQuery[0];
-                int expected = (int) verificationQuery[1];
+                String query    = (String) verificationQuery[0];
+                int    expected = (int) verificationQuery[1];
 
                 try {
                     AtlasSearchResult result = discoveryService.searchUsingDslQuery(query, 25, 0);
+
                     if (result.getEntities() == null || result.getEntities().isEmpty()) {
                         LOG.warn("DSL {} returned no entities", query);
+
                         success = false;
                     } else if (result.getEntities().size() != expected) {
                         LOG.warn("DSL {} returned unexpected number of entities. Expected {} Actual {}", query, expected, result.getEntities().size());
+
                         success = false;
                     } else {
                         success = true;
                     }
                 } catch (AtlasBaseException e) {
                     LOG.error("Got exception for DSL {}, errorCode: {}", query, e.getAtlasErrorCode());
+
                     waitOrBailout(pollingAttempts, pollingBackoff, attempt);
                 }
             }
+
             // DSL queries were successful
             if (success) {
                 LOG.info("Polling was success");
+
                 break;
             } else {
                 waitOrBailout(pollingAttempts, pollingBackoff, attempt);
@@ -116,9 +127,11 @@ public class DSLQueriesTest extends BasicTestSetup {
     private void waitOrBailout(final int pollingAttempts, final int pollingBackoff, final int attempt) throws InterruptedException {
         if (attempt == pollingAttempts - 1) {
             LOG.error("Polling failed after {} attempts", pollingAttempts);
+
             throw new SkipException("Polling for test data was unsuccessful");
         } else {
             LOG.warn("Waiting for {} before polling again", pollingBackoff);
+
             Thread.sleep(pollingBackoff);
         }
     }
@@ -127,9 +140,7 @@ public class DSLQueriesTest extends BasicTestSetup {
     public void teardown() throws Exception {
         AtlasGraphProvider.cleanup();
 
-        if (useLocalSolr()) {
-            LocalSolrRunner.stop();
-        }
+        super.cleanup();
     }
 
     @DataProvider(name = "comparisonQueriesProvider")
@@ -194,12 +205,41 @@ public class DSLQueriesTest extends BasicTestSetup {
 
     @Test(dataProvider = "comparisonQueriesProvider")
     public void comparison(String query, int expected) throws AtlasBaseException {
-        LOG.debug(query);
         AtlasSearchResult searchResult = discoveryService.searchUsingDslQuery(query, DEFAULT_LIMIT, 0);
+
         assertSearchResult(searchResult, expected, query);
 
         AtlasSearchResult searchResult2 = discoveryService.searchUsingDslQuery(query.replace("where", " "), DEFAULT_LIMIT, 0);
+
         assertSearchResult(searchResult2, expected, query);
+    }
+
+    @DataProvider(name = "glossaryTermQueries")
+    private Object[][] glossaryTermQueries() {
+        return new Object[][]{
+                {"hive_table hasTerm modernTrade", 2, new ListValidator("logging_fact_monthly_mv", "time_dim")},
+                {"hive_table hasTerm \"modernTrade@salesGlossary\"", 2, new ListValidator("logging_fact_monthly_mv", "time_dim")},
+                {"hive_table hasTerm \"modernTrade@salesGlossary\" where hive_table.name = \"time_dim\"", 1, new ListValidator("time_dim")},
+                {"hive_table hasTerm \"modernTrade@salesGlossary\" select name", 2, null},
+                {"hive_table hasTerm \"modernTrade@salesGlossary\" limit 1", 1, null},
+                {"hive_table hasTerm \"modernTrade@salesGlossary\" or hive_table hasTerm \"ecommerce@salesGlossary\"", 3, new ListValidator("logging_fact_monthly_mv", "time_dim", "product_dim")},
+                {"hive_table hasTerm \"modernTrade@salesGlossary\" and hive_table isA Dimension",1, new ListValidator( "time_dim")},
+                {"hive_table hasTerm \"modernTrade@salesGlossary\" and db.name = \"Sales\" or (hive_table.name = \"sales_fact_monthly_mv\")", 2, new ListValidator("sales_fact_monthly_mv", "time_dim")},
+                {"hive_table where hive_table hasTerm \"modernTrade@salesGlossary\"", 2, new ListValidator("logging_fact_monthly_mv", "time_dim")},
+                {"hive_table where (name = \"product_dim\" and hive_table hasTerm \"ecommerce@salesGlossary\")", 1, new ListValidator("product_dim")},
+                {"hive_table where (name = 'product_dim' and hive_table hasTerm 'ecommerce@salesGlossary')", 1, new ListValidator("product_dim")}
+        };
+    }
+
+    @Test(dataProvider = "glossaryTermQueries")
+    public void glossaryTerm(String query, int expected, ListValidator lvExpected) throws AtlasBaseException {
+        AtlasSearchResult result = queryAssert(query, expected, DEFAULT_LIMIT, 0);
+
+        if (lvExpected == null) {
+            return;
+        }
+
+        ListValidator.assertLv(ListValidator.from(result), lvExpected);
     }
 
     @DataProvider(name = "basicProvider")
@@ -212,6 +252,7 @@ public class DSLQueriesTest extends BasicTestSetup {
                 {"hive_db as d select d", 3},
                 {"hive_db where hive_db.name=\"Reporting\"", 1},
                 {"hive_db where hive_db.name=\"Reporting\" select name, owner", 1},
+                {"hive_column where name='time_id' select name", 1},
                 {"hive_db has name", 3},
                 {"from hive_table", 10},
                 {"hive_table", 10},
@@ -219,8 +260,11 @@ public class DSLQueriesTest extends BasicTestSetup {
                 {"hive_column where hive_column isa PII", 4},
                 {"hive_column where hive_column isa PII select hive_column.qualifiedName", 4},
                 {"hive_column select hive_column.qualifiedName", 17},
+                {"hive_column select hive_column.qualifiedName, hive_column.description", 17},
                 {"hive_column select qualifiedName", 17},
+                {"hive_column select qualifiedName, description", 17},
                 {"hive_column where hive_column.name=\"customer_id\"", 2},
+                {"hive_column where hive_column.name=\"customer_id\" select qualifiedName, description", 2},
                 {"from hive_table select hive_table.qualifiedName", 10},
                 {"hive_db where (name = \"Reporting\")", 1},
                 {"hive_db where (name = \"Reporting\") select name as _col_0, owner as _col_1", 1},
@@ -230,6 +274,7 @@ public class DSLQueriesTest extends BasicTestSetup {
                 {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1", 1},
                 {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1", 1},
                 {"hive_table where (name = \"sales_fact\" and db.name = \"Sales\") select name, createTime", 1},
+                {"hive_table where (name = \"time_dim\" and db.name = \"Sales\") or (name = \"sales_fact\" and db.name = \"Sales\") select name, createTime", 2},
                 {"Dimension", 9},
                 {"JdbcAccess", 2},
                 {"ETL", 10},
@@ -237,7 +282,11 @@ public class DSLQueriesTest extends BasicTestSetup {
                 {"PII", 4},
                 {"`Log Data`", 4},
                 {"DataSet where name='sales_fact'", 1},
-                {"Asset where name='sales_fact'", 1}
+                {"Asset where name='sales_fact'", 1},
+                {"hive_db _NOT_CLASSIFIED", 3},
+                {"_CLASSIFIED", 23},
+                {"hive_db where name = [\"Reporting\",\"Sales\"]", 2},
+                {"hive_db where name = ['Reporting', 'Sales']", 2},
         };
     }
 
@@ -255,6 +304,8 @@ public class DSLQueriesTest extends BasicTestSetup {
                 {"hive_db as d where d.__state = 'ACTIVE'", 3},
                 {"hive_db select __guid", 3},
                 {"hive_db where __state = 'ACTIVE' select name, __guid, __state", 3},
+                {"hive_db where __isIncomplete=true", 0},
+                {"hive_db where __isIncomplete=false", 3},
         };
     }
 
@@ -263,9 +314,12 @@ public class DSLQueriesTest extends BasicTestSetup {
         queryAssert(query, expected, DEFAULT_LIMIT, 0);
     }
 
-    private void queryAssert(String query, final int expected, final int limit, final int offset) throws AtlasBaseException {
+    private AtlasSearchResult queryAssert(String query, final int expected, final int limit, final int offset) throws AtlasBaseException {
         AtlasSearchResult searchResult = discoveryService.searchUsingDslQuery(query, limit, offset);
+
         assertSearchResult(searchResult, expected, query);
+
+        return searchResult;
     }
 
     @DataProvider(name = "limitProvider")
@@ -323,6 +377,7 @@ public class DSLQueriesTest extends BasicTestSetup {
                 {"hive_table isa Dimension limit 2 offset 1", 2},
                 {"hive_table isa Dimension limit 3 offset 1", 3},
                 {"hive_table where db.name='Sales' and db.clusterName='cl1'", 4},
+                {"hive_table where name = 'sales_fact_monthly_mv' and db.name = 'Reporting' and columns.name = 'sales'",1},
 
                 {"hive_column where hive_column isa PII", 4},
                 {"hive_column where hive_column isa PII limit 5", 4},
@@ -371,12 +426,15 @@ public class DSLQueriesTest extends BasicTestSetup {
                 {"hive_db as d where owner = ['John ETL', 'Jane BI']", 2},
                 {"hive_db as d where owner = ['John ETL', 'Jane BI'] limit 10", 2},
                 {"hive_db as d where owner = ['John ETL', 'Jane BI'] limit 10 offset 1", 1},
+                {"hive_db where description != 'Random'", 3},
+                {"hive_db where (owner = \"John ETL\" and description != Random)", 1},
+                {"hive_db where (owner = \"Tim ETL\" and description != Random)", 1},
+                {"hive_db where (name='Reporting' or ((name='Logging' and owner = 'Jane BI') and (name='Logging' and owner = 'John ETL')))", 1}
         };
     }
 
     @Test(dataProvider = "syntaxProvider")
     public void syntax(String query, int expected) throws AtlasBaseException {
-        LOG.debug(query);
         queryAssert(query, expected, DEFAULT_LIMIT, 0);
         queryAssert(query.replace("where", " "), expected, DEFAULT_LIMIT, 0);
     }
@@ -385,19 +443,19 @@ public class DSLQueriesTest extends BasicTestSetup {
     private Object[][] orderByQueries() {
         return new Object[][]{
                 {"from hive_db as h orderby h.owner limit 3", 3, "owner", true},
-                {"hive_column as c select c.qualifiedName orderby hive_column.qualifiedName ", 17, "c.qualifiedName", true},
-                {"hive_column as c select c.qualifiedName orderby hive_column.qualifiedName limit 5", 5, "c.qualifiedName", true},
-                {"hive_column as c select c.qualifiedName orderby hive_column.qualifiedName desc limit 5", 5, "c.qualifiedName", false},
+                {"hive_column as c select c.qualifiedName orderby hive_column.qualifiedName ", 17, "qualifiedName", true},
+                {"hive_column as c select c.qualifiedName orderby hive_column.qualifiedName limit 5", 5, "qualifiedName", true},
+                {"hive_column as c select c.qualifiedName orderby hive_column.qualifiedName desc limit 5", 5, "qualifiedName", false},
 
                 {"from hive_db orderby hive_db.owner limit 3", 3, "owner", true},
-                {"hive_column select hive_column.qualifiedName orderby hive_column.qualifiedName ", 17, "hive_column.qualifiedName", true},
-                {"hive_column select hive_column.qualifiedName orderby hive_column.qualifiedName limit 5", 5, "hive_column.qualifiedName", true},
-                {"hive_column select hive_column.qualifiedName orderby hive_column.qualifiedName desc limit 5", 5, "hive_column.qualifiedName", false},
+                {"hive_column select hive_column.qualifiedName orderby hive_column.qualifiedName ", 17, "qualifiedName", true},
+                {"hive_column select hive_column.qualifiedName orderby hive_column.qualifiedName limit 5", 5, "qualifiedName", true},
+                {"hive_column select hive_column.qualifiedName orderby hive_column.qualifiedName desc limit 5", 5, "qualifiedName", false},
 
                 {"from hive_db orderby owner limit 3", 3, "owner", true},
-                {"hive_column select hive_column.qualifiedName orderby qualifiedName ", 17, "hive_column.qualifiedName", true},
-                {"hive_column select hive_column.qualifiedName orderby qualifiedName limit 5", 5, "hive_column.qualifiedName", true},
-                {"hive_column select hive_column.qualifiedName orderby qualifiedName desc limit 5", 5, "hive_column.qualifiedName", false},
+                {"hive_column select hive_column.qualifiedName orderby qualifiedName ", 17, "qualifiedName", true},
+                {"hive_column select hive_column.qualifiedName orderby qualifiedName limit 5", 5, "qualifiedName", true},
+                {"hive_column select hive_column.qualifiedName orderby qualifiedName desc limit 5", 5, "qualifiedName", false},
 
                 {"from hive_db orderby hive_db.owner limit 3", 3, "owner", true},
                 {"hive_db where hive_db.name=\"Reporting\" orderby owner", 1, "owner", true},
@@ -406,9 +464,8 @@ public class DSLQueriesTest extends BasicTestSetup {
                 {"hive_db where hive_db.name=\"Reporting\" select name, owner orderby hive_db.name ", 1, "name", true},
                 {"hive_db has name orderby hive_db.owner limit 10 offset 0", 3, "owner", true},
 
-                {"from hive_table select hive_table.owner orderby hive_table.owner", 10, "hive_table.owner", true},
-                {"from hive_table select hive_table.owner orderby hive_table.owner limit 8", 8, "hive_table.owner", true},
-
+                {"from hive_table select hive_table.owner orderby hive_table.owner", 10, "owner", true},
+                {"from hive_table select hive_table.owner orderby hive_table.owner limit 8", 8, "owner", true},
                 {"hive_table orderby hive_table.name", 10, "name", true},
 
                 {"hive_table orderby hive_table.owner", 10, "owner", true},
@@ -416,11 +473,10 @@ public class DSLQueriesTest extends BasicTestSetup {
                 {"hive_table orderby hive_table.owner limit 8 offset 0", 8, "owner", true},
                 {"hive_table orderby hive_table.owner desc limit 8 offset 0", 8, "owner", false},
 
-                {"hive_column select hive_column.qualifiedName orderby hive_column.qualifiedName ", 17, "hive_column.qualifiedName", true},
-                {"hive_column select hive_column.qualifiedName orderby hive_column.qualifiedName limit 5", 5, "hive_column.qualifiedName", true},
-                {"hive_column select hive_column.qualifiedName orderby hive_column.qualifiedName desc limit 5", 5, "hive_column.qualifiedName", false},
-
-                {"hive_column select hive_column.qualifiedName orderby hive_column.qualifiedName limit 5 offset 2", 5, "hive_column.qualifiedName", true},
+                {"hive_column select hive_column.qualifiedName orderby hive_column.qualifiedName ", 17, "qualifiedName", true},
+                {"hive_column select hive_column.qualifiedName orderby hive_column.qualifiedName limit 5", 5, "qualifiedName", true},
+                {"hive_column select hive_column.qualifiedName orderby hive_column.qualifiedName desc limit 5", 5, "qualifiedName", false},
+                {"hive_column select hive_column.qualifiedName orderby hive_column.qualifiedName limit 5 offset 2", 5, "qualifiedName", true},
 
                 {"hive_column select qualifiedName orderby hive_column.qualifiedName", 17, "qualifiedName", true},
                 {"hive_column select qualifiedName orderby hive_column.qualifiedName limit 5", 5, "qualifiedName", true},
@@ -442,168 +498,183 @@ public class DSLQueriesTest extends BasicTestSetup {
                 {"hive_db where hive_db has name orderby hive_db.owner limit 2 offset 0", 2, "owner", true},
                 {"hive_db where hive_db has name orderby hive_db.owner limit 2 offset 1", 2, "owner", true},
 
-                {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1 orderby createTime ", 1, "_col_1", true},
-                {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1 orderby createTime limit 10 ", 1, "_col_1", true},
-                {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1 orderby createTime limit 10 offset 0", 1, "_col_1", true},
-                {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1 orderby createTime limit 10 offset 5", 0, "_col_1", true},
+                {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1 orderby createTime ", 1, "createTime", true},
+                {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1 orderby createTime limit 10 ", 1, "createTime", true},
+                {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1 orderby createTime limit 10 offset 0", 1, "createTime", true},
+                {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1 orderby createTime limit 10 offset 5", 0, "createTime", true},
 
-                {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 orderby name ", 1, "_col_0", true},
-                {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 orderby name limit 10 offset 0", 1, "_col_0", true},
-                {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 orderby name limit 10 offset 1", 0, "_col_0", true},
-                {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 orderby name limit 10", 1, "_col_0", true},
-                {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 orderby name limit 0 offset 1", 0, "_col_0", true},
+                {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 orderby name ", 1, "name", true},
+                {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 orderby name limit 10 offset 0", 1, "name", true},
+                {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 orderby name limit 10 offset 1", 0, "name", true},
+                {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 orderby name limit 10", 1, "name", true},
+                {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 orderby name limit 0 offset 1", 0, "name", true},
         };
     }
 
     @Test(dataProvider = "orderByProvider")
-    public void orderBy(String query, int expected, String orderBy, boolean ascending) throws AtlasBaseException {
-        LOG.debug(query);
-        queryAssert(query, expected, DEFAULT_LIMIT, 0);
-        queryAssert(query.replace("where", " "), expected, DEFAULT_LIMIT, 0);
+    public void orderBy(String query, int expected, String attributeName, boolean ascending) throws AtlasBaseException {
+        AtlasSearchResult  searchResult = queryAssert(query, expected, DEFAULT_LIMIT, 0);
+
+        assertSortOrder(query, attributeName, ascending, searchResult.getEntities());
+
+        searchResult = queryAssert(query.replace("where", " "), expected, DEFAULT_LIMIT, 0);
+
+        assertSortOrder(query, attributeName, ascending, searchResult.getEntities());
+    }
+
+    private void assertSortOrder(String query, String attributeName, boolean ascending, List<AtlasEntityHeader> entities) {
+        if (entities == null) {
+            return;
+        }
+
+        AtlasEntityHeader prev = null;
+
+        for (AtlasEntityHeader current : entities) {
+            if (prev != null && current.hasAttribute(attributeName)) {
+                String lhs        = (String) prev.getAttribute(attributeName);
+                String rhs        = (String) current.getAttribute(attributeName);
+                int    compResult = lhs.compareTo(rhs);
+
+                if (ascending) {
+                    assertTrue(compResult <= 0, query);
+                } else {
+                    assertTrue(compResult >= 0, query);
+                }
+            }
+
+            prev = current;
+        }
     }
 
     @DataProvider(name = "likeQueriesProvider")
     private Object[][] likeQueries() {
         return new Object[][]{
-                {"hive_table qualifiedName like \"*time_dim*\"", 1},
-                {"hive_db where qualifiedName like \"qualified:R*\"", 1},
-                {"hive_table db.name=\"Sales\"", 4},
-                {"hive_table qualifiedName =\"Sales.time_dim\" AND db.name=\"Sales\"", 1},
-                {"hive_table qualifiedName like \"*time_dim*\" AND db.name=\"Sales\"", 1},
-                {"hive_table where name like \"sa?es*\"", 3},
-                {"hive_db where name like \"R*\"", 1},
-                {"hive_db where hive_db.name like \"R???rt?*\" or hive_db.name like \"S?l?s\" or hive_db.name like\"Log*\"", 3},
-                {"hive_db where hive_db.name like \"R???rt?*\" and hive_db.name like \"S?l?s\" and hive_db.name like\"Log*\"", 0},
-                {"hive_table where name like 'sales*' and db.name like 'Sa?es'", 1},
-                {"hive_table where db.name like \"Sa*\"", 4},
-                {"hive_table where db.name like \"Sa*\" and name like \"*dim\"", 3},
+                {"hive_table qualifiedName like \"*time_dim*\"", 1, new ListValidator("time_dim")},
+                {"hive_db where qualifiedName like \"qualified:R*\"", 1, new ListValidator("Reporting")},
+                {"hive_table db.name=\"Sales\"", 4, new ListValidator("customer_dim", "sales_fact", "time_dim", "product_dim")},
+                {"hive_table qualifiedName =\"Sales.time_dim\" AND db.name=\"Sales\"", 1, new ListValidator("time_dim")},
+                {"hive_table qualifiedName like \"*time_dim*\" AND db.name=\"Sales\"", 1, new ListValidator("time_dim")},
+                {"hive_table where name like \"sa?es*\"", 3, new ListValidator("sales_fact", "sales_fact_daily_mv", "sales_fact_monthly_mv")},
+                {"hive_db where name like \"R*\"", 1, new ListValidator("Reporting")},
+                {"hive_db where hive_db.name like \"R???rt?*\" or hive_db.name like \"S?l?s\" or hive_db.name like\"Log*\"", 3, new ListValidator("Reporting", "Sales", "Logging") },
+                {"hive_db where hive_db.name like \"R???rt?*\" and hive_db.name like \"S?l?s\" and hive_db.name like\"Log*\"", 0, new ListValidator()},
+                {"hive_table where name like 'sales*' and db.name like 'Sa?es'", 1, new ListValidator("sales_fact")},
+                {"hive_table where db.name like \"Sa*\"", 4, new ListValidator("customer_dim", "sales_fact", "time_dim", "product_dim")},
+                {"hive_table where db.name like \"Sa*\" and name like \"*dim\"", 3, new ListValidator("customer_dim", "product_dim", "time_dim")},
         };
     }
 
     @Test(dataProvider = "likeQueriesProvider")
-    public void likeQueries(String query, int expected) throws AtlasBaseException {
-        LOG.debug(query);
-        queryAssert(query, expected, DEFAULT_LIMIT, 0);
-        queryAssert(query.replace("where", " "), expected, DEFAULT_LIMIT, 0);
+    public void likeQueries(String query, int expected, ListValidator lv) throws AtlasBaseException {
+        queryAssert(query, expected, DEFAULT_LIMIT, 0, lv);
+        queryAssert(query.replace("where", " "), expected, DEFAULT_LIMIT, 0, lv);
+    }
+
+    private void queryAssert(String query, int expectedCount, int limit, int offset, ListValidator expected) throws AtlasBaseException {
+        AtlasSearchResult result = queryAssert(query, expectedCount, limit, offset);
+
+        ListValidator.assertLv(ListValidator.from(result), expected);
     }
 
     @DataProvider(name = "minMaxCountProvider")
     private Object[][] minMaxCountQueries() {
         return new Object[][]{
+                {"from hive_db select max(name), min(name)",
+                        new TableValidator("max(name)", "min(name)")
+                                .row("Sales", "Logging")},
                 {"from hive_db groupby (owner) select count() ",
-                        new FieldValueValidator()
-                                .withFieldNames("count()")
-                                .withExpectedValues(1)
-                                .withExpectedValues(1)
-                                .withExpectedValues(1) },
-                { "from hive_db groupby (owner) select owner, name orderby owner",
-                        new FieldValueValidator()
-                                .withFieldNames("owner", "name")
-                                .withExpectedValues("Jane BI", "Reporting")
-                                .withExpectedValues("John ETL", "Sales")
-                                .withExpectedValues("Tim ETL", "Logging") },
-                { "from hive_db groupby (owner) select Asset.owner, Asset.name, count()",
-                        new FieldValueValidator()
-                                .withFieldNames("Asset.owner", "Asset.name", "count()")
-                                .withExpectedValues("Jane BI", "Reporting", 1)
-                                .withExpectedValues("Tim ETL", "Logging", 1)
-                                .withExpectedValues("John ETL", "Sales", 1) },
-                { "from hive_db groupby (owner) select count() ",
-                        new FieldValueValidator()
-                                .withFieldNames("count()").
-                                withExpectedValues(1).
-                                withExpectedValues(1).
-                                withExpectedValues(1) },
-                { "from hive_db groupby (owner) select Asset.owner, count() ",
-                        new FieldValueValidator()
-                                .withFieldNames("Asset.owner", "count()")
-                                .withExpectedValues("Jane BI", 1)
-                                .withExpectedValues("Tim ETL", 1)
-                                .withExpectedValues("John ETL", 1) },
-                { "from hive_db groupby (owner) select count() ",
-                        new FieldValueValidator()
-                                .withFieldNames("count()")
-                                .withExpectedValues(1)
-                                .withExpectedValues(1)
-                                .withExpectedValues(1) },
+                        new TableValidator("count()")
+                                .row(1)
+                                .row(1)
+                                .row(1)},
+                {"from hive_db groupby (owner) select owner, name orderby owner",
+                        new TableValidator("owner", "name")
+                                .row("Jane BI", "Reporting")
+                                .row("John ETL", "Sales")
+                                .row("Tim ETL", "Logging")},
+                {"from hive_db groupby (owner) select Asset.owner, Asset.name, count()",
+                        new TableValidator("Asset.owner", "Asset.name", "count()")
+                                .row("Jane BI", "Reporting", 1)
+                                .row("Tim ETL", "Logging", 1)
+                                .row("John ETL", "Sales", 1)},
+                {"from hive_db groupby (owner) select count() ",
+                        new TableValidator("count()").
+                                row(1).
+                                row(1).
+                                row(1)},
+                {"from hive_db groupby (owner) select Asset.owner, count() ",
+                        new TableValidator("Asset.owner", "count()")
+                                .row("Jane BI", 1)
+                                .row("Tim ETL", 1)
+                                .row("John ETL", 1)},
+                {"from hive_db groupby (owner) select count() ",
+                        new TableValidator("count()")
+                                .row(1)
+                                .row(1)
+                                .row(1)},
+                {"from hive_db groupby (owner) select Asset.owner, count() ",
+                        new TableValidator("Asset.owner", "count()")
+                                .row("Jane BI", 1)
+                                .row("Tim ETL", 1)
+                                .row("John ETL", 1)},
 
-                { "from hive_db groupby (owner) select Asset.owner, count() ",
-                        new FieldValueValidator()
-                                .withFieldNames("Asset.owner", "count()")
-                                .withExpectedValues("Jane BI", 1)
-                                .withExpectedValues("Tim ETL", 1)
-                                .withExpectedValues("John ETL", 1) },
+                {"from hive_db groupby (owner) select Asset.owner, max(Asset.name) ",
+                        new TableValidator("Asset.owner", "max(Asset.name)")
+                                .row("Tim ETL", "Logging")
+                                .row("Jane BI", "Reporting")
+                                .row("John ETL", "Sales")},
 
-                { "from hive_db groupby (owner) select Asset.owner, max(Asset.name) ",
-                        new FieldValueValidator()
-                                .withFieldNames("Asset.owner", "max(Asset.name)")
-                                .withExpectedValues("Tim ETL", "Logging")
-                                .withExpectedValues("Jane BI", "Reporting")
-                                .withExpectedValues("John ETL", "Sales") },
+                {"from hive_db groupby (owner) select max(Asset.name) ",
+                        new TableValidator("max(Asset.name)")
+                                .row("Logging")
+                                .row("Reporting")
+                                .row("Sales")},
 
-                { "from hive_db groupby (owner) select max(Asset.name) ",
-                        new FieldValueValidator()
-                                .withFieldNames("max(Asset.name)")
-                                .withExpectedValues("Logging")
-                                .withExpectedValues("Reporting")
-                                .withExpectedValues("Sales") },
+                {"from hive_db groupby (owner) select owner, Asset.name, min(Asset.name)  ",
+                        new TableValidator("owner", "Asset.name", "min(Asset.name)")
+                                .row("Tim ETL", "Logging", "Logging")
+                                .row("Jane BI", "Reporting", "Reporting")
+                                .row("John ETL", "Sales", "Sales")},
 
-                { "from hive_db groupby (owner) select owner, Asset.name, min(Asset.name)  ",
-                        new FieldValueValidator()
-                                .withFieldNames("owner", "Asset.name", "min(Asset.name)")
-                                .withExpectedValues("Tim ETL", "Logging", "Logging")
-                                .withExpectedValues("Jane BI", "Reporting", "Reporting")
-                                .withExpectedValues("John ETL", "Sales", "Sales") },
+                {"from hive_db groupby (owner) select owner, min(Asset.name)  ",
+                        new TableValidator("owner", "min(Asset.name)")
+                                .row("Tim ETL", "Logging")
+                                .row("Jane BI", "Reporting")
+                                .row("John ETL", "Sales")},
 
-                { "from hive_db groupby (owner) select owner, min(Asset.name)  ",
-                        new FieldValueValidator()
-                                .withFieldNames("owner", "min(Asset.name)")
-                                .withExpectedValues("Tim ETL", "Logging")
-                                .withExpectedValues("Jane BI", "Reporting")
-                                .withExpectedValues("John ETL", "Sales") },
-
-                { "from hive_db groupby (owner) select min(name)  ",
-                        new FieldValueValidator()
-                                .withFieldNames("min(name)")
-                                .withExpectedValues("Reporting")
-                                .withExpectedValues("Logging")
-                                .withExpectedValues("Sales") },
-                { "from hive_db groupby (owner) select min('name') ",
-                        new FieldValueValidator()
-                                .withFieldNames("min('name')")
-                                .withExpectedValues("name")
-                                .withExpectedValues("name")
-                                .withExpectedValues("name") },
-                { "from hive_db select count() ",
-                        new FieldValueValidator()
-                                .withFieldNames("count()")
-                                .withExpectedValues(3) },
-                { "from Person select count() as 'count', max(Person.age) as 'max', min(Person.age) as 'min'",
-                        new FieldValueValidator()
-                                .withFieldNames("'count'", "'max'", "'min'")
-                                .withExpectedValues(50, 0, 4) },
-                { "from Person select count() as 'count', sum(Person.age) as 'sum'",
-                        new FieldValueValidator()
-                                .withFieldNames("'count'", "'sum'")
-                                .withExpectedValues(4, 86) },
-//                { "from hive_db groupby (owner) select min(name) orderby name limit 2 ",
-//                        new FieldValueValidator()
-//                                .withFieldNames("min(name)")
-//                                .withExpectedValues("Logging")
-//                                .withExpectedValues("Reporting") },
-//                { "from hive_db groupby (owner) select min(name) orderby name desc limit 2 ",
-//                        new FieldValueValidator()
-//                                .withFieldNames("min(name)")
-//                                .withExpectedValues("Reporting")
-//                                .withExpectedValues("Sales") }
+                {"from hive_db groupby (owner) select min(name)  ",
+                        new TableValidator("min(name)")
+                                .row("Reporting")
+                                .row("Logging")
+                                .row("Sales")},
+                {"from hive_db groupby (owner) select min('name') ",
+                        new TableValidator("min('name')")
+                                .row("Reporting")
+                                .row("Logging")
+                                .row("Sales")},
+                {"from hive_db select count() ",
+                        new TableValidator("count()")
+                                .row(3)},
+                {"from Person select count() as 'count', max(Person.age) as 'max', min(Person.age) as 'min'",
+                        new TableValidator("'count'", "'max'", "'min'")
+                                .row(4, 50.0f, 0.0f)},
+                {"from Person select count() as 'count', sum(Person.age) as 'sum'",
+                        new TableValidator("'count'", "'sum'")
+                                .row(4, 86.0)},
+                {"from Asset where __isIncomplete = false groupby (__typeName)  select __typeName, count()",
+                        new TableValidator("__typeName", "count()")
+                                .row("Asset", 1)
+                                .row("hive_table", 10)
+                                .row("hive_column", 17)
+                                .row("hive_db", 3)
+                                .row("hive_process", 7)
+                }
         };
     }
 
     @Test(dataProvider = "minMaxCountProvider")
-    public void minMaxCount(String query, FieldValueValidator fv) throws AtlasBaseException {
-        LOG.debug(query);
+    public void minMaxCount(String query, TableValidator fv) throws AtlasBaseException {
         queryAssert(query, fv);
-        queryAssert(query.replace("where", " "), fv);
     }
 
     @DataProvider(name = "errorQueriesProvider")
@@ -624,7 +695,9 @@ public class DSLQueriesTest extends BasicTestSetup {
                 {"hive_table select db.name, columns"}, // Can't select more than one referred attribute
                 {"hive_table select owner, columns"}, // Can't select a mix of immediate attribute and referred entity
                 {"hive_table select owner, db.name"}, // Same as above
-                {"hive_order"} // From src should be an Entity or Classification
+                {"hive_order"}, // From src should be an Entity or Classification
+                {"hive_table hasTerm modernTrade@salesGlossary"},//should be encoded with double quotes
+
         };
     }
 
@@ -640,29 +713,22 @@ public class DSLQueriesTest extends BasicTestSetup {
     @Test(dataProvider = "errorQueriesProvider", expectedExceptions = { AtlasBaseException.class })
     public void errorQueries(String query) throws AtlasBaseException {
         LOG.debug(query);
+
         discoveryService.searchUsingDslQuery(query, DEFAULT_LIMIT, 0);
     }
 
-    private void queryAssert(String query, FieldValueValidator fv) throws AtlasBaseException {
+    private void queryAssert(String query, TableValidator fv) throws AtlasBaseException {
         AtlasSearchResult searchResult = discoveryService.searchUsingDslQuery(query, DEFAULT_LIMIT, 0);
-        assertSearchResult(searchResult, fv);
-    }
 
-    private void assertSearchResult(AtlasSearchResult searchResult, FieldValueValidator expected) {
         assertNotNull(searchResult);
         assertNull(searchResult.getEntities());
 
-        assertEquals(searchResult.getAttributes().getName().size(), expected.getFieldNamesCount());
-        for (int i = 0; i < searchResult.getAttributes().getName().size(); i++) {
-            String s = searchResult.getAttributes().getName().get(i);
-            assertEquals(s, expected.fieldNames[i]);
-        }
-
-        assertEquals(searchResult.getAttributes().getValues().size(), expected.values.size());
+        TableValidator.assertFv(TableValidator.from(searchResult.getAttributes()), fv);
     }
 
     private void assertSearchResult(AtlasSearchResult searchResult, int expected, String query) {
         assertNotNull(searchResult);
+
         if(expected == 0) {
             assertTrue(searchResult.getAttributes() == null || CollectionUtils.isEmpty(searchResult.getAttributes().getValues()));
             assertNull(searchResult.getEntities(), query);
@@ -675,35 +741,117 @@ public class DSLQueriesTest extends BasicTestSetup {
         }
     }
 
-    private class FieldValueValidator {
-        class ResultObject {
-            Map<String, Object> fieldValues = new HashMap<>();
+    private static class TableValidator {
+        static class NameValueEntry {
+            Map<String, Object> items = new LinkedHashMap<>();
 
             public void setFieldValue(String string, Object object) {
-                fieldValues.put(string, object);
+                items.put(string, object);
             }
         }
 
-        private String[] fieldNames;
-        private List<ResultObject> values = new ArrayList<>();
+        public String[]             fieldNames;
+        public List<NameValueEntry> values = new ArrayList<>();
 
-        public FieldValueValidator withFieldNames(String... fieldNames) {
+        public TableValidator() {
+        }
+
+        public TableValidator(String... fieldNames) {
+            header(fieldNames);
+        }
+
+        public TableValidator header(String... fieldNames) {
             this.fieldNames = fieldNames;
+
             return this;
         }
 
-        public FieldValueValidator withExpectedValues(Object... values) {
-            ResultObject obj = new ResultObject();
+        public TableValidator row(Object... values) {
+            NameValueEntry obj = new NameValueEntry();
+
             for (int i = 0; i < fieldNames.length; i++) {
                 obj.setFieldValue(fieldNames[i], values[i]);
             }
 
             this.values.add(obj);
+
             return this;
         }
 
-        public int getFieldNamesCount() {
-            return (fieldNames != null) ? fieldNames.length : 0;
+        public static void assertFv(TableValidator actual, TableValidator expected) {
+            assertEquals(actual.fieldNames.length, expected.fieldNames.length);
+            assertEquals(actual.fieldNames, expected.fieldNames);
+            assertEquals(actual.values.size(), expected.values.size());
+
+            Map<String, Object> actualKeyItemsForCompare = new HashMap<>();
+            Map<String, Object> expectedItemsForCompare  = new HashMap<>();
+
+            for (int i = 0; i < actual.values.size(); i++) {
+                getMapFrom(expectedItemsForCompare, expected.values.get(i).items);
+                getMapFrom(actualKeyItemsForCompare, actual.values.get(i).items);
+            }
+
+            for (String key : actualKeyItemsForCompare.keySet()) {
+                Object actualValue   = actualKeyItemsForCompare.get(key);
+                Object expectedValue = expectedItemsForCompare.get(key);
+
+                assertNotNull(actualValue, "Key: " + key + ": Failed!");
+                assertEquals(actualValue, expectedValue, "Key: " + key + ": Value compare failed!");
+            }
+        }
+
+        private static Map<String, Object> getMapFrom(Map<String, Object> valuesMap, Map<String, Object> linkedHashMap) {
+            for (Map.Entry<String, Object> entry : linkedHashMap.entrySet()) {
+                String key = entry.getValue().toString();
+
+                valuesMap.put(key, linkedHashMap);
+                break;
+            }
+
+            return valuesMap;
+        }
+
+        public static TableValidator from(AtlasSearchResult.AttributeSearchResult searchResult) {
+            TableValidator fv = new TableValidator();
+
+            fv.header(searchResult.getName().toArray(new String[]{}));
+
+            for (int i = 0; i < searchResult.getValues().size(); i++) {
+                List list = searchResult.getValues().get(i);
+
+                fv.row(list.toArray());
+            }
+
+            return fv;
+        }
+    }
+
+    private static class ListValidator {
+        private Set<String> values;
+        public ListValidator(String... vals) {
+            values = Arrays.stream(vals).collect(Collectors.toSet());
+        }
+
+        public static void assertLv(ListValidator actual, ListValidator expected) {
+            String errorMessage = String.format("Expected: %s\r\nActual: %s", expected.values, actual.values);
+
+            assertEquals(actual.values.size(), expected.values.size(), errorMessage);
+
+            if (expected.values.size() > 0) {
+                for (String expectedVal : expected.values) {
+                    assertTrue(actual.values.contains(expectedVal), errorMessage);
+                }
+            }
+        }
+
+        public static ListValidator from(AtlasSearchResult result) {
+            ListValidator lv = new ListValidator();
+
+            if (result.getEntities() != null) {
+                lv.values.addAll(result.getEntities().stream().map(x -> x.getDisplayText()).collect(Collectors.toSet()));
+            }
+
+            return lv;
         }
     }
 }

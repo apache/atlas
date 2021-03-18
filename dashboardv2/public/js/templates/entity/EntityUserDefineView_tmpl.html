@@ -15,9 +15,9 @@
  * limitations under the License.
 -->
 <div class="panel-group" id="accordion">
-    <div class="panel panel-default custom-panel expand_collapse_panel-icon" data-id="userDefine">
+    <div class="panel panel-default custom-panel expand_collapse_panel-icon userDefinePanel" data-id="userDefine" style="position:relative;">
         {{#ifCond customAttibutes.length "===" 0}}
-        <div class="panel-heading collapsed" data-toggle="collapse" href={{divId_1.anchor}} {{#ifCond swapItem "===" true}} aria-expanded="true" {{else}} aria-expanded="false" {{/ifCond}} style="width: 70%">
+        <div class="panel-heading" data-toggle="collapse" href={{divId_1.anchor}} {{#ifCond swapItem "===" true}} aria-expanded="true" {{else}} aria-expanded="false" {{/ifCond}} style="width: 70%">
             <h4 class="panel-title">
                 <a>User-defined properties </a>
             </h4>
@@ -36,7 +36,7 @@
         </div>
         {{/ifCond}}
         {{#ifCond readOnlyEntity "===" false}}
-        <div class="panel-actions">
+        <div class="panel-actions detailpage-panel-button">
             {{#ifCond swapItem "!==" true}}
             <button class="btn btn-action btn-sm" data-id="addAttr">
                 {{#ifCond customAttibutes.length "===" 0}} Add {{else}} Edit {{/ifCond}}
@@ -75,7 +75,7 @@
                     <div id="r_entityUserDefinedItemView"></div>
                     {{else}}
                     <div class="entity-detail-table">
-                        <table class="table">
+                        <table class="table bold-key">
                             <tbody>
                                 {{#each customAttibutes}}
                                 <tr>

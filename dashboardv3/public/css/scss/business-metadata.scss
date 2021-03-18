@@ -90,6 +90,10 @@
 
 .business-metadata-details,
 .admin-details {
+    .tableOverlay {
+        background-color: transparent;
+    }
+
     .expandable .attr-details {
         max-height: 300px;
         overflow: auto;
@@ -97,8 +101,18 @@
         width: calc(100% - 30px);
     }
 
-    .admin-type-dropdown {
-        width: 100px;
+    .expandable .admin-audit-details {
+        display: flex;
+        flex-wrap: wrap;
+        margin-left: 20px;
+
+        .attr-type-container {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 5px 10px;
+            margin: 5px;
+            width: 32%;
+        }
     }
 
     .expandable .admin-attr-details {
@@ -106,6 +120,25 @@
         margin-left: 20px;
         width: calc(100% - 27px);
     }
+
+    .import-export .admin-audit-details {
+        display: table;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+
+        tr>td:nth-child(2) {
+            text-align: right;
+        }
+    }
+}
+
+.admin-details .expandable .admin-audit-details .attr-type-container {
+    max-height: 200px;
+    overflow: auto;
+}
+
+.admin-details .attributeResultContainer {
+    float: left;
 }
 
 .tab-pane {
@@ -155,7 +188,7 @@
 
 .business-metadata-attr-tableOverlay {
     position: absolute;
-    width: 100%;
+    width: calc(100% - 40px);
     height: 100%;
     background: #808080;
     z-index: 99;

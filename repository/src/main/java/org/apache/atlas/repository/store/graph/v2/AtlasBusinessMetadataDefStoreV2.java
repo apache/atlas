@@ -29,6 +29,7 @@ import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.type.AtlasBusinessMetadataType;
+import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.typesystem.types.DataTypes;
@@ -68,6 +69,8 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
                     DataTypes.TypeCategory.BUSINESS_METADATA.name());
         }
 
+        AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_CREATE, businessMetadataDef), "create businessMetadata-def ", businessMetadataDef.getName());
+
         AtlasVertex ret = typeDefStore.findTypeVertexByName(businessMetadataDef.getName());
 
         if (ret != null) {
@@ -104,7 +107,16 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
             LOG.debug("==> AtlasBusinessMetadataDefStoreV2.create({}, {})", businessMetadataDef, preCreateResult);
         }
 
-        AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_CREATE, businessMetadataDef), "create businessMetadata-def ", businessMetadataDef.getName());
+        verifyAttributeTypeReadAccess(businessMetadataDef.getAttributeDefs());
+
+        if (CollectionUtils.isNotEmpty(businessMetadataDef.getAttributeDefs())) {
+            AtlasBusinessMetadataType businessMetadataType = typeRegistry.getBusinessMetadataTypeByName(businessMetadataDef.getName());
+            for (AtlasStructType.AtlasAttribute attribute : businessMetadataType.getAllAttributes().values()) {
+                AtlasBusinessMetadataType.AtlasBusinessAttribute bmAttribute = (AtlasBusinessMetadataType.AtlasBusinessAttribute) attribute;
+                verifyTypesReadAccess(bmAttribute.getApplicableEntityTypes());
+            }
+        }
+
 
         AtlasVertex vertex = (preCreateResult == null) ? preCreate(businessMetadataDef) : preCreateResult;
 
@@ -184,6 +196,16 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
     public AtlasBusinessMetadataDef update(AtlasBusinessMetadataDef typeDef) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasBusinessMetadataDefStoreV2.update({})", typeDef);
+        }
+
+        verifyAttributeTypeReadAccess(typeDef.getAttributeDefs());
+
+        if (CollectionUtils.isNotEmpty(typeDef.getAttributeDefs())) {
+            AtlasBusinessMetadataType businessMetadataType = typeRegistry.getBusinessMetadataTypeByName(typeDef.getName());
+            for (AtlasStructType.AtlasAttribute attribute : businessMetadataType.getAllAttributes().values()) {
+                AtlasBusinessMetadataType.AtlasBusinessAttribute bmAttribute = (AtlasBusinessMetadataType.AtlasBusinessAttribute) attribute;
+                verifyTypesReadAccess(bmAttribute.getApplicableEntityTypes());
+            }
         }
 
         validateType(typeDef);
