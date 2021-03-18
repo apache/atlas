@@ -1,5 +1,7 @@
 *
 !config
-!dist/apache-atlas-*-bin.tar.gz
+!dist/apache-atlas-*-hbase-hook.tar.gz
+!dist/apache-atlas-*-hive-hook.tar.gz
+!dist/apache-atlas-*-server.tar.gz
 !downloads/*
 !scripts/*

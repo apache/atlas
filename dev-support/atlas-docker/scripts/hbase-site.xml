@@ -49,4 +49,8 @@
     <name>hbase.zookeeper.quorum</name>
     <value>atlas-zk.example.com</value>
   </property>
+  <property>
+    <name>hbase.coprocessor.master.classes</name>
+    <value>org.apache.atlas.hbase.hook.HBaseAtlasCoprocessor</value>
+  </property>
 </configuration>

@@ -16,12 +16,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-echo "export JAVA_HOME=${JAVA_HOME}" >> ${HBASE_HOME}/conf/hbase-env.sh
+service ssh start
 
-cat <<EOF > /etc/ssh/ssh_config
-Host *
-   StrictHostKeyChecking no
-   UserKnownHostsFile=/dev/null
-EOF
+if [ ! -e ${HIVE_HOME}/.setupDone ]
+then
+  su -c "ssh-keygen -t rsa -P '' -f ~/.ssh/id_rsa" hdfs
+  su -c "cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys" hdfs
+  su -c "chmod 0600 ~/.ssh/authorized_keys" hdfs
 
-chown -R hbase:hadoop /opt/hbase/
+  su -c "ssh-keygen -t rsa -P '' -f ~/.ssh/id_rsa" yarn
+  su -c "cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys" yarn
+  su -c "chmod 0600 ~/.ssh/authorized_keys" yarn
+
+  echo "ssh" > /etc/pdsh/rcmd_default
+
+  ${ATLAS_SCRIPTS}/atlas-hive-setup.sh
+
+  touch ${HIVE_HOME}/.setupDone
+fi
+
+su -c "${HIVE_HOME}/bin/hiveserver2" hive
+
+HIVESERVER2_PID=`ps -ef  | grep -v grep | grep -i "org.apache.hive.service.server.HiveServer2" | awk '{print $2}'`
+
+# prevent the container from exiting
+tail --pid=$HIVESERVER2_PID -f /dev/null
