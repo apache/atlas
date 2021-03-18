@@ -137,8 +137,7 @@ define(['require',
                     if ((typename === "float" || typename === "array<float>") && event.which == 46) {
                         return;
                     }
-                    if ((event.which < 48 || event.which > 57)) {
-
+                    if ((event.which < 48 || event.which > 57) && event.key !== "-") {
                         event.preventDefault();
                     }
                 });
@@ -232,7 +231,16 @@ define(['require',
                         }
                         var opt = {
                             tags: selectEl.data("tags") ? true : false,
-                            multiple: selectEl.data("multi")
+                            multiple: selectEl.data("multi"),
+                            createTag: function(params) {
+                                var option = params.term;
+                                if ($.isNumeric(option)) {
+                                    return {
+                                        id: option,
+                                        text: option
+                                    }
+                                }
+                            }
                         }
                         if (!selectEl.data("enum")) {
                             opt.data = data;
