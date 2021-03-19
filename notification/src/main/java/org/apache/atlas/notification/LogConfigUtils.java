@@ -18,13 +18,6 @@
 package org.apache.atlas.notification;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.core.Appender;
-import org.apache.logging.log4j.core.config.Configuration;
-import org.apache.logging.log4j.core.LoggerContext;
-import org.apache.logging.log4j.core.appender.FileAppender;
-import org.apache.logging.log4j.core.appender.RollingFileAppender;
-import org.apache.logging.log4j.core.appender.RollingRandomAccessFileAppender;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,55 +46,113 @@ public class LogConfigUtils {
     }
 
     private static String getFileAppenderPath() {
-        String        ret           = StringUtils.EMPTY;
-        LoggerContext loggerContext = (LoggerContext) LogManager.getContext();
-        Configuration configuration = loggerContext.getConfiguration();
+        String ret = StringUtils.EMPTY;
 
-        for (Appender appender : configuration.getAppenders().values()) {
-            if (appender instanceof RollingRandomAccessFileAppender) {
-                ret = ((RollingRandomAccessFileAppender) appender).getFileName();
-                break;
-            } else if (appender instanceof RollingFileAppender) {
-                ret =  ((RollingRandomAccessFileAppender) appender).getFileName();
-                break;
-            } else if (appender instanceof FileAppender) {
-                ret =  ((FileAppender) appender).getFileName();
-                break;
-            } else {
-                LOG.info("Could not infer log path from this appender: {}", appender.getClass().getName());
+        try {
+            org.apache.logging.log4j.core.LoggerContext        loggerContext = (org.apache.logging.log4j.core.LoggerContext) org.apache.logging.log4j.LogManager.getContext();
+            org.apache.logging.log4j.core.config.Configuration configuration = loggerContext.getConfiguration();
+
+            String rrfaFilename = null;
+            String rfaFilename  = null;
+            String faFilename   = null;
+
+            // get log file path in the following order:
+            //   1. first RollingRandomAccessFileAppender
+            //   2. first RollingFileAppender, if no RollingRandomAccessFileAppender is found
+            //   3. first FileAppender, if no RollingFileAppender is found
+            for (org.apache.logging.log4j.core.Appender appender : configuration.getAppenders().values()) {
+                if (rrfaFilename == null && appender instanceof org.apache.logging.log4j.core.appender.RollingRandomAccessFileAppender) {
+                    org.apache.logging.log4j.core.appender.RollingRandomAccessFileAppender fileAppender = (org.apache.logging.log4j.core.appender.RollingRandomAccessFileAppender) appender;
+
+                    rrfaFilename = fileAppender.getFileName();
+
+                    LOG.debug("RollingRandomAccessFileAppender(name={}, fileName={})", fileAppender.getName(), fileAppender.getFileName());
+                } else if (rfaFilename == null && appender instanceof org.apache.logging.log4j.core.appender.RollingFileAppender) {
+                    org.apache.logging.log4j.core.appender.RollingFileAppender fileAppender = (org.apache.logging.log4j.core.appender.RollingFileAppender) appender;
+
+                    rfaFilename = fileAppender.getFileName();
+
+                    LOG.debug("RollingFileAppender(name={}, fileName={})", fileAppender.getName(), fileAppender.getFileName());
+                } else if (faFilename == null && appender instanceof org.apache.logging.log4j.core.appender.FileAppender) {
+                    org.apache.logging.log4j.core.appender.FileAppender fileAppender = (org.apache.logging.log4j.core.appender.FileAppender) appender;
+
+                    faFilename =  fileAppender.getFileName();
+
+                    LOG.debug("FileAppender(name={}, fileName={})", fileAppender.getName(), fileAppender.getFileName());
+                } else {
+                    LOG.info("Could not infer log path from this appender: {}", appender.getClass().getName());
+                }
             }
-        }
 
-        LOG.info("getFileAppenderPath(): ret={}", ret);
+            if (rrfaFilename != null) {
+                ret = rrfaFilename;
+            } else if (rfaFilename != null) {
+                ret = rfaFilename;
+            } else if (faFilename != null) {
+                ret = faFilename;
+            }
+
+            LOG.info("getFileAppenderPath(): ret={}", ret);
+        } catch (Throwable t) {
+            LOG.info("getFileAppenderPath(): failed to get log path from org.apache.logging.log4j. error: {}", t.getMessage());
+        }
 
         return ret;
     }
 
     private static String getFileAppenderPathApproach2() {
-        String ret = null;
+        String ret = StringUtils.EMPTY;
 
         try {
             org.apache.log4j.Logger rootLogger   = org.apache.log4j.Logger.getRootLogger();
             Enumeration             allAppenders = rootLogger.getAllAppenders();
 
             if (allAppenders != null) {
+                String drfaFilename = null;
+                String rfaFilename  = null;
+                String faFilename   = null;
+
+                // get log file path in the following order:
+                //   1. first DailyRollingFileAppender
+                //   2. first RollingFileAppender, if no DailyRollingFileAppender is found
+                //   3. first FileAppender, if no RollingFileAppender is found
                 while (allAppenders.hasMoreElements()) {
                     Object appender = allAppenders.nextElement();
 
-                    if (appender instanceof org.apache.log4j.FileAppender) {
+                    if (drfaFilename == null && appender instanceof org.apache.log4j.DailyRollingFileAppender) {
+                        org.apache.log4j.DailyRollingFileAppender fileAppender = (org.apache.log4j.DailyRollingFileAppender) appender;
+
+                        drfaFilename = fileAppender.getFile();
+
+                        LOG.debug("DailyRollingFileAppender(name={}, file={})", fileAppender.getName(), fileAppender.getFile());
+                    } else if (rfaFilename == null && appender instanceof org.apache.log4j.RollingFileAppender) {
+                        org.apache.log4j.RollingFileAppender fileAppender = (org.apache.log4j.RollingFileAppender) appender;
+
+                        rfaFilename = fileAppender.getFile();
+
+                        LOG.debug("RollingFileAppender(name={}, file={}, append={})", fileAppender.getName(), fileAppender.getFile());
+                    } else if (faFilename == null && appender instanceof org.apache.log4j.FileAppender) {
                         org.apache.log4j.FileAppender fileAppender = (org.apache.log4j.FileAppender) appender;
 
-                        ret = fileAppender.getName();
+                        faFilename = fileAppender.getFile();
 
-                        break;
+                        LOG.debug("FileAppender(name={}, file={}, append={})", fileAppender.getName(), fileAppender.getFile());
                     }
                 }
-            }
-        } catch (Exception e) {
-            LOG.error("getFileAppenderPathApproach2(): failed to get appender path", e);
-        }
 
-        LOG.info("getFileAppenderPathApproach2(): ret={}", ret);
+                if (drfaFilename != null) {
+                    ret = drfaFilename;
+                } else if (rfaFilename != null) {
+                    ret = rfaFilename;
+                } else if (faFilename != null) {
+                    ret = faFilename;
+                }
+            }
+
+            LOG.info("getFileAppenderPathApproach2(): ret={}", ret);
+        } catch (Throwable t) {
+            LOG.error("getFileAppenderPathApproach2(): failed to get log path from org.apache.log4j.", t);
+        }
 
         return ret;
     }
