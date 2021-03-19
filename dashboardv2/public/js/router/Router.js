@@ -270,21 +270,18 @@ define([
                     var tagValidate = paramObj.tag,
                         isTagPresent = false;
                     if ((tagValidate.indexOf('*') == -1)) {
-                        classificationDefCollection.fullCollection.each(function(model) {
+                        isTagPresent = classificationDefCollection.fullCollection.some(function(model) {
                             var name = Utils.getName(model.toJSON(), 'name');
                             if (model.get('category') == 'CLASSIFICATION') {
-                                if (tagValidate) {
-                                    if (name === tagValidate) {
-                                        isTagPresent = true;
-                                    }
-                                }
+                                return name === tagValidate;
                             }
-                        });
-                        _.each(Enums.addOnClassification, function(classificationName) {
-                            if (classificationName === tagValidate) {
-                                isTagPresent = true;
-                            }
-                        });
+                            return false;
+                        })
+                        if (!isTagPresent) {
+                            isTagPresent = Enums.addOnClassification.some(function(classificationName) {
+                                return classificationName === tagValidate;
+                            })
+                        }
                         if (!isTagPresent) {
                             tag.url = UrlLinks.classicationApiUrl(tagValidate);
                             tag.fetch({
@@ -298,10 +295,9 @@ define([
                                     renderSearchView.call();
                                 }
                             });
-                        } else {
-                            renderSearchView();
                         }
-                    } else {
+                    }
+                    if (tagValidate.indexOf('*') >= 0 || isTagPresent) {
                         renderSearchView();
                     }
                 } else {

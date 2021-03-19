@@ -116,6 +116,12 @@ define([
                     that.changeLoaderState(false);
                 }
             });
+            this.classificationAndMetricEvent.on("metricCollection:Update", function(options) {
+                that.changeLoaderState(true);
+                that.ui.refreshTree.attr("disabled", true).tooltip("hide");
+                that.ui["entitySearchTree"].jstree(true).destroy();
+                that.refresh({ type: "entity", apiCount: 0 });
+            });
         },
         initialize: function(options) {
             this.options = options;
@@ -130,11 +136,12 @@ define([
                     "classificationDefCollection",
                     "searchTableColumns",
                     "searchTableFilters",
-                    "metricCollection"
+                    "metricCollection",
+                    "classificationAndMetricEvent"
                 )
             );
             this.bindEvents();
-            this.entityCountObj = _.first(this.metricCollection.toJSON());
+            this.entityCountObj = _.first(this.metricCollection.toJSON()) || { entity: { entityActive: {}, entityDeleted: {} }, tag: { tagEntities: {} } };
             this.isEmptyServicetype = true;
             this.entityTreeData = {};
             this.typeId = null;
@@ -317,9 +324,9 @@ define([
                             serviceType = "other_types";
                         }
                         if (categoryType == "ENTITY") {
-                            var entityCount =
+                            var entityCount = that.entityCountObj ?
                                 (that.entityCountObj.entity.entityActive[model.get("name")] || 0) +
-                                (that.entityCountObj.entity.entityDeleted[model.get("name")] || 0),
+                                (that.entityCountObj.entity.entityDeleted[model.get("name")] || 0) : 0,
                                 modelname = entityCount ? model.get("name") + " (" + _.numberFormatWithComma(entityCount) + ")" : model.get("name");
                             if (that.options.value) {
                                 isSelected = that.options.value.type ? that.options.value.type == model.get("name") : false;
@@ -533,7 +540,7 @@ define([
         },
         refresh: function(options) {
             var that = this,
-                apiCount = 3,
+                apiCount = (options && options.apiCount == 0) ? options.apiCount : 3,
                 renderTree = function() {
                     if (apiCount === 0) {
                         that.renderEntityTree();
@@ -541,35 +548,42 @@ define([
                         that.ui.refreshTree.attr("disabled", false);
                     }
                 };
-            this.entityDefCollection.fetch({
-                complete: function() {
-                    that.entityDefCollection.fullCollection.comparator = function(model) {
-                        return model.get('name').toLowerCase();
-                    };
-                    that.entityDefCollection.fullCollection.sort({ silent: true });
-                    --apiCount;
-                    renderTree();
-                }
-            });
-
-            this.metricCollection.fetch({
-                complete: function() {
-                    --apiCount;
-                    that.entityCountObj = _.first(that.metricCollection.toJSON());
-                    renderTree();
-                }
-            });
-
-            this.typeHeaders.fetch({
-                complete: function() {
-                    that.typeHeaders.fullCollection.comparator = function(model) {
-                        return model.get('name').toLowerCase();
+            if (apiCount == 0) {
+                that.entityDefCollection.fullCollection.sort({ silent: true });
+                that.entityCountObj = _.first(that.metricCollection.toJSON());
+                that.typeHeaders.fullCollection.sort({ silent: true });
+                renderTree();
+            } else {
+                this.entityDefCollection.fetch({
+                    complete: function() {
+                        that.entityDefCollection.fullCollection.comparator = function(model) {
+                            return model.get('name').toLowerCase();
+                        };
+                        that.entityDefCollection.fullCollection.sort({ silent: true });
+                        --apiCount;
+                        renderTree();
                     }
-                    that.typeHeaders.fullCollection.sort({ silent: true });
-                    --apiCount;
-                    renderTree();
-                }
-            });
+                });
+
+                this.metricCollection.fetch({
+                    complete: function() {
+                        --apiCount;
+                        that.entityCountObj = _.first(that.metricCollection.toJSON());
+                        renderTree();
+                    }
+                });
+
+                this.typeHeaders.fetch({
+                    complete: function() {
+                        that.typeHeaders.fullCollection.comparator = function(model) {
+                            return model.get('name').toLowerCase();
+                        }
+                        that.typeHeaders.fullCollection.sort({ silent: true });
+                        --apiCount;
+                        renderTree();
+                    }
+                });
+            }
         },
         onClickImportBusinessMetadata: function() {
             var that = this;

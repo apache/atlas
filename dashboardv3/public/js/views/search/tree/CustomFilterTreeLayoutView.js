@@ -17,40 +17,39 @@
  */
 define([
     "require",
-    "hbs!tmpl/search/tree/EntityTreeLayoutView_tmpl",
+    "hbs!tmpl/search/tree/CustomFilterTreeLayoutView_tmpl",
     "utils/Utils",
+    "utils/Messages",
     "utils/Globals",
     "utils/UrlLinks",
     "utils/CommonViewFunction",
     "collection/VSearchList",
     "collection/VGlossaryList",
-    'utils/Enums',
     "jstree"
-], function(require, EntityLayoutViewTmpl, Utils, Globals, UrlLinks, CommonViewFunction, VSearchList, VGlossaryList, Enums) {
+], function(require, CustomFilterTreeLayoutViewTmpl, Utils, Messages, Globals, UrlLinks, CommonViewFunction, VSearchList, VGlossaryList) {
     "use strict";
 
-    var EntityTreeLayoutview = Marionette.LayoutView.extend({
-        template: EntityLayoutViewTmpl,
+    var CustomFilterTreeLayoutView = Marionette.LayoutView.extend({
 
-        regions: {},
+        _viewName: 'CustomFilterTreeLayoutView',
+
+        template: CustomFilterTreeLayoutViewTmpl,
+
+        regions: {
+
+            RSaveSearchBasic: '[data-id="r_saveSearchBasic"]'
+        },
         ui: {
             //refresh
             refreshTree: '[data-id="refreshTree"]',
             groupOrFlatTree: '[data-id="groupOrFlatTreeView"]',
-
-            // tree el
-            entitySearchTree: '[data-id="entitySearchTree"]',
-
-            // Show/hide empty values in tree
-            showEmptyServiceType: '[data-id="showEmptyServiceType"]',
-            entityTreeLoader: '[data-id="entityTreeLoader"]',
-            importBusinessMetadata: "[data-id='importBusinessMetadata']",
-            downloadBusinessMetadata: "[data-id='downloadBusinessMetadata']"
+            customFilterSearchTree: '[data-id="customFilterSearchTree"]',
+            showCustomFilter: '[data-id="showCustomFilter"]',
+            customFilterTreeLoader: '[data-id="customFilterTreeLoader"]'
         },
         templateHelpers: function() {
             return {
-                apiBaseUrl: UrlLinks.apiBaseUrl,
-                importTmplUrl: UrlLinks.businessMetadataImportTempUrl()
+                apiBaseUrl: UrlLinks.apiBaseUrl
             };
         },
         events: function() {
@@ -58,69 +57,62 @@ define([
                 that = this;
             events["click " + this.ui.refreshTree] = function(e) {
                 that.changeLoaderState(true);
-                this.ui.refreshTree.attr("disabled", true).tooltip("hide");
+                that.ui.refreshTree.attr("disabled", true).tooltip("hide");
                 var type = $(e.currentTarget).data("type");
                 e.stopPropagation();
-                that.ui[type + "SearchTree"].jstree(true).destroy();
-                that.refresh({ type: type });
+                that.refreshCustomFilterTree();
             };
-
-            // show and hide entities and classifications with 0 numbers
-            events["click " + this.ui.showEmptyServiceType] = function(e) {
-                e.stopPropagation();
-                this.isEmptyServicetype = !this.isEmptyServicetype;
-                this.entitySwitchBtnUpdate();
+            events["click " + this.ui.showCustomFilter] = function(e) {
+                that.isBasic = !that.isBasic;
+                this.customFilterSwitchBtnUpdate();
             };
-            // refresh individual tree
             events["click " + this.ui.groupOrFlatTree] = function(e) {
+                that.changeLoaderState(true);
                 var type = $(e.currentTarget).data("type");
                 e.stopPropagation();
                 this.isGroupView = !this.isGroupView;
+                this.ui.groupOrFlatTree.attr("data-original-title", (this.isGroupView ? "Show all" : "Show type"));
                 this.ui.groupOrFlatTree.tooltip('hide');
-                this.ui.groupOrFlatTree.find("i").toggleClass("fa-sitemap fa-list-ul");
+                this.ui.groupOrFlatTree.find("i").toggleClass("group-tree-deactivate");
                 this.ui.groupOrFlatTree.find("span").html(this.isGroupView ? "Show flat tree" : "Show group tree");
                 that.ui[type + "SearchTree"].jstree(true).destroy();
-                that.renderEntityTree();
-            };
-            events["click " + this.ui.importBusinessMetadata] = function(e) {
-                e.stopPropagation();
-                that.onClickImportBusinessMetadata();
-            };
-            events["click " + this.ui.downloadBusinessMetadata] = function(e) {
-                e.stopPropagation();
+                that.fetchCustomFilter();
             };
 
             return events;
         },
         bindEvents: function() {
             var that = this;
-            $('body').on('click', '.entityPopoverOptions li', function(e) {
-                that.$('.entityPopover').popover('hide');
-                that[$(this).find('a').data('fn') + "Entity"](e)
-            });
-            this.searchVent.on("Entity:Count:Update", function(options) {
-                that.changeLoaderState(true);
-                var opt = options || {};
-                if (opt && !opt.metricData) {
-                    that.metricCollection.fetch({
-                        complete: function() {
-                            that.entityCountObj = _.first(that.metricCollection.toJSON());
-                            that.fromManualRender = true;
-                            that.ui.entitySearchTree.jstree(true).refresh();
-                            that.changeLoaderState(false);
-                        }
-                    });
-                } else {
-                    that.entityCountObj = opt.metricData;
-                    that.ui.entitySearchTree.jstree(true).refresh();
-                    that.changeLoaderState(false);
-                }
-            });
-            this.classificationAndMetricEvent.on("metricCollection:Update", function(options) {
-                that.changeLoaderState(true);
-                that.ui.refreshTree.attr("disabled", true).tooltip("hide");
-                that.ui["entitySearchTree"].jstree(true).destroy();
-                that.refresh({ type: "entity", apiCount: 0 });
+            this.listenTo(
+                this.saveSearchBaiscCollection.fullCollection,
+                "reset add change remove",
+                function() {
+                    if (this.ui.customFilterSearchTree.jstree(true)) {
+                        this.ui.customFilterSearchTree.jstree(true).refresh();
+                    } else {
+                        this.renderCustomFilterTree();
+                    }
+                },
+                this
+            );
+            this.listenTo(
+                this.saveSearchAdvanceCollection.fullCollection,
+                "reset add change remove",
+                function() {
+                    if (this.ui.customFilterSearchTree.jstree(true)) {
+                        this.ui.customFilterSearchTree.jstree(true).refresh();
+                    } else {
+                        this.renderCustomFilterTree();
+                    }
+                },
+                this
+            );
+            this.searchVent.on("Save:Filter", function(data) {
+                that.saveAs();
+            })
+            $('body').on('click', '.customFilterPopoverOptions li', function(e) {
+                that.$('.customFilterPopoverOptions').popover('hide');
+                that[$(this).find('a').data('fn') + "CustomFilter"](e)
             });
         },
         initialize: function(options) {
@@ -136,338 +128,84 @@ define([
                     "classificationDefCollection",
                     "searchTableColumns",
                     "searchTableFilters",
-                    "metricCollection",
-                    "classificationAndMetricEvent"
+                    "metricCollection"
                 )
             );
+            this.saveSearchBaiscCollection = new VSearchList();
+            this.saveSearchCollection = new VSearchList();
+            this.saveSearchAdvanceCollection = new VSearchList();
+            this.saveSearchCollection.url = UrlLinks.saveSearchApiUrl();
+            this.saveSearchBaiscCollection.fullCollection.comparator = function(model) {
+                return getModelName(model);
+            }
+            this.saveSearchAdvanceCollection.fullCollection.comparator = function(model) {
+                return getModelName(model);
+            }
+
+            function getModelName(model) {
+                if (model.get('name')) {
+                    return model.get('name').toLowerCase();
+                }
+            };
             this.bindEvents();
-            this.entityCountObj = _.first(this.metricCollection.toJSON()) || { entity: { entityActive: {}, entityDeleted: {} }, tag: { tagEntities: {} } };
-            this.isEmptyServicetype = true;
-            this.entityTreeData = {};
-            this.typeId = null;
+            this.customFilterData = null;
+            this.isBasic = true;
+            this.customFilterId = null;
             this.isGroupView = true;
         },
         onRender: function() {
             this.changeLoaderState(true);
-            this.renderEntityTree();
-            this.createEntityAction();
-            this.changeLoaderState(false);
+            this.fetchCustomFilter();
         },
         changeLoaderState: function(showLoader) {
             if (showLoader) {
-                this.ui.entitySearchTree.hide();
-                this.ui.entityTreeLoader.show();
+                this.ui.customFilterSearchTree.hide();
+                this.ui.customFilterTreeLoader.show();
             } else {
-                this.ui.entitySearchTree.show();
-                this.ui.entityTreeLoader.hide();
+                this.ui.customFilterSearchTree.show();
+                this.ui.customFilterTreeLoader.hide();
             }
         },
-        createEntityAction: function() {
-            var that = this;
-            Utils.generatePopover({
-                el: this.$el,
-                contentClass: 'entityPopoverOptions',
-                popoverOptions: {
-                    selector: '.entityPopover',
-                    content: function() {
-                        var type = $(this).data('detail'),
-                            liString = "<li><i class='fa fa-search'></i><a href='javascript:void(0)' data-fn='onSelectedSearch'>Search</a></li>"
-                        return "<ul>" + liString + "</ul>";
-                    }
-                }
-            });
-        },
-        renderEntityTree: function() {
-            var that = this;
-            this.generateSearchTree({
-                $el: that.ui.entitySearchTree
-            });
-        },
-        onSearchEntityNode: function(showEmptyType) {
-            // on tree search by text, searches for all entity node, called by searchfilterBrowserLayoutView.js
-            this.isEmptyServicetype = showEmptyType;
-            this.entitySwitchBtnUpdate();
-        },
-        entitySwitchBtnUpdate: function() {
-            this.ui.showEmptyServiceType.attr("data-original-title", (this.isEmptyServicetype ? "Show" : "Hide") + " empty service types");
-            this.ui.showEmptyServiceType.tooltip('hide');
-            this.ui.showEmptyServiceType.find("i").toggleClass("fa-toggle-on fa-toggle-off");
-            this.ui.entitySearchTree.jstree(true).refresh();
-        },
         manualRender: function(options) {
-            var that = this;
             _.extend(this.options, options);
+
             if (this.options.value === undefined) {
                 this.options.value = {};
             }
-            if (!this.options.value.type) {
-                this.ui.entitySearchTree.jstree(true).deselect_all();
-                this.typeId = null;
-            } else {
-                if (that.options.value.type === "_ALL_ENTITY_TYPES" && this.typeId !== "_ALL_ENTITY_TYPES") {
-                    this.fromManualRender = true;
-                    if (this.typeId) {
-                        this.ui.entitySearchTree.jstree(true).deselect_node(this.typeId);
-                    }
-                    this.typeId = Globals[that.options.value.type].guid;
-                    this.ui.entitySearchTree.jstree(true).select_node(this.typeId);
-                } else if (this.typeId !== "_ALL_ENTITY_TYPES" && that.options.value.type !== this.typeId) {
-                    var dataFound = this.typeHeaders.fullCollection.find(function(obj) {
-                        return obj.get("name") === that.options.value.type
-                    });
-                    if (dataFound) {
-                        if ((this.typeId && this.typeId !== dataFound.get("guid")) || this.typeId === null) {
-                            if (this.typeId) {
-                                this.ui.entitySearchTree.jstree(true).deselect_node(this.typeId);
-                            }
-                            this.fromManualRender = true;
-                            this.typeId = dataFound.get("guid");
-                            this.ui.entitySearchTree.jstree(true).select_node(dataFound.get("guid"));
-                        }
-                    }
-                }
+            if (!this.options.value.isCF) {
+                this.ui.customFilterSearchTree.jstree(true).deselect_all();
+                this.customFilterId = null;
             }
+
         },
-        onNodeSelect: function(options) {
-            var that = this,
-                type,
-                name = options.node.original.name,
-                selectedNodeId = options.node.id,
-                typeValue = null,
-                params = {
-                    searchType: "basic",
-                    dslChecked: false
-                };
-            if (this.options.value) {
-                if (this.options.value.type) {
-                    params["type"] = this.options.value.type;
-                }
-                if (this.options.value.isCF) {
-                    this.options.value.isCF = null;
-                }
-                if (this.options.value.entityFilters) {
-                    params["entityFilters"] = null;
-                }
-            }
-            var getUrl = Utils.getUrlState.isSearchTab();
-            if (!getUrl) { that.typeId = null; }
-            if (that.typeId != selectedNodeId) {
-                that.typeId = selectedNodeId;
-                typeValue = name;
-                params['type'] = typeValue;
-            } else {
-                that.typeId = params["type"] = null;
-                that.ui.entitySearchTree.jstree(true).deselect_all(true);
-                if (!that.options.value.type && !that.options.value.tag && !that.options.value.term && !that.options.value.query && !this.options.value.udKeys && !this.options.value.ugLabels) {
-                    that.showDefaultPage();
-                    return;
-                }
-            }
-            var searchParam = _.extend({}, this.options.value, params);
-            this.triggerSearch(searchParam);
+        renderCustomFilterTree: function() {
+            this.generateCustomFilterTree({
+                $el: this.ui.customFilterSearchTree
+            });
+            this.createCustomFilterAction();
         },
-        showDefaultPage: function() {
-            Utils.setUrl({
-                url: '!/search',
-                mergeBrowserUrl: false,
-                trigger: true,
-                updateTabState: true
+        fetchCustomFilter: function() {
+            var that = this;
+            this.saveSearchCollection.fetch({
+                success: function(collection, data) {
+                    that.saveSearchBaiscCollection.fullCollection.reset(_.where(data, { searchType: "BASIC" }));
+                    that.saveSearchAdvanceCollection.fullCollection.reset(_.where(data, { searchType: "ADVANCED" }));
+                    that.changeLoaderState(false);
+                    that.ui.refreshTree.attr("disabled", false);
+                },
+                silent: true
             });
         },
-        triggerSearch: function(params, url) {
-            var serachUrl = url ? url : '#!/search/searchResult';
-            Utils.setUrl({
-                url: serachUrl,
-                urlParams: params,
-                mergeBrowserUrl: false,
-                trigger: true,
-                updateTabState: true
-            });
-        },
-        onSelectedSearchEntity: function() {
-            var params = {
-                searchType: "basic",
-                dslChecked: false,
-                type: this.options.value.type
-            };
-            this.triggerSearch(params);
-        },
-        getEntityTree: function() {
-            var that = this,
-                serviceTypeArr = [],
-                serviceTypeWithEmptyEntity = [],
-                type = "ENTITY",
-                entityTreeContainer = this.ui.entitytreeStructure,
-                generateTreeData = function(data) {
-                    that.typeHeaders.fullCollection.each(function(model) {
-                        var totalCount = 0,
-                            serviceType = model.toJSON().serviceType,
-                            isSelected = false,
-                            categoryType = model.toJSON().category,
-                            generateServiceTypeArr = function(entityCountArr, serviceType, children, entityCount) {
-                                if (that.isGroupView) {
-                                    if (entityCountArr[serviceType]) {
-                                        entityCountArr[serviceType]["children"].push(children);
-                                        entityCountArr[serviceType]["totalCounter"] = +entityCountArr[serviceType]["totalCounter"] + entityCount;
-                                    } else {
-                                        entityCountArr[serviceType] = [];
-                                        entityCountArr[serviceType]["name"] = serviceType;
-                                        entityCountArr[serviceType]["children"] = [];
-                                        entityCountArr[serviceType]["children"].push(children);
-                                        entityCountArr[serviceType]["totalCounter"] = entityCount;
-                                    }
-                                } else {
-                                    entityCountArr.push(children)
-                                }
-                            };
-                        if (!serviceType) {
-                            serviceType = "other_types";
-                        }
-                        if (categoryType == "ENTITY") {
-                            var entityCount = that.entityCountObj ?
-                                (that.entityCountObj.entity.entityActive[model.get("name")] || 0) +
-                                (that.entityCountObj.entity.entityDeleted[model.get("name")] || 0) : 0,
-                                modelname = entityCount ? model.get("name") + " (" + _.numberFormatWithComma(entityCount) + ")" : model.get("name");
-                            if (that.options.value) {
-                                isSelected = that.options.value.type ? that.options.value.type == model.get("name") : false;
-                                if (!that.typeId) {
-                                    that.typeId = isSelected ? model.get("guid") : null;
-                                }
-                            }
-
-                            var children = {
-                                text: _.escape(modelname),
-                                name: model.get("name"),
-                                type: model.get("category"),
-                                gType: "Entity",
-                                guid: model.get("guid"),
-                                id: model.get("guid"),
-                                model: model,
-                                parent: "#",
-                                icon: "fa fa-file-o",
-                                state: {
-                                    disabled: false,
-                                    selected: isSelected
-                                },
-                            };
-
-                            entityCount = _.isNaN(entityCount) ? 0 : entityCount;
-                            generateServiceTypeArr(serviceTypeArr, serviceType, children, entityCount);
-                            if (entityCount) {
-                                generateServiceTypeArr(serviceTypeWithEmptyEntity, serviceType, children, entityCount);
-                            }
-                        }
-                    });
-
-                    var serviceTypeData = that.isEmptyServicetype ? serviceTypeWithEmptyEntity : serviceTypeArr;
-                    if (that.isGroupView) {
-                        var serviceDataWithRootEntity = pushRootEntityToJstree.call(that, 'group', serviceTypeData);
-                        return getParentsData.call(that, serviceDataWithRootEntity);
-                    } else {
-                        return pushRootEntityToJstree.call(that, null, serviceTypeData);
-                    }
-                },
-                pushRootEntityToJstree = function(type, data) {
-                    var rootEntity = Globals[Enums.addOnEntities[0]];
-                    var isSelected = this.options.value && this.options.value.type ? this.options.value.type == rootEntity.name : false;
-                    var rootEntityNode = {
-                        text: _.escape(rootEntity.name),
-                        name: rootEntity.name,
-                        type: rootEntity.category,
-                        gType: "Entity",
-                        guid: rootEntity.guid,
-                        id: rootEntity.guid,
-                        model: rootEntity,
-                        parent: "#",
-                        icon: "fa fa-file-o",
-                        state: {
-                            // disabled: entityCount == 0 ? true : false,
-                            selected: isSelected
-                        },
-                    };
-                    if (type === 'group') {
-                        if (data.other_types === undefined) {
-                            data.other_types = { name: "other_types", children: [] };
-                        }
-                        data.other_types.children.push(rootEntityNode);
-                    } else {
-                        data.push(rootEntityNode);
-                    }
-                    return data;
-                },
-                getParentsData = function(data) {
-                    var parents = Object.keys(data),
-                        treeData = [],
-                        withoutEmptyServiceType = [],
-                        treeCoreData = null,
-                        openEntityNodesState = function(treeDate) {
-                            if (treeDate.length == 1) {
-                                _.each(treeDate, function(model) {
-                                    model.state = { opened: true }
-                                })
-                            }
-                        },
-                        generateNode = function(children) {
-                            var nodeStructure = {
-                                text: "Service Types",
-                                children: children,
-                                icon: "fa fa-folder-o",
-                                type: "ENTITY",
-                                state: { opened: true },
-                                parent: "#"
-                            }
-                            return nodeStructure;
-                        };
-                    for (var i = 0; i < parents.length; i++) {
-
-                        var checkEmptyServiceType = false,
-                            getParrent = data[parents[i]],
-                            totalCounter = getParrent.totalCounter,
-                            textName = getParrent.totalCounter ? parents[i] + " (" + _.numberFormatWithComma(totalCounter) + ")" : parents[i],
-                            parent = {
-                                icon: "fa fa-folder-o",
-                                type: type,
-                                gType: "ServiceType",
-                                children: getParrent.children,
-                                text: _.escape(textName),
-                                name: data[parents[i]].name,
-                                id: i,
-                                state: { opened: true }
-                            };
-                        if (that.isEmptyServicetype) {
-                            if (data[parents[i]].totalCounter == 0) {
-                                checkEmptyServiceType = true;
-                            }
-                        }
-                        treeData.push(parent);
-                        if (!checkEmptyServiceType) {
-                            withoutEmptyServiceType.push(parent);
-                        }
-                    }
-                    that.entityTreeData = {
-                        withoutEmptyServiceTypeEntity: generateNode(withoutEmptyServiceType),
-                        withEmptyServiceTypeEntity: generateNode(treeData)
-                    };
-
-                    treeCoreData = that.isEmptyServicetype ? withoutEmptyServiceType : treeData;
-
-                    openEntityNodesState(treeCoreData);
-                    return treeCoreData;
-                };
-            return generateTreeData();
-        },
-        generateSearchTree: function(options) {
+        generateCustomFilterTree: function(options) {
             var $el = options && options.$el,
-                data = options && options.data,
-                type = options && options.type,
                 that = this,
                 getEntityTreeConfig = function(opt) {
                     return {
                         plugins: ["search", "core", "sort", "conditionalselect", "changed", "wholerow", "node_customize"],
                         conditionalselect: function(node) {
                             var type = node.original.type;
-                            if (type == "ENTITY" || type == "GLOSSARY") {
-                                if (node.children.length || type == "GLOSSARY") {
+                            if (type == "customFilterFolder") {
+                                if (node.children.length) {
                                     return false;
                                 } else {
                                     return true;
@@ -483,10 +221,10 @@ define([
                         },
                         node_customize: {
                             default: function(el) {
-                                var aType = $(el).find(">a.jstree-anchor");
-                                aType.append("<span class='tree-tooltip'>" + aType.text() + "</span>");
+                                var aFilter = $(el).find(">a.jstree-anchor");
+                                aFilter.append("<span class='tree-tooltip'>" + _.escape(aFilter.text()) + "</span>");
                                 if ($(el).find(".fa-ellipsis-h").length === 0) {
-                                    $(el).append('<div class="tools"><i class="fa fa-ellipsis-h entityPopover" rel="popover"></i></div>');
+                                    $(el).append('<div class="tools"><i class="fa fa-ellipsis-h customFilterPopover" rel="popover"></i></div>');
                                 }
                             }
                         },
@@ -494,9 +232,7 @@ define([
                             multiple: false,
                             data: function(node, cb) {
                                 if (node.id === "#") {
-                                    cb(
-                                        that.getEntityTree()
-                                    );
+                                    cb(that.getCustomFilterTree());
                                 }
                             }
                         }
@@ -510,11 +246,7 @@ define([
             ).on("open_node.jstree", function(e, data) {
                 that.isTreeOpen = true;
             }).on("select_node.jstree", function(e, data) {
-                if (!that.fromManualRender) {
-                    that.onNodeSelect(data);
-                } else {
-                    that.fromManualRender = false;
-                }
+                that.onNodeSelect(data);
             }).on("search.jstree", function(nodes, str, res) {
                 if (str.nodes.length === 0) {
                     $el.jstree(true).hide_all();
@@ -523,13 +255,13 @@ define([
                     $el.parents(".panel").removeClass("hide");
                 }
             }).on("hover_node.jstree", function(nodes, str, res) {
-                var aType = that.$("#" + str.node.a_attr.id),
-                    typeOffset = aType.find(">.jstree-icon").offset();
+                var aFilter = that.$("#" + str.node.a_attr.id),
+                    filterOffset = aFilter.find(">.jstree-icon").offset();
                 that.$(".tree-tooltip").removeClass("show");
                 setTimeout(function() {
-                    if (aType.hasClass("jstree-hovered") && typeOffset.top && typeOffset.left) {
-                        aType.find(">span.tree-tooltip").css({
-                            top: "calc(" + typeOffset.top + "px - 45px)",
+                    if (aFilter.hasClass("jstree-hovered") && filterOffset.top && filterOffset.left) {
+                        aFilter.find(">span.tree-tooltip").css({
+                            top: "calc(" + filterOffset.top + "px - 45px)",
                             left: "24px"
                         }).addClass("show");
                     }
@@ -538,61 +270,231 @@ define([
                 that.$(".tree-tooltip").removeClass("show");
             });
         },
-        refresh: function(options) {
+        createCustomFilterAction: function() {
+            var that = this;
+            Utils.generatePopover({
+                el: this.$el,
+                contentClass: 'customFilterPopoverOptions',
+                popoverOptions: {
+                    selector: '.customFilterPopover',
+                    content: function() {
+                        var type = $(this).data('detail'),
+                            liString = "";
+                        liString = "<li data-type=" + type + " class='listTerm'><i class='fa fa-pencil'></i><a href='javascript:void(0)' data-fn='rename'>Rename</a></li>" +
+                            "<li data-type=" + type + " class='listTerm'><i class='fa fa-trash-o'></i><a href='javascript:void(0)' data-fn='delete'>Delete</a></li>"
+
+                        return "<ul>" + liString + "</ul>";
+                    }
+                }
+            });
+        },
+        customFilterSwitchBtnUpdate: function() {
             var that = this,
-                apiCount = (options && options.apiCount == 0) ? options.apiCount : 3,
-                renderTree = function() {
-                    if (apiCount === 0) {
-                        that.renderEntityTree();
-                        that.changeLoaderState(false);
-                        that.ui.refreshTree.attr("disabled", false);
+                getTreeData, displayText;
+            that.ui.showCustomFilter.attr("data-original-title", (that.isBasic ? "Show Advanced search" : "Show Basic search"));
+            that.ui.showCustomFilter.tooltip('hide');
+            that.ui.showCustomFilter.find("i").toggleClass("switch-button");
+            that.ui.customFilterSearchTree.jstree(true).refresh();
+        },
+        getCustomFilterTree: function(options) {
+            var that = this,
+                customFilterBasicList = [],
+                customFilterAdvanceList = [],
+                allCustomFilter = [],
+                customFilterBasicTreeData = that.saveSearchBaiscCollection.fullCollection.models,
+                customFilterAdvanceTreeData = that.saveSearchAdvanceCollection.fullCollection.models,
+                openClassificationNodesState = function(treeDate) {
+                    if (treeDate.length == 1) {
+                        _.each(treeDate, function(model) {
+                            model.state['opeaned'] = true;
+                        })
                     }
-                };
-            if (apiCount == 0) {
-                that.entityDefCollection.fullCollection.sort({ silent: true });
-                that.entityCountObj = _.first(that.metricCollection.toJSON());
-                that.typeHeaders.fullCollection.sort({ silent: true });
-                renderTree();
+                },
+                generateNode = function(nodeOptions) {
+                    var searchType = nodeOptions.get('searchType');
+                    var nodeStructure = {
+                        text: _.escape(nodeOptions.get('name')),
+                        name: _.escape(nodeOptions.get('name')),
+                        type: "customFilter",
+                        id: nodeOptions.get('guid'),
+                        icon: (searchType === 'BASIC' ? "fa fa-circle-thin basic-tree" : "fa fa-circle-thin advance-tree"),
+                        gType: "CustomFilter",
+                        model: nodeOptions
+                    }
+                    return nodeStructure;
+
+                }
+            that.customFilterId = null;
+            _.each(customFilterBasicTreeData, function(filterNode) {
+                customFilterBasicList.push(generateNode(filterNode));
+                allCustomFilter.push(generateNode(filterNode));
+            });
+            _.each(customFilterAdvanceTreeData, function(filterNode) {
+                customFilterAdvanceList.push(generateNode(filterNode));
+                allCustomFilter.push(generateNode(filterNode));
+            });
+
+            var treeView = [{
+                icon: "fa fa-folder-o",
+                gType: "customFilter",
+                type: "customFilterFolder",
+                children: customFilterBasicList,
+                text: "Basic Search",
+                name: "Basic Search",
+                state: { opened: true }
+            }, {
+                icon: "fa fa-folder-o",
+                gType: "customFilter",
+                type: "customFilterFolder",
+                children: customFilterAdvanceList,
+                text: "Advance Search",
+                name: "Advance Search",
+                state: { opened: true }
+            }];
+            var customFilterList = that.isGroupView ? treeView : allCustomFilter;
+            return customFilterList;
+        },
+        onNodeSelect: function(nodeData) {
+            var that = this,
+                options = nodeData.node.original,
+                selectedNodeId = options.id;
+            if (that.customFilterId != selectedNodeId) {
+                that.customFilterId = selectedNodeId;
+                if (options && options.model) {
+                    var searchParameters = options.model.get('searchParameters'),
+                        searchType = options.model.get('searchType'),
+                        params = CommonViewFunction.generateUrlFromSaveSearchObject({
+                            value: { "searchParameters": searchParameters },
+                            classificationDefCollection: that.classificationDefCollection,
+                            entityDefCollection: that.entityDefCollection
+                        });
+                    searchType === 'ADVANCED' ? that.isBasic = false : that.isBasic = true;
+                    _.extend({}, this.options.value, params);
+                    // Utils.notifyInfo({
+                    //     content: "Saved values are selected."
+                    // })
+
+                    Utils.setUrl({
+                        url: '#!/search/searchResult',
+                        urlParams: _.extend({}, { 'searchType': that.isBasic ? 'basic' : 'dsl', 'isCF': true }, params),
+                        mergeBrowserUrl: false,
+                        trigger: true,
+                        updateTabState: true
+                    });
+                }
+
             } else {
-                this.entityDefCollection.fetch({
-                    complete: function() {
-                        that.entityDefCollection.fullCollection.comparator = function(model) {
-                            return model.get('name').toLowerCase();
-                        };
-                        that.entityDefCollection.fullCollection.sort({ silent: true });
-                        --apiCount;
-                        renderTree();
-                    }
-                });
-
-                this.metricCollection.fetch({
-                    complete: function() {
-                        --apiCount;
-                        that.entityCountObj = _.first(that.metricCollection.toJSON());
-                        renderTree();
-                    }
-                });
-
-                this.typeHeaders.fetch({
-                    complete: function() {
-                        that.typeHeaders.fullCollection.comparator = function(model) {
-                            return model.get('name').toLowerCase();
-                        }
-                        that.typeHeaders.fullCollection.sort({ silent: true });
-                        --apiCount;
-                        renderTree();
-                    }
+                that.customFilterId = null;
+                that.ui.customFilterSearchTree.jstree(true).deselect_all(true);
+                that.showDefaultPage();
+            }
+        },
+        showDefaultPage: function() {
+            Utils.setUrl({
+                url: '#!/search',
+                mergeBrowserUrl: false,
+                trigger: true,
+                updateTabState: true
+            });
+        },
+        getValue: function() {
+            return this.options.value;
+        },
+        callSaveModalLayoutView: function(options) {
+            require([
+                'views/search/save/SaveModalLayoutView'
+            ], function(SaveModalLayoutView) {
+                new SaveModalLayoutView(options);
+            });
+        },
+        renameCustomFilter: function(opt) {
+            var that = this,
+                selectednode = that.ui.customFilterSearchTree.jstree("get_selected", true),
+                options = selectednode[0].original;
+            if (options && options.model.attributes) {
+                var that = this;
+                require([
+                    'views/search/save/SaveModalLayoutView'
+                ], function(SaveModalLayoutView) {
+                    new SaveModalLayoutView({ 'rename': true, 'selectedModel': options.model.clone(), 'collection': that.isBasic ? that.saveSearchBaiscCollection.fullCollection : that.saveSearchAdvanceCollection.fullCollection, 'getValue': that.getValue, 'isBasic': that.isBasic });
                 });
             }
         },
-        onClickImportBusinessMetadata: function() {
+        deleteCustomFilter: function(opt) {
+            var that = this,
+                selectednode = that.ui.customFilterSearchTree.jstree("get_selected", true),
+                options = selectednode[0].original;
+            if (options && options.model) {
+                var that = this;
+                var notifyObj = {
+                    modal: true,
+                    html: true,
+                    text: Messages.conformation.deleteMessage + "<b>" + _.escape(options.model.get('name')) + "</b>" + " ?",
+                    ok: function(obj) {
+                        that.notificationModal = obj;
+                        obj.showButtonLoader();
+                        that.onDeleteNotifyOk(options);
+                    },
+                    okCloses: false,
+                    cancel: function(argument) {}
+                }
+                Utils.notifyConfirm(notifyObj);
+            }
+        },
+        onDeleteNotifyOk: function(options) {
             var that = this;
-            require([
-                'views/import/ImportLayoutView'
-            ], function(ImportLayoutView) {
-                var view = new ImportLayoutView({});
-            });
+            options.model.urlRoot = UrlLinks.saveSearchApiUrl();
+            if (options.model) {
+                options.model.id = options.model.get("guid");
+                options.model.idAttribute = "guid";
+                options.model.destroy({
+                    wait: true,
+                    success: function(model, data) {
+                        that.showDefaultPage();
+                        Utils.notifySuccess({
+                            content: options.model.attributes.name + Messages.getAbbreviationMsg(false, 'deleteSuccessMessage')
+                        });
+                    },
+                    complete: function() {
+                        that.notificationModal.hideButtonLoader();
+                        that.notificationModal.remove();
+                    }
+                });
+            } else {
+                Utils.notifyError({
+                    content: Messages.defaultErrorMessage
+                });
+            }
+        },
+        saveAs: function(e) {
+            var value = this.getValue();
+            if (value && (value.type || value.tag || value.query || value.term)) {
+                value.searchType == "basic" ? this.isBasic = true : this.isBasic = false;
+                var urlObj = Utils.getUrlState.getQueryParams();
+                if (urlObj) {
+                    // includeDE value in because we need to send "true","false" to the server.
+                    urlObj.includeDE = urlObj.includeDE == "true" ? true : false;
+                    urlObj.excludeSC = urlObj.excludeSC == "true" ? true : false;
+                    urlObj.excludeST = urlObj.excludeST == "true" ? true : false;
+                }
+                this.customFilterSwitchBtnUpdate();
+                this.callSaveModalLayoutView({
+                    'collection': this.isBasic ? this.saveSearchBaiscCollection.fullCollection : this.saveSearchAdvanceCollection.fullCollection,
+                    getValue: function() {
+                        return _.extend({}, value, urlObj);
+                    },
+                    'isBasic': this.isBasic
+                });
+            } else {
+                Utils.notifyInfo({
+                    content: Messages.search.favoriteSearch.notSelectedSearchFilter
+                })
+            }
+        },
+        refreshCustomFilterTree: function() {
+            this.fetchCustomFilter();
         }
+
     });
-    return EntityTreeLayoutview;
+    return CustomFilterTreeLayoutView;
 });
