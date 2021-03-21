@@ -114,6 +114,6 @@ public class TermSearchProcessor extends SearchProcessor {
 
     @Override
     public long getResultCount() {
-        return -1;
+        return assignedEntities != null ? assignedEntities.size() : -1;
     }
 }
