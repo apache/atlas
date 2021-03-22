@@ -38,7 +38,7 @@
         </div>
     </div>
     <div class="panel panel-default custom-panel expand_collapse_panel-icon hide col-sm-5" data-id="attributeDetails">
-        <div class="panel-heading" data-toggle="collapse" href="#attributeTableCollapse" aria-expanded="true">
+        <div class="panel-heading" data-toggle="collapse" href={{technicalPropPanelId.anchor}} aria-expanded="true">
             <h4 class="panel-title">
                 <a data-id="panel-attr-heading">Technical properties </a>
             </h4>
@@ -46,7 +46,7 @@
                 <button type="button" title="Collapse"><i class="ec-icon fa"></i></button>
             </div>
         </div>
-        <div id="attributeTableCollapse" class="panel-collapse collapse in">
+        <div id={{technicalPropPanelId.id}} class="panel-collapse collapse in">
             <div class="panel-body">
                 <table class="table stat-table">
                     <tbody data-id="attribute-card">
@@ -59,7 +59,7 @@
         </div>
     </div>
     <div class="panel panel-default custom-panel expand_collapse_panel-icon hide col-sm-5" data-id="relationShipAttributeDetails">
-        <div class="panel-heading" data-toggle="collapse" href="#relationShipAttributeTableCollapse" aria-expanded="true">
+        <div class="panel-heading" data-toggle="collapse" href={{relationshipPropPanelId.anchor}} aria-expanded="true">
             <h4 class="panel-title">
                 <a>Relationship properties </a>
             </h4>
@@ -67,7 +67,7 @@
                 <button type="button" title="Collapse"><i class="ec-icon fa"></i></button>
             </div>
         </div>
-        <div id="relationShipAttributeTableCollapse" class="panel-collapse collapse in">
+        <div id={{relationshipPropPanelId.id}} class="panel-collapse collapse in">
             <div class="panel-body">
                 <table class="table stat-table">
                     <tbody data-id="relationship-attr-card">
@@ -80,7 +80,7 @@
         </div>
     </div>
     <div class="panel panel-default custom-panel expand_collapse_panel-icon hide col-sm-5" data-id="customAttributeDetails">
-        <div class="panel-heading" data-toggle="collapse" href="#customAttributeCollapse" aria-expanded="true">
+        <div class="panel-heading" data-toggle="collapse" href={{userdefinedPropPanelId.anchor}} aria-expanded="true">
             <h4 class="panel-title">
                 <a>User-defined properties </a>
             </h4>
@@ -88,7 +88,7 @@
                 <button type="button" title="Collapse"><i class="ec-icon fa"></i></button>
             </div>
         </div>
-        <div id="customAttributeCollapse" class="panel-collapse collapse in">
+        <div id={{userdefinedPropPanelId.id}} class="panel-collapse collapse in">
             <div class="panel-body">
                 <table class="table stat-table">
                     <tbody data-id="custom-attr-card">

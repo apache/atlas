@@ -32,6 +32,14 @@ define(['require',
 
             template: CreateAuditTableLayoutViewTmpl,
 
+            templateHelpers: function(){
+                return {
+                    technicalPropPanelId: this.technicalPropId,
+                    relationshipPropPanelId: this.relationshipPropId,
+                    userdefinedPropPanelId: this.userDefinedPropId
+                };
+            },
+
             /** Layout sub regions */
             regions: {},
 
@@ -67,10 +75,20 @@ define(['require',
              */
             initialize: function(options) {
                 _.extend(this, _.pick(options, 'guid', 'entityModel', 'action', 'entity', 'entityName', 'attributeDefs'));
+                var modelID = this.entityModel.cid || parseInt((Math.random() * 100));
+                this.technicalPropId = this.getRandomID(modelID);
+                this.relationshipPropId = this.getRandomID(modelID, this.technicalPropId);
+                this.userDefinedPropId = this.getRandomID(modelID, this.technicalPropId, this.userDefinedPropId);
             },
             bindEvents: function() {},
             onRender: function() {
                 this.auditTableGenerate();
+            },
+            getRandomID: function(modelID, technicalPropId, relationshipPropId) {
+                var randomIdObj = CommonViewFunction.getRandomIdAndAnchor();
+                randomIdObj.id = randomIdObj.id + modelID;
+                randomIdObj.anchor = randomIdObj.anchor + modelID;
+                return (randomIdObj === technicalPropId || randomIdObj === relationshipPropId) ? this.getRandomID(technicalPropId, relationshipPropId) : randomIdObj;
             },
             createTableWithValues: function(tableDetails) {
                 var attrTable = CommonViewFunction.propertyTable({
