@@ -48,7 +48,12 @@ define(['require', 'utils/Utils', 'lossless-json', 'marionette', 'backgrid', 'as
                         try {
                             return LosslessJSON.parse(data, function(k, v) { try { return (v.isLosslessNumber) ? v.valueOf() : v } catch (err) { return v.value } });
                         } catch (err) {
-                            return $.parseJSON(data);
+                            if (err.name.toLowerCase() === "syntaxerror" && data.length > 0 && data.indexOf("<html") > -1) { // to handel logout for multile windows
+                                var redirectUrl = window.location.origin + window.location.pathname;
+                                window.location = redirectUrl.substring(0, redirectUrl.lastIndexOf("/"));
+                            } else {
+                                return $.parseJSON(data);
+                            }
                         }
                     }
                 })
