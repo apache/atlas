@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.jersey.api.client.ClientResponse;
 import org.apache.atlas.AtlasClientV2;
 import org.apache.atlas.AtlasServiceException;
+import org.apache.atlas.bulkimport.BulkImportResponse;
 import org.apache.atlas.model.glossary.AtlasGlossary;
 import org.apache.atlas.model.glossary.AtlasGlossaryCategory;
 import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
@@ -115,7 +116,7 @@ public class GlossaryClientV2IT extends BaseResourceIT {
     public void getAllGlossary() throws Exception {
         List<AtlasGlossary> list = atlasClientV2.getAllGlossaries("ASC", 5, 0);
         assertNotNull(list);
-        assertEquals(list.size(), 2);
+        assertEquals(list.size(), 3);
     }
 
     @Test(dependsOnMethods = "testCreateGlossary")
@@ -240,7 +241,7 @@ public class GlossaryClientV2IT extends BaseResourceIT {
         }
         List<AtlasGlossaryTerm> termList = atlasClientV2.createGlossaryTerms(list);
         assertNotNull(termList);
-        assertEquals(termList.size(), 2);
+        assertEquals(termList.size(), 3);
     }
 
     @Test(dependsOnMethods = "testCreateGlossary")
@@ -434,22 +435,15 @@ public class GlossaryClientV2IT extends BaseResourceIT {
     @Test()
     public void testImportGlossaryData() {
         try {
-            String                  filePath = TestResourceFileUtils.getTestFilePath("template.csv");
-            List<AtlasGlossaryTerm> terms    = atlasClientV2.importGlossary(filePath);
+            String             filePath = TestResourceFileUtils.getTestFilePath("template.csv");
+            BulkImportResponse terms    = atlasClientV2.importGlossary(filePath);
 
             assertNotNull(terms);
 
-            List<AtlasGlossaryTerm> termList = mapper.convertValue(terms, new TypeReference<List<AtlasGlossaryTerm>>() { });
+            assertEquals(terms.getSuccessImportInfoList().size(), 1);
 
-            assertEquals(terms.size(), 1);
-
-            AtlasGlossaryTerm createdTerm = termList.get(0);
-
-            String glossaryGuid = createdTerm.getAnchor().getGlossaryGuid();
-
-            atlasClientV2.deleteGlossaryByGuid(glossaryGuid);
         } catch (AtlasServiceException ex) {
-            fail("Import GlossaryData should've succeeded");
+            fail("Import GlossaryData should've succeeded : "+ex);
         }
     }
 

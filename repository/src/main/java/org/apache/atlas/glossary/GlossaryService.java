@@ -20,6 +20,8 @@ package org.apache.atlas.glossary;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.SortOrder;
 import org.apache.atlas.annotation.GraphTransaction;
+import org.apache.atlas.bulkimport.BulkImportResponse;
+import org.apache.atlas.bulkimport.BulkImportResponse.ImportInfo;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.glossary.AtlasGlossary;
 import org.apache.atlas.model.glossary.AtlasGlossaryCategory;
@@ -54,7 +56,10 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.apache.atlas.glossary.GlossaryUtils.*;
+import static org.apache.atlas.bulkimport.BulkImportResponse.ImportStatus.FAILED;
+import static org.apache.atlas.glossary.GlossaryUtils.getAtlasGlossaryCategorySkeleton;
+import static org.apache.atlas.glossary.GlossaryUtils.getAtlasGlossaryTermSkeleton;
+import static org.apache.atlas.glossary.GlossaryUtils.getGlossarySkeleton;
 
 @Service
 public class GlossaryService {
@@ -1106,21 +1111,44 @@ public class GlossaryService {
         }
     }
 
-    public List<AtlasGlossaryTerm> importGlossaryData(InputStream inputStream, String fileName) throws AtlasBaseException {
-        List<AtlasGlossaryTerm> ret;
-
+    public BulkImportResponse importGlossaryData(InputStream inputStream, String fileName) throws AtlasBaseException {
+        BulkImportResponse ret = new BulkImportResponse();
         try {
             if (StringUtils.isBlank(fileName)) {
                 throw new AtlasBaseException(AtlasErrorCode.INVALID_FILE_TYPE, fileName);
             }
 
-            List<String[]> fileData       = FileUtils.readFileData(fileName, inputStream);
-            List<String>   failedTermMsgs = new ArrayList<>();
+            List<String[]>          fileData      = FileUtils.readFileData(fileName, inputStream);
+            List<AtlasGlossaryTerm> glossaryTerms = glossaryTermUtils.getGlossaryTermDataList(fileData, ret);
 
-            ret = glossaryTermUtils.getGlossaryTermDataList(fileData, failedTermMsgs);
-            ret = createGlossaryTerms(ret);
+            for (AtlasGlossaryTerm glossaryTerm : glossaryTerms) {
+                    String glossaryTermName = glossaryTerm.getName();
+                    String glossaryName     = getGlossaryName(glossaryTerm);
+
+                try {
+                        createTerm(glossaryTerm);
+                                                    ret.addToSuccessImportInfoList(new ImportInfo(glossaryName, glossaryTermName));
+                    } catch (AtlasBaseException e) {
+                        LOG.error("Error while importing glossary term {}", glossaryTermName);
+
+                        ret.addToFailedImportInfoList(new ImportInfo(glossaryName, glossaryTermName, FAILED, e.getMessage()));
+                    }
+                  }
         } catch (IOException e) {
             throw new AtlasBaseException(AtlasErrorCode.FAILED_TO_UPLOAD, fileName);
+        }
+
+        return ret;
+    }
+
+    private String getGlossaryName(AtlasGlossaryTerm glossaryTerm) {
+        String ret               = "";
+        String glossaryTermQName = glossaryTerm.getQualifiedName();
+
+        if (StringUtils.isNotBlank(glossaryTermQName)){
+            String[] glossaryQnameSplit = glossaryTermQName.split("@");
+
+            ret = (glossaryQnameSplit.length == 2) ? glossaryQnameSplit[1] : "";
         }
 
         return ret;

@@ -21,6 +21,7 @@ import com.sun.jersey.core.header.FormDataContentDisposition;
 import com.sun.jersey.multipart.FormDataParam;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.SortOrder;
+import org.apache.atlas.bulkimport.BulkImportResponse;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.glossary.GlossaryService;
 import org.apache.atlas.glossary.GlossaryTermUtils;
@@ -983,8 +984,8 @@ public class GlossaryREST {
     @POST
     @Path("/import")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
-    public List<AtlasGlossaryTerm> importGlossaryData(@FormDataParam("file") InputStream inputStream,
-                                                      @FormDataParam("file") FormDataContentDisposition fileDetail) throws AtlasBaseException {
+    public BulkImportResponse importGlossaryData(@FormDataParam("file") InputStream inputStream,
+                                                 @FormDataParam("file") FormDataContentDisposition fileDetail) throws AtlasBaseException {
         return glossaryService.importGlossaryData(inputStream, fileDetail.getFileName());
     }
 }
