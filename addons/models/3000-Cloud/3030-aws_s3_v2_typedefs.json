@@ -150,7 +150,7 @@
         "Path"
       ],
       "serviceType": "aws",
-      "typeVersion": "1.1",
+      "typeVersion": "1.2",
       "attributeDefs": [
         {
           "name":        "objectPrefix",
@@ -158,7 +158,7 @@
           "cardinality": "SINGLE",
           "isIndexable": true,
           "isOptional":  false,
-          "isUnique":    true
+          "isUnique":    false
         },
         {
           "name":        "subdomain",
