@@ -78,6 +78,12 @@ public class AtlasPathExtractorUtilTest {
     private static final String S3_PATH                          = S3_SCHEME + "aws_my_bucket1/1234567890/renders/Irradiance_A.csv";
     private static final String S3A_PATH                         = S3A_SCHEME + "aws_my_bucket1/1234567890/renders/Irradiance_A.csv";
 
+    // Google Cloud Storage
+    private static final String GCS_VIRTUAL_DIR            = "gcp_storage_virtual_directory";
+    private static final String GCS_BUCKET                 = "gcp_storage_bucket";
+    private static final String GCS_SCHEME                 = "gs" + SCHEME_SEPARATOR;
+    private static final String GCS_PATH                   = GCS_SCHEME + "gcs_test_bucket1/1234567890/data";
+
     @DataProvider(name = "ozonePathProvider")
     private Object[][] ozonePathProvider(){
         return new Object[][]{
@@ -264,6 +270,22 @@ public class AtlasPathExtractorUtilTest {
         verifyS3KnownEntities(S3A_SCHEME, S3A_PATH, extractorContext.getKnownEntities());
     }
 
+    @Test
+    public void testGetPathEntityGCSPath() {
+        PathExtractorContext extractorContext = new PathExtractorContext(METADATA_NAMESPACE);
+
+        Path path = new Path(GCS_PATH);
+        AtlasEntityWithExtInfo entityWithExtInfo = AtlasPathExtractorUtil.getPathEntity(path, extractorContext);
+        AtlasEntity entity = entityWithExtInfo.getEntity();
+
+        assertNotNull(entity);
+        assertEquals(entity.getTypeName(), GCS_VIRTUAL_DIR);
+        assertEquals(entityWithExtInfo.getReferredEntities().size(), 1);
+
+        verifyGCSVirtualDir(GCS_SCHEME, GCS_PATH, entity);
+        verifyGCSKnownEntities(GCS_SCHEME, GCS_PATH, extractorContext.getKnownEntities());
+    }
+
     private void verifyOzoneEntities(Map<String, AtlasEntity> knownEntities, OzoneKeyValidator validator) {
         for (AtlasEntity knownEntity : knownEntities.values()) {
             switch (knownEntity.getTypeName()){
@@ -350,17 +372,32 @@ public class AtlasPathExtractorUtilTest {
 
         if (pathQName.equalsIgnoreCase(entityQName)){
             assertEquals(entity.getAttribute(ATTRIBUTE_NAME), "Irradiance_A.csv");
-            assertEquals(entity.getAttribute(ATTRIBUTE_OBJECT_PREFIX), "/1234567890/renders/Irradiance_A.csv/");
+            assertEquals(entity.getAttribute(ATTRIBUTE_OBJECT_PREFIX), "/1234567890/renders/");
         } else {
             pathQName = s3Scheme + "aws_my_bucket1/1234567890/" + QNAME_METADATA_NAMESPACE;
             if (pathQName.equalsIgnoreCase(entityQName)){
                 assertEquals(entity.getAttribute(ATTRIBUTE_NAME), "1234567890");
-                assertEquals(entity.getAttribute(ATTRIBUTE_OBJECT_PREFIX), "/1234567890/");
+                assertEquals(entity.getAttribute(ATTRIBUTE_OBJECT_PREFIX), "/");
             } else {
                 assertEquals(entity.getAttribute(ATTRIBUTE_QUALIFIED_NAME), s3Scheme + "aws_my_bucket1/1234567890/renders/" + QNAME_METADATA_NAMESPACE);
                 assertEquals(entity.getAttribute(ATTRIBUTE_NAME), "renders");
-                assertEquals(entity.getAttribute(ATTRIBUTE_OBJECT_PREFIX), "/1234567890/renders/");
+                assertEquals(entity.getAttribute(ATTRIBUTE_OBJECT_PREFIX), "/1234567890/");
             }
+        }
+    }
+
+    private void verifyGCSVirtualDir(String s3Scheme, String path, AtlasEntity entity) {
+        String pathQName = path + "/" + QNAME_METADATA_NAMESPACE;
+        String entityQName = (String) entity.getAttribute(ATTRIBUTE_QUALIFIED_NAME);
+
+        if (pathQName.equalsIgnoreCase(entityQName)){
+            assertEquals(entity.getAttribute(ATTRIBUTE_NAME), "data");
+            assertEquals(entity.getAttribute(ATTRIBUTE_OBJECT_PREFIX), "/1234567890/");
+        } else {
+            pathQName = s3Scheme + "gcs_test_bucket1/1234567890/" + QNAME_METADATA_NAMESPACE;
+            assertEquals(entityQName, pathQName);
+            assertEquals(entity.getAttribute(ATTRIBUTE_NAME), "1234567890");
+            assertEquals(entity.getAttribute(ATTRIBUTE_OBJECT_PREFIX), "/");
         }
     }
 
@@ -409,6 +446,29 @@ public class AtlasPathExtractorUtilTest {
     private void verifyS3BucketEntity(String scheme, AtlasEntity entity) {
         assertEquals(entity.getAttribute(ATTRIBUTE_QUALIFIED_NAME), scheme + "aws_my_bucket1" + QNAME_METADATA_NAMESPACE);
         assertEquals(entity.getAttribute(ATTRIBUTE_NAME), "aws_my_bucket1");
+    }
+
+    private void verifyGCSKnownEntities(String scheme, String path, Map<String, AtlasEntity> knownEntities) {
+        assertEquals(knownEntities.size(), 3);
+        int dirCount = 0;
+        for (AtlasEntity knownEntity : knownEntities.values()) {
+            switch (knownEntity.getTypeName()){
+                case GCS_VIRTUAL_DIR:
+                    verifyGCSVirtualDir(scheme, path, knownEntity);
+                    dirCount++;
+                    break;
+
+                case GCS_BUCKET:
+                    verifyGCSBucketEntity(scheme, knownEntity);
+                    break;
+            }
+        }
+        assertEquals(dirCount, 2);
+    }
+
+    private void verifyGCSBucketEntity(String scheme, AtlasEntity entity) {
+        assertEquals(entity.getAttribute(ATTRIBUTE_QUALIFIED_NAME), scheme + "gcs_test_bucket1" + QNAME_METADATA_NAMESPACE);
+        assertEquals(entity.getAttribute(ATTRIBUTE_NAME), "gcs_test_bucket1");
     }
 
     private class OzoneKeyValidator {
