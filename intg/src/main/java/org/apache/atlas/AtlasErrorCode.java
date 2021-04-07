@@ -171,6 +171,7 @@ public enum AtlasErrorCode {
     INVALID_BUSINESS_ATTRIBUTES_IMPORT_DATA(400, "ATLAS-400-00-099","The uploaded file was not processed due to following errors : {0}"),
     ATTRIBUTE_NAME_INVALID_CHARS(400, "ATLAS-400-00-09A", "{0}: invalid name. Attribute names must begin with a letter followed by a sequence of letters, numbers, or '_' characters"),
     NO_DATA_FOUND(400, "ATLAS-400-00-09B", "No data found in the uploaded file"),
+    NOT_VALID_FILE(400, "ATLAS-400-00-09C", "Invalid {0} file"),
     UNAUTHORIZED_ACCESS(403, "ATLAS-403-00-001", "{0} is not authorized to perform {1}"),
 
     // All Not found enums go here

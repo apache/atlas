@@ -1527,32 +1527,26 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     public BulkImportResponse bulkCreateOrUpdateBusinessAttributes(InputStream inputStream, String fileName) throws AtlasBaseException {
         BulkImportResponse ret = new BulkImportResponse();
 
-        try {
-            if (StringUtils.isBlank(fileName)) {
-                throw new AtlasBaseException(AtlasErrorCode.FILE_NAME_NOT_FOUND, fileName);
+        if (StringUtils.isBlank(fileName)) {
+            throw new AtlasBaseException(AtlasErrorCode.FILE_NAME_NOT_FOUND, fileName);
+        }
+
+        List<String[]>           fileData              = FileUtils.readFileData(fileName, inputStream);
+        Map<String, AtlasEntity> attributesToAssociate = getBusinessMetadataDefList(fileData, ret);
+
+        for (AtlasEntity entity : attributesToAssociate.values()) {
+            Map<String, Map<String, Object>> businessAttributes = entity.getBusinessAttributes();
+            String                           guid               = entity.getGuid();
+
+            try {
+                addOrUpdateBusinessAttributes(guid, businessAttributes, true);
+
+                ret.addToSuccessImportInfoList(new ImportInfo(guid, businessAttributes.toString()));
+            } catch (Exception e) {
+                LOG.error("Error occurred while updating BusinessMetadata Attributes for Entity " + guid);
+
+                ret.addToFailedImportInfoList(new ImportInfo(guid, businessAttributes.toString(), FAILED, e.getMessage()));
             }
-
-            List<String[]>           fileData              = FileUtils.readFileData(fileName, inputStream);
-            Map<String, AtlasEntity> attributesToAssociate = getBusinessMetadataDefList(fileData, ret);
-
-            for (AtlasEntity entity : attributesToAssociate.values()) {
-                Map<String, Map<String, Object>> businessAttributes = entity.getBusinessAttributes();
-                String                           guid               = entity.getGuid();
-
-                try {
-                    addOrUpdateBusinessAttributes(guid, businessAttributes, true);
-
-                    ret.addToSuccessImportInfoList(new ImportInfo(guid, businessAttributes.toString()));
-                }catch (Exception e) {
-                    LOG.error("Error occurred while updating BusinessMetadata Attributes for Entity " + guid);
-
-                    ret.addToFailedImportInfoList(new ImportInfo(guid, businessAttributes.toString(), FAILED, e.getMessage()));
-                }
-            }
-        } catch (IOException e) {
-            LOG.error("An Exception occurred while uploading the file {}", fileName, e);
-
-            throw new AtlasBaseException(AtlasErrorCode.FAILED_TO_UPLOAD, e);
         }
 
         return ret;

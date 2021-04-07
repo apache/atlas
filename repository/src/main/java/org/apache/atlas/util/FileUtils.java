@@ -53,7 +53,7 @@ public class FileUtils {
     public static final int BM_ATTR_VALUE_COLUMN_INDEX = 3;
     public static final int UNIQUE_ATTR_NAME_COLUMN_INDEX = 4;
 
-    public static List<String[]> readFileData(String fileName, InputStream inputStream) throws IOException, AtlasBaseException {
+    public static List<String[]> readFileData(String fileName, InputStream inputStream) throws AtlasBaseException {
         List<String[]>                        ret;
         String                                extension     = FilenameUtils.getExtension(fileName);
 
@@ -72,7 +72,7 @@ public class FileUtils {
         return ret;
     }
 
-    public static List<String[]> readCSV(InputStream inputStream) throws IOException, AtlasBaseException {
+    public static List<String[]> readCSV(InputStream inputStream) throws AtlasBaseException {
         List<String[]> ret = new ArrayList<>();
 
         try (CSVReader csvReader = new CSVReader(new InputStreamReader(inputStream))) {
@@ -89,36 +89,40 @@ public class FileUtils {
                     ret.add(data);
                 }
             }
-        } catch (CsvValidationException e) {
-            throw new AtlasBaseException(AtlasErrorCode.NO_DATA_FOUND, e);
+        } catch (CsvValidationException | IOException e) {
+            throw new AtlasBaseException(AtlasErrorCode.NOT_VALID_FILE, CSV.name());
         }
 
         return ret;
     }
 
-    public static List<String[]> readExcel(InputStream inputStream, String extension) throws IOException {
+    public static List<String[]> readExcel(InputStream inputStream, String extension) throws AtlasBaseException {
         List<String[]> ret        = new ArrayList<>();
-        Workbook       excelBook  = extension.equalsIgnoreCase(XLS.name()) ? new HSSFWorkbook(inputStream) : new XSSFWorkbook(inputStream);
-        Sheet          excelSheet = excelBook.getSheetAt(0);
-        Iterator       itr        = excelSheet.rowIterator();
-        Row            headerRow  = (Row) itr.next();
 
-        if (isRowEmpty(headerRow)) {
-            return ret;
-        }
+        try (Workbook excelBook = extension.equalsIgnoreCase(XLS.name()) ? new HSSFWorkbook(inputStream) : new XSSFWorkbook(inputStream)) {
+            Sheet          excelSheet = excelBook.getSheetAt(0);
+            Iterator       itr        = excelSheet.rowIterator();
+            Row            headerRow  = (Row) itr.next();
 
-        while (itr.hasNext()) {
-            Row row = (Row) itr.next();
-
-            if (!isRowEmpty(row)) {
-                String[] data = new String[row.getLastCellNum()];
-
-                for (int i = 0; i < row.getLastCellNum(); i++) {
-                    data[i] = (row.getCell(i) != null) ? row.getCell(i).getStringCellValue().trim() : null;
-                }
-
-                ret.add(data);
+            if (isRowEmpty(headerRow)) {
+                return ret;
             }
+
+            while (itr.hasNext()) {
+                Row row = (Row) itr.next();
+
+                if (!isRowEmpty(row)) {
+                    String[] data = new String[row.getLastCellNum()];
+
+                    for (int i = 0; i < row.getLastCellNum(); i++) {
+                        data[i] = (row.getCell(i) != null) ? row.getCell(i).getStringCellValue().trim() : null;
+                    }
+
+                    ret.add(data);
+                }
+            }
+        } catch (IOException e) {
+            throw new AtlasBaseException(AtlasErrorCode.NOT_VALID_FILE, XLS.name());
         }
 
         return ret;

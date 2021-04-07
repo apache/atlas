@@ -98,9 +98,9 @@ public class GlossaryServiceTest {
     public static Object[][] getGlossaryTermsProvider() {
         return new Object[][]{
                 // offset, limit, expected
-                {0, -1, 6},
+                {0, -1, 7},
                 {0, 2, 2},
-                {2, 5, 4},
+                {2, 6, 5},
         };
     }
 
@@ -949,6 +949,14 @@ public class GlossaryServiceTest {
 
             assertNotNull(bulkImportResponse1);
             assertEquals(bulkImportResponse1.getSuccessImportInfoList().size(), 1);
+
+            // With circular dependent relations
+            InputStream             inputStream2   = getFile(CSV_FILES,"template_with_circular_relationship.csv");
+            BulkImportResponse bulkImportResponse2 = glossaryService.importGlossaryData(inputStream2,"template_with_circular_relationship.csv");
+
+            assertNotNull(bulkImportResponse2);
+            assertEquals(bulkImportResponse2.getSuccessImportInfoList().size(), 3);
+            assertEquals(bulkImportResponse2.getFailedImportInfoList().size(), 0);
         } catch (AtlasBaseException e){
             fail("The GlossaryTerm should have been created "+e);
         }
@@ -963,6 +971,18 @@ public class GlossaryServiceTest {
             fail("Error occurred : Failed to recognize the empty file.");
         } catch (AtlasBaseException e) {
             assertEquals(e.getMessage(),"No data found in the uploaded file");
+        }
+    }
+
+    @Test
+    public void testInvalidFileException() {
+        InputStream inputStream = getFile(EXCEL_FILES, "invalid_xls.xls");
+
+        try {
+            BulkImportResponse bulkImportResponse = glossaryService.importGlossaryData(inputStream, "invalid_xls.xls");
+            fail("Error occurred : Failed to recognize the invalid xls file.");
+        } catch (AtlasBaseException e) {
+            assertEquals(e.getMessage(),"Invalid XLS file");
         }
     }
 
@@ -987,6 +1007,9 @@ public class GlossaryServiceTest {
         try {
             BulkImportResponse bulkImportResponse = glossaryService.importGlossaryData(inputStream, "incorrectFile.csv");
 
+            assertEquals(bulkImportResponse.getSuccessImportInfoList().size(),1);
+
+            //Due to invalid Relation we get Failed message even the import succeeded for the term
             assertEquals(bulkImportResponse.getFailedImportInfoList().size(),1);
         } catch (AtlasBaseException e) {
             fail("The incorrect file exception should have handled "+e);
