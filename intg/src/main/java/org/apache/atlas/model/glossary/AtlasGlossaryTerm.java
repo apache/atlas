@@ -286,6 +286,22 @@ public class AtlasGlossaryTerm extends AtlasGlossaryBaseObject {
         hasTerms = true;
     }
 
+    public boolean containAnyRelation() {
+        return (CollectionUtils.isNotEmpty(getTranslationTerms()) ||
+                CollectionUtils.isNotEmpty(getValidValuesFor()) ||
+                CollectionUtils.isNotEmpty(getSynonyms()) ||
+                CollectionUtils.isNotEmpty(getReplacedBy()) ||
+                CollectionUtils.isNotEmpty(getValidValues()) ||
+                CollectionUtils.isNotEmpty(getReplacementTerms()) ||
+                CollectionUtils.isNotEmpty(getSeeAlso()) ||
+                CollectionUtils.isNotEmpty(getTranslatedTerms()) ||
+                CollectionUtils.isNotEmpty(getIsA()) ||
+                CollectionUtils.isNotEmpty(getAntonyms()) ||
+                CollectionUtils.isNotEmpty(getClassifies()) ||
+                CollectionUtils.isNotEmpty(getPreferredToTerms()) ||
+                CollectionUtils.isNotEmpty(getPreferredTerms()));
+    }
+
     @JsonIgnore
     public String toAuditString() {
         AtlasGlossaryTerm t = new AtlasGlossaryTerm();

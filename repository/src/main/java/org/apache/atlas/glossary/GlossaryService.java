@@ -44,7 +44,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -394,8 +393,12 @@ public class GlossaryService {
         return ret;
     }
 
-    @GraphTransaction
     public AtlasGlossaryTerm updateTerm(AtlasGlossaryTerm atlasGlossaryTerm) throws AtlasBaseException {
+        return updateTerm(atlasGlossaryTerm, true);
+    }
+
+    @GraphTransaction
+    public AtlasGlossaryTerm updateTerm(AtlasGlossaryTerm atlasGlossaryTerm, boolean ignoreUpdateIfTermExists) throws AtlasBaseException {
         if (DEBUG_ENABLED) {
             LOG.debug("==> GlossaryService.updateTerm({})", atlasGlossaryTerm);
         }
@@ -412,9 +415,12 @@ public class GlossaryService {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME);
         }
 
-        String qualifiedName = getDuplicateGlossaryRelatedTerm(atlasGlossaryTerm);
-        if (StringUtils.isNotEmpty(qualifiedName)) {
-            throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_TERM_ALREADY_EXISTS, qualifiedName);
+        if (ignoreUpdateIfTermExists) {
+            String qualifiedName = getDuplicateGlossaryRelatedTerm(atlasGlossaryTerm);
+
+            if (StringUtils.isNotEmpty(qualifiedName)) {
+                throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_TERM_ALREADY_EXISTS, qualifiedName);
+            }
         }
 
         AtlasGlossaryTerm storeObject = dataAccess.load(atlasGlossaryTerm);
@@ -1041,7 +1047,6 @@ public class GlossaryService {
     }
 
     private String getDuplicateGlossaryRelatedTerm(AtlasGlossaryTerm atlasGlossaryTerm) throws AtlasBaseException {
-
         Map<AtlasGlossaryTerm.Relation, Set<AtlasRelatedTermHeader>> relatedTermsMap = atlasGlossaryTerm.getRelatedTerms();
         for (Map.Entry<AtlasGlossaryTerm.Relation, Set<AtlasRelatedTermHeader>> relatedTermsMapEntry : relatedTermsMap.entrySet()) {
             Set<AtlasRelatedTermHeader> termHeaders = relatedTermsMapEntry.getValue();
@@ -1113,32 +1118,54 @@ public class GlossaryService {
 
     public BulkImportResponse importGlossaryData(InputStream inputStream, String fileName) throws AtlasBaseException {
         BulkImportResponse ret = new BulkImportResponse();
-        try {
-            if (StringUtils.isBlank(fileName)) {
-                throw new AtlasBaseException(AtlasErrorCode.INVALID_FILE_TYPE, fileName);
-            }
 
-            List<String[]>          fileData      = FileUtils.readFileData(fileName, inputStream);
-            List<AtlasGlossaryTerm> glossaryTerms = glossaryTermUtils.getGlossaryTermDataList(fileData, ret);
-
-            for (AtlasGlossaryTerm glossaryTerm : glossaryTerms) {
-                    String glossaryTermName = glossaryTerm.getName();
-                    String glossaryName     = getGlossaryName(glossaryTerm);
-
-                try {
-                        createTerm(glossaryTerm);
-                                                    ret.addToSuccessImportInfoList(new ImportInfo(glossaryName, glossaryTermName));
-                    } catch (AtlasBaseException e) {
-                        LOG.error("Error while importing glossary term {}", glossaryTermName);
-
-                        ret.addToFailedImportInfoList(new ImportInfo(glossaryName, glossaryTermName, FAILED, e.getMessage()));
-                    }
-                  }
-        } catch (IOException e) {
-            throw new AtlasBaseException(AtlasErrorCode.FAILED_TO_UPLOAD, fileName);
+        if (StringUtils.isBlank(fileName)) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_FILE_TYPE, fileName);
         }
 
+        List<String[]> fileData = FileUtils.readFileData(fileName, inputStream);
+
+        List<AtlasGlossaryTerm> glossaryTermsWithoutRelations = glossaryTermUtils.getGlossaryTermDataList(fileData, ret);
+        createGlossaryTerms(glossaryTermsWithoutRelations, ret);
+
+        List<AtlasGlossaryTerm> glossaryTermsWithRelations = glossaryTermUtils.getGlossaryTermDataList(fileData, ret, true);
+        updateGlossaryTermsRelation(glossaryTermsWithRelations, ret);
+
         return ret;
+    }
+
+    private void createGlossaryTerms(List<AtlasGlossaryTerm> glossaryTerms, BulkImportResponse bulkImportResponse) {
+        for (AtlasGlossaryTerm glossaryTerm : glossaryTerms) {
+            String glossaryTermName = glossaryTerm.getName();
+            String glossaryName     = getGlossaryName(glossaryTerm);
+
+            try {
+                createTerm(glossaryTerm);
+
+                bulkImportResponse.addToSuccessImportInfoList(new ImportInfo(glossaryName, glossaryTermName));
+            } catch (AtlasBaseException e) {
+                LOG.error(AtlasErrorCode.FAILED_TO_CREATE_GLOSSARY_TERM.toString(), glossaryTermName, e);
+
+                bulkImportResponse.addToFailedImportInfoList(new ImportInfo(glossaryName, glossaryTermName, FAILED, e.getMessage()));
+            }
+        }
+    }
+
+    private void updateGlossaryTermsRelation(List<AtlasGlossaryTerm> glossaryTerms, BulkImportResponse bulkImportResponse) {
+        for (AtlasGlossaryTerm glossaryTerm : glossaryTerms) {
+            if (glossaryTerm.containAnyRelation()) {
+                String glossaryTermName = glossaryTerm.getName();
+                String glossaryName     = getGlossaryName(glossaryTerm);
+
+                try {
+                    updateTerm(glossaryTerm, false);
+                } catch (AtlasBaseException e) {
+                    LOG.error(AtlasErrorCode.FAILED_TO_CREATE_GLOSSARY_TERM.toString(), glossaryTermName, e);
+
+                    bulkImportResponse.addToFailedImportInfoList(new ImportInfo(glossaryName, glossaryTermName, FAILED, e.getMessage()));
+                }
+            }
+        }
     }
 
     private String getGlossaryName(AtlasGlossaryTerm glossaryTerm) {
@@ -1149,22 +1176,6 @@ public class GlossaryService {
             String[] glossaryQnameSplit = glossaryTermQName.split("@");
 
             ret = (glossaryQnameSplit.length == 2) ? glossaryQnameSplit[1] : "";
-        }
-
-        return ret;
-    }
-
-    private List<AtlasGlossaryTerm> createGlossaryTerms(List<AtlasGlossaryTerm> glossaryTerms) throws AtlasBaseException {
-        List<AtlasGlossaryTerm> ret = new ArrayList<>();
-
-        for (AtlasGlossaryTerm glossaryTerm : glossaryTerms) {
-            try {
-                ret.add(createTerm(glossaryTerm));
-            } catch (AtlasBaseException e) {
-                if (!e.getAtlasErrorCode().equals(AtlasErrorCode.GLOSSARY_TERM_ALREADY_EXISTS)) {
-                    throw new AtlasBaseException(AtlasErrorCode.FAILED_TO_CREATE_GLOSSARY_TERM, glossaryTerm.getName());
-                }
-            }
         }
 
         return ret;
