@@ -121,7 +121,7 @@ define(["require",
                     url: UrlLinks.searchApiUrl("quick"),
                     contentType: "application/json",
                     data: {
-                        query: this.getSearchString(term),
+                        query: term,
                         limit: 5,
                         offset: 0
                     },
@@ -260,7 +260,7 @@ define(["require",
                             if (event.keyCode == 13) {
                                 if ($(this).data("valSelected") !== true) {
                                     that.closeSearch();
-                                    that.triggerBasicSearch(that.getSearchString($(this).val()));
+                                    that.triggerBasicSearch($(this).val());
                                 } else {
                                     $(this).data("valSelected", false);
                                 }
