@@ -969,8 +969,7 @@ public final class TestUtilsV2 {
                         createRequiredAttrDef("tag", "string"));
 
         AtlasClassificationDef fetlClassificationTypeDefinition =
-                AtlasTypeUtil.createTraitTypeDef("fetl" + CLASSIFICATION, "fetl" + CLASSIFICATION + _description, Collections.singleton(CLASSIFICATION),
-                        createRequiredAttrDef("tag", "string"));
+                AtlasTypeUtil.createTraitTypeDef("fetl" + CLASSIFICATION, "fetl" + CLASSIFICATION + _description, Collections.singleton(CLASSIFICATION));
 
         AtlasClassificationDef phiTypeDefinition = AtlasTypeUtil.createTraitTypeDef(PHI, PHI + _description, Collections.<String>emptySet(),
                                                                                     createRequiredAttrDef("stringAttr", "string"),
@@ -1450,8 +1449,7 @@ public final class TestUtilsV2 {
                         createRequiredAttrDef("level", "int"));
 
         AtlasClassificationDef janitorSecurityClearanceTypeDef =
-                AtlasTypeUtil.createTraitTypeDef("JanitorClearance", "JanitorClearance_description", Collections.singleton("SecurityClearance1"),
-                        createRequiredAttrDef("level", "int"));
+                AtlasTypeUtil.createTraitTypeDef("JanitorClearance", "JanitorClearance_description", Collections.singleton("SecurityClearance1"));
 
         List<AtlasClassificationDef> ret = Arrays.asList(securityClearanceTypeDef, janitorSecurityClearanceTypeDef);
 

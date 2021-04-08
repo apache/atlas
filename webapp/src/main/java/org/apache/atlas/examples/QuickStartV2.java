@@ -231,15 +231,11 @@ public class QuickStartV2 {
     AtlasTypesDef createTypeDefinitions() {
         // Entity-Definitions
         AtlasEntityDef dbTypeDef      = createClassTypeDef(DATABASE_TYPE, DATABASE_TYPE, VERSION_1, Collections.singleton("DataSet"),
-                                                            createUniqueRequiredAttrDef("name", "string"),
-                                                            createOptionalAttrDef("description", "string"),
                                                             createOptionalAttrDef("locationUri", "string"),
-                                                            createOptionalAttrDef("owner", "string"),
                                                             createOptionalAttrDef("createTime", "long"));
 
         AtlasEntityDef tableTypeDef   = createClassTypeDef(TABLE_TYPE, TABLE_TYPE, VERSION_1, Collections.singleton("DataSet"),
                                                             new HashMap<String, String>() {{ put("schemaElementsAttribute", "columns"); }} ,
-                                                            createOptionalAttrDef("owner", "string"),
                                                             createOptionalAttrDef("createTime", "long"),
                                                             createOptionalAttrDef("lastAccessTime", "long"),
                                                             createOptionalAttrDef("retention", "long"),
@@ -250,7 +246,6 @@ public class QuickStartV2 {
 
         AtlasEntityDef colTypeDef     = createClassTypeDef(COLUMN_TYPE, COLUMN_TYPE, VERSION_1, Collections.singleton("DataSet"),
                                                             new HashMap<String, String>() {{ put("schemaAttributes", "[\"name\", \"description\", \"owner\", \"type\", \"comment\", \"position\"]"); }},
-                                                            createOptionalAttrDef("name", "string"),
                                                             createOptionalAttrDef("dataType", "string"),
                                                             createOptionalAttrDef("comment", "string"));
 

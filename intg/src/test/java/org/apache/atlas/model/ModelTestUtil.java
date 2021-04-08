@@ -29,6 +29,7 @@ import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeRegistry.AtlasTransientTypeRegistry;
+import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,6 +37,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_BUILTIN_TYPES;
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_PRIMITIVE_TYPES;
@@ -228,8 +230,13 @@ public final class  ModelTestUtil {
         ret.setDescription(ret.getName());
         ret.setAttributeDefs(newAttributeDefsWithAllBuiltInTypes(PREFIX_ATTRIBUTE_NAME));
 
+        List<AtlasAttributeDef> currentTypeAttrDefs = ret.getAttributeDefs();
+
         if (superTypes != null) {
             for (AtlasEntityDef superType : superTypes) {
+                List<AtlasAttributeDef> superTypeAttrDefs = superType.getAttributeDefs();
+                removeAttributeIfExistedInSuperType(currentTypeAttrDefs, superTypeAttrDefs);
+
                 ret.addSuperType(superType.getName());
             }
         }
@@ -284,8 +291,13 @@ public final class  ModelTestUtil {
         ret.setDescription(ret.getName());
         ret.setAttributeDefs(newAttributeDefsWithAllBuiltInTypes(PREFIX_ATTRIBUTE_NAME));
 
+        List<AtlasAttributeDef> currentTypeAttrDefs = ret.getAttributeDefs();
+
         if (superTypes != null) {
             for (AtlasClassificationDef superType : superTypes) {
+                List<AtlasAttributeDef> superTypeAttrDefs = superType.getAttributeDefs();
+                removeAttributeIfExistedInSuperType(currentTypeAttrDefs, superTypeAttrDefs);
+
                 ret.addSuperType(superType.getName());
             }
         }
@@ -513,5 +525,14 @@ public final class  ModelTestUtil {
 
     private static String getRandomBuiltInType() {
         return ATLAS_BUILTIN_TYPES[ThreadLocalRandom.current().nextInt(0, ATLAS_BUILTIN_TYPES.length)];
+    }
+
+    private static void removeAttributeIfExistedInSuperType(List<AtlasAttributeDef> currentTypeAttrDefs, List<AtlasAttributeDef> superTypeAttrDefs) {
+        if (CollectionUtils.isNotEmpty(superTypeAttrDefs)) {
+            List<String> superTypeAttrNames = superTypeAttrDefs.stream()
+                    .map(superTypeObj -> superTypeObj.getName()).collect(Collectors.toList());
+
+            currentTypeAttrDefs.removeIf(obj -> superTypeAttrNames.contains(obj.getName()));
+        }
     }
 }
