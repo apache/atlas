@@ -339,9 +339,9 @@ public class TypedefsJerseyResourceIT extends BaseResourceIT {
     public void testListTypesByFilter() throws Exception {
         AtlasAttributeDef attr = AtlasTypeUtil.createOptionalAttrDef("attr", "string");
         AtlasEntityDef classDefA = AtlasTypeUtil.createClassTypeDef("A" + randomString(), Collections.<String>emptySet(), attr);
-        AtlasEntityDef classDefA1 = AtlasTypeUtil.createClassTypeDef("A1" + randomString(), Collections.singleton(classDefA.getName()), attr);
+        AtlasEntityDef classDefA1 = AtlasTypeUtil.createClassTypeDef("A1" + randomString(), Collections.singleton(classDefA.getName()));
         AtlasEntityDef classDefB = AtlasTypeUtil.createClassTypeDef("B" + randomString(), Collections.<String>emptySet(), attr);
-        AtlasEntityDef classDefC = AtlasTypeUtil.createClassTypeDef("C" + randomString(), new HashSet<>(Arrays.asList(classDefB.getName(), classDefA.getName())), attr);
+        AtlasEntityDef classDefC = AtlasTypeUtil.createClassTypeDef("C" + randomString(), new HashSet<>(Arrays.asList(classDefB.getName(), classDefA.getName())));
 
         AtlasTypesDef atlasTypesDef = new AtlasTypesDef();
         atlasTypesDef.getEntityDefs().add(classDefA);

@@ -169,7 +169,7 @@ public class QuickStart {
                 .createClassTypeDef(TABLE_TYPE, TABLE_TYPE, Collections.singleton("DataSet"),
                         new AttributeDefinition(DB_ATTRIBUTE, DATABASE_TYPE, Multiplicity.REQUIRED, false, null),
                         new AttributeDefinition("sd", STORAGE_DESC_TYPE, Multiplicity.REQUIRED, true, null),
-                        attrDef("owner", AtlasBaseTypeDef.ATLAS_TYPE_STRING), attrDef("createTime", AtlasBaseTypeDef.ATLAS_TYPE_LONG),
+                        attrDef("createTime", AtlasBaseTypeDef.ATLAS_TYPE_LONG),
                         attrDef("lastAccessTime", AtlasBaseTypeDef.ATLAS_TYPE_LONG), attrDef("retention", AtlasBaseTypeDef.ATLAS_TYPE_LONG),
                         attrDef("viewOriginalText", AtlasBaseTypeDef.ATLAS_TYPE_STRING),
                         attrDef("viewExpandedText", AtlasBaseTypeDef.ATLAS_TYPE_STRING), attrDef("tableType", AtlasBaseTypeDef.ATLAS_TYPE_STRING),

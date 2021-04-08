@@ -212,6 +212,7 @@ public class AtlasEntityType extends AtlasStructType {
     @Override
     void resolveReferencesPhase2(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
         super.resolveReferencesPhase2(typeRegistry);
+        ensureNoAttributeOverride(superTypes);
 
         for (AtlasEntityType superType : superTypes) {
             superType.addSubType(this);
