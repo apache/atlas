@@ -688,8 +688,8 @@ public class GlossaryTermUtils extends GlossaryUtils {
                     relatedTermHeader.setTermGuid(glossaryTermGuid);
                     ret.add(relatedTermHeader);
                 } else {
-                    failedTermMsgs.add(System.lineSeparator() + "The provided Reference Glossary and TermName does not exist in the system " +
-                            dataArray[1] + FileUtils.COLON_CHARACTER + dataArray[0] + " for record with TermName  : " + termName + " and GlossaryName : " + glossaryName);
+                    failedTermMsgs.add("\n" + "The provided Reference Glossary and TermName does not exist in the system " +
+                            dataArray[1] + "@" + dataArray[0] + " for record with TermName  : " + termName + " and GlossaryName : " + glossaryName);
                 }
             }
         }
