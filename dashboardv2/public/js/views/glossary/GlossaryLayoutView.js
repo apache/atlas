@@ -344,34 +344,56 @@ define(['require',
                         node: parent,
                         objGuid: obj.guid
                     });
-
                     if (type == "category" && obj.categories) {
+                        var isSelected = false,
+                            parentGuid = obj.guid,
+                            parentCategoryGuid = null,
+                            categoryList = [],
+                            catrgoryRelation = [];
                         _.each(obj.categories, function(category) {
-                            if (category.parentCategoryGuid) {
-                                return;
+                            if (that.options.value) {
+                                isSelected = that.options.value.guid ? that.options.value.guid == category.categoryGuid : false;
                             }
+
                             var typeName = category.typeName || "GlossaryCategory",
                                 guid = category.categoryGuid,
                                 categoryObj = {
-                                    "text": _.escape(category.displayText),
-                                    "type": typeName,
-                                    "gType": "category",
-                                    "guid": guid,
-                                    "id": guid,
-                                    "parent": obj,
-                                    "glossaryId": obj.guid,
-                                    "glossaryName": obj.name,
-                                    "model": category,
-                                    "children": true,
-                                    "icon": "fa fa-files-o",
+                                    id: guid,
+                                    guid: guid,
+                                    text: _.escape(category.displayText),
+                                    type: typeName,
+                                    gType: "category",
+                                    glossaryId: obj.guid,
+                                    glossaryName: obj.name,
+                                    children: [],
+                                    model: category,
+                                    icon: "fa fa-files-o"
                                 };
                             categoryObj.state = getSelectedState({
                                 index: i,
                                 node: categoryObj,
                                 objGuid: guid
                             })
-                            parent.children.push(categoryObj)
+                            if (category.parentCategoryGuid) {
+                                catrgoryRelation.push({ parent: category.parentCategoryGuid, child: guid })
+                            }
+                            categoryList.push(categoryObj);
                         });
+                        _.each(categoryList, function(category) {
+                            var getRelation = _.find(catrgoryRelation, function(catrgoryObj) {
+                                if (catrgoryObj.child == category.guid) return catrgoryObj;
+                            })
+                            if (getRelation) {
+                                _.map(categoryList, function(catrgoryObj) {
+                                    if (catrgoryObj.guid == getRelation.parent) {
+                                        catrgoryObj["children"].push(category);
+                                    };
+                                })
+                            } else {
+                                parent.children.push(category)
+                            }
+                        })
+
                     }
                     if (type == "term" && obj.terms) {
                         _.each(obj.terms, function(term) {
@@ -690,7 +712,7 @@ define(['require',
                                     }), { silent: true });
                                 } else if (that.value.gType == "category") {
                                     glossary.set('categories', _.reject(glossary.get('categories'), function(obj) {
-                                        return obj.categoryGuid == guid;
+                                        return obj.categoryGuid == guid || obj.parentCategoryGuid == guid;
                                     }), { silent: true });
                                 } else {
                                     glossary = that.glossaryCollection.fullCollection.first();
