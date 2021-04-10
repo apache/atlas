@@ -17,6 +17,7 @@
 # limitations under the License.
 import enum
 import time
+from functools import reduce
 
 BASE_URI = "api/atlas/"
 APPLICATION_JSON = 'application/json'
@@ -118,16 +119,28 @@ class API:
         self.consumes = consumes
         self.produces = produces
 
+    def multipart_urljoin(self, base_path, *path_elems):
+        """Join a base path and multiple context path elements. Handle single
+        leading and trailing `/` characters transparently.
+
+        Args:
+            base_path (string): the base path or url (ie. `http://atlas/v2/`)
+            *path_elems (string): multiple relative path elements (ie. `/my/relative`, `/path`)
+
+        Returns:
+            string: the result of joining the base_path with the additional path elements
+        """
+        def urljoin_pair(left, right):
+            return "/".join([left.rstrip('/'), right.strip('/')])
+
+        return reduce(urljoin_pair, path_elems, base_path)
+
     def format_path(self, params):
         return API(self.path.format(**params), self.method, self.expected_status, self.consumes, self.produces)
 
     def format_path_with_params(self, *params):
-        path = self.path
-
-        for par in params:
-            path += "/" + par
-
-        return API(path, self.method, self.expected_status, self.consumes, self.produces)
+        request_path = self.multipart_urljoin(self.path, *params)
+        return API(request_path, self.method, self.expected_status, self.consumes, self.produces)
 
 
 class HTTPMethod(enum.Enum):
