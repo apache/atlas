@@ -235,7 +235,7 @@ define(['require',
             },
             onClickLabelFullName: function() {
                 this.labelFullText = !this.labelFullText;
-                this.LineageHelperRef.displayFullName({ bLabelFullText : this.labelFullText });
+                this.LineageHelperRef.displayFullName({ bLabelFullText: this.labelFullText });
             },
             fetchGraphData: function(options) {
                 var that = this,
@@ -416,7 +416,7 @@ define(['require',
                 var data = {};
                 _.each(config, function(valKey, key) {
                     var val = initialData[key];
-                    if (_.isUndefined(val) && initialData.attributes[key]) {
+                    if (_.isUndefined(val) && initialData.attributes && initialData.attributes[key]) {
                         val = initialData.attributes[key];
                     }
                     if (val) {
@@ -430,16 +430,16 @@ define(['require',
                     "sortBy": false
                 }));
             },
-            calculateLineageDetailPanelHeight: function(){
+            calculateLineageDetailPanelHeight: function() {
                 var $parentContainer = $('#tab-lineage .resizeGraph'),
                     $panel = $parentContainer.find('.fix-box');
                 var $parentHeight = $parentContainer.find('.fix-box, tbody').removeAttr('style').height() - 48, // 48px is the Panels top from the parent container
                     $tBody = $panel.find('tbody'),
-                    panelHeight = $tBody.height() + 100; 
-                if($parentHeight < panelHeight){
+                    panelHeight = $tBody.height() + 100;
+                if ($parentHeight < panelHeight) {
                     panelHeight = $parentHeight;
                 }
-                $panel.css('height', panelHeight  + 'px');
+                $panel.css('height', panelHeight + 'px');
                 $tBody.css('height', '100%');
             }
         });
