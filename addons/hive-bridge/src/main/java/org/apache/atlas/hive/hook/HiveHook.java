@@ -19,6 +19,7 @@
 package org.apache.atlas.hive.hook;
 
 import org.apache.atlas.hive.hook.events.*;
+import org.apache.atlas.hive.hook.utils.ActiveEntityFilter;
 import org.apache.atlas.hook.AtlasHook;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.utils.LruCache;
@@ -68,6 +69,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     public static final String HOOK_HIVE_TABLE_IGNORE_PATTERN                            = CONF_PREFIX + "hive_table.ignore.pattern";
     public static final String HOOK_HIVE_TABLE_PRUNE_PATTERN                             = CONF_PREFIX + "hive_table.prune.pattern";
     public static final String HOOK_HIVE_TABLE_CACHE_SIZE                                = CONF_PREFIX + "hive_table.cache.size";
+    public static final String HOOK_HIVE_IGNORE_DDL_OPERATIONS                           = CONF_PREFIX + "hs2.ignore.ddl.operations";
     public static final String DEFAULT_HOST_NAME = "localhost";
 
     private static final Map<String, HiveOperation> OPERATION_MAP = new HashMap<>();
@@ -88,7 +90,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     private static final List                          ignoreDummyTableName;
     private static final String                        ignoreValuesTmpTableNamePrefix;
     private static final boolean                       hiveProcessPopulateDeprecatedAttributes;
-    private static HiveHookObjectNamesCache knownObjects = null;
+    private static HiveHookObjectNamesCache            knownObjects = null;
     private static String hostName;
 
     static {
@@ -158,6 +160,8 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
             LOG.warn("No hostname found. Setting the hostname to default value {}", DEFAULT_HOST_NAME, e);
             hostName = DEFAULT_HOST_NAME;
         }
+
+        ActiveEntityFilter.init(atlasProperties);
     }
 
 
@@ -244,7 +248,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
             if (event != null) {
                 final UserGroupInformation ugi = hookContext.getUgi() == null ? Utils.getUGI() : hookContext.getUgi();
 
-                super.notifyEntities(event.getNotificationMessages(), ugi);
+                super.notifyEntities(ActiveEntityFilter.apply(event.getNotificationMessages()), ugi);
             }
         } catch (Throwable t) {
             LOG.error("HiveHook.run(): failed to process operation {}", hookContext.getOperationName(), t);

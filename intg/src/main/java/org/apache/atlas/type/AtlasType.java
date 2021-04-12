@@ -143,6 +143,9 @@ public abstract class AtlasType {
         return AtlasJson.fromJson(jsonStr, type);
     }
 
+    public static <T> T fromLinkedHashMap(Object obj, Class<T> type) {
+        return AtlasJson.fromLinkedHashMap(obj, type);
+    }
     public static String toV1Json(Object obj) {
         return AtlasJson.toV1Json(obj);
     }

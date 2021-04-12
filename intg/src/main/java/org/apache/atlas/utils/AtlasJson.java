@@ -117,6 +117,20 @@ public class AtlasJson {
         return ret;
     }
 
+    public static <T> T fromLinkedHashMap(Object linkedHashMap, Class<T> type) {
+        T ret = null;
+
+        if (linkedHashMap != null) {
+            ret = mapper.convertValue(linkedHashMap, type);
+
+            if (ret instanceof Struct) {
+                ((Struct) ret).normalize();
+            }
+        }
+
+        return ret;
+    }
+
     public static <T> T fromJson(String jsonStr, Class<T> type) {
         T ret = null;
 
