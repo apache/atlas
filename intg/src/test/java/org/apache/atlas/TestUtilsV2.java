@@ -740,10 +740,16 @@ public final class TestUtilsV2 {
                 createOptionalAttrDef("attr19", "array<date>", options, _description),
                 createOptionalAttrDef("attr20", "array<ENUM_1>", options, _description));
 
+        options.put("applicableEntityTypes", "[\"" + SUPER_TYPE_NAME + "\"]");
+
+        AtlasBusinessMetadataDef bmWithSuperType = createBusinessMetadataDef("bmWithSuperType", _description,"1.0",
+                createOptionalAttrDef("attrSuperBoolean", AtlasBusinessMetadataDef.ATLAS_TYPE_BOOLEAN, options, _description ),
+                createOptionalAttrDef("attrSuperString", AtlasBusinessMetadataDef.ATLAS_TYPE_STRING, options, _description ));
+
         AtlasTypesDef ret = AtlasTypeUtil.getTypesDef(new ArrayList<>(),
                 new ArrayList<>(), new ArrayList<>(),
                 new ArrayList<>(), new ArrayList<>(),
-                Arrays.asList(bmNoApplicableTypes, bmNoAttributes, bmWithAllTypes, bmWithAllTypesMV));
+                Arrays.asList(bmNoApplicableTypes, bmNoAttributes, bmWithAllTypes, bmWithAllTypesMV, bmWithSuperType));
 
         populateSystemAttributes(ret);
 
