@@ -126,6 +126,9 @@ public abstract class SearchProcessor {
         OPERATOR_MAP.put(SearchParameters.Operator.NOT_NULL, INDEX_SEARCH_PREFIX + "\"%s\":[* TO *]");
         OPERATOR_PREDICATE_MAP.put(SearchParameters.Operator.NOT_NULL, getNotNullPredicateGenerator());
 
+        OPERATOR_MAP.put(SearchParameters.Operator.NOT_EMPTY, INDEX_SEARCH_PREFIX + "\"%s\":[* TO *]");
+        OPERATOR_PREDICATE_MAP.put(SearchParameters.Operator.NOT_EMPTY, getNotEmptyPredicateGenerator());
+
         OPERATOR_MAP.put(SearchParameters.Operator.TIME_RANGE, INDEX_SEARCH_PREFIX + "\"%s\": [%s TO %s]");
         OPERATOR_PREDICATE_MAP.put(SearchParameters.Operator.TIME_RANGE, getInRangePredicateGenerator());
     }

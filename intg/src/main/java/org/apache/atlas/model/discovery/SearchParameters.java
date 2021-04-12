@@ -464,7 +464,8 @@ public class SearchParameters implements Serializable {
         CONTAINS_ALL(new String[]{"containsAll", "CONTAINSALL", "contains_all", "CONTAINS_ALL"}),
         IS_NULL(new String[]{"isNull", "ISNULL", "is_null", "IS_NULL"}),
         NOT_NULL(new String[]{"notNull", "NOTNULL", "not_null", "NOT_NULL"}),
-        TIME_RANGE(new String[]{"timerange", "TIMERANGE","time_range","TIME_RANGE"})
+        TIME_RANGE(new String[]{"timerange", "TIMERANGE","time_range","TIME_RANGE"}),
+        NOT_EMPTY(new String[]{"notEmpty", "NOTEMPTY", "not_empty", "NOT_EMPTY"})
         ;
         static final Map<String, Operator> operatorsMap = new HashMap<>();
 

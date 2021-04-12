@@ -22,6 +22,7 @@ import com.google.common.base.Preconditions;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.GraphTransaction;
+import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.listener.TypeDefChangeListener;
 import org.apache.atlas.model.typedef.*;
@@ -65,12 +66,16 @@ public class AtlasTypeDefGraphStoreV2 extends AtlasTypeDefGraphStore {
 
     protected final AtlasGraph atlasGraph;
 
+    private EntityDiscoveryService entityDiscoveryService;
+
     @Inject
     public AtlasTypeDefGraphStoreV2(AtlasTypeRegistry typeRegistry,
                                     Set<TypeDefChangeListener> typeDefChangeListeners,
-                                    AtlasGraph atlasGraph) {
+                                    AtlasGraph atlasGraph,
+                                    EntityDiscoveryService entityDiscoveryService) {
         super(typeRegistry, typeDefChangeListeners);
         this.atlasGraph = atlasGraph;
+        this.entityDiscoveryService = entityDiscoveryService;
 
         LOG.debug("<== AtlasTypeDefGraphStoreV1()");
     }
@@ -102,7 +107,7 @@ public class AtlasTypeDefGraphStoreV2 extends AtlasTypeDefGraphStore {
 
     @Override
     protected AtlasDefStore<AtlasBusinessMetadataDef> getBusinessMetadataDefStore(AtlasTypeRegistry typeRegistry) {
-        return new AtlasBusinessMetadataDefStoreV2(this, typeRegistry);
+        return new AtlasBusinessMetadataDefStoreV2(this, typeRegistry, this.entityDiscoveryService);
     }
 
     @Override
