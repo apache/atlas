@@ -246,6 +246,10 @@ public class AtlasHiveHookContext {
     }
 
     private void init() {
+        if (hiveOperation == null) {
+            return;
+        }
+
         String operation = hiveOperation.getOperationName();
 
         if (knownObjects == null || !isCreateAlterOperation(operation)) {
