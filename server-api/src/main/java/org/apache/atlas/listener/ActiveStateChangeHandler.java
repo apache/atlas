@@ -32,8 +32,8 @@ public interface ActiveStateChangeHandler {
         TYPEDEF_STORE_INITIALIZER(2),
         ATLAS_PATCH_SERVICE(3),
         DEFAULT_METADATA_SERVICE(4),
-        NOTIFICATION_HOOK_CONSUMER(5);
-
+        NOTIFICATION_HOOK_CONSUMER(5),
+        TASK_MANAGEMENT(6);
 
         private final int order;
 

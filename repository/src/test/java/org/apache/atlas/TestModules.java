@@ -64,9 +64,11 @@ import org.apache.atlas.repository.store.graph.v2.AtlasTypeDefGraphStoreV2;
 import org.apache.atlas.repository.store.graph.v2.BulkImporterImpl;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
 import org.apache.atlas.repository.store.graph.v2.IAtlasEntityChangeNotifier;
+import org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory;
 import org.apache.atlas.runner.LocalSolrRunner;
 import org.apache.atlas.service.Service;
 import org.apache.atlas.store.AtlasTypeDefStore;
+import org.apache.atlas.tasks.TaskManagement;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.AtlasRepositoryConfiguration;
 import org.apache.atlas.util.SearchTracker;
@@ -183,7 +185,11 @@ public class TestModules {
             // Glossary related bindings
             bind(GlossaryService.class).asEagerSingleton();
 
-            final GraphTransactionInterceptor graphTransactionInterceptor = new GraphTransactionInterceptor(new AtlasGraphProvider().get());
+            // TaskManagement
+            bind(TaskManagement.class).asEagerSingleton();
+            bind(ClassificationPropagateTaskFactory.class).asEagerSingleton();
+
+            final GraphTransactionInterceptor graphTransactionInterceptor = new GraphTransactionInterceptor(new AtlasGraphProvider().get(), null);
             requestInjection(graphTransactionInterceptor);
             bindInterceptor(Matchers.any(), Matchers.annotatedWith(GraphTransaction.class), graphTransactionInterceptor);
         }

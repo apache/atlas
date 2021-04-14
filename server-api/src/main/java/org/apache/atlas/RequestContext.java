@@ -23,6 +23,7 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
 import org.apache.commons.lang.StringUtils;
@@ -30,13 +31,13 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
-import java.util.Map;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static org.apache.atlas.model.instance.AtlasObjectId.KEY_GUID;
 
@@ -61,6 +62,8 @@ public class RequestContext {
     private final Set<String>                            entitiesToSkipUpdate = new HashSet<>();
     private final Set<String>                            onlyCAUpdateEntities = new HashSet<>();
     private final Set<String>                            onlyBAUpdateEntities = new HashSet<>();
+    private final List<AtlasTask>                        queuedTasks          = new ArrayList<>();
+
 
     private String       user;
     private Set<String>  userGroups;
@@ -122,6 +125,7 @@ public class RequestContext {
         this.entitiesToSkipUpdate.clear();
         this.onlyCAUpdateEntities.clear();
         this.onlyBAUpdateEntities.clear();
+        this.queuedTasks.clear();
 
         if (metrics != null && !metrics.isEmpty()) {
             METRICS.debug(metrics.toString());
@@ -444,6 +448,14 @@ public class RequestContext {
                 entityGuidPair.resetEntityGuid();
             }
         }
+    }
+
+    public void queueTask(AtlasTask task) {
+        queuedTasks.add(task);
+    }
+
+    public List<AtlasTask> getQueuedTasks() {
+        return this.queuedTasks;
     }
 
     public class EntityGuidPair {

@@ -68,6 +68,7 @@ import org.springframework.stereotype.Component;
 import javax.inject.Inject;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -79,6 +80,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Queue;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -116,6 +118,7 @@ import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelation
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.BOTH;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
+import static org.apache.atlas.type.Constants.PENDING_TASKS_PROPERTY_KEY;
 
 @Component
 public class EntityGraphRetriever {
@@ -501,7 +504,7 @@ public class EntityGraphRetriever {
     public List<AtlasVertex> getImpactedVerticesV2(AtlasVertex entityVertex, String relationshipGuidToExclude) {
         List<AtlasVertex> ret = new ArrayList<>();
 
-        traverseImpactedVertices(entityVertex, relationshipGuidToExclude, null, new HashSet<>(), ret);
+        traverseImpactedVertices(entityVertex, relationshipGuidToExclude, null, ret);
 
         return ret;
     }
@@ -509,7 +512,7 @@ public class EntityGraphRetriever {
     public List<AtlasVertex> getIncludedImpactedVerticesV2(AtlasVertex entityVertex, String relationshipGuidToExclude) {
         List<AtlasVertex> ret = new ArrayList<>(Arrays.asList(entityVertex));
 
-        traverseImpactedVertices(entityVertex, relationshipGuidToExclude, null, new HashSet<>(), ret);
+        traverseImpactedVertices(entityVertex, relationshipGuidToExclude, null, ret);
 
         return ret;
     }
@@ -517,20 +520,37 @@ public class EntityGraphRetriever {
     public List<AtlasVertex> getImpactedVerticesV2(AtlasVertex entityVertex, String relationshipGuidToExclude, String classificationId) {
         List<AtlasVertex> ret = new ArrayList<>();
 
-        traverseImpactedVertices(entityVertex, relationshipGuidToExclude, classificationId, new HashSet<>(), ret);
+        traverseImpactedVertices(entityVertex, relationshipGuidToExclude, classificationId, ret);
 
         return ret;
     }
 
-    private void traverseImpactedVertices(AtlasVertex entityVertex, String relationshipGuidToExclude, String classificationId, Set<String> visitedVertices, List<AtlasVertex> result) {
-        visitedVertices.add(entityVertex.getIdForDisplay());
+    private void traverseImpactedVertices(final AtlasVertex entityVertexStart, final String relationshipGuidToExclude,
+                                          final String classificationId, final List<AtlasVertex> result) {
+        Set<String> visitedVertices = new HashSet<>();
 
-        AtlasEntityType entityType          = typeRegistry.getEntityTypeByName(getTypeName(entityVertex));
-        String[]        tagPropagationEdges = entityType != null ? entityType.getTagPropagationEdgesArray() : null;
+        Queue<AtlasVertex> queue = new ArrayDeque<AtlasVertex>() {{ add(entityVertexStart); }};
 
-        if (tagPropagationEdges != null) {
+        while (!queue.isEmpty()) {
+            AtlasVertex entityVertex   = queue.poll();
+            String      entityVertexId = entityVertex.getIdForDisplay();
+
+            if (visitedVertices.contains(entityVertexId)) {
+                LOG.info("Already visited: {}", entityVertexId);
+
+                continue;
+            }
+
+            visitedVertices.add(entityVertexId);
+
+            AtlasEntityType entityType          = typeRegistry.getEntityTypeByName(getTypeName(entityVertex));
+            String[]        tagPropagationEdges = entityType != null ? entityType.getTagPropagationEdgesArray() : null;
+
+            if (tagPropagationEdges == null) {
+                continue;
+            }
+
             Iterable<AtlasEdge> propagationEdges = entityVertex.getEdges(AtlasEdgeDirection.BOTH, tagPropagationEdges);
-
             for (AtlasEdge propagationEdge : propagationEdges) {
                 if (getEdgeStatus(propagationEdge) != ACTIVE) {
                     continue;
@@ -540,7 +560,7 @@ public class EntityGraphRetriever {
 
                 if (tagPropagation == null || tagPropagation == NONE) {
                     continue;
-                } else if (tagPropagation == TWO_TO_ONE)  {
+                } else if (tagPropagation == TWO_TO_ONE) {
                     if (isOutVertex(entityVertex, propagationEdge)) {
                         continue;
                     }
@@ -558,18 +578,18 @@ public class EntityGraphRetriever {
 
                 if (classificationId != null) {
                     List<String> blockedClassificationIds = getBlockedClassificationIds(propagationEdge);
-
                     if (CollectionUtils.isNotEmpty(blockedClassificationIds) && blockedClassificationIds.contains(classificationId)) {
                         continue;
                     }
                 }
 
-                AtlasVertex adjacentVertex = getOtherVertex(propagationEdge, entityVertex);
+                AtlasVertex adjacentVertex             = getOtherVertex(propagationEdge, entityVertex);
+                String      adjacentVertexIdForDisplay = adjacentVertex.getIdForDisplay();
 
-                if (!visitedVertices.contains(adjacentVertex.getIdForDisplay())) {
+                if (!visitedVertices.contains(adjacentVertexIdForDisplay)) {
                     result.add(adjacentVertex);
 
-                    traverseImpactedVertices(adjacentVertex, relationshipGuidToExclude, classificationId, visitedVertices, result);
+                    queue.add(adjacentVertex);
                 }
             }
         }
@@ -768,25 +788,32 @@ public class EntityGraphRetriever {
             LOG.debug("Mapping system attributes for type {}", entity.getTypeName());
         }
 
-        entity.setGuid(getGuid(entityVertex));
-        entity.setTypeName(getTypeName(entityVertex));
-        entity.setStatus(GraphHelper.getStatus(entityVertex));
-        entity.setVersion(GraphHelper.getVersion(entityVertex));
+        try {
+            if (entityVertex != null) {
+                entity.setGuid(getGuid(entityVertex));
+                entity.setTypeName(getTypeName(entityVertex));
+                entity.setStatus(GraphHelper.getStatus(entityVertex));
+                entity.setVersion(GraphHelper.getVersion(entityVertex));
 
-        entity.setCreatedBy(GraphHelper.getCreatedByAsString(entityVertex));
-        entity.setUpdatedBy(GraphHelper.getModifiedByAsString(entityVertex));
+                entity.setCreatedBy(GraphHelper.getCreatedByAsString(entityVertex));
+                entity.setUpdatedBy(GraphHelper.getModifiedByAsString(entityVertex));
 
-        entity.setCreateTime(new Date(GraphHelper.getCreatedTime(entityVertex)));
-        entity.setUpdateTime(new Date(GraphHelper.getModifiedTime(entityVertex)));
+                entity.setCreateTime(new Date(GraphHelper.getCreatedTime(entityVertex)));
+                entity.setUpdateTime(new Date(GraphHelper.getModifiedTime(entityVertex)));
 
-        entity.setHomeId(GraphHelper.getHomeId(entityVertex));
+                entity.setHomeId(GraphHelper.getHomeId(entityVertex));
 
-        entity.setIsProxy(GraphHelper.isProxy(entityVertex));
-        entity.setIsIncomplete(isEntityIncomplete(entityVertex));
+                entity.setIsProxy(GraphHelper.isProxy(entityVertex));
+                entity.setIsIncomplete(isEntityIncomplete(entityVertex));
 
-        entity.setProvenanceType(GraphHelper.getProvenanceType(entityVertex));
-        entity.setCustomAttributes(getCustomAttributes(entityVertex));
-        entity.setLabels(getLabels(entityVertex));
+                entity.setProvenanceType(GraphHelper.getProvenanceType(entityVertex));
+                entity.setCustomAttributes(getCustomAttributes(entityVertex));
+                entity.setLabels(getLabels(entityVertex));
+                entity.setPendingTasks(getPendingTasks(entityVertex));
+            }
+        } catch (Throwable t) {
+            LOG.warn("Got exception while mapping system attributes for type {} : ", entity.getTypeName(), t);
+        }
 
         return entity;
     }
@@ -1659,5 +1686,15 @@ public class EntityGraphRetriever {
 
             relationship.setAttribute(attribute.getName(), attrValue);
         }
+    }
+
+    private Set<String> getPendingTasks(AtlasVertex entityVertex) {
+        Collection<String> ret = entityVertex.getPropertyValues(PENDING_TASKS_PROPERTY_KEY, String.class);
+
+        if (CollectionUtils.isEmpty(ret)) {
+            return null;
+        }
+
+        return new HashSet<>(ret);
     }
 }
