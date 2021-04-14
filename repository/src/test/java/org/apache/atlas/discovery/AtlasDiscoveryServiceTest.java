@@ -152,7 +152,7 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
         List<AtlasEntityHeader> entityHeaders = discoveryService.searchWithParameters(params).getEntities();
 
         Assert.assertTrue(CollectionUtils.isNotEmpty(entityHeaders));
-        assertEquals(entityHeaders.size(), 1);
+        assertEquals(entityHeaders.size(), 11);
     }
 
 

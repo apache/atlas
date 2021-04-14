@@ -59,7 +59,7 @@ public class AtlasTypeRegistry {
         registryData              = new RegistryData();
         updateSynchronizer        = new TypeRegistryUpdateSynchronizer(this);
         missingRelationshipDefs   = new HashSet<>();
-        commonIndexFieldNameCache = new HashMap<>();
+        commonIndexFieldNameCache = new LinkedHashMap<>();
 
         resolveReferencesForRootTypes();
         resolveIndexFieldNamesForRootTypes();

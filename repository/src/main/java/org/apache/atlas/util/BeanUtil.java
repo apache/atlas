@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.atlas;
+package org.apache.atlas.util;
 
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;

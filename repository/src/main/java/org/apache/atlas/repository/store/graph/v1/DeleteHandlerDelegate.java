@@ -21,6 +21,7 @@ package org.apache.atlas.repository.store.graph.v1;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.DeleteType;
+import org.apache.atlas.tasks.TaskManagement;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.AtlasRepositoryConfiguration;
 import org.slf4j.Logger;
@@ -38,13 +39,15 @@ public class DeleteHandlerDelegate {
     private final SoftDeleteHandlerV1 softDeleteHandler;
     private final HardDeleteHandlerV1 hardDeleteHandler;
     private final DeleteHandlerV1     defaultHandler;
-    private final AtlasGraph atlasGraph;
+    private final AtlasGraph graph;
+    private final TaskManagement      taskManagement;
 
     @Inject
-    public DeleteHandlerDelegate(AtlasGraph atlasGraph, AtlasTypeRegistry typeRegistry) {
-        this.atlasGraph = atlasGraph;
-        this.softDeleteHandler = new SoftDeleteHandlerV1(atlasGraph, typeRegistry);
-        this.hardDeleteHandler = new HardDeleteHandlerV1(atlasGraph, typeRegistry);
+    public DeleteHandlerDelegate(AtlasGraph graph, AtlasTypeRegistry typeRegistry, TaskManagement taskManagement) {
+        this.graph = graph;
+        this.taskManagement    = taskManagement;
+        this.softDeleteHandler = new SoftDeleteHandlerV1(graph, typeRegistry, taskManagement);
+        this.hardDeleteHandler = new HardDeleteHandlerV1(graph, typeRegistry, taskManagement);
         this.defaultHandler    = getDefaultConfiguredHandler(typeRegistry);
     }
 
@@ -77,7 +80,8 @@ public class DeleteHandlerDelegate {
 
             LOG.info("Default delete handler set to: {}", handlerFromProperties.getName());
 
-            ret = (DeleteHandlerV1) handlerFromProperties.getConstructor(AtlasGraph.class, AtlasTypeRegistry.class).newInstance(this.atlasGraph, typeRegistry);
+            ret = (DeleteHandlerV1) handlerFromProperties.getConstructor(AtlasGraph.class, AtlasTypeRegistry.class, TaskManagement.class)
+                                    .newInstance(this.graph, typeRegistry, taskManagement);
         } catch (Exception ex) {
             LOG.error("Error instantiating default delete handler. Defaulting to: {}", softDeleteHandler.getClass().getName(), ex);
 

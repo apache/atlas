@@ -192,6 +192,22 @@ public class AtlasGraphUtilsV2 {
         return addProperty(vertex, propertyName, value, true);
     }
 
+    public static AtlasEdge addEncodedProperty(AtlasEdge edge, String propertyName, String value) {
+        List<String> listPropertyValues = edge.getListProperty(propertyName);
+
+        if (listPropertyValues == null) {
+            listPropertyValues = new ArrayList<>();
+        }
+
+        listPropertyValues.add(value);
+
+        edge.removeProperty(propertyName);
+
+        edge.setListProperty(propertyName, listPropertyValues);
+
+        return edge;
+    }
+
     public static AtlasVertex addProperty(AtlasVertex vertex, String propertyName, Object value, boolean isEncoded) {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> addProperty({}, {}, {})", toString(vertex), propertyName, value);
