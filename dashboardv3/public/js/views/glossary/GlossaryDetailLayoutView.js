@@ -361,8 +361,7 @@ define(['require',
                 return terms;
             },
             onClickAddTermBtn: function(e) {
-                var that = this,
-                    glossary = this.glossaryCollection;
+                var glossary = this.glossaryCollection;
                 if (this.value && this.value.gId) {
                     var foundModel = this.glossaryCollection.find({ guid: this.value.gId });
                     if (foundModel) {
@@ -375,7 +374,7 @@ define(['require',
                 }
                 var obj = {
                         callback: function() {
-                            that.getData();
+                            this.getData();
                         },
                         glossaryCollection: glossary,
                     },
