@@ -625,6 +625,8 @@ define(['require',
                 }
             },
             renderTermList: function() {
+                this.glossaryTermArray = null; //This Value is created to store the result of search Term while basic search through term.
+                var that = this;
                 var getTypeAheadData = function(data, params) {
                     var dataList = data.entities,
                         foundOptions = [];
@@ -637,7 +639,7 @@ define(['require',
                         }
                     });
                     return foundOptions;
-                }
+                };
                 this.ui.termLov.select2({
                     placeholder: "Search Term",
                     allowClear: true,
@@ -654,6 +656,7 @@ define(['require',
                             };
                         },
                         processResults: function(data, params) {
+                            that.glossaryTermArray = getTypeAheadData(data, params); //storing the search Results obj
                             return {
                                 results: getTypeAheadData(data, params)
                             };
@@ -734,6 +737,18 @@ define(['require',
             findSearchResult: function() {
                 this.triggerSearch(this.ui.searchInput.val());
             },
+            //This below function returns the searched Term Guid.
+            getSearchedTermGuid: function() {
+                var searchedTerm = this.ui.termLov.select2('val'),
+                    searchedTermGuid = null;
+                if (searchedTerm) {
+                    this.glossaryTermArray.find(function(obj) {
+                        if (searchedTerm === obj.id)
+                            searchedTermGuid = obj.guid;
+                    });
+                }
+                return searchedTermGuid;
+            },
             triggerSearch: function(value) {
                 var params = {
                         searchType: this.type,
@@ -743,11 +758,12 @@ define(['require',
                     },
                     typeLovValue = this.ui.typeLov.find(':selected').data('name'), // to get count of selected element used data
                     tagLovValue = this.ui.tagLov.find(':selected').data('name') || this.ui.tagLov.val(),
-                    termLovValue = this.ui.termLov.select2('val')
+                    termLovValue = this.ui.termLov.select2('val');
                 params['type'] = typeLovValue || null;
                 if (!this.dsl) {
                     params['tag'] = tagLovValue || null;
                     params['term'] = termLovValue || null;
+                    params['guid'] = this.getSearchedTermGuid(); //Adding Guid in the URL for selection while switching. 
                     var entityFilterObj = this.searchTableFilters['entityFilters'],
                         tagFilterObj = this.searchTableFilters['tagFilters'];
                     params['includeDE'] = false;

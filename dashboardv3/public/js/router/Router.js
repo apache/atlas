@@ -233,7 +233,7 @@ define([
         },
         renderGlossaryLayoutView: function(id) {
             var that = this;
-            require(["views/site/Header", "views/glossary/GlossaryContainerLayoutView", "views/site/SideNavLayoutView"], function(Header, GlossaryContainerLayoutView, SideNavLayoutView) {
+            require(["views/site/Header", "views/glossary/GlossaryContainerLayoutView", "views/search/SearchDefaultLayoutView", "views/site/SideNavLayoutView"], function(Header, GlossaryContainerLayoutView, SearchDefaultLayoutView, SideNavLayoutView) {
                 var paramObj = Utils.getUrlState.getQueryParams();
                 that.renderViewIfNotExists(that.getHeaderOptions(Header));
                 var options = _.extend({
@@ -254,16 +254,29 @@ define([
                         return new SideNavLayoutView(options);
                     }
                 });
-                that.renderViewIfNotExists({
-                    view: App.rContent,
-                    viewName: "GlossaryContainerLayoutView",
-                    manualRender: function() {
-                        this.view.currentView.manualRender(options);
-                    },
-                    render: function() {
-                        return new GlossaryContainerLayoutView(options)
-                    }
-                });
+                //Below condition is added for showing Detail Page for only Term and Category,
+                //because we are showing default search Page on Glossary Selection.
+                if (paramObj.gType !== "glossary") {
+                    that.renderViewIfNotExists({
+                        view: App.rContent,
+                        viewName: "GlossaryContainerLayoutView",
+                        manualRender: function() {
+                            this.view.currentView.manualRender(options);
+                        },
+                        render: function() {
+                            return new GlossaryContainerLayoutView(options)
+                        }
+                    });
+                } else {
+                    options["value"] = "";
+                    options["initialView"] = true;
+                    that.renderViewIfNotExists(
+                        that.getHeaderOptions(Header, {
+                            fromDefaultSearch: true
+                        })
+                    );
+                    App.rContent.show(new SearchDefaultLayoutView(options));
+                }
             });
         },
         renderDefaultSearchLayoutView: function(opt) {

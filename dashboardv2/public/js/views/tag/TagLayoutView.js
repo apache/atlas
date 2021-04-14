@@ -321,7 +321,7 @@ define(['require',
                         return '<li class="parent-node" data-id="tags">' +
                             '<div><div class="tools"><i class="fa fa-ellipsis-h tagPopover"></i></div>' +
                             (hasChild ? '<i class="fa toggleArrow fa-angle-right" data-id="expandArrow" data-name="' + name + '"></i>' : '') +
-                            '<a href="#!/tag/tagAttribute/' + name + '?viewType=' + (isTree ? 'tree' : 'flat') + '&searchType=basic"  data-name="' + name + '">' + name + '</a></div>' +
+                            '<a href="#!/tag/tagAttribute/' + name + '?viewType=' + (isTree ? 'tree' : 'flat') + '&searchType=basic&tag=' + name + '" data-name="' + name + '">' + name + '</a></div>' +
                             (isTree && hasChild ? '<ul class="child hide">' + that.generateTree({ 'data': options.children, 'isTree': isTree }) + '</ul>' : '') + '</li>';
                     };
                 if (isTree) {
@@ -410,7 +410,6 @@ define(['require',
                         });
                     });
                     modal.on('ok', function() {
-                        // modal.$el.find('button.ok').attr("disabled", "true");
                         modal.$el.find('button.ok').showButtonLoader();
                         that.onCreateButton(view, modal);
                     });
@@ -531,7 +530,7 @@ define(['require',
                             });
                         }
                         that.collection.fullCollection.add(classificationDefs);
-                        that.setUrl('#!/tag/tagAttribute/' + ref.ui.tagName.val(), true);
+                        that.setUrl('#!/tag/tagAttribute/' + ref.ui.tagName.val() + '?tag=' + ref.ui.tagName.val(), true);
                         Utils.notifySuccess({
                             content: "Classification " + that.name + Messages.getAbbreviationMsg(false, 'addSuccessMessage')
                         });
