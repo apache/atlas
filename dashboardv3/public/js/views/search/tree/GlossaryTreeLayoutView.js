@@ -389,46 +389,36 @@ define([
                     var isSelected = false,
                         parentGuid = obj.guid,
                         parentCategoryGuid = null,
-                        categoryList = [],
-                        catrgoryRelation = [];
+                        getParentCategory = function() {
+                            var parentCategory = _.find(parent.model.categories, function(subCategory) {
+                                return subCategory.categoryGuid === parentCategoryGuid;
+                            });
+                            return parentCategory;
+                        };
                     _.each(obj.categories, function(category) {
                         if (that.options.value) {
                             isSelected = that.options.value.guid ? that.options.value.guid == category.categoryGuid : false;
                         }
-
+                        if (category.parentCategoryGuid) {
+                            return;
+                        }
                         var typeName = category.typeName || "GlossaryCategory",
                             guid = category.categoryGuid,
                             categoryObj = {
-                                id: guid,
-                                guid: guid,
-                                text: _.escape(category.displayText),
-                                type: typeName,
-                                gType: "category",
-                                glossaryId: obj.guid,
-                                glossaryName: obj.name,
-                                children: [],
-                                model: category,
-                                icon: "fa fa-files-o"
+                                "text": _.escape(category.displayText),
+                                "type": typeName,
+                                "gType": "category",
+                                "guid": guid,
+                                "id": guid,
+                                "parent": obj,
+                                "glossaryId": obj.guid,
+                                "glossaryName": obj.name,
+                                "model": category,
+                                "children": true,
+                                "icon": "fa fa-files-o"
                             };
-                        if (category.parentCategoryGuid) {
-                            catrgoryRelation.push({ parent: category.parentCategoryGuid, child: guid })
-                        }
-                        categoryList.push(categoryObj);
+                        parent.children.push(categoryObj)
                     });
-                    _.each(categoryList, function(category) {
-                        var getRelation = _.find(catrgoryRelation, function(catrgoryObj) {
-                            if (catrgoryObj.child == category.guid) return catrgoryObj;
-                        })
-                        if (getRelation) {
-                            _.map(categoryList, function(catrgoryObj) {
-                                if (catrgoryObj.guid == getRelation.parent) {
-                                    catrgoryObj["children"].push(category);
-                                };
-                            })
-                        } else {
-                            parent.children.push(category)
-                        }
-                    })
                 }
                 if (that.isTermView && obj.terms) {
                     var isSelected = false;
@@ -501,26 +491,7 @@ define([
                 CommonViewFunction.createEditGlossaryCategoryTerm({
                     "isCategoryView": true,
                     "collection": that.glossaryCollection,
-                    "callback": function(updateCollection) {
-                        var updatedObj = {
-                                categoryGuid: updateCollection.guid,
-                                displayText: updateCollection.name,
-                                relationGuid: updateCollection.anchor ? updateCollection.anchor.relationGuid : null
-                            },
-                            glossary = that.glossaryCollection.fullCollection.findWhere({ guid: updateCollection.anchor.glossaryGuid });
-                        if (updateCollection.parentCategory) {
-                            updatedObj["parentCategoryGuid"] = updateCollection.parentCategory.categoryGuid;
-                        }
-                        if (glossary) {
-                            var glossaryAttributes = glossary.attributes || null;
-                            if (glossaryAttributes) {
-                                if (glossaryAttributes.categories) {
-                                    glossaryAttributes['categories'].push(updatedObj);
-                                } else {
-                                    glossaryAttributes['categories'] = [updatedObj];
-                                }
-                            }
-                        }
+                    "callback": function() {
                         that.ui.termSearchTree.jstree(true).refresh();
                     },
                     "node": selectednode[0].original
