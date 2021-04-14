@@ -216,7 +216,8 @@ define(['require',
                 }
                 if (Utils.getUrlState.isGlossaryTab()) {
                     var obj = this.query[this.viewType],
-                        $tree = this.ui[(this.viewType == "term" ? "termTree" : "categoryTree")]
+                        $tree = this.ui[(this.viewType == "term" ? "termTree" : "categoryTree")];
+                    obj["gId"] = that.value.gId; //this Property added, Because when we toggle the GlossaryViewButton it does not adds the gId which is required for selection.  
                     if (obj.guid) {
                         var node = $tree.jstree(true).get_node(obj.guid);
                         if (node) {
@@ -826,11 +827,17 @@ define(['require',
                         obj["gId"] = selectedItem.guid;
                     }
                     this.query[this.viewType] = _.extend(obj, _.omit(this.value, 'gId'), _.pick(this.glossary.selectedItem, 'model', 'type', 'gType', 'guid'), { "viewType": this.viewType, "isNodeNotFoundAtLoad": this.query[this.viewType].isNodeNotFoundAtLoad });
+                    //Below condition if for adding term Param to the URL for selection Purpose while switching from Old UI to New UI on term selection.
+                    if (selectedItem.type === "GlossaryTerm") {
+                        obj['term'] = selectedItem.text + '@' + selectedItem.glossaryName;
+                    } else {
+                        delete obj.term;
+                    }
                     Utils.setUrl({
                         url: '#!/glossary/' + obj.guid,
                         mergeBrowserUrl: false,
                         trigger: true,
-                        urlParams: _.omit(obj, 'model', 'guid', 'type', 'isNodeNotFoundAtLoad'),
+                        urlParams: _.omit(obj, 'model', 'type', 'isNodeNotFoundAtLoad'), //Guid has been removed from here because we need in the URL for Highlighting issue.
                         updateTabState: true
                     });
                 }

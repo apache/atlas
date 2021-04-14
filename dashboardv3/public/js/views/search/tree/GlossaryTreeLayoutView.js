@@ -96,6 +96,7 @@ define([
                 this.glossaryCollection.fullCollection, "reset add change",
                 function(skip) {
                     if (this.ui.termSearchTree.jstree(true)) {
+                        that.glossaryTreeUpdate = true; //To Keep the selection of Term after any new Glossary is Created.
                         this.ui.termSearchTree.jstree(true).refresh();
                     } else {
                         this.renderGlossaryTree();
@@ -117,7 +118,8 @@ define([
             });
         },
         glossarySwitchBtnUpdate: function() {
-            this.ui.showGlossaryType.attr("data-original-title", (this.isTermView ? "Show Category" : "Show Term"));
+            var tooltipTitle = (this.isTermView ? "Show Category" : "Show Term");
+            this.ui.showGlossaryType.attr({ "data-original-title": tooltipTitle, "title": tooltipTitle });
             this.ui.showGlossaryType.tooltip('hide');
             this.ui.showGlossaryType.find("i").toggleClass("switch-button");
             if (this.isTermView) {
@@ -155,6 +157,12 @@ define([
             });
             this.getViewType();
             this.bindEvents();
+            //To stop the trigger Search event, if the node is selected in Old UI and swicthed to New UI.
+            if (Utils.getUrlState.getQueryParams()) {
+                if(Utils.getUrlState.getQueryParams().gType === "term"){
+                    this.glossaryTreeUpdate = true;
+                }
+            }
         },
         onRender: function() {
             this.changeLoaderState(true);
@@ -226,6 +234,11 @@ define([
             this.createTermAction();
         },
         onNodeSelect: function(options, showCategory) {
+            if (this.glossaryTreeUpdate && options.node.original.type === "GlossaryTerm") {
+                //To stop the trigger Search event,if the node is selected in Old UI and swicthed to New UI.
+                this.glossaryTreeUpdate = false;
+                return;
+            }
             var name, type, selectedNodeId, that = this,
                 glossaryType = options.node.original.gType;
             if (glossaryType == "category") {
@@ -274,6 +287,27 @@ define([
                 this.triggerSearch(searchParam);
                 if (that.searchVent) {
                     that.searchVent.trigger("Success:Category");
+                }
+            } else if (glossaryType = "glossary") { //This condition is added to setUrl after click on Glossary for highlighting issue from New UI to Old UI.                
+                that.glossaryTermId = null;
+                if (that.glossaryId != options.node.id) {
+                    that.glossaryId = options.node.id;
+                    var params = {
+                        "gId": that.glossaryId,
+                        "gType": options.node.original.gType,
+                        "viewType": (this.isTermView) ? "term" : "category"
+                    };
+                    Utils.setUrl({
+                        url: '#!/glossary/' + that.glossaryId,
+                        urlParams: params,
+                        mergeBrowserUrl: false,
+                        trigger: false,
+                        updateTabState: true
+                    });
+                } else {
+                    that.glossaryId = null;
+                    that.ui.termSearchTree.jstree(true).deselect_all(true);
+                    this.showDefaultPage();
                 }
             } else {
                 that.glossaryTermId = null;
@@ -344,8 +378,10 @@ define([
             var that = this,
                 collection = (options && options.collection) || this.glossaryCollection.fullCollection,
                 listOfParents = [],
-                type = "term";
-
+                type = "term",
+                queryParams = Utils.getUrlState.getQueryParams(),
+                glossaryGuid = queryParams ? queryParams.gId : null,
+                gType = queryParams ? queryParams.gType : "term";
             return this.glossaryCollection.fullCollection.map(function(model, i) {
                 var obj = model.toJSON(),
                     parent = {
@@ -358,7 +394,10 @@ define([
                         type: obj.typeName ? obj.typeName : "GLOSSARY",
                         gType: "glossary",
                         children: [],
-                        state: { opened: true }
+                        state: {
+                            opened: true,
+                            selected: (model.id === glossaryGuid && gType === "glossary") ? true : false
+                        }
                     },
                     openGlossaryNodesState = function(treeDate) {
                         if (treeDate.length == 1) {
@@ -620,7 +659,7 @@ define([
                 gId = selectednode[0].original.parent && selectednode[0].original.parent.guid,
                 isGlossaryView = (type == 'GlossaryTerm' || type == 'GlossaryCategory') ? false : true,
                 model = this.glossaryCollection.fullCollection.get(guid),
-                termModel = this.glossaryCollection.fullCollection.get(gId);;
+                termModel = this.glossaryCollection.fullCollection.get(gId);
             if (isGlossaryView) {
                 CommonViewFunction.createEditGlossaryCategoryTerm({
                     "model": model,
@@ -648,6 +687,10 @@ define([
                     gType: that.isTermView ? 'term' : 'category',
                     viewType: that.isTermView ? 'term' : 'category',
                     searchType: "basic"
+                }
+                if (type === "GlossaryTerm") {
+                    //Below condition is used to keep the selection or Highlight after clicking on the viewEdit option on term.
+                    params['term'] = selectednode[0].original.name + '@' + selectednode[0].original.parent.name;
                 }
                 var serachUrl = '#!/glossary/' + guid;
                 this.triggerSearch(params, serachUrl);
@@ -701,6 +744,10 @@ define([
                 ).on("load_node.jstree", function(e, data) {}).on("open_node.jstree", function(e, data) {}).on("select_node.jstree", function(e, data) {
                     if (that.fromManualRender !== true) {
                         that.onNodeSelect(data);
+                        if (that.glossaryId === data.node.original.id) {
+                            //This condition is to reset the Glossary ID to null after clicking on the Logo.
+                            that.glossaryId = null;
+                        }
                     } else {
                         that.fromManualRender = false;
                     }
@@ -726,6 +773,10 @@ define([
                             that.options.categoryEvent.trigger("Success:Category", true);
                         }
                     }
+                    //Below condition is for switching the the Show Term/Show Category toggle button on swicthing from Old to New UI.
+                    if (that.isTermView === false) {
+                        that.glossarySwitchBtnUpdate();
+                    }
 
                 }).on("hover_node.jstree", function(nodes, str, res) {
                     var aTerm = that.$("#" + str.node.a_attr.id),
@@ -749,6 +800,7 @@ define([
         refresh: function(options) {
             this.glossaryTermId = null;
             this.fetchGlossary();
+            this.glossaryTreeUpdate = true;
         },
         onClickImportGlossary: function() {
             var that = this;
