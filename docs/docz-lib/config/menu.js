@@ -19,7 +19,7 @@ export default [
                 name: "Search",
                 menu: [
                     "Basic Search",
-                    "Advance Search"
+                    "Advanced Search"
                 ]
             },
             {
