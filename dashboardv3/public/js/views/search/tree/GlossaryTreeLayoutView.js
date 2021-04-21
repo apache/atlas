@@ -96,7 +96,7 @@ define([
                 this.glossaryCollection.fullCollection, "reset add change",
                 function(skip) {
                     if (this.ui.termSearchTree.jstree(true)) {
-                        that.glossaryTreeUpdate = true; //To Keep the selection of Term after any new Glossary is Created.
+                        that.isGlossaryTree = true; //To Keep the selection of Term after any new Glossary is Created.
                         this.ui.termSearchTree.jstree(true).refresh();
                     } else {
                         this.renderGlossaryTree();
@@ -158,10 +158,12 @@ define([
             this.getViewType();
             this.bindEvents();
             //To stop the trigger Search event, if the node is selected in Old UI and swicthed to New UI.
-            if (Utils.getUrlState.getQueryParams()) {
-                if(Utils.getUrlState.getQueryParams().gType === "term"){
-                    this.glossaryTreeUpdate = true;
-                }
+            this.isGlossaryTree = this.isGlossryTreeview();
+        },
+        isGlossryTreeview: function() {
+            var queryParams = Utils.getUrlState.getQueryParams();
+            if (queryParams && (queryParams.gType === "term" || queryParams.gType === "category")) {
+                return true;
             }
         },
         onRender: function() {
@@ -181,7 +183,7 @@ define([
             this.options.categoryEvent.off("Success:TermRename")
         },
         getViewType: function() {
-            if (this.options.value) {
+            if (Utils.getUrlState.isGlossaryTab()) {
                 this.isTermView = this.options.value.viewType ? this.options.value.viewType == "term" ? true : false : true;
             } else {
                 this.isTermView = true;
@@ -234,9 +236,10 @@ define([
             this.createTermAction();
         },
         onNodeSelect: function(options, showCategory) {
-            if (this.glossaryTreeUpdate && options.node.original.type === "GlossaryTerm") {
+            var nodeType = options.node.original.type;
+            if (this.isGlossaryTree && (nodeType === "GlossaryTerm" || nodeType === "GlossaryCategory")) {
                 //To stop the trigger Search event,if the node is selected in Old UI and swicthed to New UI.
-                this.glossaryTreeUpdate = false;
+                this.isGlossaryTree = false;
                 return;
             }
             var name, type, selectedNodeId, that = this,
@@ -773,7 +776,7 @@ define([
                             that.options.categoryEvent.trigger("Success:Category", true);
                         }
                     }
-                    //Below condition is for switching the the Show Term/Show Category toggle button on swicthing from Old to New UI.
+                    //Below condition is for switching the the Show Term/Show Category toggle button on switching from Old to New UI.
                     if (that.isTermView === false) {
                         that.glossarySwitchBtnUpdate();
                     }
@@ -800,7 +803,7 @@ define([
         refresh: function(options) {
             this.glossaryTermId = null;
             this.fetchGlossary();
-            this.glossaryTreeUpdate = true;
+            this.isGlossaryTree = true;
         },
         onClickImportGlossary: function() {
             var that = this;
