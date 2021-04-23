@@ -16,47 +16,99 @@
  * limitations under the License.
  */
 
-var gatewayUrl;
+(function () {
+    var gatewayUrl,
+    _csrfToken,
+    csrfEnabled = false,
+    restCsrfCustomHeader,
+    restCsrfMethodsToIgnore = [],
+    swaggerSpecFileName = "swagger.json";
 
-window.onload = function() {
-    const ui = SwaggerUIBundle({
-        url: getSwaggerBaseUrl(window.location.pathname) + "/swagger.json",
-        dom_id: '#swagger-ui',
-        deepLinking: true,
-        presets: [
-            SwaggerUIBundle.presets.apis,
-            SwaggerUIStandalonePreset
-        ],
-        plugins: [
-            SwaggerUIBundle.plugins.DownloadUrl
-        ],
-        layout: "StandaloneLayout",
-        requestInterceptor: function(request) {
-              if (!request.url.includes("swagger.json")) {
+    window.onload = function() {
+        const ui = SwaggerUIBundle({
+            url: getSwaggerBaseUrl(window.location.pathname) + "/" + swaggerSpecFileName,
+            dom_id: '#swagger-ui',
+            deepLinking: true,
+            presets: [
+                SwaggerUIBundle.presets.apis,
+                SwaggerUIStandalonePreset
+            ],
+            plugins: [
+                SwaggerUIBundle.plugins.DownloadUrl
+            ],
+            layout: "StandaloneLayout",
+            requestInterceptor: function(request) {
+                if (!request.url.includes(swaggerSpecFileName)) {
                     request.url = getAPIUrl(request.url);
-              }
-              request.headers['X-XSRF-HEADER'] = "valid";
-              return request;
-        },
-        docExpansion: 'none',
-        validatorUrl: 'none'
-    })
-    window.ui = ui;
+                    setCsrfHeaderToRequest(request);
+                }
 
-    document.getElementById("swagger-ui").getElementsByClassName("topbar-wrapper")[0].getElementsByTagName("img")[0].src = gatewayUrl + "/img/atlas_logo.svg";
-}
+                return request;
+            },
+            docExpansion: 'none',
+            validatorUrl: 'none'
+        })
+        window.ui = ui;
 
-function getSwaggerBaseUrl(url) {
-    var path = url.replace(/\/[\w-]+.(jsp|html)|\/+$/ig, '');
-    splitPath = path.split("/");
-    splitPath.pop();
-    gatewayUrl = splitPath.join("/");
+        atlasLogo = gatewayUrl + "/img/atlas_logo.svg";
+        $('#swagger-ui img').attr("src", atlasLogo);
 
-    return window.location.origin + path;
-};
+        fetchCsrfHeader();
+    }
 
-function getAPIUrl(url) {
-    url = new URL(url);
-    var path =  url.origin + gatewayUrl + url.pathname + url.search;
-    return path;
-};
+    function getSwaggerBaseUrl(url) {
+        var path = url.replace(/\/[\w-]+.(jsp|html)|\/+$/ig, '');
+        splitPath = path.split("/");
+        splitPath.pop();
+        gatewayUrl = splitPath.join("/");
+
+        return window.location.origin + path;
+    };
+
+    function getAPIUrl(url) {
+        url = new URL(url);
+        var path =  url.origin + gatewayUrl + url.pathname + url.search;
+        return path;
+    };
+
+    function fetchCsrfHeader() {
+        var response = getSessionDetails();
+
+        if (!csrfEnabled && response['atlas.rest-csrf.enabled']) {
+            var str = "" + response['atlas.rest-csrf.enabled'];
+            csrfEnabled = (str.toLowerCase() == 'true');
+        }
+
+        if (!restCsrfCustomHeader && response["atlas.rest-csrf.custom-header"]) {
+            restCsrfCustomHeader = response["atlas.rest-csrf.custom-header"].trim();
+        }
+
+        if (restCsrfMethodsToIgnore == 0 && response["atlas.rest-csrf.methods-to-ignore"]) {
+            restCsrfMethodsToIgnore = response["atlas.rest-csrf.methods-to-ignore"].split(",");
+        }
+
+        if (csrfEnabled) {
+            _csrfToken = response['_csrfToken'];
+        }
+    }
+
+    function setCsrfHeaderToRequest(request) {
+        if (csrfEnabled && !restCsrfMethodsToIgnore.includes(request.method)) {
+           request.headers[restCsrfCustomHeader] = _csrfToken;
+        }
+    }
+
+    function getSessionDetails() {
+        var response;
+        $.ajax({
+            async : false,
+            method: "GET",
+            url: gatewayUrl + "/api/atlas/admin/session",
+            dataType: 'json',
+            success: function(result){
+                response = result;
+            }
+        });
+        return response;
+    };
+})();
