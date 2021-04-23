@@ -201,14 +201,19 @@ define([
             var that = this;
             this.listenTo(
                 this.classificationDefCollection.fullCollection,
-                "reset add remove",
-                function() {
-                    if (this.ui.classificationSearchTree.jstree(true)) {
-                        that.classificationTreeUpdate = true;
-                        that.ui.classificationSearchTree.jstree(true).refresh();
-                    } else {
-                        this.renderClassificationTree();
-                    }
+                "reset add",
+                function(model) {
+                    that.classificationTreeUpdate = true;
+                    that.classificationTreeRefresh();
+                },
+                this
+            );
+            this.listenTo(
+                this.classificationDefCollection.fullCollection,
+                "remove",
+                function(model) {
+                    that.classificationTreeUpdate = false;
+                    that.classificationTreeRefresh();
                 },
                 this
             );
@@ -235,6 +240,13 @@ define([
                 }
 
             });
+        },
+        classificationTreeRefresh: function() {
+            if (this.ui.classificationSearchTree.jstree(true)) {
+                this.ui.classificationSearchTree.jstree(true).refresh();
+            } else {
+                this.renderClassificationTree();
+            }
         },
         findSearchResult: function(tagValue) {
             if (tagValue) {
@@ -463,7 +475,7 @@ define([
                             var child = collection.find({
                                 name: name
                             });
-                            var tagEntityCount = that.entityCountObj?that.entityCountObj.tag.tagEntities[name]:null;
+                            var tagEntityCount = that.entityCountObj ? that.entityCountObj.tag.tagEntities[name] : null;
                             var tagname = tagEntityCount ? name + " (" + _.numberFormatWithComma(tagEntityCount) + ")" : name;
 
                             if (that.options.value) {
@@ -506,7 +518,7 @@ define([
             collection.each(function(model) {
                 var modelJSON = model.toJSON(),
                     name = modelJSON.name,
-                    tagEntityCount = that.entityCountObj?that.entityCountObj.tag.tagEntities[name]:null,
+                    tagEntityCount = that.entityCountObj ? that.entityCountObj.tag.tagEntities[name] : null,
                     tagname = tagEntityCount ? name + " (" + _.numberFormatWithComma(tagEntityCount) + ")" : name,
                     isSelectedChildted = false,
                     isSelected = false;
