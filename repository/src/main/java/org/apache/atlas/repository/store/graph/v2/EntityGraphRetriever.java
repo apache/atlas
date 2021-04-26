@@ -271,7 +271,7 @@ public class EntityGraphRetriever {
         Object ret = null;
 
         try {
-            ret = getVertexAttribute(entityVertex, attribute);
+            ret = getVertexAttributeIgnoreInactive(entityVertex, attribute);
         } catch (AtlasBaseException excp) {
             // ignore
         }
@@ -966,6 +966,10 @@ public class EntityGraphRetriever {
     }
 
     private Object mapVertexToAttribute(AtlasVertex entityVertex, AtlasAttribute attribute, AtlasEntityExtInfo entityExtInfo, final boolean isMinExtInfo, boolean includeReferences) throws AtlasBaseException {
+        return mapVertexToAttribute(entityVertex, attribute, entityExtInfo, isMinExtInfo, includeReferences, false);
+    }
+
+    private Object mapVertexToAttribute(AtlasVertex entityVertex, AtlasAttribute attribute, AtlasEntityExtInfo entityExtInfo, final boolean isMinExtInfo, boolean includeReferences, boolean ignoreInactive) throws AtlasBaseException {
         Object    ret                = null;
         AtlasType attrType           = attribute.getAttributeType();
         String    edgeLabel          = attribute.getRelationshipEdgeLabel();
@@ -1011,7 +1015,7 @@ public class EntityGraphRetriever {
                     if (attribute.getAttributeDef().isSoftReferenced()) {
                         ret = mapVertexToArrayForSoftRef(entityVertex, attribute, entityExtInfo, isMinExtInfo);
                     } else {
-                        ret = mapVertexToArray(entityVertex, entityExtInfo, isOwnedAttribute, attribute, isMinExtInfo, includeReferences);
+                        ret = mapVertexToArray(entityVertex, entityExtInfo, isOwnedAttribute, attribute, isMinExtInfo, includeReferences, ignoreInactive);
                     }
                 }
             }
@@ -1158,7 +1162,8 @@ public class EntityGraphRetriever {
     }
 
     private List<Object> mapVertexToArray(AtlasVertex entityVertex, AtlasEntityExtInfo entityExtInfo,
-                                          boolean isOwnedAttribute, AtlasAttribute attribute, final boolean isMinExtInfo, boolean includeReferences) throws AtlasBaseException {
+                                          boolean isOwnedAttribute, AtlasAttribute attribute, final boolean isMinExtInfo,
+                                          boolean includeReferences, boolean ignoreInactive) throws AtlasBaseException {
 
         AtlasArrayType arrayType        = (AtlasArrayType) attribute.getAttributeType();
         AtlasType      arrayElementType = arrayType.getElementType();
@@ -1181,6 +1186,10 @@ public class EntityGraphRetriever {
             // Graph layer does erroneous mapping of the null element, hence avoiding the processing of the null element
             if (element == null) {
                 LOG.debug("Skipping null arrayElement");
+                continue;
+            }
+
+            if (ignoreInactive && GraphHelper.getStatus((AtlasEdge) element) != AtlasEntity.Status.ACTIVE) {
                 continue;
             }
 
@@ -1331,6 +1340,10 @@ public class EntityGraphRetriever {
 
     private Object getVertexAttribute(AtlasVertex vertex, AtlasAttribute attribute) throws AtlasBaseException {
         return vertex != null && attribute != null ? mapVertexToAttribute(vertex, attribute, null, false) : null;
+    }
+
+    private Object getVertexAttributeIgnoreInactive(AtlasVertex vertex, AtlasAttribute attribute) throws AtlasBaseException {
+        return vertex != null && attribute != null ? mapVertexToAttribute(vertex, attribute, null, false, true, true) : null;
     }
 
     private void mapRelationshipAttributes(AtlasVertex entityVertex, AtlasEntity entity, AtlasEntityExtInfo entityExtInfo, boolean isMinExtInfo) throws AtlasBaseException {
