@@ -1054,6 +1054,14 @@
                 <version>${zookeeper.version}</version>
             </dependency>
 
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-bom</artifactId>
+                <version>4.1.61.Final</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
             <!-- commons -->
             <dependency>
                 <groupId>commons-configuration</groupId>
