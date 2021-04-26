@@ -18,6 +18,7 @@
 package org.apache.atlas.repository.store.graph.v2;
 
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.DeleteType;
 import org.apache.atlas.GraphTransactionInterceptor;
@@ -109,7 +110,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     private final IAtlasEntityChangeNotifier entityChangeNotifier;
     private final EntityGraphMapper          entityGraphMapper;
     private final EntityGraphRetriever       entityRetriever;
-    private final boolean                    storeDifferentialAudits;
+    private       boolean                    storeDifferentialAudits;
 
     @Inject
     public AtlasEntityStoreV2(AtlasGraph graph, DeleteHandlerDelegate deleteDelegate, AtlasTypeRegistry typeRegistry,
@@ -121,6 +122,11 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         this.entityGraphMapper    = entityGraphMapper;
         this.entityRetriever      = new EntityGraphRetriever(graph, typeRegistry);
         this.storeDifferentialAudits = STORE_DIFFERENTIAL_AUDITS.getBoolean();
+    }
+
+    @VisibleForTesting
+    public void setStoreDifferentialAudits(boolean val) {
+        this.storeDifferentialAudits = val;
     }
 
     @Override
