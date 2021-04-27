@@ -215,7 +215,8 @@ define(['require',
             onSelectDepthChange: function(e, options) {
                 //this.initializeGraph();
                 this.filterObj.depthCount = e.currentTarget.value;
-                this.fetchGraphData({ queryParam: { 'depth': this.filterObj.depthCount } });
+                //legends property is added in queryParam to stop the legend getting added in lineage graph whenever dept is changed. 
+                this.fetchGraphData({ queryParam: { 'depth': this.filterObj.depthCount }, 'legends': false });
             },
             onClickResetLineage: function() {
                 this.LineageHelperRef.refresh();
@@ -252,7 +253,7 @@ define(['require',
                         if (that.isDestroyed) {
                             return;
                         }
-
+                        data["legends"] = options ? options.legends : true;
                         that.createGraph(data);
                         that.renderLineageTypeSearch(data);
                     },
@@ -268,12 +269,12 @@ define(['require',
             createGraph: function(data) {
                 var that = this;
                 $('.resizeGraph').css("height", this.$('.svg').height() + "px");
-
                 this.LineageHelperRef = new LineageHelper.default({
                     entityDefCollection: this.entityDefCollection.fullCollection.toJSON(),
                     data: data,
                     el: this.$('.svg')[0],
                     legendsEl: this.$('.legends')[0],
+                    legends: data.legends,
                     getFilterObj: function() {
                         return {
                             isProcessHideCheck: that.filterObj.isProcessHideCheck,
