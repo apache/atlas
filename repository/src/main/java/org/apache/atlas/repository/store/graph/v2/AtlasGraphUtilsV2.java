@@ -47,6 +47,7 @@ import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.util.FileUtils;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
@@ -841,4 +842,29 @@ public class AtlasGraphUtilsV2 {
         return ret;
     }
 
+    public static void addItemToListProperty(AtlasEdge edge, String property, String value) {
+        List list = getListFromProperty(edge, property);
+
+        list.add(value);
+
+        edge.setListProperty(property, list);
+    }
+
+    public static void removeItemFromListProperty(AtlasEdge edge, String property, String value) {
+        List list = getListFromProperty(edge, property);
+
+        list.remove(value);
+
+        if (CollectionUtils.isEmpty(list)) {
+            edge.removeProperty(property);
+        } else {
+            edge.setListProperty(property, list);
+        }
+    }
+
+    private static List getListFromProperty(AtlasEdge edge, String property) {
+        List list = edge.getListProperty(property);
+
+        return CollectionUtils.isEmpty(list) ? new ArrayList() : list;
+    }
 }

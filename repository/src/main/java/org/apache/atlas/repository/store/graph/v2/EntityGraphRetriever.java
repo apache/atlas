@@ -1189,7 +1189,7 @@ public class EntityGraphRetriever {
                 continue;
             }
 
-            if (ignoreInactive && GraphHelper.getStatus((AtlasEdge) element) != AtlasEntity.Status.ACTIVE) {
+            if (isInactiveEdge(element, ignoreInactive)) {
                 continue;
             }
 
@@ -1709,5 +1709,9 @@ public class EntityGraphRetriever {
         }
 
         return new HashSet<>(ret);
+    }
+
+    private boolean isInactiveEdge(Object element, boolean ignoreInactive) {
+        return ignoreInactive && element instanceof AtlasEdge && getStatus((AtlasEdge) element) != AtlasEntity.Status.ACTIVE;
     }
 }

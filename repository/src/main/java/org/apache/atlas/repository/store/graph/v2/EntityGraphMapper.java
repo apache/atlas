@@ -25,7 +25,8 @@ import org.apache.atlas.GraphTransactionInterceptor;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.TimeBoundary;
+ import org.apache.atlas.exception.EntityNotFoundException;
+ import org.apache.atlas.model.TimeBoundary;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -124,6 +125,7 @@ import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPro
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_DELETE;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
+import static org.apache.atlas.type.Constants.PENDING_TASKS_PROPERTY_KEY;
 
 @Component
 public class EntityGraphMapper {
@@ -2039,6 +2041,8 @@ public class EntityGraphMapper {
                 return null;
             }
 
+            GraphTransactionInterceptor.lockObjectAndReleasePostCommit(entityGuid);
+
             AtlasVertex entityVertex = graphHelper.getVertexForGUID(entityGuid);
 
             if (entityVertex == null) {
@@ -2554,13 +2558,15 @@ public class EntityGraphMapper {
     }
 
     @GraphTransaction
-    public List<String> deleteClassificationPropagation(String classificationVertexId) throws AtlasBaseException {
+    public List<String> deleteClassificationPropagation(String entityGuid, String classificationVertexId) throws AtlasBaseException {
         try {
             if (StringUtils.isEmpty(classificationVertexId)) {
                 LOG.warn("deleteClassificationPropagation(classificationVertexId={}): classification vertex id is empty", classificationVertexId);
 
                 return null;
             }
+
+            GraphTransactionInterceptor.lockObjectAndReleasePostCommit(entityGuid);
 
             AtlasVertex classificationVertex = graph.getVertex(classificationVertexId);
 
@@ -2821,5 +2827,37 @@ public class EntityGraphMapper {
 
     private void createAndQueueTask(String taskType, AtlasVertex entityVertex, String classificationVertexId) {
         deleteDelegate.getHandler().createAndQueueTask(taskType, entityVertex, classificationVertexId, null);
+    }
+
+    public void removePendingTaskFromEntity(String entityGuid, String taskGuid) throws EntityNotFoundException {
+        if (StringUtils.isEmpty(entityGuid) || StringUtils.isEmpty(taskGuid)) {
+            return;
+        }
+
+        AtlasVertex entityVertex = graphHelper.getVertexForGUID(entityGuid);
+
+        if (entityVertex == null) {
+            LOG.warn("Error fetching vertex: {}", entityVertex);
+
+            return;
+        }
+
+        entityVertex.removePropertyValue(PENDING_TASKS_PROPERTY_KEY, taskGuid);
+    }
+
+    public void removePendingTaskFromEdge(String edgeId, String taskGuid) throws AtlasBaseException {
+        if (StringUtils.isEmpty(edgeId) || StringUtils.isEmpty(taskGuid)) {
+            return;
+        }
+
+        AtlasEdge edge = graph.getEdge(edgeId);
+
+        if (edge == null) {
+            LOG.warn("Error fetching edge: {}", edgeId);
+
+            return;
+        }
+
+        AtlasGraphUtilsV2.removeItemFromListProperty(edge, EDGE_PENDING_TASKS_PROPERTY_KEY, taskGuid);
     }
 }

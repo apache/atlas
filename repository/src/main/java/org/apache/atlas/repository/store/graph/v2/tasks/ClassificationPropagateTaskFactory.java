@@ -54,13 +54,11 @@ public class ClassificationPropagateTaskFactory implements TaskFactory {
     private final AtlasRelationshipStore relationshipStore;
 
     @Inject
-    public ClassificationPropagateTaskFactory(TaskManagement taskManagement, AtlasGraph graph, EntityGraphMapper entityGraphMapper, DeleteHandlerDelegate deleteDelegate, AtlasRelationshipStore relationshipStore) {
+    public ClassificationPropagateTaskFactory(AtlasGraph graph, EntityGraphMapper entityGraphMapper, DeleteHandlerDelegate deleteDelegate, AtlasRelationshipStore relationshipStore) {
         this.graph             = graph;
         this.entityGraphMapper = entityGraphMapper;
         this.deleteDelegate    = deleteDelegate;
         this.relationshipStore = relationshipStore;
-
-        taskManagement.addFactory(this);
     }
 
     public org.apache.atlas.tasks.AbstractTask create(AtlasTask task) {
