@@ -24,6 +24,7 @@ import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.tasks.TaskManagement;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.springframework.stereotype.Component;
 
@@ -34,8 +35,8 @@ import javax.inject.Inject;
 public class HardDeleteHandlerV1 extends DeleteHandlerV1 {
 
     @Inject
-    public HardDeleteHandlerV1(AtlasGraph graph, AtlasTypeRegistry typeRegistry) {
-        super(graph, typeRegistry, true, false);
+    public HardDeleteHandlerV1(AtlasGraph graph, AtlasTypeRegistry typeRegistry, TaskManagement taskManagement) {
+        super(graph, typeRegistry, true, false, taskManagement);
     }
 
     @Override

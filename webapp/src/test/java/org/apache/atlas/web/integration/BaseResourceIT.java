@@ -354,7 +354,7 @@ public abstract class BaseResourceIT {
 
         ClassTypeDefinition tblClsDef = TypesUtil
                 .createClassTypeDef(HIVE_TABLE_TYPE, null, Collections.singleton("DataSet"),
-                        attrDef("owner", AtlasBaseTypeDef.ATLAS_TYPE_STRING), attrDef("createTime", AtlasBaseTypeDef.ATLAS_TYPE_LONG),
+                        attrDef("createTime", AtlasBaseTypeDef.ATLAS_TYPE_LONG),
                         attrDef("lastAccessTime", AtlasBaseTypeDef.ATLAS_TYPE_DATE),
                         attrDef("temporary", AtlasBaseTypeDef.ATLAS_TYPE_BOOLEAN),
                         new AttributeDefinition("db", DATABASE_TYPE, Multiplicity.OPTIONAL, true, "tables"),
@@ -435,7 +435,6 @@ public abstract class BaseResourceIT {
         AtlasEntityDef tblClsDef = AtlasTypeUtil
                 .createClassTypeDef(HIVE_TABLE_TYPE_V2,
                         Collections.singleton("DataSet"),
-                        AtlasTypeUtil.createOptionalAttrDef("owner", "string"),
                         AtlasTypeUtil.createOptionalAttrDef("createTime", "long"),
                         AtlasTypeUtil.createOptionalAttrDef("lastAccessTime", "date"),
                         AtlasTypeUtil.createOptionalAttrDef("temporary", "boolean"),

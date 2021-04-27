@@ -216,7 +216,8 @@ define(['require',
                 }
                 if (Utils.getUrlState.isGlossaryTab()) {
                     var obj = this.query[this.viewType],
-                        $tree = this.ui[(this.viewType == "term" ? "termTree" : "categoryTree")]
+                        $tree = this.ui[(this.viewType == "term" ? "termTree" : "categoryTree")];
+                    obj["gId"] = that.value.gId; //this Property added, Because when we toggle the GlossaryViewButton it does not adds the gId which is required for selection.  
                     if (obj.guid) {
                         var node = $tree.jstree(true).get_node(obj.guid);
                         if (node) {
@@ -344,34 +345,56 @@ define(['require',
                         node: parent,
                         objGuid: obj.guid
                     });
-
                     if (type == "category" && obj.categories) {
+                        var isSelected = false,
+                            parentGuid = obj.guid,
+                            parentCategoryGuid = null,
+                            categoryList = [],
+                            catrgoryRelation = [];
                         _.each(obj.categories, function(category) {
-                            if (category.parentCategoryGuid) {
-                                return;
+                            if (that.options.value) {
+                                isSelected = that.options.value.guid ? that.options.value.guid == category.categoryGuid : false;
                             }
+
                             var typeName = category.typeName || "GlossaryCategory",
                                 guid = category.categoryGuid,
                                 categoryObj = {
-                                    "text": _.escape(category.displayText),
-                                    "type": typeName,
-                                    "gType": "category",
-                                    "guid": guid,
-                                    "id": guid,
-                                    "parent": obj,
-                                    "glossaryId": obj.guid,
-                                    "glossaryName": obj.name,
-                                    "model": category,
-                                    "children": true,
-                                    "icon": "fa fa-files-o",
+                                    id: guid,
+                                    guid: guid,
+                                    text: _.escape(category.displayText),
+                                    type: typeName,
+                                    gType: "category",
+                                    glossaryId: obj.guid,
+                                    glossaryName: obj.name,
+                                    children: [],
+                                    model: category,
+                                    icon: "fa fa-files-o"
                                 };
                             categoryObj.state = getSelectedState({
                                 index: i,
                                 node: categoryObj,
                                 objGuid: guid
                             })
-                            parent.children.push(categoryObj)
+                            if (category.parentCategoryGuid) {
+                                catrgoryRelation.push({ parent: category.parentCategoryGuid, child: guid })
+                            }
+                            categoryList.push(categoryObj);
                         });
+                        _.each(categoryList, function(category) {
+                            var getRelation = _.find(catrgoryRelation, function(catrgoryObj) {
+                                if (catrgoryObj.child == category.guid) return catrgoryObj;
+                            })
+                            if (getRelation) {
+                                _.map(categoryList, function(catrgoryObj) {
+                                    if (catrgoryObj.guid == getRelation.parent) {
+                                        catrgoryObj["children"].push(category);
+                                    };
+                                })
+                            } else {
+                                parent.children.push(category)
+                            }
+                        })
+
                     }
                     if (type == "term" && obj.terms) {
                         _.each(obj.terms, function(term) {
@@ -651,12 +674,27 @@ define(['require',
                     CommonViewFunction.createEditGlossaryCategoryTerm({
                         "isCategoryView": true,
                         "collection": that.glossaryCollection,
-                        "callback": function() {
-                            if (that.value.gType == "glossary") {
-                                that.getGlossary();
-                            } else {
-                                that.ui.categoryTree.jstree(true).refresh();
+                        "callback": function(updateCollection) {
+                            var updatedObj = {
+                                    categoryGuid: updateCollection.guid,
+                                    displayText: updateCollection.name,
+                                    relationGuid: updateCollection.anchor ? updateCollection.anchor.relationGuid : null
+                                },
+                                glossary = that.glossaryCollection.fullCollection.findWhere({ guid: updateCollection.anchor.glossaryGuid });
+                            if (updateCollection.parentCategory) {
+                                updatedObj["parentCategoryGuid"] = updateCollection.parentCategory.categoryGuid;
                             }
+                            if (glossary) {
+                                var glossaryAttributes = glossary.attributes || null;
+                                if (glossaryAttributes) {
+                                    if (glossaryAttributes.categories) {
+                                        glossaryAttributes['categories'].push(updatedObj);
+                                    } else {
+                                        glossaryAttributes['categories'] = [updatedObj];
+                                    }
+                                }
+                            }
+                            that.ui.categoryTree.jstree(true).refresh();
                         },
                         "node": this.glossary.selectedItem
                     })
@@ -690,7 +728,7 @@ define(['require',
                                     }), { silent: true });
                                 } else if (that.value.gType == "category") {
                                     glossary.set('categories', _.reject(glossary.get('categories'), function(obj) {
-                                        return obj.categoryGuid == guid;
+                                        return obj.categoryGuid == guid || obj.parentCategoryGuid == guid;
                                     }), { silent: true });
                                 } else {
                                     glossary = that.glossaryCollection.fullCollection.first();
@@ -789,11 +827,17 @@ define(['require',
                         obj["gId"] = selectedItem.guid;
                     }
                     this.query[this.viewType] = _.extend(obj, _.omit(this.value, 'gId'), _.pick(this.glossary.selectedItem, 'model', 'type', 'gType', 'guid'), { "viewType": this.viewType, "isNodeNotFoundAtLoad": this.query[this.viewType].isNodeNotFoundAtLoad });
+                    //Below condition if for adding term Param to the URL for selection Purpose while switching from Old UI to New UI on term selection.
+                    if (selectedItem.type === "GlossaryTerm") {
+                        obj['term'] = selectedItem.text + '@' + selectedItem.glossaryName;
+                    } else {
+                        delete obj.term;
+                    }
                     Utils.setUrl({
                         url: '#!/glossary/' + obj.guid,
                         mergeBrowserUrl: false,
                         trigger: true,
-                        urlParams: _.omit(obj, 'model', 'guid', 'type', 'isNodeNotFoundAtLoad'),
+                        urlParams: _.omit(obj, 'model', 'type', 'isNodeNotFoundAtLoad'), //Guid has been removed from here because we need in the URL for Highlighting issue.
                         updateTabState: true
                     });
                 }

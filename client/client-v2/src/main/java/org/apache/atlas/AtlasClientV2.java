@@ -1014,10 +1014,10 @@ public class AtlasClientV2 extends AtlasBaseClient {
         return readStreamContents(inputStream);
     }
 
-    public List<AtlasGlossaryTerm> importGlossary(String fileName) throws AtlasServiceException {
+    public BulkImportResponse importGlossary(String fileName) throws AtlasServiceException {
         MultiPart multipartEntity = getMultiPartData(fileName);
 
-        return callAPI(API_V2.IMPORT_GLOSSARY, List.class, multipartEntity);
+        return callAPI(API_V2.IMPORT_GLOSSARY, BulkImportResponse.class, multipartEntity);
     }
 
 

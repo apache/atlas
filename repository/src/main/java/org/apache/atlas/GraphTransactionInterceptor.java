@@ -26,7 +26,9 @@ import org.apache.atlas.exception.NotFoundException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.tasks.TaskManagement;
 import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
+import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -53,7 +55,8 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
     private static final ThreadLocal<Boolean>                   innerFailure               = ThreadLocal.withInitial(() -> Boolean.FALSE);
     private static final ThreadLocal<Map<String, AtlasVertex>>  guidVertexCache            = ThreadLocal.withInitial(() -> new HashMap<>());
 
-    private final AtlasGraph graph;
+    private final AtlasGraph     graph;
+    private final TaskManagement taskManagement;
 
     private static final ThreadLocal<Map<Object, String>> vertexGuidCache =
             new ThreadLocal<Map<Object, String>>() {
@@ -80,8 +83,9 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
             };
 
     @Inject
-    public GraphTransactionInterceptor(AtlasGraph graph) {
-        this.graph = graph;
+    public GraphTransactionInterceptor(AtlasGraph graph, TaskManagement taskManagement) {
+        this.graph          = graph;
+        this.taskManagement = taskManagement;
     }
 
     @Override
@@ -89,7 +93,7 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
         Method        method            = invocation.getMethod();
         String        invokingClass     = method.getDeclaringClass().getSimpleName();
         String        invokedMethodName = method.getName();
-        boolean       logRollback       = method.getAnnotation(GraphTransaction.class).logRollback();
+        boolean       logRollback       = method.getAnnotation(GraphTransaction.class) == null || method.getAnnotation(GraphTransaction.class).logRollback();
 
         boolean isInnerTxn = isTxnOpen.get();
         // Outermost txn marks any subsequent transaction as inner
@@ -164,6 +168,10 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
             }
 
             OBJECT_UPDATE_SYNCHRONIZER.releaseLockedObjects();
+
+            if (isSuccess) {
+                submitTasks();
+            }
         }
     }
 
@@ -229,6 +237,14 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
         vertexGuidCache.get().clear();
         vertexStateCache.get().clear();
         edgeStateCache.get().clear();
+    }
+
+    private void submitTasks() {
+        if (CollectionUtils.isEmpty(RequestContext.get().getQueuedTasks()) || taskManagement == null) {
+            return;
+        }
+
+        taskManagement.addAll(RequestContext.get().getQueuedTasks());
     }
 
     boolean logException(Throwable t) {

@@ -22,7 +22,9 @@ import org.apache.atlas.AtlasClient;
 import org.apache.atlas.BasicTestSetup;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.discovery.AtlasQuickSearchResult;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
+import org.apache.atlas.model.discovery.QuickSearchParameters;
 import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -152,7 +154,7 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
         List<AtlasEntityHeader> entityHeaders = discoveryService.searchWithParameters(params).getEntities();
 
         Assert.assertTrue(CollectionUtils.isNotEmpty(entityHeaders));
-        assertEquals(entityHeaders.size(), 1);
+        assertEquals(entityHeaders.size(), 11);
     }
 
 
@@ -351,6 +353,7 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
     String spChar18  = "/warehouse/tablespace/external/hive/name/hortonia_bank";
     String spChar19  = "/warehouse/tablespace/external/hive/name/exis_bank";
 
+    String spChar20  = "search_name_with nameblank@namecluster";
 
     @DataProvider(name = "specialCharSearchContains")
     private Object[][] specialCharSearchContains() {
@@ -575,10 +578,53 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
         };
     }
 
+    @DataProvider(name = "specialCharQuickSearch")
+    private Object[][] specialCharQuickSearch() {
+        return new Object[][]{
+                {"default.test_dot_name", 3},
+                {"default.test_dot_name*", 3},
+                {"test_dot_name", 0},
+                {"*test_dot_name", 2},
+                {"*test_dot_name*", 4},
+                {"default.test_dot_name\\*", 0},
+
+                {"default.test_dot_qf", 3},
+                {"default.test_dot_qf*", 3},
+                {"test_dot_qf", 1},
+                {"*test_dot_qf", 3},
+                {"*test_dot_qf*", 4},
+                {"default.test_dot_qf\\*", 2},
+
+                {"default.test_dot_name_12.col1", 1},
+                {"default.test_dot_name_12.col1*", 1},
+                {"default.test_dot_name_12.col", 0},
+                {"default.test_dot_name_12.col*", 1},
+                {"default.test_dot_qf_12.col1", 1},
+                {"default.test_dot_qf_12.col1*", 0},
+
+                {"default.test_dot_name_12*", 1},
+                {"default.test_dot_qf_12*", 1},
+
+                //space gets tokenized, hence whenever user searches for 'STRING' type attribute, space needs to be escaped
+                {"search_name_with nameblank@namecluster", 0},
+                //{"search_name_with nameblank@name", 0}, commenting as there are some entities created from other class with same name
+                {"search_name_with nameblank*", 0},
+                {"search_name_with\\ nameblank@namecluster", 1},
+                {"search_name_with\\ nameblank*", 1},
+
+                //if we escape it will consider as single string, hence * will act as character not as wildcard
+                {"search_qf_with\\ qfblank*", 0},
+                {"search_qf_with\\ qfblank@qfcluster", 1},
+                {"search_qf_with qfblank@qfcluster", 1},
+                {"search_qf_with qfblank@q", 1},
+                {"search_qf_with qfblank*", 1},
+        };
+    }
+
 
     public void createSpecialCharTestEntities() throws AtlasBaseException {
 
-        List<String> nameList = Arrays.asList(spChar1,spChar2,spChar3,spChar4,spChar5,spChar6,spChar7,spChar8,spChar9,spChar10,spChar11,spChar12,spChar13,spChar14,spChar15,spChar16,spChar17,spChar18,spChar19);
+        List<String> nameList = Arrays.asList(spChar1,spChar2,spChar3,spChar4,spChar5,spChar6,spChar7,spChar8,spChar9,spChar10,spChar11,spChar12,spChar13,spChar14,spChar15,spChar16,spChar17,spChar18,spChar19,spChar20);
         for (String nameStr : nameList) {
             AtlasEntity entityToDelete = new AtlasEntity(HIVE_TABLE_TYPE);
             entityToDelete.setAttribute("name", nameStr);
@@ -647,7 +693,18 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
         params.setLimit(20);
 
         AtlasSearchResult searchResult = discoveryService.searchWithParameters(params);
-        assertSearchResult(searchResult,expected, attrValue);
+        assertSearchResult(searchResult, expected, attrValue);
+    }
+
+    @Test(dataProvider = "specialCharQuickSearch")
+    public void specialCharQuickSearch(String searchValue, int expected) throws AtlasBaseException {
+        QuickSearchParameters params = new QuickSearchParameters();
+        params.setQuery(searchValue);
+        params.setLimit(5);
+        params.setOffset(0);
+
+        AtlasQuickSearchResult searchResult = discoveryService.quickSearch(params);
+        assertSearchResult(searchResult.getSearchResults(), expected, searchValue);
     }
 
     private void assertSearchResult(AtlasSearchResult searchResult, int expected, String query) {

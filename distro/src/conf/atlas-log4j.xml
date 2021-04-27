@@ -57,6 +57,16 @@
         </layout>
     </appender>
 
+    <appender name="TASKS" class="org.apache.log4j.RollingFileAppender">
+        <param name="File" value="${atlas.log.dir}/tasks.log"/>
+        <param name="Append" value="true"/>
+        <param name="maxFileSize" value="259MB" />
+        <param name="maxBackupIndex" value="20" />
+        <layout class="org.apache.log4j.PatternLayout">
+            <param name="ConversionPattern" value="%t %d %x %m%n (%C{1}:%L)"/>
+        </layout>
+    </appender>
+
     <appender name="METRICS" class="org.apache.log4j.RollingFileAppender">
         <param name="File" value="${atlas.log.dir}/metric.log"/>
         <param name="Append" value="true"/>
@@ -142,6 +152,11 @@
     <logger name="FAILED" additivity="false">
         <level value="info"/>
         <appender-ref ref="FAILED"/>
+    </logger>
+
+    <logger name="TASKS" additivity="false">
+        <level value="info"/>
+        <appender-ref ref="TASKS"/>
     </logger>
 
     <root>

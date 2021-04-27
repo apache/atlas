@@ -568,7 +568,7 @@ define(['require',
                     });
                 var columns = new columnCollection((that.searchCollection.dynamicTable ? that.getDaynamicColumns(that.searchCollection.toJSON()) : that.getFixedDslColumn()));
                 columns.setPositions().sort();
-                if (this.searchType == "Advanced Search" && columns.length) {
+                if (this.searchType == "Advanced Search" && columns.length && that.searchCollection.length) {
                     //for dsl search with Select clause, default column to be use as sorting
                     var tableColumnNames = Object.keys(that.searchCollection.toJSON()[0]);
                     that.commonTableOptions['sortOpts'] = {

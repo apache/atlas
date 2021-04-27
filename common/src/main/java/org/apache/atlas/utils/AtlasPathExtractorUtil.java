@@ -82,6 +82,13 @@ public class AtlasPathExtractorUtil {
     public static final String RELATIONSHIP_OZONE_VOLUME_BUCKET     = "ozone_volume_buckets";
     public static final String RELATIONSHIP_OZONE_PARENT_CHILDREN   = "ozone_parent_children";
 
+    //Google Cloud Storage
+    public static final String GCS_SCHEME                       = "gs" + SCHEME_SEPARATOR;
+    public static final String GCS_BUCKET                       = "gcp_storage_bucket";
+    public static final String GCS_VIRTUAL_DIR                  = "gcp_storage_virtual_directory";
+    public static final String ATTRIBUTE_GCS_PARENT             = "parent";
+    public static final String RELATIONSHIP_GCS_PARENT_CHILDREN = "gcp_storage_parent_children";
+
     public static AtlasEntityWithExtInfo getPathEntity(Path path, PathExtractorContext context) {
         AtlasEntityWithExtInfo entityWithExtInfo = new AtlasEntityWithExtInfo();
         AtlasEntity ret;
@@ -98,9 +105,12 @@ public class AtlasPathExtractorUtil {
             ret = addAbfsPathEntity(path, entityWithExtInfo, context);
         } else if (isOzonePath(strPath)) {
             ret = addOzonePathEntity(path, entityWithExtInfo, context);
+        } else if (isGCSPath(strPath)) {
+            ret = addGCSPathEntity(path, entityWithExtInfo, context);
         } else {
             ret = addHDFSPathEntity(path, context);
         }
+
         entityWithExtInfo.setEntity(ret);
 
         return entityWithExtInfo;
@@ -121,6 +131,10 @@ public class AtlasPathExtractorUtil {
 
     private static boolean isOzonePath(String strPath) {
         return strPath != null && (strPath.startsWith(OZONE_SCHEME) || strPath.startsWith(OZONE_3_SCHEME));
+    }
+
+    private static boolean isGCSPath(String strPath) {
+        return strPath != null && strPath.startsWith(GCS_SCHEME);
     }
 
     private static AtlasEntity addS3PathEntityV1(Path path, AtlasEntityExtInfo extInfo, PathExtractorContext context) {
@@ -217,7 +231,7 @@ public class AtlasPathExtractorUtil {
                 ret = new AtlasEntity(AWS_S3_V2_PSEUDO_DIR);
 
                 ret.setRelationshipAttribute(ATTRIBUTE_CONTAINER, parentObjId);
-                ret.setAttribute(ATTRIBUTE_OBJECT_PREFIX, subDirPath);
+                ret.setAttribute(ATTRIBUTE_OBJECT_PREFIX, parentPath);
                 ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, subDirQualifiedName);
                 ret.setAttribute(ATTRIBUTE_NAME, subDirName);
 
@@ -437,6 +451,83 @@ public class AtlasPathExtractorUtil {
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== addOzonePathEntity(strPath={})", strPath);
+        }
+
+        return ret;
+    }
+
+    private static AtlasEntity addGCSPathEntity(Path path, AtlasEntityExtInfo extInfo, PathExtractorContext context) {
+        String strPath = path.toString();
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> addGCSPathEntity(strPath={})", strPath);
+        }
+
+        String      metadataNamespace = context.getMetadataNamespace();
+        String      pathQualifiedName = strPath + QNAME_SEP_METADATA_NAMESPACE + metadataNamespace;
+        AtlasEntity ret               = context.getEntity(pathQualifiedName);
+
+        if (ret == null) {
+            String      bucketName          = path.toUri().getAuthority();
+            String      schemeAndBucketName = (path.toUri().getScheme() + SCHEME_SEPARATOR + bucketName).toLowerCase();
+            String      bucketQualifiedName = schemeAndBucketName + QNAME_SEP_METADATA_NAMESPACE + metadataNamespace;
+            AtlasEntity bucketEntity        = context.getEntity(bucketQualifiedName);
+
+            if (bucketEntity == null) {
+                bucketEntity = new AtlasEntity(GCS_BUCKET);
+
+                bucketEntity.setAttribute(ATTRIBUTE_QUALIFIED_NAME, bucketQualifiedName);
+                bucketEntity.setAttribute(ATTRIBUTE_NAME, bucketName);
+
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("adding entity: typeName={}, qualifiedName={}", bucketEntity.getTypeName(), bucketEntity.getAttribute(ATTRIBUTE_QUALIFIED_NAME));
+                }
+
+                context.putEntity(bucketQualifiedName, bucketEntity);
+            }
+
+            extInfo.addReferredEntity(bucketEntity);
+
+            AtlasRelatedObjectId parentObjId = AtlasTypeUtil.getAtlasRelatedObjectId(bucketEntity, RELATIONSHIP_GCS_PARENT_CHILDREN);
+            String               parentPath  = Path.SEPARATOR;
+            String               dirPath     = path.toUri().getPath();
+
+            if (StringUtils.isEmpty(dirPath)) {
+                dirPath = Path.SEPARATOR;
+            }
+
+            for (String subDirName : dirPath.split(Path.SEPARATOR)) {
+                if (StringUtils.isEmpty(subDirName)) {
+                    continue;
+                }
+
+                String subDirPath          = parentPath + subDirName + Path.SEPARATOR;
+                String subDirQualifiedName = schemeAndBucketName + subDirPath + QNAME_SEP_METADATA_NAMESPACE + metadataNamespace;
+
+                ret = new AtlasEntity(GCS_VIRTUAL_DIR);
+
+                ret.setRelationshipAttribute(ATTRIBUTE_GCS_PARENT, parentObjId);
+                ret.setAttribute(ATTRIBUTE_OBJECT_PREFIX, parentPath);
+                ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, subDirQualifiedName);
+                ret.setAttribute(ATTRIBUTE_NAME, subDirName);
+
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("adding entity: typeName={}, qualifiedName={}", ret.getTypeName(), ret.getAttribute(ATTRIBUTE_QUALIFIED_NAME));
+                }
+
+                context.putEntity(subDirQualifiedName, ret);
+
+                parentObjId = AtlasTypeUtil.getAtlasRelatedObjectId(ret, RELATIONSHIP_GCS_PARENT_CHILDREN);
+                parentPath  = subDirPath;
+            }
+
+            if (ret == null) {
+                ret = bucketEntity;
+            }
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== addGCSPathEntity(strPath={})", strPath);
         }
 
         return ret;

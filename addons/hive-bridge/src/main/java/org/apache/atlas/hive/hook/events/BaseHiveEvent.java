@@ -136,6 +136,8 @@ public abstract class BaseHiveEvent {
     public static final String ATTRIBUTE_EXEC_TIME                 = "execTime";
     public static final String ATTRIBUTE_DDL_QUERIES               = "ddlQueries";
     public static final String ATTRIBUTE_SERVICE_TYPE              = "serviceType";
+    public static final String ATTRIBUTE_GUID                      = "guid";
+    public static final String ATTRIBUTE_UNIQUE_ATTRIBUTES         = "uniqueAttributes";
     public static final String HBASE_STORAGE_HANDLER_CLASS         = "org.apache.hadoop.hive.hbase.HBaseStorageHandler";
     public static final String HBASE_DEFAULT_NAMESPACE             = "default";
     public static final String HBASE_NAMESPACE_TABLE_DELIMITER     = ":";

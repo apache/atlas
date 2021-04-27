@@ -20,6 +20,7 @@ package org.apache.atlas.glossary;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.SortOrder;
 import org.apache.atlas.TestModules;
+import org.apache.atlas.bulkimport.BulkImportResponse;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.glossary.AtlasGlossary;
 import org.apache.atlas.model.glossary.AtlasGlossaryCategory;
@@ -65,7 +66,11 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 
-import static org.testng.Assert.*;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class GlossaryServiceTest {
@@ -93,9 +98,9 @@ public class GlossaryServiceTest {
     public static Object[][] getGlossaryTermsProvider() {
         return new Object[][]{
                 // offset, limit, expected
-                {0, -1, 6},
+                {0, -1, 7},
                 {0, 2, 2},
-                {2, 5, 4},
+                {2, 6, 5},
         };
     }
 
@@ -933,17 +938,25 @@ public class GlossaryServiceTest {
     @Test( dependsOnGroups = "Glossary.CREATE" )
     public void testImportGlossaryData(){
         try {
-            InputStream             inputStream           = getFile(CSV_FILES,"template_1.csv");
-            List<AtlasGlossaryTerm> atlasGlossaryTermList = glossaryService.importGlossaryData(inputStream,"template_1.csv");
+            InputStream             inputStream   = getFile(CSV_FILES,"template_1.csv");
+            BulkImportResponse bulkImportResponse = glossaryService.importGlossaryData(inputStream,"template_1.csv");
 
-            assertNotNull(atlasGlossaryTermList);
-            assertEquals(atlasGlossaryTermList.size(), 1);
+            assertNotNull(bulkImportResponse);
+            assertEquals(bulkImportResponse.getSuccessImportInfoList().size(), 1);
 
-            InputStream             inputStream1           = getFile(EXCEL_FILES,"template_1.xlsx");
-            List<AtlasGlossaryTerm> atlasGlossaryTermList1 = glossaryService.importGlossaryData(inputStream1,"template_1.xlsx");
+            InputStream             inputStream1   = getFile(EXCEL_FILES,"template_1.xlsx");
+            BulkImportResponse bulkImportResponse1 = glossaryService.importGlossaryData(inputStream1,"template_1.xlsx");
 
-            assertNotNull(atlasGlossaryTermList1);
-            assertEquals(atlasGlossaryTermList1.size(), 1);
+            assertNotNull(bulkImportResponse1);
+            assertEquals(bulkImportResponse1.getSuccessImportInfoList().size(), 1);
+
+            // With circular dependent relations
+            InputStream             inputStream2   = getFile(CSV_FILES,"template_with_circular_relationship.csv");
+            BulkImportResponse bulkImportResponse2 = glossaryService.importGlossaryData(inputStream2,"template_with_circular_relationship.csv");
+
+            assertNotNull(bulkImportResponse2);
+            assertEquals(bulkImportResponse2.getSuccessImportInfoList().size(), 3);
+            assertEquals(bulkImportResponse2.getFailedImportInfoList().size(), 0);
         } catch (AtlasBaseException e){
             fail("The GlossaryTerm should have been created "+e);
         }
@@ -958,6 +971,18 @@ public class GlossaryServiceTest {
             fail("Error occurred : Failed to recognize the empty file.");
         } catch (AtlasBaseException e) {
             assertEquals(e.getMessage(),"No data found in the uploaded file");
+        }
+    }
+
+    @Test
+    public void testInvalidFileException() {
+        InputStream inputStream = getFile(EXCEL_FILES, "invalid_xls.xls");
+
+        try {
+            BulkImportResponse bulkImportResponse = glossaryService.importGlossaryData(inputStream, "invalid_xls.xls");
+            fail("Error occurred : Failed to recognize the invalid xls file.");
+        } catch (AtlasBaseException e) {
+            assertEquals(e.getMessage(),"Invalid XLS file");
         }
     }
 
@@ -980,12 +1005,14 @@ public class GlossaryServiceTest {
         InputStream inputStream = getFile(CSV_FILES, "incorrectFile.csv");
 
         try {
-            glossaryService.importGlossaryData(inputStream, "incorrectFile.csv");
-            fail("Error occurred : Failed to recognize the incorrect file.");
+            BulkImportResponse bulkImportResponse = glossaryService.importGlossaryData(inputStream, "incorrectFile.csv");
+
+            assertEquals(bulkImportResponse.getSuccessImportInfoList().size(),1);
+
+            //Due to invalid Relation we get Failed message even the import succeeded for the term
+            assertEquals(bulkImportResponse.getFailedImportInfoList().size(),1);
         } catch (AtlasBaseException e) {
-            assertEquals(e.getMessage(),"The uploaded file has not been processed due to the following errors : \n" +
-                    "[\n" +
-                    "The provided Reference Glossary and TermName does not exist in the system GentsFootwear: for record with TermName  : BankBranch1 and GlossaryName : testBankingGlossary]");
+            fail("The incorrect file exception should have handled "+e);
         }
     }
 

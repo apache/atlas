@@ -21,6 +21,8 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasStruct;
+import org.apache.atlas.model.typedef.AtlasClassificationDef;
+import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinality;
@@ -716,6 +718,16 @@ public class AtlasStructType extends AtlasType {
         }
 
         return ret;
+    }
+
+    protected void ensureNoAttributeOverride(List<? extends AtlasStructType> superTypes) throws AtlasBaseException {
+        for (AtlasStructType superType : superTypes) {
+            for (AtlasAttributeDef attributeDef : this.structDef.getAttributeDefs()) {
+                if (superType.getAllAttributes().containsKey(attributeDef.getName())) {
+                    throw new AtlasBaseException(AtlasErrorCode.ATTRIBUTE_NAME_ALREADY_EXISTS_IN_PARENT_TYPE, getStructDef().getName(), attributeDef.getName(), superType.getStructDef().getName());
+                }
+            }
+        }
     }
 
     public static class AtlasAttribute {

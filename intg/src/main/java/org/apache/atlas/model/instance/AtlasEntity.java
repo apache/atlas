@@ -95,6 +95,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
     private Map<String, String>              customAttributes;
     private Map<String, Map<String, Object>> businessAttributes;
     private Set<String>                      labels;
+    private Set<String>                      pendingTasks; // read-only field i.e. value provided is ignored during entity create/update
 
     @JsonIgnore
     private static AtomicLong s_nextId = new AtomicLong(System.nanoTime());
@@ -220,6 +221,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
             setCustomAttributes(other.getCustomAttributes());
             setBusinessAttributes(other.getBusinessAttributes());
             setLabels(other.getLabels());
+            setPendingTasks(other.getPendingTasks());
         }
     }
 
@@ -393,6 +395,14 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         this.labels = labels;
     }
 
+    public Set<String> getPendingTasks() {
+        return pendingTasks;
+    }
+
+    public void setPendingTasks(Set<String> pendingTasks) {
+        this.pendingTasks = pendingTasks;
+    }
+
     public List<AtlasClassification> getClassifications() { return classifications; }
 
     public void setClassifications(List<AtlasClassification> classifications) { this.classifications = classifications; }
@@ -443,6 +453,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         setCustomAttributes(null);
         setBusinessAttributes(null);
         setLabels(null);
+        setPendingTasks(null);
     }
 
     private static String nextInternalId() {
@@ -485,6 +496,9 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         sb.append("]");
         sb.append(", labels=[");
         dumpObjects(labels, sb);
+        sb.append("]");
+        sb.append(", pendingTasks=[");
+        dumpObjects(pendingTasks, sb);
         sb.append("]");
         sb.append('}');
 

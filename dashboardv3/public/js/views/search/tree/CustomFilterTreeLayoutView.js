@@ -347,8 +347,8 @@ define([
                 gType: "customFilter",
                 type: "customFilterFolder",
                 children: customFilterAdvanceList,
-                text: "Advance Search",
-                name: "Advance Search",
+                text: "Advanced Search",
+                name: "Advanced Search",
                 state: { opened: true }
             }];
             var customFilterList = that.isGroupView ? treeView : allCustomFilter;

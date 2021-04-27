@@ -94,6 +94,7 @@ public final class Constants {
     public static final String PROPAGATED_CLASSIFICATION_NAMES_KEY  = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "propagatedClassificationNames");
     public static final String CUSTOM_ATTRIBUTES_PROPERTY_KEY       = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "customAttributes");
     public static final String LABELS_PROPERTY_KEY                  = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "labels");
+    public static final String PENDING_TASKS_PROPERTY_KEY           = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "pendingTasks");
 
     /**
      * Patch vertices property keys.
@@ -206,6 +207,24 @@ public final class Constants {
      * typedef patch constants
      */
     public static final String  TYPEDEF_PATCH_ADD_MANDATORY_ATTRIBUTE   = "ADD_MANDATORY_ATTRIBUTE";
+
+    /*
+     * Task related constants
+     */
+    public static final String TASK_PREFIX            = INTERNAL_PROPERTY_KEY_PREFIX + "task_";
+    public static final String TASK_TYPE_PROPERTY_KEY = encodePropertyKey(TASK_PREFIX + "v_type");
+    public static final String TASK_TYPE_NAME         = INTERNAL_PROPERTY_KEY_PREFIX + "AtlasTaskDef";
+    public static final String TASK_GUID              = encodePropertyKey(TASK_PREFIX + "guid");
+    public static final String TASK_TYPE              = encodePropertyKey(TASK_PREFIX + "type");
+    public static final String TASK_CREATED_TIME      = encodePropertyKey(TASK_PREFIX + "timestamp");
+    public static final String TASK_UPDATED_TIME      = encodePropertyKey(TASK_PREFIX + "modificationTimestamp");
+    public static final String TASK_CREATED_BY        = encodePropertyKey(TASK_PREFIX + "createdBy");
+    public static final String TASK_STATUS            = encodePropertyKey(TASK_PREFIX + "status");
+    public static final String TASK_ATTEMPT_COUNT     = encodePropertyKey(TASK_PREFIX + "attemptCount");
+    public static final String TASK_PARAMETERS        = encodePropertyKey(TASK_PREFIX + "parameters");
+    public static final String TASK_ERROR_MESSAGE     = encodePropertyKey(TASK_PREFIX + "errorMessage");
+    public static final String TASK_START_TIME        = encodePropertyKey(TASK_PREFIX + "startTime");
+    public static final String TASK_END_TIME          = encodePropertyKey(TASK_PREFIX + "endTime");
 
     /*
      * All supported file-format extensions for Bulk Imports through file upload

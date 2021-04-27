@@ -740,10 +740,16 @@ public final class TestUtilsV2 {
                 createOptionalAttrDef("attr19", "array<date>", options, _description),
                 createOptionalAttrDef("attr20", "array<ENUM_1>", options, _description));
 
+        options.put("applicableEntityTypes", "[\"" + SUPER_TYPE_NAME + "\"]");
+
+        AtlasBusinessMetadataDef bmWithSuperType = createBusinessMetadataDef("bmWithSuperType", _description,"1.0",
+                createOptionalAttrDef("attrSuperBoolean", AtlasBusinessMetadataDef.ATLAS_TYPE_BOOLEAN, options, _description ),
+                createOptionalAttrDef("attrSuperString", AtlasBusinessMetadataDef.ATLAS_TYPE_STRING, options, _description ));
+
         AtlasTypesDef ret = AtlasTypeUtil.getTypesDef(new ArrayList<>(),
                 new ArrayList<>(), new ArrayList<>(),
                 new ArrayList<>(), new ArrayList<>(),
-                Arrays.asList(bmNoApplicableTypes, bmNoAttributes, bmWithAllTypes, bmWithAllTypesMV));
+                Arrays.asList(bmNoApplicableTypes, bmNoAttributes, bmWithAllTypes, bmWithAllTypesMV, bmWithSuperType));
 
         populateSystemAttributes(ret);
 
@@ -963,8 +969,7 @@ public final class TestUtilsV2 {
                         createRequiredAttrDef("tag", "string"));
 
         AtlasClassificationDef fetlClassificationTypeDefinition =
-                AtlasTypeUtil.createTraitTypeDef("fetl" + CLASSIFICATION, "fetl" + CLASSIFICATION + _description, Collections.singleton(CLASSIFICATION),
-                        createRequiredAttrDef("tag", "string"));
+                AtlasTypeUtil.createTraitTypeDef("fetl" + CLASSIFICATION, "fetl" + CLASSIFICATION + _description, Collections.singleton(CLASSIFICATION));
 
         AtlasClassificationDef phiTypeDefinition = AtlasTypeUtil.createTraitTypeDef(PHI, PHI + _description, Collections.<String>emptySet(),
                                                                                     createRequiredAttrDef("stringAttr", "string"),
@@ -1444,8 +1449,7 @@ public final class TestUtilsV2 {
                         createRequiredAttrDef("level", "int"));
 
         AtlasClassificationDef janitorSecurityClearanceTypeDef =
-                AtlasTypeUtil.createTraitTypeDef("JanitorClearance", "JanitorClearance_description", Collections.singleton("SecurityClearance1"),
-                        createRequiredAttrDef("level", "int"));
+                AtlasTypeUtil.createTraitTypeDef("JanitorClearance", "JanitorClearance_description", Collections.singleton("SecurityClearance1"));
 
         List<AtlasClassificationDef> ret = Arrays.asList(securityClearanceTypeDef, janitorSecurityClearanceTypeDef);
 

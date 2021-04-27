@@ -216,7 +216,7 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
         TypesDef typesDef = new TypesDef(Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.singletonList(classTypeDef));
         String a = createType(AtlasType.toV1Json(typesDef)).get(0);
 
-        classTypeDef = TypesUtil.createClassTypeDef("A1" + randomString(), null, Collections.singleton(a), attr);
+        classTypeDef = TypesUtil.createClassTypeDef("A1" + randomString(), null, Collections.singleton(a));
         typesDef = new TypesDef(Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.singletonList(classTypeDef));
         String a1 = createType(AtlasType.toV1Json(typesDef)).get(0);
 
@@ -224,7 +224,7 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
         typesDef = new TypesDef(Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.singletonList(classTypeDef));
         String b = createType(AtlasType.toV1Json(typesDef)).get(0);
 
-        classTypeDef = TypesUtil.createClassTypeDef("C" + randomString(), null, new HashSet<>(Arrays.asList(a, b)), attr);
+        classTypeDef = TypesUtil.createClassTypeDef("C" + randomString(), null, new HashSet<>(Arrays.asList(a, b)));
         typesDef = new TypesDef(Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.singletonList(classTypeDef));
         String c = createType(AtlasType.toV1Json(typesDef)).get(0);
 

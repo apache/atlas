@@ -130,6 +130,7 @@ public class AtlasClassificationType extends AtlasStructType {
     @Override
     void resolveReferencesPhase2(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
         super.resolveReferencesPhase2(typeRegistry);
+        ensureNoAttributeOverride(superTypes);
 
         for (AtlasClassificationType superType : superTypes) {
             superType.addSubType(this);

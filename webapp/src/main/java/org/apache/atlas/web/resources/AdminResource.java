@@ -55,9 +55,11 @@ import org.apache.atlas.repository.impexp.ExportService;
 import org.apache.atlas.repository.impexp.ImportService;
 import org.apache.atlas.repository.impexp.MigrationProgressService;
 import org.apache.atlas.repository.impexp.ZipSink;
+import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.repository.patches.AtlasPatchManager;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.services.MetricsService;
+import org.apache.atlas.tasks.TaskManagement;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.SearchTracker;
@@ -78,6 +80,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
@@ -135,7 +138,7 @@ public class AdminResource {
     private static final String UI_DATE_FORMAT                 = "atlas.ui.date.format";
     private static final String UI_DATE_DEFAULT_FORMAT         = "MM/DD/YYYY hh:mm:ss A";
     private static final String OPERATION_STATUS               = "operationStatus";
-    private static final List TIMEZONE_LIST  = Arrays.asList(TimeZone.getAvailableIDs());
+    private static final List TIMEZONE_LIST                    = Arrays.asList(TimeZone.getAvailableIDs());
 
     @Context
     private HttpServletRequest httpServletRequest;
@@ -155,6 +158,7 @@ public class AdminResource {
     private final  MigrationProgressService migrationProgressService;
     private final  ReentrantLock            importExportOperationLock;
     private final  ExportImportAuditService exportImportAuditService;
+    private final  TaskManagement           taskManagement;
     private final  AtlasServerService       atlasServerService;
     private final  AtlasEntityStore         entityStore;
     private final  AtlasPatchManager        patchManager;
@@ -178,7 +182,8 @@ public class AdminResource {
                          MigrationProgressService migrationProgressService,
                          AtlasServerService serverService,
                          ExportImportAuditService exportImportAuditService, AtlasEntityStore entityStore,
-                         AtlasPatchManager patchManager, AtlasAuditService auditService, EntityAuditRepository auditRepository) {
+                         AtlasPatchManager patchManager, AtlasAuditService auditService, EntityAuditRepository auditRepository,
+                         TaskManagement taskManagement) {
         this.serviceState              = serviceState;
         this.metricsService            = metricsService;
         this.exportService             = exportService;
@@ -193,6 +198,7 @@ public class AdminResource {
         this.patchManager              = patchManager;
         this.auditService              = auditService;
         this.auditRepository           = auditRepository;
+        this.taskManagement            = taskManagement;
 
         if (atlasProperties != null) {
             this.defaultUIVersion = atlasProperties.getString(DEFAULT_UI_VERSION, UI_VERSION_V2);
@@ -203,6 +209,11 @@ public class AdminResource {
             this.isTimezoneFormatEnabled = true;
             this.uiDateFormat = UI_DATE_DEFAULT_FORMAT;
         }
+    }
+
+    @PostConstruct
+    public void init() {
+        taskManagement.queuePendingTasks();
     }
 
     /**
@@ -735,6 +746,22 @@ public class AdminResource {
         }
 
         return ret;
+    }
+
+    @GET
+    @Path("/tasks")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public List<AtlasTask> getTaskStatus(@QueryParam("guids") List<String> guids) throws AtlasBaseException {
+        return CollectionUtils.isNotEmpty(guids) ? taskManagement.getByGuids(guids) : taskManagement.getAll();
+    }
+
+    @DELETE
+    @Path("/tasks")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public void deleteTask(@QueryParam("guids") List<String> guids) throws AtlasBaseException {
+        if (CollectionUtils.isNotEmpty(guids)) {
+            taskManagement.deleteByGuids(guids);
+        }
     }
 
     private String getEditableEntityTypes(Configuration config) {

@@ -76,7 +76,8 @@ public enum AtlasConfiguration {
     STORAGE_CONSISTENCY_LOCK_ENABLED("atlas.graph.storage.consistency-lock.enabled", true),
     REBUILD_INDEX("atlas.rebuild.index", false),
     STORE_DIFFERENTIAL_AUDITS("atlas.entity.audit.differential", false),
-    DSL_EXECUTOR_TRAVERSAL("atlas.dsl.executor.traversal", true);
+    DSL_EXECUTOR_TRAVERSAL("atlas.dsl.executor.traversal", true),
+    TASKS_USE_ENABLED("atlas.tasks.enabled", true);
 
     private static final Configuration APPLICATION_PROPERTIES;
 

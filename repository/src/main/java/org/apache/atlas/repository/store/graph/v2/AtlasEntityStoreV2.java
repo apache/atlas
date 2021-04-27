@@ -18,6 +18,7 @@
 package org.apache.atlas.repository.store.graph.v2;
 
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.DeleteType;
 import org.apache.atlas.GraphTransactionInterceptor;
@@ -60,6 +61,7 @@ import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.bulkimport.BulkImportResponse;
+import org.apache.atlas.bulkimport.BulkImportResponse.ImportInfo;
 import org.apache.atlas.util.FileUtils;
 import org.apache.atlas.utils.AtlasEntityUtil;
 import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
@@ -87,6 +89,7 @@ import java.util.Set;
 
 import static java.lang.Boolean.FALSE;
 import static org.apache.atlas.AtlasConfiguration.STORE_DIFFERENTIAL_AUDITS;
+import static org.apache.atlas.bulkimport.BulkImportResponse.ImportStatus.FAILED;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.DELETE;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.PURGE;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.UPDATE;
@@ -107,7 +110,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     private final IAtlasEntityChangeNotifier entityChangeNotifier;
     private final EntityGraphMapper          entityGraphMapper;
     private final EntityGraphRetriever       entityRetriever;
-    private final boolean                    storeDifferentialAudits;
+    private       boolean                    storeDifferentialAudits;
 
     @Inject
     public AtlasEntityStoreV2(AtlasGraph graph, DeleteHandlerDelegate deleteDelegate, AtlasTypeRegistry typeRegistry,
@@ -119,6 +122,11 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         this.entityGraphMapper    = entityGraphMapper;
         this.entityRetriever      = new EntityGraphRetriever(graph, typeRegistry);
         this.storeDifferentialAudits = STORE_DIFFERENTIAL_AUDITS.getBoolean();
+    }
+
+    @VisibleForTesting
+    public void setStoreDifferentialAudits(boolean val) {
+        this.storeDifferentialAudits = val;
     }
 
     @Override
@@ -1525,33 +1533,26 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     public BulkImportResponse bulkCreateOrUpdateBusinessAttributes(InputStream inputStream, String fileName) throws AtlasBaseException {
         BulkImportResponse ret = new BulkImportResponse();
 
-        try {
-            if (StringUtils.isBlank(fileName)) {
-                throw new AtlasBaseException(AtlasErrorCode.FILE_NAME_NOT_FOUND, fileName);
+        if (StringUtils.isBlank(fileName)) {
+            throw new AtlasBaseException(AtlasErrorCode.FILE_NAME_NOT_FOUND, fileName);
+        }
+
+        List<String[]>           fileData              = FileUtils.readFileData(fileName, inputStream);
+        Map<String, AtlasEntity> attributesToAssociate = getBusinessMetadataDefList(fileData, ret);
+
+        for (AtlasEntity entity : attributesToAssociate.values()) {
+            Map<String, Map<String, Object>> businessAttributes = entity.getBusinessAttributes();
+            String                           guid               = entity.getGuid();
+
+            try {
+                addOrUpdateBusinessAttributes(guid, businessAttributes, true);
+
+                ret.addToSuccessImportInfoList(new ImportInfo(guid, businessAttributes.toString()));
+            } catch (Exception e) {
+                LOG.error("Error occurred while updating BusinessMetadata Attributes for Entity " + guid);
+
+                ret.addToFailedImportInfoList(new ImportInfo(guid, businessAttributes.toString(), FAILED, e.getMessage()));
             }
-
-            List<String[]>           fileData              = FileUtils.readFileData(fileName, inputStream);
-            Map<String, AtlasEntity> attributesToAssociate = getBusinessMetadataDefList(fileData, ret);
-
-            for (AtlasEntity entity : attributesToAssociate.values()) {
-                try {
-                    addOrUpdateBusinessAttributes(entity.getGuid(), entity.getBusinessAttributes(), true);
-
-                    BulkImportResponse.ImportInfo successImportInfo = new BulkImportResponse.ImportInfo(entity.getGuid(), entity.getBusinessAttributes().toString());
-
-                    ret.setSuccessImportInfoList(successImportInfo);
-                }catch (Exception e) {
-                    LOG.error("Error occurred while updating BusinessMetadata Attributes for Entity " + entity.getGuid());
-
-                    BulkImportResponse.ImportInfo failedImportInfo = new BulkImportResponse.ImportInfo(entity.getGuid(), entity.getBusinessAttributes().toString(), BulkImportResponse.ImportStatus.FAILED, e.getMessage());
-
-                    ret.getFailedImportInfoList().add(failedImportInfo);
-                }
-            }
-        } catch (IOException e) {
-            LOG.error("An Exception occurred while uploading the file {}", fileName, e);
-
-            throw new AtlasBaseException(AtlasErrorCode.FAILED_TO_UPLOAD, e);
         }
 
         return ret;
@@ -1676,9 +1677,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         for (String failedMsg : failedMsgList) {
             LOG.error(failedMsg);
 
-            BulkImportResponse.ImportInfo importInfo = new BulkImportResponse.ImportInfo(BulkImportResponse.ImportStatus.FAILED, failedMsg);
-
-            bulkImportResponse.getFailedImportInfoList().add(importInfo);
+            bulkImportResponse.addToFailedImportInfoList(new ImportInfo(FAILED, failedMsg));
         }
 
         return ret;
@@ -1731,9 +1730,10 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         if(missingFieldsCheck){
             LOG.error("Missing fields: " + Arrays.toString(record) + " at line #" + lineIndex);
+
             String failedTermMsgs = "Missing fields: " + Arrays.toString(record) + " at line #" + lineIndex;
-            BulkImportResponse.ImportInfo importInfo = new BulkImportResponse.ImportInfo(BulkImportResponse.ImportStatus.FAILED, failedTermMsgs, lineIndex);
-            bulkImportResponse.getFailedImportInfoList().add(importInfo);
+
+            bulkImportResponse.addToFailedImportInfoList(new ImportInfo(FAILED, failedTermMsgs, lineIndex));
         }
         return missingFieldsCheck;
     }

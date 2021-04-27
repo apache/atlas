@@ -17,13 +17,18 @@
  */
 package org.apache.atlas.bulkimport;
 
+import org.apache.atlas.model.annotation.AtlasJSON;
+
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class BulkImportResponse {
+import static org.apache.atlas.bulkimport.BulkImportResponse.ImportStatus.SUCCESS;
 
-    private List<ImportInfo> failedImportInfoList = new ArrayList<ImportInfo>();
-    private List<ImportInfo> successImportInfoList = new ArrayList<ImportInfo>();
+@AtlasJSON
+public class BulkImportResponse implements Serializable {
+    private List<ImportInfo> failedImportInfoList = new ArrayList<>();
+    private List<ImportInfo> successImportInfoList = new ArrayList<>();
 
     public BulkImportResponse() {}
 
@@ -31,36 +36,32 @@ public class BulkImportResponse {
         return failedImportInfoList;
     }
 
-    public void setFailedImportInfoList(List<ImportInfo> failedImportInfoList){
+    public void setFailedImportInfoList(List<ImportInfo> failedImportInfoList) {
         this.failedImportInfoList = failedImportInfoList;
     }
 
-    public void setFailedImportInfoList(ImportInfo importInfo){
-        List<ImportInfo> failedImportInfoList = this.failedImportInfoList;
-
-        if (failedImportInfoList == null) {
-            failedImportInfoList = new ArrayList<>();
+    public void addToFailedImportInfoList(ImportInfo importInfo) {
+        if (this.failedImportInfoList == null) {
+            this.failedImportInfoList = new ArrayList<>();
         }
-        failedImportInfoList.add(importInfo);
-        setFailedImportInfoList(failedImportInfoList);
+
+        this.failedImportInfoList.add(importInfo);
     }
 
     public List<ImportInfo> getSuccessImportInfoList() {
         return successImportInfoList;
     }
 
-    public void setSuccessImportInfoList(List<ImportInfo> successImportInfoList){
+    public void setSuccessImportInfoList(List<ImportInfo> successImportInfoList) {
         this.successImportInfoList = successImportInfoList;
     }
 
-    public void setSuccessImportInfoList(ImportInfo importInfo){
-        List<ImportInfo> successImportInfoList = this.successImportInfoList;
-
+    public void addToSuccessImportInfoList(ImportInfo importInfo) {
         if (successImportInfoList == null) {
             successImportInfoList = new ArrayList<>();
         }
+
         successImportInfoList.add(importInfo);
-        setSuccessImportInfoList(successImportInfoList);
     }
 
     public enum ImportStatus {
@@ -75,13 +76,15 @@ public class BulkImportResponse {
                 '}';
     }
 
-    static public class ImportInfo {
 
+    public static class ImportInfo {
         private String parentObjectName;
         private String childObjectName;
         private ImportStatus importStatus;
         private String remarks;
         private Integer rowNumber;
+
+        public ImportInfo(){ }
 
         public ImportInfo(String parentObjectName, String childObjectName, ImportStatus importStatus, String remarks, Integer rowNumber) {
             this.parentObjectName = parentObjectName;
@@ -92,19 +95,19 @@ public class BulkImportResponse {
         }
 
         public ImportInfo(String parentObjectName, String childObjectName, ImportStatus importStatus) {
-            this(parentObjectName, childObjectName, importStatus, "",-1);
+            this(parentObjectName, childObjectName, importStatus, "", -1);
         }
 
-        public ImportInfo( ImportStatus importStatus, String remarks) {
-            this("","", importStatus, remarks, -1);
+        public ImportInfo(ImportStatus importStatus, String remarks) {
+            this("", "", importStatus, remarks, -1);
         }
 
-        public ImportInfo( ImportStatus importStatus, String remarks, Integer rowNumber) {
-            this("","", importStatus, remarks, rowNumber);
+        public ImportInfo(ImportStatus importStatus, String remarks, Integer rowNumber) {
+            this("", "", importStatus, remarks, rowNumber);
         }
 
         public ImportInfo(String parentObjectName, String childObjectName) {
-            this(parentObjectName,childObjectName, ImportStatus.SUCCESS, "", -1);
+            this(parentObjectName, childObjectName, SUCCESS, "", -1);
         }
 
         public ImportInfo(String parentObjectName, String childObjectName, ImportStatus importStatus, String remarks) {
@@ -154,5 +157,4 @@ public class BulkImportResponse {
                     '}';
         }
     }
-
 }
