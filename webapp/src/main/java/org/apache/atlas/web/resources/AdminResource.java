@@ -211,11 +211,6 @@ public class AdminResource {
         }
     }
 
-    @PostConstruct
-    public void init() {
-        taskManagement.queuePendingTasks();
-    }
-
     /**
      * Fetches the thread stack dump for this application.
      *

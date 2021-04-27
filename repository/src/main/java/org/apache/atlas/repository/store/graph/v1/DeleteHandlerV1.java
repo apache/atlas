@@ -1203,7 +1203,7 @@ public abstract class DeleteHandlerV1 {
         Map<String, Object> taskParams         = ClassificationTask.toParameters(relationshipEdgeId, relationship);
         AtlasTask           task               = taskManagement.createTask(taskType, currentUser, taskParams);
 
-        AtlasGraphUtilsV2.addEncodedProperty(relationshipEdge, PENDING_TASKS_PROPERTY_KEY, task.getGuid());
+        AtlasGraphUtilsV2.addItemToListProperty(relationshipEdge, EDGE_PENDING_TASKS_PROPERTY_KEY, task.getGuid());
 
         RequestContext.get().queueTask(task);
     }

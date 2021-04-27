@@ -67,9 +67,10 @@ public class ClassificationPropagationTasks {
 
         @Override
         protected void run(Map<String, Object> parameters) throws AtlasBaseException {
+            String entityGuid             = (String) parameters.get(PARAM_ENTITY_GUID);
             String classificationVertexId = (String) parameters.get(PARAM_CLASSIFICATION_VERTEX_ID);
 
-            entityGraphMapper.deleteClassificationPropagation(classificationVertexId);
+            entityGraphMapper.deleteClassificationPropagation(entityGuid, classificationVertexId);
         }
     }
 

@@ -73,7 +73,7 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         if (configuration == null || !HAConfiguration.isHAEnabled(configuration)) {
             startInternal();
         } else {
-            LOG.info("TaskManagement.start(): deferring patches until instance activation");
+            LOG.info("TaskManagement.start(): deferring until instance activation");
         }
     }
 
@@ -183,9 +183,11 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         }
 
         LOG.info("TaskManagement: Started!");
+
+        queuePendingTasks();
     }
 
-    public void queuePendingTasks() {
+    private void queuePendingTasks() {
         if (AtlasConfiguration.TASKS_USE_ENABLED.getBoolean() == false) {
             return;
         }
