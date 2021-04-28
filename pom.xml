@@ -485,6 +485,17 @@
             <!--<organizationUrl>https://www.cloudera.com</organizationUrl>-->
         </developer>
         <developer>
+            <id>sidmishra</id>
+            <name>Sidharth Mishra</name>
+            <email>sidmishra@apache.org</email>
+            <timezone>America/Los_Angeles</timezone>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <organization>Cloudera Inc.</organization>
+            <!--<organizationUrl>https://www.cloudera.com</organizationUrl>-->
+        </developer>
+        <developer>
             <id>sriksun</id>
             <name>Srikanth Sundarrajan</name>
             <email>sriksun@apache.org</email>
