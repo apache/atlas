@@ -23,22 +23,22 @@ import java.util.Objects;
 
 @AtlasJSON
 public class AtlasGlossaryTermHeader {
-    private String glossaryGuid;
+    private String termGuid;
     private String qualifiedName;
 
-    public AtlasGlossaryTermHeader(String glossaryGuid) {
-        this.glossaryGuid = glossaryGuid;
+    public AtlasGlossaryTermHeader(String termGuid) {
+        this.termGuid = termGuid;
     }
 
-    public AtlasGlossaryTermHeader(String glossaryGuid, String qualifiedName) {
-        this.glossaryGuid = glossaryGuid;
+    public AtlasGlossaryTermHeader(String termGuid, String qualifiedName) {
+        this.termGuid = termGuid;
         this.qualifiedName = qualifiedName;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("AtlasGlossaryTermHeader{");
-        sb.append("glossaryGuid='").append(glossaryGuid).append('\'');
+        sb.append("termGuid='").append(termGuid).append('\'');
         sb.append(", qualifiedName='").append(qualifiedName).append('\'');
         sb.append('}');
         return sb.toString();
@@ -47,12 +47,12 @@ public class AtlasGlossaryTermHeader {
     public AtlasGlossaryTermHeader() {
     }
 
-    public String getGlossaryGuid() {
-        return glossaryGuid;
+    public String getTermGuid() {
+        return termGuid;
     }
 
-    public void setGlossaryGuid(final String glossaryGuid) {
-        this.glossaryGuid = glossaryGuid;
+    public void setTermGuid(final String termGuid) {
+        this.termGuid = termGuid;
     }
 
     public String getQualifiedName() {
@@ -68,13 +68,13 @@ public class AtlasGlossaryTermHeader {
         if (this == o) return true;
         if (!(o instanceof org.apache.atlas.model.glossary.AtlasGlossaryTermHeader)) return false;
         final org.apache.atlas.model.glossary.AtlasGlossaryTermHeader that = (org.apache.atlas.model.glossary.AtlasGlossaryTermHeader) o;
-        return Objects.equals(glossaryGuid, that.glossaryGuid) &&
+        return Objects.equals(termGuid, that.termGuid) &&
                 Objects.equals(qualifiedName, that.qualifiedName);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(glossaryGuid, qualifiedName);
+        return Objects.hash(termGuid, qualifiedName);
     }
 
 }
