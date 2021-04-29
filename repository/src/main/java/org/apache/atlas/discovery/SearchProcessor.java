@@ -487,7 +487,7 @@ public abstract class SearchProcessor {
                     ret = false;
                 } else if (operator == SearchParameters.Operator.CONTAINS && AtlasAttribute.hastokenizeChar(attributeValue) && indexType == null) { // indexType = TEXT
                     if (LOG.isDebugEnabled()) {
-                        LOG.debug("{} operator found for string (TEXT) attribute {} and special characters found in filter value {}, deferring to in-memory or graph query (might cause poor performance)", attributeValue);
+                        LOG.debug("{} operator found for string (TEXT) attribute {} and special characters found in filter value {}, deferring to in-memory or graph query (might cause poor performance)", operator, qualifiedName, attributeValue);
                     }
 
                     ret = false;
@@ -808,10 +808,11 @@ public abstract class SearchProcessor {
                             && (op == SearchParameters.Operator.CONTAINS || op == SearchParameters.Operator.STARTS_WITH || op == SearchParameters.Operator.ENDS_WITH)
                             && def.getTypeName().equalsIgnoreCase(AtlasBaseTypeDef.ATLAS_TYPE_STRING)) {
 
-                        escapeIndexQueryValue  = AtlasAttribute.escapeIndexQueryValue(attrVal, false, false);
                         if (def.getIndexType() == null && AtlasAttribute.hastokenizeChar(attrVal)) {
                             replaceWildcardChar = true;
                         }
+                        escapeIndexQueryValue  = AtlasAttribute.escapeIndexQueryValue(attrVal, false, false);
+
                     } else {
                         escapeIndexQueryValue = AtlasAttribute.escapeIndexQueryValue(attrVal);
                     }
