@@ -37,6 +37,7 @@ import org.apache.atlas.repository.store.graph.v2.AtlasEntityChangeNotifier;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.FileUtils;
+import org.apache.atlas.utils.AtlasJson;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -56,6 +57,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.bulkimport.BulkImportResponse.ImportStatus.FAILED;
+import static org.apache.atlas.bulkimport.BulkImportResponse.ImportStatus.SUCCESS;
 import static org.apache.atlas.glossary.GlossaryUtils.getAtlasGlossaryCategorySkeleton;
 import static org.apache.atlas.glossary.GlossaryUtils.getAtlasGlossaryTermSkeleton;
 import static org.apache.atlas.glossary.GlossaryUtils.getGlossarySkeleton;
@@ -1125,42 +1127,44 @@ public class GlossaryService {
 
         List<String[]> fileData = FileUtils.readFileData(fileName, inputStream);
 
-        List<AtlasGlossaryTerm> glossaryTermsWithoutRelations = glossaryTermUtils.getGlossaryTermDataList(fileData, ret);
+        List<AtlasGlossaryTerm> glossaryTermsWithoutRelations = glossaryTermUtils.getGlossaryTermDataWithoutRelations(fileData, ret);
         createGlossaryTerms(glossaryTermsWithoutRelations, ret);
 
-        List<AtlasGlossaryTerm> glossaryTermsWithRelations = glossaryTermUtils.getGlossaryTermDataList(fileData, ret, true);
+        List<AtlasGlossaryTerm> glossaryTermsWithRelations = glossaryTermUtils.getGlossaryTermDataWithRelations(fileData, ret);
         updateGlossaryTermsRelation(glossaryTermsWithRelations, ret);
 
         return ret;
     }
 
-    private void createGlossaryTerms(List<AtlasGlossaryTerm> glossaryTerms, BulkImportResponse bulkImportResponse) {
+    private void createGlossaryTerms(List<AtlasGlossaryTerm> glossaryTerms, BulkImportResponse bulkImportResponse) throws AtlasBaseException {
         for (AtlasGlossaryTerm glossaryTerm : glossaryTerms) {
             String glossaryTermName = glossaryTerm.getName();
             String glossaryName     = getGlossaryName(glossaryTerm);
 
             try {
-                createTerm(glossaryTerm);
+                AtlasGlossaryTerm createdTerm = createTerm(glossaryTerm);
 
-                bulkImportResponse.addToSuccessImportInfoList(new ImportInfo(glossaryName, glossaryTermName));
+                bulkImportResponse.addToSuccessImportInfoList(new ImportInfo(glossaryName, glossaryTermName, SUCCESS, AtlasJson.toJson(createdTerm.getGlossaryTermHeader())));
             } catch (AtlasBaseException e) {
                 LOG.error(AtlasErrorCode.FAILED_TO_CREATE_GLOSSARY_TERM.toString(), glossaryTermName, e);
 
                 bulkImportResponse.addToFailedImportInfoList(new ImportInfo(glossaryName, glossaryTermName, FAILED, e.getMessage()));
             }
         }
+
+        checkForSuccessImports(bulkImportResponse);
     }
 
     private void updateGlossaryTermsRelation(List<AtlasGlossaryTerm> glossaryTerms, BulkImportResponse bulkImportResponse) {
         for (AtlasGlossaryTerm glossaryTerm : glossaryTerms) {
-            if (glossaryTerm.containAnyRelation()) {
+            if (glossaryTerm.hasTerms()) {
                 String glossaryTermName = glossaryTerm.getName();
                 String glossaryName     = getGlossaryName(glossaryTerm);
 
                 try {
                     updateTerm(glossaryTerm, false);
                 } catch (AtlasBaseException e) {
-                    LOG.error(AtlasErrorCode.FAILED_TO_CREATE_GLOSSARY_TERM.toString(), glossaryTermName, e);
+                    LOG.error(AtlasErrorCode.FAILED_TO_UPDATE_GLOSSARY_TERM.toString(), glossaryTermName, e);
 
                     bulkImportResponse.addToFailedImportInfoList(new ImportInfo(glossaryName, glossaryTermName, FAILED, e.getMessage()));
                 }
@@ -1179,5 +1183,11 @@ public class GlossaryService {
         }
 
         return ret;
+    }
+
+    private void checkForSuccessImports(BulkImportResponse bulkImportResponse) throws AtlasBaseException {
+        if (CollectionUtils.isEmpty(bulkImportResponse.getSuccessImportInfoList())) {
+            throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_IMPORT_FAILED);
+        }
     }
 }

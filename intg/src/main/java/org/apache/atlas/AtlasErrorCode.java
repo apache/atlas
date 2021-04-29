@@ -208,6 +208,7 @@ public enum AtlasErrorCode {
     GLOSSARY_ALREADY_EXISTS(409, "ATLAS-409-00-007", "Glossary with name {0} already exists"),
     GLOSSARY_TERM_ALREADY_EXISTS(409, "ATLAS-409-00-009", "Glossary term with qualifiedName {0} already exists"),
     GLOSSARY_CATEGORY_ALREADY_EXISTS(409, "ATLAS-409-00-00A", "Glossary category with qualifiedName {0} already exists"),
+    GLOSSARY_IMPORT_FAILED(409, "ATLAS-409-00-011", "Glossary import failed"),
 
     // All internal errors go here
     INTERNAL_ERROR(500, "ATLAS-500-00-001", "Internal server error {0}"),
@@ -230,7 +231,8 @@ public enum AtlasErrorCode {
     DATA_ACCESS_LOAD_FAILED(500, "ATLAS-500-00-013", "Load failed: {0}"),
     ENTITY_NOTIFICATION_FAILED(500, "ATLAS-500-00-014", "Notification failed for operation: {0} : {1}"),
     FAILED_TO_UPLOAD(500, "ATLAS-500-00-015", "Error occurred while uploading the file: {0}"),
-    FAILED_TO_CREATE_GLOSSARY_TERM(500, "ATLAS-500-00-016", "Error occurred while creating glossary term: {0}");
+    FAILED_TO_CREATE_GLOSSARY_TERM(500, "ATLAS-500-00-016", "Error occurred while creating glossary term: {0}"),
+    FAILED_TO_UPDATE_GLOSSARY_TERM(500, "ATLAS-500-00-017", "Error occurred while updating glossary term: {0}");
 
     private String errorCode;
     private String errorMessage;
