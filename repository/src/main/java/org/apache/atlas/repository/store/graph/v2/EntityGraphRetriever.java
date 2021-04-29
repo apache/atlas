@@ -510,9 +510,13 @@ public class EntityGraphRetriever {
     }
 
     public List<AtlasVertex> getIncludedImpactedVerticesV2(AtlasVertex entityVertex, String relationshipGuidToExclude) {
+        return getIncludedImpactedVerticesV2(entityVertex, relationshipGuidToExclude, null);
+    }
+
+    public List<AtlasVertex> getIncludedImpactedVerticesV2(AtlasVertex entityVertex, String relationshipGuidToExclude, String classificationId) {
         List<AtlasVertex> ret = new ArrayList<>(Arrays.asList(entityVertex));
 
-        traverseImpactedVertices(entityVertex, relationshipGuidToExclude, null, ret);
+        traverseImpactedVertices(entityVertex, relationshipGuidToExclude, classificationId, ret);
 
         return ret;
     }
