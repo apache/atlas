@@ -20,6 +20,8 @@ package org.apache.atlas.repository.graphdb.janus;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.SearchParameters;
+import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.type.AtlasEntityType;
@@ -73,6 +75,15 @@ public class AtlasSolrQueryBuilderTest {
     @Mock
     private AtlasStructType.AtlasAttribute qualifiedNameAttributeMock;
 
+    @Mock
+    private AtlasStructDef.AtlasAttributeDef stringAttributeDef;
+
+    @Mock
+    private AtlasStructDef.AtlasAttributeDef textAttributeDef;
+
+    @Mock
+    private AtlasStructDef.AtlasAttributeDef nonStringAttributeDef;
+
     private Map<String, String> indexFieldNamesMap = new HashMap<>();
 
 
@@ -89,6 +100,16 @@ public class AtlasSolrQueryBuilderTest {
         when(hiveTableEntityTypeMock.getAttribute("Constants.ENTITY_TYPE_PROPERTY_KEY")).thenReturn(entitypeAttributeMock);
         when(hiveTableEntityTypeMock.getAttribute("qualifiedName")).thenReturn(qualifiedNameAttributeMock);
 
+        when(hiveTableEntityTypeMock.getAttributeDef("name")).thenReturn(stringAttributeDef);
+        when(hiveTableEntityTypeMock.getAttributeDef("comment")).thenReturn(stringAttributeDef);
+        when(hiveTableEntityTypeMock.getAttributeDef("description")).thenReturn(stringAttributeDef);
+        when(hiveTableEntityTypeMock.getAttributeDef("qualifiedName")).thenReturn(textAttributeDef);
+
+        when(nonStringAttributeDef.getTypeName()).thenReturn(AtlasBaseTypeDef.ATLAS_TYPE_INT);
+        when(stringAttributeDef.getTypeName()).thenReturn(AtlasBaseTypeDef.ATLAS_TYPE_STRING);
+        when(textAttributeDef.getTypeName()).thenReturn(AtlasBaseTypeDef.ATLAS_TYPE_STRING);
+
+        when(stringAttributeDef.getIndexType()).thenReturn(AtlasStructDef.AtlasAttributeDef.IndexType.STRING);
 
         indexFieldNamesMap.put("name", "name_index");
         indexFieldNamesMap.put("comment", "comment_index");
@@ -170,7 +191,7 @@ public class AtlasSolrQueryBuilderTest {
 
         processSearchParameters(fileName, underTest);
 
-        Assert.assertEquals(underTest.build(), "+t10  AND  -__state_index:DELETED AND  +__typeName__index:(hive_table )  AND  ( ( +comment_index:*United States*  ) AND ( +descrption__index:*nothing*  ) AND ( +name_index:*t100*  ) )");
+        Assert.assertEquals(underTest.build(), "+t10  AND  -__state_index:DELETED AND  +__typeName__index:(hive_table )  AND  ( ( +comment_index:*United\\ States*  ) AND ( +descrption__index:*nothing*  ) AND ( +name_index:*t100*  ) )");
     }
 
     @Test

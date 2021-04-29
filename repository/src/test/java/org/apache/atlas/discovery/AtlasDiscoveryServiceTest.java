@@ -26,6 +26,7 @@ import org.apache.atlas.model.discovery.AtlasQuickSearchResult;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.QuickSearchParameters;
 import org.apache.atlas.model.discovery.SearchParameters;
+import org.apache.atlas.model.discovery.AtlasAggregationEntry;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
@@ -40,6 +41,7 @@ import javax.inject.Inject;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.apache.atlas.model.discovery.SearchParameters.*;
 import static org.testng.Assert.*;
@@ -672,6 +674,27 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
         assertSearchResult(searchResult,expected, attrValue);
     }
 
+    @Test(dataProvider = "specialCharSearchContains")
+    public void specialCharQuickSearchAssertContains(String attrName, SearchParameters.Operator operator, String attrValue, int expected) throws AtlasBaseException {
+        QuickSearchParameters params = new QuickSearchParameters();
+        params.setTypeName(HIVE_TABLE_TYPE);
+        SearchParameters.FilterCriteria filterCriteria = getSingleFilterCondition(attrName,operator, attrValue);
+        params.setEntityFilters(filterCriteria);
+        params.setLimit(20);
+
+        AtlasQuickSearchResult searchResult = discoveryService.quickSearch(params);
+        assertSearchResult(searchResult.getSearchResults(), expected, attrValue);
+
+        List<String> failedCases = Arrays.asList("def:default:qf-","star*in","ith spac","778-87");
+        if (attrName.equals("qualifiedName") && failedCases.contains(attrValue)) {
+            expected = 0;
+        }
+
+        if (expected > 0)  {
+            assertAggregationMetrics(searchResult);
+        }
+    }
+
     @Test(dataProvider = "specialCharSearchName")
     public void specialCharSearchAssertName(String attrName, SearchParameters.Operator operator, String attrValue, int expected) throws AtlasBaseException {
         SearchParameters params = new SearchParameters();
@@ -682,6 +705,21 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
 
         AtlasSearchResult searchResult = discoveryService.searchWithParameters(params);
         assertSearchResult(searchResult,expected, attrValue);
+    }
+
+    @Test(dataProvider = "specialCharSearchName")
+    public void specialCharQuickSearchAssertName(String attrName, SearchParameters.Operator operator, String attrValue, int expected) throws AtlasBaseException {
+        QuickSearchParameters params = new QuickSearchParameters();
+        params.setTypeName(HIVE_TABLE_TYPE);
+        SearchParameters.FilterCriteria filterCriteria = getSingleFilterCondition(attrName,operator, attrValue);
+        params.setEntityFilters(filterCriteria);
+        params.setLimit(20);
+
+        AtlasQuickSearchResult searchResult = discoveryService.quickSearch(params);
+        assertSearchResult(searchResult.getSearchResults(), expected, attrValue);
+        if (expected > 0) {
+            assertAggregationMetrics(searchResult);
+        }
     }
 
     @Test(dataProvider = "specialCharSearchQFName")
@@ -696,6 +734,21 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
         assertSearchResult(searchResult, expected, attrValue);
     }
 
+    @Test(dataProvider = "specialCharSearchQFName")
+    public void specialCharQuickSearchAssertQFName(String attrName, SearchParameters.Operator operator, String attrValue, int expected) throws AtlasBaseException {
+        QuickSearchParameters params = new QuickSearchParameters();
+        params.setTypeName(HIVE_TABLE_TYPE);
+        SearchParameters.FilterCriteria filterCriteria = getSingleFilterCondition(attrName,operator, attrValue);
+        params.setEntityFilters(filterCriteria);
+        params.setLimit(20);
+
+        AtlasQuickSearchResult searchResult = discoveryService.quickSearch(params);
+        assertSearchResult(searchResult.getSearchResults(), expected, attrValue);
+        if (expected > 0) {
+            assertAggregationMetrics(searchResult);
+        }
+    }
+
     @Test(dataProvider = "specialCharQuickSearch")
     public void specialCharQuickSearch(String searchValue, int expected) throws AtlasBaseException {
         QuickSearchParameters params = new QuickSearchParameters();
@@ -705,6 +758,9 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
 
         AtlasQuickSearchResult searchResult = discoveryService.quickSearch(params);
         assertSearchResult(searchResult.getSearchResults(), expected, searchValue);
+        if (expected > 0) {
+            assertAggregationMetrics(searchResult);
+        }
     }
 
     private void assertSearchResult(AtlasSearchResult searchResult, int expected, String query) {
@@ -719,6 +775,14 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
             assertNotNull(searchResult.getAttributes().getValues());
             assertEquals(searchResult.getAttributes().getValues().size(), expected, query);
         }
+    }
+
+    private void assertAggregationMetrics(AtlasQuickSearchResult searchResult) {
+        Map<String, List<AtlasAggregationEntry>> agg =  searchResult.getAggregationMetrics();
+        Assert.assertTrue(CollectionUtils.isNotEmpty(agg.get("__typeName")));
+
+        AtlasAggregationEntry entry = agg.get("__typeName").get(0);
+        Assert.assertTrue(entry!=null && entry.getCount() > 0);
     }
 
     private void createDimensionalTaggedEntity(String name) throws AtlasBaseException {
