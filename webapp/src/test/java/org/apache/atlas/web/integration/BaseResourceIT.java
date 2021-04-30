@@ -637,6 +637,16 @@ public abstract class BaseResourceIT {
         return atlasEntity;
     }
 
+    protected  AtlasEntity createEntity(String typeName, String name) {
+        AtlasEntity atlasEntity = new AtlasEntity(typeName);
+
+        atlasEntity.setAttribute("name", name);
+        atlasEntity.setAttribute("qualifiedName", name);
+        atlasEntity.setAttribute("clusterName", randomString());
+
+        return atlasEntity;
+    }
+
     public interface Predicate {
 
         /**

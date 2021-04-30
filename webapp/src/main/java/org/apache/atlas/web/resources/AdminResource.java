@@ -21,6 +21,7 @@ package org.apache.atlas.web.resources;
 import com.sun.jersey.multipart.FormDataParam;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.authorize.AtlasAdminAccessRequest;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
@@ -66,6 +67,7 @@ import org.apache.atlas.util.SearchTracker;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.filters.AtlasCSRFPreventionFilter;
+import org.apache.atlas.web.service.AtlasDebugMetricsSink;
 import org.apache.atlas.web.service.ServiceState;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.collections.CollectionUtils;
@@ -80,7 +82,6 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
@@ -167,6 +168,8 @@ public class AdminResource {
     private final  EntityAuditRepository    auditRepository;
     private final  boolean                  isTimezoneFormatEnabled;
     private final  String                   uiDateFormat;
+    private final  AtlasDebugMetricsSink    debugMetricsRESTSink;
+    private final  boolean                  isDebugMetricsEnabled;
 
     static {
         try {
@@ -183,7 +186,7 @@ public class AdminResource {
                          AtlasServerService serverService,
                          ExportImportAuditService exportImportAuditService, AtlasEntityStore entityStore,
                          AtlasPatchManager patchManager, AtlasAuditService auditService, EntityAuditRepository auditRepository,
-                         TaskManagement taskManagement) {
+                         TaskManagement taskManagement, AtlasDebugMetricsSink debugMetricsRESTSink) {
         this.serviceState              = serviceState;
         this.metricsService            = metricsService;
         this.exportService             = exportService;
@@ -199,15 +202,18 @@ public class AdminResource {
         this.auditService              = auditService;
         this.auditRepository           = auditRepository;
         this.taskManagement            = taskManagement;
+        this.debugMetricsRESTSink      = debugMetricsRESTSink;
 
         if (atlasProperties != null) {
             this.defaultUIVersion = atlasProperties.getString(DEFAULT_UI_VERSION, UI_VERSION_V2);
             this.isTimezoneFormatEnabled = atlasProperties.getBoolean(UI_DATE_TIMEZONE_FORMAT_ENABLED, true);
             this.uiDateFormat = atlasProperties.getString(UI_DATE_FORMAT, UI_DATE_DEFAULT_FORMAT);
+            this.isDebugMetricsEnabled = AtlasConfiguration.DEBUG_METRICS_ENABLED.getBoolean();
         } else {
             this.defaultUIVersion = UI_VERSION_V2;
             this.isTimezoneFormatEnabled = true;
             this.uiDateFormat = UI_DATE_DEFAULT_FORMAT;
+            this.isDebugMetricsEnabled = false;
         }
     }
 
@@ -355,6 +361,7 @@ public class AdminResource {
         responseData.put("timezones", TIMEZONE_LIST);
         responseData.put(UI_DATE_TIMEZONE_FORMAT_ENABLED, isTimezoneFormatEnabled);
         responseData.put(UI_DATE_FORMAT, uiDateFormat);
+        responseData.put(AtlasConfiguration.DEBUG_METRICS_ENABLED.getPropertyName(), isDebugMetricsEnabled);
 
         response = Response.ok(AtlasJson.toV1Json(responseData)).build();
 
@@ -757,6 +764,12 @@ public class AdminResource {
         if (CollectionUtils.isNotEmpty(guids)) {
             taskManagement.deleteByGuids(guids);
         }
+    }
+
+    @GET
+    @Path("/debug/metrics")
+    public Map getDebugMetrics() {
+        return debugMetricsRESTSink.getMetrics();
     }
 
     private String getEditableEntityTypes(Configuration config) {

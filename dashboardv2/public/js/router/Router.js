@@ -46,6 +46,8 @@ define([
             //Administrator page
             '!/administrator': 'administrator',
             '!/administrator/businessMetadata/:id': 'businessMetadataDetailPage',
+            //Debug Metrics
+            '!/debugMetrics': 'debugMetrics',
             // Default
             '*actions': 'defaultAction'
         },
@@ -353,6 +355,29 @@ define([
                     }
                 });
                 App.rNContent.show(new AdministratorLayoutView(_.extend({ value: paramObj, guid: null }, options)));
+            });
+        },
+        debugMetrics: function() {
+            var that = this;
+            require(["views/site/Header", "views/site/SideNavLayoutView", 'views/dev_debug/DebugMetricsLayoutView'], function(Header, SideNavLayoutView, DebugMetricsLayoutView) {
+                var paramObj = Utils.getUrlState.getQueryParams(),
+                    options = _.extend({}, that.preFetchedCollectionLists, that.sharedObj, that.ventObj);
+                that.renderViewIfNotExists(that.getHeaderOptions(Header));
+                that.renderViewIfNotExists({
+                    view: App.rSideNav,
+                    manualRender: function() {
+                        this.view.currentView.selectTab();
+                        if (Utils.getUrlState.isTagTab()) {
+                            this.view.currentView.RTagLayoutView.currentView.manualRender();
+                        } else if (Utils.getUrlState.isGlossaryTab()) {
+                            this.view.currentView.RGlossaryLayoutView.currentView.manualRender(_.extend({ "isTrigger": true, "value": paramObj }));
+                        }
+                    },
+                    render: function() {
+                        return new SideNavLayoutView(options);
+                    }
+                });
+                App.rNContent.show(new DebugMetricsLayoutView(options));
             });
         },
         businessMetadataDetailPage: function(guid) {

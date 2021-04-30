@@ -341,6 +341,8 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
                     urlUpdate['glossaryUrl'] = options.url;
                 } else if (Utils.getUrlState.isAdministratorTab(options.url)) {
                     urlUpdate['administratorUrl'] = options.url;
+                } else if (Utils.getUrlState.isDebugMetricsTab(options.url)) {
+                    urlUpdate['debugMetricsUrl'] = options.url;
                 }
                 $.extend(Globals.saveApplicationState.tabState, urlUpdate);
             }
@@ -390,6 +392,12 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
             return this.checkTabUrl({
                 url: url,
                 matchString: "administrator"
+            });
+        },
+        isDebugMetricsTab: function(url) {
+            return this.checkTabUrl({
+                url: url,
+                matchString: "debugMetrics"
             });
         },
         isGlossaryTab: function(url) {

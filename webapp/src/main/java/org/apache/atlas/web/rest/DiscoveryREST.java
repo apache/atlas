@@ -20,6 +20,7 @@ package org.apache.atlas.web.rest;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.SortOrder;
+import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.discovery.AtlasDiscoveryService;
 import org.apache.atlas.discovery.EntityDiscoveryService;
@@ -100,6 +101,7 @@ public class DiscoveryREST {
      */
     @GET
     @Path("/dsl")
+    @Timed
     public AtlasSearchResult searchUsingDSL(@QueryParam("query")          String query,
                                             @QueryParam("typeName")       String typeName,
                                             @QueryParam("classification") String classification,
@@ -147,6 +149,7 @@ public class DiscoveryREST {
      */
     @GET
     @Path("/fulltext")
+    @Timed
     public AtlasSearchResult searchUsingFullText(@QueryParam("query")                  String  query,
                                                  @QueryParam("excludeDeletedEntities") boolean excludeDeletedEntities,
                                                  @QueryParam("limit")                  int     limit,
@@ -186,6 +189,7 @@ public class DiscoveryREST {
      */
     @GET
     @Path("/basic")
+    @Timed
     public AtlasSearchResult searchUsingBasic(@QueryParam("query")                  String  query,
                                               @QueryParam("typeName")               String  typeName,
                                               @QueryParam("classification")         String  classification,
@@ -241,6 +245,7 @@ public class DiscoveryREST {
      */
     @GET
     @Path("/attribute")
+    @Timed
     public AtlasSearchResult searchUsingAttribute(@QueryParam("attrName")        String attrName,
                                                   @QueryParam("attrValuePrefix") String attrValuePrefix,
                                                   @QueryParam("typeName")        String typeName,
@@ -314,6 +319,7 @@ public class DiscoveryREST {
      */
     @Path("basic")
     @POST
+    @Timed
     public AtlasSearchResult searchWithParameters(SearchParameters parameters) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
@@ -364,6 +370,7 @@ public class DiscoveryREST {
      */
     @GET
     @Path("relationship")
+    @Timed
     public AtlasSearchResult searchRelatedEntities(@QueryParam("guid")                            String      guid,
                                                    @QueryParam("relation")                        String      relation,
                                                    @QueryParam("attributes")                      Set<String> attributes,
@@ -409,6 +416,7 @@ public class DiscoveryREST {
      */
     @POST
     @Path("saved")
+    @Timed
     public AtlasUserSavedSearch addSavedSearch(AtlasUserSavedSearch savedSearch) throws AtlasBaseException, IOException {
         validateUserSavedSearch(savedSearch);
 
@@ -433,6 +441,7 @@ public class DiscoveryREST {
      */
     @PUT
     @Path("saved")
+    @Timed
     public AtlasUserSavedSearch updateSavedSearch(AtlasUserSavedSearch savedSearch) throws AtlasBaseException {
         validateUserSavedSearch(savedSearch);
 
@@ -458,6 +467,7 @@ public class DiscoveryREST {
      */
     @GET
     @Path("saved/{name}")
+    @Timed
     public AtlasUserSavedSearch getSavedSearch(@PathParam("name") String searchName,
                                                @QueryParam("user") String userName) throws AtlasBaseException {
         Servlets.validateQueryParamLength("name", searchName);
@@ -484,6 +494,7 @@ public class DiscoveryREST {
      */
     @GET
     @Path("saved")
+    @Timed
     public List<AtlasUserSavedSearch> getSavedSearches(@QueryParam("user") String userName) throws AtlasBaseException {
         Servlets.validateQueryParamLength("user", userName);
 
@@ -505,6 +516,7 @@ public class DiscoveryREST {
      */
     @DELETE
     @Path("saved/{guid}")
+    @Timed
     public void deleteSavedSearch(@PathParam("guid") String guid) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
 
@@ -532,6 +544,7 @@ public class DiscoveryREST {
      */
     @Path("saved/execute/{name}")
     @GET
+    @Timed
     public AtlasSearchResult executeSavedSearchByName(@PathParam("name") String searchName,
                                                       @QueryParam("user") String userName) throws AtlasBaseException {
         Servlets.validateQueryParamLength("name", searchName);
@@ -562,6 +575,7 @@ public class DiscoveryREST {
      */
     @Path("saved/execute/guid/{guid}")
     @GET
+    @Timed
     public AtlasSearchResult executeSavedSearchByGuid(@PathParam("guid") String searchGuid) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", searchGuid);
 
@@ -589,6 +603,7 @@ public class DiscoveryREST {
      */
     @Path("/quick")
     @GET
+    @Timed
     public AtlasQuickSearchResult quickSearch(@QueryParam("query")                  String  query,
                                               @QueryParam("typeName")               String  typeName,
                                               @QueryParam("excludeDeletedEntities") boolean excludeDeletedEntities,
@@ -633,6 +648,7 @@ public class DiscoveryREST {
      */
     @Path("/quick")
     @POST
+    @Timed
     public AtlasQuickSearchResult quickSearch(QuickSearchParameters quickSearchParameters) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
@@ -665,6 +681,7 @@ public class DiscoveryREST {
 
     @Path("suggestions")
     @GET
+    @Timed
     public AtlasSuggestionsResult getSuggestions(@QueryParam("prefixString") String prefixString, @QueryParam("fieldName") String fieldName) {
         AtlasPerfTracer perf = null;
 

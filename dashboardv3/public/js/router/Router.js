@@ -47,6 +47,8 @@ define([
             //Audit table
             '!/administrator': 'administrator',
             '!/administrator/businessMetadata/:id': 'businessMetadataDetailPage',
+            //Debug Metrics
+            '!/debugMetrics': 'debugMetrics',
             // Default
             "*actions": "defaultAction"
         },
@@ -425,9 +427,9 @@ define([
                 App.rContent.show(new AdministratorLayoutView(_.extend({ value: paramObj, guid: null }, options)));
             });
         },
-        devDebugging: function() {
+        debugMetrics: function() {
             var that = this;
-            require(["views/site/Header", "views/site/SideNavLayoutView", 'views/dev_debug/DevDebuggingLayoutView'], function(Header, SideNavLayoutView, DevDebuggingLayoutView) {
+            require(["views/site/Header", "views/site/SideNavLayoutView", 'views/dev_debug/DebugMetricsLayoutView'], function(Header, SideNavLayoutView, DebugMetricsLayoutView) {
                 var paramObj = Utils.getUrlState.getQueryParams(),
                     options = _.extend({}, that.preFetchedCollectionLists, that.sharedObj, that.ventObj);
                 that.renderViewIfNotExists(that.getHeaderOptions(Header));
@@ -440,10 +442,9 @@ define([
                         return new SideNavLayoutView(options);
                     }
                 });
-                App.rContent.show(new DevDebuggingLayoutView(options));
+                App.rContent.show(new DebugMetricsLayoutView(options));
             });
         },
-
         businessMetadataDetailPage: function(guid) {
             var that = this;
             require(["views/site/Header", "views/site/SideNavLayoutView", "views/business_metadata/BusinessMetadataContainerLayoutView", ], function(Header, SideNavLayoutView, BusinessMetadataContainerLayoutView) {

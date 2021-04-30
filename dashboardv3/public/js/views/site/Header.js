@@ -34,12 +34,14 @@ define(['require',
         templateHelpers: function() {
             return {
                 apiDocUrl: UrlLinks.apiDocUrl(),
+                isDebugMetricsEnabled: Globals.isDebugMetricsEnabled
             };
         },
         ui: {
             backButton: "[data-id='backButton']",
             menuHamburger: "[data-id='menuHamburger']",
             administrator: "[data-id='administrator']",
+            showDebug: "[data-id='showDebug']",
             signOut: "[data-id='signOut']",
             uiSwitch: "[data-id='uiSwitch']"
         },
@@ -62,6 +64,14 @@ define(['require',
             events['click ' + this.ui.administrator] = function() {
                 Utils.setUrl({
                     url: "#!/administrator",
+                    mergeBrowserUrl: false,
+                    trigger: true,
+                    updateTabState: true
+                });
+            };
+            events['click ' + this.ui.showDebug] = function() {
+                Utils.setUrl({
+                    url: "#!/debugMetrics",
                     mergeBrowserUrl: false,
                     trigger: true,
                     updateTabState: true
