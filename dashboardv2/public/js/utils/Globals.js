@@ -48,6 +48,7 @@ define(["require"], function(require) {
     Globals.isTimezoneFormatEnabled = true;
 
     Globals.isDebugMetricsEnabled = false;
+    Globals.isTasksEnabled = true;
 
     return Globals;
 });
