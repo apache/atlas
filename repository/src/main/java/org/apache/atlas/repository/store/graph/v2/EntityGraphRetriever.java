@@ -531,9 +531,9 @@ public class EntityGraphRetriever {
 
     private void traverseImpactedVertices(final AtlasVertex entityVertexStart, final String relationshipGuidToExclude,
                                           final String classificationId, final List<AtlasVertex> result) {
-        Set<String> visitedVertices = new HashSet<>();
-
-        Queue<AtlasVertex> queue = new ArrayDeque<AtlasVertex>() {{ add(entityVertexStart); }};
+        Set<String>              visitedVertices = new HashSet<>();
+        Queue<AtlasVertex>       queue           = new ArrayDeque<AtlasVertex>() {{ add(entityVertexStart); }};
+        Map<String, AtlasVertex> resultsMap      = new HashMap<>();
 
         while (!queue.isEmpty()) {
             AtlasVertex entityVertex   = queue.poll();
@@ -555,6 +555,7 @@ public class EntityGraphRetriever {
             }
 
             Iterable<AtlasEdge> propagationEdges = entityVertex.getEdges(AtlasEdgeDirection.BOTH, tagPropagationEdges);
+
             for (AtlasEdge propagationEdge : propagationEdges) {
                 if (getEdgeStatus(propagationEdge) != ACTIVE) {
                     continue;
@@ -582,6 +583,7 @@ public class EntityGraphRetriever {
 
                 if (classificationId != null) {
                     List<String> blockedClassificationIds = getBlockedClassificationIds(propagationEdge);
+
                     if (CollectionUtils.isNotEmpty(blockedClassificationIds) && blockedClassificationIds.contains(classificationId)) {
                         continue;
                     }
@@ -590,13 +592,15 @@ public class EntityGraphRetriever {
                 AtlasVertex adjacentVertex             = getOtherVertex(propagationEdge, entityVertex);
                 String      adjacentVertexIdForDisplay = adjacentVertex.getIdForDisplay();
 
-                if (!visitedVertices.contains(adjacentVertexIdForDisplay)) {
-                    result.add(adjacentVertex);
+                if (!visitedVertices.contains(adjacentVertexIdForDisplay) && !resultsMap.containsKey(adjacentVertexIdForDisplay)) {
+                    resultsMap.put(adjacentVertexIdForDisplay, adjacentVertex);
 
                     queue.add(adjacentVertex);
                 }
             }
         }
+
+        result.addAll(resultsMap.values());
     }
 
     private boolean isOutVertex(AtlasVertex vertex, AtlasEdge edge) {
