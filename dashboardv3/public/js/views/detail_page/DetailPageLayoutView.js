@@ -43,6 +43,7 @@ define(['require',
                 RTagTableLayoutView: "#r_tagTableLayoutView",
                 RLineageLayoutView: "#r_lineageLayoutView",
                 RAuditTableLayoutView: "#r_auditTableLayoutView",
+                RPendingTaskTableLayoutView: "#r_pendingTaskTableLayoutView",
                 RReplicationAuditTableLayoutView: "#r_replicationAuditTableLayoutView",
                 RProfileLayoutView: "#r_profileLayoutView",
                 RRelationshipLayoutView: "#r_relationshipLayoutView",
@@ -72,7 +73,8 @@ define(['require',
             },
             templateHelpers: function() {
                 return {
-                    entityUpdate: Globals.entityUpdate
+                    entityUpdate: Globals.entityUpdate,
+                    isTasksEnabled: Globals.isTasksEnabled
                 };
             },
             /** ui events hash */
@@ -321,6 +323,7 @@ define(['require',
                     this.renderRelationshipLayoutView(obj);
                     this.renderAuditTableLayoutView(obj);
                     this.renderTagTableLayoutView(obj);
+                    if (Globals.isTasksEnabled) { this.renderPendingTaskTableLayoutView(); }
 
                     // To render profile tab check for attribute "profileData" or typeName = "hive_db","hbase_namespace"
                     if (collectionJSON && (!_.isUndefined(collectionJSON.attributes['profileData']) || collectionJSON.typeName === "hive_db" || collectionJSON.typeName === "hbase_namespace")) {
@@ -642,6 +645,12 @@ define(['require',
                 var that = this;
                 require(['views/tag/TagDetailTableLayoutView'], function(TagDetailTableLayoutView) {
                     that.RTagTableLayoutView.show(new TagDetailTableLayoutView(obj));
+                });
+            },
+            renderPendingTaskTableLayoutView: function() {
+                var that = this;
+                require(['views/detail_page/PendingTaskTableLayoutView'], function(PendingTaskTableLayoutView) {
+                    that.RPendingTaskTableLayoutView.show(new PendingTaskTableLayoutView());
                 });
             },
             renderLineageLayoutView: function(obj) {
