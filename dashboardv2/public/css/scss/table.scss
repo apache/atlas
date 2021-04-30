@@ -122,7 +122,8 @@ tr.empty {
 
     .debuggging-table-header {
         padding-right: 0px !important;
-        button{
+
+        button {
             float: right;
         }
     }
@@ -314,4 +315,21 @@ td {
     &>div {
         flex-grow: 1;
     }
+}
+
+.debug-metrics-table table {
+
+    tr th:not(:first-child),
+    tr td:not(:first-child) {
+        text-align: center !important;
+
+        button {
+            margin: 0 auto;
+        }
+    }
+}
+
+.debug-btn-wrapper {
+    margin-bottom: 5px;
+    z-index: 2;
 }

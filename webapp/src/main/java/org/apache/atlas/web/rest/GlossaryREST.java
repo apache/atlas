@@ -21,6 +21,7 @@ import com.sun.jersey.core.header.FormDataContentDisposition;
 import com.sun.jersey.multipart.FormDataParam;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.SortOrder;
+import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.bulkimport.BulkImportResponse;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.glossary.GlossaryService;
@@ -85,6 +86,7 @@ public class GlossaryREST {
      * @throws AtlasBaseException
      */
     @GET
+    @Timed
     public List<AtlasGlossary> getGlossaries(@DefaultValue("-1") @QueryParam("limit") final String limit,
                                              @DefaultValue("0") @QueryParam("offset") final String offset,
                                              @DefaultValue("ASC") @QueryParam("sort") final String sort) throws AtlasBaseException {
@@ -112,6 +114,7 @@ public class GlossaryREST {
      */
     @GET
     @Path("/{glossaryGuid}")
+    @Timed
     public AtlasGlossary getGlossary(@PathParam("glossaryGuid") String glossaryGuid) throws AtlasBaseException {
         Servlets.validateQueryParamLength("glossaryGuid", glossaryGuid);
 
@@ -143,6 +146,7 @@ public class GlossaryREST {
      */
     @GET
     @Path("/{glossaryGuid}/detailed")
+    @Timed
     public AtlasGlossary.AtlasGlossaryExtInfo getDetailedGlossary(@PathParam("glossaryGuid") String glossaryGuid) throws AtlasBaseException {
         Servlets.validateQueryParamLength("glossaryGuid", glossaryGuid);
 
@@ -174,6 +178,7 @@ public class GlossaryREST {
      */
     @GET
     @Path("/term/{termGuid}")
+    @Timed
     public AtlasGlossaryTerm getGlossaryTerm(@PathParam("termGuid") String termGuid) throws AtlasBaseException {
         Servlets.validateQueryParamLength("termGuid", termGuid);
 
@@ -204,6 +209,7 @@ public class GlossaryREST {
      */
     @GET
     @Path("/category/{categoryGuid}")
+    @Timed
     public AtlasGlossaryCategory getGlossaryCategory(@PathParam("categoryGuid") String categoryGuid) throws AtlasBaseException {
         Servlets.validateQueryParamLength("categoryGuid", categoryGuid);
         AtlasPerfTracer perf = null;
@@ -234,6 +240,7 @@ public class GlossaryREST {
      * @HTTP 409 If Glossary definition already exists (duplicate qualifiedName)
      */
     @POST
+    @Timed
     public AtlasGlossary createGlossary(AtlasGlossary atlasGlossary) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
         try {
@@ -258,6 +265,7 @@ public class GlossaryREST {
      */
     @POST
     @Path("/term")
+    @Timed
     public AtlasGlossaryTerm createGlossaryTerm(AtlasGlossaryTerm glossaryTerm) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
         try {
@@ -283,6 +291,7 @@ public class GlossaryREST {
      */
     @POST
     @Path("/terms")
+    @Timed
     public List<AtlasGlossaryTerm> createGlossaryTerms(List<AtlasGlossaryTerm> glossaryTerm) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
         try {
@@ -312,6 +321,7 @@ public class GlossaryREST {
      */
     @POST
     @Path("/category")
+    @Timed
     public AtlasGlossaryCategory createGlossaryCategory(AtlasGlossaryCategory glossaryCategory) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
         try {
@@ -337,6 +347,7 @@ public class GlossaryREST {
      */
     @POST
     @Path("/categories")
+    @Timed
     public List<AtlasGlossaryCategory> createGlossaryCategories(List<AtlasGlossaryCategory> glossaryCategory) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
         try {
@@ -367,6 +378,7 @@ public class GlossaryREST {
      */
     @PUT
     @Path("/{glossaryGuid}")
+    @Timed
     public AtlasGlossary updateGlossary(@PathParam("glossaryGuid") String glossaryGuid, AtlasGlossary updatedGlossary) throws AtlasBaseException {
         Servlets.validateQueryParamLength("glossaryGuid", glossaryGuid);
         AtlasPerfTracer perf = null;
@@ -393,6 +405,7 @@ public class GlossaryREST {
      */
     @PUT
     @Path("/{glossaryGuid}/partial")
+    @Timed
     public AtlasGlossary partialUpdateGlossary(@PathParam("glossaryGuid") String glossaryGuid, Map<String, String> partialUpdates) throws AtlasBaseException {
         Servlets.validateQueryParamLength("glossaryGuid", glossaryGuid);
 
@@ -432,6 +445,7 @@ public class GlossaryREST {
      */
     @PUT
     @Path("/term/{termGuid}")
+    @Timed
     public AtlasGlossaryTerm updateGlossaryTerm(@PathParam("termGuid") String termGuid, AtlasGlossaryTerm glossaryTerm) throws AtlasBaseException {
         Servlets.validateQueryParamLength("termGuid", termGuid);
         AtlasPerfTracer perf = null;
@@ -458,6 +472,7 @@ public class GlossaryREST {
      */
     @PUT
     @Path("/term/{termGuid}/partial")
+    @Timed
     public AtlasGlossaryTerm partialUpdateGlossaryTerm(@PathParam("termGuid") String termGuid, Map<String, String> partialUpdates) throws AtlasBaseException {
         Servlets.validateQueryParamLength("termGuid", termGuid);
 
@@ -497,6 +512,7 @@ public class GlossaryREST {
      */
     @PUT
     @Path("/category/{categoryGuid}")
+    @Timed
     public AtlasGlossaryCategory updateGlossaryCategory(@PathParam("categoryGuid") String categoryGuid, AtlasGlossaryCategory glossaryCategory) throws AtlasBaseException {
         Servlets.validateQueryParamLength("categoryGuid", categoryGuid);
         AtlasPerfTracer perf = null;
@@ -523,6 +539,7 @@ public class GlossaryREST {
      */
     @PUT
     @Path("/category/{categoryGuid}/partial")
+    @Timed
     public AtlasGlossaryCategory partialUpdateGlossaryCategory(@PathParam("categoryGuid") String categoryGuid, Map<String, String> partialUpdates) throws AtlasBaseException {
         Servlets.validateQueryParamLength("categoryGuid", categoryGuid);
 
@@ -559,6 +576,7 @@ public class GlossaryREST {
      */
     @DELETE
     @Path("/{glossaryGuid}")
+    @Timed
     public void deleteGlossary(@PathParam("glossaryGuid") String glossaryGuid) throws AtlasBaseException {
         Servlets.validateQueryParamLength("glossaryGuid", glossaryGuid);
         AtlasPerfTracer perf = null;
@@ -581,6 +599,7 @@ public class GlossaryREST {
      */
     @DELETE
     @Path("/term/{termGuid}")
+    @Timed
     public void deleteGlossaryTerm(@PathParam("termGuid") String termGuid) throws AtlasBaseException {
         Servlets.validateQueryParamLength("termGuid", termGuid);
         AtlasPerfTracer perf = null;
@@ -603,6 +622,7 @@ public class GlossaryREST {
      */
     @DELETE
     @Path("/category/{categoryGuid}")
+    @Timed
     public void deleteGlossaryCategory(@PathParam("categoryGuid") String categoryGuid) throws AtlasBaseException {
         Servlets.validateQueryParamLength("categoryGuid", categoryGuid);
         AtlasPerfTracer perf = null;
@@ -629,6 +649,7 @@ public class GlossaryREST {
      */
     @GET
     @Path("/{glossaryGuid}/terms")
+    @Timed
     public List<AtlasGlossaryTerm> getGlossaryTerms(@PathParam("glossaryGuid") String glossaryGuid,
                                                          @DefaultValue("-1") @QueryParam("limit") String limit,
                                                          @DefaultValue("0") @QueryParam("offset") String offset,
@@ -660,6 +681,7 @@ public class GlossaryREST {
      */
     @GET
     @Path("/{glossaryGuid}/terms/headers")
+    @Timed
     public List<AtlasRelatedTermHeader> getGlossaryTermHeaders(@PathParam("glossaryGuid") String glossaryGuid,
                                                          @DefaultValue("-1") @QueryParam("limit") String limit,
                                                          @DefaultValue("0") @QueryParam("offset") String offset,
@@ -691,6 +713,7 @@ public class GlossaryREST {
      */
     @GET
     @Path("/{glossaryGuid}/categories")
+    @Timed
     public List<AtlasGlossaryCategory> getGlossaryCategories(@PathParam("glossaryGuid") String glossaryGuid,
                                                                   @DefaultValue("-1") @QueryParam("limit") String limit,
                                                                   @DefaultValue("0") @QueryParam("offset") String offset,
@@ -722,6 +745,7 @@ public class GlossaryREST {
      */
     @GET
     @Path("/{glossaryGuid}/categories/headers")
+    @Timed
     public List<AtlasRelatedCategoryHeader> getGlossaryCategoriesHeaders(@PathParam("glossaryGuid") String glossaryGuid,
                                                                   @DefaultValue("-1") @QueryParam("limit") String limit,
                                                                   @DefaultValue("0") @QueryParam("offset") String offset,
@@ -753,6 +777,7 @@ public class GlossaryREST {
      */
     @GET
     @Path("/category/{categoryGuid}/terms")
+    @Timed
     public List<AtlasRelatedTermHeader> getCategoryTerms(@PathParam("categoryGuid") String categoryGuid,
                                                          @DefaultValue("-1") @QueryParam("limit") String limit,
                                                          @DefaultValue("0") @QueryParam("offset") String offset,
@@ -785,6 +810,7 @@ public class GlossaryREST {
      */
     @GET
     @Path("/terms/{termGuid}/related")
+    @Timed
     public Map<AtlasGlossaryTerm.Relation, Set<AtlasRelatedTermHeader>> getRelatedTerms(@PathParam("termGuid") String termGuid,
                                                                                         @DefaultValue("-1") @QueryParam("limit") String limit,
                                                                                         @DefaultValue("0") @QueryParam("offset") String offset,
@@ -817,6 +843,7 @@ public class GlossaryREST {
      */
     @GET
     @Path("/terms/{termGuid}/assignedEntities")
+    @Timed
     public List<AtlasRelatedObjectId> getEntitiesAssignedWithTerm(@PathParam("termGuid") String termGuid,
                                                                   @DefaultValue("-1") @QueryParam("limit") String limit,
                                                                   @DefaultValue("0") @QueryParam("offset") String offset,
@@ -848,6 +875,7 @@ public class GlossaryREST {
      */
     @POST
     @Path("/terms/{termGuid}/assignedEntities")
+    @Timed
     public void assignTermToEntities(@PathParam("termGuid") String termGuid, List<AtlasRelatedObjectId> relatedObjectIds) throws AtlasBaseException {
         Servlets.validateQueryParamLength("termGuid", termGuid);
 
@@ -874,6 +902,7 @@ public class GlossaryREST {
      */
     @DELETE
     @Path("/terms/{termGuid}/assignedEntities")
+    @Timed
     public void removeTermAssignmentFromEntities(@PathParam("termGuid") String termGuid, List<AtlasRelatedObjectId> relatedObjectIds) throws AtlasBaseException {
         removeTermFromGlossary(termGuid, relatedObjectIds);
     }
@@ -890,6 +919,7 @@ public class GlossaryREST {
      */
     @PUT
     @Path("/terms/{termGuid}/assignedEntities")
+    @Timed
     public void disassociateTermAssignmentFromEntities(@PathParam("termGuid") String termGuid, List<AtlasRelatedObjectId> relatedObjectIds) throws AtlasBaseException {
         removeTermFromGlossary(termGuid, relatedObjectIds);
     }
@@ -924,6 +954,7 @@ public class GlossaryREST {
      */
     @GET
     @Path("/category/{categoryGuid}/related")
+    @Timed
     public Map<String, List<AtlasRelatedCategoryHeader>> getRelatedCategories(@PathParam("categoryGuid") String categoryGuid,
                                                                          @DefaultValue("-1") @QueryParam("limit") String limit,
                                                                          @DefaultValue("0") @QueryParam("offset") String offset,
@@ -984,6 +1015,7 @@ public class GlossaryREST {
     @POST
     @Path("/import")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Timed
     public BulkImportResponse importGlossaryData(@FormDataParam("file") InputStream inputStream,
                                                  @FormDataParam("file") FormDataContentDisposition fileDetail) throws AtlasBaseException {
         return glossaryService.importGlossaryData(inputStream, fileDetail.getFileName());

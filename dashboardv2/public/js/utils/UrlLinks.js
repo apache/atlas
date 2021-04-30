@@ -46,6 +46,9 @@ define(['require', 'utils/Enums', 'utils/Utils', 'underscore'], function(require
         metricsApiUrl: function() {
             return this.baseUrl + '/admin/metrics'
         },
+        debugMetricsApiUrl: function() {
+            return this.baseUrl + '/admin/debug/metrics'
+        },
         migrationStatusApiUrl: function() {
             return this.baseUrl + '/admin/status'
         },

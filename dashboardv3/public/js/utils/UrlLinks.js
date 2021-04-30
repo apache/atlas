@@ -46,6 +46,12 @@ define(['require', 'utils/Enums', 'utils/Utils', 'underscore'], function(require
         metricsApiUrl: function() {
             return this.baseUrl + '/admin/metrics'
         },
+        debugMetricsApiUrl: function() {
+            return this.baseUrl + '/admin/debug/metrics'
+        },
+        regitrydataDefApiUrl: function(name) {
+            return this.baseUrlV2 + '/entity/getRegistryData';
+        },
         rootEntityDefUrl: function(name) {
             return this.baseUrlV2 + '/types/entitydef/name/' + name;
         },

@@ -116,7 +116,7 @@ define(['require',
                 that.$('.tabs').find('li a[aria-controls="tab-' + view + '"]').parents('li').addClass('active').siblings().removeClass('active');
                 that.$('.tab-content').find('div#tab-' + view).addClass('active').siblings().removeClass('active');
             };
-            if (Utils.getUrlState.isSearchTab() || Utils.getUrlState.isInitial() || Utils.getUrlState.isAdministratorTab()) {
+            if (Utils.getUrlState.isSearchTab() || Utils.getUrlState.isInitial() || Utils.getUrlState.isAdministratorTab() || Utils.getUrlState.isDebugMetricsTab()) {
                 activeTab({ "view": "search" });
             } else if (Utils.getUrlState.isTagTab()) {
                 activeTab({ "view": "classification" });

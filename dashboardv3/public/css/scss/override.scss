@@ -258,6 +258,10 @@
     overflow: initial;
 }
 
+.tab-content>.tab-pane.active.debug-metrics {
+    padding: 5px 20px 15px 20px;
+}
+
 .advancedInfo {
     margin-left: 5px;
     cursor: pointer;

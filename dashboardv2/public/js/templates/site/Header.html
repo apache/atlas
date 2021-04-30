@@ -33,7 +33,6 @@
                 </div>
             </td>
             <td>
-                <!-- <div class="btn-group pull-right header-menu"> -->
                 <table class="header-menu">
                     <tr>
                         <td><a class="show-stat" href="javascript:void(0);" title="Statistics"><i class="fa fa-bar-chart"></i></a></td>
@@ -66,6 +65,9 @@
                                         <li><a target="_blank" href="http://atlas.apache.org/">Documentation</a></li>
                                         <li><a target="_blank" href="{{apiDocUrl}}">API Documentation</a></li>
                                         <li class="aboutAtlas"><a href="javascript:void(0)">About</a></li>
+                                        {{#if isDebugMetricsEnabled}}
+                                            <li class="show-debug"><a href="javascript:void(0)" data-id="showDebug">Debug</a></li>
+                                        {{/if}}    
                                     </ul>
                                 </li>
                                 <li role="separator" class="divider"></li>
