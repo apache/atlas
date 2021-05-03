@@ -1125,13 +1125,17 @@ public class GlossaryService {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_FILE_TYPE, fileName);
         }
 
-        List<String[]> fileData = FileUtils.readFileData(fileName, inputStream);
+        try {
+            List<String[]> fileData = FileUtils.readFileData(fileName, inputStream);
 
-        List<AtlasGlossaryTerm> glossaryTermsWithoutRelations = glossaryTermUtils.getGlossaryTermDataWithoutRelations(fileData, ret);
-        createGlossaryTerms(glossaryTermsWithoutRelations, ret);
+            List<AtlasGlossaryTerm> glossaryTermsWithoutRelations = glossaryTermUtils.getGlossaryTermDataWithoutRelations(fileData, ret);
+            createGlossaryTerms(glossaryTermsWithoutRelations, ret);
 
-        List<AtlasGlossaryTerm> glossaryTermsWithRelations = glossaryTermUtils.getGlossaryTermDataWithRelations(fileData, ret);
-        updateGlossaryTermsRelation(glossaryTermsWithRelations, ret);
+            List<AtlasGlossaryTerm> glossaryTermsWithRelations = glossaryTermUtils.getGlossaryTermDataWithRelations(fileData, ret);
+            updateGlossaryTermsRelation(glossaryTermsWithRelations, ret);
+        } finally {
+            glossaryTermUtils.clearImportCache();
+        }
 
         return ret;
     }

@@ -49,6 +49,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -65,7 +66,7 @@ public class GlossaryTermUtils extends GlossaryUtils {
     private static final int INDEX_FOR_GLOSSARY_AT_RECORD = 0;
     private static final int INDEX_FOR_TERM_AT_RECORD     = 1;
 
-    Map<String, String> glossaryNameGuidCacheForImport = new HashMap<>();
+    private static final ThreadLocal<Map<String, String>> glossaryNameGuidCacheForImport = ThreadLocal.withInitial(() -> new LinkedHashMap<>());
 
     protected GlossaryTermUtils(AtlasRelationshipStore relationshipStore, AtlasTypeRegistry typeRegistry, DataAccess dataAccess) {
         super(relationshipStore, typeRegistry, dataAccess);
@@ -146,6 +147,10 @@ public class GlossaryTermUtils extends GlossaryUtils {
         if (DEBUG_ENABLED) {
             LOG.debug("<== GlossaryTermUtils.processTermDissociation()");
         }
+    }
+
+    public void clearImportCache() {
+        glossaryNameGuidCacheForImport.get().clear();
     }
 
     private boolean isRelationshipGuidSame(AtlasRelatedObjectId storeObject, AtlasRelatedObjectId relatedObjectId) {
@@ -555,7 +560,7 @@ public class GlossaryTermUtils extends GlossaryUtils {
             } else {
                 glossaryName = record[INDEX_FOR_GLOSSARY_AT_RECORD];
 
-                String glossaryGuid = glossaryNameGuidCacheForImport.get(glossaryName);
+                String glossaryGuid = glossaryNameGuidCacheForImport.get().get(glossaryName);
 
                 if (StringUtils.isEmpty(glossaryGuid)) {
                     glossaryGuid = getGlossaryGUIDFromGraphDB(glossaryName);
@@ -564,7 +569,7 @@ public class GlossaryTermUtils extends GlossaryUtils {
                         glossaryGuid = createGlossary(glossaryName, failedTermMsgs);
                     }
 
-                    glossaryNameGuidCacheForImport.put(glossaryName, glossaryGuid);
+                    glossaryNameGuidCacheForImport.get().put(glossaryName, glossaryGuid);
                 }
 
                 if (StringUtils.isNotEmpty(glossaryGuid)) {
@@ -599,7 +604,7 @@ public class GlossaryTermUtils extends GlossaryUtils {
             if (ArrayUtils.isNotEmpty(record) && StringUtils.isNotBlank(record[INDEX_FOR_GLOSSARY_AT_RECORD])) {
                 AtlasGlossaryTerm glossaryTerm = new AtlasGlossaryTerm();
                 String            glossaryName = record[INDEX_FOR_GLOSSARY_AT_RECORD];
-                String            glossaryGuid = glossaryNameGuidCacheForImport.get(glossaryName);
+                String            glossaryGuid = glossaryNameGuidCacheForImport.get().get(glossaryName);
 
                 if (StringUtils.isNotEmpty(glossaryGuid)) {
                     glossaryTerm = populateGlossaryTermObject(failedTermMsgs, record, glossaryGuid, true);
