@@ -20,11 +20,15 @@ package org.apache.atlas.utils;
 
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.kafka.common.config.SaslConfigs;
+import org.apache.kafka.common.config.types.Password;
+import org.apache.kafka.common.security.JaasContext;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.testng.annotations.Test;
-
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
 import static org.testng.Assert.assertNull;
@@ -55,9 +59,10 @@ public class KafkaUtilsTest {
 
         assertTrue(newPropertyValue.contains(loginModuleName), "loginModuleName not present in new property");
         assertTrue(newPropertyValue.contains(loginModuleControlFlag),"loginModuleControlFlag not present in new property");
-        assertTrue(newPropertyValue.contains("useKeyTab=" + optionUseKeyTab), "useKeyTab not present in new property or value doesn't match");
-        assertTrue(newPropertyValue.contains("storeKey="+ optionStoreKey), "storeKey not present in new property or value doesn't match");
-        assertTrue(newPropertyValue.contains("serviceName=" + optionServiceName), "serviceName not present in new property or value doesn't match");
+        assertTrue(newPropertyValue.contains("useKeyTab=\"" + optionUseKeyTab + "\""), "useKeyTab not present in new property or value doesn't match");
+        assertTrue(newPropertyValue.contains("storeKey=\""+ optionStoreKey + "\""), "storeKey not present in new property or value doesn't match");
+        assertTrue(newPropertyValue.contains("serviceName=\"" + optionServiceName + "\""), "serviceName not present in new property or value doesn't match");
+        assertJaaSConfigLoadable(newPropertyValue);
 
     }
 
@@ -82,9 +87,10 @@ public class KafkaUtilsTest {
 
         assertTrue(newPropertyValue.contains(loginModuleName), "loginModuleName not present in new property");
         assertTrue(newPropertyValue.contains(loginModuleControlFlag),"loginModuleControlFlag not present in new property");
-        assertTrue(newPropertyValue.contains("useKeyTab=" + optionUseKeyTab), "useKeyTab not present in new property or value doesn't match");
-        assertTrue(newPropertyValue.contains("storeKey="+ optionStoreKey), "storeKey not present in new property or value doesn't match");
-        assertTrue(newPropertyValue.contains("serviceName=" + optionServiceName), "serviceName not present in new property or value doesn't match");
+        assertTrue(newPropertyValue.contains("useKeyTab=\"" + optionUseKeyTab + "\""), "useKeyTab not present in new property or value doesn't match");
+        assertTrue(newPropertyValue.contains("storeKey=\""+ optionStoreKey + "\""), "storeKey not present in new property or value doesn't match");
+        assertTrue(newPropertyValue.contains("serviceName=\"" + optionServiceName + "\""), "serviceName not present in new property or value doesn't match");
+        assertJaaSConfigLoadable(newPropertyValue);
 
     }
 
@@ -134,6 +140,7 @@ public class KafkaUtilsTest {
             assertTrue(newPropertyValue.contains(loginModuleControlFlag),"loginModuleControlFlag not present in new property");
             assertTrue(newPropertyValue.contains("keyTabPath=\"" + optionKeyTabPath + "\""));
             assertTrue(newPropertyValue.contains("principal=\""+ updatedPrincipalValue + "\""));
+            assertJaaSConfigLoadable(newPropertyValue);
 
         } catch (IOException e) {
             fail("Failed while getting updated principal value with exception : " + e.getMessage());
@@ -170,9 +177,10 @@ public class KafkaUtilsTest {
             String newPropertyValue = properties.getProperty(KafkaUtils.KAFKA_SASL_JAAS_CONFIG_PROPERTY);
             assertTrue(newPropertyValue.contains(loginModuleName), "loginModuleName not present in new property");
             assertTrue(newPropertyValue.contains(loginModuleControlFlag), "loginModuleControlFlag not present in new property");
-            assertTrue(newPropertyValue.contains("useKeyTab=" + optionUseKeyTab), "useKeyTab not present in new property or value doesn't match");
-            assertTrue(newPropertyValue.contains("storeKey=" + optionStoreKey), "storeKey not present in new property or value doesn't match");
-            assertTrue(newPropertyValue.contains("serviceName=" + optionServiceName), "serviceName not present in new property or value doesn't match");
+            assertTrue(newPropertyValue.contains("useKeyTab=\"" + optionUseKeyTab + "\""), "useKeyTab not present in new property or value doesn't match");
+            assertTrue(newPropertyValue.contains("storeKey=\"" + optionStoreKey + "\""), "storeKey not present in new property or value doesn't match");
+            assertTrue(newPropertyValue.contains("serviceName=\"" + optionServiceName + "\""), "serviceName not present in new property or value doesn't match");
+            assertJaaSConfigLoadable(newPropertyValue);
         }
     }
 
@@ -204,9 +212,64 @@ public class KafkaUtilsTest {
             String newPropertyValue = properties.getProperty(KafkaUtils.KAFKA_SASL_JAAS_CONFIG_PROPERTY);
             assertTrue(newPropertyValue.contains(loginModuleName), "loginModuleName not present in new property");
             assertTrue(newPropertyValue.contains(loginModuleControlFlag), "loginModuleControlFlag not present in new property");
-            assertTrue(newPropertyValue.contains("useKeyTab=" + optionUseKeyTab), "useKeyTab not present in new property or value doesn't match");
-            assertTrue(newPropertyValue.contains("storeKey=" + optionStoreKey), "storeKey not present in new property or value doesn't match");
-            assertTrue(newPropertyValue.contains("serviceName=" + optionServiceName), "serviceName not present in new property or value doesn't match");
+            assertTrue(newPropertyValue.contains("useKeyTab=\"" + optionUseKeyTab + "\""), "useKeyTab not present in new property or value doesn't match");
+            assertTrue(newPropertyValue.contains("storeKey=\"" + optionStoreKey + "\""), "storeKey not present in new property or value doesn't match");
+            assertTrue(newPropertyValue.contains("serviceName=\"" + optionServiceName + "\""), "serviceName not present in new property or value doesn't match");
+            assertJaaSConfigLoadable(newPropertyValue);
+        }
+    }
+
+    @Test
+    public void testSetKafkaJAASPropertiesForTokenAuthConfig() {
+        Properties properties = new Properties();
+        Configuration configuration = new PropertiesConfiguration();
+
+        final String loginModuleName = "org.apache.kafka.common.security.scram.ScramLoginModule";
+        final String loginModuleControlFlag = "required";
+        final String optionUseKeyTab = "false";
+        final String optionStoreKey = "false";
+        final String optionServiceName = "kafka";
+        final String optionTokenAuth = "true";
+        final String optionUsername = "30CQ4q1hQMy0dB6X0eXfxQ";
+        final String optionPassword = "KdaUQ4FlKWlDxwQrAeFGUVbb6sR0P+zoqOZDZjtIRP1wseXbSbhiTjz3QI9Ur9o4LTYZSv8TE1QqUC4FSwnoTA==";
+
+        configuration.setProperty("atlas.kafka.bootstrap.servers", "localhost:9100");
+        configuration.setProperty("atlas.jaas.KafkaClient.loginModuleName",loginModuleName);
+        configuration.setProperty("atlas.jaas.KafkaClient.loginModuleControlFlag", loginModuleControlFlag);
+        configuration.setProperty("atlas.jaas.KafkaClient.option.useKeyTab", optionUseKeyTab);
+        configuration.setProperty("atlas.jaas.KafkaClient.option.storeKey", optionStoreKey);
+        configuration.setProperty("atlas.jaas.KafkaClient.option.serviceName", optionServiceName);
+        configuration.setProperty("atlas.jaas.KafkaClient.option.tokenauth", optionTokenAuth);
+        configuration.setProperty("atlas.jaas.KafkaClient.option.username", optionUsername);
+        configuration.setProperty("atlas.jaas.KafkaClient.option.password", optionPassword);
+
+        try (MockedStatic mockedKafkaUtilsClass = Mockito.mockStatic(KafkaUtils.class)) {
+            mockedKafkaUtilsClass.when(() -> KafkaUtils.surroundWithQuotes(Mockito.anyString())).thenCallRealMethod();
+            mockedKafkaUtilsClass.when(() -> KafkaUtils.setKafkaJAASProperties(configuration, properties)).thenCallRealMethod();
+
+            KafkaUtils.setKafkaJAASProperties(configuration, properties);
+
+            String newPropertyValue = properties.getProperty(KafkaUtils.KAFKA_SASL_JAAS_CONFIG_PROPERTY);
+            assertTrue(newPropertyValue.contains(loginModuleName), "loginModuleName not present in new property");
+            assertTrue(newPropertyValue.contains(loginModuleControlFlag), "loginModuleControlFlag not present in new property");
+            assertTrue(newPropertyValue.contains("useKeyTab=\"" + optionUseKeyTab + "\""), "useKeyTab not present in new property or value doesn't match");
+            assertTrue(newPropertyValue.contains("storeKey=\"" + optionStoreKey + "\""), "storeKey not present in new property or value doesn't match");
+            assertTrue(newPropertyValue.contains("serviceName=\"" + optionServiceName + "\""), "serviceName not present in new property or value doesn't match");
+            assertTrue(newPropertyValue.contains("tokenauth=\"" + optionTokenAuth + "\""), "tokenauth not present in new property or value doesn't match");
+            assertTrue(newPropertyValue.contains("username=\"" + optionUsername + "\""), "username not present in new property or value doesn't match");
+            assertTrue(newPropertyValue.contains("password=\"" + optionPassword + "\""), "password not present in new property or value doesn't match");
+            assertJaaSConfigLoadable(newPropertyValue);
+        }
+    }
+
+    private void assertJaaSConfigLoadable(String jaasConfig) {
+        // Ensure that JaaS config can be loaded
+        Map<String, Password> jaasConfigs = new HashMap<>();
+        jaasConfigs.put(SaslConfigs.SASL_JAAS_CONFIG, new Password(jaasConfig));
+        try {
+            JaasContext.loadClientContext(jaasConfigs);
+        } catch (IllegalArgumentException e) {
+            fail(String.format("JaaS config '%s' can not be loaded", jaasConfig), e);
         }
     }
 

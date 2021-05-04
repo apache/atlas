@@ -318,20 +318,9 @@ public class KafkaUtils implements AutoCloseable {
             return optionVal;
         }
 
-        String ret = optionVal;
-
-        // For property values which have special chars like "@" or "/", we need to enclose it in
-        // double quotes, so that Kafka can parse it
-        // If the property is already enclosed in double quotes, then do nothing.
-        if (optionVal.indexOf(0) != '"' && optionVal.indexOf(optionVal.length() - 1) != '"') {
-            // If the string as special characters like except _,-
-            final String SPECIAL_CHAR_LIST = "/!@#%^&*";
-
-            if (StringUtils.containsAny(optionVal, SPECIAL_CHAR_LIST)) {
-                ret = String.format("\"%s\"", optionVal);
-            }
-        }
-
-        return ret;
+        // Enclose property values in double quotes, so that Kafka can parse it.
+        // Escape all double quotes that may occur in the property value.
+        String doubleQuoteEscaped = optionVal.replace("\"", "\\\"");
+        return String.format("\"%s\"", doubleQuoteEscaped);
     }
 }
