@@ -1118,6 +1118,7 @@ public class GlossaryService {
         }
     }
 
+    @GraphTransaction
     public BulkImportResponse importGlossaryData(InputStream inputStream, String fileName) throws AtlasBaseException {
         BulkImportResponse ret = new BulkImportResponse();
 
@@ -1161,6 +1162,8 @@ public class GlossaryService {
 
     private void updateGlossaryTermsRelation(List<AtlasGlossaryTerm> glossaryTerms, BulkImportResponse bulkImportResponse) {
         for (AtlasGlossaryTerm glossaryTerm : glossaryTerms) {
+            glossaryTermUtils.updateGlossaryTermRelations(glossaryTerm);
+
             if (glossaryTerm.hasTerms()) {
                 String glossaryTermName = glossaryTerm.getName();
                 String glossaryName     = getGlossaryName(glossaryTerm);
