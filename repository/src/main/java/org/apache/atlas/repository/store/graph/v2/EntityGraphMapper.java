@@ -2569,6 +2569,7 @@ public class EntityGraphMapper {
             GraphTransactionInterceptor.lockObjectAndReleasePostCommit(entityGuid);
 
             AtlasVertex classificationVertex = graph.getVertex(classificationVertexId);
+            AtlasClassification classification     = entityRetriever.toAtlasClassification(classificationVertex);
 
             if (classificationVertex == null) {
                 LOG.warn("deleteClassificationPropagation(classificationVertexId={}): classification vertex not found", classificationVertexId);
@@ -2578,12 +2579,13 @@ public class EntityGraphMapper {
 
             List<AtlasVertex> entityVertices = deleteDelegate.getHandler().removeTagPropagation(classificationVertex);
 
+            deleteDelegate.getHandler().deleteClassificationVertex(classificationVertex, true);
+
             if (CollectionUtils.isEmpty(entityVertices)) {
 
                 return null;
             }
 
-            AtlasClassification classification     = entityRetriever.toAtlasClassification(classificationVertex);
             List<AtlasEntity>   propagatedEntities = updateClassificationText(classification, entityVertices);
 
             entityChangeNotifier.onClassificationsDeletedFromEntities(propagatedEntities, Collections.singletonList(classification));
