@@ -52,6 +52,7 @@ public class SearchParameters implements Serializable {
     private boolean includeSubClassifications       = true;
     private int     limit;
     private int     offset;
+    private String  marker;
 
     private FilterCriteria entityFilters;
     private FilterCriteria tagFilters;
@@ -216,6 +217,16 @@ public class SearchParameters implements Serializable {
     }
 
     /**
+     * @return marker (offset of the next page)
+     */
+    public String getMarker() { return marker; }
+
+    /**
+     * @param marker
+     */
+    public void setMarker(String marker) { this.marker = marker; }
+
+    /**
      * Entity attribute filters for the type (if type name is specified)
      * @return
      */
@@ -294,6 +305,8 @@ public class SearchParameters implements Serializable {
         SearchParameters that = (SearchParameters) o;
         return excludeDeletedEntities == that.excludeDeletedEntities &&
                 includeClassificationAttributes == that.includeClassificationAttributes &&
+                includeSubTypes == that.includeSubTypes &&
+                includeSubClassifications == that.includeSubClassifications &&
                 limit == that.limit &&
                 offset == that.offset &&
                 Objects.equals(query, that.query) &&
@@ -309,8 +322,9 @@ public class SearchParameters implements Serializable {
 
     @Override
     public int hashCode() {
-        return Objects.hash(query, typeName, classification, termName, excludeDeletedEntities, includeClassificationAttributes,
-                            limit, offset, entityFilters, tagFilters, attributes, sortBy, sortOrder);
+        return Objects.hash(query, typeName, classification, termName, includeSubTypes, includeSubClassifications,
+                            excludeDeletedEntities, includeClassificationAttributes, limit, offset, entityFilters,
+                            tagFilters, attributes, sortBy, sortOrder);
     }
 
     public StringBuilder toString(StringBuilder sb) {
@@ -323,6 +337,8 @@ public class SearchParameters implements Serializable {
         sb.append(", typeName='").append(typeName).append('\'');
         sb.append(", classification='").append(classification).append('\'');
         sb.append(", termName='").append(termName).append('\'');
+        sb.append(", includeSubTypes='").append(includeSubTypes).append('\'');
+        sb.append(", includeSubClassifications='").append(includeSubClassifications).append('\'');
         sb.append(", excludeDeletedEntities=").append(excludeDeletedEntities);
         sb.append(", includeClassificationAttributes=").append(includeClassificationAttributes);
         sb.append(", limit=").append(limit);

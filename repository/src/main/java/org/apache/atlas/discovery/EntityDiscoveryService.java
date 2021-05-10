@@ -463,6 +463,11 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
             ret.setApproximateCount(searchContext.getSearchProcessor().getResultCount());
 
+            String nextMarker = searchContext.getSearchProcessor().getNextMarker();
+            if (StringUtils.isNotEmpty(nextMarker)) {
+                ret.setNextMarker(nextMarker);
+            }
+
             // By default any attribute that shows up in the search parameter should be sent back in the response
             // If additional values are requested then the entityAttributes will be a superset of the all search attributes
             // and the explicitly requested attribute(s)

@@ -197,7 +197,8 @@ public class DiscoveryREST {
                                               @QueryParam("sortOrder")              SortOrder sortOrder,
                                               @QueryParam("excludeDeletedEntities") boolean excludeDeletedEntities,
                                               @QueryParam("limit")                  int     limit,
-                                              @QueryParam("offset")                 int     offset) throws AtlasBaseException {
+                                              @QueryParam("offset")                 int     offset,
+                                              @QueryParam("marker")                 String  marker) throws AtlasBaseException {
         Servlets.validateQueryParamLength("typeName", typeName);
         Servlets.validateQueryParamLength("classification", classification);
         Servlets.validateQueryParamLength("sortBy", sortByAttribute);
@@ -220,6 +221,7 @@ public class DiscoveryREST {
             searchParameters.setExcludeDeletedEntities(excludeDeletedEntities);
             searchParameters.setLimit(limit);
             searchParameters.setOffset(offset);
+            searchParameters.setMarker(marker);
             searchParameters.setSortBy(sortByAttribute);
             searchParameters.setSortOrder(sortOrder);
 

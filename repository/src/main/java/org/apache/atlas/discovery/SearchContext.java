@@ -18,10 +18,10 @@
 package org.apache.atlas.discovery;
 
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.SearchParameters;
-import org.apache.atlas.model.discovery.SearchParameters.*;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.repository.Constants;
@@ -43,11 +43,25 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.discovery.SearchProcessor.ALL_TYPE_QUERY;
-import static org.apache.atlas.model.discovery.SearchParameters.*;
+import static org.apache.atlas.model.discovery.SearchParameters.ALL_CLASSIFICATIONS;
+import static org.apache.atlas.model.discovery.SearchParameters.ALL_CLASSIFICATION_TYPES;
+import static org.apache.atlas.model.discovery.SearchParameters.ALL_ENTITY_TYPES;
+import static org.apache.atlas.model.discovery.SearchParameters.FilterCriteria;
+import static org.apache.atlas.model.discovery.SearchParameters.NO_CLASSIFICATIONS;
+import static org.apache.atlas.model.discovery.SearchParameters.WILDCARD_CLASSIFICATIONS;
 
 /*
  * Search context captures elements required for performing a basic search
@@ -71,6 +85,7 @@ public class SearchContext {
     private final String                  classificationTypeAndSubTypesQryStr;
     private boolean                       terminateSearch = false;
     private SearchProcessor               searchProcessor;
+    private Integer                       marker;
 
     public final static AtlasClassificationType MATCH_ALL_WILDCARD_CLASSIFICATION = new AtlasClassificationType(new AtlasClassificationDef(WILDCARD_CLASSIFICATIONS));
     public final static AtlasClassificationType MATCH_ALL_CLASSIFIED              = new AtlasClassificationType(new AtlasClassificationDef(ALL_CLASSIFICATIONS));
@@ -122,6 +137,10 @@ public class SearchContext {
             for (AtlasClassificationType classificationType : classificationTypes) {
                 validateAttributes(classificationType, searchParameters.getTagFilters());
             }
+        }
+
+        if (StringUtils.isNotEmpty(searchParameters.getMarker())) {
+            marker = MarkerUtil.decodeMarker(searchParameters);
         }
 
         //remove other types if builtin type is present
@@ -231,6 +250,8 @@ public class SearchContext {
 
     public Set<String> getClassificationNames() {return classificationNames;}
 
+    public Integer getMarker() { return marker; }
+
     public boolean includeEntityType(String entityType) {
         return typeAndSubTypes.isEmpty() || typeAndSubTypes.contains(entityType);
     }
@@ -238,9 +259,7 @@ public class SearchContext {
     public boolean includeClassificationTypes(Collection<String> traitNames) {
         final boolean ret;
 
-        if (CollectionUtils.isEmpty(classificationTypes) || classificationTypeAndSubTypes.isEmpty()) {
-            ret = true;
-        } else if (classificationTypes.iterator().next() == MATCH_ALL_NOT_CLASSIFIED) {
+        if (classificationTypes.iterator().next() == MATCH_ALL_NOT_CLASSIFIED) {
             ret = CollectionUtils.isEmpty(traitNames);
         } else if (classificationTypes.iterator().next() == MATCH_ALL_CLASSIFICATION_TYPES) {
             ret = CollectionUtils.isNotEmpty(traitNames);
@@ -502,5 +521,65 @@ public class SearchContext {
 
     private AtlasEntityType getTermEntityType() {
         return typeRegistry.getEntityTypeByName(TermSearchProcessor.ATLAS_GLOSSARY_TERM_ENTITY_TYPE);
+    }
+
+    public static class MarkerUtil {
+        private final static int IDX_HASH_CODE = 0;
+        private final static int IDX_OFFSET    = 1;
+
+        private final static String MARKER_DELIMITER = ":";
+
+        @VisibleForTesting
+                final static String MARKER_START     = "*";
+
+        @VisibleForTesting
+                final static int    MARKER_END       = -1;
+
+        public static String getNextEncMarker(SearchParameters searchParameters, Integer nextOffset) {
+            if (nextOffset == null) {
+                return null;
+            }
+
+            if (nextOffset == MARKER_END) {
+                return String.valueOf(nextOffset);
+            }
+
+            String value = searchParameters.hashCode() + MARKER_DELIMITER + nextOffset;
+            return Base64.getEncoder().encodeToString(value.getBytes());
+        }
+
+        public static Integer decodeMarker(SearchParameters searchParameters) throws AtlasBaseException {
+            if (searchParameters == null || searchParameters.getOffset() > 0) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Marker can be used only if offset=0.");
+            }
+
+            String encodedMarker = searchParameters.getMarker();
+            if (StringUtils.equals(encodedMarker, MARKER_START)) {
+                return 0;
+            }
+
+            try {
+                byte[] inputMarkerBytes = Base64.getDecoder().decode(encodedMarker);
+                String inputMarker      = new String(inputMarkerBytes);
+                if (StringUtils.isEmpty(inputMarker) || !inputMarker.contains(MARKER_DELIMITER)) {
+                    throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid marker found! Marker does not contain delimiter: " + MARKER_DELIMITER);
+                }
+
+                String[] str = inputMarker.split(MARKER_DELIMITER);
+                if (str == null || str.length != 2) {
+                    throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid marker found! Decoding using delimiter did not yield correct result!");
+                }
+
+                int hashCode        = Integer.parseInt(str[IDX_HASH_CODE]);
+                int currentHashCode = searchParameters.hashCode();
+                if (hashCode == currentHashCode && Integer.parseInt(str[IDX_OFFSET]) >= 0) {
+                    return Integer.parseInt(str[IDX_OFFSET]);
+                }
+
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid Marker! Parsing resulted in error.");
+            } catch (Exception e) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid marker!");
+            }
+        }
     }
 }
