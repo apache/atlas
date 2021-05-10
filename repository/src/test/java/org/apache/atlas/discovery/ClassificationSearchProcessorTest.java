@@ -33,6 +33,7 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -261,6 +262,62 @@ public class ClassificationSearchProcessorTest extends BasicTestSetup {
         }).collect(Collectors.toList());
         Assert.assertTrue(guids.contains(dimensionTagDeleteGuid));
 
+    }
+
+    @Test
+    public void searchByWildcardTagMarker() throws AtlasBaseException {
+        final String LAST_MARKER = "-1";
+        SearchParameters params = new SearchParameters();
+        params.setClassification("*");
+        int limit     = 5;
+        String marker = "*";
+        params.setLimit(limit);
+
+        while (!StringUtils.equals(marker, LAST_MARKER)) {
+            params.setMarker(marker);
+            SearchContext context = new SearchContext(params, typeRegistry, graph, indexer.getVertexIndexKeys());
+            ClassificationSearchProcessor processor = new ClassificationSearchProcessor(context);
+            List<AtlasVertex> vertices = processor.execute();
+            long totalCount = vertices.size();
+            marker = processor.getNextMarker();
+
+            if (totalCount < limit) {
+                assertEquals(marker, LAST_MARKER);
+                break;
+            } else {
+                Assert.assertNotNull(marker);
+                assertEquals(vertices.size(), 5);
+            }
+        }
+    }
+
+    @Test   //marker functionality is not supported in this case
+    public void searchByTagAndGraphSysFiltersMarker() throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+        params.setClassification(DIMENSION_CLASSIFICATION);
+        FilterCriteria filterCriteria = getSingleFilterCondition("__entityStatus", Operator.EQ, "DELETED");
+        params.setTagFilters(filterCriteria);
+        params.setExcludeDeletedEntities(false);
+        params.setLimit(20);
+        params.setMarker("*");
+
+        SearchContext context = new SearchContext(params, typeRegistry, graph, indexer.getVertexIndexKeys());
+        ClassificationSearchProcessor processor = new ClassificationSearchProcessor(context);
+        List<AtlasVertex> vertices = processor.execute();
+
+        Assert.assertTrue(CollectionUtils.isNotEmpty(vertices));
+        assertEquals(vertices.size(), 1);
+        List<String> guids = vertices.stream().map(g -> {
+            try {
+                return entityRetriever.toAtlasEntityHeader(g).getGuid();
+            } catch (AtlasBaseException e) {
+                fail("Failure in mapping vertex to AtlasEntityHeader");
+            }
+            return "";
+        }).collect(Collectors.toList());
+        Assert.assertTrue(guids.contains(dimensionTagDeleteGuid));
+
+        Assert.assertNull(processor.getNextMarker());
     }
 
     private void createDimensionTaggedEntityAndDelete() throws AtlasBaseException {

@@ -27,6 +27,7 @@ import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.util.SearchPredicateUtil;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.collections.Predicate;
 import org.apache.commons.collections.PredicateUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -212,26 +213,32 @@ public class ClassificationSearchProcessor extends SearchProcessor {
         }
 
         try {
-            final int     startIdx   = context.getSearchParameters().getOffset();
             final int     limit      = context.getSearchParameters().getLimit();
+                  Integer marker     = context.getMarker();
 
             // query to start at 0, even though startIdx can be higher - because few results in earlier retrieval could
             // have been dropped: like non-active-entities or duplicate-entities (same entity pointed to by multiple
             // classifications in the result)
             //
             // first 'startIdx' number of entries will be ignored
-            int qryOffset = 0;
+            //marker functionality will not work when there is need to fetch classificationVertices and get entities from it
+            if (indexQuery == null) {
+                marker = null;
+            }
+            // if marker is provided, start query with marker offset
+            int startIdx  = marker != null ? marker : context.getSearchParameters().getOffset();
+            int qryOffset = marker != null ? marker : 0;
             int resultIdx = qryOffset;
 
-            final Set<String>       processedGuids         = new HashSet<>();
-            final List<AtlasVertex> entityVertices         = new ArrayList<>();
-            final List<AtlasVertex> classificationVertices = new ArrayList<>();
+            final Set<String>                   processedGuids         = new HashSet<>();
+            LinkedHashMap<Integer, AtlasVertex> offsetEntityVertexMap  = new LinkedHashMap<>();
+            final List<AtlasVertex>             classificationVertices = new ArrayList<>();
 
             final String          sortBy                = context.getSearchParameters().getSortBy();
             final SortOrder       sortOrder             = context.getSearchParameters().getSortOrder();
 
             for (; ret.size() < limit; qryOffset += limit) {
-                entityVertices.clear();
+                offsetEntityVertexMap.clear();
                 classificationVertices.clear();
 
                 if (context.terminateSearch()) {
@@ -251,12 +258,12 @@ public class ClassificationSearchProcessor extends SearchProcessor {
                         queryResult = indexQuery.vertices(qryOffset, limit);
                     }
 
-                    getVerticesFromIndexQueryResult(queryResult, entityVertices);
-                    isLastResultPage = entityVertices.size() < limit;
+                    offsetEntityVertexMap   = getVerticesFromIndexQueryResult(queryResult, offsetEntityVertexMap, qryOffset);
+                    isLastResultPage        = offsetEntityVertexMap.size() < limit;
 
                     // Do in-memory filtering
-                    CollectionUtils.filter(entityVertices, traitPredicate);
-                    CollectionUtils.filter(entityVertices, isEntityPredicate);
+                    offsetEntityVertexMap = super.filter(offsetEntityVertexMap, traitPredicate);
+                    offsetEntityVertexMap = super.filter(offsetEntityVertexMap, isEntityPredicate);
 
                 } else {
                     if (classificationIndexQuery != null) {
@@ -283,11 +290,14 @@ public class ClassificationSearchProcessor extends SearchProcessor {
                 // Since tag filters are present, we need to collect the entity vertices after filtering the classification
                 // vertex results (as these might be lower in number)
                 if (CollectionUtils.isNotEmpty(classificationVertices)) {
+                    int resultCount = 0;
+
                     for (AtlasVertex classificationVertex : classificationVertices) {
                         Iterable<AtlasEdge> edges = classificationVertex.getEdges(AtlasEdgeDirection.IN, Constants.CLASSIFICATION_LABEL);
 
                         for (AtlasEdge edge : edges) {
                             AtlasVertex entityVertex = edge.getOutVertex();
+                            resultCount++;
 
                             String guid = AtlasGraphUtilsV2.getIdFromVertex(entityVertex);
 
@@ -295,7 +305,7 @@ public class ClassificationSearchProcessor extends SearchProcessor {
                                 continue;
                             }
 
-                            entityVertices.add(entityVertex);
+                            offsetEntityVertexMap.put((qryOffset + resultCount) - 1, entityVertex);
 
                             processedGuids.add(guid);
                         }
@@ -303,22 +313,28 @@ public class ClassificationSearchProcessor extends SearchProcessor {
                 }
 
                 if (whiteSpaceFilter) {
-                    filterWhiteSpaceClassification(entityVertices);
+                    offsetEntityVertexMap = filterWhiteSpaceClassification(offsetEntityVertexMap);
                 }
-                    // Do in-memory filtering
-                CollectionUtils.filter(entityVertices, isEntityPredicate);
+                // Do in-memory filtering
+                offsetEntityVertexMap = super.filter(offsetEntityVertexMap, isEntityPredicate);
                 if (activePredicate != null) {
-                    CollectionUtils.filter(entityVertices, activePredicate);
+                    offsetEntityVertexMap = super.filter(offsetEntityVertexMap, activePredicate);
                 }
 
-                super.filter(entityVertices);
+                offsetEntityVertexMap = super.filter(offsetEntityVertexMap);
 
-                resultIdx = collectResultVertices(ret, startIdx, limit, resultIdx, entityVertices);
+                resultIdx = collectResultVertices(ret, startIdx, limit, resultIdx, offsetEntityVertexMap, marker);
 
                 if (isLastResultPage) {
+                    resultIdx = SearchContext.MarkerUtil.MARKER_END - 1;
                     break;
                 }
             }
+
+            if (marker != null) {
+                nextOffset = resultIdx + 1;
+            }
+
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -331,20 +347,23 @@ public class ClassificationSearchProcessor extends SearchProcessor {
     }
 
     @Override
-    public void filter(List<AtlasVertex> entityVertices) {
+    public LinkedHashMap<Integer, AtlasVertex> filter(LinkedHashMap<Integer, AtlasVertex> offsetEntityVertexMap) {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> ClassificationSearchProcessor.filter({})", entityVertices.size());
+            LOG.debug("==> ClassificationSearchProcessor.filter({})", offsetEntityVertexMap.size());
         }
 
         if (inMemoryPredicate != null) {
             //in case of classification type + index attributes
-            CollectionUtils.filter(entityVertices, traitPredicate);
+            offsetEntityVertexMap = super.filter(offsetEntityVertexMap, traitPredicate);
 
             //filter attributes (filterCriteria). Find classification vertex(typeName = classification) from entity vertex (traitName = classification)
             final Set<String> processedGuids = new HashSet<>();
-            List<AtlasVertex> matchEntityVertices = new ArrayList<>();
-            if (CollectionUtils.isNotEmpty(entityVertices)) {
-                for (AtlasVertex entityVertex : entityVertices) {
+            LinkedHashMap<Integer, AtlasVertex> matchEntityVertices = new LinkedHashMap<>();
+
+            if (MapUtils.isNotEmpty(offsetEntityVertexMap)) {
+                for (Map.Entry<Integer, AtlasVertex> offsetToEntity : offsetEntityVertexMap.entrySet()) {
+
+                    AtlasVertex entityVertex  = offsetToEntity.getValue();
                     Iterable<AtlasEdge> edges = entityVertex.getEdges(AtlasEdgeDirection.OUT, Constants.CLASSIFICATION_LABEL);
 
                     for (AtlasEdge edge : edges) {
@@ -358,7 +377,7 @@ public class ClassificationSearchProcessor extends SearchProcessor {
                                 continue;
                             }
 
-                            matchEntityVertices.add(entityVertex);
+                            matchEntityVertices.put(offsetToEntity.getKey(), entityVertex);
                             processedGuids.add(guid);
                             break;
 
@@ -366,20 +385,22 @@ public class ClassificationSearchProcessor extends SearchProcessor {
                     }
                 }
             }
-            entityVertices.clear();
-            entityVertices.addAll(matchEntityVertices);
+            offsetEntityVertexMap.clear();
+            offsetEntityVertexMap.putAll(matchEntityVertices);
 
         } else {
             //in case of only classsification type
-            CollectionUtils.filter(entityVertices, traitPredicate);
-            CollectionUtils.filter(entityVertices, isEntityPredicate);
+            offsetEntityVertexMap = super.filter(offsetEntityVertexMap, traitPredicate);
+            offsetEntityVertexMap = super.filter(offsetEntityVertexMap, isEntityPredicate);
         }
 
-        super.filter(entityVertices);
+        offsetEntityVertexMap = super.filter(offsetEntityVertexMap);
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("<== ClassificationSearchProcessor.filter(): ret.size()={}", entityVertices.size());
+            LOG.debug("<== ClassificationSearchProcessor.filter(): ret.size()={}", offsetEntityVertexMap.size());
         }
+
+        return offsetEntityVertexMap;
     }
 
     @Override

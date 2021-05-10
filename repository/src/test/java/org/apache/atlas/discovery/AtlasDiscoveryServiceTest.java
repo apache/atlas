@@ -34,6 +34,7 @@ import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 import org.testng.Assert;
 import org.testng.annotations.*;
 
@@ -73,67 +74,51 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
         SearchParameters params = new SearchParameters();
         params.setTermName(SALES_TERM+"@"+SALES_GLOSSARY);
 
-        List<AtlasEntityHeader> entityHeaders = discoveryService.searchWithParameters(params).getEntities();
-
-        Assert.assertTrue(CollectionUtils.isNotEmpty(entityHeaders));
-        assertEquals(entityHeaders.size(), 10);
+        assertSearchProcessorWithoutMarker(params, 10);
     }
 
     // TSP execute and CSP,ESP filter
     @Test
-    public void term_tag() throws AtlasBaseException {
+    public void termTag() throws AtlasBaseException {
         SearchParameters params = new SearchParameters();
         params.setTermName(SALES_TERM+"@"+SALES_GLOSSARY);
         params.setClassification(METRIC_CLASSIFICATION);
 
-        List<AtlasEntityHeader> entityHeaders = discoveryService.searchWithParameters(params).getEntities();
-
-        Assert.assertTrue(CollectionUtils.isNotEmpty(entityHeaders));
-        for(AtlasEntityHeader e : entityHeaders){
-            System.out.println(e.toString());
-        }
-        assertEquals(entityHeaders.size(), 4);
+        assertSearchProcessorWithoutMarker(params, 4);
     }
 
     @Test
-    public void term_entity() throws AtlasBaseException {
+    public void termEntity() throws AtlasBaseException {
         SearchParameters params = new SearchParameters();
         params.setTermName(SALES_TERM+"@"+SALES_GLOSSARY);
         params.setTypeName(HIVE_TABLE_TYPE);
 
-        List<AtlasEntityHeader> entityHeaders = discoveryService.searchWithParameters(params).getEntities();
-
-        Assert.assertTrue(CollectionUtils.isNotEmpty(entityHeaders));
-        assertEquals(entityHeaders.size(), 10);
+        assertSearchProcessorWithoutMarker(params, 10);
     }
 
     @Test
-    public void term_entity_tag() throws AtlasBaseException {
+    public void termEntityTag() throws AtlasBaseException {
         SearchParameters params = new SearchParameters();
         params.setTermName(SALES_TERM+"@"+SALES_GLOSSARY);
         params.setTypeName(HIVE_TABLE_TYPE);
         params.setClassification(DIMENSIONAL_CLASSIFICATION);
 
         List<AtlasEntityHeader> entityHeaders = discoveryService.searchWithParameters(params).getEntities();
-
         Assert.assertTrue(CollectionUtils.isEmpty(entityHeaders));
     }
 
     //FSP execute and CSP,ESP filter
     @Test
-    public void query_ALLTag() throws AtlasBaseException {
+    public void queryALLTag() throws AtlasBaseException {
         SearchParameters params = new SearchParameters();
         params.setClassification(ALL_CLASSIFICATION_TYPES);
         params.setQuery("sales");
 
-        List<AtlasEntityHeader> entityHeaders = discoveryService.searchWithParameters(params).getEntities();
-
-        Assert.assertTrue(CollectionUtils.isNotEmpty(entityHeaders));
-        assertEquals(entityHeaders.size(), 5);
+        assertSearchProcessorWithoutMarker(params, 5);
     }
 
     @Test
-    public void query_ALLTag_tagFilter() throws AtlasBaseException {
+    public void queryALLTagTagFilter() throws AtlasBaseException {
         SearchParameters params = new SearchParameters();
         params.setClassification(ALL_CLASSIFICATION_TYPES);
         //typeName will check for only classification name not propogated classification
@@ -141,103 +126,79 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
         params.setTagFilters(fc);
         params.setQuery("sales");
 
-        List<AtlasEntityHeader> entityHeaders = discoveryService.searchWithParameters(params).getEntities();
-
-        Assert.assertTrue(CollectionUtils.isNotEmpty(entityHeaders));
-        assertEquals(entityHeaders.size(), 4);
+        assertSearchProcessorWithoutMarker(params, 4);
     }
 
     @Test
-    public void query_NOTCLASSIFIEDTag() throws AtlasBaseException {
+    public void queryNOTCLASSIFIEDTag() throws AtlasBaseException {
         SearchParameters params = new SearchParameters();
         params.setClassification(NO_CLASSIFICATIONS);
         params.setQuery("sales");
 
-        List<AtlasEntityHeader> entityHeaders = discoveryService.searchWithParameters(params).getEntities();
-
-        Assert.assertTrue(CollectionUtils.isNotEmpty(entityHeaders));
-        assertEquals(entityHeaders.size(), 11);
+        assertSearchProcessorWithoutMarker(params, 11);
     }
 
 
     @Test
-    public void query_ALLWildcardTag() throws AtlasBaseException {
+    public void queryALLWildcardTag() throws AtlasBaseException {
         SearchParameters params = new SearchParameters();
         params.setClassification("*");
         params.setQuery("sales");
 
-        List<AtlasEntityHeader> entityHeaders = discoveryService.searchWithParameters(params).getEntities();
-
-        Assert.assertTrue(CollectionUtils.isNotEmpty(entityHeaders));
-        assertEquals(entityHeaders.size(), 5);
+        assertSearchProcessorWithoutMarker(params, 5);
     }
 
     @Test
-    public void query_wildcardTag() throws AtlasBaseException {
+    public void queryWildcardTag() throws AtlasBaseException {
         SearchParameters params = new SearchParameters();
         params.setClassification("Dimen*on");
         params.setQuery("sales");
 
-        List<AtlasEntityHeader> entityHeaders = discoveryService.searchWithParameters(params).getEntities();
-
-        Assert.assertTrue(CollectionUtils.isNotEmpty(entityHeaders));
-        assertEquals(entityHeaders.size(), 2);
+        assertSearchProcessorWithoutMarker(params, 2);
     }
 
     @Test
-    public void query_tag() throws AtlasBaseException {
+    public void queryTag() throws AtlasBaseException {
         SearchParameters params = new SearchParameters();
         params.setClassification(METRIC_CLASSIFICATION);
         params.setQuery("sales");
 
-        List<AtlasEntityHeader> entityHeaders = discoveryService.searchWithParameters(params).getEntities();
-
-        Assert.assertTrue(CollectionUtils.isNotEmpty(entityHeaders));
-        assertEquals(entityHeaders.size(), 3);
+        assertSearchProcessorWithoutMarker(params, 3);
     }
 
     @Test
-    public void query_tag_tagFilter() throws AtlasBaseException {
+    public void queryTagTagFilter() throws AtlasBaseException {
         SearchParameters params = new SearchParameters();
         params.setClassification(METRIC_CLASSIFICATION);
         SearchParameters.FilterCriteria fc = getSingleFilterCondition("__timestamp", SearchParameters.Operator.LT, String.valueOf(System.currentTimeMillis()));
         params.setTagFilters(fc);
         params.setQuery("sales");
 
-        List<AtlasEntityHeader> entityHeaders = discoveryService.searchWithParameters(params).getEntities();
-
-        Assert.assertTrue(CollectionUtils.isNotEmpty(entityHeaders));
-        assertEquals(entityHeaders.size(), 3);
+        assertSearchProcessorWithoutMarker(params, 3);
     }
 
     @Test
-    public void query_entity() throws AtlasBaseException {
+    public void queryEntity() throws AtlasBaseException {
         SearchParameters params = new SearchParameters();
         params.setTypeName(HIVE_TABLE_TYPE);
         params.setQuery("sales");
 
-        List<AtlasEntityHeader> entityHeaders = discoveryService.searchWithParameters(params).getEntities();
-
-        Assert.assertTrue(CollectionUtils.isNotEmpty(entityHeaders));
-        assertEquals(entityHeaders.size(), 4);
+        assertSearchProcessorWithoutMarker(params, 4);
     }
 
     @Test
-    public void query_entity_entityFilter() throws AtlasBaseException {
+    public void queryEntityEntityFilter() throws AtlasBaseException {
         SearchParameters params = new SearchParameters();
         params.setTypeName(HIVE_TABLE_TYPE);
         SearchParameters.FilterCriteria fc = getSingleFilterCondition("tableType", Operator.NOT_NULL, "null");
         params.setEntityFilters(fc);
         params.setQuery("sales");
 
-        List<AtlasEntityHeader> entityHeaders = discoveryService.searchWithParameters(params).getEntities();
-
-        Assert.assertTrue(CollectionUtils.isNotEmpty(entityHeaders));
-        assertEquals(entityHeaders.size(), 3);
+        assertSearchProcessorWithoutMarker(params, 3);
     }
 
     @Test
-    public void query_entity_entityFilter_tag() throws AtlasBaseException {
+    public void queryEntityEntityFilterTag() throws AtlasBaseException {
         SearchParameters params = new SearchParameters();
         params.setTypeName(HIVE_TABLE_TYPE);
         SearchParameters.FilterCriteria fc = getSingleFilterCondition("tableType", Operator.IS_NULL, "null");
@@ -245,14 +206,11 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
         params.setClassification(DIMENSIONAL_CLASSIFICATION);
         params.setQuery("sales");
 
-        List<AtlasEntityHeader> entityHeaders = discoveryService.searchWithParameters(params).getEntities();
-
-        Assert.assertTrue(CollectionUtils.isNotEmpty(entityHeaders));
-        assertEquals(entityHeaders.size(), 1);
+        assertSearchProcessorWithoutMarker(params, 1);
     }
 
     @Test
-    public void query_entity_entityFilter_tag_tagFilter() throws AtlasBaseException {
+    public void queryEntityEntityFilterTagTagFilter() throws AtlasBaseException {
         SearchParameters params = new SearchParameters();
         params.setTypeName(HIVE_TABLE_TYPE);
         SearchParameters.FilterCriteria fcE = getSingleFilterCondition("tableType", Operator.IS_NULL, "null");
@@ -262,14 +220,11 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
         SearchParameters.FilterCriteria fcC = getSingleFilterCondition("attr1", Operator.EQ, "value1");
         params.setTagFilters(fcC);
 
-        List<AtlasEntityHeader> entityHeaders = discoveryService.searchWithParameters(params).getEntities();
-
-        Assert.assertTrue(CollectionUtils.isNotEmpty(entityHeaders));
-        assertEquals(entityHeaders.size(), 1);
+        assertSearchProcessorWithoutMarker(params, 1);
     }
 
     @Test
-    public void query_entity_tag_tagFilter() throws AtlasBaseException {
+    public void queryEntityTagTagFilter() throws AtlasBaseException {
         SearchParameters params = new SearchParameters();
         params.setTypeName(HIVE_TABLE_TYPE);
         params.setClassification(METRIC_CLASSIFICATION);
@@ -277,29 +232,22 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
         params.setTagFilters(fc);
         params.setQuery("sales");
 
-        List<AtlasEntityHeader> entityHeaders = discoveryService.searchWithParameters(params).getEntities();
-
-        Assert.assertTrue(CollectionUtils.isNotEmpty(entityHeaders));
-        assertEquals(entityHeaders.size(), 2);
-
+        assertSearchProcessorWithoutMarker(params, 2);
     }
 
     @Test
-    public void query_entity_tag() throws AtlasBaseException {
+    public void queryEntityTag() throws AtlasBaseException {
         SearchParameters params = new SearchParameters();
         params.setTypeName(HIVE_TABLE_TYPE);
         params.setClassification(METRIC_CLASSIFICATION);
         params.setQuery("sales");
 
-        List<AtlasEntityHeader> entityHeaders = discoveryService.searchWithParameters(params).getEntities();
-
-        Assert.assertTrue(CollectionUtils.isNotEmpty(entityHeaders));
-        assertEquals(entityHeaders.size(), 2);
+        assertSearchProcessorWithoutMarker(params, 2);
     }
 
     // CSP Execute and ESP filter
     @Test
-    public void entity_entityFilter_tag_tagFilter() throws AtlasBaseException {
+    public void entityEntityFilterTagTagFilter() throws AtlasBaseException {
         SearchParameters params = new SearchParameters();
         params.setTypeName(HIVE_TABLE_TYPE);
         SearchParameters.FilterCriteria fcE = getSingleFilterCondition("tableType", Operator.EQ, "Managed");
@@ -308,26 +256,170 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
         SearchParameters.FilterCriteria fcC = getSingleFilterCondition("__timestamp", SearchParameters.Operator.LT, String.valueOf(System.currentTimeMillis()));
         params.setTagFilters(fcC);
 
-        List<AtlasEntityHeader> entityHeaders = discoveryService.searchWithParameters(params).getEntities();
-
-        Assert.assertTrue(CollectionUtils.isNotEmpty(entityHeaders));
-        assertEquals(entityHeaders.size(), 4);
-
+        assertSearchProcessorWithoutMarker(params, 4);
     }
 
     @Test
-    public void entity_tag_tagFilter() throws AtlasBaseException {
+    public void entityTagTagFilter() throws AtlasBaseException {
         SearchParameters params = new SearchParameters();
         params.setTypeName(HIVE_TABLE_TYPE);
         params.setClassification(METRIC_CLASSIFICATION);
         SearchParameters.FilterCriteria fc = getSingleFilterCondition("__timestamp", SearchParameters.Operator.LT, String.valueOf(System.currentTimeMillis()));
         params.setTagFilters(fc);
 
+        assertSearchProcessorWithoutMarker(params, 4);
+    }
+
+    @Test
+    public void searchWith0offsetMarker() throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+        params.setTypeName(HIVE_TABLE_TYPE);
+        params.setOffset(0);
+        params.setMarker(SearchContext.MarkerUtil.MARKER_START);
+        params.setLimit(5);
+
+        assertSearchProcessorWithMarker(params, 5);
+    }
+
+    @Test
+    public void searchWithNoOffsetMarker() throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+        params.setTypeName(HIVE_TABLE_TYPE);
+        params.setMarker(SearchContext.MarkerUtil.MARKER_START);
+        params.setLimit(5);
+
+        assertSearchProcessorWithMarker(params, 5);
+    }
+
+    @Test
+    public void searchWithGreaterThan0OffsetBlankMarker() throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+        params.setTypeName(HIVE_TABLE_TYPE);
+        params.setOffset(1);
+        params.setMarker("");
+        params.setLimit(5);
+
+        assertSearchProcessorWithoutMarker(params, 5);
+    }
+
+    @Test(expectedExceptions = AtlasBaseException.class, expectedExceptionsMessageRegExp = "Marker can be used only if offset=0.")
+    public void searchWithGreaterThan0OffsetMarker() throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+        params.setTypeName(HIVE_TABLE_TYPE);
+        params.setOffset(1);
+        params.setMarker(SearchContext.MarkerUtil.MARKER_START);
+        params.setLimit(5);
         List<AtlasEntityHeader> entityHeaders = discoveryService.searchWithParameters(params).getEntities();
 
-        Assert.assertTrue(CollectionUtils.isNotEmpty(entityHeaders));
-        assertEquals(entityHeaders.size(), 4);
+        assertNotNull(entityHeaders);
     }
+
+    @Test
+    public void searchWithMarkerSet() throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+        params.setTypeName(HIVE_TABLE_TYPE);
+        params.setMarker(SearchContext.MarkerUtil.MARKER_START);
+        params.setLimit(5);
+        AtlasSearchResult searchResult        = discoveryService.searchWithParameters(params);
+        List<AtlasEntityHeader> entityHeaders = searchResult.getEntities();
+
+        Assert.assertTrue(CollectionUtils.isNotEmpty(entityHeaders));
+        assertEquals(entityHeaders.size(), 5);
+        Assert.assertTrue(StringUtils.isNotEmpty(searchResult.getNextMarker()));
+
+        //get next marker and set in marker of subsequent request
+        params.setMarker(searchResult.getNextMarker());
+        AtlasSearchResult nextsearchResult        = discoveryService.searchWithParameters(params);
+        List<AtlasEntityHeader> nextentityHeaders = nextsearchResult.getEntities();
+
+        Assert.assertTrue(CollectionUtils.isNotEmpty(nextentityHeaders));
+        Assert.assertTrue(StringUtils.isNotEmpty(nextsearchResult.getNextMarker()));
+
+        if (entityHeaders.size() < params.getLimit()) {
+            Assert.assertTrue(nextsearchResult.getNextMarker() == String.valueOf(-1));
+        }
+    }
+
+    @Test(expectedExceptions = AtlasBaseException.class, expectedExceptionsMessageRegExp = "Invalid marker!")
+    public void searchWithInvalidMarker() throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+        params.setTypeName(HIVE_TABLE_TYPE);
+        params.setMarker(SearchContext.MarkerUtil.MARKER_START);
+        params.setLimit(5);
+        AtlasSearchResult searchResult        = discoveryService.searchWithParameters(params);
+        List<AtlasEntityHeader> entityHeaders = searchResult.getEntities();
+
+        Assert.assertTrue(CollectionUtils.isNotEmpty(entityHeaders));
+        assertEquals(entityHeaders.size(), 5);
+        Assert.assertTrue(StringUtils.isNotEmpty(searchResult.getNextMarker()));
+
+        //get next marker and set in marker of subsequent request
+        params.setMarker(searchResult.getNextMarker()+"abc");
+        AtlasSearchResult nextsearchResult = discoveryService.searchWithParameters(params);
+
+    }
+
+    @Test
+    public void searchWithLastPageMarker() throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+        params.setTypeName(HIVE_TABLE_TYPE);
+        params.setExcludeDeletedEntities(true);
+        params.setMarker(SearchContext.MarkerUtil.MARKER_START);
+        params.setLimit(5);
+        AtlasSearchResult searchResult        = discoveryService.searchWithParameters(params);
+        List<AtlasEntityHeader> entityHeaders = searchResult.getEntities();
+
+        Assert.assertTrue(CollectionUtils.isNotEmpty(entityHeaders));
+        assertEquals(entityHeaders.size(), 5);
+        Assert.assertTrue(StringUtils.isNotEmpty(searchResult.getNextMarker()));
+
+        long maxEntities = searchResult.getApproximateCount();
+
+        //get next marker and set in marker of subsequent request
+        params.setMarker(SearchContext.MarkerUtil.MARKER_START);
+        params.setLimit((int)maxEntities + 10);
+        AtlasSearchResult nextsearchResult = discoveryService.searchWithParameters(params);
+
+        Assert.assertTrue(nextsearchResult.getNextMarker().equals("-1"));
+    }
+
+
+    @Test //marker functionality is not supported
+    public void termMarker() throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+        params.setTermName(SALES_TERM+"@"+SALES_GLOSSARY);
+        params.setMarker("*");
+
+        assertSearchProcessorWithoutMarker(params, 10);
+
+    }
+
+    @Test
+    public void queryEntityTagMarker() throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+        params.setTypeName(HIVE_TABLE_TYPE);
+        params.setClassification(METRIC_CLASSIFICATION);
+        params.setQuery("sales");
+        params.setMarker("*");
+        params.setLimit(5);
+
+        assertSearchProcessorWithMarker(params, 2);
+    }
+
+    // CSP Execute and ESP filter
+    @Test
+    public void entityEntityFilterTagTagFilterMarker() throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+        params.setTypeName(HIVE_TABLE_TYPE);
+        SearchParameters.FilterCriteria fcE = getSingleFilterCondition("tableType", Operator.EQ, "Managed");
+        params.setEntityFilters(fcE);
+        params.setClassification(METRIC_CLASSIFICATION);
+        SearchParameters.FilterCriteria fcC = getSingleFilterCondition("__timestamp", SearchParameters.Operator.LT, String.valueOf(System.currentTimeMillis()));
+        params.setTagFilters(fcC);
+        params.setMarker("*");
+        assertSearchProcessorWithoutMarker(params, 4);
+    }
+
 
     String spChar1   = "default.test_dot_name";
     String spChar2   = "default.test_dot_name@db.test_db";
@@ -792,6 +884,29 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
         HashMap<String,Object> attr = new HashMap<>();
         attr.put("attr1","value1");
         entityStore.addClassification(Arrays.asList(guid), new AtlasClassification(DIMENSIONAL_CLASSIFICATION, attr));
+    }
+
+
+    private void assertSearchProcessorWithoutMarker(SearchParameters params, int expected) throws AtlasBaseException {
+        assertSearchProcessor(params, expected, false);
+    }
+
+    private void assertSearchProcessorWithMarker(SearchParameters params, int expected) throws AtlasBaseException {
+        assertSearchProcessor(params, expected, true);
+    }
+
+    private void assertSearchProcessor(SearchParameters params, int expected, boolean checkMarker) throws AtlasBaseException {
+        AtlasSearchResult searchResult = discoveryService.searchWithParameters(params);
+        List<AtlasEntityHeader> entityHeaders = searchResult.getEntities();
+
+        Assert.assertTrue(CollectionUtils.isNotEmpty(entityHeaders));
+        assertEquals(entityHeaders.size(), expected);
+
+        if (checkMarker) {
+            Assert.assertTrue(StringUtils.isNotEmpty(searchResult.getNextMarker()));
+        } else {
+            Assert.assertTrue(StringUtils.isEmpty(searchResult.getNextMarker()));
+        }
     }
 
     @AfterClass

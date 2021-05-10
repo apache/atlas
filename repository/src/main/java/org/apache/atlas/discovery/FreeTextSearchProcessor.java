@@ -96,20 +96,23 @@ public class FreeTextSearchProcessor extends SearchProcessor {
         }
 
         try {
-            final int startIdx = context.getSearchParameters().getOffset();
-            final int limit    = context.getSearchParameters().getLimit();
+            final int limit       = context.getSearchParameters().getLimit();
+            final Integer marker  = context.getMarker();
+            final int startIdx    = marker != null ? marker : context.getSearchParameters().getOffset();
 
             // query to start at 0, even though startIdx can be higher - because few results in earlier retrieval could
             // have been dropped: like vertices of non-entity or non-active-entity
             //
             // first 'startIdx' number of entries will be ignored
-            int qryOffset = 0;
+            // if marker is provided, start query with marker offset
+            int qryOffset = marker != null ? marker : 0;
             int resultIdx = qryOffset;
 
-            final List<AtlasVertex> entityVertices = new ArrayList<>();
+            LinkedHashMap<Integer, AtlasVertex> offsetEntityVertexMap = new LinkedHashMap<>();
+
             try {
                 for (; ret.size() < limit; qryOffset += limit) {
-                    entityVertices.clear();
+                    offsetEntityVertexMap.clear();
 
                     if (context.terminateSearch()) {
                         LOG.warn("query terminated: {}", context.getSearchParameters());
@@ -150,22 +153,27 @@ public class FreeTextSearchProcessor extends SearchProcessor {
                             }
                         }
 
-                        entityVertices.add(vertex);
+                        offsetEntityVertexMap.put((qryOffset + resultCount) - 1, vertex);
                     }
 
-                    isLastResultPage = resultCount < limit;
+                    isLastResultPage      = resultCount < limit;
 
-                    super.filter(entityVertices);
-
-                    resultIdx = collectResultVertices(ret, startIdx, limit, resultIdx, entityVertices);
+                    offsetEntityVertexMap = super.filter(offsetEntityVertexMap);
+                    resultIdx             = collectResultVertices(ret, startIdx, limit, resultIdx, offsetEntityVertexMap, marker);
 
                     if (isLastResultPage) {
+                        resultIdx = SearchContext.MarkerUtil.MARKER_END - 1;
                         break;
                     }
                 }
             } catch (Throwable t) {
                 throw t;
             }
+
+            if (marker != null) {
+                nextOffset = resultIdx + 1;
+            }
+
         } finally {
             AtlasPerfTracer.log(perf);
         }
