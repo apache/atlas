@@ -134,9 +134,9 @@ public class Publisher implements Runnable {
             FileLockedReadWrite fileLockedRead = new FileLockedReadWrite(source);
 
             try {
-                DataInput dataInput = fileLockedRead.getInput(new File(record.getPath()));
-                int lineInSpoolFile = 0;
-                List<String> messages = new ArrayList<>();
+                DataInput    dataInput       = fileLockedRead.getInput(new File(record.getPath()));
+                int          lineInSpoolFile = 0;
+                List<String> messages        = new ArrayList<>();
 
                 for (String message = dataInput.readLine(); message != null; message = dataInput.readLine()) {
                     lineInSpoolFile++;
@@ -147,7 +147,7 @@ public class Publisher implements Runnable {
 
                     messages.add(message);
 
-                    if (messages.size() == messageBatchSize) {
+                    if ((isDestDown && messages.size() == 1) || messages.size() == messageBatchSize) {
                         dispatch(record, lineInSpoolFile, messages);
                     }
                 }
