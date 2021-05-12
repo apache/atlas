@@ -306,8 +306,9 @@ define(['require',
                         okText: 'Save',
                         allowCancel: true,
                     }).open();
-                    view.ui.description.on('keyup', function(e) {
+                    view.ui.description.on('keyup input', function(e) {
                         that.textAreaChangeEvent(view);
+                        e.stopPropagation();
                     });
                     that.modal.$el.find('button.ok').prop('disabled', true);
                     that.modal.on('ok', function() {
