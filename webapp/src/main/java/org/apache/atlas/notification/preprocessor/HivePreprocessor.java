@@ -81,6 +81,10 @@ public class HivePreprocessor {
                     entity.setAttribute(ATTRIBUTE_SD, null);
                     entity.setAttribute(ATTRIBUTE_COLUMNS, null);
                     entity.setAttribute(ATTRIBUTE_PARTITION_KEYS, null);
+
+                    entity.setRelationshipAttribute(ATTRIBUTE_SD, null);
+                    entity.setRelationshipAttribute(ATTRIBUTE_COLUMNS, null);
+                    entity.setRelationshipAttribute(ATTRIBUTE_PARTITION_KEYS, null);
                 } else if (context.getHiveTypesRemoveOwnedRefAttrs()) {
                     context.removeRefAttributeAndRegisterToMove(entity, ATTRIBUTE_SD, RELATIONSHIP_TYPE_HIVE_TABLE_STORAGEDESC, ATTRIBUTE_TABLE);
                     context.removeRefAttributeAndRegisterToMove(entity, ATTRIBUTE_COLUMNS, RELATIONSHIP_TYPE_HIVE_TABLE_COLUMNS, ATTRIBUTE_TABLE);
