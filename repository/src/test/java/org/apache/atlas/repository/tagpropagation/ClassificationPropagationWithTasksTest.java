@@ -131,9 +131,6 @@ public class ClassificationPropagationWithTasksTest extends AtlasTestBase {
         List<String> ret = entityGraphMapper.propagateClassification(HDFS_PATH_EMPLOYEES, StringUtils.EMPTY, StringUtils.EMPTY);
         assertNull(ret);
 
-        ret = entityGraphMapper.updateClassificationsPropagation(HDFS_PATH_EMPLOYEES, StringUtils.EMPTY, StringUtils.EMPTY);
-        assertNull(ret);
-
         ret = entityGraphMapper.deleteClassificationPropagation(StringUtils.EMPTY, StringUtils.EMPTY);
         assertNull(ret);
 
@@ -191,9 +188,6 @@ public class ClassificationPropagationWithTasksTest extends AtlasTestBase {
 
         assertNotNull(entityVertex);
         assertNotNull(classificationVertex);
-
-        List<String> impactedEntities = entityGraphMapper.updateClassificationsPropagation(hdfs_employees.getGuid(), classificationVertex.getId().toString(), StringUtils.EMPTY);
-        assertNotNull(impactedEntities);
     }
 
     @Test(dependsOnMethods = "update")
