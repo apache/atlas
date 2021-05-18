@@ -224,6 +224,10 @@ public class AtlasGlossaryTerm extends AtlasGlossaryBaseObject {
 
     public void setPreferredToTerms(final Set<AtlasRelatedTermHeader> preferredToTerms) {
         this.preferredToTerms = preferredToTerms;
+
+        if (CollectionUtils.isNotEmpty(preferredToTerms)) {
+            hasTerms = true;
+        }
     }
 
     public Set<AtlasRelatedTermHeader> getReplacementTerms() {
