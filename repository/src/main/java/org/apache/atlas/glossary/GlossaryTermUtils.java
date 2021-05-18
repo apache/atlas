@@ -725,21 +725,25 @@ public class GlossaryTermUtils extends GlossaryUtils {
                     String relatedTermQualifiedName = dataArray[1] + invalidNameChars[0] + dataArray[0];
                     String currTermQualifiedName    = termName + invalidNameChars[0] + glossaryName;
 
-                    vertex = AtlasGraphUtilsV2.findByTypeAndUniquePropertyName(GlossaryUtils.ATLAS_GLOSSARY_TERM_TYPENAME,
-                            GlossaryUtils.ATLAS_GLOSSARY_TERM_TYPENAME + invalidNameChars[1] + QUALIFIED_NAME_ATTR, relatedTermQualifiedName);
-
-                    if (vertex != null) {
-                        String glossaryTermGuid = AtlasGraphUtilsV2.getIdFromVertex(vertex);
-
-                        relatedTermHeader       = new AtlasRelatedTermHeader();
-                        relatedTermHeader.setTermGuid(glossaryTermGuid);
-
-                        cacheRelatedTermQNameGuid(currTermQualifiedName, relatedTermQualifiedName, glossaryTermGuid);
-
-                        ret.add(relatedTermHeader);
+                    if (relatedTermQualifiedName.equalsIgnoreCase(currTermQualifiedName)) {
+                        failedTermMsgs.add("Invalid relationship specified for Term. Term cannot have a relationship with self");
                     } else {
-                        failedTermMsgs.add("The provided Reference " + dataArray[1] + "@" + dataArray[0] +
-                                " does not exist at Atlas referred at record with TermName  : " + termName + " and GlossaryName : " + glossaryName);
+                        vertex = AtlasGraphUtilsV2.findByTypeAndUniquePropertyName(GlossaryUtils.ATLAS_GLOSSARY_TERM_TYPENAME,
+                                GlossaryUtils.ATLAS_GLOSSARY_TERM_TYPENAME + invalidNameChars[1] + QUALIFIED_NAME_ATTR, relatedTermQualifiedName);
+
+                        if (vertex != null) {
+                            String glossaryTermGuid = AtlasGraphUtilsV2.getIdFromVertex(vertex);
+
+                            relatedTermHeader = new AtlasRelatedTermHeader();
+                            relatedTermHeader.setTermGuid(glossaryTermGuid);
+
+                            cacheRelatedTermQNameGuid(currTermQualifiedName, relatedTermQualifiedName, glossaryTermGuid);
+
+                            ret.add(relatedTermHeader);
+                        } else {
+                            failedTermMsgs.add("The provided Reference " + dataArray[1] + "@" + dataArray[0] +
+                                    " does not exist at Atlas referred at record with TermName  : " + termName + " and GlossaryName : " + glossaryName);
+                        }
                     }
                 } else {
                     failedTermMsgs.add("Incorrect relation data specified for the term : " + termName + "@" + glossaryName);
