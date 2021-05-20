@@ -40,6 +40,7 @@ import org.apache.atlas.notification.NotificationInterface.NotificationType;
 import org.apache.atlas.notification.preprocessor.EntityPreprocessor;
 import org.apache.atlas.notification.preprocessor.PreprocessorContext;
 import org.apache.atlas.notification.preprocessor.PreprocessorContext.PreprocessAction;
+import org.apache.atlas.repository.store.graph.EntityCorrelationStore;
 import org.apache.atlas.util.AtlasMetricsCounter;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.utils.LruCache;
@@ -191,6 +192,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     private       ExecutorService               executors;
     private       Instant                       nextStatsLogTime = AtlasMetricsCounter.getNextHourStartTime(Instant.now());
     private final Map<TopicPartition, Long>     lastCommittedPartitionOffset;
+    private final EntityCorrelationManager      entityCorrelationManager;
 
     @VisibleForTesting
     final int consumerRetryInterval;
@@ -201,7 +203,8 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     @Inject
     public NotificationHookConsumer(NotificationInterface notificationInterface, AtlasEntityStore atlasEntityStore,
                                     ServiceState serviceState, AtlasInstanceConverter instanceConverter,
-                                    AtlasTypeRegistry typeRegistry, AtlasMetricsUtil metricsUtil) throws AtlasException {
+                                    AtlasTypeRegistry typeRegistry, AtlasMetricsUtil metricsUtil,
+                                    EntityCorrelationStore entityCorrelationStore) throws AtlasException {
         this.notificationInterface = notificationInterface;
         this.atlasEntityStore      = atlasEntityStore;
         this.serviceState          = serviceState;
@@ -308,7 +311,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         hiveTypesRemoveOwnedRefAttrs  = applicationProperties.getBoolean(CONSUMER_PREPROCESS_HIVE_TYPES_REMOVE_OWNEDREF_ATTRS, true);
         rdbmsTypesRemoveOwnedRefAttrs = applicationProperties.getBoolean(CONSUMER_PREPROCESS_RDBMS_TYPES_REMOVE_OWNEDREF_ATTRS, true);
         preprocessEnabled             = skipHiveColumnLineageHive20633 || updateHiveProcessNameWithQualifiedName || hiveTypesRemoveOwnedRefAttrs || rdbmsTypesRemoveOwnedRefAttrs || !hiveTablesToIgnore.isEmpty() || !hiveTablesToPrune.isEmpty() || !hiveDummyDatabasesToIgnore.isEmpty() || !hiveDummyTablesToIgnore.isEmpty() || !hiveTablePrefixesToIgnore.isEmpty();
-
+        entityCorrelationManager      = new EntityCorrelationManager(entityCorrelationStore);
         LOG.info("{}={}", CONSUMER_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633, skipHiveColumnLineageHive20633);
         LOG.info("{}={}", CONSUMER_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633_INPUTS_THRESHOLD, skipHiveColumnLineageHive20633InputsThreshold);
         LOG.info("{}={}", CONSUMER_PREPROCESS_HIVE_TYPES_REMOVE_OWNEDREF_ATTRS, hiveTypesRemoveOwnedRefAttrs);
@@ -688,6 +691,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                                     EntityMutationResponse response = atlasEntityStore.deleteByUniqueAttributes(type, Collections.singletonMap(deleteRequest.getAttribute(), (Object) deleteRequest.getAttributeValue()));
 
                                     stats.updateStats(response);
+                                    entityCorrelationManager.add(kafkaMsg.getSpooled(), kafkaMsg.getMsgCreated(), response.getDeletedEntities());
                                 } catch (ClassCastException cle) {
                                     LOG.error("Failed to delete entity {}", deleteRequest);
                                 }
@@ -770,6 +774,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                                         EntityMutationResponse response = atlasEntityStore.deleteByUniqueAttributes(type, entity.getUniqueAttributes());
 
                                         stats.updateStats(response);
+                                        entityCorrelationManager.add(kafkaMsg.getSpooled(), kafkaMsg.getMsgCreated(), response.getDeletedEntities());
                                     }
                                 } catch (ClassCastException cle) {
                                     LOG.error("Failed to do delete entities {}", entities);
@@ -889,6 +894,8 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
                     RequestContext.get().resetEntityGuidUpdates();
 
+                    entityCorrelationManager.add(context.isSpooledMessage(), context.getMsgCreated(), response.getDeletedEntities());
+
                     RequestContext.get().clearCache();
                 }
             }
@@ -973,7 +980,9 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         PreprocessorContext context = null;
 
         if (preprocessEnabled) {
-            context = new PreprocessorContext(kafkaMsg, typeRegistry, hiveTablesToIgnore, hiveTablesToPrune, hiveTablesCache, hiveDummyDatabasesToIgnore, hiveDummyTablesToIgnore, hiveTablePrefixesToIgnore, hiveTypesRemoveOwnedRefAttrs, rdbmsTypesRemoveOwnedRefAttrs, updateHiveProcessNameWithQualifiedName);
+            context = new PreprocessorContext(kafkaMsg, typeRegistry, hiveTablesToIgnore, hiveTablesToPrune, hiveTablesCache,
+                    hiveDummyDatabasesToIgnore, hiveDummyTablesToIgnore, hiveTablePrefixesToIgnore, hiveTypesRemoveOwnedRefAttrs,
+                    rdbmsTypesRemoveOwnedRefAttrs, updateHiveProcessNameWithQualifiedName, entityCorrelationManager);
 
             if (context.isHivePreprocessEnabled()) {
                 preprocessHiveTypes(context);

@@ -81,6 +81,11 @@ public class AtlasFileSpoolTest extends BaseTest {
         public void close() {
 
         }
+
+        @Override
+        public boolean isReady(NotificationType type) {
+            return true;
+        }
     }
 
     @Test

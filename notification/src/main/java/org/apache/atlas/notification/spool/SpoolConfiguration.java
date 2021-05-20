@@ -25,9 +25,11 @@ public class SpoolConfiguration {
     private static final int    PROP_RETRY_DESTINATION_MS_DEFAULT               = 30000; // Default 30 seconds
     private static final int    PROP_FILE_ROLLOVER_SEC_DEFAULT                  = 60; // 60 secs
     private static final int    PROP_FILE_SPOOL_ARCHIVE_MAX_FILES_COUNT_DEFAULT = 100;
+    private static final int    PROP_PAUSE_BEFORE_SEND_MS_DEFAULT               = 60;
     private static final String PROP_FILE_SPOOL_ARCHIVE_DIR_DEFAULT             = "archive";
     private static final String PROP_FILE_SPOOL_LOCAL_DIR_DEFAULT               = "/tmp/spool";
     private static final int    PROP_FILE_MESSAGE_BATCH_SIZE_DEFAULT            = 100;
+    private static final String PROP_HIVE_METASTORE_NAME_DEFAULT                = "HiveMetastoreHookImpl";
     private static final String PROPERTY_PREFIX_SPOOL                           = "atlas.hook.spool.";
     public  static final String PROP_FILE_SPOOL_LOCAL_DIR                       = PROPERTY_PREFIX_SPOOL + "dir";
     private static final String PROP_FILE_SPOOL_ARCHIVE_DIR                     = PROPERTY_PREFIX_SPOOL + "archive.dir";
@@ -35,6 +37,8 @@ public class SpoolConfiguration {
     public  static final String PROP_FILE_SPOOL_FILE_ROLLOVER_SEC               = PROPERTY_PREFIX_SPOOL + "file.rollover.sec";
     public  static final String PROP_FILE_SPOOL_DEST_RETRY_MS                   = PROPERTY_PREFIX_SPOOL + "destination.retry.ms";
     private static final String PROP_MESSAGE_BATCH_SIZE                         = PROPERTY_PREFIX_SPOOL + "destination.message.batchsize";
+    private static final String PROP_FILE_SPOOL_PAUSE_BEFORE_SEND_SEC           = PROPERTY_PREFIX_SPOOL + "pause.before.send.sec";
+    private static final String PROP_HIVE_METASTORE_NAME                        = PROPERTY_PREFIX_SPOOL + "hivemetastore.name";
 
     private final String messageHandlerName;
     private final int    maxArchivedFilesCount;
@@ -44,6 +48,8 @@ public class SpoolConfiguration {
     private final int    fileSpoolMaxFilesCount;
     private final String spoolDirPath;
     private final String archiveDir;
+    private final int    pauseBeforeSendSec;
+    private final String hiveMetaStoreName;
     private       String sourceName;
 
     public SpoolConfiguration(Configuration cfg, String messageHandlerName) {
@@ -51,10 +57,12 @@ public class SpoolConfiguration {
         this.maxArchivedFilesCount  = cfg.getInt(PROP_FILE_SPOOL_ARCHIVE_MAX_FILES_COUNT, PROP_FILE_SPOOL_ARCHIVE_MAX_FILES_COUNT_DEFAULT);
         this.messageBatchSize       = cfg.getInt(PROP_MESSAGE_BATCH_SIZE, PROP_FILE_MESSAGE_BATCH_SIZE_DEFAULT);
         this.retryDestinationMS     = cfg.getInt(PROP_FILE_SPOOL_DEST_RETRY_MS, PROP_RETRY_DESTINATION_MS_DEFAULT);
+        this.pauseBeforeSendSec     = cfg.getInt(PROP_FILE_SPOOL_PAUSE_BEFORE_SEND_SEC, PROP_PAUSE_BEFORE_SEND_MS_DEFAULT);
         this.fileRollOverSec        = cfg.getInt(PROP_FILE_SPOOL_FILE_ROLLOVER_SEC, PROP_FILE_ROLLOVER_SEC_DEFAULT) * 1000;
         this.fileSpoolMaxFilesCount = cfg.getInt(PROP_FILE_SPOOL_ARCHIVE_MAX_FILES_COUNT, PROP_FILE_SPOOL_ARCHIVE_MAX_FILES_COUNT_DEFAULT);
         this.spoolDirPath           = cfg.getString(SpoolConfiguration.PROP_FILE_SPOOL_LOCAL_DIR, PROP_FILE_SPOOL_LOCAL_DIR_DEFAULT);
         this.archiveDir             = cfg.getString(PROP_FILE_SPOOL_ARCHIVE_DIR, new File(getSpoolDirPath(), PROP_FILE_SPOOL_ARCHIVE_DIR_DEFAULT).toString());
+        this.hiveMetaStoreName      = cfg.getString(PROP_HIVE_METASTORE_NAME, PROP_HIVE_METASTORE_NAME_DEFAULT);
     }
 
     public void setSource(String val) {
@@ -119,5 +127,13 @@ public class SpoolConfiguration {
         String fileDoneName = SpoolUtils.getIndexPublishFile(fileName);
 
         return new File(getSpoolDir(), fileDoneName);
+    }
+
+    public int getPauseBeforeSendSec() {
+        return pauseBeforeSendSec;
+    }
+
+    public boolean isHiveMetaStore() {
+        return this.sourceName.equals(this.hiveMetaStoreName);
     }
 }

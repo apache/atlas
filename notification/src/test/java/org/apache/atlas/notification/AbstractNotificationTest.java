@@ -127,5 +127,10 @@ public class AbstractNotificationTest {
         @Override
         public void close() {
         }
+
+        @Override
+        public boolean isReady(NotificationType type) {
+            return true;
+        }
     }
 }

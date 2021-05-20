@@ -19,14 +19,14 @@ package org.apache.atlas.notification.spool;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.hook.FailedMessagesLogger;
+import org.apache.atlas.model.notification.AtlasNotificationMessage;
 import org.apache.atlas.notification.AbstractNotification;
 import org.apache.atlas.notification.NotificationConsumer;
-import org.apache.commons.io.IOUtils;
+import org.apache.atlas.type.AtlasType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.DataOutput;
-import java.io.PrintWriter;
 import java.util.List;
 
 public class Spooler extends AbstractNotification {
@@ -57,8 +57,14 @@ public class Spooler extends AbstractNotification {
 
     @Override
     public void sendInternal(NotificationType type, List<String> messages) {
-        boolean ret = write(messages);
+        for (int i = 0; i < messages.size(); i++) {
+            AtlasNotificationMessage e = AtlasType.fromV1Json(messages.get(i), AtlasNotificationMessage.class);
+            e.setSpooled(true);
 
+            messages.set(i, AtlasType.toV1Json(e));
+        }
+
+        boolean ret = write(messages);
         if (failedMessagesLogger != null && !ret) {
             writeToFailedMessages(messages);
         }
@@ -66,6 +72,11 @@ public class Spooler extends AbstractNotification {
 
     @Override
     public void close() {
+    }
+
+    @Override
+    public boolean isReady(NotificationType type) {
+        return true;
     }
 
     @VisibleForTesting

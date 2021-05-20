@@ -367,6 +367,27 @@ public class AtlasGraphUtilsV2 {
         return vertex;
     }
 
+    public static String findFirstDeletedDuringSpooledByQualifiedName(String qualifiedName, long timestamp) {
+        return findFirstDeletedDuringSpooledByQualifiedName(getGraphInstance(), qualifiedName, timestamp);
+    }
+
+    public static String findFirstDeletedDuringSpooledByQualifiedName(AtlasGraph graph, String qualifiedName, long timestamp) {
+        MetricRecorder metric = RequestContext.get().startMetricRecord("findDeletedDuringSpooledByQualifiedName");
+
+        AtlasGraphQuery query = graph.query().has(STATE_PROPERTY_KEY, Status.DELETED.name())
+                                             .has(Constants.ENTITY_DELETED_TIMESTAMP_PROPERTY_KEY, AtlasGraphQuery.ComparisionOperator.GREATER_THAN, timestamp)
+                                             .has(Constants.QUALIFIED_NAME, qualifiedName)
+                                             .orderBy(Constants.ENTITY_DELETED_TIMESTAMP_PROPERTY_KEY, ASC);
+
+        Iterator iterator = query.vertices().iterator();
+
+        String ret = iterator.hasNext() ? GraphHelper.getGuid((AtlasVertex) iterator.next()) : null;
+
+        RequestContext.get().endMetricRecord(metric);
+
+        return ret;
+    }
+
     public static AtlasVertex findByGuid(String guid) {
         return findByGuid(getGraphInstance(), guid);
     }
