@@ -110,4 +110,13 @@ public interface NotificationInterface {
      * Shutdown any notification producers and consumers associated with this interface instance.
      */
     void close();
+
+    /**
+     *  Check if underlying notification mechanism is ready for use.
+     *
+     * @param type tye message type
+     * @return true if available, false otherwise
+     *
+     */
+    boolean isReady(NotificationType type);
 }

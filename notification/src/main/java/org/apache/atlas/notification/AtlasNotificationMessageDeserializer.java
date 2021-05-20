@@ -62,6 +62,8 @@ public abstract class AtlasNotificationMessageDeserializer<T> implements Message
     private long                                      splitMessagesLastPurgeTime    = System.currentTimeMillis();
     private final AtomicLong                          messageCountTotal             = new AtomicLong(0);
     private final AtomicLong                          messageCountSinceLastInterval = new AtomicLong(0);
+    private long                                      msgCreated;
+    private boolean                                   spooled;
     // ----- Constructors ----------------------------------------------------
 
     /**
@@ -101,18 +103,31 @@ public abstract class AtlasNotificationMessageDeserializer<T> implements Message
     }
 
     // ----- MessageDeserializer ---------------------------------------------
+    public long getMsgCreated() {
+        return this.msgCreated;
+    }
+
+    public boolean getSpooled() {
+        return this.spooled;
+    }
+
     @Override
     public T deserialize(String messageJson) {
         final T ret;
 
         messageCountTotal.incrementAndGet();
         messageCountSinceLastInterval.incrementAndGet();
+        this.msgCreated = 0;
+        this.spooled = false;
 
-        AtlasNotificationBaseMessage msg = AtlasType.fromV1Json(messageJson, AtlasNotificationBaseMessage.class);
+        AtlasNotificationBaseMessage msg = AtlasType.fromV1Json(messageJson, AtlasNotificationMessage.class);
 
         if (msg == null || msg.getVersion() == null) { // older style messages not wrapped with AtlasNotificationMessage
             ret = AtlasType.fromV1Json(messageJson, messageType);
         } else  {
+            this.msgCreated = ((AtlasNotificationMessage) msg).getMsgCreationTime();
+            this.spooled = ((AtlasNotificationMessage) msg).getSpooled();
+
             String msgJson = messageJson;
 
             if (msg.getMsgSplitCount() > 1) { // multi-part message

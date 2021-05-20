@@ -172,6 +172,18 @@ public class KafkaNotification extends AbstractNotification implements Service {
 
 
     // ----- NotificationInterface -------------------------------------------
+    public boolean isReady(NotificationType notificationType) {
+        try {
+            KafkaProducer producer = getOrCreateProducer(notificationType);
+            producer.metrics();
+            return true;
+        }
+        catch (Exception exception) {
+            LOG.error("Error: Connecting... {}", exception.getMessage());
+            return false;
+        }
+    }
+
     @Override
     public <T> List<NotificationConsumer<T>> createConsumers(NotificationType notificationType, int numConsumers) {
         return createConsumers(notificationType, numConsumers, Boolean.valueOf(properties.getProperty("enable.auto.commit", properties.getProperty("auto.commit.enable","false"))));

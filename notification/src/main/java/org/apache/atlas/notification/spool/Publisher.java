@@ -65,14 +65,16 @@ public class Publisher implements Runnable {
             IndexRecord record = null;
 
             while (true) {
-                waitIfDestinationDown();
-
+                checkAndWaitIfDestinationDown();
                 if (this.isDrain) {
                     break;
                 }
 
-                record = fetchNext(record);
+                if (isDestDown) {
+                    continue;
+                }
 
+                record = fetchNext(record);
                 if (record != null && processAndDispatch(record)) {
                     indexManagement.removeAsDone(record);
 
@@ -104,14 +106,14 @@ public class Publisher implements Runnable {
         return isDestDown;
     }
 
-    private void waitIfDestinationDown() throws InterruptedException {
+    private void checkAndWaitIfDestinationDown() throws InterruptedException {
+        isDestDown = !notificationHandler.isReady(NotificationInterface.NotificationType.HOOK);
         if (isDestDown) {
             LOG.info("Publisher.waitIfDestinationDown(source={}): {}: Destination is down. Sleeping for: {} ms. Queue: {} items",
                      this.source, notificationHandlerName, retryDestinationMS, indexManagement.getQueueSize());
 
             Thread.sleep(retryDestinationMS);
         }
-
     }
 
     private IndexRecord fetchNext(IndexRecord record) {
@@ -192,6 +194,8 @@ public class Publisher implements Runnable {
 
     private void dispatch(String filePath, List<String> messages) throws Exception {
         try {
+            pauseBeforeSend();
+
             notificationHandler.sendInternal(NotificationInterface.NotificationType.HOOK, messages);
 
             if (isDestDown) {
@@ -205,6 +209,30 @@ public class Publisher implements Runnable {
             throw new NotificationException(exception, String.format("%s: %s: Publisher: Destination down!", this.source, notificationHandlerName));
         } finally {
             messages.clear();
+        }
+    }
+
+    /**
+     * Reason for pauseBeforeSend:
+     *  - EntityCorrelation is needed to be able to stitch lineage to the correct entity.
+     *  - Background: When messages are added to Kafka queue directly, the ordering is incidentally guaranteed, where
+     *     messages from lineage producing hooks reach immediately after messages from entities producing hooks.
+     *  - When Spooled messages are posted onto Kafka, this order cannot be guaranteed. The entity correlation logic within Atlas
+     *     can attach lineage to the correct entity, provided that the entity participating in the lineage is already present.
+     *
+     *   This logic of entity correlation works well for majority of cases except where lineage entities are created before regular entities.
+     *   In this case, shell entities get created in the absence of real entities. Problem is that there is 1 shell entity for any number of references.
+     *   Circumventing this limitation is not easy.
+     *
+     *   The pauseBeforeSend forces the situation where HiveMetaStore generated messages reach Kafka before lineage-producing hooks.
+     *
+     * @throws InterruptedException
+     */
+    private void pauseBeforeSend() throws InterruptedException {
+        if (!configuration.isHiveMetaStore()) {
+            int waitMs = configuration.getPauseBeforeSendSec() * 1000;
+            LOG.info("Waiting before dispatch: {}", waitMs);
+            Thread.sleep(waitMs);
         }
     }
 }

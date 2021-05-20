@@ -27,6 +27,7 @@ import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -51,7 +52,7 @@ public class AtlasFileSpool implements NotificationInterface {
 
     @Override
     public void init(String source, Object failedMessagesLogger) {
-        LOG.info("==> AtlasFileSpool.init(source={})", source);
+        LOG.debug("==> AtlasFileSpool.init(source={})", source);
 
         if (!isInitDone()) {
             try {
@@ -76,10 +77,10 @@ public class AtlasFileSpool implements NotificationInterface {
                 LOG.error("AtlasFileSpool(source={}): initialization failed, unknown error", this.config.getSourceName(), t);
             }
         } else {
-            LOG.info("AtlasFileSpool.init(): initialization already done. initDone={}", initDone);
+            LOG.debug("AtlasFileSpool.init(): initialization already done. initDone={}", initDone);
         }
 
-        LOG.info("<== AtlasFileSpool.init(source={})", source);
+        LOG.debug("<== AtlasFileSpool.init(source={})", source);
     }
 
     @Override
@@ -100,34 +101,49 @@ public class AtlasFileSpool implements NotificationInterface {
     }
 
     @Override
+    public boolean isReady(NotificationType type) {
+        return true;
+    }
+
+    @Override
     public <T> void send(NotificationType type, List<T> messages) throws NotificationException {
+        List<String> serializedMessages = getSerializedMessages(messages);
         if (hasInitSucceeded() && (this.indexManagement.isPending() || this.publisher.isDestinationDown())) {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("AtlasFileSpool.send(): sending to spooler");
             }
 
-            spooler.send(type, messages);
+            spooler.sendInternal(type, serializedMessages);
         } else {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("AtlasFileSpool.send(): sending to notificationHandler");
             }
 
             try {
-                notificationHandler.send(type, messages);
+                notificationHandler.sendInternal(type, serializedMessages);
             } catch (Exception e) {
                 if (isInitDone()) {
                     LOG.info("AtlasFileSpool.send(): failed in sending to notificationHandler. Sending to spool", e);
 
                     publisher.setDestinationDown();
 
-                    spooler.send(type, messages);
+                    spooler.sendInternal(type, serializedMessages);
                 } else {
-                    LOG.warn("AtlasFileSpool.send(): failed in sending to notificationHandler. Not sending to spool, as it is not yet initialized", e);
+                    LOG.warn("AtlasFileSpool.send(): failed in sending to notificationHandler. Not sending to spool, as it is not initialized.", e);
 
                     throw e;
                 }
             }
         }
+    }
+
+    private <T> List<String> getSerializedMessages(List<T> messages) {
+        List<String> serializedMessages = new ArrayList<>(messages.size());
+        for (int index = 0; index < messages.size(); index++) {
+            notificationHandler.createNotificationMessages(messages.get(index), serializedMessages);
+        }
+
+        return serializedMessages;
     }
 
     @Override

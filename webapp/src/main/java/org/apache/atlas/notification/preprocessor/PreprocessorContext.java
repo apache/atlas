@@ -23,6 +23,7 @@ import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.model.notification.HookNotification;
+import org.apache.atlas.notification.EntityCorrelationManager;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.commons.collections.CollectionUtils;
@@ -69,9 +70,10 @@ public class PreprocessorContext {
     private final Set<String>                         createdEntities        = new HashSet<>();
     private final Set<String>                         deletedEntities        = new HashSet<>();
     private final Map<String, String>                 guidAssignments        = new HashMap<>();
+    private final EntityCorrelationManager            correlationManager;
     private       List<AtlasEntity>                   postUpdateEntities     = null;
 
-    public PreprocessorContext(AtlasKafkaMessage<HookNotification> kafkaMessage, AtlasTypeRegistry typeRegistry, List<Pattern> hiveTablesToIgnore, List<Pattern> hiveTablesToPrune, Map<String, PreprocessAction> hiveTablesCache, List<String> hiveDummyDatabasesToIgnore, List<String> hiveDummyTablesToIgnore, List<String> hiveTablePrefixesToIgnore, boolean hiveTypesRemoveOwnedRefAttrs, boolean rdbmsTypesRemoveOwnedRefAttrs, boolean updateHiveProcessNameWithQualifiedName) {
+    public PreprocessorContext(AtlasKafkaMessage<HookNotification> kafkaMessage, AtlasTypeRegistry typeRegistry, List<Pattern> hiveTablesToIgnore, List<Pattern> hiveTablesToPrune, Map<String, PreprocessAction> hiveTablesCache, List<String> hiveDummyDatabasesToIgnore, List<String> hiveDummyTablesToIgnore, List<String> hiveTablePrefixesToIgnore, boolean hiveTypesRemoveOwnedRefAttrs, boolean rdbmsTypesRemoveOwnedRefAttrs, boolean updateHiveProcessNameWithQualifiedName, EntityCorrelationManager correlationManager) {
         this.kafkaMessage                           = kafkaMessage;
         this.typeRegistry                           = typeRegistry;
         this.hiveTablesToIgnore                     = hiveTablesToIgnore;
@@ -101,6 +103,7 @@ public class PreprocessorContext {
         }
 
         this.isHivePreProcessEnabled = hiveTypesRemoveOwnedRefAttrs || !hiveTablesToIgnore.isEmpty() || !hiveTablesToPrune.isEmpty() || !hiveDummyDatabasesToIgnore.isEmpty() || !hiveDummyTablesToIgnore.isEmpty() || !hiveTablePrefixesToIgnore.isEmpty() || updateHiveProcessNameWithQualifiedName;
+        this.correlationManager = correlationManager;
     }
 
     public AtlasKafkaMessage<HookNotification> getKafkaMessage() {
@@ -576,5 +579,17 @@ public class PreprocessorContext {
         } else {
             partialEntity.setAttribute(attrName, attrVal);
         }
+    }
+
+    public long getMsgCreated() {
+        return kafkaMessage.getMsgCreated();
+    }
+
+    public boolean isSpooledMessage() {
+        return kafkaMessage.getSpooled();
+    }
+
+    public String getGuidForDeletedEntity(String qualifiedName) {
+        return this.correlationManager.getGuidForDeletedEntityToBeCorrelated(qualifiedName, kafkaMessage.getMsgCreated());
     }
 }
