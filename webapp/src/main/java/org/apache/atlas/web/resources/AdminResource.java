@@ -74,6 +74,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -102,6 +103,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -113,6 +115,8 @@ import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
+
+import static org.apache.atlas.web.filters.AtlasCSRFPreventionFilter.CSRF_TOKEN;
 
 
 /**
@@ -326,7 +330,7 @@ public class AdminResource {
     @GET
     @Path("session")
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public Response getUserProfile() {
+    public Response getUserProfile(@Context HttpServletRequest request) {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AdminResource.getUserProfile()");
         }
@@ -364,9 +368,15 @@ public class AdminResource {
         responseData.put("timezones", TIMEZONE_LIST);
         responseData.put(UI_DATE_TIMEZONE_FORMAT_ENABLED, isTimezoneFormatEnabled);
         responseData.put(UI_DATE_FORMAT, uiDateFormat);
-        responseData.put(AtlasConfiguration.DEBUG_METRICS_ENABLED.getPropertyName(), isDebugMetricsEnabled);
-        responseData.put(AtlasConfiguration.TASKS_USE_ENABLED.getPropertyName(), isTasksEnabled);
-        
+
+        String salt = (String) request.getSession().getAttribute(CSRF_TOKEN);
+        if (StringUtils.isEmpty(salt)) {
+            salt = RandomStringUtils.random(20, 0, 0, true, true, null, new SecureRandom());
+            request.getSession().setAttribute(CSRF_TOKEN, salt);
+        }
+
+        responseData.put(CSRF_TOKEN, salt);
+
         response = Response.ok(AtlasJson.toV1Json(responseData)).build();
 
         if (LOG.isDebugEnabled()) {
