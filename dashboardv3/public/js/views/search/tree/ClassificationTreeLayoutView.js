@@ -686,6 +686,9 @@ define([
                         allowCancel: true
                     }).open();
                 modal.$el.find("button.ok").attr("disabled", "true");
+                view.ui.tagName.on('keyup input', function(e) {
+                    view.ui.description.val(this.value);
+                });
                 modal.on("shownModal", function() {
                     view.ui.parentTag.select2({
                         multiple: true,
