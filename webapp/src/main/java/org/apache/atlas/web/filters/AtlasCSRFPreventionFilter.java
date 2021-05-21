@@ -21,6 +21,7 @@ package org.apache.atlas.web.filters;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.lang.StringUtils;
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,6 +35,7 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
@@ -63,11 +65,13 @@ public class AtlasCSRFPreventionFilter implements Filter {
 	public static final String CUSTOM_HEADER_PARAM = "atlas.rest-csrf.custom-header";
 	public static final String HEADER_DEFAULT = "X-XSRF-HEADER";
 	public static final String HEADER_USER_AGENT = "User-Agent";
+	public static final String CSRF_TOKEN = "_csrfToken";
+
 
 	private String  headerName = HEADER_DEFAULT;
 	private Set<String> methodsToIgnore = null;
 	private Set<Pattern> browserUserAgents;
-	
+
 	public AtlasCSRFPreventionFilter() {
 		try {
 			if (isCSRF_ENABLED){
@@ -167,19 +171,30 @@ public class AtlasCSRFPreventionFilter implements Filter {
 		 *             if there is an I/O error
 		 */
 		void sendError(int code, String message) throws IOException;
-	}	
-	  
-	public void handleHttpInteraction(HttpInteraction httpInteraction)
-			throws IOException, ServletException {
-		if (!isBrowser(httpInteraction.getHeader(HEADER_USER_AGENT))
-				|| methodsToIgnore.contains(httpInteraction.getMethod())
-				|| httpInteraction.getHeader(headerName) != null) {
+	}
+
+	public void handleHttpInteraction(HttpInteraction httpInteraction) throws IOException, ServletException {
+		HttpSession session   = ((ServletFilterHttpInteraction) httpInteraction).getSession();
+		String      csrfToken = StringUtils.EMPTY;
+
+		if (session != null) {
+			csrfToken = (String) session.getAttribute(CSRF_TOKEN);
+		} else {
+			if (LOG.isDebugEnabled()) {
+				LOG.debug("Session is null");
+			}
+		}
+
+		String clientCsrfToken = httpInteraction.getHeader(headerName);
+
+		if (!isBrowser(httpInteraction.getHeader(HEADER_USER_AGENT)) || methodsToIgnore.contains(httpInteraction.getMethod())
+				|| (clientCsrfToken != null && clientCsrfToken.equals(csrfToken))) {
 			httpInteraction.proceed();
-		}else {
-			httpInteraction.sendError(HttpServletResponse.SC_BAD_REQUEST,"Missing Required Header for CSRF Vulnerability Protection");
+		} else {
+			httpInteraction.sendError(HttpServletResponse.SC_BAD_REQUEST,"Missing header or invalid Header value for CSRF Vulnerability Protection");
 		}
 	}
-	
+
 	public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
         final HttpServletRequest httpRequest = (HttpServletRequest) request;
         final HttpServletResponse httpResponse = (HttpServletResponse) response;
@@ -233,6 +248,10 @@ public class AtlasCSRFPreventionFilter implements Filter {
 		@Override
 		public void proceed() throws IOException, ServletException {
 			chain.doFilter(httpRequest, httpResponse);
+		}
+
+		public HttpSession getSession() {
+			return httpRequest.getSession();
 		}
 
 		@Override
