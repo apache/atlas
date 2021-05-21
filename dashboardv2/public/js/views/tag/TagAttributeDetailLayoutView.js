@@ -276,7 +276,7 @@ define(['require',
                     });
             },
             textAreaChangeEvent: function(view) {
-                if (this.model.get('description') === view.ui.description.val()) {
+                if (this.model.get('description') === view.ui.description.val() || view.ui.description.val().length == 0) {
                     this.modal.$el.find('button.ok').prop('disabled', true);
                 } else {
                     this.modal.$el.find('button.ok').prop('disabled', false);
