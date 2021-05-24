@@ -48,7 +48,7 @@ arithE: multiE arithERight* ;
 
 comparisonClause: arithE operator arithE ;
 
-isClause: arithE (K_ISA | K_IS) identifier ;
+isClause: arithE (K_ISA | K_IS) (identifier | expr ) ;
 
 hasTermClause: arithE K_HASTERM (identifier | expr );
 

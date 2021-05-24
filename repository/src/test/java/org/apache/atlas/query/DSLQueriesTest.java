@@ -231,6 +231,33 @@ public class DSLQueriesTest extends BasicTestSetup {
         };
     }
 
+    @DataProvider(name = "classificationQueries")
+    private Object[][] classificationQueries() {
+        return new Object[][] {
+                {"hive_table isA Dimension", 5, new ListValidator("product_dim", "time_dim", "customer_dim", "sales_fact_monthly_mv", "sales_fact_daily_mv")},
+                {"hive_table where hive_table isA Dimension", 5,  new ListValidator("product_dim", "time_dim", "customer_dim", "sales_fact_monthly_mv", "sales_fact_daily_mv")},
+                {"hive_table where name = 'time_dim' and hive_table isA Dimension", 1,  new ListValidator("time_dim")},
+                {"Dimension where Dimension.timeAttr = 'timeValue'", 5,  new ListValidator("loadSalesMonthly", "loadSalesDaily", "time_dim", "sales_fact_monthly_mv", "sales_fact_daily_mv")},
+                {"Dimension as d where d.productAttr = 'productValue'", 2, new ListValidator("product_dim", "product_dim_view")},
+                {"hive_table where hive_table isA Dimension and Dimension.timeAttr = 'timeValue'", 3, new ListValidator("time_dim", "sales_fact_monthly_mv", "sales_fact_daily_mv")},
+                {"hive_table where Dimension.timeAttr = 'timeValue'", 3, new ListValidator("time_dim", "sales_fact_monthly_mv", "sales_fact_daily_mv")},
+                {"hive_table where (Dimension.timeAttr = 'timeValue')", 3, new ListValidator("time_dim", "sales_fact_monthly_mv", "sales_fact_daily_mv")},
+                {"hive_table where (name = 'time_dim' and Dimension.timeAttr = 'timeValue')", 1, new ListValidator("time_dim")},
+                {"hive_table hasTerm \"modernTrade@salesGlossary\" and Dimension.timeAttr = 'timeValue' and db.name = 'Sales'", 1, new ListValidator("time_dim")},
+        };
+    }
+
+    @Test(dataProvider = "classificationQueries")
+    public void classificationQueries(String query, int expected, ListValidator lvExpected) throws AtlasBaseException {
+        AtlasSearchResult result = queryAssert(query, expected, DEFAULT_LIMIT, 0);
+
+        if (lvExpected == null) {
+            return;
+        }
+
+        ListValidator.assertLv(ListValidator.from(result), lvExpected);
+    }
+
     @Test(dataProvider = "glossaryTermQueries")
     public void glossaryTerm(String query, int expected, ListValidator lvExpected) throws AtlasBaseException {
         AtlasSearchResult result = queryAssert(query, expected, DEFAULT_LIMIT, 0);
@@ -703,6 +730,8 @@ public class DSLQueriesTest extends BasicTestSetup {
                 {"hive_table select owner, db.name"}, // Same as above
                 {"hive_order"}, // From src should be an Entity or Classification
                 {"hive_table hasTerm modernTrade@salesGlossary"},//should be encoded with double quotes
+                {"Dimension where tagAttr1 = 'tagValue'"}, // prefix for classification attributes is must
+                {"Dimension where Dimension.tagAttr1 = 'tagValue' and name = 'time_dim'"},
 
         };
     }

@@ -30,6 +30,7 @@ import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 
 import java.text.DateFormat;
@@ -82,6 +83,7 @@ public class GremlinQueryComposer {
     private final int                    providedOffset;
     private final Context                context;
     private final GremlinQueryComposer   parent;
+    private       boolean                hasTrait                    = false;
 
     public GremlinQueryComposer(Lookup registryLookup, Context context, AtlasDSL.QueryMetadata qmd, int limit, int offset, GremlinQueryComposer parent) {
         this.lookup         = registryLookup;
@@ -179,6 +181,12 @@ public class GremlinQueryComposer {
 
     public void addWhere(String lhs, String operator, String rhs) {
         String                currentType = context.getActiveTypeName();
+
+        //in case if trait type is registered and lhs has trait attributes
+        if (currentType != null && lookup.isTraitType(currentType)) {
+            context.setActiveTypeToUnknown();
+        }
+
         IdentifierHelper.Info org         = null;
         IdentifierHelper.Info lhsI        = createInfo(lhs);
         boolean rhsIsNotDateOrNumOrBool   = false;
@@ -190,6 +198,10 @@ public class GremlinQueryComposer {
             lhsI = createInfo(lhs);
 
             lhsI.setTypeName(org.getTypeName());
+
+            if (org.isTrait()) {
+                setHasTrait();
+            }
         }
 
         if (!context.validator.isValidQualifiedName(lhsI.getQualifiedName(), lhsI.getRaw())) {
@@ -252,6 +264,10 @@ public class GremlinQueryComposer {
 
             context.registerActive(currentType);
         }
+    }
+
+    private void setHasTrait() {
+        this.hasTrait = true;
     }
 
     private void addForIsIncompleteClause(IdentifierHelper.Info lhsI,SearchParameters.Operator op, String rhs ) {
@@ -346,6 +362,10 @@ public class GremlinQueryComposer {
 
     public GremlinQueryComposer createNestedProcessor() {
         return new GremlinQueryComposer(lookup, this.context, queryMetadata, this.providedLimit, this.providedOffset, this);
+    }
+
+    public GremlinQueryComposer newInstance() {
+        return new GremlinQueryComposer(lookup, new Context(lookup), queryMetadata, this.providedLimit, this.providedOffset, null);
     }
 
     public void addFromAlias(String typeName, String alias) {
@@ -728,6 +748,19 @@ public class GremlinQueryComposer {
         queryClauses.add(gv);
     }
 
+    public void addAll(GremlinClauseList gcList) {
+        if (gcList != null) {
+            List<GremlinQueryComposer.GremlinClauseValue> list = gcList.getList();
+
+            if (CollectionUtils.isNotEmpty(list)) {
+                queryClauses.clear();
+                for (GremlinClauseValue value : list) {
+                    queryClauses.add(value);
+                }
+            }
+        }
+    }
+
     private void add(int idx, GremlinClause clause, String... args) {
         queryClauses.add(idx, new GremlinClauseValue(clause, args));
     }
@@ -746,6 +779,10 @@ public class GremlinQueryComposer {
 
     public SelectClauseComposer getSelectComposer() {
         return this.context.selectClauseComposer;
+    }
+
+    public boolean hasAnyTraitAttributeClause() {
+        return this.hasTrait;
     }
 
     public static class GremlinClauseValue {
@@ -818,6 +855,10 @@ public class GremlinQueryComposer {
                     activeType = UNKNOWN_TYPE;
                 }
             }
+        }
+
+        public void setActiveTypeToUnknown() {
+            activeType = UNKNOWN_TYPE;
         }
 
         public void registerActive(IdentifierHelper.Info info) {
