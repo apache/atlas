@@ -24,7 +24,7 @@ public class AtlasDSLLexer extends Lexer {
 		K_RBRACKET=19, K_LT=20, K_LTE=21, K_EQ=22, K_NEQ=23, K_GT=24, K_GTE=25, 
 		K_FROM=26, K_WHERE=27, K_ORDERBY=28, K_GROUPBY=29, K_LIMIT=30, K_SELECT=31, 
 		K_MAX=32, K_MIN=33, K_SUM=34, K_COUNT=35, K_OFFSET=36, K_AS=37, K_ISA=38, 
-		K_IS=39, K_HAS=40, K_ASC=41, K_DESC=42, K_TRUE=43, K_FALSE=44, K_HASTERM=45,
+		K_IS=39, K_HAS=40, K_ASC=41, K_DESC=42, K_TRUE=43, K_FALSE=44, K_HASTERM=45, 
 		KEYWORD=46, ID=47, STRING=48;
 	public static String[] channelNames = {
 		"DEFAULT_TOKEN_CHANNEL", "HIDDEN"
@@ -36,15 +36,15 @@ public class AtlasDSLLexer extends Lexer {
 
 	private static String[] makeRuleNames() {
 		return new String[] {
-			"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N",
-			"O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "DIGIT",
-			"LETTER", "SINGLE_LINE_COMMENT", "MULTILINE_COMMENT", "WS", "NUMBER",
-			"FLOATING_NUMBER", "BOOL", "K_COMMA", "K_PLUS", "K_MINUS", "K_STAR",
-			"K_DIV", "K_DOT", "K_LIKE", "K_AND", "K_OR", "K_LPAREN", "K_LBRACKET",
-			"K_RPAREN", "K_RBRACKET", "K_LT", "K_LTE", "K_EQ", "K_NEQ", "K_GT", "K_GTE",
-			"K_FROM", "K_WHERE", "K_ORDERBY", "K_GROUPBY", "K_LIMIT", "K_SELECT",
-			"K_MAX", "K_MIN", "K_SUM", "K_COUNT", "K_OFFSET", "K_AS", "K_ISA", "K_IS",
-			"K_HAS", "K_ASC", "K_DESC", "K_TRUE", "K_FALSE", "K_HASTERM", "KEYWORD",
+			"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", 
+			"O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "DIGIT", 
+			"LETTER", "SINGLE_LINE_COMMENT", "MULTILINE_COMMENT", "WS", "NUMBER", 
+			"FLOATING_NUMBER", "BOOL", "K_COMMA", "K_PLUS", "K_MINUS", "K_STAR", 
+			"K_DIV", "K_DOT", "K_LIKE", "K_AND", "K_OR", "K_LPAREN", "K_LBRACKET", 
+			"K_RPAREN", "K_RBRACKET", "K_LT", "K_LTE", "K_EQ", "K_NEQ", "K_GT", "K_GTE", 
+			"K_FROM", "K_WHERE", "K_ORDERBY", "K_GROUPBY", "K_LIMIT", "K_SELECT", 
+			"K_MAX", "K_MIN", "K_SUM", "K_COUNT", "K_OFFSET", "K_AS", "K_ISA", "K_IS", 
+			"K_HAS", "K_ASC", "K_DESC", "K_TRUE", "K_FALSE", "K_HASTERM", "KEYWORD", 
 			"ID", "STRING"
 		};
 	}
@@ -52,19 +52,19 @@ public class AtlasDSLLexer extends Lexer {
 
 	private static String[] makeLiteralNames() {
 		return new String[] {
-			null, null, null, null, null, null, null, "','", "'+'", "'-'", "'*'",
+			null, null, null, null, null, null, null, "','", "'+'", "'-'", "'*'", 
 			"'/'", "'.'", null, null, null, "'('", "'['", "')'", "']'"
 		};
 	}
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
 	private static String[] makeSymbolicNames() {
 		return new String[] {
-			null, "SINGLE_LINE_COMMENT", "MULTILINE_COMMENT", "WS", "NUMBER", "FLOATING_NUMBER",
-			"BOOL", "K_COMMA", "K_PLUS", "K_MINUS", "K_STAR", "K_DIV", "K_DOT", "K_LIKE",
-			"K_AND", "K_OR", "K_LPAREN", "K_LBRACKET", "K_RPAREN", "K_RBRACKET",
-			"K_LT", "K_LTE", "K_EQ", "K_NEQ", "K_GT", "K_GTE", "K_FROM", "K_WHERE",
-			"K_ORDERBY", "K_GROUPBY", "K_LIMIT", "K_SELECT", "K_MAX", "K_MIN", "K_SUM",
-			"K_COUNT", "K_OFFSET", "K_AS", "K_ISA", "K_IS", "K_HAS", "K_ASC", "K_DESC",
+			null, "SINGLE_LINE_COMMENT", "MULTILINE_COMMENT", "WS", "NUMBER", "FLOATING_NUMBER", 
+			"BOOL", "K_COMMA", "K_PLUS", "K_MINUS", "K_STAR", "K_DIV", "K_DOT", "K_LIKE", 
+			"K_AND", "K_OR", "K_LPAREN", "K_LBRACKET", "K_RPAREN", "K_RBRACKET", 
+			"K_LT", "K_LTE", "K_EQ", "K_NEQ", "K_GT", "K_GTE", "K_FROM", "K_WHERE", 
+			"K_ORDERBY", "K_GROUPBY", "K_LIMIT", "K_SELECT", "K_MAX", "K_MIN", "K_SUM", 
+			"K_COUNT", "K_OFFSET", "K_AS", "K_ISA", "K_IS", "K_HAS", "K_ASC", "K_DESC", 
 			"K_TRUE", "K_FALSE", "K_HASTERM", "KEYWORD", "ID", "STRING"
 		};
 	}

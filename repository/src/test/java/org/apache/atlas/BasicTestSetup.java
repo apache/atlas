@@ -305,7 +305,8 @@ public abstract class BasicTestSetup extends AtlasTestBase {
     }
 
     protected void createClassificationTypes() {
-        List<AtlasClassificationDef> cds =  Arrays.asList(new AtlasClassificationDef(DIMENSION_CLASSIFICATION, "Dimension Classification", "1.0"),
+        List<AtlasClassificationDef> cds =  Arrays.asList(new AtlasClassificationDef(DIMENSION_CLASSIFICATION, "Dimension Classification", "1.0",
+                        Arrays.asList(new AtlasStructDef.AtlasAttributeDef("timeAttr","string"), new AtlasStructDef.AtlasAttributeDef("productAttr","string"))),
                 new AtlasClassificationDef(FACT_CLASSIFICATION, "Fact Classification", "1.0"),
                 new AtlasClassificationDef(PII_CLASSIFICATION, "PII Classification", "1.0"),
                 new AtlasClassificationDef(METRIC_CLASSIFICATION, "Metric Classification", "1.0"),
@@ -389,7 +390,15 @@ public abstract class BasicTestSetup extends AtlasTestBase {
         table.setAttribute("sd", getAtlasObjectId(sd));
 
         table.setAttribute("columns", getAtlasObjectIds(columns));
-        table.setClassifications(Stream.of(traitNames).map(AtlasClassification::new).collect(Collectors.toList()));
+        if (name.equals("time_dim")) {
+            AtlasClassification classification = new AtlasClassification(traitNames[0], new HashMap<String, Object>() {{ put("timeAttr", "timeValue"); }});
+            table.setClassifications(Collections.singletonList(classification));
+        } else if (name.equals("product_dim")) {
+            AtlasClassification classification = new AtlasClassification(traitNames[0], new HashMap<String, Object>() {{ put("productAttr", "productValue"); }});
+            table.setClassifications(Collections.singletonList(classification));
+        } else {
+            table.setClassifications(Stream.of(traitNames).map(AtlasClassification::new).collect(Collectors.toList()));
+        }
 
         sd.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, dbName + "." + name + "@" + clusterName + "_storage");
 

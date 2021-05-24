@@ -31,6 +31,8 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static org.apache.atlas.repository.Constants.CLASSIFICATION_LABEL;
+
 public class IdentifierHelper {
 
     private static final Pattern SINGLE_QUOTED_IDENTIFIER   = Pattern.compile("'(\\w[\\w\\d\\.\\s]*)'");
@@ -186,7 +188,7 @@ public class IdentifierHelper {
                     updateTypeInfo(lookup, context);
                     setIsTrait(context, lookup, attributeName);
                     updateEdgeInfo(lookup, context);
-                    introduceType = !isPrimitive() && !context.hasAlias(parts[0]);
+                    introduceType = (!isPrimitive() && !context.hasAlias(parts[0])) || isTrait;
                     updateSubTypes(lookup, context);
                 }
             } catch (NullPointerException ex) {
@@ -213,8 +215,11 @@ public class IdentifierHelper {
         private void updateEdgeInfo(org.apache.atlas.query.Lookup lookup, GremlinQueryComposer.Context context) {
             if (!isPrimitive && !isTrait && typeName != attributeName) {
                 edgeDirection = lookup.getRelationshipEdgeDirection(context, attributeName);
-                edgeLabel = lookup.getRelationshipEdgeLabel(context, attributeName);
-                typeName = lookup.getTypeFromEdge(context, attributeName);
+                edgeLabel     = lookup.getRelationshipEdgeLabel(context, attributeName);
+                typeName      = lookup.getTypeFromEdge(context, attributeName);
+            } else if (isTrait) {
+                edgeDirection = AtlasRelationshipEdgeDirection.OUT;
+                edgeLabel     = CLASSIFICATION_LABEL;
             }
         }
 
@@ -249,8 +254,11 @@ public class IdentifierHelper {
                     typeName = context.hasAlias(parts[0]) ?
                                        context.getTypeNameFromAlias(parts[0]) :
                                        parts[0];
-
-                    attributeName = parts[1];
+                    if (typeName != null && lookup.isTraitType(typeName) && !typeName.equals(context.getActiveTypeName())) {
+                        attributeName = typeName;
+                    } else {
+                        attributeName = parts[1];
+                    }
                 }
             }
 

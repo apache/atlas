@@ -110,6 +110,13 @@ Example: To find all the Tables for a column.
 {`Table where columns.name="sales"`}
 </SyntaxHighlighter>
 
+Example: To retrieve all the entities of type _Table_ that are tagged with _Dimension_ classification and its attribute _priority_ having 'high'
+
+<SyntaxHighlighter wrapLines={true} language="sql" style={theme.dark}>
+{`Table where Dimension.priority = "high"`}
+</SyntaxHighlighter>
+
+
 
 ### Using Date Literals
 Dates used in literals need to be specified using the ISO 8601 format.
@@ -223,6 +230,14 @@ Example: To retrieve all entities that have _Dimension_ classification.
 
 <SyntaxHighlighter wrapLines={true} language="sql" style={theme.dark}>
 {`Dimension`}
+</SyntaxHighlighter>
+
+To search for all entities having a particular classification with its attribute, add filter in where clause.
+
+Example: To retrieve all the entities that are tagged with _Dimension_ classification and its attribute _priority_ having 'high'
+
+<SyntaxHighlighter wrapLines={true} language="sql" style={theme.dark}>
+{`Dimension where Dimension.priority = "high"`}
 </SyntaxHighlighter>
 
 ###Non Primitive attribute Filtering
