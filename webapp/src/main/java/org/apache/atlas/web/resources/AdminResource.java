@@ -368,6 +368,8 @@ public class AdminResource {
         responseData.put("timezones", TIMEZONE_LIST);
         responseData.put(UI_DATE_TIMEZONE_FORMAT_ENABLED, isTimezoneFormatEnabled);
         responseData.put(UI_DATE_FORMAT, uiDateFormat);
+        responseData.put(AtlasConfiguration.DEBUG_METRICS_ENABLED.getPropertyName(), isDebugMetricsEnabled);
+        responseData.put(AtlasConfiguration.TASKS_USE_ENABLED.getPropertyName(), isTasksEnabled);
 
         String salt = (String) request.getSession().getAttribute(CSRF_TOKEN);
         if (StringUtils.isEmpty(salt)) {
