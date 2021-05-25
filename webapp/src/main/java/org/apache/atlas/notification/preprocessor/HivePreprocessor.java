@@ -81,6 +81,10 @@ public class HivePreprocessor {
                     entity.setAttribute(ATTRIBUTE_SD, null);
                     entity.setAttribute(ATTRIBUTE_COLUMNS, null);
                     entity.setAttribute(ATTRIBUTE_PARTITION_KEYS, null);
+
+                    entity.setRelationshipAttribute(ATTRIBUTE_SD, null);
+                    entity.setRelationshipAttribute(ATTRIBUTE_COLUMNS, null);
+                    entity.setRelationshipAttribute(ATTRIBUTE_PARTITION_KEYS, null);
                 } else if (context.getHiveTypesRemoveOwnedRefAttrs()) {
                     context.removeRefAttributeAndRegisterToMove(entity, ATTRIBUTE_SD, RELATIONSHIP_TYPE_HIVE_TABLE_STORAGEDESC, ATTRIBUTE_TABLE);
                     context.removeRefAttributeAndRegisterToMove(entity, ATTRIBUTE_COLUMNS, RELATIONSHIP_TYPE_HIVE_TABLE_COLUMNS, ATTRIBUTE_TABLE);
@@ -223,6 +227,34 @@ public class HivePreprocessor {
                         }
                     }
                 }
+            }
+
+            preprocessCheckpoint(entity, context);
+        }
+
+        private void preprocessCheckpoint(AtlasEntity entity, PreprocessorContext context) {
+            if (!context.isSpooledMessage()) {
+                return;
+            }
+
+            String[] relationshipNames = new String[]{ATTRIBUTE_INPUTS, ATTRIBUTE_OUTPUTS};
+            for (String relationshipName : relationshipNames) {
+                Object val = entity.getRelationshipAttribute(relationshipName);
+                if (!isEmpty(val) && val instanceof List) {
+                    updateListWithGuids(context, (List) val);
+                }
+            }
+        }
+
+        private void updateListWithGuids(PreprocessorContext context, List list) {
+            for (Object o : list) {
+                String qn = getQualifiedName(o);
+                String guid = context.getGuidForDeletedEntity(qn);
+                if (StringUtils.isEmpty(guid)) {
+                    continue;
+                }
+
+                setObjectIdWithGuid(o, guid);
             }
         }
 

@@ -34,6 +34,7 @@ define(['require',
                 glossaryImportTempUrl: UrlLinks.glossaryImportTempUrl(),
                 businessMetadataImportTempUrl: UrlLinks.businessMetadataImportTempUrl(),
                 apiDocUrl: UrlLinks.apiDocUrl(),
+                isDebugMetricsEnabled: Globals.isDebugMetricsEnabled
             };
         },
         ui: {
@@ -43,6 +44,7 @@ define(['require',
             clearGlobalSearch: "[data-id='clearGlobalSearch']",
             signOut: "[data-id='signOut']",
             administrator: "[data-id='administrator']",
+            showDebug: "[data-id='showDebug']",
             uiSwitch: "[data-id='uiSwitch']",
             glossaryImport: "[data-id='glossaryImport']",
             businessMetadataImport: "[data-id='businessMetadataImport']"
@@ -90,6 +92,14 @@ define(['require',
             };
             events['click ' + this.ui.businessMetadataImport] = function() {
                 this.onClickImport()
+            };
+            events['click ' + this.ui.showDebug] = function() {
+                Utils.setUrl({
+                    url: "#!/debugMetrics",
+                    mergeBrowserUrl: false,
+                    trigger: true,
+                    updateTabState: true
+                });
             };
 
             return events;

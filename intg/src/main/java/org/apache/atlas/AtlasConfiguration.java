@@ -77,6 +77,7 @@ public enum AtlasConfiguration {
     REBUILD_INDEX("atlas.rebuild.index", false),
     STORE_DIFFERENTIAL_AUDITS("atlas.entity.audit.differential", false),
     DSL_EXECUTOR_TRAVERSAL("atlas.dsl.executor.traversal", true),
+    DEBUG_METRICS_ENABLED("atlas.debug.metrics.enabled", false),
     TASKS_USE_ENABLED("atlas.tasks.enabled", true);
 
     private static final Configuration APPLICATION_PROPERTIES;

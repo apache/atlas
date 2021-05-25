@@ -309,6 +309,12 @@ require(['App',
                 if (response['atlas.ui.date.timezone.format.enabled'] !== undefined) {
                     Globals.isTimezoneFormatEnabled = response['atlas.ui.date.timezone.format.enabled'];
                 }
+                if (response['atlas.debug.metrics.enabled'] !== undefined) {
+                    Globals.isDebugMetricsEnabled = response["atlas.debug.metrics.enabled"];
+                }
+                if (response['atlas.tasks.enabled'] !== undefined) {
+                    Globals.isTasksEnabled = response['atlas.tasks.enabled'];
+                }
             }
             --that.asyncFetchCounter;
             startApp();

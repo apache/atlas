@@ -176,7 +176,10 @@ public class AtlasGlossaryTerm extends AtlasGlossaryBaseObject {
 
     public void setSeeAlso(final Set<AtlasRelatedTermHeader> seeAlso) {
         this.seeAlso = seeAlso;
-        hasTerms = true;
+
+        if (CollectionUtils.isNotEmpty(seeAlso)) {
+            hasTerms = true;
+        }
     }
 
     public Set<AtlasRelatedTermHeader> getSynonyms() {
@@ -185,7 +188,10 @@ public class AtlasGlossaryTerm extends AtlasGlossaryBaseObject {
 
     public void setSynonyms(final Set<AtlasRelatedTermHeader> synonyms) {
         this.synonyms = synonyms;
-        hasTerms = true;
+
+        if (CollectionUtils.isNotEmpty(synonyms)) {
+            hasTerms = true;
+        }
     }
 
     public Set<AtlasRelatedTermHeader> getAntonyms() {
@@ -194,7 +200,10 @@ public class AtlasGlossaryTerm extends AtlasGlossaryBaseObject {
 
     public void setAntonyms(final Set<AtlasRelatedTermHeader> antonyms) {
         this.antonyms = antonyms;
-        hasTerms = true;
+
+        if (CollectionUtils.isNotEmpty(antonyms)) {
+            hasTerms = true;
+        }
     }
 
     public Set<AtlasRelatedTermHeader> getPreferredTerms() {
@@ -203,7 +212,10 @@ public class AtlasGlossaryTerm extends AtlasGlossaryBaseObject {
 
     public void setPreferredTerms(final Set<AtlasRelatedTermHeader> preferredTerms) {
         this.preferredTerms = preferredTerms;
-        hasTerms = true;
+
+        if (CollectionUtils.isNotEmpty(preferredTerms)) {
+            hasTerms = true;
+        }
     }
 
     public Set<AtlasRelatedTermHeader> getPreferredToTerms() {
@@ -212,6 +224,10 @@ public class AtlasGlossaryTerm extends AtlasGlossaryBaseObject {
 
     public void setPreferredToTerms(final Set<AtlasRelatedTermHeader> preferredToTerms) {
         this.preferredToTerms = preferredToTerms;
+
+        if (CollectionUtils.isNotEmpty(preferredToTerms)) {
+            hasTerms = true;
+        }
     }
 
     public Set<AtlasRelatedTermHeader> getReplacementTerms() {
@@ -220,7 +236,10 @@ public class AtlasGlossaryTerm extends AtlasGlossaryBaseObject {
 
     public void setReplacementTerms(final Set<AtlasRelatedTermHeader> replacementTerms) {
         this.replacementTerms = replacementTerms;
-        hasTerms = true;
+
+        if (CollectionUtils.isNotEmpty(replacementTerms)) {
+            hasTerms = true;
+        }
     }
 
     public Set<AtlasRelatedTermHeader> getReplacedBy() {
@@ -229,7 +248,10 @@ public class AtlasGlossaryTerm extends AtlasGlossaryBaseObject {
 
     public void setReplacedBy(final Set<AtlasRelatedTermHeader> replacedBy) {
         this.replacedBy = replacedBy;
-        hasTerms = true;
+
+        if (CollectionUtils.isNotEmpty(replacedBy)) {
+            hasTerms = true;
+        }
     }
 
     public Set<AtlasRelatedTermHeader> getTranslationTerms() {
@@ -238,7 +260,10 @@ public class AtlasGlossaryTerm extends AtlasGlossaryBaseObject {
 
     public void setTranslationTerms(final Set<AtlasRelatedTermHeader> translationTerms) {
         this.translationTerms = translationTerms;
-        hasTerms = true;
+
+        if (CollectionUtils.isNotEmpty(translationTerms)) {
+            hasTerms = true;
+        }
     }
 
     public Set<AtlasRelatedTermHeader> getTranslatedTerms() {
@@ -247,7 +272,10 @@ public class AtlasGlossaryTerm extends AtlasGlossaryBaseObject {
 
     public void setTranslatedTerms(final Set<AtlasRelatedTermHeader> translatedTerms) {
         this.translatedTerms = translatedTerms;
-        hasTerms = true;
+
+        if (CollectionUtils.isNotEmpty(translatedTerms)) {
+            hasTerms = true;
+        }
     }
 
     public Set<AtlasRelatedTermHeader> getIsA() {
@@ -256,7 +284,10 @@ public class AtlasGlossaryTerm extends AtlasGlossaryBaseObject {
 
     public void setIsA(final Set<AtlasRelatedTermHeader> isA) {
         this.isA = isA;
-        hasTerms = true;
+
+        if (CollectionUtils.isNotEmpty(isA)) {
+            hasTerms = true;
+        }
     }
 
     public Set<AtlasRelatedTermHeader> getClassifies() {
@@ -265,7 +296,10 @@ public class AtlasGlossaryTerm extends AtlasGlossaryBaseObject {
 
     public void setClassifies(final Set<AtlasRelatedTermHeader> classifies) {
         this.classifies = classifies;
-        hasTerms = true;
+
+        if (CollectionUtils.isNotEmpty(classifies)) {
+            hasTerms = true;
+        }
     }
 
     public Set<AtlasRelatedTermHeader> getValidValues() {
@@ -274,7 +308,10 @@ public class AtlasGlossaryTerm extends AtlasGlossaryBaseObject {
 
     public void setValidValues(final Set<AtlasRelatedTermHeader> validValues) {
         this.validValues = validValues;
-        hasTerms = true;
+
+        if (CollectionUtils.isNotEmpty(validValues)) {
+            hasTerms = true;
+        }
     }
 
     public Set<AtlasRelatedTermHeader> getValidValuesFor() {
@@ -283,23 +320,14 @@ public class AtlasGlossaryTerm extends AtlasGlossaryBaseObject {
 
     public void setValidValuesFor(final Set<AtlasRelatedTermHeader> validValuesFor) {
         this.validValuesFor = validValuesFor;
-        hasTerms = true;
+
+        if (CollectionUtils.isNotEmpty(validValuesFor)) {
+            hasTerms = true;
+        }
     }
 
-    public boolean containAnyRelation() {
-        return (CollectionUtils.isNotEmpty(getTranslationTerms()) ||
-                CollectionUtils.isNotEmpty(getValidValuesFor()) ||
-                CollectionUtils.isNotEmpty(getSynonyms()) ||
-                CollectionUtils.isNotEmpty(getReplacedBy()) ||
-                CollectionUtils.isNotEmpty(getValidValues()) ||
-                CollectionUtils.isNotEmpty(getReplacementTerms()) ||
-                CollectionUtils.isNotEmpty(getSeeAlso()) ||
-                CollectionUtils.isNotEmpty(getTranslatedTerms()) ||
-                CollectionUtils.isNotEmpty(getIsA()) ||
-                CollectionUtils.isNotEmpty(getAntonyms()) ||
-                CollectionUtils.isNotEmpty(getClassifies()) ||
-                CollectionUtils.isNotEmpty(getPreferredToTerms()) ||
-                CollectionUtils.isNotEmpty(getPreferredTerms()));
+    public AtlasGlossaryTermHeader getGlossaryTermHeader() {
+        return new AtlasGlossaryTermHeader(this.getGuid(), this.getQualifiedName());
     }
 
     @JsonIgnore

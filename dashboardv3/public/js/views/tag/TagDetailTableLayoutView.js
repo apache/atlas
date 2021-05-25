@@ -222,10 +222,10 @@ define(['require',
                             sortable: false,
                             formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                                 fromRaw: function(rawValue, model) {
-                                    var values = model.get('attributes');
-                                    var data = that.classificationDefCollection.fullCollection.findWhere({ 'name': model.get('typeName') });
-                                    var attributeDefs = Utils.getNestedSuperTypeObj({ data: data.toJSON(), collection: that.classificationDefCollection, attrMerge: true });
-                                    var tagValue = 'NA',
+                                    var values = model.get('attributes'),
+                                        data = that.classificationDefCollection.fullCollection.findWhere({ 'name': model.get('typeName') }),
+                                        attributeDefs = data ? Utils.getNestedSuperTypeObj({ data: data.toJSON(), collection: that.classificationDefCollection, attrMerge: true }) : null,
+                                        tagValue = 'NA',
                                         dataType;
                                     if (!_.isEmpty(attributeDefs)) {
                                         var stringValue = "";

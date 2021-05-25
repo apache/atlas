@@ -98,8 +98,9 @@ public class IndexManagement {
     }
 
     public boolean isPending() {
-        return !indexReader.isEmpty() ||
-                (indexWriter.getCurrent() != null && indexWriter.getCurrent().getLine() > 0);
+        return !indexReader.isEmpty()
+                || (indexWriter.getCurrent() != null && indexWriter.getCurrent().isStatusWriteInProgress())
+                || (indexReader.currentIndexRecord != null && indexReader.currentIndexRecord.getStatus() == IndexRecord.STATUS_READ_IN_PROGRESS);
     }
 
     public synchronized DataOutput getSpoolWriter() throws IOException {
@@ -146,6 +147,8 @@ public class IndexManagement {
 
     public void update(IndexRecord record) {
         this.indexFileManager.updateIndex(record);
+
+        LOG.info("this.indexFileManager.updateIndex: {}", record.getLine());
     }
 
     public void flushSpoolWriter() throws IOException {
@@ -349,6 +352,9 @@ public class IndexManagement {
 
         public IndexRecord next() throws InterruptedException {
             this.currentIndexRecord = blockingQueue.poll(retryDestinationMS, TimeUnit.MILLISECONDS);
+            if (this.currentIndexRecord != null) {
+                this.currentIndexRecord.setStatus(IndexRecord.STATUS_READ_IN_PROGRESS);
+            }
 
             return this.currentIndexRecord;
         }

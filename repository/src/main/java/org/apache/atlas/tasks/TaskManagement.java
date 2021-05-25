@@ -49,6 +49,7 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
     private final TaskRegistry              registry;
     private final Statistics                statistics;
     private final Map<String, TaskFactory>  taskTypeFactoryMap;
+    private       boolean                   hasStarted;
 
     @Inject
     public TaskManagement(Configuration configuration, TaskRegistry taskRegistry) {
@@ -73,8 +74,14 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         if (configuration == null || !HAConfiguration.isHAEnabled(configuration)) {
             startInternal();
         } else {
-            LOG.info("TaskManagement.start(): deferring patches until instance activation");
+            LOG.info("TaskManagement.start(): deferring until instance activation");
         }
+
+        this.hasStarted = true;
+    }
+
+    public boolean hasStarted() {
+        return this.hasStarted;
     }
 
     @Override
@@ -183,9 +190,15 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         }
 
         LOG.info("TaskManagement: Started!");
+        if (this.taskTypeFactoryMap.size() == 0) {
+            LOG.warn("Not factories registered! Pending tasks will be queued once factories are registered!");
+            return;
+        }
+
+        queuePendingTasks();
     }
 
-    public void queuePendingTasks() {
+    private void queuePendingTasks() {
         if (AtlasConfiguration.TASKS_USE_ENABLED.getBoolean() == false) {
             return;
         }

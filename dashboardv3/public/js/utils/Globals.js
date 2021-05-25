@@ -29,7 +29,8 @@ define(["require"], function(require) {
             tagUrl: "#!/tag",
             searchUrl: "#!/search",
             glossaryUrl: "#!/glossary",
-            administratorUrl: "#!/administrator"
+            administratorUrl: "#!/administrator",
+            debugMetricsUrl: "#!/debugMetrics"
         },
         detailPageState: {}
     };
@@ -45,6 +46,9 @@ define(["require"], function(require) {
     Globals.dateTimeFormat = "MM/DD/YYYY hh:mm:ss A";
     Globals.dateFormat = "MM/DD/YYYY";
     Globals.isTimezoneFormatEnabled = true;
+
+    Globals.isDebugMetricsEnabled = false;
+    Globals.isTasksEnabled = true;
 
     return Globals;
 });

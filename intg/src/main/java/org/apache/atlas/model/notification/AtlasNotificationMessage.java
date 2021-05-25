@@ -40,9 +40,10 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class AtlasNotificationMessage<T> extends AtlasNotificationBaseMessage {
-    private String msgSourceIP;
-    private String msgCreatedBy;
-    private long   msgCreationTime;
+    private String  msgSourceIP;
+    private String  msgCreatedBy;
+    private long    msgCreationTime;
+    private boolean spooled;
 
     /**
      * The actual message.
@@ -55,18 +56,22 @@ public class AtlasNotificationMessage<T> extends AtlasNotificationBaseMessage {
     }
 
     public AtlasNotificationMessage(MessageVersion version, T message) {
-        this(version, message, null, null);
+        this(version, message, null, null, false);
     }
 
-    public AtlasNotificationMessage(MessageVersion version, T message, String msgSourceIP, String createdBy) {
+    public AtlasNotificationMessage(MessageVersion version, T message, String msgSourceIP, String createdBy, boolean spooled) {
         super(version);
 
         this.msgSourceIP     = msgSourceIP;
         this.msgCreatedBy    = createdBy;
         this.msgCreationTime = (new Date()).getTime();
         this.message         = message;
+        this.spooled         = spooled;
     }
 
+    public AtlasNotificationMessage(MessageVersion version, T message, String msgSourceIP, String createdBy) {
+        this(version, message, msgSourceIP, createdBy, false);
+    }
 
     public String getMsgSourceIP() {
         return msgSourceIP;
@@ -98,5 +103,13 @@ public class AtlasNotificationMessage<T> extends AtlasNotificationBaseMessage {
 
     public void setMessage(T message) {
         this.message = message;
+    }
+
+    public void setSpooled(boolean val) {
+        this.spooled = val;
+    }
+
+    public boolean getSpooled() {
+        return spooled;
     }
 }

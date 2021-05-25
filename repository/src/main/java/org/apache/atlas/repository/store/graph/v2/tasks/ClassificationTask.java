@@ -19,8 +19,10 @@ package org.apache.atlas.repository.store.graph.v2.tasks;
 
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.exception.EntityNotFoundException;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.tasks.AtlasTask;
+import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasElement;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
@@ -56,7 +58,11 @@ public abstract class ClassificationTask extends AbstractTask {
     protected final DeleteHandlerDelegate  deleteDelegate;
     protected final AtlasRelationshipStore relationshipStore;
 
-    public ClassificationTask(AtlasTask task, AtlasGraph graph, EntityGraphMapper entityGraphMapper, DeleteHandlerDelegate deleteDelegate, AtlasRelationshipStore relationshipStore) {
+    public ClassificationTask(AtlasTask task,
+                              AtlasGraph graph,
+                              EntityGraphMapper entityGraphMapper,
+                              DeleteHandlerDelegate deleteDelegate,
+                              AtlasRelationshipStore relationshipStore) {
         super(task);
 
         this.graph             = graph;
@@ -120,17 +126,15 @@ public abstract class ClassificationTask extends AbstractTask {
     protected void setStatus(AtlasTask.Status status) {
         super.setStatus(status);
 
-        // remove pending task guid from entity vertex or relationship edge
-        AtlasElement element;
-
-        if (getTaskType() == CLASSIFICATION_PROPAGATION_RELATIONSHIP_UPDATE) {
-            element = graph.getEdge((String) getTaskDef().getParameters().get(PARAM_RELATIONSHIP_EDGE_ID));
-
-        } else {
-            element = AtlasGraphUtilsV2.findByGuid((String) getTaskDef().getParameters().get(PARAM_ENTITY_GUID));
+        try {
+            if (getTaskType() == CLASSIFICATION_PROPAGATION_RELATIONSHIP_UPDATE) {
+                entityGraphMapper.removePendingTaskFromEdge((String) getTaskDef().getParameters().get(PARAM_RELATIONSHIP_EDGE_ID), getTaskGuid());
+            } else {
+                entityGraphMapper.removePendingTaskFromEntity((String) getTaskDef().getParameters().get(PARAM_ENTITY_GUID), getTaskGuid());
+            }
+        } catch (EntityNotFoundException | AtlasBaseException e) {
+            LOG.error("Error updating associated element for: {}", getTaskGuid(), e);
         }
-
-        element.removePropertyValue(PENDING_TASKS_PROPERTY_KEY, getTaskGuid());
     }
 
     protected abstract void run(Map<String, Object> parameters) throws AtlasBaseException;

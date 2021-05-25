@@ -61,6 +61,7 @@ public class BaseTest {
         props.setProperty(SpoolConfiguration.PROP_FILE_SPOOL_LOCAL_DIR, spoolDir);
         props.setProperty(SpoolConfiguration.PROP_FILE_SPOOL_DEST_RETRY_MS, Integer.toString(destinationRetry));
         props.setProperty(SpoolConfiguration.PROP_FILE_SPOOL_FILE_ROLLOVER_SEC, Integer.toString(2));
+        props.setProperty(SpoolConfiguration.PROP_FILE_SPOOL_PAUSE_BEFORE_SEND_SEC, 0);
         return props;
     }
 

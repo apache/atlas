@@ -21,6 +21,7 @@ package org.apache.atlas.web.resources;
 import com.sun.jersey.multipart.FormDataParam;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.authorize.AtlasAdminAccessRequest;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
@@ -47,6 +48,7 @@ import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.metrics.AtlasMetrics;
 import org.apache.atlas.model.patches.AtlasPatch.AtlasPatches;
+import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.repository.audit.AtlasAuditService;
 import org.apache.atlas.repository.audit.EntityAuditRepository;
 import org.apache.atlas.repository.impexp.AtlasServerService;
@@ -55,7 +57,6 @@ import org.apache.atlas.repository.impexp.ExportService;
 import org.apache.atlas.repository.impexp.ImportService;
 import org.apache.atlas.repository.impexp.MigrationProgressService;
 import org.apache.atlas.repository.impexp.ZipSink;
-import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.repository.patches.AtlasPatchManager;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.services.MetricsService;
@@ -66,12 +67,14 @@ import org.apache.atlas.util.SearchTracker;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.filters.AtlasCSRFPreventionFilter;
+import org.apache.atlas.web.service.AtlasDebugMetricsSink;
 import org.apache.atlas.web.service.ServiceState;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -80,7 +83,6 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
@@ -101,6 +103,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -112,6 +115,8 @@ import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
+
+import static org.apache.atlas.web.filters.AtlasCSRFPreventionFilter.CSRF_TOKEN;
 
 
 /**
@@ -167,6 +172,9 @@ public class AdminResource {
     private final  EntityAuditRepository    auditRepository;
     private final  boolean                  isTimezoneFormatEnabled;
     private final  String                   uiDateFormat;
+    private final  AtlasDebugMetricsSink    debugMetricsRESTSink;
+    private final  boolean                  isDebugMetricsEnabled;
+    private final  boolean                  isTasksEnabled;
 
     static {
         try {
@@ -183,7 +191,7 @@ public class AdminResource {
                          AtlasServerService serverService,
                          ExportImportAuditService exportImportAuditService, AtlasEntityStore entityStore,
                          AtlasPatchManager patchManager, AtlasAuditService auditService, EntityAuditRepository auditRepository,
-                         TaskManagement taskManagement) {
+                         TaskManagement taskManagement, AtlasDebugMetricsSink debugMetricsRESTSink) {
         this.serviceState              = serviceState;
         this.metricsService            = metricsService;
         this.exportService             = exportService;
@@ -199,21 +207,21 @@ public class AdminResource {
         this.auditService              = auditService;
         this.auditRepository           = auditRepository;
         this.taskManagement            = taskManagement;
+        this.debugMetricsRESTSink      = debugMetricsRESTSink;
 
         if (atlasProperties != null) {
             this.defaultUIVersion = atlasProperties.getString(DEFAULT_UI_VERSION, UI_VERSION_V2);
             this.isTimezoneFormatEnabled = atlasProperties.getBoolean(UI_DATE_TIMEZONE_FORMAT_ENABLED, true);
             this.uiDateFormat = atlasProperties.getString(UI_DATE_FORMAT, UI_DATE_DEFAULT_FORMAT);
+            this.isDebugMetricsEnabled = AtlasConfiguration.DEBUG_METRICS_ENABLED.getBoolean();
+            this.isTasksEnabled = AtlasConfiguration.TASKS_USE_ENABLED.getBoolean();
         } else {
             this.defaultUIVersion = UI_VERSION_V2;
             this.isTimezoneFormatEnabled = true;
             this.uiDateFormat = UI_DATE_DEFAULT_FORMAT;
+            this.isDebugMetricsEnabled = false;
+            this.isTasksEnabled = false;
         }
-    }
-
-    @PostConstruct
-    public void init() {
-        taskManagement.queuePendingTasks();
     }
 
     /**
@@ -322,7 +330,7 @@ public class AdminResource {
     @GET
     @Path("session")
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public Response getUserProfile() {
+    public Response getUserProfile(@Context HttpServletRequest request) {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AdminResource.getUserProfile()");
         }
@@ -360,6 +368,14 @@ public class AdminResource {
         responseData.put("timezones", TIMEZONE_LIST);
         responseData.put(UI_DATE_TIMEZONE_FORMAT_ENABLED, isTimezoneFormatEnabled);
         responseData.put(UI_DATE_FORMAT, uiDateFormat);
+
+        String salt = (String) request.getSession().getAttribute(CSRF_TOKEN);
+        if (StringUtils.isEmpty(salt)) {
+            salt = RandomStringUtils.random(20, 0, 0, true, true, null, new SecureRandom());
+            request.getSession().setAttribute(CSRF_TOKEN, salt);
+        }
+
+        responseData.put(CSRF_TOKEN, salt);
 
         response = Response.ok(AtlasJson.toV1Json(responseData)).build();
 
@@ -762,6 +778,13 @@ public class AdminResource {
         if (CollectionUtils.isNotEmpty(guids)) {
             taskManagement.deleteByGuids(guids);
         }
+    }
+
+    @GET
+    @Path("/debug/metrics")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Map getDebugMetrics() {
+        return debugMetricsRESTSink.getMetrics();
     }
 
     private String getEditableEntityTypes(Configuration config) {

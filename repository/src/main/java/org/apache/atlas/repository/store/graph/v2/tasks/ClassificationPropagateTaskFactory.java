@@ -37,13 +37,11 @@ public class ClassificationPropagateTaskFactory implements TaskFactory {
     private static final Logger LOG = LoggerFactory.getLogger(ClassificationPropagateTaskFactory.class);
 
     public static final String CLASSIFICATION_PROPAGATION_ADD                 = "CLASSIFICATION_PROPAGATION_ADD";
-    public static final String CLASSIFICATION_PROPAGATION_UPDATE              = "CLASSIFICATION_PROPAGATION_UPDATE";
     public static final String CLASSIFICATION_PROPAGATION_DELETE              = "CLASSIFICATION_PROPAGATION_DELETE";
     public static final String CLASSIFICATION_PROPAGATION_RELATIONSHIP_UPDATE = "CLASSIFICATION_PROPAGATION_RELATIONSHIP_UPDATE";
 
     private static final List<String> supportedTypes = new ArrayList<String>() {{
         add(CLASSIFICATION_PROPAGATION_ADD);
-        add(CLASSIFICATION_PROPAGATION_UPDATE);
         add(CLASSIFICATION_PROPAGATION_DELETE);
         add(CLASSIFICATION_PROPAGATION_RELATIONSHIP_UPDATE);
     }};
@@ -54,13 +52,11 @@ public class ClassificationPropagateTaskFactory implements TaskFactory {
     private final AtlasRelationshipStore relationshipStore;
 
     @Inject
-    public ClassificationPropagateTaskFactory(TaskManagement taskManagement, AtlasGraph graph, EntityGraphMapper entityGraphMapper, DeleteHandlerDelegate deleteDelegate, AtlasRelationshipStore relationshipStore) {
+    public ClassificationPropagateTaskFactory(AtlasGraph graph, EntityGraphMapper entityGraphMapper, DeleteHandlerDelegate deleteDelegate, AtlasRelationshipStore relationshipStore) {
         this.graph             = graph;
         this.entityGraphMapper = entityGraphMapper;
         this.deleteDelegate    = deleteDelegate;
         this.relationshipStore = relationshipStore;
-
-        taskManagement.addFactory(this);
     }
 
     public org.apache.atlas.tasks.AbstractTask create(AtlasTask task) {
@@ -70,9 +66,6 @@ public class ClassificationPropagateTaskFactory implements TaskFactory {
         switch (taskType) {
             case CLASSIFICATION_PROPAGATION_ADD:
                 return new ClassificationPropagationTasks.Add(task, graph, entityGraphMapper, deleteDelegate, relationshipStore);
-
-            case CLASSIFICATION_PROPAGATION_UPDATE:
-                return new ClassificationPropagationTasks.Update(task, graph, entityGraphMapper, deleteDelegate, relationshipStore);
 
             case CLASSIFICATION_PROPAGATION_DELETE:
                 return new ClassificationPropagationTasks.Delete(task, graph, entityGraphMapper, deleteDelegate, relationshipStore);

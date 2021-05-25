@@ -348,8 +348,13 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
                     urlUpdate['searchUrl'] = options.url;
                 } else if (Utils.getUrlState.isGlossaryTab(options.url)) {
                     urlUpdate['glossaryUrl'] = options.url;
+                } else if (Utils.getUrlState.isBMDetailPage(options.url)) {
+                    urlUpdate['bmDetailPageUrl'] = options.url;
+                    urlUpdate['administratorUrl'] = options.url;
                 } else if (Utils.getUrlState.isAdministratorTab(options.url)) {
                     urlUpdate['administratorUrl'] = options.url;
+                } else if (Utils.getUrlState.isDebugMetricsTab(options.url)) {
+                    urlUpdate['debugMetricsUrl'] = options.url;
                 }
                 $.extend(Globals.saveApplicationState.tabState, urlUpdate);
             }
@@ -395,6 +400,16 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
             return this.checkTabUrl({
                 url: url,
                 matchString: "administrator"
+            });
+        },
+        isBMDetailPage: function(url) {
+            var quey = this.getQueryUrl(url);
+            return (quey.hash.indexOf("businessMetadata") > -1) ? true : false;
+        },
+        isDebugMetricsTab: function(url) {
+            return this.checkTabUrl({
+                url: url,
+                matchString: "debugMetrics"
             });
         },
         isGlossaryTab: function(url) {

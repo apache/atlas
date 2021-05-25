@@ -47,6 +47,7 @@ import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.util.FileUtils;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
@@ -364,6 +365,27 @@ public class AtlasGraphUtilsV2 {
         RequestContext.get().endMetricRecord(metric);
 
         return vertex;
+    }
+
+    public static String findFirstDeletedDuringSpooledByQualifiedName(String qualifiedName, long timestamp) {
+        return findFirstDeletedDuringSpooledByQualifiedName(getGraphInstance(), qualifiedName, timestamp);
+    }
+
+    public static String findFirstDeletedDuringSpooledByQualifiedName(AtlasGraph graph, String qualifiedName, long timestamp) {
+        MetricRecorder metric = RequestContext.get().startMetricRecord("findDeletedDuringSpooledByQualifiedName");
+
+        AtlasGraphQuery query = graph.query().has(STATE_PROPERTY_KEY, Status.DELETED.name())
+                                             .has(Constants.ENTITY_DELETED_TIMESTAMP_PROPERTY_KEY, AtlasGraphQuery.ComparisionOperator.GREATER_THAN, timestamp)
+                                             .has(Constants.QUALIFIED_NAME, qualifiedName)
+                                             .orderBy(Constants.ENTITY_DELETED_TIMESTAMP_PROPERTY_KEY, ASC);
+
+        Iterator iterator = query.vertices().iterator();
+
+        String ret = iterator.hasNext() ? GraphHelper.getGuid((AtlasVertex) iterator.next()) : null;
+
+        RequestContext.get().endMetricRecord(metric);
+
+        return ret;
     }
 
     public static AtlasVertex findByGuid(String guid) {
@@ -841,4 +863,29 @@ public class AtlasGraphUtilsV2 {
         return ret;
     }
 
+    public static void addItemToListProperty(AtlasEdge edge, String property, String value) {
+        List list = getListFromProperty(edge, property);
+
+        list.add(value);
+
+        edge.setListProperty(property, list);
+    }
+
+    public static void removeItemFromListProperty(AtlasEdge edge, String property, String value) {
+        List list = getListFromProperty(edge, property);
+
+        list.remove(value);
+
+        if (CollectionUtils.isEmpty(list)) {
+            edge.removeProperty(property);
+        } else {
+            edge.setListProperty(property, list);
+        }
+    }
+
+    private static List getListFromProperty(AtlasEdge edge, String property) {
+        List list = edge.getListProperty(property);
+
+        return CollectionUtils.isEmpty(list) ? new ArrayList() : list;
+    }
 }

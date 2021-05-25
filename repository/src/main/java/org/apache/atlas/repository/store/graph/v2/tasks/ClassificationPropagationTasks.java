@@ -45,21 +45,6 @@ public class ClassificationPropagationTasks {
         }
     }
 
-    public static class Update extends ClassificationTask {
-        public Update(AtlasTask task, AtlasGraph graph, EntityGraphMapper entityGraphMapper, DeleteHandlerDelegate deleteDelegate, AtlasRelationshipStore relationshipStore) {
-            super(task, graph, entityGraphMapper, deleteDelegate, relationshipStore);
-        }
-
-        @Override
-        protected void run(Map<String, Object> parameters) throws AtlasBaseException {
-            String entityGuid             = (String) parameters.get(PARAM_ENTITY_GUID);
-            String classificationVertexId = (String) parameters.get(PARAM_CLASSIFICATION_VERTEX_ID);
-            String relationshipGuid       = (String) parameters.get(PARAM_RELATIONSHIP_GUID);
-
-            entityGraphMapper.updateClassificationsPropagation(entityGuid, classificationVertexId, relationshipGuid);
-        }
-    }
-
     public static class Delete extends ClassificationTask {
         public Delete(AtlasTask task, AtlasGraph graph, EntityGraphMapper entityGraphMapper, DeleteHandlerDelegate deleteDelegate, AtlasRelationshipStore relationshipStore) {
             super(task, graph, entityGraphMapper, deleteDelegate, relationshipStore);
@@ -67,9 +52,10 @@ public class ClassificationPropagationTasks {
 
         @Override
         protected void run(Map<String, Object> parameters) throws AtlasBaseException {
+            String entityGuid             = (String) parameters.get(PARAM_ENTITY_GUID);
             String classificationVertexId = (String) parameters.get(PARAM_CLASSIFICATION_VERTEX_ID);
 
-            entityGraphMapper.deleteClassificationPropagation(classificationVertexId);
+            entityGraphMapper.deleteClassificationPropagation(entityGuid, classificationVertexId);
         }
     }
 

@@ -215,7 +215,8 @@ define(['require',
             onSelectDepthChange: function(e, options) {
                 //this.initializeGraph();
                 this.filterObj.depthCount = e.currentTarget.value;
-                this.fetchGraphData({ queryParam: { 'depth': this.filterObj.depthCount } });
+                //legends property is added in queryParam to stop the legend getting added in lineage graph whenever dept is changed. 
+                this.fetchGraphData({ queryParam: { 'depth': this.filterObj.depthCount }, 'legends': false });
             },
             onClickResetLineage: function() {
                 this.LineageHelperRef.refresh();
@@ -235,7 +236,7 @@ define(['require',
             },
             onClickLabelFullName: function() {
                 this.labelFullText = !this.labelFullText;
-                this.LineageHelperRef.displayFullName({ bLabelFullText : this.labelFullText });
+                this.LineageHelperRef.displayFullName({ bLabelFullText: this.labelFullText });
             },
             fetchGraphData: function(options) {
                 var that = this,
@@ -252,7 +253,7 @@ define(['require',
                         if (that.isDestroyed) {
                             return;
                         }
-
+                        data["legends"] = options ? options.legends : true;
                         that.createGraph(data);
                         that.renderLineageTypeSearch(data);
                     },
@@ -268,12 +269,12 @@ define(['require',
             createGraph: function(data) {
                 var that = this;
                 $('.resizeGraph').css("height", this.$('.svg').height() + "px");
-
                 this.LineageHelperRef = new LineageHelper.default({
                     entityDefCollection: this.entityDefCollection.fullCollection.toJSON(),
                     data: data,
                     el: this.$('.svg')[0],
                     legendsEl: this.$('.legends')[0],
+                    legends: data.legends,
                     getFilterObj: function() {
                         return {
                             isProcessHideCheck: that.filterObj.isProcessHideCheck,
@@ -416,7 +417,7 @@ define(['require',
                 var data = {};
                 _.each(config, function(valKey, key) {
                     var val = initialData[key];
-                    if (_.isUndefined(val) && initialData.attributes[key]) {
+                    if (_.isUndefined(val) && initialData.attributes && initialData.attributes[key]) {
                         val = initialData.attributes[key];
                     }
                     if (val) {
@@ -430,16 +431,16 @@ define(['require',
                     "sortBy": false
                 }));
             },
-            calculateLineageDetailPanelHeight: function(){
+            calculateLineageDetailPanelHeight: function() {
                 var $parentContainer = $('#tab-lineage .resizeGraph'),
                     $panel = $parentContainer.find('.fix-box');
                 var $parentHeight = $parentContainer.find('.fix-box, tbody').removeAttr('style').height() - 48, // 48px is the Panels top from the parent container
                     $tBody = $panel.find('tbody'),
-                    panelHeight = $tBody.height() + 100; 
-                if($parentHeight < panelHeight){
+                    panelHeight = $tBody.height() + 100;
+                if ($parentHeight < panelHeight) {
                     panelHeight = $parentHeight;
                 }
-                $panel.css('height', panelHeight  + 'px');
+                $panel.css('height', panelHeight + 'px');
                 $tBody.css('height', '100%');
             }
         });

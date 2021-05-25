@@ -21,6 +21,8 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria;
 import org.apache.atlas.model.discovery.SearchParameters.Operator;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
@@ -32,6 +34,9 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 
 import static org.apache.atlas.repository.Constants.CUSTOM_ATTRIBUTES_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.CLASSIFICATION_NAMES_KEY;
+import static org.apache.atlas.repository.Constants.PROPAGATED_CLASSIFICATION_NAMES_KEY;
+import static org.apache.atlas.repository.Constants.LABELS_PROPERTY_KEY;
 
 public class AtlasSolrQueryBuilder {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasSolrQueryBuilder.class);
@@ -207,7 +212,32 @@ public class AtlasSolrQueryBuilder {
                         attributeValue = getIndexQueryAttributeValue(attributeValue);
                     }
 
-                    withPropertyCondition(sb, indexAttributeName, operator, attributeValue);
+                    if (attributeValue != null) {
+                        attributeValue = attributeValue.trim();
+                    }
+
+                    //when wildcard search -> escape special Char, don't quote
+                    //      when  tokenized characters + index field Type TEXT -> remove wildcard '*' from query
+
+                    //'CONTAINS and NOT_CONTAINS' operator with tokenize char in attributeValue doesn't guarantee correct results
+                    // for aggregationMetrics
+                    boolean replaceWildcardChar = false;
+
+                    AtlasStructDef.AtlasAttributeDef def = type.getAttributeDef(attributeName);
+                    if (!isPipeSeparatedSystemAttribute(attributeName)
+                            && isWildCardOperator(operator)
+                            && def.getTypeName().equalsIgnoreCase(AtlasBaseTypeDef.ATLAS_TYPE_STRING)) {
+
+                        if (def.getIndexType() == null && AtlasAttribute.hastokenizeChar(attributeValue)) {
+                            replaceWildcardChar = true;
+                        }
+                        attributeValue  = AtlasAttribute.escapeIndexQueryValue(attributeValue, false, false);
+
+                    } else {
+                        attributeValue  = AtlasAttribute.escapeIndexQueryValue(attributeValue);
+                    }
+
+                    withPropertyCondition(sb, indexAttributeName, operator, attributeValue, replaceWildcardChar);
                     indexAttributes.add(indexAttributeName);
                     orExpQuery.add(sb);
                 }
@@ -241,12 +271,8 @@ public class AtlasSolrQueryBuilder {
         return this;
     }
 
-    private void withPropertyCondition(StringBuilder queryBuilder, String indexFieldName, Operator operator, String attributeValue) throws AtlasBaseException {
+    private void withPropertyCondition(StringBuilder queryBuilder, String indexFieldName, Operator operator, String attributeValue, boolean replaceWildCard) throws AtlasBaseException {
         if (StringUtils.isNotEmpty(indexFieldName) && operator != null) {
-            if (attributeValue != null) {
-                attributeValue = attributeValue.trim();
-            }
-
             beginCriteria(queryBuilder);
 
             switch (operator) {
@@ -257,16 +283,16 @@ public class AtlasSolrQueryBuilder {
                     withNotEqual(queryBuilder, indexFieldName, attributeValue);
                     break;
                 case STARTS_WITH:
-                    withStartsWith(queryBuilder, indexFieldName, attributeValue);
+                    withStartsWith(queryBuilder, indexFieldName, attributeValue, replaceWildCard);
                     break;
                 case ENDS_WITH:
-                    withEndsWith(queryBuilder, indexFieldName, attributeValue);
+                    withEndsWith(queryBuilder, indexFieldName, attributeValue, replaceWildCard);
                     break;
                 case CONTAINS:
-                    withContains(queryBuilder, indexFieldName, attributeValue);
+                    withContains(queryBuilder, indexFieldName, attributeValue, replaceWildCard);
                     break;
                 case NOT_CONTAINS:
-                    withNotContains(queryBuilder, indexFieldName, attributeValue);
+                    withNotContains(queryBuilder, indexFieldName, attributeValue, replaceWildCard);
                     break;
                 case IS_NULL:
                     withIsNull(queryBuilder, indexFieldName);
@@ -298,6 +324,20 @@ public class AtlasSolrQueryBuilder {
 
             endCriteria(queryBuilder);
         }
+    }
+
+    private boolean isPipeSeparatedSystemAttribute(String attrName) {
+        return StringUtils.equals(attrName, CLASSIFICATION_NAMES_KEY) ||
+                StringUtils.equals(attrName, PROPAGATED_CLASSIFICATION_NAMES_KEY) ||
+                StringUtils.equals(attrName, LABELS_PROPERTY_KEY) ||
+                StringUtils.equals(attrName, CUSTOM_ATTRIBUTES_PROPERTY_KEY);
+    }
+
+    private boolean isWildCardOperator(Operator operator) {
+        return (operator == Operator.CONTAINS ||
+                operator == Operator.STARTS_WITH ||
+                operator == Operator.ENDS_WITH ||
+                operator == Operator.NOT_CONTAINS);
     }
 
     private String getIndexQueryAttributeValue(String attributeValue) {
@@ -347,12 +387,14 @@ public class AtlasSolrQueryBuilder {
         queryBuilder.append(" )");
     }
 
-    private void withEndsWith(StringBuilder queryBuilder, String indexFieldName, String attributeValue) {
-        queryBuilder.append("+").append(indexFieldName).append(":*").append(attributeValue).append(" ");
+    private void withEndsWith(StringBuilder queryBuilder, String indexFieldName, String attributeValue, boolean replaceWildCard) {
+        String attrValuePrefix = replaceWildCard ? ":" : ":*";
+        queryBuilder.append("+").append(indexFieldName).append(attrValuePrefix).append(attributeValue).append(" ");
     }
 
-    private void withStartsWith(StringBuilder queryBuilder, String indexFieldName, String attributeValue) {
-        queryBuilder.append("+").append(indexFieldName).append(":").append(attributeValue).append("* ");
+    private void withStartsWith(StringBuilder queryBuilder, String indexFieldName, String attributeValue, boolean replaceWildCard) {
+        String attrValuePostfix = replaceWildCard ? " " : "* ";
+        queryBuilder.append("+").append(indexFieldName).append(":").append(attributeValue).append(attrValuePostfix);
     }
 
     private void withNotEqual(StringBuilder queryBuilder, String indexFieldName, String attributeValue) {
@@ -391,12 +433,19 @@ public class AtlasSolrQueryBuilder {
         queryBuilder.append("+").append(indexFieldName).append(":[ * TO ").append(attributeValue).append(" ] ");
     }
 
-    private void withContains(StringBuilder queryBuilder, String indexFieldName, String attributeValue) {
-        queryBuilder.append("+").append(indexFieldName).append(":*").append(attributeValue).append("* ");
+    private void withContains(StringBuilder queryBuilder, String indexFieldName, String attributeValue, boolean replaceWildCard) {
+        String attrValuePrefix  = replaceWildCard ? ":" : ":*";
+        String attrValuePostfix = replaceWildCard ? " " : "* ";
+
+        queryBuilder.append("+").append(indexFieldName).append(attrValuePrefix).append(attributeValue).append(attrValuePostfix);
     }
 
-    private void withNotContains(StringBuilder queryBuilder, String indexFieldName, String attributeValue) {
-        queryBuilder.append("*:* -").append(indexFieldName).append(":*").append(attributeValue).append("* ");
+    private void withNotContains(StringBuilder queryBuilder, String indexFieldName, String attributeValue, boolean replaceWildCard) {
+        String attrValuePrefix  = replaceWildCard ? ":" : ":*";
+        String attrValuePostfix = replaceWildCard ? " " : "* ";
+
+        queryBuilder.append("*:* -").append(indexFieldName).append(attrValuePrefix).append(attributeValue).append(attrValuePostfix);
+
     }
 
     private void withIsNull(StringBuilder queryBuilder, String indexFieldName) {

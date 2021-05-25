@@ -32,6 +32,8 @@ public abstract class EntityPreprocessor {
     public static final String TYPE_HIVE_PROCESS        = "hive_process";
     public static final String TYPE_HIVE_STORAGEDESC    = "hive_storagedesc";
     public static final String TYPE_HIVE_DB             = "hive_db";
+    public static final String TYPE_HIVE_DB_DDL         = "hive_db_ddl";
+    public static final String TYPE_HIVE_TABLE_DDL      = "hive_table_ddl";
     public static final String TYPE_HIVE_TABLE          = "hive_table";
     public static final String TYPE_RDBMS_INSTANCE      = "rdbms_instance";
     public static final String TYPE_RDBMS_DB            = "rdbms_db";
@@ -71,11 +73,13 @@ public abstract class EntityPreprocessor {
     static {
         EntityPreprocessor[] hivePreprocessors = new EntityPreprocessor[] {
                                                                     new HivePreprocessor.HiveDbPreprocessor(),
+                                                                    new HiveDbDDLPreprocessor(),
                                                                     new HivePreprocessor.HiveTablePreprocessor(),
                                                                     new HivePreprocessor.HiveColumnPreprocessor(),
                                                                     new HivePreprocessor.HiveProcessPreprocessor(),
                                                                     new HivePreprocessor.HiveColumnLineageProcessPreprocessor(),
-                                                                    new HivePreprocessor.HiveStorageDescPreprocessor()
+                                                                    new HivePreprocessor.HiveStorageDescPreprocessor(),
+                                                                    new HiveTableDDLPreprocessor()
         };
 
         EntityPreprocessor[] rdbmsPreprocessors = new EntityPreprocessor[] {
@@ -156,6 +160,16 @@ public abstract class EntityPreprocessor {
         Object ret = attributes != null ? attributes.get(ATTRIBUTE_QUALIFIED_NAME) : null;
 
         return ret != null ? ret.toString() : null;
+    }
+
+    public void setObjectIdWithGuid(Object obj, String guid) {
+        if (obj instanceof AtlasObjectId) {
+            AtlasObjectId objectId = (AtlasObjectId) obj;
+            objectId.setGuid(guid);
+        } else if (obj instanceof Map) {
+            Map map = (Map) obj;
+            map.put("guid", guid);
+        }
     }
 
     protected boolean isEmpty(Object obj) {

@@ -793,7 +793,6 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 }));
             }
         }
-
     }
     CommonViewFunction.removeCategoryTermAssociation = function(options) {
         if (options) {
@@ -864,13 +863,10 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
         }
     }
     CommonViewFunction.addRestCsrfCustomHeader = function(xhr, settings) {
-        if (settings.url == null) {
-            return;
-        }
-        var method = settings.type;
-        if (CommonViewFunction.restCsrfCustomHeader != null && !CommonViewFunction.restCsrfMethodsToIgnore[method]) {
-            // The value of the header is unimportant.  Only its presence matters.
-            xhr.setRequestHeader(CommonViewFunction.restCsrfCustomHeader, '""');
+        if (null != settings.url) {
+            var method = settings.type;
+            var csrfToken = CommonViewFunction.restCsrfValue;
+            null == CommonViewFunction.restCsrfCustomHeader || CommonViewFunction.restCsrfMethodsToIgnore[method] || xhr.setRequestHeader(CommonViewFunction.restCsrfCustomHeader, csrfToken);
         }
     }
     CommonViewFunction.restCsrfCustomHeader = null;
@@ -900,16 +896,14 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                             var str = "" + response['atlas.rest-csrf.enabled'];
                             csrfEnabled = (str.toLowerCase() == 'true');
                         }
-                        if (response['atlas.rest-csrf.custom-header']) {
-                            header = response['atlas.rest-csrf.custom-header'].trim();
-                        }
-                        if (response['atlas.rest-csrf.methods-to-ignore']) {
-                            methods = getTrimmedStringArrayValue(response['atlas.rest-csrf.methods-to-ignore']);
-                        }
-                        if (csrfEnabled) {
-                            CommonViewFunction.restCsrfCustomHeader = header;
-                            CommonViewFunction.restCsrfMethodsToIgnore = {};
-                            methods.map(function(method) { CommonViewFunction.restCsrfMethodsToIgnore[method] = true; });
+                        if (response["atlas.rest-csrf.custom-header"] && (header = response["atlas.rest-csrf.custom-header"].trim()),
+                            response["atlas.rest-csrf.methods-to-ignore"] && (methods = getTrimmedStringArrayValue(response["atlas.rest-csrf.methods-to-ignore"])),
+                            csrfEnabled) {
+                            CommonViewFunction.restCsrfCustomHeader = header, CommonViewFunction.restCsrfMethodsToIgnore = {},
+                                CommonViewFunction.restCsrfValue = response["_csrfToken"] || '""',
+                                methods.map(function(method) {
+                                    CommonViewFunction.restCsrfMethodsToIgnore[method] = !0;
+                                });
                             var statusCodeErrorFn = function(error) {
                                 Utils.defaultErrorHandler(null, error)
                             }

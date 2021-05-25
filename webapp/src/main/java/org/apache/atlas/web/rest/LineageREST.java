@@ -20,6 +20,7 @@ package org.apache.atlas.web.rest;
 
 
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.discovery.AtlasLineageService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
@@ -30,7 +31,6 @@ import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Service;
@@ -89,6 +89,7 @@ public class LineageREST {
      */
     @GET
     @Path("/{guid}")
+    @Timed
     public AtlasLineageInfo getLineageGraph(@PathParam("guid") String guid,
                                             @QueryParam("direction") @DefaultValue(DEFAULT_DIRECTION)  LineageDirection direction,
                                             @QueryParam("depth") @DefaultValue(DEFAULT_DEPTH) int depth) throws AtlasBaseException {
@@ -130,6 +131,7 @@ public class LineageREST {
     @Path("/uniqueAttribute/type/{typeName}")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Timed
     public AtlasLineageInfo getLineageByUniqueAttribute(@PathParam("typeName") String typeName, @QueryParam("direction") @DefaultValue(DEFAULT_DIRECTION) LineageDirection direction,
                                                         @QueryParam("depth") @DefaultValue(DEFAULT_DEPTH) int depth, @Context HttpServletRequest servletRequest) throws AtlasBaseException {
         Servlets.validateQueryParamLength("typeName", typeName);

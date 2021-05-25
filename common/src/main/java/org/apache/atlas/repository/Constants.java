@@ -94,7 +94,7 @@ public final class Constants {
     public static final String PROPAGATED_CLASSIFICATION_NAMES_KEY  = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "propagatedClassificationNames");
     public static final String CUSTOM_ATTRIBUTES_PROPERTY_KEY       = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "customAttributes");
     public static final String LABELS_PROPERTY_KEY                  = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "labels");
-    public static final String PENDING_TASKS_PROPERTY_KEY           = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "pendingTasks");
+    public static final String EDGE_PENDING_TASKS_PROPERTY_KEY      = encodePropertyKey(RELATIONSHIP_PROPERTY_KEY_PREFIX + "__pendingTasks");
 
     /**
      * Patch vertices property keys.
@@ -134,6 +134,8 @@ public final class Constants {
     public static final String PROVENANCE_TYPE_KEY    = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "provenanceType");
 
     public static final String TIMESTAMP_PROPERTY_KEY = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "timestamp");
+
+    public static final String ENTITY_DELETED_TIMESTAMP_PROPERTY_KEY = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "entityDeletedTimestamp");
 
     public static final String MODIFICATION_TIMESTAMP_PROPERTY_KEY = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "modificationTimestamp");
 
