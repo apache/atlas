@@ -99,6 +99,7 @@ define([
                     autoProcessQueue: false,
                     maxFiles: 1,
                     addRemoveLinks: true,
+                    timeout: 0,
                     init: function() {
                         that.dropzone = this;
                         this.on('addedfile', function(file) {
