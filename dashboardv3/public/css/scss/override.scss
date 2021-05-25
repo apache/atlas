@@ -267,6 +267,11 @@
     cursor: pointer;
 }
 
+.metricsUIInfo {
+    font-size: 20px !important;
+    margin-right: 5px;
+}
+
 .query-builder {
     .rule-container {
         margin: 6px 0;
@@ -559,4 +564,8 @@ div.columnmanager-dropdown-container {
 
 .dropzone .dz-preview .dz-details .dz-filename {
     padding-top: 20px;
+}
+
+.tooltip-inner {
+    max-width: 250px;
 }

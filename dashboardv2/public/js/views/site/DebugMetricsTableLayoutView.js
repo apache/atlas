@@ -37,7 +37,8 @@ define(['require',
             },
             /** ui selector cache */
             ui: {
-                refreshMetricsBtn: '[data-id="refreshMetricsBtn"]'
+                refreshMetricsBtn: '[data-id="refreshMetricsBtn"]',
+                metricsInfoBtn: '[data-id="metricsInfo"]'
             },
             /** ui events hash */
             events: function() {
@@ -49,6 +50,7 @@ define(['require',
                     this.debugMetricsCollection.state.currentPage = 0;
                     this.fetchMetricData();
                 };
+                events["click " + this.ui.metricsInfoBtn] = 'metricsInfo';
                 return events;
             },
             /**
@@ -90,6 +92,24 @@ define(['require',
                 this.$('.debug-metrics-table').show();
                 this.fetchMetricData();
             },
+            metricsInfo: function(e) {
+                require([
+                    'views/site/MetricsUIInfoView',
+                    'modules/Modal'
+                ], function(MetricsUIInfoView, Modal) {
+                    var view = new MetricsUIInfoView();
+                    var modal = new Modal({
+                        title: 'Debug Metrics',
+                        content: view,
+                        okCloses: true,
+                        showFooter: false,
+                        allowCancel: false
+                    }).open();
+                    view.on('closeModal', function() {
+                        modal.trigger('cancel');
+                    });
+                });
+            },
             fetchMetricData: function(options) {
                 var that = this;
                 this.debugMetricsCollection.fetch({
@@ -98,7 +118,7 @@ define(['require',
                             metricsDataKeys = data ? Object.keys(data) : null;
                         that.debugMetricsCollection.fullCollection.reset();
                         _.each(metricsDataKeys.sort(), function(keyName) {
-                            that.debugMetricsCollection.add(data[keyName]);
+                            that.debugMetricsCollection.fullCollection.add(data[keyName]);
                         });
                     },
                     complete: function(data) {
@@ -118,6 +138,9 @@ define(['require',
                     }
                 });
             },
+            millisecondsToSeconds: function(rawValue) {
+                return parseFloat((rawValue % 60000) / 1000).toFixed(3);
+            },
             getAuditTableColumns: function() {
                 var that = this;
                 return this.debugMetricsCollection.constructor.getTableCols({
@@ -130,39 +153,43 @@ define(['require',
                     numops: {
                         label: "Count",
                         cell: "html",
+                        toolTip: "Number of times the API has been hit since Atlas started",
                         sortable: true,
                         editable: false
                     },
                     minTime: {
                         label: "Min Time (secs)",
                         cell: "html",
+                        toolTip: "Minimum API execution time since Atlas started",
                         sortable: true,
                         editable: false,
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
-                                return parseFloat((rawValue % 1000) / 100).toFixed(3);
+                                return that.millisecondsToSeconds(rawValue);
                             }
                         })
                     },
                     maxTime: {
                         label: "Max Time (secs)",
                         cell: "html",
+                        toolTip: "Maximum API execution time since Atlas started",
                         sortable: true,
                         editable: false,
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
-                                return parseFloat((rawValue % 1000) / 100).toFixed(3);
+                                return that.millisecondsToSeconds(rawValue);
                             }
                         })
                     },
                     avgTime: {
                         label: "Average Time (secs)",
                         cell: "html",
+                        toolTip: "Average time taken to execute by an API within an interval of time",
                         sortable: true,
                         editable: false,
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
-                                return parseFloat((rawValue % 1000) / 100).toFixed(3);
+                                return that.millisecondsToSeconds(rawValue);
                             }
                         })
                     }
