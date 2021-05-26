@@ -616,13 +616,23 @@ define(['require',
             },
             onNotifyOk: function(data) {
                 var that = this,
-                    deleteTagData = this.collection.fullCollection.findWhere({ name: this.tag });
+                    deleteTagData = this.collection.fullCollection.findWhere({ name: this.tag }),
+                    superTypeOfDeleteTag = deleteTagData.get('superTypes'),
+                    superTypeObj = superTypeOfDeleteTag ? this.collection.fullCollection.findWhere({ name: superTypeOfDeleteTag[0] }) : null;
+
                 deleteTagData.deleteTag({
                     typeName: that.tag,
                     success: function() {
                         Utils.notifySuccess({
                             content: "Classification " + that.tag + Messages.getAbbreviationMsg(false, 'deleteSuccessMessage')
                         });
+                        //delete current classification from subTypes list of parent classification if any
+                        if (superTypeObj) {
+                            var parentSubTypeUpdate = _.reject(superTypeObj.get('subTypes'), function(subtype) {
+                                return subtype === that.tag;
+                            });
+                            superTypeObj.set('subTypes', parentSubTypeUpdate);
+                        }
                         // if deleted tag is prviously searched then remove that tag url from save state of tab.
                         var searchUrl = Globals.saveApplicationState.tabState.searchUrl;
                         var urlObj = Utils.getUrlState.getQueryParams(searchUrl);
