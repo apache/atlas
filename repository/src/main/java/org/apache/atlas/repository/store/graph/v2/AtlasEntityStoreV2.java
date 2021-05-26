@@ -1592,7 +1592,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             String bmAttributeValue = record[FileUtils.BM_ATTR_VALUE_COLUMN_INDEX];
             String uniqueAttrName   = AtlasTypeUtil.ATTRIBUTE_QUALIFIED_NAME;
 
-            if (record.length > FileUtils.UNIQUE_ATTR_NAME_COLUMN_INDEX) {
+            if (record.length > FileUtils.UNIQUE_ATTR_NAME_COLUMN_INDEX && StringUtils.isNotBlank(record[FileUtils.UNIQUE_ATTR_NAME_COLUMN_INDEX])) {
                 uniqueAttrName = record[FileUtils.UNIQUE_ATTR_NAME_COLUMN_INDEX];
             }
 
@@ -1628,7 +1628,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             AtlasBusinessAttribute businessAttribute = entityType.getBusinesAAttribute(bmAttribute);
 
             if (businessAttribute == null) {
-                failedMsgList.add("Line #" + (lineIndex + 1) + ": invalid business attribute name '" + bmAttribute + "'");
+                failedMsgList.add("Line #" + (lineIndex + 1) + ": invalid business-metadata '"+ bmAttribute + "' for entity type '" + entityType.getTypeName() + "'");
 
                 continue;
             }
