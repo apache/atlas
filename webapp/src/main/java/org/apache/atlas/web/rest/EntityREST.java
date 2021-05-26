@@ -21,6 +21,7 @@ import com.sun.jersey.core.header.FormDataContentDisposition;
 import com.sun.jersey.multipart.FormDataParam;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.EntityAuditEvent;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasEntityAccessRequest;
@@ -790,7 +791,10 @@ public class EntityREST {
     }
 
     /**
-     * Bulk API to associate a tag to multiple entities
+     * Bulk API to associate a tag to multiple entities.
+     * Option 1: List of GUIDs to associate a tag
+     * Option 2: Typename and list of uniq attributes for entities to associate a tag
+     * Option 3: List of GUIDs and Typename with list of uniq attributes for entities to associate a tag
      */
     @POST
     @Path("/bulk/classification")
@@ -803,15 +807,49 @@ public class EntityREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.addClassification(" + request  + ")");
             }
 
-            AtlasClassification classification = request == null ? null : request.getClassification();
-            List<String>        entityGuids    = request == null ? null : request.getEntityGuids();
+            AtlasClassification       classification           = request == null ? null : request.getClassification();
+            List<String>              entityGuids              = request == null ? null : request.getEntityGuids();
+            List<Map<String, Object>> entitiesUniqueAttributes = request == null ? null : request.getEntitiesUniqueAttributes();
+            String                    entityTypeName           = request == null ? null : request.getEntityTypeName();
 
             if (classification == null || StringUtils.isEmpty(classification.getTypeName())) {
                 throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "no classification");
             }
 
-            if (CollectionUtils.isEmpty(entityGuids)) {
-                throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "empty guid list");
+            if (hasNoGUIDAndTypeNameAttributes(request)) {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Need either list of GUIDs or entity type and list of qualified Names");
+            }
+
+            if (CollectionUtils.isNotEmpty(entitiesUniqueAttributes) && entityTypeName != null) {
+                AtlasEntityType entityType = ensureEntityType(entityTypeName);
+
+                if (CollectionUtils.isEmpty(entityGuids)) {
+                    entityGuids = new ArrayList<>();
+                }
+
+                for (Map<String, Object> eachEntityAttributes : entitiesUniqueAttributes) {
+                    try {
+                        String guid = entitiesStore.getGuidByUniqueAttributes(entityType, eachEntityAttributes);
+
+                        if (guid != null) {
+                            entityGuids.add(guid);
+                        }
+                    } catch (AtlasBaseException e) {
+                        if (RequestContext.get().isSkipFailedEntities()) {
+                            if (LOG.isDebugEnabled()) {
+                                LOG.debug("getByIds(): ignoring failure for entity with unique attributes {} and typeName {}: error code={}, message={}", eachEntityAttributes, entityTypeName, e.getAtlasErrorCode(), e.getMessage());
+                            }
+
+                            continue;
+                        }
+
+                        throw e;
+                    }
+                }
+
+                if (CollectionUtils.isEmpty(entityGuids)) {
+                    throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "No guid found for given entity Type Name and list of attributes");
+                }
             }
 
             entitiesStore.addClassification(entityGuids, classification);
@@ -1297,5 +1335,10 @@ public class EntityREST {
         }
 
         return ret;
+    }
+
+    private boolean hasNoGUIDAndTypeNameAttributes(ClassificationAssociateRequest request) {
+        return (request == null || (CollectionUtils.isEmpty(request.getEntityGuids()) &&
+                (CollectionUtils.isEmpty(request.getEntitiesUniqueAttributes()) || request.getEntityTypeName() == null)));
     }
 }
