@@ -54,14 +54,14 @@ public class IndexManagement {
     public void init() throws IOException, AtlasException {
         String sourceName = config.getSourceName();
 
-        File spoolDir = SpoolUtils.getCreateDirectory(config.getSpoolDir());
-
+        File spoolDir = SpoolUtils.getCreateDirectoryWithPermissionCheck(config.getSpoolDir(), config.getUser());
         if (spoolDir == null) {
             throw new AtlasException(String.format("%s: %s not found or inaccessible!", sourceName, spoolDir.getAbsolutePath()));
         }
 
-        File archiveDir = SpoolUtils.getCreateDirectory(config.getArchiveDir());
+        config.setSpoolDir(spoolDir.getAbsolutePath());
 
+        File archiveDir = SpoolUtils.getCreateDirectory(config.getArchiveDir());
         if (archiveDir == null) {
             throw new AtlasException(String.format("%s: %s not found or inaccessible!", sourceName, archiveDir.getAbsolutePath()));
         }

@@ -41,6 +41,7 @@ public class AtlasFileSpool implements NotificationInterface {
     private final Publisher            publisher;
     private       Thread               publisherThread;
     private       Boolean              initDone = null;
+    private       String               currentUser;
 
     public AtlasFileSpool(Configuration configuration, AbstractNotification notificationHandler) {
         this.notificationHandler = notificationHandler;
@@ -56,7 +57,7 @@ public class AtlasFileSpool implements NotificationInterface {
 
         if (!isInitDone()) {
             try {
-                config.setSource(source);
+                config.setSource(source, this.currentUser);
 
                 LOG.info("{}: Initialization: Starting...", this.config.getSourceName());
 
@@ -86,6 +87,7 @@ public class AtlasFileSpool implements NotificationInterface {
     @Override
     public void setCurrentUser(String user) {
         this.notificationHandler.setCurrentUser(user);
+        this.currentUser = user;
     }
 
     @Override

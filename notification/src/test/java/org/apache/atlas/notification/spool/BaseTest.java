@@ -50,7 +50,7 @@ public class BaseTest {
 
     public SpoolConfiguration getSpoolConfiguration(String spoolDir, String handlerName) {
         SpoolConfiguration cfg = new SpoolConfiguration(getConfiguration(spoolDir), handlerName);
-        cfg.setSource(SOURCE_TEST);
+        cfg.setSource(SOURCE_TEST, "testuser");
         return cfg;
     }
 
