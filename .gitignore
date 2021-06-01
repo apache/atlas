@@ -76,3 +76,6 @@ distro/solr/*.tgz
 # emacs files
 *#
 *~
+
+# webapp
+/webapp/overlays/
