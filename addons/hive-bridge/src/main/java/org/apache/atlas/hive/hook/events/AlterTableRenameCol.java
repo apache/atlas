@@ -69,7 +69,6 @@ public class AlterTableRenameCol extends AlterTable {
 
     public List<HookNotification> getHiveMessages() throws Exception {
         List<HookNotification> baseMsgs = super.getNotificationMessages();
-        List<HookNotification> ret      = new ArrayList<>(baseMsgs);
 
         if (CollectionUtils.isEmpty(getInputs())) {
             LOG.error("AlterTableRenameCol: old-table not found in inputs list");
@@ -89,8 +88,9 @@ public class AlterTableRenameCol extends AlterTable {
             return null;
         }
 
-        Table oldTable = getInputs().iterator().next().getTable();
-        Table newTable = getOutputs().iterator().next().getTable();
+        List<HookNotification> ret      = new ArrayList<>(baseMsgs);
+        Table                  oldTable = getInputs().iterator().next().getTable();
+        Table                  newTable = getOutputs().iterator().next().getTable();
 
         if (newTable != null) {
             newTable = getHive().getTable(newTable.getDbName(), newTable.getTableName());
