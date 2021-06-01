@@ -37,6 +37,7 @@ import java.text.SimpleDateFormat;
 public class SpoolUtils {
     private static final Logger LOG = LoggerFactory.getLogger(SpoolUtils.class);
 
+    private static final String           USER_SPECIFIC_PATH_NAME_FORMAT = "%s-%s";
     public  static final String           DEFAULT_CHAR_SET              = "UTF-8";
     private static final String           DEFAULT_LINE_SEPARATOR        = System.getProperty("line.separator");
     private static final String           FILE_EXT_JSON                 = ".json";
@@ -72,6 +73,33 @@ public class SpoolUtils {
         return ret;
     }
 
+    public static File getCreateDirectoryWithPermissionCheck(File file, String user) {
+        File ret = getCreateDirectory(file);
+
+        LOG.info("SpoolUtils.getCreateDirectory({}): Checking permissions...");
+        if (!file.canWrite() || !file.canRead()) {
+            File fileWithUserSuffix = getFileWithUserSuffix(file, user);
+            LOG.error("SpoolUtils.getCreateDirectory({}, {}): Insufficient permissions for user: {}! Will create: {}",
+                    file.getAbsolutePath(), user, user, fileWithUserSuffix);
+            ret = getCreateDirectory(fileWithUserSuffix);
+        }
+
+        return ret;
+    }
+
+    private static File getFileWithUserSuffix(File file, String user) {
+        if (!file.isDirectory()) {
+            return file;
+        }
+
+        String absolutePath = file.getAbsolutePath();
+        if (absolutePath.endsWith(File.pathSeparator)) {
+            absolutePath = StringUtils.removeEnd(absolutePath, File.pathSeparator);
+        }
+
+        return new File(String.format(USER_SPECIFIC_PATH_NAME_FORMAT, absolutePath, user));
+    }
+
     public static File getCreateDirectory(File file) {
         File ret = file;
 
@@ -79,7 +107,7 @@ public class SpoolUtils {
             boolean result = file.mkdirs();
 
             if (!file.isDirectory() || !result) {
-                LOG.error("SpoolUtils.getCreateDirectory({}): inaccessible!", file.toString());
+                LOG.error("SpoolUtils.getCreateDirectory({}): cannot be created!", file);
 
                 ret = null;
             }

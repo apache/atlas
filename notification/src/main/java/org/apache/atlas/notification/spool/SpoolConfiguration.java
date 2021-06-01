@@ -40,19 +40,23 @@ public class SpoolConfiguration {
     public  static final String PROP_FILE_SPOOL_PAUSE_BEFORE_SEND_SEC           = PROPERTY_PREFIX_SPOOL + "pause.before.send.sec";
     private static final String PROP_HIVE_METASTORE_NAME                        = PROPERTY_PREFIX_SPOOL + "hivemetastore.name";
 
+    private final Configuration config;
+
     private final String messageHandlerName;
     private final int    maxArchivedFilesCount;
     private final int    messageBatchSize;
     private final int    retryDestinationMS;
     private final int    fileRollOverSec;
     private final int    fileSpoolMaxFilesCount;
-    private final String spoolDirPath;
-    private final String archiveDir;
+    private       String spoolDirPath;
+    private       String archiveDir;
     private final int    pauseBeforeSendSec;
     private final String hiveMetaStoreName;
     private       String sourceName;
+     private      String user;
 
     public SpoolConfiguration(Configuration cfg, String messageHandlerName) {
+        this.config = cfg;
         this.messageHandlerName     = messageHandlerName;
         this.maxArchivedFilesCount  = cfg.getInt(PROP_FILE_SPOOL_ARCHIVE_MAX_FILES_COUNT, PROP_FILE_SPOOL_ARCHIVE_MAX_FILES_COUNT_DEFAULT);
         this.messageBatchSize       = cfg.getInt(PROP_MESSAGE_BATCH_SIZE, PROP_FILE_MESSAGE_BATCH_SIZE_DEFAULT);
@@ -65,8 +69,9 @@ public class SpoolConfiguration {
         this.hiveMetaStoreName      = cfg.getString(PROP_HIVE_METASTORE_NAME, PROP_HIVE_METASTORE_NAME_DEFAULT);
     }
 
-    public void setSource(String val) {
-        this.sourceName = val;
+    public void setSource(String source, String user) {
+        this.sourceName = source;
+        this.user       = user;
     }
 
     public String getSourceName() {
@@ -97,7 +102,12 @@ public class SpoolConfiguration {
         return new File(getSpoolDirPath());
     }
 
+    public void setSpoolDir(String absolutePath) {
+        this.spoolDirPath = absolutePath;
+    }
+
     public File getArchiveDir() {
+        this.archiveDir = config.getString(PROP_FILE_SPOOL_ARCHIVE_DIR, new File(getSpoolDirPath(), PROP_FILE_SPOOL_ARCHIVE_DIR_DEFAULT).toString());
         return new File(this.archiveDir);
     }
 
@@ -135,5 +145,9 @@ public class SpoolConfiguration {
 
     public boolean isHiveMetaStore() {
         return this.sourceName.equals(this.hiveMetaStoreName);
+    }
+
+    public String getUser() {
+        return this.user;
     }
 }
