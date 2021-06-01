@@ -463,7 +463,7 @@ public class QuickStartV2 {
         entity.setAttribute(REFERENCEABLE_ATTRIBUTE_NAME, name + CLUSTER_SUFFIX);
         entity.setAttribute("description", description);
         entity.setAttribute("owner", owner);
-        entity.setAttribute("locationuri", locationUri);
+        entity.setAttribute("locationUri", locationUri);
         entity.setAttribute("createTime", System.currentTimeMillis());
 
         // set classifications
