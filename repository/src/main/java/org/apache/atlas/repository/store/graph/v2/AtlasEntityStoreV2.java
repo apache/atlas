@@ -1564,7 +1564,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         List<String>             failedMsgList = new ArrayList<>();
 
         for (int lineIndex = 0; lineIndex < fileData.size(); lineIndex++) {
-            String[] record = fileData.get(lineIndex);
+            String[] record         = fileData.get(lineIndex);
+            int      lineIndexToLog = lineIndex + 2;
 
             boolean missingFields = record.length < FileUtils.UNIQUE_ATTR_NAME_COLUMN_INDEX ||
                                     StringUtils.isBlank(record[FileUtils.TYPENAME_COLUMN_INDEX]) ||
@@ -1573,7 +1574,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                                     StringUtils.isBlank(record[FileUtils.BM_ATTR_VALUE_COLUMN_INDEX]);
 
             if (missingFields){
-                failedMsgList.add("Line #" + (lineIndex + 1) + ": missing fields. " + Arrays.toString(record));
+                failedMsgList.add("Line #" + lineIndexToLog + ": missing fields. " + Arrays.toString(record));
 
                 continue;
             }
@@ -1582,7 +1583,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
 
             if (entityType == null) {
-                failedMsgList.add("Line #" + (lineIndex + 1) + ": invalid entity-type '" + typeName + "'");
+                failedMsgList.add("Line #" + lineIndexToLog + ": invalid entity-type '" + typeName + "'");
 
                 continue;
             }
@@ -1599,13 +1600,13 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             AtlasAttribute uniqueAttribute = entityType.getAttribute(uniqueAttrName);
 
             if (uniqueAttribute == null) {
-                failedMsgList.add("Line #" + (lineIndex + 1) + ": attribute '" + uniqueAttrName + "' not found in entity-type '" + typeName + "'");
+                failedMsgList.add("Line #" + lineIndexToLog + ": attribute '" + uniqueAttrName + "' not found in entity-type '" + typeName + "'");
 
                 continue;
             }
 
             if (!uniqueAttribute.getAttributeDef().getIsUnique()) {
-                failedMsgList.add("Line #" + (lineIndex + 1) + ": attribute '" + uniqueAttrName + "' is not an unique attribute in entity-type '" + typeName + "'");
+                failedMsgList.add("Line #" + lineIndexToLog + ": attribute '" + uniqueAttrName + "' is not an unique attribute in entity-type '" + typeName + "'");
 
                 continue;
             }
@@ -1617,7 +1618,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 vertex = AtlasGraphUtilsV2.findByTypeAndUniquePropertyName(graph, typeName, uniqueAttribute.getVertexUniquePropertyName(), uniqueAttrValue);
 
                 if (vertex == null) {
-                    failedMsgList.add("Line #" + (lineIndex + 1) + ": no " + typeName + " entity found with " + uniqueAttrName + "=" + uniqueAttrValue);
+                    failedMsgList.add("Line #" + lineIndexToLog + ": no " + typeName + " entity found with " + uniqueAttrName + "=" + uniqueAttrValue);
 
                     continue;
                 }
@@ -1628,7 +1629,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             AtlasBusinessAttribute businessAttribute = entityType.getBusinesAAttribute(bmAttribute);
 
             if (businessAttribute == null) {
-                failedMsgList.add("Line #" + (lineIndex + 1) + ": invalid business-metadata '"+ bmAttribute + "' for entity type '" + entityType.getTypeName() + "'");
+                failedMsgList.add("Line #" + lineIndexToLog + ": invalid business-metadata '"+ bmAttribute + "' for entity type '" + entityType.getTypeName() + "'");
 
                 continue;
             }
@@ -1706,7 +1707,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                     return AtlasGraphUtilsV2.doubleParser(arr, failedTermMsgList, lineIndex);
 
                 case AtlasBaseTypeDef.ATLAS_TYPE_DATE:
-                    return AtlasGraphUtilsV2.dateParser(arr, failedTermMsgList, lineIndex);
+                    return AtlasGraphUtilsV2.longParser(arr, failedTermMsgList, lineIndex);
 
                 case AtlasBaseTypeDef.ATLAS_TYPE_BOOLEAN:
                     return AtlasGraphUtilsV2.booleanParser(arr, failedTermMsgList, lineIndex);
