@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
@@ -55,6 +56,9 @@ public class ActiveEntityFilterTest {
         assertMessageFromFile("hs2-alter-view");
         assertMessageFromFile("hs2-drop-table");
         assertAtlasEntitiesWithExtInfoFromFile("hs2-create-process");
+        assertAtlasEntitiesWithExtInfoFromFile("hs2-load-inpath");
+        assertAtlasEntitiesWithExtInfoFromFile("hs2-create-db-with-no-pathentities-to-retain", false);
+        assertAtlasEntitiesWithExtInfoFromFile("hs2-load-inpath-with-no-pathentities-to-retain", false);
     }
 
     private void assertMessageFromFile(String msgFile) throws IOException {
@@ -135,24 +139,48 @@ public class ActiveEntityFilterTest {
     }
 
     private void assertAtlasEntitiesWithExtInfoFromFile(String entityFile) throws IOException {
+        assertAtlasEntitiesWithExtInfoFromFile(entityFile, true);
+    }
+
+    private void assertAtlasEntitiesWithExtInfoFromFile(String entityFile, boolean retainPathEntities) throws IOException {
         AtlasEntity.AtlasEntitiesWithExtInfo incoming = TestResourceFileUtils.readObjectFromJson("", entityFile, AtlasEntity.AtlasEntitiesWithExtInfo.class);
         AtlasEntity.AtlasEntitiesWithExtInfo expected = TestResourceFileUtils.readObjectFromJson("", entityFile + FILE_SUFFIX, AtlasEntity.AtlasEntitiesWithExtInfo.class);
 
         HiveDDLEntityFilter hiveLineageEntityFilter = new HiveDDLEntityFilter();
         AtlasEntity.AtlasEntitiesWithExtInfo actual = hiveLineageEntityFilter.apply(incoming);
-        assertAtlasEntitiesWithExtInfo(actual, expected);
+
+        if (retainPathEntities) {
+            assertAtlasEntitiesWithExtInfo(actual, expected);
+        } else {
+            assertAtlasEntitiesWithNoPathEntitiesToRetain(actual, expected);
+        }
     }
 
     private void assertAtlasEntitiesWithExtInfo(AtlasEntity.AtlasEntitiesWithExtInfo actual, AtlasEntity.AtlasEntitiesWithExtInfo expected) {
         assertNotNull(actual);
         assertNotNull(expected);
 
-        assertEquals(actual.getEntities().size(), expected.getEntities().size());
-        assertEntity(actual.getEntities(), expected.getEntities());
+        if (expected.getEntities() != null && actual.getEntities() != null) {
+            assertEquals(actual.getEntities().size(), expected.getEntities().size());
+            assertEntity(actual.getEntities(), expected.getEntities());
+        }
 
         assertEquals(MapUtils.isEmpty(actual.getReferredEntities()), MapUtils.isEmpty(expected.getReferredEntities()));
         if (expected.getReferredEntities() != null && actual.getReferredEntities() != null) {
             assertEntity(actual.getReferredEntities(), expected.getReferredEntities());
+        }
+    }
+
+    private void assertAtlasEntitiesWithNoPathEntitiesToRetain(AtlasEntity.AtlasEntitiesWithExtInfo actual, AtlasEntity.AtlasEntitiesWithExtInfo expected) {
+        assertNotNull(actual);
+        assertNotNull(expected);
+
+        if (expected.getEntities() != null && actual.getEntities() != null) {
+            assertNotEquals(actual.getEntities().size(), expected.getEntities().size());
+        }
+
+        if (expected.getReferredEntities() != null && actual.getReferredEntities() != null) {
+            assertNotEquals(actual.getReferredEntities().size(), expected.getReferredEntities().size());
         }
     }
 
