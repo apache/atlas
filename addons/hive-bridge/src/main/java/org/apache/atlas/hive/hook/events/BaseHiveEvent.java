@@ -233,7 +233,8 @@ public abstract class BaseHiveEvent {
         switch(entity.getType()) {
             case TABLE:
             case PARTITION:
-            case DFS_DIR: {
+            case DFS_DIR:
+            case LOCAL_DIR: {
                 ret = toAtlasEntity(entity, entityExtInfo, skipTempTables);
             }
             break;
@@ -281,7 +282,8 @@ public abstract class BaseHiveEvent {
             }
             break;
 
-            case DFS_DIR: {
+            case DFS_DIR:
+            case LOCAL_DIR: {
                 URI location = entity.getLocation();
 
                 if (location != null) {
@@ -822,6 +824,7 @@ public abstract class BaseHiveEvent {
                 return getQualifiedName(entity.getTable());
 
             case DFS_DIR:
+            case LOCAL_DIR:
                 return getQualifiedName(entity.getLocation());
         }
 
