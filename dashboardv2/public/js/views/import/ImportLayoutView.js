@@ -91,7 +91,7 @@ define([
                     }
                 }
                 var headers = {};
-                headers[CommonViewFunction.restCsrfCustomHeader] = '""';
+                headers[CommonViewFunction.restCsrfCustomHeader] = CommonViewFunction.restCsrfValue || '""';
                 this.ui.importGlossary.dropzone({
                     url: that.isGlossary ? UrlLinks.glossaryImportUrl() : UrlLinks.businessMetadataImportUrl(),
                     clickable: true,
