@@ -297,8 +297,8 @@ define(['require',
                 Utils.hideTitleLoader(this.$('.fontLoader'), this.ui.details);
                 if (data) {
                     this.ui.title.text(data.name || data.displayText || data.qualifiedName);
-                    this.ui.shortDescription.text(data.shortDescription);
-                    this.ui.longDescription.text(data.longDescription);
+                    this.ui.shortDescription.text(data.shortDescription ? data.shortDescription : "");
+                    this.ui.longDescription.text(data.longDescription ? data.longDescription : "");
                     this.generateCategories(data.categories);
                     this.generateTerm(data.terms);
                     this.generateTag(data.classifications);
