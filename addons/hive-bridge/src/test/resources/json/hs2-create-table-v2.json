@@ -40,7 +40,6 @@
       "relationshipAttributes": {
         "outputs": [
           {
-            "guid": "-14529329955589452",
             "typeName": "hive_table",
             "uniqueAttributes": {
               "qualifiedName": "cadb02.hh6@cm"
@@ -103,7 +102,6 @@
       "version": 0,
       "relationshipAttributes": {
         "table": {
-          "guid": "-14529329955589452",
           "typeName": "hive_table",
           "uniqueAttributes": {
             "qualifiedName": "cadb02.hh6@cm"

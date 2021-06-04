@@ -17,7 +17,6 @@
       "version": 0,
       "relationshipAttributes": {
         "table": {
-          "guid": "-44808597128610",
           "typeName": "hive_table",
           "uniqueAttributes": {
             "qualifiedName": "cadb202.vw202@primary"
@@ -51,7 +50,6 @@
       "relationshipAttributes": {
         "outputs": [
           {
-            "guid": "-44808597128610",
             "typeName": "hive_table",
             "uniqueAttributes": {
               "qualifiedName": "cadb202.vw202@primary"
@@ -112,7 +110,6 @@
       "relationshipAttributes": {
         "outputs": [
           {
-            "guid": "-44808597128612",
             "typeName": "hive_column",
             "uniqueAttributes": {
               "qualifiedName": "cadb202.vw202.col202@primary"

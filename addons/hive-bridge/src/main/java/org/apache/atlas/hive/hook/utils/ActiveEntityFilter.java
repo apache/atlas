@@ -18,11 +18,13 @@
 package org.apache.atlas.hive.hook.utils;
 
 import com.google.common.annotations.VisibleForTesting;
+import org.apache.atlas.hive.hook.HiveHook;
 import org.apache.atlas.model.notification.HookNotification;
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.List;
 
 import static org.apache.atlas.hive.hook.HiveHook.HOOK_HIVE_IGNORE_DDL_OPERATIONS;
@@ -34,16 +36,32 @@ public class ActiveEntityFilter {
 
     public static void init(Configuration configuration) {
         boolean skipDdlOperations = configuration.getBoolean(HOOK_HIVE_IGNORE_DDL_OPERATIONS, false);
-        init(skipDdlOperations);
+        List<String> additionalTypesToRetain = getConfiguredTypesToRetainForDDLEntityFilter(configuration);
+
+        init(skipDdlOperations, additionalTypesToRetain);
         LOG.info("atlas.hook.hive.ignore.ddl.operations={} - {}", skipDdlOperations, entityFilter.getClass().getSimpleName());
     }
 
     @VisibleForTesting
-    static void init(boolean lineageOnlyFilter) {
-        entityFilter = lineageOnlyFilter ? new HiveDDLEntityFilter() : new PassthroughFilter();
+    static void init(boolean lineageOnlyFilter, List<String> additionalTypesToRetain) {
+        entityFilter = lineageOnlyFilter ? new HiveDDLEntityFilter(additionalTypesToRetain) : new PassthroughFilter();
     }
 
     public static List<HookNotification> apply(List<HookNotification> incoming) {
         return entityFilter.apply(incoming);
+    }
+
+    private static List<String> getConfiguredTypesToRetainForDDLEntityFilter(Configuration configuration) {
+        try {
+            if (configuration.containsKey(HiveHook.HOOK_HIVE_FILTER_ENTITY_ADDITIONAL_TYPES_TO_RETAIN)) {
+                String[] configuredTypes = configuration.getStringArray(HiveHook.HOOK_HIVE_FILTER_ENTITY_ADDITIONAL_TYPES_TO_RETAIN);
+
+                return Arrays.asList(configuredTypes);
+            }
+        } catch (Exception e) {
+            LOG.error("Failed to load application properties", e);
+        }
+
+        return null;
     }
 }
