@@ -75,6 +75,7 @@ public enum AtlasConfiguration {
     HTTP_HEADER_SERVER_VALUE("atlas.http.header.server.value","Apache Atlas"),
     STORAGE_CONSISTENCY_LOCK_ENABLED("atlas.graph.storage.consistency-lock.enabled", true),
     REBUILD_INDEX("atlas.rebuild.index", false),
+    PROCESS_NAME_UPDATE_PATCH("atlas.process.name.update.patch", false),
     STORE_DIFFERENTIAL_AUDITS("atlas.entity.audit.differential", false),
     DSL_EXECUTOR_TRAVERSAL("atlas.dsl.executor.traversal", true),
     DEBUG_METRICS_ENABLED("atlas.debug.metrics.enabled", false),
