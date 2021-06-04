@@ -59,6 +59,7 @@ public class AtlasPatchManager {
         handlers.add(new SuggestionsRequestHandlerPatch(context));
         handlers.add(new IndexConsistencyPatch(context));
         handlers.add(new ReIndexPatch(context));
+        handlers.add(new ProcessNamePatch(context));
 
         LOG.info("<== AtlasPatchManager.init()");
     }
