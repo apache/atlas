@@ -70,7 +70,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     public static final String HOOK_HIVE_TABLE_PRUNE_PATTERN                             = CONF_PREFIX + "hive_table.prune.pattern";
     public static final String HOOK_HIVE_TABLE_CACHE_SIZE                                = CONF_PREFIX + "hive_table.cache.size";
     public static final String HOOK_HIVE_IGNORE_DDL_OPERATIONS                           = CONF_PREFIX + "hs2.ignore.ddl.operations";
-    public static final String HOOK_HIVE_FILTER_ENTITY_TYPES_TO_RETAIN                   = CONF_PREFIX + "hs2.filter.entity.types.to.retain";
+    public static final String HOOK_HIVE_FILTER_ENTITY_ADDITIONAL_TYPES_TO_RETAIN = CONF_PREFIX + "hs2.filter.entity.additional.types.to.retain";
     public static final String DEFAULT_HOST_NAME = "localhost";
 
     private static final Map<String, HiveOperation> OPERATION_MAP = new HashMap<>();

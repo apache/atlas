@@ -8,13 +8,13 @@
           "typeName": "hive_table_ddl",
           "attributes": {
             "serviceType": "hive",
-            "qualifiedName": "cadb02.hh6_renamed@cm:1616452234545",
-            "execTime": 1616452234545,
+            "qualifiedName": "cadb02.hh6_renamed@cm:1616450674247",
+            "execTime": 1616450674247,
             "queryText": "ALTER TABLE hh6 RENAME TO hh6_renamed",
             "name": "ALTER TABLE hh6 RENAME TO hh6_renamed",
             "userName": "hive"
           },
-          "guid": "-14530890092409428",
+          "guid": "-14529329955589467",
           "isIncomplete": false,
           "provenanceType": 0,
           "version": 0,

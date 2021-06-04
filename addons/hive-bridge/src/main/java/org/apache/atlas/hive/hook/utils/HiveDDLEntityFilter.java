@@ -18,8 +18,6 @@
 package org.apache.atlas.hive.hook.utils;
 
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.atlas.ApplicationProperties;
-import org.apache.atlas.hive.hook.HiveHook;
 import org.apache.atlas.hive.hook.events.BaseHiveEvent;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
@@ -43,7 +41,7 @@ import java.util.stream.Collectors;
 public class HiveDDLEntityFilter implements EntityFilter {
     private static final Logger LOG = LoggerFactory.getLogger(HiveDDLEntityFilter.class);
 
-    private static final Set<String> defaultPathTypes = new HashSet<String>() {{
+    private static final Set<String> defaultPathTypesToRetain = new HashSet<String>() {{
         add(AtlasPathExtractorUtil.HDFS_TYPE_PATH);
         add(AtlasPathExtractorUtil.ADLS_GEN2_DIRECTORY);
         add(AtlasPathExtractorUtil.GCS_VIRTUAL_DIR);
@@ -57,20 +55,16 @@ public class HiveDDLEntityFilter implements EntityFilter {
         add(BaseHiveEvent.HIVE_TYPE_COLUMN_LINEAGE);
         add(BaseHiveEvent.HIVE_DB_DDL);
         add(BaseHiveEvent.HIVE_TABLE_DDL);
-        addAll(defaultPathTypes);
-        addAll(getConfiguredTypesToRetain());
+        addAll(defaultPathTypesToRetain);
     }};
 
-    private static List<String> getConfiguredTypesToRetain() {
-        String[]        configuredTypesToRetain = null;
-
-        try {
-            configuredTypesToRetain = ApplicationProperties.get().getStringArray(HiveHook.HOOK_HIVE_FILTER_ENTITY_TYPES_TO_RETAIN);
-        } catch (Exception e) {
-            LOG.error("Failed to load application properties", e);
+    public HiveDDLEntityFilter(List<String> additionalTypesToRetain) {
+        if (CollectionUtils.isEmpty(additionalTypesToRetain)) {
+            return;
         }
 
-        return configuredTypesToRetain != null ? Arrays.asList(configuredTypesToRetain) : new ArrayList<>();
+        typesToRetain.addAll(additionalTypesToRetain);
+        LOG.info("Types retained: {}", typesToRetain.toArray());
     }
 
     public List<HookNotification> apply(List<HookNotification> incoming) {
@@ -197,7 +191,7 @@ public class HiveDDLEntityFilter implements EntityFilter {
             AtlasObjectId oid      = (AtlasObjectId) o;
             String        typeName = oid.getTypeName();
 
-            if (oid.getUniqueAttributes() != null && !defaultPathTypes.contains(typeName)) {
+            if (oid.getUniqueAttributes() != null && !typesToRetain.contains(typeName)) {
                 oid.setGuid(null);
             }
         } else {
@@ -208,8 +202,8 @@ public class HiveDDLEntityFilter implements EntityFilter {
 
             String typeName = hm.containsKey(AtlasObjectId.KEY_TYPENAME) ? (String) hm.get(AtlasObjectId.KEY_TYPENAME) : null;
 
-            if (hm.containsKey(BaseHiveEvent.ATTRIBUTE_UNIQUE_ATTRIBUTES) && !defaultPathTypes.contains(typeName)) {
-                hm.put(BaseHiveEvent.ATTRIBUTE_GUID, null);
+            if (hm.containsKey(BaseHiveEvent.ATTRIBUTE_UNIQUE_ATTRIBUTES) && !typesToRetain.contains(typeName)) {
+                hm.remove(BaseHiveEvent.ATTRIBUTE_GUID);
             }
         }
     }
