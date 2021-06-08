@@ -403,7 +403,10 @@ define(['require',
                         }).open();
                     modal.$el.find('button.ok').attr("disabled", "true");
                     view.ui.tagName.on('keyup input', function(e) {
-                        view.ui.description.val(this.value);
+                        view.ui.description.val($(this).val().replace(/\s+/g, ' '));
+                    });
+                    view.ui.description.on('input keydown', function(e) {
+                        $(this).val($(this).val().replace(/\s+/g, ' '));
                     });
                     modal.on('shownModal', function() {
                         view.ui.parentTag.select2({

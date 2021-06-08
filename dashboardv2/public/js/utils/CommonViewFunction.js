@@ -710,6 +710,9 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 "okText": model ? "Update" : "Create",
                 "allowCancel": true
             }).open();
+            modal.$el.find('input[data-id=shortDescription]').on('input keydown', function(e) {
+                $(this).val($(this).val().replace(/\s+/g, ' '));
+            });
             modal.$el.find('button.ok').attr("disabled", "true");
             modal.on('ok', function() {
                 modal.$el.find('button.ok').showButtonLoader();
