@@ -106,7 +106,7 @@ public class NotificationHookConsumerKafkaTest {
 
     @Test
     public void testConsumerConsumesNewMessageWithAutoCommitDisabled() throws AtlasException, InterruptedException, AtlasBaseException {
-        produceMessage(new HookNotificationV1.EntityCreateRequest("test_user1", createEntity()));
+        produceKeyValue(new KeyValue<>("test_user1", new HookNotificationV1.EntityCreateRequest("test_user1", createEntity())));
 
         NotificationConsumer<HookNotification> consumer                 = createNewConsumer(kafkaNotification, false);
         NotificationHookConsumer               notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null);
@@ -117,7 +117,7 @@ public class NotificationHookConsumerKafkaTest {
         verify(atlasEntityStore).createOrUpdate(any(EntityStream.class), anyBoolean());
 
         // produce another message, and make sure it moves ahead. If commit succeeded, this would work.
-        produceMessage(new HookNotificationV1.EntityCreateRequest("test_user2", createEntity()));
+        produceKeyValue(new KeyValue<>(null, new HookNotificationV1.EntityCreateRequest("test_user2", createEntity())));
         consumeOneMessage(consumer, hookConsumer);
 
         verify(atlasEntityStore,times(2)).createOrUpdate(any(EntityStream.class), anyBoolean());
@@ -131,10 +131,10 @@ public class NotificationHookConsumerKafkaTest {
         NotificationHookConsumer               notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null);
         NotificationHookConsumer.HookConsumer  hookConsumer             = notificationHookConsumer.new HookConsumer(consumer);
 
-        produceMessage(new HookNotificationV1.EntityCreateRequest("test_user2", createEntity()));
+        produceKeyValue(new KeyValue<>(null, new HookNotificationV1.EntityCreateRequest("test_user2", createEntity())));
 
         try {
-            produceMessage(new HookNotificationV1.EntityCreateRequest("test_user1", createEntity()));
+            produceKeyValue(new KeyValue<>(null, new HookNotificationV1.EntityCreateRequest("test_user1", createEntity())));
             consumeOneMessage(consumer, hookConsumer);
             consumeOneMessage(consumer, hookConsumer);
         }
@@ -144,7 +144,7 @@ public class NotificationHookConsumerKafkaTest {
 
         consumer.disableCommitExpcetion();
 
-        produceMessage(new HookNotificationV1.EntityCreateRequest("test_user1", createEntity()));
+        produceKeyValue(new KeyValue<>(null, new HookNotificationV1.EntityCreateRequest("test_user1", createEntity())));
         consumeOneMessage(consumer, hookConsumer);
         consumeOneMessage(consumer, hookConsumer);
 
@@ -153,7 +153,7 @@ public class NotificationHookConsumerKafkaTest {
 
     @Test(dependsOnMethods = "testConsumerConsumesNewMessageWithAutoCommitDisabled")
     public void testConsumerRemainsAtSameMessageWithAutoCommitEnabled() throws Exception {
-        produceMessage(new HookNotificationV1.EntityCreateRequest("test_user3", createEntity()));
+        produceKeyValue(new KeyValue<>("test_user4", new HookNotificationV1.EntityCreateRequest("test_user3", createEntity())));
 
         NotificationConsumer<HookNotification> consumer = createNewConsumer(kafkaNotification, true);
 
@@ -166,7 +166,7 @@ public class NotificationHookConsumerKafkaTest {
         verify(atlasEntityStore).createOrUpdate(any(EntityStream.class), anyBoolean());
 
         // produce another message, but this will not be consumed, as commit code is not executed in hook consumer.
-        produceMessage(new HookNotificationV1.EntityCreateRequest("test_user4", createEntity()));
+        produceKeyValue(new KeyValue<>("test_user4", new HookNotificationV1.EntityCreateRequest("test_user4", createEntity())));
 
         consumeOneMessage(consumer, hookConsumer);
         verify(atlasEntityStore,times(2)).createOrUpdate(any(EntityStream.class), anyBoolean());
@@ -230,8 +230,8 @@ public class NotificationHookConsumerKafkaTest {
         return RandomStringUtils.randomAlphanumeric(10);
     }
 
-    private void produceMessage(HookNotification message) throws NotificationException {
-        kafkaNotification.send(NotificationInterface.NotificationType.HOOK, message);
+    private void produceKeyValue(KeyValue<String, HookNotification> keyValue) throws NotificationException {
+        kafkaNotification.send(NotificationInterface.NotificationType.HOOK, keyValue);
     }
 
     // retry starting notification services every 2 mins for total of 30 mins

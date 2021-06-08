@@ -21,13 +21,15 @@ package org.apache.atlas.kafka;
 import org.apache.kafka.common.TopicPartition;
 
 public class AtlasKafkaMessage<T> {
+    private final String         key;
     private final T              message;
     private final long           offset;
     private final TopicPartition topicPartition;
     private final boolean        spooled;
     private final long           msgCreated;
 
-    public AtlasKafkaMessage(T message, long offset, String topic, int partition, long msgCreated, boolean spooled) {
+    public AtlasKafkaMessage(String key, T message, long offset, String topic, int partition, long msgCreated, boolean spooled) {
+        this.key            = key;
         this.message        = message;
         this.offset         = offset;
         this.topicPartition = new TopicPartition(topic, partition);
@@ -35,9 +37,15 @@ public class AtlasKafkaMessage<T> {
         this.spooled        = spooled;
     }
 
+    public AtlasKafkaMessage(T message, long offset, String topic, int partition, long msgCreated, boolean spooled) {
+        this(null, message, offset, topic, partition, msgCreated, spooled);
+    }
+
     public AtlasKafkaMessage(T message, long offset, String topic, int partition) {
         this(message, offset, topic, partition, 0, false);
     }
+
+    public String getKey() { return key; }
 
     public T getMessage() {
         return message;

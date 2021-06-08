@@ -78,33 +78,33 @@ public interface NotificationInterface {
      *
      * @param notificationType  the notification type (i.e. HOOK, ENTITIES)
      * @param numConsumers      the number of consumers to create
-     * @param <T>               the type of the notifications
+     * @param <V>               the type of the notification value
      *
      * @return the list of created consumers
      */
-    <T> List<NotificationConsumer<T>> createConsumers(NotificationType notificationType, int numConsumers);
+    <V> List<NotificationConsumer<V>> createConsumers(NotificationType notificationType, int numConsumers);
 
     /**
      * Send the given messages.
      *
      * @param type      the message type
-     * @param messages  the messages to send
-     * @param <T>       the message type
+     * @param keyValue  the keyValue of the message to send
+     * @param <V>       the message value type
      *
      * @throws NotificationException if an error occurs while sending
      */
-    <T> void send(NotificationType type, T... messages) throws NotificationException;
+    <V>  void send(NotificationType type, KeyValue<String,V>... keyValue) throws NotificationException;
 
     /**
      * Send the given messages.
      *
      * @param type      the message type
-     * @param messages  the list of messages to send
-     * @param <T>       the message type
+     * @param keyValues the keyValue of the message to send
+     * @param <V>       the message value type
      *
      * @throws NotificationException if an error occurs while sending
      */
-    <T> void send(NotificationType type, List<T> messages) throws NotificationException;
+    <V> void send(NotificationType type, List<KeyValue<String,V>> keyValues) throws NotificationException;
 
     /**
      * Shutdown any notification producers and consumers associated with this interface instance.

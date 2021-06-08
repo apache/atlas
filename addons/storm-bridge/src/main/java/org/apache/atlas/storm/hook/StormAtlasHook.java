@@ -104,7 +104,7 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
 
             List<HookNotification> hookNotifications = Collections.singletonList(new EntityCreateRequestV2(user, entity));
 
-            notifyEntities(hookNotifications, null);
+            notifyEntitiesWithKeyValues(hookNotifications, null);
         } catch (Exception e) {
             throw new RuntimeException("Atlas hook is unable to process the topology.", e);
         }

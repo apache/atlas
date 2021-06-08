@@ -18,6 +18,7 @@
 package org.apache.atlas.kafka;
 
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.notification.KeyValue;
 import org.apache.atlas.notification.NotificationConsumer;
 import org.apache.atlas.notification.NotificationException;
 import org.apache.atlas.notification.NotificationInterface;
@@ -90,7 +91,7 @@ public class KafkaNotificationMockTest {
         when(producer.send(expectedRecord)).thenReturn(returnValue);
 
         kafkaNotification.sendInternalToProducer(producer,
-                NotificationInterface.NotificationType.HOOK, Arrays.asList(new String[]{message}));
+                NotificationInterface.NotificationType.HOOK, Arrays.asList(new KeyValue[]{new KeyValue<>(null, message)}));
 
         verify(producer).send(expectedRecord);
     }
@@ -112,7 +113,7 @@ public class KafkaNotificationMockTest {
 
         try {
             kafkaNotification.sendInternalToProducer(producer,
-                NotificationInterface.NotificationType.HOOK, Arrays.asList(new String[]{message}));
+                NotificationInterface.NotificationType.HOOK, Arrays.asList(new KeyValue[]{new KeyValue<>(null, message)}));
             fail("Should have thrown NotificationException");
         } catch (NotificationException e) {
             assertEquals(e.getFailedMessages().size(), 1);
@@ -142,7 +143,8 @@ public class KafkaNotificationMockTest {
 
         try {
             kafkaNotification.sendInternalToProducer(producer,
-                    NotificationInterface.NotificationType.HOOK, Arrays.asList(new String[]{message1, message2}));
+                    NotificationInterface.NotificationType.HOOK, Arrays.asList(new KeyValue[]{new KeyValue<>(null, message1),
+                            new KeyValue<>(null, message2)}));
             fail("Should have thrown NotificationException");
         } catch (NotificationException e) {
             assertEquals(e.getFailedMessages().size(), 2);

@@ -19,6 +19,7 @@
 package org.apache.atlas.notification.hook;
 
 import org.apache.atlas.model.notification.HookNotification;
+import org.apache.atlas.notification.KeyValue;
 import org.apache.atlas.notification.entity.EntityNotificationTest;
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.v1.model.instance.Struct;
@@ -26,6 +27,7 @@ import org.apache.atlas.notification.AbstractNotification;
 import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityUpdateRequest;
 import org.apache.atlas.type.AtlasType;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.kafka.common.serialization.Serdes;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
@@ -46,9 +48,9 @@ public class HookNotificationDeserializerTest {
     public void testDeserialize() throws Exception {
         Referenceable       entity      = generateEntityWithTrait();
         EntityUpdateRequest message     = new EntityUpdateRequest("user1", entity);
-        List<String>        jsonMsgList = new ArrayList<>();
+        List<KeyValue<String, String>> jsonMsgList = new ArrayList<>();
 
-        AbstractNotification.createNotificationMessages(message, jsonMsgList);
+        AbstractNotification.createNotificationMessages(message, "someKey", jsonMsgList);
 
         HookNotification deserializedMessage = deserialize(jsonMsgList);
 
@@ -61,7 +63,7 @@ public class HookNotificationDeserializerTest {
         Referenceable       entity              = generateEntityWithTrait();
         EntityUpdateRequest message             = new EntityUpdateRequest("user1", entity);
         String              jsonMsg             = AtlasType.toV1Json(message);
-        HookNotification    deserializedMessage = deserialize(Collections.singletonList(jsonMsg));
+        HookNotification    deserializedMessage = deserialize(Collections.singletonList(new KeyValue<>(null,jsonMsg)));
 
         assertEqualMessage(deserializedMessage, message);
     }
@@ -70,13 +72,13 @@ public class HookNotificationDeserializerTest {
     public void testDeserializeCompressedMessage() throws Exception {
         Referenceable       entity     = generateLargeEntityWithTrait();
         EntityUpdateRequest message    = new EntityUpdateRequest("user1", entity);
-        List<String>       jsonMsgList = new ArrayList<>();
+        List<KeyValue<String, String>> jsonMsgList = new ArrayList<>();
 
-        AbstractNotification.createNotificationMessages(message, jsonMsgList);
+        AbstractNotification.createNotificationMessages(message, null, jsonMsgList);
 
         assertTrue(jsonMsgList.size() == 1);
 
-        String compressedMsg   = jsonMsgList.get(0);
+        String compressedMsg   = jsonMsgList.get(0).getValue();
         String uncompressedMsg = AtlasType.toV1Json(message);
 
         assertTrue(compressedMsg.length() < uncompressedMsg.length(), "Compressed message (" + compressedMsg.length() + ") should be shorter than uncompressed message (" + uncompressedMsg.length() + ")");
@@ -90,9 +92,9 @@ public class HookNotificationDeserializerTest {
     public void testDeserializeSplitMessage() throws Exception {
         Referenceable       entity      = generateVeryLargeEntityWithTrait();
         EntityUpdateRequest message     = new EntityUpdateRequest("user1", entity);
-        List<String>        jsonMsgList = new ArrayList<>();
+        List<KeyValue<String, String>> jsonMsgList = new ArrayList<>();
 
-        AbstractNotification.createNotificationMessages(message, jsonMsgList);
+        AbstractNotification.createNotificationMessages(message, null, jsonMsgList);
 
         assertTrue(jsonMsgList.size() > 1);
 
@@ -107,12 +109,11 @@ public class HookNotificationDeserializerTest {
         return ret;
     }
 
-    private HookNotification deserialize(List<String> jsonMsgList) {
+    private HookNotification deserialize(List<KeyValue<String, String>> jsonMsgList) {
         HookNotification deserializedMessage = null;
 
-        for (String jsonMsg : jsonMsgList) {
-            deserializedMessage = deserializer.deserialize(jsonMsg);
-
+        for (KeyValue<String, String> jsonMsg : jsonMsgList) {
+            deserializedMessage = deserializer.deserialize(jsonMsg.getValue());
             if (deserializedMessage != null) {
                 break;
             }

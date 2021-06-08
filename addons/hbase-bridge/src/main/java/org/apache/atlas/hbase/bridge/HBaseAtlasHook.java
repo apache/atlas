@@ -562,7 +562,7 @@ public class HBaseAtlasHook extends AtlasHook {
             ugi = ugi.getRealUser();
         }
 
-        notifyEntities(hbaseOperationContext.getMessages(), ugi);
+        notifyEntitiesWithKeyValues(hbaseOperationContext.getMessages(), ugi);
     }
 
     private HBaseOperationContext handleHBaseNameSpaceOperation(NamespaceDescriptor namespaceDescriptor, String nameSpace, OPERATION operation, UserGroupInformation ugi, String userName) {

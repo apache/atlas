@@ -163,7 +163,7 @@ public class NotificationEntityChangeListener implements EntityChangeListener {
                                      OperationType             operationType) throws AtlasException {
         MetricRecorder metric = RequestContext.get().startMetricRecord("entityNotification");
 
-        List<EntityNotificationV1> messages = new ArrayList<>();
+        List<KeyValue<String, EntityNotificationV1>> messages = new ArrayList<>();
 
         for (Referenceable entityDefinition : entityDefinitions) {
             if(GraphHelper.isInternalType(entityDefinition.getTypeName())) {
@@ -184,7 +184,9 @@ public class NotificationEntityChangeListener implements EntityChangeListener {
 
             EntityNotificationV1 notification = new EntityNotificationV1(entity, operationType, getAllTraits(entity, typeRegistry));
 
-            messages.add(notification);
+            //TODO - Source feedback
+            //Sending null to preserve old V1 functionality. Could otherwise use Id.toString, if we wanted a String, otherwise we can emit the Long value.
+            messages.add(new KeyValue<>(null, notification));
         }
 
         if (!messages.isEmpty()) {

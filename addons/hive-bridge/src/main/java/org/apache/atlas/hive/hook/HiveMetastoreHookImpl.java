@@ -164,7 +164,7 @@ public class HiveMetastoreHookImpl extends MetaStoreEventListener {
                 if (event != null) {
                     final UserGroupInformation ugi = SecurityUtils.getUGI() == null ? Utils.getUGI() : SecurityUtils.getUGI();
 
-                    super.notifyEntities(event.getNotificationMessages(), ugi);
+                    super.notifyEntitiesWithValues(event.getNotificationMessages(), ugi);
                 }
             } catch (Throwable t) {
                 LOG.error("HiveMetastoreHook.handleEvent({}): failed to process operation {}", listenerEvent, t);

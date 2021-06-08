@@ -101,10 +101,10 @@ public class AtlasKafkaConsumer<T> extends AbstractNotificationConsumer<T> {
     private List<AtlasKafkaMessage<T>> receive(long timeoutMilliSeconds, Map<TopicPartition, Long> lastCommittedPartitionOffset) {
         List<AtlasKafkaMessage<T>> messages = new ArrayList();
 
-        ConsumerRecords<?, ?> records = kafkaConsumer != null ? kafkaConsumer.poll(timeoutMilliSeconds) : null;
+        ConsumerRecords<String, ?> records = kafkaConsumer != null ? kafkaConsumer.poll(timeoutMilliSeconds) : null;
 
         if (records != null) {
-            for (ConsumerRecord<?, ?> record : records) {
+            for (ConsumerRecord<String, ?> record : records) {
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("Received Message topic ={}, partition ={}, offset = {}, key = {}, value = {}",
                             record.topic(), record.partition(), record.offset(), record.key(), record.value());
@@ -121,9 +121,11 @@ public class AtlasKafkaConsumer<T> extends AbstractNotificationConsumer<T> {
                     continue;
                 }
 
+                String key = null;
                 T message = null;
 
                 try {
+                    key = record.key();
                     message = deserializer.deserialize(record.value().toString());
                 } catch (OutOfMemoryError excp) {
                     LOG.error("Ignoring message that failed to deserialize: topic={}, partition={}, offset={}, key={}, value={}",
@@ -134,7 +136,7 @@ public class AtlasKafkaConsumer<T> extends AbstractNotificationConsumer<T> {
                     continue;
                 }
 
-                messages.add(new AtlasKafkaMessage(message, record.offset(), record.topic(), record.partition(),
+                messages.add(new AtlasKafkaMessage(key, message, record.offset(), record.topic(), record.partition(),
                                                             deserializer.getMsgCreated(), deserializer.getSpooled()));
             }
         }

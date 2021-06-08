@@ -19,6 +19,7 @@
 package org.apache.atlas.kafka;
 
 import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.notification.KeyValue;
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.notification.NotificationConsumer;
 import org.apache.atlas.notification.NotificationInterface;
@@ -50,10 +51,14 @@ public class KafkaNotificationTest {
 
     @Test
     public void testReceiveKafkaMessages() throws Exception {
-        kafkaNotification.send(NotificationInterface.NotificationType.HOOK, new EntityCreateRequest("u1", new Referenceable("type")));
-        kafkaNotification.send(NotificationInterface.NotificationType.HOOK, new EntityCreateRequest("u2", new Referenceable("type")));
-        kafkaNotification.send(NotificationInterface.NotificationType.HOOK, new EntityCreateRequest("u3", new Referenceable("type")));
-        kafkaNotification.send(NotificationInterface.NotificationType.HOOK, new EntityCreateRequest("u4", new Referenceable("type")));
+        kafkaNotification.send(NotificationInterface.NotificationType.HOOK,
+                new KeyValue<>("key1", new EntityCreateRequest("u1", new Referenceable("type"))));
+        kafkaNotification.send(NotificationInterface.NotificationType.HOOK,
+                new KeyValue<>("key2", new EntityCreateRequest("u2", new Referenceable("type"))));
+        kafkaNotification.send(NotificationInterface.NotificationType.HOOK,
+                new KeyValue<>("key3", new EntityCreateRequest("u3", new Referenceable("type"))));
+        kafkaNotification.send(NotificationInterface.NotificationType.HOOK,
+                new KeyValue<>("key4", new EntityCreateRequest("u4", new Referenceable("type"))));
 
         NotificationConsumer<Object>    consumer  = kafkaNotification.createConsumers(NotificationInterface.NotificationType.HOOK, 1).get(0);
         List<AtlasKafkaMessage<Object>> messages  = null ;
@@ -70,7 +75,7 @@ public class KafkaNotificationTest {
         int i = 1;
         for (AtlasKafkaMessage<Object> msg :  messages){
             HookNotification message =  (HookNotification) msg.getMessage();
-
+            assertEquals(msg.getKey(), "key"+i);
             assertEquals(message.getUser(), "u"+i++);
         }
 

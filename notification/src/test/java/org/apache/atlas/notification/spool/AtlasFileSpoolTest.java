@@ -19,6 +19,7 @@ package org.apache.atlas.notification.spool;
 
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.notification.AbstractNotification;
+import org.apache.atlas.notification.KeyValue;
 import org.apache.atlas.notification.NotificationConsumer;
 import org.apache.atlas.notification.NotificationException;
 import org.apache.commons.io.FileUtils;
@@ -43,9 +44,9 @@ public class AtlasFileSpoolTest extends BaseTest {
 
     private static class MessageHandlerSpy extends AbstractNotification {
 
-        private List<String> publishedMessages = new ArrayList<>();
+        private List<KeyValue<String,String>> publishedMessages = new ArrayList<>();
 
-        public List<String> getMessages() {
+        public List<KeyValue<String,String>> getMessages() {
             return publishedMessages;
         }
 
@@ -59,9 +60,8 @@ public class AtlasFileSpoolTest extends BaseTest {
         }
 
         @Override
-        public void sendInternal(NotificationType type, List<String> messages) throws NotificationException {
+        public void sendInternal(NotificationType type, List<KeyValue<String,String>> messages) throws NotificationException {
             publishedMessages.addAll(messages);
-
         }
 
         @Override
@@ -70,11 +70,11 @@ public class AtlasFileSpoolTest extends BaseTest {
         }
 
         @Override
-        public <T> void send(NotificationType type, T... messages) throws NotificationException {
+        public <T> void send(NotificationType type, KeyValue<String,T>... messages) throws NotificationException {
         }
 
         @Override
-        public <T> void send(NotificationType type, List<T> messages) throws NotificationException {
+        public <T> void send(NotificationType type, List<KeyValue<String,T>> messages) throws NotificationException {
         }
 
         @Override
@@ -114,7 +114,7 @@ public class AtlasFileSpoolTest extends BaseTest {
         indexManagement.init();
         Spooler spooler = new Spooler(cfg, indexManagement);
         for (int i = 0; i < MAX_RECORDS; i++) {
-            spooler.write(Collections.singletonList("message: " + i));
+            spooler.write(Collections.singletonList(new KeyValue<>("key: " + i, "message: " + i)));
         }
 
         indexManagement.stop();
@@ -205,7 +205,7 @@ public class AtlasFileSpoolTest extends BaseTest {
 
             for (int i = 0; i < MAX_RECORDS; i++) {
                 try {
-                    spooler.send(HOOK, String.format("%s-%s", "message", i));
+                    spooler.send(HOOK, new KeyValue<>(String.format("%s-%s", "key", i), String.format("%s-%s", "message", i)));
 
                     Thread.sleep(RandomUtils.nextInt(10, 100));
                 } catch (NotificationException exception) {

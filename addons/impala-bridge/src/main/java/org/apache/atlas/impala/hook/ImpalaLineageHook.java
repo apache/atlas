@@ -115,7 +115,7 @@ public class ImpalaLineageHook extends AtlasHook {
 
                 final UserGroupInformation ugi = getUgiFromUserName(lineageQuery.getUser());
 
-                super.notifyEntities(event.getNotificationMessages(), ugi);
+                super.notifyEntitiesWithKeyValues(event.getNotificationMessages(), ugi);
             }
         } catch (Throwable t) {
 
