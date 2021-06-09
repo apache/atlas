@@ -218,7 +218,8 @@ public class GremlinQueryComposer {
                 final AtlasStructDef.AtlasAttributeDef.IndexType indexType = attribute.getAttributeDef().getIndexType();
 
                 if (indexType == AtlasStructDef.AtlasAttributeDef.IndexType.STRING || !containsNumberAndLettersOnly(rhs)) {
-                    add(GremlinClause.STRING_CONTAINS, getPropertyForClause(lhsI), IdentifierHelper.getFixedRegEx(rhs));
+                    String escapeRhs = IdentifierHelper.escapeCharacters(IdentifierHelper.getFixedRegEx(rhs));
+                    add(GremlinClause.STRING_CONTAINS, getPropertyForClause(lhsI), escapeRhs);
                 } else {
                     add(GremlinClause.TEXT_CONTAINS, getPropertyForClause(lhsI), IdentifierHelper.getFixedRegEx(rhs));
                 }

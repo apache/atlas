@@ -153,7 +153,7 @@ public abstract class BasicTestSetup extends AtlasTestBase {
         
         createClassificationTypes();
 
-        AtlasEntity salesDB = database("Sales", "Sales Database", "John ETL", "hdfs://host:8000/apps/warehouse/sales");
+        AtlasEntity salesDB = database("Sales", "/apps/warehouse/Sales Database", "John ETL", "hdfs://host:8000/apps/warehouse/sales");
         entities.add(salesDB);
 
         AtlasEntity sd =
@@ -193,7 +193,7 @@ public abstract class BasicTestSetup extends AtlasTestBase {
         entities.add(timeDim);
 
         AtlasEntity reportingDB =
-                database("Reporting", "reporting database", "Jane BI", "hdfs://host:8000/apps/warehouse/reporting");
+                database("Reporting", "/apps/warehouse/reporting database", "Jane BI", "hdfs://host:8000/apps/warehouse/reporting");
         entities.add(reportingDB);
 
         sd = storageDescriptor("hdfs://host:8000/apps/warehouse/sales", "TextInputFormat", "TextOutputFormat", true, ImmutableList.of(column("time_id", "int", "time id")));
@@ -229,7 +229,7 @@ public abstract class BasicTestSetup extends AtlasTestBase {
                                          ImmutableList.of(salesFactDaily), "create table as select ", "plan", "id", "graph", ETL_CLASSIFICATION);
         entities.add(loadSalesDaily);
 
-        AtlasEntity logDB = database("Logging", null, "Tim ETL", "hdfs://host:8000/apps/warehouse/logging");
+        AtlasEntity logDB = database("Logging", "/apps/warehouse/logging", "Tim ETL", "hdfs://host:8000/apps/warehouse/logging");
         entities.add(logDB);
 
         sd = storageDescriptor("hdfs://host:8000/apps/warehouse/sales", "TextInputFormat", "TextOutputFormat", true, ImmutableList.of(column("time_id", "int", "time id")));
@@ -336,8 +336,9 @@ public abstract class BasicTestSetup extends AtlasTestBase {
         database.setAttribute("name", name);
         database.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, "qualified:" + name);
         database.setAttribute("description", description);
+        database.setAttribute("userDescription", description);
         database.setAttribute("owner", owner);
-        database.setAttribute("locationUri", locationUri);
+        database.setAttribute("location", locationUri);
         database.setAttribute("createTime", System.currentTimeMillis());
         database.setAttribute("clusterName", "cl1");
         database.setClassifications(Stream.of(traitNames).map(AtlasClassification::new).collect(Collectors.toList()));
