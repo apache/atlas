@@ -25,6 +25,9 @@ import org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdg
 import org.apache.atlas.type.AtlasType;
 import org.apache.commons.lang.StringUtils;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -33,6 +36,8 @@ public class IdentifierHelper {
     private static final Pattern SINGLE_QUOTED_IDENTIFIER   = Pattern.compile("'(\\w[\\w\\d\\.\\s]*)'");
     private static final Pattern DOUBLE_QUOTED_IDENTIFIER   = Pattern.compile("\"(\\w[\\w\\d\\.\\s]*)\"");
     private static final Pattern BACKTICK_QUOTED_IDENTIFIER = Pattern.compile("`(\\w[\\w\\d\\.\\s]*)`");
+    private static final Character[]    ESCAPE_CHARS           = new Character[] {'+', '@', '#', '&', '|', '(', ')', '{', '}', '[', ']', '~', '\\', '/'};
+    private static final Set<Character> ESCAPE_CHARACTERS_SET = new HashSet<>(Arrays.asList(ESCAPE_CHARS));
 
     public static String get(String quotedIdentifier) {
         String ret;
@@ -114,6 +119,24 @@ public class IdentifierHelper {
 
     public static String getFixedRegEx(String s) {
         return s.replace("*", ".*").replace('?', '.');
+    }
+
+    public static String escapeCharacters(String value) {
+        if (StringUtils.isEmpty(value)) {
+            return value;
+        }
+
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < value.length(); i++) {
+            char c = value.charAt(i);
+
+            if (c != '*' && ESCAPE_CHARACTERS_SET.contains(c)) {
+                sb.append('\\');
+            }
+            sb.append(c);
+        }
+
+        return sb.toString();
     }
 
     public static String removeWildcards(String s) {

@@ -561,6 +561,12 @@ public class DSLQueriesTest extends BasicTestSetup {
                 {"hive_table where name like 'sales*' and db.name like 'Sa?es'", 1, new ListValidator("sales_fact")},
                 {"hive_table where db.name like \"Sa*\"", 4, new ListValidator("customer_dim", "sales_fact", "time_dim", "product_dim")},
                 {"hive_table where db.name like \"Sa*\" and name like \"*dim\"", 3, new ListValidator("customer_dim", "product_dim", "time_dim")},
+                //STRING Mapping
+                {"hive_db where userDescription like \"*/warehouse/*\"", 3, new ListValidator("Sales","Reporting","Logging")},
+                {"hive_db where userDescription like \"/apps/warehouse/*\"", 3, new ListValidator("Sales","Reporting","Logging")},
+                //TEXT Mapping
+                {"hive_db where description like \"*/warehouse/*\"", 3, new ListValidator("Sales","Reporting","Logging")},
+                {"hive_db where description like \"/apps/warehouse/*\"", 3, new ListValidator("Sales","Reporting","Logging")},
         };
     }
 
