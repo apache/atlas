@@ -292,6 +292,7 @@ public class CreateHiveProcess extends BaseHiveEvent {
         return entity != null && !context.isMetastoreHook()
             && (context.getHiveOperation().equals(HiveOperation.CREATETABLE_AS_SELECT)
              || context.getHiveOperation().equals(HiveOperation.CREATEVIEW)
-             || context.getHiveOperation().equals(HiveOperation.ALTERVIEW_AS));
+             || context.getHiveOperation().equals(HiveOperation.ALTERVIEW_AS)
+             || context.getHiveOperation().equals(HiveOperation.CREATE_MATERIALIZED_VIEW));
     }
 }
