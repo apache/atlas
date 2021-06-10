@@ -95,9 +95,6 @@ define(['require',
                     getValue: function(val, key) {
                         if (key && key.toLowerCase().indexOf("time") > 0) {
                             return Utils.formatDate({ date: val });
-                        } else if (key && key.toLowerCase().indexOf("position") === 0 && val === 0) {
-                            //if position value is 0 we are showing N/A
-                            return "N/A";
                         } else {
                             return val;
                         }
