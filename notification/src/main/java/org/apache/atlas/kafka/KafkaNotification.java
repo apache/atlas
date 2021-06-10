@@ -270,8 +270,7 @@ public class KafkaNotification extends AbstractNotification implements Service {
         List<MessageContext> messageContexts = new ArrayList<>();
 
         for (KeyValue<String, String> message : messages) {
-            //Bellemare - replace with message.getKey()
-            ProducerRecord record = new ProducerRecord(topic, "BELLEMARE-WAS-HERE-KEY", message.getValue());
+            ProducerRecord record = new ProducerRecord(topic, message.getKey(), message.getValue());
 
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Sending message for topic {}: {}", topic, message);

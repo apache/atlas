@@ -23,6 +23,7 @@ import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityExtInfo;
 import org.apache.atlas.model.notification.HookNotification;
 import org.apache.atlas.model.notification.HookNotification.EntityCreateRequestV2;
+import org.apache.atlas.notification.KeyValue;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.utils.HdfsNameServiceResolver;
 import org.apache.commons.collections.CollectionUtils;
@@ -102,7 +103,8 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
                 }
             }
 
-            List<HookNotification> hookNotifications = Collections.singletonList(new EntityCreateRequestV2(user, entity));
+            List<KeyValue<String, HookNotification>> hookNotifications =
+                    Collections.singletonList(new KeyValue<>(null, new EntityCreateRequestV2(user, entity)));
 
             notifyEntitiesWithKeyValues(hookNotifications, null);
         } catch (Exception e) {

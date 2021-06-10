@@ -38,6 +38,7 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.notification.HookNotification;
 import org.apache.atlas.model.notification.HookNotification.EntityCreateRequestV2;
+import org.apache.atlas.notification.KeyValue;
 import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,12 +50,12 @@ public class CreateImpalaProcess extends BaseImpalaEvent {
         super(context);
     }
 
-    public List<HookNotification> getNotificationMessages() throws Exception {
-        List<HookNotification>   ret      = null;
+    public List<KeyValue<String,HookNotification>> getNotificationMessages() throws Exception {
+        List<KeyValue<String,HookNotification>> ret = null;
         AtlasEntitiesWithExtInfo entities = getEntities();
 
         if (entities != null && CollectionUtils.isNotEmpty(entities.getEntities())) {
-            ret = Collections.singletonList(new EntityCreateRequestV2(getUserName(), entities));
+            ret = Collections.singletonList(new KeyValue<>(null, new EntityCreateRequestV2(getUserName(), entities)));
         }
 
         return ret;
