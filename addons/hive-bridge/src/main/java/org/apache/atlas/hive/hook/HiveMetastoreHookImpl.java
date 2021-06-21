@@ -173,8 +173,8 @@ public class HiveMetastoreHookImpl extends MetaStoreEventListener {
     }
 
     private static boolean isTableRename(Table oldTable, Table newTable) {
-        String oldTableName = oldTable.getTableName();
-        String newTableName = newTable.getTableName();
+        String oldTableName = oldTable.getDbName() + "." + oldTable.getTableName();
+        String newTableName = newTable.getDbName() + "." + newTable.getTableName();
 
         return !StringUtils.equalsIgnoreCase(oldTableName, newTableName);
     }
