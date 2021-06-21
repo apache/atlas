@@ -425,31 +425,6 @@ define(['require',
                     dataLength = this.collection.length,
                     goToPage = this.ui.gotoPage.val();
 
-                if (!dataLength && this.offset >= this.limit && ((options && options.next) || goToPage) && (options && !options.fromUrl)) {
-                    /* User clicks on next button and server returns
-                    empty response then disabled the next button without rendering table*/
-
-                    var pageNumber = this.activePage + 1;
-                    if (goToPage) {
-                        pageNumber = goToPage;
-                        this.offset = (this.activePage - 1) * this.limit;
-                    } else {
-                        this.ui.nextData.attr('disabled', true);
-                        this.offset = this.offset - this.limit;
-                    }
-                    if (this.value) {
-                        this.value.pageOffset = this.offset;
-                        if (this.triggerUrl) {
-                            this.triggerUrl();
-                        }
-                    }
-                    Utils.notifyInfo({
-                        html: true,
-                        content: Messages.search.noRecordForPage + '<b>' + Utils.getNumberSuffix({ number: pageNumber, sup: true }) + '</b> page'
-                    });
-                    return;
-                }
-
                 /*Next button check.
                 It's outside of Previous button else condition
                 because when user comes from 2 page to 1 page than we need to check next button.*/
@@ -492,6 +467,30 @@ define(['require',
                 this.ui.activePage.attr('title', "Page " + this.activePage);
                 this.ui.activePage.text(this.activePage);
                 this.ui.showPage.val(this.limit).trigger('change', { "skipViewChange": true });
+
+                if (!dataLength && this.offset >= this.limit && ((options && options.next) || goToPage) && (options && !options.fromUrl)) {
+                    /* User clicks on next button and server returns
+                    empty response then disabled the next button without rendering table*/
+
+                    var pageNumber = this.activePage;
+                    if (goToPage) {
+                        pageNumber = goToPage;
+                        this.offset = (this.activePage - 1) * this.limit;
+                    } else {
+                        this.ui.nextData.attr('disabled', true);
+                    }
+                    if (this.value) {
+                        this.value.pageOffset = this.offset;
+                        if (this.triggerUrl) {
+                            this.triggerUrl();
+                        }
+                    }
+                    Utils.notifyInfo({
+                        html: true,
+                        content: Messages.search.noRecordForPage + '<b>' + Utils.getNumberSuffix({ number: pageNumber, sup: true }) + '</b> page'
+                    });
+                    return;
+                }
             },
 
             /**
