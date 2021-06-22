@@ -38,7 +38,7 @@ public class IdentifierHelper {
     private static final Pattern SINGLE_QUOTED_IDENTIFIER   = Pattern.compile("'(\\w[\\w\\d\\.\\s]*)'");
     private static final Pattern DOUBLE_QUOTED_IDENTIFIER   = Pattern.compile("\"(\\w[\\w\\d\\.\\s]*)\"");
     private static final Pattern BACKTICK_QUOTED_IDENTIFIER = Pattern.compile("`(\\w[\\w\\d\\.\\s]*)`");
-    private static final Character[]    ESCAPE_CHARS           = new Character[] {'+', '@', '#', '&', '|', '(', ')', '{', '}', '[', ']', '~', '\\', '/'};
+    private static final Character[]    ESCAPE_CHARS          = new Character[] {'@', '#', '&', '~', '/'};
     private static final Set<Character> ESCAPE_CHARACTERS_SET = new HashSet<>(Arrays.asList(ESCAPE_CHARS));
 
     public static String get(String quotedIdentifier) {

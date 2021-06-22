@@ -214,6 +214,7 @@ public class GremlinQueryComposerTest {
         verify( "Table where owner like \"Jane/*\"", "g.V().has('__typeName', 'Table').has('Table.owner', org.janusgraph.core.attribute.Text.textRegex(\"Jane\\/.*\")).dedup().limit(25).toList()");
         verify( "Table where Asset.name like \"/sales_*\"", "g.V().has('__typeName', 'Table').has('Asset.__s_name', org.janusgraph.core.attribute.Text.textRegex(\"\\/sales_.*\")).dedup().limit(25).toList()");
         verify( "Table where Asset.name like \"sales:*\"", "g.V().has('__typeName', 'Table').has('Asset.__s_name', org.janusgraph.core.attribute.Text.textRegex(\"sales:.*\")).dedup().limit(25).toList()");
+        verify( "Table where Asset.name like \"table[0-9]\"", "g.V().has('__typeName', 'Table').has('Asset.__s_name', org.janusgraph.core.attribute.Text.textRegex(\"table[0-9]\")).dedup().limit(25).toList()");
     }
 
     @Test
