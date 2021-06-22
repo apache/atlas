@@ -594,6 +594,7 @@ public class DSLQueriesTest extends BasicTestSetup {
                 //TEXT Mapping
                 {"hive_db where description like \"*/warehouse/*\"", 3, new ListValidator("Sales","Reporting","Logging")},
                 {"hive_db where description like \"/apps/warehouse/*\"", 3, new ListValidator("Sales","Reporting","Logging")},
+                {"hive_table where name like \"table[0-2]\"", 2, new ListValidator("table1", "table2")},
         };
     }
 
