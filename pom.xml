@@ -2139,6 +2139,7 @@
                         <!-- atlas doc directory -->
                         <exclude>**/docz-lib/**</exclude>
                         <exclude>**/.docz/**</exclude>
+                        <exclude>**/*.svg</exclude>
                         
                     </excludes>
                 </configuration>
