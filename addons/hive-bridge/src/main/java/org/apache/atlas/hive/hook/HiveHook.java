@@ -70,7 +70,8 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     public static final String HOOK_HIVE_TABLE_PRUNE_PATTERN                             = CONF_PREFIX + "hive_table.prune.pattern";
     public static final String HOOK_HIVE_TABLE_CACHE_SIZE                                = CONF_PREFIX + "hive_table.cache.size";
     public static final String HOOK_HIVE_IGNORE_DDL_OPERATIONS                           = CONF_PREFIX + "hs2.ignore.ddl.operations";
-    public static final String HOOK_HIVE_FILTER_ENTITY_ADDITIONAL_TYPES_TO_RETAIN = CONF_PREFIX + "hs2.filter.entity.additional.types.to.retain";
+    public static final String HOOK_HIVE_FILTER_ENTITY_ADDITIONAL_TYPES_TO_RETAIN        = CONF_PREFIX + "hs2.filter.entity.additional.types.to.retain";
+    public static final String HOOK_HIVE_SKIP_TEMP_TABLES                                = CONF_PREFIX + "skip.temp.tables";
     public static final String DEFAULT_HOST_NAME = "localhost";
 
     private static final Map<String, HiveOperation> OPERATION_MAP = new HashMap<>();
@@ -93,6 +94,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     private static final boolean                       hiveProcessPopulateDeprecatedAttributes;
     private static HiveHookObjectNamesCache            knownObjects = null;
     private static String hostName;
+    private static boolean                             skipTempTables = true;
 
     static {
         for (HiveOperation hiveOperation : HiveOperation.values()) {
@@ -154,6 +156,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         ignoreDummyDatabaseName        = atlasProperties.getList("atlas.hook.hive.ignore.dummy.database.name", defaultDummyDatabase);
         ignoreDummyTableName           = atlasProperties.getList("atlas.hook.hive.ignore.dummy.table.name", defaultDummyTable);
         ignoreValuesTmpTableNamePrefix = atlasProperties.getString("atlas.hook.hive.ignore.values.tmp.table.name.prefix", "Values__Tmp__Table__");
+        skipTempTables                 = atlasProperties.getBoolean(HOOK_HIVE_SKIP_TEMP_TABLES, true);
 
         try {
             hostName = InetAddress.getLocalHost().getHostName();
@@ -182,7 +185,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
 
         try {
             HiveOperation        oper    = OPERATION_MAP.get(hookContext.getOperationName());
-            AtlasHiveHookContext context = new AtlasHiveHookContext(this, oper, hookContext, getKnownObjects());
+            AtlasHiveHookContext context = new AtlasHiveHookContext(this, oper, hookContext, getKnownObjects(), isSkipTempTables());
             BaseHiveEvent        event   = null;
 
             switch (oper) {
@@ -201,7 +204,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
                 break;
 
                 case CREATETABLE:
-                    event = new CreateTable(context, true);
+                    event = new CreateTable(context);
                 break;
 
                 case DROPTABLE:
@@ -218,7 +221,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
                 case EXPORT:
                 case IMPORT:
                 case QUERY:
-                    event = new CreateHiveProcess(context, true);
+                    event = new CreateHiveProcess(context);
                 break;
 
                 case ALTERTABLE_FILEFORMAT:
@@ -295,6 +298,10 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
 
     public boolean isHiveProcessPopulateDeprecatedAttributes() {
         return hiveProcessPopulateDeprecatedAttributes;
+    }
+
+    public static boolean isSkipTempTables() {
+        return skipTempTables;
     }
 
     public PreprocessAction getPreprocessActionForHiveTable(String qualifiedName) {

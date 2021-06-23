@@ -49,12 +49,9 @@ import java.util.Set;
 
 public class CreateHiveProcess extends BaseHiveEvent {
     private static final Logger LOG = LoggerFactory.getLogger(CreateHiveProcess.class);
-    private final boolean skipTempTables;
 
-    public CreateHiveProcess(AtlasHiveHookContext context, boolean skipTempTables) {
+    public CreateHiveProcess(AtlasHiveHookContext context) {
         super(context);
-
-        this.skipTempTables = skipTempTables;
     }
 
     @Override
