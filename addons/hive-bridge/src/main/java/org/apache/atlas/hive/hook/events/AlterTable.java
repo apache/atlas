@@ -29,7 +29,7 @@ import java.util.List;
 
 public class AlterTable extends CreateTable {
     public AlterTable(AtlasHiveHookContext context) {
-        super(context, true);
+        super(context);
     }
 
     @Override

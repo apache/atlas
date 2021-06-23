@@ -58,19 +58,20 @@ public class AtlasHiveHookContext {
 
     private boolean isSkippedInputEntity;
     private boolean isSkippedOutputEntity;
+    private boolean skipTempTables;
 
     public AtlasHiveHookContext(HiveHook hook, HiveOperation hiveOperation, HookContext hiveContext,
-                                HiveHookObjectNamesCache knownObjects) throws Exception {
-        this(hook, hiveOperation, hiveContext, knownObjects, null, null);
+                                HiveHookObjectNamesCache knownObjects, boolean skipTempTables) throws Exception {
+        this(hook, hiveOperation, hiveContext, knownObjects, null, null, skipTempTables);
     }
 
     public AtlasHiveHookContext(HiveHook hook, HiveOperation hiveOperation, HiveHookObjectNamesCache knownObjects,
-                                HiveMetastoreHook metastoreHook, ListenerEvent listenerEvent) throws Exception {
-        this(hook, hiveOperation, null, knownObjects, metastoreHook, listenerEvent);
+                                HiveMetastoreHook metastoreHook, ListenerEvent listenerEvent, boolean skipTempTables) throws Exception {
+        this(hook, hiveOperation, null, knownObjects, metastoreHook, listenerEvent, skipTempTables);
     }
 
     public AtlasHiveHookContext(HiveHook hook, HiveOperation hiveOperation, HookContext hiveContext, HiveHookObjectNamesCache knownObjects,
-                                HiveMetastoreHook metastoreHook, ListenerEvent listenerEvent) throws Exception {
+                                HiveMetastoreHook metastoreHook, ListenerEvent listenerEvent, boolean skipTempTables) throws Exception {
         this.hook             = hook;
         this.hiveOperation    = hiveOperation;
         this.hiveContext      = hiveContext;
@@ -79,6 +80,7 @@ public class AtlasHiveHookContext {
         this.metastoreHook    = metastoreHook;
         this.metastoreEvent   = listenerEvent;
         this.metastoreHandler = (listenerEvent != null) ? metastoreEvent.getIHMSHandler() : null;
+        this.skipTempTables   = skipTempTables;
 
         init();
     }
@@ -129,6 +131,10 @@ public class AtlasHiveHookContext {
         if (!isSkippedOutputEntity) {
             isSkippedOutputEntity = true;
         }
+    }
+
+    public boolean isSkipTempTables() {
+        return skipTempTables;
     }
 
     public LineageInfo getLineageInfo() {
