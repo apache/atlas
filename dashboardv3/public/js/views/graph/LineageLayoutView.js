@@ -226,6 +226,13 @@ define(['require',
                 this.labelFullText = false;
             },
             onClickSaveSvg: function(e, a) {
+                var that = this;
+                if (that.lineageRelationshipLength >= 1000) {
+                    Utils.notifyInfo({
+                        content: "There was an error in downloading lineage: Lineage exceeds display parameters!"
+                    });
+                    return;
+                }
                 this.LineageHelperRef.exportLineage();
             },
             onClickZoomIn: function() {
@@ -254,6 +261,16 @@ define(['require',
                             return;
                         }
                         data["legends"] = options ? options.legends : true;
+                        // show only main part of lineage current entity is at bottom, so reverse is done
+                        var relationsReverse = data.relations ? data.relations.reverse() : null,
+                            lineageMaxRelationCount = 9000;
+                        if (relationsReverse.length > lineageMaxRelationCount) {
+                            data.relations = relationsReverse.splice(relationsReverse.length - lineageMaxRelationCount, relationsReverse.length - 1);
+                            Utils.notifyInfo({
+                                content: "Lineage exceeds display parameters and hence only upto 9000 relationships from this lineage can be displayed"
+                            });
+                        }
+                        that.lineageRelationshipLength = data.relations.length;
                         that.createGraph(data);
                         that.renderLineageTypeSearch(data);
                     },
@@ -269,6 +286,7 @@ define(['require',
             createGraph: function(data) {
                 var that = this;
                 $('.resizeGraph').css("height", this.$('.svg').height() + "px");
+
                 this.LineageHelperRef = new LineageHelper.default({
                     entityDefCollection: this.entityDefCollection.fullCollection.toJSON(),
                     data: data,
