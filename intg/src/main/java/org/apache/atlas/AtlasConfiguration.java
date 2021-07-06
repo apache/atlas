@@ -78,6 +78,7 @@ public enum AtlasConfiguration {
     PROCESS_NAME_UPDATE_PATCH("atlas.process.name.update.patch", false),
     STORE_DIFFERENTIAL_AUDITS("atlas.entity.audit.differential", false),
     DSL_EXECUTOR_TRAVERSAL("atlas.dsl.executor.traversal", true),
+    DSL_CACHED_TRANSLATOR("atlas.dsl.cached.translator", true),
     DEBUG_METRICS_ENABLED("atlas.debug.metrics.enabled", false),
     TASKS_USE_ENABLED("atlas.tasks.enabled", true);
 
