@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.query.executors;
 
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.query.AtlasDSL;
@@ -28,6 +29,7 @@ import org.apache.atlas.repository.graphdb.AtlasGraphTraversal;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.utils.LruCache;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.slf4j.Logger;
@@ -44,9 +46,17 @@ public class TraversalBasedExecutor implements DSLQueryExecutor {
     private static final String DEFAULT_LIMIT_OFFSET_TEMPLATE = " limit %d offset %d";
     private static final String CLAUSE_OFFSET_ZERO            = " offset 0";
 
+    private static final Translator translator;
+
     private final AtlasTypeRegistry     typeRegistry;
     private final AtlasGraph            graph;
     private final EntityGraphRetriever  entityRetriever;
+
+    static {
+        translator = AtlasConfiguration.DSL_CACHED_TRANSLATOR.getBoolean()
+                            ? new CachedTranslator()
+                            : new Translator();
+    }
 
     public TraversalBasedExecutor(AtlasTypeRegistry typeRegistry, AtlasGraph graph, EntityGraphRetriever entityRetriever) {
         this.typeRegistry    = typeRegistry;
@@ -106,28 +116,60 @@ public class TraversalBasedExecutor implements DSLQueryExecutor {
     }
 
     private GremlinQuery toTraversal(String query, int limit, int offset) throws AtlasBaseException {
-        QueryParams params = QueryParams.getNormalizedParams(limit, offset);
-
-        query = getStringWithLimitOffset(query, params);
-
-        AtlasDSL.Translator dslTranslator = new AtlasDSL.Translator(query, typeRegistry, params.offset(), params.limit());
-        GremlinQuery        gremlinQuery  = dslTranslator.translate();
-        AtlasGraphTraversal result        = GremlinClauseToTraversalTranslator.run(this.graph, gremlinQuery.getClauses());
+        GremlinQuery gremlinQuery  = translator.translate(typeRegistry, query, limit, offset);
+        AtlasGraphTraversal result = GremlinClauseToTraversalTranslator.run(this.graph, gremlinQuery.getClauses());
 
         gremlinQuery.setResult(result);
 
         return gremlinQuery;
     }
 
-    private String getStringWithLimitOffset(String query, QueryParams params) {
-        if (!query.contains(DSL_KEYWORD_LIMIT) && !query.contains(DSL_KEYWORD_OFFSET)) {
-            query += String.format(DEFAULT_LIMIT_OFFSET_TEMPLATE, params.limit(), params.offset());
+    private static class Translator {
+
+        public Translator() {
         }
 
-        if (query.contains(DSL_KEYWORD_LIMIT) && !query.contains(DSL_KEYWORD_OFFSET)) {
-            query += CLAUSE_OFFSET_ZERO;
+        public GremlinQuery translate(AtlasTypeRegistry typeRegistry, String query, int limit, int offset) throws AtlasBaseException {
+            QueryParams params = QueryParams.getNormalizedParams(limit, offset);
+            query = getStringWithLimitOffset(query, params);
+
+            AtlasDSL.Translator dslTranslator = new AtlasDSL.Translator(query, typeRegistry, params.offset(), params.limit());
+            GremlinQuery        gremlinQuery  = dslTranslator.translate();
+
+            return gremlinQuery;
         }
 
-        return query;
+        private String getStringWithLimitOffset(String query, QueryParams params) {
+            if (!query.contains(DSL_KEYWORD_LIMIT) && !query.contains(DSL_KEYWORD_OFFSET)) {
+                query += String.format(DEFAULT_LIMIT_OFFSET_TEMPLATE, params.limit(), params.offset());
+            }
+
+            if (query.contains(DSL_KEYWORD_LIMIT) && !query.contains(DSL_KEYWORD_OFFSET)) {
+                query += CLAUSE_OFFSET_ZERO;
+            }
+
+            return query;
+        }
+    }
+
+    private static class CachedTranslator extends Translator {
+        private final static int DSLQUERY_CACHE_SIZE = 100;
+        private final Map<String, GremlinQuery> cachedQuery;
+
+        public CachedTranslator() {
+            this.cachedQuery = new LruCache<>(DSLQUERY_CACHE_SIZE, 100000);
+        }
+
+        @Override
+        public GremlinQuery translate(AtlasTypeRegistry typeRegistry, String query, int limit, int offset) throws AtlasBaseException {
+            String key = String.format("%s-%s-%s", query, limit, offset);
+
+            if (!cachedQuery.containsKey(key)) {
+                GremlinQuery gremlinQuery = super.translate(typeRegistry, query, limit, offset);
+                cachedQuery.put(key, gremlinQuery);
+            }
+
+            return cachedQuery.get(key);
+        }
     }
 }
