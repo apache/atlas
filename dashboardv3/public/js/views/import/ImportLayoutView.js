@@ -91,7 +91,7 @@ define([
                     }
                 }
                 var headers = {};
-                headers[CommonViewFunction.restCsrfCustomHeader] = '""';
+                headers[CommonViewFunction.restCsrfCustomHeader] = CommonViewFunction.restCsrfValue || '""';
                 this.ui.importGlossary.dropzone({
                     url: that.isGlossary ? UrlLinks.glossaryImportUrl() : UrlLinks.businessMetadataImportUrl(),
                     clickable: true,
@@ -99,6 +99,7 @@ define([
                     autoProcessQueue: false,
                     maxFiles: 1,
                     addRemoveLinks: true,
+                    timeout: 0,
                     init: function() {
                         that.dropzone = this;
                         this.on('addedfile', function(file) {

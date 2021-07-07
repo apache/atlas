@@ -39,6 +39,7 @@ import org.apache.atlas.util.AtlasGremlinQueryProvider;
 import org.apache.atlas.util.SearchPredicateUtil;
 import org.apache.atlas.util.SearchPredicateUtil.*;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.collections.Predicate;
 import org.apache.commons.collections.PredicateUtils;
 import org.apache.commons.lang.StringUtils;
@@ -52,6 +53,7 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static org.apache.atlas.SortOrder.ASCENDING;
 import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_CLASSIFICATION_TYPES;
@@ -137,6 +139,7 @@ public abstract class SearchProcessor {
     protected       SearchProcessor        nextProcessor;
     protected       Predicate              inMemoryPredicate;
     protected       GraphIndexQueryBuilder graphIndexQueryBuilder;
+    protected       Integer                nextOffset;
 
     protected SearchProcessor(SearchContext context) {
         this.context = context;
@@ -149,6 +152,10 @@ public abstract class SearchProcessor {
         } else {
             nextProcessor.addProcessor(processor);
         }
+    }
+
+    public String getNextMarker() {
+        return SearchContext.MarkerUtil.getNextEncMarker(context.getSearchParameters(), nextOffset);
     }
 
     public abstract List<AtlasVertex> execute();
@@ -181,28 +188,41 @@ public abstract class SearchProcessor {
                StringUtils.equals(attrName, CUSTOM_ATTRIBUTES_PROPERTY_KEY);
     }
 
-    protected int collectResultVertices(final List<AtlasVertex> ret, final int startIdx, final int limit, int resultIdx, final List<AtlasVertex> entityVertices) {
-        for (AtlasVertex entityVertex : entityVertices) {
-            resultIdx++;
+    protected int collectResultVertices(final List<AtlasVertex> ret, final int startIdx, final int limit, int resultIdx, final Map<Integer, AtlasVertex> offsetEntityVertexMap, Integer marker) {
+            int lastOffset = resultIdx;
 
-            if (resultIdx <= startIdx) {
-                continue;
+            for (Map.Entry<Integer, AtlasVertex> offsetToEntity : offsetEntityVertexMap.entrySet()) {
+                resultIdx++;
+
+                if (resultIdx <= startIdx) {
+                    continue;
+                }
+
+                lastOffset = offsetToEntity.getKey();
+                ret.add(offsetToEntity.getValue());
+
+                if (ret.size() == limit) {
+                    break;
+                }
             }
-
-            ret.add(entityVertex);
-
-            if (ret.size() == limit) {
-                break;
-            }
-        }
-
-        return resultIdx;
+            return marker == null ? resultIdx : lastOffset;
     }
 
-    public void filter(List<AtlasVertex> entityVertices) {
-        if (nextProcessor != null && CollectionUtils.isNotEmpty(entityVertices)) {
-            nextProcessor.filter(entityVertices);
+    public LinkedHashMap<Integer, AtlasVertex> filter(LinkedHashMap<Integer, AtlasVertex> offsetEntityVertexMap) {
+        if (nextProcessor != null && MapUtils.isNotEmpty(offsetEntityVertexMap)) {
+            return nextProcessor.filter(offsetEntityVertexMap);
         }
+        return offsetEntityVertexMap;
+    }
+
+    public LinkedHashMap<Integer, AtlasVertex> filter(LinkedHashMap<Integer, AtlasVertex> offsetEntityVertexMap, Predicate predicate) {
+        if (predicate != null) {
+            offsetEntityVertexMap = offsetEntityVertexMap.entrySet()
+                    .stream()
+                    .filter(x -> predicate.evaluate(x.getValue()))
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (x, y) -> y, LinkedHashMap::new));
+        }
+        return offsetEntityVertexMap;
     }
 
     protected Predicate buildTraitPredict(Set<AtlasClassificationType> classificationTypes) {
@@ -361,13 +381,13 @@ public abstract class SearchProcessor {
         return ret;
     }
 
-    protected void filterWhiteSpaceClassification(List<AtlasVertex> entityVertices) {
-        if (CollectionUtils.isNotEmpty(entityVertices)) {
-            final Iterator<AtlasVertex> it              = entityVertices.iterator();
-            final Set<String>           typeAndSubTypes = context.getClassificationTypeNames();
+    protected LinkedHashMap<Integer,AtlasVertex> filterWhiteSpaceClassification(LinkedHashMap<Integer,AtlasVertex> offsetEntityVertexMap) {
+        if (offsetEntityVertexMap != null) {
+            final Iterator<Map.Entry<Integer, AtlasVertex>> it = offsetEntityVertexMap.entrySet().iterator();
+            final Set<String>                  typeAndSubTypes = context.getClassificationTypeNames();
 
             while (it.hasNext()) {
-                AtlasVertex  entityVertex        = it.next();
+                AtlasVertex  entityVertex        = it.next().getValue();
                 List<String> classificationNames = AtlasGraphUtilsV2.getClassificationNames(entityVertex);
 
                 if (CollectionUtils.isNotEmpty(classificationNames)) {
@@ -387,6 +407,7 @@ public abstract class SearchProcessor {
                 it.remove();
             }
         }
+        return offsetEntityVertexMap;
     }
 
     protected void constructFilterQuery(StringBuilder indexQuery, Set<? extends AtlasStructType> structTypes, FilterCriteria filterCriteria, Set<String> indexAttributes) {
@@ -1205,6 +1226,18 @@ public abstract class SearchProcessor {
         return vertices;
     }
 
+    protected LinkedHashMap<Integer, AtlasVertex> getVerticesFromIndexQueryResult(Iterator<AtlasIndexQuery.Result> idxQueryResult, LinkedHashMap<Integer, AtlasVertex> offsetEntityVertexMap, int qryOffset) {
+        if (idxQueryResult != null) {
+            while (idxQueryResult.hasNext()) {
+                AtlasVertex vertex = idxQueryResult.next().getVertex();
+
+                offsetEntityVertexMap.put(qryOffset++, vertex);
+            }
+        }
+
+        return offsetEntityVertexMap;
+    }
+
     protected Collection<AtlasVertex> getVertices(Iterator<AtlasVertex> iterator, Collection<AtlasVertex> vertices) {
         if (iterator != null) {
             while (iterator.hasNext()) {
@@ -1215,6 +1248,18 @@ public abstract class SearchProcessor {
         }
 
         return vertices;
+    }
+
+    protected LinkedHashMap<Integer, AtlasVertex> getVertices(Iterator<AtlasVertex> iterator, LinkedHashMap<Integer, AtlasVertex> offsetEntityVertexMap, int qryOffset) {
+        if (iterator != null) {
+            while (iterator.hasNext()) {
+                AtlasVertex vertex = iterator.next();
+
+                offsetEntityVertexMap.put(qryOffset++, vertex);
+            }
+        }
+
+        return offsetEntityVertexMap;
     }
 
     protected Set<String> getGuids(List<AtlasVertex> vertices) {

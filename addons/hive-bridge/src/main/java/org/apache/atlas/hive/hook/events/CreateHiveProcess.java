@@ -49,12 +49,9 @@ import java.util.Set;
 
 public class CreateHiveProcess extends BaseHiveEvent {
     private static final Logger LOG = LoggerFactory.getLogger(CreateHiveProcess.class);
-    private final boolean skipTempTables;
 
-    public CreateHiveProcess(AtlasHiveHookContext context, boolean skipTempTables) {
+    public CreateHiveProcess(AtlasHiveHookContext context) {
         super(context);
-
-        this.skipTempTables = skipTempTables;
     }
 
     @Override
@@ -292,6 +289,7 @@ public class CreateHiveProcess extends BaseHiveEvent {
         return entity != null && !context.isMetastoreHook()
             && (context.getHiveOperation().equals(HiveOperation.CREATETABLE_AS_SELECT)
              || context.getHiveOperation().equals(HiveOperation.CREATEVIEW)
-             || context.getHiveOperation().equals(HiveOperation.ALTERVIEW_AS));
+             || context.getHiveOperation().equals(HiveOperation.ALTERVIEW_AS)
+             || context.getHiveOperation().equals(HiveOperation.CREATE_MATERIALIZED_VIEW));
     }
 }

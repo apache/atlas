@@ -48,6 +48,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -257,7 +258,27 @@ public class DSLVisitor extends AtlasDSLParserBaseVisitor<Void> {
         if (CollectionUtils.isNotEmpty(expr.exprRight())) {
             processExprRight(expr, gremlinQueryComposer);
         } else {
+            GremlinQueryComposer original = gremlinQueryComposer.newInstance();
+            original.addAll(gremlinQueryComposer.getQueryClauses());
+
             processExpr(expr.compE(), gremlinQueryComposer);
+
+            if (gremlinQueryComposer.hasAnyTraitAttributeClause()) {
+                gremlinQueryComposer.addAll(original.getQueryClauses());
+                processExprForTrait(expr, gremlinQueryComposer);
+            }
+
+        }
+    }
+
+    private void processExprForTrait(final ExprContext expr, GremlinQueryComposer gremlinQueryComposer) {
+        //add AND clause
+        GremlinQueryComposer nestedProcessor = gremlinQueryComposer.createNestedProcessor();
+        processExpr(expr.compE(), nestedProcessor);
+
+        GremlinClauseList clauseList         = nestedProcessor.getQueryClauses();
+        if (clauseList.size() > 1) {
+            gremlinQueryComposer.addAndClauses(Collections.singletonList(nestedProcessor));
         }
     }
 

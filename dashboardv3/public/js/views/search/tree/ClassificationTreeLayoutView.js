@@ -686,6 +686,12 @@ define([
                         allowCancel: true
                     }).open();
                 modal.$el.find("button.ok").attr("disabled", "true");
+                view.ui.tagName.on('keyup input', function(e) {
+                    view.ui.description.val($(this).val().replace(/\s+/g, ' '));
+                });
+                view.ui.description.on('input keydown', function(e) {
+                    $(this).val($(this).val().replace(/\s+/g, ' '));
+                });
                 modal.on("shownModal", function() {
                     view.ui.parentTag.select2({
                         multiple: true,
@@ -865,16 +871,25 @@ define([
             if (this.tagId) {
                 var deleteTagData = this.classificationDefCollection.fullCollection.findWhere({ guid: this.tagId });
                 if (deleteTagData) {
-                    var tagName = deleteTagData.get("name");
+                    var tagName = deleteTagData.get("name"),
+                        superTypeOfDeleteTag = deleteTagData.get('superTypes'),
+                        superTypeObj = superTypeOfDeleteTag ? this.classificationDefCollection.fullCollection.findWhere({ name: superTypeOfDeleteTag[0] }) : null;
                     deleteTagData.deleteTag({
                         typeName: tagName,
                         success: function() {
                             Utils.notifySuccess({
                                 content: "Classification " + tagName + Messages.getAbbreviationMsg(false, 'deleteSuccessMessage')
                             });
+                            //delete current classification from subTypes list of parent classification if any
+                            if (superTypeObj) {
+                                var parentSubTypeUpdate = _.reject(superTypeObj.get('subTypes'), function(subtype) {
+                                    return subtype === tagName;
+                                });
+                                superTypeObj.set('subTypes', parentSubTypeUpdate);
+                            }
                             // if deleted tag is prviously searched then remove that tag url from save state of tab.
-                            var searchUrl = Globals.saveApplicationState.tabState.searchUrl;
-                            var urlObj = Utils.getUrlState.getQueryParams(searchUrl);
+                            var searchUrl = Globals.saveApplicationState.tabState.searchUrl,
+                                urlObj = Utils.getUrlState.getQueryParams(searchUrl);
                             that.classificationDefCollection.fullCollection.remove(deleteTagData);
                             // to update tag list of search tab fetch typeHeaders.
                             //that.typeHeaders.fetch({ reset: true });

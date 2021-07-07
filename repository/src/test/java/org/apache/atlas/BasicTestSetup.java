@@ -153,7 +153,7 @@ public abstract class BasicTestSetup extends AtlasTestBase {
         
         createClassificationTypes();
 
-        AtlasEntity salesDB = database("Sales", "Sales Database", "John ETL", "hdfs://host:8000/apps/warehouse/sales");
+        AtlasEntity salesDB = database("Sales", "/apps/warehouse/Sales Database", "John ETL", "hdfs://host:8000/apps/warehouse/sales");
         entities.add(salesDB);
 
         AtlasEntity sd =
@@ -193,7 +193,7 @@ public abstract class BasicTestSetup extends AtlasTestBase {
         entities.add(timeDim);
 
         AtlasEntity reportingDB =
-                database("Reporting", "reporting database", "Jane BI", "hdfs://host:8000/apps/warehouse/reporting");
+                database("Reporting", "/apps/warehouse/reporting database", "Jane BI", "hdfs://host:8000/apps/warehouse/reporting");
         entities.add(reportingDB);
 
         sd = storageDescriptor("hdfs://host:8000/apps/warehouse/sales", "TextInputFormat", "TextOutputFormat", true, ImmutableList.of(column("time_id", "int", "time id")));
@@ -229,7 +229,7 @@ public abstract class BasicTestSetup extends AtlasTestBase {
                                          ImmutableList.of(salesFactDaily), "create table as select ", "plan", "id", "graph", ETL_CLASSIFICATION);
         entities.add(loadSalesDaily);
 
-        AtlasEntity logDB = database("Logging", null, "Tim ETL", "hdfs://host:8000/apps/warehouse/logging");
+        AtlasEntity logDB = database("Logging", "/apps/warehouse/logging", "Tim ETL", "hdfs://host:8000/apps/warehouse/logging");
         entities.add(logDB);
 
         sd = storageDescriptor("hdfs://host:8000/apps/warehouse/sales", "TextInputFormat", "TextOutputFormat", true, ImmutableList.of(column("time_id", "int", "time id")));
@@ -305,7 +305,8 @@ public abstract class BasicTestSetup extends AtlasTestBase {
     }
 
     protected void createClassificationTypes() {
-        List<AtlasClassificationDef> cds =  Arrays.asList(new AtlasClassificationDef(DIMENSION_CLASSIFICATION, "Dimension Classification", "1.0"),
+        List<AtlasClassificationDef> cds =  Arrays.asList(new AtlasClassificationDef(DIMENSION_CLASSIFICATION, "Dimension Classification", "1.0",
+                        Arrays.asList(new AtlasStructDef.AtlasAttributeDef("timeAttr","string"), new AtlasStructDef.AtlasAttributeDef("productAttr","string"))),
                 new AtlasClassificationDef(FACT_CLASSIFICATION, "Fact Classification", "1.0"),
                 new AtlasClassificationDef(PII_CLASSIFICATION, "PII Classification", "1.0"),
                 new AtlasClassificationDef(METRIC_CLASSIFICATION, "Metric Classification", "1.0"),
@@ -336,8 +337,9 @@ public abstract class BasicTestSetup extends AtlasTestBase {
         database.setAttribute("name", name);
         database.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, "qualified:" + name);
         database.setAttribute("description", description);
+        database.setAttribute("userDescription", description);
         database.setAttribute("owner", owner);
-        database.setAttribute("locationUri", locationUri);
+        database.setAttribute("location", locationUri);
         database.setAttribute("createTime", System.currentTimeMillis());
         database.setAttribute("clusterName", "cl1");
         database.setClassifications(Stream.of(traitNames).map(AtlasClassification::new).collect(Collectors.toList()));
@@ -388,7 +390,15 @@ public abstract class BasicTestSetup extends AtlasTestBase {
         table.setAttribute("sd", getAtlasObjectId(sd));
 
         table.setAttribute("columns", getAtlasObjectIds(columns));
-        table.setClassifications(Stream.of(traitNames).map(AtlasClassification::new).collect(Collectors.toList()));
+        if (name.equals("time_dim")) {
+            AtlasClassification classification = new AtlasClassification(traitNames[0], new HashMap<String, Object>() {{ put("timeAttr", "timeValue"); }});
+            table.setClassifications(Collections.singletonList(classification));
+        } else if (name.equals("product_dim")) {
+            AtlasClassification classification = new AtlasClassification(traitNames[0], new HashMap<String, Object>() {{ put("productAttr", "productValue"); }});
+            table.setClassifications(Collections.singletonList(classification));
+        } else {
+            table.setClassifications(Stream.of(traitNames).map(AtlasClassification::new).collect(Collectors.toList()));
+        }
 
         sd.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, dbName + "." + name + "@" + clusterName + "_storage");
 

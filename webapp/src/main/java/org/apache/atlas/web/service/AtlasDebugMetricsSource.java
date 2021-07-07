@@ -41,7 +41,9 @@ public class AtlasDebugMetricsSource {
 
     protected @Metric(always = true)  MutableRate entityREST_getById;
     protected @Metric(always = true)  MutableRate entityREST_createOrUpdate;
+    protected @Metric(always = true)  MutableRate entityREST_partialUpdateEntityAttrByGuid;
     protected @Metric(always = true)  MutableRate entityREST_deleteByGuid;
+    protected @Metric(always = true)  MutableRate entityREST_getClassification;
     protected @Metric(always = true)  MutableRate entityREST_getClassifications;
     protected @Metric(always = true)  MutableRate entityREST_addClassificationsByUniqAttr;
     protected @Metric(always = true)  MutableRate entityREST_addClassifications;
@@ -583,8 +585,16 @@ public class AtlasDebugMetricsSource {
                 entityREST_createOrUpdate.add(timeConsumed);
                 break;
 
+            case EntityREST_partialUpdateEntityAttrByGuid:
+                entityREST_partialUpdateEntityAttrByGuid.add(timeConsumed);
+                break;
+
             case EntityREST_deleteByGuid:
                 entityREST_deleteByGuid.add(timeConsumed);
+                break;
+
+            case EntityREST_getClassification:
+                entityREST_getClassification.add(timeConsumed);
                 break;
 
             case EntityREST_getClassifications:

@@ -53,6 +53,7 @@ public class AtlasSearchResult implements Serializable {
     private List<AtlasFullTextResult>      fullTextResult;
     private Map<String, AtlasEntityHeader> referredEntities;
     private long                           approximateCount = -1;
+    private String                         nextMarker;
 
     public AtlasSearchResult() {}
 
@@ -131,8 +132,12 @@ public class AtlasSearchResult implements Serializable {
 
     public void setApproximateCount(long approximateCount) { this.approximateCount = approximateCount; }
 
+    public String getNextMarker() { return nextMarker; }
+
+    public void setNextMarker(String nextMarker) { this.nextMarker = nextMarker; }
+
     @Override
-    public int hashCode() { return Objects.hash(queryType, searchParameters, queryText, type, classification, entities, attributes, fullTextResult, referredEntities); }
+    public int hashCode() { return Objects.hash(queryType, searchParameters, queryText, type, classification, entities, attributes, fullTextResult, referredEntities, nextMarker); }
 
     @Override
     public boolean equals(Object o) {
@@ -147,7 +152,8 @@ public class AtlasSearchResult implements Serializable {
                Objects.equals(entities, that.entities) &&
                Objects.equals(attributes, that.attributes) &&
                Objects.equals(fullTextResult, that.fullTextResult) &&
-               Objects.equals(referredEntities, that.referredEntities);
+               Objects.equals(referredEntities, that.referredEntities) &&
+               Objects.equals(nextMarker, that.nextMarker);
     }
 
     public void addEntity(AtlasEntityHeader newEntity) {
@@ -190,6 +196,7 @@ public class AtlasSearchResult implements Serializable {
                 ", fullTextResult=" + fullTextResult +
                 ", referredEntities=" + referredEntities +
                 ", approximateCount=" + approximateCount +
+                ", nextMarker=" + nextMarker +
                 '}';
     }
 

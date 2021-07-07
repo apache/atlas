@@ -237,6 +237,11 @@ define([
             var that = this;
             require(["views/site/Header", "views/glossary/GlossaryContainerLayoutView", "views/search/SearchDefaultLayoutView", "views/site/SideNavLayoutView"], function(Header, GlossaryContainerLayoutView, SearchDefaultLayoutView, SideNavLayoutView) {
                 var paramObj = Utils.getUrlState.getQueryParams();
+                //Below if condition is added  to handle "when Glossary tab does not have any glossary and selected in Old UI and switched to New UI is show continous loading
+                if (paramObj === undefined) {
+                    that.defaultAction();
+                    return;
+                }
                 that.renderViewIfNotExists(that.getHeaderOptions(Header));
                 var options = _.extend({
                         guid: id,

@@ -577,6 +577,11 @@ hr[size="10"] {
             -webkit-border-radius: 0 6px 6px 6px;
             -moz-border-radius: 0 6px 6px;
             border-radius: 0 6px 6px 6px;
+
+            .submenu {
+                left: -125%;
+                top: -5px;
+            }
         }
 
         &:hover>.dropdown-menu {

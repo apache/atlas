@@ -22,6 +22,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.query.antlr4.AtlasDSLParser;
+import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection;
@@ -60,6 +61,19 @@ public class GremlinQueryComposerTest {
         verify("Table isa Dimension", expected);
         verify("Table is Dimension", expected);
         verify("Table where Table is Dimension", expected);
+    }
+
+    @Test()
+    public void classificationAttributes() {
+        String expected1 = "g.V().outE('classifiedAs').has('__name', within('Dimension')).outV().and(__.out('classifiedAs').has('Dimension.timeAttr', eq('value')).dedup().in('classifiedAs')).dedup().limit(25).toList()";
+        String expected2 = "g.V().outE('classifiedAs').has('__name', within('Dimension')).outV().as('d').and(__.out('classifiedAs').has('Dimension.timeAttr', eq('value')).dedup().in('classifiedAs')).dedup().limit(25).toList()";
+        String expected3 = "g.V().has('__typeName', 'Table').and(__.has('Table.name', eq('time_dim')),__.out('classifiedAs').has('Dimension.timeAttr', eq('value')).dedup().in('classifiedAs')).dedup().limit(25).toList()";
+        String expected4 = "g.V().has('__typeName', 'Table').and(__.out('classifiedAs').has('Dimension.timeAttr', eq('value')).dedup().in('classifiedAs')).dedup().limit(25).toList()";
+
+        verify("Dimension where Dimension.timeAttr = 'value'", expected1);
+        verify("Dimension as d where d.timeAttr = 'value'",expected2);
+        verify("Table where (name = 'time_dim' and Dimension.timeAttr = 'value')",expected3);
+        verify("Table where Dimension.timeAttr = 'value'", expected4);
     }
 
     @Test
@@ -197,6 +211,10 @@ public class GremlinQueryComposerTest {
                 "g.V().has('__typeName', 'Table').has('Table.owner', org.janusgraph.core.attribute.Text.textRegex(\".*Tab_.*\")).dedup().limit(25).toList()");
         verify("from Table where (db.name = \"Reporting\")",
                 "g.V().has('__typeName', 'Table').out('__Table.db').has('DB.name', eq(\"Reporting\")).dedup().in('__Table.db').dedup().limit(25).toList()");
+        verify( "Table where owner like \"Jane/*\"", "g.V().has('__typeName', 'Table').has('Table.owner', org.janusgraph.core.attribute.Text.textRegex(\"Jane\\/.*\")).dedup().limit(25).toList()");
+        verify( "Table where Asset.name like \"/sales_*\"", "g.V().has('__typeName', 'Table').has('Asset.__s_name', org.janusgraph.core.attribute.Text.textRegex(\"\\/sales_.*\")).dedup().limit(25).toList()");
+        verify( "Table where Asset.name like \"sales:*\"", "g.V().has('__typeName', 'Table').has('Asset.__s_name', org.janusgraph.core.attribute.Text.textRegex(\"sales:.*\")).dedup().limit(25).toList()");
+        verify( "Table where Asset.name like \"table[0-9]\"", "g.V().has('__typeName', 'Table').has('Asset.__s_name', org.janusgraph.core.attribute.Text.textRegex(\"table[0-9]\")).dedup().limit(25).toList()");
     }
 
     @Test
@@ -444,7 +462,7 @@ public class GremlinQueryComposerTest {
     }
 
     private String getGremlinQuery(String dsl, AtlasDSLParser.QueryContext queryContext, int expectedNumberOfErrors) {
-        AtlasTypeRegistry             registry = mock(AtlasTypeRegistry.class);
+        AtlasTypeRegistry registry = mock(AtlasTypeRegistry.class);
         org.apache.atlas.query.Lookup lookup   = new TestLookup(registry);
         GremlinQueryComposer.Context  context  = new GremlinQueryComposer.Context(lookup);
         AtlasDSL.QueryMetadata queryMetadata   = new AtlasDSL.QueryMetadata(queryContext);
@@ -470,7 +488,7 @@ public class GremlinQueryComposerTest {
         public AtlasType getType(String typeName) throws AtlasBaseException {
             AtlasType type;
             if(typeName.equals("PII") || typeName.equals("Dimension")) {
-                type = mock(AtlasType.class);
+                type = mock(AtlasClassificationType.class);
                 when(type.getTypeCategory()).thenReturn(TypeCategory.CLASSIFICATION);
             } else {
                 type = mock(AtlasEntityType.class);
@@ -551,6 +569,14 @@ public class GremlinQueryComposerTest {
 
         @Override
         public boolean hasAttribute(GremlinQueryComposer.Context context, String attributeName) {
+            if (context.getActiveType() instanceof AtlasClassificationType) {
+                return attributeName.equals("timeAttr");
+            }
+
+            if (context.getActiveEntityType() == null) {
+                return false;
+            }
+
             return (context.getActiveTypeName().equals("Table") && attributeName.equals("db")) ||
                     (context.getActiveTypeName().equals("Table") && attributeName.equals("columns")) ||
                     (context.getActiveTypeName().equals("Table") && attributeName.equals("createTime")) ||

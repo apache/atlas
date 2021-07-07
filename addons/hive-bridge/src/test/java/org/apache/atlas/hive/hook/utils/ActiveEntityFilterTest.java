@@ -21,13 +21,13 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.notification.HookNotification;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.utils.TestResourceFileUtils;
-import org.apache.commons.collections.MapUtils;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -37,13 +37,15 @@ import java.util.Set;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
 
 public class ActiveEntityFilterTest {
-    private static String FILE_SUFFIX = "-v2";
+    private static String FILE_SUFFIX_ACTUAL_RESULTS = "-v2";
+    private static String ADDITIONAL_TYPE_HDFS_PATH  = "hdfs_path";
 
     @BeforeClass
     public void setup() {
-        ActiveEntityFilter.init(true);
+        ActiveEntityFilter.init(true, Arrays.asList(new String[]{ADDITIONAL_TYPE_HDFS_PATH}));
     }
 
     @Test
@@ -55,11 +57,12 @@ public class ActiveEntityFilterTest {
         assertMessageFromFile("hs2-alter-view");
         assertMessageFromFile("hs2-drop-table");
         assertAtlasEntitiesWithExtInfoFromFile("hs2-create-process");
+        assertMessageFromFile("hs2-load-inpath");
     }
 
     private void assertMessageFromFile(String msgFile) throws IOException {
         List incoming = loadList(msgFile);
-        List expected = loadList(msgFile + FILE_SUFFIX);
+        List expected = loadList(msgFile + FILE_SUFFIX_ACTUAL_RESULTS);
         int expectedSize = expected.size();
 
         List<HookNotification> actual = ActiveEntityFilter.apply((List<HookNotification>) incoming);
@@ -136,9 +139,9 @@ public class ActiveEntityFilterTest {
 
     private void assertAtlasEntitiesWithExtInfoFromFile(String entityFile) throws IOException {
         AtlasEntity.AtlasEntitiesWithExtInfo incoming = TestResourceFileUtils.readObjectFromJson("", entityFile, AtlasEntity.AtlasEntitiesWithExtInfo.class);
-        AtlasEntity.AtlasEntitiesWithExtInfo expected = TestResourceFileUtils.readObjectFromJson("", entityFile + FILE_SUFFIX, AtlasEntity.AtlasEntitiesWithExtInfo.class);
+        AtlasEntity.AtlasEntitiesWithExtInfo expected = TestResourceFileUtils.readObjectFromJson("", entityFile + FILE_SUFFIX_ACTUAL_RESULTS, AtlasEntity.AtlasEntitiesWithExtInfo.class);
 
-        HiveDDLEntityFilter hiveLineageEntityFilter = new HiveDDLEntityFilter();
+        HiveDDLEntityFilter hiveLineageEntityFilter = new HiveDDLEntityFilter(null);
         AtlasEntity.AtlasEntitiesWithExtInfo actual = hiveLineageEntityFilter.apply(incoming);
         assertAtlasEntitiesWithExtInfo(actual, expected);
     }
@@ -150,7 +153,10 @@ public class ActiveEntityFilterTest {
         assertEquals(actual.getEntities().size(), expected.getEntities().size());
         assertEntity(actual.getEntities(), expected.getEntities());
 
-        assertEquals(MapUtils.isEmpty(actual.getReferredEntities()), MapUtils.isEmpty(expected.getReferredEntities()));
+        if (expected.getReferredEntities() == null && actual.getReferredEntities() != null) {
+            fail("expected.getReferredEntities() == null, but expected.getReferredEntities() != null");
+        }
+
         if (expected.getReferredEntities() != null && actual.getReferredEntities() != null) {
             assertEntity(actual.getReferredEntities(), expected.getReferredEntities());
         }
@@ -197,7 +203,7 @@ public class ActiveEntityFilterTest {
                 String actualJson = AtlasType.toJson(actualEntity);
                 String expectedJson = AtlasType.toJson(expectedEntity);
 
-                assertEquals(AtlasType.fromJson(actualJson, LinkedHashMap.class), AtlasType.fromJson(expectedJson, LinkedHashMap.class));
+                Assert.assertEquals(actualJson, expectedJson, "Actual: " + actualJson);
             }
         }
     }

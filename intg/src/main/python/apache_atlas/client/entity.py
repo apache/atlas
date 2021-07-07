@@ -254,13 +254,13 @@ class EntityClient:
             {query}), None, query_params)
 
     def get_entity_headers(self, tag_update_start_time):
-        query_params = {"tagUpdateStartTime", tag_update_start_time}
+        query_params = {"tagUpdateStartTime": tag_update_start_time}
 
         return self.client.call_api(EntityClient.GET_BULK_HEADERS, AtlasEntityHeaders, query_params)
 
     # Business attributes APIs
     def add_or_update_business_attributes(self, entity_guid, is_overwrite, business_attributes):
-        query_params = {"isOverwrite", is_overwrite}
+        query_params = {"isOverwrite": is_overwrite}
 
         self.client.call_api(EntityClient.ADD_BUSINESS_ATTRIBUTE.format_path({'entity_guid': entity_guid}), None,
                              query_params, business_attributes)

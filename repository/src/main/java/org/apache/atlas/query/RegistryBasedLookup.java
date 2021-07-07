@@ -71,7 +71,11 @@ class RegistryBasedLookup implements Lookup {
 
     @Override
     public String getQualifiedName(GremlinQueryComposer.Context context, String name) throws AtlasBaseException {
-        AtlasEntityType et = context.getActiveEntityType();
+        AtlasStructType et = context.getActiveEntityType();
+        if (et == null && isClassificationType(context)) {
+            et = (AtlasClassificationType) context.getActiveType();
+        }
+
         if (et == null) {
             return "";
         }
@@ -81,8 +85,12 @@ class RegistryBasedLookup implements Lookup {
 
     @Override
     public boolean isPrimitive(GremlinQueryComposer.Context context, String attributeName) {
-        AtlasEntityType et = context.getActiveEntityType();
-        if(et == null) {
+        AtlasStructType et = context.getActiveEntityType();
+        if (et == null && isClassificationType(context)) {
+           et = (AtlasClassificationType) context.getActiveType();
+        }
+
+        if (et == null) {
             return false;
         }
 
@@ -140,9 +148,12 @@ class RegistryBasedLookup implements Lookup {
 
     @Override
     public boolean hasAttribute(GremlinQueryComposer.Context context, String typeName) {
-        AtlasEntityType entityType = context.getActiveEntityType();
+        AtlasStructType type = context.getActiveEntityType();
 
-        return getAttribute(entityType, typeName) != null;
+        if (type == null && isClassificationType(context)) {
+            type = (AtlasClassificationType) context.getActiveType();
+        }
+        return getAttribute(type, typeName) != null;
     }
 
     @Override
@@ -269,23 +280,41 @@ class RegistryBasedLookup implements Lookup {
         return attribute.getVertexPropertyName();
     }
 
-    private AtlasStructType.AtlasAttribute getAttribute(AtlasEntityType entityType, String attrName) {
+    private AtlasStructType.AtlasAttribute getAttribute(AtlasStructType type, String attrName) {
         AtlasStructType.AtlasAttribute ret = null;
 
-        if (entityType != null) {
+        if (type == null) {
+            return ret;
+        }
+
+        if (type instanceof AtlasEntityType) {
+            AtlasEntityType entityType = (AtlasEntityType) type;
             ret = entityType.getAttribute(attrName);
 
             if (ret == null) {
                 ret = entityType.getRelationshipAttribute(attrName, null);
             }
+
+            return ret;
+        }
+
+        if (type instanceof AtlasClassificationType) {
+            AtlasClassificationType classificationType = (AtlasClassificationType) type;
+            return classificationType.getAttribute(attrName);
+
         }
 
         return ret;
     }
 
-    private AtlasType getAttributeType(AtlasEntityType entityType, String attrName) {
+    private AtlasType getAttributeType(AtlasStructType entityType, String attrName) {
         AtlasStructType.AtlasAttribute attribute = getAttribute(entityType, attrName);
 
         return attribute != null ? attribute.getAttributeType() : null;
     }
+
+    private boolean isClassificationType(GremlinQueryComposer.Context context) {
+        return context.getActiveType() instanceof AtlasClassificationType;
+    }
+
 }

@@ -93,9 +93,6 @@ define(['require',
             fetchAuditCollection: function() {
                 this.commonTableOptions['atlasPaginationOpts'] = this.getPaginationOptions();
                 this.fetchCollection();
-                this.entityCollection.comparator = function(model) {
-                    return -model.get('timestamp');
-                }
             },
             bindEvents: function() {},
             getPaginationOptions: function() {
@@ -118,9 +115,7 @@ define(['require',
                 this.entityCollection.fetch({
                     success: function(dataOrCollection, response) {
                         that.entityCollection.state.pageSize = that.getPageCount();
-                        if (!that.fromSort) {
-                            that.entityCollection.fullCollection.reset(response, $.extend(options));
-                        }
+                        that.entityCollection.reset(response, $.extend(options));
                     },
                     complete: function() {
                         that.$('.fontLoader').hide();
@@ -128,7 +123,6 @@ define(['require',
                         that.$('.auditTable').show();
                         if (that.fromSort) {
                             that.fromSort = !that.fromSort;
-                            that.renderTableLayoutView();
                         }
                     },
                     silent: true
@@ -187,7 +181,6 @@ define(['require',
                                 'views/audit/CreateAuditTableLayoutView',
                             ], function(CreateAuditTableLayoutView) {
                                 that.action = model.get('action');
-                                // $(el.target).attr('disabled', true);
                                 var eventModel = that.entityCollection.fullCollection.findWhere({ 'eventKey': model.get('eventKey') }).toJSON(),
                                     collectionModel = new that.entityCollection.model(eventModel),
                                     view = new CreateAuditTableLayoutView({ guid: that.guid, entityModel: collectionModel, action: that.action, entity: that.entity, entityName: that.entityName, attributeDefs: that.attributeDefs });

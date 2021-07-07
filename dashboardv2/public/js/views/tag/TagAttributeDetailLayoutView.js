@@ -276,14 +276,14 @@ define(['require',
                     });
             },
             textAreaChangeEvent: function(view) {
-                if (this.model.get('description') === view.ui.description.val()) {
+                if (this.model.get('description') === view.ui.description.val() || view.ui.description.val().length == 0 || view.ui.description.val().trim().length === 0) {
                     this.modal.$el.find('button.ok').prop('disabled', true);
                 } else {
                     this.modal.$el.find('button.ok').prop('disabled', false);
                 }
             },
             onPublishClick: function(view) {
-                var saveObj = _.extend(this.model.toJSON(), { 'description': view.ui.description.val() });
+                var saveObj = _.extend(this.model.toJSON(), { 'description': view.ui.description.val().trim() });
                 this.onSaveButton(saveObj, Messages.tag.updateTagDescriptionMessage);
                 this.ui.description.show();
             },
@@ -303,6 +303,7 @@ define(['require',
                         allowCancel: true,
                     }).open();
                     view.ui.description.on('keyup input', function(e) {
+                        $(this).val($(this).val().replace(/\s+/g, ' '));
                         that.textAreaChangeEvent(view);
                         e.stopPropagation();
                     });

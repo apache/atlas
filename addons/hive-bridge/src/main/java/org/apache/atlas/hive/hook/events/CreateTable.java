@@ -42,12 +42,9 @@ import static org.apache.hadoop.hive.ql.plan.HiveOperation.*;
 
 public class CreateTable extends BaseHiveEvent {
     private static final Logger LOG = LoggerFactory.getLogger(CreateTable.class);
-    private final boolean skipTempTables;
 
-    public CreateTable(AtlasHiveHookContext context, boolean skipTempTables) {
+    public CreateTable(AtlasHiveHookContext context) {
         super(context);
-
-        this.skipTempTables = skipTempTables;
     }
 
     @Override

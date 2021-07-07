@@ -21,7 +21,7 @@ import json
 import logging
 
 from apache_atlas.model.enums    import EntityOperation
-from apache_atlas.model.instance import AtlasEntityWithExtInfo, EntityMutations, AtlasRelatedObjectId
+from apache_atlas.model.instance import AtlasEntityWithExtInfo, AtlasRelatedObjectId
 from apache_atlas.utils          import type_coerce
 
 

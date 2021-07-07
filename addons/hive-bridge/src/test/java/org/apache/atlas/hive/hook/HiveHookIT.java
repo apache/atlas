@@ -282,7 +282,7 @@ public class HiveHookIT extends HiveITBase {
     private Set<ReadEntity> getInputs(String inputName, Entity.Type entityType) throws HiveException {
         final ReadEntity entity;
 
-        if (Entity.Type.DFS_DIR.equals(entityType)) {
+        if (Entity.Type.DFS_DIR.equals(entityType) || Entity.Type.LOCAL_DIR.equals(entityType)) {
             entity = new TestReadEntity(lower(new Path(inputName).toString()), entityType);
         } else {
             entity = new TestReadEntity(getQualifiedTblName(inputName), entityType);
@@ -602,7 +602,7 @@ public class HiveHookIT extends HiveITBase {
         Assert.assertNotNull(ddlQueries);
         Assert.assertEquals(ddlQueries.size(), 1);
 
-        assertProcessIsRegistered(constructEvent(query, HiveOperation.LOAD, null, getOutputs(tableName, Entity.Type.TABLE)));
+        assertProcessIsRegistered(constructEvent(query, HiveOperation.LOAD, getInputs("file://" + loadFile, Entity.Type.LOCAL_DIR), getOutputs(tableName, Entity.Type.TABLE)));
     }
 
     @Test
@@ -840,7 +840,7 @@ public class HiveHookIT extends HiveITBase {
         runCommand(query);
 
         HiveEventContext event = constructEvent(query,  HiveOperation.QUERY,
-                getInputs(tableName, Entity.Type.TABLE), null);
+                getInputs(tableName, Entity.Type.TABLE), getOutputs(randomLocalPath, Entity.Type.LOCAL_DIR));
         AtlasEntity hiveProcess = validateProcess(event);
         AtlasEntity hiveProcessExecution = validateProcessExecution(hiveProcess, event);
         AtlasObjectId process = toAtlasObjectId(hiveProcessExecution.getRelationshipAttribute(
@@ -1057,7 +1057,7 @@ public class HiveHookIT extends HiveITBase {
 
         String tblId = assertTableIsRegistered(DEFAULT_DB, tableName);
 
-        String filename = "pfile://" + mkdir("exportUnPartitioned");
+        String filename = "file://" + mkdir("exportUnPartitioned");
         String query    = "export table " + tableName + " to \"" + filename + "\"";
 
         runCommand(query);
@@ -1110,7 +1110,7 @@ public class HiveHookIT extends HiveITBase {
         Assert.assertNotEquals(processEntity.getGuid(), processEntity2.getGuid());
 
         //Should create another process
-        filename = "pfile://" + mkdir("export2UnPartitioned");
+        filename = "file://" + mkdir("export2UnPartitioned");
         query    = "export table " + tableName + " to \"" + filename + "\"";
 
         runCommand(query);
@@ -1174,7 +1174,7 @@ public class HiveHookIT extends HiveITBase {
         String tblId = assertTableIsRegistered(DEFAULT_DB, tableName);
 
         //Add a partition
-        String partFile = "pfile://" + mkdir("partition");
+        String partFile = "file://" + mkdir("partition");
         String query    = "alter table " + tableName + " add partition (dt='"+ PART_FILE + "') location '" + partFile + "'";
 
         runCommand(query);

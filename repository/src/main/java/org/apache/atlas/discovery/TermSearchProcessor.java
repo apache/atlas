@@ -20,12 +20,15 @@ package org.apache.atlas.discovery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
-
+import java.util.Map;
+import java.util.stream.Collectors;
 
 
 public class TermSearchProcessor extends SearchProcessor {
@@ -58,15 +61,22 @@ public class TermSearchProcessor extends SearchProcessor {
             perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TermSearchProcessor.execute(" + context +  ")");
         }
 
+        //marker functionality will not work when there is need to fetch Term vertices and get entities from it
         try {
             if (CollectionUtils.isNotEmpty(assignedEntities)) {
+                LinkedHashMap<Integer, AtlasVertex> offsetEntityVertexMap = new LinkedHashMap<>();
+
                 final int               startIdx = context.getSearchParameters().getOffset();
                 final int               limit    = context.getSearchParameters().getLimit();
                 final List<AtlasVertex> tmpList  = new ArrayList<>(assignedEntities);
 
-                super.filter(tmpList);
+                for (int i = 0; i < tmpList.size(); i++) {
+                    offsetEntityVertexMap.put(i, tmpList.get(i));
+                }
 
-                collectResultVertices(ret, startIdx, limit, 0, tmpList);
+                offsetEntityVertexMap = super.filter(offsetEntityVertexMap);
+
+                collectResultVertices(ret, startIdx, limit, 0, offsetEntityVertexMap, null);
             }
         } finally {
             AtlasPerfTracer.log(perf);
@@ -79,37 +89,41 @@ public class TermSearchProcessor extends SearchProcessor {
         return ret;
     }
 
+    //this filter is never used
     @Override
-    public void filter(List<AtlasVertex> entityVertices) {
+    public LinkedHashMap<Integer, AtlasVertex> filter(LinkedHashMap<Integer, AtlasVertex> offsetEntityVertexMap) {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> TermSearchProcessor.filter({})", entityVertices.size());
+            LOG.debug("==> TermSearchProcessor.filter({})", offsetEntityVertexMap.size());
         }
 
-        if (CollectionUtils.isNotEmpty(entityVertices)) {
+        if (MapUtils.isNotEmpty(offsetEntityVertexMap)) {
             if (CollectionUtils.isEmpty(assignedEntities)) {
-                entityVertices.clear();
+                offsetEntityVertexMap.clear();
             } else {
-                CollectionUtils.filter(entityVertices, o -> {
-                    if (o instanceof AtlasVertex) {
-                        AtlasVertex entityVertex = (AtlasVertex) o;
+                offsetEntityVertexMap.entrySet().stream().
+                        filter(o -> {
+                            if (o instanceof AtlasVertex) {
+                                AtlasVertex entityVertex = (AtlasVertex) o;
 
-                        for (AtlasVertex assignedEntity : assignedEntities) {
-                            if (assignedEntity.getId().equals(entityVertex.getId())) {
-                                return true;
+                                for (AtlasVertex assignedEntity : assignedEntities) {
+                                    if (assignedEntity.getId().equals(entityVertex.getId())) {
+                                        return true;
+                                    }
+                                }
                             }
-                        }
-                    }
 
                     return false;
-                });
+                }).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (x, y) -> y, LinkedHashMap::new));
             }
         }
 
-        super.filter(entityVertices);
+        offsetEntityVertexMap = super.filter(offsetEntityVertexMap);
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("<== TermSearchProcessor.filter(): ret.size()={}", entityVertices.size());
+            LOG.debug("<== TermSearchProcessor.filter(): ret.size()={}", offsetEntityVertexMap.size());
         }
+
+        return offsetEntityVertexMap;
     }
 
     @Override

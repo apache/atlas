@@ -240,32 +240,26 @@ public class EntitySearchProcessor extends SearchProcessor {
         }
 
         try {
-            final int startIdx = context.getSearchParameters().getOffset();
-            final int limit    = context.getSearchParameters().getLimit();
+            final int limit       = context.getSearchParameters().getLimit();
+            final Integer marker  = context.getMarker();
+            final int startIdx    = marker != null ? marker : context.getSearchParameters().getOffset();
 
             // when subsequent filtering stages are involved, query should start at 0 even though startIdx can be higher
             //
             // first 'startIdx' number of entries will be ignored
-            int qryOffset = (nextProcessor != null || (graphQuery != null && indexQuery != null)) ? 0 : startIdx;
+            // if marker is provided, start query with marker offset
+            int qryOffset;
+            if (marker != null) {
+                qryOffset = marker;
+            } else {
+                qryOffset = (nextProcessor != null || (graphQuery != null && indexQuery != null)) ? 0 : startIdx;
+            }
             int resultIdx = qryOffset;
 
-            final List<AtlasVertex> entityVertices = new ArrayList<>();
-
-            SortOrder sortOrder = context.getSearchParameters().getSortOrder();
-            String sortBy = context.getSearchParameters().getSortBy();
-
-            final AtlasEntityType entityType = context.getEntityTypes().iterator().next();
-            AtlasAttribute sortByAttribute = entityType.getAttribute(sortBy);
-            if (sortByAttribute == null) {
-                sortBy = null;
-            } else {
-                sortBy = sortByAttribute.getVertexPropertyName();
-            }
-
-            if (sortOrder == null) { sortOrder = ASCENDING; }
+            LinkedHashMap<Integer, AtlasVertex> offsetEntityVertexMap = new LinkedHashMap<>();
 
             for (; ret.size() < limit; qryOffset += limit) {
-                entityVertices.clear();
+                offsetEntityVertexMap.clear();
 
                 if (context.terminateSearch()) {
                     LOG.warn("query terminated: {}", context.getSearchParameters());
@@ -277,41 +271,36 @@ public class EntitySearchProcessor extends SearchProcessor {
 
                 if (indexQuery != null) {
                     Iterator<AtlasIndexQuery.Result> idxQueryResult = executeIndexQuery(context, indexQuery, qryOffset, limit);
+                    offsetEntityVertexMap = getVerticesFromIndexQueryResult(idxQueryResult, offsetEntityVertexMap, qryOffset);
 
-                    getVerticesFromIndexQueryResult(idxQueryResult, entityVertices);
-
-                    isLastResultPage = entityVertices.size() < limit;
-
-                    // Do in-memory filtering before the graph query
-                    CollectionUtils.filter(entityVertices, inMemoryPredicate);
-
-                    if (graphQueryPredicate != null) {
-                        CollectionUtils.filter(entityVertices, graphQueryPredicate);
-                    }
                 } else {
                     Iterator<AtlasVertex> queryResult = graphQuery.vertices(qryOffset, limit).iterator();
-
-                    getVertices(queryResult, entityVertices);
-
-                    isLastResultPage = entityVertices.size() < limit;
-
-                    // Do in-memory filtering
-                    CollectionUtils.filter(entityVertices, inMemoryPredicate);
-
-                    //incase when operator is NEQ in pipeSeperatedSystemAttributes
-                    if (graphQueryPredicate != null) {
-                        CollectionUtils.filter(entityVertices, graphQueryPredicate);
-                    }
+                    offsetEntityVertexMap = getVertices(queryResult, offsetEntityVertexMap, qryOffset);
                 }
 
-                super.filter(entityVertices);
+                isLastResultPage = offsetEntityVertexMap.size() < limit;
+                // Do in-memory filtering
+                offsetEntityVertexMap = super.filter(offsetEntityVertexMap, inMemoryPredicate);
 
-                resultIdx = collectResultVertices(ret, startIdx, limit, resultIdx, entityVertices);
+                //incase when operator is NEQ in pipeSeperatedSystemAttributes
+                if (graphQueryPredicate != null) {
+                    offsetEntityVertexMap = super.filter(offsetEntityVertexMap, graphQueryPredicate);
+                }
+
+                offsetEntityVertexMap = super.filter(offsetEntityVertexMap);
+
+                resultIdx = collectResultVertices(ret, startIdx, limit, resultIdx, offsetEntityVertexMap, marker);
 
                 if (isLastResultPage) {
+                    resultIdx = MarkerUtil.MARKER_END - 1;
                     break;
                 }
             }
+
+            if (marker != null) {
+                nextOffset = resultIdx + 1;
+            }
+
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -324,23 +313,25 @@ public class EntitySearchProcessor extends SearchProcessor {
     }
 
     @Override
-    public void filter(List<AtlasVertex> entityVertices) {
+    public LinkedHashMap<Integer, AtlasVertex> filter(LinkedHashMap<Integer,AtlasVertex> offsetEntityVertexMap) {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> EntitySearchProcessor.filter({})", entityVertices.size());
+            LOG.debug("==> EntitySearchProcessor.filter({})", offsetEntityVertexMap.size());
         }
 
         // Since we already have the entity vertices, a in-memory filter will be faster than fetching the same
         // vertices again with the required filtering
         if (filterGraphQueryPredicate != null) {
             LOG.debug("Filtering in-memory");
-            CollectionUtils.filter(entityVertices, filterGraphQueryPredicate);
+            offsetEntityVertexMap = super.filter(offsetEntityVertexMap, filterGraphQueryPredicate);
         }
 
-        super.filter(entityVertices);
+        offsetEntityVertexMap = super.filter(offsetEntityVertexMap);
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("<== EntitySearchProcessor.filter(): ret.size()={}", entityVertices.size());
+            LOG.debug("<== EntitySearchProcessor.filter(): ret.size()={}", offsetEntityVertexMap.size());
         }
+
+        return offsetEntityVertexMap;
     }
 
     @Override

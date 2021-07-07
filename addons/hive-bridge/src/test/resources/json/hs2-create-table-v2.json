@@ -1,5 +1,20 @@
 {
-  "referredEntities": {},
+  "referredEntities": {
+    "-14529329955589455": {
+      "typeName": "hdfs_path",
+      "attributes": {
+        "path": "hdfs://ve0126.halxg.cloudera.com:8020/tmp/external/hh6.csv",
+        "qualifiedName": "hdfs://ve0126.halxg.cloudera.com:8020/tmp/external/hh6.csv@cm",
+        "clusterName": "cm",
+        "name": "/tmp/external/hh6.csv"
+      },
+      "guid": "-14529329955589455",
+      "isIncomplete": false,
+      "provenanceType": 0,
+      "version": 0,
+      "proxy": false
+    }
+  },
   "entities": [
     {
       "typeName": "hive_process",
@@ -25,7 +40,6 @@
       "relationshipAttributes": {
         "outputs": [
           {
-            "guid": "-14529329955589452",
             "typeName": "hive_table",
             "uniqueAttributes": {
               "qualifiedName": "cadb02.hh6@cm"
@@ -88,7 +102,6 @@
       "version": 0,
       "relationshipAttributes": {
         "table": {
-          "guid": "-14529329955589452",
           "typeName": "hive_table",
           "uniqueAttributes": {
             "qualifiedName": "cadb02.hh6@cm"

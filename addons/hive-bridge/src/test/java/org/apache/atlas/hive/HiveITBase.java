@@ -175,7 +175,7 @@ public class HiveITBase {
     }
 
     protected String createTestDFSPath(String path) throws Exception {
-        return "pfile://" + mkdir(path);
+        return "file://" + mkdir(path);
     }
 
     protected String file(String tag) throws Exception {

@@ -69,7 +69,9 @@ public class DebugMetricsWrapper {
 
 		public static final String EntityREST_getById                        = EntityRESTPrefix + "getById(..)";
 		public static final String EntityREST_createOrUpdate                 = EntityRESTPrefix + "createOrUpdate(..)";
+		public static final String EntityREST_partialUpdateEntityAttrByGuid  = EntityRESTPrefix + "partialUpdateEntityAttrByGuid(..)";
 		public static final String EntityREST_deleteByGuid                   = EntityRESTPrefix + "deleteByGuid(..)";
+		public static final String EntityREST_getClassification              = EntityRESTPrefix + "getClassification(..)";
 		public static final String EntityREST_getClassifications             = EntityRESTPrefix + "getClassifications(..)";
 		public static final String EntityREST_addClassificationsByUA         = EntityRESTPrefix + "addClassificationsByUniqueAttribute(..)";
 		public static final String EntityREST_addClassifications             = EntityRESTPrefix + "addClassifications(..)";

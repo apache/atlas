@@ -165,7 +165,6 @@ def expandWebApp(dir):
         except OSError as e:
             if e.errno != errno.EEXIST:
                 raise e
-            pass
         atlasWarPath = os.path.join(atlasDir(), "server", "webapp", "atlas.war")
         if (isCygwin()):
             atlasWarPath = convertCygwinPath(atlasWarPath)

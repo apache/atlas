@@ -70,7 +70,7 @@ public class KafkaBridge {
     private static final String URI                               = "uri";
     private static final String CLUSTERNAME                       = "clusterName";
     private static final String TOPIC                             = "topic";
-    private static final String FORMAT_KAKFA_TOPIC_QUALIFIED_NAME = "%s@%s";
+    private static final String FORMAT_KAFKA_TOPIC_QUALIFIED_NAME = "%s@%s";
 
     private final List<String>  availableTopics;
     private final String        metadataNamespace;
@@ -255,7 +255,7 @@ public class KafkaBridge {
 
     @VisibleForTesting
     static String getTopicQualifiedName(String metadataNamespace, String topic) {
-        return String.format(FORMAT_KAKFA_TOPIC_QUALIFIED_NAME, topic.toLowerCase(), metadataNamespace);
+        return String.format(FORMAT_KAFKA_TOPIC_QUALIFIED_NAME, topic.toLowerCase(), metadataNamespace);
     }
 
     private AtlasEntityWithExtInfo findTopicEntityInAtlas(String topicQualifiedName) {

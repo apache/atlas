@@ -115,7 +115,7 @@ public class HiveMetastoreHookImpl extends MetaStoreEventListener {
 
             try {
                 HiveOperation        oper    = operContext.getOperation();
-                AtlasHiveHookContext context = new AtlasHiveHookContext(hiveHook, oper, hiveHook.getKnownObjects(), this, listenerEvent);
+                AtlasHiveHookContext context = new AtlasHiveHookContext(hiveHook, oper, hiveHook.getKnownObjects(), this, listenerEvent, hiveHook.isSkipTempTables());
                 BaseHiveEvent        event   = null;
 
                 switch (oper) {
@@ -132,7 +132,7 @@ public class HiveMetastoreHookImpl extends MetaStoreEventListener {
                         break;
 
                     case CREATETABLE:
-                        event = new CreateTable(context, true);
+                        event = new CreateTable(context);
                         break;
 
                     case DROPTABLE:

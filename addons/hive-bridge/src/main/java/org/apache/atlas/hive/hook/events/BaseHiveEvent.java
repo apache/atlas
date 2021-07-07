@@ -162,6 +162,7 @@ public abstract class BaseHiveEvent {
 
     public static final Map<Integer, String> OWNER_TYPE_TO_ENUM_VALUE = new HashMap<>();
 
+    protected final boolean skipTempTables;
 
     static {
         OWNER_TYPE_TO_ENUM_VALUE.put(1, "USER");
@@ -173,7 +174,8 @@ public abstract class BaseHiveEvent {
 
 
     protected BaseHiveEvent(AtlasHiveHookContext context) {
-        this.context = context;
+        this.context        = context;
+        this.skipTempTables = context.isSkipTempTables();
     }
 
     public AtlasHiveHookContext getContext() {
@@ -230,7 +232,8 @@ public abstract class BaseHiveEvent {
         switch(entity.getType()) {
             case TABLE:
             case PARTITION:
-            case DFS_DIR: {
+            case DFS_DIR:
+            case LOCAL_DIR: {
                 ret = toAtlasEntity(entity, entityExtInfo, skipTempTables);
             }
             break;
@@ -278,7 +281,8 @@ public abstract class BaseHiveEvent {
             }
             break;
 
-            case DFS_DIR: {
+            case DFS_DIR:
+            case LOCAL_DIR: {
                 URI location = entity.getLocation();
 
                 if (location != null) {
@@ -819,6 +823,7 @@ public abstract class BaseHiveEvent {
                 return getQualifiedName(entity.getTable());
 
             case DFS_DIR:
+            case LOCAL_DIR:
                 return getQualifiedName(entity.getLocation());
         }
 
