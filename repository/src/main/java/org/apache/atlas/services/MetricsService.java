@@ -26,9 +26,9 @@ import org.apache.atlas.model.metrics.AtlasMetrics;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
-import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.AtlasMetricJVMUtil;
@@ -38,7 +38,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -245,7 +244,12 @@ public class MetricsService {
 
         Collection<AtlasEntityDef> entityDefs = typeRegistry.getAllEntityDefs();
         if (CollectionUtils.isNotEmpty(entityDefs)) {
-            ret.getEntityDefs().addAll(entityDefs);
+            for(AtlasEntityDef entityDef : entityDefs) {
+                if(!(CollectionUtils.isNotEmpty(entityDef.getSuperTypes()) &&
+                        entityDef.getSuperTypes().contains(Constants.TYPE_NAME_INTERNAL))) {
+                    ret.getEntityDefs().add(entityDef);
+                }
+            }
         }
 
         Collection<AtlasClassificationDef> classificationTypes = typeRegistry.getAllClassificationDefs();

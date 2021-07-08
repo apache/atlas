@@ -87,7 +87,6 @@ public class MetricsServiceTest extends AtlasTestBase {
 
     private final Map<String, Long> activeEntityMetricsExpected = new HashMap<String, Long>() {{
         put("hive_storagedesc", 5L);
-        put("__ExportImportAuditEntry", 1L);
         put("AtlasServer", 1L);
         put("hive_column_lineage", 8L);
         put("hive_table", 5L);
@@ -153,7 +152,7 @@ public class MetricsServiceTest extends AtlasTestBase {
         assertNotNull(metrics);
 
         // general metrics
-        assertEquals(metrics.getNumericMetric(GENERAL, METRIC_ENTITY_COUNT).intValue(), 43);
+        assertEquals(metrics.getNumericMetric(GENERAL, METRIC_ENTITY_COUNT).intValue(), 42);
         assertEquals(metrics.getNumericMetric(GENERAL, METRIC_TAG_COUNT).intValue(), 1);
         assertTrue(metrics.getNumericMetric(GENERAL, METRIC_TYPE_UNUSED_COUNT).intValue() >= 10);
         assertTrue(metrics.getNumericMetric(GENERAL, METRIC_TYPE_COUNT).intValue() >= 44);
@@ -164,7 +163,7 @@ public class MetricsServiceTest extends AtlasTestBase {
         Map deletedEntityMetricsActual = (Map) metrics.getMetric(ENTITY, METRIC_ENTITY_DELETED);
 
         assertEquals(tagMetricsActual.size(), 1);
-        assertEquals(activeEntityMetricsActual.size(), 8);
+        assertEquals(activeEntityMetricsActual.size(), 7);
         assertEquals(deletedEntityMetricsActual.size(), 4);
 
         assertEquals(tagMetricsActual, tagMetricsExpected);
