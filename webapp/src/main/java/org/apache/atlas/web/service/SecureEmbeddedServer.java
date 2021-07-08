@@ -132,11 +132,12 @@ public class SecureEmbeddedServer extends EmbeddedServer {
         http_config.setSecurePort(port);
         http_config.setRequestHeaderSize(bufferSize);
         http_config.setResponseHeaderSize(bufferSize);
-        http_config.setSendServerVersion(true);
+        http_config.setSendServerVersion(false);
         http_config.setSendDateHeader(false);
 
         HttpConfiguration https_config = new HttpConfiguration(http_config);
         https_config.addCustomizer(new SecureRequestCustomizer());
+        https_config.setSendServerVersion(false);
 
         // SSL Connector
         ServerConnector sslConnector = new ServerConnector(server,

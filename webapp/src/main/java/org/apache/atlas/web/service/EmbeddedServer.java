@@ -97,6 +97,7 @@ public class EmbeddedServer {
         final int bufferSize = AtlasConfiguration.WEBSERVER_REQUEST_BUFFER_SIZE.getInt();;
         http_config.setResponseHeaderSize(bufferSize);
         http_config.setRequestHeaderSize(bufferSize);
+        http_config.setSendServerVersion(false);
 
         ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory(http_config));
         connector.setPort(port);
