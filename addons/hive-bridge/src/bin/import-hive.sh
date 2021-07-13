@@ -91,8 +91,11 @@ if [ -z "$HIVE_HOME" ]; then
 fi
 
 HIVE_CP="${HIVE_CONF}"
+# Multiple jars in HIVE_CP_EXCLUDE_LIST can be added using "\|" separator
+# Ex: HIVE_CP_EXCLUDE_LIST="javax.ws.rs-api\|jersey-multipart"
+HIVE_CP_EXCLUDE_LIST="javax.ws.rs-api"
 
-for i in "${HIVE_HOME}/lib/"*.jar; do
+for i in $(find "${HIVE_HOME}/lib/" -name  "*.jar" | grep -v "$HIVE_CP_EXCLUDE_LIST"); do
     HIVE_CP="${HIVE_CP}:$i"
 done
 
