@@ -48,28 +48,24 @@ public class AtlasPatchManager {
         this.context = new PatchContext(atlasGraph, typeRegistry, indexer, entityGraphMapper);
     }
 
-    @PostConstruct
-    public void init() {
-        LOG.info("==> AtlasPatchManager.init()");
-
-        // register all java patches here
-        handlers.add(new UniqueAttributePatch(context));
-        handlers.add(new ClassificationTextPatch(context));
-        handlers.add(new FreeTextRequestHandlerPatch(context));
-        handlers.add(new SuggestionsRequestHandlerPatch(context));
-        handlers.add(new IndexConsistencyPatch(context));
-        handlers.add(new ReIndexPatch(context));
-        handlers.add(new ProcessNamePatch(context));
-
-        LOG.info("<== AtlasPatchManager.init()");
-    }
-
     public AtlasPatches getAllPatches() {
         return context.getPatchRegistry().getAllPatches();
     }
 
     public void applyAll() {
         LOG.info("==> AtlasPatchManager.applyAll()");
+        
+        List<AtlasPatchHandler> localHandlers = new ArrayList<>();
+
+        localHandlers.add(new UniqueAttributePatch(context));
+        localHandlers.add(new ClassificationTextPatch(context));
+        localHandlers.add(new FreeTextRequestHandlerPatch(context));
+        localHandlers.add(new SuggestionsRequestHandlerPatch(context));
+        localHandlers.add(new IndexConsistencyPatch(context));
+        localHandlers.add(new ReIndexPatch(context));
+        localHandlers.add(new ProcessNamePatch(context));
+
+        localHandlers.addAll(handlers);
 
         try {
             for (AtlasPatchHandler handler : handlers) {
