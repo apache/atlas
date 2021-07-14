@@ -564,10 +564,15 @@ div.columnmanager-dropdown-container {
     padding-top: 20px;
 }
 
-.tooltip-inner {
-    max-width: 250px;
-}
-
 .select2-container--default .select2-search--inline .select2-search__field {
     width: 100% !important;
+}
+
+.tooltip-inner>div {
+    max-width: 250px;
+    text-align: left;
+
+    ul {
+        list-style: disc;
+    }
 }
