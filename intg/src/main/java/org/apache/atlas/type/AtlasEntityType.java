@@ -65,11 +65,12 @@ public class AtlasEntityType extends AtlasStructType {
     private static final String OPTION_SCHEMA_ATTRIBUTES     = "schemaAttributes";
     private static final String INTERNAL_TYPENAME            = "__internal";
 
-    private static final char   NS_ATTRIBUTE_NAME_SEPARATOR  = '.';
+    public static final String OPTION_APPEND_RELATIONSHIPS_ON_PARTIAL_UPDATE = "appendRelationshipsOnPartialUpdate";
 
-    private static final char DYN_ATTRIBUTE_NAME_SEPARATOR   = '.';
-    private static final char DYN_ATTRIBUTE_OPEN_DELIM       = '{';
-    private static final char DYN_ATTRIBUTE_CLOSE_DELIM      = '}';
+    private static final char NS_ATTRIBUTE_NAME_SEPARATOR  = '.';
+    private static final char DYN_ATTRIBUTE_NAME_SEPARATOR = '.';
+    private static final char DYN_ATTRIBUTE_OPEN_DELIM     = '{';
+    private static final char DYN_ATTRIBUTE_CLOSE_DELIM    = '}';
 
     private static final String[] ENTITY_HEADER_ATTRIBUTES = new String[]{NAME, DESCRIPTION, OWNER, CREATE_TIME};
     private static final String   ENTITY_ROOT_NAME         = "__ENTITY_ROOT";
@@ -326,7 +327,11 @@ public class AtlasEntityType extends AtlasStructType {
                 String         relationshipType = relationsEntry.getKey();
                 AtlasAttribute relationshipAttr = relationsEntry.getValue();
 
-                relationshipAttrDefs.add(new AtlasRelationshipAttributeDef(relationshipType, relationshipAttr.isLegacyAttribute(), relationshipAttr.getAttributeDef()));
+                AtlasRelationshipAttributeDef relationshipAttributeDef = new AtlasRelationshipAttributeDef(relationshipType, relationshipAttr.isLegacyAttribute(), relationshipAttr.getAttributeDef());
+
+                updateRelationshipAttrDefForPartialUpdate(relationshipAttributeDef, entityDef);
+
+                relationshipAttrDefs.add(relationshipAttributeDef);
             }
         }
 
@@ -366,6 +371,19 @@ public class AtlasEntityType extends AtlasStructType {
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("resolveReferencesPhase3({}): tagPropagationEdges={}", getTypeName(), tagPropagationEdges);
+        }
+    }
+
+    private void updateRelationshipAttrDefForPartialUpdate(AtlasRelationshipAttributeDef relationshipAttributeDef, AtlasEntityDef entityDef) {
+        String appendRelationshipsOnPartialUpdate = entityDef.getOption(OPTION_APPEND_RELATIONSHIPS_ON_PARTIAL_UPDATE);
+        String relationshipAttributeName          = relationshipAttributeDef.getName();
+
+        if (StringUtils.isNotEmpty(appendRelationshipsOnPartialUpdate)) {
+            Set<String> relationshipTypesToAppend = AtlasType.fromJson(appendRelationshipsOnPartialUpdate, Set.class);
+
+            if (CollectionUtils.isNotEmpty(relationshipTypesToAppend) && relationshipTypesToAppend.contains(relationshipAttributeName)) {
+                relationshipAttributeDef.setOption(AtlasAttributeDef.ATTRDEF_OPTION_APPEND_ON_PARTIAL_UPDATE, Boolean.toString(true));
+            }
         }
     }
 

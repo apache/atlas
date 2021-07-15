@@ -51,6 +51,7 @@ import org.testng.annotations.Test;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -558,6 +559,38 @@ public abstract class AtlasRelationshipStoreV2Test extends AtlasTestBase {
 
         AtlasEntity a2Entity = updatedEntities.getEntity(a2.getGuid());
         verifyRelationshipAttributeList(a2Entity, "manyB", ImmutableList.of(getAtlasObjectId(b1)));
+    }
+
+    @Test
+    public void testRelationshipAttributeOnPartialUpdate() throws Exception {
+        AtlasObjectId maxId = employeeNameIdMap.get("Max");
+        AtlasObjectId janeId = employeeNameIdMap.get("Jane");
+        AtlasObjectId mikeId = employeeNameIdMap.get("Mike");
+        AtlasObjectId johnId = employeeNameIdMap.get("John");
+
+        // Partial Update Max's Employee.friends reference with Jane and apply the change as a partial update.
+        // This should also update friends list of Max and Jane.
+        AtlasEntity maxEntityForUpdate = new AtlasEntity(EMPLOYEE_TYPE);
+        maxEntityForUpdate.setRelationshipAttribute("friends", Arrays.asList(janeId));
+
+        AtlasEntityType employeeType = typeRegistry.getEntityTypeByName(EMPLOYEE_TYPE);
+        Map<String, Object> uniqAttributes = Collections.<String, Object>singletonMap("name", "Max");
+
+        init();
+        EntityMutationResponse updateResponse = entityStore.updateByUniqueAttributes(employeeType, uniqAttributes, new AtlasEntityWithExtInfo(maxEntityForUpdate));
+
+        List<AtlasEntityHeader> partialUpdatedEntities = updateResponse.getPartialUpdatedEntities();
+        assertEquals(partialUpdatedEntities.size(), 2);
+        // 2 entities should have been updated:
+        // * Max to add  Employee.friends reference
+        // * Jane to add Max from Employee.friends
+        AtlasEntitiesWithExtInfo updatedEntities = entityStore.getByIds(ImmutableList.of(maxId.getGuid(), janeId.getGuid()));
+
+        AtlasEntity maxEntity = updatedEntities.getEntity(maxId.getGuid());
+        verifyRelationshipAttributeList(maxEntity, "friends", ImmutableList.of(mikeId, johnId, janeId));
+
+        AtlasEntity janeEntity = updatedEntities.getEntity(janeId.getGuid());
+        verifyRelationshipAttributeList(janeEntity, "friends", ImmutableList.of(maxId));
     }
 
     protected abstract void verifyRelationshipAttributeUpdate_NonComposite_OneToOne(AtlasEntity a1, AtlasEntity b);

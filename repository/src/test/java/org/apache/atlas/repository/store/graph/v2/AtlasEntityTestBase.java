@@ -210,7 +210,7 @@ public class AtlasEntityTestBase extends AtlasTestBase {
                     Assert.assertTrue(actualList.size() >= expectedList.size());
 
                     for (int i = 0; i < expectedList.size(); i++) {
-                        validateAttribute(entityExtInfo, actualList.get(i), expectedList.get(i), elemType, attrName);
+                        Assert.assertTrue(actualList.contains(expectedList.get(i)));
                     }
                 }
                 break;

@@ -37,6 +37,8 @@ import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations.EntityOperation;
+import org.apache.atlas.model.typedef.AtlasEntityDef;
+import org.apache.atlas.model.typedef.AtlasEntityDef.AtlasRelationshipAttributeDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinality;
 import org.apache.atlas.repository.Constants;
@@ -1392,6 +1394,7 @@ public class EntityGraphMapper {
         AtlasAttribute inverseRefAttribute = attribute.getInverseRefAttribute();
         Cardinality    cardinality         = attribute.getAttributeDef().getCardinality();
         List<Object>   newElementsCreated  = new ArrayList<>();
+        List<Object>   allArrayElements    = null;
         List<Object>   currentElements;
 
         if (isReference && !isSoftReference) {
@@ -1442,13 +1445,22 @@ public class EntityGraphMapper {
         }
 
         if (isReference && !isSoftReference) {
-            List<AtlasEdge> additionalEdges = removeUnusedArrayEntries(attribute, (List) currentElements, (List) newElementsCreated, ctx.getReferringVertex());
-            newElementsCreated.addAll(additionalEdges);
+            boolean isAppendOnPartialUpdate = getAppendOptionForRelationship(ctx.getReferringVertex(), attribute.getName());
+
+            if (isAppendOnPartialUpdate) {
+                allArrayElements = unionCurrentAndNewElements(attribute, (List) currentElements, (List) newElementsCreated);
+            } else {
+                List<AtlasEdge> activeCurrentElements = removeUnusedArrayEntries(attribute, (List) currentElements, (List) newElementsCreated, ctx.getReferringVertex());
+
+                allArrayElements = unionCurrentAndNewElements(attribute, activeCurrentElements, (List) newElementsCreated);
+            }
+        } else {
+            allArrayElements = newElementsCreated;
         }
 
         // add index to attributes of array type
-       for (int index = 0; index < newElementsCreated.size(); index++) {
-           Object element = newElementsCreated.get(index);
+       for (int index = 0; allArrayElements != null && index < allArrayElements.size(); index++) {
+           Object element = allArrayElements.get(index);
 
            if (element instanceof AtlasEdge) {
                AtlasGraphUtilsV2.setEncodedProperty((AtlasEdge) element, ATTRIBUTE_INDEX_PROPERTY_KEY, index);
@@ -1458,14 +1470,28 @@ public class EntityGraphMapper {
         if (isNewElementsNull) {
             setArrayElementsProperty(elementType, isSoftReference, ctx.getReferringVertex(), ctx.getVertexProperty(), null);
         } else {
-            setArrayElementsProperty(elementType, isSoftReference, ctx.getReferringVertex(), ctx.getVertexProperty(), newElementsCreated);
+            setArrayElementsProperty(elementType, isSoftReference, ctx.getReferringVertex(), ctx.getVertexProperty(), allArrayElements);
         }
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== mapArrayValue({})", ctx);
         }
 
-        return newElementsCreated;
+        return allArrayElements;
+    }
+
+    private boolean getAppendOptionForRelationship(AtlasVertex entityVertex, String relationshipAttributeName) {
+        boolean                             ret                       = false;
+        String                              entityTypeName            = AtlasGraphUtilsV2.getTypeName(entityVertex);
+        AtlasEntityDef                      entityDef                 = typeRegistry.getEntityDefByName(entityTypeName);
+        List<AtlasRelationshipAttributeDef> relationshipAttributeDefs = entityDef.getRelationshipAttributeDefs();
+
+        if (CollectionUtils.isNotEmpty(relationshipAttributeDefs)) {
+            ret = relationshipAttributeDefs.stream().anyMatch(relationshipAttrDef -> relationshipAttrDef.getName().equals(relationshipAttributeName)
+                    && relationshipAttrDef.isAppendOnPartialUpdate());
+        }
+
+        return ret;
     }
 
     private AtlasEdge createVertex(AtlasStruct struct, AtlasVertex referringVertex, String edgeLabel, EntityMutationContext context) throws AtlasBaseException {
@@ -1846,6 +1872,17 @@ public class EntityGraphMapper {
         }
 
         return ret;
+    }
+
+    private List<AtlasEdge> unionCurrentAndNewElements(AtlasAttribute attribute, List<AtlasEdge> currentElements, List<AtlasEdge> newElements) {
+        Collection<AtlasEdge> ret              = null;
+        AtlasType             arrayElementType = ((AtlasArrayType) attribute.getAttributeType()).getElementType();
+
+        if (arrayElementType != null && isReference(arrayElementType)) {
+            ret = CollectionUtils.union(currentElements, newElements);
+        }
+
+        return CollectionUtils.isNotEmpty(ret) ? new ArrayList<>(ret) : Collections.emptyList();
     }
 
     //Removes unused edges from the old collection, compared to the new collection
