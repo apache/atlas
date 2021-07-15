@@ -32,6 +32,7 @@ import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipEndDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
@@ -97,6 +98,7 @@ public final class TestRelationshipUtilsV2 {
                                                         createOptionalAttrDef("orgLevel", ORG_LEVEL_TYPE),
                                                         createOptionalAttrDef("shares", "long"),
                                                         createOptionalAttrDef("salary", "double"));
+        employeeType.setOption(AtlasEntityType.OPTION_APPEND_RELATIONSHIPS_ON_PARTIAL_UPDATE, "[\"friends\"]");
         /******* Department Type *******/
         AtlasEntityDef departmentType = createClassTypeDef(DEPARTMENT_TYPE, description(DEPARTMENT_TYPE), superType(null),
                                                         createUniqueRequiredAttrDef("name", "string"));
