@@ -48,7 +48,7 @@ import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getId
 public class ProcessNamePatch extends AtlasPatchHandler {
     private static final Logger LOG = LoggerFactory.getLogger(ProcessNamePatch.class);
 
-    private static final String PATCH_ID          = "JAVA_PATCH_0000_007";
+    private static final String PATCH_ID          = "JAVA_PATCH_0000_009";
     private static final String PATCH_DESCRIPTION = "Set name to qualifiedName.";
 
     private final PatchContext context;
