@@ -145,7 +145,7 @@ define([
         manualRender: function(options) {
             var that = this;
             _.extend(this, options);
-            if (Utils.getUrlState.isAdministratorTab() && this.guid) {
+            if (Utils.getUrlState.isBMDetailPage() && this.guid) {
                 this.ui.businessMetadataSearchTree.jstree(true).select_node(this.guid);
             } else {
                 this.ui.businessMetadataSearchTree.jstree(true).deselect_all();
