@@ -110,14 +110,17 @@ def main():
                mc.server_pid_not_running(pid)
 
     if is_hbase and mc.is_hbase_local(confdir):
-        print("configured for local hbase.")
+        print("\nConfigured for local HBase.")
         mc.configure_hbase(atlas_home)
+
+        print("Starting local HBase...")
         mc.run_hbase_action(mc.hbaseBinDir(atlas_home), "start", hbase_conf_dir, logdir)
-        print("hbase started.")
+
+        print("Local HBase started!")
 
     #solr setup
     if mc.is_solr_local(confdir):
-        print("configured for local solr.")
+        print("\nConfigured for local Solr.")
 
         if mc.is_cassandra_local(confdir):
             print("Cassandra embedded configured.")
@@ -128,12 +131,17 @@ def main():
             mc.run_zookeeper(mc.zookeeperBinDir(atlas_home), "start", logdir)
             print("zookeeper started.")
 
+        print("Starting local Solr...")
         mc.run_solr(mc.solrBinDir(atlas_home), "start", mc.get_solr_zk_url(confdir), mc.solrPort(), logdir, True, mc.solrHomeDir(atlas_home))
-        print("solr started.")
 
-        print("setting up solr collections...")
+        print("Local Solr started!")
+
+        print("\nCreating Solr collections for Atlas using config: " + mc.solrConfDir(atlas_home))
+
         mc.create_solr_collection(mc.solrBinDir(atlas_home), mc.solrConfDir(atlas_home), "vertex_index", logdir)
+
         mc.create_solr_collection(mc.solrBinDir(atlas_home), mc.solrConfDir(atlas_home), "edge_index", logdir)
+
         mc.create_solr_collection(mc.solrBinDir(atlas_home), mc.solrConfDir(atlas_home), "fulltext_index", logdir)
 
     #elasticsearch setup

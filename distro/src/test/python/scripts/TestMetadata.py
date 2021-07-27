@@ -109,13 +109,13 @@ class TestMetadata(unittest.TestCase):
                 call(['atlas_home/solr/bin/solr', 'start', '-z', 'localhost:9838', '-p', '9838', '-s', 'atlas_home/data/solr'], 'atlas_home/logs',
                      False, True),
                 call(['atlas_home/solr/bin/solr', 'create', '-c', 'vertex_index', '-d',
-                      'atlas_home/solr/server/solr/configsets/_default/conf', '-shards', '1', '-replicationFactor',
+                      'atlas_home/conf/solr', '-shards', '1', '-replicationFactor',
                       '1'], 'atlas_home/logs', False, True),
                 call(['atlas_home/solr/bin/solr', 'create', '-c', 'edge_index', '-d',
-                      'atlas_home/solr/server/solr/configsets/_default/conf', '-shards', '1', '-replicationFactor',
+                      'atlas_home/conf/solr', '-shards', '1', '-replicationFactor',
                       '1'], 'atlas_home/logs', False, True),
                 call(['atlas_home/solr/bin/solr', 'create', '-c', 'fulltext_index', '-d',
-                      'atlas_home/solr/server/solr/configsets/_default/conf', '-shards', '1', '-replicationFactor',
+                      'atlas_home/conf/solr', '-shards', '1', '-replicationFactor',
                       '1'], 'atlas_home/logs', False, True)]
 
             runProcess_mock.assert_has_calls(calls)
