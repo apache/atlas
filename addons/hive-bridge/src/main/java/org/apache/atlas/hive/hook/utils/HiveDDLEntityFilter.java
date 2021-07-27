@@ -47,6 +47,9 @@ public class HiveDDLEntityFilter implements EntityFilter {
         add(AtlasPathExtractorUtil.GCS_VIRTUAL_DIR);
         add(AtlasPathExtractorUtil.AWS_S3_V2_PSEUDO_DIR);
         add(AtlasPathExtractorUtil.AWS_S3_PSEUDO_DIR);
+        add(AtlasPathExtractorUtil.OZONE_KEY);
+        add(AtlasPathExtractorUtil.OZONE_BUCKET);
+        add(AtlasPathExtractorUtil.OZONE_VOLUME);
     }};
 
     private static final Set<String> typesToRetain = new HashSet<String>() {{
