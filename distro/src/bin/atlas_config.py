@@ -125,7 +125,7 @@ def solrHomeDir(dir):
     return os.environ.get(SOLR_HOME, os.path.join(dir, "data", "solr"))
 
 def solrConfDir(dir):
-    return os.environ.get(SOLR_CONF, os.path.join(dir, "solr", CONFIG_SETS_CONF))
+    return os.environ.get(SOLR_CONF, os.path.join(dir, "conf", "solr"))
 
 def solrPort():
     return os.environ.get(SOLR_PORT, DEFAULT_SOLR_PORT)
@@ -516,7 +516,7 @@ def get_atlas_url_port(confdir):
         else:
             port = getConfigWithDefault(confdir, ATLAS_HTTP_PORT, DEFAULT_ATLAS_HTTP_PORT)
 
-    print("starting atlas on port %s" % port)
+    print("Starting Atlas server on port: %s" % port)
     return port
 
 def get_atlas_url_host(confdir):
@@ -524,7 +524,7 @@ def get_atlas_url_host(confdir):
     host = getConfigWithDefault(confdir, ATLAS_SERVER_BIND_ADDRESS, DEFAULT_ATLAS_SERVER_HOST)
     if (host == '0.0.0.0'):
         host = DEFAULT_ATLAS_SERVER_HOST
-    print("starting atlas on host %s" % host)
+    print("\nStarting Atlas server on host: %s" % host)
     return host
 
 def wait_for_startup(confdir, wait):

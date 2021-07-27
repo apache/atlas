@@ -64,7 +64,7 @@ public final class ApplicationProperties extends PropertiesConfiguration {
     public static final String  LDAP_BIND_PASSWORD              =  "atlas.authentication.method.ldap.bind.password";
     public static final String  MASK_LDAP_PASSWORD              =  "********";
     public static final String  DEFAULT_GRAPHDB_BACKEND         = GRAPHBD_BACKEND_JANUS;
-    public static final boolean DEFAULT_SOLR_WAIT_SEARCHER      = true;
+    public static final boolean DEFAULT_SOLR_WAIT_SEARCHER      = false;
     public static final boolean DEFAULT_INDEX_MAP_NAME          = false;
     public static final AtlasRunMode DEFAULT_ATLAS_RUN_MODE     = AtlasRunMode.PROD;
     public static final String INDEX_SEARCH_MAX_RESULT_SET_SIZE = "atlas.graph.index.search.max-result-set-size";
@@ -342,11 +342,12 @@ public final class ApplicationProperties extends PropertiesConfiguration {
         if (indexBackend.equalsIgnoreCase(INDEX_BACKEND_SOLR)) {
             LOG.info("Atlas is running in MODE: {}.", runMode.name());
 
-            if(runMode == AtlasRunMode.PROD) {
-                //we do not want these configurations to be over written in Production mode.
-                clearPropertyDirect(SOLR_WAIT_SEARCHER_CONF);
-                addPropertyDirect(SOLR_WAIT_SEARCHER_CONF, DEFAULT_SOLR_WAIT_SEARCHER);
-                LOG.info("Setting solr-wait-searcher property '" + DEFAULT_SOLR_WAIT_SEARCHER + "'");
+            if (runMode == AtlasRunMode.PROD) {
+                if (!containsKey(SOLR_WAIT_SEARCHER_CONF)) {
+                    addPropertyDirect(SOLR_WAIT_SEARCHER_CONF, DEFAULT_SOLR_WAIT_SEARCHER);
+                }
+
+                LOG.info("Setting solr.wait-searcher property '" + getBoolean(SOLR_WAIT_SEARCHER_CONF) + "'");
 
                 clearPropertyDirect(INDEX_MAP_NAME_CONF);
                 addPropertyDirect(INDEX_MAP_NAME_CONF, DEFAULT_INDEX_MAP_NAME);
@@ -361,6 +362,7 @@ public final class ApplicationProperties extends PropertiesConfiguration {
         addPropertyDirect(INDEX_SEARCH_MAX_RESULT_SET_SIZE, indexMaxResultSetSize);
 
         LOG.info("Setting " + INDEX_SEARCH_MAX_RESULT_SET_SIZE + " = " + indexMaxResultSetSize);
+        LOG.info("Setting " + SOLR_WAIT_SEARCHER_CONF + " = " + getBoolean(SOLR_WAIT_SEARCHER_CONF));
 
         setDbCacheConfDefaults();
     }
