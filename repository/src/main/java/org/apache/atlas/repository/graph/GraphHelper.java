@@ -1605,6 +1605,27 @@ public final class GraphHelper {
         return ret;
     }
 
+    //get entity type of relationship (End vertex entity type) from relationship label
+    public static String getReferencedEntityTypeName(AtlasVertex entityVertex, String relation) {
+        String ret = null;
+        Iterator<AtlasEdge> edges    = GraphHelper.getAdjacentEdgesByLabel(entityVertex, AtlasEdgeDirection.BOTH, relation);
+
+        if (edges != null && edges.hasNext()) {
+            AtlasEdge   relationEdge = edges.next();
+            AtlasVertex outVertex    = relationEdge.getOutVertex();
+            AtlasVertex inVertex     = relationEdge.getInVertex();
+
+            if (outVertex != null && inVertex != null) {
+                String outVertexId    = outVertex.getIdForDisplay();
+                String entityVertexId = entityVertex.getIdForDisplay();
+                AtlasVertex endVertex = StringUtils.equals(outVertexId, entityVertexId) ? inVertex : outVertex;
+                ret                   = GraphHelper.getTypeName(endVertex);
+            }
+        }
+
+       return ret;
+    }
+
     public static boolean isRelationshipEdge(AtlasEdge edge) {
         if (edge == null) {
             return false;

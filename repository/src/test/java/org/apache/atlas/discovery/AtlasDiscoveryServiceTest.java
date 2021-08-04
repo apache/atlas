@@ -20,6 +20,7 @@ package org.apache.atlas.discovery;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.BasicTestSetup;
+import org.apache.atlas.SortOrder;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasQuickSearchResult;
@@ -53,6 +54,8 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
 
     @Inject
     private AtlasDiscoveryService discoveryService;
+
+    String salesFactGuid = null;
 
     @BeforeClass
     public void setup() throws Exception {
@@ -853,6 +856,54 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
         if (expected > 0) {
             assertAggregationMetrics(searchResult);
         }
+    }
+
+    @Test
+    public void searchRelatedEntitiesSortAsc() throws AtlasBaseException {
+        String guid = gethiveTableSalesFactGuid();
+
+        SearchParameters params = new SearchParameters();
+        params.setLimit(10);
+        AtlasSearchResult relResult  = discoveryService.searchRelatedEntities(guid, "__hive_table.columns", false, params);
+        List<AtlasEntityHeader> list = relResult.getEntities();
+
+        Assert.assertTrue(CollectionUtils.isNotEmpty(list));
+        Assert.assertTrue(list.size() == 4);
+        Assert.assertTrue(list.get(0).getDisplayText().equalsIgnoreCase("customer_id"));
+        Assert.assertTrue(list.get(3).getDisplayText().equalsIgnoreCase("time_id"));
+
+    }
+
+    @Test
+    public void searchRelatedEntitiesSortDesc() throws AtlasBaseException {
+        String guid = gethiveTableSalesFactGuid();
+
+        SearchParameters params = new SearchParameters();
+        params.setLimit(10);
+        params.setSortOrder(SortOrder.DESCENDING);
+
+        AtlasSearchResult relResult  = discoveryService.searchRelatedEntities(guid, "columns", false, params);
+        List<AtlasEntityHeader> list = relResult.getEntities();
+
+        Assert.assertTrue(CollectionUtils.isNotEmpty(list));
+        Assert.assertTrue(list.size() == 4);
+        Assert.assertTrue(list.get(3).getDisplayText().equalsIgnoreCase("customer_id"));
+        Assert.assertTrue(list.get(0).getDisplayText().equalsIgnoreCase("time_id"));
+    }
+
+    private String gethiveTableSalesFactGuid() throws AtlasBaseException {
+        if (salesFactGuid == null) {
+            SearchParameters params = new SearchParameters();
+            params.setTypeName(HIVE_TABLE_TYPE);
+            SearchParameters.FilterCriteria filterCriteria = getSingleFilterCondition("name",Operator.EQ, "sales_fact");
+            params.setEntityFilters(filterCriteria);
+            AtlasSearchResult result = discoveryService.searchWithParameters(params);
+
+            if (result != null && CollectionUtils.isNotEmpty(result.getEntities())) {
+                salesFactGuid = result.getEntities().get(0).getGuid();
+            }
+        }
+        return salesFactGuid;
     }
 
     private void assertSearchResult(AtlasSearchResult searchResult, int expected, String query) {
