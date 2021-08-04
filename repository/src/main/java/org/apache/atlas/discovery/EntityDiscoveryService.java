@@ -585,12 +585,19 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         }
 
         if (attribute != null) {
+            //get end entity type through relationship attribute
             endEntityType = attribute.getReferencedEntityType(typeRegistry);
 
-            if (endEntityType != null) {
-                relation = attribute.getRelationshipEdgeLabel();
-            } else {
+            if (endEntityType == null) {
                 throw new AtlasBaseException(AtlasErrorCode.INVALID_RELATIONSHIP_ATTRIBUTE, relation, attribute.getTypeName());
+            }
+            relation = attribute.getRelationshipEdgeLabel();
+        } else {
+            //get end entity type through label
+            String endEntityTypeName = GraphHelper.getReferencedEntityTypeName(entityVertex, relation);
+
+            if (StringUtils.isNotEmpty(endEntityTypeName)) {
+                endEntityType = typeRegistry.getEntityTypeByName(endEntityTypeName);
             }
         }
 
