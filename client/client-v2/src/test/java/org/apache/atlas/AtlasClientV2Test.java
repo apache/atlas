@@ -22,6 +22,12 @@ package org.apache.atlas;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 import org.apache.atlas.model.instance.AtlasClassification;
+import org.apache.atlas.model.typedef.AtlasRelationshipDef;
+import org.apache.atlas.model.typedef.AtlasClassificationDef;
+import org.apache.atlas.model.typedef.AtlasEnumDef;
+import org.apache.atlas.model.typedef.AtlasBusinessMetadataDef;
+import org.apache.atlas.model.typedef.AtlasStructDef;
+import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.commons.configuration.Configuration;
 import org.mockito.Matchers;
 import org.mockito.Mock;
@@ -124,6 +130,21 @@ public class AtlasClientV2Test {
 
     }
 
-
+    @Test
+    public void restRequestCheck() {
+        AtlasClientV2 atlasClient = new AtlasClientV2(service, configuration);
+        String pathForRelationshipTypeDef           = atlasClient.getPathForType(AtlasRelationshipDef.class);
+        Assert.assertEquals("relationshipdef", pathForRelationshipTypeDef);
+        String pathForStructTypeDef                 = atlasClient.getPathForType(AtlasStructDef.class);
+        Assert.assertEquals("structdef", pathForStructTypeDef);
+        String pathForBusinessMetadataTypeDef       = atlasClient.getPathForType(AtlasBusinessMetadataDef.class);
+        Assert.assertEquals("businessmetadatadef", pathForBusinessMetadataTypeDef);
+        String pathForEnumTypeDef                   = atlasClient.getPathForType(AtlasEnumDef.class);
+        Assert.assertEquals("enumdef", pathForEnumTypeDef);
+        String pathForClassificationTypeDef         = atlasClient.getPathForType(AtlasClassificationDef.class);
+        Assert.assertEquals("classificationdef", pathForClassificationTypeDef);
+        String pathForEntityTypeDef                 = atlasClient.getPathForType(AtlasEntityDef.class);
+        Assert.assertEquals("entitydef", pathForEntityTypeDef);
+    }
 }
 
