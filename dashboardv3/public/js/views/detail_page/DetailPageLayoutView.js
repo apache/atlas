@@ -259,7 +259,7 @@ define(['require',
                                 } else {
                                     tags['propagated'].push(val);
                                     if (tags.propagatedMap[typeName]) {
-                                        tags.propagatedMap[typeName]["count"] += tags.propagatedMap[typeName]["count"];
+                                        tags.propagatedMap[typeName]["count"]++;
                                     } else {
                                         tags.propagatedMap[typeName] = val;
                                         tags.propagatedMap[typeName]["count"] = 1;
