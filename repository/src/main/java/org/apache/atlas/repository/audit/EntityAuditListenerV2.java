@@ -409,7 +409,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
 
     private EntityAuditEventV2 createEvent(EntityAuditEventV2 entityAuditEventV2, AtlasEntity entity, EntityAuditActionV2 action, String details) {
         entityAuditEventV2.setEntityId(entity.getGuid());
-        entityAuditEventV2.setTimestamp(RequestContext.get().getRequestTime());
+        entityAuditEventV2.setTimestamp(System.currentTimeMillis());
         entityAuditEventV2.setUser(RequestContext.get().getUser());
         entityAuditEventV2.setAction(action);
         entityAuditEventV2.setDetails(details);
