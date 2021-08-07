@@ -380,8 +380,8 @@
                 <role>committer</role>
                 <role>PMC</role>
             </roles>
-            <organization>Cloudera Inc.</organization>
-            <!--<organizationUrl>https://www.cloudera.com</organizationUrl>-->
+            <organization>Privacera Inc</organization>
+            <!--<organizationUrl>https://www.privacera.com</organizationUrl>-->
         </developer>
         <developer>
             <id>mandy</id>
