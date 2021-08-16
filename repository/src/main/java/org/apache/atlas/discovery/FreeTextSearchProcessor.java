@@ -27,6 +27,8 @@ import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,24 +53,39 @@ public class FreeTextSearchProcessor extends SearchProcessor {
         super(context);
 
         SearchParameters searchParameters = context.getSearchParameters();
-        StringBuilder    queryString      = new StringBuilder();
-
-        queryString.append(searchParameters.getQuery());
-
-        if (CollectionUtils.isNotEmpty(context.getEntityTypeNames()) && context.getEntityTypesQryStr().length() <= MAX_QUERY_STR_LENGTH_TYPES) {
-            queryString.append(AND_STR).append(context.getEntityTypesQryStr());
-        }
-
-        graphIndexQueryBuilder.addActiveStateQueryFilter(queryString);
-
-        if (CollectionUtils.isNotEmpty(context.getClassificationTypeNames()) && context.getClassificationTypesQryStr().length() <= MAX_QUERY_STR_LENGTH_TYPES) {
-            queryString.append(AND_STR).append(context.getClassificationTypesQryStr());
-        }
+//        StringBuilder    queryString      = new StringBuilder();
+//
+//        queryString.append(searchParameters.getQuery());
+//
+//        if (CollectionUtils.isNotEmpty(context.getEntityTypeNames()) && context.getEntityTypesQryStr().length() <= MAX_QUERY_STR_LENGTH_TYPES) {
+//            queryString.append(AND_STR).append(context.getEntityTypesQryStr());
+//        }
+//
+//        graphIndexQueryBuilder.addActiveStateQueryFilter(queryString);
+//
+//        if (CollectionUtils.isNotEmpty(context.getClassificationTypeNames()) && context.getClassificationTypesQryStr().length() <= MAX_QUERY_STR_LENGTH_TYPES) {
+//            queryString.append(AND_STR).append(context.getClassificationTypesQryStr());
+//        }
 
         // just use the query string as is
-        LOG.debug("Using query string  '{}'.", queryString);
+//        LOG.debug("Using query string  '{}'.", queryString);
+//
+//        indexQuery = context.getGraph().indexQuery(prepareGraphIndexQueryParameters(context, queryString));
 
-        indexQuery = context.getGraph().indexQuery(prepareGraphIndexQueryParameters(context, queryString));
+        Map<String, Float> fieldsWithBoostValue = new HashMap<>();
+        if (searchParameters.getQueryFields() == null) {
+            fieldsWithBoostValue.put("Asset.__s_name", 2F);
+            fieldsWithBoostValue.put("description", 1F);
+        } else {
+            fieldsWithBoostValue = searchParameters.getQueryFields();
+        }
+
+        String searchText = searchParameters.getQuery();
+
+        ElasticsearchQueryBuilder elasticsearchQueryBuilder = new ElasticsearchQueryBuilder(context);
+        QueryBuilder queryBuilder = elasticsearchQueryBuilder.getMatchAllQueryBuilder(searchText, fieldsWithBoostValue);
+        SearchSourceBuilder searchSourceBuilder = elasticsearchQueryBuilder.getSourceBuilder(queryBuilder);
+        indexQuery = context.getGraph().elasticsearchQuery(Constants.VERTEX_INDEX, searchSourceBuilder);
     }
 
     private GraphIndexQueryParameters prepareGraphIndexQueryParameters(SearchContext context, StringBuilder queryString) {

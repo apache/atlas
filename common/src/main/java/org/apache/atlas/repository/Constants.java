@@ -155,8 +155,12 @@ public final class Constants {
      * search backing index name for edge labels.
      */
     public static final String EDGE_INDEX = "edge_index";
-
     public static final String FULLTEXT_INDEX = "fulltext_index";
+
+    /**
+     * elasticsearch index prefix.
+     */
+    public static final String INDEX_PREFIX = "janusgraph_";
 
     public static final String QUALIFIED_NAME                          = "Referenceable.qualifiedName";
     public static final String TYPE_NAME_PROPERTY_KEY                  = INTERNAL_PROPERTY_KEY_PREFIX + "typeName";

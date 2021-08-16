@@ -52,6 +52,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchDatabase.getClient;
+
 /**
  * Default implementation for Graph Provider that doles out JanusGraph.
  */
@@ -281,7 +283,7 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
 
     @Override
     public AtlasGraph<AtlasJanusVertex, AtlasJanusEdge> getGraphBulkLoading() {
-        return new AtlasJanusGraph(getBulkLoadingGraphInstance());
+        return new AtlasJanusGraph(getBulkLoadingGraphInstance(), getClient());
     }
 
     private static void startEmbeddedSolr() throws AtlasException {
