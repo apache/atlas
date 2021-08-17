@@ -270,9 +270,9 @@ public class AtlasTypeDefGraphStoreV2 extends AtlasTypeDefGraphStore {
 
     void deleteTypeVertex(AtlasVertex vertex) throws AtlasBaseException {
         Iterator<AtlasEdge> inEdges = vertex.getEdges(AtlasEdgeDirection.IN).iterator();
-
         if (inEdges.hasNext()) {
-            throw new AtlasBaseException(AtlasErrorCode.TYPE_HAS_REFERENCES);
+            String name        = vertex.getProperty(Constants.TYPENAME_PROPERTY_KEY, String.class);
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_HAS_REFERENCES, name);
         }
 
         Iterable<AtlasEdge> edges = vertex.getEdges(AtlasEdgeDirection.OUT);
