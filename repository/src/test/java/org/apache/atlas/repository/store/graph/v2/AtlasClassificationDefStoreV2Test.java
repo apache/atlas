@@ -17,15 +17,25 @@
  */
 package org.apache.atlas.repository.store.graph.v2;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 
 import com.google.inject.Inject;
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.TestModules;
+import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.graphdb.AtlasEdge;
+import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
+
+import java.util.ArrayList;
 
 /**
  * Tests for AtlasClassificationDefStoreV2
@@ -64,5 +74,22 @@ public class AtlasClassificationDefStoreV2Test {
   @Test(dataProvider = "traitRegexString")
   public void testIsValidName(String data, boolean expected) {
     assertEquals(classificationDefStore.isValidName(data), expected);
+  }
+
+  @Test
+  public void testDeleteReferencedTraitFail() {
+    AtlasVertex typeVertex = mock(AtlasVertex.class);
+    when(typeVertex.getProperty(Constants.TYPENAME_PROPERTY_KEY, String.class)).thenReturn("Tag11");
+    when(typeVertex.getEdges(AtlasEdgeDirection.IN)).thenReturn(() -> {
+      ArrayList<AtlasEdge> list = new ArrayList<>();
+      list.add(mock(AtlasEdge.class));
+      return list.iterator();
+    });
+    try {
+      classificationDefStore.deleteByName("Tag11", typeVertex );
+    } catch (AtlasBaseException abe) {
+      assertEquals(abe.getMessage(), AtlasErrorCode.TYPE_HAS_REFERENCES.getFormattedErrorMessage("Tag11"));
+      assertEquals(abe.getAtlasErrorCode() , AtlasErrorCode.TYPE_HAS_REFERENCES);
+    }
   }
 }
