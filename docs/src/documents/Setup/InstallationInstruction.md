@@ -45,7 +45,7 @@ bin/atlas_start.py`}
 
 <SyntaxHighlighter wrapLines={true} style={theme.dark}>
     {`curl -u username:password http://localhost:21000/api/atlas/admin/version
-    {"Description":"Metadata Management and Data Governance Platform over Hadoop","Version":"2.1.0","Name":"apache-atlas"}`}
+    {"Description":"Metadata Management and Data Governance Platform over Hadoop","Version":"2.2.0","Name":"apache-atlas"}`}
 </SyntaxHighlighter>
 
 
