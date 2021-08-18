@@ -84,6 +84,7 @@
 
         <menu name="Documentation">
             <item name="latest" href="../index.html"/>
+            <item name="2.2.0" href="../2.2.0/index.html"/>
             <item name="2.1.0" href="../2.1.0/index.html"/>
             <item name="2.0.0" href="../2.0.0/index.html"/>
             <item name="1.2.0" href="../1.2.0/index.html"/>

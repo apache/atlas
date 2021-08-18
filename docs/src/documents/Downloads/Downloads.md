@@ -18,6 +18,7 @@ artifacts can be found in our published [KEYS file](https://www.apache.org/dist/
 
 | **Version** | **Release Date** | **Tarball** | **GPG** | **Hash** |
 | : ------------- : | : ------------- : | : ------------- : | : ------------- : |: ------------- :|
+| 2.2.0 | 2021-08-17 | [source](https://www.apache.org/dyn/closer.cgi/atlas/2.2.0/apache-atlas-2.2.0-sources.tar.gz) | [signature](https://www.apache.org/dist/atlas/2.2.0/apache-atlas-2.2.0-sources.tar.gz.asc) | [SHA512](https://www.apache.org/dist/atlas/2.2.0/apache-atlas-2.2.0-sources.tar.gz.sha512) |
 | 2.1.0 | 2020-07-15 | [source](https://www.apache.org/dyn/closer.cgi/atlas/2.1.0/apache-atlas-2.1.0-sources.tar.gz) | [signature](https://www.apache.org/dist/atlas/2.1.0/apache-atlas-2.1.0-sources.tar.gz.asc) | [SHA512](https://www.apache.org/dist/atlas/2.1.0/apache-atlas-2.1.0-sources.tar.gz.sha512) |
 | 0.8.4 | 2019-06-21 | [source](https://www.apache.org/dyn/closer.cgi/atlas/0.8.4/apache-atlas-0.8.4-sources.tar.gz) | [signature](https://www.apache.org/dist/atlas/0.8.4/apache-atlas-0.8.4-sources.tar.gz.asc) | [SHA512](https://www.apache.org/dist/atlas/0.8.4/apache-atlas-0.8.4-sources.tar.gz.sha512) |
 | 1.2.0 | 2019-06-07 | [source](https://www.apache.org/dyn/closer.cgi/atlas/1.2.0/apache-atlas-1.2.0-sources.tar.gz) | [signature](https://www.apache.org/dist/atlas/1.2.0/apache-atlas-1.2.0-sources.tar.gz.asc) | [SHA512](https://www.apache.org/dist/atlas/1.2.0/apache-atlas-1.2.0-sources.tar.gz.sha512) |
@@ -27,11 +28,11 @@ artifacts can be found in our published [KEYS file](https://www.apache.org/dist/
 | 1.0.0 | 2018-06-02 | [source](https://archive.apache.org/dist/atlas/1.0.0/apache-atlas-1.0.0-sources.tar.gz) | [signature](https://archive.apache.org/dist/atlas/1.0.0/apache-atlas-1.0.0-sources.tar.gz.asc) | [SHA512](https://archive.apache.org/dist/atlas/1.0.0/apache-atlas-1.0.0-sources.tar.gz.sha512) |
 | 0.8.2 | 2018-02-05 | [source](https://archive.apache.org/dist/atlas/0.8.2/apache-atlas-0.8.2-sources.tar.gz) | [signature](https://archive.apache.org/dist/atlas/0.8.2/apache-atlas-0.8.2-sources.tar.gz.asc) | [SHA512](https://archive.apache.org/dist/atlas/0.8.2/apache-atlas-0.8.2-sources.tar.gz.sha512) |
 | 0.8.1 | 2017-08-29 | [source](https://archive.apache.org/dist/atlas/0.8.1/apache-atlas-0.8.1-sources.tar.gz) | [signature](https://archive.apache.org/dist/atlas/0.8.1/apache-atlas-0.8.1-sources.tar.gz.asc) | [SHA512](https://archive.apache.org/dist/atlas/0.8.1/apache-atlas-0.8.1-sources.tar.gz.sha512) |
-| 0.7.0-incubating | 2016-07-09 | [source](https://archive.apache.org/dist/atlas/0.7.0-incubating/apache-atlas-0.7-incubating-sources.tar.gz) | [signature](https://archive.apache.org/dist/atlas/0.7.0-incubating/apache-atlas-0.7-incubating-sources.tar.gz.asc) | [SHA512](https://archive.apache.org/dist/atlas/0.7.0-incubating/apache-atlas-0.7-incubating-sources.tar.gz.sha512) |
-| 0.8.0-incubating | 2017-06-26 | [source](https://archive.apache.org/dist/atlas/0.8.0-incubating/apache-atlas-0.8-incubating-sources.tar.gz) | [signature](https://archive.apache.org/dist/atlas/0.8.0-incubating/apache-atlas-0.8-incubating-sources.tar.gz.asc) | [SHA512](https://archive.apache.org/dist/atlas/0.8.0-incubating/apache-atlas-0.8-incubating-sources.tar.gz.sha512) |
-| 0.7.1-incubating | 2017-01-28 | [source](https://archive.apache.org/dist/atlas/0.7.1-incubating/apache-atlas-0.7.1-incubating-sources.tar.gz) | [signature](https://archive.apache.org/dist/atlas/0.7.1-incubating/apache-atlas-0.7.1-incubating-sources.tar.gz.asc) | [checksum](https://archive.apache.org/dist/atlas/0.7.1-incubating/apache-atlas-0.7.1-incubating-sources.tar.gz.mds) |
-| 0.6.0-incubating | 2015-12-31 | [source](https://archive.apache.org/dist/atlas/0.6.0-incubating/apache-atlas-0.6-incubating-sources.tar.gz) | [signature](https://archive.apache.org/dist/atlas/0.6.0-incubating/apache-atlas-0.6-incubating-sources.tar.gz.asc) | [SHA](https://archive.apache.org/dist/atlas/0.6.0-incubating/apache-atlas-0.6-incubating-sources.tar.gz.sha) |
-| 0.5.0-incubating | 2015-07-10 | [source](https://archive.apache.org/dist/atlas/0.5.0-incubating/apache-atlas-0.5-incubating-sources.tar.gz) | [signature](https://archive.apache.org/dist/atlas/0.5.0-incubating/apache-atlas-0.5-incubating-sources.tar.gz.asc) | [SHA](https://archive.apache.org/dist/atlas/0.5.0-incubating/apache-atlas-0.5-incubating-sources.tar.gz.sha) |
+| 0.8.0-incubating | 2017-06-26 | [source](https://archive.apache.org/dist/incubator/atlas/0.8.0-incubating/apache-atlas-0.8-incubating-sources.tar.gz) | [signature](https://archive.apache.org/dist/incubator/atlas/0.8.0-incubating/apache-atlas-0.8-incubating-sources.tar.gz.asc) | [SHA512](https://archive.apache.org/dist/incubator/atlas/0.8.0-incubating/apache-atlas-0.8-incubating-sources.tar.gz.sha512) |
+| 0.7.1-incubating | 2017-01-28 | [source](https://archive.apache.org/dist/incubator/atlas/0.7.1-incubating/apache-atlas-0.7.1-incubating-sources.tar.gz) | [signature](https://archive.apache.org/dist/incubator/atlas/0.7.1-incubating/apache-atlas-0.7.1-incubating-sources.tar.gz.asc) | [checksum](https://archive.apache.org/dist/incubator/atlas/0.7.1-incubating/apache-atlas-0.7.1-incubating-sources.tar.gz.mds) |
+| 0.7.0-incubating | 2016-07-09 | [source](https://archive.apache.org/dist/incubator/atlas/0.7.0-incubating/apache-atlas-0.7-incubating-sources.tar.gz) | [signature](https://archive.apache.org/dist/incubator/atlas/0.7.0-incubating/apache-atlas-0.7-incubating-sources.tar.gz.asc) | [SHA512](https://archive.apache.org/dist/incubator/atlas/0.7.0-incubating/apache-atlas-0.7-incubating-sources.tar.gz.sha512) |
+| 0.6.0-incubating | 2015-12-31 | [source](https://archive.apache.org/dist/incubator/atlas/0.6.0-incubating/apache-atlas-0.6-incubating-sources.tar.gz) | [signature](https://archive.apache.org/dist/incubator/atlas/0.6.0-incubating/apache-atlas-0.6-incubating-sources.tar.gz.asc) | [SHA](https://archive.apache.org/dist/incubator/atlas/0.6.0-incubating/apache-atlas-0.6-incubating-sources.tar.gz.sha) |
+| 0.5.0-incubating | 2015-07-10 | [source](https://archive.apache.org/dist/incubator/atlas/0.5.0-incubating/apache-atlas-0.5-incubating-sources.tar.gz) | [signature](https://archive.apache.org/dist/incubator/atlas/0.5.0-incubating/apache-atlas-0.5-incubating-sources.tar.gz.asc) | [SHA](https://archive.apache.org/dist/incubator/atlas/0.5.0-incubating/apache-atlas-0.5-incubating-sources.tar.gz.sha) |
 
 ## Verify the integrity of the files
 
@@ -65,6 +66,36 @@ pgp downloaded_file.asc`}
 </SyntaxHighlighter>
 
 ## Release Notes
+**[Atlas 2.2.0](../2.2.0/index) (Released on 2021/08/17)**
+   * (new) Deferred Action: classification propagation will be handled as a background task (AtlasTask)
+   * Re-indexing: added Re-indexing as part of JAVA_PATCH
+   * Model Change: created JAVA_PATCH to add new super types to existing entities
+   * Export Service: added support for Business Metadata in Atlas Export API
+   * Admin/AtlasTask API: added HA support for admin/task API
+   * Entity definition: provided option to add mandatory attribute to existing entity definition
+   * DSL Search:
+        - added support for glossary terms and relationship
+        - added support for null attribute values,
+        - now uses Tinkerpop GraphTraversal instead of GremlinScriptEngine for performance improvement
+        - added support search by classification and its attribute
+        - added caching mechanism for translated DSL queries
+   * Atlas Python Client: refactored and enhanced Atlas Python Client supporting Python 2.7
+   * Search: updated free-text search processor to support Elasticsearch, Support search text with special characters, optimized pagination
+   * Bulk Glossary Import: improved and enhanced Bulk Glossary Import supporting import with relations
+   * Performance: improved performance of GraphHelper's guid and status getter methods
+   * Authorization: enhanced Atlas authorization for Add/Update/Remove classification on entities, "admin-audits" for Atlas Admin Audits authorization
+   * Notification: improved NotificationHookConsumer for Large Message Processing
+   * Export/Import Service: enhanced Export/Import Service to conditionally Support Simultaneous Operations and to export Terms
+   * Hive Hook: added support HiveServer2 Hook to send Lineage-only Messages
+   * Apache Flink: introduced model to capture Apache Flink entities and relationships
+   * GCP: introduced model to capture GCP entities and relationships
+   * ADLS-Gen2: updated model for Azure Data Lake Storage Gen2 entities and relationships
+   * Dependencies Upgrade: JanusGraph, elasticsearch, JQuery, Http core, Http Client, slf4j, log4j, ant, gremlin, Solr, groovy, netty, Kafka
+   * UI: fixed Atlas Web UI to load faster in case of large number of classifications & entities
+   * Docker image: improvements to Docker support
+   * Various bug fixes and improvements
+   * [List of JIRAs resolved in Apache Atlas 2.2.0 release](https://issues.apache.org/jira/issues/?jql=project%20%3D%20ATLAS%20AND%20status%20%3D%20Resolved%20AND%20fixVersion%20%3D%202.2.0%20ORDER%20BY%20key%20DESC)
+
 **[Atlas 2.1.0](../2.1.0/index) (Released on 2020/07/15)**
    * Quick Search: provides a simpler search experience with type-ahead suggestions
    * Business Metadata: enables augmenting entity-types with additional attributes, search entities using these attributes
@@ -84,8 +115,7 @@ pgp downloaded_file.asc`}
    * Authorization: updated to cover new features, like: business metadata, labels, purge
    * UI: multiple UI improvements, including a beta UI
    * Various Bug-fixes and optimizations
-   * <a href="">List of JIRAs resolved in Apache Atlas 2.1.0</a>
-   * [List of JIRAs resolved in Apache Atlas 2.0.0 release](https://issues.apache.org/jira/issues/?jql=project%20%3D%20ATLAS%20AND%20status%20%3D%20Resolved%20AND%20fixVersion%20%3D%202.1.0%20ORDER%20BY%20key%20DESC)
+   * [List of JIRAs resolved in Apache Atlas 2.1.0 release](https://issues.apache.org/jira/issues/?jql=project%20%3D%20ATLAS%20AND%20status%20%3D%20Resolved%20AND%20fixVersion%20%3D%202.1.0%20ORDER%20BY%20key%20DESC)
 
 **[Atlas 2.0.0](../2.0.0/index) (Released on 2019/05/14)**
    * Soft-reference attribute implementation.
