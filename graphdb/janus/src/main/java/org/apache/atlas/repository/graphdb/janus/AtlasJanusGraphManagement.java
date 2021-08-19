@@ -47,14 +47,11 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.IndexType;
 import org.janusgraph.graphdb.types.MixedIndexType;
+import org.janusgraph.graphdb.types.ParameterType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Janus implementation of AtlasGraphManagement.
@@ -210,16 +207,43 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
 
     @Override
     public String addMixedIndex(String indexName, AtlasPropertyKey propertyKey, boolean isStringField) {
+        return addMixedIndex(indexName, propertyKey, isStringField, new ArrayList<>());
+    }
+
+    @Override
+    public String addMixedIndex(String indexName, AtlasPropertyKey propertyKey, boolean isStringField, ArrayList<String> multifields) {
         PropertyKey     janusKey        = AtlasJanusObjectFactory.createPropertyKey(propertyKey);
         JanusGraphIndex janusGraphIndex = management.getGraphIndex(indexName);
 
+        ArrayList<Parameter> params = new ArrayList<>();
+
         if(isStringField) {
-            management.addIndexKey(janusGraphIndex, janusKey, Mapping.STRING.asParameter());
-            LOG.debug("created a string type for {} with janueKey {}.", propertyKey.getName(), janusKey);
-        } else {
-            management.addIndexKey(janusGraphIndex, janusKey);
-            LOG.debug("created a default type for {} with janueKey {}.", propertyKey.getName(), janusKey);
+            params.add(Mapping.STRING.asParameter());
+            LOG.debug("string type for {} with janueKey {}.", propertyKey.getName(), janusKey);
         }
+
+        if (multifields != null && multifields.size() > 0) {
+            HashMap<String, HashMap<String, String>> fieldMap = new HashMap<>();
+            if (multifields.contains("keyword")) {
+                HashMap<String, String> keywordMap = new HashMap<>();
+                keywordMap.put("type", "keyword");
+                fieldMap.put("keyword", keywordMap);
+            }
+            if (multifields.contains("simple")) {
+                HashMap<String, String> simpleMap = new HashMap<>();
+                simpleMap.put("type", "text");
+                simpleMap.put("analyzer", "simple");
+                fieldMap.put("simple", simpleMap);
+            }
+            params.add(Parameter.of(ParameterType.customParameterName("fields"), fieldMap));
+        }
+
+        if (params.size() > 0) {
+            management.addIndexKey(janusGraphIndex,janusKey,params.toArray(new Parameter[0]));
+        } else {
+            management.addIndexKey(janusGraphIndex,janusKey);
+        }
+        LOG.debug("created a type for {} with janueKey {}.", propertyKey.getName(), janusKey);
 
         String encodedName = "";
         if(isStringField) {

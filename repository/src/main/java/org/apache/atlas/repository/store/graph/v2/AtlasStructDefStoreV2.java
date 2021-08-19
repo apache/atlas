@@ -552,6 +552,7 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
         attribInfo.put("description", attributeDef.getDescription());
         attribInfo.put("searchWeight", attributeDef.getSearchWeight());
         attribInfo.put("indexType", attributeDef.getIndexType());
+        attribInfo.put("multifields", attributeDef.getMultifields());
 
         if(attributeDef.getOptions() != null) {
             attribInfo.put("options", AtlasType.toJson(attributeDef.getOptions()));
@@ -655,6 +656,10 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
         if(!StringUtils.isEmpty(indexType)) {
             ret.setIndexType(AtlasAttributeDef.IndexType.valueOf(indexType));
         }
+
+        ArrayList<String> multifields = (ArrayList<String>) attribInfo.get("multifields");
+        ret.setMultifields(multifields);
+
         return ret;
     }
 
