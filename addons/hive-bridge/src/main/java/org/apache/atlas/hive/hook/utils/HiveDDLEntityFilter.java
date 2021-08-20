@@ -43,8 +43,12 @@ public class HiveDDLEntityFilter implements EntityFilter {
 
     private static final Set<String> defaultPathTypesToRetain = new HashSet<String>() {{
         add(AtlasPathExtractorUtil.HDFS_TYPE_PATH);
+        add(AtlasPathExtractorUtil.ADLS_GEN2_ACCOUNT);
+        add(AtlasPathExtractorUtil.ADLS_GEN2_CONTAINER);
         add(AtlasPathExtractorUtil.ADLS_GEN2_DIRECTORY);
         add(AtlasPathExtractorUtil.GCS_VIRTUAL_DIR);
+        add(AtlasPathExtractorUtil.AWS_S3_BUCKET);
+        add(AtlasPathExtractorUtil.AWS_S3_V2_BUCKET);
         add(AtlasPathExtractorUtil.AWS_S3_V2_PSEUDO_DIR);
         add(AtlasPathExtractorUtil.AWS_S3_PSEUDO_DIR);
         add(AtlasPathExtractorUtil.OZONE_KEY);
