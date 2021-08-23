@@ -80,7 +80,9 @@ public enum AtlasConfiguration {
     DSL_EXECUTOR_TRAVERSAL("atlas.dsl.executor.traversal", true),
     DSL_CACHED_TRANSLATOR("atlas.dsl.cached.translator", true),
     DEBUG_METRICS_ENABLED("atlas.debug.metrics.enabled", false),
-    TASKS_USE_ENABLED("atlas.tasks.enabled", true);
+    TASKS_USE_ENABLED("atlas.tasks.enabled", true),
+    SESSION_TIMEOUT_SECS("atlas.session.timeout.secs", 3600);
+
 
     private static final Configuration APPLICATION_PROPERTIES;
 
