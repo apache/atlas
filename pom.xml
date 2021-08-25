@@ -728,7 +728,7 @@
         <joda-time.version>2.10.6</joda-time.version>
         <json.version>3.2.11</json.version>
         <jsr.version>1.1</jsr.version>
-        <junit.version>4.13</junit.version>
+        <junit.version>4.13.1</junit.version>
         <kafka.scala.binary.version>2.12</kafka.scala.binary.version>
         <kafka.version>2.5.0</kafka.version>
         <keycloak.version>6.0.1</keycloak.version>
