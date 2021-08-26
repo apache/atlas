@@ -372,16 +372,16 @@ public class AtlasPathExtractorUtilTest {
 
         if (pathQName.equalsIgnoreCase(entityQName)){
             assertEquals(entity.getAttribute(ATTRIBUTE_NAME), "Irradiance_A.csv");
-            assertEquals(entity.getAttribute(ATTRIBUTE_OBJECT_PREFIX), "/1234567890/renders/");
+            assertEquals(entity.getAttribute(ATTRIBUTE_OBJECT_PREFIX), "/1234567890/renders/Irradiance_A.csv/");
         } else {
             pathQName = s3Scheme + "aws_my_bucket1/1234567890/" + QNAME_METADATA_NAMESPACE;
             if (pathQName.equalsIgnoreCase(entityQName)){
                 assertEquals(entity.getAttribute(ATTRIBUTE_NAME), "1234567890");
-                assertEquals(entity.getAttribute(ATTRIBUTE_OBJECT_PREFIX), "/");
+                assertEquals(entity.getAttribute(ATTRIBUTE_OBJECT_PREFIX), "/1234567890/");
             } else {
                 assertEquals(entity.getAttribute(ATTRIBUTE_QUALIFIED_NAME), s3Scheme + "aws_my_bucket1/1234567890/renders/" + QNAME_METADATA_NAMESPACE);
                 assertEquals(entity.getAttribute(ATTRIBUTE_NAME), "renders");
-                assertEquals(entity.getAttribute(ATTRIBUTE_OBJECT_PREFIX), "/1234567890/");
+                assertEquals(entity.getAttribute(ATTRIBUTE_OBJECT_PREFIX), "/1234567890/renders/");
             }
         }
     }
