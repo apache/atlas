@@ -154,6 +154,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     public static final String CONSUMER_PREPROCESS_HIVE_PROCESS_UPD_NAME_WITH_QUALIFIED_NAME = "atlas.notification.consumer.preprocess.hive_process.update.name.with.qualified_name";
     public static final String CONSUMER_PREPROCESS_HIVE_TYPES_REMOVE_OWNEDREF_ATTRS          = "atlas.notification.consumer.preprocess.hive_types.remove.ownedref.attrs";
     public static final String CONSUMER_PREPROCESS_RDBMS_TYPES_REMOVE_OWNEDREF_ATTRS         = "atlas.notification.consumer.preprocess.rdbms_types.remove.ownedref.attrs";
+    public static final String CONSUMER_PREPROCESS_S3_V2_DIRECTORY_PRUNE_OBJECT_PREFIX       = "atlas.notification.consumer.preprocess.s3_v2_directory.prune.object_prefix";
     public static final String CONSUMER_AUTHORIZE_USING_MESSAGE_USER                         = "atlas.notification.authorize.using.message.user";
     public static final String CONSUMER_AUTHORIZE_AUTHN_CACHE_TTL_SECONDS                    = "atlas.notification.authorize.authn.cache.ttl.seconds";
 
@@ -182,6 +183,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     private final Map<String, PreprocessAction> hiveTablesCache;
     private final boolean                       hiveTypesRemoveOwnedRefAttrs;
     private final boolean                       rdbmsTypesRemoveOwnedRefAttrs;
+    private final boolean                       s3V2DirectoryPruneObjectPrefix;
     private final boolean                       preprocessEnabled;
     private final boolean createShellEntityForNonExistingReference;
     private final boolean                       authorizeUsingMessageUser;
@@ -310,12 +312,15 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
         hiveTypesRemoveOwnedRefAttrs  = applicationProperties.getBoolean(CONSUMER_PREPROCESS_HIVE_TYPES_REMOVE_OWNEDREF_ATTRS, true);
         rdbmsTypesRemoveOwnedRefAttrs = applicationProperties.getBoolean(CONSUMER_PREPROCESS_RDBMS_TYPES_REMOVE_OWNEDREF_ATTRS, true);
-        preprocessEnabled             = skipHiveColumnLineageHive20633 || updateHiveProcessNameWithQualifiedName || hiveTypesRemoveOwnedRefAttrs || rdbmsTypesRemoveOwnedRefAttrs || !hiveTablesToIgnore.isEmpty() || !hiveTablesToPrune.isEmpty() || !hiveDummyDatabasesToIgnore.isEmpty() || !hiveDummyTablesToIgnore.isEmpty() || !hiveTablePrefixesToIgnore.isEmpty();
+        s3V2DirectoryPruneObjectPrefix = applicationProperties.getBoolean(CONSUMER_PREPROCESS_S3_V2_DIRECTORY_PRUNE_OBJECT_PREFIX, true);
+
+        preprocessEnabled             = skipHiveColumnLineageHive20633 || updateHiveProcessNameWithQualifiedName || hiveTypesRemoveOwnedRefAttrs || rdbmsTypesRemoveOwnedRefAttrs || s3V2DirectoryPruneObjectPrefix || !hiveTablesToIgnore.isEmpty() || !hiveTablesToPrune.isEmpty() || !hiveDummyDatabasesToIgnore.isEmpty() || !hiveDummyTablesToIgnore.isEmpty() || !hiveTablePrefixesToIgnore.isEmpty();
         entityCorrelationManager      = new EntityCorrelationManager(entityCorrelationStore);
         LOG.info("{}={}", CONSUMER_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633, skipHiveColumnLineageHive20633);
         LOG.info("{}={}", CONSUMER_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633_INPUTS_THRESHOLD, skipHiveColumnLineageHive20633InputsThreshold);
         LOG.info("{}={}", CONSUMER_PREPROCESS_HIVE_TYPES_REMOVE_OWNEDREF_ATTRS, hiveTypesRemoveOwnedRefAttrs);
         LOG.info("{}={}", CONSUMER_PREPROCESS_RDBMS_TYPES_REMOVE_OWNEDREF_ATTRS, rdbmsTypesRemoveOwnedRefAttrs);
+        LOG.info("{}={}", CONSUMER_PREPROCESS_S3_V2_DIRECTORY_PRUNE_OBJECT_PREFIX, s3V2DirectoryPruneObjectPrefix);
         LOG.info("{}={}", CONSUMER_COMMIT_BATCH_SIZE, commitBatchSize);
         LOG.info("{}={}", CONSUMER_DISABLED, consumerDisabled);
     }
@@ -982,7 +987,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         if (preprocessEnabled) {
             context = new PreprocessorContext(kafkaMsg, typeRegistry, hiveTablesToIgnore, hiveTablesToPrune, hiveTablesCache,
                     hiveDummyDatabasesToIgnore, hiveDummyTablesToIgnore, hiveTablePrefixesToIgnore, hiveTypesRemoveOwnedRefAttrs,
-                    rdbmsTypesRemoveOwnedRefAttrs, updateHiveProcessNameWithQualifiedName, entityCorrelationManager);
+                    rdbmsTypesRemoveOwnedRefAttrs, s3V2DirectoryPruneObjectPrefix, updateHiveProcessNameWithQualifiedName, entityCorrelationManager);
 
             if (context.isHivePreprocessEnabled()) {
                 preprocessHiveTypes(context);
@@ -994,6 +999,10 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
             if (rdbmsTypesRemoveOwnedRefAttrs) {
                 rdbmsTypeRemoveOwnedRefAttrs(context);
+            }
+
+            if (s3V2DirectoryPruneObjectPrefix) {
+                pruneObjectPrefixForS3V2Directory(context);
             }
 
             context.moveRegisteredReferredEntities();
@@ -1032,6 +1041,28 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
             for (int i = 0; i < entities.size(); i++) {
                 AtlasEntity        entity       = entities.get(i);
                 EntityPreprocessor preprocessor = EntityPreprocessor.getRdbmsPreprocessor(entity.getTypeName());
+
+                if (preprocessor != null) {
+                    preprocessor.preprocess(entity, context);
+                }
+            }
+        }
+    }
+
+    private void pruneObjectPrefixForS3V2Directory(PreprocessorContext context) {
+        List<AtlasEntity> entities = new ArrayList<>();
+
+        if (CollectionUtils.isNotEmpty(context.getEntities())) {
+            entities.addAll(context.getEntities());
+        }
+
+        if (MapUtils.isNotEmpty(context.getReferredEntities())) {
+            entities.addAll(context.getReferredEntities().values());
+        }
+
+        if (CollectionUtils.isNotEmpty(entities)) {
+            for (AtlasEntity entity : entities) {
+                EntityPreprocessor preprocessor = EntityPreprocessor.getS3V2Preprocessor(entity.getTypeName());
 
                 if (preprocessor != null) {
                     preprocessor.preprocess(entity, context);
