@@ -1,0 +1,24 @@
+version: "3"
+services:
+  #docker run --name elasticsearch -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" -d elasticsearch:7.8.0
+  elasticsearch:
+    image: elasticsearch:7.8.0
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    environment:
+      - discovery.type=single-node
+  cassandra:
+    # docker run --name cassandra -p 7000:7000 -p 7001:7001 -p 7199:7199 -p 9042:9042 -p 9160:9160 -d cassandra:2.1
+    image: cassandra:2.1
+    ports:
+      - "7000:7000"
+      - "7001:7001"
+      - "7199:7199"
+      - "9042:9042"
+  #docker run --name some-zookeeper -p 2181:2181 --restart always -d zookeeper
+  some-zookeeper:
+    image: zookeeper
+    ports:
+      - "2181:2181"
+    restart: always
