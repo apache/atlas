@@ -207,7 +207,8 @@ require.config({
         'jstree': 'libs/jstree/jstree.min',
         'jquery-steps': 'libs/jquery-steps/jquery.steps.min',
         'dropzone': 'libs/dropzone/js/dropzone-amd-module',
-        'lossless-json': 'libs/lossless-json/lossless-json'
+        'lossless-json': 'libs/lossless-json/lossless-json',
+        'store': 'external_lib/idealTimeout/store.min'
     },
 
     /**
@@ -228,11 +229,12 @@ require(['App',
     'collection/VEntityList',
     'collection/VTagList',
     'utils/Enums',
+    'utils/Utils',
     'utils/Overrides',
     'bootstrap',
     'd3',
     'select2'
-], function(App, Router, Helper, CommonViewFunction, Globals, UrlLinks, VEntityList, VTagList, Enums) {
+], function(App, Router, Helper, CommonViewFunction, Globals, UrlLinks, VEntityList, VTagList, Enums, Utils) {
     var that = this;
     this.asyncFetchCounter = 5 + (Enums.addOnEntities.length + 1);
     // entity
@@ -315,6 +317,27 @@ require(['App',
                 if (response['atlas.tasks.enabled'] !== undefined) {
                     Globals.isTasksEnabled = response['atlas.tasks.enabled'];
                 }
+                if (response['atlas.session.timeout.secs']) { Globals.idealTimeoutSeconds = response['atlas.session.timeout.secs']; }
+                /*  Atlas idealTimeout 
+       redirectUrl: url to redirect after timeout
+       idealTimeLimit: timeout in seconds
+       activityEvents: ideal keyboard mouse events
+       dialogDisplayLimit: show popup before timeout in seconds
+       */
+                $(document).ready(function() {
+                    $(document).idleTimeout({
+                        redirectUrl: Utils.getBaseUrl(window.location.pathname) + '/index.html?action=timeout', // redirect to this url
+                        idleTimeLimit: Globals.idealTimeoutSeconds, // 900 seconds
+                        activityEvents: 'click keypress scroll wheel mousemove', // separate each event with a space
+                        dialogDisplayLimit: 10, // Time to display the warning dialog before logout (and optional callback) in seconds
+                        sessionKeepAliveTimer: false, // Set to false to disable pings.
+                        onModalKeepAlive: function() {
+                            CommonViewFunction.userDataFetch({
+                                url: UrlLinks.sessionApiUrl()
+                            })
+                        }
+                    });
+                });
             }
             --that.asyncFetchCounter;
             startApp();
