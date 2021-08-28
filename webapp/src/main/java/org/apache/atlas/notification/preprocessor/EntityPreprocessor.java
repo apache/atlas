@@ -64,8 +64,9 @@ public abstract class EntityPreprocessor {
     public static final char   QNAME_SEP_ENTITY_NAME  = '.';
     public static final String QNAME_SD_SUFFIX        = "_storage";
 
-    private static final Map<String, EntityPreprocessor> HIVE_PREPROCESSOR_MAP  = new HashMap<>();
-    private static final Map<String, EntityPreprocessor> RDBMS_PREPROCESSOR_MAP = new HashMap<>();
+    private static final Map<String, EntityPreprocessor> HIVE_PREPROCESSOR_MAP      = new HashMap<>();
+    private static final Map<String, EntityPreprocessor> RDBMS_PREPROCESSOR_MAP     = new HashMap<>();
+    private static final Map<String, EntityPreprocessor> AWS_S3_V2_PREPROCESSOR_MAP = new HashMap<>();
 
     private final String typeName;
 
@@ -88,12 +89,20 @@ public abstract class EntityPreprocessor {
                                                                     new RdbmsPreprocessor.RdbmsTablePreprocessor()
        };
 
+        EntityPreprocessor[] s3V2Preprocessors = new EntityPreprocessor[] {
+                new AWSS3V2Preprocessor.AWSS3V2DirectoryPreprocessor()
+        };
+
         for (EntityPreprocessor preprocessor : hivePreprocessors) {
             HIVE_PREPROCESSOR_MAP.put(preprocessor.getTypeName(), preprocessor);
         }
 
         for (EntityPreprocessor preprocessor : rdbmsPreprocessors) {
             RDBMS_PREPROCESSOR_MAP.put(preprocessor.getTypeName(), preprocessor);
+        }
+
+        for (EntityPreprocessor preprocessor : s3V2Preprocessors) {
+            AWS_S3_V2_PREPROCESSOR_MAP.put(preprocessor.getTypeName(), preprocessor);
         }
     }
 
@@ -114,6 +123,10 @@ public abstract class EntityPreprocessor {
 
     public static EntityPreprocessor getRdbmsPreprocessor(String typeName) {
         return typeName != null ? RDBMS_PREPROCESSOR_MAP.get(typeName) : null;
+    }
+
+    public static EntityPreprocessor getS3V2Preprocessor(String typeName) {
+        return typeName != null ? AWS_S3_V2_PREPROCESSOR_MAP.get(typeName) : null;
     }
 
     public static String getQualifiedName(AtlasEntity entity) {

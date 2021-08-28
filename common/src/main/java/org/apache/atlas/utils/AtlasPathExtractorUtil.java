@@ -231,7 +231,7 @@ public class AtlasPathExtractorUtil {
                 ret = new AtlasEntity(AWS_S3_V2_PSEUDO_DIR);
 
                 ret.setRelationshipAttribute(ATTRIBUTE_CONTAINER, parentObjId);
-                ret.setAttribute(ATTRIBUTE_OBJECT_PREFIX, parentPath);
+                ret.setAttribute(ATTRIBUTE_OBJECT_PREFIX, subDirPath);
                 ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, subDirQualifiedName);
                 ret.setAttribute(ATTRIBUTE_NAME, subDirName);
 

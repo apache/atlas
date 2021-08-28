@@ -63,6 +63,7 @@ public class PreprocessorContext {
     private final boolean                             updateHiveProcessNameWithQualifiedName;
     private final boolean                             hiveTypesRemoveOwnedRefAttrs;
     private final boolean                             rdbmsTypesRemoveOwnedRefAttrs;
+    private final boolean                             s3V2DirectoryPruneObjectPrefix;
     private final boolean                             isHivePreProcessEnabled;
     private final Set<String>                         ignoredEntities        = new HashSet<>();
     private final Set<String>                         prunedEntities         = new HashSet<>();
@@ -73,7 +74,7 @@ public class PreprocessorContext {
     private final EntityCorrelationManager            correlationManager;
     private       List<AtlasEntity>                   postUpdateEntities     = null;
 
-    public PreprocessorContext(AtlasKafkaMessage<HookNotification> kafkaMessage, AtlasTypeRegistry typeRegistry, List<Pattern> hiveTablesToIgnore, List<Pattern> hiveTablesToPrune, Map<String, PreprocessAction> hiveTablesCache, List<String> hiveDummyDatabasesToIgnore, List<String> hiveDummyTablesToIgnore, List<String> hiveTablePrefixesToIgnore, boolean hiveTypesRemoveOwnedRefAttrs, boolean rdbmsTypesRemoveOwnedRefAttrs, boolean updateHiveProcessNameWithQualifiedName, EntityCorrelationManager correlationManager) {
+    public PreprocessorContext(AtlasKafkaMessage<HookNotification> kafkaMessage, AtlasTypeRegistry typeRegistry, List<Pattern> hiveTablesToIgnore, List<Pattern> hiveTablesToPrune, Map<String, PreprocessAction> hiveTablesCache, List<String> hiveDummyDatabasesToIgnore, List<String> hiveDummyTablesToIgnore, List<String> hiveTablePrefixesToIgnore, boolean hiveTypesRemoveOwnedRefAttrs, boolean rdbmsTypesRemoveOwnedRefAttrs, boolean s3V2DirectoryPruneObjectPrefix, boolean updateHiveProcessNameWithQualifiedName, EntityCorrelationManager correlationManager) {
         this.kafkaMessage                           = kafkaMessage;
         this.typeRegistry                           = typeRegistry;
         this.hiveTablesToIgnore                     = hiveTablesToIgnore;
@@ -84,6 +85,7 @@ public class PreprocessorContext {
         this.hiveTablePrefixesToIgnore              = hiveTablePrefixesToIgnore;
         this.hiveTypesRemoveOwnedRefAttrs           = hiveTypesRemoveOwnedRefAttrs;
         this.rdbmsTypesRemoveOwnedRefAttrs          = rdbmsTypesRemoveOwnedRefAttrs;
+        this.s3V2DirectoryPruneObjectPrefix         = s3V2DirectoryPruneObjectPrefix;
         this.updateHiveProcessNameWithQualifiedName = updateHiveProcessNameWithQualifiedName;
 
         final HookNotification  message = kafkaMessage.getMessage();
@@ -123,6 +125,10 @@ public class PreprocessorContext {
     public boolean getHiveTypesRemoveOwnedRefAttrs() { return hiveTypesRemoveOwnedRefAttrs; }
 
     public boolean getRdbmsTypesRemoveOwnedRefAttrs() { return rdbmsTypesRemoveOwnedRefAttrs; }
+
+    public boolean getS3V2DirectoryPruneObjectPrefix() {
+        return s3V2DirectoryPruneObjectPrefix;
+    }
 
     public boolean isHivePreprocessEnabled() {
         return isHivePreProcessEnabled;
