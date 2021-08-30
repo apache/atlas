@@ -734,7 +734,7 @@
         <keycloak.version>6.0.1</keycloak.version>
         <log4j.version>1.2.17</log4j.version>
         <log4j2.version>2.13.3</log4j2.version>
-        <lucene-solr.version>8.6.3</lucene-solr.version>
+        <lucene-solr.version>8.7.0</lucene-solr.version>
         <maven-site-plugin.version>3.7</maven-site-plugin.version>
         <MaxPermGen>512m</MaxPermGen>
         <node-for-v2.version>v12.16.0</node-for-v2.version>
@@ -1062,6 +1062,12 @@
             <dependency>
                 <groupId>org.apache.zookeeper</groupId>
                 <artifactId>zookeeper</artifactId>
+                <version>${zookeeper.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.zookeeper</groupId>
+                <artifactId>zookeeper-jute</artifactId>
                 <version>${zookeeper.version}</version>
             </dependency>
 

@@ -63,8 +63,8 @@ public class GraphSandboxUtil {
             Configuration conf     = ApplicationProperties.get();
             Object        property = conf.getProperty("atlas.graph.index.search.solr.embedded");
 
-            if (property != null && property instanceof String) {
-                ret = Boolean.valueOf((String) property);
+            if (property instanceof String) {
+                ret = Boolean.parseBoolean((String) property);
             }
         } catch (AtlasException ignored) {
             throw new SkipException("useLocalSolr: failed! ", ignored);
