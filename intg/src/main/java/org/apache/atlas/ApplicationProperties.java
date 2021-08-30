@@ -137,7 +137,9 @@ public final class ApplicationProperties extends PropertiesConfiguration {
             LOG.info("Loading {} from {}", fileName, url);
 
             ApplicationProperties appProperties = new ApplicationProperties(url);
+            //Setting properties from System env
 
+            appProperties = replaceVariables(appProperties);
             appProperties.setDefaults();
 
             setLdapPasswordFromKeystore(appProperties);
@@ -149,6 +151,19 @@ public final class ApplicationProperties extends PropertiesConfiguration {
         } catch (Exception e) {
             throw new AtlasException("Failed to load application properties", e);
         }
+    }
+
+    private static ApplicationProperties replaceVariables(ApplicationProperties configuration){
+        Iterator<String> keys = configuration.getKeys();
+        while (keys.hasNext()){
+            String key = keys.next();
+            String value = configuration.getString(key);
+            if (value.startsWith("${") && value.endsWith("}")){
+                configuration.setProperty(key,System.getenv(value.substring(2,value.length()-1)));
+            }
+        }
+        return  configuration;
+
     }
 
     private static void logConfiguration(Configuration configuration) {
