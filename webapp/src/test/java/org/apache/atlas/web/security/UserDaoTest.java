@@ -65,4 +65,9 @@ public class UserDaoTest {
         assertTrue(hadException);
     }
 
+    @Test
+    public void testUserDaowithencodePassword() {
+        assertTrue(UserDao.checkEncrypted("admin", "a4a88c0872bf652bb9ed803ece5fd6e82354838a9bf59ab4babb1dab322154e1", "admin"));
+    }
+
 }

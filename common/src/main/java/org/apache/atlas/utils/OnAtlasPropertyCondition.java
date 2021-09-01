@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Condition;
 import org.springframework.context.annotation.ConditionContext;
 import org.springframework.core.type.AnnotatedTypeMetadata;
-import org.springframework.core.type.classreading.AnnotationMetadataReadingVisitor;
+import org.springframework.core.type.AnnotationMetadata;
 
 public class OnAtlasPropertyCondition implements Condition {
     private final Logger LOG = LoggerFactory.getLogger(OnAtlasPropertyCondition.class);
@@ -37,16 +37,18 @@ public class OnAtlasPropertyCondition implements Condition {
         boolean matches = false;
         String propertyName = (String) metadata.getAnnotationAttributes(ConditionalOnAtlasProperty.class.getName()).get("property");
         boolean isDefault = (Boolean) metadata.getAnnotationAttributes(ConditionalOnAtlasProperty.class.getName()).get("isDefault");
-        String className = ((AnnotationMetadataReadingVisitor) metadata).getClassName();
+        if (metadata instanceof AnnotatedTypeMetadata) {
+            String className = ((AnnotationMetadata) metadata).getClassName();
 
-        try {
-            Configuration configuration = ApplicationProperties.get();
-            String configuredProperty = configuration.getString(propertyName);
-            if (StringUtils.isNotEmpty(configuredProperty)) {
-                matches = configuredProperty.equals(className);
-            } else if (isDefault) matches = true;
-        } catch (AtlasException e) {
-            LOG.error("Unable to load atlas properties. Dependent bean configuration may fail");
+            try {
+                Configuration configuration = ApplicationProperties.get();
+                String configuredProperty = configuration.getString(propertyName);
+                if (StringUtils.isNotEmpty(configuredProperty)) {
+                    matches = configuredProperty.equals(className);
+                } else if (isDefault) matches = true;
+            } catch (AtlasException e) {
+                LOG.error("Unable to load atlas properties. Dependent bean configuration may fail");
+            }
         }
         return matches;
     }

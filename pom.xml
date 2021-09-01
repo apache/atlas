@@ -760,8 +760,8 @@
         <solr-test-framework.version>8.6.3</solr-test-framework.version>
         <solr.version>8.6.3</solr.version>
         <spray.version>1.3.1</spray.version>
-        <spring.security.version>4.2.17.RELEASE</spring.security.version>
-        <spring.version>4.3.29.RELEASE</spring.version>
+        <spring.security.version>5.5.1</spring.security.version>
+        <spring.version>5.3.8</spring.version>
         <sqoop.version>1.4.6.2.3.99.0-195</sqoop.version>
         <storm.version>2.1.0</storm.version>
         <surefire.forkCount>2C</surefire.forkCount>
@@ -1073,6 +1073,22 @@
                 <scope>import</scope>
             </dependency>
 
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-framework-bom</artifactId>
+                <version>${spring.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.security</groupId>
+                <artifactId>spring-security-bom</artifactId>
+                <version>${spring.security.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
             <!-- commons -->
             <dependency>
                 <groupId>commons-configuration</groupId>
@@ -1345,61 +1361,6 @@
                 <groupId>javax.servlet</groupId>
                 <artifactId>javax.servlet-api</artifactId>
                 <version>${javax.servlet.version}</version>
-            </dependency>
-
-            <!-- Spring -->
-            <dependency>
-                <groupId>org.springframework</groupId>
-                <artifactId>spring-core</artifactId>
-                <version>${spring.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework</groupId>
-                <artifactId>spring-web</artifactId>
-                <version>${spring.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework</groupId>
-                <artifactId>spring-webmvc</artifactId>
-                <version>${spring.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework.security</groupId>
-                <artifactId>spring-security-core</artifactId>
-                <version>${spring.security.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework.security</groupId>
-                <artifactId>spring-security-web</artifactId>
-                <version>${spring.security.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework.security</groupId>
-                <artifactId>spring-security-config</artifactId>
-                <version>${spring.security.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework.security</groupId>
-                <artifactId>spring-security-ldap</artifactId>
-                <version>${spring.security.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework</groupId>
-                <artifactId>spring-aop</artifactId>
-                <version>${spring.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework</groupId>
-                <artifactId>spring-test</artifactId>
-                <version>${spring.version}</version>
             </dependency>
 
             <!--  atlas modules -->

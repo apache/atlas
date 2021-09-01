@@ -214,12 +214,8 @@ public final class Servlets {
         }
     }
 
-    public static String decodeQueryString(String query){
-        try {
-            return UriUtils.decode(query,"UTF-8");
+    public static String decodeQueryString(String query) {
+        return UriUtils.decode(query,"UTF-8");
 
-        } catch (UnsupportedEncodingException e){
-            return query;
-        }
     }
 }
