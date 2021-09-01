@@ -19,6 +19,7 @@
 package org.apache.atlas.web.filters;
 
 import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.security.SecurityProperties;
 import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.atlas.web.security.AtlasAuthenticationProvider;
@@ -73,6 +74,9 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.hadoop.security.authorize.AuthorizationException;
+import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
+
+import static org.apache.atlas.web.filters.RestUtil.constructForwardableURL;
 
 
 /**
@@ -90,6 +94,7 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
     private   static final String[]       DEFAULT_PROXY_USERS   = new String[] { "knox" };
     private   static final String         CONF_PROXYUSER_PREFIX = "atlas.proxyuser";
     protected static final ServletContext nullContext           = new NullServletContext();
+    private   static final String         ORIGINAL_URL_QUERY_PARAM = "originalUrl";
 
     private Signer               signer;
     private SignerSecretProvider secretProvider;
@@ -102,8 +107,9 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
     private Set<String>          atlasProxyUsers = new HashSet<>();
     private HttpServlet          optionsServlet;
     private boolean              supportTrustedProxy = false;
+    private int                  sessionTimeout;
 
-
+    private SecurityContextLogoutHandler logoutHandler;
 
     public AtlasAuthenticationFilter() {
         LOG.info("==> AtlasAuthenticationFilter()");
@@ -193,7 +199,7 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
         optionsServlet = new HttpServlet() {
         };
         optionsServlet.init();
-
+        logoutHandler = new SecurityContextLogoutHandler();
         LOG.info("<== AtlasAuthenticationFilter.init(filterConfig={})", filterConfig);
 
     }
@@ -301,6 +307,10 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
 
         LOG.debug(" AuthenticationFilterConfig: {}", ret);
 
+        sessionTimeout = AtlasConfiguration.SESSION_TIMEOUT_SECS.getInt();
+        if(sessionTimeout < 30){
+            LOG.warn("AtlasAuthenticationFilter:: sessionTimeout is set low");
+        }
         supportKeyTabBrowserLogin = configuration.getBoolean("atlas.authentication.method.kerberos.support.keytab.browser.login", false);
         supportTrustedProxy = configuration.getBoolean("atlas.authentication.method.trustedproxy", true);
         String agents = configuration.getString(AtlasCSRFPreventionFilter.BROWSER_USER_AGENT_PARAM, AtlasCSRFPreventionFilter.BROWSER_USER_AGENTS_DEFAULT);
@@ -332,6 +342,8 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
             Authentication              existingAuth    = SecurityContextHolder.getContext().getAuthentication();
             HttpServletResponse         httpResponse    = (HttpServletResponse) response;
             AtlasResponseRequestWrapper responseWrapper = new AtlasResponseRequestWrapper(httpResponse);
+            String action = httpRequest.getParameter("action");
+            String doAsUser = request.getParameter("doAs");
 
             HeadersUtil.setHeaderMapAttributes(responseWrapper, HeadersUtil.X_FRAME_OPTIONS_KEY);
             HeadersUtil.setHeaderMapAttributes(responseWrapper, HeadersUtil.X_CONTENT_TYPE_OPTIONS_KEY);
@@ -342,6 +354,14 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
                 for (String headerKey : headerProperties.stringPropertyNames()) {
                     responseWrapper.setHeader(headerKey, headerProperties.getProperty(headerKey));
                 }
+            }
+
+            if (supportTrustedProxy && StringUtils.isNotEmpty(doAsUser) && StringUtils.equals(action, RestUtil.TIMEOUT_ACTION)) {
+                if (existingAuth != null) {
+                    logoutHandler.logout(httpRequest, httpResponse, existingAuth);
+                }
+                redirectTimeoutReqeust(httpRequest, httpResponse);
+                return;
             }
 
             if (existingAuth == null) {
@@ -365,6 +385,28 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
         }
     }
 
+    private void redirectTimeoutReqeust(HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException{
+        String logoutUrl = httpRequest.getRequestURL().toString();
+
+        logoutUrl =  StringUtils.replace(logoutUrl, httpRequest.getRequestURI(), RestUtil.LOGOUT_URL);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("logoutUrl value is " + logoutUrl);
+        }
+        String xForwardedURL = constructForwardableURL(httpRequest);
+
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("xForwardedURL = " + xForwardedURL);
+        }
+        String redirectUrl = RestUtil.constructRedirectURL(httpRequest, logoutUrl, xForwardedURL, ORIGINAL_URL_QUERY_PARAM);
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Redirect URL = " + redirectUrl);
+            LOG.debug("session id = " + httpRequest.getRequestedSessionId());
+        }
+
+        httpResponse.sendRedirect(redirectUrl);
+    }
 
 
     /**
@@ -717,7 +759,7 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
                 ((AbstractAuthenticationToken) finalAuthentication).setDetails(webDetails);
 
                 SecurityContextHolder.getContext().setAuthentication(finalAuthentication);
-
+                httpRequest.getSession().setMaxInactiveInterval(sessionTimeout);
                 request.setAttribute("atlas.http.authentication.type", true);
 
                 if (!StringUtils.equals(loggedInUser, userName)) {

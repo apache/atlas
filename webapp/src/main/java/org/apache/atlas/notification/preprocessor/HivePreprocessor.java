@@ -71,6 +71,7 @@ public class HivePreprocessor {
                     context.addToIgnoredEntities(entity.getAttribute(ATTRIBUTE_SD));
                     context.addToIgnoredEntities(entity.getAttribute(ATTRIBUTE_COLUMNS));
                     context.addToIgnoredEntities(entity.getAttribute(ATTRIBUTE_PARTITION_KEYS));
+                    context.addToIgnoredEntities(entity.getAttribute(TYPE_HIVE_TABLE_DDL));
                 } else if (action == PreprocessAction.PRUNE) {
                     context.addToPrunedEntities(entity);
 
