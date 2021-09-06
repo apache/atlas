@@ -685,7 +685,7 @@ define(['require',
                 }
                 if (this.value) {
                     this.ui.searchInput.val(this.value.query || "");
-                    if (this.value.dslChecked == "true") {
+                    if (this.value.dslChecked == "true" || this.value.searchType === "dsl") {
                         if (!this.ui.searchType.prop("checked")) {
                             this.ui.searchType.prop("checked", true).trigger("change");
                         }
