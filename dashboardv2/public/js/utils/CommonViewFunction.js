@@ -279,6 +279,9 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             }
             var keyValue = valueObject[key],
                 listCount = "";
+            if (key == "isIncomplete" && keyValue == false) {
+                return;
+            }
             if (showListCount && _.isArray(keyValue) && keyValue.length > 0) {
                 listCount = (valueObject && valueObject.paramsCount != undefined) ? (numberFormat(valueObject.paramsCount) != 0) ? ' (' + numberFormat(valueObject.paramsCount) + ')' : '' : ' (' + numberFormat(keyValue.length) + ')';
             }
