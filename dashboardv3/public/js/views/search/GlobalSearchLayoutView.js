@@ -164,9 +164,9 @@ define(["require",
             },
             renderSearchLayoutView: function() {
                 var that = this;
-                require(["views/search/SearchLayoutView"], function(SearchLayoutView) {
+                require(["views/search/AdvanceSearchLayoutView"], function(AdvanceSearchLayoutView) {
                     that.RSearchLayoutView.show(
-                        new SearchLayoutView(
+                        new AdvanceSearchLayoutView(
                             _.extend({
                                     isHeaderSearch: true,
                                     onSubmit: function() {
@@ -261,6 +261,7 @@ define(["require",
                                 if ($(this).data("valSelected") !== true) {
                                     that.closeSearch();
                                     that.triggerBasicSearch($(this).val());
+
                                 } else {
                                     $(this).data("valSelected", false);
                                 }

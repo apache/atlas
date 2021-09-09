@@ -49,6 +49,7 @@ define(["require"], function(require) {
 
     Globals.isDebugMetricsEnabled = false;
     Globals.isTasksEnabled = false;
+    Globals.advanceSearchData = {};
     Globals.idealTimeoutSeconds = 900;
 
     return Globals;
