@@ -920,6 +920,8 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         searchParameters.setOffset(quickSearchParameters.getOffset());
         searchParameters.setEntityFilters(quickSearchParameters.getEntityFilters());
         searchParameters.setAttributes(quickSearchParameters.getAttributes());
+        searchParameters.setSortBy(quickSearchParameters.getSortBy());
+        searchParameters.setSortOrder(quickSearchParameters.getSortOrder());
 
         return searchParameters;
     }
