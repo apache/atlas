@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
+import org.apache.atlas.SortOrder;
 import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria;
 
 import java.io.Serializable;
@@ -47,6 +48,8 @@ public class QuickSearchParameters implements Serializable {
     private int            offset;
     private int            limit;
     private Set<String>    attributes;
+    private String         sortBy;
+    private SortOrder      sortOrder;
 
     /**
      * for framework use.
@@ -61,7 +64,9 @@ public class QuickSearchParameters implements Serializable {
                                  boolean        excludeDeletedEntities,
                                  int            offset,
                                  int            limit,
-                                 Set<String>    attributes) {
+                                 Set<String>    attributes,
+                                 String         sortBy,
+                                 SortOrder      sortOrder) {
         this.query                  = query;
         this.typeName               = typeName;
         this.entityFilters          = entityFilters;
@@ -70,6 +75,8 @@ public class QuickSearchParameters implements Serializable {
         this.offset                 = offset;
         this.limit                  = limit;
         this.attributes             = attributes;
+        this.sortBy                 = sortBy;
+        this.sortOrder              = sortOrder;
     }
 
     public String getQuery() {
@@ -134,5 +141,21 @@ public class QuickSearchParameters implements Serializable {
 
     public void setAttributes(Set<String> attributes) {
         this.attributes = attributes;
+    }
+
+    public String getSortBy() {
+        return sortBy;
+    }
+
+    public void setSortBy(String sortBy) {
+        this.sortBy = sortBy;
+    }
+
+    public SortOrder getSortOrder() {
+        return sortOrder;
+    }
+
+    public void setSortOrder(SortOrder sortOrder) {
+        this.sortOrder = sortOrder;
     }
 }
