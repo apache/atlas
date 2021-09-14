@@ -52,8 +52,8 @@ Build Process
 2. Execute the following commands to build Apache Atlas
 
    $ export MAVEN_OPTS="-Xms2g -Xmx2g"
-   $ mvn clean install
-   $ mvn clean package -Pdist
+   $ mvn clean install -DskipTests 
+   $ mvn clean package -Pdist -DskipTests 
 
 3. After above build commands successfully complete, you should see the following files
 
