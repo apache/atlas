@@ -101,6 +101,9 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
                     var notifyObj = {
                         modal: true,
                         ok: function(argument) {
+                            if (Utils.getUrlState.getQueryParams().searchType === "dsl") {
+                                Globals.advanceSearchData = {};
+                            }
                             Utils.setUrl({
                                 url: '#!/search',
                                 mergeBrowserUrl: false,
