@@ -161,6 +161,7 @@ define(['require',
                 this.offset = 0;
                 this.bindEvents();
                 this.multiSelectEntity = [];
+                this.activeEntityCountSelected = 0;
                 this.searchType = 'Basic Search';
                 this.columnOrder = null;
                 this.defaultColumns = ["selected", "name", "description", "typeName", "owner", "tag", "term"];
@@ -196,6 +197,7 @@ define(['require',
                 this.onClickLoadMore();
                 this.listenTo(this.searchCollection, 'backgrid:selected', function(model, checked) {
                     this.multiSelectEntity = [];
+                    that.activeEntityCountSelected = 0;
                     if (checked === true) {
                         model.set("isEnable", true);
                     } else {
@@ -204,6 +206,9 @@ define(['require',
                     this.searchCollection.find(function(item) {
                         if (item.get('isEnable')) {
                             var obj = item.toJSON();
+                            if (item.get('status') === 'ACTIVE') {
+                                that.activeEntityCountSelected++;
+                            }
                             that.multiSelectEntity.push({
                                 id: obj.guid,
                                 model: obj
@@ -356,10 +361,11 @@ define(['require',
                 }, options));
             },
             updateMultiSelect: function() {
-                if (this.multiSelectEntity.length > 0) {
-                    this.$('.multiSelectTag,.multiSelectTerm').show();
+                var addTermTagButton = this.$('.multiSelectTag,.multiSelectTerm');
+                if (this.activeEntityCountSelected > 0) {
+                    addTermTagButton.show();
                 } else {
-                    this.$('.multiSelectTag,.multiSelectTerm').hide();
+                    addTermTagButton.hide();
                 }
             },
             updateColumnList: function(updatedList) {
@@ -386,6 +392,8 @@ define(['require',
                     isSearchTab = Utils.getUrlState.isSearchTab(),
                     tagFilters = null,
                     entityFilters = null;
+                that.activeEntityCountSelected = 0;
+                that.updateMultiSelect();
                 if (isSearchTab) {
                     tagFilters = CommonViewFunction.attributeFilter.generateAPIObj(this.value.tagFilters);
                     entityFilters = CommonViewFunction.attributeFilter.generateAPIObj(this.value.entityFilters);
@@ -499,7 +507,6 @@ define(['require',
                         that.ui.activePage.text(that.activePage);
                         that.renderTableLayoutView();
                         that.multiSelectEntity = [];
-                        that.updateMultiSelect();
 
                         if (dataLength > 0) {
                             that.$('.searchTable').removeClass('noData')
@@ -1072,18 +1079,18 @@ define(['require',
                     };
                 }
             },
-            addTagModalView: function(guid, multiple) {
+            addTagModalView: function(guid, multiple, entityCount) {
                 var that = this;
                 require(['views/tag/AddTagModalView'], function(AddTagModalView) {
                     var view = new AddTagModalView({
                         guid: guid,
                         multiple: multiple,
+                        entityCount: entityCount,
                         callback: function() {
                             if (that.searchVent) {
                                 that.searchVent.trigger("Classification:Count:Update");
                             }
                             that.multiSelectEntity = [];
-                            that.$('.multiSelectTag,.multiSelectTerm').hide();
                             that.fetchCollection();
                         },
                         tagList: that.getTagList(guid, multiple),
@@ -1132,7 +1139,7 @@ define(['require',
                     that = this,
                     isTagMultiSelect = $(e.currentTarget).hasClass('multiSelectTag');
                 if (isTagMultiSelect && this.multiSelectEntity && this.multiSelectEntity.length) {
-                    that.addTagModalView(guid, this.multiSelectEntity);
+                    that.addTagModalView(guid, this.multiSelectEntity, this.activeEntityCountSelected);
                 } else {
                     guid = that.$(e.currentTarget).data("guid");
                     that.addTagModalView(guid);
@@ -1155,7 +1162,6 @@ define(['require',
                             associatedTerms: obj.associatedTerms,
                             callback: function() {
                                 that.multiSelectEntity = [];
-                                that.$('.multiSelectTag,.multiSelectTerm').hide();
                                 that.fetchCollection();
                             },
                             glossaryCollection: glossaryCollection,
