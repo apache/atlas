@@ -138,9 +138,9 @@ define(['require',
                         },
                         onFinished: function(event, currentIndex) {
                             var $assignBtn = $(this).find('a[href="#finish"]');
-                            if(!$assignBtn.attr('disabled')){
+                            if (!$assignBtn.attr('disabled')) {
                                 $assignBtn.attr('disabled', true).showButtonLoader();
-                                $assignBtn.parent().attr('aria-disabled','true').addClass('disabled');
+                                $assignBtn.parent().attr('aria-disabled', 'true').addClass('disabled');
                                 that.assignTerm();
                             }
                         },
@@ -171,8 +171,11 @@ define(['require',
                         cust_error: function() {
                             var $assignBtn = that.$el.find('a[href="#finish"]');
                             $assignBtn.removeAttr('disabled').hideButtonLoader();
-                            $assignBtn.parent().attr('aria-disabled','false').removeClass('disabled');
+                            $assignBtn.parent().attr('aria-disabled', 'false').removeClass('disabled');
                             that.assignTermError = true;
+                        },
+                        complete: function() {
+                            that.modal.trigger('closeModal');
                         }
                     },
                     model = new this.glossaryCollection.model();
@@ -228,6 +231,7 @@ define(['require',
                                     "</b> " + (deletedEntity.length === 1 ? "entity " : "entities ") +
                                     Messages.assignTermDeletedEntity
                             });
+                            that.modal.close();
                         }
                     } else {
                         data.push({ "guid": that.guid });
