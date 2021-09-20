@@ -185,8 +185,16 @@ public class TaskRegistry {
         ret.setType(v.getProperty(Constants.TASK_TYPE, String.class));
         ret.setStatus(v.getProperty(Constants.TASK_STATUS, String.class));
         ret.setCreatedBy(v.getProperty(Constants.TASK_CREATED_BY, String.class));
-        ret.setCreatedTime(new Date(v.getProperty(Constants.TASK_CREATED_TIME, Long.class)));
-        ret.setUpdatedTime(new Date(v.getProperty(Constants.TASK_UPDATED_TIME, Long.class)));
+
+        Long createdTime = v.getProperty(Constants.TASK_CREATED_TIME, Long.class);
+        if (createdTime != null) {
+            ret.setCreatedTime(new Date(createdTime));
+        }
+
+        Long updatedTime = v.getProperty(Constants.TASK_UPDATED_TIME, Long.class);
+        if (updatedTime != null) {
+            ret.setUpdatedTime(new Date(updatedTime));
+        }
 
         Long startTime = v.getProperty(Constants.TASK_START_TIME, Long.class);
         if (startTime != null) {
