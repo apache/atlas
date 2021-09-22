@@ -29,6 +29,7 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationConverter;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.security.SecurityUtil;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.authentication.client.AuthenticatedURL;
 import org.apache.hadoop.security.authentication.client.AuthenticationException;
 import org.apache.hadoop.security.authentication.client.KerberosAuthenticator;
@@ -39,6 +40,7 @@ import org.apache.hadoop.security.authentication.server.KerberosAuthenticationHa
 import org.apache.hadoop.security.authentication.util.Signer;
 import org.apache.hadoop.security.authentication.util.SignerException;
 import org.apache.hadoop.security.authentication.util.SignerSecretProvider;
+import org.apache.hadoop.security.authorize.AuthorizationException;
 import org.apache.hadoop.security.authorize.ProxyUsers;
 import org.apache.log4j.NDC;
 import org.slf4j.Logger;
@@ -51,8 +53,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetails;
+import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.stereotype.Component;
-import org.apache.hadoop.security.UserGroupInformation;
+
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletContext;
@@ -70,11 +73,19 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.security.Principal;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Date;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.apache.hadoop.security.authorize.AuthorizationException;
-import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 
 import static org.apache.atlas.web.filters.RestUtil.constructForwardableURL;
 
@@ -88,6 +99,7 @@ import static org.apache.atlas.web.filters.RestUtil.constructForwardableURL;
 public class AtlasAuthenticationFilter extends AuthenticationFilter {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasAuthenticationFilter.class);
 
+    private   static final int            SESSION_TIMEOUT_DISABLED_VALUE = -1;
     private   static final String         CONFIG_KERBEROS_TOKEN_VALIDITY = "atlas.authentication.method.kerberos.token.validity";
     private   static final String         CONFIG_PROXY_USERS    = "atlas.proxyusers";
     private   static final String         PREFIX                = "atlas.authentication.method";
@@ -199,7 +211,11 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
         optionsServlet = new HttpServlet() {
         };
         optionsServlet.init();
-        logoutHandler = new SecurityContextLogoutHandler();
+
+        if (sessionTimeout != -1) {
+            logoutHandler = new SecurityContextLogoutHandler();
+        }
+
         LOG.info("<== AtlasAuthenticationFilter.init(filterConfig={})", filterConfig);
 
     }
@@ -306,11 +322,11 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
 
 
         LOG.debug(" AuthenticationFilterConfig: {}", ret);
-
         sessionTimeout = AtlasConfiguration.SESSION_TIMEOUT_SECS.getInt();
-        if(sessionTimeout < 30){
-            LOG.warn("AtlasAuthenticationFilter:: sessionTimeout is set low");
-        }
+        LOG.info("AtlasAuthenticationFilter: {} = {}: {}",
+                    AtlasConfiguration.SESSION_TIMEOUT_SECS.getPropertyName(), sessionTimeout, 
+                    (sessionTimeout == SESSION_TIMEOUT_DISABLED_VALUE) ? "Disabled" : "Enabled");
+
         supportKeyTabBrowserLogin = configuration.getBoolean("atlas.authentication.method.kerberos.support.keytab.browser.login", false);
         supportTrustedProxy = configuration.getBoolean("atlas.authentication.method.trustedproxy", true);
         String agents = configuration.getString(AtlasCSRFPreventionFilter.BROWSER_USER_AGENT_PARAM, AtlasCSRFPreventionFilter.BROWSER_USER_AGENTS_DEFAULT);
@@ -356,7 +372,7 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
                 }
             }
 
-            if (supportTrustedProxy && StringUtils.isNotEmpty(doAsUser) && StringUtils.equals(action, RestUtil.TIMEOUT_ACTION)) {
+            if (logoutHandler != null && supportTrustedProxy && StringUtils.isNotEmpty(doAsUser) && StringUtils.equals(action, RestUtil.TIMEOUT_ACTION)) {
                 if (existingAuth != null) {
                     logoutHandler.logout(httpRequest, httpResponse, existingAuth);
                 }
@@ -759,7 +775,10 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
                 ((AbstractAuthenticationToken) finalAuthentication).setDetails(webDetails);
 
                 SecurityContextHolder.getContext().setAuthentication(finalAuthentication);
-                httpRequest.getSession().setMaxInactiveInterval(sessionTimeout);
+                if (sessionTimeout != SESSION_TIMEOUT_DISABLED_VALUE) {
+                    httpRequest.getSession().setMaxInactiveInterval(sessionTimeout);
+                }
+
                 request.setAttribute("atlas.http.authentication.type", true);
 
                 if (!StringUtils.equals(loggedInUser, userName)) {
