@@ -57,7 +57,10 @@ public class AtlasAuthenticationSuccessHandler implements AuthenticationSuccessH
         if (request.getSession() != null) { // incase of form based login mark it as local login in session
             request.getSession().setAttribute(LOCALLOGIN,"true");
             request.getServletContext().setAttribute(request.getSession().getId(), LOCALLOGIN);
-            request.getSession().setMaxInactiveInterval(sessionTimeout);
+
+            if (this.sessionTimeout != -1) {
+                request.getSession().setMaxInactiveInterval(sessionTimeout);
+            }
         }
         response.setContentType("application/json");
         response.setStatus(HttpServletResponse.SC_OK);
