@@ -110,7 +110,7 @@ define(['require',
          * @constructs
          */
         initialize: function(options) {
-            _.extend(this, _.pick(options, 'modalCollection', 'guid', 'callback', 'multiple', 'showLoader', 'hideLoader', 'tagList', 'tagModel', 'enumDefCollection'));
+            _.extend(this, _.pick(options, 'modalCollection', 'guid', 'callback', 'multiple', 'entityCount', 'showLoader', 'hideLoader', 'tagList', 'tagModel', 'enumDefCollection'));
             this.commonCollection = new VTagList();
             if (this.tagModel) {
                 this.collection = new Backbone.Collection(this.tagModel.validityPeriods);
@@ -185,6 +185,7 @@ define(['require',
                                 "</b> " + (obj.deletedEntity.length === 1 ? "entity " : "entities ") +
                                 Messages.assignDeletedEntity
                         });
+                        that.modal.close();
                     }
                     if (obj.skipEntity.length) {
                         var text = "<b>" + obj.skipEntity.length + " of " + that.multiple.length +
@@ -486,7 +487,7 @@ define(['require',
                 success: function(data) {
                     var addupdatetext = that.tagModel ? 'updated successfully to ' : 'added to ';
                     Utils.notifySuccess({
-                        content: "Classification " + tagName + " has been " + addupdatetext + (that.multiple ? "entities" : "entity")
+                        content: "Classification " + tagName + " has been " + addupdatetext + (that.entityCount > 1 ? "entities" : "entity")
                     });
                     if (options.modalCollection) {
                         options.modalCollection.fetch({ reset: true });
@@ -494,13 +495,15 @@ define(['require',
                     if (that.callback) {
                         that.callback();
                     }
-                    that.modal.close();
                 },
                 cust_error: function(model, response) {
                     that.modal.$el.find('button.ok').hideButtonLoader();
                     if (that.hideLoader) {
                         that.hideLoader();
                     }
+                },
+                complete: function() {
+                    that.modal.close();
                 }
             });
         },
