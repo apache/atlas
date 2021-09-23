@@ -26,7 +26,9 @@ import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
+import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -38,6 +40,9 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotEquals;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotNull;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class FreeTextSearchProcessorTest extends BasicTestSetup {
@@ -132,11 +137,35 @@ public class FreeTextSearchProcessorTest extends BasicTestSetup {
         new FreeTextSearchProcessor(context);
     }
 
+    @Test(description = "filtering internal types")
+    public void searchByTextFilteringInternalTypes() throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+        params.setQuery("*");
+        params.setExcludeDeletedEntities(true);
+        params.setLimit(500);
+        params.setOffset(0);
+
+        SearchContext context = new SearchContext(params, typeRegistry, graph, Collections.<String>emptySet());
+
+        FreeTextSearchProcessor processor = new FreeTextSearchProcessor(context);
+
+        List<AtlasVertex> vertices = processor.execute();
+
+        assertNotNull(vertices);
+
+        for (AtlasVertex vertex : vertices) {
+            String entityTypeName = AtlasGraphUtilsV2.getTypeName(vertex);
+            AtlasEntityType entityType = context.getTypeRegistry().getEntityTypeByName(entityTypeName);
+
+            assertFalse(entityType.isInternalType());
+            assertNotEquals("AtlasGlossaryTerm", entityTypeName);
+        }
+    }
+
     @AfterClass
     public void teardown() throws Exception {
         AtlasGraphProvider.cleanup();
 
         super.cleanup();
     }
-
 }
