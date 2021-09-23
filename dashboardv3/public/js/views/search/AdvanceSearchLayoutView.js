@@ -54,8 +54,7 @@ define(['require',
                     that = this;
                 events["keyup " + this.ui.searchInput] = function(e) {
                     var code = e.which;
-                    this.value.query = e.currentTarget.value;
-                    this.query[this.type].query = this.value.query;
+                    this.query[this.type].query = Globals.advanceSearchData.searchByQuery = e.currentTarget.value;
                     if (code == 13) {
                         that.findSearchResult();
                         this.getAdvanceSearchValues();
@@ -70,7 +69,7 @@ define(['require',
                 $('.global-search-container').find("span[data-id='detailSearch']").on("click", function(e) {
                     if (that.$el.height() === 0) {
                         that.renderTypeTagList({ "filterList": Globals.advanceSearchData.filterTypeSelected, isTypeOnly: true });
-                        that.setAdvanceSeachValues();
+                        that.setAdvanceSearchValues();
                     }
                 });
                 return events;
@@ -130,7 +129,7 @@ define(['require',
                     }
                 }
             },
-            setAdvanceSeachValues: function() {
+            setAdvanceSearchValues: function() {
                 this.ui.typeLov.val(Globals.advanceSearchData.searchByType).trigger('change');
                 this.ui.searchInput.val(Globals.advanceSearchData.searchByQuery);
             },
@@ -143,6 +142,7 @@ define(['require',
                     if (e.type == "change" && select2Data) {
                         var value = (_.isEmpty(select2Data) ? select2Data : _.first(select2Data).id),
                             key = "type";
+                        Globals.advanceSearchData.searchByType = value;
                         value = value && value.length ? value : null;
                         if (this.value) {
                             //On Change handle
@@ -197,11 +197,7 @@ define(['require',
             },
             onRefreshButton: function() {
                 this.fetchCollection();
-                //to check url query param contain type or not
-                var checkURLValue = Utils.getUrlState.getQueryParams(this.url);
-                if (this.searchVent && (_.has(checkURLValue, "type") || _.has(checkURLValue, "query"))) {
-                    this.searchVent.trigger('search:refresh');
-                }
+                this.getAdvanceSearchValues();
             },
             advancedInfo: function(e) {
                 require([
@@ -245,24 +241,10 @@ define(['require',
             setValues: function(paramObj) {
                 var arr = [],
                     that = this;
-                if (paramObj) {
-                    this.value = paramObj;
-                }
-                if (this.value) {
-                    this.ui.searchInput.val(this.value.query ? this.value.query : Globals.advanceSearchData.searchByQuery || "");
-                    this.ui.typeLov.val(this.value.type);
-                    if (this.ui.typeLov.data('select2')) {
-                        if (this.ui.typeLov.val() !== this.value.type) {
-                            this.value.type = null;
-                            this.ui.typeLov.val("").trigger("change", { 'manual': true });
-                        } else {
-                            this.ui.typeLov.trigger("change", { 'manual': true });
-                        }
-                    }
-                    setTimeout(function() {
-                        !that.isDestroyed && that.ui.searchInput.focus();
-                    }, 0);
-                }
+                this.setAdvanceSearchValues();
+                setTimeout(function() {
+                    !that.isDestroyed && that.ui.searchInput.focus();
+                }, 0);
             },
             renderTypeTagList: function(options) {
                 var that = this;

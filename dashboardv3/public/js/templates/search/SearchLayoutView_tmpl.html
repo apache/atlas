@@ -17,7 +17,7 @@
 <div class="row row-margin-bottom">
     <div class="col-sm-12" style="margin:15px 0px;">
         <div class="row">
-            <div class="col-sm-9" style="margin-top: 5px;">
+            <div class="col-sm-12" style="margin-top: 5px;">
                 <!-- <span class="pull-left">Basic</span>
                 <label class="switch pull-left">
                     <input type="checkbox" class="switch-input" name="queryType" value="text" />
@@ -26,18 +26,18 @@
                 <span class="pull-left">Advanced</span>
                 <span class="advancedInfo" data-id="advancedInfo"><i class="fa fa-question-circle-o"></i></span>
             </div>
-            <div class="col-sm-3">
-                <button type="button" class="btn btn-action btn-md pull-right typeLOV" title="Refresh" data-id="refreshBtn"><i class="fa fa-refresh"></i></button>
-            </div>
         </div>
     </div>
     <div class="col-sm-12 form-group">
         <div class="form-group">
             <div class="srchType clearfix">
                 <span class="srchTitle">Search By Type</span>
-                <div class="">
-                    <div class="col-sm-12 no-padding typeFilter">
+                <div class="typeFilter-container">
+                    <div class="no-padding typeFilter">
                         <select data-id="typeLOV"></select>
+                    </div>
+                    <div class="refreshBtn-container">
+                        <button type="button" class="btn btn-action btn-md pull-right typeLOV" title="Refresh" data-id="refreshBtn"><i class="fa fa-refresh"></i></button>
                     </div>
                     <!--  <div class="col-sm-2 no-padding typeFilterBtn">
                         <button type="button" class="btn btn-action btn-md pull-right typeLOV active" title="Entity Attribute Filter" data-id="typeAttrFilter"><i class="fa fa-filter"></i></button>
