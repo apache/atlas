@@ -40,28 +40,19 @@ import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.SKIPPED;
 public class AtlasPatchManager {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasPatchManager.class);
 
-    private final PatchContext            context;
     private final List<AtlasPatchHandler> handlers = new ArrayList<>();
+    private final AtlasGraph atlasGraph;
+    private final AtlasTypeRegistry typeRegistry;
+    private final GraphBackedSearchIndexer indexer;
+    private final EntityGraphMapper entityGraphMapper;
+    private PatchContext            context;
 
     @Inject
     public AtlasPatchManager(AtlasGraph atlasGraph, AtlasTypeRegistry typeRegistry, GraphBackedSearchIndexer indexer, EntityGraphMapper entityGraphMapper) {
-        this.context = new PatchContext(atlasGraph, typeRegistry, indexer, entityGraphMapper);
-    }
-
-    @PostConstruct
-    public void init() {
-        LOG.info("==> AtlasPatchManager.init()");
-
-        // register all java patches here
-        handlers.add(new UniqueAttributePatch(context));
-        handlers.add(new ClassificationTextPatch(context));
-        handlers.add(new FreeTextRequestHandlerPatch(context));
-        handlers.add(new SuggestionsRequestHandlerPatch(context));
-        handlers.add(new IndexConsistencyPatch(context));
-        handlers.add(new ReIndexPatch(context));
-        handlers.add(new ProcessNamePatch(context));
-
-        LOG.info("<== AtlasPatchManager.init()");
+        this.atlasGraph = atlasGraph;
+        this.typeRegistry = typeRegistry;
+        this.indexer = indexer;
+        this.entityGraphMapper = entityGraphMapper;
     }
 
     public AtlasPatches getAllPatches() {
@@ -70,6 +61,7 @@ public class AtlasPatchManager {
 
     public void applyAll() {
         LOG.info("==> AtlasPatchManager.applyAll()");
+        init();
 
         try {
             for (AtlasPatchHandler handler : handlers) {
@@ -88,6 +80,23 @@ public class AtlasPatchManager {
         }
 
         LOG.info("<== AtlasPatchManager.applyAll()");
+    }
+
+    private void init() {
+        LOG.info("==> AtlasPatchManager.init()");
+
+        this.context = new PatchContext(atlasGraph, typeRegistry, indexer, entityGraphMapper);
+
+        // register all java patches here
+        handlers.add(new UniqueAttributePatch(context));
+        handlers.add(new ClassificationTextPatch(context));
+        handlers.add(new FreeTextRequestHandlerPatch(context));
+        handlers.add(new SuggestionsRequestHandlerPatch(context));
+        handlers.add(new IndexConsistencyPatch(context));
+        handlers.add(new ReIndexPatch(context));
+        handlers.add(new ProcessNamePatch(context));
+
+        LOG.info("<== AtlasPatchManager.init()");
     }
 
     public void addPatchHandler(AtlasPatchHandler patchHandler) {
