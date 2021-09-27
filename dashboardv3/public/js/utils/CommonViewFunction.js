@@ -288,6 +288,9 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 var value = val,
                     appendClass = (value == "N/A" ? "hide-row" : ""),
                     htmlTag = '<div class="scroll-y">' + value + '</div>';
+                if (defEntityType === 'string' && Utils.isUrl(value)) {
+                    htmlTag = '<div class="scroll-y"><a target="_blank" class="blue-link" href="' + value + '">' + value + "</a></div>"
+                }
                 if (_.isObject(valueObject[key]) && !_.isEmpty(valueObject[key])) {
                     var matchedLinkString = val.match(/href|value-loader\w*/g),
                         matchedJson = val.match(/json-value|json-string\w*/g),
@@ -301,6 +304,9 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 }
                 table += '<tr class="' + appendClass + '"><td>' + (_.escape(key) + listCount) + '</td><td>' + htmlTag + '</td></tr>';
             } else {
+                if (defEntityType === 'string' && Utils.isUrl(val)) {
+                    val = '<a target="_blank" class="blue-link" href="' + val + '">' + val + "</a>"
+                }
                 table += '<span>' + val + '</span>';
             }
 
