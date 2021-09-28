@@ -258,18 +258,9 @@
     overflow: initial;
 }
 
-.tab-content>.tab-pane.active.debug-metrics {
-    padding: 5px 20px 15px 20px;
-}
-
 .advancedInfo {
     margin-left: 5px;
     cursor: pointer;
-}
-
-.metricsUIInfo {
-    font-size: 20px !important;
-    margin-right: 5px;
 }
 
 .query-builder {
@@ -582,5 +573,25 @@ div.columnmanager-dropdown-container {
 .ideal-timeout {
     .modal-content {
         border-radius: 0px !important;
+    }
+}
+
+.typeFilter-container {
+    width: 100%;
+
+    .typeFilter {
+        width: calc(100% - 45px);
+        display: inline-block;
+    }
+}
+
+.refreshBtn-container {
+    display: inline-block;
+    position: absolute;
+    padding-left: 8px;
+
+    .btn-action {
+        margin: 0px !important;
+        font-size: 15px;
     }
 }
