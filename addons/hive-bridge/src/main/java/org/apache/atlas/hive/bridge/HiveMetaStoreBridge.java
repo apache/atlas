@@ -161,6 +161,7 @@ public class HiveMetaStoreBridge {
 
             if (deleteNonExisting) {
                 hiveMetaStoreBridge.deleteEntitiesForNonExistingHiveMetadata(failOnError);
+                exitCode = EXIT_CODE_SUCCESS;
             } else if (StringUtils.isNotEmpty(fileToImport)) {
                 File f = new File(fileToImport);
 
@@ -187,12 +188,13 @@ public class HiveMetaStoreBridge {
                     exitCode = EXIT_CODE_SUCCESS;
                 } else {
                     LOG.error("Failed to read the input file: " + fileToImport);
+                    exitCode = EXIT_CODE_FAILED;
                 }
             } else {
                 hiveMetaStoreBridge.importHiveMetadata(databaseToImport, tableToImport, failOnError);
+                exitCode = EXIT_CODE_SUCCESS;
             }
 
-            exitCode = EXIT_CODE_SUCCESS;
         } catch(ParseException e) {
             LOG.error("Failed to parse arguments. Error: ", e.getMessage());
             printUsage();
@@ -326,7 +328,8 @@ public class HiveMetaStoreBridge {
                 }
             }
         } else {
-            LOG.info("No database found");
+            LOG.error("No database found");
+            System.exit(EXIT_CODE_FAILED);
         }
     }
 
@@ -365,7 +368,7 @@ public class HiveMetaStoreBridge {
                 }
             }
         } else {
-            LOG.info("No tables to import in database {}", databaseName);
+            LOG.error("No tables to import in database {}", databaseName);
         }
 
         return tablesImported;

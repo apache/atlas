@@ -156,8 +156,8 @@ echo "Log file for import is $LOGFILE"
 "${JAVA_BIN}" ${JAVA_PROPERTIES} -cp "${CP}" org.apache.atlas.hive.bridge.HiveMetaStoreBridge $IMPORT_ARGS
 
 RETVAL=$?
-[ $RETVAL -eq 0 ] && echo Hive Meta Data imported successfully!!!
-[ $RETVAL -ne 0 ] && echo Failed to import Hive Meta Data!!!
+[ $RETVAL -eq 0 ] && echo Hive metadata imported successfully!
+[ $RETVAL -ne 0 ] && echo Failed to import Hive metadata! Check logs at: $LOGFILE for details.
 
 exit $RETVAL
 
