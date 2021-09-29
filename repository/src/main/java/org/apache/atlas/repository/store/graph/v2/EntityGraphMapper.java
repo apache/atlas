@@ -1389,6 +1389,7 @@ public class EntityGraphMapper {
         List           newElements         = (List) ctx.getValue();
         AtlasArrayType arrType             = (AtlasArrayType) attribute.getAttributeType();
         AtlasType      elementType         = arrType.getElementType();
+        boolean        isStructType        = (elementType.getTypeCategory() == TypeCategory.STRUCT);
         boolean        isReference         = isReference(elementType);
         boolean        isSoftReference     = ctx.getAttribute().getAttributeDef().isSoftReferenced();
         AtlasAttribute inverseRefAttribute = attribute.getInverseRefAttribute();
@@ -1444,8 +1445,9 @@ public class EntityGraphMapper {
             }
         }
 
-        if (isReference && !isSoftReference) {
-            boolean isAppendOnPartialUpdate = getAppendOptionForRelationship(ctx.getReferringVertex(), attribute.getName());
+        if (isReference && !isSoftReference ) {
+
+            boolean isAppendOnPartialUpdate = !isStructType ? getAppendOptionForRelationship(ctx.getReferringVertex(), attribute.getName()) : false;
 
             if (isAppendOnPartialUpdate) {
                 allArrayElements = unionCurrentAndNewElements(attribute, (List) currentElements, (List) newElementsCreated);
@@ -1484,11 +1486,13 @@ public class EntityGraphMapper {
         boolean                             ret                       = false;
         String                              entityTypeName            = AtlasGraphUtilsV2.getTypeName(entityVertex);
         AtlasEntityDef                      entityDef                 = typeRegistry.getEntityDefByName(entityTypeName);
-        List<AtlasRelationshipAttributeDef> relationshipAttributeDefs = entityDef.getRelationshipAttributeDefs();
+        if (entityDef != null) {
+            List<AtlasRelationshipAttributeDef> relationshipAttributeDefs = entityDef.getRelationshipAttributeDefs();
 
-        if (CollectionUtils.isNotEmpty(relationshipAttributeDefs)) {
-            ret = relationshipAttributeDefs.stream().anyMatch(relationshipAttrDef -> relationshipAttrDef.getName().equals(relationshipAttributeName)
-                    && relationshipAttrDef.isAppendOnPartialUpdate());
+            if (CollectionUtils.isNotEmpty(relationshipAttributeDefs)) {
+                ret = relationshipAttributeDefs.stream().anyMatch(relationshipAttrDef -> relationshipAttrDef.getName().equals(relationshipAttributeName)
+                        && relationshipAttrDef.isAppendOnPartialUpdate());
+            }
         }
 
         return ret;
