@@ -201,7 +201,7 @@ define([
             var that = this;
             this.listenTo(
                 this.classificationDefCollection.fullCollection,
-                "reset add",
+                "reset",
                 function(model) {
                     that.classificationTreeUpdate = true;
                     that.classificationTreeRefresh();
@@ -210,7 +210,7 @@ define([
             );
             this.listenTo(
                 this.classificationDefCollection.fullCollection,
-                "remove",
+                "remove add",
                 function(model) {
                     that.classificationTreeUpdate = false;
                     that.classificationTreeRefresh();

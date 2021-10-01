@@ -269,7 +269,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 }
                 return subLink === "" ? getEmptyString(key) : subLink;
             }
-        var valueObjectKeysList = _.keys(valueObject);
+        var valueObjectKeysList = _.keys(_.omit(valueObject, ['paramsCount']));
         if (_.isUndefined(sortBy) || sortBy == true) {
             valueObjectKeysList = _.sortBy(valueObjectKeysList);
         }
@@ -278,7 +278,13 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 return;
             }
             var keyValue = valueObject[key],
-                listCount = showListCount && _.isArray(keyValue) && keyValue.length > 0 ? ' (' + numberFormat(keyValue.length) + ')' : "";
+                listCount = "";
+            if (key == "isIncomplete" && keyValue == false) {
+                return;
+            }
+            if (showListCount && _.isArray(keyValue) && keyValue.length > 0) {
+                listCount = (valueObject && valueObject.paramsCount != undefined) ? (numberFormat(valueObject.paramsCount) != 0) ? ' (' + numberFormat(valueObject.paramsCount) + ')' : '' : ' (' + numberFormat(keyValue.length) + ')';
+            }
             var defEntity = _.find(attributeDefs, { name: key });
             if (defEntity && defEntity.typeName) {
                 var defEntityType = defEntity.typeName.toLocaleLowerCase();

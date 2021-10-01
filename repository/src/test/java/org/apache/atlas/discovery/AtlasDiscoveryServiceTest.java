@@ -859,6 +859,44 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
     }
 
     @Test
+    public void searchWithEntityQuickSearchSortAsc() throws AtlasBaseException {
+        QuickSearchParameters params = new QuickSearchParameters();
+        params.setTypeName("hive_table");
+        params.setQuery("sales");
+        params.setExcludeDeletedEntities(true);
+        params.setLimit(3);
+        params.setSortBy("owner");
+        params.setSortOrder(SortOrder.ASCENDING);
+
+        AtlasQuickSearchResult searchResult = discoveryService.quickSearch(params);
+        List<AtlasEntityHeader> list = searchResult.getSearchResults().getEntities();
+
+        Assert.assertTrue(CollectionUtils.isNotEmpty(list));
+        Assert.assertTrue(list.size() == 3);
+        Assert.assertTrue(list.get(0).getAttribute("owner").toString().equalsIgnoreCase("Jane BI"));
+        Assert.assertTrue(list.get(1).getAttribute("owner").toString().equalsIgnoreCase("Joe"));
+    }
+
+    @Test
+    public void searchWithEntityQuickSearchSortDesc() throws AtlasBaseException {
+        QuickSearchParameters params = new QuickSearchParameters();
+        params.setTypeName("hive_table");
+        params.setQuery("sales");
+        params.setExcludeDeletedEntities(true);
+        params.setLimit(3);
+        params.setSortBy("name");
+        params.setSortOrder(SortOrder.DESCENDING);
+
+        AtlasQuickSearchResult searchResult = discoveryService.quickSearch(params);
+        List<AtlasEntityHeader> list = searchResult.getSearchResults().getEntities();
+
+        Assert.assertTrue(CollectionUtils.isNotEmpty(list));
+        Assert.assertTrue(list.size() == 3);
+        Assert.assertTrue(list.get(0).getDisplayText().equalsIgnoreCase("time_dim"));
+        Assert.assertTrue(list.get(1).getDisplayText().equalsIgnoreCase("sales_fact_monthly_mv"));
+    }
+
+    @Test
     public void searchRelatedEntitiesSortAsc() throws AtlasBaseException {
         String guid = gethiveTableSalesFactGuid();
 

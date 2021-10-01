@@ -254,6 +254,22 @@ define(['require',
                     "el": that.$graphButtonsEl,
                     disabled: true
                 });
+                //Create data for displaying just entityNode when no relationships are present.
+                var classificationNamesArray = [];
+                if (this.entity.classifications) {
+                    this.entity.classifications.forEach(function(item) {
+                        classificationNamesArray.push(item.typeName);
+                    });
+                }
+                this.currentEntityData = {
+                    classificationNames: classificationNamesArray,
+                    displayText: that.entity.attributes.name,
+                    labels: [],
+                    meaningNames: [],
+                    meanings: []
+                }
+                _.extend(this.currentEntityData, _.pick(this.entity, 'attributes', 'guid', 'isIncomplete', 'status', 'typeName'));
+                //End
                 this.collection.getLineage(this.guid, {
                     queryParam: queryParam,
                     success: function(data) {
@@ -271,6 +287,11 @@ define(['require',
                             });
                         }
                         that.lineageRelationshipLength = data.relations.length;
+                        if (_.isEmpty(data.relations)) {
+                            if (_.isEmpty(data.guidEntityMap) || !data.guidEntityMap[data.baseEntityGuid]) {
+                                data.guidEntityMap[data.baseEntityGuid] = that.currentEntityData;
+                            }
+                        }
                         that.createGraph(data);
                         that.renderLineageTypeSearch(data);
                     },

@@ -96,7 +96,8 @@ define(['require',
                 this.selectedFilter = {
                     'basic': [],
                     'dsl': []
-                }
+                };
+                this.filterTypeSelected = null;
                 var param = Utils.getUrlState.getQueryParams();
                 this.query = {
                     dsl: {
@@ -532,7 +533,7 @@ define(['require',
                 });
 
                 _.each(_.uniq(serviceArr), function(service) {
-                    serviceStr += '<li><div class="pretty p-switch p-fill"><input type="checkbox" class="pull-left" data-value="' + (service) + '" value="" ' + (_.contains(that.selectedFilter[that.type], service) ? "checked" : "") + '/><div class="state p-primary"><label>' + (service.toUpperCase()) + '</label></div></div></li>';
+                    serviceStr += '<li><div class="pretty p-switch p-fill"><input type="checkbox" class="pull-left" data-value="' + (service) + '" value="" ' + (_.contains(that.filterTypeSelected, service) ? "checked" : "") + '/><div class="state p-primary"><label>' + (service.toUpperCase()) + '</label></div></div></li>';
                 });
                 var templt = serviceStr + '<hr class="hr-filter"/><div class="text-right"><div class="divider"></div><button class="btn btn-action btn-sm filterDone">Done</button></div>';
                 return templt;
@@ -609,14 +610,18 @@ define(['require',
                     getFilterBox: this.getFilterBox.bind(this),
                     onFilterSubmit: function(options) {
                         that.selectedFilter[that.type] = options.filterVal;
-                        that.renderTypeTagList({ "filterList": options.filterVal, isTypeOnly: true })
+                        that.filterTypeSelected = that.selectedFilter[that.type];
+                        that.renderTypeTagList({ "filterList": options.filterVal, isTypeOnly: true });
+                        that.checkForButtonVisiblity();
                     }
                 });
-                typeLovSelect2.on("select2:close", function() {
-                    typeLovSelect2.trigger("hideFilter");
-                });
-                if (typeLovSelect2 && isTypeOnly) {
-                    typeLovSelect2.select2('open').trigger("change", { 'manual': true });
+                if (this.value.filterTypeSelected === "undefined") {
+                    typeLovSelect2.on("select2:close", function() {
+                        typeLovSelect2.trigger("hideFilter");
+                    });
+                    if (typeLovSelect2 && isTypeOnly) {
+                        typeLovSelect2.select2('open').trigger("change", { 'manual': true });
+                    }
                 }
                 if (that.setInitialEntityVal) {
                     var defaultEntity = Enums.addOnEntities[0];
@@ -683,9 +688,14 @@ define(['require',
                 if (paramObj) {
                     this.value = paramObj;
                 }
+                if (this.value.filterTypeSelected) {
+                    this.filterTypeSelected = this.value.filterTypeSelected.split(',');
+                    this.renderTypeTagList({ "filterList": this.filterTypeSelected, isTypeOnly: true });
+                    this.ui.typeLov.val(this.value.type);
+                }
                 if (this.value) {
                     this.ui.searchInput.val(this.value.query || "");
-                    if (this.value.dslChecked == "true") {
+                    if (this.value.dslChecked == "true" || this.value.searchType === "dsl") {
                         if (!this.ui.searchType.prop("checked")) {
                             this.ui.searchType.prop("checked", true).trigger("change");
                         }
@@ -754,7 +764,8 @@ define(['require',
                         searchType: this.type,
                         dslChecked: this.ui.searchType.is(':checked'),
                         tagFilters: null,
-                        entityFilters: null
+                        entityFilters: null,
+                        filterTypeSelected: this.filterTypeSelected
                     },
                     typeLovValue = this.ui.typeLov.find(':selected').data('name'), // to get count of selected element used data
                     tagLovValue = this.ui.tagLov.find(':selected').data('name') || this.ui.tagLov.val(),
@@ -844,6 +855,7 @@ define(['require',
             },
             clearSearchData: function() {
                 this.selectedFilter[this.type] = [];
+                this.filterTypeSelected = [];
                 this.renderTypeTagList();
                 this.updateQueryObject();
                 this.ui.typeLov.val("").trigger("change");

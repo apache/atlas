@@ -93,7 +93,8 @@ fi
 HIVE_CP="${HIVE_CONF}"
 # Multiple jars in HIVE_CP_EXCLUDE_LIST can be added using "\|" separator
 # Ex: HIVE_CP_EXCLUDE_LIST="javax.ws.rs-api\|jersey-multipart"
-HIVE_CP_EXCLUDE_LIST="javax.ws.rs-api"
+# exclude log4j libs from hive classpath to avoid conflict
+HIVE_CP_EXCLUDE_LIST="javax.ws.rs-api\|log4j-slf4j-impl\|log4j-1.2-api\|log4j-api\|log4j-core\|log4j-web"
 
 for i in $(find "${HIVE_HOME}/lib/" -name  "*.jar" | grep -v "$HIVE_CP_EXCLUDE_LIST"); do
     HIVE_CP="${HIVE_CP}:$i"
@@ -155,8 +156,8 @@ echo "Log file for import is $LOGFILE"
 "${JAVA_BIN}" ${JAVA_PROPERTIES} -cp "${CP}" org.apache.atlas.hive.bridge.HiveMetaStoreBridge $IMPORT_ARGS
 
 RETVAL=$?
-[ $RETVAL -eq 0 ] && echo Hive Meta Data imported successfully!!!
-[ $RETVAL -ne 0 ] && echo Failed to import Hive Meta Data!!!
+[ $RETVAL -eq 0 ] && echo Hive metadata imported successfully!
+[ $RETVAL -ne 0 ] && echo Failed to import Hive metadata! Check logs at: $LOGFILE for details.
 
 exit $RETVAL
 

@@ -371,6 +371,10 @@ public class AdminResource {
         responseData.put(AtlasConfiguration.DEBUG_METRICS_ENABLED.getPropertyName(), isDebugMetricsEnabled);
         responseData.put(AtlasConfiguration.TASKS_USE_ENABLED.getPropertyName(), isTasksEnabled);
 
+        if (AtlasConfiguration.SESSION_TIMEOUT_SECS.getInt() != -1) {
+            responseData.put(AtlasConfiguration.SESSION_TIMEOUT_SECS.getPropertyName(), AtlasConfiguration.SESSION_TIMEOUT_SECS.getInt());
+        }
+
         String salt = (String) request.getSession().getAttribute(CSRF_TOKEN);
         if (StringUtils.isEmpty(salt)) {
             salt = RandomStringUtils.random(20, 0, 0, true, true, null, new SecureRandom());

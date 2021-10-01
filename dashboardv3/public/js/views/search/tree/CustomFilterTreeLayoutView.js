@@ -369,6 +369,10 @@ define([
                             entityDefCollection: that.entityDefCollection
                         });
                     searchType === 'ADVANCED' ? that.isBasic = false : that.isBasic = true;
+                    if (searchType === 'ADVANCED') {
+                        Globals.advanceSearchData.searchByQuery = searchParameters.query;
+                        Globals.advanceSearchData.searchByType = searchParameters.typeName;
+                    }
                     _.extend({}, this.options.value, params);
                     // Utils.notifyInfo({
                     //     content: "Saved values are selected."

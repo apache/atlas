@@ -606,11 +606,13 @@ public class DiscoveryREST {
     @Path("/quick")
     @GET
     @Timed
-    public AtlasQuickSearchResult quickSearch(@QueryParam("query")                  String  query,
-                                              @QueryParam("typeName")               String  typeName,
-                                              @QueryParam("excludeDeletedEntities") boolean excludeDeletedEntities,
-                                              @QueryParam("offset")                 int     offset,
-                                              @QueryParam("limit")                  int     limit) throws AtlasBaseException {
+    public AtlasQuickSearchResult quickSearch(@QueryParam("query")                  String    query,
+                                              @QueryParam("typeName")               String    typeName,
+                                              @QueryParam("excludeDeletedEntities") boolean   excludeDeletedEntities,
+                                              @QueryParam("offset")                 int       offset,
+                                              @QueryParam("limit")                  int       limit,
+                                              @QueryParam("sortBy")                 String    sortByAttribute,
+                                              @QueryParam("sortOrder")              SortOrder sortOrder) throws AtlasBaseException {
 
 
 
@@ -633,7 +635,9 @@ public class DiscoveryREST {
                                                                                     excludeDeletedEntities,
                                                                                     offset,
                                                                                     limit,
-                                                                                    null); // attributes
+                                                                                    null, // attributes
+                                                                                    sortByAttribute,
+                                                                                    sortOrder);
 
             return discoveryService.quickSearch(quickSearchParameters);
         } finally {
@@ -671,6 +675,11 @@ public class DiscoveryREST {
             if (StringUtils.isEmpty(quickSearchParameters.getTypeName()) &&
                 StringUtils.isEmpty(quickSearchParameters.getQuery())){
                 throw new AtlasBaseException(AtlasErrorCode.INVALID_SEARCH_PARAMS);
+            }
+
+            if (StringUtils.isEmpty(quickSearchParameters.getTypeName()) &&
+                    (StringUtils.isNotEmpty(quickSearchParameters.getSortBy()))) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "SortBy specified without Type name");
             }
 
             validateSearchParameters(quickSearchParameters);

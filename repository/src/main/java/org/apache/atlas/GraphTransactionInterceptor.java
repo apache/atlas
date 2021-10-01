@@ -367,13 +367,13 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
             }
         };
 
-        public void lockObject(final List<String> guids) {
+        public void lockObject(final List<?> guids) {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("==> lockObject(): guids: {}", guids);
             }
 
-            Collections.sort(guids);
-            for (String g : guids) {
+            Collections.sort((List<String>) guids);
+            for (String g : (List<String>) guids) {
                 lockObject(g);
             }
         }

@@ -24,11 +24,13 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Properties;
 import java.util.List;
+import java.security.NoSuchAlgorithmException;
 import javax.annotation.PostConstruct;
 import org.apache.atlas.web.security.AtlasAuthenticationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.authentication.encoding.ShaPasswordEncoder;
+import org.springframework.security.crypto.codec.Hex;
+import org.springframework.security.crypto.codec.Utf8;
 import org.springframework.stereotype.Repository;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
@@ -48,7 +50,6 @@ public class UserDao {
     private static final Logger LOG = LoggerFactory.getLogger(UserDao.class);
 
     private static final String             DEFAULT_USER_CREDENTIALS_PROPERTIES = "users-credentials.properties";
-    private static final ShaPasswordEncoder sha256Encoder                       = new ShaPasswordEncoder(256);
     private static       boolean            v1ValidationEnabled = true;
     private static       boolean            v2ValidationEnabled = true;
 
@@ -180,7 +181,7 @@ public class UserDao {
         boolean ret = false;
 
         try {
-            String hash = sha256Encoder.encodePassword(password, salt);
+            String hash = encodePassword(password, salt);
 
             ret = hash != null && hash.equals(encryptedPwd);
         } catch (Throwable excp) {
@@ -233,4 +234,33 @@ public class UserDao {
             throw new AtlasAuthenticationException("Exception while encoding password.", ex);
         }
     }
+
+    public static String encodePassword(String rawPass, Object salt) {
+        String saltedPass = mergePasswordAndSalt(rawPass, salt, false);
+        MessageDigest messageDigest = getMessageDigest();
+        byte[] digest = messageDigest.digest(Utf8.encode(saltedPass));
+
+        return new String(Hex.encode(digest));
+    }
+
+    protected static final MessageDigest getMessageDigest() throws IllegalArgumentException {
+        try {
+            return MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException var2) {
+            throw new IllegalArgumentException("No such algorithm [SHA-256 ]");
+        }
+    }
+
+    protected static String mergePasswordAndSalt(String password, Object salt, boolean strict) {
+        if (!StringUtils.hasText(password)) {
+            password = "";
+        }
+
+        if (strict && salt != null && (salt.toString().lastIndexOf("{") != -1 || salt.toString().lastIndexOf("}") != -1)) {
+            throw new IllegalArgumentException("Cannot use { or } in salt.toString()");
+        } else {
+            return StringUtils.hasText(salt.toString()) ? password + "{" + salt.toString() + "}" : password;
+        }
+    }
+
 }

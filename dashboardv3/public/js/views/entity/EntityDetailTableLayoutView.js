@@ -79,7 +79,7 @@ define(['require',
                     highlightString = $(".atlas-header .global-search-container input.global-search").val(),
                     table = CommonViewFunction.propertyTable({
                         scope: this,
-                        valueObject: _.extend({ "isIncomplete": this.entity.isIncomplete }, this.entity.attributes),
+                        valueObject: _.extend({ "isIncomplete": this.entity.isIncomplete || false }, this.entity.attributes),
                         attributeDefs: this.attributeDefs,
                         highlightString: highlightString
                     });

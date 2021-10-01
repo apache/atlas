@@ -377,7 +377,7 @@ define(['require',
                     adminValues += this.showImportExportTable(resultData, obj.operation);
                 }
                 if (paramsData) {
-                    adminValues += this.showImportExportTable(paramsData);
+                    adminValues += this.showImportExportTable(_.extend(paramsData, { "paramsCount": obj.model.get('paramsCount') }));
                 }
                 adminValues = adminValues ? adminValues : obj.adminText;
                 return '<div class="row"><div class="attr-details"><h4 style="word-break: break-word;">' + adminTypDetails + '</h4>' + adminValues + '</div></div>';

@@ -1125,19 +1125,19 @@ public class AtlasClientV2 extends AtlasBaseClient {
         return callAPI(api, typeDefClass, null);
     }
 
-    private <T> String getPathForType(Class<T> typeDefClass) {
+    protected  <T> String getPathForType(Class<T> typeDefClass) {
         if (AtlasEnumDef.class.isAssignableFrom(typeDefClass)) {
             return "enumdef";
         } else if (AtlasEntityDef.class.isAssignableFrom(typeDefClass)) {
             return "entitydef";
         } else if (AtlasClassificationDef.class.isAssignableFrom(typeDefClass)) {
             return "classificationdef";
-        } else if (AtlasStructDef.class.isAssignableFrom(typeDefClass)) {
-            return "structdef";
         } else if (AtlasRelationshipDef.class.isAssignableFrom(typeDefClass)) {
             return "relationshipdef";
         } else if (AtlasBusinessMetadataDef.class.isAssignableFrom(typeDefClass)) {
             return "businessmetadatadef";
+        }else if (AtlasStructDef.class.isAssignableFrom(typeDefClass)) {
+            return "structdef";
         }
 
         // Code should never reach this point
