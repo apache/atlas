@@ -234,7 +234,7 @@ define(['require',
                             multiple: selectEl.data("multi"),
                             createTag: function(params) {
                                 var option = params.term;
-                                if ($.isNumeric(option)) {
+                                if ($.isNumeric(option) || (typeName === "array<string>" && _.isString(option))) {
                                     return {
                                         id: option,
                                         text: option
