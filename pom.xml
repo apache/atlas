@@ -690,7 +690,7 @@
         <commons-conf.version>1.10</commons-conf.version>
         <commons-conf2.version>2.2</commons-conf2.version>
         <commons-el.version>1.0</commons-el.version>
-        <commons-io.version>2.6</commons-io.version>
+        <commons-io.version>2.8.0</commons-io.version>
         <commons-lang.version>2.6</commons-lang.version>
         <commons-logging.version>1.1.3</commons-logging.version>
         <commons-validator.version>1.6</commons-validator.version>
@@ -728,7 +728,7 @@
         <joda-time.version>2.10.6</joda-time.version>
         <json.version>3.2.11</json.version>
         <jsr.version>1.1</jsr.version>
-        <junit.version>4.13</junit.version>
+        <junit.version>4.13.1</junit.version>
         <kafka.scala.binary.version>2.12</kafka.scala.binary.version>
         <kafka.version>2.5.0</kafka.version>
         <keycloak.version>6.0.1</keycloak.version>
@@ -760,8 +760,8 @@
         <solr-test-framework.version>8.6.3</solr-test-framework.version>
         <solr.version>8.6.3</solr.version>
         <spray.version>1.3.1</spray.version>
-        <spring.security.version>4.2.17.RELEASE</spring.security.version>
-        <spring.version>4.3.29.RELEASE</spring.version>
+        <spring.security.version>5.5.1</spring.security.version>
+        <spring.version>5.3.8</spring.version>
         <sqoop.version>1.4.6.2.3.99.0-195</sqoop.version>
         <storm.version>2.1.0</storm.version>
         <surefire.forkCount>2C</surefire.forkCount>
@@ -1073,6 +1073,22 @@
                 <scope>import</scope>
             </dependency>
 
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-framework-bom</artifactId>
+                <version>${spring.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.security</groupId>
+                <artifactId>spring-security-bom</artifactId>
+                <version>${spring.security.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
             <!-- commons -->
             <dependency>
                 <groupId>commons-configuration</groupId>
@@ -1345,61 +1361,6 @@
                 <groupId>javax.servlet</groupId>
                 <artifactId>javax.servlet-api</artifactId>
                 <version>${javax.servlet.version}</version>
-            </dependency>
-
-            <!-- Spring -->
-            <dependency>
-                <groupId>org.springframework</groupId>
-                <artifactId>spring-core</artifactId>
-                <version>${spring.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework</groupId>
-                <artifactId>spring-web</artifactId>
-                <version>${spring.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework</groupId>
-                <artifactId>spring-webmvc</artifactId>
-                <version>${spring.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework.security</groupId>
-                <artifactId>spring-security-core</artifactId>
-                <version>${spring.security.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework.security</groupId>
-                <artifactId>spring-security-web</artifactId>
-                <version>${spring.security.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework.security</groupId>
-                <artifactId>spring-security-config</artifactId>
-                <version>${spring.security.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework.security</groupId>
-                <artifactId>spring-security-ldap</artifactId>
-                <version>${spring.security.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework</groupId>
-                <artifactId>spring-aop</artifactId>
-                <version>${spring.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework</groupId>
-                <artifactId>spring-test</artifactId>
-                <version>${spring.version}</version>
             </dependency>
 
             <!--  atlas modules -->
@@ -1686,7 +1647,7 @@
                 <version>${project.version}</version>
             </dependency>
 
-          <!-- Fix for cassandra-all tranitive dependency CVE-2017-18640 : https://nvd.nist.gov/vuln/detail/CVE-2017-18640 -->
+            <!-- Fix for cassandra-all tranitive dependency CVE-2017-18640 : https://nvd.nist.gov/vuln/detail/CVE-2017-18640 -->
             <dependency>
                 <groupId>org.yaml</groupId>
                 <artifactId>snakeyaml</artifactId>
@@ -2140,7 +2101,7 @@
                         <exclude>**/docz-lib/**</exclude>
                         <exclude>**/.docz/**</exclude>
                         <exclude>**/*.svg</exclude>
-                        
+
                     </excludes>
                 </configuration>
                 <executions>
