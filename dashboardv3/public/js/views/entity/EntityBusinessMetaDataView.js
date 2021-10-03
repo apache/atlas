@@ -191,7 +191,7 @@ define([
                 type: "POST",
                 success: function(data) {
                     Utils.notifySuccess({
-                        content: "One or more Business Metadada attributes" + Messages.getAbbreviationMsg(true, 'editSuccessMessage')
+                        content: "One or more Business Metadata attribute" + Messages.getAbbreviationMsg(true, 'editSuccessMessage')
                     });
                     that.entity.businessAttributes = data;
                     that.ui.businessMetadataTree.html("");

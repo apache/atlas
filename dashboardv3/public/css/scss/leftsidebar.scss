@@ -189,7 +189,7 @@
 
         .dropdown-menu {
             min-width: 182px;
-            left: -155px;
+            left: -170px;
 
             &>li {
                 padding: 3px 15px;
@@ -440,6 +440,7 @@ span.tree-tooltip {
 
 .tree-droupdown {
     left: -190px !important;
+    width: 218px;
 
     span a {
         padding: 0px !important;
