@@ -83,6 +83,11 @@
             text-align: right;
         }
     }
+
+    .tree-container {
+        max-height: 140px;
+        overflow-y: auto !important;
+    }
 }
 
 .modal-full-screen {
