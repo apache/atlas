@@ -263,7 +263,7 @@ public final class Atlas {
             PutIndexTemplateRequest request = new PutIndexTemplateRequest("atlan-template");
             request.patterns(Arrays.asList(vertexIndex));
             String atlasHomeDir  = System.getProperty("atlas.conf");
-            String elasticsearchSettingsFilePath = (org.apache.commons.lang3.StringUtils.isEmpty(atlasHomeDir) ? "." : atlasHomeDir) + File.separator + "es-settings.json";
+            String elasticsearchSettingsFilePath = "addons" + File.separator + "elasticsearch" + File.separator + "es-settings.json";
             File elasticsearchSettingsFile  = new File(elasticsearchSettingsFilePath);
             String jsonString  = new String(Files.readAllBytes(elasticsearchSettingsFile.toPath()), StandardCharsets.UTF_8);
             request.settings(jsonString, XContentType.JSON);

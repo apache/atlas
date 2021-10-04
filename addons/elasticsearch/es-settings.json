@@ -1,0 +1,19 @@
+{
+  "analysis": {
+    "analyzer": {
+      "text_search_analyzer": {
+        "type": "custom",
+        "tokenizer": "lowercase",
+        "filter": [
+          "snowball_english"
+        ]
+      }
+    },
+    "filter": {
+      "snowball_english": {
+        "type": "snowball",
+        "language": "English"
+      }
+    }
+  }
+}
