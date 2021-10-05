@@ -143,15 +143,12 @@ public class GlossaryService {
             throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Glossary definition missing");
         }
 
+        if (isNameInvalid(atlasGlossary.getName())) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME);
+        }
+
         if (StringUtils.isEmpty(atlasGlossary.getQualifiedName())) {
-            if (StringUtils.isEmpty(atlasGlossary.getName())) {
-                throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_QUALIFIED_NAME_CANT_BE_DERIVED);
-            }
-            if (isNameInvalid(atlasGlossary.getName())){
-                throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME);
-            } else {
-                atlasGlossary.setQualifiedName(atlasGlossary.getName());
-            }
+            atlasGlossary.setQualifiedName(GlossaryUtils.createQualifiedName());
         }
 
         if (glossaryExists(atlasGlossary)) {
@@ -343,15 +340,12 @@ public class GlossaryService {
 
         if (isNameInvalid(glossaryTerm.getName())){
             throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME);
-        } else {
-            // Derive the qualifiedName
-            String        anchorGlossaryGuid = glossaryTerm.getAnchor().getGlossaryGuid();
-            AtlasGlossary glossary           = dataAccess.load(getGlossarySkeleton(anchorGlossaryGuid));
-            glossaryTerm.setQualifiedName(glossaryTerm.getName() + "@" + glossary.getQualifiedName());
+        }
 
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Derived qualifiedName = {}", glossaryTerm.getQualifiedName());
-            }
+        glossaryTerm.setQualifiedName(glossaryTermUtils.createQualifiedName(glossaryTerm));
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Derived qualifiedName = {}", glossaryTerm.getQualifiedName());
         }
 
         // This might fail for the case when the term's qualifiedName has been updated and the duplicate request comes in with old name
@@ -410,7 +404,7 @@ public class GlossaryService {
         }
 
         if (StringUtils.isEmpty(atlasGlossaryTerm.getName())) {
-            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "DisplayName can't be null/empty");
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Name can't be null/empty");
         }
 
         if (isNameInvalid(atlasGlossaryTerm.getName())) {
@@ -426,6 +420,11 @@ public class GlossaryService {
         }
 
         AtlasGlossaryTerm storeObject = dataAccess.load(atlasGlossaryTerm);
+
+        if (!storeObject.getAnchor().getGlossaryGuid().equals(atlasGlossaryTerm.getAnchor().getGlossaryGuid())){
+            throw new AtlasBaseException(AtlasErrorCode.ACHOR_UPDATION_NOT_SUPPORTED);
+        }
+
         if (!storeObject.equals(atlasGlossaryTerm)) {
             atlasGlossaryTerm.setGuid(storeObject.getGuid());
             atlasGlossaryTerm.setQualifiedName(storeObject.getQualifiedName());
@@ -560,18 +559,10 @@ public class GlossaryService {
         }
         if (isNameInvalid(glossaryCategory.getName())){
             throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME);
-        } else {
-            // Derive the qualifiedName
-            String anchorGlossaryGuid = glossaryCategory.getAnchor().getGlossaryGuid();
-            AtlasGlossary glossary = dataAccess.load(getGlossarySkeleton(anchorGlossaryGuid));
-            glossaryCategory.setQualifiedName(glossaryCategory.getName()+ "@" + glossary.getQualifiedName());
-
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Derived qualifiedName = {}", glossaryCategory.getQualifiedName());
-            }
-
-
         }
+
+        // Derive the qualifiedName
+        glossaryCategory.setQualifiedName(glossaryCategoryUtils.createQualifiedName(glossaryCategory));
 
         // This might fail for the case when the category's qualifiedName has been updated during a hierarchy change
         // and the duplicate request comes in with old name
@@ -639,7 +630,7 @@ public class GlossaryService {
         }
 
         if (StringUtils.isEmpty(glossaryCategory.getName())) {
-            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "DisplayName can't be null/empty");
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Name can't be null/empty");
         }
 
         if (isNameInvalid(glossaryCategory.getName())) {
@@ -647,6 +638,10 @@ public class GlossaryService {
         }
 
         AtlasGlossaryCategory storeObject = dataAccess.load(glossaryCategory);
+
+        if (!storeObject.getAnchor().getGlossaryGuid().equals(glossaryCategory.getAnchor().getGlossaryGuid())){
+            throw new AtlasBaseException(AtlasErrorCode.ACHOR_UPDATION_NOT_SUPPORTED);
+        }
 
         if (!storeObject.equals(glossaryCategory)) {
             try {

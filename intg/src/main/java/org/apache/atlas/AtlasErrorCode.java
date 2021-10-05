@@ -208,6 +208,7 @@ public enum AtlasErrorCode {
     GLOSSARY_ALREADY_EXISTS(409, "ATLAS-409-00-007", "Glossary with name {0} already exists"),
     GLOSSARY_TERM_ALREADY_EXISTS(409, "ATLAS-409-00-009", "Glossary term with qualifiedName {0} already exists"),
     GLOSSARY_CATEGORY_ALREADY_EXISTS(409, "ATLAS-409-00-00A", "Glossary category with qualifiedName {0} already exists"),
+    ACHOR_UPDATION_NOT_SUPPORTED(409, "ATLAS-400-00-0010", "Anchor(glossary) change not supported"),
     GLOSSARY_IMPORT_FAILED(409, "ATLAS-409-00-011", "Glossary import failed"),
 
     // All internal errors go here

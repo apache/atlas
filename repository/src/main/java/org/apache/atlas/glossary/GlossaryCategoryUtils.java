@@ -167,6 +167,7 @@ public class GlossaryCategoryUtils extends GlossaryUtils {
                     } else {
                         // Delete link to existing parent and link to new parent
                         relationshipStore.deleteById(parentRelationship.getGuid(), true);
+                        updateQualifiedName(storeObject, newParent.getCategoryGuid());
                         createRelationship(defineCategoryHierarchyLink(newParent, storeObject.getGuid()));
                     }
                 }
@@ -187,14 +188,21 @@ public class GlossaryCategoryUtils extends GlossaryUtils {
 
         // New parent added, qualifiedName needs recomputation
         // Derive the qualifiedName of the Glossary
-        AtlasGlossaryCategory parentCategory = dataAccess.load(getAtlasGlossaryCategorySkeleton(newParent.getCategoryGuid()));
-        storeObject.setQualifiedName(storeObject.getName() + "." + parentCategory.getQualifiedName());
+        updateQualifiedName(storeObject, newParent.getCategoryGuid());
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("Derived qualifiedName = {}", storeObject.getQualifiedName());
         }
 
         updateChildCategories(storeObject, storeObject.getChildrenCategories(), impactedCategories, false);
+    }
+
+    private void updateQualifiedName(AtlasGlossaryCategory storeObject, String guid) throws AtlasBaseException {
+        AtlasRelatedCategoryHeader parentCat = new AtlasRelatedCategoryHeader();
+        parentCat.setCategoryGuid(guid);
+        AtlasGlossaryCategory glossaryCategory = new AtlasGlossaryCategory(storeObject);
+        glossaryCategory.setParentCategory(parentCat);
+        storeObject.setQualifiedName(createQualifiedName(glossaryCategory));
     }
 
     private void processParentRemoval(AtlasGlossaryCategory storeObject, AtlasGlossaryCategory updatedCategory, AtlasRelatedCategoryHeader existingParent, Map<String, AtlasGlossaryCategory> impactedCategories) throws AtlasBaseException {
@@ -207,8 +215,9 @@ public class GlossaryCategoryUtils extends GlossaryUtils {
 
         // Derive the qualifiedName of the Glossary
         String        anchorGlossaryGuid = updatedCategory.getAnchor().getGlossaryGuid();
-        AtlasGlossary glossary           = dataAccess.load(getGlossarySkeleton(anchorGlossaryGuid));
-        storeObject.setQualifiedName(storeObject.getName() + "@" + glossary.getQualifiedName());
+        AtlasGlossaryCategory glossaryCategory = new AtlasGlossaryCategory(storeObject);
+        glossaryCategory.setAnchor(new AtlasGlossaryHeader(anchorGlossaryGuid));
+        storeObject.setQualifiedName(createQualifiedName(glossaryCategory, true));
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("Derived qualifiedName = {}", storeObject.getQualifiedName());
@@ -393,6 +402,7 @@ public class GlossaryCategoryUtils extends GlossaryUtils {
                                                                    .stream()
                                                                    .filter(c -> updatedExistingCategoryRelation(existingChildren, c))
                                                                    .collect(Collectors.toSet());
+                updateChildCategories(storeObject, toUpdate, impactedCategories, false);
                 updateCategoryRelationships(storeObject, toUpdate);
 
                 Set<AtlasRelatedCategoryHeader> toDelete = existingChildren
@@ -535,20 +545,25 @@ public class GlossaryCategoryUtils extends GlossaryUtils {
 
         for (AtlasRelatedCategoryHeader childCategoryHeader : childCategories) {
             AtlasGlossaryCategory child           = dataAccess.load(getAtlasGlossaryCategorySkeleton(childCategoryHeader.getCategoryGuid()));
-            String                qualifiedName   = child.getName() + ".";
             String                childAnchorGuid = child.getAnchor().getGlossaryGuid();
+            String                qualifiedName = "";
+
             if (isParentRemoved) {
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("Parent removed, deriving qualifiedName using Glossary");
                 }
                 AtlasGlossary glossary = dataAccess.load(getGlossarySkeleton(childAnchorGuid));
-                qualifiedName += glossary.getQualifiedName();
+                qualifiedName = getNanoid(child.getQualifiedName()) + glossary.getQualifiedName();
                 child.setParentCategory(null);
             } else {
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("Using parent to derive qualifiedName");
                 }
-                qualifiedName += parentCategory.getQualifiedName();
+                AtlasGlossaryCategory category = new AtlasGlossaryCategory(child);
+                AtlasRelatedCategoryHeader parentCat = new AtlasRelatedCategoryHeader();
+                parentCat.setCategoryGuid(parentCategory.getGuid());
+                category.setParentCategory(parentCat);
+                qualifiedName = createQualifiedName(category, parentCategory, false);
             }
             child.setQualifiedName(qualifiedName);
 
@@ -576,4 +591,52 @@ public class GlossaryCategoryUtils extends GlossaryUtils {
         }
     }
 
+    protected String createQualifiedName(AtlasGlossaryCategory cat) throws AtlasBaseException {
+        return createQualifiedName(cat, null, false);
+    }
+
+    protected String createQualifiedName(AtlasGlossaryCategory cat, boolean parentRemoval)  throws AtlasBaseException {
+        return createQualifiedName(cat, null, parentRemoval);
+    }
+
+    protected String createQualifiedName(AtlasGlossaryCategory cat, AtlasGlossaryCategory parentCategory, boolean parentRemoval) throws AtlasBaseException {
+        String ret = "" ;
+        String qName = "";
+
+        if (!StringUtils.isEmpty(cat.getQualifiedName())) {
+            //extract existing nanoid for category
+            String[] t1 = cat.getQualifiedName().split("\\.");
+            qName = t1[t1.length -1].split("@")[0];
+        }
+
+        qName = StringUtils.isEmpty(qName) ? getUUID() : qName;
+        if (parentRemoval) {
+            AtlasGlossary glossary = dataAccess.load(getGlossarySkeleton(cat.getAnchor().getGlossaryGuid()));
+            ret = qName + "@" + glossary.getQualifiedName();
+
+        } else if (parentCategory != null) {
+            String[] parentCatQname = parentCategory.getQualifiedName().split("@");
+            ret = parentCatQname[0] + "." + qName + "@" + parentCatQname[1];
+
+        } else if (cat.getParentCategory() != null) {
+            AtlasGlossaryCategory parentCat = dataAccess.load(getAtlasGlossaryCategorySkeleton(cat.getParentCategory().getCategoryGuid()));
+            String[] parentCatQname = parentCat.getQualifiedName().split("@");
+            ret = parentCatQname[0] + "." + qName + "@" + parentCatQname[1];
+
+        } else {
+            String anchorGlossaryGuid = cat.getAnchor().getGlossaryGuid();
+            AtlasGlossary glossary = dataAccess.load(getGlossarySkeleton(anchorGlossaryGuid));
+            if (glossary == null) {
+                throw new AtlasBaseException("Glossary not found with guid: " + anchorGlossaryGuid);
+            }
+            ret = qName + "@" + glossary.getQualifiedName();
+        }
+        return ret;
+    }
+
+    private String getNanoid(String qualifiedName){
+        String[] split_0 = qualifiedName.split("@");
+        String[] split_1 = split_0[0].split("\\.");
+        return split_1[split_1.length-1];
+    }
 }
