@@ -26,6 +26,7 @@ import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.slf4j.Logger;
@@ -63,6 +64,7 @@ public class RequestContext {
     private final Set<String>                            onlyCAUpdateEntities = new HashSet<>();
     private final Set<String>                            onlyBAUpdateEntities = new HashSet<>();
     private final List<AtlasTask>                        queuedTasks          = new ArrayList<>();
+    private final Set<String> relationAttrsForSearch = new HashSet<>();
 
 
     private String       user;
@@ -79,6 +81,7 @@ public class RequestContext {
     private boolean     createShellEntityForNonExistingReference = false;
     private boolean     skipFailedEntities = false;
     private String      currentTypePatchAction = "";
+
 
     private RequestContext() {
     }
@@ -125,6 +128,7 @@ public class RequestContext {
         this.entitiesToSkipUpdate.clear();
         this.onlyCAUpdateEntities.clear();
         this.onlyBAUpdateEntities.clear();
+        this.relationAttrsForSearch.clear();
         this.queuedTasks.clear();
 
         if (metrics != null && !metrics.isEmpty()) {
@@ -135,6 +139,15 @@ public class RequestContext {
 
         if (this.entityGuidInRequest != null) {
             this.entityGuidInRequest.clear();
+        }
+    }
+
+    public Set<String> getRelationAttrsForSearch() {
+        return relationAttrsForSearch;
+    }
+    public void setRelationAttrsForSearch(Set<String> relationAttrsForSearch) {
+        if (CollectionUtils.isNotEmpty(relationAttrsForSearch)){
+            this.relationAttrsForSearch.addAll(relationAttrsForSearch);
         }
     }
 
