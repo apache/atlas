@@ -269,7 +269,6 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
         public static final String    ATTRDEF_OPTION_SOFT_REFERENCE           = "isSoftReference";
         public static final String    ATTRDEF_OPTION_APPEND_ON_PARTIAL_UPDATE = "isAppendOnPartialUpdate";
         private final String          STRING_TRUE                             = "true";
-        private final String          MULTIFIELDS                             = "multifields";
 
         /**
          * single-valued attribute or multi-valued attribute.
@@ -297,6 +296,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
         private Map<String, String>      options;
         private String                   displayName;
         private ArrayList<String>        multifields;
+        private String                   defaultFieldType;
 
         public AtlasAttributeDef() { this(null, null); }
 
@@ -379,6 +379,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
                 setIndexType(other.getIndexType());
                 setDisplayName(other.getDisplayName());
                 setMultifields(other.getMultifields());
+                setDefaultFieldType(other.getDefaultFieldType());
             }
         }
 
@@ -563,6 +564,14 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             this.multifields = multifields;
         }
 
+        public String getDefaultFieldType() {
+            return defaultFieldType;
+        }
+
+        public void setDefaultFieldType(String defaultFieldType) {
+            this.defaultFieldType = defaultFieldType;
+        }
+
         public StringBuilder toString(StringBuilder sb) {
             if (sb == null) {
                 sb = new StringBuilder();
@@ -585,6 +594,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             sb.append(", indexType='").append(indexType).append('\'');
             sb.append(", displayName='").append(displayName).append('\'');
             sb.append(", multifields='").append(multifields).append('\'');
+            sb.append(", defaultFieldType='").append(defaultFieldType).append('\'');
             sb.append(", constraints=[");
             if (CollectionUtils.isNotEmpty(constraints)) {
                 int i = 0;
@@ -623,12 +633,13 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
                     Objects.equals(searchWeight, that.searchWeight) &&
                     Objects.equals(indexType, that.indexType) &&
                     Objects.equals(displayName, that.displayName) &&
-                    Objects.equals(multifields, that.multifields);
+                    Objects.equals(multifields, that.multifields) &&
+                    Objects.equals(defaultFieldType, that.defaultFieldType);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(name, typeName, isOptional, cardinality, valuesMinCount, valuesMaxCount, isUnique, isIndexable, includeInNotification, defaultValue, constraints, options, description, searchWeight, indexType, displayName, multifields);
+            return Objects.hash(name, typeName, isOptional, cardinality, valuesMinCount, valuesMaxCount, isUnique, isIndexable, includeInNotification, defaultValue, constraints, options, description, searchWeight, indexType, displayName, multifields, defaultFieldType);
         }
 
         @Override

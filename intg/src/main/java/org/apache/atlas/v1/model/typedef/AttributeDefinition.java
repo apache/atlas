@@ -58,12 +58,13 @@ public class AttributeDefinition implements Serializable {
     private int                                        searchWeight = DEFAULT_SEARCHWEIGHT;
     private AtlasStructDef.AtlasAttributeDef.IndexType indexType    = null;
     private ArrayList<String>                          multifields  = new ArrayList<>();
+    private String                                     defaultFieldType;
 
     public AttributeDefinition() {
     }
 
     public AttributeDefinition(String name, String dataTypeName, Multiplicity multiplicity) {
-        this(name, dataTypeName, multiplicity, false, false, true, null, null, DEFAULT_SEARCHWEIGHT, null, new ArrayList<>());
+        this(name, dataTypeName, multiplicity, false, false, true, null, null, DEFAULT_SEARCHWEIGHT, null, new ArrayList<>(), "");
     }
 
     public AttributeDefinition(String name, String dataTypeName, Multiplicity multiplicity, boolean isComposite,
@@ -73,18 +74,18 @@ public class AttributeDefinition implements Serializable {
 
     public AttributeDefinition(String name, String dataTypeName, Multiplicity multiplicity, boolean isComposite,
                                String reverseAttributeName, int searchWeight, AtlasStructDef.AtlasAttributeDef.IndexType indexType) {
-        this(name, dataTypeName, multiplicity, isComposite, false, false, reverseAttributeName, null, searchWeight, indexType, new ArrayList<>());
+        this(name, dataTypeName, multiplicity, isComposite, false, false, reverseAttributeName, null, searchWeight, indexType, new ArrayList<>(), "");
     }
 
     public AttributeDefinition(String name, String dataTypeName, Multiplicity multiplicity, boolean isComposite,
                                boolean isUnique, boolean isIndexable, String reverseAttributeName,
                                Map<String, String> options) {
-        this(name, dataTypeName, multiplicity, isComposite, isUnique, isIndexable,reverseAttributeName, options, DEFAULT_SEARCHWEIGHT, null, new ArrayList<>());
+        this(name, dataTypeName, multiplicity, isComposite, isUnique, isIndexable,reverseAttributeName, options, DEFAULT_SEARCHWEIGHT, null, new ArrayList<>(), "");
     }
 
     public AttributeDefinition(String name, String dataTypeName, Multiplicity multiplicity, boolean isComposite,
                                boolean isUnique, boolean isIndexable, String reverseAttributeName,
-                               Map<String, String> options, int searchWeight, AtlasStructDef.AtlasAttributeDef.IndexType indexType, ArrayList<String> multifields) {
+                               Map<String, String> options, int searchWeight, AtlasStructDef.AtlasAttributeDef.IndexType indexType, ArrayList<String> multifields, String defaultFieldType) {
         this.name                 = name;
         this.dataTypeName         = dataTypeName;
         this.multiplicity         = multiplicity;
@@ -96,6 +97,7 @@ public class AttributeDefinition implements Serializable {
         this.searchWeight         = searchWeight;
         this.indexType            = indexType;
         this.multifields          = multifields;
+        this.defaultFieldType     = defaultFieldType;
     }
 
 
@@ -177,6 +179,14 @@ public class AttributeDefinition implements Serializable {
 
     public void setMultifields(final ArrayList<String> multifields) {
         this.multifields = multifields;
+    }
+
+    public String getDefaultFieldType() {
+        return defaultFieldType;
+    }
+
+    public void setDefaultFieldType(final String defaultFieldType) {
+        this.defaultFieldType = defaultFieldType;
     }
 
     public Map<String, String> getOptions() {
