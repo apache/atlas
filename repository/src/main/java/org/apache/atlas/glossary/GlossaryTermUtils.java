@@ -984,7 +984,6 @@ public class GlossaryTermUtils extends GlossaryUtils {
         }
         qName = StringUtils.isEmpty(qName) ? getUUID() : qName;
 
-
         String anchorGlossaryGuid = term.getAnchor().getGlossaryGuid();
         AtlasGlossary glossary = dataAccess.load(getGlossarySkeleton(anchorGlossaryGuid));
         if (glossary == null) {

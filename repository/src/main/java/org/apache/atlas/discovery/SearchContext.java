@@ -20,16 +20,15 @@ package org.apache.atlas.discovery;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.metrics.AtlasMetrics;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.GraphHelper;
-import org.apache.atlas.repository.graphdb.AtlasEdge;
-import org.apache.atlas.repository.graphdb.AtlasGraph;
-import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
-import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.graphdb.*;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.type.AtlasClassificationType;
@@ -38,6 +37,7 @@ import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.AtlasRepositoryConfiguration;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -479,21 +479,34 @@ public class SearchContext {
     }
 
 
-    private AtlasVertex getGlossaryTermVertex(String termName) {
-        AtlasVertex ret = null;
-
-        if (StringUtils.isNotEmpty(termName)) {
-            AtlasEntityType termType = getTermEntityType();
-            AtlasAttribute  attrName = termType.getAttribute(TermSearchProcessor.ATLAS_GLOSSARY_TERM_ATTR_QNAME);
-            AtlasGraphQuery query    = graph.query().has(Constants.ENTITY_TYPE_PROPERTY_KEY, termType.getTypeName())
-                                                    .has(attrName.getVertexPropertyName(), termName)
-                                                    .has(Constants.STATE_PROPERTY_KEY, AtlasEntity.Status.ACTIVE.name());
-
-            Iterator<AtlasVertex> results = query.vertices().iterator();
-
-            ret = results.hasNext() ? results.next() : null;
+    private AtlasVertex getGlossaryTermVertex(String termName) throws AtlasBaseException {
+        if (StringUtils.isEmpty(termName)) {
+            return null;
         }
 
+        AtlasPerfMetrics.MetricRecorder metrics = RequestContext.get().startMetricRecord("getGlossaryTermVertex");
+        String[] split_a = termName.split("@");
+        if (split_a.length != 2) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "termName: " + termName);
+        }
+        String glossaryName = split_a[1];
+        termName = split_a[0];
+
+        AtlasVertex ret = null;
+        if (StringUtils.isNotEmpty(glossaryName) && StringUtils.isNotEmpty(termName)) {
+            AtlasEntityType termType = getTermEntityType();
+
+            AtlasEntityType glossaryType = typeRegistry.getEntityTypeByName(TermSearchProcessor.ATLAS_GLOSSARY_ENTITY_TYPE);
+            AtlasVertex vertex = AtlasGraphUtilsV2.glossaryFindByTypeAndPropertyName(glossaryType, glossaryName);
+            if (vertex != null) {
+                AtlasAttribute attrName = glossaryType.getAttribute(TermSearchProcessor.ATLAS_ATTR_QNAME);
+                String glossaryQName = vertex.getProperty(attrName.getVertexPropertyName(), String.class);
+
+                List<AtlasVertex> vertexList = AtlasGraphUtilsV2.glossaryFindChildByTypeAndPropertyName(termType, termName, glossaryQName);
+                ret = CollectionUtils.isNotEmpty(vertexList) ? vertexList.get(0) : null;
+            }
+        }
+        RequestContext.get().endMetricRecord(metrics);
         return ret;
     }
 

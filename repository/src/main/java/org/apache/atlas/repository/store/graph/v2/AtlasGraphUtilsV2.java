@@ -521,6 +521,45 @@ public class AtlasGraphUtilsV2 {
         return vertex;
     }
 
+    public static AtlasVertex glossaryFindByTypeAndPropertyName(AtlasEntityType entityType, String name) {
+        Iterator<AtlasVertex> result = glossaryFindAllByTypeAndPropertyName(entityType, name);
+        AtlasVertex           vertex = result.hasNext() ? result.next() : null;
+
+        return vertex;
+    }
+
+    public static List<AtlasVertex> glossaryFindChildByTypeAndPropertyName(AtlasEntityType entityType, String name, String glossaryQName) {
+        MetricRecorder  metric          = RequestContext.get().startMetricRecord("glossaryFindChildByTypeAndPropertyName");
+        Iterator<AtlasVertex> result = glossaryFindAllByTypeAndPropertyName(entityType, name);
+        String qNameKey = entityType.getAllAttributes().get("qualifiedName").getQualifiedName();
+
+        List<AtlasVertex> vertexList = new ArrayList<>();
+        while (result.hasNext()) {
+            AtlasVertex v = result.next();
+            String vQualifiedName = v.getProperty(qNameKey, String.class);
+            if (vQualifiedName.endsWith(glossaryQName)) {
+                vertexList.add(v);
+            }
+        }
+        RequestContext.get().endMetricRecord(metric);
+        return vertexList;
+    }
+
+    public static Iterator<AtlasVertex> glossaryFindAllByTypeAndPropertyName(AtlasEntityType entityType, String name) {
+        MetricRecorder  metric          = RequestContext.get().startMetricRecord("glossaryFindAllByTypeAndPropertyName");
+        AtlasGraph graph                = getGraphInstance();
+        AtlasGraphQuery query           = graph.query()
+                                                .has(ENTITY_TYPE_PROPERTY_KEY, entityType.getTypeName())
+                                                .has(STATE_PROPERTY_KEY, AtlasEntity.Status.ACTIVE.name())
+                                                .has(entityType.getAllAttributes().get("name").getQualifiedName(), name);
+
+
+        Iterator<AtlasVertex> result = query.vertices().iterator();
+
+        RequestContext.get().endMetricRecord(metric);
+        return result;
+    }
+
     public static AtlasVertex findByTypeAndPropertyName(AtlasGraph graph, String typeName, Map<String, Object> attributeValues) {
         return findByTypeAndPropertyName(graph, typeName, attributeValues, false);
     }
