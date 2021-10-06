@@ -34,6 +34,7 @@ import javax.xml.bind.annotation.XmlSeeAlso;
 import org.apache.atlas.model.PList;
 import org.apache.atlas.model.SearchFilter.SortType;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
@@ -52,23 +53,25 @@ public class AtlasObjectId  implements Serializable {
 
     public static final String KEY_GUID              = "guid";
     public static final String KEY_TYPENAME          = "typeName";
+    public static final String KEY_ATTRIBUTES        = "attributes";
     public static final String KEY_UNIQUE_ATTRIBUTES = "uniqueAttributes";
 
     private String              guid;
     private String              typeName;
+    private Map<String, Object> attributes;
     private Map<String, Object> uniqueAttributes;
 
 
     public AtlasObjectId() {
-        this(null, null, (Map<String, Object>)null);
+        this(null, null, null);
     }
 
     public AtlasObjectId(String guid) {
-        this(guid, null, (Map<String, Object>)null);
+        this(guid, null, null);
     }
 
     public AtlasObjectId(String guid, String typeName) {
-        this(guid, typeName, (Map<String, Object>)null);
+        this(guid, typeName, null);
     }
 
     public AtlasObjectId(String typeName, Map<String, Object> uniqueAttributes) {
@@ -80,8 +83,23 @@ public class AtlasObjectId  implements Serializable {
     }
 
     public AtlasObjectId(String guid, String typeName, Map<String, Object> uniqueAttributes) {
+        this(guid, typeName, uniqueAttributes, null);
+    }
+    public Map<String, Object> getAttributes() {
+        return attributes;
+    }
+    public void setAttributes(Map<String, Object> attributes) {
+        if (MapUtils.isEmpty(attributes)) {
+            this.attributes = null;
+        } else {
+            this.attributes = attributes;
+        }
+    }
+
+    public AtlasObjectId(String guid, String typeName, Map<String, Object> uniqueAttributes, Map<String, Object> attributes) {
         setGuid(guid);
         setTypeName(typeName);
+        setAttributes(attributes);
         setUniqueAttributes(uniqueAttributes);
     }
 
@@ -89,6 +107,7 @@ public class AtlasObjectId  implements Serializable {
         if (other != null) {
             setGuid(other.getGuid());
             setTypeName(other.getTypeName());
+            setAttributes(other.getAttributes());
             setUniqueAttributes(other.getUniqueAttributes());
         }
     }
@@ -97,6 +116,7 @@ public class AtlasObjectId  implements Serializable {
         if (objIdMap != null) {
             Object g = objIdMap.get(KEY_GUID);
             Object t = objIdMap.get(KEY_TYPENAME);
+            Object a = objIdMap.get(KEY_ATTRIBUTES);
             Object u = objIdMap.get(KEY_UNIQUE_ATTRIBUTES);
 
             if (g != null) {
@@ -105,6 +125,10 @@ public class AtlasObjectId  implements Serializable {
 
             if (t != null) {
                 setTypeName(t.toString());
+            }
+
+            if (a != null && a instanceof Map) {
+                setAttributes((Map)a);
             }
 
             if (u != null && u instanceof Map) {
@@ -146,6 +170,8 @@ public class AtlasObjectId  implements Serializable {
         sb.append("guid='").append(guid).append('\'');
         sb.append(", typeName='").append(typeName).append('\'');
         sb.append(", uniqueAttributes={");
+        AtlasBaseTypeDef.dumpObjects(uniqueAttributes, sb);
+        sb.append(", attributes={");
         AtlasBaseTypeDef.dumpObjects(uniqueAttributes, sb);
         sb.append('}');
         sb.append('}');

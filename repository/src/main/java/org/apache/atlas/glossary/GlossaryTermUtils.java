@@ -975,4 +975,20 @@ public class GlossaryTermUtils extends GlossaryUtils {
             }
         }
     }
+
+    protected String createQualifiedName(AtlasGlossaryTerm term) throws AtlasBaseException{
+        String qName = "";
+        if (!StringUtils.isEmpty(term.getQualifiedName())) {
+            //extract existing nanoid for term
+            qName = term.getQualifiedName().split("@")[0];
+        }
+        qName = StringUtils.isEmpty(qName) ? getUUID() : qName;
+
+        String anchorGlossaryGuid = term.getAnchor().getGlossaryGuid();
+        AtlasGlossary glossary = dataAccess.load(getGlossarySkeleton(anchorGlossaryGuid));
+        if (glossary == null) {
+            throw new AtlasBaseException("Glossary not found with guid: " + anchorGlossaryGuid);
+        }
+        return qName + "@" + glossary.getQualifiedName();
+    }
 }

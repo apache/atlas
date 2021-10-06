@@ -58,6 +58,7 @@ public class SearchParameters implements Serializable {
     private FilterCriteria entityFilters;
     private FilterCriteria tagFilters;
     private Set<String>    attributes;
+    private Set<String>    relationAttributes;
     private SortOrder      sortOrder;
 
     public static final String WILDCARD_CLASSIFICATIONS = "*";
@@ -313,6 +314,22 @@ public class SearchParameters implements Serializable {
      * @param sortOrder ASCENDING vs DESCENDING
      */
     public void setSortOrder(SortOrder sortOrder) { this.sortOrder = sortOrder; }
+
+    /**
+     * Attributes values for related entities in the result response
+     */
+    public Set<String> getRelationAttributes() {
+        return relationAttributes;
+    }
+
+    /**
+     * Return these attributes for related entities in the result response
+     * @param relationAttributes
+     */
+    public void setRelationAttributes(Set<String> relationAttributes) {
+        this.relationAttributes = relationAttributes;
+    }
+
 
     @Override
     public boolean equals(Object o) {

@@ -64,6 +64,10 @@
                     <groupId>io.dropwizard.metrics</groupId>
                     <artifactId>metrics-ganglia</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>commons-logging</groupId>
+                    <artifactId>commons-logging</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
 

@@ -26,6 +26,7 @@ import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.repository.ogm.DataAccess;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.util.NanoIdUtils;
 
 import java.util.Objects;
 
@@ -108,5 +109,12 @@ public abstract class GlossaryUtils {
 
     enum RelationshipOperation {
         CREATE, UPDATE, DELETE
+    }
+
+    protected static String createQualifiedName() {
+        return getUUID();
+    }
+    protected static String getUUID(){
+        return NanoIdUtils.randomNanoId();
     }
 }
