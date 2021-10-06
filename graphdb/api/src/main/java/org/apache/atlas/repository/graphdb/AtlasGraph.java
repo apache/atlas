@@ -21,6 +21,7 @@ import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.groovy.GroovyExpression;
 import org.apache.atlas.type.AtlasType;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import javax.script.ScriptEngine;
 import javax.script.ScriptException;
@@ -193,6 +194,15 @@ public interface AtlasGraph<V, E> {
      *
      */
     AtlasIndexQuery<V, E> indexQuery(GraphIndexQueryParameters indexQueryParameters);
+
+    /**
+     * Creates an index query.
+     *
+     * @param indexName Name of elasticsearch index to run the query on
+     * @param sourceBuilder Elasticsearch search source builder
+     *
+     */
+    AtlasIndexQuery<V, E> elasticsearchQuery(String indexName, SearchSourceBuilder sourceBuilder);
 
     /**
      * Gets the management object associated with this graph and opens a transaction

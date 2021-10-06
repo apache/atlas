@@ -51,6 +51,12 @@
             <artifactId>gremlin-core</artifactId>
             <version>${tinkerpop.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.elasticsearch</groupId>
+            <artifactId>elasticsearch</artifactId>
+            <version>7.6.2</version>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
 
 

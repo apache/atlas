@@ -18,6 +18,7 @@
 
 package org.apache.atlas;
 
+import org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchDatabase;
 import org.apache.atlas.security.SecurityProperties;
 import org.apache.atlas.web.service.EmbeddedServer;
 import org.apache.commons.cli.CommandLine;
@@ -29,15 +30,28 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.util.ShutdownHookManager;
+import org.elasticsearch.action.IndicesRequest;
+import org.elasticsearch.action.support.master.AcknowledgedResponse;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.indices.IndexTemplatesExistRequest;
+import org.elasticsearch.client.indices.PutIndexTemplateRequest;
+import org.elasticsearch.common.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
-import java.util.Iterator;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.util.*;
+
+import static org.apache.atlas.repository.Constants.INDEX_PREFIX;
+import static org.apache.atlas.repository.Constants.VERTEX_INDEX;
 
 /**
  * Driver for running Metadata as a standalone server with embedded jetty server.
@@ -126,6 +140,9 @@ public final class Atlas {
         configuration.setProperty(SecurityProperties.TLS_ENABLED, String.valueOf(enableTLS));
 
         showStartupInfo(buildConfiguration, enableTLS, appPort);
+        if (configuration.getProperty("atlas.graph.index.search.backend").equals("elasticsearch")) {
+            initElasticsearch();
+        }
 
         server = EmbeddedServer.newServer(appHost, appPort, appPath, enableTLS);
         installLogBridge();
@@ -227,4 +244,40 @@ public final class Atlas {
         SLF4JBridgeHandler.install();
     }
 
+    private static void initElasticsearch() throws IOException {
+        RestHighLevelClient esClient = AtlasElasticsearchDatabase.getClient();
+        IndexTemplatesExistRequest indexTemplateExistsRequest = new IndexTemplatesExistRequest("atlan-template");
+        boolean exists = false;
+        try {
+            exists = esClient.indices().existsTemplate(indexTemplateExistsRequest, RequestOptions.DEFAULT);
+            if (exists) {
+                LOG.info("atlan-template es index template exists!");
+            } else {
+                LOG.info("atlan-template es index template does not exists!");
+            }
+        } catch (Exception es) {
+            LOG.error("Caught exception: ", es.toString());
+        }
+        if (!exists) {
+            String vertexIndex = INDEX_PREFIX + VERTEX_INDEX;
+            PutIndexTemplateRequest request = new PutIndexTemplateRequest("atlan-template");
+            request.patterns(Arrays.asList(vertexIndex));
+            String atlasHomeDir  = System.getProperty("atlas.conf");
+            String elasticsearchSettingsFilePath = "addons" + File.separator + "elasticsearch" + File.separator + "es-settings.json";
+            File elasticsearchSettingsFile  = new File(elasticsearchSettingsFilePath);
+            String jsonString  = new String(Files.readAllBytes(elasticsearchSettingsFile.toPath()), StandardCharsets.UTF_8);
+            request.settings(jsonString, XContentType.JSON);
+            try {
+                AcknowledgedResponse putTemplateResponse = esClient.indices().putTemplate(request, RequestOptions.DEFAULT);
+                if (putTemplateResponse.isAcknowledged()) {
+                    LOG.info("Atlan index template created.");
+                } else {
+                    LOG.error("error creating atlan index template");
+                }
+            } catch (Exception e) {
+                LOG.error("Caught exception: ", e.toString());
+                throw e;
+            }
+        }
+    }
 }

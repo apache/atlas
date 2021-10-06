@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import java.io.Serializable;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -294,6 +295,8 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
         private List<AtlasConstraintDef> constraints;
         private Map<String, String>      options;
         private String                   displayName;
+        private ArrayList<String>        multifields;
+        private String                   defaultFieldType;
 
         public AtlasAttributeDef() { this(null, null); }
 
@@ -375,6 +378,8 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
                 setSearchWeight(other.getSearchWeight());
                 setIndexType(other.getIndexType());
                 setDisplayName(other.getDisplayName());
+                setMultifields(other.getMultifields());
+                setDefaultFieldType(other.getDefaultFieldType());
             }
         }
 
@@ -551,6 +556,22 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             this.description = description;
         }
 
+        public ArrayList<String> getMultifields() {
+            return multifields;
+        }
+
+        public void setMultifields(ArrayList<String> multifields) {
+            this.multifields = multifields;
+        }
+
+        public String getDefaultFieldType() {
+            return defaultFieldType;
+        }
+
+        public void setDefaultFieldType(String defaultFieldType) {
+            this.defaultFieldType = defaultFieldType;
+        }
+
         public StringBuilder toString(StringBuilder sb) {
             if (sb == null) {
                 sb = new StringBuilder();
@@ -572,6 +593,8 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             sb.append(", searchWeight='").append(searchWeight).append('\'');
             sb.append(", indexType='").append(indexType).append('\'');
             sb.append(", displayName='").append(displayName).append('\'');
+            sb.append(", multifields='").append(multifields).append('\'');
+            sb.append(", defaultFieldType='").append(defaultFieldType).append('\'');
             sb.append(", constraints=[");
             if (CollectionUtils.isNotEmpty(constraints)) {
                 int i = 0;
@@ -609,12 +632,14 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
                     Objects.equals(options, that.options) &&
                     Objects.equals(searchWeight, that.searchWeight) &&
                     Objects.equals(indexType, that.indexType) &&
-                    Objects.equals(displayName, that.displayName);
+                    Objects.equals(displayName, that.displayName) &&
+                    Objects.equals(multifields, that.multifields) &&
+                    Objects.equals(defaultFieldType, that.defaultFieldType);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(name, typeName, isOptional, cardinality, valuesMinCount, valuesMaxCount, isUnique, isIndexable, includeInNotification, defaultValue, constraints, options, description, searchWeight, indexType, displayName);
+            return Objects.hash(name, typeName, isOptional, cardinality, valuesMinCount, valuesMaxCount, isUnique, isIndexable, includeInNotification, defaultValue, constraints, options, description, searchWeight, indexType, displayName, multifields, defaultFieldType);
         }
 
         @Override

@@ -79,3 +79,6 @@ distro/solr/*.tgz
 
 # webapp
 /webapp/overlays/
+
+# local models and configurations
+/deploy
