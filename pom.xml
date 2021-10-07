@@ -769,7 +769,7 @@
         <testng.version>6.9.4</testng.version>
         <tinkerpop.version>3.4.10</tinkerpop.version>
         <woodstox-core.version>5.0.3</woodstox-core.version>
-        <zookeeper.version>3.5.7</zookeeper.version>
+        <zookeeper.version>3.4.6</zookeeper.version>
     </properties>
 
     <modules>

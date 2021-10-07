@@ -1,0 +1,79 @@
+--- atlas_config.py.orig	2019-05-03 08:22:00.000000000 +0300
++++ atlas_config.py	2020-01-16 02:14:31.660601445 +0300
+@@ -500,15 +500,18 @@
+ 
+ def wait_for_startup(confdir, wait):
+     count = 0
++    started = False
+     host = get_atlas_url_host(confdir)
+     port = get_atlas_url_port(confdir)
+-    while True:
++    pid_file = pidFile(atlasDir())
++
++    while not started:
+         try:
+             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+             s.settimeout(1)
+             s.connect((host, int(port)))
+             s.close()
+-            break
++            started = True
+         except Exception as e:
+             # Wait for 1 sec before next ping
+             sys.stdout.write('.')
+@@ -516,11 +519,20 @@
+             sleep(1)
+ 
+         if count > wait:
+-            s.close()
+-            break
++	    s.close()
++            sys.stdout.write('\nAtlas Web-UI startup timed out! But, wait for it...')
++            sys.stdout.flush()
++	    break
++
++        if not os.path.exists(pid_file):
++            sys.stdout.write('\nApache Atlas startup failed!\nCheck logs: /opt/apache-atlas-2.0.0/logs/application.log')
++            sys.stdout.flush()
++	    exit()
++	    break
+ 
+         count = count + 1
+ 
++
+     sys.stdout.write('\n')
+ 
+ def run_zookeeper(dir, action, logdir = None, wait=True):
+@@ -555,14 +567,14 @@
+ 
+     if zk_url is None:
+         if port is None:
+-            cmd = [os.path.join(dir, solrScript), action]
++            cmd = [os.path.join(dir, solrScript), action, '-force']
+         else:
+-            cmd = [os.path.join(dir, solrScript), action, '-p', str(port)]
++            cmd = [os.path.join(dir, solrScript), action, '-force', '-p', str(port)]
+     else:
+         if port is None:
+-            cmd = [os.path.join(dir, solrScript), action, '-z', zk_url]
++            cmd = [os.path.join(dir, solrScript), action, '-force', '-z', zk_url]
+         else:
+-            cmd = [os.path.join(dir, solrScript), action, '-z', zk_url, '-p', port]
++            cmd = [os.path.join(dir, solrScript), action, '-force', '-z', zk_url, '-p', port]
+ 
+     return runProcess(cmd, logdir, False, wait)
+ 
+@@ -572,7 +584,7 @@
+     if IS_WINDOWS:
+         solrScript = "solr.cmd"
+ 
+-    cmd = [os.path.join(dir, solrScript), 'create', '-c', index, '-d', confdir,  '-shards',  solrShards(),  '-replicationFactor', solrReplicationFactor()]
++    cmd = [os.path.join(dir, solrScript), 'create', '-c', index, '-d', confdir,  '-shards',  solrShards(),  '-replicationFactor', solrReplicationFactor(), '-force']
+ 
+     return runProcess(cmd, logdir, False, wait)
+ 
+@@ -691,3 +703,4 @@
+     windowsPath = subprocess.Popen(cygpathArgs, stdout=subprocess.PIPE).communicate()[0]
+     windowsPath = windowsPath.strip()
+     return windowsPath
++
