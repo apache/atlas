@@ -30,6 +30,7 @@ import org.apache.atlas.model.glossary.relations.AtlasRelatedCategoryHeader;
 import org.apache.atlas.model.glossary.relations.AtlasRelatedTermHeader;
 import org.apache.atlas.model.glossary.relations.AtlasTermCategorizationHeader;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.ogm.DataAccess;
@@ -491,6 +492,30 @@ public class GlossaryService {
         if (DEBUG_ENABLED) {
             LOG.debug("<== GlossaryService.deleteTerm()");
         }
+    }
+
+    @GraphTransaction
+    public void assignTermToEntities(Map<String, List<AtlasRelatedObjectId>>  mapOfTermRelatedObjectIds) throws AtlasBaseException {
+
+        for (String termGuid : mapOfTermRelatedObjectIds.keySet()) {
+
+            List<AtlasRelatedObjectId>  relatedObjectIds =    mapOfTermRelatedObjectIds.get(termGuid);
+
+            if (DEBUG_ENABLED) {
+                LOG.debug("==> GlossaryService.assignTermToEntities({}, {})", termGuid, relatedObjectIds);
+            }
+
+            AtlasGlossaryTerm glossaryTerm = dataAccess.load(getAtlasGlossaryTermSkeleton(termGuid));
+
+            glossaryTermUtils.processTermAssignments(glossaryTerm, relatedObjectIds);
+
+            entityChangeNotifier.onTermAddedToEntities(glossaryTerm, relatedObjectIds);
+
+        }
+        if (DEBUG_ENABLED) {
+            LOG.debug("<== GlossaryService.assignTermToEntities()");
+        }
+
     }
 
     @GraphTransaction

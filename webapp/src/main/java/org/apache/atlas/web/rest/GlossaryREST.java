@@ -34,7 +34,9 @@ import org.apache.atlas.model.glossary.relations.AtlasRelatedTermHeader;
 import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -886,6 +888,36 @@ public class GlossaryREST {
             }
 
             glossaryService.assignTermToEntities(termGuid, relatedObjectIds);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    /**
+     * Assign the given term to the provided list of entity headers
+     *
+     * @param mapOfTermToRelatedObjectIds Related Entity IDs to which the term has to be associated in Map with termGuid as key
+     * @throws AtlasBaseException
+     * @HTTP 204 If the term assignment was successful
+     * @HTTP 400 If ANY of the entity header is invalid
+     * @HTTP 404 If glossary guid in invalid
+     */
+    @POST
+    @Path("/terms/assignedEntities")
+    @Timed
+    public void assignTermsToMultipleEntities(Map<String, List<AtlasRelatedObjectId>> mapOfTermToRelatedObjectIds) throws AtlasBaseException {
+
+        if (mapOfTermToRelatedObjectIds == null || mapOfTermToRelatedObjectIds.isEmpty()) {
+            throw new AtlasBaseException(AtlasErrorCode.EMPTY_REQUEST);
+        }
+
+        AtlasPerfTracer perf = null;
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "GlossaryREST.assignTermsToMultipleEntities()");
+            }
+
+            glossaryService.assignTermToEntities(mapOfTermToRelatedObjectIds);
         } finally {
             AtlasPerfTracer.log(perf);
         }
