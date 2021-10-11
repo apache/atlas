@@ -180,4 +180,23 @@ public interface AtlasGraphManagement {
      * @throws Exception
      */
     void reindex(String indexName, List<AtlasElement> elements) throws Exception;
+
+    /**
+     * Starts recovering indices from the specified recovery time and returns TransactionRecovery
+     * @param startTime
+     * @return transactionRecoveryObject
+     */
+    Object startIndexRecovery(long startTime);
+
+    /**
+     * Stop index recovery.
+     * @param txRecoveryObject
+     */
+    void stopIndexRecovery(Object txRecoveryObject);
+
+    /**
+     * Print index recovery stats.
+     * @param txRecoveryObject
+     */
+    void printIndexRecoveryStats(Object txRecoveryObject);
 }
