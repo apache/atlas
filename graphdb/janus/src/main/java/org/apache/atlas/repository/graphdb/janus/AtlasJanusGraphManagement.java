@@ -19,37 +19,46 @@ package org.apache.atlas.repository.graphdb.janus;
 
 import com.google.common.base.Preconditions;
 import org.apache.atlas.AtlasConfiguration;
-import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.repository.graphdb.AtlasCardinality;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
+import org.apache.atlas.repository.graphdb.AtlasEdgeLabel;
 import org.apache.atlas.repository.graphdb.AtlasElement;
+import org.apache.atlas.repository.graphdb.AtlasGraphIndex;
+import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
+import org.apache.atlas.repository.graphdb.AtlasPropertyKey;
+import org.apache.commons.lang.StringUtils;
 import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.EdgeLabel;
+import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.JanusGraphElement;
+import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.schema.*;
+import org.janusgraph.core.log.TransactionRecovery;
+import org.janusgraph.core.schema.ConsistencyModifier;
+import org.janusgraph.core.schema.JanusGraphIndex;
+import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.core.schema.JanusGraphManagement.IndexBuilder;
+import org.janusgraph.core.schema.Mapping;
+import org.janusgraph.core.schema.Parameter;
+import org.janusgraph.core.schema.PropertyKeyMaker;
 import org.janusgraph.diskstorage.BackendTransaction;
 import org.janusgraph.diskstorage.indexing.IndexEntry;
 import org.janusgraph.graphdb.database.IndexSerializer;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.database.management.ManagementSystem;
 import org.janusgraph.graphdb.internal.Token;
-import org.apache.atlas.repository.graphdb.AtlasCardinality;
-import org.apache.atlas.repository.graphdb.AtlasEdgeLabel;
-import org.apache.atlas.repository.graphdb.AtlasGraphIndex;
-import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
-import org.apache.atlas.repository.graphdb.AtlasPropertyKey;
-import org.apache.commons.lang.StringUtils;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.janusgraph.graphdb.log.StandardTransactionLogProcessor;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.IndexType;
 import org.janusgraph.graphdb.types.MixedIndexType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -344,6 +353,62 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
             throw exception;
         } finally {
             management.commit();
+        }
+    }
+
+    @Override
+    public Object startIndexRecovery(long recoveryStartTime) {
+        Instant    recoveryStartInstant = Instant.ofEpochMilli(recoveryStartTime);
+        JanusGraph janusGraph           = this.graph.getGraph();
+
+        return JanusGraphFactory.startTransactionRecovery(janusGraph, recoveryStartInstant);
+    }
+
+    @Override
+    public void stopIndexRecovery(Object txRecoveryObject) {
+        if (txRecoveryObject == null) {
+            return;
+        }
+
+        try {
+            if (txRecoveryObject instanceof TransactionRecovery) {
+                TransactionRecovery txRecovery = (TransactionRecovery) txRecoveryObject;
+                StandardJanusGraph  janusGraph = (StandardJanusGraph) this.graph.getGraph();
+
+                LOG.info("stopIndexRecovery: Index Client is unhealthy. Index recovery: Paused!");
+
+                janusGraph.getBackend().getSystemTxLog().close();
+
+                txRecovery.shutdown();
+            } else {
+                LOG.error("stopIndexRecovery({}): Invalid transaction recovery object!", txRecoveryObject);
+            }
+        } catch (Exception e) {
+            LOG.warn("stopIndexRecovery: Error while shutting down transaction recovery", e);
+        }
+    }
+
+    @Override
+    public void printIndexRecoveryStats(Object txRecoveryObject) {
+        if (txRecoveryObject == null) {
+            return;
+        }
+
+        try {
+            if (txRecoveryObject instanceof TransactionRecovery) {
+                StandardTransactionLogProcessor txRecovery = (StandardTransactionLogProcessor) txRecoveryObject;
+                long[]                          statistics = txRecovery.getStatistics();
+
+                if (statistics.length >= 2) {
+                    LOG.info("Index Recovery: Stats: Success:{}: Failed: {}", statistics[0], statistics[1]);
+                } else {
+                    LOG.info("Index Recovery: Stats: {}", statistics);
+                }
+            } else {
+                LOG.error("Transaction stats: Invalid transaction recovery object!: Unexpected type: {}: Details: {}", txRecoveryObject.getClass().toString(), txRecoveryObject);
+            }
+        } catch (Exception e) {
+            LOG.error("Error: Retrieving log transaction stats!", e);
         }
     }
 

@@ -54,4 +54,10 @@ public interface AtlasGraphIndexClient {
      * @param suggestionProperties the list of suggestion properties.
      */
     void applySuggestionFields(String collectionName, List<String> suggestionProperties);
+
+    /**
+     * Returns status of index client
+     * @return returns true if index client is active
+     */
+    boolean isHealthy();
 }
