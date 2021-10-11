@@ -67,6 +67,7 @@ import org.apache.atlas.util.SearchTracker;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.filters.AtlasCSRFPreventionFilter;
+import org.apache.atlas.web.service.ActiveInstanceElectorService;
 import org.apache.atlas.web.service.AtlasDebugMetricsSink;
 import org.apache.atlas.web.service.ServiceState;
 import org.apache.atlas.web.util.Servlets;
@@ -101,6 +102,10 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import org.apache.atlas.model.general.HealthStatus;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graph.AtlasGraphProvider;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.SecureRandom;
@@ -115,6 +120,7 @@ import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
+import java.util.*;
 
 import static org.apache.atlas.web.filters.AtlasCSRFPreventionFilter.CSRF_TOKEN;
 
@@ -144,6 +150,9 @@ public class AdminResource {
     private static final String UI_DATE_DEFAULT_FORMAT         = "MM/DD/YYYY hh:mm:ss A";
     private static final String OPERATION_STATUS               = "operationStatus";
     private static final List TIMEZONE_LIST                    = Arrays.asList(TimeZone.getAvailableIDs());
+
+    @Inject
+    private ActiveInstanceElectorService electorService;
 
     @Context
     private HttpServletRequest httpServletRequest;
@@ -390,6 +399,75 @@ public class AdminResource {
         }
 
         return response;
+    }
+
+    @GET
+    @Path("health")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public Response healthCheck() {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> AdminResource.healthCheck()");
+        }
+
+        Map<String, HealthStatus> result = new HashMap<>();
+
+        AtlasGraph<Object, Object> graph = AtlasGraphProvider.getGraphInstance();
+
+        boolean cassandraFailed = false;
+        try {
+            GraphTraversal t = graph.V().limit(1);
+            t.hasNext();
+            result.put("cassandra", new HealthStatus("cassandra", "ok", true, new Date().toString(), ""));
+        } catch (Exception e) {
+            result.put("cassandra", new HealthStatus("cassandra", "error", true, new Date().toString(), e.toString()));
+            cassandraFailed = true;
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== AdminResource.healthCheck()");
+        }
+
+        if (cassandraFailed) {
+            return Response.status(500).entity(result).build();
+        }
+
+        return Response.status(200).entity(result).build();
+    }
+
+    @GET
+    @Path("killtheleader")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public Response killTheLeader() {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> AdminResource.killTheLeader()");
+        }
+
+        System.out.println(electorService);
+        try{
+            return Response.status(200).build();
+        } finally {
+            //do after actions
+            electorService.quitElection();
+        }
+    }
+
+    @GET
+    @Path("isactive")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public Response isActive() {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> AdminResource.isActive()");
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== AdminResource.isActive()");
+        }
+
+        if (serviceState.getState().toString().equals(ServiceState.ServiceStateValue.ACTIVE.toString())) {
+            return Response.ok().build();
+        }
+
+        return Response.serverError().build();
     }
 
     @GET

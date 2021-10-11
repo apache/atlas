@@ -191,6 +191,18 @@ public class ActiveInstanceElectorService implements Service, LeaderLatchListene
         }
     }
 
+    public void quitElection() {
+        if (!HAConfiguration.isHAEnabled(configuration)) {
+            LOG.info("HA is not enabled, you cannot quit something you haven't joined");
+            return;
+        }
+        try {
+            leaderLatch.close();
+        } catch (IOException e) {
+            LOG.error("Error closing leader latch", e);
+        }
+    }
+
     /**
      * Call all registered {@link ActiveStateChangeHandler}s on becoming passive instance.
      */
