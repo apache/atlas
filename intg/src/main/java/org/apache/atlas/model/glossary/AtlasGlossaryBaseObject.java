@@ -17,18 +17,40 @@
  */
 package org.apache.atlas.model.glossary;
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.apache.atlas.model.AtlasBaseModelObject;
 import org.apache.atlas.model.instance.AtlasClassification;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.Map;
+import java.util.Set;
 
 
 public abstract class AtlasGlossaryBaseObject extends AtlasBaseModelObject {
+
+    protected static Set<String> excludeFromOtherAttributes = new HashSet<String>() {{
+        add("qualifiedName");
+        add("name");
+        add("shortDescription");
+        add("longDescription");
+        add("additionalAttributes");
+        add("examples");
+        add("abbreviation");
+        add("usage");
+        add("language");
+        add("guid");
+    }};
+
+    private Map<String, Object> otherAttributes;
 
     // Core attributes
     private String qualifiedName;
@@ -51,6 +73,46 @@ public abstract class AtlasGlossaryBaseObject extends AtlasBaseModelObject {
         this.classifications = other.classifications;
         this.qualifiedName = other.qualifiedName;
         this.additionalAttributes = other.additionalAttributes;
+        this.otherAttributes = other.otherAttributes;
+    }
+
+    @JsonAnyGetter
+    public Map<String, Object> getOtherAttributes() {
+        return otherAttributes;
+    }
+
+    @JsonAnySetter
+    public void setOtherAttribute(String propertyKey, Object value) {
+        if (this.otherAttributes == null) {
+            this.otherAttributes = new HashMap<>();
+        }
+        this.otherAttributes.put(propertyKey, value);
+    }
+
+    public void setOtherAttributes(Map<String, Object> attributes) {
+        if (this.otherAttributes == null) {
+            this.otherAttributes = new HashMap<>();
+        }
+
+        for (String key : attributes.keySet()) {
+            if (!excludeFromOtherAttributes.contains(key)) {
+                this.otherAttributes.put(key, attributes.get(key));
+            }
+        }
+    }
+
+    public void setEntityAttributes(AtlasEntity atlasEntity, Map<String, Object> attributes) {
+        if (this.otherAttributes == null) {
+            this.otherAttributes = new HashMap<>();
+        }
+
+        if (MapUtils.isNotEmpty(attributes)) {
+            for (String key : attributes.keySet()) {
+                if (!atlasEntity.getAttributes().containsKey(key)) {
+                    atlasEntity.setAttribute(key, attributes.get(key));
+                }
+            }
+        }
     }
 
     public Map<String, Object> getAdditionalAttributes() {
@@ -131,12 +193,13 @@ public abstract class AtlasGlossaryBaseObject extends AtlasBaseModelObject {
                 Objects.equals(shortDescription, that.shortDescription) &&
                 Objects.equals(longDescription, that.longDescription) &&
                 Objects.equals(additionalAttributes, that.additionalAttributes) &&
-                Objects.equals(classifications, that.classifications);
+                Objects.equals(classifications, that.classifications) &&
+                Objects.equals(otherAttributes, that.otherAttributes);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), qualifiedName, name, shortDescription, longDescription, additionalAttributes, classifications);
+        return Objects.hash(super.hashCode(), qualifiedName, name, shortDescription, longDescription, additionalAttributes, classifications, otherAttributes);
     }
 
     @Override
@@ -147,6 +210,7 @@ public abstract class AtlasGlossaryBaseObject extends AtlasBaseModelObject {
         sb.append(", longDescription='").append(longDescription).append('\'');
         sb.append(", classifications=").append(classifications).append('\'');
         sb.append(", additionalAttributes=").append(additionalAttributes);
+        sb.append(", otherAttributes=").append(otherAttributes);
 
         return sb;
     }

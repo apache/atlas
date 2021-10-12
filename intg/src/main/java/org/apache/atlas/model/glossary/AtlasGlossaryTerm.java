@@ -326,6 +326,7 @@ public class AtlasGlossaryTerm extends AtlasGlossaryBaseObject {
         }
     }
 
+    @JsonIgnore
     public AtlasGlossaryTermHeader getGlossaryTermHeader() {
         return new AtlasGlossaryTermHeader(this.getGuid(), this.getQualifiedName());
     }

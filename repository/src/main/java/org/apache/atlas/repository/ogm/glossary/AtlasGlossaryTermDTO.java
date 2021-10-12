@@ -48,7 +48,7 @@ public class AtlasGlossaryTermDTO extends AbstractGlossaryDTO<AtlasGlossaryTerm>
     @Override
     public AtlasGlossaryTerm from(final AtlasEntity entity) {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasGlossaryTermDTO.from()", entity);
+            LOG.debug("==> AtlasGlossaryTermDTO.from() {}", entity);
         }
 
         Objects.requireNonNull(entity, "entity");
@@ -64,6 +64,7 @@ public class AtlasGlossaryTermDTO extends AbstractGlossaryDTO<AtlasGlossaryTerm>
         ret.setAbbreviation((String) entity.getAttribute("abbreviation"));
         ret.setUsage((String) entity.getAttribute("usage"));
         ret.setAdditionalAttributes((Map) entity.getAttribute("additionalAttributes"));
+        ret.setOtherAttributes(entity.getAttributes());
 
         Object anchor = entity.getRelationshipAttribute("anchor");
         if (anchor instanceof AtlasRelatedObjectId) {
@@ -222,6 +223,8 @@ public class AtlasGlossaryTermDTO extends AbstractGlossaryDTO<AtlasGlossaryTerm>
         ret.setAttribute("usage", obj.getUsage());
         ret.setAttribute("anchor", new AtlasObjectId(obj.getAnchor().getGlossaryGuid()));
         ret.setAttribute("additionalAttributes", obj.getAdditionalAttributes());
+
+        obj.setEntityAttributes(ret, obj.getOtherAttributes());
 
         if (CollectionUtils.isNotEmpty(obj.getClassifications())) {
             if (LOG.isDebugEnabled()) {

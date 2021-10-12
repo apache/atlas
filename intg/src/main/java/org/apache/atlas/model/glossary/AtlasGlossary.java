@@ -237,7 +237,5 @@ public class AtlasGlossary extends AtlasGlossaryBaseObject {
 
             return sb;
         }
-
-
     }
 }

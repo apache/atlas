@@ -59,6 +59,7 @@ public class AtlasGlossaryDTO extends AbstractGlossaryDTO<AtlasGlossary> {
         ret.setLanguage((String) entity.getAttribute("language"));
         ret.setUsage((String) entity.getAttribute("usage"));
         ret.setAdditionalAttributes((Map) entity.getAttribute("additionalAttributes"));
+        ret.setOtherAttributes(entity.getAttributes());
 
         Object categoriesAttr = entity.getRelationshipAttribute("categories");
         Object termsAttr = entity.getRelationshipAttribute("terms");
@@ -121,6 +122,8 @@ public class AtlasGlossaryDTO extends AbstractGlossaryDTO<AtlasGlossary> {
         ret.setAttribute("language", obj.getLanguage());
         ret.setAttribute("usage", obj.getUsage());
         ret.setAttribute("additionalAttributes", obj.getAdditionalAttributes());
+
+        obj.setEntityAttributes(ret, obj.getOtherAttributes());
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== AtlasGlossaryDTO.toEntity() : {}", ret);
