@@ -45,10 +45,12 @@ import org.janusgraph.core.schema.JanusGraphManagement.IndexBuilder;
 import org.janusgraph.core.schema.Mapping;
 import org.janusgraph.core.schema.Parameter;
 import org.janusgraph.core.schema.PropertyKeyMaker;
+import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.diskstorage.BackendTransaction;
 import org.janusgraph.diskstorage.indexing.IndexEntry;
 import org.janusgraph.graphdb.database.IndexSerializer;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
+import org.janusgraph.graphdb.database.management.GraphIndexStatusReport;
 import org.janusgraph.graphdb.database.management.ManagementSystem;
 import org.janusgraph.graphdb.internal.Token;
 import org.janusgraph.graphdb.log.StandardTransactionLogProcessor;
@@ -64,6 +66,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+
+import static org.janusgraph.core.schema.SchemaAction.ENABLE_INDEX;
+import static org.janusgraph.core.schema.SchemaStatus.ENABLED;
+import static org.janusgraph.core.schema.SchemaStatus.INSTALLED;
+import static org.janusgraph.core.schema.SchemaStatus.REGISTERED;
 
 /**
  * Janus implementation of AtlasGraphManagement.
@@ -305,6 +313,57 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
         } finally {
             commit();
         }
+    }
+
+    @Override
+    public void updateSchemaStatus() {
+        updateSchemaStatus(this.management, this.graph.getGraph(), Vertex.class);
+        updateSchemaStatus(this.management, this.graph.getGraph(), Edge.class);
+    }
+
+    public static void updateSchemaStatus(JanusGraphManagement mgmt, JanusGraph graph, Class<? extends Element> elementType) {
+        LOG.info("updating SchemaStatus for {}: Starting...", elementType.getSimpleName());
+        int count = 0;
+
+        Iterable<JanusGraphIndex> iterable = mgmt.getGraphIndexes(elementType);
+
+        for (JanusGraphIndex index : iterable) {
+
+            if (index.isCompositeIndex()) {
+                PropertyKey[] propertyKeys = index.getFieldKeys();
+                SchemaStatus status       = index.getIndexStatus(propertyKeys[0]);
+                String        indexName    = index.name();
+
+                try {
+                    if (status == REGISTERED) {
+                        JanusGraphManagement management = graph.openManagement();
+                        JanusGraphIndex indexToUpdate   = management.getGraphIndex(indexName);
+                        management.updateIndex(indexToUpdate, ENABLE_INDEX).get();
+                        management.commit();
+
+                        GraphIndexStatusReport report = ManagementSystem.awaitGraphIndexStatus(graph, indexName).status(ENABLED).call();
+
+                        if (!report.getConvergedKeys().isEmpty() && report.getConvergedKeys().containsKey(indexName)) {
+                            LOG.info("SchemaStatus updated for index: {}, from {} to {}.", index.name(), REGISTERED, ENABLED);
+
+                            count++;
+                        } else if (!report.getNotConvergedKeys().isEmpty() && report.getNotConvergedKeys().containsKey(indexName)) {
+                            LOG.error("SchemaStatus failed to update index: {}, from {} to {}.", index.name(), REGISTERED, ENABLED);
+                        }
+
+                    } else if (status == INSTALLED) {
+                        LOG.warn("SchemaStatus {} found for index: {}", INSTALLED, indexName);
+
+                    }
+                } catch (InterruptedException e) {
+                    LOG.error("IllegalStateException for indexName : {}, Exception: ", indexName, e);
+                } catch (ExecutionException e) {
+                    LOG.error("ExecutionException for indexName : {}, Exception: ", indexName, e);
+                }
+            }
+        }
+
+        LOG.info("updating SchemaStatus for {}: {}: Done!", elementType.getSimpleName(), count);
     }
 
     private static void setConsistency(JanusGraphManagement mgmt, Class<? extends Element> elementType) {

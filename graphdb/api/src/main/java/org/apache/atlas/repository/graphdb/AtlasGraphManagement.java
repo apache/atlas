@@ -173,6 +173,11 @@ public interface AtlasGraphManagement {
      */
     void updateUniqueIndexesForConsistencyLock();
 
+    /**
+     * update valid SchemaStatus for all vertex and edge indexes.
+     */
+    void updateSchemaStatus();
+
     /***
      * Re-index elements.
      * @param indexName: Name of the index that needs to be operated on.
