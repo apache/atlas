@@ -23,12 +23,14 @@ import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasTypeAccessRequest;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.typesystem.types.DataTypes;
 import org.apache.atlas.typesystem.types.DataTypes.TypeCategory;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -77,6 +79,11 @@ class AtlasClassificationDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasClassif
 
         if (ret != null) {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_ALREADY_EXISTS, classificationDef.getName());
+        }
+        ret = typeDefStore.findTypeVertexByDisplayName(
+                classificationDef.getDisplayName(), TypeCategory.TRAIT);
+        if (ret != null) {
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_WITH_DISPLAY_NAME_ALREADY_EXISTS, classificationDef.getDisplayName());
         }
 
         ret = typeDefStore.createTypeVertex(classificationDef);
@@ -170,6 +177,25 @@ class AtlasClassificationDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasClassif
         }
 
         return ret;
+    }
+
+    @Override
+    public void validateType(AtlasBaseTypeDef typeDef) throws AtlasBaseException {
+        super.validateType(typeDef);
+
+        AtlasClassificationDef classifiDef = (AtlasClassificationDef) typeDef;
+
+        if (StringUtils.isEmpty(classifiDef.getDisplayName())){
+            throw new AtlasBaseException(AtlasErrorCode.MISSING_CLASSIFICATION_DISPLAY_NAME);
+        }
+
+        //validate uniqueness of display name
+        AtlasVertex ret = typeDefStore.findTypeVertexByDisplayName(
+                classifiDef.getDisplayName(), DataTypes.TypeCategory.TRAIT);
+        if (ret != null && (
+                classifiDef.getGuid() == null || !classifiDef.getGuid().equals(ret.getProperty(Constants.GUID_PROPERTY_KEY, String.class)))) {
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_WITH_DISPLAY_NAME_ALREADY_EXISTS, classifiDef.getDisplayName());
+        }
     }
 
     @Override

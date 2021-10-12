@@ -44,6 +44,7 @@ import org.apache.atlas.model.PList;
 import org.apache.atlas.model.SearchFilter.SortType;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.hadoop.util.StringUtils;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
@@ -110,12 +111,18 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
     }
 
     public void setAttributeDefs(List<AtlasAttributeDef> attributeDefs) {
+        setAttributeDefs(attributeDefs, true);
+    }
+
+    public void setAttributeDefs(List<AtlasAttributeDef> attributeDefs, boolean removeRedundancy) {
         if (this.attributeDefs != null && this.attributeDefs == attributeDefs) {
             return;
         }
 
         if (CollectionUtils.isEmpty(attributeDefs)) {
             this.attributeDefs = new ArrayList<>();
+        } else if (!removeRedundancy) {
+            this.attributeDefs = new ArrayList<>(attributeDefs);
         } else {
             // if multiple attributes with same name are present, keep only the last entry
             List<AtlasAttributeDef> tmpList     = new ArrayList<>(attributeDefs.size());
@@ -141,7 +148,6 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             this.attributeDefs = tmpList;
         }
     }
-
     public AtlasAttributeDef getAttribute(String attrName) {
         return findAttribute(this.attributeDefs, attrName);
     }
@@ -249,6 +255,11 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
     @Override
     public String toString() {
         return toString(new StringBuilder()).toString();
+    }
+
+
+    public static String generateRandomName() {
+        return RandomStringUtils.randomAlphabetic(1) + RandomStringUtils.randomAlphanumeric(21);
     }
 
     /**

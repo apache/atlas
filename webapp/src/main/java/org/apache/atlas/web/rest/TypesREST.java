@@ -395,7 +395,8 @@ public class TypesREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.createAtlasTypeDefs(" +
                                                                AtlasTypeUtil.toDebugString(typesDef) + ")");
             }
-
+            typesDef.getBusinessMetadataDefs().forEach(AtlasBusinessMetadataDef::setRandomNameForEntityAndAttributeDefs);
+            typesDef.getClassificationDefs().forEach(AtlasClassificationDef::setRandomNameForEntityAndAttributeDefs);
             return typeDefStore.createTypesDef(typesDef);
         } finally {
             AtlasPerfTracer.log(perf);
@@ -422,7 +423,26 @@ public class TypesREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.updateAtlasTypeDefs(" +
                                                                AtlasTypeUtil.toDebugString(typesDef) + ")");
             }
-
+            for (AtlasBusinessMetadataDef mb : typesDef.getBusinessMetadataDefs()) {
+                AtlasBusinessMetadataDef existingMB;
+                try{
+                    existingMB = typeDefStore.getBusinessMetadataDefByGuid(mb.getGuid());
+                }catch (AtlasBaseException e){
+                    //do nothing -- this BM is ew
+                    existingMB = null;
+                }
+                mb.setRandomNameForNewAttributeDefs(existingMB);
+            }
+            for (AtlasClassificationDef classificationDef : typesDef.getClassificationDefs()) {
+                AtlasClassificationDef existingClassificationDef;
+                try{
+                    existingClassificationDef = typeDefStore.getClassificationDefByGuid(classificationDef.getGuid());
+                }catch (AtlasBaseException e){
+                    //do nothing -- this classification is ew
+                    existingClassificationDef = null;
+                }
+                classificationDef.setRandomNameForNewAttributeDefs(existingClassificationDef);
+            }
             return typeDefStore.updateTypesDef(typesDef);
         } finally {
             AtlasPerfTracer.log(perf);

@@ -29,6 +29,7 @@ import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasBusinessMetadataDef;
+import org.apache.atlas.model.typedef.AtlasNamedTypeDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -44,11 +45,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static org.apache.atlas.model.typedef.AtlasBusinessMetadataDef.ATTR_OPTION_APPLICABLE_ENTITY_TYPES;
 
@@ -86,6 +83,15 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
             throw new AtlasBaseException(AtlasErrorCode.TYPE_ALREADY_EXISTS, businessMetadataDef.getName());
         }
 
+        //validate uniqueness of display name for BM
+        if (type.getTypeCategory() == TypeCategory.BUSINESS_METADATA) {
+            ret = typeDefStore.findTypeVertexByDisplayName(
+                    businessMetadataDef.getDisplayName(), DataTypes.TypeCategory.BUSINESS_METADATA);
+            if (ret != null) {
+                throw new AtlasBaseException(AtlasErrorCode.TYPE_WITH_DISPLAY_NAME_ALREADY_EXISTS, businessMetadataDef.getDisplayName());
+            }
+        }
+
         ret = typeDefStore.createTypeVertex(businessMetadataDef);
 
         updateVertexPreCreate(businessMetadataDef, (AtlasBusinessMetadataType) type, ret);
@@ -101,6 +107,15 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
     public void validateType(AtlasBaseTypeDef typeDef) throws AtlasBaseException {
         super.validateType(typeDef);
         AtlasBusinessMetadataDef businessMetadataDef = (AtlasBusinessMetadataDef) typeDef;
+
+        //validate uniqueness of display name for BM
+        AtlasVertex ret = typeDefStore.findTypeVertexByDisplayName(
+                businessMetadataDef.getDisplayName(), DataTypes.TypeCategory.BUSINESS_METADATA);
+        if (ret != null && (
+                businessMetadataDef.getGuid() == null || !businessMetadataDef.getGuid().equals(ret.getProperty(Constants.GUID_PROPERTY_KEY, String.class)))) {
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_WITH_DISPLAY_NAME_ALREADY_EXISTS, businessMetadataDef.getDisplayName());
+        }
+
         if (CollectionUtils.isNotEmpty(businessMetadataDef.getAttributeDefs())) {
             for (AtlasStructDef.AtlasAttributeDef attributeDef : businessMetadataDef.getAttributeDefs()) {
                 if (!isValidName(attributeDef.getName())) {

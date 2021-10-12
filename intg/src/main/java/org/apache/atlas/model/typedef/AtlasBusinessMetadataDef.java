@@ -21,11 +21,14 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.apache.atlas.model.TypeCategory;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.RandomStringUtils;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -37,35 +40,46 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 @JsonIgnoreProperties(ignoreUnknown=true)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
-public class AtlasBusinessMetadataDef extends AtlasStructDef implements Serializable {
+public class AtlasBusinessMetadataDef extends AtlasStructDef implements AtlasNamedTypeDef, Serializable {
     private static final long serialVersionUID = 1L;
 
     public static final String ATTR_OPTION_APPLICABLE_ENTITY_TYPES = "applicableEntityTypes";
     public static final String ATTR_MAX_STRING_LENGTH              = "maxStrLength";
     public static final String ATTR_VALID_PATTERN                  = "validPattern";
 
+    private String displayName;
+
     public AtlasBusinessMetadataDef() {
         this(null, null, null, null);
     }
 
-    public AtlasBusinessMetadataDef(String name, String description) {
-        this(name, description, null, null, null);
+    public AtlasBusinessMetadataDef(String displayName, String description) {
+        this(displayName, description, null, null, null);
     }
 
-    public AtlasBusinessMetadataDef(String name, String description, String typeVersion) {
-        this(name, description, typeVersion, null, null);
+    public AtlasBusinessMetadataDef(String displayName, String description, String typeVersion) {
+        this(displayName, description, typeVersion, null, null);
     }
 
-    public AtlasBusinessMetadataDef(String name, String description, String typeVersion, List<AtlasAttributeDef> attributeDefs) {
-        this(name, description, typeVersion, attributeDefs, null);
+    public AtlasBusinessMetadataDef(String displayName, String description, String typeVersion, List<AtlasAttributeDef> attributeDefs) {
+        this(displayName, description, typeVersion, attributeDefs, null);
     }
 
-    public AtlasBusinessMetadataDef(String name, String description, String typeVersion, List<AtlasAttributeDef> attributeDefs, Map<String, String> options) {
+    public AtlasBusinessMetadataDef(String displayName, String description, String typeVersion, List<AtlasAttributeDef> attributeDefs, Map<String, String> options) {
+        this(generateRandomName(), displayName, description, typeVersion, attributeDefs, options);
+    }
+    public AtlasBusinessMetadataDef(String name, String displayName, String description, String typeVersion, List<AtlasAttributeDef> attributeDefs, Map<String, String> options) {
         super(TypeCategory.BUSINESS_METADATA, name, description, typeVersion, attributeDefs, options);
+        this.displayName = displayName;
     }
-
     public AtlasBusinessMetadataDef(AtlasBusinessMetadataDef other) {
         super(other);
+    }
+
+    @Override
+    protected void appendExtraBaseTypeDefToString(StringBuilder sb) {
+        super.appendExtraBaseTypeDefToString(sb);
+        sb.append(", displayName='").append(this.displayName).append('\'');
     }
 
     @Override
@@ -84,5 +98,48 @@ public class AtlasBusinessMetadataDef extends AtlasStructDef implements Serializ
         sb.append('}');
 
         return sb;
+    }
+
+    @Override
+    public String getDisplayName() {
+        return displayName;
+    }
+
+    @Override
+    public void setDisplayName(String displayName) {
+        this.displayName = displayName;
+    }
+
+    public void setRandomNameForEntityAndAttributeDefs() {
+        setRandomName();
+        this.getAttributeDefs().forEach((attr) -> attr.setName(generateRandomName()));
+    }
+
+    public void setRandomNameForNewAttributeDefs(AtlasBusinessMetadataDef oldBusinessMetadataDef) {
+        List<String> oldNames = new ArrayList<>();
+        if (oldBusinessMetadataDef !=  null) {
+            for (AtlasAttributeDef attr : oldBusinessMetadataDef.getAttributeDefs()) {
+                oldNames.add(attr.getName());
+            }
+        }
+        for (AtlasAttributeDef attr : this.getAttributeDefs()){
+            if (!oldNames.contains(attr.getName())){
+                attr.setName(generateRandomName());
+            }
+        }
+    }
+
+    @Override
+    public void setAttributeDefs(List<AtlasAttributeDef> attributeDefs) {
+        super.setAttributeDefs(attributeDefs, false);
+    }
+
+    private void setRandomName() {
+        setName(generateRandomName());
+    }
+
+    @Override
+    public int hashCode() {
+        return (this.displayName == null ? 0 : this.displayName.hashCode()) + super.hashCode() * 31;
     }
 }

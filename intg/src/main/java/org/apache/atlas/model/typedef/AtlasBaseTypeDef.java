@@ -326,6 +326,9 @@ public abstract class AtlasBaseTypeDef implements java.io.Serializable {
         options.put(optionName, value);
     }
 
+    protected void appendExtraBaseTypeDefToString(StringBuilder sb) {
+    }
+
     public StringBuilder toString(StringBuilder sb) {
         if (sb == null) {
             sb = new StringBuilder();
@@ -344,6 +347,7 @@ public abstract class AtlasBaseTypeDef implements java.io.Serializable {
         sb.append(", typeVersion='").append(typeVersion).append('\'');
         sb.append(", serviceType='").append(serviceType).append('\'');
         sb.append(", options='").append(options).append('\'');
+        appendExtraBaseTypeDefToString(sb);
         sb.append('}');
 
         return sb;

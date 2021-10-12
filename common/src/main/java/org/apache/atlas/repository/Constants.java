@@ -66,6 +66,7 @@ public final class Constants {
     public static final String TYPE_CATEGORY_PROPERTY_KEY   = getEncodedTypePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "type.category");
     public static final String VERTEX_TYPE_PROPERTY_KEY     = getEncodedTypePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "type");
     public static final String TYPENAME_PROPERTY_KEY        = getEncodedTypePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "type.name");
+    public static final String TYPE_DISPLAYNAME_PROPERTY_KEY= getEncodedTypePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "type.displayName");
     public static final String TYPEDESCRIPTION_PROPERTY_KEY = getEncodedTypePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "type.description");
     public static final String TYPEVERSION_PROPERTY_KEY     = getEncodedTypePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "type.version");
     public static final String TYPEOPTIONS_PROPERTY_KEY     = getEncodedTypePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "type.options");

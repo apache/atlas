@@ -31,11 +31,7 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
@@ -49,11 +45,13 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 @JsonIgnoreProperties(ignoreUnknown=true)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
-public class AtlasClassificationDef extends AtlasStructDef implements java.io.Serializable {
+public class AtlasClassificationDef extends AtlasStructDef implements AtlasNamedTypeDef, java.io.Serializable {
     private static final long serialVersionUID = 1L;
 
     private Set<String> superTypes;
     private Set<String> entityTypes;
+
+    private String displayName;
 
     // subTypes field below is derived from 'superTypes' specified in all AtlasClassificationDef
     // this value is ignored during create & update operations
@@ -64,16 +62,16 @@ public class AtlasClassificationDef extends AtlasStructDef implements java.io.Se
         this(null, null, null, null, null, null);
     }
 
-    public AtlasClassificationDef(String name) {
-        this(name, null, null, null, null, null);
+    public AtlasClassificationDef(String displayName) {
+        this(displayName, null, null, null, null, null);
     }
 
-    public AtlasClassificationDef(String name, String description) {
-        this(name, description, null, null, null, null);
+    public AtlasClassificationDef(String displayName, String description) {
+        this(displayName, description, null, null, null, null);
     }
 
-    public AtlasClassificationDef(String name, String description, String typeVersion) {
-        this(name, description, typeVersion, null, null, null);
+    public AtlasClassificationDef(String displayName, String description, String typeVersion) {
+        this(displayName, description, typeVersion, null, null, null);
     }
 
     public AtlasClassificationDef(String name, String description, String typeVersion,
@@ -81,21 +79,28 @@ public class AtlasClassificationDef extends AtlasStructDef implements java.io.Se
         this(name, description, typeVersion, attributeDefs, null, null);
     }
 
-    public AtlasClassificationDef(String name, String description, String typeVersion,
+    public AtlasClassificationDef(String displayName, String description, String typeVersion,
                                   List<AtlasAttributeDef> attributeDefs, Set<String> superTypes) {
-        this(name, description, typeVersion, attributeDefs, superTypes, null);
+        this(displayName, description, typeVersion, attributeDefs, superTypes, null);
     }
 
-    public AtlasClassificationDef(String name, String description, String typeVersion,
+    public AtlasClassificationDef(String displayName, String description, String typeVersion,
                                   List<AtlasAttributeDef> attributeDefs, Set<String> superTypes,
                                   Map<String, String> options) {
-        this(name, description, typeVersion, attributeDefs, superTypes, null, options);
+        this(displayName, description, typeVersion, attributeDefs, superTypes, null, options);
     }
 
-    public AtlasClassificationDef(String name, String description, String typeVersion,
+    public AtlasClassificationDef(String displayName, String description, String typeVersion,
+                                  List<AtlasAttributeDef> attributeDefs, Set<String> superTypes,
+                                  Set<String> entityTypes, Map<String, String> options) {
+        this(generateRandomName(), displayName, description, typeVersion, attributeDefs, superTypes, null, options);
+    }
+
+    public AtlasClassificationDef(String name, String displayName, String description, String typeVersion,
                                   List<AtlasAttributeDef> attributeDefs, Set<String> superTypes,
                                   Set<String> entityTypes, Map<String, String> options) {
         super(TypeCategory.CLASSIFICATION, name, description, typeVersion, attributeDefs, options);
+        this.setDisplayName(displayName);
 
         setSuperTypes(superTypes);
         setEntityTypes(entityTypes);
@@ -103,8 +108,12 @@ public class AtlasClassificationDef extends AtlasStructDef implements java.io.Se
 
     public AtlasClassificationDef(AtlasClassificationDef other) {
         super(other);
-
-        setSuperTypes(other != null ? other.getSuperTypes() : null);
+        if (other != null) {
+            setSuperTypes(other.getSuperTypes());
+            setDisplayName(other.getDisplayName());
+            setEntityTypes(other.getEntityTypes());
+            setSubTypes(other.getSubTypes());
+        }
     }
 
     public Set<String> getSuperTypes() {
@@ -249,12 +258,20 @@ public class AtlasClassificationDef extends AtlasStructDef implements java.io.Se
 
         AtlasClassificationDef that = (AtlasClassificationDef) o;
 
-        return Objects.equals(superTypes, that.superTypes) && Objects.equals(entityTypes,that.entityTypes);
+        return Objects.equals(superTypes, that.superTypes) &&
+                Objects.equals(displayName, that.displayName) &&
+                Objects.equals(entityTypes,that.entityTypes);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), superTypes);
+        return Objects.hash(super.hashCode(), superTypes, this.displayName);
+    }
+
+    @Override
+    protected void appendExtraBaseTypeDefToString(StringBuilder sb) {
+        super.appendExtraBaseTypeDefToString(sb);
+        sb.append(", displayName='").append(this.displayName).append('\'');
     }
 
     @Override
@@ -262,6 +279,39 @@ public class AtlasClassificationDef extends AtlasStructDef implements java.io.Se
         return toString(new StringBuilder()).toString();
     }
 
+    @Override
+    public String getDisplayName() {
+        return displayName;
+    }
+
+    @Override
+    public void setDisplayName(String displayName) {
+        this.displayName = displayName;
+    }
+
+    @Override
+    public void setAttributeDefs(List<AtlasAttributeDef> attributeDefs) {
+       super.setAttributeDefs(attributeDefs, false);
+    }
+
+    public void setRandomNameForEntityAndAttributeDefs() {
+        setName(generateRandomName());
+        this.getAttributeDefs().forEach((attr) -> attr.setName(generateRandomName()));
+    }
+
+    public void setRandomNameForNewAttributeDefs(AtlasClassificationDef oldBusinessMetadataDef) {
+        List<String> oldNames = new ArrayList<>();
+        if (oldBusinessMetadataDef !=  null) {
+            for (AtlasAttributeDef attr : oldBusinessMetadataDef.getAttributeDefs()) {
+                oldNames.add(attr.getName());
+            }
+        }
+        for (AtlasAttributeDef attr : this.getAttributeDefs()){
+            if (!oldNames.contains(attr.getName())){
+                attr.setName(generateRandomName());
+            }
+        }
+    }
 
     /**
      * REST serialization friendly list.

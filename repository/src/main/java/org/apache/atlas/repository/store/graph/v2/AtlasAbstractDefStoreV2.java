@@ -25,6 +25,7 @@ import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.authorize.AtlasTypeAccessRequest;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.model.typedef.AtlasNamedTypeDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.query.AtlasDSL;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -37,7 +38,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
@@ -106,6 +109,24 @@ import java.util.regex.Pattern;
     public void validateType(AtlasBaseTypeDef typeDef) throws AtlasBaseException {
         if (!isValidName(typeDef.getName())) {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID_FORMAT, typeDef.getName(), typeDef.getCategory().name());
+        }
+
+        if (typeDef instanceof AtlasNamedTypeDef) {
+            AtlasNamedTypeDef namedTypeDef = (AtlasNamedTypeDef) typeDef;
+            if (StringUtils.isEmpty(namedTypeDef.getDisplayName())) {
+                throw new AtlasBaseException(AtlasErrorCode.TYPEDEF_DISPLAY_NAME_IS_REQUIRED);
+            }
+            Set<String> names = new HashSet<>();
+            for (AtlasStructDef.AtlasAttributeDef attr : ((AtlasStructDef) typeDef).getAttributeDefs()) {
+                if (StringUtils.isEmpty(attr.getDisplayName())){
+                    throw new AtlasBaseException(AtlasErrorCode.TYPEDEF_ATTR_DISPLAY_NAME_IS_REQUIRED, typeDef.getName());
+                }
+                if (names.contains(attr.getDisplayName())){
+                    throw new AtlasBaseException(AtlasErrorCode.TYPE_ATTR_WITH_DISPLAY_NAME_ALREADY_EXISTS, attr.getDisplayName(), typeDef.getName());
+                }else{
+                    names.add(attr.getDisplayName());
+                }
+            }
         }
 
         try {
