@@ -95,6 +95,7 @@ public class AtlasPatchManager {
         handlers.add(new IndexConsistencyPatch(context));
         handlers.add(new ReIndexPatch(context));
         handlers.add(new ProcessNamePatch(context));
+        handlers.add(new UpdateCompositeIndexStatusPatch(context));
 
         LOG.info("<== AtlasPatchManager.init()");
     }

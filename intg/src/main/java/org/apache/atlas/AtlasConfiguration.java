@@ -81,7 +81,8 @@ public enum AtlasConfiguration {
     DSL_CACHED_TRANSLATOR("atlas.dsl.cached.translator", true),
     DEBUG_METRICS_ENABLED("atlas.debug.metrics.enabled", false),
     TASKS_USE_ENABLED("atlas.tasks.enabled", true),
-    SESSION_TIMEOUT_SECS("atlas.session.timeout.secs", -1);
+    SESSION_TIMEOUT_SECS("atlas.session.timeout.secs", -1),
+    UPDATE_COMPOSITE_INDEX_STATUS("atlas.update.composite.index.status", true);
 
 
     private static final Configuration APPLICATION_PROPERTIES;
