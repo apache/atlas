@@ -14,6 +14,12 @@
         "type": "snowball",
         "language": "English"
       }
+    },
+    "normalizer": {
+      "my_normalizer": {
+        "type": "custom",
+        "filter": ["lowercase"]
+      }
     }
   }
 }

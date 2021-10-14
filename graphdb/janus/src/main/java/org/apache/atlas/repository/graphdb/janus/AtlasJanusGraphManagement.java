@@ -210,42 +210,30 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
 
     @Override
     public String addMixedIndex(String indexName, AtlasPropertyKey propertyKey, boolean isStringField) {
-        return addMixedIndex(indexName, propertyKey, isStringField, new ArrayList<>(), "");
+        return addMixedIndex(indexName, propertyKey, isStringField, new HashMap<>(), new HashMap<>());
     }
 
     @Override
-    public String addMixedIndex(String indexName, AtlasPropertyKey propertyKey, boolean isStringField, ArrayList<String> multifields, String defaultFieldType) {
+    public String addMixedIndex(String indexName, AtlasPropertyKey propertyKey, boolean isStringField, HashMap<String, Object> indexTypeESConfig, HashMap<String, HashMap<String, Object>> indexTypeESFields) {
         PropertyKey     janusKey        = AtlasJanusObjectFactory.createPropertyKey(propertyKey);
         JanusGraphIndex janusGraphIndex = management.getGraphIndex(indexName);
 
         ArrayList<Parameter> params = new ArrayList<>();
 
-        if(isStringField && !indexName.equals(VERTEX_INDEX)) {
+        if(isStringField) {
             params.add(Mapping.STRING.asParameter());
             LOG.debug("string type for {} with janueKey {}.", propertyKey.getName(), janusKey);
-        } else if (indexName.equals(VERTEX_INDEX)) {
-            if (StringUtils.isNotEmpty(defaultFieldType) && defaultFieldType.equals(ES_FILTER_FIELD_KEY)) {
-                params.add(Parameter.of(ParameterType.customParameterName("type"), "keyword"));
-            } else if (StringUtils.isNotEmpty(defaultFieldType) && defaultFieldType.equals(ES_SEARCH_FIELD_KEY)){
-                params.add(Parameter.of(ParameterType.customParameterName("type"), "text"));
-                params.add(Parameter.of(ParameterType.customParameterName("analyzer"), "text_search_analyzer"));
-            }
+        }
 
-            if (multifields != null && multifields.size() > 0) {
-                HashMap<String, HashMap<String, String>> fieldMap = new HashMap<>();
-                if (multifields.contains(ES_FILTER_FIELD_KEY)) {
-                    HashMap<String, String> keywordMap = new HashMap<>();
-                    keywordMap.put("type", "keyword");
-                    fieldMap.put(ES_FILTER_FIELD_KEY, keywordMap);
-                }
-                if (multifields.contains(ES_SEARCH_FIELD_KEY)) {
-                    HashMap<String, String> searchMap = new HashMap<>();
-                    searchMap.put("type", "text");
-                    searchMap.put("analyzer", "text_search_analyzer");
-                    fieldMap.put(ES_SEARCH_FIELD_KEY, searchMap);
-                }
-                params.add(Parameter.of(ParameterType.customParameterName("fields"), fieldMap));
+        if (indexTypeESConfig != null) {
+            for (String esPropertyKey : indexTypeESConfig.keySet()) {
+                Object esPropertyValue = indexTypeESConfig.get(esPropertyKey);
+                params.add(Parameter.of(ParameterType.customParameterName(esPropertyKey), esPropertyValue));
             }
+        }
+
+        if (indexTypeESFields != null) {
+            params.add(Parameter.of(ParameterType.customParameterName("fields"), indexTypeESFields));
         }
 
         if (params.size() > 0) {

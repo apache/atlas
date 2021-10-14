@@ -19,6 +19,7 @@
 package org.apache.atlas.repository.graphdb;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -171,7 +172,7 @@ public interface AtlasGraphManagement {
      * @param defaultFieldType
      * @return the index field name used for the given property
      */
-    String addMixedIndex(String vertexIndex, AtlasPropertyKey propertyKey, boolean isStringField, ArrayList<String> multifields, String defaultFieldType);
+    String addMixedIndex(String vertexIndex, AtlasPropertyKey propertyKey, boolean isStringField, HashMap<String, Object> indexTypeESConfig, HashMap<String, HashMap<String, Object>> indexTypeESFields);
 
     /**
      * Gets the index field name for the vertex property.

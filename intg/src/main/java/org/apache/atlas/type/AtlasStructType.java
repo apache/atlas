@@ -731,7 +731,7 @@ public class AtlasStructType extends AtlasType {
     }
 
     public static class AtlasAttribute {
-        public static final Object VERTEX_PROPERTY_PREFIX_STRING_INDEX_TYPE = "__s_";
+        public static final Object VERTEX_PROPERTY_PREFIX_STRING_INDEX_TYPE = "";
         private final AtlasStructType          definedInType;
         private final AtlasType                attributeType;
         private final AtlasAttributeDef        attributeDef;
