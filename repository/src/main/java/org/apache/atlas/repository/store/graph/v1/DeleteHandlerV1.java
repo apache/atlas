@@ -53,6 +53,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.apache.atlas.model.TypeCategory.*;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
@@ -210,9 +211,14 @@ public abstract class DeleteHandlerV1 {
                 continue;
             }
 
-            AtlasEntityHeader entity     = entityRetriever.toAtlasEntityHeader(vertex);
-            String            typeName   = entity.getTypeName();
+            String typeName = GraphHelper.getTypeName(vertex);
             AtlasEntityType   entityType = typeRegistry.getEntityTypeByName(typeName);
+
+            Set<String> attributes = entityType.getAllAttributes().values().stream()
+                    .filter(x -> x.getAttributeDef().getIncludeInNotification())
+                    .map(x -> x.getAttributeDef().getName()).collect(Collectors.toSet());
+
+            AtlasEntityHeader entity     = entityRetriever.toAtlasEntityHeader(vertex, attributes);
 
             if (entityType == null) {
                 throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), typeName);
