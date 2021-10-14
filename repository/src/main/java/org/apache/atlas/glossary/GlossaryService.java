@@ -598,7 +598,6 @@ public class GlossaryService {
         // Derive the qualifiedName
         glossaryCategory.setQualifiedName(glossaryCategoryUtils.createQualifiedName(glossaryCategory));
 
-
         if (categoryExists(glossaryCategory)) {
             throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_CATEGORY_ALREADY_EXISTS, glossaryCategory.getName());
         }

@@ -26,6 +26,7 @@ ATLAS_COMMAND_OPTS="-Datlas.home=%s"
 ATLAS_CONFIG_OPTS="-Datlas.conf=%s"
 DEFAULT_JVM_HEAP_OPTS="-Xmx1024m"
 DEFAULT_JVM_OPTS="-Dlog4j.configuration=atlas-log4j.xml -Djava.net.preferIPv4Stack=true -server"
+JOLOKIA_JVM_OPTS="-javaagent:/opt/apache-atlas/libext/jolokia-jvm-agent.jar=port=7777,host=0.0.0.0"
 
 def main():
 
@@ -65,6 +66,8 @@ def main():
     if atlas_server_jvm_opts:
         jvm_opts_list.extend(atlas_server_jvm_opts.split())
 
+    # Add jolokia jvm agent
+    jvm_opts_list.append(JOLOKIA_JVM_OPTS)
     atlas_jvm_opts = os.environ.get(mc.ATLAS_OPTS, DEFAULT_JVM_OPTS)
     jvm_opts_list.extend(atlas_jvm_opts.split())
 

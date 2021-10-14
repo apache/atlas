@@ -31,6 +31,7 @@ import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.*;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
+import org.apache.atlas.stats.StatsClient;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType;
@@ -85,6 +86,7 @@ public class SearchContext {
     private final String                  classificationTypeAndSubTypesQryStr;
     private boolean                       terminateSearch = false;
     private SearchProcessor               searchProcessor;
+    private StatsClient                   statsClient;
     private Integer                       marker;
 
     public final static AtlasClassificationType MATCH_ALL_WILDCARD_CLASSIFICATION = new AtlasClassificationType(new AtlasClassificationDef(WILDCARD_CLASSIFICATIONS));
@@ -94,6 +96,10 @@ public class SearchContext {
     public final static AtlasEntityType         MATCH_ALL_ENTITY_TYPES            = AtlasEntityType.getEntityRoot();
     public final static String                  TYPENAME_DELIMITER                = ",";
 
+    public SearchContext(SearchParameters searchParameters, AtlasTypeRegistry typeRegistry, AtlasGraph graph, Set<String> indexedKeys, StatsClient statsClient) throws AtlasBaseException {
+        this(searchParameters, typeRegistry, graph, indexedKeys);
+        this.statsClient = statsClient;
+    }
 
     public SearchContext(SearchParameters searchParameters, AtlasTypeRegistry typeRegistry, AtlasGraph graph, Set<String> indexedKeys) throws AtlasBaseException {
         this.searchParameters   = searchParameters;
@@ -223,6 +229,14 @@ public class SearchContext {
         if (needEntityProcessor()) {
             addProcessor(new EntitySearchProcessor(this));
         }
+    }
+
+    public StatsClient getStatsClient() {
+        return statsClient;
+    }
+
+    public void setStatsClient(StatsClient statsClient) {
+        this.statsClient = statsClient;
     }
 
     public SearchParameters getSearchParameters() { return searchParameters; }

@@ -52,7 +52,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-
 import static org.apache.atlas.repository.Constants.VERTEX_INDEX;
 
 /**

@@ -239,6 +239,8 @@ public class EntitySearchProcessor extends SearchProcessor {
             perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntitySearchProcessor.execute(" + context +  ")");
         }
 
+        long startTime = System.currentTimeMillis();
+
         try {
             final int limit       = context.getSearchParameters().getLimit();
             final Integer marker  = context.getMarker();
@@ -304,6 +306,9 @@ public class EntitySearchProcessor extends SearchProcessor {
         } finally {
             AtlasPerfTracer.log(perf);
         }
+
+        this.context.getStatsClient().recordExecutionTime(BASIC_SEARCH_EXECUTION_TIME_METRIC, System.currentTimeMillis() - startTime);
+        this.context.getStatsClient().increment(BASIC_SEARCH_COUNT_METRIC);
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== EntitySearchProcessor.execute({}): ret.size()={}", context, ret.size());

@@ -55,6 +55,7 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.userprofile.UserProfileService;
+import org.apache.atlas.stats.StatsClient;
 import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasBuiltInTypes.AtlasObjectIdType;
 import org.apache.atlas.type.AtlasClassificationType;
@@ -118,13 +119,15 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     private final UserProfileService              userProfileService;
     private final SuggestionsProvider             suggestionsProvider;
     private final DSLQueryExecutor                dslQueryExecutor;
+    private final StatsClient                     statsClient;
 
     @Inject
     EntityDiscoveryService(AtlasTypeRegistry typeRegistry,
                            AtlasGraph graph,
                            GraphBackedSearchIndexer indexer,
                            SearchTracker searchTracker,
-                           UserProfileService userProfileService) throws AtlasException {
+                           UserProfileService userProfileService,
+                           StatsClient statsClient) throws AtlasException {
         this.graph                    = graph;
         this.entityRetriever          = new EntityGraphRetriever(this.graph, typeRegistry);
         this.indexer                  = indexer;
@@ -137,6 +140,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         this.indexSearchPrefix        = AtlasGraphUtilsV2.getIndexSearchPrefix();
         this.userProfileService       = userProfileService;
         this.suggestionsProvider      = new SuggestionsProviderImpl(graph, typeRegistry);
+        this.statsClient              = statsClient;
         this.dslQueryExecutor         = AtlasConfiguration.DSL_EXECUTOR_TRAVERSAL.getBoolean()
                                             ? new TraversalBasedExecutor(typeRegistry, graph, entityRetriever)
                                             : new ScriptEngineBasedExecutor(typeRegistry, graph, entityRetriever);
@@ -415,7 +419,8 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         SearchContext searchContext = new SearchContext(createSearchParameters(quickSearchParameters),
                                                         typeRegistry,
                                                         graph,
-                                                        indexer.getVertexIndexKeys());
+                                                        indexer.getVertexIndexKeys(),
+                                                        statsClient);
 
         if(LOG.isDebugEnabled()) {
             LOG.debug("Generating the search results for the query {} .", searchContext.getSearchParameters().getQuery());
@@ -446,7 +451,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     @Override
     @GraphTransaction
     public AtlasSearchResult searchWithParameters(SearchParameters searchParameters) throws AtlasBaseException {
-        return searchWithSearchContext(new SearchContext(searchParameters, typeRegistry, graph, indexer.getVertexIndexKeys()));
+        return searchWithSearchContext(new SearchContext(searchParameters, typeRegistry, graph, indexer.getVertexIndexKeys(), statsClient));
     }
 
     private AtlasSearchResult searchWithSearchContext(SearchContext searchContext) throws AtlasBaseException {

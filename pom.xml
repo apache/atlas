@@ -737,7 +737,7 @@
         <lucene-solr.version>8.6.3</lucene-solr.version>
         <maven-site-plugin.version>3.7</maven-site-plugin.version>
         <MaxPermGen>512m</MaxPermGen>
-        <node-for-v2.version>v12.16.0</node-for-v2.version>
+        <node-for-v2.version>v9.11.1</node-for-v2.version>
         <npm-for-v2.version>6.13.7</npm-for-v2.version>
         <opencsv.version>5.0</opencsv.version>
         <paranamer.version>2.7</paranamer.version>
@@ -1065,13 +1065,13 @@
                 <version>${zookeeper.version}</version>
             </dependency>
 
-            <dependency>
+            <!-- <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-bom</artifactId>
                 <version>4.1.61.Final</version>
                 <type>pom</type>
                 <scope>import</scope>
-            </dependency>
+            </dependency> -->
 
             <dependency>
                 <groupId>org.springframework</groupId>

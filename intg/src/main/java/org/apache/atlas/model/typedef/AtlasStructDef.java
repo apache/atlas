@@ -280,6 +280,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
         public static final String    ATTRDEF_OPTION_SOFT_REFERENCE           = "isSoftReference";
         public static final String    ATTRDEF_OPTION_APPEND_ON_PARTIAL_UPDATE = "isAppendOnPartialUpdate";
         private final String          STRING_TRUE                             = "true";
+        private final String          MULTIFIELDS                             = "multifields";
 
         /**
          * single-valued attribute or multi-valued attribute.

@@ -238,6 +238,31 @@ public final class Constants {
      */
     public enum SupportedFileExtensions { XLSX, XLS, CSV }
 
+    /*
+     * All statsd metric names
+     */
+    public static final String ENTITIES_ADDED_METRIC = "entities.added";
+    public static final String ENTITIES_UPDATED_METRIC = "entities.updated";
+    public static final String ENTITIES_DELETED_METRIC = "entities.deleted";
+    public static final String ENTITIES_PURGED_METRIC = "entities.purged";
+    public static final String CLASSIFICATIONS_ADDED_METRIC = "classifications.added";
+    public static final String CLASSIFICATIONS_UPDATED_METRIC = "classifications.updated";
+    public static final String CLASSIFICATIONS_DELETED_METRIC = "classifications.deleted";
+    public static final String TERMS_ADDED_METRIC = "terms.added";
+    public static final String TERMS_DELETED_METRIC = "terms.deleted";
+    public static final String RELATIONSHIPS_ADDED_METRIC = "relationships.added";
+    public static final String RELATIONSHIPS_UPDATED_METRIC = "relationships.updated";
+    public static final String RELATIONSHIPS_DELETED_METRIC = "relationships.deleted";
+    public static final String RELATIONSHIPS_PURGED_METRIC = "relationships.purged";
+    public static final String LABELS_ADDED_METRIC = "labels.added";
+    public static final String LABELS_DELETED_METRIC = "labels.deleted";
+    public static final String BA_UPDATED_METRIC = "ba.deleted";
+
+    public static final String BASIC_SEARCH_COUNT_METRIC = "search.basic.count";
+    public static final String BASIC_SEARCH_EXECUTION_TIME_METRIC = "search.basic.execution.time";
+    public static final String CLASSIFICATION_PROPAGATION_TIME_METRIC = "classification.propagation.time";
+    public static final String CLASSIFICATION_PROPAGATION_JOB_COUNT_METRIC = "classification.propagation.job.count";
+
     private Constants() {
     }
 

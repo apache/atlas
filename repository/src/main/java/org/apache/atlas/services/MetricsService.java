@@ -23,6 +23,7 @@ import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasTypesDefFilterRequest;
 import org.apache.atlas.model.instance.AtlasEntity.Status;
 import org.apache.atlas.model.metrics.AtlasMetrics;
+import org.apache.atlas.stats.StatsClient;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
@@ -36,6 +37,7 @@ import org.apache.atlas.util.AtlasMetricsUtil;
 import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.inject.Inject;
 import java.util.Collection;
@@ -45,6 +47,7 @@ import java.util.Map;
 import static org.apache.atlas.discovery.SearchProcessor.AND_STR;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
+import static org.apache.atlas.model.metrics.AtlasMetrics.*;
 import static org.apache.atlas.repository.Constants.*;
 
 @AtlasService
@@ -81,6 +84,9 @@ public class MetricsService {
     private final AtlasTypeRegistry typeRegistry;
     private final AtlasMetricsUtil  metricsUtil;
     private final String            indexSearchPrefix = AtlasGraphUtilsV2.getIndexSearchPrefix();
+
+    @Autowired
+    private StatsClient statsClient;
 
     @Inject
     public MetricsService(final AtlasGraph graph, final AtlasTypeRegistry typeRegistry, AtlasMetricsUtil metricsUtil) {
@@ -193,6 +199,55 @@ public class MetricsService {
         metrics.addMetric(SYSTEM, METRIC_RUNTIME, AtlasMetricJVMUtil.getRuntimeInfo());
 
         return metrics;
+    }
+
+    public void pushMetricsToStatsd() {
+        AtlasMetrics metrics = this.getMetrics();
+        statsClient.gauge(GENERAL + "." + METRIC_TYPE_COUNT ,
+                metrics.getNumericMetric(GENERAL, METRIC_TYPE_COUNT).longValue());
+
+        statsClient.gauge(GENERAL + "." + METRIC_TAG_COUNT ,
+                metrics.getNumericMetric(GENERAL, METRIC_TAG_COUNT).longValue());
+
+        statsClient.gauge(GENERAL + "." + METRIC_TYPE_UNUSED_COUNT ,
+                metrics.getNumericMetric(GENERAL, METRIC_TYPE_UNUSED_COUNT).longValue());
+
+        statsClient.gauge(GENERAL + "." + METRIC_ENTITY_COUNT ,
+                metrics.getNumericMetric(GENERAL, METRIC_ENTITY_COUNT).longValue());
+
+        Map<String, Long> entityActiveMetric = (Map<String, Long>) metrics.getMetric(ENTITY, METRIC_ENTITY_ACTIVE);
+
+        if (entityActiveMetric != null) {
+            statsClient.gauge(ENTITY + "." + METRIC_ENTITY_DELETED,
+                    entityActiveMetric.values().stream().reduce((long) 0, Long::sum));
+        }
+
+        Map<String, Long> entityDeletedMetric = (Map<String, Long>) metrics.getMetric(ENTITY, METRIC_ENTITY_DELETED);
+
+        if (entityDeletedMetric != null) {
+            statsClient.gauge(ENTITY + "." + METRIC_ENTITY_DELETED,
+                    entityDeletedMetric.values().stream().reduce((long) 0, Long::sum));
+        }
+
+        Map<String, Long> entityPreTagMetric = (Map<String, Long>) metrics.getMetric(TAG, METRIC_ENTITIES_PER_TAG);
+
+        if (entityPreTagMetric != null) {
+            statsClient.gauge(TAG + "." + METRIC_ENTITIES_PER_TAG ,
+                    entityPreTagMetric.values().stream().reduce((long) 0, Long::sum));
+        }
+        if (metrics.getMetric(GENERAL, METRIC_STATS) instanceof Map) {
+            Map<String, Object> metric = (Map<String, Object>) metrics.getMetric(GENERAL, METRIC_STATS);
+
+            if (metric.get(STAT_SERVER_STATUS_BACKEND_STORE) == "connected") {
+                statsClient.gauge(STAT_SERVER_STATUS_BACKEND_STORE.replace(":", "."), 1);
+            }
+
+            if (metric.get(STAT_SERVER_STATUS_BACKEND_STORE) == "connected") {
+                statsClient.gauge(STAT_SERVER_STATUS_BACKEND_STORE.replace(":", "."), 1);
+            }
+
+            statsClient.gauge(STAT_SERVER_UP_TIME.replace(":", "."), System.currentTimeMillis() - ((Number) metric.get(STAT_SERVER_START_TIMESTAMP)).longValue());
+        }
     }
 
     private long getTypeCount(String typeName, Status status) {
