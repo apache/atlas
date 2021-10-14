@@ -318,12 +318,16 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             HashMap<String, Object> ES_DATE_FIELD = new HashMap<>();
             ES_DATE_FIELD.put("type", "date");
             ES_DATE_FIELD.put("format", "epoch_millis");
-
             HashMap<String, HashMap<String, Object>> TIMESTAMP_MULTIFIELDS = new HashMap<>();
             TIMESTAMP_MULTIFIELDS.put("date", ES_DATE_FIELD);
 
+            HashMap<String, Object> ES_KEYWORD_FIELD = new HashMap<>();
+            ES_KEYWORD_FIELD.put("type", "keyword");
+            HashMap<String, HashMap<String, Object>> KEYWORD_MULTIFIELD = new HashMap<>();
+            KEYWORD_MULTIFIELD.put("keyword", ES_KEYWORD_FIELD);
+
             // create vertex indexes
-            createCommonVertexIndex(management, GUID_PROPERTY_KEY, UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false, true);
+            createCommonVertexIndex(management, GUID_PROPERTY_KEY, UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false, false, new HashMap<>(), KEYWORD_MULTIFIELD);
             createCommonVertexIndex(management, HISTORICAL_GUID_PROPERTY_KEY, UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false);
 
             createCommonVertexIndex(management, TYPENAME_PROPERTY_KEY, UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false);
@@ -331,11 +335,11 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             createCommonVertexIndex(management, VERTEX_TYPE_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
             createCommonVertexIndex(management, VERTEX_ID_IN_IMPORT_KEY, UniqueKind.NONE, Long.class, SINGLE, true, false);
 
-            createCommonVertexIndex(management, ENTITY_TYPE_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false, true);
+            createCommonVertexIndex(management, ENTITY_TYPE_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false, false, new HashMap<>(), KEYWORD_MULTIFIELD);
             createCommonVertexIndex(management, SUPER_TYPES_PROPERTY_KEY, UniqueKind.NONE, String.class, SET, true, false);
             createCommonVertexIndex(management, TIMESTAMP_PROPERTY_KEY, UniqueKind.NONE, Long.class, SINGLE, false, false, false, new HashMap<>(), TIMESTAMP_MULTIFIELDS);
             createCommonVertexIndex(management, MODIFICATION_TIMESTAMP_PROPERTY_KEY, UniqueKind.NONE, Long.class, SINGLE, false, false, false, new HashMap<>(), TIMESTAMP_MULTIFIELDS);
-            createCommonVertexIndex(management, STATE_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, false, false, true);
+            createCommonVertexIndex(management, STATE_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, false, false, false, new HashMap<>(), KEYWORD_MULTIFIELD);
             createCommonVertexIndex(management, CREATED_BY_KEY, UniqueKind.NONE, String.class, SINGLE, false, false, true);
             createCommonVertexIndex(management, CLASSIFICATION_TEXT_KEY, UniqueKind.NONE, String.class, SINGLE, false, false);
             createCommonVertexIndex(management, MODIFIED_BY_KEY, UniqueKind.NONE, String.class, SINGLE, false, false, true);
