@@ -315,6 +315,13 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
                 LOG.info("Created index : {}", FULLTEXT_INDEX);
             }
 
+            HashMap<String, Object> ES_DATE_FIELD = new HashMap<>();
+            ES_DATE_FIELD.put("type", "date");
+            ES_DATE_FIELD.put("format", "epoch_millis");
+
+            HashMap<String, HashMap<String, Object>> TIMESTAMP_MULTIFIELDS = new HashMap<>();
+            TIMESTAMP_MULTIFIELDS.put("date", ES_DATE_FIELD);
+
             // create vertex indexes
             createCommonVertexIndex(management, GUID_PROPERTY_KEY, UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false, true);
             createCommonVertexIndex(management, HISTORICAL_GUID_PROPERTY_KEY, UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false);
@@ -326,8 +333,8 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
 
             createCommonVertexIndex(management, ENTITY_TYPE_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false, true);
             createCommonVertexIndex(management, SUPER_TYPES_PROPERTY_KEY, UniqueKind.NONE, String.class, SET, true, false);
-            createCommonVertexIndex(management, TIMESTAMP_PROPERTY_KEY, UniqueKind.NONE, Long.class, SINGLE, false, false);
-            createCommonVertexIndex(management, MODIFICATION_TIMESTAMP_PROPERTY_KEY, UniqueKind.NONE, Long.class, SINGLE, false, false);
+            createCommonVertexIndex(management, TIMESTAMP_PROPERTY_KEY, UniqueKind.NONE, Long.class, SINGLE, false, false, false, new HashMap<>(), TIMESTAMP_MULTIFIELDS);
+            createCommonVertexIndex(management, MODIFICATION_TIMESTAMP_PROPERTY_KEY, UniqueKind.NONE, Long.class, SINGLE, false, false, false, new HashMap<>(), TIMESTAMP_MULTIFIELDS);
             createCommonVertexIndex(management, STATE_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, false, false, true);
             createCommonVertexIndex(management, CREATED_BY_KEY, UniqueKind.NONE, String.class, SINGLE, false, false, true);
             createCommonVertexIndex(management, CLASSIFICATION_TEXT_KEY, UniqueKind.NONE, String.class, SINGLE, false, false);
@@ -457,8 +464,18 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
                                          Class propertyClass,
                                          AtlasCardinality cardinality,
                                          boolean createCompositeIndex,
+                                         boolean createCompositeIndexWithTypeAndSuperTypes,boolean isStringField ) {
+        createCommonVertexIndex(management, propertyName, uniqueKind, propertyClass, cardinality, createCompositeIndex, createCompositeIndexWithTypeAndSuperTypes, isStringField, new HashMap<>(), new HashMap<>());
+    }
+
+    private void createCommonVertexIndex(AtlasGraphManagement management,
+                                         String propertyName,
+                                         UniqueKind uniqueKind,
+                                         Class propertyClass,
+                                         AtlasCardinality cardinality,
+                                         boolean createCompositeIndex,
                                          boolean createCompositeIndexWithTypeAndSuperTypes) {
-        createCommonVertexIndex(management, propertyName, uniqueKind, propertyClass, cardinality, createCompositeIndex, createCompositeIndexWithTypeAndSuperTypes, false);
+        createCommonVertexIndex(management, propertyName, uniqueKind, propertyClass, cardinality, createCompositeIndex, createCompositeIndexWithTypeAndSuperTypes, false, new HashMap<>(), new HashMap<>());
     }
 
     private void createCommonVertexIndex(AtlasGraphManagement management,
@@ -468,7 +485,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
                                          AtlasCardinality cardinality,
                                          boolean createCompositeIndex,
                                          boolean createCompositeIndexWithTypeAndSuperTypes,
-                                         boolean isStringField) {
+                                         boolean isStringField, HashMap<String, Object> indexTypeESConfig, HashMap<String, HashMap<String, Object>> indexTypeESFields) {
         if(isStringField && String.class.equals(propertyClass)) {
 
             propertyName = AtlasAttribute.VERTEX_PROPERTY_PREFIX_STRING_INDEX_TYPE +propertyName;
@@ -481,7 +498,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
                                                         propertyClass,
                                                         cardinality,
                                                         createCompositeIndex,
-                                                        createCompositeIndexWithTypeAndSuperTypes, isStringField);
+                                                        createCompositeIndexWithTypeAndSuperTypes, isStringField, indexTypeESConfig, indexTypeESFields);
         if(indexFieldName != null) {
             typeRegistry.addIndexFieldName(propertyName, indexFieldName);
         }
