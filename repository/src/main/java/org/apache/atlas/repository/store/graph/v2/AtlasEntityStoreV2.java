@@ -461,6 +461,9 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         switch (attrType.getTypeCategory()) {
             case PRIMITIVE:
+            case ARRAY:
+            case ENUM:
+            case MAP:
                 updateEntity.setAttribute(attrName, attrValue);
                 break;
             case OBJECT_ID_TYPE:
@@ -1330,6 +1333,9 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         if (ret != null) {
             context.addResolvedIdByUniqAttribs(objectId, ret);
+            if (entity.getLabels() != null) {
+                entityGraphMapper.setLabels(ret, entity.getLabels());
+            }
         } else {
             ret = context.getResolvedEntityVertex(objectId);
 

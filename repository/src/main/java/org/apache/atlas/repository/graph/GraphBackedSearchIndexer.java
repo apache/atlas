@@ -81,7 +81,6 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
     private static final String EDGE_ID_IN_IMPORT_KEY   = "__eIdInImport";
     private static final List<Class> INDEX_EXCLUSION_CLASSES = new ArrayList() {
         {
-            add(Boolean.class);
             add(BigDecimal.class);
             add(BigInteger.class);
         }
