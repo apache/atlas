@@ -861,28 +861,32 @@ public class AtlasGraphUtilsV2 {
         return ret;
     }
 
-    public static void addItemToListProperty(AtlasEdge edge, String property, String value) {
-        List list = getListFromProperty(edge, property);
+    public static void addItemToListProperty(AtlasElement element, String property, String value) {
+        List list = getListFromProperty(element, property);
 
         list.add(value);
 
-        edge.setListProperty(property, list);
+        element.setListProperty(property, list);
     }
 
-    public static void removeItemFromListProperty(AtlasEdge edge, String property, String value) {
-        List list = getListFromProperty(edge, property);
+    public static void removeItemFromListProperty(AtlasElement element, String property, String value) {
+        List list = getListFromProperty(element, property);
 
         list.remove(value);
 
         if (CollectionUtils.isEmpty(list)) {
-            edge.removeProperty(property);
+            element.removeProperty(property);
         } else {
-            edge.setListProperty(property, list);
+            element.setListProperty(property, list);
         }
     }
 
-    private static List getListFromProperty(AtlasEdge edge, String property) {
-        List list = edge.getListProperty(property);
+    public static void removeItemFromListPropertyValue(AtlasElement element, String property, String value) {
+        element.removePropertyValue(property, value);
+    }
+
+    private static List getListFromProperty(AtlasElement element, String property) {
+        List list = element.getListProperty(property);
 
         return CollectionUtils.isEmpty(list) ? new ArrayList() : list;
     }

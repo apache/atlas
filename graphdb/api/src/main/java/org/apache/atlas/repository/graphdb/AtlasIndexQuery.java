@@ -18,6 +18,7 @@
 
 package org.apache.atlas.repository.graphdb;
 
+import org.apache.atlas.model.discovery.SearchParams;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 
 import java.util.Iterator;
@@ -29,6 +30,14 @@ import java.util.Iterator;
  * @param <E> edge class used by the graph
  */
 public interface AtlasIndexQuery<V, E> {
+
+    /**
+     * Gets the query results.
+     *
+     * @return
+     */
+
+    DirectIndexQueryResult<V, E> vertices(SearchParams searchParams);
 
     /**
      * Gets the query results.

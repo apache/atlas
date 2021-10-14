@@ -22,6 +22,7 @@ import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.SortOrder;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
@@ -35,6 +36,7 @@ import org.apache.atlas.model.discovery.AtlasSearchResult.AtlasQueryType;
 import org.apache.atlas.model.discovery.AtlasSuggestionsResult;
 import org.apache.atlas.model.discovery.QuickSearchParameters;
 import org.apache.atlas.model.discovery.SearchParameters;
+import org.apache.atlas.model.discovery.SearchParams;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
@@ -52,6 +54,7 @@ import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery.Result;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.graphdb.DirectIndexQueryResult;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.userprofile.UserProfileService;
@@ -81,7 +84,6 @@ import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 import javax.script.ScriptEngine;
-import javax.script.ScriptException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -91,6 +93,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import javax.script.ScriptException;
 
 import static org.apache.atlas.AtlasErrorCode.*;
 import static org.apache.atlas.SortOrder.ASCENDING;
@@ -984,5 +987,46 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         }
 
         return atttOwner;
+    }
+
+    @Override
+    public AtlasSearchResult directIndexSearch(SearchParams searchParams) throws AtlasBaseException {
+        RequestContext.get().setRelationAttrsForSearch(searchParams.getRelationAttributes());
+        AtlasSearchResult ret = new AtlasSearchResult();
+        AtlasIndexQuery indexQuery = null;
+
+        ret.setSearchParameters(searchParams);
+        ret.setQueryType(AtlasQueryType.INDEX);
+
+        Set<String> resultAttributes = new HashSet<>();
+        if (CollectionUtils.isNotEmpty(searchParams.getAttributes())) {
+            resultAttributes.addAll(searchParams.getAttributes());
+        }
+
+        try {
+            indexQuery = graph.elasticsearchQuery(Constants.VERTEX_INDEX, searchParams);
+
+            DirectIndexQueryResult indexQueryResult = indexQuery.vertices(searchParams);
+
+            Iterator<Result> iterator = indexQueryResult.getIterator();
+
+            while (iterator.hasNext()) {
+                Result result = iterator.next();
+                AtlasVertex vertex = result.getVertex();
+
+                AtlasEntityHeader header = entityRetriever.toAtlasEntityHeader(vertex, resultAttributes);
+                ret.addEntityScore(header.getGuid(), result.getScore());
+                ret.addEntity(header);
+
+            }
+
+            ret.setAggregations(indexQueryResult.getAggregationMap());
+            ret.setApproximateCount(indexQuery.vertexTotals());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        scrubSearchResults(ret);
+        return ret;
     }
 }

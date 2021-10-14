@@ -17,34 +17,66 @@
  */
 package org.apache.atlas.repository.graphdb.janus;
 
+import org.apache.atlas.model.discovery.IndexSearchParams;
+import org.apache.atlas.model.discovery.SearchParams;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.graphdb.DirectIndexQueryResult;
+import org.apache.atlas.type.AtlasType;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.NotImplementedException;
+import org.apache.http.HttpEntity;
+import org.apache.http.entity.ContentType;
+import org.apache.http.nio.entity.NStringEntity;
+import org.apache.http.util.EntityUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.HttpAsyncResponseConsumerFactory;
 import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.Request;
+import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.janusgraph.util.encoding.LongEncoding;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
 public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex, AtlasJanusEdge> {
+    private static final Logger LOG = LoggerFactory.getLogger(AtlasElasticsearchQuery.class);
+
     private AtlasJanusGraph graph;
     private RestHighLevelClient esClient;
+    private RestClient lowLevelRestClient;
     private String index;
     private SearchSourceBuilder sourceBuilder;
     private SearchResponse searchResponse;
+    private SearchParams searchParams;
+    private long vertexTotals = -1;
 
     public AtlasElasticsearchQuery(AtlasJanusGraph graph, RestHighLevelClient esClient, String index, SearchSourceBuilder sourceBuilder) {
+        this(graph, index);
         this.esClient = esClient;
         this.sourceBuilder = sourceBuilder;
+    }
+
+    public AtlasElasticsearchQuery(AtlasJanusGraph graph, RestClient restClient, String index, SearchParams searchParams) {
+        this(graph, index);
+        this.lowLevelRestClient = restClient;
+        this.searchParams = searchParams;
+    }
+
+    private AtlasElasticsearchQuery(AtlasJanusGraph graph, String index) {
         this.index = index;
         this.graph = graph;
         searchResponse = null;
@@ -77,6 +109,65 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         return result;
     }
 
+    private DirectIndexQueryResult runQueryWithLowLevelClient(SearchParams searchParams){
+        DirectIndexQueryResult result = null;
+
+        try {
+
+            String responseString =  perfromDirectIndexQuery(searchParams.getQuery());
+            if (LOG.isDebugEnabled()) {
+                LOG.info("runQueryWithLowLevelClient.response : {}", responseString);
+            }
+
+            result = getResultFromResponse(responseString);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return result;
+    }
+
+    private String perfromDirectIndexQuery(String query) throws IOException {
+        HttpEntity entity = new NStringEntity(query, ContentType.APPLICATION_JSON);
+
+        String endPoint = index + "/_search";
+
+        Request request = new Request("GET", endPoint);
+        request.setEntity(entity);
+
+        Response response = lowLevelRestClient.performRequest(request);
+
+        return EntityUtils.toString(response.getEntity());
+    }
+
+    private DirectIndexQueryResult getResultFromResponse(String responseString) {
+        DirectIndexQueryResult result = new DirectIndexQueryResult();
+
+        Map<String, LinkedHashMap> responseMap = AtlasType.fromJson(responseString, Map.class);
+
+        Map<String, LinkedHashMap> hits_0 = AtlasType.fromJson(AtlasType.toJson(responseMap.get("hits")), Map.class);
+        this.vertexTotals = (Integer) hits_0.get("total").get("value");
+
+        List<LinkedHashMap> hits_1 = AtlasType.fromJson(AtlasType.toJson(hits_0.get("hits")), List.class);
+
+        Stream<Result<AtlasJanusVertex, AtlasJanusEdge>> resultStream = hits_1.stream().map(ResultImplDirect::new);
+        result.setIterator(resultStream.iterator());
+
+        Map<String, Object> aggregationsMap = (Map<String, Object>) responseMap.get("aggregations");
+
+        if (MapUtils.isNotEmpty(aggregationsMap)) {
+            result.setAggregationMap(aggregationsMap);
+        }
+
+        return result;
+    }
+
+    @Override
+    public DirectIndexQueryResult<AtlasJanusVertex, AtlasJanusEdge> vertices(SearchParams searchParams) {
+        return runQueryWithLowLevelClient(searchParams);
+    }
+
     @Override
     public Iterator<Result<AtlasJanusVertex, AtlasJanusEdge>> vertices() {
         SearchRequest searchRequest = getSearchRequest(index, sourceBuilder);
@@ -98,7 +189,10 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
 
     @Override
     public Long vertexTotals() {
-        return searchResponse.getHits().getTotalHits().value;
+        if (searchResponse != null) {
+            return searchResponse.getHits().getTotalHits().value;
+        }
+        return vertexTotals;
     }
 
     public final class ResultImpl implements AtlasIndexQuery.Result<AtlasJanusVertex, AtlasJanusEdge> {
@@ -117,6 +211,26 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         @Override
         public double getScore() {
             return hit.getScore();
+        }
+    }
+
+
+    public final class ResultImplDirect implements AtlasIndexQuery.Result<AtlasJanusVertex, AtlasJanusEdge> {
+        private LinkedHashMap<String, Object> hit;
+
+        public ResultImplDirect(LinkedHashMap<String, Object> hit) {
+            this.hit = hit;
+        }
+
+        @Override
+        public AtlasVertex<AtlasJanusVertex, AtlasJanusEdge> getVertex() {
+            long vertexId = LongEncoding.decode(String.valueOf(hit.get("_id")));
+            return graph.getVertex(String.valueOf(vertexId));
+        }
+
+        @Override
+        public double getScore() {
+            return Double.parseDouble(String.valueOf(hit.get("_score")));
         }
     }
 }

@@ -24,12 +24,17 @@ import org.apache.http.HttpHost;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class AtlasElasticsearchDatabase {
+    private static final Logger LOG = LoggerFactory.getLogger(AtlasElasticsearchDatabase.class);
+
     private static volatile RestHighLevelClient searchClient;
+    private static volatile RestClient lowLevelClient;
     public static final String INDEX_BACKEND_CONF = "atlas.graph.index.search.hostname";
 
     public static List<HttpHost> getHttpHosts() throws AtlasException {
@@ -64,11 +69,33 @@ public class AtlasElasticsearchDatabase {
                         searchClient =
                                 new RestHighLevelClient(restClientBuilder);
                     } catch (AtlasException e) {
-
+                        LOG.error("Failed to initialize high level client for ES");
                     }
                 }
             }
         }
         return searchClient;
+    }
+
+    public static RestClient getLowLevelClient() {
+        if (lowLevelClient == null) {
+            synchronized (AtlasElasticsearchDatabase.class) {
+                if (lowLevelClient == null) {
+                    try {
+                        List<HttpHost> httpHosts = getHttpHosts();
+
+                        RestClientBuilder builder = RestClient.builder(httpHosts.get(0));
+                        builder.setRequestConfigCallback(requestConfigBuilder -> requestConfigBuilder
+                                .setConnectTimeout(900000)
+                                .setSocketTimeout(900000));
+
+                        lowLevelClient = builder.build();
+                    } catch (AtlasException e) {
+                        LOG.error("Failed to initialize low level rest client for ES");
+                    }
+                }
+            }
+        }
+        return lowLevelClient;
     }
 }

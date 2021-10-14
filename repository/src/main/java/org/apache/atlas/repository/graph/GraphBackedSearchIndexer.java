@@ -56,6 +56,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.*;
 
+import static org.apache.atlas.ApplicationProperties.INDEX_BACKEND_CONF;
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.*;
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graphdb.AtlasCardinality.LIST;
@@ -66,6 +67,7 @@ import static org.apache.atlas.type.AtlasStructType.UNIQUE_ATTRIBUTE_SHADE_PROPE
 import static org.apache.atlas.type.AtlasTypeUtil.isArrayType;
 import static org.apache.atlas.type.AtlasTypeUtil.isMapType;
 import static org.apache.atlas.type.Constants.PENDING_TASKS_PROPERTY_KEY;
+import static org.apache.atlas.type.Constants.TERMS_PROPERTY_KEY;
 
 
 /**
@@ -345,6 +347,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             createCommonVertexIndex(management, PATCH_TYPE_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
             createCommonVertexIndex(management, PATCH_ACTION_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
             createCommonVertexIndex(management, PATCH_STATE_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
+            createCommonVertexIndex(management, TERMS_PROPERTY_KEY, UniqueKind.NONE, String.class, SET, true, false);
 
             // tasks
             createCommonVertexIndex(management, TASK_GUID, UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false);
@@ -951,6 +954,18 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
     }
 
     private boolean isIndexApplicable(Class propertyClass, AtlasCardinality cardinality) {
+        String indexBackend = "";
+        try {
+            indexBackend = ApplicationProperties.get().getString(INDEX_BACKEND_CONF);
+        } catch (AtlasException e) {
+            LOG.error("Failed to read property {}", INDEX_BACKEND_CONF);
+            e.printStackTrace();
+        }
+
+        if (StringUtils.isNotEmpty(indexBackend) && "elasticsearch".equals(indexBackend)) {
+            return !INDEX_EXCLUSION_CLASSES.contains(propertyClass);
+        }
+
         return !(INDEX_EXCLUSION_CLASSES.contains(propertyClass) || cardinality.isMany());
     }
     

@@ -20,6 +20,7 @@ package org.apache.atlas.repository.graphdb;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.groovy.GroovyExpression;
+import org.apache.atlas.model.discovery.SearchParams;
 import org.apache.atlas.type.AtlasType;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
@@ -203,6 +204,8 @@ public interface AtlasGraph<V, E> {
      *
      */
     AtlasIndexQuery<V, E> elasticsearchQuery(String indexName, SearchSourceBuilder sourceBuilder);
+
+    AtlasIndexQuery<V, E> elasticsearchQuery(String indexName, SearchParams searchParams);
 
     /**
      * Gets the management object associated with this graph and opens a transaction

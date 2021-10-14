@@ -19,13 +19,16 @@
 package org.apache.atlas.discovery;
 
 
-import org.apache.atlas.SortOrder;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.discovery.*;
+import org.apache.atlas.model.discovery.AtlasSearchResult;
+import org.apache.atlas.model.discovery.AtlasQuickSearchResult;
+import org.apache.atlas.model.discovery.AtlasSuggestionsResult;
+import org.apache.atlas.model.discovery.QuickSearchParameters;
+import org.apache.atlas.model.discovery.SearchParameters;
+import org.apache.atlas.model.discovery.SearchParams;
 import org.apache.atlas.model.profile.AtlasUserSavedSearch;
 
 import java.util.List;
-import java.util.Set;
 
 public interface AtlasDiscoveryService {
     /**
@@ -144,6 +147,14 @@ public interface AtlasDiscoveryService {
      * @throws AtlasBaseException
      */
     AtlasQuickSearchResult quickSearch(QuickSearchParameters searchParameters) throws AtlasBaseException;
+
+    /**
+     * Search for direct ES query
+     * @param searchParams Search criteria
+     * @return Matching entities
+     * @throws AtlasBaseException
+     */
+    AtlasSearchResult directIndexSearch(SearchParams searchParams) throws AtlasBaseException;
 
     /**
      * Should return top 5 suggestion strings for the given prefix.

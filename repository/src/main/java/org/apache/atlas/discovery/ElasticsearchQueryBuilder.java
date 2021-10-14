@@ -25,15 +25,14 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.Map;
+import java.util.HashMap;
 
 public class ElasticsearchQueryBuilder {
-    SearchContext context;
     private static final Logger LOG = LoggerFactory.getLogger(ElasticsearchQueryBuilder.class);
     private static final Map<SearchParameters.Operator, String> OPERATOR_MAP = new HashMap<>();
 
-    ElasticsearchQueryBuilder(SearchContext context) {
-        this.context = context;
+    ElasticsearchQueryBuilder() {
     }
 
     QueryBuilder getMatchAllQueryBuilder(String searchText, Map<String, Float> fieldsWithBoostVal) {

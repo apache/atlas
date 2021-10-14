@@ -356,6 +356,36 @@ public class DiscoveryREST {
     }
 
     /**
+     * Index based search for query direct on Elasticsearch
+     *
+     * @param parameters Index Search parameters @IndexSearchParams.java
+     * @return Atlas search result
+     * @throws AtlasBaseException
+     * @HTTP 200 On successful search
+     */
+    @Path("indexsearch")
+    @POST
+    @Timed
+    public AtlasSearchResult indexSearch(IndexSearchParams parameters) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.indexSearch(" + parameters + ")");
+            }
+
+            if (StringUtils.isEmpty(parameters.getQuery())) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Please provide query");
+            }
+
+            return discoveryService.directIndexSearch(parameters);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+
+    }
+
+    /**
      * Relationship search to search for related entities satisfying the search parameters
      *
      * @param guid            Attribute name

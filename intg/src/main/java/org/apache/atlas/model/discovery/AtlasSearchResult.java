@@ -31,6 +31,7 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -44,7 +45,7 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AtlasSearchResult implements Serializable {
     private AtlasQueryType                 queryType;
-    private SearchParameters               searchParameters;
+    private SearchParams                   searchParameters;
     private String                         queryText;
     private String                         type;
     private String                         classification;
@@ -54,6 +55,8 @@ public class AtlasSearchResult implements Serializable {
     private Map<String, AtlasEntityHeader> referredEntities;
     private long                           approximateCount = -1;
     private String                         nextMarker;
+    private Map<String, Object>            aggregations;
+    private Map<String,Double>             searchScore;
 
     public AtlasSearchResult() {}
 
@@ -71,7 +74,7 @@ public class AtlasSearchResult implements Serializable {
         setReferredEntities(null);
     }
 
-    public AtlasSearchResult(SearchParameters searchParameters) {
+    public AtlasSearchResult(SearchParams searchParameters) {
         setQueryType(AtlasQueryType.BASIC);
 
         if (searchParameters != null) {
@@ -88,11 +91,11 @@ public class AtlasSearchResult implements Serializable {
 
     public void setQueryType(AtlasQueryType queryType) { this.queryType = queryType; }
 
-    public SearchParameters getSearchParameters() {
+    public SearchParams getSearchParameters() {
         return searchParameters;
     }
 
-    public void setSearchParameters(SearchParameters searchParameters) {
+    public void setSearchParameters(SearchParams searchParameters) {
         this.searchParameters = searchParameters;
     }
 
@@ -132,6 +135,18 @@ public class AtlasSearchResult implements Serializable {
 
     public void setApproximateCount(long approximateCount) { this.approximateCount = approximateCount; }
 
+    public Map<String, Object> getAggregations() { return aggregations; }
+
+    public void setAggregations(Map<String, Object> aggregations) { this.aggregations = aggregations; }
+
+    public Map<String, Double> getSearchScore() {
+        return searchScore;
+    }
+
+    public void setSearchScore(HashMap<String, Double> searchScore) {
+        this.searchScore = searchScore;
+    }
+
     public String getNextMarker() { return nextMarker; }
 
     public void setNextMarker(String nextMarker) { this.nextMarker = nextMarker; }
@@ -169,6 +184,15 @@ public class AtlasSearchResult implements Serializable {
         }
     }
 
+    public void addEntityScore(String entityGuid, Double score) {
+
+        if (searchScore == null) {
+            searchScore = new HashMap<String, Double>();
+        }
+
+        searchScore.put(entityGuid,score);
+    }
+
     public void removeEntity(AtlasEntityHeader entity) {
         List<AtlasEntityHeader> entities = this.entities;
 
@@ -197,10 +221,12 @@ public class AtlasSearchResult implements Serializable {
                 ", referredEntities=" + referredEntities +
                 ", approximateCount=" + approximateCount +
                 ", nextMarker=" + nextMarker +
+                ", aggregations=" + aggregations +
+                ", searchScore=" + searchScore +
                 '}';
     }
 
-    public enum AtlasQueryType { DSL, FULL_TEXT, GREMLIN, BASIC, ATTRIBUTE, RELATIONSHIP }
+    public enum AtlasQueryType { DSL, FULL_TEXT, GREMLIN, BASIC, ATTRIBUTE, RELATIONSHIP, INDEX }
 
     @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)

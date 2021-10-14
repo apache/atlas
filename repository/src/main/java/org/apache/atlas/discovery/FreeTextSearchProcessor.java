@@ -82,7 +82,7 @@ public class FreeTextSearchProcessor extends SearchProcessor {
 
         String searchText = searchParameters.getQuery();
 
-        ElasticsearchQueryBuilder elasticsearchQueryBuilder = new ElasticsearchQueryBuilder(context);
+        ElasticsearchQueryBuilder elasticsearchQueryBuilder = new ElasticsearchQueryBuilder();
         QueryBuilder queryBuilder = elasticsearchQueryBuilder.getMatchAllQueryBuilder(searchText, fieldsWithBoostValue);
         SearchSourceBuilder searchSourceBuilder = elasticsearchQueryBuilder.getSourceBuilder(queryBuilder);
         indexQuery = context.getGraph().elasticsearchQuery(Constants.VERTEX_INDEX, searchSourceBuilder);

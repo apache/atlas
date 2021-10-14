@@ -32,6 +32,7 @@ import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.ogm.DataAccess;
+import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.type.AtlasRelationshipType;
@@ -88,7 +89,8 @@ public class GlossaryTermUtils extends GlossaryUtils {
         }
     }
 
-    public void processTermAssignments(AtlasGlossaryTerm glossaryTerm, Collection<AtlasRelatedObjectId> relatedObjectIds) throws AtlasBaseException {
+    public void processTermAssignments(AtlasGlossaryTerm glossaryTerm, Collection<AtlasRelatedObjectId> relatedObjectIds,
+                                       AtlasEntityStore entityStore) throws AtlasBaseException {
         if (DEBUG_ENABLED) {
             LOG.debug("==> GlossaryTermUtils.processTermAssignments({}, {})", glossaryTerm, relatedObjectIds);
         }
@@ -108,6 +110,7 @@ public class GlossaryTermUtils extends GlossaryUtils {
                 LOG.debug("Assigning term guid={}, to entity guid = {}", glossaryTerm.getGuid(), objectId.getGuid());
             }
             createRelationship(defineTermAssignment(glossaryTerm.getGuid(), objectId));
+            entityStore.addTermToEntityAttr(objectId.getGuid(), glossaryTerm.getQualifiedName());
         }
 
         if (DEBUG_ENABLED) {
@@ -115,7 +118,9 @@ public class GlossaryTermUtils extends GlossaryUtils {
         }
     }
 
-    public void processTermDissociation(AtlasGlossaryTerm glossaryTerm, Collection<AtlasRelatedObjectId> relatedObjectIds) throws AtlasBaseException {
+
+    public void processTermDissociation(AtlasGlossaryTerm glossaryTerm, Collection<AtlasRelatedObjectId> relatedObjectIds,
+                                        AtlasEntityStore entityStore) throws AtlasBaseException {
         if (DEBUG_ENABLED) {
             LOG.debug("==> GlossaryTermUtils.processTermDissociation({}, {}, {})", glossaryTerm.getGuid(), relatedObjectIds, glossaryTerm);
         }
@@ -140,6 +145,7 @@ public class GlossaryTermUtils extends GlossaryUtils {
                 AtlasRelatedObjectId existingTermRelation = assignedEntityMap.get(relatedObjectId.getGuid());
                 if (CollectionUtils.isNotEmpty(assignedEntities) && isRelationshipGuidSame(existingTermRelation, relatedObjectId)) {
                     relationshipStore.deleteById(relatedObjectId.getRelationshipGuid(), true);
+                    entityStore.removeTermFromEntityAttr(relatedObjectId.getGuid(), glossaryTerm.getQualifiedName());
                 } else {
                     throw new AtlasBaseException(AtlasErrorCode.INVALID_TERM_DISSOCIATION, relatedObjectId.getRelationshipGuid(), glossaryTerm.getGuid(), relatedObjectId.getGuid());
                 }

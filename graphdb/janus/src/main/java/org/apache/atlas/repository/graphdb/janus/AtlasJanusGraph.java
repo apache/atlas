@@ -26,6 +26,7 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.groovy.GroovyExpression;
+import org.apache.atlas.model.discovery.SearchParams;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
@@ -57,6 +58,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.io.IoCore;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONMapper;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONWriter;
+import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.janusgraph.core.Cardinality;
@@ -87,6 +89,7 @@ import java.util.Set;
 
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchDatabase.getClient;
+import static org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchDatabase.getLowLevelClient;
 import static org.apache.atlas.repository.graphdb.janus.AtlasJanusGraphDatabase.getGraphInstance;
 import static org.apache.atlas.type.Constants.STATE_PROPERTY_KEY;
 
@@ -103,7 +106,9 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
     private final ConvertGremlinValueFunction GREMLIN_VALUE_CONVERSION_FUNCTION = new ConvertGremlinValueFunction();
     private final Set<String>                 multiProperties                   = new HashSet<>();
     private final StandardJanusGraph          janusGraph;
-    private final RestHighLevelClient elasticsearchClient;
+    private final RestHighLevelClient         elasticsearchClient;
+    private final RestClient                  restClient;
+
     private final ThreadLocal<GremlinGroovyScriptEngine> scriptEngine = ThreadLocal.withInitial(() -> {
         DefaultImportCustomizer.Builder builder = DefaultImportCustomizer.build()
                                                                          .addClassImports(java.util.function.Function.class)
@@ -114,10 +119,10 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
 
 
     public AtlasJanusGraph() {
-        this(getGraphInstance(), getClient());
+        this(getGraphInstance(), getClient(), getLowLevelClient());
     }
 
-    public AtlasJanusGraph(JanusGraph graphInstance, RestHighLevelClient elasticsearchClient) {
+    public AtlasJanusGraph(JanusGraph graphInstance, RestHighLevelClient elasticsearchClient, RestClient restClient) {
         //determine multi-properties once at startup
         JanusGraphManagement mgmt = null;
 
@@ -138,6 +143,7 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
         }
 
         janusGraph = (StandardJanusGraph) graphInstance;
+        this.restClient = restClient;
         this.elasticsearchClient = elasticsearchClient;
     }
 
@@ -292,6 +298,13 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
     public AtlasIndexQuery<AtlasJanusVertex, AtlasJanusEdge> elasticsearchQuery(String indexName, SearchSourceBuilder sourceBuilder) {
         assert elasticsearchClient != null;
         return new AtlasElasticsearchQuery(this, elasticsearchClient, INDEX_PREFIX + indexName, sourceBuilder);
+    }
+
+    public AtlasIndexQuery<AtlasJanusVertex, AtlasJanusEdge> elasticsearchQuery(String indexName, SearchParams searchParams) {
+        if (restClient == null) {
+            LOG.error("restClient is not initiated, failed to run query on ES");
+        }
+        return new AtlasElasticsearchQuery(this, restClient, INDEX_PREFIX + indexName, searchParams);
     }
 
     @Override

@@ -74,7 +74,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -97,6 +96,7 @@ import static org.apache.atlas.repository.Constants.IS_INCOMPLETE_PROPERTY_KEY;
 import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
 import static org.apache.atlas.repository.graph.GraphHelper.isEntityIncomplete;
 import static org.apache.atlas.repository.store.graph.v2.EntityGraphMapper.validateLabels;
+import static org.apache.atlas.type.Constants.TERMS_PROPERTY_KEY;
 
 
 @Component
@@ -1743,5 +1743,19 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             bulkImportResponse.addToFailedImportInfoList(new ImportInfo(FAILED, failedTermMsgs, lineIndex));
         }
         return missingFieldsCheck;
+    }
+
+    @Override
+    @GraphTransaction
+    public void addTermToEntityAttr(String entityGuid, String termQName){
+        AtlasVertex vertex =  AtlasGraphUtilsV2.findByGuid(entityGuid);
+        AtlasGraphUtilsV2.addEncodedProperty(vertex, TERMS_PROPERTY_KEY, termQName);
+    }
+
+    @Override
+    @GraphTransaction
+    public void removeTermFromEntityAttr(String entityGuid, String termQName){
+        AtlasVertex vertex =  AtlasGraphUtilsV2.findByGuid(entityGuid);
+        AtlasGraphUtilsV2.removeItemFromListPropertyValue(vertex, TERMS_PROPERTY_KEY, termQName);
     }
 }

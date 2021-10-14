@@ -20,11 +20,13 @@ package org.apache.atlas.repository.graphdb.janus;
 import java.util.Iterator;
 
 import com.google.common.base.Preconditions;
+import org.apache.atlas.model.discovery.SearchParams;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Iterators;
+import org.apache.atlas.repository.graphdb.DirectIndexQueryResult;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.janusgraph.core.JanusGraphIndexQuery;
 import org.janusgraph.core.JanusGraphVertex;
@@ -39,6 +41,11 @@ public class AtlasJanusIndexQuery implements AtlasIndexQuery<AtlasJanusVertex, A
     public AtlasJanusIndexQuery(AtlasJanusGraph graph, JanusGraphIndexQuery query) {
         this.query = query;
         this.graph = graph;
+    }
+
+    @Override
+    public DirectIndexQueryResult<AtlasJanusVertex, AtlasJanusEdge> vertices(SearchParams searchParams) {
+        return null;
     }
 
     @Override

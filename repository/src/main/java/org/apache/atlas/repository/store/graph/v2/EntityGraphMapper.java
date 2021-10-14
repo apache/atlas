@@ -18,15 +18,15 @@
 package org.apache.atlas.repository.store.graph.v2;
 
 
- import com.google.common.annotations.VisibleForTesting;
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.GraphTransactionInterceptor;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.exception.AtlasBaseException;
- import org.apache.atlas.exception.EntityNotFoundException;
- import org.apache.atlas.model.TimeBoundary;
+import org.apache.atlas.exception.EntityNotFoundException;
+import org.apache.atlas.model.TimeBoundary;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -128,6 +128,7 @@ import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPro
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
 import static org.apache.atlas.type.Constants.PENDING_TASKS_PROPERTY_KEY;
+import static org.apache.atlas.type.Constants.TERMS_PROPERTY_KEY;
 
 @Component
 public class EntityGraphMapper {
@@ -1473,6 +1474,14 @@ public class EntityGraphMapper {
             setArrayElementsProperty(elementType, isSoftReference, ctx.getReferringVertex(), ctx.getVertexProperty(), null);
         } else {
             setArrayElementsProperty(elementType, isSoftReference, ctx.getReferringVertex(), ctx.getVertexProperty(), allArrayElements);
+        }
+
+        if (attribute.getAttributeDef().getName().equals("meanings")) {
+            // handle __terms attribute of entity
+            Set<String> qNames = newElementsCreated.stream().map(x -> ((AtlasEdge)x).getOutVertex().getProperty("AtlasGlossaryTerm.qualifiedName", String.class)).collect(Collectors.toSet());
+
+            ctx.getReferringVertex().removeProperty(TERMS_PROPERTY_KEY);
+            qNames.forEach(q -> AtlasGraphUtilsV2.addEncodedProperty(ctx.getReferringVertex(), TERMS_PROPERTY_KEY, q));
         }
 
         if (LOG.isDebugEnabled()) {
