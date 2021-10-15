@@ -35,6 +35,7 @@ define(['require',
             templateHelpers: function() {
                 return {
                     create: this.create,
+                    displayName: this.displayName,
                     description: this.description,
                     fromTable: this.fromTable,
                     isEditAttr: this.isEditAttr
@@ -61,6 +62,7 @@ define(['require',
             /** ui selector cache */
             ui: {
                 name: "[data-id='name']",
+                displayName: "[data-id='displayName']",
                 description: "[data-id='description']",
                 title: "[data-id='title']",
                 attributeData: "[data-id='attributeData']",
@@ -98,6 +100,7 @@ define(['require',
                 this.isEditAttr = this.isAttrEdit ? false : true;
                 this.businessMetadataModel = new VEntity();
                 if (this.model) {
+                    this.displayName = this.model.get('displayName');
                     this.description = this.model.get('description');
                 } else {
                     this.create = true;
@@ -222,7 +225,7 @@ define(['require',
                     return;
                 };
                 this.loaderStatus(true);
-                var name = this.ui.name.val(),
+                var displayName = this.ui.displayName.val(),
                     description = this.ui.description.val();
                 var attributeObj = this.collection.toJSON();
                 if (this.collection.length === 1 && this.collection.first().get("name") === "") {
@@ -239,7 +242,7 @@ define(['require',
                         "updatedBy": "admin",
                         "version": 1,
                         "typeVersion": "1.1",
-                        "name": name.trim(),
+                        "displayName": displayName.trim(),
                         "description": description.trim(),
                         "attributeDefs": attributeObj
                     }]

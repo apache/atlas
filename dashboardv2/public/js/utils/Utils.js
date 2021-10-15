@@ -449,6 +449,9 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
     Utils.getName = function() {
         return Utils.extractKeyValueFromEntity.apply(this, arguments).name;
     }
+    Utils.getDisplayName = function() {
+            return Utils.extractKeyValueFromEntity.apply(this, arguments).displayName;
+        }
     Utils.getNameWithProperties = function() {
         return Utils.extractKeyValueFromEntity.apply(this, arguments);
     }

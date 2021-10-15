@@ -36,7 +36,8 @@ define(['require',
             templateHelpers: function() {
                 return {
                     create: this.create,
-                    description: this.description
+                    description: this.description,
+                    displayName: this.displayName
                 };
             },
 
@@ -56,6 +57,7 @@ define(['require',
             /** ui selector cache */
             ui: {
                 tagName: "[data-id='tagName']",
+                displayName: "[data-id='displayName']",
                 parentTag: "[data-id='parentTagList']",
                 description: "[data-id='description']",
                 title: "[data-id='title']",
@@ -77,6 +79,7 @@ define(['require',
                 _.extend(this, _.pick(options, 'tagCollection', 'enumDefCollection', 'model', 'tag', 'descriptionData', 'selectedTag'));
                 if (this.model) {
                     this.description = this.model.get('description');
+                    this.displayName = this.model.get('displayName');
                 } else {
                     this.create = true;
                 }

@@ -290,6 +290,7 @@ define(['require',
                                     var modelJSON = child.toJSON();
                                     data.push({
                                         name: name,
+                                        displayName: modelJSON.displayName,
                                         children: getChildren({ children: modelJSON.subTypes })
                                     });
                                 }
@@ -303,6 +304,7 @@ define(['require',
                         var name = modelJSON.name;
                         listOfParents[name] = {
                             name: name,
+                            displayName: modelJSON.displayName,
                             children: getChildren({ children: modelJSON.subTypes })
                         }
                     }
@@ -316,18 +318,19 @@ define(['require',
                     that = this,
                     element = '',
                     getElString = function(options) {
-                        var name = options.name,
+                        var name = options.name, displayName=options.displayName,
                             hasChild = isTree && options.children && options.children.length;
                         return '<li class="parent-node" data-id="tags">' +
                             '<div><div class="tools"><i class="fa fa-ellipsis-h tagPopover"></i></div>' +
                             (hasChild ? '<i class="fa toggleArrow fa-angle-right" data-id="expandArrow" data-name="' + name + '"></i>' : '') +
-                            '<a href="#!/tag/tagAttribute/' + name + '?viewType=' + (isTree ? 'tree' : 'flat') + '&searchType=basic&tag=' + name + '" data-name="' + name + '">' + name + '</a></div>' +
+                            '<a href="#!/tag/tagAttribute/' + name + '?viewType=' + (isTree ? 'tree' : 'flat') + '&searchType=basic&tag=' + name + '" data-name="' + name + '">' + displayName + '</a></div>' +
                             (isTree && hasChild ? '<ul class="child hide">' + that.generateTree({ 'data': options.children, 'isTree': isTree }) + '</ul>' : '') + '</li>';
                     };
                 if (isTree) {
                     _.each(data, function(obj) {
                         element += getElString({
                             name: obj.name,
+                            displayName: obj.displayName,
                             children: obj.children
                         });
                     });
@@ -338,6 +341,7 @@ define(['require',
                             if (name.search(new RegExp(searchString, "i")) != -1) {
                                 element += getElString({
                                     name: obj.get('name'),
+                                    displayName: obj.get('displayName'),
                                     children: null
                                 });
                             } else {
@@ -346,6 +350,7 @@ define(['require',
                         } else {
                             element += getElString({
                                 name: obj.get('name'),
+                                displayName: obj.get('displayName'),
                                 children: null
                             });
                         }
@@ -448,6 +453,7 @@ define(['require',
                     return;
                 }
                 this.name = ref.ui.tagName.val();
+                this.displayName = ref.ui.displayName.val();
                 this.description = ref.ui.description.val();
                 var superTypes = [];
                 if (ref.ui.parentTag.val() && ref.ui.parentTag.val()) {
@@ -508,7 +514,7 @@ define(['require',
                 }
                 this.json = {
                     classificationDefs: [{
-                        'name': this.name.trim(),
+                        'displayName': this.displayName.trim(),
                         'description': this.description.trim(),
                         'superTypes': superTypes.length ? superTypes : [],
                         "attributeDefs": attributeObj

@@ -280,13 +280,13 @@ define(['require',
                             }
                         }
                     },
-                    name: {
-                        label: "Name",
+                    displayName: {
+                        label: "displayName",
                         cell: "html",
                         editable: false,
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
-                                return '<a title= "' + model.get('name') + '" href ="#!/administrator/businessMetadata/' + model.get('guid') + '?from=bm">' + model.get('name') + '</a>';
+                                return '<a title= "' + model.get('name') + '" href ="#!/administrator/businessMetadata/' + model.get('guid') + '?from=bm">' + model.get('displayName') + '</a>';
                             }
                         })
                     },
