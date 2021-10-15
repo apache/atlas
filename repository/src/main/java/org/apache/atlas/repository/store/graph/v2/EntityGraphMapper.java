@@ -146,6 +146,8 @@ public class EntityGraphMapper {
     private static final int     CUSTOM_ATTRIBUTE_KEY_MAX_LENGTH   = AtlasConfiguration.CUSTOM_ATTRIBUTE_KEY_MAX_LENGTH.getInt();
     private static final int     CUSTOM_ATTRIBUTE_VALUE_MAX_LENGTH = AtlasConfiguration.CUSTOM_ATTRIBUTE_VALUE_MAX_LENGTH.getInt();
 
+    private static final String GLOSSARY_TERM_QUALIFIED_NAME_ATTR = "Referenceable.qualifiedName";
+
     private static final boolean ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES = AtlasConfiguration.ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES.getBoolean();
     private static final boolean CLASSIFICATION_PROPAGATION_DEFAULT                  = AtlasConfiguration.CLASSIFICATION_PROPAGATION_DEFAULT.getBoolean();
     private              boolean DEFERRED_ACTION_ENABLED                             = AtlasConfiguration.TASKS_USE_ENABLED.getBoolean();
@@ -1478,7 +1480,7 @@ public class EntityGraphMapper {
 
         if (attribute.getAttributeDef().getName().equals("meanings")) {
             // handle __terms attribute of entity
-            Set<String> qNames = newElementsCreated.stream().map(x -> ((AtlasEdge)x).getOutVertex().getProperty("AtlasGlossaryTerm.qualifiedName", String.class)).collect(Collectors.toSet());
+            Set<String> qNames = newElementsCreated.stream().map(x -> ((AtlasEdge)x).getOutVertex().getProperty(GLOSSARY_TERM_QUALIFIED_NAME_ATTR, String.class)).collect(Collectors.toSet());
 
             ctx.getReferringVertex().removeProperty(TERMS_PROPERTY_KEY);
             qNames.forEach(q -> AtlasGraphUtilsV2.addEncodedProperty(ctx.getReferringVertex(), TERMS_PROPERTY_KEY, q));
