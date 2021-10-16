@@ -93,6 +93,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.script.ScriptException;
 
 import static org.apache.atlas.AtlasErrorCode.*;
@@ -1015,6 +1016,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 AtlasVertex vertex = result.getVertex();
 
                 AtlasEntityHeader header = entityRetriever.toAtlasEntityHeader(vertex, resultAttributes);
+                header.setClassifications(entityRetriever.getAllClassifications(vertex));
                 ret.addEntityScore(header.getGuid(), result.getScore());
                 ret.addEntity(header);
 
