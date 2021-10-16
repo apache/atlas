@@ -128,7 +128,8 @@ import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPro
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
 import static org.apache.atlas.type.Constants.PENDING_TASKS_PROPERTY_KEY;
-import static org.apache.atlas.type.Constants.TERMS_PROPERTY_KEY;
+import static org.apache.atlas.type.Constants.MEANINGS_PROPERTY_KEY;
+import static org.apache.atlas.type.Constants.MEANINGS_TEXT_PROPERTY_KEY;
 
 @Component
 public class EntityGraphMapper {
@@ -1480,10 +1481,20 @@ public class EntityGraphMapper {
 
         if (attribute.getAttributeDef().getName().equals("meanings")) {
             // handle __terms attribute of entity
-            Set<String> qNames = newElementsCreated.stream().map(x -> ((AtlasEdge)x).getOutVertex().getProperty(GLOSSARY_TERM_QUALIFIED_NAME_ATTR, String.class)).collect(Collectors.toSet());
+            List<AtlasVertex> meanings = newElementsCreated.stream().map(x -> ((AtlasEdge)x).getOutVertex()).collect(Collectors.toList());
 
-            ctx.getReferringVertex().removeProperty(TERMS_PROPERTY_KEY);
-            qNames.forEach(q -> AtlasGraphUtilsV2.addEncodedProperty(ctx.getReferringVertex(), TERMS_PROPERTY_KEY, q));
+            Set<String> qNames = meanings.stream().map(x -> x.getProperty("AtlasGlossaryTerm.qualifiedName", String.class)).collect(Collectors.toSet());
+            List<String> names = meanings.stream().map(x -> x.getProperty("AtlasGlossaryTerm.name", String.class)).collect(Collectors.toList());
+
+            ctx.getReferringVertex().removeProperty(MEANINGS_PROPERTY_KEY);
+            ctx.getReferringVertex().removeProperty(MEANINGS_TEXT_PROPERTY_KEY);
+            if (CollectionUtils.isNotEmpty(qNames)){
+                qNames.forEach(q -> AtlasGraphUtilsV2.addEncodedProperty(ctx.getReferringVertex(), MEANINGS_PROPERTY_KEY, q));
+            }
+
+            if (CollectionUtils.isNotEmpty(names)){
+                AtlasGraphUtilsV2.setEncodedProperty(ctx.referringVertex, MEANINGS_TEXT_PROPERTY_KEY, StringUtils.join(names, ","));
+            }
         }
 
         if (LOG.isDebugEnabled()) {

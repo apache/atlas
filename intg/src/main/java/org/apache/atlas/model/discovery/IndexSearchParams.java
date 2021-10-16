@@ -23,8 +23,14 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 public class IndexSearchParams extends SearchParams {
     private static final Logger LOG = LoggerFactory.getLogger(IndexSearchParams.class);
 
-    private static final String FILTER_VAR_NAME_PREFIX = "Atlan.";
-    private static final Pattern pattern = Pattern.compile("(?<=" + FILTER_VAR_NAME_PREFIX + ").+?(?=\")");
+    private static final Map<String, String> attributeNamesMapping = new HashMap<String, String>(){
+        {
+            put("__classificationNames", "__traitNames");
+            put("__propagatedClassificationNames", "__propagatedTraitNames");
+            put("qualifiedName", "Referenceable.qualifiedName");
+        }};
+
+    private static final Pattern pattern = Pattern.compile("(?<=\").+?(?=\")");
 
     private Map query;
     private String queryString;
@@ -61,58 +67,10 @@ public class IndexSearchParams extends SearchParams {
         }
         for (String key : keysToMap) {
             if (attributeNamesMapping.containsKey(key)) {
-                queryString = queryString.replaceAll(FILTER_VAR_NAME_PREFIX + key, attributeNamesMapping.get(key));
+                queryString = queryString.replaceAll(key, attributeNamesMapping.get(key));
             }
         }
 
         return queryString;
     }
-
-    private static final Map<String, String> attributeNamesMapping = new HashMap<String, String>() {{
-        put("guid", "__guid");
-        put("createdBy", "__createdBy");
-        put("modifiedBy", "__modifiedBy");
-        put("timestamp", "__timestamp");
-        put("modificationTimestamp", "__modificationTimestamp");
-        put("terms", "__terms");
-        put("classificationNames", "__classificationNames");
-        put("classificationsText", "__classificationsText");
-        put("traitNames", "__traitNames");
-        put("propagatedTraitNames", "__propagatedTraitNames");
-        put("propagatedClassificationNames", "__propagatedClassificationNames");
-        put("state", "__state");
-        put("typeName", "__typeName");
-        put("qualifiedName", "Referenceable.qualifiedName");
-        put("name", "Asset.name");
-        put("displayName", "Asset.displayName");
-        put("description", "Asset.description");
-        put("userDescription", "Asset.description");
-        put("certificateStatus", "Asset.certificateStatus");
-        put("certificateUpdatedBy", "Asset.certificateUpdatedBy");
-        put("certificateUpdatedAt", "Asset.certificateUpdatedAt");
-        put("bannerTitle", "Asset.bannerTitle");
-        put("bannerDescription", "Asset.bannerDescription");
-        put("bannerType", "Asset.bannerType");
-        put("bannerUpdatedAt", "Asset.bannerUpdatedAt");
-        put("bannerUpdatedBy", "Asset.bannerUpdatedBy");
-        put("ownerUsers", "Asset.ownerUsers");
-        put("ownerGroups", "Asset.ownerGroups");
-        put("connnectorName", "Asset.connnectorName");
-        put("connectionName", "Asset.connectionName");
-        put("connectionQualifiedName", "Asset.connectionQualifiedName");
-        put("subType", "Asset.subType");
-        put("isDiscoverable", "Asset.isDiscoverable");
-        put("isEditable", "Asset.isEditable");
-        put("sourceOwners", "Asset.sourceOwners");
-        put("sourceCreatedBy", "Asset.sourceCreatedBy");
-        put("sourceCreatedAt", "Asset.sourceCreatedAt");
-        put("sourceUpdatedAt", "Asset.sourceUpdatedAt");
-        put("sourceUpdatedBy", "Asset.sourceUpdatedBy");
-        put("lastSyncWorkflowName", "Asset.lastSyncWorkflowName");
-        put("lastSyncRunAt", "Asset.lastSyncRunAt");
-        put("lastSyncRun", "Asset.lastSyncRun");
-        put("viewScore", "Asset.viewScore");
-        put("code", "Process.code");
-        put("sql", "Process.sql");
-    }};
 }
