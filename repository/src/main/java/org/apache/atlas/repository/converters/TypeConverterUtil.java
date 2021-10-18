@@ -376,7 +376,8 @@ public final class TypeConverterUtil {
                                                 oldAttrDef.getSearchWeight(),
                                                 oldAttrDef.getIndexType(),
                                                 oldAttrDef.getIndexTypeESConfig(),
-                                                oldAttrDef.getIndexTypeESFields()));
+                                                oldAttrDef.getIndexTypeESFields(),
+                                                oldAttrDef.getAutoUpdateAttributes()));
             }
         }
 

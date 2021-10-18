@@ -309,6 +309,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
         private String                   displayName;
         HashMap<String, Object> indexTypeESConfig;
         HashMap<String, HashMap<String, Object>> indexTypeESFields;
+        HashMap<String, ArrayList> autoUpdateAttributes;
 
         public AtlasAttributeDef() { this(null, null); }
 
@@ -392,6 +393,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
                 setDisplayName(other.getDisplayName());
                 setIndexTypeESConfig(other.getIndexTypeESConfig());
                 setIndexTypeESFields(other.getIndexTypeESFields());
+                setAutoUpdateAttributes(other.getAutoUpdateAttributes());
             }
         }
 
@@ -580,6 +582,12 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             return this.indexTypeESFields;
         }
 
+        public void setAutoUpdateAttributes(HashMap<String, ArrayList> autoUpdateAttributes) { this.autoUpdateAttributes = autoUpdateAttributes; }
+
+        public HashMap<String, ArrayList> getAutoUpdateAttributes() {
+            return this.autoUpdateAttributes;
+        }
+
         public StringBuilder toString(StringBuilder sb) {
             if (sb == null) {
                 sb = new StringBuilder();
@@ -603,6 +611,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             sb.append(", displayName='").append(displayName).append('\'');
             sb.append(", indexTypeESConfig='").append(indexTypeESConfig).append('\'');
             sb.append(", indexTypeESFields='").append(indexTypeESFields).append('\'');
+            sb.append(", autoUpdateAttributes='").append(autoUpdateAttributes).append('\'');
             sb.append(", constraints=[");
             if (CollectionUtils.isNotEmpty(constraints)) {
                 int i = 0;
@@ -642,12 +651,13 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
                     Objects.equals(indexType, that.indexType) &&
                     Objects.equals(displayName, that.displayName) &&
                     Objects.equals(indexTypeESConfig, that.indexTypeESConfig) &&
-                    Objects.equals(indexTypeESFields, that.indexTypeESFields);
+                    Objects.equals(indexTypeESFields, that.indexTypeESFields) &&
+                    Objects.equals(autoUpdateAttributes, that.autoUpdateAttributes);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(name, typeName, isOptional, cardinality, valuesMinCount, valuesMaxCount, isUnique, isIndexable, includeInNotification, defaultValue, constraints, options, description, searchWeight, indexType, displayName, indexTypeESConfig, indexTypeESFields);
+            return Objects.hash(name, typeName, isOptional, cardinality, valuesMinCount, valuesMaxCount, isUnique, isIndexable, includeInNotification, defaultValue, constraints, options, description, searchWeight, indexType, displayName, indexTypeESConfig, indexTypeESFields, autoUpdateAttributes);
         }
 
         @Override

@@ -554,6 +554,7 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
         attribInfo.put("indexType", attributeDef.getIndexType());
         attribInfo.put("indexTypeESConfig", attributeDef.getIndexTypeESConfig());
         attribInfo.put("indexTypeESFields", attributeDef.getIndexTypeESFields());
+        attribInfo.put("autoUpdateAttributes", attributeDef.getAutoUpdateAttributes());
 
         if(attributeDef.getOptions() != null) {
             attribInfo.put("options", AtlasType.toJson(attributeDef.getOptions()));
@@ -664,6 +665,8 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
         HashMap<String, HashMap<String, Object>> indexTypeESFields = (HashMap<String, HashMap<String, Object>>) attribInfo.get("indexTypeESFields");
         ret.setIndexTypeESFields(indexTypeESFields);
 
+        HashMap<String, ArrayList> autoUpdateAttributes = (HashMap<String, ArrayList>) attribInfo.get("autoUpdateAttributes");
+        ret.setAutoUpdateAttributes(autoUpdateAttributes);
         return ret;
     }
 
