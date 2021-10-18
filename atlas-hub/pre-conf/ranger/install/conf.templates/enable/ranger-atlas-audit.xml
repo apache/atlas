@@ -118,5 +118,19 @@
 		<name>xasecure.audit.destination.log4j.logger</name>
 		<value>AUDIT</value>
 	</property>	
+
+	<!-- ElasticSearch audit provider configuration -->
+	<property>
+		<name>xasecure.audit.destination.elasticsearch</name>
+		<value>true</value>
+	</property>
+	<property>
+		<name>xasecure.audit.elasticsearch.is.enabled</name>
+		<value>true/</value>
+	</property>
+	<property>
+		<name>xasecure.audit.destination.elasticsearch.urls</name>
+		<value>logging-master.logging.svc.cluster.local</value>
+	</property>
 	
 </configuration>
