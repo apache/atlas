@@ -72,6 +72,7 @@ import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.ListUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -657,9 +658,16 @@ public class EntityGraphMapper {
         if (MapUtils.isNotEmpty(struct.getAttributes())) {
             MetricRecorder metric = RequestContext.get().startMetricRecord("mapAttributes");
 
+            List<String> timestampAutoUpdateAttributes = new ArrayList<>();
+            List<String> userAutoUpdateAttributes = new ArrayList<>();
+
             if (op.equals(CREATE)) {
                 for (AtlasAttribute attribute : structType.getAllAttributes().values()) {
                     Object attrValue = struct.getAttribute(attribute.getName());
+                    Object attrOldValue = vertex.getProperty(attribute.getVertexPropertyName(),attribute.getClass());
+                    if (attrValue!= null && !attrValue.equals(attrOldValue)) {
+                        addValuesToAutoUpdateAttributesList(attribute, userAutoUpdateAttributes, timestampAutoUpdateAttributes);
+                    }
 
                     mapAttribute(attribute, attrValue, vertex, op, context);
                 }
@@ -670,6 +678,10 @@ public class EntityGraphMapper {
 
                     if (attribute != null) {
                         Object attrValue = struct.getAttribute(attrName);
+                        Object attrOldValue = vertex.getProperty(attribute.getVertexPropertyName(),attribute.getClass());
+                        if (attrValue != null && !attrValue.equals(attrOldValue)) {
+                            addValuesToAutoUpdateAttributesList(attribute, userAutoUpdateAttributes, timestampAutoUpdateAttributes);
+                        }
 
                         mapAttribute(attribute, attrValue, vertex, op, context);
                     } else {
@@ -679,12 +691,28 @@ public class EntityGraphMapper {
             }
 
             updateModificationMetadata(vertex);
+            graphHelper.updateMetadataAttributes(vertex, timestampAutoUpdateAttributes, "timestamp");
+            graphHelper.updateMetadataAttributes(vertex, userAutoUpdateAttributes, "user");
 
             RequestContext.get().endMetricRecord(metric);
         }
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== mapAttributes({}, {})", op, struct.getTypeName());
+        }
+    }
+
+    private void addValuesToAutoUpdateAttributesList(AtlasAttribute attribute, List<String> userAutoUpdateAttributes, List<String> timestampAutoUpdateAttributes) {
+        HashMap<String, ArrayList> autoUpdateAttributes =  attribute.getAttributeDef().getAutoUpdateAttributes();
+        if (autoUpdateAttributes != null) {
+            List<String> userAttributes = autoUpdateAttributes.get("user");
+            if (userAttributes != null && userAttributes.size() > 0) {
+                userAutoUpdateAttributes.addAll(userAttributes);
+            }
+            List<String> timestampAttributes = autoUpdateAttributes.get("timestamp");
+            if (timestampAttributes != null && timestampAttributes.size() > 0) {
+                timestampAutoUpdateAttributes.addAll(timestampAttributes);
+            }
         }
     }
 

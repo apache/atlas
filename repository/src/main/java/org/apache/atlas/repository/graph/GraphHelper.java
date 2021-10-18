@@ -655,6 +655,17 @@ public final class GraphHelper {
         AtlasGraphUtilsV2.setEncodedProperty(vertex, MODIFICATION_TIMESTAMP_PROPERTY_KEY, RequestContext.get().getRequestTime());
         AtlasGraphUtilsV2.setEncodedProperty(vertex, MODIFIED_BY_KEY, RequestContext.get().getUser());
     }
+    public static void updateMetadataAttributes(AtlasVertex vertex, List<String> attributes, String metadataType) {
+        if (attributes != null && attributes.size() > 0) {
+            for (String attributeName: attributes) {
+                if (metadataType.equals("timestamp")) {
+                    AtlasGraphUtilsV2.setEncodedProperty(vertex, attributeName, RequestContext.get().getRequestTime());
+                } else if (metadataType.equals("user")) {
+                    AtlasGraphUtilsV2.setEncodedProperty(vertex, attributeName, RequestContext.get().getUser());
+                }
+            }
+        }
+    }
 
     public static String getQualifiedNameForMapKey(String prefix, String key) {
         return prefix + "." + key;
