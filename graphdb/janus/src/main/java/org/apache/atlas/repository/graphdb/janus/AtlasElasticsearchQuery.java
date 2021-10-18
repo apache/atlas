@@ -230,6 +230,10 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
 
         @Override
         public double getScore() {
+            Object _score = hit.get("_score");
+            if (_score == null){
+                return -1;
+            }
             return Double.parseDouble(String.valueOf(hit.get("_score")));
         }
     }
