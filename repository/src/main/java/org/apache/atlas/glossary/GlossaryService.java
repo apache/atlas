@@ -163,14 +163,6 @@ public class GlossaryService {
 
         if (StringUtils.isEmpty(atlasGlossary.getQualifiedName())) {
             atlasGlossary.setQualifiedName(GlossaryUtils.createQualifiedName());
-            if (StringUtils.isEmpty(atlasGlossary.getName())) {
-                throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_QUALIFIED_NAME_CANT_BE_DERIVED);
-            }
-            if (isNameInvalid(atlasGlossary.getName())) {
-                throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME);
-            } else {
-                atlasGlossary.setQualifiedName(atlasGlossary.getName());
-            }
         }
 
         if (glossaryExists(atlasGlossary)) {
@@ -804,9 +796,9 @@ public class GlossaryService {
         AtlasGraph<Object, Object> graph = AtlasGraphProvider.getGraphInstance();
 
         GraphTraversal query = graph.V().has(Constants.GUID_PROPERTY_KEY, categoryGuid)
-                .has(Constants.STATE_PROPERTY_KEY, P.within(Constants.ACTIVE_STATE_VALUE))
+                .has(Constants.STATE_PROPERTY_KEY, Constants.ACTIVE_STATE_VALUE)
                 .out(Constants.CATEGORY_TERMS_EDGE_LABEL)
-                .has(Constants.STATE_PROPERTY_KEY, P.within(Constants.ACTIVE_STATE_VALUE));
+                .has(Constants.STATE_PROPERTY_KEY, Constants.ACTIVE_STATE_VALUE);
 
         runPaginatedTermsQuery(offset, limit, sortOrder, ret, query);
 
@@ -877,9 +869,9 @@ public class GlossaryService {
 
         GraphTraversal query = graph.V()
                 .has(Constants.GUID_PROPERTY_KEY, glossaryGuid)
-                .has(Constants.STATE_PROPERTY_KEY, P.within(Constants.ACTIVE_STATE_VALUE))
+                .has(Constants.STATE_PROPERTY_KEY, Constants.ACTIVE_STATE_VALUE)
                 .out(Constants.GLOSSARY_CATEGORY_EDGE_LABEL)
-                .has(Constants.STATE_PROPERTY_KEY, P.within(Constants.ACTIVE_STATE_VALUE));
+                .has(Constants.STATE_PROPERTY_KEY, Constants.ACTIVE_STATE_VALUE);
 
         if (sortOrder != null) {
             Order order = sortOrder == SortOrder.ASCENDING ? Order.asc : Order.desc;
@@ -899,7 +891,7 @@ public class GlossaryService {
             Set<String> parentResults = graph.V()
                     .has(Constants.GUID_PROPERTY_KEY, atlasRelatedCategoryHeader.getCategoryGuid())
                     .in(Constants.CATEGORY_PARENT_EDGE_LABEL)
-                    .has(Constants.STATE_PROPERTY_KEY, P.within(Constants.ACTIVE_STATE_VALUE))
+                    .has(Constants.STATE_PROPERTY_KEY, Constants.ACTIVE_STATE_VALUE)
                     .values(Constants.GUID_PROPERTY_KEY).toSet();
 
             if (!parentResults.isEmpty()) {
