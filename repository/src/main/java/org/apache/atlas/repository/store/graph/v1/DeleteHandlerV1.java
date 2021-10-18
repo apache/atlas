@@ -31,7 +31,6 @@ import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
-import org.apache.atlas.repository.graph.AtlasEdgeLabel;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
@@ -646,15 +645,15 @@ public abstract class DeleteHandlerV1 {
     protected void deleteEdge(AtlasEdge edge, boolean updateInverseAttribute, boolean force) throws AtlasBaseException {
         //update inverse attribute
         if (updateInverseAttribute) {
-            AtlasEdgeLabel atlasEdgeLabel = new AtlasEdgeLabel(edge.getLabel());
-            AtlasType      parentType     = typeRegistry.getType(atlasEdgeLabel.getTypeName());
+            String labelWithoutPrefix = edge.getLabel().substring(GraphHelper.EDGE_LABEL_PREFIX.length());
+            AtlasType      parentType = typeRegistry.getType(AtlasGraphUtilsV2.getTypeName(edge.getOutVertex()));
 
             if (parentType instanceof AtlasEntityType) {
                 AtlasEntityType                parentEntityType = (AtlasEntityType) parentType;
-                AtlasStructType.AtlasAttribute attribute        = parentEntityType.getAttribute(atlasEdgeLabel.getAttributeName());
+                AtlasStructType.AtlasAttribute attribute        = parentEntityType.getAttribute(labelWithoutPrefix);
 
                 if (attribute == null) {
-                    attribute = parentEntityType.getRelationshipAttribute(atlasEdgeLabel.getAttributeName(), AtlasGraphUtilsV2.getTypeName(edge));
+                    attribute = parentEntityType.getRelationshipAttribute(labelWithoutPrefix, AtlasGraphUtilsV2.getTypeName(edge));
                 }
 
                 if (attribute != null && attribute.getInverseRefAttribute() != null) {
@@ -772,12 +771,12 @@ public abstract class DeleteHandlerV1 {
         deleteVertex(instanceVertex, force);
     }
 
-    protected AtlasAttribute getAttributeForEdge(String edgeLabel) throws AtlasBaseException {
-        AtlasEdgeLabel  atlasEdgeLabel   = new AtlasEdgeLabel(edgeLabel);
-        AtlasType       parentType       = typeRegistry.getType(atlasEdgeLabel.getTypeName());
+    protected AtlasAttribute getAttributeForEdge(AtlasEdge edge) throws AtlasBaseException {
+        String labelWithoutPrefix        = edge.getLabel().substring(GraphHelper.EDGE_LABEL_PREFIX.length());
+        AtlasType       parentType       = typeRegistry.getType(AtlasGraphUtilsV2.getTypeName(edge.getOutVertex()));
         AtlasStructType parentStructType = (AtlasStructType) parentType;
 
-        return parentStructType.getAttribute(atlasEdgeLabel.getAttributeName());
+        return parentStructType.getAttribute(labelWithoutPrefix);
     }
 
     protected abstract void _deleteVertex(AtlasVertex instanceVertex, boolean force);
@@ -922,7 +921,7 @@ public abstract class DeleteHandlerV1 {
 
                     if (!isDeletedEntity(outVertex)) {
                         AtlasVertex inVertex = edge.getInVertex();
-                        AtlasAttribute attribute = getAttributeForEdge(edge.getLabel());
+                        AtlasAttribute attribute = getAttributeForEdge(edge);
 
                         deleteEdgeBetweenVertices(outVertex, inVertex, attribute);
                     }
