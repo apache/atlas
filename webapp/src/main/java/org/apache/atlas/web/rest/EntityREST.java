@@ -43,6 +43,8 @@ import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.repository.audit.EntityAuditRepository;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
+import org.apache.atlas.repository.patches.PatchContext;
+import org.apache.atlas.repository.patches.ReIndexPatch;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
 import org.apache.atlas.repository.store.graph.v2.ClassificationAssociator;
@@ -1367,6 +1369,27 @@ public class EntityREST {
         }
 
         return ret;
+    }
+
+    /**
+     * Reindexs all the mixed indices.
+     */
+    @POST
+    @Path("/repairindex")
+    @Timed
+    public void repairIndex() throws AtlasBaseException {
+
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.repairIndex");
+            }
+            entitiesStore.repairIndex();
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+
     }
 
     private boolean hasNoGUIDAndTypeNameAttributes(ClassificationAssociateRequest request) {
