@@ -46,6 +46,8 @@ import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.patches.PatchContext;
+import org.apache.atlas.repository.patches.ReIndexPatch;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscovery;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
@@ -1768,6 +1770,20 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 }
             }
             AtlasGraphUtilsV2.setEncodedProperty(vertex, MEANINGS_TEXT_PROPERTY_KEY, StringUtils.join(nameList, ","));
+        }
+    }
+
+    public void repairIndex() throws AtlasBaseException {
+        try {
+            LOG.info("ReIndexPatch: Starting...");
+            PatchContext context = new PatchContext(graph, typeRegistry, null, entityGraphMapper);
+            ReIndexPatch.ReindexPatchProcessor reindexPatchProcessor = new ReIndexPatch.ReindexPatchProcessor(context);
+
+            reindexPatchProcessor.repairVertices();
+            reindexPatchProcessor.repairEdges();
+        } catch (Exception exception) {
+            LOG.error("Error while reindexing.", exception);
+            throw new AtlasBaseException(AtlasErrorCode.REPAIR_INDEX_FAILED, exception.toString());
         }
     }
 }

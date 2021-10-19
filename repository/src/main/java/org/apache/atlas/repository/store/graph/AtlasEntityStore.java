@@ -303,4 +303,6 @@ public interface AtlasEntityStore {
      * Add given termQName from the given entity attribute value list "__meanings" & "__meaningsText"
      */
     void removeTermFromEntityAttr(String entityGuid, String termQName, String termName);
+
+    void repairIndex() throws AtlasBaseException;
 }
