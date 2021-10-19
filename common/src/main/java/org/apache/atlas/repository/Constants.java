@@ -107,6 +107,16 @@ public final class Constants {
     public static final String PATCH_STATE_PROPERTY_KEY       = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "patch.state");
 
     /**
+     * Glossary property keys.
+     */
+    public static final String TERM_DISPLAY_TEXT_KEY = "Asset.name";
+    public static final String CATEGORY_DISPLAY_TEXT_KEY = "Asset.name";
+    public static final String CATEGORY_PARENT_EDGE_LABEL = "r:AtlasGlossaryCategoryHierarchyLink";
+    public static final String CATEGORY_TERMS_EDGE_LABEL = "r:AtlasGlossaryTermCategorization";
+    public static final String GLOSSARY_TERMS_EDGE_LABEL = "r:AtlasGlossaryTermAnchor";
+    public static final String GLOSSARY_CATEGORY_EDGE_LABEL = "r:AtlasGlossaryCategoryAnchor";
+
+    /**
      * The homeId field is used when saving into Atlas a copy of an object that is being imported from another
      * repository. The homeId will be set to a String that identifies the other repository. The specific format
      * of repository identifiers is domain dependent. Where it is set by Open Metadata Repository Services it will
@@ -232,6 +242,7 @@ public final class Constants {
     public static final String TASK_ERROR_MESSAGE     = encodePropertyKey(TASK_PREFIX + "errorMessage");
     public static final String TASK_START_TIME        = encodePropertyKey(TASK_PREFIX + "startTime");
     public static final String TASK_END_TIME          = encodePropertyKey(TASK_PREFIX + "endTime");
+    public static final String ACTIVE_STATE_VALUE = "ACTIVE";
 
     /*
      * All supported file-format extensions for Bulk Imports through file upload
