@@ -132,5 +132,8 @@
 		<name>xasecure.audit.destination.elasticsearch.urls</name>
 		<value>logging-master.logging.svc.cluster.local</value>
 	</property>
-	
+	<property>
+		<name>xasecure.audit.destination.elasticsearch.index</name>
+		<value>ranger-audit</value>
+	</property>
 </configuration>
