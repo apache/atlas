@@ -20,6 +20,9 @@ package org.apache.atlas.model.glossary.relations;
 import org.apache.atlas.model.annotation.AtlasJSON;
 import org.apache.atlas.model.glossary.enums.AtlasTermRelationshipStatus;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 @AtlasJSON
@@ -31,6 +34,27 @@ public class AtlasRelatedTermHeader {
     private String expression;
     private String steward;
     private String source;
+
+    public Map<String, Object> getOtherAttributes() {
+        return otherAttributes;
+    }
+
+    private Map<String, Object> otherAttributes;
+
+
+
+    public void setOtherAttributes(Map<String, List<String>> rs, List includeAttributes) {
+        if (this.otherAttributes == null) {
+            this.otherAttributes = new HashMap<>();
+        }
+        if (includeAttributes!=null) {
+            for (String key : rs.keySet()) {
+                if (includeAttributes.contains(key)) {
+                    this.otherAttributes.put(key, rs.get(key).get(0));
+                }
+            }
+        }
+    }
 
     private AtlasTermRelationshipStatus status;
 
