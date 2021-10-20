@@ -29,8 +29,6 @@ import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
 import org.apache.atlas.model.glossary.relations.AtlasRelatedCategoryHeader;
 import org.apache.atlas.model.glossary.relations.AtlasRelatedTermHeader;
 import org.apache.atlas.model.glossary.relations.AtlasTermCategorizationHeader;
-import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
@@ -832,7 +830,7 @@ public class GlossaryService {
         return ret;
     }
 
-    private void runPaginatedTermsQuery(int offset, int limit, SortOrder sortOrder, List<AtlasRelatedTermHeader> ret, GraphTraversal baseQuery, List attributes) {
+    private void runPaginatedTermsQuery(int offset, int limit, SortOrder sortOrder, List<AtlasRelatedTermHeader> ret, GraphTraversal baseQuery, List<String> attributes) {
         if (sortOrder != null) {
             Order order = sortOrder == SortOrder.ASCENDING ? Order.asc : Order.desc;
             baseQuery = baseQuery.order().by(Constants.TERM_DISPLAY_TEXT_KEY, order);
@@ -845,12 +843,12 @@ public class GlossaryService {
         constructTermsHeaders(ret, results, attributes);
     }
 
-    private void constructTermsHeaders(List<AtlasRelatedTermHeader> ret, Set<Map<String, List<String>>> queryResult, List attributes) {
+    private void constructTermsHeaders(List<AtlasRelatedTermHeader> ret, Set<Map<String, List<String>>> queryResult, List<String> attributes) {
         for (Map<String, List<String>> res : queryResult) {
             AtlasRelatedTermHeader atlasRelatedTermHeader = new AtlasRelatedTermHeader();
             atlasRelatedTermHeader.setTermGuid(res.get(Constants.GUID_PROPERTY_KEY).get(0));
             atlasRelatedTermHeader.setDisplayText(res.get(Constants.TERM_DISPLAY_TEXT_KEY).get(0));
-            atlasRelatedTermHeader.setOtherAttributes(res, attributes);
+            atlasRelatedTermHeader.setAttributes(res, attributes);
             ret.add(atlasRelatedTermHeader);
         }
     }
