@@ -24,7 +24,6 @@ on:
       - alpha
       - beta
       - development
-      - staging
       - master
 
 jobs:
@@ -95,13 +94,11 @@ jobs:
         id: get_latest_tag
         run: |
           repo_branch=${{ steps.get_branch.outputs.branch }}
-          # if [[ "$repo_branch" == "main" ]]; then
-          #   charts_tag="main"
-          # elif [[ "$repo_branch" == "beta" ]]; then
-          #   charts_tag="development"
-          # else 
-          charts_tag="$repo_branch"
-          # fi
+          if [[ "$repo_branch" == "master" ]]; then
+            charts_tag="staging"
+          else 
+            charts_tag="$repo_branch"
+          fi
           echo "##[set-output name=charts_tag;]$(echo $charts_tag)"
           tag=$(git tag | grep "\<$charts_tag\>" | sort -V | grep 'v[0-9].*' | tail -1)
           echo "##[set-output name=tag;]$(git tag | grep "\<$charts_tag\>" | sort -V | grep 'v[0-9].*' | tail -1)"
