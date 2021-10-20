@@ -340,7 +340,7 @@ public class RestoreHandlerV1 {
 
     private void restoreRelationships(Collection<AtlasEdge> edges) throws AtlasBaseException {
         for (AtlasEdge edge : edges) {
-            boolean needToSkip = (AtlasGraphUtilsV2.getState(edge) == DELETED);
+            boolean needToSkip = (AtlasGraphUtilsV2.getState(edge) == ACTIVE);
 
             if (needToSkip) {
                 if (LOG.isDebugEnabled()) {
