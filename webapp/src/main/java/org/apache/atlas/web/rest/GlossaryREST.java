@@ -29,9 +29,11 @@ import org.apache.atlas.glossary.GlossaryTermUtils;
 import org.apache.atlas.model.glossary.AtlasGlossary;
 import org.apache.atlas.model.glossary.AtlasGlossaryCategory;
 import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
+import org.apache.atlas.model.glossary.relations.AtlasGlossaryHeader;
 import org.apache.atlas.model.glossary.relations.AtlasRelatedCategoryHeader;
 import org.apache.atlas.model.glossary.relations.AtlasRelatedTermHeader;
 import org.apache.atlas.model.instance.AtlasRelatedObjectId;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.collections.MapUtils;
@@ -477,14 +479,13 @@ public class GlossaryREST {
                 throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "PartialUpdates missing or empty");
             }
 
-            AtlasGlossaryTerm glossaryTerm = glossaryService.getTerm(termGuid);
-            for (Map.Entry<String, String> entry : partialUpdates.entrySet()) {
-                try {
-                    glossaryTerm.setAttribute(entry.getKey(), entry.getValue());
-                } catch (IllegalArgumentException e) {
-                    throw new AtlasBaseException(AtlasErrorCode.INVALID_PARTIAL_UPDATE_ATTR, "Glossary Term", entry.getKey());
-                }
-            }
+            AtlasGlossaryTerm glossaryTermOld = glossaryService.getTerm(termGuid);
+
+            partialUpdates.put("guid", termGuid);
+
+            AtlasGlossaryTerm glossaryTerm = AtlasType.fromJson(AtlasType.toJson(partialUpdates), AtlasGlossaryTerm.class);
+            glossaryTerm.setAnchor(glossaryTermOld.getAnchor());
+
             return glossaryService.updateTerm(glossaryTerm);
         } finally {
             AtlasPerfTracer.log(perf);
