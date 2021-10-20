@@ -40,16 +40,22 @@ import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.TermsResponse;
-import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.janusgraph.diskstorage.solr.Solr6Index;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.PriorityQueue;
+import java.util.Set;
 
 import static org.apache.atlas.repository.Constants.FREETEXT_REQUEST_HANDLER;
 import static org.apache.atlas.repository.Constants.VERTEX_INDEX;
@@ -57,17 +63,44 @@ import static org.apache.atlas.repository.Constants.VERTEX_INDEX;
 public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasJanusGraphIndexClient.class);
 
-    private static final FreqComparator FREQ_COMPARATOR          = new FreqComparator();
-    private static final int            DEFAULT_SUGGESTION_COUNT = 5;
-    private static final int            MIN_FACET_COUNT_REQUIRED = 1;
-    private static final String         TERMS_PREFIX             = "terms.prefix";
-    private static final String         TERMS_FIELD              = "terms.fl";
+    private static final FreqComparator FREQ_COMPARATOR              = new FreqComparator();
+    private static final int            DEFAULT_SUGGESTION_COUNT     = 5;
+    private static final int            MIN_FACET_COUNT_REQUIRED     = 1;
+    private static final String         TERMS_PREFIX                 = "terms.prefix";
+    private static final String         TERMS_FIELD                  = "terms.fl";
+    private static final int            SOLR_HEALTHY_STATUS          = 0;
+    private static final long           SOLR_STATUS_LOG_FREQUENCY_MS = 60000;//Prints SOLR DOWN status for every 1 min
+    private static long                 prevSolrHealthCheckTime;
+
 
     private final Configuration configuration;
 
 
     public AtlasJanusGraphIndexClient(Configuration configuration) {
         this.configuration = configuration;
+    }
+
+    public boolean isHealthy() {
+        boolean isHealthy   = false;
+        long    currentTime = System.currentTimeMillis();
+
+        try {
+            if (isSolrHealthy()) {
+                isHealthy = true;
+            }
+        } catch (Exception exception) {
+            if (LOG.isDebugEnabled()) {
+                LOG.error("Error: isHealthy", exception);
+            }
+        }
+
+        if (!isHealthy && (prevSolrHealthCheckTime == 0 || currentTime - prevSolrHealthCheckTime > SOLR_STATUS_LOG_FREQUENCY_MS)) {
+            LOG.info("Solr Health: Unhealthy!");
+
+            prevSolrHealthCheckTime = currentTime;
+        }
+
+        return isHealthy;
     }
 
     @Override
@@ -338,6 +371,12 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
         }
 
         return Collections.EMPTY_LIST;
+    }
+
+    private boolean isSolrHealthy() throws SolrServerException, IOException {
+        SolrClient client = Solr6Index.getSolrClient();
+
+        return client != null && client.ping(Constants.VERTEX_INDEX).getStatus() == SOLR_HEALTHY_STATUS;
     }
 
     private void graphManagementCommit(AtlasGraphManagement management) {

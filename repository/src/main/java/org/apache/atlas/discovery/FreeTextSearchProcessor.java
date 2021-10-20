@@ -24,6 +24,7 @@ import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.*;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
+import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
@@ -32,7 +33,10 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
 
 
 /**
@@ -154,7 +158,12 @@ public class FreeTextSearchProcessor extends SearchProcessor {
                             if (LOG.isDebugEnabled()) {
                                 LOG.debug("FreeTextSearchProcessor.execute(): ignoring non-entity vertex (id={})", vertex.getId());
                             }
+                            continue;
+                        }
 
+                        //skip internalTypes
+                        AtlasEntityType entityType = context.getTypeRegistry().getEntityTypeByName(entityTypeName);
+                        if (entityType != null && entityType.isInternalType()) {
                             continue;
                         }
 

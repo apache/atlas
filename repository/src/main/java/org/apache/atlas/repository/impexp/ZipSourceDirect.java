@@ -257,9 +257,9 @@ public class ZipSourceDirect implements EntityImportStream {
         if (zipEntryNext.getName().equals(ZipExportFileNames.ATLAS_TYPESDEF_NAME.toEntryFileName())) {
             String json = getJsonPayloadFromZipEntryStream(this.zipInputStream);
             this.typesDef = AtlasType.fromJson(json, AtlasTypesDef.class);
+            zipEntryNext = zipInputStream.getNextEntry();
         }
 
-        zipEntryNext = zipInputStream.getNextEntry();
         if (zipEntryNext.getName().equals(ZIP_ENTRY_ENTITIES)) {
             this.entitiesArrayParser = new EntitiesArrayParser(zipInputStream);
         } else {

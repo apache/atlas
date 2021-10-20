@@ -50,6 +50,7 @@ public final class ApplicationProperties extends PropertiesConfiguration {
     public static final String  INDEX_BACKEND_CONF              = "atlas.graph.index.search.backend";
     public static final String  INDEX_MAP_NAME_CONF             = "atlas.graph.index.search.map-name";
     public static final String  SOLR_WAIT_SEARCHER_CONF         = "atlas.graph.index.search.solr.wait-searcher";
+    public static final String  INDEX_RECOVERY_CONF             = "atlas.index.recovery.enable";
     public static final String  ENABLE_FULLTEXT_SEARCH_CONF     = "atlas.search.fulltext.enable";
     public static final String  ENABLE_FREETEXT_SEARCH_CONF     = "atlas.search.freetext.enable";
     public static final String  ATLAS_RUN_MODE                  = "atlas.run.mode";
@@ -66,6 +67,7 @@ public final class ApplicationProperties extends PropertiesConfiguration {
     public static final String  DEFAULT_GRAPHDB_BACKEND         = GRAPHBD_BACKEND_JANUS;
     public static final boolean DEFAULT_SOLR_WAIT_SEARCHER      = false;
     public static final boolean DEFAULT_INDEX_MAP_NAME          = false;
+    public static final boolean DEFAULT_INDEX_RECOVERY          = true;
     public static final AtlasRunMode DEFAULT_ATLAS_RUN_MODE     = AtlasRunMode.PROD;
     public static final String INDEX_SEARCH_MAX_RESULT_SET_SIZE = "atlas.graph.index.search.max-result-set-size";
 

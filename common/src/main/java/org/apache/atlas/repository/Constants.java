@@ -244,6 +244,14 @@ public final class Constants {
     public static final String TASK_END_TIME          = encodePropertyKey(TASK_PREFIX + "endTime");
     public static final String ACTIVE_STATE_VALUE = "ACTIVE";
 
+    /**
+     * Index Recovery vertex property keys.
+     */
+    public static final String INDEX_RECOVERY_PREFIX                  = INTERNAL_PROPERTY_KEY_PREFIX + "idxRecovery_";
+    public static final String PROPERTY_KEY_INDEX_RECOVERY_NAME       = encodePropertyKey(INDEX_RECOVERY_PREFIX + "name");
+    public static final String PROPERTY_KEY_INDEX_RECOVERY_START_TIME = encodePropertyKey(INDEX_RECOVERY_PREFIX + "startTime");
+    public static final String PROPERTY_KEY_INDEX_RECOVERY_PREV_TIME  = encodePropertyKey(INDEX_RECOVERY_PREFIX + "prevTime");
+
     /*
      * All supported file-format extensions for Bulk Imports through file upload
      */
