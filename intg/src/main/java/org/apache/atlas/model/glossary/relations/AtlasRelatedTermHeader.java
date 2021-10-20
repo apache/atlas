@@ -19,7 +19,11 @@ package org.apache.atlas.model.glossary.relations;
 
 import org.apache.atlas.model.annotation.AtlasJSON;
 import org.apache.atlas.model.glossary.enums.AtlasTermRelationshipStatus;
+import org.apache.commons.collections.CollectionUtils;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 @AtlasJSON
@@ -31,6 +35,8 @@ public class AtlasRelatedTermHeader {
     private String expression;
     private String steward;
     private String source;
+    private Map<String, Object> attributes;
+
 
     private AtlasTermRelationshipStatus status;
 
@@ -85,6 +91,23 @@ public class AtlasRelatedTermHeader {
         this.status = status;
     }
 
+    public void setAttributes(Map<String, List<String>> rs, List<String> includeAttributes) {
+        if (this.attributes == null) {
+            this.attributes = new HashMap<>();
+        }
+        if (CollectionUtils.isNotEmpty(includeAttributes)) {
+            for (String key : includeAttributes) {
+                if (includeAttributes.contains(key) &&  rs.get(key) != null) {
+                    this.attributes.put(key, rs.get(key).get(0));
+                }
+            }
+        }
+    }
+
+    public Map<String, Object> getAttributes() {
+        return attributes;
+    }
+
     @Override
     public boolean equals(final Object o) {
         if (this == o) return true;
@@ -96,13 +119,14 @@ public class AtlasRelatedTermHeader {
                        Objects.equals(expression, that.expression) &&
                        Objects.equals(steward, that.steward) &&
                        Objects.equals(source, that.source) &&
-                       status == that.status;
+                       status == that.status &&
+                       Objects.equals(attributes, that.attributes);
     }
 
     @Override
     public int hashCode() {
 
-        return Objects.hash(termGuid, relationGuid, description, expression, steward, source, status);
+        return Objects.hash(termGuid, relationGuid, description, expression, steward, source, status, attributes);
     }
 
     @Override
@@ -115,6 +139,7 @@ public class AtlasRelatedTermHeader {
         sb.append(", expression='").append(expression).append('\'');
         sb.append(", steward='").append(steward).append('\'');
         sb.append(", source='").append(source).append('\'');
+        sb.append(", attributes='").append(attributes).append('\'');
         sb.append(", status=").append(status);
         sb.append('}');
         return sb.toString();

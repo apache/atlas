@@ -29,8 +29,6 @@ import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
 import org.apache.atlas.model.glossary.relations.AtlasRelatedCategoryHeader;
 import org.apache.atlas.model.glossary.relations.AtlasRelatedTermHeader;
 import org.apache.atlas.model.glossary.relations.AtlasTermCategorizationHeader;
-import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
@@ -783,7 +781,7 @@ public class GlossaryService {
 
 
     @GraphTransaction
-    public List<AtlasRelatedTermHeader> getCategoryTermsHeaders(String categoryGuid, int offset, int limit, SortOrder sortOrder) throws AtlasBaseException {
+    public List<AtlasRelatedTermHeader> getCategoryTermsHeaders(String categoryGuid, int offset, int limit, SortOrder sortOrder, List includeAttributes) throws AtlasBaseException {
         if (Objects.isNull(categoryGuid)) {
             throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "categoryGuid is null/empty");
         }
@@ -800,7 +798,7 @@ public class GlossaryService {
                 .out(Constants.CATEGORY_TERMS_EDGE_LABEL)
                 .has(Constants.STATE_PROPERTY_KEY, Constants.ACTIVE_STATE_VALUE);
 
-        runPaginatedTermsQuery(offset, limit, sortOrder, ret, query);
+        runPaginatedTermsQuery(offset, limit, sortOrder, ret, query, includeAttributes);
 
         return ret;
     }
@@ -827,32 +825,35 @@ public class GlossaryService {
             query = query.where(__.inE(Constants.CATEGORY_TERMS_EDGE_LABEL).count().is(P.eq(0)));
         }
 
-        runPaginatedTermsQuery(offset, limit, sortOrder, ret, query);
+        runPaginatedTermsQuery(offset, limit, sortOrder, ret, query , null);
 
         return ret;
     }
 
-    private void runPaginatedTermsQuery(int offset, int limit, SortOrder sortOrder, List<AtlasRelatedTermHeader> ret, GraphTraversal baseQuery) {
+    private void runPaginatedTermsQuery(int offset, int limit, SortOrder sortOrder, List<AtlasRelatedTermHeader> ret, GraphTraversal baseQuery, List<String> attributes) {
         if (sortOrder != null) {
             Order order = sortOrder == SortOrder.ASCENDING ? Order.asc : Order.desc;
             baseQuery = baseQuery.order().by(Constants.TERM_DISPLAY_TEXT_KEY, order);
         }
 
         Set<Map<String, List<String>>> results = baseQuery
-                .valueMap(Constants.GUID_PROPERTY_KEY, Constants.TERM_DISPLAY_TEXT_KEY)
+                .valueMap()
                 .range(offset, limit + offset).toSet();
 
-        constructTermsHeaders(ret, results);
+        constructTermsHeaders(ret, results, attributes);
     }
 
-    private void constructTermsHeaders(List<AtlasRelatedTermHeader> ret, Set<Map<String, List<String>>> queryResult) {
+    private void constructTermsHeaders(List<AtlasRelatedTermHeader> ret, Set<Map<String, List<String>>> queryResult, List<String> attributes) {
         for (Map<String, List<String>> res : queryResult) {
             AtlasRelatedTermHeader atlasRelatedTermHeader = new AtlasRelatedTermHeader();
             atlasRelatedTermHeader.setTermGuid(res.get(Constants.GUID_PROPERTY_KEY).get(0));
             atlasRelatedTermHeader.setDisplayText(res.get(Constants.TERM_DISPLAY_TEXT_KEY).get(0));
+            atlasRelatedTermHeader.setAttributes(res, attributes);
             ret.add(atlasRelatedTermHeader);
         }
     }
+
+
 
     @GraphTransaction
     public List<AtlasRelatedCategoryHeader> getGlossaryCategoriesHeadersFull(String glossaryGuid, int offset, int limit, SortOrder sortOrder) throws AtlasBaseException {
