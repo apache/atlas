@@ -26,7 +26,6 @@ import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
-import org.apache.atlas.repository.graph.AtlasEdgeLabel;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
@@ -358,23 +357,12 @@ public class RestoreHandlerV1 {
         restoreRelationships(Collections.singleton(edge));
     }
 
-    private AtlasStructType.AtlasAttribute getAttributeForEdge(String edgeLabel) throws AtlasBaseException {
-        AtlasStructType.AtlasAttribute attribute;
-        try {
-            AtlasRelationshipDef relationshipDef = typeRegistry.getRelationshipDefByLabel(edgeLabel);
-            AtlasEntityType type = (AtlasEntityType) typeRegistry.getType(relationshipDef.getEndDef1().getType());
-            attribute = type.getRelationshipAttribute(relationshipDef.getEndDef1().getName(), relationshipDef.getName());
-        } catch (AtlasBaseException e) {
-            LOG.warn(e.getMessage());
+    private AtlasStructType.AtlasAttribute getAttributeForEdge(AtlasEdge edge) throws AtlasBaseException {
+        String labelWithoutPrefix        = edge.getLabel().substring(GraphHelper.EDGE_LABEL_PREFIX.length());
+        AtlasType       parentType       = typeRegistry.getType(AtlasGraphUtilsV2.getTypeName(edge.getOutVertex()));
+        AtlasStructType parentStructType = (AtlasStructType) parentType;
 
-            // If the above method doesn't work which means relationship label isn't defined by user then switch to default method
-            AtlasEdgeLabel atlasEdgeLabel   = new AtlasEdgeLabel(edgeLabel);
-            AtlasType       parentType       = typeRegistry.getType(atlasEdgeLabel.getTypeName());
-            AtlasStructType parentStructType = (AtlasStructType) parentType;
-            attribute = parentStructType.getAttribute(atlasEdgeLabel.getAttributeName());
-        }
-
-        return attribute;
+        return parentStructType.getAttribute(labelWithoutPrefix);
     }
 
     protected void restoreVertex(AtlasVertex instanceVertex) throws AtlasBaseException {
@@ -395,7 +383,7 @@ public class RestoreHandlerV1 {
                 } else {
                     AtlasVertex outVertex = edge.getOutVertex();
                     AtlasVertex inVertex = edge.getInVertex();
-                    AtlasStructType.AtlasAttribute attribute = getAttributeForEdge(edge.getLabel());
+                    AtlasStructType.AtlasAttribute attribute = getAttributeForEdge(edge);
 
                     restoreEdgeBetweenVertices(outVertex, inVertex, attribute);
                 }
