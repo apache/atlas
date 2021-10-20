@@ -55,6 +55,8 @@ import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
  import org.apache.atlas.tasks.TaskManagement;
  import org.apache.atlas.type.AtlasArrayType;
+import org.apache.atlas.repository.store.graph.v1.RestoreHandlerV1;
+import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasBuiltInTypes;
 import org.apache.atlas.type.AtlasBusinessMetadataType.AtlasBusinessAttribute;
 import org.apache.atlas.type.AtlasClassificationType;
@@ -157,6 +159,7 @@ public class EntityGraphMapper {
     private final GraphHelper               graphHelper;
     private final AtlasGraph                graph;
     private final DeleteHandlerDelegate     deleteDelegate;
+    private final RestoreHandlerV1          restoreHandlerV1;
     private final AtlasTypeRegistry         typeRegistry;
     private final AtlasRelationshipStore    relationshipStore;
     private final IAtlasEntityChangeNotifier entityChangeNotifier;
@@ -166,10 +169,11 @@ public class EntityGraphMapper {
     private final TaskManagement taskManagement;
 
     @Inject
-    public EntityGraphMapper(DeleteHandlerDelegate deleteDelegate, AtlasTypeRegistry typeRegistry, AtlasGraph graph,
+    public EntityGraphMapper(DeleteHandlerDelegate deleteDelegate, RestoreHandlerV1 restoreHandlerV1, AtlasTypeRegistry typeRegistry, AtlasGraph graph,
                              AtlasRelationshipStore relationshipStore, IAtlasEntityChangeNotifier entityChangeNotifier,
                              AtlasInstanceConverter instanceConverter, IFullTextMapper fullTextMapperV2,
                              TaskManagement taskManagement) {
+        this.restoreHandlerV1 = restoreHandlerV1;
         this.graphHelper          = new GraphHelper(graph);
         this.deleteDelegate       = deleteDelegate;
         this.typeRegistry         = typeRegistry;
@@ -300,6 +304,10 @@ public class EntityGraphMapper {
         EntityMutationResponse resp       = new EntityMutationResponse();
         RequestContext         reqContext = RequestContext.get();
 
+        if (CollectionUtils.isNotEmpty(context.getEntitiesToRestore())) {
+            restoreHandlerV1.restoreEntities(context.getEntitiesToRestore());
+        }
+
         Collection<AtlasEntity> createdEntities = context.getCreatedEntities();
         Collection<AtlasEntity> updatedEntities = context.getUpdatedEntities();
 
@@ -364,6 +372,12 @@ public class EntityGraphMapper {
 
         for (AtlasEntityHeader entity : req.getUpdatedEntities()) {
             resp.addEntity(updateType, entity);
+        }
+
+        if (req.isRestoreRequested()) {
+            for (AtlasEntityHeader entity : req.getRestoredEntities()) {
+                resp.addEntity(UPDATE, entity);
+            }
         }
 
         RequestContext.get().endMetricRecord(metric);
@@ -877,7 +891,7 @@ public class EntityGraphMapper {
 
                     //delete old reference
                     deleteDelegate.getHandler().deleteEdgeReference(currentEdge, ctx.getAttrType().getTypeCategory(), ctx.getAttribute().isOwnedRef(),
-                                                      true, ctx.getAttribute().getRelationshipEdgeDirection(), ctx.getReferringVertex());
+                            true, ctx.getAttribute().getRelationshipEdgeDirection(), ctx.getReferringVertex());
                 }
 
                 return newEdge;
@@ -1111,7 +1125,8 @@ public class EntityGraphMapper {
         String uniqPropName = attribute != null ? attribute.getVertexUniquePropertyName() : null;
 
         if (uniqPropName != null) {
-            if (isDeletedEntity || AtlasGraphUtilsV2.getState(vertex) == DELETED) {
+            // Removing AtlasGraphUtilsV2.getState(vertex) == DELETED condition below to keep the unique contrain even if asset is deleted.
+            if (isDeletedEntity) {
                 vertex.removeProperty(uniqPropName);
             } else {
                 AtlasGraphUtilsV2.setEncodedProperty(vertex, uniqPropName, ret);
@@ -1295,7 +1310,7 @@ public class EntityGraphMapper {
                 // use legacy way to create/update edges
                 if (WARN_ON_NO_RELATIONSHIP || LOG.isDebugEnabled()) {
                     LOG.warn("No RelationshipDef defined between {} and {} on attribute: {}. This can lead to severe performance degradation.",
-                             getTypeName(entityVertex), getTypeName(attributeVertex), attributeName);
+                            getTypeName(entityVertex), getTypeName(attributeVertex), attributeName);
                 }
 
                 ret = mapObjectIdValue(ctx, context);
@@ -1858,7 +1873,7 @@ public class EntityGraphMapper {
 
     private AtlasEdge updateRelationship(AtlasEdge currentEdge, final AtlasVertex parentEntityVertex, final AtlasVertex newEntityVertex,
                                          AtlasRelationshipEdgeDirection edgeDirection,  Map<String, Object> relationshipAttributes)
-                                         throws AtlasBaseException {
+            throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("Updating entity reference using relationship {} for reference attribute {}", getTypeName(newEntityVertex));
         }
@@ -1951,7 +1966,7 @@ public class EntityGraphMapper {
 
                     for (AtlasEdge edge : edgesToRemove) {
                         boolean deleted = deleteDelegate.getHandler().deleteEdgeReference(edge, entryType.getTypeCategory(), attribute.isOwnedRef(),
-                                                                             true, attribute.getRelationshipEdgeDirection(), entityVertex);
+                                true, attribute.getRelationshipEdgeDirection(), entityVertex);
 
                         if (!deleted) {
                             additionalElements.add(edge);

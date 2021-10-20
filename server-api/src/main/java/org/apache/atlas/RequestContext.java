@@ -53,6 +53,7 @@ public class RequestContext {
     private final long                                   requestTime          = System.currentTimeMillis();
     private final Map<String, AtlasEntityHeader>         updatedEntities      = new HashMap<>();
     private final Map<String, AtlasEntityHeader>         deletedEntities      = new HashMap<>();
+    private final Map<String, AtlasEntityHeader>         restoreEntities      = new HashMap<>();
     private final Map<String, AtlasEntity>               entityCache          = new HashMap<>();
     private final Map<String, AtlasEntityWithExtInfo>    entityExtInfoCache   = new HashMap<>();
     private final Map<String, AtlasEntity>               diffEntityCache      = new HashMap<>();
@@ -82,6 +83,7 @@ public class RequestContext {
     private boolean     skipFailedEntities = false;
     private String      currentTypePatchAction = "";
 
+    private boolean     isRestoreRequested = true;
 
     private RequestContext() {
     }
@@ -223,6 +225,10 @@ public class RequestContext {
 
     public void setPurgeRequested(boolean isPurgeRequested) { this.isPurgeRequested = isPurgeRequested; }
 
+    public boolean isRestoreRequested() { return isRestoreRequested; }
+
+    public void setRestoreRequested(boolean isRestoreRequested) { this.isRestoreRequested = isRestoreRequested; }
+
     public boolean isInNotificationProcessing() {
         return isInNotificationProcessing;
     }
@@ -298,6 +304,13 @@ public class RequestContext {
     public void recordEntityDelete(AtlasEntityHeader entity) {
         if (entity != null && entity.getGuid() != null) {
             deletedEntities.put(entity.getGuid(), entity);
+        }
+    }
+
+    public void recordEntityRestore(AtlasEntityHeader entity) {
+        if (entity != null && entity.getGuid() != null) {
+            entity.setStatus(AtlasEntity.Status.ACTIVE);
+            restoreEntities.put(entity.getGuid(), entity);
         }
     }
 
@@ -399,6 +412,10 @@ public class RequestContext {
     public void clearAddedPropagations() {
         addedPropagations.clear();
     }
+    
+    public Collection<AtlasEntityHeader> getRestoredEntities() {
+        return restoreEntities.values();
+    }
 
     /**
      * Checks if an instance with the given guid is in the cache for this request.  Either returns the instance
@@ -425,6 +442,10 @@ public class RequestContext {
 
     public boolean isDeletedEntity(String guid) {
         return deletedEntities.containsKey(guid);
+    }
+
+    public boolean isRestoredEntity(String guid) {
+        return restoreEntities.containsKey(guid);
     }
 
     public MetricRecorder startMetricRecord(String name) { return metrics != null ? metrics.getMetricRecorder(name) : null; }

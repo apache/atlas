@@ -1,3 +1,4 @@
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -144,6 +145,14 @@ public interface AtlasEntityStore {
     EntityMutationResponse createOrUpdate(EntityStream entityStream, boolean isPartialUpdate) throws AtlasBaseException;
 
     /**
+     * Create or update entities in the stream with restore parameter
+     * @param entityStream AtlasEntityStream
+     * @return EntityMutationResponse Entity mutations operations with the corresponding set of entities on which these operations were performed
+     * @throws AtlasBaseException
+     */
+    EntityMutationResponse createOrUpdate(EntityStream entityStream, boolean isPartialUpdate, boolean isRestoreRequested) throws AtlasBaseException;
+
+    /**
      * Create or update  entities with parameters necessary for import process
      * @param entityStream AtlasEntityStream
      * @return EntityMutationResponse Entity mutations operations with the corresponding set of entities on which these operations were performed
@@ -221,6 +230,11 @@ public interface AtlasEntityStore {
      * Return list of deleted entity guids
      */
     EntityMutationResponse deleteByIds(List<String> guid) throws AtlasBaseException;
+
+    /*
+     * Return list of deleted entity guids
+     */
+    EntityMutationResponse restoreByIds(List<String> guid) throws AtlasBaseException;
 
     /*
      * Return list of purged entity guids

@@ -201,6 +201,7 @@ public enum AtlasErrorCode {
     NO_PROPAGATED_CLASSIFICATIONS_FOUND_FOR_ENTITY(404, "ATLAS-404-00-013", "No propagated classifications associated with entity: {0}"),
     FILE_NAME_NOT_FOUND(404, "ATLAS-404-00-014", "File name should not be blank"),
     NO_TYPE_NAME_ON_VERTEX(404, "ATLAS-404-00-015", "No typename found for given entity with guid: {0}"),
+    RELATIONSHIP_LABEL_NOT_FOUND(404, "ATLAS-404-00-016", "Given relationshipLabel {0} was invalid"),
 
     // All data conflict errors go here
     TYPE_ALREADY_EXISTS(409, "ATLAS-409-00-001", "Given type {0} already exists"),

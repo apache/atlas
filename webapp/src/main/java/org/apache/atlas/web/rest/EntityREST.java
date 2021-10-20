@@ -65,17 +65,7 @@ import org.springframework.stereotype.Service;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.DefaultValue;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -83,12 +73,7 @@ import javax.ws.rs.core.StreamingOutput;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 
 /**
@@ -303,7 +288,6 @@ public class EntityREST {
      *
      * PUT /v2/entity/uniqueAttribute/type/aType?attr:aTypeAttribute=someValue
      *
-
      *******/
     @PUT
     @Path("/uniqueAttribute/type/{typeName}")
@@ -787,7 +771,7 @@ public class EntityREST {
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.createOrUpdate(entityCount=" +
-                                                                       (CollectionUtils.isEmpty(entities.getEntities()) ? 0 : entities.getEntities().size()) + ")");
+                        (CollectionUtils.isEmpty(entities.getEntities()) ? 0 : entities.getEntities().size()) + ")");
             }
 
             EntityStream entityStream = new AtlasEntityStream(entities);
@@ -825,10 +809,32 @@ public class EntityREST {
     }
 
     /**
-     * Bulk API to associate a tag to multiple entities.
-     * Option 1: List of GUIDs to associate a tag
-     * Option 2: Typename and list of uniq attributes for entities to associate a tag
-     * Option 3: List of GUIDs and Typename with list of uniq attributes for entities to associate a tag
+     * Bulk API to restore list of entities identified by its GUIDs
+     */
+    @POST
+    @Path("/restore/bulk")
+    public EntityMutationResponse restoreByGuids(@QueryParam("guid") final List<String> guids) throws AtlasBaseException {
+        if (CollectionUtils.isNotEmpty(guids)) {
+            for (String guid : guids) {
+                Servlets.validateQueryParamLength("guid", guid);
+            }
+        }
+
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.restoreByGuids(" + guids  + ")");
+            }
+
+            return entitiesStore.restoreByIds(guids);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    /**
+     * Bulk API to associate a tag to multiple entities
      */
     @POST
     @Path("/bulk/classification")

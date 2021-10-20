@@ -38,6 +38,8 @@ import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
+import org.apache.atlas.repository.store.graph.v1.RestoreHandlerV1;
+import org.apache.atlas.runner.LocalSolrRunner;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.DeleteType;
 import org.apache.atlas.type.AtlasEntityType;
@@ -80,6 +82,9 @@ public abstract class AtlasRelationshipStoreV2Test extends AtlasTestBase {
 
     @Inject
     DeleteHandlerDelegate deleteDelegate;
+
+    @Inject
+    RestoreHandlerV1 restoreHandlerV1;
 
     @Inject
     EntityGraphMapper graphMapper;
@@ -130,7 +135,7 @@ public abstract class AtlasRelationshipStoreV2Test extends AtlasTestBase {
 
     @BeforeTest
     public void init() throws Exception {
-        entityStore       = new AtlasEntityStoreV2(atlasGraph, deleteDelegate, typeRegistry, mockChangeNotifier, graphMapper);
+        entityStore       = new AtlasEntityStoreV2(atlasGraph, deleteDelegate, restoreHandlerV1, typeRegistry, mockChangeNotifier, graphMapper);
         relationshipStore = new AtlasRelationshipStoreV2(atlasGraph, typeRegistry, deleteDelegate, entityNotifier);
 
         RequestContext.clear();
@@ -409,8 +414,8 @@ public abstract class AtlasRelationshipStoreV2Test extends AtlasTestBase {
 
         init();
         EntityMutationResponse response = entityStore.updateByUniqueAttributes(typeRegistry.getEntityTypeByName("B"),
-                                                                               Collections.singletonMap(NAME, b.getAttribute(NAME)),
-                                                                               new AtlasEntityWithExtInfo(bPartialUpdate));
+                Collections.singletonMap(NAME, b.getAttribute(NAME)),
+                new AtlasEntityWithExtInfo(bPartialUpdate));
         // Verify 3 entities were updated:
         // * set b.manyA reference to a1 and a2
         // * set inverse a1.oneB reference to b
@@ -431,8 +436,8 @@ public abstract class AtlasRelationshipStoreV2Test extends AtlasTestBase {
         bPartialUpdate.setRelationshipAttribute("manyA", ImmutableList.of(getAtlasObjectId(a3)));
         init();
         response = entityStore.updateByUniqueAttributes(typeRegistry.getEntityTypeByName("B"),
-                                                        Collections.singletonMap(NAME, b.getAttribute(NAME)),
-                                                        new AtlasEntityWithExtInfo(bPartialUpdate));
+                Collections.singletonMap(NAME, b.getAttribute(NAME)),
+                new AtlasEntityWithExtInfo(bPartialUpdate));
         // Verify 4 entities were updated:
         // * set b.manyA reference to a3
         // * set inverse a3.oneB reference to b
@@ -543,8 +548,8 @@ public abstract class AtlasRelationshipStoreV2Test extends AtlasTestBase {
 
         init();
         EntityMutationResponse response = entityStore.updateByUniqueAttributes(typeRegistry.getEntityTypeByName("B"),
-                                                                               Collections.singletonMap(NAME, b1.getAttribute(NAME)),
-                                                                               new AtlasEntityWithExtInfo(b1PartialUpdate));
+                Collections.singletonMap(NAME, b1.getAttribute(NAME)),
+                new AtlasEntityWithExtInfo(b1PartialUpdate));
 
         List<AtlasEntityHeader> updatedEntityHeaders = response.getPartialUpdatedEntities();
         assertEquals(updatedEntityHeaders.size(), 3);

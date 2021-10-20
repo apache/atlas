@@ -27,13 +27,14 @@ import org.apache.commons.lang.StringUtils;
 import java.util.*;
 
 public class EntityMutationContext {
-    private final EntityGraphDiscoveryContext  context;
-    private final List<AtlasEntity>            entitiesCreated  = new ArrayList<>();
-    private final List<AtlasEntity>            entitiesUpdated  = new ArrayList<>();
-    private final Map<String, AtlasEntityType> entityVsType     = new HashMap<>();
-    private final Map<String, AtlasVertex>     entityVsVertex   = new HashMap<>();
-    private final Map<String, String>          guidAssignments  = new HashMap<>();
-    private       List<AtlasVertex>            entitiesToDelete = null;
+    private final EntityGraphDiscoveryContext context;
+    private final List<AtlasEntity> entitiesCreated = new ArrayList<>();
+    private final List<AtlasEntity> entitiesUpdated = new ArrayList<>();
+    private final Map<String, AtlasEntityType> entityVsType = new HashMap<>();
+    private final Map<String, AtlasVertex> entityVsVertex = new HashMap<>();
+    private final Map<String, String> guidAssignments = new HashMap<>();
+    private List<AtlasVertex> entitiesToDelete = null;
+    private List<AtlasVertex> entitiesToRestore = null;
 
     public EntityMutationContext(final EntityGraphDiscoveryContext context) {
         this.context = context;
@@ -65,6 +66,14 @@ public class EntityMutationContext {
                 entityVsVertex.put(internalGuid, atlasVertex);
             }
         }
+    }
+
+    public void addEntityToRestore(AtlasVertex vertex) {
+        if (entitiesToRestore == null) {
+            entitiesToRestore = new ArrayList<>();
+        }
+
+        entitiesToRestore.add(vertex);
     }
 
     public void addEntityToDelete(AtlasVertex vertex) {
@@ -100,11 +109,17 @@ public class EntityMutationContext {
         return entitiesToDelete;
     }
 
+    public List<AtlasVertex> getEntitiesToRestore() {
+        return entitiesToRestore;
+    }
+
     public AtlasEntityType getType(String guid) {
         return entityVsType.get(guid);
     }
 
-    public AtlasVertex getVertex(String guid) { return entityVsVertex.get(guid); }
+    public AtlasVertex getVertex(String guid) {
+        return entityVsVertex.get(guid);
+    }
 
     @Override
     public boolean equals(final Object o) {
@@ -114,10 +129,10 @@ public class EntityMutationContext {
         final EntityMutationContext that = (EntityMutationContext) o;
 
         return Objects.equals(context, that.context) &&
-               Objects.equals(entitiesCreated, that.entitiesCreated) &&
-               Objects.equals(entitiesUpdated, that.entitiesUpdated) &&
-               Objects.equals(entityVsType, that.entityVsType) &&
-               Objects.equals(entityVsVertex, that.entityVsVertex);
+                Objects.equals(entitiesCreated, that.entitiesCreated) &&
+                Objects.equals(entitiesUpdated, that.entitiesUpdated) &&
+                Objects.equals(entityVsType, that.entityVsType) &&
+                Objects.equals(entityVsVertex, that.entityVsVertex);
     }
 
     @Override
@@ -133,12 +148,12 @@ public class EntityMutationContext {
     @Override
     public String toString() {
         return "EntityMutationContext{" +
-            "context=" + context +
-            ", entitiesCreated=" + entitiesCreated +
-            ", entitiesUpdated=" + entitiesUpdated +
-            ", entityVsType=" + entityVsType +
-            ", entityVsVertex=" + entityVsVertex +
-            '}';
+                "context=" + context +
+                ", entitiesCreated=" + entitiesCreated +
+                ", entitiesUpdated=" + entitiesUpdated +
+                ", entityVsType=" + entityVsType +
+                ", entityVsVertex=" + entityVsVertex +
+                '}';
     }
 
     public AtlasEntity getCreatedEntity(String parentGuid) {
@@ -153,9 +168,13 @@ public class EntityMutationContext {
         return entitiesToDelete != null && entitiesToDelete.contains(vertex);
     }
 
+    public boolean isRestoredEntity(AtlasVertex vertex) {
+        return entitiesToRestore != null && entitiesToRestore.contains(vertex);
+    }
+
     private AtlasEntity getFromCollection(String parentGuid, Collection<AtlasEntity> coll) {
         for (AtlasEntity e : coll) {
-            if(e.getGuid().equalsIgnoreCase(parentGuid)) {
+            if (e.getGuid().equalsIgnoreCase(parentGuid)) {
                 return e;
             }
         }
@@ -165,7 +184,7 @@ public class EntityMutationContext {
 
     public AtlasEntity getCreatedOrUpdatedEntity(String parentGuid) {
         AtlasEntity e = getCreatedEntity(parentGuid);
-        if(e == null) {
+        if (e == null) {
             return getUpdatedEntity(parentGuid);
         }
 

@@ -1,3 +1,4 @@
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -53,6 +54,7 @@ import org.apache.atlas.repository.store.graph.EntityGraphDiscovery;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityComparator.AtlasEntityDiffResult;
+import org.apache.atlas.repository.store.graph.v1.RestoreHandlerV1;
 import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasBusinessMetadataType.AtlasBusinessAttribute;
 import org.apache.atlas.type.AtlasClassificationType;
@@ -71,6 +73,7 @@ import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.json.simple.JSONArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -82,9 +85,7 @@ import java.util.*;
 import static java.lang.Boolean.FALSE;
 import static org.apache.atlas.AtlasConfiguration.STORE_DIFFERENTIAL_AUDITS;
 import static org.apache.atlas.bulkimport.BulkImportResponse.ImportStatus.FAILED;
-import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.DELETE;
-import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.PURGE;
-import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.UPDATE;
+import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.*;
 import static org.apache.atlas.repository.Constants.IS_INCOMPLETE_PROPERTY_KEY;
 import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
 import static org.apache.atlas.repository.graph.GraphHelper.isEntityIncomplete;
@@ -98,19 +99,21 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasEntityStoreV2.class);
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("store.EntityStore");
 
-    private final AtlasGraph                 graph;
-    private final DeleteHandlerDelegate      deleteDelegate;
-    private final AtlasTypeRegistry          typeRegistry;
+    private final AtlasGraph                graph;
+    private final DeleteHandlerDelegate     deleteDelegate;
+    private final RestoreHandlerV1          restoreHandlerV1;
+    private final AtlasTypeRegistry         typeRegistry;
     private final IAtlasEntityChangeNotifier entityChangeNotifier;
     private final EntityGraphMapper          entityGraphMapper;
     private final EntityGraphRetriever       entityRetriever;
     private       boolean                    storeDifferentialAudits;
 
     @Inject
-    public AtlasEntityStoreV2(AtlasGraph graph, DeleteHandlerDelegate deleteDelegate, AtlasTypeRegistry typeRegistry,
+    public AtlasEntityStoreV2(AtlasGraph graph, DeleteHandlerDelegate deleteDelegate, RestoreHandlerV1 restoreHandlerV1, AtlasTypeRegistry typeRegistry,
                               IAtlasEntityChangeNotifier entityChangeNotifier, EntityGraphMapper entityGraphMapper) {
         this.graph                = graph;
         this.deleteDelegate       = deleteDelegate;
+        this.restoreHandlerV1     = restoreHandlerV1;
         this.typeRegistry         = typeRegistry;
         this.entityChangeNotifier = entityChangeNotifier;
         this.entityGraphMapper    = entityGraphMapper;
@@ -361,6 +364,14 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     }
 
     @Override
+    @GraphTransaction
+    public EntityMutationResponse createOrUpdate(EntityStream entityStream, boolean isPartialUpdate, boolean isRestoreRequested) throws AtlasBaseException {
+        RequestContext.get().
+                setRestoreRequested(isRestoreRequested);
+        return createOrUpdate(entityStream, isPartialUpdate, false, false);
+    }
+
+    @Override
     @GraphTransaction(logRollback = false)
     public EntityMutationResponse createOrUpdateForImport(EntityStream entityStream) throws AtlasBaseException {
         return createOrUpdate(entityStream, false, true, true);
@@ -545,6 +556,45 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
 
         EntityMutationResponse ret = deleteVertices(deletionCandidates);
+
+        // Notify the change listeners
+        entityChangeNotifier.onEntitiesMutated(ret, false);
+
+        return ret;
+    }
+
+    @Override
+    @GraphTransaction
+    public EntityMutationResponse restoreByIds(final List<String> guids) throws AtlasBaseException {
+        if (CollectionUtils.isEmpty(guids)) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Guid(s) not specified");
+        }
+
+        Collection<AtlasVertex> restoreCandidates = new ArrayList<>();
+
+        for (String guid : guids) {
+            AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(graph, guid);
+
+            if (vertex == null) {
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Restore request ignored for non-existent entity with guid " + guid);
+                }
+
+                continue;
+            }
+
+            AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(vertex);
+
+            AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_DELETE, entityHeader), "delete entity: guid=", guid);
+
+            restoreCandidates.add(vertex);
+        }
+
+        if (restoreCandidates.isEmpty()) {
+            LOG.info("No restore candidate entities were found for guids %s", guids);
+        }
+
+        EntityMutationResponse ret = restoreVertices(restoreCandidates);
 
         // Notify the change listeners
         entityChangeNotifier.onEntitiesMutated(ret, false);
@@ -801,8 +851,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         // verify authorization only for removal of directly associated classification and not propagated one.
         if (StringUtils.isEmpty(associatedEntityGuid) || guid.equals(associatedEntityGuid)) {
             AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_REMOVE_CLASSIFICATION,
-                                                 entityHeader, new AtlasClassification(classificationName)),
-                                                 "remove classification: guid=", guid, ", classification=", classificationName);
+                            entityHeader, new AtlasClassification(classificationName)),
+                    "remove classification: guid=", guid, ", classification=", classificationName);
         }
 
         if (LOG.isDebugEnabled()) {
@@ -1145,7 +1195,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             if (!RequestContext.get().isImportInProgress()) {
                 for (AtlasEntity entity : context.getCreatedEntities()) {
                     AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, new AtlasEntityHeader(entity)),
-                                                         "create entity: type=", entity.getTypeName());
+                            "create entity: type=", entity.getTypeName());
                 }
             }
 
@@ -1197,7 +1247,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 if (!reqContext.isImportInProgress()) {
                     for (AtlasEntity entity : context.getUpdatedEntities()) {
                         AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, new AtlasEntityHeader(entity)),
-                                                             "update entity: type=", entity.getTypeName());
+                                "update entity: type=", entity.getTypeName());
                     }
                 }
 
@@ -1275,7 +1325,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                     if (RequestContext.get().isImportInProgress() && AtlasTypeUtil.isAssignedGuid(entity.getGuid())) {
                         vertex = entityGraphMapper.createVertexWithGuid(entity, entity.getGuid());
                     } else {
-                         vertex = entityGraphMapper.createVertex(entity);
+                        vertex = entityGraphMapper.createVertex(entity);
                     }
 
                     discoveryContext.addResolvedGuid(guid, vertex);
@@ -1289,6 +1339,13 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                     requestContext.recordEntityGuidUpdate(entity, guid);
 
                     context.addCreated(guid, entity, entityType, vertex);
+                }
+
+                if (requestContext.isRestoreRequested()) {
+                    Status currStatus = AtlasGraphUtilsV2.getState(vertex);
+                    if (currStatus == Status.DELETED) {
+                        context.addEntityToRestore(vertex);
+                    }
                 }
 
                 // during import, update the system attributes
@@ -1363,6 +1420,19 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
 
         for (AtlasEntityHeader entity : req.getUpdatedEntities()) {
+            response.addEntity(UPDATE, entity);
+        }
+
+        return response;
+    }
+
+    private EntityMutationResponse restoreVertices(Collection<AtlasVertex> restoreCandidates) throws AtlasBaseException {
+        EntityMutationResponse response = new EntityMutationResponse();
+        RequestContext         req      = RequestContext.get();
+
+        restoreHandlerV1.restoreEntities(restoreCandidates);
+
+        for (AtlasEntityHeader entity : req.getRestoredEntities()) {
             response.addEntity(UPDATE, entity);
         }
 
@@ -1568,10 +1638,10 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             int      lineIndexToLog = lineIndex + 2;
 
             boolean missingFields = record.length < FileUtils.UNIQUE_ATTR_NAME_COLUMN_INDEX ||
-                                    StringUtils.isBlank(record[FileUtils.TYPENAME_COLUMN_INDEX]) ||
-                                    StringUtils.isBlank(record[FileUtils.UNIQUE_ATTR_VALUE_COLUMN_INDEX]) ||
-                                    StringUtils.isBlank(record[FileUtils.BM_ATTR_NAME_COLUMN_INDEX]) ||
-                                    StringUtils.isBlank(record[FileUtils.BM_ATTR_VALUE_COLUMN_INDEX]);
+                    StringUtils.isBlank(record[FileUtils.TYPENAME_COLUMN_INDEX]) ||
+                    StringUtils.isBlank(record[FileUtils.UNIQUE_ATTR_VALUE_COLUMN_INDEX]) ||
+                    StringUtils.isBlank(record[FileUtils.BM_ATTR_NAME_COLUMN_INDEX]) ||
+                    StringUtils.isBlank(record[FileUtils.BM_ATTR_VALUE_COLUMN_INDEX]);
 
             if (missingFields){
                 failedMsgList.add("Line #" + lineIndexToLog + ": missing fields. " + Arrays.toString(record));
@@ -1724,10 +1794,10 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     private boolean missingFieldsCheck(String[] record, BulkImportResponse bulkImportResponse, int lineIndex){
         boolean missingFieldsCheck = (record.length < FileUtils.UNIQUE_ATTR_NAME_COLUMN_INDEX) ||
-                    StringUtils.isBlank(record[FileUtils.TYPENAME_COLUMN_INDEX]) ||
-                        StringUtils.isBlank(record[FileUtils.UNIQUE_ATTR_VALUE_COLUMN_INDEX]) ||
-                            StringUtils.isBlank(record[FileUtils.BM_ATTR_NAME_COLUMN_INDEX]) ||
-                                StringUtils.isBlank(record[FileUtils.BM_ATTR_VALUE_COLUMN_INDEX]);
+                StringUtils.isBlank(record[FileUtils.TYPENAME_COLUMN_INDEX]) ||
+                StringUtils.isBlank(record[FileUtils.UNIQUE_ATTR_VALUE_COLUMN_INDEX]) ||
+                StringUtils.isBlank(record[FileUtils.BM_ATTR_NAME_COLUMN_INDEX]) ||
+                StringUtils.isBlank(record[FileUtils.BM_ATTR_VALUE_COLUMN_INDEX]);
 
         if(missingFieldsCheck){
             LOG.error("Missing fields: " + Arrays.toString(record) + " at line #" + lineIndex);
