@@ -755,9 +755,9 @@ public class AtlasStructType extends AtlasType {
             this.definedInType            = definedInType;
             this.attributeDef             = attrDef;
             this.attributeType            = attributeType.getTypeForAttribute();
-            this.qualifiedName            = getQualifiedAttributeName(definedInType.getStructDef(), attributeDef.getName());
-            this.vertexPropertyName       = generateVertexPropertyName(definedInType.getStructDef(), attributeDef, qualifiedName);
-            this.vertexUniquePropertyName = attrDef.getIsUnique() ? encodePropertyKey(getQualifiedAttributeName(definedInType.getStructDef(), UNIQUE_ATTRIBUTE_SHADE_PROPERTY_PREFIX + attributeDef.getName())) : null;
+            this.qualifiedName            = attributeDef.getName();
+            this.vertexPropertyName       = generateVertexPropertyName(attributeDef);
+            this.vertexUniquePropertyName = attrDef.getIsUnique() ? encodePropertyKey(UNIQUE_ATTRIBUTE_SHADE_PROPERTY_PREFIX + attributeDef.getName()) : null;
             this.relationshipName         = relationshipName;
             this.relationshipEdgeLabel    = getRelationshipEdgeLabel(relationshipLabel);
             boolean isOwnedRef            = false;
@@ -1144,32 +1144,8 @@ public class AtlasStructType extends AtlasType {
             return AtlasStructType.getReferencedEntityType(type);
         }
 
-        public static String getQualifiedAttributeName(AtlasStructDef structDef, String attrName) {
-            if (isRootType(structDef)) {
-                return attrName;
-            } else {
-                return attrName.contains(".") ? attrName : String.format("%s.%s", structDef.getName(), attrName);
-            }
-        }
-
-        public static String generateVertexPropertyName(AtlasStructDef structDef, AtlasAttributeDef attrDef, String qualifiedName) {
-            String vertexPropertyName = qualifiedName;
-            String attrName           = attrDef.getName();
-            if (isRootType(structDef)) {
-                return attrName;
-            } else {
-                if(!attrDef.getName().contains(".") &&
-                    AtlasAttributeDef.IndexType.STRING.equals(attrDef.getIndexType()) &&
-                    ATLAS_TYPE_STRING.equalsIgnoreCase(attrDef.getTypeName())) {
-                    vertexPropertyName = String.format("%s.%s%s", structDef.getName(), VERTEX_PROPERTY_PREFIX_STRING_INDEX_TYPE, attrDef.getName());
-                }
-            }
-            return encodePropertyKey(vertexPropertyName);
-        }
-
-        private static boolean isRootType(AtlasStructDef structDef) {
-            return StringUtils.equals(structDef.getName(), AtlasEntityType.ENTITY_ROOT.getTypeName()) ||
-                   StringUtils.equals(structDef.getName(), AtlasClassificationType.CLASSIFICATION_ROOT.getTypeName());
+        public static String generateVertexPropertyName(AtlasAttributeDef attrDef) {
+            return encodePropertyKey(attrDef.getName());
         }
 
         // Keys copied from org.janusgraph.graphdb.types.system.SystemTypeManager.RESERVED_CHARS

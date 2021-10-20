@@ -415,8 +415,7 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
             List<AtlasStructDef.AtlasAttributeDef> attributeDefs = businessMetadataDef.getAttributeDefs();
 
             for (AtlasStructDef.AtlasAttributeDef attributeDef : attributeDefs) {
-                String      qualifiedName       = AtlasStructType.AtlasAttribute.getQualifiedAttributeName(businessMetadataDef, attributeDef.getName());
-                String      vertexPropertyName  = AtlasStructType.AtlasAttribute.generateVertexPropertyName(businessMetadataDef, attributeDef, qualifiedName);
+                String      vertexPropertyName  = AtlasStructType.AtlasAttribute.generateVertexPropertyName(attributeDef);
                 Set<String> applicableTypes     = AtlasJson.fromJson(attributeDef.getOption(AtlasBusinessMetadataDef.ATTR_OPTION_APPLICABLE_ENTITY_TYPES), Set.class);
 
                 if (isBusinessAttributePresent(vertexPropertyName, applicableTypes)) {

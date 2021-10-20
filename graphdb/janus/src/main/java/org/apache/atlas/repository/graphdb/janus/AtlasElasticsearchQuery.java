@@ -17,6 +17,8 @@
  */
 package org.apache.atlas.repository.graphdb.janus;
 
+import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.discovery.SearchParams;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
@@ -109,7 +111,7 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         return result;
     }
 
-    private DirectIndexQueryResult runQueryWithLowLevelClient(SearchParams searchParams){
+    private DirectIndexQueryResult runQueryWithLowLevelClient(SearchParams searchParams) throws AtlasBaseException {
         DirectIndexQueryResult result = null;
 
         try {
@@ -122,7 +124,8 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
             result = getResultFromResponse(responseString);
 
         } catch (IOException e) {
-            e.printStackTrace();
+            LOG.error("Failed to execute direct query on ES {}", e.getMessage());
+            throw new AtlasBaseException(AtlasErrorCode.INDEX_SEARCH_FAILED, e.getMessage());
         }
 
         return result;
@@ -164,7 +167,7 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
     }
 
     @Override
-    public DirectIndexQueryResult<AtlasJanusVertex, AtlasJanusEdge> vertices(SearchParams searchParams) {
+    public DirectIndexQueryResult<AtlasJanusVertex, AtlasJanusEdge> vertices(SearchParams searchParams) throws AtlasBaseException {
         return runQueryWithLowLevelClient(searchParams);
     }
 

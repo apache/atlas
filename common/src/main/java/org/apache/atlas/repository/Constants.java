@@ -173,7 +173,7 @@ public final class Constants {
      */
     public static final String INDEX_PREFIX = "janusgraph_";
 
-    public static final String QUALIFIED_NAME                          = "Referenceable.qualifiedName";
+    public static final String QUALIFIED_NAME                          = "qualifiedName";
     public static final String TYPE_NAME_PROPERTY_KEY                  = INTERNAL_PROPERTY_KEY_PREFIX + "typeName";
     public static final String INDEX_SEARCH_MAX_RESULT_SET_SIZE        = "atlas.graph.index.search.max-result-set-size";
     public static final String INDEX_SEARCH_TYPES_MAX_QUERY_STR_LENGTH = "atlas.graph.index.search.types.max-query-str-length";
