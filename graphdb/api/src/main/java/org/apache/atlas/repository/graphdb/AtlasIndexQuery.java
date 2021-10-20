@@ -18,6 +18,7 @@
 
 package org.apache.atlas.repository.graphdb;
 
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.SearchParams;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 
@@ -37,7 +38,7 @@ public interface AtlasIndexQuery<V, E> {
      * @return
      */
 
-    DirectIndexQueryResult<V, E> vertices(SearchParams searchParams);
+    DirectIndexQueryResult<V, E> vertices(SearchParams searchParams)  throws AtlasBaseException ;
 
     /**
      * Gets the query results.
