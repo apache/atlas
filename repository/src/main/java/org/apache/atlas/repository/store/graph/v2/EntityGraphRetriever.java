@@ -127,7 +127,7 @@ import static org.apache.atlas.type.Constants.PENDING_TASKS_PROPERTY_KEY;
 public class EntityGraphRetriever {
     private static final Logger LOG = LoggerFactory.getLogger(EntityGraphRetriever.class);
 
-    private static final String GLOSSARY_TERM_DISPLAY_NAME_ATTR = "AtlasGlossaryTerm.name";
+    private static final String GLOSSARY_TERM_DISPLAY_NAME_ATTR = "Asset.name";
     public  static final String TERM_RELATION_NAME              = "AtlasGlossarySemanticAssignment";
 
     public static final String NAME           = "name";

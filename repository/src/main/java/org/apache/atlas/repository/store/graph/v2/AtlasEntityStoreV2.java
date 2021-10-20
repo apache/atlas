@@ -46,6 +46,8 @@ import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.patches.PatchContext;
+import org.apache.atlas.repository.patches.ReIndexPatch;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscovery;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
@@ -75,16 +77,7 @@ import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 import static java.lang.Boolean.FALSE;
 import static org.apache.atlas.AtlasConfiguration.STORE_DIFFERENTIAL_AUDITS;
@@ -96,7 +89,8 @@ import static org.apache.atlas.repository.Constants.IS_INCOMPLETE_PROPERTY_KEY;
 import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
 import static org.apache.atlas.repository.graph.GraphHelper.isEntityIncomplete;
 import static org.apache.atlas.repository.store.graph.v2.EntityGraphMapper.validateLabels;
-import static org.apache.atlas.type.Constants.TERMS_PROPERTY_KEY;
+import static org.apache.atlas.type.Constants.MEANINGS_PROPERTY_KEY;
+import static org.apache.atlas.type.Constants.MEANINGS_TEXT_PROPERTY_KEY;
 
 
 @Component
@@ -1747,15 +1741,49 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     @Override
     @GraphTransaction
-    public void addTermToEntityAttr(String entityGuid, String termQName){
+    public void addTermToEntityAttr(String entityGuid, String termQName, String name){
         AtlasVertex vertex =  AtlasGraphUtilsV2.findByGuid(entityGuid);
-        AtlasGraphUtilsV2.addEncodedProperty(vertex, TERMS_PROPERTY_KEY, termQName);
+        AtlasGraphUtilsV2.addEncodedProperty(vertex, MEANINGS_PROPERTY_KEY, termQName);
+
+        String names = AtlasGraphUtilsV2.getProperty(vertex, MEANINGS_TEXT_PROPERTY_KEY, String.class);
+
+        if (StringUtils.isNotEmpty(names)) {
+            name = name + "," + names;
+        }
+        AtlasGraphUtilsV2.setEncodedProperty(vertex, MEANINGS_TEXT_PROPERTY_KEY, name);
     }
 
     @Override
     @GraphTransaction
-    public void removeTermFromEntityAttr(String entityGuid, String termQName){
-        AtlasVertex vertex =  AtlasGraphUtilsV2.findByGuid(entityGuid);
-        AtlasGraphUtilsV2.removeItemFromListPropertyValue(vertex, TERMS_PROPERTY_KEY, termQName);
+    public void removeTermFromEntityAttr(String entityGuid, String termQName, String name){
+        AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(entityGuid);
+        AtlasGraphUtilsV2.removeItemFromListPropertyValue(vertex, MEANINGS_PROPERTY_KEY, termQName);
+
+        String names = AtlasGraphUtilsV2.getProperty(vertex, MEANINGS_TEXT_PROPERTY_KEY, String.class);
+        if (StringUtils.isNotEmpty(names)){
+            List<String> nameList = new ArrayList<>(Arrays.asList(names.split(",")));
+            Iterator<String> iterator = nameList.iterator();
+            while (iterator.hasNext()) {
+                if (name.equals(iterator.next())) {
+                    iterator.remove();
+                    break;
+                }
+            }
+            AtlasGraphUtilsV2.setEncodedProperty(vertex, MEANINGS_TEXT_PROPERTY_KEY, StringUtils.join(nameList, ","));
+        }
+    }
+
+    public void repairIndex() throws AtlasBaseException {
+        try {
+            LOG.info("ReIndexPatch: Starting...");
+            PatchContext context = new PatchContext(graph, typeRegistry, null, entityGraphMapper);
+            ReIndexPatch.ReindexPatchProcessor reindexPatchProcessor = new ReIndexPatch.ReindexPatchProcessor(context);
+
+            reindexPatchProcessor.repairVertices();
+            reindexPatchProcessor.repairEdges();
+        } catch (Exception exception) {
+            LOG.error("Error while reindexing.", exception);
+            throw new AtlasBaseException(AtlasErrorCode.REPAIR_INDEX_FAILED, exception.toString());
+        }
     }
 }

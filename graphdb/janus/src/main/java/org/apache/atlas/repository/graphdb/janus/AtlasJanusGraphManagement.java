@@ -22,6 +22,7 @@ import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasElement;
+import org.apache.commons.collections.MapUtils;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.janusgraph.core.Cardinality;
@@ -225,14 +226,15 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
             LOG.debug("string type for {} with janueKey {}.", propertyKey.getName(), janusKey);
         }
 
-        if (indexTypeESConfig != null) {
+        if (MapUtils.isNotEmpty(indexTypeESConfig)) {
             for (String esPropertyKey : indexTypeESConfig.keySet()) {
                 Object esPropertyValue = indexTypeESConfig.get(esPropertyKey);
                 params.add(Parameter.of(ParameterType.customParameterName(esPropertyKey), esPropertyValue));
             }
         }
 
-        if (indexTypeESFields != null) {
+
+        if (MapUtils.isNotEmpty(indexTypeESFields)) {
             params.add(Parameter.of(ParameterType.customParameterName("fields"), indexTypeESFields));
         }
 

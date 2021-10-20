@@ -550,7 +550,8 @@ define(['require',
                     tagStr = typeStr,
                     foundNewClassification = false;
                 this.typeHeaders.fullCollection.each(function(model) {
-                    var name = Utils.getName(model.toJSON(), 'name');
+                    var modelJSON = model.toJSON();
+                    var name = Utils.getName(modelJSON, 'name');
                     if (model.get('category') == 'ENTITY' && (serviceTypeToBefiltered && serviceTypeToBefiltered.length ? _.contains(serviceTypeToBefiltered, model.get('serviceType')) : true)) {
                         var entityCount = (that.entityCountObj.entity.entityActive[name] || 0) + (that.entityCountObj.entity.entityDeleted[name] || 0);
                         typeStr += '<option value="' + (name) + '" data-name="' + (name) + '">' + (name) + ' ' + (entityCount ? "(" + _.numberFormatWithComma(entityCount) + ")" : '') + '</option>';
@@ -562,7 +563,8 @@ define(['require',
                                 foundNewClassification = true;
                             }
                         }
-                        tagStr += '<option value="' + (name) + '" data-name="' + (name) + '">' + (name) + ' ' + (tagEntityCount ? "(" + _.numberFormatWithComma(tagEntityCount) + ")" : '') + '</option>';
+                        var displayName = modelJSON.displayName;
+                        tagStr += '<option value="' + (name) + '" data-name="' + (name) + '">' + (displayName) + ' ' + (tagEntityCount ? "(" + _.numberFormatWithComma(tagEntityCount) + ")" : '') + '</option>';
                     }
                 });
 

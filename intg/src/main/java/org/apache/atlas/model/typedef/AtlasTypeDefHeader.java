@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import org.apache.atlas.model.TypeCategory;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -43,6 +44,7 @@ public class AtlasTypeDefHeader implements java.io.Serializable {
 
     private String guid;
     private String name;
+    private String displayName;
     private String serviceType = null;
     private TypeCategory category;
 
@@ -61,8 +63,17 @@ public class AtlasTypeDefHeader implements java.io.Serializable {
         this.serviceType = serviceType;
     }
 
+    public AtlasTypeDefHeader(String guid, String name, String displayName, TypeCategory category, String serviceType) {
+        this(guid, name, category, serviceType);
+        this.displayName = displayName;
+    }
+
     public AtlasTypeDefHeader(AtlasBaseTypeDef typeDef) {
         this(typeDef.getGuid(), typeDef.getName(), typeDef.getCategory(), typeDef.getServiceType());
+    }
+
+    public <T extends AtlasStructDef & AtlasNamedTypeDef> AtlasTypeDefHeader(T typeDef) {
+        this(typeDef.getGuid(), typeDef.getName(),typeDef.getDisplayName(), typeDef.getCategory(), typeDef.getServiceType());
     }
 
     public AtlasTypeDefHeader(AtlasTypeDefHeader other) {
@@ -72,11 +83,13 @@ public class AtlasTypeDefHeader implements java.io.Serializable {
             setName(null);
             setCategory(null);
             setServiceType(null);
+            setDisplayName(null);
         } else {
             setGuid(other.getGuid());
             setName(other.getName());
             setCategory(other.getCategory());
             setServiceType(other.getServiceType());
+            setDisplayName(other.getDisplayName());
         }
     }
 
@@ -126,12 +139,13 @@ public class AtlasTypeDefHeader implements java.io.Serializable {
         return Objects.equals(guid, that.guid) &&
                 Objects.equals(name, that.name) &&
                 Objects.equals(serviceType, that.serviceType) &&
+                Objects.equals(displayName, that.displayName) &&
                 category == that.category;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(guid, name, category, serviceType);
+        return Objects.hash(guid, name, category, serviceType, displayName);
     }
 
     public StringBuilder toString(StringBuilder sb) {
@@ -144,8 +158,19 @@ public class AtlasTypeDefHeader implements java.io.Serializable {
         sb.append(", name='").append(name).append('\'');
         sb.append(", typeCategory='").append(category).append('\'');
         sb.append(", serviceType='").append(serviceType).append('\'');
+        if (StringUtils.isNotEmpty(this.displayName)){
+            sb.append(", displayName='").append(serviceType).append('\'');
+        }
         sb.append('}');
 
         return sb;
+    }
+
+    public String getDisplayName() {
+        return displayName;
+    }
+
+    public void setDisplayName(String displayName) {
+        this.displayName = displayName;
     }
 }

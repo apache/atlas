@@ -72,6 +72,7 @@ import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.ListUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -128,7 +129,8 @@ import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPro
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
 import static org.apache.atlas.type.Constants.PENDING_TASKS_PROPERTY_KEY;
-import static org.apache.atlas.type.Constants.TERMS_PROPERTY_KEY;
+import static org.apache.atlas.type.Constants.MEANINGS_PROPERTY_KEY;
+import static org.apache.atlas.type.Constants.MEANINGS_TEXT_PROPERTY_KEY;
 
 @Component
 public class EntityGraphMapper {
@@ -145,6 +147,8 @@ public class EntityGraphMapper {
     private static final Pattern LABEL_REGEX                       = Pattern.compile("^[a-zA-Z0-9_-]*$");
     private static final int     CUSTOM_ATTRIBUTE_KEY_MAX_LENGTH   = AtlasConfiguration.CUSTOM_ATTRIBUTE_KEY_MAX_LENGTH.getInt();
     private static final int     CUSTOM_ATTRIBUTE_VALUE_MAX_LENGTH = AtlasConfiguration.CUSTOM_ATTRIBUTE_VALUE_MAX_LENGTH.getInt();
+
+    private static final String GLOSSARY_TERM_QUALIFIED_NAME_ATTR = "Referenceable.qualifiedName";
 
     private static final boolean ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES = AtlasConfiguration.ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES.getBoolean();
     private static final boolean CLASSIFICATION_PROPAGATION_DEFAULT                  = AtlasConfiguration.CLASSIFICATION_PROPAGATION_DEFAULT.getBoolean();
@@ -654,9 +658,16 @@ public class EntityGraphMapper {
         if (MapUtils.isNotEmpty(struct.getAttributes())) {
             MetricRecorder metric = RequestContext.get().startMetricRecord("mapAttributes");
 
+            List<String> timestampAutoUpdateAttributes = new ArrayList<>();
+            List<String> userAutoUpdateAttributes = new ArrayList<>();
+
             if (op.equals(CREATE)) {
                 for (AtlasAttribute attribute : structType.getAllAttributes().values()) {
                     Object attrValue = struct.getAttribute(attribute.getName());
+                    Object attrOldValue = vertex.getProperty(attribute.getVertexPropertyName(),attribute.getClass());
+                    if (attrValue!= null && !attrValue.equals(attrOldValue)) {
+                        addValuesToAutoUpdateAttributesList(attribute, userAutoUpdateAttributes, timestampAutoUpdateAttributes);
+                    }
 
                     mapAttribute(attribute, attrValue, vertex, op, context);
                 }
@@ -667,6 +678,10 @@ public class EntityGraphMapper {
 
                     if (attribute != null) {
                         Object attrValue = struct.getAttribute(attrName);
+                        Object attrOldValue = vertex.getProperty(attribute.getVertexPropertyName(),attribute.getClass());
+                        if (attrValue != null && !attrValue.equals(attrOldValue)) {
+                            addValuesToAutoUpdateAttributesList(attribute, userAutoUpdateAttributes, timestampAutoUpdateAttributes);
+                        }
 
                         mapAttribute(attribute, attrValue, vertex, op, context);
                     } else {
@@ -676,12 +691,28 @@ public class EntityGraphMapper {
             }
 
             updateModificationMetadata(vertex);
+            graphHelper.updateMetadataAttributes(vertex, timestampAutoUpdateAttributes, "timestamp");
+            graphHelper.updateMetadataAttributes(vertex, userAutoUpdateAttributes, "user");
 
             RequestContext.get().endMetricRecord(metric);
         }
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== mapAttributes({}, {})", op, struct.getTypeName());
+        }
+    }
+
+    private void addValuesToAutoUpdateAttributesList(AtlasAttribute attribute, List<String> userAutoUpdateAttributes, List<String> timestampAutoUpdateAttributes) {
+        HashMap<String, ArrayList> autoUpdateAttributes =  attribute.getAttributeDef().getAutoUpdateAttributes();
+        if (autoUpdateAttributes != null) {
+            List<String> userAttributes = autoUpdateAttributes.get("user");
+            if (userAttributes != null && userAttributes.size() > 0) {
+                userAutoUpdateAttributes.addAll(userAttributes);
+            }
+            List<String> timestampAttributes = autoUpdateAttributes.get("timestamp");
+            if (timestampAttributes != null && timestampAttributes.size() > 0) {
+                timestampAutoUpdateAttributes.addAll(timestampAttributes);
+            }
         }
     }
 
@@ -1478,10 +1509,20 @@ public class EntityGraphMapper {
 
         if (attribute.getAttributeDef().getName().equals("meanings")) {
             // handle __terms attribute of entity
-            Set<String> qNames = newElementsCreated.stream().map(x -> ((AtlasEdge)x).getOutVertex().getProperty("AtlasGlossaryTerm.qualifiedName", String.class)).collect(Collectors.toSet());
+            List<AtlasVertex> meanings = newElementsCreated.stream().map(x -> ((AtlasEdge)x).getOutVertex()).collect(Collectors.toList());
 
-            ctx.getReferringVertex().removeProperty(TERMS_PROPERTY_KEY);
-            qNames.forEach(q -> AtlasGraphUtilsV2.addEncodedProperty(ctx.getReferringVertex(), TERMS_PROPERTY_KEY, q));
+            Set<String> qNames = meanings.stream().map(x -> x.getProperty("AtlasGlossaryTerm.qualifiedName", String.class)).collect(Collectors.toSet());
+            List<String> names = meanings.stream().map(x -> x.getProperty("AtlasGlossaryTerm.name", String.class)).collect(Collectors.toList());
+
+            ctx.getReferringVertex().removeProperty(MEANINGS_PROPERTY_KEY);
+            ctx.getReferringVertex().removeProperty(MEANINGS_TEXT_PROPERTY_KEY);
+            if (CollectionUtils.isNotEmpty(qNames)){
+                qNames.forEach(q -> AtlasGraphUtilsV2.addEncodedProperty(ctx.getReferringVertex(), MEANINGS_PROPERTY_KEY, q));
+            }
+
+            if (CollectionUtils.isNotEmpty(names)){
+                AtlasGraphUtilsV2.setEncodedProperty(ctx.referringVertex, MEANINGS_TEXT_PROPERTY_KEY, StringUtils.join(names, ","));
+            }
         }
 
         if (LOG.isDebugEnabled()) {

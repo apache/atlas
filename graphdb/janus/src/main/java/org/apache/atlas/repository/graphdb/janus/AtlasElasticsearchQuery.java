@@ -116,9 +116,9 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
 
             String responseString =  perfromDirectIndexQuery(searchParams.getQuery());
             if (LOG.isDebugEnabled()) {
-                LOG.info("runQueryWithLowLevelClient.response : {}", responseString);
+                LOG.debug("runQueryWithLowLevelClient.response : {}", responseString);
             }
-
+            
             result = getResultFromResponse(responseString);
 
         } catch (IOException e) {
@@ -131,7 +131,7 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
     private String perfromDirectIndexQuery(String query) throws IOException {
         HttpEntity entity = new NStringEntity(query, ContentType.APPLICATION_JSON);
 
-        String endPoint = index + "/_search";
+        String endPoint = index + "/_search?_source=false";
 
         Request request = new Request("GET", endPoint);
         request.setEntity(entity);
@@ -230,6 +230,10 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
 
         @Override
         public double getScore() {
+            Object _score = hit.get("_score");
+            if (_score == null){
+                return -1;
+            }
             return Double.parseDouble(String.valueOf(hit.get("_score")));
         }
     }
