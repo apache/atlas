@@ -16,6 +16,12 @@
         ]
       }
     },
+    "normalizer": {
+      "atlan_normalizer": {
+        "type": "custom",
+        "filter": ["lowercase"]
+      }
+    },
     "filter": {
       "snowball_english": {
         "type": "snowball",
