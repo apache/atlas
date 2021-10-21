@@ -426,6 +426,11 @@ public class GlossaryService {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME);
         }
 
+        if (atlasGlossaryTerm.getAnchor() == null || StringUtils.isEmpty(atlasGlossaryTerm.getAnchor().getGlossaryGuid())) {
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Anchor glossaryGuid can't be null/empty");
+        }
+
+
         if (ignoreUpdateIfTermExists) {
             String qualifiedName = getDuplicateGlossaryRelatedTerm(atlasGlossaryTerm);
 

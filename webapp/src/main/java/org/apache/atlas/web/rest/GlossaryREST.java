@@ -466,7 +466,7 @@ public class GlossaryREST {
     @PUT
     @Path("/term/{termGuid}/partial")
     @Timed
-    public AtlasGlossaryTerm partialUpdateGlossaryTerm(@PathParam("termGuid") String termGuid, Map<String, String> partialUpdates) throws AtlasBaseException {
+    public AtlasGlossaryTerm partialUpdateGlossaryTerm(@PathParam("termGuid") String termGuid, Map<String, Object> partialUpdates) throws AtlasBaseException {
         Servlets.validateQueryParamLength("termGuid", termGuid);
 
         AtlasPerfTracer perf = null;
@@ -479,13 +479,17 @@ public class GlossaryREST {
                 throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "PartialUpdates missing or empty");
             }
 
-            AtlasGlossaryTerm glossaryTermOld = glossaryService.getTerm(termGuid);
+            AtlasGlossaryTerm glossaryTerm = glossaryService.getTerm(termGuid);
 
-            partialUpdates.put("guid", termGuid);
+            AtlasGlossaryTerm partialGlossaryTerm = AtlasType.fromJson(AtlasType.toJson(partialUpdates), AtlasGlossaryTerm.class);
 
-            AtlasGlossaryTerm glossaryTerm = AtlasType.fromJson(AtlasType.toJson(partialUpdates), AtlasGlossaryTerm.class);
-            glossaryTerm.setAnchor(glossaryTermOld.getAnchor());
-
+            for (Map.Entry<String, Object> entry : partialUpdates.entrySet()) {
+                try {
+                    glossaryTerm.setTermAttribute(entry.getKey(), partialGlossaryTerm);
+                } catch (IllegalArgumentException e) {
+                    throw new AtlasBaseException(AtlasErrorCode.INVALID_PARTIAL_UPDATE_ATTR, "Glossary Term", entry.getKey());
+                }
+            }
             return glossaryService.updateTerm(glossaryTerm);
         } finally {
             AtlasPerfTracer.log(perf);
