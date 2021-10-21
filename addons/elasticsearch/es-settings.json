@@ -1,12 +1,25 @@
 {
   "analysis": {
     "analyzer": {
-      "text_search_analyzer": {
+      "atlan_text_analyzer": {
         "type": "custom",
-        "tokenizer": "lowercase",
+        "tokenizer": "atlan_tokenizer",
         "filter": [
-          "snowball_english"
+          "apostrophe", "lowercase"
         ]
+      },
+      "atlan_text_stemmer": {
+        "type": "custom",
+        "tokenizer": "atlan_tokenizer",
+        "filter": [
+          "snowball_english", "lowercase"
+        ]
+      }
+    },
+    "normalizer": {
+      "atlan_normalizer": {
+        "type": "custom",
+        "filter": ["lowercase"]
       }
     },
     "filter": {
@@ -15,10 +28,10 @@
         "language": "English"
       }
     },
-    "normalizer": {
-      "my_normalizer": {
-        "type": "custom",
-        "filter": ["lowercase"]
+    "tokenizer": {
+      "atlan_tokenizer": {
+        "type": "pattern",
+        "pattern": "( |_|-|'|/|@)"
       }
     }
   }

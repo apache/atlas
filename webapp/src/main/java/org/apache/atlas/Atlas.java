@@ -30,7 +30,6 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.util.ShutdownHookManager;
-import org.elasticsearch.action.IndicesRequest;
 import org.elasticsearch.action.support.master.AcknowledgedResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -258,13 +257,12 @@ public final class Atlas {
         } catch (Exception es) {
             LOG.error("Caught exception: ", es.toString());
         }
-        exists = true;
         if (!exists) {
             String vertexIndex = INDEX_PREFIX + VERTEX_INDEX;
             PutIndexTemplateRequest request = new PutIndexTemplateRequest("atlan-template");
             request.patterns(Arrays.asList(vertexIndex));
-            String atlasHomeDir  = System.getProperty("atlas.conf");
-            String elasticsearchSettingsFilePath = "addons" + File.separator + "elasticsearch" + File.separator + "es-settings.json";
+            String atlasHomeDir  = System.getProperty("atlas.home");
+            String elasticsearchSettingsFilePath = (org.apache.commons.lang3.StringUtils.isEmpty(atlasHomeDir) ? "." : atlasHomeDir) + File.separator + "elasticsearch" + File.separator + "es-settings.json";
             File elasticsearchSettingsFile  = new File(elasticsearchSettingsFilePath);
             String jsonString  = new String(Files.readAllBytes(elasticsearchSettingsFile.toPath()), StandardCharsets.UTF_8);
             request.settings(jsonString, XContentType.JSON);
