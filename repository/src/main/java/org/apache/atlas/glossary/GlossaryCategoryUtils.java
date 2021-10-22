@@ -27,6 +27,7 @@ import org.apache.atlas.model.glossary.relations.AtlasRelatedTermHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.instance.AtlasStruct;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.ogm.DataAccess;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.type.AtlasRelationshipType;
@@ -37,13 +38,17 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static org.apache.atlas.type.Constants.CATEGORIES_PROPERTY_KEY;
 
 public class GlossaryCategoryUtils extends GlossaryUtils {
     private static final Logger  LOG           = LoggerFactory.getLogger(GlossaryCategoryUtils.class);
@@ -305,6 +310,7 @@ public class GlossaryCategoryUtils extends GlossaryUtils {
 
     private void createTermCategorizationRelationships(AtlasGlossaryCategory storeObject, Collection<AtlasRelatedTermHeader> terms) throws AtlasBaseException {
         if (CollectionUtils.isNotEmpty(terms)) {
+            List<String> termGuids = new ArrayList<>();
             Set<AtlasRelatedTermHeader> existingTerms = storeObject.getTerms();
             for (AtlasRelatedTermHeader term : terms) {
                 if (Objects.isNull(term.getTermGuid())) {
@@ -319,7 +325,14 @@ public class GlossaryCategoryUtils extends GlossaryUtils {
                     if (DEBUG_ENABLED) {
                         LOG.debug("Creating relation between category = {} and term = {}", storeObject.getGuid(), term.getDisplayText());
                     }
+                    termGuids.add(term.getTermGuid());
                     createRelationship(defineCategorizedTerm(storeObject.getGuid(), term));
+                }
+
+                if (CollectionUtils.isNotEmpty(termGuids)) {
+                    String qName = storeObject.getQualifiedName();
+                    List<AtlasVertex> termVertices = termGuids.stream().map(this::getVertexById).collect(Collectors.toList());
+                    termVertices.stream().forEach(v -> addEntityAttr(v, CATEGORIES_PROPERTY_KEY, qName));
                 }
             }
         }
@@ -340,11 +353,19 @@ public class GlossaryCategoryUtils extends GlossaryUtils {
 
     private void deleteTermCategorizationRelationships(AtlasGlossaryCategory storeObject, Collection<AtlasRelatedTermHeader> terms) throws AtlasBaseException {
         if (CollectionUtils.isNotEmpty(terms)) {
+            List<String> deletedGuids = new ArrayList<>();
             for (AtlasRelatedTermHeader term : terms) {
                 if (DEBUG_ENABLED) {
                     LOG.debug("Creating term relation with category = {}, terms = {}", storeObject.getName(), term.getDisplayText());
                 }
+                deletedGuids.add(term.getTermGuid());
                 relationshipStore.deleteById(term.getRelationGuid(), true);
+            }
+
+            if (CollectionUtils.isNotEmpty(deletedGuids)) {
+                String qName = storeObject.getQualifiedName();
+                List<AtlasVertex> termVertices = deletedGuids.stream().map(this::getVertexById).collect(Collectors.toList());
+                termVertices.stream().forEach(v -> removeEntityAttr(v, CATEGORIES_PROPERTY_KEY, qName));
             }
         }
     }

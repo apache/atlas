@@ -73,7 +73,6 @@ import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.json.simple.JSONArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -90,8 +89,6 @@ import static org.apache.atlas.repository.Constants.IS_INCOMPLETE_PROPERTY_KEY;
 import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
 import static org.apache.atlas.repository.graph.GraphHelper.isEntityIncomplete;
 import static org.apache.atlas.repository.store.graph.v2.EntityGraphMapper.validateLabels;
-import static org.apache.atlas.type.Constants.MEANINGS_PROPERTY_KEY;
-import static org.apache.atlas.type.Constants.MEANINGS_TEXT_PROPERTY_KEY;
 
 
 @Component
@@ -1807,40 +1804,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             bulkImportResponse.addToFailedImportInfoList(new ImportInfo(FAILED, failedTermMsgs, lineIndex));
         }
         return missingFieldsCheck;
-    }
-
-    @Override
-    @GraphTransaction
-    public void addTermToEntityAttr(String entityGuid, String termQName, String name){
-        AtlasVertex vertex =  AtlasGraphUtilsV2.findByGuid(entityGuid);
-        AtlasGraphUtilsV2.addEncodedProperty(vertex, MEANINGS_PROPERTY_KEY, termQName);
-
-        String names = AtlasGraphUtilsV2.getProperty(vertex, MEANINGS_TEXT_PROPERTY_KEY, String.class);
-
-        if (StringUtils.isNotEmpty(names)) {
-            name = name + "," + names;
-        }
-        AtlasGraphUtilsV2.setEncodedProperty(vertex, MEANINGS_TEXT_PROPERTY_KEY, name);
-    }
-
-    @Override
-    @GraphTransaction
-    public void removeTermFromEntityAttr(String entityGuid, String termQName, String name){
-        AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(entityGuid);
-        AtlasGraphUtilsV2.removeItemFromListPropertyValue(vertex, MEANINGS_PROPERTY_KEY, termQName);
-
-        String names = AtlasGraphUtilsV2.getProperty(vertex, MEANINGS_TEXT_PROPERTY_KEY, String.class);
-        if (StringUtils.isNotEmpty(names)){
-            List<String> nameList = new ArrayList<>(Arrays.asList(names.split(",")));
-            Iterator<String> iterator = nameList.iterator();
-            while (iterator.hasNext()) {
-                if (name.equals(iterator.next())) {
-                    iterator.remove();
-                    break;
-                }
-            }
-            AtlasGraphUtilsV2.setEncodedProperty(vertex, MEANINGS_TEXT_PROPERTY_KEY, StringUtils.join(nameList, ","));
-        }
     }
 
     public void repairIndex() throws AtlasBaseException {

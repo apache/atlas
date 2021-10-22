@@ -66,9 +66,11 @@ import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.isRef
 import static org.apache.atlas.type.AtlasStructType.UNIQUE_ATTRIBUTE_SHADE_PROPERTY_PREFIX;
 import static org.apache.atlas.type.AtlasTypeUtil.isArrayType;
 import static org.apache.atlas.type.AtlasTypeUtil.isMapType;
-import static org.apache.atlas.type.Constants.PENDING_TASKS_PROPERTY_KEY;
+import static org.apache.atlas.type.Constants.CATEGORIES_PROPERTY_KEY;
+import static org.apache.atlas.type.Constants.GLOSSARY_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.MEANINGS_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.MEANINGS_TEXT_PROPERTY_KEY;
+import static org.apache.atlas.type.Constants.PENDING_TASKS_PROPERTY_KEY;
 
 
 /**
@@ -365,6 +367,8 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             createCommonVertexIndex(management, PATCH_STATE_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
             createCommonVertexIndex(management, MEANINGS_PROPERTY_KEY, UniqueKind.NONE, String.class, SET, true, false, true);
             createCommonVertexIndex(management, MEANINGS_TEXT_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false, false, ES_ATLAN_TEXT_ANALYZER_CONFIG, new HashMap<>());
+            createCommonVertexIndex(management, GLOSSARY_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false, true);
+            createCommonVertexIndex(management, CATEGORIES_PROPERTY_KEY, UniqueKind.NONE, String.class, SET, true, false, true);
 
 
             // tasks

@@ -73,8 +73,6 @@ import static org.apache.atlas.glossary.GlossaryUtils.*;
 public class GlossaryService {
     private static final Logger  LOG                 = LoggerFactory.getLogger(GlossaryService.class);
     private static final boolean DEBUG_ENABLED       = LOG.isDebugEnabled();
-    private static final String  QUALIFIED_NAME_ATTR = "qualifiedName";
-    private static final String  NAME_ATTR           = "name";
 
     private final DataAccess                dataAccess;
     private final GlossaryTermUtils         glossaryTermUtils;
@@ -838,7 +836,7 @@ public class GlossaryService {
     private void runPaginatedTermsQuery(int offset, int limit, SortOrder sortOrder, List<AtlasRelatedTermHeader> ret, GraphTraversal baseQuery, List<String> attributes) {
         if (sortOrder != null) {
             Order order = sortOrder == SortOrder.ASCENDING ? Order.asc : Order.desc;
-            baseQuery = baseQuery.order().by(Constants.TERM_DISPLAY_TEXT_KEY, order);
+            baseQuery = baseQuery.order().by(NAME, order);
         }
 
         Set<Map<String, List<String>>> results = baseQuery
@@ -852,7 +850,7 @@ public class GlossaryService {
         for (Map<String, List<String>> res : queryResult) {
             AtlasRelatedTermHeader atlasRelatedTermHeader = new AtlasRelatedTermHeader();
             atlasRelatedTermHeader.setTermGuid(res.get(Constants.GUID_PROPERTY_KEY).get(0));
-            atlasRelatedTermHeader.setDisplayText(res.get(Constants.TERM_DISPLAY_TEXT_KEY).get(0));
+            atlasRelatedTermHeader.setDisplayText(res.get(NAME).get(0));
             atlasRelatedTermHeader.setAttributes(res, attributes);
             ret.add(atlasRelatedTermHeader);
         }
@@ -881,18 +879,18 @@ public class GlossaryService {
 
         if (sortOrder != null) {
             Order order = sortOrder == SortOrder.ASCENDING ? Order.asc : Order.desc;
-            query = query.order().by(Constants.CATEGORY_DISPLAY_TEXT_KEY, order);
+            query = query.order().by(NAME, order);
         }
 
         Set<Map<String, List<String>>> results = query
-                .valueMap(Constants.GUID_PROPERTY_KEY, Constants.CATEGORY_DISPLAY_TEXT_KEY)
+                .valueMap(Constants.GUID_PROPERTY_KEY, NAME)
                 .range(offset, limit + offset).toSet();
 
 
         for (Map<String, List<String>> res : results) {
             AtlasRelatedCategoryHeader atlasRelatedCategoryHeader = new AtlasRelatedCategoryHeader();
             atlasRelatedCategoryHeader.setCategoryGuid(res.get(Constants.GUID_PROPERTY_KEY).get(0));
-            atlasRelatedCategoryHeader.setDisplayText(res.get(Constants.CATEGORY_DISPLAY_TEXT_KEY).get(0));
+            atlasRelatedCategoryHeader.setDisplayText(res.get(NAME).get(0));
 
             Set<String> parentResults = graph.V()
                     .has(Constants.GUID_PROPERTY_KEY, atlasRelatedCategoryHeader.getCategoryGuid())
@@ -1127,7 +1125,7 @@ public class GlossaryService {
         List<AtlasVertex> vertexList = AtlasGraphUtilsV2.glossaryFindChildByTypeAndPropertyName(entityType, category.getName(), glossaryQName);
 
         //derive level, if (same level & different guid) then do not allow
-        String qNameKey = entityType.getAllAttributes().get(QUALIFIED_NAME_ATTR).getQualifiedName();
+        String qNameKey = entityType.getAllAttributes().get(QUALIFIED_NAME).getQualifiedName();
         for (AtlasVertex v : vertexList) {
             String vQualifiedName = v.getProperty(qNameKey, String.class);
 

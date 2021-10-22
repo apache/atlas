@@ -23,12 +23,24 @@ import org.apache.atlas.model.glossary.AtlasGlossaryCategory;
 import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
 import org.apache.atlas.model.glossary.relations.AtlasRelatedTermHeader;
 import org.apache.atlas.model.instance.AtlasRelationship;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.ogm.DataAccess;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
+import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.NanoIdUtils;
+import org.apache.commons.lang.StringUtils;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
+
+import static org.apache.atlas.type.Constants.CATEGORIES_PROPERTY_KEY;
+import static org.apache.atlas.type.Constants.GLOSSARY_PROPERTY_KEY;
+import static org.apache.atlas.type.Constants.MEANINGS_PROPERTY_KEY;
+import static org.apache.atlas.type.Constants.MEANINGS_TEXT_PROPERTY_KEY;
 
 public abstract class GlossaryUtils {
 
@@ -45,7 +57,7 @@ public abstract class GlossaryUtils {
     static final String ATLAS_GLOSSARY_CATEGORY_TYPENAME = "AtlasGlossaryCategory";
 
     public static final String NAME                         = "name";
-    public static final String QUALIFIED_NAME_ATTR          = "qualifiedName";
+    public static final String QUALIFIED_NAME               = "qualifiedName";
     public static final char[] invalidNameChars             = {'@', '.'};
 
     // Relation name constants
@@ -109,6 +121,62 @@ public abstract class GlossaryUtils {
 
     enum RelationshipOperation {
         CREATE, UPDATE, DELETE
+    }
+
+    /* Return Glossary QualifedName extracted from category or term qualifedName
+     * */
+    protected String getGlossaryQN(String qName) {
+        String[] split_0 = qName.split("@");
+        return split_0[split_0.length - 1];
+    }
+    protected void addEntityAttr(AtlasVertex vertex, String propName, String propValue) {
+        if (MEANINGS_PROPERTY_KEY.equals(propName) || CATEGORIES_PROPERTY_KEY.equals(propName)) {
+            AtlasGraphUtilsV2.addEncodedProperty(vertex, propName, propValue);
+
+        } else if (GLOSSARY_PROPERTY_KEY.equals(propName)) {
+            AtlasGraphUtilsV2.setEncodedProperty(vertex, propName, propValue);
+
+        }else if (MEANINGS_TEXT_PROPERTY_KEY.equals(propName)) {
+            String names = AtlasGraphUtilsV2.getProperty(vertex, MEANINGS_TEXT_PROPERTY_KEY, String.class);
+
+            if (org.apache.commons.lang3.StringUtils.isNotEmpty(names)) {
+                propValue = propValue + "," + names;
+            }
+
+            AtlasGraphUtilsV2.setEncodedProperty(vertex, MEANINGS_TEXT_PROPERTY_KEY, propValue);
+        }
+    }
+
+    protected void removeEntityAttr(AtlasVertex vertex, String propName) {
+        vertex.removeProperty(propName);
+    }
+
+    protected void removeEntityAttr(AtlasVertex vertex, String propName, String propValue) {
+        if (MEANINGS_PROPERTY_KEY.equals(propName) || CATEGORIES_PROPERTY_KEY.equals(propName)) {
+            AtlasGraphUtilsV2.removeItemFromListPropertyValue(vertex, propName, propValue);
+
+        } else if (GLOSSARY_PROPERTY_KEY.equals(propName)) {
+            vertex.removeProperty(propName);
+
+        } else if (MEANINGS_TEXT_PROPERTY_KEY.equals(propName)) {
+            String names = AtlasGraphUtilsV2.getProperty(vertex, propName, String.class);
+
+            if (StringUtils.isNotEmpty(names)){
+                List<String> nameList = new ArrayList<>(Arrays.asList(names.split(",")));
+                Iterator<String> iterator = nameList.iterator();
+                while (iterator.hasNext()) {
+                    if (propValue.equals(iterator.next())) {
+                        iterator.remove();
+                        break;
+                    }
+                }
+                AtlasGraphUtilsV2.setEncodedProperty(vertex, propName, org.apache.commons.lang3.StringUtils.join(nameList, ","));
+            }
+        }
+    }
+
+    protected AtlasVertex getVertexById(String guid){
+        return AtlasGraphUtilsV2.findByGuid(guid);
     }
 
     protected static String createQualifiedName() {

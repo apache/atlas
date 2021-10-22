@@ -59,6 +59,10 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.bulkimport.BulkImportResponse.ImportStatus.FAILED;
+import static org.apache.atlas.type.Constants.CATEGORIES_PROPERTY_KEY;
+import static org.apache.atlas.type.Constants.GLOSSARY_PROPERTY_KEY;
+import static org.apache.atlas.type.Constants.MEANINGS_PROPERTY_KEY;
+import static org.apache.atlas.type.Constants.MEANINGS_TEXT_PROPERTY_KEY;
 
 public class GlossaryTermUtils extends GlossaryUtils {
     private static final Logger  LOG           = LoggerFactory.getLogger(GlossaryTermUtils.class);
@@ -110,7 +114,10 @@ public class GlossaryTermUtils extends GlossaryUtils {
                 LOG.debug("Assigning term guid={}, to entity guid = {}", glossaryTerm.getGuid(), objectId.getGuid());
             }
             createRelationship(defineTermAssignment(glossaryTerm.getGuid(), objectId));
-            entityStore.addTermToEntityAttr(objectId.getGuid(), glossaryTerm.getQualifiedName(), glossaryTerm.getName());
+
+            AtlasVertex vertex = getVertexById(objectId.getGuid());
+            addEntityAttr(vertex, MEANINGS_PROPERTY_KEY, glossaryTerm.getQualifiedName());
+            addEntityAttr(vertex, MEANINGS_TEXT_PROPERTY_KEY, glossaryTerm.getName());
         }
 
         if (DEBUG_ENABLED) {
@@ -145,7 +152,10 @@ public class GlossaryTermUtils extends GlossaryUtils {
                 AtlasRelatedObjectId existingTermRelation = assignedEntityMap.get(relatedObjectId.getGuid());
                 if (CollectionUtils.isNotEmpty(assignedEntities) && isRelationshipGuidSame(existingTermRelation, relatedObjectId)) {
                     relationshipStore.deleteById(relatedObjectId.getRelationshipGuid(), true);
-                    entityStore.removeTermFromEntityAttr(relatedObjectId.getGuid(), glossaryTerm.getQualifiedName(), glossaryTerm.getName());
+
+                    AtlasVertex vertex = getVertexById(relatedObjectId.getGuid());
+                    removeEntityAttr(vertex, MEANINGS_PROPERTY_KEY, glossaryTerm.getQualifiedName());
+                    removeEntityAttr(vertex, MEANINGS_TEXT_PROPERTY_KEY, glossaryTerm.getName());
                 } else {
                     throw new AtlasBaseException(AtlasErrorCode.INVALID_TERM_DISSOCIATION, relatedObjectId.getRelationshipGuid(), glossaryTerm.getGuid(), relatedObjectId.getGuid());
                 }
@@ -171,6 +181,9 @@ public class GlossaryTermUtils extends GlossaryUtils {
         if (Objects.isNull(updatedTerm.getAnchor()) && op != RelationshipOperation.DELETE) {
             throw new AtlasBaseException(AtlasErrorCode.MISSING_MANDATORY_ANCHOR);
         }
+
+        AtlasVertex vertex = getVertexById(storeObject.getGuid());
+        addEntityAttr(vertex, GLOSSARY_PROPERTY_KEY, getGlossaryQN(storeObject.getQualifiedName()));
 
         AtlasGlossaryHeader existingAnchor    = storeObject.getAnchor();
         AtlasGlossaryHeader updatedTermAnchor = updatedTerm.getAnchor();
@@ -344,7 +357,7 @@ public class GlossaryTermUtils extends GlossaryUtils {
                     if (DEBUG_ENABLED) {
                         LOG.debug("Deleting term categorization, term = {}, categories = {}", storeObject.getGuid(), existingCategories.size());
                     }
-                    deleteCategorizationRelationship(existingCategories.values());
+                    deleteCategorizationRelationship(storeObject.getGuid(), existingCategories.values(), true);
                     break;
                 }
 
@@ -354,21 +367,23 @@ public class GlossaryTermUtils extends GlossaryUtils {
                                                                       .filter(c -> !existingCategories.containsKey(c.getCategoryGuid()))
                                                                       .collect(Collectors.toSet());
                 createTermCategorizationRelationships(storeObject, toCreate);
+
                 Set<AtlasTermCategorizationHeader> toUpdate = newCategories
                                                                       .values()
                                                                       .stream()
                                                                       .filter(c -> updatedExistingCategorizationRelation(existingCategories, c))
                                                                       .collect(Collectors.toSet());
                 updateTermCategorizationRelationships(storeObject, toUpdate);
+
                 Set<AtlasTermCategorizationHeader> toDelete = existingCategories
                                                                       .values()
                                                                       .stream()
                                                                       .filter(c -> !newCategories.containsKey(c.getCategoryGuid()))
                                                                       .collect(Collectors.toSet());
-                deleteCategorizationRelationship(toDelete);
+                deleteCategorizationRelationship(storeObject.getGuid(), toDelete, false);
                 break;
             case DELETE:
-                deleteCategorizationRelationship(existingCategories.values());
+                deleteCategorizationRelationship(storeObject.getGuid(), existingCategories.values(), true);
                 break;
         }
     }
@@ -394,6 +409,7 @@ public class GlossaryTermUtils extends GlossaryUtils {
 
     private void createTermCategorizationRelationships(AtlasGlossaryTerm storeObject, Collection<AtlasTermCategorizationHeader> categories) throws AtlasBaseException {
         if (CollectionUtils.isNotEmpty(categories)) {
+            List<String> addedCatGuids = new ArrayList<>();
             Set<AtlasTermCategorizationHeader> existingCategories = storeObject.getCategories();
             for (AtlasTermCategorizationHeader categorizationHeader : categories) {
                 if (Objects.nonNull(existingCategories) && existingCategories.contains(categorizationHeader)) {
@@ -405,7 +421,17 @@ public class GlossaryTermUtils extends GlossaryUtils {
                 if (DEBUG_ENABLED) {
                     LOG.debug("Creating relation between term = {} and category = {}", storeObject.getGuid(), categorizationHeader.getDisplayText());
                 }
+                addedCatGuids.add(categorizationHeader.getCategoryGuid());
                 createRelationship(defineCategorizedTerm(categorizationHeader, storeObject.getGuid()));
+            }
+
+            if (CollectionUtils.isNotEmpty(addedCatGuids)) {
+                AtlasVertex termVertex = getVertexById(storeObject.getGuid());
+                List<String> catQnames = addedCatGuids.stream()
+                                                        .map(this::getVertexById)
+                                                        .map(v -> v.getProperty(QUALIFIED_NAME, String.class))
+                                                        .collect(Collectors.toList());
+                        catQnames.stream().forEach(q -> addEntityAttr(termVertex, CATEGORIES_PROPERTY_KEY, q));
             }
         }
     }
@@ -423,13 +449,29 @@ public class GlossaryTermUtils extends GlossaryUtils {
         }
     }
 
-    private void deleteCategorizationRelationship(Collection<AtlasTermCategorizationHeader> existingCategories) throws AtlasBaseException {
+    private void deleteCategorizationRelationship(String termGuid,
+                                                  Collection<AtlasTermCategorizationHeader> existingCategories,
+                                                  boolean deleteAll) throws AtlasBaseException {
         if (CollectionUtils.isNotEmpty(existingCategories)) {
+            List<String> deletedCatGuids = new ArrayList<>();
             for (AtlasTermCategorizationHeader categorizationHeader : existingCategories) {
                 if (DEBUG_ENABLED) {
                     LOG.debug("Deleting relation guid = {}, text = {}", categorizationHeader.getRelationGuid(), categorizationHeader.getDisplayText());
                 }
+                deletedCatGuids.add(categorizationHeader.getCategoryGuid());
                 relationshipStore.deleteById(categorizationHeader.getRelationGuid(), true);
+            }
+
+            if (CollectionUtils.isNotEmpty(deletedCatGuids)) {
+                AtlasVertex termVertex = getVertexById(termGuid);
+                if (deleteAll) {
+                    termVertex.removeProperty(CATEGORIES_PROPERTY_KEY);
+                } else {
+                    List<AtlasVertex> catVertices = deletedCatGuids.stream().map(this::getVertexById).collect(Collectors.toList());
+                    for (AtlasVertex vertex : catVertices) {
+                        removeEntityAttr(termVertex, CATEGORIES_PROPERTY_KEY, vertex.getProperty(QUALIFIED_NAME, String.class));
+                    }
+                }
             }
         }
     }
@@ -735,7 +777,7 @@ public class GlossaryTermUtils extends GlossaryUtils {
                         failedTermMsgs.add("Invalid relationship specified for Term. Term cannot have a relationship with self");
                     } else {
                         vertex = AtlasGraphUtilsV2.findByTypeAndUniquePropertyName(GlossaryUtils.ATLAS_GLOSSARY_TERM_TYPENAME,
-                                GlossaryUtils.ATLAS_GLOSSARY_TERM_TYPENAME + invalidNameChars[1] + QUALIFIED_NAME_ATTR, relatedTermQualifiedName);
+                                GlossaryUtils.ATLAS_GLOSSARY_TERM_TYPENAME + invalidNameChars[1] + QUALIFIED_NAME, relatedTermQualifiedName);
 
                         if (vertex != null) {
                             String glossaryTermGuid = AtlasGraphUtilsV2.getIdFromVertex(vertex);
@@ -825,7 +867,7 @@ public class GlossaryTermUtils extends GlossaryUtils {
     }
 
     private String getGlossaryGUIDFromGraphDB(String glossaryName) {
-        AtlasVertex vertex = AtlasGraphUtilsV2.findByTypeAndUniquePropertyName(GlossaryUtils.ATLAS_GLOSSARY_TYPENAME, GlossaryUtils.ATLAS_GLOSSARY_TYPENAME + "." + QUALIFIED_NAME_ATTR, glossaryName);
+        AtlasVertex vertex = AtlasGraphUtilsV2.findByTypeAndUniquePropertyName(GlossaryUtils.ATLAS_GLOSSARY_TYPENAME, GlossaryUtils.ATLAS_GLOSSARY_TYPENAME + "." + QUALIFIED_NAME, glossaryName);
 
         return (vertex != null) ? AtlasGraphUtilsV2.getIdFromVertex(vertex) : null;
     }
