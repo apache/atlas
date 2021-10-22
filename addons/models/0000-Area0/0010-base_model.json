@@ -117,7 +117,7 @@
       "typeVersion": "1.0",
       "attributeDefs": [
         {
-          "name": "name",
+          "name": "__AtlasUserProfile.name",
           "typeName": "string",
           "cardinality": "SINGLE",
           "isIndexable": true,
@@ -156,7 +156,7 @@
       "typeVersion": "1.0",
       "attributeDefs": [
         {
-          "name": "name",
+          "name": "__AtlasUserSavedSearch.name",
           "typeName": "string",
           "cardinality": "SINGLE",
           "isIndexable": false,
