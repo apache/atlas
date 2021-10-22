@@ -866,7 +866,7 @@ public class GlossaryREST {
     public List<AtlasRelatedTermHeader> getCategoryTermFull(@PathParam("categoryGuid") String categoryGuid,
                                                          @DefaultValue("-1") @QueryParam("limit") String limit,
                                                          @DefaultValue("0") @QueryParam("offset") String offset,
-                                                         @DefaultValue("ASC") @QueryParam("sort") final String sort) throws AtlasBaseException {
+                                                         @DefaultValue("ASC") @QueryParam("sort") final String sort, @QueryParam("attributes") List<String> includeAttributes) throws AtlasBaseException {
         Servlets.validateQueryParamLength("categoryGuid", categoryGuid);
 
         AtlasPerfTracer perf = null;
@@ -875,7 +875,7 @@ public class GlossaryREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "GlossaryREST.getCategoryTerms(" + categoryGuid + ")");
             }
 
-            return glossaryService.getCategoryTermsHeaders(categoryGuid, Integer.parseInt(offset), Integer.parseInt(limit), toSortOrder(sort));
+            return glossaryService.getCategoryTermsHeaders(categoryGuid, Integer.parseInt(offset), Integer.parseInt(limit), toSortOrder(sort), includeAttributes);
 
         } finally {
             AtlasPerfTracer.log(perf);
