@@ -308,15 +308,5 @@ public interface AtlasEntityStore {
      */
     BulkImportResponse bulkCreateOrUpdateBusinessAttributes(InputStream inputStream, String fileName) throws AtlasBaseException;
 
-    /**
-     * Add given termQName to the given entity attribute value list "__terms" & "__meaningsText"
-     */
-    void addTermToEntityAttr(String entityGuid, String termQName, String termName);
-
-    /**
-     * Add given termQName from the given entity attribute value list "__meanings" & "__meaningsText"
-     */
-    void removeTermFromEntityAttr(String entityGuid, String termQName, String termName);
-
     void repairIndex() throws AtlasBaseException;
 }

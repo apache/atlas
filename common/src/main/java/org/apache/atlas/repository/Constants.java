@@ -109,8 +109,6 @@ public final class Constants {
     /**
      * Glossary property keys.
      */
-    public static final String TERM_DISPLAY_TEXT_KEY = "Asset.name";
-    public static final String CATEGORY_DISPLAY_TEXT_KEY = "Asset.name";
     public static final String CATEGORY_PARENT_EDGE_LABEL = "r:AtlasGlossaryCategoryHierarchyLink";
     public static final String CATEGORY_TERMS_EDGE_LABEL = "r:AtlasGlossaryTermCategorization";
     public static final String GLOSSARY_TERMS_EDGE_LABEL = "r:AtlasGlossaryTermAnchor";

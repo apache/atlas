@@ -170,7 +170,7 @@ public class GremlinQueryComposer {
         String   attributeToSearch;
 
         if (terms.length > 1) {
-            attributeToSearch = GlossaryUtils.QUALIFIED_NAME_ATTR;;
+            attributeToSearch = GlossaryUtils.QUALIFIED_NAME;;
         } else {
             termName = terms[0];
             attributeToSearch = GlossaryUtils.NAME;;

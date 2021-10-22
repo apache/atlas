@@ -131,8 +131,11 @@ import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPro
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
 import static org.apache.atlas.type.Constants.PENDING_TASKS_PROPERTY_KEY;
+import static org.apache.atlas.type.Constants.CATEGORIES_PROPERTY_KEY;
+import static org.apache.atlas.type.Constants.GLOSSARY_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.MEANINGS_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.MEANINGS_TEXT_PROPERTY_KEY;
+import static org.apache.atlas.type.Constants.PENDING_TASKS_PROPERTY_KEY;
 
 @Component
 public class EntityGraphMapper {
@@ -150,7 +153,13 @@ public class EntityGraphMapper {
     private static final int     CUSTOM_ATTRIBUTE_KEY_MAX_LENGTH   = AtlasConfiguration.CUSTOM_ATTRIBUTE_KEY_MAX_LENGTH.getInt();
     private static final int     CUSTOM_ATTRIBUTE_VALUE_MAX_LENGTH = AtlasConfiguration.CUSTOM_ATTRIBUTE_VALUE_MAX_LENGTH.getInt();
 
-    private static final String GLOSSARY_TERM_QUALIFIED_NAME_ATTR = "Referenceable.qualifiedName";
+    private static final String TYPE_GLOSSARY= "AtlasGlossary";
+    private static final String TYPE_CATEGORY= "AtlasGlossaryCategory";
+    private static final String TYPE_TERM = "AtlasGlossaryTerm";
+    private static final String ATTR_MEANINGS = "meanings";
+    private static final String ATTR_ANCHOR = "anchor";
+    private static final String ATTR_CATEGORIES = "categories";
+
 
     private static final boolean ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES = AtlasConfiguration.ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES.getBoolean();
     private static final boolean CLASSIFICATION_PROPAGATION_DEFAULT                  = AtlasConfiguration.CLASSIFICATION_PROPAGATION_DEFAULT.getBoolean();
@@ -317,9 +326,9 @@ public class EntityGraphMapper {
                 AtlasVertex     vertex     = context.getVertex(guid);
                 AtlasEntityType entityType = context.getType(guid);
 
+                mapAttributes(createdEntity, entityType, vertex, CREATE, context);
                 mapRelationshipAttributes(createdEntity, entityType, vertex, CREATE, context);
 
-                mapAttributes(createdEntity, entityType, vertex, CREATE, context);
                 setCustomAttributes(vertex,createdEntity);
 
                 resp.addEntity(CREATE, constructHeader(createdEntity, vertex));
@@ -339,9 +348,9 @@ public class EntityGraphMapper {
                 AtlasVertex     vertex     = context.getVertex(guid);
                 AtlasEntityType entityType = context.getType(guid);
 
+                mapAttributes(updatedEntity, entityType, vertex, updateType, context);
                 mapRelationshipAttributes(updatedEntity, entityType, vertex, UPDATE, context);
 
-                mapAttributes(updatedEntity, entityType, vertex, updateType, context);
                 setCustomAttributes(vertex,updatedEntity);
 
                 if (replaceClassifications) {
@@ -894,6 +903,10 @@ public class EntityGraphMapper {
                             true, ctx.getAttribute().getRelationshipEdgeDirection(), ctx.getReferringVertex());
                 }
 
+                if (edgeLabel.equals(GLOSSARY_TERMS_EDGE_LABEL)) {
+                    addGlossaryAttr(ctx, newEdge);
+                }
+
                 return newEdge;
             }
 
@@ -1441,6 +1454,7 @@ public class EntityGraphMapper {
         boolean        isSoftReference     = ctx.getAttribute().getAttributeDef().isSoftReferenced();
         AtlasAttribute inverseRefAttribute = attribute.getInverseRefAttribute();
         Cardinality    cardinality         = attribute.getAttributeDef().getCardinality();
+        List<AtlasEdge> removedElements    = new ArrayList<>();
         List<Object>   newElementsCreated  = new ArrayList<>();
         List<Object>   allArrayElements    = null;
         List<Object>   currentElements;
@@ -1499,9 +1513,9 @@ public class EntityGraphMapper {
             if (isAppendOnPartialUpdate) {
                 allArrayElements = unionCurrentAndNewElements(attribute, (List) currentElements, (List) newElementsCreated);
             } else {
-                List<AtlasEdge> activeCurrentElements = removeUnusedArrayEntries(attribute, (List) currentElements, (List) newElementsCreated, ctx.getReferringVertex());
+                removedElements = removeUnusedArrayEntries(attribute, (List) currentElements, (List) newElementsCreated, ctx.getReferringVertex());
 
-                allArrayElements = unionCurrentAndNewElements(attribute, activeCurrentElements, (List) newElementsCreated);
+                allArrayElements = unionCurrentAndNewElements(attribute, removedElements, (List) newElementsCreated);
             }
         } else {
             allArrayElements = newElementsCreated;
@@ -1522,22 +1536,12 @@ public class EntityGraphMapper {
             setArrayElementsProperty(elementType, isSoftReference, ctx.getReferringVertex(), ctx.getVertexProperty(), allArrayElements);
         }
 
-        if (attribute.getAttributeDef().getName().equals("meanings")) {
-            // handle __terms attribute of entity
-            List<AtlasVertex> meanings = newElementsCreated.stream().map(x -> ((AtlasEdge)x).getOutVertex()).collect(Collectors.toList());
+        switch (ctx.getAttribute().getRelationshipEdgeLabel()) {
+            case TERM_ASSIGNMENT_LABEL: addMeaningsToEntity(ctx, newElements);
+                break;
 
-            Set<String> qNames = meanings.stream().map(x -> x.getProperty("AtlasGlossaryTerm.qualifiedName", String.class)).collect(Collectors.toSet());
-            List<String> names = meanings.stream().map(x -> x.getProperty("AtlasGlossaryTerm.name", String.class)).collect(Collectors.toList());
-
-            ctx.getReferringVertex().removeProperty(MEANINGS_PROPERTY_KEY);
-            ctx.getReferringVertex().removeProperty(MEANINGS_TEXT_PROPERTY_KEY);
-            if (CollectionUtils.isNotEmpty(qNames)){
-                qNames.forEach(q -> AtlasGraphUtilsV2.addEncodedProperty(ctx.getReferringVertex(), MEANINGS_PROPERTY_KEY, q));
-            }
-
-            if (CollectionUtils.isNotEmpty(names)){
-                AtlasGraphUtilsV2.setEncodedProperty(ctx.referringVertex, MEANINGS_TEXT_PROPERTY_KEY, StringUtils.join(names, ","));
-            }
+            case CATEGORY_TERMS_EDGE_LABEL: addCategoriesToTermEntity(ctx, newElementsCreated, removedElements);
+                break;
         }
 
         if (LOG.isDebugEnabled()) {
@@ -1545,6 +1549,61 @@ public class EntityGraphMapper {
         }
 
         return allArrayElements;
+    }
+
+    private void addGlossaryAttr(AttributeMutationContext ctx, AtlasEdge edge) {
+        AtlasVertex termVertex = ctx.getReferringVertex();
+
+        if (TYPE_TERM.equals(getTypeName(termVertex))) {
+            // handle __glossary attribute of term entity
+            String gloQname = edge.getOutVertex().getProperty(QUALIFIED_NAME, String.class);
+            AtlasGraphUtilsV2.setEncodedProperty(termVertex, GLOSSARY_PROPERTY_KEY, gloQname);
+        }
+    }
+
+    private void addCategoriesToTermEntity(AttributeMutationContext ctx, List<Object> newElementsCreated, List<AtlasEdge> removedElements) {
+        AtlasVertex termVertex = ctx.getReferringVertex();
+
+        if (TYPE_CATEGORY.equals(getTypeName(termVertex))) {
+            String catQName = ctx.getReferringVertex().getProperty("qualifiedName", String.class);
+
+            if (CollectionUtils.isNotEmpty(newElementsCreated)) {
+                List<AtlasVertex> termVertices = newElementsCreated.stream().map(x -> ((AtlasEdge) x).getInVertex()).collect(Collectors.toList());
+                termVertices.stream().forEach(v -> AtlasGraphUtilsV2.addEncodedProperty(v, CATEGORIES_PROPERTY_KEY, catQName));
+            }
+
+            if (CollectionUtils.isNotEmpty(removedElements)) {
+                List<AtlasVertex> termVertices = removedElements.stream().map(x -> x.getInVertex()).collect(Collectors.toList());
+                termVertices.stream().forEach(v -> AtlasGraphUtilsV2.removeItemFromListPropertyValue(v, CATEGORIES_PROPERTY_KEY, catQName));
+            }
+        }
+
+        if (TYPE_TERM.equals(getTypeName(termVertex))) {
+            List<AtlasVertex> categoryVertices = newElementsCreated.stream().map(x -> ((AtlasEdge)x).getOutVertex()).collect(Collectors.toList());
+            Set<String> catQnames = categoryVertices.stream().map(x -> x.getProperty(QUALIFIED_NAME, String.class)).collect(Collectors.toSet());
+
+            termVertex.removeProperty(CATEGORIES_PROPERTY_KEY);
+            catQnames.stream().forEach(q -> AtlasGraphUtilsV2.addEncodedProperty(termVertex, CATEGORIES_PROPERTY_KEY, q));
+        }
+    }
+
+    private void addMeaningsToEntity(AttributeMutationContext ctx, List<Object> newElementsCreated) {
+        // handle __terms attribute of entity
+        List<AtlasVertex> meanings = newElementsCreated.stream().map(x -> ((AtlasEdge) x).getOutVertex()).collect(Collectors.toList());
+
+        Set<String> qNames = meanings.stream().map(x -> x.getProperty("qualifiedName", String.class)).collect(Collectors.toSet());
+        List<String> names = meanings.stream().map(x -> x.getProperty("name", String.class)).collect(Collectors.toList());
+
+        ctx.getReferringVertex().removeProperty(MEANINGS_PROPERTY_KEY);
+        ctx.getReferringVertex().removeProperty(MEANINGS_TEXT_PROPERTY_KEY);
+
+        if (CollectionUtils.isNotEmpty(qNames)) {
+            qNames.forEach(q -> AtlasGraphUtilsV2.addEncodedProperty(ctx.getReferringVertex(), MEANINGS_PROPERTY_KEY, q));
+        }
+
+        if (CollectionUtils.isNotEmpty(names)) {
+            AtlasGraphUtilsV2.setEncodedProperty(ctx.referringVertex, MEANINGS_TEXT_PROPERTY_KEY, StringUtils.join(names, ","));
+        }
     }
 
     private boolean getAppendOptionForRelationship(AtlasVertex entityVertex, String relationshipAttributeName) {
