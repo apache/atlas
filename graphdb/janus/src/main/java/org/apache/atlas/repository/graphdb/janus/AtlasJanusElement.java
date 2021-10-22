@@ -198,6 +198,19 @@ public class AtlasJanusElement<T extends Element> implements AtlasElement {
     }
 
     @Override
+    public List<String> getMultiValuedProperty(String propertyName) {
+        List<String> value = new ArrayList<>();
+        Iterator<? extends Property<Object>> it = getWrappedElement().properties(propertyName);
+
+        while (it.hasNext()) {
+            Property currentProperty      = it.next();
+            Object   currentPropertyValue = currentProperty.value();
+            value.add((String) currentPropertyValue);
+        }
+        return value;
+    }
+
+    @Override
     public void setListProperty(String propertyName, List<String> values) {
         setProperty(propertyName, values);
 
