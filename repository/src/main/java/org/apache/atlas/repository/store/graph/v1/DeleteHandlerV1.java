@@ -31,7 +31,6 @@ import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
-import org.apache.atlas.repository.graph.AtlasEdgeLabel;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
@@ -436,14 +435,14 @@ public abstract class DeleteHandlerV1 {
                 if (getClassificationEdge(propagatedEntityVertex, classificationVertex) != null) {
                     if (LOG.isDebugEnabled()) {
                         LOG.debug(" --> Classification edge already exists from [{}] --> [{}][{}] using edge label: [{}]",
-                                  getTypeName(propagatedEntityVertex), getTypeName(classificationVertex), getTypeName(associatedEntityVertex), classificationName);
+                                getTypeName(propagatedEntityVertex), getTypeName(classificationVertex), getTypeName(associatedEntityVertex), classificationName);
                     }
 
                     continue;
                 } else if (getPropagatedClassificationEdge(propagatedEntityVertex, classificationVertex) != null) {
                     if (LOG.isDebugEnabled()) {
                         LOG.debug(" --> Propagated classification edge already exists from [{}] --> [{}][{}] using edge label: [{}]",
-                                  getTypeName(propagatedEntityVertex), getTypeName(classificationVertex), getTypeName(associatedEntityVertex), CLASSIFICATION_LABEL);
+                                getTypeName(propagatedEntityVertex), getTypeName(classificationVertex), getTypeName(associatedEntityVertex), CLASSIFICATION_LABEL);
                     }
 
                     continue;
@@ -456,7 +455,7 @@ public abstract class DeleteHandlerV1 {
                 if (!classificationType.canApplyToEntityType(entityType)) {
                     if (LOG.isDebugEnabled()) {
                         LOG.debug(" --> Not creating propagated classification edge from [{}] --> [{}][{}], classification is not applicable for entity type",
-                                   getTypeName(propagatedEntityVertex), getTypeName(classificationVertex), getTypeName(associatedEntityVertex));
+                                getTypeName(propagatedEntityVertex), getTypeName(classificationVertex), getTypeName(associatedEntityVertex));
                     }
 
                     continue;
@@ -470,7 +469,7 @@ public abstract class DeleteHandlerV1 {
 
                 if (LOG.isDebugEnabled()) {
                     LOG.debug(" --> Adding propagated classification: [{}] to {} ({}) using edge label: [{}]", classificationName, getTypeName(propagatedEntityVertex),
-                              GraphHelper.getGuid(propagatedEntityVertex), CLASSIFICATION_LABEL);
+                            GraphHelper.getGuid(propagatedEntityVertex), CLASSIFICATION_LABEL);
                 }
 
                 if (ret == null) {
@@ -537,7 +536,7 @@ public abstract class DeleteHandlerV1 {
             String inVertexType  = getTypeName(edge.getInVertex());
 
             ret = GraphHelper.isRelationshipEdge(edge) || edge.getPropertyKeys().contains(RELATIONSHIP_GUID_PROPERTY_KEY) ||
-                  (typeRegistry.getEntityTypeByName(outVertexType) != null && typeRegistry.getEntityTypeByName(inVertexType) != null);
+                    (typeRegistry.getEntityTypeByName(outVertexType) != null && typeRegistry.getEntityTypeByName(inVertexType) != null);
         }
 
         return ret;
@@ -604,7 +603,7 @@ public abstract class DeleteHandlerV1 {
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("Removing propagated classification: [{} - associatedEntityGuid: {}] from: [{}][{}] with edge label: [{}]",
-                       classificationName, associatedEntityGuid, getTypeName(entityVertex), getGuid(entityVertex), CLASSIFICATION_LABEL);
+                    classificationName, associatedEntityGuid, getTypeName(entityVertex), getGuid(entityVertex), CLASSIFICATION_LABEL);
         }
 
         AtlasClassification classification = entityRetriever.toAtlasClassification(classificationVertex);
@@ -625,7 +624,7 @@ public abstract class DeleteHandlerV1 {
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("Removing propagated classification: [{}] from: [{}][{}] with edge label: [{}]", classificationName,
-                       getTypeName(entityVertex), GraphHelper.getGuid(entityVertex), CLASSIFICATION_LABEL);
+                    getTypeName(entityVertex), GraphHelper.getGuid(entityVertex), CLASSIFICATION_LABEL);
         }
 
         removeFromPropagatedClassificationNames(entityVertex, classificationName);
@@ -646,15 +645,15 @@ public abstract class DeleteHandlerV1 {
     protected void deleteEdge(AtlasEdge edge, boolean updateInverseAttribute, boolean force) throws AtlasBaseException {
         //update inverse attribute
         if (updateInverseAttribute) {
-            AtlasEdgeLabel atlasEdgeLabel = new AtlasEdgeLabel(edge.getLabel());
-            AtlasType      parentType     = typeRegistry.getType(atlasEdgeLabel.getTypeName());
+            String labelWithoutPrefix = edge.getLabel().substring(GraphHelper.EDGE_LABEL_PREFIX.length());
+            AtlasType      parentType = typeRegistry.getType(AtlasGraphUtilsV2.getTypeName(edge.getOutVertex()));
 
             if (parentType instanceof AtlasEntityType) {
                 AtlasEntityType                parentEntityType = (AtlasEntityType) parentType;
-                AtlasStructType.AtlasAttribute attribute        = parentEntityType.getAttribute(atlasEdgeLabel.getAttributeName());
+                AtlasStructType.AtlasAttribute attribute        = parentEntityType.getAttribute(labelWithoutPrefix);
 
                 if (attribute == null) {
-                    attribute = parentEntityType.getRelationshipAttribute(atlasEdgeLabel.getAttributeName(), AtlasGraphUtilsV2.getTypeName(edge));
+                    attribute = parentEntityType.getRelationshipAttribute(labelWithoutPrefix, AtlasGraphUtilsV2.getTypeName(edge));
                 }
 
                 if (attribute != null && attribute.getInverseRefAttribute() != null) {
@@ -677,16 +676,16 @@ public abstract class DeleteHandlerV1 {
         switch (typeCategory) {
             case STRUCT:
                 deleteTypeVertex(instanceVertex, force);
-            break;
+                break;
 
             case CLASSIFICATION:
                 deleteClassificationVertex(instanceVertex, force);
-            break;
+                break;
 
             case ENTITY:
             case OBJECT_ID_TYPE:
                 deleteEntities(Collections.singletonList(instanceVertex));
-            break;
+                break;
 
             default:
                 throw new IllegalStateException("Type category " + typeCategory + " not handled");
@@ -723,12 +722,12 @@ public abstract class DeleteHandlerV1 {
                     case OBJECT_ID_TYPE:
                         //If its class attribute, delete the reference
                         deleteEdgeReference(instanceVertex, edgeLabel, attrType.getTypeCategory(), isOwned);
-                    break;
+                        break;
 
                     case STRUCT:
                         //If its struct attribute, delete the reference
                         deleteEdgeReference(instanceVertex, edgeLabel, attrType.getTypeCategory(), false);
-                    break;
+                        break;
 
                     case ARRAY:
                         //For array attribute, if the element is struct/class, delete all the references
@@ -744,7 +743,7 @@ public abstract class DeleteHandlerV1 {
                                 }
                             }
                         }
-                    break;
+                        break;
 
                     case MAP:
                         //For map attribute, if the value type is struct/class, delete all the references
@@ -758,13 +757,15 @@ public abstract class DeleteHandlerV1 {
                                 deleteEdgeReference(edge, valueTypeCategory, isOwned, false, instanceVertex);
                             }
                         }
-                     break;
+                        break;
 
                     case PRIMITIVE:
-                        if (attributeInfo.getVertexUniquePropertyName() != null) {
+                        // This is different from upstream atlas.
+                        // Here we are not deleting the unique property thus users can only restore after deleting an entity.
+                        if (attributeInfo.getVertexUniquePropertyName() != null && force) {
                             instanceVertex.removeProperty(attributeInfo.getVertexUniquePropertyName());
                         }
-                    break;
+                        break;
                 }
             }
         }
@@ -772,12 +773,12 @@ public abstract class DeleteHandlerV1 {
         deleteVertex(instanceVertex, force);
     }
 
-    protected AtlasAttribute getAttributeForEdge(String edgeLabel) throws AtlasBaseException {
-        AtlasEdgeLabel  atlasEdgeLabel   = new AtlasEdgeLabel(edgeLabel);
-        AtlasType       parentType       = typeRegistry.getType(atlasEdgeLabel.getTypeName());
+    protected AtlasAttribute getAttributeForEdge(AtlasEdge edge) throws AtlasBaseException {
+        String labelWithoutPrefix        = edge.getLabel().substring(GraphHelper.EDGE_LABEL_PREFIX.length());
+        AtlasType       parentType       = typeRegistry.getType(AtlasGraphUtilsV2.getTypeName(edge.getOutVertex()));
         AtlasStructType parentStructType = (AtlasStructType) parentType;
 
-        return parentStructType.getAttribute(atlasEdgeLabel.getAttributeName());
+        return parentStructType.getAttribute(labelWithoutPrefix);
     }
 
     protected abstract void _deleteVertex(AtlasVertex instanceVertex, boolean force);
@@ -880,7 +881,7 @@ public abstract class DeleteHandlerV1 {
 
             case STRUCT:
             case CLASSIFICATION:
-            break;
+                break;
 
             default:
                 throw new IllegalStateException("There can't be an edge from " + GraphHelper.getVertexDetails(outVertex) + " to " + GraphHelper.getVertexDetails(inVertex) + " with attribute name " + attribute.getName() + " which is not class/array/map attribute. found " + attrType.getTypeCategory().name());
@@ -922,7 +923,7 @@ public abstract class DeleteHandlerV1 {
 
                     if (!isDeletedEntity(outVertex)) {
                         AtlasVertex inVertex = edge.getInVertex();
-                        AtlasAttribute attribute = getAttributeForEdge(edge.getLabel());
+                        AtlasAttribute attribute = getAttributeForEdge(edge);
 
                         deleteEdgeBetweenVertices(outVertex, inVertex, attribute);
                     }

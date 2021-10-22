@@ -388,7 +388,7 @@ public class TransformationHandlerTest {
     @Test
     public void verifyEntityTypeInAttributeName() {
         AttributeTransform p = new AttributeTransform();
-        p.addAction("Asset.name", "SET: renamed");
+        p.addAction("name", "SET: renamed");
 
         List<BaseEntityHandler> handlers = initializeHandlers(Collections.singletonList(p));
 
@@ -400,9 +400,9 @@ public class TransformationHandlerTest {
         applyTransforms(assetSubEntity, handlers);
         applyTransforms(nonAssetEntity, handlers);
 
-        assertEquals((String) assetEntity.getAttribute("name"), "renamed", "Asset.name expected to be updated for Asset entity");
-        assertEquals((String) assetSubEntity.getAttribute("name"), "renamed", "Asset.name expected to be updated for Asset sub-type entity");
-        assertEquals((String) nonAssetEntity.getAttribute("name"), "originalName", "Asset.name expected to be not updated for non-Asset type entity");
+        assertEquals((String) assetEntity.getAttribute("name"), "renamed", "name expected to be updated for Asset entity");
+        assertEquals((String) assetSubEntity.getAttribute("name"), "renamed", "name expected to be updated for Asset sub-type entity");
+        assertEquals((String) nonAssetEntity.getAttribute("name"), "originalName", "name expected to be not updated for non-Asset type entity");
     }
 
     @Test

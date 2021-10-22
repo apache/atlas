@@ -201,6 +201,7 @@ public enum AtlasErrorCode {
     NO_PROPAGATED_CLASSIFICATIONS_FOUND_FOR_ENTITY(404, "ATLAS-404-00-013", "No propagated classifications associated with entity: {0}"),
     FILE_NAME_NOT_FOUND(404, "ATLAS-404-00-014", "File name should not be blank"),
     NO_TYPE_NAME_ON_VERTEX(404, "ATLAS-404-00-015", "No typename found for given entity with guid: {0}"),
+    RELATIONSHIP_LABEL_NOT_FOUND(404, "ATLAS-404-00-016", "Given relationshipLabel {0} was invalid"),
 
     // All data conflict errors go here
     TYPE_ALREADY_EXISTS(409, "ATLAS-409-00-001", "Given type {0} already exists"),
@@ -240,7 +241,8 @@ public enum AtlasErrorCode {
     FAILED_TO_UPLOAD(500, "ATLAS-500-00-015", "Error occurred while uploading the file: {0}"),
     FAILED_TO_CREATE_GLOSSARY_TERM(500, "ATLAS-500-00-016", "Error occurred while creating glossary term: {0}"),
     FAILED_TO_UPDATE_GLOSSARY_TERM(500, "ATLAS-500-00-017", "Error occurred while updating glossary term: {0}"),
-    REPAIR_INDEX_FAILED(500, "ATLAS-500-00-018", "Error occurred while repairing indices: {0}");
+    REPAIR_INDEX_FAILED(500, "ATLAS-500-00-018", "Error occurred while repairing indices: {0}"),
+    INDEX_SEARCH_FAILED(400, "ATLAS-400-00-102", "Error occurred while running direct index query on ES: {0}");
 
     private String errorCode;
     private String errorMessage;

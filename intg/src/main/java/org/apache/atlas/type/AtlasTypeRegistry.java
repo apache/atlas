@@ -32,6 +32,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Stream;
 
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.*;
 /**
@@ -222,6 +223,17 @@ public class AtlasTypeRegistry {
     }
     public AtlasRelationshipDef getRelationshipDefByName(String name) {
         return registryData.relationshipDefs.getTypeDefByName(name);
+    }
+
+    public AtlasRelationshipDef getRelationshipDefByLabel(String label) throws AtlasBaseException {
+        for (AtlasRelationshipDef def: registryData.relationshipDefs.getAll()) {
+            String relationshipLabel = def.getRelationshipLabel();
+            if (relationshipLabel != null && relationshipLabel.equals(label)) {
+                return def;
+            }
+        }
+
+        throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIP_LABEL_NOT_FOUND, label);
     }
 
     public AtlasBusinessMetadataDef getBusinessMetadataDefByGuid(String guid) {

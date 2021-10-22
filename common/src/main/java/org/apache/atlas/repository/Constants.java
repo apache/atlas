@@ -173,7 +173,7 @@ public final class Constants {
      */
     public static final String INDEX_PREFIX = "janusgraph_";
 
-    public static final String QUALIFIED_NAME                          = "Referenceable.qualifiedName";
+    public static final String QUALIFIED_NAME                          = "qualifiedName";
     public static final String TYPE_NAME_PROPERTY_KEY                  = INTERNAL_PROPERTY_KEY_PREFIX + "typeName";
     public static final String INDEX_SEARCH_MAX_RESULT_SET_SIZE        = "atlas.graph.index.search.max-result-set-size";
     public static final String INDEX_SEARCH_TYPES_MAX_QUERY_STR_LENGTH = "atlas.graph.index.search.types.max-query-str-length";
@@ -243,6 +243,14 @@ public final class Constants {
     public static final String TASK_START_TIME        = encodePropertyKey(TASK_PREFIX + "startTime");
     public static final String TASK_END_TIME          = encodePropertyKey(TASK_PREFIX + "endTime");
     public static final String ACTIVE_STATE_VALUE = "ACTIVE";
+
+    /**
+     * Index Recovery vertex property keys.
+     */
+    public static final String INDEX_RECOVERY_PREFIX                  = INTERNAL_PROPERTY_KEY_PREFIX + "idxRecovery_";
+    public static final String PROPERTY_KEY_INDEX_RECOVERY_NAME       = encodePropertyKey(INDEX_RECOVERY_PREFIX + "name");
+    public static final String PROPERTY_KEY_INDEX_RECOVERY_START_TIME = encodePropertyKey(INDEX_RECOVERY_PREFIX + "startTime");
+    public static final String PROPERTY_KEY_INDEX_RECOVERY_PREV_TIME  = encodePropertyKey(INDEX_RECOVERY_PREFIX + "prevTime");
 
     /*
      * All supported file-format extensions for Bulk Imports through file upload

@@ -324,8 +324,12 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
 
             HashMap<String, Object> ES_KEYWORD_FIELD = new HashMap<>();
             ES_KEYWORD_FIELD.put("type", "keyword");
+            ES_KEYWORD_FIELD.put("normalizer", "atlan_normalizer");
             HashMap<String, HashMap<String, Object>> KEYWORD_MULTIFIELD = new HashMap<>();
             KEYWORD_MULTIFIELD.put("keyword", ES_KEYWORD_FIELD);
+
+            HashMap<String, Object> ES_ATLAN_TEXT_ANALYZER_CONFIG = new HashMap<>();
+            ES_ATLAN_TEXT_ANALYZER_CONFIG.put("analyzer", "atlan_text_analyzer");
 
             // create vertex indexes
             createCommonVertexIndex(management, GUID_PROPERTY_KEY, UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false, true);
@@ -360,7 +364,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             createCommonVertexIndex(management, PATCH_ACTION_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
             createCommonVertexIndex(management, PATCH_STATE_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
             createCommonVertexIndex(management, MEANINGS_PROPERTY_KEY, UniqueKind.NONE, String.class, SET, true, false, true);
-            createCommonVertexIndex(management, MEANINGS_TEXT_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
+            createCommonVertexIndex(management, MEANINGS_TEXT_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false, false, ES_ATLAN_TEXT_ANALYZER_CONFIG, new HashMap<>());
 
 
             // tasks
@@ -368,6 +372,9 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             createCommonVertexIndex(management, TASK_TYPE_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
             createCommonVertexIndex(management, TASK_CREATED_TIME, UniqueKind.NONE, Long.class, SINGLE, true, false);
             createCommonVertexIndex(management, TASK_STATUS, UniqueKind.NONE, String.class, SINGLE, true, false);
+
+            // index recovery
+            createCommonVertexIndex(management, PROPERTY_KEY_INDEX_RECOVERY_NAME, UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false);
 
             // create vertex-centric index
             createVertexCentricIndex(management, CLASSIFICATION_LABEL, AtlasEdgeDirection.BOTH, CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, String.class, SINGLE);
@@ -551,8 +558,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
     }
 
     private void createIndexForAttribute(AtlasGraphManagement management, AtlasStructDef structDef, AtlasAttributeDef attributeDef) {
-        String           qualifiedName  = AtlasAttribute.getQualifiedAttributeName(structDef, attributeDef.getName());
-        final String     propertyName   = AtlasAttribute.generateVertexPropertyName(structDef, attributeDef, qualifiedName);
+        final String     propertyName   = AtlasAttribute.generateVertexPropertyName(attributeDef);
         AtlasCardinality cardinality    = toAtlasCardinality(attributeDef.getCardinality());
         boolean          isUnique       = attributeDef.getIsUnique();
         boolean          isIndexable    = attributeDef.getIsIndexable();
@@ -560,7 +566,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         boolean          isBuiltInType  = AtlasTypeUtil.isBuiltInType(attribTypeName);
         boolean          isArrayType    = isArrayType(attribTypeName);
         boolean          isMapType      = isMapType(attribTypeName);
-        final String     uniqPropName   = isUnique ? AtlasGraphUtilsV2.encodePropertyKey(structDef.getName() + "." + UNIQUE_ATTRIBUTE_SHADE_PROPERTY_PREFIX + attributeDef.getName()) : null;
+        final String     uniqPropName   = isUnique ? AtlasGraphUtilsV2.encodePropertyKey(UNIQUE_ATTRIBUTE_SHADE_PROPERTY_PREFIX + attributeDef.getName()) : null;
         final AtlasAttributeDef.IndexType indexType      = attributeDef.getIndexType();
         HashMap<String, Object> indexTypeESConfig = attributeDef.getIndexTypeESConfig();
         HashMap<String, HashMap<String, Object>> indexTypeESFields = attributeDef.getIndexTypeESFields();
@@ -645,16 +651,6 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         } catch (Exception excp) {
             LOG.warn("Failed to delete propertyKey {}, for attribute {}.{}", propertyName, typeName, attributeDef.getName());
         }
-    }
-
-    /**
-     * gets the encoded property name for the attribute passed in.
-     * @param baseTypeDef the type system of the attribute
-     * @param attributeDef the attribute definition
-     * @return the encoded property name for the attribute passed in.
-     */
-    public static String getEncodedPropertyName(AtlasStructDef baseTypeDef, AtlasAttributeDef attributeDef) {
-        return AtlasAttribute.getQualifiedAttributeName(baseTypeDef, attributeDef.getName());
     }
 
     private void createLabelIfNeeded(final AtlasGraphManagement management, final String propertyName, final String attribTypeName) {
@@ -1030,6 +1026,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
 
     private void updateIndexForTypeDef(AtlasGraphManagement management, AtlasBaseTypeDef typeDef) {
         Preconditions.checkNotNull(typeDef, "Cannot index on null typedefs");
+        LOG.info("Index creation started for type {} complete", typeDef.getName());
         if (LOG.isDebugEnabled()) {
             LOG.debug("Creating indexes for type name={}, definition={}", typeDef.getName(), typeDef.getClass());
         }

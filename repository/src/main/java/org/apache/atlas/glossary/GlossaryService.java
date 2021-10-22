@@ -308,7 +308,7 @@ public class GlossaryService {
         deleteCategories(storeObject, categories);
 
         // Once all relations are deleted, then delete the Glossary
-        dataAccess.delete(glossaryGuid);
+        dataAccess.delete(glossaryGuid, true);
 
         if (DEBUG_ENABLED) {
             LOG.debug("<== GlossaryService.deleteGlossary()");
@@ -501,7 +501,7 @@ public class GlossaryService {
 
 
         // Now delete the term
-        dataAccess.delete(termGuid);
+        dataAccess.delete(termGuid, true);
 
         if (DEBUG_ENABLED) {
             LOG.debug("<== GlossaryService.deleteTerm()");
@@ -745,7 +745,7 @@ public class GlossaryService {
         glossaryCategoryUtils.processCategoryRelations(storeObject, storeObject, GlossaryUtils.RelationshipOperation.DELETE);
 
         // Now delete the category
-        dataAccess.delete(categoryGuid);
+        dataAccess.delete(categoryGuid, true);
 
         if (DEBUG_ENABLED) {
             LOG.debug("<== GlossaryService.deleteCategory()");

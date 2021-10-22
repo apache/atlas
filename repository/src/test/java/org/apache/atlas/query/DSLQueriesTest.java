@@ -626,8 +626,8 @@ public class DSLQueriesTest extends BasicTestSetup {
                                 .row("Jane BI", "Reporting")
                                 .row("John ETL", "Sales")
                                 .row("Tim ETL", "Logging")},
-                {"from hive_db groupby (owner) select Asset.owner, Asset.name, count()",
-                        new TableValidator("Asset.owner", "Asset.name", "count()")
+                {"from hive_db groupby (owner) select Asset.owner, name, count()",
+                        new TableValidator("Asset.owner", "name", "count()")
                                 .row("Jane BI", "Reporting", 1)
                                 .row("Tim ETL", "Logging", 1)
                                 .row("John ETL", "Sales", 1)},
@@ -652,26 +652,26 @@ public class DSLQueriesTest extends BasicTestSetup {
                                 .row("Tim ETL", 1)
                                 .row("John ETL", 1)},
 
-                {"from hive_db groupby (owner) select Asset.owner, max(Asset.name) ",
-                        new TableValidator("Asset.owner", "max(Asset.name)")
+                {"from hive_db groupby (owner) select Asset.owner, max(name) ",
+                        new TableValidator("Asset.owner", "max(name)")
                                 .row("Tim ETL", "Logging")
                                 .row("Jane BI", "Reporting")
                                 .row("John ETL", "Sales")},
 
-                {"from hive_db groupby (owner) select max(Asset.name) ",
-                        new TableValidator("max(Asset.name)")
+                {"from hive_db groupby (owner) select max(name) ",
+                        new TableValidator("max(name)")
                                 .row("Logging")
                                 .row("Reporting")
                                 .row("Sales")},
 
-                {"from hive_db groupby (owner) select owner, Asset.name, min(Asset.name)  ",
-                        new TableValidator("owner", "Asset.name", "min(Asset.name)")
+                {"from hive_db groupby (owner) select owner, name, min(name)  ",
+                        new TableValidator("owner", "name", "min(name)")
                                 .row("Tim ETL", "Logging", "Logging")
                                 .row("Jane BI", "Reporting", "Reporting")
                                 .row("John ETL", "Sales", "Sales")},
 
-                {"from hive_db groupby (owner) select owner, min(Asset.name)  ",
-                        new TableValidator("owner", "min(Asset.name)")
+                {"from hive_db groupby (owner) select owner, min(name)  ",
+                        new TableValidator("owner", "min(name)")
                                 .row("Tim ETL", "Logging")
                                 .row("Jane BI", "Reporting")
                                 .row("John ETL", "Sales")},

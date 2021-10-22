@@ -145,6 +145,12 @@
             <directory>../addons/models</directory>
             <outputDirectory>models</outputDirectory>
         </fileSet>
+
+        <!-- elasticsearch-configs -->
+        <fileSet>
+            <directory>../addons/elasticsearch</directory>
+            <outputDirectory>elasticsearch</outputDirectory>
+        </fileSet>
     </fileSets>
 
     <files>

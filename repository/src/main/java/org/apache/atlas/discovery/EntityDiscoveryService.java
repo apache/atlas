@@ -1025,7 +1025,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             ret.setAggregations(indexQueryResult.getAggregationMap());
             ret.setApproximateCount(indexQuery.vertexTotals());
         } catch (Exception e) {
-            e.printStackTrace();
+            throw e;
         }
 
         scrubSearchResults(ret);

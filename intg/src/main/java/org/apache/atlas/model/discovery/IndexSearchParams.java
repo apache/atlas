@@ -42,7 +42,7 @@ public class IndexSearchParams extends SearchParams {
 
     public void setDsl(Map dsl) {
         this.dsl = dsl;
-        queryString = parseQueryAttrNames(AtlasType.toJson(dsl));
+        queryString = AtlasType.toJson(dsl);
     }
 
     public void setRelationAttributes(Set<String> relationAttributes) {

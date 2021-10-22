@@ -203,7 +203,7 @@ public class GremlinQueryComposerTest {
                 "it.property('DB.owner').isPresent() ? it.value('DB.owner') : \"\"])}); t.unique(); }";
         verify("from DB where name = \"Reporting\" select name, owner", getExpected(exSel, exMain));
         verify("from DB where (name = \"Reporting\") select name, owner", getExpected(exSel, exMain));
-        verify("Table where Asset.name like \"Tab*\"",
+        verify("Table where name like \"Tab*\"",
                 "g.V().has('__typeName', 'Table').has('Asset.__s_name', org.janusgraph.core.attribute.Text.textRegex(\"Tab.*\")).dedup().limit(25).toList()");
         verify("Table where owner like \"Tab*\"",
           "g.V().has('__typeName', 'Table').has('Table.owner', org.janusgraph.core.attribute.Text.textContainsRegex(\"Tab.*\")).dedup().limit(25).toList()");
@@ -212,9 +212,9 @@ public class GremlinQueryComposerTest {
         verify("from Table where (db.name = \"Reporting\")",
                 "g.V().has('__typeName', 'Table').out('__Table.db').has('DB.name', eq(\"Reporting\")).dedup().in('__Table.db').dedup().limit(25).toList()");
         verify( "Table where owner like \"Jane/*\"", "g.V().has('__typeName', 'Table').has('Table.owner', org.janusgraph.core.attribute.Text.textRegex(\"Jane\\/.*\")).dedup().limit(25).toList()");
-        verify( "Table where Asset.name like \"/sales_*\"", "g.V().has('__typeName', 'Table').has('Asset.__s_name', org.janusgraph.core.attribute.Text.textRegex(\"\\/sales_.*\")).dedup().limit(25).toList()");
-        verify( "Table where Asset.name like \"sales:*\"", "g.V().has('__typeName', 'Table').has('Asset.__s_name', org.janusgraph.core.attribute.Text.textRegex(\"sales:.*\")).dedup().limit(25).toList()");
-        verify( "Table where Asset.name like \"table[0-9]\"", "g.V().has('__typeName', 'Table').has('Asset.__s_name', org.janusgraph.core.attribute.Text.textRegex(\"table[0-9]\")).dedup().limit(25).toList()");
+        verify( "Table where name like \"/sales_*\"", "g.V().has('__typeName', 'Table').has('Asset.__s_name', org.janusgraph.core.attribute.Text.textRegex(\"\\/sales_.*\")).dedup().limit(25).toList()");
+        verify( "Table where name like \"sales:*\"", "g.V().has('__typeName', 'Table').has('Asset.__s_name', org.janusgraph.core.attribute.Text.textRegex(\"sales:.*\")).dedup().limit(25).toList()");
+        verify( "Table where name like \"table[0-9]\"", "g.V().has('__typeName', 'Table').has('Asset.__s_name', org.janusgraph.core.attribute.Text.textRegex(\"table[0-9]\")).dedup().limit(25).toList()");
     }
 
     @Test

@@ -33,7 +33,8 @@ public interface ActiveStateChangeHandler {
         ATLAS_PATCH_SERVICE(3),
         DEFAULT_METADATA_SERVICE(4),
         NOTIFICATION_HOOK_CONSUMER(5),
-        TASK_MANAGEMENT(6);
+        TASK_MANAGEMENT(6),
+        INDEX_RECOVERY(7);
 
         private final int order;
 

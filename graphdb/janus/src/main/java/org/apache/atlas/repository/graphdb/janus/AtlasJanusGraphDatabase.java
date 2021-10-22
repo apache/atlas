@@ -28,7 +28,6 @@ import org.apache.atlas.repository.graphdb.janus.serializer.BigDecimalSerializer
 import org.apache.atlas.repository.graphdb.janus.serializer.BigIntegerSerializer;
 import org.apache.atlas.repository.graphdb.janus.serializer.TypeCategorySerializer;
 import org.apache.atlas.typesystem.types.DataTypes.TypeCategory;
-import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONMapper;
 import org.janusgraph.core.JanusGraph;
@@ -48,31 +47,41 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+
 import static org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchDatabase.getClient;
 import static org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchDatabase.getLowLevelClient;
+
+import static org.apache.atlas.ApplicationProperties.DEFAULT_INDEX_RECOVERY;
+import static org.apache.atlas.ApplicationProperties.INDEX_RECOVERY_CONF;
+
 
 /**
  * Default implementation for Graph Provider that doles out JanusGraph.
  */
 public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, AtlasJanusEdge> {
     private static final Logger LOG      = LoggerFactory.getLogger(AtlasJanusGraphDatabase.class);
-    private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("AtlasJanusGraphDatabase");
 
     private static final String OLDER_STORAGE_EXCEPTION = "Storage version is incompatible with current client";
 
     /**
      * Constant for the configuration property that indicates the prefix.
      */
-    public static final String GRAPH_PREFIX         = "atlas.graph";
-    public static final String INDEX_BACKEND_CONF   = "index.search.backend";
-    public static final String SOLR_ZOOKEEPER_URL   = "atlas.graph.index.search.solr.zookeeper-url";
-    public static final String SOLR_ZOOKEEPER_URLS  = "atlas.graph.index.search.solr.zookeeper-urls";
-    public static final String INDEX_BACKEND_LUCENE = "lucene";
-    public static final String INDEX_BACKEND_ES     = "elasticsearch";
+    public static final String GRAPH_PREFIX               = "atlas.graph";
+    public static final String INDEX_BACKEND_CONF         = "index.search.backend";
+    public static final String SOLR_ZOOKEEPER_URL         = "atlas.graph.index.search.solr.zookeeper-url";
+    public static final String SOLR_ZOOKEEPER_URLS        = "atlas.graph.index.search.solr.zookeeper-urls";
+    public static final String INDEX_BACKEND_LUCENE       = "lucene";
+    public static final String INDEX_BACKEND_ES           = "elasticsearch";
+    public static final String GRAPH_TX_LOG_CONF          = "tx.log-tx";
+    public static final String GRAPH_TX_LOG_VERBOSE_CONF  = "tx.recovery.verbose";
+    public static final String SOLR_INDEX_TX_LOG_TTL_CONF = "write.ahead.log.ttl.in.hours";
+    public static final String GRAPH_TX_LOG_TTL_CONF      = "log.tx.ttl";
+    public static final long   DEFAULT_GRAPH_TX_LOG_TTL   = 72; //Hrs
 
     private static volatile AtlasJanusGraph atlasGraphInstance = null;
     private static volatile JanusGraph graphInstance;
@@ -169,8 +178,11 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
                         throw new RuntimeException(e);
                     }
 
-                    graphInstance = initJanusGraph(config);
+                    configureTxLogBasedIndexRecovery();
+
+                    graphInstance      = initJanusGraph(config);
                     atlasGraphInstance = new AtlasJanusGraph();
+
                     validateIndexBackend(config);
 
                 }
@@ -191,6 +203,52 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
                 return JanusGraphFactory.open(config);
             } else {
                 throw new RuntimeException(e);
+            }
+        }
+    }
+
+    public static void configureTxLogBasedIndexRecovery() {
+        try {
+            boolean  recoveryEnabled = ApplicationProperties.get().getBoolean(INDEX_RECOVERY_CONF, DEFAULT_INDEX_RECOVERY);
+            long     ttl             = ApplicationProperties.get().getLong(SOLR_INDEX_TX_LOG_TTL_CONF, DEFAULT_GRAPH_TX_LOG_TTL);
+            Duration txLogTtlSecs    = Duration.ofSeconds(Duration.ofHours(ttl).getSeconds());
+
+            Map<String, Object> properties = new HashMap<String, Object>() {{
+                put(GRAPH_TX_LOG_CONF, recoveryEnabled);
+                put(GRAPH_TX_LOG_VERBOSE_CONF, recoveryEnabled);
+                put(GRAPH_TX_LOG_TTL_CONF, txLogTtlSecs);
+            }};
+
+            updateGlobalConfiguration(properties);
+
+            LOG.info("Tx Log-based Index Recovery: {}!", recoveryEnabled ? "Enabled" : "Disabled");
+        } catch (Exception e) {
+            LOG.error("Error: Failed!", e);
+        }
+    }
+
+    private static void updateGlobalConfiguration(Map<String, Object> map) {
+        JanusGraph           graph            = null;
+        JanusGraphManagement managementSystem = null;
+
+        try {
+            graph            = initJanusGraph(getConfiguration());
+            managementSystem = graph.openManagement();
+
+            for (Map.Entry<String, Object> entry : map.entrySet()) {
+                managementSystem.set(entry.getKey(), entry.getValue());
+            }
+
+            LOG.info("Global properties updated!: {}", map);
+        } catch (Exception ex) {
+            LOG.error("Error updating global configuration: {}", map, ex);
+        } finally {
+            if (managementSystem != null) {
+                managementSystem.commit();
+            }
+
+            if (graph != null) {
+                graph.close();
             }
         }
     }

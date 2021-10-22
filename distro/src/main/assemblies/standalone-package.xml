@@ -125,6 +125,12 @@
             <outputDirectory>models</outputDirectory>
         </fileSet>
 
+        <!-- elasticsearch-configs -->
+        <fileSet>
+            <directory>../addons/elasticsearch</directory>
+            <outputDirectory>elasticsearch</outputDirectory>
+        </fileSet>
+
         <!-- addons/hive -->
         <fileSet>
             <directory>../addons/hive-bridge/src/bin</directory>
