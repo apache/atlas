@@ -29,9 +29,11 @@ import org.apache.atlas.glossary.GlossaryTermUtils;
 import org.apache.atlas.model.glossary.AtlasGlossary;
 import org.apache.atlas.model.glossary.AtlasGlossaryCategory;
 import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
+import org.apache.atlas.model.glossary.relations.AtlasGlossaryHeader;
 import org.apache.atlas.model.glossary.relations.AtlasRelatedCategoryHeader;
 import org.apache.atlas.model.glossary.relations.AtlasRelatedTermHeader;
 import org.apache.atlas.model.instance.AtlasRelatedObjectId;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.collections.MapUtils;
@@ -464,7 +466,7 @@ public class GlossaryREST {
     @PUT
     @Path("/term/{termGuid}/partial")
     @Timed
-    public AtlasGlossaryTerm partialUpdateGlossaryTerm(@PathParam("termGuid") String termGuid, Map<String, String> partialUpdates) throws AtlasBaseException {
+    public AtlasGlossaryTerm partialUpdateGlossaryTerm(@PathParam("termGuid") String termGuid, Map<String, Object> partialUpdates) throws AtlasBaseException {
         Servlets.validateQueryParamLength("termGuid", termGuid);
 
         AtlasPerfTracer perf = null;
@@ -478,9 +480,12 @@ public class GlossaryREST {
             }
 
             AtlasGlossaryTerm glossaryTerm = glossaryService.getTerm(termGuid);
-            for (Map.Entry<String, String> entry : partialUpdates.entrySet()) {
+
+            AtlasGlossaryTerm partialGlossaryTerm = AtlasType.fromJson(AtlasType.toJson(partialUpdates), AtlasGlossaryTerm.class);
+
+            for (Map.Entry<String, Object> entry : partialUpdates.entrySet()) {
                 try {
-                    glossaryTerm.setAttribute(entry.getKey(), entry.getValue());
+                    glossaryTerm.setTermAttribute(entry.getKey(), partialGlossaryTerm);
                 } catch (IllegalArgumentException e) {
                     throw new AtlasBaseException(AtlasErrorCode.INVALID_PARTIAL_UPDATE_ATTR, "Glossary Term", entry.getKey());
                 }

@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+
 @AtlasJSON
 public class AtlasGlossaryTerm extends AtlasGlossaryBaseObject {
     // Core attributes
@@ -344,6 +345,103 @@ public class AtlasGlossaryTerm extends AtlasGlossaryBaseObject {
     @JsonIgnore
     public boolean hasTerms() {
         return hasTerms;
+    }
+
+    public void setTermAttribute(String attrName, AtlasGlossaryTerm partialTermObject) {
+        Objects.requireNonNull(attrName, "AtlasGlossaryTerm attribute name");
+
+        switch (attrName) {
+            case "name":
+                setName(partialTermObject.getName());
+                break;
+
+            case "shortDescription":
+                setShortDescription(partialTermObject.getShortDescription());
+                break;
+
+            case "longDescription":
+                setLongDescription(partialTermObject.getLongDescription());
+                break;
+
+            case "abbreviation":
+                setAbbreviation(partialTermObject.getAbbreviation());
+                break;
+
+            case "usage":
+                setUsage(partialTermObject.getUsage());
+                break;
+
+            case "examples":
+                setExamples(partialTermObject.getExamples());
+                break;
+
+            case "anchor":
+                setAnchor(partialTermObject.getAnchor());
+                break;
+
+            case "assignedEntities":
+                setAssignedEntities(partialTermObject.getAssignedEntities());
+                break;
+
+            case "categories":
+                setCategories(partialTermObject.getCategories());
+                break;
+
+            case "seeAlso":
+                setSeeAlso(partialTermObject.getSeeAlso());
+                break;
+
+            case "synonyms":
+                setSynonyms(partialTermObject.getSynonyms());
+                break;
+
+            case "antonyms":
+                setAntonyms(partialTermObject.getAntonyms());
+                break;
+
+            case "preferredTerms":
+                setPreferredTerms(partialTermObject.getPreferredTerms());
+                break;
+
+            case "preferredToTerms":
+                setPreferredToTerms(partialTermObject.getPreferredTerms());
+                break;
+
+            case "replacementTerms":
+                setReplacementTerms(partialTermObject.getReplacementTerms());
+                break;
+
+            case "replacedBy":
+                setReplacedBy(partialTermObject.getReplacedBy());
+                break;
+
+            case "translationTerms":
+                setTranslatedTerms(partialTermObject.getTranslatedTerms());
+                break;
+
+            case "isA":
+                setIsA(partialTermObject.getIsA());
+                break;
+
+            case "classifies":
+                setClassifies(partialTermObject.getClassifies());
+                break;
+
+            case "validValues":
+                setValidValues(partialTermObject.getValidValues());
+                break;
+
+            case "validValuesFor":
+                setValidValuesFor(partialTermObject.getValidValuesFor());
+                break;
+
+            case "additionalAttributes":
+                setAdditionalAttributes(partialTermObject.getAdditionalAttributes());
+                break;
+
+            default:
+                setOtherAttribute(attrName, partialTermObject.getOtherAttributes().get(attrName));
+        }
     }
 
     @JsonIgnore

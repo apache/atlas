@@ -188,7 +188,7 @@ public class GlossaryTermUtils extends GlossaryUtils {
                 }
                 break;
             case UPDATE:
-                if (!Objects.equals(updatedTermAnchor, existingAnchor)) {
+                if (!Objects.equals(updatedTermAnchor.getGlossaryGuid(), existingAnchor.getGlossaryGuid())) {
                     if (Objects.isNull(updatedTermAnchor.getGlossaryGuid())) {
                         throw new AtlasBaseException(AtlasErrorCode.INVALID_NEW_ANCHOR_GUID);
                     }

@@ -67,7 +67,7 @@
       ],
       "attributeDefs": [
         {
-          "name": "name",
+          "name": "AtlasServer.name",
           "typeName": "string",
           "cardinality": "SINGLE",
           "isIndexable": true,
@@ -75,7 +75,7 @@
           "isUnique": false
         },
         {
-          "name": "displayName",
+          "name": "AtlasServer.displayName",
           "typeName": "string",
           "cardinality": "SINGLE",
           "isIndexable": true,
