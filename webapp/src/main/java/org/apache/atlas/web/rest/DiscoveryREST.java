@@ -110,16 +110,16 @@ public class DiscoveryREST {
         Servlets.validateQueryParamLength("typeName", typeName);
         Servlets.validateQueryParamLength("classification", classification);
 
-        if (StringUtils.isNotEmpty(query) && query.length() > maxDslQueryLength) {
-            throw new AtlasBaseException(AtlasErrorCode.INVALID_QUERY_LENGTH, Constants.MAX_DSL_QUERY_STR_LENGTH);
+        if (StringUtils.isNotEmpty(query)) {
+            if (query.length() > maxDslQueryLength) {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_QUERY_LENGTH, Constants.MAX_DSL_QUERY_STR_LENGTH);
+            }
+            query = Servlets.decodeQueryString(query);
         }
 
         AtlasPerfTracer perf = null;
 
         try {
-
-            query = Servlets.decodeQueryString(query);
-
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.searchUsingDSL(" + query + "," + typeName
                         + "," + classification + "," + limit + "," + offset + ")");
