@@ -83,8 +83,6 @@ public class RequestContext {
     private boolean     skipFailedEntities = false;
     private String      currentTypePatchAction = "";
 
-    private boolean     isRestoreRequested = true;
-
     private RequestContext() {
     }
 
@@ -224,10 +222,6 @@ public class RequestContext {
     public boolean isPurgeRequested() { return isPurgeRequested; }
 
     public void setPurgeRequested(boolean isPurgeRequested) { this.isPurgeRequested = isPurgeRequested; }
-
-    public boolean isRestoreRequested() { return isRestoreRequested; }
-
-    public void setRestoreRequested(boolean isRestoreRequested) { this.isRestoreRequested = isRestoreRequested; }
 
     public boolean isInNotificationProcessing() {
         return isInNotificationProcessing;

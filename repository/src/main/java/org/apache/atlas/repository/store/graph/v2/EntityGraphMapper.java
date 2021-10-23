@@ -383,7 +383,7 @@ public class EntityGraphMapper {
             resp.addEntity(updateType, entity);
         }
 
-        if (req.isRestoreRequested()) {
+        if (req.getRestoredEntities() != null && req.getRestoredEntities().size() > 0) {
             for (AtlasEntityHeader entity : req.getRestoredEntities()) {
                 resp.addEntity(UPDATE, entity);
             }
