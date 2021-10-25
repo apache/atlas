@@ -77,6 +77,16 @@ public interface AtlasAuthorizer {
     void scrubSearchResults(AtlasSearchResultScrubRequest request) throws AtlasAuthorizationException {
     }
 
+    /**
+     * scrub search-results to handle entities for which the user doesn't have access
+     * @param request
+     * @return
+     * @throws AtlasAuthorizationException
+     */
+    default
+    void scrubSearchResults(AtlasSearchResultScrubRequest request, boolean isScrubAuditEnabled) throws AtlasAuthorizationException {
+    }
+
     default
     void scrubEntityHeader(AtlasEntityHeader entity) {
         entity.setGuid("-1");
