@@ -84,7 +84,7 @@ public class AtlasAuthorizationUtils {
                 request.setForwardedAddresses(RequestContext.get().getForwardedAddresses());
                 request.setRemoteIPAddress(RequestContext.get().getClientIPAddress());
 
-                authorizer.scrubSearchResults(request);
+                authorizer.scrubSearchResults(request, true);
             } catch (AtlasAuthorizationException e) {
                 LOG.error("Unable to obtain AtlasAuthorizer", e);
             }
