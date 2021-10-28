@@ -21,7 +21,9 @@ import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.hook.FailedMessagesLogger;
 import org.apache.atlas.model.notification.AtlasNotificationMessage;
 import org.apache.atlas.notification.AbstractNotification;
+import org.apache.atlas.notification.KeyValue;
 import org.apache.atlas.notification.NotificationConsumer;
+import org.apache.atlas.notification.NotificationException;
 import org.apache.atlas.type.AtlasType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,12 +58,12 @@ public class Spooler extends AbstractNotification {
     }
 
     @Override
-    public void sendInternal(NotificationType type, List<String> messages) {
+    public void sendInternal(NotificationType type,  List<KeyValue<String, String>> messages) {
         for (int i = 0; i < messages.size(); i++) {
-            AtlasNotificationMessage e = AtlasType.fromV1Json(messages.get(i), AtlasNotificationMessage.class);
+            AtlasNotificationMessage e = AtlasType.fromV1Json(messages.get(i).getValue(), AtlasNotificationMessage.class);
             e.setSpooled(true);
 
-            messages.set(i, AtlasType.toV1Json(e));
+            messages.set(i, new KeyValue<>(messages.get(i).getKey(), AtlasType.toV1Json(e)));
         }
 
         boolean ret = write(messages);
@@ -80,7 +82,7 @@ public class Spooler extends AbstractNotification {
     }
 
     @VisibleForTesting
-    boolean write(List<String> messages) {
+    boolean write(List<KeyValue<String, String>> messages) {
         final boolean ret;
 
         try {
@@ -100,23 +102,27 @@ public class Spooler extends AbstractNotification {
         return ret;
     }
 
-    private void writeToFailedMessages(List<String> messages) {
+    private void writeToFailedMessages(List<KeyValue<String,String>> messages) {
         if (failedMessagesLogger != null) {
-            for (String message : messages) {
-                failedMessagesLogger.log(message);
+            for (KeyValue<String,String> message : messages) {
+                //Bellemare TODO - Does this affect a test / formatting?
+                failedMessagesLogger.log(message.toString());
             }
         }
     }
 
-    private boolean writeInternal(List<String> messages) {
+    private boolean writeInternal(List<KeyValue<String,String>> messages) {
         boolean ret = false;
 
         try {
             byte[]     lineSeparatorBytes = SpoolUtils.getLineSeparator().getBytes(SpoolUtils.DEFAULT_CHAR_SET);
             DataOutput pw                 = indexManagement.getSpoolWriter();
 
-            for (String message : messages) {
-                pw.write(message.getBytes(SpoolUtils.DEFAULT_CHAR_SET));
+            for (KeyValue<String,String> message : messages) {
+                //TODO - Bellemare - Serialize this with a proper format
+                pw.write(message.getKey().getBytes(SpoolUtils.DEFAULT_CHAR_SET));
+                pw.write(lineSeparatorBytes);
+                pw.write(message.getValue().getBytes(SpoolUtils.DEFAULT_CHAR_SET));
                 pw.write(lineSeparatorBytes);
             }
 

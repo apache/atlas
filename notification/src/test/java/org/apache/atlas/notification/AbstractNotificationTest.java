@@ -45,19 +45,23 @@ public class AbstractNotificationTest {
         Test             message1      = new Test(HookNotificationType.ENTITY_CREATE, "user1");
         Test             message2      = new Test(HookNotificationType.TYPE_CREATE, "user1");
         Test             message3      = new Test(HookNotificationType.ENTITY_FULL_UPDATE, "user1");
-        List<String>     messageJson   = new ArrayList<>();
+        List<KeyValue<String, String>> messageJson = new ArrayList<>();
 
-        AbstractNotification.createNotificationMessages(message1, messageJson);
-        AbstractNotification.createNotificationMessages(message2, messageJson);
-        AbstractNotification.createNotificationMessages(message3, messageJson);
+        AbstractNotification.createNotificationMessages(message1, "key1", messageJson);
+        AbstractNotification.createNotificationMessages(message2, "key2", messageJson);
+        AbstractNotification.createNotificationMessages(message3, "key3", messageJson);
 
-        notification.send(NotificationType.HOOK, message1, message2, message3);
+        notification.send(NotificationType.HOOK,
+                new KeyValue<>("key1", message1),
+                new KeyValue<>("key2", message2),
+                new KeyValue<>("key3", message3));
 
         assertEquals(NotificationType.HOOK, notification.type);
         assertEquals(3, notification.messages.size());
 
         for (int i = 0; i < notification.messages.size(); i++) {
-            assertEqualsMessageJson(notification.messages.get(i), messageJson.get(i));
+            assertEquals(notification.messages.get(i).getKey(), messageJson.get(i).getKey());
+            assertEqualsMessageJson(notification.messages.get(i).getValue(), messageJson.get(i).getValue());
         }
     }
 
@@ -69,19 +73,23 @@ public class AbstractNotificationTest {
         Test             message2      = new Test(HookNotificationType.TYPE_CREATE, "user1");
         Test             message3      = new Test(HookNotificationType.ENTITY_FULL_UPDATE, "user1");
         List<Test>       messages      = Arrays.asList(message1, message2, message3);
-        List<String>     messageJson   = new ArrayList<>();
+        List<KeyValue<String, String>> messageJson = new ArrayList<>();
 
-        AbstractNotification.createNotificationMessages(message1, messageJson);
-        AbstractNotification.createNotificationMessages(message2, messageJson);
-        AbstractNotification.createNotificationMessages(message3, messageJson);
+        AbstractNotification.createNotificationMessages(message1, "key1", messageJson);
+        AbstractNotification.createNotificationMessages(message2, "key2", messageJson);
+        AbstractNotification.createNotificationMessages(message3, "key3", messageJson);
 
-        notification.send(NotificationInterface.NotificationType.HOOK, messages);
+        notification.send(NotificationInterface.NotificationType.HOOK,
+                new KeyValue<>("key1", message1),
+                new KeyValue<>("key2", message2),
+                new KeyValue<>("key3", message3));
 
         assertEquals(notification.type, NotificationType.HOOK);
         assertEquals(notification.messages.size(), messageJson.size());
 
         for (int i = 0; i < notification.messages.size(); i++) {
-            assertEqualsMessageJson(notification.messages.get(i), messageJson.get(i));
+            assertEquals(notification.messages.get(i).getKey(), messageJson.get(i).getKey());
+            assertEqualsMessageJson(notification.messages.get(i).getValue(), messageJson.get(i).getValue());
         }
     }
 
@@ -105,14 +113,14 @@ public class AbstractNotificationTest {
 
     public static class TestNotification extends AbstractNotification {
         private NotificationType type;
-        private List<String>     messages;
+        private List<KeyValue<String, String>> messages;
 
         public TestNotification(Configuration applicationProperties) throws AtlasException {
             super(applicationProperties);
         }
 
         @Override
-        public void sendInternal(NotificationType notificationType, List<String> notificationMessages)
+        public void sendInternal(NotificationType notificationType, List<KeyValue<String, String>> notificationMessages)
             throws NotificationException {
 
             type     = notificationType;

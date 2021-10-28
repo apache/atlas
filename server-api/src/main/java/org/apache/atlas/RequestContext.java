@@ -458,7 +458,8 @@ public class RequestContext {
         return this.queuedTasks;
     }
 
-    public class EntityGuidPair {
+    //TODO - Had to make this static to compile it.
+    public static class EntityGuidPair {
         private final Object entity;
         private final String guid;
 

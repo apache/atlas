@@ -20,6 +20,7 @@ package org.apache.atlas.hbase.model;
 
 import org.apache.atlas.hbase.bridge.HBaseAtlasHook;
 import org.apache.atlas.model.notification.HookNotification;
+import org.apache.atlas.notification.KeyValue;
 import org.apache.hadoop.hbase.NamespaceDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.HColumnDescriptor;
@@ -76,7 +77,7 @@ public class HBaseOperationContext {
         this(null, nameSpace, null, tableName, null, columnFamilyDescriptor, columnFamily, operation, ugi, user, owner, hbaseConf);
     }
 
-    private List<HookNotification> messages = new ArrayList<>();
+    private List<KeyValue<String,HookNotification>> messages = new ArrayList<>();
 
     public UserGroupInformation getUgi() {
         return ugi;
@@ -122,15 +123,19 @@ public class HBaseOperationContext {
         return columnFamily;
     }
 
+    public void addMessage(String key, HookNotification value) {
+        messages.add(new KeyValue<>(key, value));
+    }
+
     public void addMessage(HookNotification message) {
-        messages.add(message);
+        addMessage(null, message);
     }
 
     public String getOwner() {
         return owner;
     }
 
-    public List<HookNotification> getMessages() {
+    public List<KeyValue<String,HookNotification>> getMessages() {
         return messages;
     }
 

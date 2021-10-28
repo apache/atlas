@@ -29,12 +29,12 @@ import java.util.List;
 import static org.apache.atlas.notification.NotificationInterface.NotificationType.ENTITIES;
 
 
-public class EntityNotificationSender<T> {
+public class EntityNotificationSender<V> {
     private static final Logger LOG = LoggerFactory.getLogger(EntityNotificationSender.class);
 
     private final static boolean NOTIFY_POST_COMMIT_DEFAULT = true;
 
-    private final NotificationSender<T> notificationSender;
+    private final NotificationSender<V> notificationSender;
 
     public EntityNotificationSender(NotificationInterface notificationInterface, Configuration configuration) {
         this(notificationInterface, configuration != null ? configuration.getBoolean("atlas.notification.send.postcommit", NOTIFY_POST_COMMIT_DEFAULT) : NOTIFY_POST_COMMIT_DEFAULT);
@@ -52,16 +52,16 @@ public class EntityNotificationSender<T> {
         }
     }
 
-    public void send(List<T> notifications) throws NotificationException {
+    public void send(List<KeyValue<String,V>> notifications) throws NotificationException {
         this.notificationSender.send(notifications);
     }
 
 
-    private interface NotificationSender<T> {
-        void send(List<T> notifications) throws NotificationException;
+    private interface NotificationSender<V> {
+        void send(List<KeyValue<String,V>> notifications) throws NotificationException;
     }
 
-    private class InlineNotificationSender<T> implements NotificationSender<T> {
+    private class InlineNotificationSender<V> implements NotificationSender<V> {
         private final NotificationInterface notificationInterface;
 
         public InlineNotificationSender(NotificationInterface notificationInterface) {
@@ -69,12 +69,12 @@ public class EntityNotificationSender<T> {
         }
 
         @Override
-        public void send(List<T> notifications) throws NotificationException {
+        public void send(List<KeyValue<String, V>> notifications) throws NotificationException {
             notificationInterface.send(ENTITIES, notifications);
         }
     }
 
-    private class PostCommitNotificationSender<T> implements NotificationSender<T> {
+    private class PostCommitNotificationSender<V> implements NotificationSender<V> {
         private final NotificationInterface                   notificationInterface;
         private final ThreadLocal<PostCommitNotificationHook> postCommitNotificationHooks = new ThreadLocal<>();
 
@@ -83,7 +83,7 @@ public class EntityNotificationSender<T> {
         }
 
         @Override
-        public void send(List<T> notifications) throws NotificationException {
+        public void send(List<KeyValue<String, V>> notifications) throws NotificationException {
             PostCommitNotificationHook notificationHook = postCommitNotificationHooks.get();
 
             if (notificationHook == null) {
@@ -95,14 +95,14 @@ public class EntityNotificationSender<T> {
             }
         }
 
-        class PostCommitNotificationHook<T> extends GraphTransactionInterceptor.PostTransactionHook {
-            private final List<T> notifications = new ArrayList<>();
+        class PostCommitNotificationHook<V> extends GraphTransactionInterceptor.PostTransactionHook {
+            private final List<KeyValue<String,V>> notifications = new ArrayList<>();
 
-            public PostCommitNotificationHook(List<T> notifications) {
+            public PostCommitNotificationHook(List<KeyValue<String,V>> notifications) {
                 this.addNotifications(notifications);
             }
 
-            public void addNotifications(List<T> notifications) {
+            public void addNotifications(List<KeyValue<String,V>> notifications) {
                 if (notifications != null) {
                     this.notifications.addAll(notifications);
                 }

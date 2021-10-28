@@ -44,6 +44,7 @@ import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.notification.HookNotification;
+import org.apache.atlas.notification.KeyValue;
 import org.apache.atlas.type.AtlasTypeUtil;
 
 import org.apache.commons.collections.CollectionUtils;
@@ -109,7 +110,7 @@ public abstract class BaseImpalaEvent {
         return context;
     }
 
-    public abstract List<HookNotification> getNotificationMessages() throws Exception;
+    public abstract List<KeyValue<String,HookNotification>> getNotificationMessages() throws Exception;
 
     public String getUserName() { return context.getUserName(); }
 

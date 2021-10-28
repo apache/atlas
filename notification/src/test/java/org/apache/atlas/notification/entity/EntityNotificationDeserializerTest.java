@@ -19,6 +19,7 @@
 package org.apache.atlas.notification.entity;
 
 import org.apache.atlas.model.notification.EntityNotification;
+import org.apache.atlas.notification.KeyValue;
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.v1.model.instance.Struct;
 import org.apache.atlas.notification.AbstractNotification;
@@ -44,14 +45,14 @@ public class EntityNotificationDeserializerTest {
         String               traitName    = "MyTrait";
         List<Struct>         traits       = Collections.singletonList(new Struct(traitName, Collections.<String, Object>emptyMap()));
         EntityNotificationV1 notification = new EntityNotificationV1(entity, EntityNotificationV1.OperationType.TRAIT_ADD, traits);
-        List<String>         jsonMsgList  = new ArrayList<>();
+        List<KeyValue<String, String>> jsonMsgList = new ArrayList<>();
 
-        AbstractNotification.createNotificationMessages(notification, jsonMsgList);
+        AbstractNotification.createNotificationMessages(notification, "someKey", jsonMsgList);
 
         EntityNotification deserializedNotification = null;
 
-        for (String jsonMsg : jsonMsgList) {
-            deserializedNotification =  deserializer.deserialize(jsonMsg);
+        for (KeyValue<String,String> kv : jsonMsgList) {
+            deserializedNotification =  deserializer.deserialize(kv.getValue());
 
             if (deserializedNotification != null) {
                 break;

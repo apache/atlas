@@ -24,6 +24,7 @@ import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.kafka.NotificationProvider;
 import org.apache.atlas.model.notification.HookNotification;
+import org.apache.atlas.notification.KeyValue;
 import org.apache.atlas.notification.NotificationException;
 import org.apache.atlas.notification.NotificationInterface;
 import org.apache.atlas.utils.AtlasConfigurationUtil;
@@ -36,6 +37,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.security.PrivilegedExceptionAction;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -160,7 +162,7 @@ public abstract class AtlasHook {
      * @param messages   hook notification messages
      * @param maxRetries maximum number of retries while sending message to messaging system
      */
-    public static void notifyEntities(List<HookNotification> messages, UserGroupInformation ugi, int maxRetries) {
+    public static void notifyEntitiesWithKeyValues(List<KeyValue<String, HookNotification>> messages, UserGroupInformation ugi, int maxRetries) {
         if (executor == null) { // send synchronously
             notifyEntitiesInternal(messages, maxRetries, ugi, notificationInterface, logFailedMessages, failedMessagesLogger);
         } else {
@@ -173,8 +175,21 @@ public abstract class AtlasHook {
         }
     }
 
+    public static void notifyEntitiesWithValues(List<HookNotification> messages, UserGroupInformation ugi, int maxRetries) {
+        List<KeyValue<String, HookNotification>> list = new ArrayList<>(messages.size());
+        for (HookNotification hn: messages)
+            list.add(new KeyValue<>(null, hn));
+        notifyEntitiesWithKeyValues(list, ugi, maxRetries);
+    }
+
+    public static void notifyEntitiesWithValues(List<HookNotification> messages, UserGroupInformation ugi) {
+        notifyEntitiesWithValues(messages, ugi, notificationMaxRetries);
+    }
+
+
+
     @VisibleForTesting
-    static void notifyEntitiesInternal(List<HookNotification> messages, int maxRetries, UserGroupInformation ugi,
+    static void notifyEntitiesInternal(List<KeyValue<String, HookNotification>> messages, int maxRetries, UserGroupInformation ugi,
                                        NotificationInterface notificationInterface,
                                        boolean shouldLogFailedMessages, FailedMessagesLogger logger) {
         if (messages == null || messages.isEmpty()) {
@@ -241,10 +256,23 @@ public abstract class AtlasHook {
      * De-duping of entities is done on server side depending on the
      * unique attribute on the entities.
      *
+     * @param messages KeyValue pairs of hook notification messages
+     */
+    protected void notifyEntitiesWithKeyValues(List<KeyValue<String, HookNotification>> messages, UserGroupInformation ugi) {
+        notifyEntitiesWithKeyValues(messages, ugi, notificationMaxRetries);
+    }
+
+    /**
+     * Notify atlas of the entity through message. Uses null keys.
      * @param messages hook notification messages
+     * @param ugi
      */
     protected void notifyEntities(List<HookNotification> messages, UserGroupInformation ugi) {
-        notifyEntities(messages, ugi, notificationMaxRetries);
+        List<KeyValue<String, HookNotification>> keyValues = new ArrayList<>(messages.size());
+        for (HookNotification message: messages)
+            keyValues.add(new KeyValue<>(null, message));
+
+        notifyEntitiesWithKeyValues(keyValues, ugi, notificationMaxRetries);
     }
 
     /**

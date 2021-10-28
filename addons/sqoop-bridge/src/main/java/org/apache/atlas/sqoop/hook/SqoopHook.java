@@ -31,6 +31,7 @@ import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.notification.HookNotification;
 import org.apache.atlas.model.notification.HookNotification.EntityCreateRequestV2;
 import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.notification.KeyValue;
 import org.apache.atlas.sqoop.model.SqoopDataTypes;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.utils.AtlasConfigurationUtil;
@@ -244,7 +245,7 @@ public class SqoopHook extends SqoopJobDataPublisher {
 
     private static class AtlasHookImpl extends AtlasHook {
         public void sendNotification(HookNotification notification) {
-            super.notifyEntities(Collections.singletonList(notification), null);
+            super.notifyEntitiesWithKeyValues(Collections.singletonList(new KeyValue<>(null, notification)), null);
         }
     }
 }

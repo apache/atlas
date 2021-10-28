@@ -19,6 +19,7 @@ package org.apache.atlas.notification.spool;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.notification.AbstractNotification;
+import org.apache.atlas.notification.KeyValue;
 import org.apache.atlas.notification.NotificationException;
 import org.apache.atlas.notification.NotificationInterface;
 import org.apache.atlas.notification.spool.models.IndexRecord;
@@ -138,16 +139,19 @@ public class Publisher implements Runnable {
             try {
                 DataInput    dataInput       = fileLockedRead.getInput(new File(record.getPath()));
                 int          lineInSpoolFile = 0;
-                List<String> messages        = new ArrayList<>();
+                List<KeyValue<String,String>> messages = new ArrayList<>();
 
-                for (String message = dataInput.readLine(); message != null; message = dataInput.readLine()) {
+                for (String line = dataInput.readLine(); line != null; line = dataInput.readLine()) {
                     lineInSpoolFile++;
 
                     if (lineInSpoolFile < record.getLine()) {
                         continue;
                     }
 
-                    messages.add(message);
+                    //The key and the value are on separate lines. Read the next line to get the value.
+                    //TODO Bellemare does this work correctly?
+                    String value = dataInput.readLine();
+                    messages.add(new KeyValue<>(line, value));
 
                     if (messages.size() == messageBatchSize) {
                         dispatch(record, lineInSpoolFile, messages);
@@ -180,7 +184,7 @@ public class Publisher implements Runnable {
         return ret;
     }
 
-    private void dispatch(IndexRecord record, int lineInSpoolFile, List<String> messages) throws Exception {
+    private void dispatch(IndexRecord record, int lineInSpoolFile, List<KeyValue<String,String>> messages) throws Exception {
         if (notificationHandler == null || messages == null || messages.size() == 0) {
             LOG.error("Publisher.dispatch(source={}): consumer={}: error sending logs", this.source, notificationHandlerName);
         } else {
@@ -192,7 +196,7 @@ public class Publisher implements Runnable {
         }
     }
 
-    private void dispatch(String filePath, List<String> messages) throws Exception {
+    private void dispatch(String filePath, List<KeyValue<String,String>> messages) throws Exception {
         try {
             pauseBeforeSend();
 

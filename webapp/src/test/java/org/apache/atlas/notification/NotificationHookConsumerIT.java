@@ -59,8 +59,8 @@ public class NotificationHookConsumerIT extends BaseResourceIT {
         cleanUpNotificationService();
     }
 
-    private void sendHookMessage(HookNotification message) throws NotificationException, InterruptedException {
-        notificationInterface.send(NotificationInterface.NotificationType.HOOK, message);
+    private void sendHookKeyValue(KeyValue<String, HookNotification> keyValue) throws NotificationException, InterruptedException {
+        notificationInterface.send(NotificationInterface.NotificationType.HOOK, keyValue);
 
         sleep(1000);
     }
@@ -68,7 +68,8 @@ public class NotificationHookConsumerIT extends BaseResourceIT {
     @Test
     public void testMessageHandleFailureConsumerContinues() throws Exception {
         //send invalid message - update with invalid type
-        sendHookMessage(new EntityPartialUpdateRequest(TEST_USER, randomString(), null, null, new Referenceable(randomString())));
+        sendHookKeyValue(new KeyValue<>(TEST_USER,
+                new EntityPartialUpdateRequest(TEST_USER, randomString(), null, null, new Referenceable(randomString()))));
 
         //send valid message
         final Referenceable entity = new Referenceable(DATABASE_TYPE_BUILTIN);
@@ -79,7 +80,7 @@ public class NotificationHookConsumerIT extends BaseResourceIT {
         entity.set(QUALIFIED_NAME, dbName);
         entity.set(CLUSTER_NAME, randomString());
 
-        sendHookMessage(new EntityCreateRequest(TEST_USER, entity));
+        sendHookKeyValue(new KeyValue<>(TEST_USER, new EntityCreateRequest(TEST_USER, entity)));
 
         waitFor(MAX_WAIT_TIME, new Predicate() {
             @Override
@@ -103,7 +104,7 @@ public class NotificationHookConsumerIT extends BaseResourceIT {
         entity.set(QUALIFIED_NAME, qualifiedName);
         entity.set(CLUSTER_NAME, clusterName);
 
-        sendHookMessage(new EntityCreateRequest(TEST_USER, entity));
+        sendHookKeyValue(new KeyValue<>(TEST_USER, new EntityCreateRequest(TEST_USER, entity)));
 
         waitFor(MAX_WAIT_TIME, new Predicate() {
             @Override
@@ -140,7 +141,8 @@ public class NotificationHookConsumerIT extends BaseResourceIT {
 
         newEntity.set("owner", randomString());
 
-        sendHookMessage(new EntityPartialUpdateRequest(TEST_USER, DATABASE_TYPE_BUILTIN, QUALIFIED_NAME, (String) entity.get(QUALIFIED_NAME), newEntity));
+        sendHookKeyValue(new KeyValue<>(null,
+                new EntityPartialUpdateRequest(TEST_USER, DATABASE_TYPE_BUILTIN, QUALIFIED_NAME, (String) entity.get(QUALIFIED_NAME), newEntity)));
 
         waitFor(MAX_WAIT_TIME, new Predicate() {
             @Override
@@ -177,7 +179,8 @@ public class NotificationHookConsumerIT extends BaseResourceIT {
 
         newEntity.set(QUALIFIED_NAME, newQualifiedName);
 
-        sendHookMessage(new EntityPartialUpdateRequest(TEST_USER, DATABASE_TYPE_BUILTIN, QUALIFIED_NAME, qualifiedName, newEntity));
+        sendHookKeyValue(new KeyValue<>(null,
+                new EntityPartialUpdateRequest(TEST_USER, DATABASE_TYPE_BUILTIN, QUALIFIED_NAME, qualifiedName, newEntity)));
 
         waitFor(MAX_WAIT_TIME, new Predicate() {
             @Override
@@ -208,7 +211,8 @@ public class NotificationHookConsumerIT extends BaseResourceIT {
 
         final String dbId = atlasClientV1.createEntity(entity).get(0);
 
-        sendHookMessage(new EntityDeleteRequest(TEST_USER, DATABASE_TYPE_BUILTIN, QUALIFIED_NAME, qualifiedName));
+        sendHookKeyValue(new KeyValue<>(null,
+                new EntityDeleteRequest(TEST_USER, DATABASE_TYPE_BUILTIN, QUALIFIED_NAME, qualifiedName)));
 
         waitFor(MAX_WAIT_TIME, new Predicate() {
             @Override
@@ -243,7 +247,7 @@ public class NotificationHookConsumerIT extends BaseResourceIT {
         newEntity.set(CLUSTER_NAME, clusterName);
 
         //updating unique attribute
-        sendHookMessage(new EntityUpdateRequest(TEST_USER, newEntity));
+        sendHookKeyValue(new KeyValue<>(null, new EntityUpdateRequest(TEST_USER, newEntity)));
 
         waitFor(MAX_WAIT_TIME, new Predicate() {
             @Override

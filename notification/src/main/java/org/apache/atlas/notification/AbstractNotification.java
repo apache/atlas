@@ -83,18 +83,18 @@ public abstract class AbstractNotification implements NotificationInterface {
     // ----- NotificationInterface -------------------------------------------
 
     @Override
-    public <T> void send(NotificationType type, List<T> messages) throws NotificationException {
-        List<String> strMessages = new ArrayList<>(messages.size());
-
+    public <V> void send(NotificationType type, List<KeyValue<String,V>> messages) throws NotificationException {
+        List<KeyValue<String, String>> strMessages = new ArrayList<>(messages.size());
         for (int index = 0; index < messages.size(); index++) {
-            createNotificationMessages(messages.get(index), strMessages);
+            String key = messages.get(index).getKey();
+            createNotificationMessages(messages.get(index).getValue(), key, strMessages);
         }
 
         sendInternal(type, strMessages);
     }
 
     @Override
-    public <T> void send(NotificationType type, T... messages) throws NotificationException {
+    public <V> void send(NotificationType type, KeyValue<String,V>... messages) throws NotificationException {
         send(type, Arrays.asList(messages));
     }
 
@@ -112,7 +112,7 @@ public abstract class AbstractNotification implements NotificationInterface {
      *
      * @throws NotificationException if an error occurs while sending
      */
-    public abstract void sendInternal(NotificationType type, List<String> messages) throws NotificationException;
+    public abstract void sendInternal(NotificationType type, List<KeyValue<String, String>> messages) throws NotificationException;
 
 
     // ----- utility methods -------------------------------------------------
@@ -148,7 +148,7 @@ public abstract class AbstractNotification implements NotificationInterface {
      *
      * @return the message as a JSON string
      */
-    public static void createNotificationMessages(Object message, List<String> msgJsonList) {
+    public static <K> void createNotificationMessages(Object message, K key, List<KeyValue<K, String>> msgJsonList) {
         AtlasNotificationMessage<?> notificationMsg = new AtlasNotificationMessage<>(CURRENT_MESSAGE_VERSION, message, getHostAddress(), getCurrentUser());
         String                      msgJson         = AtlasType.toV1Json(notificationMsg);
 
@@ -203,7 +203,7 @@ public abstract class AbstractNotification implements NotificationInterface {
 
                         String splitMsgJson = AtlasType.toV1Json(splitMsg);
 
-                        msgJsonList.add(splitMsgJson);
+                        msgJsonList.add(new KeyValue<>(key, splitMsgJson));
 
                         offset += length;
                     }
@@ -214,7 +214,7 @@ public abstract class AbstractNotification implements NotificationInterface {
         }
 
         if (!msgLengthExceedsLimit) {
-            msgJsonList.add(msgJson);
+            msgJsonList.add(new KeyValue(key, msgJson));
         }
     }
 

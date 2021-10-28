@@ -20,6 +20,7 @@ package org.apache.atlas.notification.spool;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.hook.FailedMessagesLogger;
 import org.apache.atlas.notification.AbstractNotification;
+import org.apache.atlas.notification.KeyValue;
 import org.apache.atlas.notification.NotificationConsumer;
 import org.apache.atlas.notification.NotificationException;
 import org.apache.atlas.notification.NotificationInterface;
@@ -98,7 +99,7 @@ public class AtlasFileSpool implements NotificationInterface {
     }
 
     @Override
-    public <T> void send(NotificationType type, T... messages) throws NotificationException {
+    public <T> void send(NotificationType type, KeyValue<String, T>... messages) throws NotificationException {
         send(type, Arrays.asList(messages));
     }
 
@@ -108,8 +109,8 @@ public class AtlasFileSpool implements NotificationInterface {
     }
 
     @Override
-    public <T> void send(NotificationType type, List<T> messages) throws NotificationException {
-        List<String> serializedMessages = getSerializedMessages(messages);
+    public <T> void send(NotificationType type, List<KeyValue<String, T>> messages) throws NotificationException {
+        List<KeyValue<String,String>> serializedMessages = getSerializedMessages(messages);
         if (hasInitSucceeded() && (this.indexManagement.isPending() || this.publisher.isDestinationDown())) {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("AtlasFileSpool.send(): sending to spooler");
@@ -139,10 +140,11 @@ public class AtlasFileSpool implements NotificationInterface {
         }
     }
 
-    private <T> List<String> getSerializedMessages(List<T> messages) {
-        List<String> serializedMessages = new ArrayList<>(messages.size());
+    private <T> List<KeyValue<String,String>> getSerializedMessages(List<KeyValue<String,T>> messages) {
+        List<KeyValue<String,String>> serializedMessages = new ArrayList<>(messages.size());
         for (int index = 0; index < messages.size(); index++) {
-            notificationHandler.createNotificationMessages(messages.get(index), serializedMessages);
+            String key = messages.get(index).getKey();
+            notificationHandler.createNotificationMessages(messages.get(index).getValue(), key, serializedMessages);
         }
 
         return serializedMessages;

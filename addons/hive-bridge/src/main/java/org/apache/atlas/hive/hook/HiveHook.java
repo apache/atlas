@@ -257,7 +257,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
             if (event != null) {
                 final UserGroupInformation ugi = hookContext.getUgi() == null ? Utils.getUGI() : hookContext.getUgi();
 
-                super.notifyEntities(ActiveEntityFilter.apply(event.getNotificationMessages()), ugi);
+                super.notifyEntitiesWithValues(ActiveEntityFilter.apply(event.getNotificationMessages()), ugi);
             }
         } catch (Throwable t) {
             LOG.error("HiveHook.run(): failed to process operation {}", hookContext.getOperationName(), t);

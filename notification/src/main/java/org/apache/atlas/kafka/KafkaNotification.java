@@ -22,6 +22,7 @@ import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.notification.AbstractNotification;
+import org.apache.atlas.notification.KeyValue;
 import org.apache.atlas.notification.NotificationConsumer;
 import org.apache.atlas.notification.NotificationException;
 import org.apache.atlas.service.Service;
@@ -258,19 +259,18 @@ public class KafkaNotification extends AbstractNotification implements Service {
 
     // ----- AbstractNotification --------------------------------------------
     @Override
-    public void sendInternal(NotificationType notificationType, List<String> messages) throws NotificationException {
+    public void sendInternal(NotificationType notificationType, List<KeyValue<String, String>> messages) throws NotificationException {
         KafkaProducer producer = getOrCreateProducer(notificationType);
-
         sendInternalToProducer(producer, notificationType, messages);
     }
 
     @VisibleForTesting
-    void sendInternalToProducer(Producer p, NotificationType notificationType, List<String> messages) throws NotificationException {
+    void sendInternalToProducer(Producer p, NotificationType notificationType, List<KeyValue<String, String>> messages) throws NotificationException {
         String               topic           = PRODUCER_TOPIC_MAP.get(notificationType);
         List<MessageContext> messageContexts = new ArrayList<>();
 
-        for (String message : messages) {
-            ProducerRecord record = new ProducerRecord(topic, message);
+        for (KeyValue<String, String> message : messages) {
+            ProducerRecord record = new ProducerRecord(topic, message.getKey(), message.getValue());
 
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Sending message for topic {}: {}", topic, message);
@@ -278,10 +278,10 @@ public class KafkaNotification extends AbstractNotification implements Service {
 
             Future future = p.send(record);
 
-            messageContexts.add(new MessageContext(future, message));
+            messageContexts.add(new MessageContext(future, message.getKey(), message.getValue()));
         }
 
-        List<String> failedMessages       = new ArrayList<>();
+        List<KeyValue<String, String>> failedMessages       = new ArrayList<>();
         Exception    lastFailureException = null;
 
         for (MessageContext context : messageContexts) {
@@ -294,12 +294,12 @@ public class KafkaNotification extends AbstractNotification implements Service {
             } catch (Exception e) {
                 lastFailureException = e;
 
-                failedMessages.add(context.getMessage());
+                failedMessages.add(new KeyValue<>(context.key, context.value));
             }
         }
 
         if (lastFailureException != null) {
-            throw new NotificationException(lastFailureException, failedMessages);
+            throw new NotificationException(lastFailureException, failedMessages.toString());
         }
     }
 
@@ -383,19 +383,21 @@ public class KafkaNotification extends AbstractNotification implements Service {
 
     private class MessageContext {
         private final Future<RecordMetadata> future;
-        private final String                 message;
+        private final String                 key;
+        private final String                 value;
 
-        public MessageContext(Future<RecordMetadata> future, String message) {
+        public MessageContext(Future<RecordMetadata> future, String key, String value) {
             this.future  = future;
-            this.message = message;
+            this.key = key;
+            this.value = value;
         }
 
         public Future<RecordMetadata> getFuture() {
             return future;
         }
 
-        public String getMessage() {
-            return message;
+        public String getValue() {
+            return value;
         }
     }
 
