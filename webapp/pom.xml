@@ -768,6 +768,8 @@
                         <id>start-jetty</id>
                         <phase>pre-integration-test</phase>
                         <goals>
+                            <!-- stop any previous instance to free up the port -->
+                            <goal>stop</goal>
                             <goal>deploy-war</goal>
                         </goals>
                     </execution>
