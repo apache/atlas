@@ -14,6 +14,13 @@
         "filter": [
           "snowball_english", "lowercase"
         ]
+      },
+      "search_synonyms": {
+        "type": "custom",
+        "filter": [
+          "graph_synonyms"
+        ],
+        "tokenizer": "atlan_tokenizer"
       }
     },
     "normalizer": {
@@ -23,6 +30,10 @@
       }
     },
     "filter": {
+      "graph_synonyms": {
+        "type": "synonym_graph",
+        "synonyms_path": "synonym.txt"
+      },
       "snowball_english": {
         "type": "snowball",
         "language": "English"
