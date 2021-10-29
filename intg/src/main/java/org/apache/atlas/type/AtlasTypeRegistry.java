@@ -189,6 +189,10 @@ public class AtlasTypeRegistry {
         return registryData.classificationDefs.getTypeByName(name);
     }
 
+    public AtlasClassificationType getClassificationTypeByDisplayName(String displayName) throws NoSuchElementException {
+        return registryData.classificationDefs.getAllTypes().stream().filter(x -> x.getClassificationDef().getDisplayName().equals(displayName)).findFirst().get();
+    }
+
     public Collection<AtlasBusinessMetadataType> getAllBusinessMetadataTypes() {
         return registryData.businessMetadataDefs.getAllTypes();
     }

@@ -322,7 +322,7 @@ public class AtlasRelationshipDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasRe
             throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, name);
         }
 
-        if (AtlasGraphUtilsV2.relationshipTypeHasInstanceEdges(name)) {
+        if (AtlasGraphUtilsV2.relationshipTypeHasInstanceEdges(existingDef)) {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_HAS_REFERENCES, name);
         }
 
@@ -353,7 +353,7 @@ public class AtlasRelationshipDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasRe
 
         String typeName = AtlasGraphUtilsV2.getEncodedProperty(ret, Constants.TYPENAME_PROPERTY_KEY, String.class);
 
-        if (AtlasGraphUtilsV2.relationshipTypeHasInstanceEdges(typeName)) {
+        if (AtlasGraphUtilsV2.relationshipTypeHasInstanceEdges(existingDef)) {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_HAS_REFERENCES, typeName);
         }
 

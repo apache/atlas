@@ -54,6 +54,7 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 public class AtlasClassification extends AtlasStruct implements Serializable {
     private static final long serialVersionUID = 1L;
 
+    private String             displayName                       = null;
     private String             entityGuid                        = null;
     private Status             entityStatus                      = Status.ACTIVE;
     private Boolean            propagate                         = null;
@@ -88,8 +89,17 @@ public class AtlasClassification extends AtlasStruct implements Serializable {
             setEntityStatus(other.getEntityStatus());
             setPropagate(other.isPropagate());
             setValidityPeriods(other.getValidityPeriods());
+            setDisplayName(other.getDisplayName());
             setRemovePropagationsOnEntityDelete(other.getRemovePropagationsOnEntityDelete());
         }
+    }
+
+    public String getDisplayName() {
+        return displayName;
+    }
+
+    public void setDisplayName(String displayName) {
+        this.displayName = displayName;
     }
 
     public String getEntityGuid() {
@@ -175,7 +185,7 @@ public class AtlasClassification extends AtlasStruct implements Serializable {
         sb.append(", entityStatus=").append(entityStatus);
         sb.append(", propagate=").append(propagate);
         sb.append(", removePropagationsOnEntityDelete=").append(removePropagationsOnEntityDelete);
-        sb.append(", validityPeriods=").append(validityPeriods);
+        sb.append(", displayName=").append(displayName);
         sb.append(", validityPeriods=").append(validityPeriods);
         sb.append('}');
         return sb.toString();
