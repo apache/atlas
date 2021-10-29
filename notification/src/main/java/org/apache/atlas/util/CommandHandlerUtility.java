@@ -34,7 +34,7 @@ public class CommandHandlerUtility {
     private static final String SHELL_CMD_OPTION            = "-c";
     private static final String FIND_PROCESS_ID_CMD_FORMAT  = "lsof -i:%s | tail -n 1 | tr -s ' ' | cut -d' ' -f2";
     private static final String KILL_PROCESS_CMD_FORMAT     = "kill %s %s" ;
-    private static final int    SLEEP_AFTER_SOFT_KILL_IN_MS = 10000;
+    private static final int    SLEEP_AFTER_SOFT_KILL_IN_MS = 4000;
 
     public static void tryKillingProcessUsingPort(int port, boolean forceKill) {
         String processID = findProcessIdUsingPort(port);
