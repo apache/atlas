@@ -49,11 +49,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.apache.atlas.repository.Constants.HBASE_SOURCE;
+
 // This will register Hbase entities into Atlas
 public class HBaseAtlasHook extends AtlasHook {
     private static final Logger LOG = LoggerFactory.getLogger(HBaseAtlasHook.class);
 
-
+    
     public static final String ATTR_DESCRIPTION           = "description";
     public static final String ATTR_ATLAS_ENDPOINT        = "atlas.rest.address";
     public static final String ATTR_PARAMETERS            = "parameters";
@@ -495,6 +497,10 @@ public class HBaseAtlasHook extends AtlasHook {
         }
 
         return columnFamily;
+    }
+
+    public String getMessageSource() {
+        return HBASE_SOURCE;
     }
 
     private String getTableName(HBaseOperationContext hbaseOperationContext) {

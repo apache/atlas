@@ -28,6 +28,7 @@ import org.apache.atlas.notification.NotificationException;
 import org.apache.atlas.notification.NotificationInterface;
 import org.apache.atlas.utils.AtlasConfigurationUtil;
 import org.apache.commons.configuration.Configuration;
+import org.apache.atlas.model.notification.MessageSource;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.util.ShutdownHookManager;
@@ -65,6 +66,7 @@ public abstract class AtlasHook {
 
     protected static Configuration         atlasProperties;
     protected static NotificationInterface notificationInterface;
+    protected MessageSource source;
 
     private static final String               metadataNamespace;
     private static final int                  SHUTDOWN_HOOK_WAIT_TIME_MS = 3000;
@@ -143,13 +145,17 @@ public abstract class AtlasHook {
     }
 
     public AtlasHook() {
+        source = new MessageSource(getMessageSource());
         notificationInterface.init(this.getClass().getSimpleName(), failedMessagesLogger);
     }
 
     public AtlasHook(String name) {
+        source = new MessageSource(getMessageSource());
         LOG.info("AtlasHook: Spool name: Passed from caller.: {}", name);
         notificationInterface.init(name, failedMessagesLogger);
     }
+
+    public abstract String getMessageSource();
 
     /**
      * Notify atlas of the entity through message. The entity can be a
@@ -160,14 +166,14 @@ public abstract class AtlasHook {
      * @param messages   hook notification messages
      * @param maxRetries maximum number of retries while sending message to messaging system
      */
-    public static void notifyEntities(List<HookNotification> messages, UserGroupInformation ugi, int maxRetries) {
+    public static void notifyEntities(List<HookNotification> messages, UserGroupInformation ugi, int maxRetries, MessageSource source) {
         if (executor == null) { // send synchronously
-            notifyEntitiesInternal(messages, maxRetries, ugi, notificationInterface, logFailedMessages, failedMessagesLogger);
+            notifyEntitiesInternal(messages, maxRetries, ugi, notificationInterface, logFailedMessages, failedMessagesLogger, source);
         } else {
             executor.submit(new Runnable() {
                 @Override
                 public void run() {
-                    notifyEntitiesInternal(messages, maxRetries, ugi, notificationInterface, logFailedMessages, failedMessagesLogger);
+                    notifyEntitiesInternal(messages, maxRetries, ugi, notificationInterface, logFailedMessages, failedMessagesLogger, source);
                 }
             });
         }
@@ -176,7 +182,7 @@ public abstract class AtlasHook {
     @VisibleForTesting
     static void notifyEntitiesInternal(List<HookNotification> messages, int maxRetries, UserGroupInformation ugi,
                                        NotificationInterface notificationInterface,
-                                       boolean shouldLogFailedMessages, FailedMessagesLogger logger) {
+                                       boolean shouldLogFailedMessages, FailedMessagesLogger logger, MessageSource source) {
         if (messages == null || messages.isEmpty()) {
             return;
         }
@@ -199,12 +205,12 @@ public abstract class AtlasHook {
 
             try {
                 if (ugi == null) {
-                    notificationInterface.send(NotificationInterface.NotificationType.HOOK, messages);
+                    notificationInterface.send(NotificationInterface.NotificationType.HOOK, messages, source);
                 } else {
                     PrivilegedExceptionAction<Object> privilegedNotify = new PrivilegedExceptionAction<Object>() {
                         @Override
                         public Object run() throws Exception {
-                            notificationInterface.send(NotificationInterface.NotificationType.HOOK, messages);
+                            notificationInterface.send(NotificationInterface.NotificationType.HOOK, messages, source);
                             return messages;
                         }
                     };
@@ -244,7 +250,7 @@ public abstract class AtlasHook {
      * @param messages hook notification messages
      */
     protected void notifyEntities(List<HookNotification> messages, UserGroupInformation ugi) {
-        notifyEntities(messages, ugi, notificationMaxRetries);
+        notifyEntities(messages, ugi, notificationMaxRetries, source);
     }
 
     /**

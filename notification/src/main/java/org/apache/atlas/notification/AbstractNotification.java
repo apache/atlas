@@ -23,6 +23,7 @@ import org.apache.atlas.model.notification.AtlasNotificationBaseMessage;
 import org.apache.atlas.model.notification.AtlasNotificationMessage;
 import org.apache.atlas.model.notification.AtlasNotificationStringMessage;
 import org.apache.atlas.model.notification.AtlasNotificationBaseMessage.CompressionKind;
+import org.apache.atlas.model.notification.MessageSource;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.model.notification.MessageVersion;
 import org.apache.commons.configuration.Configuration;
@@ -84,10 +85,15 @@ public abstract class AbstractNotification implements NotificationInterface {
 
     @Override
     public <T> void send(NotificationType type, List<T> messages) throws NotificationException {
+        send(type, messages, new MessageSource());
+    }
+
+    @Override
+    public <T> void send(NotificationType type, List<T> messages, MessageSource source) throws NotificationException {
         List<String> strMessages = new ArrayList<>(messages.size());
 
         for (int index = 0; index < messages.size(); index++) {
-            createNotificationMessages(messages.get(index), strMessages);
+            createNotificationMessages(messages.get(index), strMessages, source);
         }
 
         sendInternal(type, strMessages);
@@ -146,10 +152,11 @@ public abstract class AbstractNotification implements NotificationInterface {
      *
      * @param message  the message in object form
      *
+     * @param source
      * @return the message as a JSON string
      */
-    public static void createNotificationMessages(Object message, List<String> msgJsonList) {
-        AtlasNotificationMessage<?> notificationMsg = new AtlasNotificationMessage<>(CURRENT_MESSAGE_VERSION, message, getHostAddress(), getCurrentUser());
+    public static void createNotificationMessages(Object message, List<String> msgJsonList, MessageSource source) {
+        AtlasNotificationMessage<?> notificationMsg = new AtlasNotificationMessage<>(CURRENT_MESSAGE_VERSION, message, getHostAddress(), getCurrentUser(), false, source);
         String                      msgJson         = AtlasType.toV1Json(notificationMsg);
 
         boolean msgLengthExceedsLimit = (msgJson.length() * MAX_BYTES_PER_CHAR) > MESSAGE_MAX_LENGTH_BYTES;

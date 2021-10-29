@@ -49,6 +49,7 @@ import java.util.regex.Pattern;
 import static org.apache.atlas.hive.hook.events.BaseHiveEvent.ATTRIBUTE_QUALIFIED_NAME;
 import static org.apache.atlas.hive.hook.events.BaseHiveEvent.HIVE_TYPE_DB;
 import static org.apache.atlas.hive.hook.events.BaseHiveEvent.HIVE_TYPE_TABLE;
+import static org.apache.atlas.repository.Constants.HS2_SOURCE;
 
 public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     private static final Logger LOG = LoggerFactory.getLogger(HiveHook.class);
@@ -176,6 +177,9 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         super(name);
     }
 
+    public String getMessageSource() {
+        return HS2_SOURCE;
+    }
 
     @Override
     public void run(HookContext hookContext) throws Exception {

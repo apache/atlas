@@ -55,6 +55,7 @@ public class AtlasNotificationBaseMessage {
 
     public enum CompressionKind { NONE, GZIP };
 
+    private MessageSource   source             = null;
     private MessageVersion  version            = null;
     private String          msgId              = null;
     private CompressionKind msgCompressionKind = CompressionKind.NONE;
@@ -70,9 +71,18 @@ public class AtlasNotificationBaseMessage {
     }
 
     public AtlasNotificationBaseMessage(MessageVersion version, String msgId, CompressionKind msgCompressionKind) {
+        this (version, msgId, msgCompressionKind, null);
+    }
+
+    public AtlasNotificationBaseMessage(MessageVersion version, MessageSource source) {
+        this (version, null, CompressionKind.NONE, source);
+    }
+
+    public AtlasNotificationBaseMessage(MessageVersion version, String msgId, CompressionKind msgCompressionKind, MessageSource source) {
         this.version            = version;
         this.msgId              = msgId;
         this.msgCompressionKind = msgCompressionKind;
+        this.source             = source;
     }
 
     public AtlasNotificationBaseMessage(MessageVersion version, String msgId, CompressionKind msgCompressionKind, int msgSplitIdx, int msgSplitCount) {
@@ -89,6 +99,14 @@ public class AtlasNotificationBaseMessage {
 
     public MessageVersion getVersion() {
         return version;
+    }
+
+    public void setSource(MessageSource source) {
+        this.source = source;
+    }
+
+    public MessageSource getSource() {
+        return source;
     }
 
     public String getMsgId() {

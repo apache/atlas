@@ -19,6 +19,7 @@
 package org.apache.atlas.notification.entity;
 
 import org.apache.atlas.model.notification.EntityNotification;
+import org.apache.atlas.model.notification.MessageSource;
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.v1.model.instance.Struct;
 import org.apache.atlas.notification.AbstractNotification;
@@ -37,6 +38,7 @@ import static org.testng.Assert.assertTrue;
  */
 public class EntityNotificationDeserializerTest {
     private EntityMessageDeserializer deserializer = new EntityMessageDeserializer();
+    MessageSource source = new MessageSource(this.getClass().getSimpleName());
 
     @Test
     public void testDeserialize() throws Exception {
@@ -46,7 +48,7 @@ public class EntityNotificationDeserializerTest {
         EntityNotificationV1 notification = new EntityNotificationV1(entity, EntityNotificationV1.OperationType.TRAIT_ADD, traits);
         List<String>         jsonMsgList  = new ArrayList<>();
 
-        AbstractNotification.createNotificationMessages(notification, jsonMsgList);
+        AbstractNotification.createNotificationMessages(notification, jsonMsgList, source);
 
         EntityNotification deserializedNotification = null;
 
