@@ -717,7 +717,8 @@
         <httpcomponents-httpcore.version>4.4.13</httpcomponents-httpcore.version>
         <jackson.databind.version>2.11.3</jackson.databind.version>
         <jackson.version>2.11.3</jackson.version>
-        <janus.version>0.5.3</janus.version>
+        <janusgraph.version>0.6.0</janusgraph.version>
+        <janusgraph.cassandra.version>0.5.3</janusgraph.cassandra.version>
         <javax-inject.version>1</javax-inject.version>
         <javax.servlet.version>3.1.0</javax.servlet.version>
         <jersey-spring.version>1.19.4</jersey-spring.version>
@@ -767,7 +768,7 @@
         <surefire.forkCount>2C</surefire.forkCount>
         <surefire.version>3.0.0-M5</surefire.version>
         <testng.version>6.9.4</testng.version>
-        <tinkerpop.version>3.4.10</tinkerpop.version>
+        <tinkerpop.version>3.5.1</tinkerpop.version>
         <woodstox-core.version>5.0.3</woodstox-core.version>
         <zookeeper.version>3.5.7</zookeeper.version>
     </properties>
