@@ -262,7 +262,7 @@ public final class AtlasGraphSONReader {
             }
 
             final GraphSONMapper.Builder builder = GraphSONMapper.build();
-            final GraphSONMapper         mapper  = builder.typeInfo(TypeInfo.NO_TYPES).create();
+            final GraphSONMapper         mapper  = builder.create();
 
             return new AtlasGraphSONReader(mapper.createMapper(), relationshipCache, graph, bulkLoadGraph,
                                                                     numWorkers, batchSize, suppliedStartIndex);

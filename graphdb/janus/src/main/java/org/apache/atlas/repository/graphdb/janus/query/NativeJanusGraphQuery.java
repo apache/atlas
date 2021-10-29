@@ -236,7 +236,7 @@ public class NativeJanusGraphQuery implements NativeTinkerpopGraphQuery<AtlasJan
 
     @Override
     public void orderBy(final String propertyName, final AtlasGraphQuery.SortOrder sortOrder) {
-        Order order = sortOrder == AtlasGraphQuery.SortOrder.ASC ? Order.incr : Order.decr;
+        Order order = sortOrder == AtlasGraphQuery.SortOrder.ASC ? Order.asc : Order.desc;
         query.orderBy(propertyName, order);
     }
 
