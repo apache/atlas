@@ -894,7 +894,7 @@ public class EntityREST {
     }
 
     /**
-     * Bulk API to associate a tag to multiple entities
+     * Bulk API to associate tags to multiple entities
      */
     @POST
     @Path("/bulk/classification/displayName")
