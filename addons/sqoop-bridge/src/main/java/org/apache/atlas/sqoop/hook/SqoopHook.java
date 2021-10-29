@@ -47,6 +47,9 @@ import java.util.HashMap;
 import java.util.Properties;
 import java.util.List;
 import java.util.Date;
+
+import static org.apache.atlas.repository.Constants.SQOOP_SOURCE;
+
 /**
  * AtlasHook sends lineage information to the AtlasSever.
  */
@@ -243,6 +246,11 @@ public class SqoopHook extends SqoopJobDataPublisher {
     }
 
     private static class AtlasHookImpl extends AtlasHook {
+
+        public String getMessageSource() {
+            return SQOOP_SOURCE;
+        }
+
         public void sendNotification(HookNotification notification) {
             super.notifyEntities(Collections.singletonList(notification), null);
         }

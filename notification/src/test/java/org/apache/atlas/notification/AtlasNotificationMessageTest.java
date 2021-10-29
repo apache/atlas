@@ -19,8 +19,18 @@
 package org.apache.atlas.notification;
 
 import org.apache.atlas.model.notification.AtlasNotificationMessage;
+import org.apache.atlas.model.notification.MessageSource;
 import org.apache.atlas.model.notification.MessageVersion;
+import org.apache.atlas.notification.entity.EntityNotificationTest;
+import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.v1.model.instance.Referenceable;
+import org.apache.atlas.v1.model.instance.Struct;
+import org.apache.atlas.v1.model.notification.HookNotificationV1;
 import org.testng.annotations.Test;
+
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Collections;
 
 import static org.testng.Assert.*;
 
@@ -28,7 +38,7 @@ import static org.testng.Assert.*;
  * AtlasNotificationMessage tests.
  */
 public class AtlasNotificationMessageTest {
-
+    
     @Test
     public void testGetVersion() throws Exception {
         MessageVersion version = new MessageVersion("1.0.0");
@@ -56,4 +66,25 @@ public class AtlasNotificationMessageTest {
         assertTrue(atlasNotificationMessage.compareVersion(version2) < 0);
         assertTrue(atlasNotificationMessage.compareVersion(version3) > 0);
     }
+
+    @Test
+    public void testMessageSource() throws Exception {
+        Referenceable entity                           = generateEntityWithTrait();
+        HookNotificationV1.EntityUpdateRequest message = new HookNotificationV1.EntityUpdateRequest("user1", entity);
+        MessageSource source                           = new MessageSource(this.getClass().getSimpleName());
+        List<String> jsonList                          = new LinkedList<>();
+
+        AbstractNotification.createNotificationMessages(message, jsonList, source);
+        for(Object json :  jsonList) {
+            AtlasNotificationMessage atlasNotificationMessage = AtlasType.fromV1Json((String) json, AtlasNotificationMessage.class);
+            assertEquals("\"" + source.getSource() + "\"" ,AtlasType.toV1Json(atlasNotificationMessage.getSource().getSource()));
+        }
+    }
+
+    private Referenceable generateEntityWithTrait() {
+        Referenceable ret = EntityNotificationTest.getEntity("id", new Struct("MyTrait", Collections.<String, Object>emptyMap()));
+
+        return ret;
+    }
+
 }

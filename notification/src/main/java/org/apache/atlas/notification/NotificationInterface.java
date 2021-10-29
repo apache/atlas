@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.notification;
 
+import org.apache.atlas.model.notification.MessageSource;
 import org.apache.atlas.notification.entity.EntityMessageDeserializer;
 import org.apache.atlas.notification.hook.HookMessageDeserializer;
 
@@ -109,6 +110,8 @@ public interface NotificationInterface {
     /**
      * Shutdown any notification producers and consumers associated with this interface instance.
      */
+    <T> void send(NotificationType type, List<T> messages, MessageSource source) throws NotificationException;
+
     void close();
 
     /**

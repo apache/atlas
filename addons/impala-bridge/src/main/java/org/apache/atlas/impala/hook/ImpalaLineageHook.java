@@ -36,6 +36,8 @@ import javax.security.auth.Subject;
 import javax.security.auth.kerberos.KerberosPrincipal;
 import java.util.HashSet;
 
+import static org.apache.atlas.repository.Constants.IMPALA_SOURCE;
+
 public class ImpalaLineageHook extends AtlasHook {
     private static final Logger LOG = LoggerFactory.getLogger(ImpalaLineageHook.class);
     public static final String ATLAS_ENDPOINT                      = "atlas.rest.address";
@@ -63,6 +65,10 @@ public class ImpalaLineageHook extends AtlasHook {
 
     public ImpalaLineageHook() {
 
+    }
+
+    public String getMessageSource() {
+        return IMPALA_SOURCE;
     }
 
     public void process(String impalaQueryString) throws Exception {
