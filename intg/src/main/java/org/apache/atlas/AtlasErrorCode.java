@@ -198,6 +198,8 @@ public enum AtlasErrorCode {
     FILE_NAME_NOT_FOUND(404, "ATLAS-404-00-014", "File name should not be blank"),
     NO_TYPE_NAME_ON_VERTEX(404, "ATLAS-404-00-015", "No typename found for given entity with guid: {0}"),
 
+    METHOD_NOT_ALLOWED(405, "ATLAS-405-00-001", "Error 405 - The request method {0} is inappropriate for the URL: {1}"),
+
     // All data conflict errors go here
     TYPE_ALREADY_EXISTS(409, "ATLAS-409-00-001", "Given type {0} already exists"),
     TYPE_HAS_REFERENCES(409, "ATLAS-409-00-002", "Given type {0} has references"),
