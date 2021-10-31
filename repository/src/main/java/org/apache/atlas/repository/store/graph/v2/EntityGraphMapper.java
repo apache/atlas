@@ -687,7 +687,12 @@ public class EntityGraphMapper {
             if (op.equals(CREATE)) {
                 for (AtlasAttribute attribute : structType.getAllAttributes().values()) {
                     Object attrValue = struct.getAttribute(attribute.getName());
-                    Object attrOldValue = vertex.getProperty(attribute.getVertexPropertyName(),attribute.getClass());
+                    Object attrOldValue = null;
+                    try {
+                        attrOldValue = vertex.getProperty(attribute.getVertexPropertyName(),attribute.getClass());
+                    } catch (IllegalStateException e) {
+                        attrOldValue = vertex.getPropertyValues(attribute.getVertexPropertyName(),attribute.getClass());
+                    }
                     if (attrValue!= null && !attrValue.equals(attrOldValue)) {
                         addValuesToAutoUpdateAttributesList(attribute, userAutoUpdateAttributes, timestampAutoUpdateAttributes);
                     }
@@ -701,7 +706,13 @@ public class EntityGraphMapper {
 
                     if (attribute != null) {
                         Object attrValue = struct.getAttribute(attrName);
-                        Object attrOldValue = vertex.getProperty(attribute.getVertexPropertyName(),attribute.getClass());
+                        Object attrOldValue = null;
+                        try {
+                            attrOldValue = vertex.getProperty(attribute.getVertexPropertyName(),attribute.getClass());
+                        } catch (IllegalStateException e) {
+                            attrOldValue = vertex.getPropertyValues(attribute.getVertexPropertyName(),attribute.getClass());
+                        }
+
                         if (attrValue != null && !attrValue.equals(attrOldValue)) {
                             addValuesToAutoUpdateAttributesList(attribute, userAutoUpdateAttributes, timestampAutoUpdateAttributes);
                         }
@@ -1531,9 +1542,9 @@ public class EntityGraphMapper {
         }
 
         if (isNewElementsNull) {
-            setArrayElementsProperty(elementType, isSoftReference, ctx.getReferringVertex(), ctx.getVertexProperty(), null);
+            setArrayElementsProperty(elementType, isSoftReference, ctx.getReferringVertex(), ctx.getVertexProperty(), null, null, cardinality);
         } else {
-            setArrayElementsProperty(elementType, isSoftReference, ctx.getReferringVertex(), ctx.getVertexProperty(), allArrayElements);
+            setArrayElementsProperty(elementType, isSoftReference, ctx.getReferringVertex(), ctx.getVertexProperty(), allArrayElements, currentElements, cardinality);
         }
 
         switch (ctx.getAttribute().getRelationshipEdgeLabel()) {
@@ -1980,10 +1991,12 @@ public class EntityGraphMapper {
     }
 
     public static List<Object> getArrayElementsProperty(AtlasType elementType, boolean isSoftReference, AtlasVertex vertex, String vertexPropertyName) {
+        boolean isArrayOfPrimitiveType = elementType.getTypeCategory().equals(TypeCategory.PRIMITIVE);
         if (!isSoftReference && isReference(elementType)) {
             return (List)vertex.getListProperty(vertexPropertyName, AtlasEdge.class);
-        }
-        else {
+        } else if (isArrayOfPrimitiveType) {
+            return (List) vertex.getMultiValuedProperty(vertexPropertyName);
+        } else {
             return (List)vertex.getListProperty(vertexPropertyName);
         }
     }
@@ -2039,9 +2052,27 @@ public class EntityGraphMapper {
 
         return Collections.emptyList();
     }
-    private void setArrayElementsProperty(AtlasType elementType, boolean isSoftReference, AtlasVertex vertex, String vertexPropertyName, List<Object> values) {
+    private void setArrayElementsProperty(AtlasType elementType, boolean isSoftReference, AtlasVertex vertex, String vertexPropertyName, List<Object> allValues, List<Object> currentValues, Cardinality cardinality) {
+        boolean isArrayOfPrimitiveType = elementType.getTypeCategory().equals(TypeCategory.PRIMITIVE);
         if (!isReference(elementType) || isSoftReference) {
-            AtlasGraphUtilsV2.setEncodedProperty(vertex, vertexPropertyName, values);
+            if (isArrayOfPrimitiveType) {
+                allValues = CollectionUtils.isEmpty(allValues) ? new ArrayList<>() : allValues;
+                currentValues = CollectionUtils.isEmpty(currentValues) ? new ArrayList<>() : currentValues;
+                // Remove the values that are not recieved in request payload
+                for (Object value: currentValues) {
+                    if (!allValues.contains(value)) {
+                        vertex.removePropertyValue(vertexPropertyName, value);
+                    }
+                }
+                // Add only those values that are not already present
+                for (Object value: allValues) {
+                    if (!currentValues.contains(value)) {
+                        AtlasGraphUtilsV2.addEncodedProperty(vertex, vertexPropertyName, value, cardinality);
+                    }
+                }
+            } else {
+                AtlasGraphUtilsV2.setEncodedProperty(vertex, vertexPropertyName, allValues);
+            }
         }
     }
 
