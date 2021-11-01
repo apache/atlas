@@ -6,6 +6,9 @@
         "tokenizer": "atlan_tokenizer",
         "filter": [
           "apostrophe", "lowercase"
+        ],
+        "char_filter":[
+          "number_filter"
         ]
       },
       "atlan_text_stemmer": {
@@ -13,6 +16,9 @@
         "tokenizer": "atlan_tokenizer",
         "filter": [
           "snowball_english", "lowercase"
+        ],
+        "char_filter":[
+          "number_filter"
         ]
       }
     },
@@ -32,6 +38,13 @@
       "atlan_tokenizer": {
         "type": "pattern",
         "pattern": "( |_|-|'|/|@)"
+      }
+    },
+    "char_filter":{
+      "number_filter":{
+        "type":"pattern_replace",
+        "pattern":"\\d+",
+        "replacement":""
       }
     }
   }
