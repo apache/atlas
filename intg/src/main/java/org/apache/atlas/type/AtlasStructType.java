@@ -108,8 +108,8 @@ public class AtlasStructType extends AtlasType {
             if (attrType instanceof AtlasArrayType) {
                 attrType = ((AtlasArrayType) attrType).getElementType();
                 boolean isArrayOfPrimitiveType = attrType.getTypeCategory().equals(TypeCategory.PRIMITIVE);
-                if (isArrayOfPrimitiveType && Cardinality.SINGLE.equals(cardinality)) {
-                    attributeDef.setCardinality(Cardinality.LIST);
+                if (isArrayOfPrimitiveType) {
+                    attributeDef.setCardinality(Cardinality.SET);
                 }
 
             } else if (attrType instanceof AtlasMapType) {

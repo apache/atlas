@@ -71,7 +71,7 @@ public interface AtlasElement {
      */
     List<String> getListProperty(String propertyName);
 
-    List<String> getMultiValuedProperty(String propertyName);
+    <V> List<V> getMultiValuedProperty(String propertyName, Class<V> elementType);
 
     /**
      * Gets the value of a multiplicity one property whose value is a list.  It

@@ -478,7 +478,12 @@ public class EntityGraphMapper {
 
             for (AtlasBusinessAttribute bmAttribute : bmAttributes.values()) {
                 String bmAttrName          = bmAttribute.getName();
-                Object bmAttrExistingValue = entityVertex.getProperty(bmAttribute.getVertexPropertyName(), Object.class);
+                Object bmAttrExistingValue = null;
+                try {
+                    bmAttrExistingValue = entityVertex.getProperty(bmAttribute.getVertexPropertyName(), Object.class);
+                } catch (IllegalStateException e) {
+                    bmAttrExistingValue = entityVertex.getPropertyValues(bmAttribute.getVertexPropertyName(), Object.class);
+                }
                 Object bmAttrNewValue      = MapUtils.isEmpty(entityBmAttributes) ? null : entityBmAttributes.get(bmAttrName);
 
                 if (bmAttrExistingValue == null) {
@@ -553,7 +558,12 @@ public class EntityGraphMapper {
                     }
 
                     Object bmAttrValue   = entityBmAttributes.get(bmAttrName);
-                    Object existingValue = AtlasGraphUtilsV2.getEncodedProperty(entityVertex, bmAttribute.getVertexPropertyName(), Object.class);
+                    Object existingValue = null;
+                    try {
+                        existingValue = entityVertex.getProperty(bmAttribute.getVertexPropertyName(), Object.class);
+                    } catch (IllegalStateException e) {
+                        existingValue = entityVertex.getPropertyValues(bmAttribute.getVertexPropertyName(), Object.class);
+                    }
 
                     if (existingValue == null) {
                         if (bmAttrValue != null) {
@@ -1995,7 +2005,7 @@ public class EntityGraphMapper {
         if (!isSoftReference && isReference(elementType)) {
             return (List)vertex.getListProperty(vertexPropertyName, AtlasEdge.class);
         } else if (isArrayOfPrimitiveType) {
-            return (List) vertex.getMultiValuedProperty(vertexPropertyName);
+            return (List) vertex.getMultiValuedProperty(vertexPropertyName, elementType.getClass());
         } else {
             return (List)vertex.getListProperty(vertexPropertyName);
         }
@@ -2056,24 +2066,12 @@ public class EntityGraphMapper {
         boolean isArrayOfPrimitiveType = elementType.getTypeCategory().equals(TypeCategory.PRIMITIVE);
         if (!isReference(elementType) || isSoftReference) {
             if (isArrayOfPrimitiveType) {
-                allValues = CollectionUtils.isEmpty(allValues) ? new ArrayList<>() : allValues;
-                currentValues = CollectionUtils.isEmpty(currentValues) ? new ArrayList<>() : currentValues;
-                List<Object> propertiesToAdd = new ArrayList<>(allValues);
-                List<Object> propertiesToRemove = new ArrayList<>(currentValues);
-
-                for (Object value: allValues) {
-                    if (propertiesToRemove.contains(value)) {
-                        propertiesToRemove.remove(value);
-                        propertiesToAdd.remove(value);
+                vertex.removeProperty(vertexPropertyName);
+                if (CollectionUtils.isNotEmpty(allValues)) {
+                    for (Object value: allValues) {
+                        AtlasGraphUtilsV2.addEncodedProperty(vertex, vertexPropertyName, value);
                     }
                 }
-                for (Object value: propertiesToRemove) {
-                    vertex.removePropertyValue(vertexPropertyName, value);
-                }
-                for (Object value: propertiesToAdd) {
-                    AtlasGraphUtilsV2.addEncodedProperty(vertex, vertexPropertyName, value, cardinality);
-                }
-
             } else {
                 AtlasGraphUtilsV2.setEncodedProperty(vertex, vertexPropertyName, allValues);
             }

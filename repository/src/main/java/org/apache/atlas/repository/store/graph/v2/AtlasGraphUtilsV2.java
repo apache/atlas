@@ -200,13 +200,6 @@ public class AtlasGraphUtilsV2 {
         return addProperty(vertex, propertyName, value, true);
     }
 
-    public static AtlasVertex addEncodedProperty(AtlasVertex vertex, String propertyName, Object value, AtlasStructDef.AtlasAttributeDef.Cardinality cardinality) {
-        if (cardinality.equals(AtlasStructDef.AtlasAttributeDef.Cardinality.LIST)) {
-            return addListProperty(vertex, propertyName, value, true);
-        }
-        return addProperty(vertex, propertyName, value, true);
-    }
-
     public static AtlasEdge addEncodedProperty(AtlasEdge edge, String propertyName, String value) {
         List<String> listPropertyValues = edge.getListProperty(propertyName);
 

@@ -1363,7 +1363,7 @@ public final class GraphHelper {
         if (isReference(elementType)) {
             return (List) getCollectionElementsUsingRelationship(instanceVertex, attribute);
         } else if (isArrayOfPrimitiveType) {
-            return (List) instanceVertex.getMultiValuedProperty(propertyName);
+            return (List) instanceVertex.getMultiValuedProperty(propertyName, elementType.getClass());
         } else {
             return (List) instanceVertex.getListProperty(propertyName);
         }
