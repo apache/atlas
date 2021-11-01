@@ -903,7 +903,7 @@ public class EntityGraphMapper {
                             true, ctx.getAttribute().getRelationshipEdgeDirection(), ctx.getReferringVertex());
                 }
 
-                if (edgeLabel.equals(GLOSSARY_TERMS_EDGE_LABEL)) {
+                if (edgeLabel.equals(GLOSSARY_TERMS_EDGE_LABEL) || edgeLabel.equals(GLOSSARY_CATEGORY_EDGE_LABEL)) {
                     addGlossaryAttr(ctx, newEdge);
                 }
 
@@ -1552,12 +1552,13 @@ public class EntityGraphMapper {
     }
 
     private void addGlossaryAttr(AttributeMutationContext ctx, AtlasEdge edge) {
-        AtlasVertex termVertex = ctx.getReferringVertex();
+        AtlasVertex toVertex = ctx.getReferringVertex();
+        String toVertexType = getTypeName(toVertex);
 
-        if (TYPE_TERM.equals(getTypeName(termVertex))) {
-            // handle __glossary attribute of term entity
+        if (TYPE_TERM.equals(toVertexType) || TYPE_CATEGORY.equals(toVertexType)) {
+            // handle __glossary attribute of term or category entity
             String gloQname = edge.getOutVertex().getProperty(QUALIFIED_NAME, String.class);
-            AtlasGraphUtilsV2.setEncodedProperty(termVertex, GLOSSARY_PROPERTY_KEY, gloQname);
+            AtlasGraphUtilsV2.setEncodedProperty(toVertex, GLOSSARY_PROPERTY_KEY, gloQname);
         }
     }
 
