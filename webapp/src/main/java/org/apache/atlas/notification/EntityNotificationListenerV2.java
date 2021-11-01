@@ -154,45 +154,45 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
     }
 
     private void notifyEntityEvents(List<AtlasEntity> entities, OperationType operationType) throws AtlasBaseException {
-//        MetricRecorder metric = RequestContext.get().startMetricRecord("entityNotification");
-//        List<EntityNotificationV2> messages = new ArrayList<>();
-//
-//        for (AtlasEntity entity : entities) {
-//            if (isInternalType(entity.getTypeName())) {
-//                continue;
-//            }
-//
-//            messages.add(new EntityNotificationV2(toNotificationHeader(entity), operationType, RequestContext.get().getRequestTime()));
-//        }
-//
-//        sendNotifications(operationType, messages);
-//        RequestContext.get().endMetricRecord(metric);
+        MetricRecorder metric = RequestContext.get().startMetricRecord("entityNotification");
+        List<EntityNotificationV2> messages = new ArrayList<>();
+
+        for (AtlasEntity entity : entities) {
+            if (isInternalType(entity.getTypeName())) {
+                continue;
+            }
+
+            messages.add(new EntityNotificationV2(toNotificationHeader(entity), operationType, RequestContext.get().getRequestTime()));
+        }
+
+        sendNotifications(operationType, messages);
+        RequestContext.get().endMetricRecord(metric);
     }
 
     private void notifyRelationshipEvents(List<AtlasRelationship> relationships, OperationType operationType) throws AtlasBaseException {
-//        MetricRecorder metric = RequestContext.get().startMetricRecord("entityNotification");
-//        List<EntityNotificationV2> messages = new ArrayList<>();
-//
-//        for (AtlasRelationship relationship : relationships) {
-//            if (isInternalType(relationship.getTypeName())) {
-//                continue;
-//            }
-//
-//            messages.add(new EntityNotificationV2(toNotificationHeader(relationship), operationType, RequestContext.get().getRequestTime()));
-//        }
-//
-//        sendNotifications(operationType, messages);
-//        RequestContext.get().endMetricRecord(metric);
+        MetricRecorder metric = RequestContext.get().startMetricRecord("entityNotification");
+        List<EntityNotificationV2> messages = new ArrayList<>();
+
+        for (AtlasRelationship relationship : relationships) {
+            if (isInternalType(relationship.getTypeName())) {
+                continue;
+            }
+
+            messages.add(new EntityNotificationV2(toNotificationHeader(relationship), operationType, RequestContext.get().getRequestTime()));
+        }
+
+        sendNotifications(operationType, messages);
+        RequestContext.get().endMetricRecord(metric);
     }
 
     private void sendNotifications(OperationType operationType, List<EntityNotificationV2> messages) throws AtlasBaseException {
-//        if (!messages.isEmpty()) {
-//            try {
-//                notificationSender.send(messages);
-//            } catch (NotificationException e) {
-//                throw new AtlasBaseException(AtlasErrorCode.ENTITY_NOTIFICATION_FAILED, e, operationType.name());
-//            }
-//        }
+        if (!messages.isEmpty()) {
+            try {
+                notificationSender.send(messages);
+            } catch (NotificationException e) {
+                throw new AtlasBaseException(AtlasErrorCode.ENTITY_NOTIFICATION_FAILED, e, operationType.name());
+            }
+        }
     }
 
     private AtlasEntityHeader toNotificationHeader(AtlasEntity entity) {
