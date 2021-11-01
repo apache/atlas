@@ -592,9 +592,6 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
                 boolean        isReference = isReference(arrayType.getElementType());
                 arrayElementType = arrayType.getElementType();
                 isArrayOfPrimitiveType = arrayElementType.getTypeCategory().equals(TypeCategory.PRIMITIVE);
-                if (isArrayOfPrimitiveType) {
-                    cardinality = cardinality.isMany() ? cardinality : LIST;
-                }
 
                 if (!isReference && !isArrayOfPrimitiveType) {
                     createPropertyKey(management, propertyName, ArrayList.class, SINGLE);

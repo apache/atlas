@@ -19,6 +19,7 @@ package org.apache.atlas.type;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
@@ -106,6 +107,11 @@ public class AtlasStructType extends AtlasType {
             //check if attribute type is not classification
             if (attrType instanceof AtlasArrayType) {
                 attrType = ((AtlasArrayType) attrType).getElementType();
+                boolean isArrayOfPrimitiveType = attrType.getTypeCategory().equals(TypeCategory.PRIMITIVE);
+                if (isArrayOfPrimitiveType && Cardinality.SINGLE.equals(cardinality)) {
+                    attributeDef.setCardinality(Cardinality.LIST);
+                }
+
             } else if (attrType instanceof AtlasMapType) {
                 attrType = ((AtlasMapType) attrType).getValueType();
             }

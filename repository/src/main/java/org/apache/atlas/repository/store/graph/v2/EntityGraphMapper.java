@@ -2058,18 +2058,22 @@ public class EntityGraphMapper {
             if (isArrayOfPrimitiveType) {
                 allValues = CollectionUtils.isEmpty(allValues) ? new ArrayList<>() : allValues;
                 currentValues = CollectionUtils.isEmpty(currentValues) ? new ArrayList<>() : currentValues;
-                // Remove the values that are not recieved in request payload
-                for (Object value: currentValues) {
-                    if (!allValues.contains(value)) {
-                        vertex.removePropertyValue(vertexPropertyName, value);
-                    }
-                }
-                // Add only those values that are not already present
+                List<Object> propertiesToAdd = new ArrayList<>(allValues);
+                List<Object> propertiesToRemove = new ArrayList<>(currentValues);
+
                 for (Object value: allValues) {
-                    if (!currentValues.contains(value)) {
-                        AtlasGraphUtilsV2.addEncodedProperty(vertex, vertexPropertyName, value, cardinality);
+                    if (propertiesToRemove.contains(value)) {
+                        propertiesToRemove.remove(value);
+                        propertiesToAdd.remove(value);
                     }
                 }
+                for (Object value: propertiesToRemove) {
+                    vertex.removePropertyValue(vertexPropertyName, value);
+                }
+                for (Object value: propertiesToAdd) {
+                    AtlasGraphUtilsV2.addEncodedProperty(vertex, vertexPropertyName, value, cardinality);
+                }
+
             } else {
                 AtlasGraphUtilsV2.setEncodedProperty(vertex, vertexPropertyName, allValues);
             }
