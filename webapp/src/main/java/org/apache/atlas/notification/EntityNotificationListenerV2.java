@@ -25,6 +25,7 @@ import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.model.instance.AtlasEntityHeaderWithRelations;
 import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.instance.AtlasRelationshipHeader;
@@ -195,8 +196,8 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
         }
     }
 
-    private AtlasEntityHeader toNotificationHeader(AtlasEntity entity) {
-        AtlasEntityHeader ret         = new AtlasEntityHeader(entity.getTypeName(), entity.getGuid(), new HashMap<>());
+    private AtlasEntityHeaderWithRelations toNotificationHeader(AtlasEntity entity) {
+        AtlasEntityHeaderWithRelations ret = new AtlasEntityHeaderWithRelations(entity.getTypeName(), entity.getGuid(), new HashMap<>());
         Object            name        = entity.getAttribute(NAME);
         Object            displayText = name != null ? name : entity.getAttribute(QUALIFIED_NAME);
 
@@ -224,6 +225,21 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
                         ret.setAttribute(attribute.getName(), attrValue);
                     }
                 }
+            }
+
+            //Add relationship attributes which has isOptional as false
+            Map<String, Object> rel = new HashMap<>();
+            for (Map<String, AtlasAttribute> attrs : entityType.getRelationshipAttributes().values()) {
+                for (AtlasAttribute attr : attrs.values()) {
+                    if (!attr.getAttributeDef().getIsOptional()) {
+                        String attrName = attr.getAttributeDef().getName();
+                        rel.put(attrName, entity.getRelationshipAttribute(attrName));
+                    }
+                }
+            }
+
+            if (MapUtils.isNotEmpty(rel)){
+                ret.setRelationshipAttributes(rel);
             }
 
             if (CollectionUtils.isNotEmpty(entity.getClassifications())) {
