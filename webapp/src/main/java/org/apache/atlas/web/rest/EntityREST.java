@@ -31,15 +31,9 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2;
-import org.apache.atlas.model.instance.AtlasClassification;
-import org.apache.atlas.model.instance.AtlasEvaluatePolicyResponse;
-import org.apache.atlas.model.instance.AtlasEvaluatePolicyRequest;
+import org.apache.atlas.model.instance.*;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
-import org.apache.atlas.model.instance.AtlasEntityHeader;
-import org.apache.atlas.model.instance.AtlasEntityHeaders;
-import org.apache.atlas.model.instance.ClassificationAssociateRequest;
-import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.repository.audit.EntityAuditRepository;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
@@ -51,6 +45,7 @@ import org.apache.atlas.repository.store.graph.v2.ClassificationAssociator;
 import org.apache.atlas.repository.store.graph.v2.EntityStream;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.FileUtils;
 import org.apache.atlas.utils.AtlasPerfTracer;
@@ -893,6 +888,59 @@ public class EntityREST {
             }
 
             entitiesStore.addClassification(entityGuids, classification);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    /**
+     * Bulk API to associate tags to multiple entities
+     */
+    @POST
+    @Path("/bulk/classification/displayName")
+    @Timed
+    public void addClassificationByDisplayName(List<AtlasClassification> classificationList) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.addClassificationByDisplayName()");
+            }
+
+            if (CollectionUtils.isEmpty(classificationList)) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "classification list should be specified");
+            }
+
+            Map<String, List<AtlasClassification>> entityGuidClassificationMap = new HashMap<>();
+            for (AtlasClassification classification : classificationList) {
+
+                if (StringUtils.isEmpty(classification.getTypeName())) {
+
+                    try {
+                        AtlasType type = typeRegistry.getClassificationTypeByDisplayName(classification.getDisplayName());
+                        if (type == null) {
+                            throw new AtlasBaseException("Classification type not found for displayName {}" + classification.getDisplayName());
+                        }
+                        classification.setTypeName(type.getTypeName());
+                    } catch (NoSuchElementException exception) {
+                        throw new AtlasBaseException("No Classification type fount for displayName " + classification.getDisplayName());
+                    }
+                }
+
+                if (entityGuidClassificationMap.containsKey(classification.getEntityGuid())) {
+                    List<AtlasClassification> classifications = entityGuidClassificationMap.get(classification.getEntityGuid());
+                    classifications.add(classification);
+                } else {
+                    List<AtlasClassification> classifications = new ArrayList<>();
+                    classifications.add(classification);
+                    entityGuidClassificationMap.put(classification.getEntityGuid(), classifications);
+                }
+            }
+
+            for (Map.Entry<String, List<AtlasClassification>> x : entityGuidClassificationMap.entrySet()) {
+                entitiesStore.addClassifications(x.getKey(), x.getValue());
+            }
+
         } finally {
             AtlasPerfTracer.log(perf);
         }
