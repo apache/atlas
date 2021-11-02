@@ -22,16 +22,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentSkipListSet;
 
 public class StatusReporter<T, U> {
     private static final Logger LOG = LoggerFactory.getLogger(StatusReporter.class);
 
-    private final Map<T, U> producedItems = new LinkedHashMap<>();
-    private final Set<T>    processedSet  = new HashSet<>();
+    private final Map<T, U> producedItems = Collections.synchronizedMap(new LinkedHashMap<>());
+    private final Set<T>    processedSet  = new ConcurrentSkipListSet<>();
     private final long      timeoutDuration;
     private       long      lastAck;
 
@@ -49,6 +50,11 @@ public class StatusReporter<T, U> {
 
     public void processed(T item) {
         this.processedSet.add(item);
+    }
+
+    public void processed(T item, U index) {
+        this.processedSet.add(item);
+        this.producedItems.put(item, index);
     }
 
     public void processed(T[] index) {

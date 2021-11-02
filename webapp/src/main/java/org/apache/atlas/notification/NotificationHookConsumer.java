@@ -20,107 +20,54 @@ package org.apache.atlas.notification;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.atlas.ApplicationProperties;
-import org.apache.atlas.AtlasClient;
-import org.apache.atlas.AtlasClientV2;
 import org.apache.atlas.AtlasConfiguration;
-import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.hook.AtlasHook;
 import org.apache.atlas.kafka.AtlasKafkaMessage;
 import org.apache.atlas.kafka.KafkaNotification;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
-import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
-import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
-import org.apache.atlas.model.instance.AtlasEntityHeader;
-import org.apache.atlas.model.instance.AtlasObjectId;
-import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.notification.HookNotification;
-import org.apache.atlas.model.notification.HookNotification.EntityCreateRequestV2;
-import org.apache.atlas.model.notification.HookNotification.EntityDeleteRequestV2;
-import org.apache.atlas.model.notification.HookNotification.EntityPartialUpdateRequestV2;
-import org.apache.atlas.model.notification.HookNotification.EntityUpdateRequestV2;
-import org.apache.atlas.model.notification.ImportNotification.AtlasEntityImportNotification;
-import org.apache.atlas.model.notification.ImportNotification.AtlasTypesDefImportNotification;
-import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.notification.NotificationInterface.NotificationType;
-import org.apache.atlas.notification.preprocessor.EntityPreprocessor;
-import org.apache.atlas.notification.preprocessor.GenericEntityPreprocessor;
-import org.apache.atlas.notification.preprocessor.PreprocessorContext;
-import org.apache.atlas.notification.preprocessor.PreprocessorContext.PreprocessAction;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.repository.impexp.AsyncImporter;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.EntityCorrelationStore;
-import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
-import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.service.Service;
-import org.apache.atlas.type.AtlasEntityType;
-import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasTypeRegistry;
-import org.apache.atlas.util.AtlasMetricsCounter;
+import org.apache.atlas.util.AdaptiveWaiter;
 import org.apache.atlas.util.AtlasMetricsUtil;
-import org.apache.atlas.util.AtlasMetricsUtil.NotificationStat;
-import org.apache.atlas.utils.AtlasJson;
-import org.apache.atlas.utils.AtlasPerfTracer;
-import org.apache.atlas.utils.LruCache;
-import org.apache.atlas.v1.model.instance.Referenceable;
-import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityCreateRequest;
-import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityDeleteRequest;
-import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityPartialUpdateRequest;
-import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityUpdateRequest;
-import org.apache.atlas.web.filters.AuditFilter;
-import org.apache.atlas.web.filters.AuditFilter.AuditLog;
 import org.apache.atlas.web.service.ServiceState;
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.MapUtils;
 import org.apache.commons.collections4.map.PassiveExpiringMap;
 import org.apache.commons.configuration.Configuration;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.core.annotation.Order;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
-import javax.ws.rs.core.Response;
 
-import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
-import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.regex.Pattern;
 
-import static org.apache.atlas.model.instance.AtlasObjectId.KEY_GUID;
-import static org.apache.atlas.model.instance.AtlasObjectId.KEY_TYPENAME;
-import static org.apache.atlas.model.instance.AtlasObjectId.KEY_UNIQUE_ATTRIBUTES;
-import static org.apache.atlas.notification.preprocessor.EntityPreprocessor.TYPE_HIVE_PROCESS;
-import static org.apache.atlas.web.security.AtlasAbstractAuthenticationProvider.getAuthoritiesFromUGI;
+import static org.apache.atlas.notification.NotificationInterface.NotificationType.ASYNC_IMPORT;
 
 /**
  * Consumer of notifications from hooks e.g., hive hook etc.
@@ -130,7 +77,6 @@ import static org.apache.atlas.web.security.AtlasAbstractAuthenticationProvider.
 @DependsOn(value = {"atlasTypeDefStoreInitializer", "atlasTypeDefGraphStoreV2"})
 public class NotificationHookConsumer implements Service, ActiveStateChangeHandler {
     private static final Logger LOG                = LoggerFactory.getLogger(NotificationHookConsumer.class);
-    private static final Logger PERF_LOG           = AtlasPerfTracer.getPerfLogger(NotificationHookConsumer.class);
     private static final Logger FAILED_LOG         = LoggerFactory.getLogger("FAILED");
     private static final Logger LARGE_MESSAGES_LOG = LoggerFactory.getLogger("LARGE_MESSAGES");
 
@@ -168,18 +114,11 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     public static final String CONSUMER_AUTHORIZE_AUTHN_CACHE_TTL_SECONDS                    = "atlas.notification.authorize.authn.cache.ttl.seconds";
     public static final int    SERVER_READY_WAIT_TIME_MS                                     = 1000;
 
-    private static final int    SC_OK                                           = 200;
-    private static final int    SC_BAD_REQUEST                                  = 400;
-    private static final String TYPE_HIVE_COLUMN_LINEAGE                        = "hive_column_lineage";
-    private static final String ATTRIBUTE_INPUTS                                = "inputs";
-    private static final String ATTRIBUTE_QUALIFIED_NAME                        = "qualifiedName";
-    private static final String EXCEPTION_CLASS_NAME_JANUSGRAPH_EXCEPTION       = "JanusGraphException";
-    private static final String EXCEPTION_CLASS_NAME_PERMANENTLOCKING_EXCEPTION = "PermanentLockingException";
-    private static final int    KAFKA_CONSUMER_SHUTDOWN_WAIT                    = 30000;
-    private static final String ATLAS_HOOK_CONSUMER_THREAD_NAME                 = "atlas-hook-consumer-thread";
-    private static final String ATLAS_HOOK_UNSORTED_CONSUMER_THREAD_NAME        = "atlas-hook-unsorted-consumer-thread";
-    private static final String ATLAS_IMPORT_CONSUMER_THREAD_PREFIX             = "atlas-import-consumer-thread-";
-    private static final String THREADNAME_PREFIX                               = NotificationHookConsumer.class.getSimpleName();
+    private static final int    KAFKA_CONSUMER_SHUTDOWN_WAIT             = 30000;
+    private static final String ATLAS_HOOK_CONSUMER_THREAD_NAME          = "atlas-hook-consumer-thread";
+    private static final String ATLAS_HOOK_UNSORTED_CONSUMER_THREAD_NAME = "atlas-hook-unsorted-consumer-thread";
+    private static final String ATLAS_IMPORT_CONSUMER_THREAD_PREFIX      = "atlas-import-consumer-thread-";
+    private static final String THREADNAME_PREFIX                        = NotificationHookConsumer.class.getSimpleName();
 
     private final AtlasEntityStore              atlasEntityStore;
     private final ServiceState                  serviceState;
@@ -187,30 +126,16 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     private final AtlasTypeRegistry             typeRegistry;
     private final AtlasMetricsUtil              metricsUtil;
     private final int                           maxRetries;
-    private final int                           failedMsgCacheSize;
     private final int                           minWaitDuration;
     private final int                           maxWaitDuration;
     private final int                           commitBatchSize;
     private final boolean                       skipHiveColumnLineageHive20633;
     private final int                           skipHiveColumnLineageHive20633InputsThreshold;
-    private final boolean                       updateHiveProcessNameWithQualifiedName;
-    private final int                           largeMessageProcessingTimeThresholdMs;
     private final boolean                       consumerDisabled;
-    private final List<Pattern>                 entityTypesToIgnore = new ArrayList<>();
-    private final List<Pattern>                 entitiesToIgnore    = new ArrayList<>();
-    private final List<Pattern>                 hiveTablesToIgnore  = new ArrayList<>();
-    private final List<Pattern>                 hiveTablesToPrune   = new ArrayList<>();
-    private final List<String>                  hiveDummyDatabasesToIgnore;
-    private final List<String>                  hiveDummyTablesToIgnore;
-    private final List<String>                  hiveTablePrefixesToIgnore;
-    private final Map<String, PreprocessAction> hiveTablesCache;
     private final boolean                       hiveTypesRemoveOwnedRefAttrs;
     private final boolean                       rdbmsTypesRemoveOwnedRefAttrs;
     private final boolean                       s3V2DirectoryPruneObjectPrefix;
-    private final boolean                       preprocessEnabled;
-    private final boolean                       createShellEntityForNonExistingReference;
     private final boolean                       authorizeUsingMessageUser;
-    private final boolean                       sparkProcessAttributes;
 
     private final Map<String, Authentication>   authnCache;
     private final NotificationInterface         notificationInterface;
@@ -222,7 +147,6 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     private final AsyncImporter                 asyncImporter;
 
     private ExecutorService executors;
-    private Instant         nextStatsLogTime = AtlasMetricsCounter.getNextHourStartTime(Instant.now());
 
     @VisibleForTesting
     final int consumerRetryInterval;
@@ -243,7 +167,6 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         this.asyncImporter                = asyncImporter;
 
         maxRetries            = applicationProperties.getInt(CONSUMER_RETRIES_PROPERTY, 3);
-        failedMsgCacheSize    = applicationProperties.getInt(CONSUMER_FAILEDCACHESIZE_PROPERTY, 1);
         consumerRetryInterval = applicationProperties.getInt(CONSUMER_RETRY_INTERVAL, 500);
         minWaitDuration       = applicationProperties.getInt(CONSUMER_MIN_RETRY_INTERVAL, consumerRetryInterval); // 500 ms  by default
         maxWaitDuration       = applicationProperties.getInt(CONSUMER_MAX_RETRY_INTERVAL, minWaitDuration * 60);  //  30 sec by default
@@ -251,10 +174,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
         skipHiveColumnLineageHive20633                = applicationProperties.getBoolean(CONSUMER_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633, false);
         skipHiveColumnLineageHive20633InputsThreshold = applicationProperties.getInt(CONSUMER_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633_INPUTS_THRESHOLD, 15); // skip if avg # of inputs is > 15
-        updateHiveProcessNameWithQualifiedName        = applicationProperties.getBoolean(CONSUMER_PREPROCESS_HIVE_PROCESS_UPD_NAME_WITH_QUALIFIED_NAME, true);
         consumerDisabled                              = applicationProperties.getBoolean(CONSUMER_DISABLED, false);
-        largeMessageProcessingTimeThresholdMs         = applicationProperties.getInt("atlas.notification.consumer.large.message.processing.time.threshold.ms", 60 * 1000);  //  60 sec by default
-        createShellEntityForNonExistingReference      = AtlasConfiguration.NOTIFICATION_CREATE_SHELL_ENTITY_FOR_NON_EXISTING_REF.getBoolean();
         authorizeUsingMessageUser                     = applicationProperties.getBoolean(CONSUMER_AUTHORIZE_USING_MESSAGE_USER, false);
         consumerMsgBufferingIntervalMS                = AtlasConfiguration.NOTIFICATION_HOOK_CONSUMER_BUFFERING_INTERVAL.getInt() * 1000L;
         consumerMsgBufferingBatchSize                 = AtlasConfiguration.NOTIFICATION_HOOK_CONSUMER_BUFFERING_BATCH_SIZE.getInt();
@@ -263,117 +183,11 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
         authnCache = (authorizeUsingMessageUser && authnCacheTtlSeconds > 0) ? new PassiveExpiringMap<>(authnCacheTtlSeconds * 1000L) : null;
 
-        String[] patternEntityTypesToIgnore = applicationProperties.getStringArray(CONSUMER_PREPROCESS_ENTITY_TYPE_IGNORE_PATTERN);
-        String[] patternEntitiesToIgnore    = applicationProperties.getStringArray(CONSUMER_PREPROCESS_ENTITY_IGNORE_PATTERN);
-
-        String[] patternHiveTablesToIgnore = applicationProperties.getStringArray(CONSUMER_PREPROCESS_HIVE_TABLE_IGNORE_PATTERN);
-        String[] patternHiveTablesToPrune  = applicationProperties.getStringArray(CONSUMER_PREPROCESS_HIVE_TABLE_PRUNE_PATTERN);
-
-        if (patternEntityTypesToIgnore != null) {
-            for (String pattern : patternEntityTypesToIgnore) {
-                try {
-                    this.entityTypesToIgnore.add(Pattern.compile(pattern));
-                } catch (Throwable t) {
-                    LOG.warn("failed to compile pattern {}", pattern, t);
-                    LOG.warn("Ignoring invalid pattern in configuration {}: {}", CONSUMER_PREPROCESS_ENTITY_TYPE_IGNORE_PATTERN, pattern);
-                }
-            }
-
-            LOG.info("{}={}", CONSUMER_PREPROCESS_ENTITY_TYPE_IGNORE_PATTERN, entityTypesToIgnore);
-        }
-
-        if (patternEntitiesToIgnore != null) {
-            for (String pattern : patternEntitiesToIgnore) {
-                try {
-                    this.entitiesToIgnore.add(Pattern.compile(pattern));
-                } catch (Throwable t) {
-                    LOG.warn("failed to compile pattern {}", pattern, t);
-                    LOG.warn("Ignoring invalid pattern in configuration {}: {}", CONSUMER_PREPROCESS_ENTITY_IGNORE_PATTERN, pattern);
-                }
-            }
-
-            LOG.info("{}={}", CONSUMER_PREPROCESS_ENTITY_IGNORE_PATTERN, entitiesToIgnore);
-        }
-
-        if (patternHiveTablesToIgnore != null) {
-            for (String pattern : patternHiveTablesToIgnore) {
-                try {
-                    hiveTablesToIgnore.add(Pattern.compile(pattern));
-
-                    LOG.info("{}={}", CONSUMER_PREPROCESS_HIVE_TABLE_IGNORE_PATTERN, pattern);
-                } catch (Throwable t) {
-                    LOG.warn("failed to compile pattern {}", pattern, t);
-                    LOG.warn("Ignoring invalid pattern in configuration {}: {}", CONSUMER_PREPROCESS_HIVE_TABLE_IGNORE_PATTERN, pattern);
-                }
-            }
-        }
-
-        if (patternHiveTablesToPrune != null) {
-            for (String pattern : patternHiveTablesToPrune) {
-                try {
-                    hiveTablesToPrune.add(Pattern.compile(pattern));
-
-                    LOG.info("{}={}", CONSUMER_PREPROCESS_HIVE_TABLE_PRUNE_PATTERN, pattern);
-                } catch (Throwable t) {
-                    LOG.warn("failed to compile pattern {}", pattern, t);
-                    LOG.warn("Ignoring invalid pattern in configuration {}: {}", CONSUMER_PREPROCESS_HIVE_TABLE_PRUNE_PATTERN, pattern);
-                }
-            }
-        }
-
-        if (!hiveTablesToIgnore.isEmpty() || !hiveTablesToPrune.isEmpty()) {
-            hiveTablesCache = new LruCache<>(applicationProperties.getInt(CONSUMER_PREPROCESS_HIVE_TABLE_CACHE_SIZE, 10000), 0);
-        } else {
-            hiveTablesCache = Collections.emptyMap();
-        }
-
-        boolean hiveDbIgnoreDummyEnabled         = applicationProperties.getBoolean(CONSUMER_PREPROCESS_HIVE_DB_IGNORE_DUMMY_ENABLED, true);
-        boolean hiveTableIgnoreDummyEnabled      = applicationProperties.getBoolean(CONSUMER_PREPROCESS_HIVE_TABLE_IGNORE_DUMMY_ENABLED, true);
-        boolean hiveTableIgnoreNamePrefixEnabled = applicationProperties.getBoolean(CONSUMER_PREPROCESS_HIVE_TABLE_IGNORE_NAME_PREFIXES_ENABLED, true);
-
-        LOG.info("{}={}", CONSUMER_PREPROCESS_HIVE_DB_IGNORE_DUMMY_ENABLED, hiveDbIgnoreDummyEnabled);
-        LOG.info("{}={}", CONSUMER_PREPROCESS_HIVE_TABLE_IGNORE_DUMMY_ENABLED, hiveTableIgnoreDummyEnabled);
-        LOG.info("{}={}", CONSUMER_PREPROCESS_HIVE_TABLE_IGNORE_NAME_PREFIXES_ENABLED, hiveTableIgnoreNamePrefixEnabled);
-
-        if (hiveDbIgnoreDummyEnabled) {
-            String[] dummyDatabaseNames = applicationProperties.getStringArray(CONSUMER_PREPROCESS_HIVE_DB_IGNORE_DUMMY_NAMES);
-
-            hiveDummyDatabasesToIgnore = trimAndPurge(dummyDatabaseNames, DUMMY_DATABASE);
-
-            LOG.info("{}={}", CONSUMER_PREPROCESS_HIVE_DB_IGNORE_DUMMY_NAMES, StringUtils.join(hiveDummyDatabasesToIgnore, ','));
-        } else {
-            hiveDummyDatabasesToIgnore = Collections.emptyList();
-        }
-
-        if (hiveTableIgnoreDummyEnabled) {
-            String[] dummyTableNames = applicationProperties.getStringArray(CONSUMER_PREPROCESS_HIVE_TABLE_IGNORE_DUMMY_NAMES);
-
-            hiveDummyTablesToIgnore = trimAndPurge(dummyTableNames, DUMMY_TABLE);
-
-            LOG.info("{}={}", CONSUMER_PREPROCESS_HIVE_TABLE_IGNORE_DUMMY_NAMES, StringUtils.join(hiveDummyTablesToIgnore, ','));
-        } else {
-            hiveDummyTablesToIgnore = Collections.emptyList();
-        }
-
-        if (hiveTableIgnoreNamePrefixEnabled) {
-            String[] ignoreNamePrefixes = applicationProperties.getStringArray(CONSUMER_PREPROCESS_HIVE_TABLE_IGNORE_NAME_PREFIXES);
-
-            hiveTablePrefixesToIgnore = trimAndPurge(ignoreNamePrefixes, VALUES_TMP_TABLE_NAME_PREFIX);
-
-            LOG.info("{}={}", CONSUMER_PREPROCESS_HIVE_TABLE_IGNORE_NAME_PREFIXES, StringUtils.join(hiveTablePrefixesToIgnore, ','));
-        } else {
-            hiveTablePrefixesToIgnore = Collections.emptyList();
-        }
-
-        LOG.info("{}={}", CONSUMER_PREPROCESS_HIVE_PROCESS_UPD_NAME_WITH_QUALIFIED_NAME, updateHiveProcessNameWithQualifiedName);
-
         hiveTypesRemoveOwnedRefAttrs   = applicationProperties.getBoolean(CONSUMER_PREPROCESS_HIVE_TYPES_REMOVE_OWNEDREF_ATTRS, true);
         rdbmsTypesRemoveOwnedRefAttrs  = applicationProperties.getBoolean(CONSUMER_PREPROCESS_RDBMS_TYPES_REMOVE_OWNEDREF_ATTRS, true);
         s3V2DirectoryPruneObjectPrefix = applicationProperties.getBoolean(CONSUMER_PREPROCESS_S3_V2_DIRECTORY_PRUNE_OBJECT_PREFIX, true);
-        sparkProcessAttributes      = this.applicationProperties.getBoolean(CONSUMER_PREPROCESS_SPARK_PROCESS_ATTRIBUTES, false);
-        preprocessEnabled        = skipHiveColumnLineageHive20633 || updateHiveProcessNameWithQualifiedName || hiveTypesRemoveOwnedRefAttrs || rdbmsTypesRemoveOwnedRefAttrs || s3V2DirectoryPruneObjectPrefix || !hiveTablesToIgnore.isEmpty() || !hiveTablesToPrune.isEmpty() || !hiveDummyDatabasesToIgnore.isEmpty() || !hiveDummyTablesToIgnore.isEmpty() || !hiveTablePrefixesToIgnore.isEmpty() || sparkProcessAttributes;
-        entityCorrelationManager = new EntityCorrelationManager(entityCorrelationStore);
 
+        entityCorrelationManager = new EntityCorrelationManager(entityCorrelationStore);
         LOG.info("{}={}", CONSUMER_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633, skipHiveColumnLineageHive20633);
         LOG.info("{}={}", CONSUMER_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633_INPUTS_THRESHOLD, skipHiveColumnLineageHive20633InputsThreshold);
         LOG.info("{}={}", CONSUMER_PREPROCESS_HIVE_TYPES_REMOVE_OWNEDREF_ATTRS, hiveTypesRemoveOwnedRefAttrs);
@@ -460,7 +274,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     public void closeImportConsumer(String importId, String topic) {
         try {
             LOG.info("==> closeImportConsumer(importId={}, topic={})", importId, topic);
-//ATLAS_IMPORT_e22a73f9f6a16620a8655b36d71fb5be
+
             String                     consumerName      = ATLAS_IMPORT_CONSUMER_THREAD_PREFIX + importId;
             ListIterator<HookConsumer> consumersIterator = consumers.listIterator();
 
@@ -472,9 +286,8 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                     consumersIterator.remove();
                 }
             }
-
-            notificationInterface.closeConsumer(NotificationInterface.NotificationType.ASYNC_IMPORT, topic);
-            notificationInterface.deleteTopic(NotificationInterface.NotificationType.ASYNC_IMPORT, topic);
+            notificationInterface.closeConsumer(ASYNC_IMPORT, topic);
+            notificationInterface.deleteTopic(ASYNC_IMPORT, topic);
 
             lastCommittedPartitionOffset.entrySet().removeIf(entry -> topic.equals(entry.getKey().topic()));
         } catch (Exception e) {
@@ -512,9 +325,9 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
     @VisibleForTesting
     void startHookConsumers() {
-        int numThreads = applicationProperties.getInt(CONSUMER_THREADS_PROPERTY, 1);
+        int                                                           numThreads                  = applicationProperties.getInt(CONSUMER_THREADS_PROPERTY, 1);
         Map<NotificationConsumer<HookNotification>, NotificationType> notificationConsumersByType = new HashMap<>();
-        List<NotificationConsumer<HookNotification>> notificationConsumers = notificationInterface.createConsumers(NotificationType.HOOK, numThreads);
+        List<NotificationConsumer<HookNotification>>                  notificationConsumers       = notificationInterface.createConsumers(NotificationType.HOOK, numThreads);
 
         for (NotificationConsumer<HookNotification> notificationConsumer : notificationConsumers) {
             notificationConsumersByType.put(notificationConsumer, NotificationType.HOOK);
@@ -604,515 +417,9 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         LOG.info("<== stopConsumerThreads()");
     }
 
-    private List<String> trimAndPurge(String[] values, String defaultValue) {
-        final List<String> ret;
-
-        if (values != null && values.length > 0) {
-            ret = new ArrayList<>(values.length);
-
-            for (String val : values) {
-                if (StringUtils.isNotBlank(val)) {
-                    ret.add(val.trim());
-                }
-            }
-        } else if (StringUtils.isNotBlank(defaultValue)) {
-            ret = Collections.singletonList(defaultValue.trim());
-        } else {
-            ret = Collections.emptyList();
-        }
-
-        return ret;
-    }
-
-    private void preprocessEntities(PreprocessorContext context) {
-        GenericEntityPreprocessor genericEntityPreprocessor = new GenericEntityPreprocessor(this.entityTypesToIgnore, this.entitiesToIgnore);
-        List<AtlasEntity>        entities                   = context.getEntities();
-
-        if (entities != null) {
-            for (int i = 0; i < entities.size(); i++) {
-                AtlasEntity entity = entities.get(i);
-
-                genericEntityPreprocessor.preprocess(entity, context);
-
-                if (context.isIgnoredEntity(entity.getGuid())) {
-                    entities.remove(i--);
-                }
-            }
-        }
-
-        Map<String, AtlasEntity> referredEntities = context.getReferredEntities();
-
-        if (referredEntities != null) {
-            for (Iterator<Map.Entry<String, AtlasEntity>> iterator = referredEntities.entrySet().iterator(); iterator.hasNext(); ) {
-                AtlasEntity entity = iterator.next().getValue();
-
-                genericEntityPreprocessor.preprocess(entity, context);
-
-                if (context.isIgnoredEntity(entity.getGuid())) {
-                    iterator.remove();
-                }
-            }
-        }
-    }
-
-    private PreprocessorContext preProcessNotificationMessage(AtlasKafkaMessage<HookNotification> kafkaMsg) {
-        PreprocessorContext context = null;
-
-        if (preprocessEnabled) {
-            context = new PreprocessorContext(kafkaMsg, typeRegistry, hiveTablesToIgnore, hiveTablesToPrune, hiveTablesCache,
-                    hiveDummyDatabasesToIgnore, hiveDummyTablesToIgnore, hiveTablePrefixesToIgnore, hiveTypesRemoveOwnedRefAttrs,
-                    rdbmsTypesRemoveOwnedRefAttrs, s3V2DirectoryPruneObjectPrefix, updateHiveProcessNameWithQualifiedName, entityCorrelationManager);
-
-            if (CollectionUtils.isNotEmpty(this.entityTypesToIgnore) || CollectionUtils.isNotEmpty(this.entitiesToIgnore)) {
-                preprocessEntities(context);
-            }
-
-            if (context.isHivePreprocessEnabled()) {
-                preprocessHiveTypes(context);
-            }
-
-            if (skipHiveColumnLineageHive20633) {
-                skipHiveColumnLineage(context);
-            }
-
-            if (rdbmsTypesRemoveOwnedRefAttrs) {
-                rdbmsTypeRemoveOwnedRefAttrs(context);
-            }
-
-            if (s3V2DirectoryPruneObjectPrefix) {
-                pruneObjectPrefixForS3V2Directory(context);
-            }
-
-            if (sparkProcessAttributes) {
-                preprocessSparkProcessAttributes(context);
-            }
-
-            context.moveRegisteredReferredEntities();
-
-            if (context.isHivePreprocessEnabled() && CollectionUtils.isNotEmpty(context.getEntities()) && context.getEntities().size() > 1) {
-                // move hive_process and hive_column_lineage entities to end of the list
-                List<AtlasEntity> entities = context.getEntities();
-                int               count    = entities.size();
-
-                for (int i = 0; i < count; i++) {
-                    AtlasEntity entity = entities.get(i);
-
-                    switch (entity.getTypeName()) {
-                        case TYPE_HIVE_PROCESS:
-                        case TYPE_HIVE_COLUMN_LINEAGE:
-                            entities.remove(i--);
-                            entities.add(entity);
-                            count--;
-                            break;
-                    }
-                }
-
-                if (entities.size() - count > 0) {
-                    LOG.info("preprocess: moved {} hive_process/hive_column_lineage entities to end of list (listSize={}). topic={}, partition={}, offset={}", entities.size() - count, entities.size(), kafkaMsg.getTopic(), kafkaMsg.getPartition(), kafkaMsg.getOffset());
-                }
-            }
-        }
-
-        return context;
-    }
-
-    private void rdbmsTypeRemoveOwnedRefAttrs(PreprocessorContext context) {
-        List<AtlasEntity> entities = context.getEntities();
-
-        if (entities != null) {
-            for (int i = 0; i < entities.size(); i++) {
-                AtlasEntity        entity       = entities.get(i);
-                EntityPreprocessor preprocessor = EntityPreprocessor.getRdbmsPreprocessor(entity.getTypeName());
-
-                if (preprocessor != null) {
-                    preprocessor.preprocess(entity, context);
-                }
-            }
-        }
-    }
-
-    private void pruneObjectPrefixForS3V2Directory(PreprocessorContext context) {
-        List<AtlasEntity> entities = new ArrayList<>();
-
-        if (CollectionUtils.isNotEmpty(context.getEntities())) {
-            entities.addAll(context.getEntities());
-        }
-
-        if (MapUtils.isNotEmpty(context.getReferredEntities())) {
-            entities.addAll(context.getReferredEntities().values());
-        }
-
-        if (CollectionUtils.isNotEmpty(entities)) {
-            for (AtlasEntity entity : entities) {
-                EntityPreprocessor preprocessor = EntityPreprocessor.getS3V2Preprocessor(entity.getTypeName());
-
-                if (preprocessor != null) {
-                    preprocessor.preprocess(entity, context);
-                }
-            }
-        }
-    }
-
-    private void preprocessHiveTypes(PreprocessorContext context) {
-        List<AtlasEntity> entities = context.getEntities();
-
-        if (entities != null) {
-            for (int i = 0; i < entities.size(); i++) {
-                AtlasEntity        entity       = entities.get(i);
-                EntityPreprocessor preprocessor = EntityPreprocessor.getHivePreprocessor(entity.getTypeName());
-
-                if (preprocessor != null) {
-                    preprocessor.preprocess(entity, context);
-
-                    if (context.isIgnoredEntity(entity.getGuid())) {
-                        entities.remove(i--);
-                    }
-                }
-            }
-
-            Map<String, AtlasEntity> referredEntities = context.getReferredEntities();
-
-            if (referredEntities != null) {
-                for (Iterator<Map.Entry<String, AtlasEntity>> iter = referredEntities.entrySet().iterator(); iter.hasNext(); ) {
-                    AtlasEntity        entity       = iter.next().getValue();
-                    EntityPreprocessor preprocessor = EntityPreprocessor.getHivePreprocessor(entity.getTypeName());
-
-                    if (preprocessor != null) {
-                        preprocessor.preprocess(entity, context);
-
-                        if (context.isIgnoredEntity(entity.getGuid())) {
-                            iter.remove();
-                        }
-                    }
-                }
-            }
-
-            int ignoredEntities = context.getIgnoredEntities().size();
-            int prunedEntities  = context.getPrunedEntities().size();
-
-            if (ignoredEntities > 0 || prunedEntities > 0) {
-                LOG.info("preprocess: ignored entities={}; pruned entities={}. topic-offset={}, partition={}", ignoredEntities, prunedEntities, context.getKafkaMessageOffset(), context.getKafkaPartition());
-            }
-        }
-    }
-
-    private void preprocessSparkProcessAttributes(PreprocessorContext context) {
-        List<AtlasEntity> entities = context.getEntities();
-
-        if (entities != null) {
-            for (int i = 0; i < entities.size(); i++) {
-                AtlasEntity entity = entities.get(i);
-                EntityPreprocessor preprocessor = EntityPreprocessor.getSparkPreprocessor(entity.getTypeName());
-
-                if (preprocessor != null) {
-                    preprocessor.preprocess(entity, context);
-                }
-            }
-        }
-    }
-
-    private void skipHiveColumnLineage(PreprocessorContext context) {
-        List<AtlasEntity> entities = context.getEntities();
-
-        if (entities != null) {
-            int         lineageCount       = 0;
-            int         lineageInputsCount = 0;
-            int         numRemovedEntities = 0;
-            Set<String> lineageQNames      = new HashSet<>();
-
-            // find if all hive_column_lineage entities have same number of inputs, which is likely to be caused by HIVE-20633 that results in incorrect lineage in some cases
-            for (int i = 0; i < entities.size(); i++) {
-                AtlasEntity entity = entities.get(i);
-
-                if (StringUtils.equals(entity.getTypeName(), TYPE_HIVE_COLUMN_LINEAGE)) {
-                    final Object qName = entity.getAttribute(ATTRIBUTE_QUALIFIED_NAME);
-
-                    if (qName != null) {
-                        final String qualifiedName = qName.toString();
-
-                        if (lineageQNames.contains(qualifiedName)) {
-                            entities.remove(i--);
-
-                            LOG.warn("removed duplicate hive_column_lineage entity: qualifiedName={}. topic-offset={}, partition={}", qualifiedName, context.getKafkaMessageOffset(), context.getKafkaPartition());
-
-                            numRemovedEntities++;
-
-                            continue;
-                        } else {
-                            lineageQNames.add(qualifiedName);
-                        }
-                    }
-
-                    lineageCount++;
-
-                    Object objInputs = entity.getAttribute(ATTRIBUTE_INPUTS);
-
-                    if (objInputs instanceof Collection) {
-                        Collection<?> inputs = (Collection<?>) objInputs;
-
-                        lineageInputsCount += inputs.size();
-                    }
-                }
-            }
-
-            float avgInputsCount = lineageCount > 0 ? (((float) lineageInputsCount) / lineageCount) : 0;
-
-            if (avgInputsCount > skipHiveColumnLineageHive20633InputsThreshold) {
-                for (int i = 0; i < entities.size(); i++) {
-                    AtlasEntity entity = entities.get(i);
-
-                    if (StringUtils.equals(entity.getTypeName(), TYPE_HIVE_COLUMN_LINEAGE)) {
-                        entities.remove(i--);
-
-                        numRemovedEntities++;
-                    }
-                }
-            }
-
-            if (numRemovedEntities > 0) {
-                LOG.warn("removed {} hive_column_lineage entities. Average # of inputs={}, threshold={}, total # of inputs={}. topic-offset={}, partition={}", numRemovedEntities, avgInputsCount, skipHiveColumnLineageHive20633InputsThreshold, lineageInputsCount, context.getKafkaMessageOffset(), context.getKafkaPartition());
-            }
-        }
-    }
-
-    private boolean isEmptyMessage(AtlasKafkaMessage<HookNotification> kafkaMsg) {
-        final boolean          ret;
-        final HookNotification message = kafkaMsg.getMessage();
-
-        switch (message.getType()) {
-            case ENTITY_CREATE_V2: {
-                AtlasEntitiesWithExtInfo entities = ((EntityCreateRequestV2) message).getEntities();
-
-                ret = entities == null || CollectionUtils.isEmpty(entities.getEntities());
-            }
-            break;
-
-            case ENTITY_FULL_UPDATE_V2: {
-                AtlasEntitiesWithExtInfo entities = ((EntityUpdateRequestV2) message).getEntities();
-
-                ret = entities == null || CollectionUtils.isEmpty(entities.getEntities());
-            }
-            break;
-
-            default:
-                ret = false;
-                break;
-        }
-
-        return ret;
-    }
-
-    private void recordProcessedEntities(EntityMutationResponse mutationResponse, NotificationStat stats, PreprocessorContext context) {
-        if (mutationResponse != null) {
-            if (stats != null) {
-                stats.updateStats(mutationResponse);
-            }
-
-            if (context != null) {
-                if (MapUtils.isNotEmpty(mutationResponse.getGuidAssignments())) {
-                    context.getGuidAssignments().putAll(mutationResponse.getGuidAssignments());
-                }
-
-                if (CollectionUtils.isNotEmpty(mutationResponse.getCreatedEntities())) {
-                    for (AtlasEntityHeader entity : mutationResponse.getCreatedEntities()) {
-                        if (entity != null && entity.getGuid() != null) {
-                            context.getCreatedEntities().add(entity.getGuid());
-                        }
-                    }
-                }
-
-                if (CollectionUtils.isNotEmpty(mutationResponse.getDeletedEntities())) {
-                    for (AtlasEntityHeader entity : mutationResponse.getDeletedEntities()) {
-                        if (entity != null && entity.getGuid() != null) {
-                            context.getDeletedEntities().add(entity.getGuid());
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private void updateProcessedEntityReferences(List<AtlasEntity> entities, Map<String, String> guidAssignments) {
-        if (CollectionUtils.isNotEmpty(entities) && MapUtils.isNotEmpty(guidAssignments)) {
-            for (AtlasEntity entity : entities) {
-                AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
-
-                if (entityType == null) {
-                    continue;
-                }
-
-                if (MapUtils.isNotEmpty(entity.getAttributes())) {
-                    for (Map.Entry<String, Object> entry : entity.getAttributes().entrySet()) {
-                        String attrName  = entry.getKey();
-                        Object attrValue = entry.getValue();
-
-                        if (attrValue == null) {
-                            continue;
-                        }
-
-                        AtlasAttribute attribute = entityType.getAttribute(attrName);
-
-                        if (attribute == null) { // look for a relationship attribute with the same name
-                            attribute = entityType.getRelationshipAttribute(attrName, null);
-                        }
-
-                        if (attribute != null && attribute.isObjectRef()) {
-                            updateProcessedEntityReferences(attrValue, guidAssignments);
-                        }
-                    }
-                }
-
-                if (MapUtils.isNotEmpty(entity.getRelationshipAttributes())) {
-                    for (Map.Entry<String, Object> entry : entity.getRelationshipAttributes().entrySet()) {
-                        Object attrValue = entry.getValue();
-
-                        if (attrValue != null) {
-                            updateProcessedEntityReferences(attrValue, guidAssignments);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private void updateProcessedEntityReferences(Object objVal, Map<String, String> guidAssignments) {
-        if (objVal instanceof AtlasObjectId) {
-            updateProcessedEntityReferences((AtlasObjectId) objVal, guidAssignments);
-        } else if (objVal instanceof Collection) {
-            updateProcessedEntityReferences((Collection<?>) objVal, guidAssignments);
-        } else if (objVal instanceof Map) {
-            updateProcessedEntityReferences((Map<?, ?>) objVal, guidAssignments);
-        }
-    }
-
-    private void updateProcessedEntityReferences(AtlasObjectId objId, Map<String, String> guidAssignments) {
-        String guid = objId.getGuid();
-
-        if (guid != null && guidAssignments.containsKey(guid)) {
-            String assignedGuid = guidAssignments.get(guid);
-
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("{}(guid={}) is already processed; updating its reference to use assigned-guid={}", objId.getTypeName(), guid, assignedGuid);
-            }
-
-            objId.setGuid(assignedGuid);
-            objId.setTypeName(null);
-            objId.setUniqueAttributes(null);
-        }
-    }
-
-    private void updateProcessedEntityReferences(Map objId, Map<String, String> guidAssignments) {
-        Object guid = objId.get(KEY_GUID);
-
-        if (guid != null && guidAssignments.containsKey(guid)) {
-            String assignedGuid = guidAssignments.get(guid);
-
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("{}(guid={}) is already processed; updating its reference to use assigned-guid={}", objId.get(KEY_TYPENAME), guid, assignedGuid);
-            }
-
-            objId.put(KEY_GUID, assignedGuid);
-            objId.remove(KEY_TYPENAME);
-            objId.remove(KEY_UNIQUE_ATTRIBUTES);
-        }
-    }
-
-    private void updateProcessedEntityReferences(Collection<?> objIds, Map<String, String> guidAssignments) {
-        for (Object objId : objIds) {
-            updateProcessedEntityReferences(objId, guidAssignments);
-        }
-    }
-
-    private void setCurrentUser(String userName) {
-        Authentication authentication = getAuthenticationForUser(userName);
-
-        if (LOG.isDebugEnabled()) {
-            if (authentication != null) {
-                LOG.debug("setCurrentUser(): notification processing will be authorized as user '{}'", userName);
-            } else {
-                LOG.debug("setCurrentUser(): Failed to get authentication for user '{}'.", userName);
-            }
-        }
-
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-    }
-
-    private Authentication getAuthenticationForUser(String userName) {
-        Authentication ret = null;
-
-        if (StringUtils.isNotBlank(userName)) {
-            ret = authnCache != null ? authnCache.get(userName) : null;
-
-            if (ret == null) {
-                List<GrantedAuthority> grantedAuths = getAuthoritiesFromUGI(userName);
-                UserDetails            principal    = new User(userName, "", grantedAuths);
-
-                ret = new UsernamePasswordAuthenticationToken(principal, "");
-
-                if (authnCache != null) {
-                    authnCache.put(userName, ret);
-                }
-            }
-        }
-
-        return ret;
-    }
-
     static class Timer {
         public void sleep(int interval) throws InterruptedException {
             Thread.sleep(interval);
-        }
-    }
-
-    static class AdaptiveWaiter {
-        private final long increment;
-        private final long maxDuration;
-        private final long minDuration;
-        private final long resetInterval;
-
-        @VisibleForTesting
-        long waitDuration;
-
-        private long lastWaitAt;
-
-        public AdaptiveWaiter(long minDuration, long maxDuration, long increment) {
-            this.minDuration   = minDuration;
-            this.maxDuration   = maxDuration;
-            this.increment     = increment;
-            this.waitDuration  = minDuration;
-            this.lastWaitAt    = 0;
-            this.resetInterval = maxDuration * 2;
-        }
-
-        public void pause(Throwable ex) {
-            setWaitDurations();
-
-            try {
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("{} in NotificationHookConsumer. Waiting for {} ms for recovery.", ex.getClass().getName(), waitDuration, ex);
-                }
-
-                Thread.sleep(waitDuration);
-            } catch (InterruptedException e) {
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("{} in NotificationHookConsumer. Waiting for recovery interrupted.", ex.getClass().getName(), e);
-                }
-            }
-        }
-
-        private void setWaitDurations() {
-            long timeSinceLastWait = (lastWaitAt == 0) ? 0 : System.currentTimeMillis() - lastWaitAt;
-
-            lastWaitAt = System.currentTimeMillis();
-
-            if (timeSinceLastWait > resetInterval) {
-                waitDuration = minDuration;
-            } else {
-                waitDuration += increment;
-                if (waitDuration > maxDuration) {
-                    waitDuration = maxDuration;
-                }
-            }
         }
     }
 
@@ -1120,21 +427,24 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     class HookConsumer extends Thread {
         private final NotificationConsumer<HookNotification> consumer;
         private final AtomicBoolean                          shouldRun      = new AtomicBoolean(false);
-        private final List<String>                           failedMessages = new ArrayList<>();
+        private final NotificationEntityProcessor            entityProcessor;
         private final AdaptiveWaiter                         adaptiveWaiter = new AdaptiveWaiter(minWaitDuration, maxWaitDuration, minWaitDuration);
 
         private int duplicateKeyCounter = 1;
 
         public HookConsumer(NotificationConsumer<HookNotification> consumer) {
-            super(ATLAS_HOOK_CONSUMER_THREAD_NAME);
-
-            this.consumer = consumer;
+            this(ATLAS_HOOK_CONSUMER_THREAD_NAME, consumer);
         }
 
         public HookConsumer(String consumerThreadName, NotificationConsumer<HookNotification> consumer) {
             super(consumerThreadName);
 
-            this.consumer = consumer;
+            this.consumer        = consumer;
+            this.entityProcessor = AtlasConfiguration.NOTIFICATION_CONCURRENT_PROCESSING.getBoolean()
+                    ? new ConcurrentEntityProcessor(applicationProperties, metricsUtil, authnCache, atlasEntityStore, instanceConverter, entityCorrelationManager, typeRegistry, FAILED_LOG, LARGE_MESSAGES_LOG, asyncImporter)
+                    : new SerialEntityProcessor(applicationProperties, metricsUtil, authnCache, atlasEntityStore, instanceConverter, entityCorrelationManager, typeRegistry, FAILED_LOG, LARGE_MESSAGES_LOG, asyncImporter);
+
+            LOG.info("entityProcessor: {}", entityProcessor.getClass().getSimpleName());
         }
 
         @Override
@@ -1156,7 +466,16 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
                             sortAndPublishMsgsToAtlasHook(msgBufferingStartTime, msgBuffer);
                         } else {
-                            List<AtlasKafkaMessage<HookNotification>> messages = consumer.receiveWithCheckedCommit(lastCommittedPartitionOffset);
+                            List<AtlasKafkaMessage<HookNotification>> messages;
+                            TopicPartitionOffsetResult                result = entityProcessor.collectResults();
+
+                            commit(result);
+
+                            if (StringUtils.contains(this.getName(), ATLAS_IMPORT_CONSUMER_THREAD_PREFIX)) {
+                                messages = consumer.receive();
+                            } else {
+                                messages = consumer.receiveWithCheckedCommit(lastCommittedPartitionOffset);
+                            }
 
                             for (AtlasKafkaMessage<HookNotification> msg : messages) {
                                 handleMessage(msg);
@@ -1187,6 +506,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
         public void shutdown() {
             LOG.info("==> HookConsumer shutdown()");
+            this.entityProcessor.shutdown();
 
             // handle the case where thread was not started at all
             // and shutdown called
@@ -1241,347 +561,11 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         }
 
         @VisibleForTesting
-        void handleMessage(AtlasKafkaMessage<HookNotification> kafkaMsg) {
-            AtlasPerfTracer  perf                   = null;
-            HookNotification message                = kafkaMsg.getMessage();
-            String           messageUser            = message.getUser();
-            long             startTime              = System.currentTimeMillis();
-            NotificationStat stats                  = new NotificationStat();
-            AuditLog         auditLog               = null;
-            boolean          importRequestComplete  = false;
-
-            if (authorizeUsingMessageUser) {
-                setCurrentUser(messageUser);
-            }
-
-            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, message.getType().name());
-            }
-
-            try {
-                // covert V1 messages to V2 to enable preProcess
-                try {
-                    switch (message.getType()) {
-                        case ENTITY_CREATE: {
-                            final EntityCreateRequest      createRequest = (EntityCreateRequest) message;
-                            final AtlasEntitiesWithExtInfo entities      = instanceConverter.toAtlasEntities(createRequest.getEntities());
-                            final EntityCreateRequestV2    v2Request     = new EntityCreateRequestV2(message.getUser(), entities);
-
-                            kafkaMsg = new AtlasKafkaMessage<>(v2Request, kafkaMsg.getOffset(), kafkaMsg.getTopic(), kafkaMsg.getPartition());
-                            message  = kafkaMsg.getMessage();
-                        }
-                        break;
-
-                        case ENTITY_FULL_UPDATE: {
-                            final EntityUpdateRequest      updateRequest = (EntityUpdateRequest) message;
-                            final AtlasEntitiesWithExtInfo entities      = instanceConverter.toAtlasEntities(updateRequest.getEntities());
-                            final EntityUpdateRequestV2    v2Request     = new EntityUpdateRequestV2(messageUser, entities);
-
-                            kafkaMsg = new AtlasKafkaMessage<>(v2Request, kafkaMsg.getOffset(), kafkaMsg.getTopic(), kafkaMsg.getPartition());
-                            message  = kafkaMsg.getMessage();
-                        }
-                        break;
-                    }
-                } catch (AtlasBaseException excp) {
-                    LOG.error("handleMessage({}): failed to convert V1 message to V2", message.getType().name());
-                }
-
-                PreprocessorContext context = preProcessNotificationMessage(kafkaMsg);
-
-                if (isEmptyMessage(kafkaMsg)) {
-                    commit(kafkaMsg);
-
-                    return;
-                }
-
-                // Used for intermediate conversions during create and update
-                String exceptionClassName = StringUtils.EMPTY;
-                for (int numRetries = 0; numRetries < maxRetries; numRetries++) {
-                    LOG.debug("handleMessage({}): attempt {}", message.getType().name(), numRetries);
-
-                    try {
-                        RequestContext requestContext = RequestContext.get();
-
-                        requestContext.setAttemptCount(numRetries + 1);
-                        requestContext.setMaxAttempts(maxRetries);
-
-                        requestContext.setUser(messageUser, null);
-                        requestContext.setInNotificationProcessing(true);
-                        requestContext.setCreateShellEntityForNonExistingReference(createShellEntityForNonExistingReference);
-
-                        switch (message.getType()) {
-                            case ENTITY_CREATE: {
-                                final EntityCreateRequest      createRequest = (EntityCreateRequest) message;
-                                final AtlasEntitiesWithExtInfo entities      = instanceConverter.toAtlasEntities(createRequest.getEntities());
-
-                                if (auditLog == null) {
-                                    auditLog = new AuditLog(messageUser, THREADNAME_PREFIX, AtlasClient.API_V1.CREATE_ENTITY.getMethod(), AtlasClient.API_V1.CREATE_ENTITY.getNormalizedPath());
-                                }
-
-                                createOrUpdate(entities, false, stats, context);
-                            }
-                            break;
-
-                            case ENTITY_PARTIAL_UPDATE: {
-                                final EntityPartialUpdateRequest partialUpdateRequest = (EntityPartialUpdateRequest) message;
-                                final Referenceable              referenceable        = partialUpdateRequest.getEntity();
-                                final AtlasEntitiesWithExtInfo   entities             = instanceConverter.toAtlasEntity(referenceable);
-
-                                if (auditLog == null) {
-                                    auditLog = new AuditLog(messageUser, THREADNAME_PREFIX,
-                                            AtlasClientV2.API_V2.UPDATE_ENTITY_BY_ATTRIBUTE.getMethod(),
-                                            String.format(AtlasClientV2.API_V2.UPDATE_ENTITY_BY_ATTRIBUTE.getNormalizedPath(), partialUpdateRequest.getTypeName()));
-                                }
-
-                                AtlasEntityType entityType = typeRegistry.getEntityTypeByName(partialUpdateRequest.getTypeName());
-                                String          guid       = AtlasGraphUtilsV2.getGuidByUniqueAttributes(entityType, Collections.singletonMap(partialUpdateRequest.getAttribute(), partialUpdateRequest.getAttributeValue()));
-
-                                // There should only be one root entity
-                                entities.getEntities().get(0).setGuid(guid);
-
-                                createOrUpdate(entities, true, stats, context);
-                            }
-                            break;
-
-                            case ENTITY_DELETE: {
-                                final EntityDeleteRequest deleteRequest = (EntityDeleteRequest) message;
-
-                                if (auditLog == null) {
-                                    auditLog = new AuditLog(messageUser, THREADNAME_PREFIX,
-                                            AtlasClientV2.API_V2.DELETE_ENTITY_BY_ATTRIBUTE.getMethod(),
-                                            String.format(AtlasClientV2.API_V2.DELETE_ENTITY_BY_ATTRIBUTE.getNormalizedPath(), deleteRequest.getTypeName()));
-                                }
-
-                                try {
-                                    AtlasEntityType type = (AtlasEntityType) typeRegistry.getType(deleteRequest.getTypeName());
-
-                                    EntityMutationResponse response = atlasEntityStore.deleteByUniqueAttributes(type, Collections.singletonMap(deleteRequest.getAttribute(), deleteRequest.getAttributeValue()));
-
-                                    stats.updateStats(response);
-
-                                    entityCorrelationManager.add(kafkaMsg.getSpooled(), kafkaMsg.getMsgCreated(), response.getDeletedEntities());
-                                } catch (ClassCastException cle) {
-                                    LOG.error("Failed to delete entity {}", deleteRequest);
-                                }
-                            }
-                            break;
-
-                            case ENTITY_FULL_UPDATE: {
-                                final EntityUpdateRequest      updateRequest = (EntityUpdateRequest) message;
-                                final AtlasEntitiesWithExtInfo entities      = instanceConverter.toAtlasEntities(updateRequest.getEntities());
-
-                                if (auditLog == null) {
-                                    auditLog = new AuditLog(messageUser, THREADNAME_PREFIX, AtlasClientV2.API_V2.UPDATE_ENTITY.getMethod(), AtlasClientV2.API_V2.UPDATE_ENTITY.getNormalizedPath());
-                                }
-
-                                createOrUpdate(entities, false, stats, context);
-                            }
-                            break;
-
-                            case ENTITY_CREATE_V2: {
-                                final EntityCreateRequestV2    createRequestV2 = (EntityCreateRequestV2) message;
-                                final AtlasEntitiesWithExtInfo entities        = createRequestV2.getEntities();
-
-                                if (auditLog == null) {
-                                    auditLog = new AuditLog(messageUser, THREADNAME_PREFIX, AtlasClientV2.API_V2.CREATE_ENTITY.getMethod(), AtlasClientV2.API_V2.CREATE_ENTITY.getNormalizedPath());
-                                }
-
-                                createOrUpdate(entities, false, stats, context);
-                            }
-                            break;
-
-                            case ENTITY_PARTIAL_UPDATE_V2: {
-                                final EntityPartialUpdateRequestV2 partialUpdateRequest = (EntityPartialUpdateRequestV2) message;
-                                final AtlasObjectId                entityId             = partialUpdateRequest.getEntityId();
-                                final AtlasEntityWithExtInfo       entity               = partialUpdateRequest.getEntity();
-
-                                if (auditLog == null) {
-                                    auditLog = new AuditLog(messageUser, THREADNAME_PREFIX, AtlasClientV2.API_V2.UPDATE_ENTITY.getMethod(), AtlasClientV2.API_V2.UPDATE_ENTITY.getNormalizedPath());
-                                }
-
-                                EntityMutationResponse response = atlasEntityStore.updateEntity(entityId, entity, true);
-
-                                stats.updateStats(response);
-                            }
-                            break;
-
-                            case ENTITY_FULL_UPDATE_V2: {
-                                final EntityUpdateRequestV2    updateRequest = (EntityUpdateRequestV2) message;
-                                final AtlasEntitiesWithExtInfo entities      = updateRequest.getEntities();
-
-                                if (auditLog == null) {
-                                    auditLog = new AuditLog(messageUser, THREADNAME_PREFIX, AtlasClientV2.API_V2.UPDATE_ENTITY.getMethod(), AtlasClientV2.API_V2.UPDATE_ENTITY.getNormalizedPath());
-                                }
-
-                                createOrUpdate(entities, false, stats, context);
-                            }
-                            break;
-
-                            case ENTITY_DELETE_V2: {
-                                final EntityDeleteRequestV2 deleteRequest = (EntityDeleteRequestV2) message;
-                                final List<AtlasObjectId>   entities      = deleteRequest.getEntities();
-
-                                try {
-                                    for (AtlasObjectId entity : entities) {
-                                        if (auditLog == null) {
-                                            auditLog = new AuditLog(messageUser, THREADNAME_PREFIX,
-                                                    AtlasClientV2.API_V2.DELETE_ENTITY_BY_ATTRIBUTE.getMethod(),
-                                                    String.format(AtlasClientV2.API_V2.DELETE_ENTITY_BY_ATTRIBUTE.getNormalizedPath(), entity.getTypeName()));
-                                        }
-
-                                        AtlasEntityType type = (AtlasEntityType) typeRegistry.getType(entity.getTypeName());
-
-                                        EntityMutationResponse response = atlasEntityStore.deleteByUniqueAttributes(type, entity.getUniqueAttributes());
-
-                                        stats.updateStats(response);
-
-                                        entityCorrelationManager.add(kafkaMsg.getSpooled(), kafkaMsg.getMsgCreated(), response.getDeletedEntities());
-                                    }
-                                } catch (ClassCastException cle) {
-                                    LOG.error("Failed to do delete entities {}", entities);
-                                }
-                            }
-                            break;
-
-                            case IMPORT_TYPES_DEF: {
-                                final AtlasTypesDefImportNotification typesDefImportNotification = (AtlasTypesDefImportNotification) message;
-                                final String                         importId                  = typesDefImportNotification.getImportId();
-                                final AtlasTypesDef                  typesDef                  = typesDefImportNotification.getTypesDef();
-
-                                try {
-                                    asyncImporter.onImportTypeDef(typesDef, importId);
-                                } catch (AtlasBaseException abe) {
-                                    LOG.error("IMPORT_TYPE_DEF: {} failed to import type definition: {}", importId, typesDef);
-                                    asyncImporter.onImportComplete(importId);
-                                    importRequestComplete = true;
-                                }
-                            }
-                            break;
-
-                            case IMPORT_ENTITY: {
-                                final AtlasEntityImportNotification entityImportNotification = (AtlasEntityImportNotification) message;
-                                final String                        importId                 = entityImportNotification.getImportId();
-                                final AtlasEntityWithExtInfo        entityWithExtInfo        = entityImportNotification.getEntity();
-                                final int                           position                 = entityImportNotification.getPosition();
-                                boolean                             completeImport           = false;
-
-                                try {
-                                    importRequestComplete = asyncImporter.onImportEntity(entityWithExtInfo, importId, position);
-                                } catch (AtlasBaseException abe) {
-                                    importRequestComplete = true;
-
-                                    asyncImporter.onImportComplete(importId);
-
-                                    LOG.error("IMPORT_ENTITY: {} failed to import entity: {}", importId, entityImportNotification);
-                                }
-                            }
-                            break;
-
-                            default:
-                                throw new IllegalStateException("Unknown notification type: " + message.getType().name());
-                        }
-
-                        if (StringUtils.isNotEmpty(exceptionClassName)) {
-                            LOG.warn("{}: Pausing & retry: Try: {}: Pause: {} ms. Handled!", exceptionClassName, numRetries, adaptiveWaiter.waitDuration);
-
-                            exceptionClassName = StringUtils.EMPTY;
-                        }
-                        break;
-                    } catch (Throwable e) {
-                        RequestContext.get().resetEntityGuidUpdates();
-
-                        exceptionClassName = e.getClass().getSimpleName();
-
-                        // don't retry in following conditions:
-                        //  1. number of retry attempts reached configured count
-                        //  2. notification processing failed due to invalid data (non-existing type, entity, ..)
-                        boolean        maxRetriesReached    = numRetries == (maxRetries - 1);
-                        AtlasErrorCode errorCode            = (e instanceof AtlasBaseException) ? ((AtlasBaseException) e).getAtlasErrorCode() : null;
-                        boolean        unrecoverableFailure = errorCode != null && (Response.Status.NOT_FOUND.equals(errorCode.getHttpCode()) || Response.Status.BAD_REQUEST.equals(errorCode.getHttpCode()));
-
-                        if (maxRetriesReached || unrecoverableFailure) {
-                            try {
-                                String strMessage = AbstractNotification.getMessageJson(message);
-
-                                if (unrecoverableFailure) {
-                                    LOG.warn("Unrecoverable failure while processing message {}", strMessage, e);
-                                } else {
-                                    LOG.warn("Max retries exceeded for message {}", strMessage, e);
-                                }
-
-                                stats.isFailedMsg = true;
-
-                                failedMessages.add(strMessage);
-
-                                if (failedMessages.size() >= failedMsgCacheSize) {
-                                    recordFailedMessages();
-                                }
-                            } catch (Throwable t) {
-                                LOG.warn("error while recording failed message: type={}, topic={}, partition={}, offset={}", message.getType(), kafkaMsg.getTopic(), kafkaMsg.getPartition(), kafkaMsg.getOffset(), t);
-                            }
-
-                            return;
-                        } else if (e instanceof org.apache.atlas.repository.graphdb.AtlasSchemaViolationException) {
-                            LOG.warn("{}: Continuing: {}", exceptionClassName, e.getMessage());
-                        } else if (exceptionClassName.equals(EXCEPTION_CLASS_NAME_JANUSGRAPH_EXCEPTION) || exceptionClassName.equals(EXCEPTION_CLASS_NAME_PERMANENTLOCKING_EXCEPTION)) {
-                            LOG.warn("{}: Pausing & retry: Try: {}: Pause: {} ms. {}", exceptionClassName, numRetries, adaptiveWaiter.waitDuration, e.getMessage());
-
-                            adaptiveWaiter.pause(e);
-                        } else {
-                            LOG.warn("Error handling message", e);
-
-                            try {
-                                LOG.info("Sleeping for {} ms before retry", consumerRetryInterval);
-
-                                Thread.sleep(consumerRetryInterval);
-                            } catch (InterruptedException ie) {
-                                LOG.error("Notification consumer thread sleep interrupted");
-                            }
-                        }
-                    } finally {
-                        RequestContext.clear();
-                    }
-                }
-
-                commit(kafkaMsg);
-            } finally {
-                AtlasPerfTracer.log(perf);
-
-                stats.timeTakenMs = System.currentTimeMillis() - startTime;
-
-                metricsUtil.onNotificationProcessingComplete(kafkaMsg.getTopic(), kafkaMsg.getPartition(), kafkaMsg.getOffset(), stats);
-
-                if (stats.timeTakenMs > largeMessageProcessingTimeThresholdMs) {
-                    try {
-                        String strMessage = AbstractNotification.getMessageJson(message);
-
-                        LOG.warn("msgProcessingTime={}, msgSize={}, topic={}, partition={}, offset={}}", stats.timeTakenMs, strMessage.length(), kafkaMsg.getTopic(), kafkaMsg.getPartition(), kafkaMsg.getOffset());
-
-                        LARGE_MESSAGES_LOG.warn("{\"msgProcessingTime\":{},\"msgSize\":{},\"topic\":{},\"partition\":{},\"topicOffset\":{},\"data\":{}}", stats.timeTakenMs, strMessage.length(), kafkaMsg.getTopic(), kafkaMsg.getPartition(), kafkaMsg.getOffset(), strMessage);
-                    } catch (Throwable t) {
-                        LOG.warn("error while recording large message: msgProcessingTime={}, type={}, topic={}, partition={}, offset={}", stats.timeTakenMs, message.getType(), kafkaMsg.getTopic(), kafkaMsg.getPartition(), kafkaMsg.getOffset(), t);
-                    }
-                }
-
-                if (auditLog != null) {
-                    auditLog.setHttpStatus(stats.isFailedMsg ? SC_BAD_REQUEST : SC_OK);
-                    auditLog.setTimeTaken(stats.timeTakenMs);
-
-                    AuditFilter.audit(auditLog);
-                }
-
-                Instant now = Instant.now();
-
-                if (now.isAfter(nextStatsLogTime)) {
-                    LOG.info("STATS: {}", AtlasJson.toJson(metricsUtil.getStats()));
-
-                    nextStatsLogTime = AtlasMetricsCounter.getNextHourStartTime(now);
-                }
-
-                if (importRequestComplete) {
-                    asyncImporter.onCompleteImportRequest(((AtlasEntityImportNotification) message).getImportId());
-                }
-            }
+        void handleMessage(AtlasKafkaMessage<HookNotification> msg) {
+            LOG.info("Message type: {}", msg.getMessage().getType().name());
+
+            TopicPartitionOffsetResult result = entityProcessor.handleMessage(msg);
+            commit(result);
         }
 
         boolean serverAvailable(Timer timer) {
@@ -1628,68 +612,33 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
             msgBuffer.put(key, msg);
         }
 
-        private void createOrUpdate(AtlasEntitiesWithExtInfo entities, boolean isPartialUpdate, NotificationStat stats, PreprocessorContext context) throws AtlasBaseException {
-            List<AtlasEntity> entitiesList = entities.getEntities();
-            AtlasEntityStream entityStream = new AtlasEntityStream(entities);
-
-            if (commitBatchSize <= 0 || entitiesList.size() <= commitBatchSize) {
-                EntityMutationResponse response = atlasEntityStore.createOrUpdate(entityStream, isPartialUpdate);
-
-                recordProcessedEntities(response, stats, context);
-            } else {
-                for (int fromIdx = 0; fromIdx < entitiesList.size(); fromIdx += commitBatchSize) {
-                    int toIndex = fromIdx + commitBatchSize;
-
-                    if (toIndex > entitiesList.size()) {
-                        toIndex = entitiesList.size();
-                    }
-
-                    List<AtlasEntity> entitiesBatch = new ArrayList<>(entitiesList.subList(fromIdx, toIndex));
-
-                    updateProcessedEntityReferences(entitiesBatch, context.getGuidAssignments());
-
-                    AtlasEntitiesWithExtInfo batch       = new AtlasEntitiesWithExtInfo(entitiesBatch);
-                    AtlasEntityStream        batchStream = new AtlasEntityStream(batch, entityStream);
-                    EntityMutationResponse   response    = atlasEntityStore.createOrUpdate(batchStream, isPartialUpdate);
-
-                    recordProcessedEntities(response, stats, context);
-
-                    RequestContext.get().resetEntityGuidUpdates();
-
-                    entityCorrelationManager.add(context.isSpooledMessage(), context.getMsgCreated(), response.getDeletedEntities());
-
-                    RequestContext.get().clearCache();
+        private void commit(TopicPartitionOffsetResult result) {
+            if (result != null) {
+                if (!lastCommittedPartitionOffset.containsKey(result.getTopicPartition())
+                        || (lastCommittedPartitionOffset.containsKey(result.getTopicPartition())
+                        && lastCommittedPartitionOffset.get(result.getTopicPartition()) != null
+                        && lastCommittedPartitionOffset.get(result.getTopicPartition()) != result.getOffset())) {
+                    LOG.info("Committing the result: {}", result.getKey());
+                    commit(result.getTopicPartition(), result.getOffset());
+                } else {
+                    consumer.poll();
                 }
             }
-
-            if (context != null) {
-                context.prepareForPostUpdate();
-
-                List<AtlasEntity> postUpdateEntities = context.getPostUpdateEntities();
-
-                if (CollectionUtils.isNotEmpty(postUpdateEntities)) {
-                    atlasEntityStore.createOrUpdate(new AtlasEntityStream(postUpdateEntities), true);
-                }
-            }
-        }
-
-        private void recordFailedMessages() {
-            //logging failed messages
-            for (String message : failedMessages) {
-                FAILED_LOG.error("[DROPPED_NOTIFICATION] {}", message);
-            }
-
-            failedMessages.clear();
         }
 
         private void commit(AtlasKafkaMessage<HookNotification> kafkaMessage) {
-            recordFailedMessages();
-
             long commitOffset = kafkaMessage.getOffset() + 1;
-
             lastCommittedPartitionOffset.put(kafkaMessage.getTopicPartition(), commitOffset);
-
             consumer.commit(kafkaMessage.getTopicPartition(), commitOffset);
+        }
+
+        private void commit(TopicPartition topicPartition, long commitOffset) {
+            long offsetToCommit = commitOffset + 1;
+            consumer.commit(topicPartition, offsetToCommit);
+            lastCommittedPartitionOffset.put(topicPartition, commitOffset);
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Committing: topicPartition: {} with offset: {}", topicPartition, offsetToCommit);
+            }
         }
     }
 }

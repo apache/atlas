@@ -29,6 +29,7 @@ import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -46,6 +47,7 @@ public class AtlasKafkaConsumer<T> extends AbstractNotificationConsumer<T> {
     private final KafkaConsumer kafkaConsumer;
     private final boolean       autoCommitEnabled;
     private final long          pollTimeoutMilliSeconds;
+    private final Duration      duration;
 
     public AtlasKafkaConsumer(NotificationInterface.NotificationType notificationType, KafkaConsumer kafkaConsumer, boolean autoCommitEnabled, long pollTimeoutMilliSeconds) {
         this(notificationType.getDeserializer(), kafkaConsumer, autoCommitEnabled, pollTimeoutMilliSeconds);
@@ -57,6 +59,7 @@ public class AtlasKafkaConsumer<T> extends AbstractNotificationConsumer<T> {
         this.autoCommitEnabled       = autoCommitEnabled;
         this.kafkaConsumer           = kafkaConsumer;
         this.pollTimeoutMilliSeconds = pollTimeoutMilliSeconds;
+        this.duration                = Duration.ofMillis(pollTimeoutMilliSeconds);
     }
 
     @Override
@@ -92,37 +95,42 @@ public class AtlasKafkaConsumer<T> extends AbstractNotificationConsumer<T> {
         }
     }
 
+    @Override
+    public void poll() {
+        this.kafkaConsumer.poll(this.duration);
+    }
+
     public List<AtlasKafkaMessage<T>> receive() {
         return this.receive(this.pollTimeoutMilliSeconds);
     }
 
     @Override
     public List<AtlasKafkaMessage<T>> receive(long timeoutMilliSeconds) {
-        return receive(this.pollTimeoutMilliSeconds, null);
+        return receive(this.duration, null);
     }
 
     @Override
     public List<AtlasKafkaMessage<T>> receiveWithCheckedCommit(Map<TopicPartition, Long> lastCommittedPartitionOffset) {
-        return receive(this.pollTimeoutMilliSeconds, lastCommittedPartitionOffset);
+        return receive(this.duration, lastCommittedPartitionOffset);
     }
 
     @Override
     public List<AtlasKafkaMessage<T>> receiveRawRecordsWithCheckedCommit(Map<TopicPartition, Long> lastCommittedPartitionOffset) {
-        return receiveRawRecords(this.pollTimeoutMilliSeconds, lastCommittedPartitionOffset);
+        return receiveRawRecords(this.duration, lastCommittedPartitionOffset);
     }
 
-    private List<AtlasKafkaMessage<T>> receiveRawRecords(long timeoutMilliSeconds, Map<TopicPartition, Long> lastCommittedPartitionOffset) {
-        return receive(timeoutMilliSeconds, lastCommittedPartitionOffset, true);
+    private List<AtlasKafkaMessage<T>> receiveRawRecords(Duration duration, Map<TopicPartition, Long> lastCommittedPartitionOffset) {
+        return receive(duration, lastCommittedPartitionOffset, true);
     }
 
-    private List<AtlasKafkaMessage<T>> receive(long timeoutMilliSeconds, Map<TopicPartition, Long> lastCommittedPartitionOffset) {
-        return receive(timeoutMilliSeconds, lastCommittedPartitionOffset, false);
+    private List<AtlasKafkaMessage<T>> receive(Duration duration, Map<TopicPartition, Long> lastCommittedPartitionOffset) {
+        return receive(duration, lastCommittedPartitionOffset, false);
     }
 
-    private List<AtlasKafkaMessage<T>> receive(long timeoutMilliSeconds, Map<TopicPartition, Long> lastCommittedPartitionOffset, boolean isRawDataRequired) {
+    private List<AtlasKafkaMessage<T>> receive(Duration duration, Map<TopicPartition, Long> lastCommittedPartitionOffset, boolean isRawDataRequired) {
         List<AtlasKafkaMessage<T>> messages = new ArrayList<>();
 
-        ConsumerRecords<?, ?> records = kafkaConsumer != null ? kafkaConsumer.poll(timeoutMilliSeconds) : null;
+        ConsumerRecords<?, ?> records = kafkaConsumer != null ? kafkaConsumer.poll(duration) : null;
 
         if (records != null) {
             for (ConsumerRecord<?, ?> record : records) {

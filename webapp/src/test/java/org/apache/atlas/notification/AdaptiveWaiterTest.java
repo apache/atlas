@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.notification;
 
+import org.apache.atlas.util.AdaptiveWaiter;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
@@ -26,11 +27,11 @@ public class AdaptiveWaiterTest {
     private final int                                     maxDuration = 100;
     private final int                                     minDuration = 5;
     private final int                                     increment   = 5;
-    private       NotificationHookConsumer.AdaptiveWaiter waiter;
+    private AdaptiveWaiter waiter;
 
     @BeforeClass
     public void setup() {
-        waiter = new NotificationHookConsumer.AdaptiveWaiter(minDuration, maxDuration, increment);
+        waiter = new AdaptiveWaiter(minDuration, maxDuration, increment);
     }
 
     @Test

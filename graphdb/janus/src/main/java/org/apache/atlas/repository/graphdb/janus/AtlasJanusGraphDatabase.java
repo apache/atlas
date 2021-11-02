@@ -235,6 +235,9 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
             } else {
                 throw new RuntimeException(e);
             }
+        } catch (Exception e) {
+            LOG.error("Error: Error initializing graph");
+            throw e;
         }
     }
 
