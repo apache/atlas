@@ -49,6 +49,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.type.Constants.CATEGORIES_PROPERTY_KEY;
+import static org.apache.atlas.type.Constants.GLOSSARY_PROPERTY_KEY;
 
 public class GlossaryCategoryUtils extends GlossaryUtils {
     private static final Logger  LOG           = LoggerFactory.getLogger(GlossaryCategoryUtils.class);
@@ -81,6 +82,9 @@ public class GlossaryCategoryUtils extends GlossaryUtils {
         if (Objects.isNull(updatedCategory.getAnchor()) && op != RelationshipOperation.DELETE) {
             throw new AtlasBaseException(AtlasErrorCode.MISSING_MANDATORY_ANCHOR);
         }
+
+        AtlasVertex vertex = getVertexById(storeObject.getGuid());
+        addEntityAttr(vertex, GLOSSARY_PROPERTY_KEY, getGlossaryQN(storeObject.getQualifiedName()));
 
         AtlasGlossaryHeader existingAnchor        = storeObject.getAnchor();
         AtlasGlossaryHeader updatedCategoryAnchor = updatedCategory.getAnchor();
