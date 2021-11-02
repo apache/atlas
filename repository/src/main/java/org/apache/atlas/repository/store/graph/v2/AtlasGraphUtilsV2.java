@@ -30,17 +30,13 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.Status;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
+import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.converters.AtlasFormatConverters;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.repository.graph.GraphHelper;
-import org.apache.atlas.repository.graphdb.AtlasEdge;
-import org.apache.atlas.repository.graphdb.AtlasElement;
-import org.apache.atlas.repository.graphdb.AtlasGraph;
-import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
-import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
+import org.apache.atlas.repository.graphdb.*;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery.Result;
-import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasEnumType;
 import org.apache.atlas.type.AtlasStructType;
@@ -230,6 +226,20 @@ public class AtlasGraphUtilsV2 {
         }
 
         vertex.addProperty(propertyName, value);
+
+        return vertex;
+    }
+
+    public static AtlasVertex addListProperty(AtlasVertex vertex, String propertyName, Object value, boolean isEncoded) {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> addListProperty({}, {}, {})", toString(vertex), propertyName, value);
+        }
+
+        if (!isEncoded) {
+            propertyName = encodePropertyKey(propertyName);
+        }
+
+        vertex.addListProperty(propertyName, value);
 
         return vertex;
     }

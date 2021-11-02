@@ -569,6 +569,8 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         String           attribTypeName = attributeDef.getTypeName();
         boolean          isBuiltInType  = AtlasTypeUtil.isBuiltInType(attribTypeName);
         boolean          isArrayType    = isArrayType(attribTypeName);
+        boolean          isArrayOfPrimitiveType    = false;
+        AtlasType        arrayElementType    = null;
         boolean          isMapType      = isMapType(attribTypeName);
         final String     uniqPropName   = isUnique ? AtlasGraphUtilsV2.encodePropertyKey(UNIQUE_ATTRIBUTE_SHADE_PROPERTY_PREFIX + attributeDef.getName()) : null;
         final AtlasAttributeDef.IndexType indexType      = attributeDef.getIndexType();
@@ -588,8 +590,10 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
 
                 AtlasArrayType arrayType   = (AtlasArrayType) attributeType;
                 boolean        isReference = isReference(arrayType.getElementType());
+                arrayElementType = arrayType.getElementType();
+                isArrayOfPrimitiveType = arrayElementType.getTypeCategory().equals(TypeCategory.PRIMITIVE);
 
-                if (!isReference) {
+                if (!isReference && !isArrayOfPrimitiveType) {
                     createPropertyKey(management, propertyName, ArrayList.class, SINGLE);
                 }
             }
@@ -608,20 +612,19 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             if (isEntityType(attributeType)) {
                 createEdgeLabel(management, propertyName);
 
-            } else if (isBuiltInType) {
+            } else if (isBuiltInType || isArrayOfPrimitiveType) {
                 if (isRelationshipType(atlasType)) {
                     createEdgeIndex(management, propertyName, getPrimitiveClass(attribTypeName), cardinality, false);
                 } else {
-                    Class primitiveClassType = getPrimitiveClass(attribTypeName);
+                    Class primitiveClassType = isArrayOfPrimitiveType ? getPrimitiveClass(arrayElementType.getTypeName()): getPrimitiveClass(attribTypeName);
                     boolean isStringField = false;
                     if(primitiveClassType == String.class) {
                         isStringField = AtlasAttributeDef.IndexType.STRING.equals(indexType);
-
                     }
-                    createVertexIndex(management, propertyName, UniqueKind.NONE, getPrimitiveClass(attribTypeName), cardinality, isIndexable, false, isStringField, indexTypeESConfig, indexTypeESFields);
+                    createVertexIndex(management, propertyName, UniqueKind.NONE, primitiveClassType, cardinality, isIndexable, false, isStringField, indexTypeESConfig, indexTypeESFields);
 
                     if (uniqPropName != null) {
-                        createVertexIndex(management, uniqPropName, UniqueKind.PER_TYPE_UNIQUE, getPrimitiveClass(attribTypeName), cardinality, isIndexable, true, isStringField);
+                        createVertexIndex(management, uniqPropName, UniqueKind.PER_TYPE_UNIQUE, primitiveClassType, cardinality, isIndexable, true, isStringField);
                     }
                 }
             } else if (isEnumType(attributeType)) {

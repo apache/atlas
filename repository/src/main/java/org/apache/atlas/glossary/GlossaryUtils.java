@@ -129,6 +129,7 @@ public abstract class GlossaryUtils {
         String[] split_0 = qName.split("@");
         return split_0[split_0.length - 1];
     }
+
     protected void addEntityAttr(AtlasVertex vertex, String propName, String propValue) {
         if (MEANINGS_PROPERTY_KEY.equals(propName) || CATEGORIES_PROPERTY_KEY.equals(propName)) {
             AtlasGraphUtilsV2.addEncodedProperty(vertex, propName, propValue);

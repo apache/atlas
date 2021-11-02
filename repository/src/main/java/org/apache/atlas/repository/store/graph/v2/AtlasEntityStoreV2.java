@@ -1477,20 +1477,28 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         List<String>    entityClassifications = getClassificationNames(guid);
         String          entityTypeName        = AtlasGraphUtilsV2.getTypeNameFromGuid(graph, guid);
         AtlasEntityType entityType            = typeRegistry.getEntityTypeByName(entityTypeName);
+        Set<String> processedTagTypeNames = new HashSet<>();
 
-        for (AtlasClassification classification : classifications) {
-            String newClassification = classification.getTypeName();
+        List <AtlasClassification> copyList = new ArrayList<>(classifications);
+        for (AtlasClassification classification : copyList) {
 
-            if (CollectionUtils.isNotEmpty(entityClassifications) && entityClassifications.contains(newClassification)) {
-                throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "entity: " + guid +
-                        ", already associated with classification: " + newClassification);
-            }
+            if (processedTagTypeNames.contains(classification.getTypeName())){
+                classifications.remove(classification);
+            } else {
+                String newClassification = classification.getTypeName();
+                processedTagTypeNames.add(newClassification);
 
-            // for each classification, check whether there are entities it should be restricted to
-            AtlasClassificationType classificationType = typeRegistry.getClassificationTypeByName(newClassification);
+                if (CollectionUtils.isNotEmpty(entityClassifications) && entityClassifications.contains(newClassification)) {
+                    throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "entity: " + guid +
+                            ", already associated with classification: " + newClassification);
+                }
 
-            if (!classificationType.canApplyToEntityType(entityType)) {
-                throw new AtlasBaseException(AtlasErrorCode.INVALID_ENTITY_FOR_CLASSIFICATION, guid, entityTypeName, newClassification);
+                // for each classification, check whether there are entities it should be restricted to
+                AtlasClassificationType classificationType = typeRegistry.getClassificationTypeByName(newClassification);
+
+                if (!classificationType.canApplyToEntityType(entityType)) {
+                    throw new AtlasBaseException(AtlasErrorCode.INVALID_ENTITY_FOR_CLASSIFICATION, guid, entityTypeName, newClassification);
+                }
             }
         }
     }
