@@ -27,6 +27,7 @@ import org.apache.atlas.AtlasException;
 import org.apache.atlas.GraphTransactionInterceptor;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.Status;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
@@ -1357,9 +1358,12 @@ public final class GraphHelper {
 
     public static List<Object> getArrayElementsProperty(AtlasType elementType, AtlasVertex instanceVertex, AtlasAttribute attribute) {
         String propertyName = attribute.getVertexPropertyName();
+        boolean isArrayOfPrimitiveType = elementType.getTypeCategory().equals(TypeCategory.PRIMITIVE);
 
         if (isReference(elementType)) {
             return (List) getCollectionElementsUsingRelationship(instanceVertex, attribute);
+        } else if (isArrayOfPrimitiveType) {
+            return (List) instanceVertex.getMultiValuedProperty(propertyName, elementType.getClass());
         } else {
             return (List) instanceVertex.getListProperty(propertyName);
         }
