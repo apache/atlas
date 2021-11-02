@@ -86,6 +86,7 @@ import static org.apache.atlas.AtlasConfiguration.STORE_DIFFERENTIAL_AUDITS;
 import static org.apache.atlas.bulkimport.BulkImportResponse.ImportStatus.FAILED;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.*;
 import static org.apache.atlas.repository.Constants.IS_INCOMPLETE_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
 import static org.apache.atlas.repository.graph.GraphHelper.isEntityIncomplete;
 import static org.apache.atlas.repository.store.graph.v2.EntityGraphMapper.validateLabels;
@@ -357,14 +358,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     @Override
     @GraphTransaction
     public EntityMutationResponse createOrUpdate(EntityStream entityStream, boolean isPartialUpdate) throws AtlasBaseException {
-        return createOrUpdate(entityStream, isPartialUpdate, false, false);
-    }
-
-    @Override
-    @GraphTransaction
-    public EntityMutationResponse createOrUpdate(EntityStream entityStream, boolean isPartialUpdate, boolean isRestoreRequested) throws AtlasBaseException {
-        RequestContext.get().
-                setRestoreRequested(isRestoreRequested);
         return createOrUpdate(entityStream, isPartialUpdate, false, false);
     }
 
@@ -1338,7 +1331,12 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                     context.addCreated(guid, entity, entityType, vertex);
                 }
 
-                if (requestContext.isRestoreRequested()) {
+                String entityStateValue = (String) entity.getAttribute(STATE_PROPERTY_KEY);
+                String entityStatusValue = entity.getStatus() != null ? entity.getStatus().toString() : null;
+                String entityActiveKey = Status.ACTIVE.toString();
+                boolean isRestoreRequested = ((StringUtils.isNotEmpty(entityStateValue) && entityStateValue.equals(entityActiveKey)) || (StringUtils.isNotEmpty(entityStatusValue) && entityStatusValue.equals(entityActiveKey)));
+
+                if (isRestoreRequested) {
                     Status currStatus = AtlasGraphUtilsV2.getState(vertex);
                     if (currStatus == Status.DELETED) {
                         context.addEntityToRestore(vertex);
