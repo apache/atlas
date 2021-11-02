@@ -98,6 +98,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasConfiguration.LABEL_MAX_LENGTH;
+import static org.apache.atlas.model.TypeCategory.ARRAY;
 import static org.apache.atlas.model.TypeCategory.CLASSIFICATION;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
@@ -479,10 +480,16 @@ public class EntityGraphMapper {
             for (AtlasBusinessAttribute bmAttribute : bmAttributes.values()) {
                 String bmAttrName          = bmAttribute.getName();
                 Object bmAttrExistingValue = null;
-                try {
-                    bmAttrExistingValue = entityVertex.getProperty(bmAttribute.getVertexPropertyName(), Object.class);
-                } catch (IllegalStateException e) {
+                boolean isArrayOfPrimitiveType = false;
+                if (bmAttribute.getAttributeType().getTypeCategory().equals(ARRAY)) {
+                    AtlasArrayType bmAttributeType = (AtlasArrayType) bmAttribute.getAttributeType();
+                    AtlasType elementType = bmAttributeType.getElementType();
+                    isArrayOfPrimitiveType = elementType.getTypeCategory().equals(TypeCategory.PRIMITIVE);
+                }
+                if (isArrayOfPrimitiveType) {
                     bmAttrExistingValue = entityVertex.getPropertyValues(bmAttribute.getVertexPropertyName(), Object.class);
+                } else {
+                    bmAttrExistingValue = entityVertex.getProperty(bmAttribute.getVertexPropertyName(), Object.class);
                 }
                 Object bmAttrNewValue      = MapUtils.isEmpty(entityBmAttributes) ? null : entityBmAttributes.get(bmAttrName);
 
@@ -559,10 +566,16 @@ public class EntityGraphMapper {
 
                     Object bmAttrValue   = entityBmAttributes.get(bmAttrName);
                     Object existingValue = null;
-                    try {
-                        existingValue = entityVertex.getProperty(bmAttribute.getVertexPropertyName(), Object.class);
-                    } catch (IllegalStateException e) {
+                    boolean isArrayOfPrimitiveType = false;
+                    if (bmAttribute.getAttributeType().getTypeCategory().equals(ARRAY)) {
+                        AtlasArrayType bmAttributeType = (AtlasArrayType) bmAttribute.getAttributeType();
+                        AtlasType elementType = bmAttributeType.getElementType();
+                        isArrayOfPrimitiveType = elementType.getTypeCategory().equals(TypeCategory.PRIMITIVE);
+                    }
+                    if (isArrayOfPrimitiveType) {
                         existingValue = entityVertex.getPropertyValues(bmAttribute.getVertexPropertyName(), Object.class);
+                    } else {
+                        existingValue = entityVertex.getProperty(bmAttribute.getVertexPropertyName(), Object.class);
                     }
 
                     if (existingValue == null) {
@@ -698,10 +711,16 @@ public class EntityGraphMapper {
                 for (AtlasAttribute attribute : structType.getAllAttributes().values()) {
                     Object attrValue = struct.getAttribute(attribute.getName());
                     Object attrOldValue = null;
-                    try {
-                        attrOldValue = vertex.getProperty(attribute.getVertexPropertyName(),attribute.getClass());
-                    } catch (IllegalStateException e) {
+                    boolean isArrayOfPrimitiveType = false;
+                    if (attribute.getAttributeType().getTypeCategory().equals(ARRAY)) {
+                        AtlasArrayType attributeType = (AtlasArrayType) attribute.getAttributeType();
+                        AtlasType elementType = attributeType.getElementType();
+                        isArrayOfPrimitiveType = elementType.getTypeCategory().equals(TypeCategory.PRIMITIVE);
+                    }
+                    if (isArrayOfPrimitiveType) {
                         attrOldValue = vertex.getPropertyValues(attribute.getVertexPropertyName(),attribute.getClass());
+                    } else {
+                        attrOldValue = vertex.getProperty(attribute.getVertexPropertyName(),attribute.getClass());
                     }
                     if (attrValue!= null && !attrValue.equals(attrOldValue)) {
                         addValuesToAutoUpdateAttributesList(attribute, userAutoUpdateAttributes, timestampAutoUpdateAttributes);
@@ -717,12 +736,17 @@ public class EntityGraphMapper {
                     if (attribute != null) {
                         Object attrValue = struct.getAttribute(attrName);
                         Object attrOldValue = null;
-                        try {
-                            attrOldValue = vertex.getProperty(attribute.getVertexPropertyName(),attribute.getClass());
-                        } catch (IllegalStateException e) {
-                            attrOldValue = vertex.getPropertyValues(attribute.getVertexPropertyName(),attribute.getClass());
+                        boolean isArrayOfPrimitiveType = false;
+                        if (attribute.getAttributeType().getTypeCategory().equals(ARRAY)) {
+                            AtlasArrayType attributeType = (AtlasArrayType) attribute.getAttributeType();
+                            AtlasType elementType = attributeType.getElementType();
+                            isArrayOfPrimitiveType = elementType.getTypeCategory().equals(TypeCategory.PRIMITIVE);
                         }
-
+                        if (isArrayOfPrimitiveType) {
+                            attrOldValue = vertex.getPropertyValues(attribute.getVertexPropertyName(),attribute.getClass());
+                        } else {
+                            attrOldValue = vertex.getProperty(attribute.getVertexPropertyName(),attribute.getClass());
+                        }
                         if (attrValue != null && !attrValue.equals(attrOldValue)) {
                             addValuesToAutoUpdateAttributesList(attribute, userAutoUpdateAttributes, timestampAutoUpdateAttributes);
                         }
