@@ -767,7 +767,13 @@ public abstract class BaseHiveEvent {
     }
 
     protected Long getQueryStartTime() {
-        return isHiveContextValid() ? context.getHiveContext().getQueryPlan().getQueryStartTime() : System.currentTimeMillis();
+        Long queryStartTime = null;
+
+        if (isHiveContextValid() && context.getHiveContext().getQueryPlan() != null) {
+            queryStartTime = context.getHiveContext().getQueryPlan().getQueryStartTime();
+        }
+
+        return queryStartTime == null ? System.currentTimeMillis() : queryStartTime;
     }
 
     protected String getQueryId() {
