@@ -361,8 +361,17 @@ public class RestoreHandlerV1 {
         String labelWithoutPrefix        = edge.getLabel().substring(GraphHelper.EDGE_LABEL_PREFIX.length());
         AtlasType       parentType       = typeRegistry.getType(AtlasGraphUtilsV2.getTypeName(edge.getOutVertex()));
         AtlasStructType parentStructType = (AtlasStructType) parentType;
-
-        return parentStructType.getAttribute(labelWithoutPrefix);
+        AtlasStructType.AtlasAttribute attribute = parentStructType.getAttribute(labelWithoutPrefix);
+        // Since we have removed typeName suffix from attribute name, we might need this
+        // The above logic will work fine in case of relationships where label is not defined
+        if (attribute == null) {
+            String[] tokenizedLabel = labelWithoutPrefix.split("\\.");
+            if (tokenizedLabel.length == 2) {
+                String attributeName = tokenizedLabel[1];
+                attribute = parentStructType.getAttribute(attributeName);
+            }
+        }
+        return attribute;
     }
 
     protected void restoreVertex(AtlasVertex instanceVertex) throws AtlasBaseException {
