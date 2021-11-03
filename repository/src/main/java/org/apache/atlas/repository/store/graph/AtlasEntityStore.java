@@ -275,6 +275,15 @@ public interface AtlasEntityStore {
     /**
      *
      * @param guid
+     * @param businessAttrbutes might having displayName instead of name
+     * @param isOverwrite
+     * @throws AtlasBaseException
+     */
+    void addOrUpdateBusinessAttributesByDisplayName(String guid, Map<String, Map<String, Object>> businessAttrbutes, boolean isOverwrite) throws AtlasBaseException;
+
+    /**
+     *
+     * @param guid
      * @param businessAttributes
      * @throws AtlasBaseException
      */
