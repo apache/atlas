@@ -831,13 +831,17 @@ public class AdminResource {
     }
 
     private void addToImportOperationAudits(AtlasImportResult result) throws AtlasBaseException {
-        List<AtlasObjectId> objectIds = result.getExportResult().getRequest().getItemsToExport();
-
         Map<String, Object> optionMap = new HashMap<>();
         optionMap.put(OPERATION_STATUS, result.getOperationStatus().name());
         String params = AtlasJson.toJson(optionMap);
 
-        auditImportExportOperations(objectIds, AuditOperation.IMPORT, params);
+        if(result.getExportResult().getRequest() == null) {
+            int resultCount = result.getProcessedEntities().size();
+            auditService.add(AuditOperation.IMPORT, params, AtlasJson.toJson(result.getMetrics()), resultCount);
+        } else {
+            List<AtlasObjectId> objectIds = result.getExportResult().getRequest().getItemsToExport();
+            auditImportExportOperations(objectIds, AuditOperation.IMPORT, params);
+        }
     }
 
     private void addToExportOperationAudits(boolean isSuccessful, AtlasExportResult result) throws AtlasBaseException {
