@@ -24,9 +24,12 @@ import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.Date;
 
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getEncodedProperty;
@@ -50,7 +53,12 @@ public class DataMigrationStatusService {
 
 
     public void init(String fileToImport) {
-        this.status = new MigrationImportStatus(fileToImport);
+        try {
+            this.status = new MigrationImportStatus(fileToImport, DigestUtils.md5Hex(new FileInputStream(fileToImport)));
+        } catch (IOException e) {
+            LOG.error("Not able to create Migration status", e);
+        }
+
         if (!this.migrationStatusVertexManagement.exists(fileToImport)) {
             return;
         }
@@ -59,21 +67,28 @@ public class DataMigrationStatusService {
     }
 
     public MigrationImportStatus getCreate(String fileName) {
-        return getCreate(new MigrationImportStatus(fileName));
+        MigrationImportStatus create = null;
+        try {
+            create = getCreate(new MigrationImportStatus(fileName, DigestUtils.md5Hex(new FileInputStream(fileName))));
+        } catch (IOException e) {
+            LOG.error("Exception occurred while creating migration import", e);
+        }
+
+        return create;
     }
 
     public MigrationImportStatus getCreate(MigrationImportStatus status) {
         try {
             this.status = this.migrationStatusVertexManagement.createOrUpdate(status);
         } catch (Exception ex) {
-            LOG.error("DataMigrationStatusService: Setting status: {}: Resulted in error!", status.getName(), ex);
+            LOG.error("DataMigrationStatusService: Setting status: {}: Resulted in error!", status.getFileHash(), ex);
         }
 
         return this.status;
     }
 
     public MigrationImportStatus getStatus() {
-        if (this.status != null && this.migrationStatusVertexManagement.exists(this.status.getName())) {
+        if (this.status != null && this.migrationStatusVertexManagement.exists(this.status.getFileHash())) {
             return getCreate(this.status);
         }
 
@@ -89,8 +104,8 @@ public class DataMigrationStatusService {
             return;
         }
 
-        MigrationImportStatus status = getByName(this.status.getName());
-        this.migrationStatusVertexManagement.delete(status.getName());
+        MigrationImportStatus status = getByName(this.status.getFileHash());
+        this.migrationStatusVertexManagement.delete(status.getFileHash());
         this.status = null;
     }
 
@@ -118,7 +133,7 @@ public class DataMigrationStatusService {
         }
 
         public MigrationImportStatus createOrUpdate(MigrationImportStatus status) {
-            this.vertex = findByNameInternal(status.getName());
+            this.vertex = findByNameInternal(status.getFileHash());
 
             if (this.vertex == null) {
                 this.vertex = graph.addVertex();
@@ -192,7 +207,7 @@ public class DataMigrationStatusService {
 
         private void updateVertex(AtlasVertex vertex, MigrationImportStatus status) {
             try {
-                setEncodedProperty(vertex, Constants.GUID_PROPERTY_KEY, status.getName());
+                setEncodedProperty(vertex, Constants.GUID_PROPERTY_KEY, status.getFileHash());
 
                 setEncodedProperty(vertex, PROPERTY_KEY_START_TIME,
                         (status.getStartTime() != null)
@@ -213,7 +228,7 @@ public class DataMigrationStatusService {
             MigrationImportStatus ret = new MigrationImportStatus();
 
             try {
-                ret.setName(getEncodedProperty(vertex, Constants.GUID_PROPERTY_KEY, String.class));
+                ret.setFileHash(getEncodedProperty(vertex, Constants.GUID_PROPERTY_KEY, String.class));
 
                 Long dateValue = getEncodedProperty(vertex, PROPERTY_KEY_START_TIME, Long.class);
                 if (dateValue != null) {
