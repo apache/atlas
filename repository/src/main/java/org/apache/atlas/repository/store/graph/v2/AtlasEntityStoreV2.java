@@ -946,7 +946,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         String                           typeName                            = getTypeName(entityVertex);
         AtlasEntityType                  entityType                          = typeRegistry.getEntityTypeByName(typeName);
         Map<String, Map<String, AtlasBusinessAttribute>> entityBMs           = entityType.getBusinessAttributes();
-        Map<String, Map<String, Object>> validBusinessAttrbutes              = new HashMap<>();
+        Map<String, Map<String, Object>> finalBMAttributes                   = new HashMap<>();
 
         MetricRecorder metric = RequestContext.get().startMetricRecord("preProcessDisplayNames");
         for (Map.Entry<String, Map<String, Object>> bm : businessAttrbutes.entrySet()) {
@@ -980,12 +980,11 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 }
                 attributes.put(atlasAttribute.getAttributeDef().getName(), bm.getValue().get(incomingAttrs.getKey()));
             }
-            validBusinessAttrbutes.put(bmType.getTypeName(), attributes);
-
+            finalBMAttributes.put(bmType.getTypeName(), attributes);
         }
         RequestContext.get().endMetricRecord(metric);
 
-        addOrUpdateBusinessAttributes(guid, validBusinessAttrbutes, isOverwrite);
+        addOrUpdateBusinessAttributes(guid, finalBMAttributes, isOverwrite);
     }
 
     @Override
