@@ -365,6 +365,8 @@ public class RestoreHandlerV1 {
         // Since we have removed typeName suffix from attribute name, we might need this
         // The above logic will work fine in case of relationships where label is not defined
         if (attribute == null) {
+            LOG.info("getAttributeForEdge - null - labelWithoutPrefix ->");
+            LOG.info(labelWithoutPrefix);
             String[] tokenizedLabel = labelWithoutPrefix.split("\\.");
             if (tokenizedLabel.length == 2) {
                 String attributeName = tokenizedLabel[1];
