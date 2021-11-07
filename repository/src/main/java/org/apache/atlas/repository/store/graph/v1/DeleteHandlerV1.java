@@ -778,8 +778,6 @@ public abstract class DeleteHandlerV1 {
         AtlasType       parentType       = typeRegistry.getType(AtlasGraphUtilsV2.getTypeName(edge.getOutVertex()));
         AtlasStructType parentStructType = (AtlasStructType) parentType;
         AtlasStructType.AtlasAttribute attribute = parentStructType.getAttribute(labelWithoutPrefix);
-        // Since we have removed typeName suffix from attribute name, we will need this
-        // The above logic will work fine in case of relationships where label is not defined
         if (attribute == null) {
             String[] tokenizedLabel = labelWithoutPrefix.split("\\.");
             if (tokenizedLabel.length == 2) {
