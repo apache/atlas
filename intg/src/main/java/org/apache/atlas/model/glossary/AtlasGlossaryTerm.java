@@ -26,6 +26,8 @@ import org.apache.atlas.model.glossary.relations.AtlasTermCategorizationHeader;
 import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.type.AtlasType;
 import org.apache.commons.collections.CollectionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -37,6 +39,9 @@ import java.util.Set;
 
 @AtlasJSON
 public class AtlasGlossaryTerm extends AtlasGlossaryBaseObject {
+
+    private static final Logger LOG = LoggerFactory.getLogger(AtlasGlossaryTerm.class);
+
     // Core attributes
     private List<String> examples;
     private String       abbreviation;
@@ -439,8 +444,15 @@ public class AtlasGlossaryTerm extends AtlasGlossaryBaseObject {
                 setAdditionalAttributes(partialTermObject.getAdditionalAttributes());
                 break;
 
+            case "classifications":
+                setClassifications(partialTermObject.getClassifications());
+
             default:
-                setOtherAttribute(attrName, partialTermObject.getOtherAttributes().get(attrName));
+                if (partialTermObject.getOtherAttributes() != null) {
+                    setOtherAttribute(attrName, partialTermObject.getOtherAttributes().get(attrName));
+                } else {
+                    LOG.warn("partialTermObject.getOtherAttributes() was null for attribute  "+ attrName);
+                }
         }
     }
 
