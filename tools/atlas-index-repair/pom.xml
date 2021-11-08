@@ -53,7 +53,7 @@
         <dependency>
             <groupId>org.janusgraph</groupId>
             <artifactId>janusgraph-core</artifactId>
-            <version>${janus.version}</version>
+            <version>${janusgraph.version}</version>
         </dependency>
 
     </dependencies>

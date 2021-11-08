@@ -17,7 +17,6 @@
  */
 package org.apache.atlas.model.impexp;
 
-
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -50,10 +49,10 @@ public class AtlasImportRequest implements Serializable {
     public  static final String OPTION_KEY_BATCH_SIZE      = "batchSize";
     public  static final String OPTION_KEY_FORMAT          = "format";
     public  static final String OPTION_KEY_FORMAT_ZIP_DIRECT = "zipDirect";
-    public static final String START_POSITION_KEY          = "startPosition";
+    public  static final String START_POSITION_KEY         = "startPosition";
+    public  static final String UPDATE_TYPE_DEFINITION_KEY = "updateTypeDefinition";
     private static final String START_GUID_KEY             = "startGuid";
     private static final String FILE_NAME_KEY              = "fileName";
-    private static final String UPDATE_TYPE_DEFINITION_KEY = "updateTypeDefinition";
     private static final String OPTION_KEY_STREAM_SIZE     = "size";
 
     private Map<String, String> options;

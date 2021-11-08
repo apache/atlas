@@ -73,7 +73,7 @@ public class BaseUtils {
 
     private JsonNode getEntityNode(String json) throws IOException {
         GraphSONMapper.Builder builder = GraphSONMapper.build();
-        final ObjectMapper mapper  = builder.typeInfo(TypeInfo.NO_TYPES).create().createMapper();
+        final ObjectMapper mapper  = builder.create().createMapper();
         return mapper.readTree(json);
     }
 
