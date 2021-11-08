@@ -697,7 +697,7 @@
         <curator.version>4.3.0</curator.version>
         <doxia.version>1.8</doxia.version>
         <dropwizard-metrics>3.2.2</dropwizard-metrics>
-        <elasticsearch.version>7.6.0</elasticsearch.version>
+        <elasticsearch.version>7.6.2</elasticsearch.version>
         <entity.repository.impl>org.apache.atlas.repository.audit.InMemoryEntityAuditRepository</entity.repository.impl>
         <enunciate-maven-plugin.version>2.13.2</enunciate-maven-plugin.version>
         <failsafe.version>2.18.1</failsafe.version>
