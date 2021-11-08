@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.apache.atlas.repository.Constants.TASK_GUID;
+import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getVertexDetails;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.setEncodedProperty;
 
 @Component
@@ -181,10 +182,25 @@ public class TaskRegistry {
     private AtlasTask toAtlasTask(AtlasVertex v) {
         AtlasTask ret = new AtlasTask();
 
-        ret.setGuid(v.getProperty(Constants.TASK_GUID, String.class));
-        ret.setType(v.getProperty(Constants.TASK_TYPE, String.class));
-        ret.setStatus(v.getProperty(Constants.TASK_STATUS, String.class));
-        ret.setCreatedBy(v.getProperty(Constants.TASK_CREATED_BY, String.class));
+        String guid = v.getProperty(Constants.TASK_GUID, String.class);
+        if (guid != null) {
+            ret.setGuid(guid);
+        }
+
+        String type = v.getProperty(Constants.TASK_TYPE, String.class);
+        if (type != null) {
+            ret.setType(type);
+        }
+
+        String status = v.getProperty(Constants.TASK_STATUS, String.class);
+        if (status != null) {
+            ret.setStatus(status);
+        }
+
+        String createdBy = v.getProperty(Constants.TASK_CREATED_BY, String.class);
+        if (createdBy != null) {
+            ret.setCreatedBy(createdBy);
+        }
 
         Long createdTime = v.getProperty(Constants.TASK_CREATED_TIME, Long.class);
         if (createdTime != null) {
@@ -207,10 +223,19 @@ public class TaskRegistry {
         }
 
         String parametersJson = v.getProperty(Constants.TASK_PARAMETERS, String.class);
-        ret.setParameters(AtlasType.fromJson(parametersJson, Map.class));
+        if (parametersJson != null) {
+            ret.setParameters(AtlasType.fromJson(parametersJson, Map.class));
+        }
 
-        ret.setAttemptCount(v.getProperty(Constants.TASK_ATTEMPT_COUNT, Integer.class));
-        ret.setErrorMessage(v.getProperty(Constants.TASK_ERROR_MESSAGE, String.class));
+        Integer attemptCount = v.getProperty(Constants.TASK_ATTEMPT_COUNT, Integer.class);
+        if (attemptCount != null) {
+            ret.setAttemptCount(attemptCount);
+        }
+
+        String errorMessage = v.getProperty(Constants.TASK_ERROR_MESSAGE, String.class);
+        if (errorMessage != null) {
+            ret.setErrorMessage(errorMessage);
+        }
 
         return ret;
     }
@@ -237,6 +262,7 @@ public class TaskRegistry {
         setEncodedProperty(ret, Constants.TASK_PARAMETERS, AtlasJson.toJson(task.getParameters()));
         setEncodedProperty(ret, Constants.TASK_ATTEMPT_COUNT, task.getAttemptCount());
         setEncodedProperty(ret, Constants.TASK_ERROR_MESSAGE, task.getErrorMessage());
+        LOG.info("Creating task vertex: {}",getVertexDetails(ret));
 
         return ret;
     }
