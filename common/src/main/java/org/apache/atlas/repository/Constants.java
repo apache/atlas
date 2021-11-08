@@ -213,9 +213,9 @@ public final class Constants {
      * elasticsearch attributes
      */
 
-    public static final String  ELASTICSEARCH_CLUSTER_STATUS_YELLOW   = "YELLOW.";
-    public static final String  ELASTICSEARCH_CLUSTER_STATUS_GREEN   = "GREEN.";
-    public static final String  ELASTICSEARCH_REST_STATUS_OK   = "OK.";
+    public static final String  ELASTICSEARCH_CLUSTER_STATUS_YELLOW   = "YELLOW";
+    public static final String  ELASTICSEARCH_CLUSTER_STATUS_GREEN   = "GREEN";
+    public static final String  ELASTICSEARCH_REST_STATUS_OK   = "OK";
 
     /*
      * replication attributes
