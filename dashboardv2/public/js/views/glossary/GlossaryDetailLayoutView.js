@@ -36,6 +36,7 @@ define(['require',
 
             /** Layout sub regions */
             regions: {
+                RTermProperties: "#r_termProperties",
                 RSearchResultLayoutView: "#r_searchResultLayoutView",
                 RTagTableLayoutView: "#r_tagTableLayoutView",
                 RRelationLayoutView: "#r_relationLayoutView"
@@ -279,6 +280,7 @@ define(['require',
                                             that.selectedTermAttribute = val;
                                         }
                                     }
+                                    that.renderTermPropertiestLayoutView(that.data);
                                     that.renderSearchResultLayoutView(obj);
                                     that.renderTagTableLayoutView(obj);
                                     that.renderRelationLayoutView(obj);
@@ -477,6 +479,14 @@ define(['require',
                             "fetchCollection": that.getData.bind(that),
                             "entity": that.data
                         })));
+                    }
+                });
+            },
+            renderTermPropertiestLayoutView: function(options) {
+                var that = this;
+                require(['views/glossary/TermPropertiestLayoutView'], function(TermPropertiestLayoutView) {
+                    if (that.RTermProperties) {
+                        that.RTermProperties.show(new TermPropertiestLayoutView(options));
                     }
                 });
             },
