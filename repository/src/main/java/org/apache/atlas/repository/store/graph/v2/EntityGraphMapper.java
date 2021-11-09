@@ -132,11 +132,11 @@ import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPro
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
 import static org.apache.atlas.type.Constants.PENDING_TASKS_PROPERTY_KEY;
+import static org.apache.atlas.type.Constants.CATEGORIES_PARENT_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.CATEGORIES_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.GLOSSARY_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.MEANINGS_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.MEANINGS_TEXT_PROPERTY_KEY;
-import static org.apache.atlas.type.Constants.PENDING_TASKS_PROPERTY_KEY;
 
 @Component
 public class EntityGraphMapper {
@@ -952,6 +952,10 @@ public class EntityGraphMapper {
                     addGlossaryAttr(ctx, newEdge);
                 }
 
+                if (CATEGORY_PARENT_EDGE_LABEL.equals(edgeLabel)) {
+                    addCatParentAttr(ctx, newEdge);
+                }
+
                 return newEdge;
             }
 
@@ -1604,6 +1608,17 @@ public class EntityGraphMapper {
             // handle __glossary attribute of term or category entity
             String gloQname = edge.getOutVertex().getProperty(QUALIFIED_NAME, String.class);
             AtlasGraphUtilsV2.setEncodedProperty(toVertex, GLOSSARY_PROPERTY_KEY, gloQname);
+        }
+    }
+
+    private void addCatParentAttr(AttributeMutationContext ctx, AtlasEdge edge) {
+        AtlasVertex toVertex = ctx.getReferringVertex();
+        String toVertexType = getTypeName(toVertex);
+
+        if (TYPE_CATEGORY.equals(toVertexType)) {
+            //add __parentCategory attribute of category entity
+            String parentQName = edge.getOutVertex().getProperty(QUALIFIED_NAME, String.class);
+            AtlasGraphUtilsV2.setEncodedProperty(toVertex, CATEGORIES_PARENT_PROPERTY_KEY, parentQName);
         }
     }
 

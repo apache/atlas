@@ -80,20 +80,17 @@ public class GlossaryService {
     private final AtlasTypeRegistry         atlasTypeRegistry;
 
     private final AtlasEntityChangeNotifier entityChangeNotifier;
-    private final AtlasEntityStore          entityStore;
 
     private static final char[] invalidNameChars = {'@', '.'};
 
     @Inject
     public GlossaryService(DataAccess dataAccess, final AtlasRelationshipStore relationshipStore,
-                           final AtlasTypeRegistry typeRegistry, AtlasEntityChangeNotifier entityChangeNotifier,
-                           AtlasEntityStore entityStore) {
+                           final AtlasTypeRegistry typeRegistry, AtlasEntityChangeNotifier entityChangeNotifier) {
         this.dataAccess           = dataAccess;
         atlasTypeRegistry         = typeRegistry;
         glossaryTermUtils         = new GlossaryTermUtils(relationshipStore, typeRegistry, dataAccess);
         glossaryCategoryUtils     = new GlossaryCategoryUtils(relationshipStore, typeRegistry, dataAccess);
         this.entityChangeNotifier = entityChangeNotifier;
-        this.entityStore          = entityStore;
     }
 
     /**
@@ -519,7 +516,7 @@ public class GlossaryService {
 
             AtlasGlossaryTerm glossaryTerm = dataAccess.load(getAtlasGlossaryTermSkeleton(termGuid));
 
-            glossaryTermUtils.processTermAssignments(glossaryTerm, relatedObjectIds, entityStore);
+            glossaryTermUtils.processTermAssignments(glossaryTerm, relatedObjectIds);
 
             entityChangeNotifier.onTermAddedToEntities(glossaryTerm, relatedObjectIds);
 
@@ -538,7 +535,7 @@ public class GlossaryService {
 
         AtlasGlossaryTerm glossaryTerm = dataAccess.load(getAtlasGlossaryTermSkeleton(termGuid));
 
-        glossaryTermUtils.processTermAssignments(glossaryTerm, relatedObjectIds, entityStore);
+        glossaryTermUtils.processTermAssignments(glossaryTerm, relatedObjectIds);
 
         entityChangeNotifier.onTermAddedToEntities(glossaryTerm, relatedObjectIds);
 
@@ -556,7 +553,7 @@ public class GlossaryService {
 
         AtlasGlossaryTerm glossaryTerm = dataAccess.load(getAtlasGlossaryTermSkeleton(termGuid));
 
-        glossaryTermUtils.processTermDissociation(glossaryTerm, relatedObjectIds, entityStore);
+        glossaryTermUtils.processTermDissociation(glossaryTerm, relatedObjectIds);
 
         entityChangeNotifier.onTermDeletedFromEntities(glossaryTerm, relatedObjectIds);
 

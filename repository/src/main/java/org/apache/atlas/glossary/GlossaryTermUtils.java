@@ -93,8 +93,7 @@ public class GlossaryTermUtils extends GlossaryUtils {
         }
     }
 
-    public void processTermAssignments(AtlasGlossaryTerm glossaryTerm, Collection<AtlasRelatedObjectId> relatedObjectIds,
-                                       AtlasEntityStore entityStore) throws AtlasBaseException {
+    public void processTermAssignments(AtlasGlossaryTerm glossaryTerm, Collection<AtlasRelatedObjectId> relatedObjectIds) throws AtlasBaseException {
         if (DEBUG_ENABLED) {
             LOG.debug("==> GlossaryTermUtils.processTermAssignments({}, {})", glossaryTerm, relatedObjectIds);
         }
@@ -125,9 +124,7 @@ public class GlossaryTermUtils extends GlossaryUtils {
         }
     }
 
-
-    public void processTermDissociation(AtlasGlossaryTerm glossaryTerm, Collection<AtlasRelatedObjectId> relatedObjectIds,
-                                        AtlasEntityStore entityStore) throws AtlasBaseException {
+    public void processTermDissociation(AtlasGlossaryTerm glossaryTerm, Collection<AtlasRelatedObjectId> relatedObjectIds) throws AtlasBaseException {
         if (DEBUG_ENABLED) {
             LOG.debug("==> GlossaryTermUtils.processTermDissociation({}, {}, {})", glossaryTerm.getGuid(), relatedObjectIds, glossaryTerm);
         }
