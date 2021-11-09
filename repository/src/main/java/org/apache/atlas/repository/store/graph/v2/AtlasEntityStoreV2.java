@@ -56,6 +56,7 @@ import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityComparator.AtlasEntityDiffResult;
 import org.apache.atlas.repository.store.graph.v1.RestoreHandlerV1;
 import org.apache.atlas.type.AtlasArrayType;
+import org.apache.atlas.type.AtlasBusinessMetadataType;
 import org.apache.atlas.type.AtlasBusinessMetadataType.AtlasBusinessAttribute;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
@@ -926,6 +927,71 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     public String setClassifications(AtlasEntityHeaders entityHeaders) {
         ClassificationAssociator.Updater associator = new ClassificationAssociator.Updater(graph, typeRegistry, this);
         return associator.setClassifications(entityHeaders.getGuidHeaderMap());
+    }
+
+    @Override
+    @GraphTransaction
+    public void addOrUpdateBusinessAttributesByDisplayName(String guid, Map<String, Map<String, Object>> businessAttrbutes, boolean isOverwrite) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> addOrUpdateBusinessAttributesByDisplayName(guid={}, businessAttributes={}, isOverwrite={})", guid, businessAttrbutes, isOverwrite);
+        }
+
+        if (StringUtils.isEmpty(guid)) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "guid is null/empty");
+        }
+
+        if (MapUtils.isEmpty(businessAttrbutes)) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "businessAttributes is null/empty");
+        }
+
+        AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(graph, guid);
+
+        if (entityVertex == null) {
+            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
+        }
+
+        String                           typeName                            = getTypeName(entityVertex);
+        AtlasEntityType                  entityType                          = typeRegistry.getEntityTypeByName(typeName);
+        Map<String, Map<String, AtlasBusinessAttribute>> entityBMs           = entityType.getBusinessAttributes();
+        Map<String, Map<String, Object>> finalBMAttributes                   = new HashMap<>();
+
+        MetricRecorder metric = RequestContext.get().startMetricRecord("preProcessDisplayNames");
+        for (Map.Entry<String, Map<String, Object>> bm : businessAttrbutes.entrySet()) {
+            Map<String, AtlasBusinessAttribute> enitytBM = entityBMs.get(bm.getKey());
+
+            AtlasBusinessMetadataType bmType = null;
+            if (enitytBM == null) {
+                //search BM type by displayName
+                try {
+                    bmType = typeRegistry.getBusinessMetadataTypeByDisplayName(bm.getKey());
+                } catch (NoSuchElementException nse) {
+                    throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, String.format("No BM type found with displayName %s", bm.getKey()));
+                }
+            } else {
+                bmType = typeRegistry.getBusinessMetadataTypeByName(bm.getKey());
+            }
+
+            //check & validate attributes
+            Map <String, Object> attributes = new HashMap<>();
+            for (Map.Entry<String, Object> incomingAttrs : bm.getValue().entrySet()) {
+                AtlasAttribute atlasAttribute = bmType.getAllAttributes().get(incomingAttrs.getKey());
+
+                if (atlasAttribute == null) { //attribute is having displayName find attribute name
+                    try {
+                        atlasAttribute = bmType.getAllAttributes().values().stream().filter(x -> incomingAttrs.getKey().equals(x.getAttributeDef().getDisplayName())).findFirst().get();
+                    } catch (NoSuchElementException nse) {
+                        String message = String.format("No attribute found with displayName %s for BM attribute %s",
+                                incomingAttrs.getKey(), bmType.getTypeName());
+                        throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, message);
+                    }
+                }
+                attributes.put(atlasAttribute.getAttributeDef().getName(), bm.getValue().get(incomingAttrs.getKey()));
+            }
+            finalBMAttributes.put(bmType.getTypeName(), attributes);
+        }
+        RequestContext.get().endMetricRecord(metric);
+
+        addOrUpdateBusinessAttributes(guid, finalBMAttributes, isOverwrite);
     }
 
     @Override

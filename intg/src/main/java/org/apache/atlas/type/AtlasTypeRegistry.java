@@ -203,6 +203,10 @@ public class AtlasTypeRegistry {
 
     public AtlasBusinessMetadataType getBusinessMetadataTypeByName(String name) { return registryData.businessMetadataDefs.getTypeByName(name); }
 
+    public AtlasBusinessMetadataType getBusinessMetadataTypeByDisplayName(String displayName) throws NoSuchElementException {
+        return registryData.businessMetadataDefs.getAllTypes().stream().filter(x -> x.getBusinessMetadataDef().getDisplayName().equals(displayName)).findFirst().get();
+    }
+
     public Collection<AtlasRelationshipDef> getAllRelationshipDefs() { return registryData.relationshipDefs.getAll(); }
 
     public Collection<AtlasEntityDef> getAllEntityDefs() { return registryData.entityDefs.getAll(); }
