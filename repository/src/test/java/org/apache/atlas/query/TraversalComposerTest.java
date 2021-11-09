@@ -53,7 +53,7 @@ public class TraversalComposerTest extends BaseDSLComposer {
                 "[JanusGraphStep([],[__typeName.eq(DB)]), DedupGlobalStep@[d], RangeGlobalStep(0,25)]");
 
         verify("Table groupby(owner) select name, owner, clusterName orderby name",
-                "[JanusGraphStep([],[__typeName.eq(Table)]), TraversalFilterStep([JanusGraphPropertiesStep([Table.owner],property)]), GroupStep(value(Table.owner),[FoldStep]), DedupGlobalStep, RangeGlobalStep(0,25)]");
+                "[JanusGraphStep([],[__typeName.eq(Table), Table.owner.neq]), GroupStep(value(Table.owner),[FoldStep]), DedupGlobalStep, RangeGlobalStep(0,25)]");
     }
 
     private void verify(String dsl, String expected) {

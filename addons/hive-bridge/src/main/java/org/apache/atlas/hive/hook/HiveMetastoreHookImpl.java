@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
 
 import static org.apache.atlas.hive.hook.events.AlterTableRenameCol.findRenamedColumn;
 import static org.apache.atlas.hive.hook.events.BaseHiveEvent.toTable;
+import static org.apache.atlas.repository.Constants.HMS_SOURCE;
 import static org.apache.hadoop.hive.ql.plan.HiveOperation.*;
 
 public class HiveMetastoreHookImpl extends MetaStoreEventListener {
@@ -104,6 +105,11 @@ public class HiveMetastoreHookImpl extends MetaStoreEventListener {
 
     public class HiveMetastoreHook extends AtlasHook {
         public HiveMetastoreHook() {
+        }
+
+        @Override
+        public String getMessageSource() {
+            return HMS_SOURCE;
         }
 
         public void handleEvent(HiveOperationContext operContext) {

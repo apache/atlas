@@ -1065,6 +1065,25 @@ public class EntityREST {
         }
     }
 
+    @POST
+    @Path("/guid/{guid}/businessmetadata/displayName")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Timed
+    public void addOrUpdateBusinessAttributesByDisplayName(@PathParam("guid") final String guid, @QueryParam("isOverwrite") @DefaultValue("false") boolean isOverwrite, Map<String, Map<String, Object>> businessAttributes) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.addOrUpdateBusinessAttributesByDisplayName(" + guid + ", isOverwrite=" + isOverwrite + ")");
+            }
+
+            entitiesStore.addOrUpdateBusinessAttributesByDisplayName(guid, businessAttributes, isOverwrite);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
     @DELETE
     @Path("/guid/{guid}/businessmetadata")
     @Produces(Servlets.JSON_MEDIA_TYPE)

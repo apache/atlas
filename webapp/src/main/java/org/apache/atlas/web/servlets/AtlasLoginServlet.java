@@ -17,11 +17,15 @@
  */
 package org.apache.atlas.web.servlets;
 
+import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.HttpMethod;
+import java.io.PrintWriter;
 
 public class AtlasLoginServlet extends AtlasHttpServlet {
     public static final Logger LOG = LoggerFactory.getLogger(AtlasLoginServlet.class);
@@ -30,6 +34,23 @@ public class AtlasLoginServlet extends AtlasHttpServlet {
 
     @Override
     protected void service(HttpServletRequest request, HttpServletResponse response) {
-        includeResponse(request, response, LOGIN_HTML_TEMPLATE);
+        try {
+            if (!request.getMethod().equals(HttpMethod.GET)) {
+                response.setContentType(TEXT_HTML);
+                response.setHeader(ALLOW, HttpMethod.GET);
+                response.setStatus(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+
+                String errorMessage = AtlasErrorCode.METHOD_NOT_ALLOWED.getFormattedErrorMessage(request.getMethod(), request.getRequestURI());
+                PrintWriter out     = response.getWriter();
+                out.println(errorMessage);
+
+                throw new AtlasBaseException(errorMessage);
+            }
+
+            includeResponse(request, response, LOGIN_HTML_TEMPLATE);
+
+        } catch (Exception e) {
+            LOG.error("Error in AtlasLoginServlet", LOGIN_HTML_TEMPLATE, e);
+        }
     }
 }

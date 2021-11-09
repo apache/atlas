@@ -72,7 +72,7 @@ public class DataAccess {
             DataTransferObject<T> dto = (DataTransferObject<T>) dtoRegistry.get(obj.getClass());
 
             AtlasEntityWithExtInfo entityWithExtInfo      = dto.toEntityWithExtInfo(obj);
-            EntityMutationResponse entityMutationResponse = entityStore.createOrUpdate(new AtlasEntityStream(entityWithExtInfo), false);
+            EntityMutationResponse entityMutationResponse = entityStore.createOrUpdateGlossary(new AtlasEntityStream(entityWithExtInfo),  false, true );
 
             // Update GUID assignment for newly created entity
             if (CollectionUtils.isNotEmpty(entityMutationResponse.getCreatedEntities())) {

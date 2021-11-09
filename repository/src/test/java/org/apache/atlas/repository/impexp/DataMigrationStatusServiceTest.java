@@ -19,13 +19,14 @@ package org.apache.atlas.repository.impexp;
 
 import com.google.inject.Inject;
 import org.apache.atlas.TestModules;
-import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.migration.MigrationImportStatus;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.migration.DataMigrationStatusService;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.Date;
 
 import static org.testng.Assert.assertEquals;
@@ -38,12 +39,13 @@ public class DataMigrationStatusServiceTest {
     AtlasGraph atlasGraph;
 
     @Test
-    public void createUpdateDelete() {
+    public void createUpdateDelete() throws IOException {
         final String STATUS_DONE = "DONE";
 
         DataMigrationStatusService dataMigrationStatusService = new DataMigrationStatusService(atlasGraph);
 
-        MigrationImportStatus expected = new MigrationImportStatus("/tmp/defg.zip");
+        MigrationImportStatus expected = new MigrationImportStatus("DUMMY-HASH");
+
         expected.setTotalCount(3333);
         expected.setCurrentIndex(20);
         expected.setStartTime(new Date());
@@ -51,7 +53,7 @@ public class DataMigrationStatusServiceTest {
         MigrationImportStatus ret = dataMigrationStatusService.getCreate(expected);
 
         assertNotNull(ret);
-        assertEquals(ret.getName(), expected.getName());
+        assertEquals(ret.getFileHash(), expected.getFileHash());
         assertEquals(ret.getStartTime(), expected.getStartTime());
         assertEquals(ret.getTotalCount(), expected.getTotalCount());
         assertEquals(ret.getCurrentIndex(), expected.getCurrentIndex());

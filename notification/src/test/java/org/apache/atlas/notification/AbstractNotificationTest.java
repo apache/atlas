@@ -19,6 +19,7 @@
 package org.apache.atlas.notification;
 
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.model.notification.MessageSource;
 import org.apache.atlas.model.notification.HookNotification;
 import org.apache.atlas.model.notification.HookNotification.HookNotificationType;
 import org.apache.atlas.notification.NotificationInterface.NotificationType;
@@ -40,6 +41,7 @@ public class AbstractNotificationTest {
 
     @org.testng.annotations.Test
     public void testSend() throws Exception {
+        MessageSource    source        = new MessageSource();
         Configuration    configuration = mock(Configuration.class);
         TestNotification notification  = new TestNotification(configuration);
         Test             message1      = new Test(HookNotificationType.ENTITY_CREATE, "user1");
@@ -47,9 +49,9 @@ public class AbstractNotificationTest {
         Test             message3      = new Test(HookNotificationType.ENTITY_FULL_UPDATE, "user1");
         List<String>     messageJson   = new ArrayList<>();
 
-        AbstractNotification.createNotificationMessages(message1, messageJson);
-        AbstractNotification.createNotificationMessages(message2, messageJson);
-        AbstractNotification.createNotificationMessages(message3, messageJson);
+        AbstractNotification.createNotificationMessages(message1, messageJson, source);
+        AbstractNotification.createNotificationMessages(message2, messageJson, source);
+        AbstractNotification.createNotificationMessages(message3, messageJson, source);
 
         notification.send(NotificationType.HOOK, message1, message2, message3);
 
@@ -63,6 +65,7 @@ public class AbstractNotificationTest {
 
     @org.testng.annotations.Test
     public void testSend2() throws Exception {
+        MessageSource    source        = new MessageSource();
         Configuration    configuration = mock(Configuration.class);
         TestNotification notification  = new TestNotification(configuration);
         Test             message1      = new Test(HookNotificationType.ENTITY_CREATE, "user1");
@@ -71,11 +74,11 @@ public class AbstractNotificationTest {
         List<Test>       messages      = Arrays.asList(message1, message2, message3);
         List<String>     messageJson   = new ArrayList<>();
 
-        AbstractNotification.createNotificationMessages(message1, messageJson);
-        AbstractNotification.createNotificationMessages(message2, messageJson);
-        AbstractNotification.createNotificationMessages(message3, messageJson);
+        AbstractNotification.createNotificationMessages(message1, messageJson, source);
+        AbstractNotification.createNotificationMessages(message2, messageJson, source);
+        AbstractNotification.createNotificationMessages(message3, messageJson, source);
 
-        notification.send(NotificationInterface.NotificationType.HOOK, messages);
+        notification.send(NotificationInterface.NotificationType.HOOK, messages, source);
 
         assertEquals(notification.type, NotificationType.HOOK);
         assertEquals(notification.messages.size(), messageJson.size());

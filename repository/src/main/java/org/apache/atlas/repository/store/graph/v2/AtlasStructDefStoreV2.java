@@ -555,6 +555,7 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
         attribInfo.put("indexTypeESConfig", attributeDef.getIndexTypeESConfig());
         attribInfo.put("indexTypeESFields", attributeDef.getIndexTypeESFields());
         attribInfo.put("autoUpdateAttributes", attributeDef.getAutoUpdateAttributes());
+        attribInfo.put("skipScrubbing", attributeDef.getSkipScrubbing());
 
         if(attributeDef.getOptions() != null) {
             attribInfo.put("options", AtlasType.toJson(attributeDef.getOptions()));
@@ -602,6 +603,10 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
         ret.setIncludeInNotification((Boolean) attribInfo.get("includeInNotification"));
         ret.setDefaultValue((String) attribInfo.get("defaultValue"));
         ret.setDescription((String) attribInfo.get("description"));
+
+        if(attribInfo.get("skipScrubbing")!=null) {
+            ret.setSkipScrubbing((Boolean) attribInfo.get("skipScrubbing"));
+        }
 
         if(attribInfo.get("options") != null) {
             ret.setOptions(AtlasType.fromJson((String) attribInfo.get("options"), Map.class));
@@ -667,6 +672,7 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
 
         HashMap<String, ArrayList> autoUpdateAttributes = (HashMap<String, ArrayList>) attribInfo.get("autoUpdateAttributes");
         ret.setAutoUpdateAttributes(autoUpdateAttributes);
+
         return ret;
     }
 

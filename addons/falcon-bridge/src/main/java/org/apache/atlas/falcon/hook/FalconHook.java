@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
+import static org.apache.atlas.repository.Constants.FALCON_SOURCE;
 
 /**
  * Falcon hook sends lineage information to the Atlas Service.
@@ -43,6 +44,11 @@ public class FalconHook extends AtlasHook implements FalconEventPublisher {
     private static final Logger LOG = LoggerFactory.getLogger(FalconHook.class);
 
     private static ConfigurationStore STORE;
+
+    @Override
+    public String getMessageSource() {
+        return FALCON_SOURCE;
+    }
 
     private enum Operation {
         ADD,

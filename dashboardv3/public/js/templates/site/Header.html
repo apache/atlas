@@ -30,17 +30,7 @@
                     <table class="header-menu">
                         <tr>
                             <td><a class="show-stat" href="javascript:void(0);" title="Statistics"><i class="fa fa-bar-chart"></i></a></td>
-                            <td class="user-dropdown">
-                                <table data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                    <tr>
-                                        <td style="padding: 0;"><a style="padding-right: 0;" href="javascript:void(0);"><i class="fa fa-user user-circle "></i>
-                                            </a>
-                                        </td>
-                                        <td style="padding-left: 0;">
-                                            <span class="userName"></span>
-                                        </td>
-                                    </tr>
-                                </table>
+                            <td class="user-dropdown"><a href="javascript:void(0);" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" class="user-dropdown"><i class="fa fa-user user-circle "></i><span class="userName"></span></a>
                                 <ul class="dropdown-menu pull-right multi-level" role="menu" aria-labelledby="dropdownMenu">
                                     <li><a href="javascript:void(0)" data-id='administrator'>Administration</a></li>
                                     <li class="dropdown-submenu">
@@ -50,8 +40,8 @@
                                             <li><a target="_blank" href="{{apiDocUrl}}">API Documentation</a></li>
                                             <li class="aboutAtlas"><a href="javascript:void(0)">About</a></li>
                                             {{#if isDebugMetricsEnabled}}
-                                                <li class="show-debug"><a href="javascript:void(0)" data-id="showDebug">Debug</a></li>
-                                            {{/if}}    
+                                            <li class="show-debug"><a href="javascript:void(0)" data-id="showDebug">Debug</a></li>
+                                            {{/if}}
                                         </ul>
                                     </li>
                                     <li class="divider"></li>

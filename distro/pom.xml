@@ -250,7 +250,7 @@ atlas.graph.storage.lock.wait-time=300
                 <elasticsearch.dir>${project.build.directory}/elasticsearch</elasticsearch.dir>
                 <elasticsearch.folder>elasticsearch-${elasticsearch.version}</elasticsearch.folder>
                 <elasticsearch.managed>true</elasticsearch.managed>
-                <elasticsearch.tar>https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${elasticsearch.version}.tar.gz</elasticsearch.tar>
+                <elasticsearch.tar>https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${elasticsearch.version}-linux-x86_64.tar.gz</elasticsearch.tar>
                 <entity.repository.properties>atlas.EntityAuditRepository.impl=org.apache.atlas.repository.audit.NoopEntityAuditRepository</entity.repository.properties>
                 <graph.index.backend>elasticsearch</graph.index.backend>
                 <graph.index.properties>#ElasticSearch

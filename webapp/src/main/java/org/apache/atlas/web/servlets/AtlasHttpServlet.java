@@ -32,6 +32,7 @@ public class AtlasHttpServlet extends HttpServlet {
     public static final String TEXT_HTML     = "text/html";
     public static final String XFRAME_OPTION = "X-Frame-Options";
     public static final String DENY          = "DENY";
+    public static final String ALLOW         = "ALLOW";
 
     protected void includeResponse(HttpServletRequest request, HttpServletResponse response, String template) {
         try {

@@ -79,6 +79,11 @@
             text-align: right;
         }
     }
+
+    .tree-container {
+        max-height: 140px;
+        overflow-y: auto !important;
+    }
 }
 
 .modal-full-screen {
@@ -581,4 +586,8 @@ div.columnmanager-dropdown-container {
     .modal-content {
         border-radius: 0px !important;
     }
+}
+
+.user-circle {
+    display: inline;
 }

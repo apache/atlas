@@ -140,24 +140,34 @@ do
     -d) IMPORT_ARGS="$IMPORT_ARGS -d $1"; shift;;
     -t) IMPORT_ARGS="$IMPORT_ARGS -t $1"; shift;;
     -f) IMPORT_ARGS="$IMPORT_ARGS -f $1"; shift;;
+    -o) IMPORT_ARGS="$IMPORT_ARGS -o $1"; shift;;
+    -i) IMPORT_ARGS="$IMPORT_ARGS -i";;
+    -h) export HELP_OPTION="true"; IMPORT_ARGS="$IMPORT_ARGS -h";;
     --database) IMPORT_ARGS="$IMPORT_ARGS --database $1"; shift;;
     --table) IMPORT_ARGS="$IMPORT_ARGS --table $1"; shift;;
     --filename) IMPORT_ARGS="$IMPORT_ARGS --filename $1"; shift;;
+    --output) IMPORT_ARGS="$IMPORT_ARGS --output $1"; shift;;
+    --ignoreBulkImport) IMPORT_ARGS="$IMPORT_ARGS --ignoreBulkImport";;
+    --help) export HELP_OPTION="true"; IMPORT_ARGS="$IMPORT_ARGS --help";;
     -deleteNonExisting) IMPORT_ARGS="$IMPORT_ARGS -deleteNonExisting";;
     "") break;;
-    *) JVM_ARGS="$JVM_ARGS $option"
+    *) IMPORT_ARGS="$IMPORT_ARGS $option"
   esac
 done
 
 JAVA_PROPERTIES="${JAVA_PROPERTIES} ${JVM_ARGS}"
 
-echo "Log file for import is $LOGFILE"
+if [ -z ${HELP_OPTION} ]; then
+  echo "Log file for import is $LOGFILE"
+fi
 
 "${JAVA_BIN}" ${JAVA_PROPERTIES} -cp "${CP}" org.apache.atlas.hive.bridge.HiveMetaStoreBridge $IMPORT_ARGS
 
 RETVAL=$?
-[ $RETVAL -eq 0 ] && echo Hive metadata imported successfully!
-[ $RETVAL -ne 0 ] && echo Failed to import Hive metadata! Check logs at: $LOGFILE for details.
+if [ -z ${HELP_OPTION} ]; then
+  [ $RETVAL -eq 0 ] && echo Hive Meta Data imported successfully!
+  [ $RETVAL -eq 1 ] && echo Failed to import Hive Meta Data! Check logs at: $LOGFILE for details.
+fi
 
 exit $RETVAL
 
