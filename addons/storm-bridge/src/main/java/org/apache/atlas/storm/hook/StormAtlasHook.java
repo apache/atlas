@@ -53,6 +53,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Date;
 
+import static org.apache.atlas.repository.Constants.STORM_SOURCE;
+
 /**
  * StormAtlasHook sends storm topology metadata information to Atlas
  * via a Kafka Broker for durability.
@@ -405,5 +407,10 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
         }
 
         return clusterName;
+    }
+
+    @Override
+    public String getMessageSource() {
+        return STORM_SOURCE;
     }
 }

@@ -182,7 +182,8 @@ public class AtlasTypeUtil {
         return new AtlasAttributeDef(name, dataType, true,
                 Cardinality.SINGLE, 0, 1,
                 false, false, false, "",
-                Collections.<AtlasConstraintDef>emptyList(), options, desc, 0, null);
+                Collections.<AtlasConstraintDef>emptyList(), options, desc, 0, null, false
+        );
     }
 
     public static AtlasAttributeDef createRequiredAttrDef(String name, String dataType) {

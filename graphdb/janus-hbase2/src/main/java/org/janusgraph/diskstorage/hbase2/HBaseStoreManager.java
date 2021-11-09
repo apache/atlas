@@ -440,7 +440,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             throw new TemporaryBackendException(e);
         }
 
-        sleepAfterWrite(txh, commitTime);
+        this.sleepAfterWrite(commitTime);
     }
 
     @Override

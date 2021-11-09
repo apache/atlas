@@ -19,6 +19,7 @@ package org.apache.atlas.notification.spool;
 
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.hook.FailedMessagesLogger;
+import org.apache.atlas.model.notification.MessageSource;
 import org.apache.atlas.notification.AbstractNotification;
 import org.apache.atlas.notification.NotificationConsumer;
 import org.apache.atlas.notification.NotificationException;
@@ -30,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import static org.apache.atlas.repository.Constants.FILE_SPOOL_SOURCE;
 
 public class AtlasFileSpool implements NotificationInterface {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasFileSpool.class);
@@ -103,13 +105,18 @@ public class AtlasFileSpool implements NotificationInterface {
     }
 
     @Override
+    public <T> void send(NotificationType type, List<T> messages) throws NotificationException {
+        send(type, messages, new MessageSource(FILE_SPOOL_SOURCE));
+    }
+
+    @Override
     public boolean isReady(NotificationType type) {
         return true;
     }
 
     @Override
-    public <T> void send(NotificationType type, List<T> messages) throws NotificationException {
-        List<String> serializedMessages = getSerializedMessages(messages);
+    public <T> void send(NotificationType type, List<T> messages, MessageSource source) throws NotificationException {
+        List<String> serializedMessages = getSerializedMessages(messages, source);
         if (hasInitSucceeded() && (this.indexManagement.isPending() || this.publisher.isDestinationDown())) {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("AtlasFileSpool.send(): sending to spooler");
@@ -139,10 +146,10 @@ public class AtlasFileSpool implements NotificationInterface {
         }
     }
 
-    private <T> List<String> getSerializedMessages(List<T> messages) {
+    private <T> List<String> getSerializedMessages(List<T> messages, MessageSource source) {
         List<String> serializedMessages = new ArrayList<>(messages.size());
         for (int index = 0; index < messages.size(); index++) {
-            notificationHandler.createNotificationMessages(messages.get(index), serializedMessages);
+            notificationHandler.createNotificationMessages(messages.get(index), serializedMessages, source);
         }
 
         return serializedMessages;

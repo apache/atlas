@@ -82,8 +82,8 @@ define(['require',
     var getPopoverEl = function(e) {
         return $(e.target).parent().data("bs.popover") || $(e.target).data("bs.popover") || $(e.target).parents('.popover').length;
     }
-    $(document).on('click DOMMouseScroll mousewheel', function(e) {
-        if (e.originalEvent) {
+    $('body').on('click DOMMouseScroll mousewheel', function(e) {
+        if (e.target) {
             // Do action if it is triggered by a human.
             //e.isImmediatePropagationStopped();
             var isPopOverEl = getPopoverEl(e)
@@ -391,7 +391,7 @@ define(['require',
         });
     }
     //For closing the modal on browsers navigation
-    $(window).on('popstate', function(){
+    $(window).on('popstate', function() {
         $('body').find('.modal-dialog .close').click();
     });
 })

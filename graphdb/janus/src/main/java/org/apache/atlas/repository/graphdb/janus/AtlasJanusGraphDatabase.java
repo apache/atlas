@@ -29,6 +29,7 @@ import org.apache.atlas.repository.graphdb.janus.serializer.BigIntegerSerializer
 import org.apache.atlas.repository.graphdb.janus.serializer.TypeCategorySerializer;
 import org.apache.atlas.typesystem.types.DataTypes.TypeCategory;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration.ConfigurationConverter;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONMapper;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.JanusGraphException;
@@ -51,6 +52,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 
 
 import static org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchDatabase.getClient;
@@ -105,18 +107,18 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
         Configuration janusConfig = ApplicationProperties.getSubsetConfiguration(configProperties, GRAPH_PREFIX);
 
         //add serializers for non-standard property value types that Atlas uses
-        janusConfig.addProperty("attributes.custom.attribute1.attribute-class", TypeCategory.class.getName());
-        janusConfig.addProperty("attributes.custom.attribute1.serializer-class", TypeCategorySerializer.class.getName());
+        janusConfig.setProperty("attributes.custom.attribute1.attribute-class", TypeCategory.class.getName());
+        janusConfig.setProperty("attributes.custom.attribute1.serializer-class", TypeCategorySerializer.class.getName());
 
         //not ideal, but avoids making large changes to Atlas
-        janusConfig.addProperty("attributes.custom.attribute2.attribute-class", ArrayList.class.getName());
-        janusConfig.addProperty("attributes.custom.attribute2.serializer-class", SerializableSerializer.class.getName());
+        janusConfig.setProperty("attributes.custom.attribute2.attribute-class", ArrayList.class.getName());
+        janusConfig.setProperty("attributes.custom.attribute2.serializer-class", SerializableSerializer.class.getName());
 
-        janusConfig.addProperty("attributes.custom.attribute3.attribute-class", BigInteger.class.getName());
-        janusConfig.addProperty("attributes.custom.attribute3.serializer-class", BigIntegerSerializer.class.getName());
+        janusConfig.setProperty("attributes.custom.attribute3.attribute-class", BigInteger.class.getName());
+        janusConfig.setProperty("attributes.custom.attribute3.serializer-class", BigIntegerSerializer.class.getName());
 
-        janusConfig.addProperty("attributes.custom.attribute4.attribute-class", BigDecimal.class.getName());
-        janusConfig.addProperty("attributes.custom.attribute4.serializer-class", BigDecimalSerializer.class.getName());
+        janusConfig.setProperty("attributes.custom.attribute4.attribute-class", BigDecimal.class.getName());
+        janusConfig.setProperty("attributes.custom.attribute4.serializer-class", BigDecimalSerializer.class.getName());
 
         return janusConfig;
     }
@@ -193,14 +195,16 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
 
     @VisibleForTesting
     static JanusGraph initJanusGraph(Configuration config) {
+
+        org.apache.commons.configuration2.Configuration conf2 = createConfiguration2(config);
         try {
-            return JanusGraphFactory.open(config);
+            return JanusGraphFactory.open(conf2);
         } catch (JanusGraphException e) {
             LOG.warn("JanusGraphException: {}", e.getMessage());
             if (e.getMessage().startsWith(OLDER_STORAGE_EXCEPTION)) {
                 LOG.info("Newer client is being used with older janus storage version. Setting allow-upgrade=true and reattempting connection");
                 config.addProperty("graph.allow-upgrade", true);
-                return JanusGraphFactory.open(config);
+                return JanusGraphFactory.open(conf2);
             } else {
                 throw new RuntimeException(e);
             }
@@ -257,7 +261,9 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
         try {
             Configuration cfg = getConfiguration();
             cfg.setProperty("storage.batch-loading", true);
-            return JanusGraphFactory.open(cfg);
+
+            org.apache.commons.configuration2.Configuration conf2 = createConfiguration2(cfg);
+            return JanusGraphFactory.open(conf2);
         } catch (IllegalArgumentException ex) {
             LOG.error("getBulkLoadingGraphInstance: Failed!", ex);
         } catch (AtlasException ex) {
@@ -265,6 +271,12 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
         }
 
         return null;
+    }
+
+    private static org.apache.commons.configuration2.Configuration createConfiguration2(Configuration conf) {
+        Properties properties = ConfigurationConverter.getProperties(conf);
+
+        return org.apache.commons.configuration2.ConfigurationConverter.getConfiguration(properties);
     }
 
     public static void unload() {

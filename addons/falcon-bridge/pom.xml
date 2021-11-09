@@ -106,12 +106,6 @@
             <artifactId>atlas-graphdb-impls</artifactId>
             <type>pom</type>
             <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>io.netty</groupId>
-                    <artifactId>netty-handler</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
     </dependencies>
 
@@ -316,6 +310,8 @@
                         <id>start-jetty</id>
                         <phase>pre-integration-test</phase>
                         <goals>
+                            <!-- stop any previous instance to free up the port -->
+                            <goal>stop</goal>
                             <goal>deploy-war</goal>
                         </goals>
                         <configuration>

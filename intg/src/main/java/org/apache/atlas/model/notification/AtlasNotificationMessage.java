@@ -60,7 +60,11 @@ public class AtlasNotificationMessage<T> extends AtlasNotificationBaseMessage {
     }
 
     public AtlasNotificationMessage(MessageVersion version, T message, String msgSourceIP, String createdBy, boolean spooled) {
-        super(version);
+        this(version, message, msgSourceIP, createdBy, spooled, null);
+    }
+
+    public AtlasNotificationMessage(MessageVersion version, T message, String msgSourceIP, String createdBy, boolean spooled, MessageSource source) {
+        super(version, source);
 
         this.msgSourceIP     = msgSourceIP;
         this.msgCreatedBy    = createdBy;
@@ -70,7 +74,7 @@ public class AtlasNotificationMessage<T> extends AtlasNotificationBaseMessage {
     }
 
     public AtlasNotificationMessage(MessageVersion version, T message, String msgSourceIP, String createdBy) {
-        this(version, message, msgSourceIP, createdBy, false);
+        this(version, message, msgSourceIP, createdBy, false, null);
     }
 
     public String getMsgSourceIP() {

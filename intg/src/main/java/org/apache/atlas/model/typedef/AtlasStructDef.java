@@ -23,7 +23,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import java.io.Serializable;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -300,6 +299,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
         private boolean                  isUnique;
         private boolean                  isIndexable;
         private boolean                  includeInNotification;
+        private boolean                  skipScrubbing;
         private String                   defaultValue;
         private String                   description;
         private int                      searchWeight = DEFAULT_SEARCHWEIGHT;
@@ -319,12 +319,12 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
 
         public AtlasAttributeDef(String name, String typeName, boolean isUnique, boolean isIndexable) {
             this(name, typeName, false, Cardinality.SINGLE, COUNT_NOT_SET, COUNT_NOT_SET, isUnique, isIndexable,
-                false, null,null, null, null, DEFAULT_SEARCHWEIGHT, null);
+                false, null,null, null, null, DEFAULT_SEARCHWEIGHT, null, false);
         }
 
         public AtlasAttributeDef(String name, String typeName, Cardinality cardinality, boolean isUnique, boolean isIndexable) {
             this(name, typeName, false, cardinality, COUNT_NOT_SET, COUNT_NOT_SET, isUnique, isIndexable,
-                false, null,null, null, null, DEFAULT_SEARCHWEIGHT, null);
+                false, null,null, null, null, DEFAULT_SEARCHWEIGHT, null, false );
         }
 
         public AtlasAttributeDef(String name, String typeName, int searchWeight) {
@@ -350,12 +350,12 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
 
         private AtlasAttributeDef(String name, String typeName, boolean isOptional, Cardinality cardinality,
                                   int valuesMinCount, int valuesMaxCount, boolean isUnique, boolean isIndexable, boolean includeInNotification, List<AtlasConstraintDef> constraints, int searchWeight, IndexType indexType) {
-            this(name, typeName, isOptional, cardinality, valuesMinCount, valuesMaxCount, isUnique, isIndexable, includeInNotification, null, constraints, null, null, searchWeight, indexType);
+            this(name, typeName, isOptional, cardinality, valuesMinCount, valuesMaxCount, isUnique, isIndexable, includeInNotification, null, constraints, null, null, searchWeight, indexType , false);
         }
 
         public AtlasAttributeDef(String name, String typeName, boolean isOptional, Cardinality cardinality,
                                  int valuesMinCount, int valuesMaxCount, boolean isUnique, boolean isIndexable, boolean includeInNotification, String defaultValue,
-                                 List<AtlasConstraintDef> constraints, Map<String,String> options, String description, int searchWeight, IndexType indexType) {
+                                 List<AtlasConstraintDef> constraints, Map<String,String> options, String description, int searchWeight, IndexType indexType, boolean skipScrubbing) {
             setName(name);
             setTypeName(typeName);
             setIsOptional(isOptional);
@@ -371,6 +371,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             setDescription(description);
             setSearchWeight(searchWeight);
             setIndexType(indexType);
+            setSkipScrubbing(skipScrubbing);
         }
 
         public AtlasAttributeDef(AtlasAttributeDef other) {
@@ -394,6 +395,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
                 setIndexTypeESConfig(other.getIndexTypeESConfig());
                 setIndexTypeESFields(other.getIndexTypeESFields());
                 setAutoUpdateAttributes(other.getAutoUpdateAttributes());
+                setSkipScrubbing(other.getSkipScrubbing());
             }
         }
 
@@ -588,6 +590,14 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             return this.autoUpdateAttributes;
         }
 
+        public boolean getSkipScrubbing() {
+            return this.skipScrubbing;
+        }
+
+        public void setSkipScrubbing(boolean skipScrubbing) {
+            this.skipScrubbing = skipScrubbing;
+        }
+
         public StringBuilder toString(StringBuilder sb) {
             if (sb == null) {
                 sb = new StringBuilder();
@@ -612,6 +622,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             sb.append(", indexTypeESConfig='").append(indexTypeESConfig).append('\'');
             sb.append(", indexTypeESFields='").append(indexTypeESFields).append('\'');
             sb.append(", autoUpdateAttributes='").append(autoUpdateAttributes).append('\'');
+            sb.append(", skipScrubbing='").append(skipScrubbing).append('\'');
             sb.append(", constraints=[");
             if (CollectionUtils.isNotEmpty(constraints)) {
                 int i = 0;
@@ -652,12 +663,13 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
                     Objects.equals(displayName, that.displayName) &&
                     Objects.equals(indexTypeESConfig, that.indexTypeESConfig) &&
                     Objects.equals(indexTypeESFields, that.indexTypeESFields) &&
-                    Objects.equals(autoUpdateAttributes, that.autoUpdateAttributes);
+                    Objects.equals(autoUpdateAttributes, that.autoUpdateAttributes) &&
+                    Objects.equals(skipScrubbing, that.skipScrubbing);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(name, typeName, isOptional, cardinality, valuesMinCount, valuesMaxCount, isUnique, isIndexable, includeInNotification, defaultValue, constraints, options, description, searchWeight, indexType, displayName, indexTypeESConfig, indexTypeESFields, autoUpdateAttributes);
+            return Objects.hash(name, typeName, isOptional, cardinality, valuesMinCount, valuesMaxCount, isUnique, isIndexable, includeInNotification, defaultValue, constraints, options, description, searchWeight, indexType, displayName, indexTypeESConfig, indexTypeESFields, autoUpdateAttributes, skipScrubbing);
         }
 
         @Override

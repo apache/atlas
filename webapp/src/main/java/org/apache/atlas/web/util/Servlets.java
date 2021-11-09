@@ -214,8 +214,12 @@ public final class Servlets {
         }
     }
 
-    public static String decodeQueryString(String query) {
-        return UriUtils.decode(query,"UTF-8");
-
+    public static String decodeQueryString(String query) throws AtlasBaseException {
+        try {
+            return UriUtils.decode(query,"UTF-8");
+        } catch (Exception e) {
+            LOG.error("Error occurred while decoding query:" + query, e.getMessage());
+            throw new AtlasBaseException(e.getMessage());
+        }
     }
 }
