@@ -42,6 +42,13 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.TermsResponse;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
+import org.elasticsearch.ElasticsearchException;
+import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
+import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.cluster.health.ClusterHealthStatus;
+import org.elasticsearch.rest.RestStatus;
 import org.janusgraph.diskstorage.solr.Solr6Index;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,8 +64,7 @@ import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Set;
 
-import static org.apache.atlas.repository.Constants.FREETEXT_REQUEST_HANDLER;
-import static org.apache.atlas.repository.Constants.VERTEX_INDEX;
+import static org.apache.atlas.repository.Constants.*;
 
 public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasJanusGraphIndexClient.class);
@@ -85,9 +91,8 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
         long    currentTime = System.currentTimeMillis();
 
         try {
-            if (isSolrHealthy()) {
-                isHealthy = true;
-            }
+            boolean isElasticsearchBackend = configuration.getProperty("atlas.graph.index.search.backend").equals("elasticsearch");
+            isHealthy = isElasticsearchBackend ? isElasticsearchHealthy() : isSolrHealthy();
         } catch (Exception exception) {
             if (LOG.isDebugEnabled()) {
                 LOG.error("Error: isHealthy", exception);
@@ -95,7 +100,7 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
         }
 
         if (!isHealthy && (prevSolrHealthCheckTime == 0 || currentTime - prevSolrHealthCheckTime > SOLR_STATUS_LOG_FREQUENCY_MS)) {
-            LOG.info("Solr Health: Unhealthy!");
+            LOG.info("Index Health: Unhealthy!");
 
             prevSolrHealthCheckTime = currentTime;
         }
@@ -377,6 +382,22 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
         SolrClient client = Solr6Index.getSolrClient();
 
         return client != null && client.ping(Constants.VERTEX_INDEX).getStatus() == SOLR_HEALTHY_STATUS;
+    }
+
+    private boolean isElasticsearchHealthy() throws ElasticsearchException, IOException {
+        RestHighLevelClient client = AtlasElasticsearchDatabase.getClient();
+        ClusterHealthRequest request = new ClusterHealthRequest(Constants.INDEX_PREFIX + Constants.VERTEX_INDEX);
+        ClusterHealthResponse response = client.cluster().health(request, RequestOptions.DEFAULT);
+        RestStatus restStatus = response.status();
+        if (restStatus.toString().equals(ELASTICSEARCH_REST_STATUS_OK)){
+            ClusterHealthStatus status = response.getStatus();
+            if (status.toString().equals(ELASTICSEARCH_CLUSTER_STATUS_GREEN) || status.toString().equals(ELASTICSEARCH_CLUSTER_STATUS_YELLOW)) {
+                return true;
+            }
+        } else {
+            LOG.error("isElasticsearchHealthy => ES health check request timed out!");
+        }
+        return false;
     }
 
     private void graphManagementCommit(AtlasGraphManagement management) {

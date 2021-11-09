@@ -166,13 +166,13 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
 
             while (shouldRun.get()) {
                 try {
-                    boolean solrHealthy = isSolrHealthy();
+                    boolean indexHealthy = isIndexHealthy();
 
-                    if (this.txRecoveryObject == null && solrHealthy) {
+                    if (this.txRecoveryObject == null && indexHealthy) {
                         startMonitoring();
                     }
 
-                    if (this.txRecoveryObject != null && !solrHealthy) {
+                    if (this.txRecoveryObject != null && !indexHealthy) {
                         stopMonitoring();
                     }
                 } catch (Exception e) {
@@ -197,7 +197,7 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
             }
         }
 
-        private boolean isSolrHealthy() throws AtlasException, InterruptedException {
+        private boolean isIndexHealthy() throws AtlasException, InterruptedException {
             Thread.sleep(indexStatusCheckRetryMillis);
 
             return this.graph.getGraphIndexClient().isHealthy();
@@ -208,7 +208,9 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
 
             try {
                 startTime        = recoveryInfoManagement.getStartTime();
+                Instant newStartTime = Instant.now();
                 txRecoveryObject = this.graph.getManagementSystem().startIndexRecovery(startTime);
+                recoveryInfoManagement.updateStartTime(newStartTime.toEpochMilli());
 
                 printIndexRecoveryStats();
             } catch (Exception e) {
@@ -223,8 +225,6 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
 
             try {
                 this.graph.getManagementSystem().stopIndexRecovery(txRecoveryObject);
-
-                recoveryInfoManagement.updateStartTime(newStartTime.toEpochMilli());
 
                 printIndexRecoveryStats();
             } catch (Exception e) {
