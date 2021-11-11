@@ -123,7 +123,7 @@ define(['require',
                     }
 
                 }
-                var label = (Enums.systemAttributes[attrObj.name] ? Enums.systemAttributes[attrObj.name] : _.escape(attrObj.name.capitalize()));
+                var label = (Enums.systemAttributes[attrObj.name] ? Enums.systemAttributes[attrObj.name] : _.escape(attrObj.name));
                 var obj = {
                     id: attrObj.name,
                     label: getLableWithType(label, attrObj.name),
