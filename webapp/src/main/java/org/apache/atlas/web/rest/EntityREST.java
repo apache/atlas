@@ -89,6 +89,7 @@ public class EntityREST {
 
     public static final String PREFIX_ATTR  = "attr:";
     public static final String PREFIX_ATTR_ = "attr_";
+    public static final String QUALIFIED_NAME  = "qualifiedName";
 
 
     private final AtlasTypeRegistry      typeRegistry;
@@ -150,7 +151,7 @@ public class EntityREST {
 
                 String action = entities.get(i).getAction();
 
-                if(action == null){
+                if (action == null) {
                     throw new AtlasBaseException(BAD_REQUEST, "action is null");
                 }
 
@@ -158,11 +159,22 @@ public class EntityREST {
 
                     try {
 
-                        Map<String, Object> attributes = new HashMap<>();
-                        if (entities.get(i).getEntityId() != null) {
-                            attributes.put("qualifiedName", entities.get(i).getEntityId());
+                        AtlasEntityHeader entityHeader = null;
+
+                        if (entities.get(i).getEntityGuid() != null) {
+                            AtlasEntityWithExtInfo ret = entitiesStore.getByIdWithoutAuthorization(entities.get(i).getEntityGuid());
+                            entityHeader = new AtlasEntityHeader(ret.getEntity());
+                        } else if (entities.get(i).getEntityId() != null && entities.get(i).getTypeName()!=null) {
+                            Map<String, Object> attributes = new HashMap<>();
+                            if (entities.get(i).getEntityId() != null) {
+                                attributes.put(QUALIFIED_NAME, entities.get(i).getEntityId());
+                            }
+                            entityHeader = new AtlasEntityHeader(entities.get(i).getTypeName(), entities.get(i).getEntityGuid(), attributes);
+                        } else {
+                            throw new AtlasBaseException(BAD_REQUEST, "requires guid or typeName and qualifiedName");
                         }
-                        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.valueOf(entities.get(i).getAction()), new AtlasEntityHeader(entities.get(i).getTypeName(), entities.get(i).getEntityGuid(), attributes)), entities.get(i).getAction() + "guid=", entities.get(i).getEntityGuid());
+
+                        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.valueOf(entities.get(i).getAction()), entityHeader, entities.get(i).getAction() + "guid=" + entities.get(i).getEntityGuid()));
                         response.add(new AtlasEvaluatePolicyResponse(entities.get(i).getTypeName(), entities.get(i).getEntityGuid(), entities.get(i).getAction(), entities.get(i).getEntityId(), true));
                     } catch (AtlasBaseException e) {
                         response.add(new AtlasEvaluatePolicyResponse(entities.get(i).getTypeName(), entities.get(i).getEntityGuid(), entities.get(i).getAction(), entities.get(i).getEntityId(), false));
@@ -173,14 +185,21 @@ public class EntityREST {
                     if (entities.get(i).getClassification() == null) {
                         throw new AtlasBaseException(BAD_REQUEST, "classification needed for " + action + " authorization");
                     }
-
-                    Map<String, Object> attributes = new HashMap<>();
-                    if (entities.get(i).getEntityId() != null) {
-                        attributes.put("qualifiedName", entities.get(i).getEntityId());
-                    }
-
                     try {
-                        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.valueOf(entities.get(i).getAction()), new AtlasEntityHeader(entities.get(i).getTypeName(), entities.get(i).getEntityGuid(), attributes), new AtlasClassification(entities.get(i).getClassification())));
+                        AtlasEntityHeader entityHeader = null;
+
+                        if (entities.get(i).getEntityGuid() != null) {
+                            AtlasEntityWithExtInfo ret = entitiesStore.getByIdWithoutAuthorization(entities.get(i).getEntityGuid());
+                            entityHeader = new AtlasEntityHeader(ret.getEntity());
+                        } else if (entities.get(i).getEntityId() != null && entities.get(i).getTypeName()!=null) {
+                            Map<String, Object> attributes = new HashMap<>();
+                            attributes.put(QUALIFIED_NAME, entities.get(i).getEntityId());
+                            entityHeader = new AtlasEntityHeader(entities.get(i).getTypeName(), entities.get(i).getEntityGuid(), attributes);
+                        } else {
+                            throw new AtlasBaseException(BAD_REQUEST, "requires guid or typeName and qualifiedName");
+                        }
+
+                        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.valueOf(entities.get(i).getAction()), entityHeader, new AtlasClassification(entities.get(i).getClassification())));
                         response.add(new AtlasEvaluatePolicyResponse(entities.get(i).getTypeName(), entities.get(i).getEntityGuid(), entities.get(i).getAction(), entities.get(i).getEntityId(), entities.get(i).getClassification(), true));
 
                     } catch (AtlasBaseException e) {
@@ -189,24 +208,34 @@ public class EntityREST {
 
                 } else if (RELATIONSHIP_ADD.name().equals(action) || RELATIONSHIP_REMOVE.name().equals(action) || RELATIONSHIP_UPDATE.name().equals(action)) {
 
-                    Map<String, Object> attributesEnd1 = new HashMap<>();
-                    if (entities.get(i).getEntityIdEnd1() != null) {
-                        attributesEnd1.put("qualifiedName", entities.get(i).getEntityIdEnd1());
-                    }
-
-                    AtlasEntityHeader end1Entity = new AtlasEntityHeader(entities.get(i).getEntityTypeEnd1(), entities.get(i).getEntityGuidEnd1(), attributesEnd1);
-
-                    Map<String, Object> attributesEnd2 = new HashMap<>();
-                    if (entities.get(i).getEntityIdEnd2() != null) {
-                        attributesEnd2.put("qualifiedName", entities.get(i).getEntityIdEnd2());
-                    }
-
-                    AtlasEntityHeader end2Entity = new AtlasEntityHeader(entities.get(i).getEntityTypeEnd2(), entities.get(i).getEntityGuidEnd2(), attributesEnd2);
                     try {
+
+                        AtlasEntityHeader end1Entity = null;
+
+                        if (entities.get(i).getEntityGuidEnd1() != null) {
+                            AtlasEntityWithExtInfo ret = entitiesStore.getByIdWithoutAuthorization(entities.get(i).getEntityGuidEnd1());
+                            end1Entity = new AtlasEntityHeader(ret.getEntity());
+                        } else if (entities.get(i).getEntityIdEnd1() != null) {
+                            Map<String, Object> attributesEnd1 = new HashMap<>();
+                            attributesEnd1.put(QUALIFIED_NAME, entities.get(i).getEntityIdEnd1());
+                            end1Entity = new AtlasEntityHeader(entities.get(i).getEntityTypeEnd1(), entities.get(i).getEntityGuidEnd1(), attributesEnd1);
+                        }
+
+                        AtlasEntityHeader end2Entity = null;
+
+                        if (entities.get(i).getEntityGuidEnd2() != null) {
+                            AtlasEntityWithExtInfo ret = entitiesStore.getByIdWithoutAuthorization(entities.get(i).getEntityGuidEnd2());
+                            end2Entity = new AtlasEntityHeader(ret.getEntity());
+                        } else if (entities.get(i).getEntityIdEnd2() != null) {
+                            Map<String, Object> attributesEnd2 = new HashMap<>();
+                            attributesEnd2.put(QUALIFIED_NAME, entities.get(i).getEntityIdEnd2());
+                            end1Entity = new AtlasEntityHeader(entities.get(i).getEntityTypeEnd2(), entities.get(i).getEntityGuidEnd2(), attributesEnd2);
+                        }
+
                         AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry, AtlasPrivilege.valueOf(action), entities.get(i).getRelationShipTypeName(), end1Entity, end2Entity));
-                        response.add(new AtlasEvaluatePolicyResponse(action, entities.get(i).getRelationShipTypeName(), entities.get(i).getEntityTypeEnd1(),  entities.get(i).getEntityGuidEnd1(), entities.get(i).getEntityIdEnd1(), entities.get(i).getEntityTypeEnd2(), entities.get(i).getEntityGuidEnd2(),  entities.get(i).getEntityIdEnd2(), true));
+                        response.add(new AtlasEvaluatePolicyResponse(action, entities.get(i).getRelationShipTypeName(), entities.get(i).getEntityTypeEnd1(), entities.get(i).getEntityGuidEnd1(), entities.get(i).getEntityIdEnd1(), entities.get(i).getEntityTypeEnd2(), entities.get(i).getEntityGuidEnd2(), entities.get(i).getEntityIdEnd2(), true));
                     } catch (AtlasBaseException e) {
-                        response.add(new AtlasEvaluatePolicyResponse(action, entities.get(i).getRelationShipTypeName(), entities.get(i).getEntityTypeEnd1(),  entities.get(i).getEntityGuidEnd1(), entities.get(i).getEntityIdEnd1(), entities.get(i).getEntityTypeEnd2(), entities.get(i).getEntityGuidEnd2(),  entities.get(i).getEntityIdEnd2(), false));
+                        response.add(new AtlasEvaluatePolicyResponse(action, entities.get(i).getRelationShipTypeName(), entities.get(i).getEntityTypeEnd1(), entities.get(i).getEntityGuidEnd1(), entities.get(i).getEntityIdEnd1(), entities.get(i).getEntityTypeEnd2(), entities.get(i).getEntityGuidEnd2(), entities.get(i).getEntityIdEnd2(), false));
                     }
                 }
 
