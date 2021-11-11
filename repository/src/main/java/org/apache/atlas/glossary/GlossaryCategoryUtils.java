@@ -49,6 +49,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.type.Constants.CATEGORIES_PROPERTY_KEY;
+import static org.apache.atlas.type.Constants.CATEGORIES_PARENT_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.GLOSSARY_PROPERTY_KEY;
 
 public class GlossaryCategoryUtils extends GlossaryUtils {
@@ -178,6 +179,7 @@ public class GlossaryCategoryUtils extends GlossaryUtils {
                         relationshipStore.deleteById(parentRelationship.getGuid(), true);
                         updateQualifiedName(storeObject, newParent.getCategoryGuid());
                         createRelationship(defineCategoryHierarchyLink(newParent, storeObject.getGuid()));
+                        addParentCatProp(storeObject, newParent.getCategoryGuid());
                     }
                 }
                 break;
@@ -187,6 +189,12 @@ public class GlossaryCategoryUtils extends GlossaryUtils {
                 }
                 break;
         }
+    }
+
+    private void addParentCatProp(AtlasGlossaryCategory category, String parentCatGuid) throws AtlasBaseException {
+        AtlasVertex catVertex = getVertexById(category.getGuid());
+        AtlasVertex parentVertex = getVertexById(parentCatGuid);
+        addEntityAttr(catVertex, CATEGORIES_PARENT_PROPERTY_KEY, parentVertex.getProperty(QUALIFIED_NAME, String.class));
     }
 
     private void processNewParent(AtlasGlossaryCategory storeObject, AtlasRelatedCategoryHeader newParent, Map<String, AtlasGlossaryCategory> impactedCategories) throws AtlasBaseException {
@@ -202,6 +210,8 @@ public class GlossaryCategoryUtils extends GlossaryUtils {
         if (LOG.isDebugEnabled()) {
             LOG.debug("Derived qualifiedName = {}", storeObject.getQualifiedName());
         }
+
+        addParentCatProp(storeObject, newParent.getCategoryGuid());
 
         updateChildCategories(storeObject, storeObject.getChildrenCategories(), impactedCategories, false);
     }
@@ -227,6 +237,9 @@ public class GlossaryCategoryUtils extends GlossaryUtils {
         AtlasGlossaryCategory glossaryCategory = new AtlasGlossaryCategory(storeObject);
         glossaryCategory.setAnchor(new AtlasGlossaryHeader(anchorGlossaryGuid));
         storeObject.setQualifiedName(createQualifiedName(glossaryCategory, true));
+
+        AtlasVertex catVertex = getVertexById(storeObject.getGuid());
+        removeEntityAttr(catVertex, CATEGORIES_PARENT_PROPERTY_KEY, null);
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("Derived qualifiedName = {}", storeObject.getQualifiedName());
@@ -580,6 +593,9 @@ public class GlossaryCategoryUtils extends GlossaryUtils {
                 AtlasGlossary glossary = dataAccess.load(getGlossarySkeleton(childAnchorGuid));
                 qualifiedName = getNanoid(child.getQualifiedName()) + glossary.getQualifiedName();
                 child.setParentCategory(null);
+
+                AtlasVertex catVertex = getVertexById(child.getGuid());
+                removeEntityAttr(catVertex, CATEGORIES_PARENT_PROPERTY_KEY, null);
             } else {
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("Using parent to derive qualifiedName");
@@ -589,6 +605,9 @@ public class GlossaryCategoryUtils extends GlossaryUtils {
                 parentCat.setCategoryGuid(parentCategory.getGuid());
                 category.setParentCategory(parentCat);
                 qualifiedName = createQualifiedName(category, parentCategory, false);
+
+                addEntityAttr(getVertexById(child.getGuid()), CATEGORIES_PARENT_PROPERTY_KEY, parentCategory.getQualifiedName());
+
             }
             child.setQualifiedName(qualifiedName);
 
