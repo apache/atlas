@@ -26,6 +26,7 @@ import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasEntityAccessRequest;
 import org.apache.atlas.authorize.AtlasPrivilege;
+import org.apache.atlas.authorize.AtlasRelationshipAccessRequest;
 import org.apache.atlas.bulkimport.BulkImportResponse;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
@@ -69,6 +70,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.*;
+
+import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
+import static org.apache.atlas.authorize.AtlasPrivilege.*;
 
 
 /**
@@ -142,13 +146,70 @@ public class EntityREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.evaluatePolicies()");
             }
 
-            for (int i=0; i < entities.size(); i++) {
-                try {
-                    AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.valueOf(entities.get(i).getAction()), new AtlasEntityHeader(entities.get(i).getTypeName(), entities.get(i).getEntityGuid(), null)), entities.get(i).getAction() + "guid=", entities.get(i).getEntityGuid());
-                    response.add(new AtlasEvaluatePolicyResponse(entities.get(i).getTypeName(), entities.get(i).getEntityGuid(), entities.get(i).getAction(), true));
-                } catch (AtlasBaseException e) {
-                    response.add(new AtlasEvaluatePolicyResponse(entities.get(i).getTypeName(), entities.get(i).getEntityGuid(), entities.get(i).getAction(), false));
+            for (int i = 0; i < entities.size(); i++) {
+
+                String action = entities.get(i).getAction();
+
+                if(action == null){
+                    throw new AtlasBaseException(BAD_REQUEST, "action is null");
                 }
+
+                if (ENTITY_READ.name().equals(action) || ENTITY_CREATE.name().equals(action) || ENTITY_UPDATE.name().equals(action) || ENTITY_DELETE.name().equals(action)) {
+
+                    try {
+
+                        Map<String, Object> attributes = new HashMap<>();
+                        if (entities.get(i).getEntityId() != null) {
+                            attributes.put("qualifiedName", entities.get(i).getEntityId());
+                        }
+                        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.valueOf(entities.get(i).getAction()), new AtlasEntityHeader(entities.get(i).getTypeName(), entities.get(i).getEntityGuid(), attributes)), entities.get(i).getAction() + "guid=", entities.get(i).getEntityGuid());
+                        response.add(new AtlasEvaluatePolicyResponse(entities.get(i).getTypeName(), entities.get(i).getEntityGuid(), entities.get(i).getAction(), entities.get(i).getEntityId(), true));
+                    } catch (AtlasBaseException e) {
+                        response.add(new AtlasEvaluatePolicyResponse(entities.get(i).getTypeName(), entities.get(i).getEntityGuid(), entities.get(i).getAction(), entities.get(i).getEntityId(), false));
+                    }
+
+                } else if (ENTITY_REMOVE_CLASSIFICATION.name().equals(action) || ENTITY_ADD_CLASSIFICATION.name().equals(action) || ENTITY_UPDATE_CLASSIFICATION.name().equals(action)) {
+
+                    if (entities.get(i).getClassification() == null) {
+                        throw new AtlasBaseException(BAD_REQUEST, "classification needed for " + action + " authorization");
+                    }
+
+                    Map<String, Object> attributes = new HashMap<>();
+                    if (entities.get(i).getEntityId() != null) {
+                        attributes.put("qualifiedName", entities.get(i).getEntityId());
+                    }
+
+                    try {
+                        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.valueOf(entities.get(i).getAction()), new AtlasEntityHeader(entities.get(i).getTypeName(), entities.get(i).getEntityGuid(), attributes), new AtlasClassification(entities.get(i).getClassification())));
+                        response.add(new AtlasEvaluatePolicyResponse(entities.get(i).getTypeName(), entities.get(i).getEntityGuid(), entities.get(i).getAction(), entities.get(i).getEntityId(), entities.get(i).getClassification(), true));
+
+                    } catch (AtlasBaseException e) {
+                        response.add(new AtlasEvaluatePolicyResponse(entities.get(i).getTypeName(), entities.get(i).getEntityGuid(), entities.get(i).getAction(), entities.get(i).getEntityId(), entities.get(i).getClassification(), false));
+                    }
+
+                } else if (RELATIONSHIP_ADD.name().equals(action) || RELATIONSHIP_REMOVE.name().equals(action) || RELATIONSHIP_UPDATE.name().equals(action)) {
+
+                    Map<String, Object> attributesEnd1 = new HashMap<>();
+                    if (entities.get(i).getEntityIdEnd1() != null) {
+                        attributesEnd1.put("qualifiedName", entities.get(i).getEntityIdEnd1());
+                    }
+
+                    AtlasEntityHeader end1Entity = new AtlasEntityHeader(entities.get(i).getEntityTypeEnd1(), entities.get(i).getEntityGuidEnd1(), attributesEnd1);
+
+                    Map<String, Object> attributesEnd2 = new HashMap<>();
+                    if (entities.get(i).getEntityIdEnd2() != null) {
+                        attributesEnd2.put("qualifiedName", entities.get(i).getEntityIdEnd2());
+                    }
+
+                    AtlasEntityHeader end2Entity = new AtlasEntityHeader(entities.get(i).getEntityTypeEnd2(), entities.get(i).getEntityGuidEnd2(), attributesEnd2);
+                    try {
+                        AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry, AtlasPrivilege.valueOf(action), entities.get(i).getRelationShipTypeName(), end1Entity, end2Entity));
+                        response.add(new AtlasEvaluatePolicyResponse(action, entities.get(i).getRelationShipTypeName(), entities.get(i).getEntityTypeEnd1(),  entities.get(i).getEntityGuidEnd1(), entities.get(i).getEntityIdEnd1(), entities.get(i).getEntityTypeEnd2(), entities.get(i).getEntityGuidEnd2(),  entities.get(i).getEntityIdEnd2(), true));
+                    } catch (AtlasBaseException e) {
+                        response.add(new AtlasEvaluatePolicyResponse(action, entities.get(i).getRelationShipTypeName(), entities.get(i).getEntityTypeEnd1(),  entities.get(i).getEntityGuidEnd1(), entities.get(i).getEntityIdEnd1(), entities.get(i).getEntityTypeEnd2(), entities.get(i).getEntityGuidEnd2(),  entities.get(i).getEntityIdEnd2(), false));
+                    }
+                }
+
             }
         } finally {
             AtlasPerfTracer.log(perf);
@@ -908,7 +969,7 @@ public class EntityREST {
             }
 
             if (CollectionUtils.isEmpty(classificationList)) {
-                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "classification list should be specified");
+                throw new AtlasBaseException(BAD_REQUEST, "classification list should be specified");
             }
 
             Map<String, List<AtlasClassification>> entityGuidClassificationMap = new HashMap<>();
@@ -969,7 +1030,7 @@ public class EntityREST {
                 if (e.getAtlasErrorCode() == AtlasErrorCode.INSTANCE_GUID_NOT_FOUND) {
                     AtlasEntityHeader entityHeader = getEntityHeaderFromPurgedAudit(guid);
 
-                    AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_READ, entityHeader), "read entity audit: guid=", guid);
+                    AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, ENTITY_READ, entityHeader), "read entity audit: guid=", guid);
                 } else {
                     throw e;
                 }
@@ -1012,7 +1073,7 @@ public class EntityREST {
             long  tagUpdateEndTime = System.currentTimeMillis();
 
             if (tagUpdateStartTime > tagUpdateEndTime) {
-                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "fromTimestamp should be less than toTimestamp");
+                throw new AtlasBaseException(BAD_REQUEST, "fromTimestamp should be less than toTimestamp");
             }
 
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
