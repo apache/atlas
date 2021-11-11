@@ -282,7 +282,15 @@ define(['require',
                     if (selectedBusinessMetadataClone.attributeDefs === undefined) {
                         selectedBusinessMetadataClone.attributeDefs = [];
                     }
-                    selectedBusinessMetadataClone.attributeDefs = selectedBusinessMetadataClone.attributeDefs.concat(this.collection.toJSON());
+
+                    //replace old attribute matched with displayName
+                    for (var i = 0; i < selectedBusinessMetadataClone.attributeDefs.length; i++) {
+                        var _attr = selectedBusinessMetadataClone.attributeDefs[0];
+                        if ( _attr.displayName === this.collection.toJSON()[0].displayName) {
+                            selectedBusinessMetadataClone.attributeDefs[0] = this.collection.toJSON()[0]
+                        }
+                    }
+
                     this.json = {
                         "enumDefs": [],
                         "structDefs": [],
