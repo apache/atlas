@@ -161,7 +161,7 @@ public class EntityResource {
             }
 
             AtlasEntitiesWithExtInfo entitiesInfo     = restAdapters.toAtlasEntities(jsonStrings);
-            EntityMutationResponse   mutationResponse = entityREST.createOrUpdate(entitiesInfo);
+            EntityMutationResponse   mutationResponse = entityREST.createOrUpdate(entitiesInfo, false, false);
 
             final List<String> guids = restAdapters.getGuids(mutationResponse.getCreatedEntities());
 
@@ -286,7 +286,7 @@ public class EntityResource {
             }
 
             AtlasEntitiesWithExtInfo   entitiesInfo     = restAdapters.toAtlasEntities(jsonStrings);
-            EntityMutationResponse     mutationResponse = entityREST.createOrUpdate(entitiesInfo);
+            EntityMutationResponse     mutationResponse = entityREST.createOrUpdate(entitiesInfo, false, false);
             CreateUpdateEntitiesResult result           = restAdapters.toCreateUpdateEntitiesResult(mutationResponse);
 
             if (LOG.isDebugEnabled()) {

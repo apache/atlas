@@ -87,7 +87,7 @@ public class TestEntityREST {
     private void createTestEntity() throws Exception {
         AtlasEntity dbEntity = TestUtilsV2.createDBEntity();
 
-        final EntityMutationResponse response = entityREST.createOrUpdate(new AtlasEntitiesWithExtInfo(dbEntity));
+        final EntityMutationResponse response = entityREST.createOrUpdate(new AtlasEntitiesWithExtInfo(dbEntity), false, false);
 
         Assert.assertNotNull(response);
         List<AtlasEntityHeader> entitiesMutated = response.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE);
@@ -391,7 +391,7 @@ public class TestEntityREST {
     @Test
     public void  testPartialUpdateByUniqueAttribute() throws Exception {
         AtlasEntity            dbEntity = TestUtilsV2.createDBEntity();
-        EntityMutationResponse response = entityREST.createOrUpdate(new AtlasEntitiesWithExtInfo(dbEntity));
+        EntityMutationResponse response = entityREST.createOrUpdate(new AtlasEntitiesWithExtInfo(dbEntity), false, false);
         String                 dbGuid   = response.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE).get(0).getGuid();
 
         Assert.assertTrue(AtlasTypeUtil.isAssignedGuid(dbGuid));
@@ -422,7 +422,7 @@ public class TestEntityREST {
     @Test
     public void  testUpdateGetDeleteEntityByUniqueAttribute() throws Exception {
         AtlasEntity            dbEntity = TestUtilsV2.createDBEntity();
-        EntityMutationResponse response = entityREST.createOrUpdate(new AtlasEntitiesWithExtInfo(dbEntity));
+        EntityMutationResponse response = entityREST.createOrUpdate(new AtlasEntitiesWithExtInfo(dbEntity), false, false);
         String                 dbGuid   = response.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE).get(0).getGuid();
 
         Assert.assertTrue(AtlasTypeUtil.isAssignedGuid(dbGuid));
