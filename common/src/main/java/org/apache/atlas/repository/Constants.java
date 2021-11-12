@@ -210,6 +210,14 @@ public final class Constants {
     public static final String EDGE_ID_IN_IMPORT_KEY   = "__eIdInImport";
 
     /*
+     * elasticsearch attributes
+     */
+
+    public static final String  ELASTICSEARCH_CLUSTER_STATUS_YELLOW   = "YELLOW";
+    public static final String  ELASTICSEARCH_CLUSTER_STATUS_GREEN   = "GREEN";
+    public static final String  ELASTICSEARCH_REST_STATUS_OK   = "OK";
+
+    /*
      * replication attributes
      */
 
@@ -249,6 +257,15 @@ public final class Constants {
     public static final String PROPERTY_KEY_INDEX_RECOVERY_NAME       = encodePropertyKey(INDEX_RECOVERY_PREFIX + "name");
     public static final String PROPERTY_KEY_INDEX_RECOVERY_START_TIME = encodePropertyKey(INDEX_RECOVERY_PREFIX + "startTime");
     public static final String PROPERTY_KEY_INDEX_RECOVERY_PREV_TIME  = encodePropertyKey(INDEX_RECOVERY_PREFIX + "prevTime");
+
+    public static final String SQOOP_SOURCE       = "sqoop";
+    public static final String FALCON_SOURCE      = "falcon";
+    public static final String HBASE_SOURCE       = "hbase";
+    public static final String HS2_SOURCE         = "hive_server2";
+    public static final String HMS_SOURCE         = "hive_metastore";
+    public static final String IMPALA_SOURCE      = "impala";
+    public static final String STORM_SOURCE       = "storm";
+    public static final String FILE_SPOOL_SOURCE  = "file_spool";
 
     /*
      * All supported file-format extensions for Bulk Imports through file upload

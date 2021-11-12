@@ -97,7 +97,7 @@ public class AtlasClient extends AtlasBaseClient {
     public static final String CREATE_TIME = "createTime";
 
     public static final String INFRASTRUCTURE_SUPER_TYPE = "Infrastructure";
-    public static final String DATA_SET_SUPER_TYPE       = "DataSet";
+    public static final String DATA_SET_SUPER_TYPE       = "Catalog";
     public static final String PROCESS_SUPER_TYPE        = "Process";
     public static final String PROCESS_ATTRIBUTE_INPUTS  = "inputs";
     public static final String PROCESS_ATTRIBUTE_OUTPUTS = "outputs";

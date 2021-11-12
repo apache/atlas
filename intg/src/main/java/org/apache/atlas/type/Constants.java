@@ -51,6 +51,7 @@ public final class Constants {
     public static final String MEANINGS_PROPERTY_KEY                = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "meanings");
     public static final String GLOSSARY_PROPERTY_KEY                = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "glossary");
     public static final String CATEGORIES_PROPERTY_KEY              = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "categories");
+    public static final String CATEGORIES_PARENT_PROPERTY_KEY       = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "parentCategory");
     public static final String MEANINGS_TEXT_PROPERTY_KEY           = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "meaningsText");
 
     //Classification-Only System Attributes

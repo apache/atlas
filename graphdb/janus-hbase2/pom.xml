@@ -34,7 +34,7 @@
         <dependency>
             <groupId>org.janusgraph</groupId>
             <artifactId>janusgraph-core</artifactId>
-            <version>${janus.version}</version>
+            <version>${janusgraph.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.codahale.metrics</groupId>
@@ -76,16 +76,6 @@
             <artifactId>hadoop-common</artifactId>
             <version>${hadoop.version}</version>
             <scope>provided</scope>
-             <exclusions>
-                 <exclusion>
-                     <groupId>io.netty</groupId>
-                     <artifactId>netty-handler</artifactId>
-                 </exclusion>
-                 <exclusion>
-                     <groupId>io.netty</groupId>
-                     <artifactId>netty-transport-native-epoll</artifactId>
-                 </exclusion>
-             </exclusions>
         </dependency>
 
         <dependency>

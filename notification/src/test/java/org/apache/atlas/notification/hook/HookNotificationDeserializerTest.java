@@ -18,6 +18,7 @@
 
 package org.apache.atlas.notification.hook;
 
+import org.apache.atlas.model.notification.MessageSource;
 import org.apache.atlas.model.notification.HookNotification;
 import org.apache.atlas.notification.entity.EntityNotificationTest;
 import org.apache.atlas.v1.model.instance.Referenceable;
@@ -41,6 +42,7 @@ import static org.testng.Assert.assertTrue;
  */
 public class HookNotificationDeserializerTest {
     private HookMessageDeserializer deserializer = new HookMessageDeserializer();
+    MessageSource source = new MessageSource(this.getClass().getSimpleName());
 
     @Test
     public void testDeserialize() throws Exception {
@@ -48,7 +50,7 @@ public class HookNotificationDeserializerTest {
         EntityUpdateRequest message     = new EntityUpdateRequest("user1", entity);
         List<String>        jsonMsgList = new ArrayList<>();
 
-        AbstractNotification.createNotificationMessages(message, jsonMsgList);
+        AbstractNotification.createNotificationMessages(message, jsonMsgList, source);
 
         HookNotification deserializedMessage = deserialize(jsonMsgList);
 
@@ -72,7 +74,7 @@ public class HookNotificationDeserializerTest {
         EntityUpdateRequest message    = new EntityUpdateRequest("user1", entity);
         List<String>       jsonMsgList = new ArrayList<>();
 
-        AbstractNotification.createNotificationMessages(message, jsonMsgList);
+        AbstractNotification.createNotificationMessages(message, jsonMsgList, source);
 
         assertTrue(jsonMsgList.size() == 1);
 
@@ -92,7 +94,7 @@ public class HookNotificationDeserializerTest {
         EntityUpdateRequest message     = new EntityUpdateRequest("user1", entity);
         List<String>        jsonMsgList = new ArrayList<>();
 
-        AbstractNotification.createNotificationMessages(message, jsonMsgList);
+        AbstractNotification.createNotificationMessages(message, jsonMsgList, source);
 
         assertTrue(jsonMsgList.size() > 1);
 

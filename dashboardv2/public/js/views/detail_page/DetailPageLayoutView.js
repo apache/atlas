@@ -172,7 +172,7 @@ define(['require',
                         typeName = Utils.getName(collectionJSON, 'typeName'),
                         superTypes = Utils.getNestedSuperTypes({ data: this.activeEntityDef.toJSON(), collection: this.entityDefCollection }),
                         isLineageRender = _.find(superTypes, function(type) {
-                            if (type === "DataSet" || type === "Process") {
+                            if (type === "Catalog" || type === "Process") {
                                 if (type === "Process") {
                                     isProcess = true;
                                 }
@@ -180,7 +180,7 @@ define(['require',
                             }
                         });
                     if (!isLineageRender) {
-                        isLineageRender = (typeName === "DataSet" || typeName === "Process") ? true : null;
+                        isLineageRender = (typeName === "Catalog" || typeName === "Process") ? true : null;
                     }
 
                     if (collectionJSON && collectionJSON.guid) {

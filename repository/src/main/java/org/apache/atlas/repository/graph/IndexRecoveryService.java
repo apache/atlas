@@ -37,6 +37,7 @@ import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.util.Iterator;
 import java.util.TimeZone;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.apache.atlas.ApplicationProperties.DEFAULT_INDEX_RECOVERY;
 import static org.apache.atlas.repository.Constants.PROPERTY_KEY_INDEX_RECOVERY_NAME;
@@ -58,6 +59,7 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
     private final RecoveryInfoManagement recoveryInfoManagement;
     private       Configuration          configuration;
     private       boolean                isIndexRecoveryEnabled;
+    private       RecoveryThread         recoveryThread;
 
     @Inject
     public IndexRecoveryService(Configuration config, AtlasGraph graph) {
@@ -67,7 +69,7 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
         long healthCheckFrequencyMillis  = config.getLong(SOLR_STATUS_CHECK_RETRY_INTERVAL, SOLR_STATUS_RETRY_DEFAULT_MS);
         this.recoveryInfoManagement      = new RecoveryInfoManagement(graph);
 
-        RecoveryThread recoveryThread = new RecoveryThread(recoveryInfoManagement, graph, recoveryStartTimeFromConfig, healthCheckFrequencyMillis);
+        this.recoveryThread = new RecoveryThread(recoveryInfoManagement, graph, recoveryStartTimeFromConfig, healthCheckFrequencyMillis);
         this.indexHealthMonitor = new Thread(recoveryThread, INDEX_HEALTH_MONITOR_THREAD_NAME);
     }
 
@@ -102,6 +104,8 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
     @Override
     public void stop() throws AtlasException {
         try {
+            recoveryThread.shutdown();
+
             indexHealthMonitor.join();
         } catch (InterruptedException e) {
             LOG.error("indexHealthMonitor: Interrupted", e);
@@ -143,6 +147,8 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
         private       long                   indexStatusCheckRetryMillis;
         private       Object                 txRecoveryObject;
 
+        private final AtomicBoolean          shouldRun = new AtomicBoolean(false);
+
         private RecoveryThread(RecoveryInfoManagement recoveryInfoManagement, AtlasGraph graph, long startTimeFromConfig, long healthCheckFrequencyMillis) {
             this.graph                       = graph;
             this.recoveryInfoManagement      = recoveryInfoManagement;
@@ -154,17 +160,19 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
         }
 
         public void run() {
+            shouldRun.set(true);
+
             LOG.info("Index Health Monitor: Starting...");
 
-            while (true) {
+            while (shouldRun.get()) {
                 try {
-                    boolean solrHealthy = isSolrHealthy();
+                    boolean indexHealthy = isIndexHealthy();
 
-                    if (this.txRecoveryObject == null && solrHealthy) {
+                    if (this.txRecoveryObject == null && indexHealthy) {
                         startMonitoring();
                     }
 
-                    if (this.txRecoveryObject != null && !solrHealthy) {
+                    if (this.txRecoveryObject != null && !indexHealthy) {
                         stopMonitoring();
                     }
                 } catch (Exception e) {
@@ -173,7 +181,23 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
             }
         }
 
-        private boolean isSolrHealthy() throws AtlasException, InterruptedException {
+        public void shutdown() {
+            try {
+                LOG.info("Index Health Monitor: Shutdown: Starting...");
+
+                // handle the case where thread was not started at all
+                // and shutdown called
+                if (shouldRun.get() == false) {
+                    return;
+                }
+
+                shouldRun.set(false);
+            } finally {
+                LOG.info("Index Health Monitor: Shutdown: Done!");
+            }
+        }
+
+        private boolean isIndexHealthy() throws AtlasException, InterruptedException {
             Thread.sleep(indexStatusCheckRetryMillis);
 
             return this.graph.getGraphIndexClient().isHealthy();
@@ -184,7 +208,9 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
 
             try {
                 startTime        = recoveryInfoManagement.getStartTime();
+                Instant newStartTime = Instant.now();
                 txRecoveryObject = this.graph.getManagementSystem().startIndexRecovery(startTime);
+                recoveryInfoManagement.updateStartTime(newStartTime.toEpochMilli());
 
                 printIndexRecoveryStats();
             } catch (Exception e) {
@@ -199,8 +225,6 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
 
             try {
                 this.graph.getManagementSystem().stopIndexRecovery(txRecoveryObject);
-
-                recoveryInfoManagement.updateStartTime(newStartTime.toEpochMilli());
 
                 printIndexRecoveryStats();
             } catch (Exception e) {

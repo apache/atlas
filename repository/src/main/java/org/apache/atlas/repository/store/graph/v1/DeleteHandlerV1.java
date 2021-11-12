@@ -777,8 +777,15 @@ public abstract class DeleteHandlerV1 {
         String labelWithoutPrefix        = edge.getLabel().substring(GraphHelper.EDGE_LABEL_PREFIX.length());
         AtlasType       parentType       = typeRegistry.getType(AtlasGraphUtilsV2.getTypeName(edge.getOutVertex()));
         AtlasStructType parentStructType = (AtlasStructType) parentType;
-
-        return parentStructType.getAttribute(labelWithoutPrefix);
+        AtlasStructType.AtlasAttribute attribute = parentStructType.getAttribute(labelWithoutPrefix);
+        if (attribute == null) {
+            String[] tokenizedLabel = labelWithoutPrefix.split("\\.");
+            if (tokenizedLabel.length == 2) {
+                String attributeName = tokenizedLabel[1];
+                attribute = parentStructType.getAttribute(attributeName);
+            }
+        }
+        return attribute;
     }
 
     protected abstract void _deleteVertex(AtlasVertex instanceVertex, boolean force);

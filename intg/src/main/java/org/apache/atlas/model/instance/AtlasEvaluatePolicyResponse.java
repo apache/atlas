@@ -46,16 +46,122 @@ public class AtlasEvaluatePolicyResponse implements Serializable {
     private String typeName;
     private String entityGuid;
     private String action;
+    private String entityId;
+
+    private String classification;
+
+    private String relationShipTypeName;
+    private String entityTypeEnd1;
+    private String entityGuidEnd1;
+    private String entityIdEnd1;
+
+    private String entityTypeEnd2;
+    private String entityGuidEnd2;
+    private String entityIdEnd2;
     private Boolean allowed;
 
 
-    public AtlasEvaluatePolicyResponse(String typeName, String entityGuid, String action, Boolean allowed) {
+
+    public AtlasEvaluatePolicyResponse(String typeName, String entityGuid, String action, String entityId , Boolean allowed) {
         this.typeName = typeName;
         this.entityGuid = entityGuid;
         this.action = action;
+        this.entityId = entityId;
         this.allowed = allowed;
     }
 
+    public AtlasEvaluatePolicyResponse(String typeName, String entityGuid, String action, String entityId , String classification, Boolean allowed) {
+        this.typeName = typeName;
+        this.entityGuid = entityGuid;
+        this.action = action;
+        this.entityId = entityId;
+        this.classification = classification;
+        this.allowed = allowed;
+    }
+
+    public AtlasEvaluatePolicyResponse(String action, String relationShipTypeName, String entityTypeEnd1, String entityGuidEnd1, String entityIdEnd1, String entityTypeEnd2, String entityGuidEnd2, String entityIdEnd2, Boolean allowed) {
+        this.action = action;
+        this.relationShipTypeName = relationShipTypeName;
+        this.entityTypeEnd1 = entityTypeEnd1;
+        this.entityGuidEnd1 = entityGuidEnd1;
+        this.entityIdEnd1 = entityIdEnd1;
+        this.entityTypeEnd2 = entityTypeEnd2;
+        this.entityGuidEnd2 = entityGuidEnd2;
+        this.entityIdEnd2 = entityIdEnd2;
+        this.allowed = allowed;
+    }
+
+    public String getRelationShipTypeName() {
+        return relationShipTypeName;
+    }
+
+    public void setRelationShipTypeName(String relationShipTypeName) {
+        this.relationShipTypeName = relationShipTypeName;
+    }
+
+    public String getEntityTypeEnd1() {
+        return entityTypeEnd1;
+    }
+
+    public void setEntityTypeEnd1(String entityTypeEnd1) {
+        this.entityTypeEnd1 = entityTypeEnd1;
+    }
+
+    public String getEntityGuidEnd1() {
+        return entityGuidEnd1;
+    }
+
+    public void setEntityGuidEnd1(String entityGuidEnd1) {
+        this.entityGuidEnd1 = entityGuidEnd1;
+    }
+
+    public String getEntityIdEnd1() {
+        return entityIdEnd1;
+    }
+
+    public void setEntityIdEnd1(String entityIdEnd1) {
+        this.entityIdEnd1 = entityIdEnd1;
+    }
+
+    public String getEntityTypeEnd2() {
+        return entityTypeEnd2;
+    }
+
+    public void setEntityTypeEnd2(String entityTypeEnd2) {
+        this.entityTypeEnd2 = entityTypeEnd2;
+    }
+
+    public String getEntityGuidEnd2() {
+        return entityGuidEnd2;
+    }
+
+    public void setEntityGuidEnd2(String entityGuidEnd2) {
+        this.entityGuidEnd2 = entityGuidEnd2;
+    }
+
+    public String getEntityIdEnd2() {
+        return entityIdEnd2;
+    }
+
+    public void setEntityIdEnd2(String entityIdEnd2) {
+        this.entityIdEnd2 = entityIdEnd2;
+    }
+
+    public String getClassification() {
+        return classification;
+    }
+
+    public void setClassification(String classification) {
+        this.classification = classification;
+    }
+
+    public String getEntityId() {
+        return entityId;
+    }
+
+    public void setEntityId(String entityId) {
+        this.entityId = entityId;
+    }
     public String getEntityGuid() {
         return entityGuid;
     }

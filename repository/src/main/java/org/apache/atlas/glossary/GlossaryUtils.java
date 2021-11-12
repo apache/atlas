@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.Objects;
 
 import static org.apache.atlas.type.Constants.CATEGORIES_PROPERTY_KEY;
+import static org.apache.atlas.type.Constants.CATEGORIES_PARENT_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.GLOSSARY_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.MEANINGS_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.MEANINGS_TEXT_PROPERTY_KEY;
@@ -129,14 +130,15 @@ public abstract class GlossaryUtils {
         String[] split_0 = qName.split("@");
         return split_0[split_0.length - 1];
     }
+
     protected void addEntityAttr(AtlasVertex vertex, String propName, String propValue) {
         if (MEANINGS_PROPERTY_KEY.equals(propName) || CATEGORIES_PROPERTY_KEY.equals(propName)) {
             AtlasGraphUtilsV2.addEncodedProperty(vertex, propName, propValue);
 
-        } else if (GLOSSARY_PROPERTY_KEY.equals(propName)) {
+        } else if (GLOSSARY_PROPERTY_KEY.equals(propName) || CATEGORIES_PARENT_PROPERTY_KEY.equals(propName)) {
             AtlasGraphUtilsV2.setEncodedProperty(vertex, propName, propValue);
 
-        }else if (MEANINGS_TEXT_PROPERTY_KEY.equals(propName)) {
+        } else if (MEANINGS_TEXT_PROPERTY_KEY.equals(propName)) {
             String names = AtlasGraphUtilsV2.getProperty(vertex, MEANINGS_TEXT_PROPERTY_KEY, String.class);
 
             if (org.apache.commons.lang3.StringUtils.isNotEmpty(names)) {
@@ -147,15 +149,11 @@ public abstract class GlossaryUtils {
         }
     }
 
-    protected void removeEntityAttr(AtlasVertex vertex, String propName) {
-        vertex.removeProperty(propName);
-    }
-
     protected void removeEntityAttr(AtlasVertex vertex, String propName, String propValue) {
         if (MEANINGS_PROPERTY_KEY.equals(propName) || CATEGORIES_PROPERTY_KEY.equals(propName)) {
             AtlasGraphUtilsV2.removeItemFromListPropertyValue(vertex, propName, propValue);
 
-        } else if (GLOSSARY_PROPERTY_KEY.equals(propName)) {
+        } else if (GLOSSARY_PROPERTY_KEY.equals(propName) || CATEGORIES_PARENT_PROPERTY_KEY.equals(propName)) {
             vertex.removeProperty(propName);
 
         } else if (MEANINGS_TEXT_PROPERTY_KEY.equals(propName)) {

@@ -18,6 +18,7 @@
 
 package org.apache.atlas.hook;
 
+import org.apache.atlas.model.notification.MessageSource;
 import org.apache.atlas.model.notification.HookNotification;
 import org.apache.atlas.notification.NotificationException;
 import org.apache.atlas.notification.NotificationInterface;
@@ -52,32 +53,35 @@ public class AtlasHookTest {
 
     @Test (timeOut = 10000)
     public void testNotifyEntitiesDoesNotHangOnException() throws Exception {
+        MessageSource source                     = new MessageSource(this.getClass().getSimpleName());
         List<HookNotification> hookNotifications = new ArrayList<>();
         doThrow(new NotificationException(new Exception())).when(notificationInterface)
-                .send(NotificationInterface.NotificationType.HOOK, hookNotifications);
+                .send(NotificationInterface.NotificationType.HOOK, hookNotifications, source);
         AtlasHook.notifyEntitiesInternal(hookNotifications, 0, null, notificationInterface, false,
-                failedMessagesLogger);
+                failedMessagesLogger, source);
         // if we've reached here, the method finished OK.
     }
 
     @Test
     public void testNotifyEntitiesRetriesOnException() throws NotificationException {
+        MessageSource source                     = new MessageSource(this.getClass().getSimpleName());
         List<HookNotification> hookNotifications =
                 new ArrayList<HookNotification>() {{
                     add(new EntityCreateRequest("user"));
                 }
             };
         doThrow(new NotificationException(new Exception())).when(notificationInterface)
-                .send(NotificationInterface.NotificationType.HOOK, hookNotifications);
+                .send(NotificationInterface.NotificationType.HOOK, hookNotifications, source);
         AtlasHook.notifyEntitiesInternal(hookNotifications, 2, null, notificationInterface, false,
-                failedMessagesLogger);
+                failedMessagesLogger, source);
 
         verify(notificationInterface, times(2)).
-                send(NotificationInterface.NotificationType.HOOK, hookNotifications);
+                send(NotificationInterface.NotificationType.HOOK, hookNotifications, source);
     }
 
     @Test
     public void testFailedMessageIsLoggedIfRequired() throws NotificationException {
+        MessageSource source                     = new MessageSource(this.getClass().getSimpleName());
         List<HookNotification> hookNotifications =
                 new ArrayList<HookNotification>() {{
                     add(new EntityCreateRequest("user"));
@@ -85,27 +89,29 @@ public class AtlasHookTest {
             };
         doThrow(new NotificationException(new Exception(), Arrays.asList("test message")))
                 .when(notificationInterface)
-                .send(NotificationInterface.NotificationType.HOOK, hookNotifications);
+                .send(NotificationInterface.NotificationType.HOOK, hookNotifications, source);
         AtlasHook.notifyEntitiesInternal(hookNotifications, 2, null, notificationInterface, true,
-                failedMessagesLogger);
+                failedMessagesLogger, source);
 
         verify(failedMessagesLogger, times(1)).log("test message");
     }
 
     @Test
     public void testFailedMessageIsNotLoggedIfNotRequired() throws NotificationException {
+        MessageSource source                     = new MessageSource(this.getClass().getSimpleName());
         List<HookNotification> hookNotifications = new ArrayList<>();
         doThrow(new NotificationException(new Exception(), Arrays.asList("test message")))
                 .when(notificationInterface)
-                .send(NotificationInterface.NotificationType.HOOK, hookNotifications);
+                .send(NotificationInterface.NotificationType.HOOK, hookNotifications, source);
         AtlasHook.notifyEntitiesInternal(hookNotifications, 2, null, notificationInterface, false,
-                failedMessagesLogger);
+                failedMessagesLogger, source);
 
         verifyZeroInteractions(failedMessagesLogger);
     }
 
     @Test
     public void testAllFailedMessagesAreLogged() throws NotificationException {
+        MessageSource source                     = new MessageSource(this.getClass().getSimpleName());
         List<HookNotification> hookNotifications =
                 new ArrayList<HookNotification>() {{
                     add(new EntityCreateRequest("user"));
@@ -113,9 +119,9 @@ public class AtlasHookTest {
             };
         doThrow(new NotificationException(new Exception(), Arrays.asList("test message1", "test message2")))
                 .when(notificationInterface)
-                .send(NotificationInterface.NotificationType.HOOK, hookNotifications);
+                .send(NotificationInterface.NotificationType.HOOK, hookNotifications, source);
         AtlasHook.notifyEntitiesInternal(hookNotifications, 2, null, notificationInterface, true,
-                failedMessagesLogger);
+                failedMessagesLogger, source);
 
         verify(failedMessagesLogger, times(1)).log("test message1");
         verify(failedMessagesLogger, times(1)).log("test message2");
@@ -123,11 +129,12 @@ public class AtlasHookTest {
 
     @Test
     public void testFailedMessageIsNotLoggedIfNotANotificationException() throws Exception {
+        MessageSource source                     = new MessageSource(this.getClass().getSimpleName());
         List<HookNotification> hookNotifications = new ArrayList<>();
         doThrow(new RuntimeException("test message")).when(notificationInterface)
-                .send(NotificationInterface.NotificationType.HOOK, hookNotifications);
+                .send(NotificationInterface.NotificationType.HOOK, hookNotifications, source);
         AtlasHook.notifyEntitiesInternal(hookNotifications, 2, null, notificationInterface, true,
-                failedMessagesLogger);
+                failedMessagesLogger, source);
 
         verifyZeroInteractions(failedMessagesLogger);
     }

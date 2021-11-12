@@ -20,6 +20,9 @@ package org.apache.atlas.authorize;
 
 
 import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.type.AtlasStructType;
+import org.apache.atlas.type.AtlasTypeRegistry;
 
 public interface AtlasAuthorizer {
     /**
@@ -77,6 +80,16 @@ public interface AtlasAuthorizer {
     void scrubSearchResults(AtlasSearchResultScrubRequest request) throws AtlasAuthorizationException {
     }
 
+    /**
+     * scrub search-results to handle entities for which the user doesn't have access
+     * @param request
+     * @return
+     * @throws AtlasAuthorizationException
+     */
+    default
+    void scrubSearchResults(AtlasSearchResultScrubRequest request, boolean isScrubAuditEnabled) throws AtlasAuthorizationException {
+    }
+
     default
     void scrubEntityHeader(AtlasEntityHeader entity) {
         entity.setGuid("-1");
@@ -101,6 +114,42 @@ public interface AtlasAuthorizer {
             entity.getMeaningNames().clear();
         }
     }
+
+    default void scrubEntityHeader(AtlasEntityHeader entity, AtlasTypeRegistry typeRegistry) {
+
+        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
+        boolean isScrubbed = false;
+
+        if (entityType != null) {
+            if (entity.getAttributes() != null) {
+                for (AtlasStructType.AtlasAttribute attribute : entityType.getAllAttributes().values()) {
+                    if (!attribute.getAttributeDef().getSkipScrubbing()) {
+                        entity.getAttributes().remove(attribute.getAttributeDef().getName());
+                        isScrubbed = true;
+                    }
+                }
+            }
+        }
+
+        entity.setScrubbed(isScrubbed);
+
+        if (entity.getClassifications() != null) {
+            entity.getClassifications().clear();
+        }
+
+        if (entity.getClassificationNames() != null) {
+            entity.getClassificationNames().clear();
+        }
+
+        if (entity.getMeanings() != null) {
+            entity.getMeanings().clear();
+        }
+
+        if (entity.getMeaningNames() != null) {
+            entity.getMeaningNames().clear();
+        }
+    }
+
 
     default
     void filterTypesDef(AtlasTypesDefFilterRequest request) throws AtlasAuthorizationException {

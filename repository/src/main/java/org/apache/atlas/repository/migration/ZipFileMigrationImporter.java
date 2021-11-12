@@ -26,7 +26,9 @@ import org.apache.atlas.model.impexp.AtlasImportRequest;
 import org.apache.atlas.model.migration.MigrationImportStatus;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.impexp.ImportService;
+import org.apache.atlas.repository.impexp.ZipExportFileNames;
 import org.apache.atlas.type.AtlasType;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.apache.commons.lang.ArrayUtils;
@@ -196,7 +198,13 @@ public class ZipFileMigrationImporter implements Runnable {
     }
 
     private MigrationImportStatus getCreateMigrationStatus(String fileName, int streamSize) {
-        MigrationImportStatus status = new MigrationImportStatus(fileName);
+        MigrationImportStatus status = null;
+        try {
+            status = new MigrationImportStatus(fileName, DigestUtils.md5Hex(new FileInputStream(fileName)));
+        } catch (IOException e) {
+            LOG.error("Exception occurred while creating migration import", e);
+        }
+
         status.setTotalCount(streamSize);
 
         MigrationImportStatus statusRetrieved = dataMigrationStatusService.getCreate(status);

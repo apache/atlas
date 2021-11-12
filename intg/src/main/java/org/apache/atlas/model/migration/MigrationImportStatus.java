@@ -21,12 +21,7 @@ package org.apache.atlas.model.migration;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import org.apache.atlas.model.AtlasBaseModelObject;
 import org.apache.atlas.model.impexp.MigrationStatus;
-import org.apache.commons.lang.StringUtils;
-
-import java.io.Serializable;
-import java.util.Date;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
@@ -36,27 +31,43 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class MigrationImportStatus extends MigrationStatus {
     private String name;
+    private String fileHash;
 
     public MigrationImportStatus() {
     }
 
     public MigrationImportStatus(String name) {
-        this.name = name;
+        this.name     = name;
+        this.fileHash = name;
+    }
+
+    public MigrationImportStatus(String name, String fileHash) {
+        this.name     = name;
+        this.fileHash = fileHash;
     }
 
     public String getName() {
         return name;
     }
 
+    public String getFileHash() {
+        return fileHash;
+    }
+
     public void setName(String name) {
         this.name = name;
     }
 
+    public void setFileHash(String fileHash) {
+        this.fileHash = fileHash;
+    }
+
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append(", name=").append(name);
-        sb.append(super.toString());
+        final StringBuilder sb = new StringBuilder("MigrationImportStatus{");
+        sb.append("name='").append(name).append('\'');
+        sb.append(", fileHash='").append(fileHash).append('\'');
+        sb.append('}');
         return sb.toString();
     }
 }

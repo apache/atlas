@@ -20,7 +20,6 @@ package org.apache.atlas.hive.bridge;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.sun.jersey.api.client.ClientResponse;
-import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClientV2;
@@ -43,12 +42,14 @@ import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.utils.PathExtractorContext;
-import org.apache.commons.cli.ParseException;
-import org.apache.commons.collections.CollectionUtils;
 
 import org.apache.commons.cli.BasicParser;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.MissingArgumentException;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.ArrayUtils;
@@ -105,10 +106,27 @@ public class HiveMetaStoreBridge {
     public static final String HIVE_TABLE_DB_EDGE_LABEL        = "__hive_table.db";
     public static final String HOOK_HIVE_PAGE_LIMIT            = CONF_PREFIX + "page.limit";
 
+    static final String OPTION_OUTPUT_FILEPATH_SHORT     = "o";
+    static final String OPTION_OUTPUT_FILEPATH_LONG      = "output";
+    static final String OPTION_IGNORE_BULK_IMPORT_SHORT  = "i";
+    static final String OPTION_IGNORE_BULK_IMPORT_LONG   = "ignoreBulkImport";
+    static final String OPTION_DATABASE_SHORT            = "d";
+    static final String OPTION_DATABASE_LONG             = "database";
+    static final String OPTION_TABLE_SHORT               = "t";
+    static final String OPTION_TABLE_LONG                = "table";
+    static final String OPTION_IMPORT_DATA_FILE_SHORT    = "f";
+    static final String OPTION_IMPORT_DATA_FILE_LONG     = "filename";
+    static final String OPTION_FAIL_ON_ERROR             = "failOnError";
+    static final String OPTION_DELETE_NON_EXISTING       = "deleteNonExisting";
+    static final String OPTION_HELP_SHORT                = "h";
+    static final String OPTION_HELP_LONG                 = "help";
+
     public static final String HOOK_AWS_S3_ATLAS_MODEL_VERSION_V2  = "v2";
 
-    private static final int    EXIT_CODE_SUCCESS = 0;
-    private static final int    EXIT_CODE_FAILED  = 1;
+    private static final int    EXIT_CODE_SUCCESS      = 0;
+    private static final int    EXIT_CODE_FAILED       = 1;
+    private static final int    EXIT_CODE_INVALID_ARG  = 2;
+
     private static final String DEFAULT_ATLAS_URL = "http://localhost:21000/";
     private static       int    pageLimit         = 10000;
 
@@ -122,84 +140,63 @@ public class HiveMetaStoreBridge {
     public static void main(String[] args) {
         int exitCode = EXIT_CODE_FAILED;
         AtlasClientV2 atlasClientV2 = null;
+        Options acceptedCliOptions = prepareCommandLineOptions();
 
         try {
-            Options options = new Options();
-            options.addOption("d", "database", true, "Database name");
-            options.addOption("t", "table", true, "Table name");
-            options.addOption("f", "filename", true, "Filename");
-            options.addOption("failOnError", false, "failOnError");
-            options.addOption("deleteNonExisting", false, "Delete database and table entities in Atlas if not present in Hive");
+            CommandLine  cmd              = new BasicParser().parse(acceptedCliOptions, args);
+            List<String> argsNotProcessed = cmd.getArgList();
 
-            CommandLine   cmd               = new BasicParser().parse(options, args);
-            boolean       failOnError       = cmd.hasOption("failOnError");
-            boolean       deleteNonExisting = cmd.hasOption("deleteNonExisting");
-            LOG.info("delete non existing flag : {} ", deleteNonExisting);
-
-            String        databaseToImport = cmd.getOptionValue("d");
-            String        tableToImport    = cmd.getOptionValue("t");
-            String        fileToImport     = cmd.getOptionValue("f");
-            Configuration atlasConf        = ApplicationProperties.get();
-            String[]      atlasEndpoint    = atlasConf.getStringArray(ATLAS_ENDPOINT);
-
-            if (atlasEndpoint == null || atlasEndpoint.length == 0) {
-                atlasEndpoint = new String[] { DEFAULT_ATLAS_URL };
+            if (argsNotProcessed != null && argsNotProcessed.size() > 0) {
+                throw new ParseException("Unrecognized arguments.");
             }
 
-
-            if (!AuthenticationUtil.isKerberosAuthenticationEnabled()) {
-                String[] basicAuthUsernamePassword = AuthenticationUtil.getBasicAuthenticationInput();
-
-                atlasClientV2 = new AtlasClientV2(atlasEndpoint, basicAuthUsernamePassword);
-            } else {
-                UserGroupInformation ugi = UserGroupInformation.getCurrentUser();
-
-                atlasClientV2 = new AtlasClientV2(ugi, ugi.getShortUserName(), atlasEndpoint);
-            }
-
-            HiveMetaStoreBridge hiveMetaStoreBridge = new HiveMetaStoreBridge(atlasConf, new HiveConf(), atlasClientV2);
-
-            if (deleteNonExisting) {
-                hiveMetaStoreBridge.deleteEntitiesForNonExistingHiveMetadata(failOnError);
+            if (cmd.hasOption(OPTION_HELP_SHORT)) {
+                printUsage(acceptedCliOptions);
                 exitCode = EXIT_CODE_SUCCESS;
-            } else if (StringUtils.isNotEmpty(fileToImport)) {
-                File f = new File(fileToImport);
+            } else {
+                Configuration atlasConf        = ApplicationProperties.get();
+                String[]      atlasEndpoint    = atlasConf.getStringArray(ATLAS_ENDPOINT);
 
-                if (f.exists() && f.canRead()) {
-                    BufferedReader br   = new BufferedReader(new FileReader(f));
-                    String         line = null;
-
-                    while((line = br.readLine()) != null) {
-                        String val[] = line.split(":");
-
-                        if (ArrayUtils.isNotEmpty(val)) {
-                            databaseToImport = val[0];
-
-                            if (val.length > 1) {
-                                tableToImport = val[1];
-                            } else {
-                                tableToImport = "";
-                            }
-
-                            hiveMetaStoreBridge.importHiveMetadata(databaseToImport, tableToImport, failOnError);
-                        }
-                    }
-
-                    exitCode = EXIT_CODE_SUCCESS;
-                } else {
-                    LOG.error("Failed to read the input file: " + fileToImport);
-                    exitCode = EXIT_CODE_FAILED;
+                if (atlasEndpoint == null || atlasEndpoint.length == 0) {
+                    atlasEndpoint = new String[] { DEFAULT_ATLAS_URL };
                 }
-            } else {
-                hiveMetaStoreBridge.importHiveMetadata(databaseToImport, tableToImport, failOnError);
-                exitCode = EXIT_CODE_SUCCESS;
-            }
 
+                if (!AuthenticationUtil.isKerberosAuthenticationEnabled()) {
+                    String[] basicAuthUsernamePassword = AuthenticationUtil.getBasicAuthenticationInput();
+
+                    atlasClientV2 = new AtlasClientV2(atlasEndpoint, basicAuthUsernamePassword);
+                } else {
+                    UserGroupInformation ugi = UserGroupInformation.getCurrentUser();
+
+                    atlasClientV2 = new AtlasClientV2(ugi, ugi.getShortUserName(), atlasEndpoint);
+                }
+
+                boolean createZip = cmd.hasOption(OPTION_OUTPUT_FILEPATH_LONG);
+
+                if (createZip) {
+                    HiveMetaStoreBridgeV2 hiveMetaStoreBridgeV2 = new HiveMetaStoreBridgeV2(atlasConf, new HiveConf(), atlasClientV2);
+
+                    if (hiveMetaStoreBridgeV2.exportDataToZipAndRunAtlasImport(cmd)) {
+                        exitCode = EXIT_CODE_SUCCESS;
+                    }
+                } else {
+                    HiveMetaStoreBridge hiveMetaStoreBridge = new HiveMetaStoreBridge(atlasConf, new HiveConf(), atlasClientV2);
+
+                    if (hiveMetaStoreBridge.importDataDirectlyToAtlas(cmd)) {
+                        exitCode = EXIT_CODE_SUCCESS;
+                    }
+                }
+            }
         } catch(ParseException e) {
-            LOG.error("Failed to parse arguments. Error: ", e.getMessage());
-            printUsage();
+            LOG.error("Invalid argument. Error: {}", e.getMessage());
+            System.out.println("Invalid argument. Error: " + e.getMessage());
+            exitCode = EXIT_CODE_INVALID_ARG;
+
+            if (!(e instanceof MissingArgumentException)) {
+                printUsage(acceptedCliOptions);
+            }
         } catch(Exception e) {
-            LOG.error("Import failed", e);
+            LOG.error("Import Failed", e);
         } finally {
             if( atlasClientV2 !=null) {
                 atlasClientV2.close();
@@ -209,26 +206,48 @@ public class HiveMetaStoreBridge {
         System.exit(exitCode);
     }
 
-    private static void printUsage() {
+    private static Options prepareCommandLineOptions() {
+        Options acceptedCliOptions = new Options();
+
+        return acceptedCliOptions.addOption(OPTION_OUTPUT_FILEPATH_SHORT, OPTION_OUTPUT_FILEPATH_LONG, true, "Output path or file for Zip import")
+                .addOption(OPTION_IGNORE_BULK_IMPORT_SHORT, OPTION_IGNORE_BULK_IMPORT_LONG, false, "Ignore bulk Import for Zip import")
+                .addOption(OPTION_DATABASE_SHORT, OPTION_DATABASE_LONG, true, "Database name")
+                .addOption(OPTION_TABLE_SHORT, OPTION_TABLE_LONG, true, "Table name")
+                .addOption(OPTION_IMPORT_DATA_FILE_SHORT, OPTION_IMPORT_DATA_FILE_LONG, true, "Filename")
+                .addOption(OPTION_FAIL_ON_ERROR, false, "failOnError")
+                .addOption(OPTION_DELETE_NON_EXISTING, false, "Delete database and table entities in Atlas if not present in Hive")
+                .addOption(OPTION_HELP_SHORT, OPTION_HELP_LONG, false, "Print this help message");
+    }
+
+    private static void printUsage(Options options) {
+        HelpFormatter formatter = new HelpFormatter();
+        formatter.printHelp("import-hive.sh", options);
         System.out.println();
+        System.out.println("Usage options:");
+        System.out.println("    Usage 1: import-hive.sh [-d <database> OR --database <database>] "  );
+        System.out.println("        Imports specified database and its tables ...");
         System.out.println();
-        System.out.println("Usage 1: import-hive.sh [-d <database> OR --database <database>] "  );
-        System.out.println("    Imports specified database and its tables ...");
+        System.out.println("    Usage 2: import-hive.sh [-d <database> OR --database <database>] [-t <table> OR --table <table>]");
+        System.out.println("        Imports specified table within that database ...");
         System.out.println();
-        System.out.println("Usage 2: import-hive.sh [-d <database> OR --database <database>] [-t <table> OR --table <table>]");
-        System.out.println("    Imports specified table within that database ...");
+        System.out.println("    Usage 3: import-hive.sh");
+        System.out.println("        Imports all databases and tables...");
         System.out.println();
-        System.out.println("Usage 3: import-hive.sh");
-        System.out.println("    Imports all databases and tables...");
+        System.out.println("    Usage 4: import-hive.sh -f <filename>");
+        System.out.println("        Imports all databases and tables in the file...");
+        System.out.println("        Format:");
+        System.out.println("            database1:tbl1");
+        System.out.println("            database1:tbl2");
+        System.out.println("            database2:tbl2");
         System.out.println();
-        System.out.println("Usage 4: import-hive.sh -f <filename>");
-        System.out.println("  Imports all databases and tables in the file...");
-        System.out.println("    Format:");
-        System.out.println("    database1:tbl1");
-        System.out.println("    database1:tbl2");
-        System.out.println("    database2:tbl2");
-        System.out.println("Usage 5: import-hive.sh [-deleteNonExisting] "  );
-        System.out.println("    Deletes databases and tables which are not in Hive ...");
+        System.out.println("    Usage 5: import-hive.sh [-deleteNonExisting] "  );
+        System.out.println("        Deletes databases and tables which are not in Hive ...");
+        System.out.println();
+        System.out.println("    Usage 6: import-hive.sh -o <output Path or file> [-f <filename>] [-d <database> OR --database <database>] [-t <table> OR --table <table>]");
+        System.out.println("        To create zip file with exported data and import the zip file at Atlas ...");
+        System.out.println();
+        System.out.println("    Usage 7: import-hive.sh -i -o <output Path or file> [-f <filename>] [-d <database> OR --database <database>] [-t <table> OR --table <table>]");
+        System.out.println("        To create zip file with exported data without importing to Atlas which can be imported later ...");
         System.out.println();
     }
 
@@ -286,6 +305,54 @@ public class HiveMetaStoreBridge {
         return convertHdfsPathToLowerCase;
     }
 
+    public boolean importDataDirectlyToAtlas(CommandLine cmd) throws Exception {
+        LOG.info("Importing Hive metadata");
+        boolean ret = false;
+
+        String        databaseToImport = cmd.getOptionValue(OPTION_DATABASE_SHORT);
+        String        tableToImport    = cmd.getOptionValue(OPTION_TABLE_SHORT);
+        String        fileToImport     = cmd.getOptionValue(OPTION_IMPORT_DATA_FILE_SHORT);
+
+        boolean       failOnError       = cmd.hasOption(OPTION_FAIL_ON_ERROR);
+        boolean       deleteNonExisting = cmd.hasOption(OPTION_DELETE_NON_EXISTING);
+
+        LOG.info("delete non existing flag : {} ", deleteNonExisting);
+
+        if (deleteNonExisting) {
+            deleteEntitiesForNonExistingHiveMetadata(failOnError);
+            ret = true;
+        } else if (StringUtils.isNotEmpty(fileToImport)) {
+            File f = new File(fileToImport);
+
+            if (f.exists() && f.canRead()) {
+                BufferedReader br   = new BufferedReader(new FileReader(f));
+                String         line = null;
+
+                while((line = br.readLine()) != null) {
+                    String val[] = line.split(":");
+
+                    if (ArrayUtils.isNotEmpty(val)) {
+                        databaseToImport = val[0];
+
+                        if (val.length > 1) {
+                            tableToImport = val[1];
+                        } else {
+                            tableToImport = "";
+                        }
+
+                        importDatabases(failOnError, databaseToImport, tableToImport);
+                    }
+                }
+                ret = true;
+            } else {
+                LOG.error("Failed to read the input file: " + fileToImport);
+            }
+        } else {
+            importDatabases(failOnError, databaseToImport, tableToImport);
+            ret = true;
+        }
+        return ret;
+    }
 
     @VisibleForTesting
     public void importHiveMetadata(String databaseToImport, String tableToImport, boolean failOnError) throws Exception {

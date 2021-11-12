@@ -672,6 +672,27 @@ public class Solr6Index implements IndexProvider {
                 doc -> doc.getFieldValue(keyIdField).toString());
     }
 
+    @Override
+    public Long queryCount(IndexQuery query, KeyInformation.IndexRetriever information, BaseTransaction tx) throws BackendException {
+        try {
+            String collection = query.getStore();
+            String keyIdField = this.getKeyFieldId(collection);
+            SolrQuery solrQuery = new SolrQuery("*:*");
+            solrQuery.set("fl", new String[]{keyIdField});
+            String queryFilter = this.buildQueryFilter(query.getCondition(), information.get(collection));
+            solrQuery.addFilterQuery(new String[]{queryFilter});
+            QueryResponse response = this.solrClient.query(collection, solrQuery);
+            logger.debug("Executed query [{}] in {} ms", query, response.getElapsedTime());
+            return response.getResults().getNumFound();
+        } catch (IOException ex) {
+            logger.error("Query did not complete : ", ex);
+            throw new PermanentBackendException(ex);
+        } catch (SolrServerException ex) {
+            logger.error("Unable to query Solr index.", ex);
+            throw new PermanentBackendException(ex);
+        }
+    }
+
     private void addOrderToQuery(SolrQuery solrQuery, List<IndexQuery.OrderEntry> orders) {
         for (final IndexQuery.OrderEntry order1 : orders) {
             final String item = order1.getKey();
@@ -765,10 +786,12 @@ public class Solr6Index implements IndexProvider {
             final String key = atom.getKey();
             final JanusGraphPredicate predicate = atom.getPredicate();
 
-            if (value instanceof Number) {
+            if (value == null && predicate == Cmp.NOT_EQUAL) {
+                return key + ":*";
+            } else if (value instanceof Number) {
                 final String queryValue = escapeValue(value);
                 Preconditions.checkArgument(predicate instanceof Cmp,
-                        "Relation not supported on numeric types: " + predicate);
+                        "Relation not supported on numeric types: %s", predicate);
                 final Cmp numRel = (Cmp) predicate;
                 switch (numRel) {
                     case EQUAL:
@@ -804,18 +827,18 @@ public class Solr6Index implements IndexProvider {
                     return (key + ":" + escapeValue(value) + "*");
                 } else if (predicate == Text.REGEX || predicate == Text.CONTAINS_REGEX) {
                     return (key + ":/" + value + "/");
-                } else if (predicate == Cmp.EQUAL) {
+                }  else if (predicate == Cmp.EQUAL || predicate == Cmp.NOT_EQUAL) {
                     final String tokenizer =
                             ParameterType.STRING_ANALYZER.findParameter(information.get(key).getParameters(), null);
-                    if(tokenizer != null){
-                        return tokenize(information, value, key, predicate,tokenizer);
-                    } else {
+                    if (tokenizer != null) {
+                        return tokenize(information, value, key, predicate, tokenizer);
+                    } else if (predicate == Cmp.EQUAL) {
                         return (key + ":\"" + escapeValue(value) + "\"");
+                    } else { // Cmp.NOT_EQUAL case
+                        return ("-" + key + ":\"" + escapeValue(value) + "\"");
                     }
-                } else if (predicate == Cmp.NOT_EQUAL) {
-                    return ("-" + key + ":\"" + escapeValue(value) + "\"");
                 } else if (predicate == Text.FUZZY || predicate == Text.CONTAINS_FUZZY) {
-                    return (key + ":"+escapeValue(value)+"~");
+                    return (key + ":"+escapeValue(value)+"~"+Text.getMaxEditDistance(value.toString()));
                 } else if (predicate == Cmp.LESS_THAN) {
                     return (key + ":[* TO \"" + escapeValue(value) + "\"}");
                 } else if (predicate == Cmp.LESS_THAN_EQUAL) {
@@ -830,9 +853,9 @@ public class Solr6Index implements IndexProvider {
             } else if (value instanceof Geoshape) {
                 final Mapping map = Mapping.getMapping(information.get(key));
                 Preconditions.checkArgument(predicate instanceof Geo && predicate != Geo.DISJOINT,
-                        "Relation not supported on geo types: " + predicate);
+                        "Relation not supported on geo types: %s", predicate);
                 Preconditions.checkArgument(map == Mapping.PREFIX_TREE || predicate == Geo.WITHIN || predicate == Geo.INTERSECT,
-                        "Relation not supported on geopoint types: " + predicate);
+                        "Relation not supported on geopoint types: %s", predicate);
                 final Geoshape geo = (Geoshape)value;
                 if (geo.getType() == Geoshape.Type.CIRCLE && (predicate == Geo.INTERSECT || map == Mapping.DEFAULT)) {
                     final Geoshape.Point center = geo.getPoint();
@@ -852,8 +875,7 @@ public class Solr6Index implements IndexProvider {
             } else if (value instanceof Date || value instanceof Instant) {
                 final String s = value.toString();
                 final String queryValue = escapeValue(value instanceof Date ? toIsoDate((Date) value) : value.toString());
-                Preconditions.checkArgument(predicate instanceof Cmp, "Relation not supported on date types: "
-                        + predicate);
+                Preconditions.checkArgument(predicate instanceof Cmp, "Relation not supported on date types: %s", predicate);
                 final Cmp numRel = (Cmp) predicate;
 
                 switch (numRel) {
@@ -944,7 +966,11 @@ public class Solr6Index implements IndexProvider {
         if (terms.isEmpty()) {
             return "";
         } else if (terms.size() == 1) {
-            return (key + ":(" + escapeValue(terms.get(0)) + ")");
+            if (janusgraphPredicate == Cmp.NOT_EQUAL) {
+                return ("-" + key + ":(" + escapeValue(terms.get(0)) + ")");
+            } else {
+                return (key + ":(" + escapeValue(terms.get(0)) + ")");
+            }
         } else {
             final And<JanusGraphElement> andTerms = new And<>();
             for (final String term : terms) {
@@ -999,7 +1025,7 @@ public class Solr6Index implements IndexProvider {
 
     @Override
     public void close() throws BackendException {
-        logger.trace("Shutting down connection to Solr", solrClient);
+        logger.trace("Shutting down connection to Solr {}", solrClient);
         try {
             solrClient.close();
         } catch (final IOException e) {

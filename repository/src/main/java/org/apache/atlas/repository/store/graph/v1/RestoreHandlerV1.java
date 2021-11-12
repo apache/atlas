@@ -361,8 +361,15 @@ public class RestoreHandlerV1 {
         String labelWithoutPrefix        = edge.getLabel().substring(GraphHelper.EDGE_LABEL_PREFIX.length());
         AtlasType       parentType       = typeRegistry.getType(AtlasGraphUtilsV2.getTypeName(edge.getOutVertex()));
         AtlasStructType parentStructType = (AtlasStructType) parentType;
-
-        return parentStructType.getAttribute(labelWithoutPrefix);
+        AtlasStructType.AtlasAttribute attribute = parentStructType.getAttribute(labelWithoutPrefix);
+        if (attribute == null) {
+            String[] tokenizedLabel = labelWithoutPrefix.split("\\.");
+            if (tokenizedLabel.length == 2) {
+                String attributeName = tokenizedLabel[1];
+                attribute = parentStructType.getAttribute(attributeName);
+            }
+        }
+        return attribute;
     }
 
     protected void restoreVertex(AtlasVertex instanceVertex) throws AtlasBaseException {
@@ -566,5 +573,19 @@ public class RestoreHandlerV1 {
         for (AtlasEdge edge : classificationEdges) {
             restoreEdgeReference(edge, CLASSIFICATION, false, instanceVertex);
         }
+    }
+
+    public boolean isRelationshipEdge(AtlasEdge edge) {
+        boolean ret = false;
+
+        if (edge != null) {
+            String outVertexType = getTypeName(edge.getOutVertex());
+            String inVertexType  = getTypeName(edge.getInVertex());
+
+            ret = GraphHelper.isRelationshipEdge(edge) || edge.getPropertyKeys().contains(RELATIONSHIP_GUID_PROPERTY_KEY) ||
+                    (typeRegistry.getEntityTypeByName(outVertexType) != null && typeRegistry.getEntityTypeByName(inVertexType) != null);
+        }
+
+        return ret;
     }
 }
