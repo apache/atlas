@@ -80,6 +80,12 @@ public class AtlasBusinessMetadataType extends AtlasStructType {
                 attrType = ((AtlasMapType) attrType).getValueType();
             }
 
+            // Do not allow updating es mappings of Business metadata attributes
+            attributeDef.setIndexTypeESConfig(null);
+            attributeDef.setIndexTypeESFields(null);
+
+            attachCustomESMappingsOnBMAttributeDef(attrType, attributeDef);
+
             // check if attribute type is not struct/classification/entity/business-metadata
             if (attrType instanceof AtlasStructType) {
                 throw new AtlasBaseException(AtlasErrorCode.BUSINESS_METADATA_DEF_ATTRIBUTE_TYPE_INVALID, getTypeName(), attrName);
@@ -132,6 +138,16 @@ public class AtlasBusinessMetadataType extends AtlasStructType {
                     entityType.addBusinessAttribute(bmAttribute);
                 }
             }
+        }
+    }
+
+    private void attachCustomESMappingsOnBMAttributeDef (AtlasType attrType, AtlasAttributeDef attributeDef) {
+        if (attrType instanceof AtlasBuiltInTypes.AtlasStringType) {
+            attributeDef.setIndexType(AtlasAttributeDef.IndexType.STRING);
+            attributeDef.setIndexTypeESConfig(Constants.ES_ATLAN_KEYWORD_ANALYZER_CONFIG);
+            attributeDef.setIndexTypeESFields(Constants.TEXT_MULTIFIELD);
+        } else if (attrType instanceof AtlasBuiltInTypes.AtlasDateType) {
+            attributeDef.setIndexTypeESFields(Constants.DATE_MULTIFIELD);
         }
     }
 
