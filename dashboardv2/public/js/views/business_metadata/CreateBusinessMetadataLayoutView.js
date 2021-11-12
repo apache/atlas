@@ -178,7 +178,7 @@ define(['require',
                     attrNames = [];
                 if (attributeDefs && !this.isAttrEdit) {
                     attrNames = _.map(attributeDefs, function(model) {
-                        return model.name.toLowerCase();
+                        return model.displayName.toLowerCase();
                     });
                 }
                 validationFileds.each(function(elements) {
@@ -196,7 +196,7 @@ define(['require',
                         var attrValue = this.value.toLowerCase();
                         if (attrNames.indexOf(attrValue) > -1) {
                             Utils.notifyInfo({
-                                content: "Attribute name already exist"
+                                content: "Attribute displayName already exist"
                             });
                             $(this).addClass('errorValidate');
                             if (isAttrDuplicate) { isAttrDuplicate = false; }
@@ -228,7 +228,7 @@ define(['require',
                 var displayName = this.ui.displayName.val(),
                     description = this.ui.description.val();
                 var attributeObj = this.collection.toJSON();
-                if (this.collection.length === 1 && this.collection.first().get("name") === "") {
+                if (this.collection.length === 1 && this.collection.first().get("displayName") === "") {
                     attributeObj = [];
                 }
                 this.json = {
@@ -283,13 +283,19 @@ define(['require',
                         selectedBusinessMetadataClone.attributeDefs = [];
                     }
 
+                    var newBMAttrs = this.collection.toJSON();
                     //replace old attribute matched with displayName
                     for (var i = 0; i < selectedBusinessMetadataClone.attributeDefs.length; i++) {
-                        var _attr = selectedBusinessMetadataClone.attributeDefs[0];
-                        if ( _attr.displayName === this.collection.toJSON()[0].displayName) {
-                            selectedBusinessMetadataClone.attributeDefs[0] = this.collection.toJSON()[0]
-                        }
+                       var _attr = selectedBusinessMetadataClone.attributeDefs[i];
+                       for (var n = 0; n < newBMAttrs.length; n++) {
+                          var _newAttr = newBMAttrs[n];
+                          if ( _attr.displayName === _newAttr.displayName || _attr.name === _newAttr.name) {
+                               selectedBusinessMetadataClone.attributeDefs[i] = _newAttr;
+                               newBMAttrs.splice(n, 1);
+                           }
+                       }
                     }
+                    selectedBusinessMetadataClone.attributeDefs = selectedBusinessMetadataClone.attributeDefs.concat(newBMAttrs);
 
                     this.json = {
                         "enumDefs": [],
