@@ -23,7 +23,9 @@ import org.testng.annotations.Test;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
+
 
 public class AtlasJanusGraphIndexClientTest {
 
@@ -112,7 +114,7 @@ public class AtlasJanusGraphIndexClientTest {
 
     @Test
     public void testGenerateSearchWeightString() {
-        Map<String, Integer> fields = new HashMap<>();
+        Map<String, Integer> fields = new LinkedHashMap<>();
         fields.put("one", 10);
         fields.put("two", 1);
         fields.put("three", 15);
