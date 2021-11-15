@@ -349,7 +349,7 @@ public final class ApplicationProperties extends PropertiesConfiguration {
                     addPropertyDirect(SOLR_WAIT_SEARCHER_CONF, DEFAULT_SOLR_WAIT_SEARCHER);
                 }
 
-                LOG.info("Setting solr.wait-searcher property '" + getBoolean(SOLR_WAIT_SEARCHER_CONF) + "'");
+                LOG.info("Setting solr.wait-searcher property '" + getBoolean(SOLR_WAIT_SEARCHER_CONF, DEFAULT_SOLR_WAIT_SEARCHER) + "'");
 
                 clearPropertyDirect(INDEX_MAP_NAME_CONF);
                 addPropertyDirect(INDEX_MAP_NAME_CONF, DEFAULT_INDEX_MAP_NAME);
@@ -364,7 +364,6 @@ public final class ApplicationProperties extends PropertiesConfiguration {
         addPropertyDirect(INDEX_SEARCH_MAX_RESULT_SET_SIZE, indexMaxResultSetSize);
 
         LOG.info("Setting " + INDEX_SEARCH_MAX_RESULT_SET_SIZE + " = " + indexMaxResultSetSize);
-        LOG.info("Setting " + SOLR_WAIT_SEARCHER_CONF + " = " + getBoolean(SOLR_WAIT_SEARCHER_CONF));
 
         setDbCacheConfDefaults();
     }
