@@ -680,6 +680,7 @@
         <aopalliance.version>1.0</aopalliance.version>
         <aspectj.runtime.version>1.8.7</aspectj.runtime.version>
         <atlas.surefire.options></atlas.surefire.options>
+        <avro.version>1.7.5</avro.version>
         <calcite.version>1.16.0</calcite.version>
         <checkstyle.failOnViolation>false</checkstyle.failOnViolation>
         <codehaus.woodstox.stax2-api.version>3.1.4</codehaus.woodstox.stax2-api.version>
@@ -728,6 +729,7 @@
         <jetty.version>9.4.31.v20200723</jetty.version>
         <joda-time.version>2.10.6</joda-time.version>
         <json.version>3.2.11</json.version>
+        <json-simple.version>1.1.1</json-simple.version>
         <jsr.version>1.1</jsr.version>
         <junit.version>4.13.1</junit.version>
         <kafka.scala.binary.version>2.12</kafka.scala.binary.version>
