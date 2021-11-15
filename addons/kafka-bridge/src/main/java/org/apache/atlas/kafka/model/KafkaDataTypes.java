@@ -23,7 +23,9 @@ package org.apache.atlas.kafka.model;
  */
 public enum KafkaDataTypes {
     // Classes
-    KAFKA_TOPIC;
+    KAFKA_TOPIC,
+    AVRO_SCHEMA,
+    AVRO_FIELD;
 
     public String getName() {
         return name().toLowerCase();
