@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-
 public class AtlasJanusGraphIndexClientTest {
 
     @Test
