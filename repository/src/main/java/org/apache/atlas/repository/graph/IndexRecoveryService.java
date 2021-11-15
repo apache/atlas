@@ -123,7 +123,12 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
 
     @Override
     public void instanceIsPassive() throws AtlasException {
-        LOG.info("IndexRecoveryService.instanceIsPassive(): no action needed.");
+        LOG.info("IndexRecoveryService.instanceIsPassive(): Reacting to passive state");
+        if (!isIndexRecoveryEnabled) {
+            LOG.warn("IndexRecoveryService.instanceIsPassive(): Recovery should be enabled.");
+            return;
+        }
+        stop();
     }
 
     @Override
