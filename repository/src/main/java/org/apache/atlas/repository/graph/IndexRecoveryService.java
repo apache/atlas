@@ -69,7 +69,7 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
         long recoveryStartTimeFromConfig = getRecoveryStartTimeFromConfig(config);
         long healthCheckFrequencyMillis  = config.getLong(SOLR_STATUS_CHECK_RETRY_INTERVAL, SOLR_STATUS_RETRY_DEFAULT_MS);
         this.recoveryInfoManagement      = new RecoveryInfoManagement(graph);
-        String indexHealthMonitorThreadUniqueName = INDEX_HEALTH_MONITOR_THREAD_NAME + "-" +NanoIdUtils.randomNanoId();
+        String indexHealthMonitorThreadUniqueName = INDEX_HEALTH_MONITOR_THREAD_NAME + "-" + NanoIdUtils.randomNanoId();
 
         this.recoveryThread = new RecoveryThread(recoveryInfoManagement, graph, recoveryStartTimeFromConfig, healthCheckFrequencyMillis);
         this.indexHealthMonitor = new Thread(recoveryThread, indexHealthMonitorThreadUniqueName);
