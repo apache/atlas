@@ -26,6 +26,7 @@ import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.service.Service;
+import org.apache.atlas.util.NanoIdUtils;
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,9 +69,10 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
         long recoveryStartTimeFromConfig = getRecoveryStartTimeFromConfig(config);
         long healthCheckFrequencyMillis  = config.getLong(SOLR_STATUS_CHECK_RETRY_INTERVAL, SOLR_STATUS_RETRY_DEFAULT_MS);
         this.recoveryInfoManagement      = new RecoveryInfoManagement(graph);
+        String indexHealthMonitorThreadUniqueName = INDEX_HEALTH_MONITOR_THREAD_NAME + "-" +NanoIdUtils.randomNanoId();
 
         this.recoveryThread = new RecoveryThread(recoveryInfoManagement, graph, recoveryStartTimeFromConfig, healthCheckFrequencyMillis);
-        this.indexHealthMonitor = new Thread(recoveryThread, INDEX_HEALTH_MONITOR_THREAD_NAME);
+        this.indexHealthMonitor = new Thread(recoveryThread, indexHealthMonitorThreadUniqueName);
     }
 
     private long getRecoveryStartTimeFromConfig(Configuration config) {
