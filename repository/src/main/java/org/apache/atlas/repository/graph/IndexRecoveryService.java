@@ -170,21 +170,19 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
 
             LOG.info("Index Health Monitor: Starting...");
 
-            while (true) {
-                if (shouldRun.get()) {
-                    try {
-                        boolean indexHealthy = isIndexHealthy();
+            while (shouldRun.get()) {
+                try {
+                    boolean indexHealthy = isIndexHealthy();
 
-                        if (this.txRecoveryObject == null && indexHealthy) {
-                            startMonitoring();
-                        }
-
-                        if (this.txRecoveryObject != null && !indexHealthy) {
-                            stopMonitoring();
-                        }
-                    } catch (Exception e) {
-                        LOG.error("Error: Index recovery monitoring!", e);
+                    if (this.txRecoveryObject == null && indexHealthy) {
+                        startMonitoring();
                     }
+
+                    if (this.txRecoveryObject != null && !indexHealthy) {
+                        stopMonitoring();
+                    }
+                } catch (Exception e) {
+                    LOG.error("Error: Index recovery monitoring!", e);
                 }
             }
         }
