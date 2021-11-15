@@ -69,10 +69,9 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
         long recoveryStartTimeFromConfig = getRecoveryStartTimeFromConfig(config);
         long healthCheckFrequencyMillis  = config.getLong(SOLR_STATUS_CHECK_RETRY_INTERVAL, SOLR_STATUS_RETRY_DEFAULT_MS);
         this.recoveryInfoManagement      = new RecoveryInfoManagement(graph);
-        String indexHealthMonitorThreadUniqueName = INDEX_HEALTH_MONITOR_THREAD_NAME + "-" + NanoIdUtils.randomNanoId();
 
         this.recoveryThread = new RecoveryThread(recoveryInfoManagement, graph, recoveryStartTimeFromConfig, healthCheckFrequencyMillis);
-        this.indexHealthMonitor = new Thread(recoveryThread, indexHealthMonitorThreadUniqueName);
+        this.indexHealthMonitor = new Thread(recoveryThread, INDEX_HEALTH_MONITOR_THREAD_NAME);
     }
 
     private long getRecoveryStartTimeFromConfig(Configuration config) {
@@ -125,12 +124,7 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
 
     @Override
     public void instanceIsPassive() throws AtlasException {
-        LOG.info("IndexRecoveryService.instanceIsPassive(): Reacting to passive state");
-        if (!isIndexRecoveryEnabled) {
-            LOG.warn("IndexRecoveryService.instanceIsPassive(): Recovery should be enabled.");
-            return;
-        }
-        stop();
+        LOG.info("IndexRecoveryService.instanceIsPassive(): no action needed.");
     }
 
     @Override
@@ -144,8 +138,13 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
 
             return;
         }
-
-        indexHealthMonitor.start();
+        if (indexHealthMonitor.isAlive()) {
+            recoveryThread.shouldRun.set(true);
+            LOG.info("IndexRecoveryService: Resuming existing thread.");
+        } else {
+            LOG.info("IndexRecoveryService: Starting new thread.");
+            indexHealthMonitor.start();
+        }
     }
 
     private static class RecoveryThread implements Runnable {
@@ -171,19 +170,21 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
 
             LOG.info("Index Health Monitor: Starting...");
 
-            while (shouldRun.get()) {
-                try {
-                    boolean indexHealthy = isIndexHealthy();
+            while (true) {
+                if (shouldRun.get()) {
+                    try {
+                        boolean indexHealthy = isIndexHealthy();
 
-                    if (this.txRecoveryObject == null && indexHealthy) {
-                        startMonitoring();
-                    }
+                        if (this.txRecoveryObject == null && indexHealthy) {
+                            startMonitoring();
+                        }
 
-                    if (this.txRecoveryObject != null && !indexHealthy) {
-                        stopMonitoring();
+                        if (this.txRecoveryObject != null && !indexHealthy) {
+                            stopMonitoring();
+                        }
+                    } catch (Exception e) {
+                        LOG.error("Error: Index recovery monitoring!", e);
                     }
-                } catch (Exception e) {
-                    LOG.error("Error: Index recovery monitoring!", e);
                 }
             }
         }
