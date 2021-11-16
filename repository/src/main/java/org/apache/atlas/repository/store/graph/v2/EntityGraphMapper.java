@@ -1065,7 +1065,7 @@ public class EntityGraphMapper {
                 if (trimmedLength < value.length()) {
                     LOG.warn("Length of indexed attribute {} is {} characters, longer than safe-limit {}; trimming to {} - attempt #{}", attribute.getQualifiedName(), value.length(), INDEXED_STR_SAFE_LEN, trimmedLength, requestContext.getAttemptCount());
 
-                    String checksumSuffix = ":" + DigestUtils.shaHex(value); // Storing SHA checksum in case verification is needed after retrieval
+                    String checksumSuffix = ":" + DigestUtils.sha256Hex(value); // Storing SHA checksum in case verification is needed after retrieval
 
                     ret = value.substring(0, trimmedLength - checksumSuffix.length()) + checksumSuffix;
                 } else {
@@ -2407,7 +2407,7 @@ public class EntityGraphMapper {
                |   true      |    false    | => Remove Tag Propagation (send REMOVE classification notifications)
                |-------------|-------------| */
 
-            if (taskManagement != null && DEFERRED_ACTION_ENABLED) {
+            if (updatedTagPropagation != null && taskManagement != null && DEFERRED_ACTION_ENABLED) {
                 String propagationType = updatedTagPropagation ? CLASSIFICATION_PROPAGATION_ADD : CLASSIFICATION_PROPAGATION_DELETE;
 
                 createAndQueueTask(propagationType, entityVertex, classificationVertex.getIdForDisplay());
