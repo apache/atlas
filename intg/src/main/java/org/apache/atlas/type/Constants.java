@@ -17,6 +17,8 @@
  */
 package org.apache.atlas.type;
 
+import java.util.HashMap;
+
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.encodePropertyKey;
 
 /**
@@ -56,6 +58,35 @@ public final class Constants {
 
     //Classification-Only System Attributes
     public static final String CLASSIFICATION_ENTITY_STATUS_PROPERTY_KEY = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "entityStatus");
+
+
+    /*
+     * elasticsearch mappings
+     */
+    public static final HashMap<String, Object> ES_DATE_FIELD = new HashMap<>();
+    static {
+        ES_DATE_FIELD.put("type", "date");
+        ES_DATE_FIELD.put("format", "epoch_millis");
+    }
+    public static final HashMap<String, HashMap<String, Object>> DATE_MULTIFIELD = new HashMap<>();
+    static {
+        DATE_MULTIFIELD.put("date", ES_DATE_FIELD);
+    }
+
+    public static final HashMap<String, Object> ES_TEXT_FIELD = new HashMap<>();
+    static {
+        ES_TEXT_FIELD.put("type", "text");
+        ES_TEXT_FIELD.put("analyzer", "atlan_text_analyzer");
+    }
+    public static final HashMap<String, HashMap<String, Object>> TEXT_MULTIFIELD = new HashMap<>();
+    static {
+        TEXT_MULTIFIELD.put("text", ES_TEXT_FIELD);
+    }
+
+    public static final HashMap<String, Object> ES_ATLAN_KEYWORD_ANALYZER_CONFIG = new HashMap<>();
+    static {
+        ES_ATLAN_KEYWORD_ANALYZER_CONFIG.put("normalizer", "atlan_normalizer");
+    }
 
     private Constants() {}
 }
