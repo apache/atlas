@@ -422,7 +422,9 @@ public class EntityREST {
      */
     @POST
     @Timed
-    public EntityMutationResponse createOrUpdate(AtlasEntityWithExtInfo entity) throws AtlasBaseException {
+    public EntityMutationResponse createOrUpdate(AtlasEntityWithExtInfo entity,
+                                                 @QueryParam("replaceClassifications") @DefaultValue("false") boolean replaceClassifications,
+                                                 @QueryParam("replaceBusinessAttributes") @DefaultValue("false") boolean replaceBusinessAttributes) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
         try {
@@ -430,7 +432,7 @@ public class EntityREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.createOrUpdate()");
             }
 
-            return entitiesStore.createOrUpdate(new AtlasEntityStream(entity), false);
+            return entitiesStore.createOrUpdate(new AtlasEntityStream(entity), replaceClassifications, replaceBusinessAttributes);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -821,7 +823,9 @@ public class EntityREST {
     @POST
     @Path("/bulk")
     @Timed
-    public EntityMutationResponse createOrUpdate(AtlasEntitiesWithExtInfo entities) throws AtlasBaseException {
+    public EntityMutationResponse createOrUpdate(AtlasEntitiesWithExtInfo entities,
+                                                 @QueryParam("replaceClassifications") @DefaultValue("false") boolean replaceClassifications,
+                                                 @QueryParam("replaceBusinessAttributes") @DefaultValue("false") boolean replaceBusinessAttributes) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
         try {
@@ -832,7 +836,7 @@ public class EntityREST {
 
             EntityStream entityStream = new AtlasEntityStream(entities);
 
-            return entitiesStore.createOrUpdate(entityStream, false);
+            return entitiesStore.createOrUpdate(entityStream, replaceClassifications, replaceBusinessAttributes);
         } finally {
             AtlasPerfTracer.log(perf);
         }
