@@ -177,7 +177,7 @@ public abstract class GlossaryUtils {
         return AtlasGraphUtilsV2.findByGuid(guid);
     }
 
-    protected static String createQualifiedName() {
+    public static String createQualifiedName() {
         return getUUID();
     }
     protected static String getUUID(){
