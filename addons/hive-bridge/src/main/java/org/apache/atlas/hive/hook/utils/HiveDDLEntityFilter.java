@@ -46,6 +46,7 @@ public class HiveDDLEntityFilter implements EntityFilter {
         add(AtlasPathExtractorUtil.ADLS_GEN2_ACCOUNT);
         add(AtlasPathExtractorUtil.ADLS_GEN2_CONTAINER);
         add(AtlasPathExtractorUtil.ADLS_GEN2_DIRECTORY);
+        add(AtlasPathExtractorUtil.GCS_BUCKET);
         add(AtlasPathExtractorUtil.GCS_VIRTUAL_DIR);
         add(AtlasPathExtractorUtil.AWS_S3_BUCKET);
         add(AtlasPathExtractorUtil.AWS_S3_V2_BUCKET);
