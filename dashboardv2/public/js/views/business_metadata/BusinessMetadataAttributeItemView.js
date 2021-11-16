@@ -56,7 +56,7 @@ define(['require',
             events: function() {
                 var events = {};
                 events["keyup " + this.ui.attributeInput] = function(e) {
-                    this.model.set({ "name": e.target.value.trim() });
+                    this.model.set({ "displayName": e.target.value.trim() });
                 };
                 events["change " + this.ui.searchWeightSelector] = function(e) {
                     this.model.set({ "searchWeight": e.target.value.trim() });
@@ -190,8 +190,7 @@ define(['require',
                     var typeName = this.model.get("typeName");
                     this.ui.close.hide();
                     this.ui.createNewEnum.hide(); // cannot add new businessMetadata on edit view
-                    this.ui.attributeInput.val(this.model.get("name"));
-                    this.ui.attributeInput.attr("disabled", "false");
+                    this.ui.attributeInput.val(this.model.get("displayName"));
                     this.ui.dataTypeSelector.attr("disabled", "false");
                     this.ui.dataTypeSelector.attr("disabled", "false");
                     this.ui.multiValueSelect.hide();

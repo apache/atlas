@@ -24,7 +24,7 @@
       "search_synonyms": {
         "type": "custom",
         "filter": [
-          "graph_synonyms"
+          "graph_synonyms", "lowercase"
         ],
         "tokenizer": "atlan_tokenizer"
       }
