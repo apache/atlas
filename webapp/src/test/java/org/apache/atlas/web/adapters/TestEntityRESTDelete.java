@@ -90,7 +90,7 @@ public class TestEntityRESTDelete {
         for (int i = 1; i <= 2; i++) {
             AtlasEntity dbEntity = TestUtilsV2.createDBEntity();
 
-            final EntityMutationResponse response = entityREST.createOrUpdate(new AtlasEntity.AtlasEntitiesWithExtInfo(dbEntity));
+            final EntityMutationResponse response = entityREST.createOrUpdate(new AtlasEntity.AtlasEntitiesWithExtInfo(dbEntity), false, false);
 
             assertNotNull(response);
             List<AtlasEntityHeader> entitiesMutated = response.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE);
