@@ -26,6 +26,7 @@ import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.service.Service;
+import org.apache.atlas.util.NanoIdUtils;
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -123,7 +124,8 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
 
     @Override
     public void instanceIsPassive() throws AtlasException {
-        LOG.info("IndexRecoveryService.instanceIsPassive(): no action needed.");
+        LOG.info("IndexRecoveryService.instanceIsPassive(): Shutting down!.");
+        recoveryThread.shutdown();
     }
 
     @Override
@@ -137,8 +139,13 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
 
             return;
         }
-
-        indexHealthMonitor.start();
+        if (indexHealthMonitor.isAlive()) {
+            recoveryThread.shouldRun.set(true);
+            LOG.info("IndexRecoveryService: Resuming existing thread.");
+        } else {
+            LOG.info("IndexRecoveryService: Starting new thread.");
+            indexHealthMonitor.start();
+        }
     }
 
     private static class RecoveryThread implements Runnable {
@@ -164,19 +171,21 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
 
             LOG.info("Index Health Monitor: Starting...");
 
-            while (shouldRun.get()) {
-                try {
-                    boolean indexHealthy = isIndexHealthy();
+            while (true) {
+                if (shouldRun.get()) {
+                    try {
+                        boolean indexHealthy = isIndexHealthy();
 
-                    if (this.txRecoveryObject == null && indexHealthy) {
-                        startMonitoring();
-                    }
+                        if (this.txRecoveryObject == null && indexHealthy) {
+                            startMonitoring();
+                        }
 
-                    if (this.txRecoveryObject != null && !indexHealthy) {
-                        stopMonitoring();
+                        if (this.txRecoveryObject != null && !indexHealthy) {
+                            stopMonitoring();
+                        }
+                    } catch (Exception e) {
+                        LOG.error("Error: Index recovery monitoring!", e);
                     }
-                } catch (Exception e) {
-                    LOG.error("Error: Index recovery monitoring!", e);
                 }
             }
         }
