@@ -14,6 +14,7 @@ public class Utils {
     public static final char[] invalidNameChars             = {'@', '.'};
 
     // Relation name constants
+    protected static final String ANCHOR                         = "anchor";
     protected static final String ATLAS_GLOSSARY_PREFIX          = ATLAS_GLOSSARY_TYPENAME;
     protected static final String TERM_ANCHOR                    = ATLAS_GLOSSARY_PREFIX + "TermAnchor";
     protected static final String CATEGORY_ANCHOR                = ATLAS_GLOSSARY_PREFIX + "CategoryAnchor";

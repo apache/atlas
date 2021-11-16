@@ -57,6 +57,7 @@ import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.repository.store.graph.v2.glossary.GlossaryPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.glossary.PreProcessor;
+import org.apache.atlas.repository.store.graph.v2.glossary.TermPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.glossary.Utils;
 import org.apache.atlas.tasks.TaskManagement;
  import org.apache.atlas.type.AtlasArrayType;
@@ -332,7 +333,8 @@ public class EntityGraphMapper {
                 AtlasVertex     vertex     = context.getVertex(guid);
                 AtlasEntityType entityType = context.getType(guid);
 
-                handleGlossaryEntities(createdEntity, vertex, CREATE);
+                PreProcessor preProcessor = getPreProcessor(createdEntity, vertex, CREATE);
+                context.setPreProcessor(preProcessor);
 
                 mapAttributes(createdEntity, entityType, vertex, CREATE, context);
                 mapRelationshipAttributes(createdEntity, entityType, vertex, CREATE, context);
@@ -356,7 +358,8 @@ public class EntityGraphMapper {
                 AtlasVertex     vertex     = context.getVertex(guid);
                 AtlasEntityType entityType = context.getType(guid);
 
-                handleGlossaryEntities(updatedEntity, vertex, UPDATE);
+                PreProcessor preProcessor = getPreProcessor(updatedEntity, vertex, UPDATE);
+                context.setPreProcessor(preProcessor);
 
                 mapAttributes(updatedEntity, entityType, vertex, updateType, context);
                 mapRelationshipAttributes(updatedEntity, entityType, vertex, UPDATE, context);
@@ -404,18 +407,21 @@ public class EntityGraphMapper {
         return resp;
     }
 
-    private void handleGlossaryEntities(AtlasEntity entity, AtlasVertex vertex, EntityOperation op) throws AtlasBaseException {
+    private PreProcessor getPreProcessor(AtlasEntity entity, AtlasVertex vertex, EntityOperation op) throws AtlasBaseException {
         PreProcessor preProcessor = null;
 
         switch (entity.getTypeName()) {
             case Utils.ATLAS_GLOSSARY_TYPENAME:
-                preProcessor = new GlossaryPreProcessor(typeRegistry, op);
+                preProcessor = new GlossaryPreProcessor(typeRegistry, entityRetriever, op);
                 break;
+
+            case Utils.ATLAS_GLOSSARY_TERM_TYPENAME:
+                preProcessor = new TermPreProcessor(typeRegistry, entityRetriever, op);
+                break;
+
         }
 
-        if (preProcessor != null) {
-            preProcessor.process(entity, vertex);
-        }
+        return preProcessor;
     }
 
     public void setCustomAttributes(AtlasVertex vertex, AtlasEntity entity) {
@@ -729,6 +735,11 @@ public class EntityGraphMapper {
 
             List<String> timestampAutoUpdateAttributes = new ArrayList<>();
             List<String> userAutoUpdateAttributes = new ArrayList<>();
+
+
+            if (context.getPreProcessor() != null) {
+                context.getPreProcessor().processAttributes(struct, vertex);
+            }
 
             if (op.equals(CREATE)) {
                 for (AtlasAttribute attribute : structType.getAllAttributes().values()) {

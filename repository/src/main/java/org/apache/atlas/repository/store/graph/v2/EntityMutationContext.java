@@ -21,6 +21,7 @@ import org.apache.atlas.model.instance.AtlasEntity;
 
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
+import org.apache.atlas.repository.store.graph.v2.glossary.PreProcessor;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.commons.lang.StringUtils;
 
@@ -35,6 +36,7 @@ public class EntityMutationContext {
     private final Map<String, String> guidAssignments = new HashMap<>();
     private List<AtlasVertex> entitiesToDelete = null;
     private List<AtlasVertex> entitiesToRestore = null;
+    private PreProcessor preProcessor = null;
 
     public EntityMutationContext(final EntityGraphDiscoveryContext context) {
         this.context = context;
@@ -119,6 +121,14 @@ public class EntityMutationContext {
 
     public AtlasVertex getVertex(String guid) {
         return entityVsVertex.get(guid);
+    }
+
+    public PreProcessor getPreProcessor() {
+        return preProcessor;
+    }
+
+    public void setPreProcessor(PreProcessor preProcessor) {
+        this.preProcessor = preProcessor;
     }
 
     @Override

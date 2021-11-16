@@ -22,9 +22,11 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.glossary.GlossaryService;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
+import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -39,20 +41,23 @@ public class GlossaryPreProcessor implements PreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(GlossaryPreProcessor.class);
 
     private final AtlasTypeRegistry typeRegistry;
+    private final EntityGraphRetriever entityRetriever;
     private final EntityMutations.EntityOperation operation;
 
-    public GlossaryPreProcessor(AtlasTypeRegistry typeRegistry, EntityMutations.EntityOperation operation) {
+    public GlossaryPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, EntityMutations.EntityOperation operation) {
+        this.entityRetriever = entityRetriever;
         this.typeRegistry = typeRegistry;
         this.operation = operation;
     }
 
     @Override
-    public void process(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
+    public void processAttributes(AtlasStruct entity, AtlasVertex vertex) throws AtlasBaseException {
+        //Handle name & qualifiedName
         if (LOG.isDebugEnabled()) {
-            LOG.debug("GlossaryPreProcessor.process: pre processing {}, {}", entity.getGuid(), operation);
+            LOG.debug("GlossaryPreProcessor.processAttributes: pre processing {}, {}", entity.getAttribute(QUALIFIED_NAME), operation);
         }
 
-        LOG.info("GlossaryPreProcessor.process: pre processing {}", AtlasType.toJson(entity));
+        LOG.info("GlossaryPreProcessor.processAttributes: pre processing {}", AtlasType.toJson(entity));
 
         switch (operation) {
             case CREATE:
@@ -62,10 +67,9 @@ public class GlossaryPreProcessor implements PreProcessor {
                 processUpdateGlossary(entity, vertex);
                 break;
         }
-
     }
 
-    private void processCreateGlossary(AtlasEntity entity) throws AtlasBaseException {
+    private void processCreateGlossary(AtlasStruct entity) throws AtlasBaseException {
         String glossaryName = (String) entity.getAttribute(NAME);
 
         if (GlossaryService.isNameInvalid(glossaryName)) {
@@ -79,7 +83,7 @@ public class GlossaryPreProcessor implements PreProcessor {
         entity.setAttribute(QUALIFIED_NAME, createQualifiedName());
     }
 
-    private void processUpdateGlossary(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
+    private void processUpdateGlossary(AtlasStruct entity, AtlasVertex vertex) throws AtlasBaseException {
         String glossaryName = (String) entity.getAttribute(NAME);
         String vertexName = vertex.getProperty(NAME, String.class);
 
