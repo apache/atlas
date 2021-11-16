@@ -19,11 +19,12 @@
 </div>
 <form class="hide form-horizontal" data-id="createForm" style="width: 70%;margin: 0 auto;">
     {{#if fromTable}}
+
     <div class="form-group">
-        <label class="control-label col-sm-2 {{#if create}}required{{/if}}" for="name">Name</label>
+        <label class="control-label col-sm-2 required" for="displayName">Display Name</label>
         {{#if create}}
         <div class="col-sm-10">
-            <input class="form-control businessMetadata-name require" data-id="name" placeholder="Name(required)" autofocus />
+            <input class="form-control businessMetadata-name require" data-id="displayName" placeholder="Display Name(required)" autofocus />
         </div>
         {{else}}
         <span class="ellipsis-with-margin control-label text-left col-sm-10" data-id="title"></span> {{/if}}

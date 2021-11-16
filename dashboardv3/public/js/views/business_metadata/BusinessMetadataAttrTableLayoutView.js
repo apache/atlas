@@ -167,6 +167,16 @@ define(['require',
                             }
                         })
                     },
+                    displayName: {
+                        label: "Attribute Display Name",
+                        cell: "html",
+                        editable: false,
+                        formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
+                            fromRaw: function(rawValue, model) {
+                                return _.escape(model.get('displayName'));
+                            }
+                        })
+                    },
                     typeName: {
                         label: "Type Name",
                         cell: "html",
