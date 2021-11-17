@@ -20,10 +20,15 @@ package org.apache.atlas.repository.store.graph.v2.glossary;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.instance.*;
+import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.model.instance.AtlasStruct;
+import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
+import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -55,7 +60,7 @@ public class TermPreProcessor implements PreProcessor {
     }
 
     @Override
-    public void processAttributes(AtlasStruct entityStruct, AtlasVertex vertex) throws AtlasBaseException {
+    public void processAttributes(AtlasStruct entityStruct, AtlasVertex vertex, EntityMutationContext context) throws AtlasBaseException {
         //Handle name & qualifiedName
         if (LOG.isDebugEnabled()) {
             LOG.debug("TermPreProcessor.processAttributes: pre processing {}, {}",
@@ -65,7 +70,7 @@ public class TermPreProcessor implements PreProcessor {
         LOG.info("TermPreProcessor.processAttributes: pre processing {}", AtlasType.toJson(entityStruct));
 
         AtlasEntity entity = (AtlasEntity) entityStruct;
-        setAnchor(entity);
+        setAnchor(entity, context);
 
         switch (operation) {
             case CREATE:
@@ -75,6 +80,11 @@ public class TermPreProcessor implements PreProcessor {
                 processUpdateTerm(entity, vertex);
                 break;
         }
+    }
+
+    @Override
+    public void processRelationshipAttributes(AtlasEntity entity, AtlasVertex vertex, EntityMutationContext context) throws AtlasBaseException {
+        //TODO
     }
 
     private void processCreateTerm(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
@@ -109,7 +119,11 @@ public class TermPreProcessor implements PreProcessor {
         entity.setAttribute(QUALIFIED_NAME, vertexQnName);
     }
 
-    protected String createQualifiedName(String termQualifiedName) {
+    private String createQualifiedName(String termQualifiedName) {
+        return createQualifiedName(termQualifiedName, (String) anchor.getAttribute(QUALIFIED_NAME));
+    }
+
+    protected static String createQualifiedName(String termQualifiedName, String glossaryQualifiedName) {
         String qName = "";
         if (!StringUtils.isEmpty(termQualifiedName)) {
             //extract existing nanoid for term
@@ -117,7 +131,7 @@ public class TermPreProcessor implements PreProcessor {
         }
         qName = StringUtils.isEmpty(qName) ? getUUID() : qName;
 
-        return qName + "@" + anchor.getAttribute(QUALIFIED_NAME);
+        return qName + "@" + glossaryQualifiedName;
     }
 
     private boolean termExists(String termName) {
@@ -130,17 +144,24 @@ public class TermPreProcessor implements PreProcessor {
         return CollectionUtils.isNotEmpty(vertexList);
     }
 
-    private void setAnchor(AtlasEntity entity) throws AtlasBaseException {
+    private void setAnchor(AtlasEntity entity, EntityMutationContext context) throws AtlasBaseException {
 
         if (anchor == null) {
             AtlasObjectId objectId = (AtlasObjectId) entity.getRelationshipAttribute(ANCHOR);
 
-            if (MapUtils.isNotEmpty(objectId.getUniqueAttributes()) &&
+            if (StringUtils.isNotEmpty(objectId.getGuid())) {
+                AtlasVertex vertex = context.getVertex(objectId.getGuid());
+
+                if (vertex == null) {
+                    anchor = entityRetriever.toAtlasEntityHeader(objectId.getGuid());
+                } else {
+                    anchor = entityRetriever.toAtlasEntityHeader(vertex);
+                }
+
+            } else if (MapUtils.isNotEmpty(objectId.getUniqueAttributes()) &&
                     StringUtils.isNotEmpty( (String) objectId.getUniqueAttributes().get(QUALIFIED_NAME))) {
                 anchor = new AtlasEntityHeader(objectId.getTypeName(), objectId.getUniqueAttributes());
 
-            } else {
-                anchor = entityRetriever.toAtlasEntityHeader(objectId.getGuid());
             }
         }
     }

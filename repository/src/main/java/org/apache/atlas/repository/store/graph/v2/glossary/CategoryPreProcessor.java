@@ -21,16 +21,19 @@ package org.apache.atlas.repository.store.graph.v2.glossary;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.glossary.AtlasGlossary;
-import org.apache.atlas.model.glossary.AtlasGlossaryCategory;
-import org.apache.atlas.model.instance.*;
+import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.model.instance.AtlasStruct;
+import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
+import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -60,7 +63,7 @@ public class CategoryPreProcessor implements PreProcessor {
     }
 
     @Override
-    public void processAttributes(AtlasStruct entityStruct, AtlasVertex vertex) throws AtlasBaseException {
+    public void processAttributes(AtlasStruct entityStruct, AtlasVertex vertex, EntityMutationContext context) throws AtlasBaseException {
         //Handle name & qualifiedName
         if (LOG.isDebugEnabled()) {
             LOG.debug("CategoryPreProcessor.processAttributes: pre processing {}, {}",
@@ -70,7 +73,7 @@ public class CategoryPreProcessor implements PreProcessor {
         LOG.info("CategoryPreProcessor.processAttributes: pre processing {}", AtlasType.toJson(entityStruct));
 
         AtlasEntity entity = (AtlasEntity) entityStruct;
-        setAnchorAndParent(entity);
+        setAnchorAndParent(entity, context);
 
         switch (operation) {
             case CREATE:
@@ -80,6 +83,11 @@ public class CategoryPreProcessor implements PreProcessor {
                 processUpdateCategory(entity, vertex);
                 break;
         }
+    }
+
+    @Override
+    public void processRelationshipAttributes(AtlasEntity entity, AtlasVertex vertex, EntityMutationContext context) throws AtlasBaseException {
+        //TODO
     }
 
     private void processCreateCategory(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
@@ -166,17 +174,24 @@ public class CategoryPreProcessor implements PreProcessor {
         return false;
     }
 
-    private void setAnchorAndParent(AtlasEntity entity) throws AtlasBaseException {
+    private void setAnchorAndParent(AtlasEntity entity, EntityMutationContext context) throws AtlasBaseException {
 
         if (anchor == null) {
             AtlasObjectId objectId = (AtlasObjectId) entity.getRelationshipAttribute(ANCHOR);
 
-            if (MapUtils.isNotEmpty(objectId.getUniqueAttributes()) &&
+            if (StringUtils.isNotEmpty(objectId.getGuid())) {
+                AtlasVertex vertex = context.getVertex(objectId.getGuid());
+
+                if (vertex == null) {
+                    anchor = entityRetriever.toAtlasEntityHeader(objectId.getGuid());
+                } else {
+                    anchor = entityRetriever.toAtlasEntityHeader(vertex);
+                }
+
+            } else if (MapUtils.isNotEmpty(objectId.getUniqueAttributes()) &&
                     StringUtils.isNotEmpty( (String) objectId.getUniqueAttributes().get(QUALIFIED_NAME))) {
                 anchor = new AtlasEntityHeader(objectId.getTypeName(), objectId.getUniqueAttributes());
 
-            } else {
-                anchor = entityRetriever.toAtlasEntityHeader(objectId.getGuid());
             }
         }
 
@@ -184,12 +199,19 @@ public class CategoryPreProcessor implements PreProcessor {
             AtlasObjectId objectId = (AtlasObjectId) entity.getRelationshipAttribute(CATEGORY_PARENT);
 
             if (objectId != null) {
-                if (MapUtils.isNotEmpty(objectId.getUniqueAttributes()) &&
+                if (StringUtils.isNotEmpty(objectId.getGuid())) {
+                    AtlasVertex vertex = context.getVertex(objectId.getGuid());
+
+                    if (vertex == null) {
+                        parentCategory = entityRetriever.toAtlasEntityHeader(objectId.getGuid());
+                    } else {
+                        parentCategory = entityRetriever.toAtlasEntityHeader(vertex);
+                    }
+
+                } else if (MapUtils.isNotEmpty(objectId.getUniqueAttributes()) &&
                         StringUtils.isNotEmpty( (String) objectId.getUniqueAttributes().get(QUALIFIED_NAME))) {
                     parentCategory = new AtlasEntityHeader(objectId.getTypeName(), objectId.getUniqueAttributes());
 
-                } else {
-                    parentCategory = entityRetriever.toAtlasEntityHeader(objectId.getGuid());
                 }
             }
         }

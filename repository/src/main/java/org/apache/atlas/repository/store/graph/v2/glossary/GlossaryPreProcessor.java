@@ -27,6 +27,7 @@ import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
+import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -52,7 +53,7 @@ public class GlossaryPreProcessor implements PreProcessor {
     }
 
     @Override
-    public void processAttributes(AtlasStruct entity, AtlasVertex vertex) throws AtlasBaseException {
+    public void processAttributes(AtlasStruct entity, AtlasVertex vertex, EntityMutationContext context) throws AtlasBaseException {
         //Handle name & qualifiedName
         if (LOG.isDebugEnabled()) {
             LOG.debug("GlossaryPreProcessor.processAttributes: pre processing {}, {}", entity.getAttribute(QUALIFIED_NAME), operation);
@@ -68,6 +69,11 @@ public class GlossaryPreProcessor implements PreProcessor {
                 processUpdateGlossary(entity, vertex);
                 break;
         }
+    }
+
+    @Override
+    public void processRelationshipAttributes(AtlasEntity entity, AtlasVertex vertex, EntityMutationContext context) {
+
     }
 
     private void processCreateGlossary(AtlasStruct entity) throws AtlasBaseException {
