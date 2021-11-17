@@ -15,6 +15,8 @@ public class Utils {
 
     // Relation name constants
     protected static final String ANCHOR                         = "anchor";
+    protected static final String CATEGORY_PARENT                = "parentCategory";
+    protected static final String CATEGORY_CHILDREN              = "childrenCategories";
     protected static final String ATLAS_GLOSSARY_PREFIX          = ATLAS_GLOSSARY_TYPENAME;
     protected static final String TERM_ANCHOR                    = ATLAS_GLOSSARY_PREFIX + "TermAnchor";
     protected static final String CATEGORY_ANCHOR                = ATLAS_GLOSSARY_PREFIX + "CategoryAnchor";

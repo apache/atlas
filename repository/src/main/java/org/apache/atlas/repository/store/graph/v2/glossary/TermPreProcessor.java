@@ -58,11 +58,11 @@ public class TermPreProcessor implements PreProcessor {
     public void processAttributes(AtlasStruct entityStruct, AtlasVertex vertex) throws AtlasBaseException {
         //Handle name & qualifiedName
         if (LOG.isDebugEnabled()) {
-            LOG.debug("GlossaryPreProcessor.processAttributes: pre processing {}, {}",
+            LOG.debug("TermPreProcessor.processAttributes: pre processing {}, {}",
                     entityStruct.getAttribute(QUALIFIED_NAME), operation);
         }
 
-        LOG.info("GlossaryPreProcessor.processAttributes: pre processing {}", AtlasType.toJson(entityStruct));
+        LOG.info("TermPreProcessor.processAttributes: pre processing {}", AtlasType.toJson(entityStruct));
 
         AtlasEntity entity = (AtlasEntity) entityStruct;
         setAnchor(entity);
@@ -100,7 +100,7 @@ public class TermPreProcessor implements PreProcessor {
             throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_TERM_ALREADY_EXISTS, termName);
         }
 
-        if (isNameInvalid(termName)) {
+        if (StringUtils.isEmpty(termName) || isNameInvalid(termName)) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME);
         }
 

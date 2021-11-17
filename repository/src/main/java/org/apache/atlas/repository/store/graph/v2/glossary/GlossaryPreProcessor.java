@@ -30,6 +30,7 @@ import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,7 +73,7 @@ public class GlossaryPreProcessor implements PreProcessor {
     private void processCreateGlossary(AtlasStruct entity) throws AtlasBaseException {
         String glossaryName = (String) entity.getAttribute(NAME);
 
-        if (GlossaryService.isNameInvalid(glossaryName)) {
+        if (StringUtils.isEmpty(glossaryName) || GlossaryService.isNameInvalid(glossaryName)) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME);
         }
 
@@ -91,7 +92,7 @@ public class GlossaryPreProcessor implements PreProcessor {
             throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_ALREADY_EXISTS,glossaryName);
         }
 
-        if (GlossaryService.isNameInvalid(glossaryName)) {
+        if (StringUtils.isEmpty(glossaryName) || GlossaryService.isNameInvalid(glossaryName)) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME);
         }
 
