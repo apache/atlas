@@ -404,7 +404,7 @@ public class HiveMetaStoreBridgeV2 {
     public void importHiveTables(boolean failOnError) throws HiveException, AtlasBaseException {
         LOG.info("Importing Hive Tables");
 
-        int tablesImported = 0;
+        int totalTablesImported = 0;
 
         if (CollectionUtils.isNotEmpty(databaseAndTableListToImport) && MapUtils.isNotEmpty(dbEntities)) {
             for (Map<String, String> eachEntry : databaseAndTableListToImport) {
@@ -430,18 +430,21 @@ public class HiveMetaStoreBridgeV2 {
                 if (!CollectionUtils.isEmpty(tableObjects)) {
                     LOG.info("Found {} tables to import in database {}", tableObjects.size(), databaseName);
 
+                    int importedInOneRun = 0;
                     try {
                         for (Table table : tableObjects) {
                             int imported = importTable(dbEntities.get(databaseName), table, failOnError);
 
-                            tablesImported += imported;
+                            totalTablesImported += imported;
+                            importedInOneRun += imported;
                         }
                     } finally {
-                        if (tablesImported == tableObjects.size()) {
-                            LOG.info("Successfully imported {} tables from database {}", tablesImported, databaseName);
+                        if (importedInOneRun == tableObjects.size()) {
+                            LOG.info("Successfully imported {} tables from database {}", importedInOneRun, databaseName);
+                            LOG.info("Successfully total {} tables imported", totalTablesImported);
                         } else {
                             LOG.error("Imported {} of {} tables from database {}. Please check logs for errors during import",
-                                    tablesImported, tableObjects.size(), databaseName);
+                                    importedInOneRun, tableObjects.size(), databaseName);
                         }
                     }
                 } else {
@@ -562,8 +565,9 @@ public class HiveMetaStoreBridgeV2 {
             } else {
                 LOG.error("Failed to import or get the status of import for the zip file {} at Atlas. Number of entities to be imported {}.", this.outZipFileName, totalProcessedEntities);
             }
-        } catch (AtlasServiceException e) {
-            LOG.error("Failed to import or get the status of import for the zip file {} at Atlas. Number of entities to be imported {}.", this.outZipFileName, totalProcessedEntities, e);
+        } catch (Exception e) {
+            LOG.error("Failed to get the status or import the zip file {} at Atlas. Number of entities to be imported {}.", this.outZipFileName, totalProcessedEntities, e);
+            LOG.info("Please check Atlas for the import status of the zip file {}.", this.outZipFileName);
         }
     }
 
