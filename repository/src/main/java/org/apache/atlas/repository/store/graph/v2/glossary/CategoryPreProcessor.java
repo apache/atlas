@@ -90,22 +90,12 @@ public class CategoryPreProcessor implements PreProcessor {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME);
         }
 
-        if (categoryExists(entity, catQName)) {
-            throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_TERM_ALREADY_EXISTS, catName);
-        }
-
         entity.setAttribute(QUALIFIED_NAME, createQualifiedName(catQName));
     }
 
     private void processUpdateCategory(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
         String catName = (String) entity.getAttribute(NAME);
-        String catQName = (String) entity.getAttribute(QUALIFIED_NAME);
-        String vertexName = vertex.getProperty(NAME, String.class);
         String vertexQnName = vertex.getProperty(QUALIFIED_NAME, String.class);
-
-        if (!vertexName.equals(catName) && categoryExists(entity, catQName)) {
-            throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_TERM_ALREADY_EXISTS, catName);
-        }
 
         if (StringUtils.isEmpty(catName) || isNameInvalid(catName)) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME);
@@ -114,13 +104,9 @@ public class CategoryPreProcessor implements PreProcessor {
         entity.setAttribute(QUALIFIED_NAME, vertexQnName);
     }
 
-/*    protected String createQualifiedName(AtlasGlossaryCategory cat) throws AtlasBaseException {
-        return createQualifiedName(cat, null, false);
-    }*/
-
     String createQualifiedName(String catQualifiedName) {
         boolean parentRemoval = false; //TODO: later when parent relationship handled, review this
-        String ret = "" ;
+        String ret = "";
         String qName = "";
 
         if (!StringUtils.isEmpty(catQualifiedName)) {
