@@ -83,6 +83,41 @@ public class CategoryPreProcessor implements PreProcessor {
                 processUpdateCategory(entity, vertex);
                 break;
         }
+
+        processParent(entity, vertex, context);
+    }
+
+    private void processParent(AtlasEntity entity, AtlasVertex vertex, EntityMutationContext context) throws AtlasBaseException {
+        AtlasEntity existingEntity = entityRetriever.toAtlasEntity(vertex);
+        AtlasObjectId existingParent = (AtlasObjectId) existingEntity.getRelationshipAttribute(CATEGORY_PARENT);
+
+        if (existingParent == null) {
+            if (parentCategory != null) {
+                //create new parent relation
+                LOG.info("create new parent relation");
+
+                entity.setAttribute(QUALIFIED_NAME, createQualifiedName(entity, vertex, parentCategory, false));
+
+            }
+
+        } else if (parentCategory != null && !existingParent.getGuid().equals(parentCategory.getGuid())) {
+            //update parent category
+            LOG.info("update parent category");
+
+            entity.setAttribute(QUALIFIED_NAME, createQualifiedName(entity, vertex, parentCategory, false));
+            //TODO: review if hard delete of old relation is needed
+
+        } else if (parentCategory == null) {
+            //delete parent category
+            LOG.info("delete parent category");
+            entity.setAttribute(QUALIFIED_NAME, createQualifiedName(entity, vertex, null, true));
+            //TODO: review if hard delete of relation is needed
+        }
+
+    }
+
+    private void processChildren(AtlasEntity entity, AtlasVertex vertex, EntityMutationContext context) throws AtlasBaseException {
+
     }
 
     @Override
@@ -92,13 +127,12 @@ public class CategoryPreProcessor implements PreProcessor {
 
     private void processCreateCategory(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
         String catName = (String) entity.getAttribute(NAME);
-        String catQName = vertex.getProperty(QUALIFIED_NAME, String.class);
 
         if (StringUtils.isEmpty(catName) || isNameInvalid(catName)) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME);
         }
 
-        entity.setAttribute(QUALIFIED_NAME, createQualifiedName(catQName));
+        entity.setAttribute(QUALIFIED_NAME, createQualifiedName(entity, vertex, null, false));
     }
 
     private void processUpdateCategory(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
@@ -110,40 +144,6 @@ public class CategoryPreProcessor implements PreProcessor {
         }
 
         entity.setAttribute(QUALIFIED_NAME, vertexQnName);
-    }
-
-    String createQualifiedName(String catQualifiedName) {
-        boolean parentRemoval = false; //TODO: later when parent relationship handled, review this
-        String ret = "";
-        String qName = "";
-
-        if (!StringUtils.isEmpty(catQualifiedName)) {
-            //extract existing nanoid for category
-            String[] t1 = catQualifiedName.split("\\.");
-            qName = t1[t1.length -1].split("@")[0];
-        }
-
-        qName = StringUtils.isEmpty(qName) ? getUUID() : qName;
-
-        if (parentRemoval) {
-            AtlasGlossary glossary = (AtlasGlossary) anchor.getAttribute(QUALIFIED_NAME);
-            ret = qName + "@" + glossary.getQualifiedName();
-
-        } else if (parentCategory != null) {
-            String catParentName = (String) parentCategory.getAttribute(QUALIFIED_NAME);
-            String[] parentCatQname = catParentName.split("@");
-            ret = parentCatQname[0] + "." + qName + "@" + parentCatQname[1];
-
-        } /*else if (cat.getParentCategory() != null) {//TODO: review later with relationship support
-            AtlasGlossaryCategory parentCat = dataAccess.load(getAtlasGlossaryCategorySkeleton(cat.getParentCategory().getCategoryGuid()));
-            String[] parentCatQname = parentCat.getQualifiedName().split("@");
-            ret = parentCatQname[0] + "." + qName + "@" + parentCatQname[1];
-
-        }*/ else {
-            ret = qName + "@" + anchor.getAttribute(QUALIFIED_NAME);
-        }
-
-        return ret;
     }
 
     private boolean categoryExists(AtlasEntity category, String catQualifiedName) {
@@ -215,6 +215,39 @@ public class CategoryPreProcessor implements PreProcessor {
                 }
             }
         }
+    }
+
+    String createQualifiedName(AtlasEntity entity, AtlasVertex vertex, AtlasEntityHeader newParentCategory, boolean parentRemoval) {
+        String catQName = vertex.getProperty(QUALIFIED_NAME, String.class);
+        String ret = "";
+        String qName = "";
+
+        if (!StringUtils.isEmpty(catQName)) {
+            //extract existing nanoid for category
+            String[] t1 = catQName.split("\\.");
+            qName = t1[t1.length -1].split("@")[0];
+        }
+
+        qName = StringUtils.isEmpty(qName) ? getUUID() : qName;
+
+        if (parentRemoval) {
+            ret = qName + "@" + anchor.getAttribute(QUALIFIED_NAME);
+
+        } else if (newParentCategory != null) {
+            String parentQName = (String) newParentCategory.getAttribute(QUALIFIED_NAME);
+            String[] parentCatQname = parentQName.split("@");
+            ret = parentCatQname[0] + "." + qName + "@" + parentCatQname[1];
+
+        } else if (parentCategory != null) {
+            String catParentName = (String) parentCategory.getAttribute(QUALIFIED_NAME);
+            String[] parentCatQname = catParentName.split("@");
+            ret = parentCatQname[0] + "." + qName + "@" + parentCatQname[1];
+
+        } else {
+            ret = qName + "@" + anchor.getAttribute(QUALIFIED_NAME);
+        }
+
+        return ret;
     }
 
     private int getCategoryLevel(String qualifiedName){

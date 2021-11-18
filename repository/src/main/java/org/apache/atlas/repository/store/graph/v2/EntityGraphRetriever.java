@@ -447,18 +447,6 @@ public class EntityGraphRetriever {
         return ret;
     }
 
-    public AtlasVertex getEntityVerte(String typeName, Map<String, Object> uniqAttributes) throws AtlasBaseException {
-        AtlasEntityType     entityType = typeRegistry.getEntityTypeByName(typeName);
-        AtlasVertex ret = AtlasGraphUtilsV2.findByUniqueAttributes(this.graph, entityType, uniqAttributes);
-
-        if (ret == null) {
-            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND, entityType.getTypeName(),
-                    uniqAttributes.toString());
-        }
-
-        return ret;
-    }
-
     public AtlasEntitiesWithExtInfo toAtlasEntitiesWithExtInfo(List<String> guids, boolean isMinExtInfo) throws AtlasBaseException {
         AtlasEntitiesWithExtInfo ret = new AtlasEntitiesWithExtInfo();
 
