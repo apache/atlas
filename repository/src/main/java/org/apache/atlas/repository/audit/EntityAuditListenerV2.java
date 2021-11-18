@@ -427,8 +427,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
     private String getAuditEventDetail(AtlasEntity entity, EntityAuditActionV2 action) {
         Map<String, Object> prunedAttributes = pruneEntityAttributesForAudit(entity);
 
-        String auditPrefix  = getV2AuditPrefix(action);
-        String auditString  = auditPrefix + AtlasType.toJson(entity);
+        String auditString  = AtlasType.toJson(entity);
         byte[] auditBytes   = auditString.getBytes(StandardCharsets.UTF_8);
         long   auditSize    = auditBytes != null ? auditBytes.length : 0;
         long   auditMaxSize = auditRepository.repositoryMaxSize();
@@ -443,7 +442,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
             entity.setAttributes(null);
             entity.setRelationshipAttributes(null);
 
-            auditString = auditPrefix + AtlasType.toJson(entity);
+            auditString = AtlasType.toJson(entity);
             auditBytes  = auditString.getBytes(StandardCharsets.UTF_8); // recheck auditString size
             auditSize   = auditBytes != null ? auditBytes.length : 0;
 
@@ -462,7 +461,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
                 shallowEntity.setStatus(entity.getStatus());
                 shallowEntity.setVersion(entity.getVersion());
 
-                auditString = auditPrefix + AtlasType.toJson(shallowEntity);
+                auditString = AtlasType.toJson(shallowEntity);
             }
 
             entity.setAttributes(attrValues);

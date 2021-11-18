@@ -42,6 +42,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -74,11 +75,25 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
     @Override
     public void putEventsV2(List<EntityAuditEventV2> events) throws AtlasBaseException {
         try {
-            String requestPayload = "";
-            HttpEntity entity = new NStringEntity(requestPayload, ContentType.APPLICATION_JSON);
-            Request request = new Request("PUT", INDEX_NAME);
+            String entityPayloadTemplate = "'{'\"entityid\":\"{0}\",\"created\":{1},\"action\":\"{2}\",\"detail\":{3},\"user\":\"{4}\"'}'";
+            String bulkMetadata = String.format("{ \"index\" : { \"_index\" : \"%s\" } }%n", INDEX_NAME);
+            StringBuilder bulkRequestBody = new StringBuilder();
+            for (EntityAuditEventV2 event : events) {
+                String created = String.format("%s", event.getTimestamp());
+                String bulkItem = MessageFormat.format(entityPayloadTemplate, event.getEntityId(), created, event.getAction(), event.getDetails(), event.getUser());
+                bulkRequestBody.append(bulkMetadata);
+                bulkRequestBody.append(bulkItem);
+                bulkRequestBody.append("\n");
+            }
+            String endpoint = INDEX_NAME + "/_bulk";
+            HttpEntity entity = new NStringEntity(bulkRequestBody.toString(), ContentType.APPLICATION_JSON);
+            Request request = new Request("POST", endpoint);
             request.setEntity(entity);
             Response response = lowLevelClient.performRequest(request);
+            int statusCode = response.getStatusLine().getStatusCode();;
+            if (statusCode != 200) {
+                throw new AtlasException("Unable to push entity audits to ES");
+            }
         } catch (Exception e) {
             throw new AtlasBaseException(e);
         }
