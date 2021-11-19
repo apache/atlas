@@ -438,6 +438,11 @@ public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditReposito
     }
 
     @Override
+    public List<EntityAuditEventV2> listEventsV2(String queryString) throws AtlasBaseException {
+        return null;
+    }
+
+    @Override
     public List<Object> listEvents(String entityId, String startKey, short maxResults) throws AtlasBaseException {
         List ret = listEventsV2(entityId, null, startKey, maxResults);
 

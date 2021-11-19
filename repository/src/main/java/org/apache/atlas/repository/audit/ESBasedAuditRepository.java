@@ -24,12 +24,14 @@ import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.annotation.ConditionalOnAtlasProperty;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
+import org.apache.atlas.type.AtlasType;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.nio.entity.NStringEntity;
+import org.apache.http.util.EntityUtils;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
@@ -43,9 +45,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import javax.inject.Singleton;
 
@@ -59,6 +59,12 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
     private static final Logger LOG = LoggerFactory.getLogger(ESBasedAuditRepository.class);
     public static final String INDEX_BACKEND_CONF = "atlas.graph.index.search.hostname";
     public static final String INDEX_NAME = "entity_audits";
+    private static final String ENTITYID = "entityid";
+    private static final String CREATED = "created";
+    private static final String ACTION = "action";
+    private static final String USER = "user";
+    private static final String DETAIL = "detail";
+    private static final String ENTITY = "entity";
 
     private RestClient lowLevelClient;
 
@@ -107,6 +113,40 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
     @Override
     public List<EntityAuditEventV2> listEventsV2(String entityId, EntityAuditEventV2.EntityAuditActionV2 auditAction, String sortByColumn, boolean sortOrderDesc, int offset, short limit) throws AtlasBaseException {
         return null;
+    }
+
+    @Override
+    public List<EntityAuditEventV2> listEventsV2(String queryString) throws AtlasBaseException {
+        try {
+            String response = performSearchOnIndex(queryString);
+            return getResultFromResponse(response);
+        } catch (IOException e) {
+            throw new AtlasBaseException(e);
+        }
+    }
+
+    private List<EntityAuditEventV2> getResultFromResponse(String responseString) {
+        List<EntityAuditEventV2> entityResults = new ArrayList<>();
+        Map<String, LinkedHashMap> responseMap = AtlasType.fromJson(responseString, Map.class);
+        Map<String, LinkedHashMap> hits_0 = AtlasType.fromJson(AtlasType.toJson(responseMap.get("hits")), Map.class);
+        List<LinkedHashMap> hits_1 = AtlasType.fromJson(AtlasType.toJson(hits_0.get("hits")), List.class);
+        for (LinkedHashMap hit: hits_1) {
+            Map source = (Map) hit.get("_source");
+            EntityAuditEventV2 event = new EntityAuditEventV2();
+            event.setEntityId((String) source.get("entityid"));
+            event.setAction(EntityAuditEventV2.EntityAuditActionV2.fromString((String) source.get("action")));
+            entityResults.add(event);
+        }
+        return entityResults;
+    }
+
+    private String performSearchOnIndex(String queryString) throws IOException {
+        HttpEntity entity = new NStringEntity(queryString, ContentType.APPLICATION_JSON);
+        String endPoint = INDEX_NAME + "/_search";
+        Request request = new Request("GET", endPoint);
+        request.setEntity(entity);
+        Response response = lowLevelClient.performRequest(request);
+        return EntityUtils.toString(response.getEntity());
     }
 
     @Override

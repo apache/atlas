@@ -118,6 +118,11 @@ public class InMemoryEntityAuditRepository implements EntityAuditRepository {
     }
 
     @Override
+    public List<EntityAuditEventV2> listEventsV2(String queryString) throws AtlasBaseException {
+        return null;
+    }
+
+    @Override
     public List<EntityAuditEventV2> listEventsV2(String entityId, EntityAuditEventV2.EntityAuditActionV2 auditAction, String startKey, short maxResults) {
         List<EntityAuditEventV2> events     = new ArrayList<>();
         String                   myStartKey = startKey;

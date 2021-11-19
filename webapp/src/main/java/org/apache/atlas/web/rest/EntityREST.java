@@ -30,6 +30,7 @@ import org.apache.atlas.authorize.AtlasRelationshipAccessRequest;
 import org.apache.atlas.bulkimport.BulkImportResponse;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
+import org.apache.atlas.model.audit.AuditSearchParams;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2;
 import org.apache.atlas.model.instance.*;
@@ -1059,6 +1060,40 @@ public class EntityREST {
                     }
                 }
             }
+
+            return ret;
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    @POST
+    @Path("{guid}/auditSearch")
+    @Timed
+    public List<EntityAuditEventV2> getAuditEvents(AuditSearchParams parameters, @PathParam("guid") String guid) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.getAuditEvents(" + guid +  ")");
+            }
+
+            // Enforces authorization for entity-read
+            try {
+                entitiesStore.getHeaderById(guid);
+            } catch (AtlasBaseException e) {
+                if (e.getAtlasErrorCode() == AtlasErrorCode.INSTANCE_GUID_NOT_FOUND) {
+                    AtlasEntityHeader entityHeader = getEntityHeaderFromPurgedAudit(guid);
+
+                    AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, ENTITY_READ, entityHeader), "read entity audit: guid=", guid);
+                } else {
+                    throw e;
+                }
+            }
+
+            String dslString = parameters.getQueryString(guid);
+
+            List<EntityAuditEventV2> ret = auditRepository.listEventsV2(dslString);
 
             return ret;
         } finally {

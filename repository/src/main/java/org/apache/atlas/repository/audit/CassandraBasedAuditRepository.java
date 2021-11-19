@@ -195,6 +195,11 @@ public class CassandraBasedAuditRepository extends AbstractStorageBasedAuditRepo
   }
 
   @Override
+  public List<EntityAuditEventV2> listEventsV2(String queryString) throws AtlasBaseException {
+    return null;
+  }
+
+  @Override
   public Set<String> getEntitiesWithTagChanges(long fromTimestamp, long toTimestamp) throws AtlasBaseException {
     throw new NotImplementedException();
   }
