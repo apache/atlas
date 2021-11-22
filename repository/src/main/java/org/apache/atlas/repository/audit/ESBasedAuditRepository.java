@@ -82,36 +82,38 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
     @Override
     public void putEventsV2(List<EntityAuditEventV2> events) throws AtlasBaseException {
         try {
-            String entityPayloadTemplate = "'{'\"entityid\":\"{0}\",\"created\":{1},\"action\":\"{2}\",\"detail\":{3},\"user\":\"{4}\"'}'";
-            String bulkMetadata = String.format("{ \"index\" : { \"_index\" : \"%s\" } }%n", INDEX_NAME);
-            StringBuilder bulkRequestBody = new StringBuilder();
-            for (EntityAuditEventV2 event : events) {
-                String created = String.format("%s", event.getTimestamp());
-                String details;
-                if (event.getAction().equals(EntityAuditEventV2.EntityAuditActionV2.ENTITY_DELETE) || event.getAction().equals(EntityAuditEventV2.EntityAuditActionV2.ENTITY_PURGE)) {
-                    details = "{}";
-                } else {
-                    String auditDetailPrefix = EntityAuditListenerV2.getV2AuditPrefix(event.getAction());
-                    details = event.getDetails().substring(auditDetailPrefix.length());
+            if (events != null && events.size() > 0) {
+                String entityPayloadTemplate = "'{'\"entityid\":\"{0}\",\"created\":{1},\"action\":\"{2}\",\"detail\":{3},\"user\":\"{4}\"'}'";
+                String bulkMetadata = String.format("{ \"index\" : { \"_index\" : \"%s\" } }%n", INDEX_NAME);
+                StringBuilder bulkRequestBody = new StringBuilder();
+                for (EntityAuditEventV2 event : events) {
+                    String created = String.format("%s", event.getTimestamp());
+                    String details;
+                    if (event.getAction().equals(EntityAuditEventV2.EntityAuditActionV2.ENTITY_DELETE) || event.getAction().equals(EntityAuditEventV2.EntityAuditActionV2.ENTITY_PURGE)) {
+                        details = "{}";
+                    } else {
+                        String auditDetailPrefix = EntityAuditListenerV2.getV2AuditPrefix(event.getAction());
+                        details = event.getDetails().substring(auditDetailPrefix.length());
+                    }
+                    String bulkItem = MessageFormat.format(entityPayloadTemplate, event.getEntityId(), created, event.getAction(), details, event.getUser());
+                    bulkRequestBody.append(bulkMetadata);
+                    bulkRequestBody.append(bulkItem);
+                    bulkRequestBody.append("\n");
                 }
-                String bulkItem = MessageFormat.format(entityPayloadTemplate, event.getEntityId(), created, event.getAction(), details, event.getUser());
-                bulkRequestBody.append(bulkMetadata);
-                bulkRequestBody.append(bulkItem);
-                bulkRequestBody.append("\n");
-            }
-            String endpoint = INDEX_NAME + "/_bulk";
-            HttpEntity entity = new NStringEntity(bulkRequestBody.toString(), ContentType.APPLICATION_JSON);
-            Request request = new Request("POST", endpoint);
-            request.setEntity(entity);
-            Response response = lowLevelClient.performRequest(request);
-            int statusCode = response.getStatusLine().getStatusCode();;
-            if (statusCode != 200) {
-                throw new AtlasException("Unable to push entity audits to ES");
-            }
-            String responseString = EntityUtils.toString(response.getEntity());
-            Map<String, Object> responseMap = AtlasType.fromJson(responseString, Map.class);
-            if ((boolean) responseMap.get("errors")) {
-                throw new AtlasException("Unable to push entity audits to ES (errors: true returned by es)");
+                String endpoint = INDEX_NAME + "/_bulk";
+                HttpEntity entity = new NStringEntity(bulkRequestBody.toString(), ContentType.APPLICATION_JSON);
+                Request request = new Request("POST", endpoint);
+                request.setEntity(entity);
+                Response response = lowLevelClient.performRequest(request);
+                int statusCode = response.getStatusLine().getStatusCode();;
+                if (statusCode != 200) {
+                    throw new AtlasException("Unable to push entity audits to ES");
+                }
+                String responseString = EntityUtils.toString(response.getEntity());
+                Map<String, Object> responseMap = AtlasType.fromJson(responseString, Map.class);
+                if ((boolean) responseMap.get("errors")) {
+                    throw new AtlasException("Unable to push entity audits to ES (errors: true returned by es)");
+                }
             }
         } catch (Exception e) {
             throw new AtlasBaseException(e);
