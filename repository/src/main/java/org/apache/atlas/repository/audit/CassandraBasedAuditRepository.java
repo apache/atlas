@@ -30,6 +30,7 @@ import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.annotation.ConditionalOnAtlasProperty;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
+import org.apache.atlas.model.audit.EntityAuditSearchResult;
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -195,7 +196,7 @@ public class CassandraBasedAuditRepository extends AbstractStorageBasedAuditRepo
   }
 
   @Override
-  public List<EntityAuditEventV2> listEventsV2(String queryString) throws AtlasBaseException {
+  public EntityAuditSearchResult searchEvents(String queryString) throws AtlasBaseException {
     return null;
   }
 

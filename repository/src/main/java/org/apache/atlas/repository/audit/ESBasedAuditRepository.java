@@ -24,6 +24,7 @@ import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.annotation.ConditionalOnAtlasProperty;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
+import org.apache.atlas.model.audit.EntityAuditSearchResult;
 import org.apache.atlas.type.AtlasType;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.NotImplementedException;
@@ -86,7 +87,14 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
             StringBuilder bulkRequestBody = new StringBuilder();
             for (EntityAuditEventV2 event : events) {
                 String created = String.format("%s", event.getTimestamp());
-                String bulkItem = MessageFormat.format(entityPayloadTemplate, event.getEntityId(), created, event.getAction(), event.getDetails(), event.getUser());
+                String details;
+                if (event.getAction().equals(EntityAuditEventV2.EntityAuditActionV2.ENTITY_DELETE) || event.getAction().equals(EntityAuditEventV2.EntityAuditActionV2.ENTITY_PURGE)) {
+                    details = "{}";
+                } else {
+                    String auditDetailPrefix = EntityAuditListenerV2.getV2AuditPrefix(event.getAction());
+                    details = event.getDetails().substring(auditDetailPrefix.length());
+                }
+                String bulkItem = MessageFormat.format(entityPayloadTemplate, event.getEntityId(), created, event.getAction(), details, event.getUser());
                 bulkRequestBody.append(bulkMetadata);
                 bulkRequestBody.append(bulkItem);
                 bulkRequestBody.append("\n");
@@ -99,6 +107,11 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
             int statusCode = response.getStatusLine().getStatusCode();;
             if (statusCode != 200) {
                 throw new AtlasException("Unable to push entity audits to ES");
+            }
+            String responseString = EntityUtils.toString(response.getEntity());
+            Map<String, Object> responseMap = AtlasType.fromJson(responseString, Map.class);
+            if ((boolean) responseMap.get("errors")) {
+                throw new AtlasException("Unable to push entity audits to ES (errors: true returned by es)");
             }
         } catch (Exception e) {
             throw new AtlasBaseException(e);
@@ -116,7 +129,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
     }
 
     @Override
-    public List<EntityAuditEventV2> listEventsV2(String queryString) throws AtlasBaseException {
+    public EntityAuditSearchResult searchEvents(String queryString) throws AtlasBaseException {
         try {
             String response = performSearchOnIndex(queryString);
             return getResultFromResponse(response);
@@ -125,19 +138,30 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
         }
     }
 
-    private List<EntityAuditEventV2> getResultFromResponse(String responseString) {
-        List<EntityAuditEventV2> entityResults = new ArrayList<>();
-        Map<String, LinkedHashMap> responseMap = AtlasType.fromJson(responseString, Map.class);
-        Map<String, LinkedHashMap> hits_0 = AtlasType.fromJson(AtlasType.toJson(responseMap.get("hits")), Map.class);
-        List<LinkedHashMap> hits_1 = AtlasType.fromJson(AtlasType.toJson(hits_0.get("hits")), List.class);
+    private EntityAuditSearchResult getResultFromResponse(String responseString) {
+        List<EntityAuditEventV2> entityAudits = new ArrayList<>();
+        EntityAuditSearchResult searchResult = new EntityAuditSearchResult();
+        Map<String, Object> responseMap = AtlasType.fromJson(responseString, Map.class);
+        Map<String, Object> hits_0 = (Map<String, Object>) responseMap.get("hits");
+        List<LinkedHashMap> hits_1 = (List<LinkedHashMap>) hits_0.get("hits");
         for (LinkedHashMap hit: hits_1) {
             Map source = (Map) hit.get("_source");
             EntityAuditEventV2 event = new EntityAuditEventV2();
-            event.setEntityId((String) source.get("entityid"));
-            event.setAction(EntityAuditEventV2.EntityAuditActionV2.fromString((String) source.get("action")));
-            entityResults.add(event);
+            event.setEntityId((String) source.get(ENTITYID));
+            event.setAction(EntityAuditEventV2.EntityAuditActionV2.fromString((String) source.get(ACTION)));
+            event.setDetail((Map<String, Object>) source.get(DETAIL));
+            event.setUser((String) source.get(USER));
+            event.setCreated((long) source.get(CREATED));
+            entityAudits.add(event);
         }
-        return entityResults;
+        Map<String, Object> aggregationsMap = (Map<String, Object>) responseMap.get("aggregations");
+        Map<String, Object> countObject = (Map<String, Object>) hits_0.get("total");
+        int totalCount = (int) countObject.get("value");
+        searchResult.setEntityAudits(entityAudits);
+        searchResult.setAggregations(aggregationsMap);
+        searchResult.setTotalCount(totalCount);
+        searchResult.setCount(entityAudits.size());
+        return searchResult;
     }
 
     private String performSearchOnIndex(String queryString) throws IOException {

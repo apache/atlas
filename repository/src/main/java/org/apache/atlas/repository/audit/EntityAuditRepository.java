@@ -22,6 +22,7 @@ import org.apache.atlas.AtlasException;
 import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.audit.EntityAuditSearchResult;
 
 import java.util.List;
 import java.util.Set;
@@ -92,7 +93,7 @@ public interface EntityAuditRepository {
      */
     List<EntityAuditEventV2> listEventsV2(String entityId, EntityAuditEventV2.EntityAuditActionV2 auditAction, String sortByColumn, boolean sortOrderDesc, int offset, short limit) throws AtlasBaseException;
 
-    List<EntityAuditEventV2> listEventsV2(String queryString) throws AtlasBaseException;
+    EntityAuditSearchResult searchEvents(String queryString) throws AtlasBaseException;
 
     /***
      * List events for given time range where classifications have been added, deleted or updated.

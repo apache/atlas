@@ -225,7 +225,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
                     if (isPropagatedClassificationAdded(guid, classification)) {
                         createEvent(events.next(), entity, PROPAGATED_CLASSIFICATION_ADD, "Added propagated classification: " + AtlasType.toJson(classification));
                     } else if (isPropagatedClassificationDeleted(guid, classification)) {
-                        createEvent(events.next(), entity, PROPAGATED_CLASSIFICATION_DELETE, "Deleted propagated classification: " + classification.getTypeName());
+                        createEvent(events.next(), entity, PROPAGATED_CLASSIFICATION_DELETE, "Deleted propagated classification: " + getDeleteClassificationString(classification.getTypeName()));
                     } else {
                         createEvent(events.next(), entity, PROPAGATED_CLASSIFICATION_UPDATE, "Updated propagated classification: " + AtlasType.toJson(classification));
                     }
@@ -238,6 +238,14 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
         }
     }
 
+    private String getDeleteClassificationString(String typeName) {
+        return String.format("{\"typeName\": \"%s\"}", typeName);
+    }
+
+    private String getLabelsString(String labels) {
+        return String.format("{\"labels\": \"%s\"}", labels);
+    }
+
     @Override
     public void onClassificationsDeleted(AtlasEntity entity, List<AtlasClassification> classifications) throws AtlasBaseException {
         if (CollectionUtils.isNotEmpty(classifications)) {
@@ -247,9 +255,9 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
 
             for (AtlasClassification classification : classifications) {
                 if (StringUtils.equals(entity.getGuid(), classification.getEntityGuid())) {
-                    createEvent(events.next(), entity, CLASSIFICATION_DELETE, "Deleted classification: " + classification.getTypeName());
+                    createEvent(events.next(), entity, CLASSIFICATION_DELETE, "Deleted classification: " + getDeleteClassificationString(classification.getTypeName()));
                 } else {
-                    createEvent(events.next(), entity, PROPAGATED_CLASSIFICATION_DELETE, "Deleted propagated classification: " + classification.getTypeName());
+                    createEvent(events.next(), entity, PROPAGATED_CLASSIFICATION_DELETE, "Deleted propagated classification: " + getDeleteClassificationString(classification.getTypeName()));
                 }
             }
 
@@ -268,9 +276,9 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
             for (AtlasClassification classification : classifications) {
                 for (AtlasEntity entity : entities) {
                     if (StringUtils.equals(entity.getGuid(), classification.getEntityGuid())) {
-                        createEvent(events.next(), entity, CLASSIFICATION_DELETE, "Deleted classification: " + classification.getTypeName());
+                        createEvent(events.next(), entity, CLASSIFICATION_DELETE, "Deleted classification: " + getDeleteClassificationString(classification.getTypeName()));
                     } else {
-                        createEvent(events.next(), entity, PROPAGATED_CLASSIFICATION_DELETE, "Deleted propagated classification: " + classification.getTypeName());
+                        createEvent(events.next(), entity, PROPAGATED_CLASSIFICATION_DELETE, "Deleted propagated classification: " + getDeleteClassificationString(classification.getTypeName()));
                     }
                 }
             }
@@ -332,7 +340,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
 
             String addedLabels = StringUtils.join(labels, " ");
 
-            createEvent(events.next(), entity, LABEL_ADD, "Added labels: " + addedLabels);
+            createEvent(events.next(), entity, LABEL_ADD, "Added labels: " + getLabelsString(addedLabels));
 
             auditRepository.putEventsV2(events.toList());
 
@@ -349,7 +357,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
 
             String deletedLabels = StringUtils.join(labels, " ");
 
-            createEvent(events.next(), entity, LABEL_DELETE, "Deleted labels: " + deletedLabels);
+            createEvent(events.next(), entity, LABEL_DELETE, "Deleted labels: " + getLabelsString(deletedLabels));
 
             auditRepository.putEventsV2(events.toList());
 
@@ -427,7 +435,8 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
     private String getAuditEventDetail(AtlasEntity entity, EntityAuditActionV2 action) {
         Map<String, Object> prunedAttributes = pruneEntityAttributesForAudit(entity);
 
-        String auditString  = AtlasType.toJson(entity);
+        String auditPrefix  = getV2AuditPrefix(action);
+        String auditString  = auditPrefix + AtlasType.toJson(entity);
         byte[] auditBytes   = auditString.getBytes(StandardCharsets.UTF_8);
         long   auditSize    = auditBytes != null ? auditBytes.length : 0;
         long   auditMaxSize = auditRepository.repositoryMaxSize();
@@ -442,7 +451,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
             entity.setAttributes(null);
             entity.setRelationshipAttributes(null);
 
-            auditString = AtlasType.toJson(entity);
+            auditString = auditPrefix + AtlasType.toJson(entity);
             auditBytes  = auditString.getBytes(StandardCharsets.UTF_8); // recheck auditString size
             auditSize   = auditBytes != null ? auditBytes.length : 0;
 
@@ -461,7 +470,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
                 shallowEntity.setStatus(entity.getStatus());
                 shallowEntity.setVersion(entity.getVersion());
 
-                auditString = AtlasType.toJson(shallowEntity);
+                auditString = auditPrefix + AtlasType.toJson(shallowEntity);
             }
 
             entity.setAttributes(attrValues);
@@ -591,7 +600,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
         return ret;
     }
 
-    private String getV2AuditPrefix(EntityAuditActionV2 action) {
+    public static String getV2AuditPrefix(EntityAuditActionV2 action) {
         final String ret;
 
         switch (action) {
@@ -622,6 +631,15 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
             case CLASSIFICATION_UPDATE:
                 ret = "Updated classification: ";
                 break;
+            case PROPAGATED_CLASSIFICATION_ADD:
+                ret = "Added propagated classification: ";
+                break;
+            case PROPAGATED_CLASSIFICATION_DELETE:
+                ret = "Deleted propagated classification: ";
+                break;
+            case PROPAGATED_CLASSIFICATION_UPDATE:
+                ret = "Updated propagated classification: ";
+                break;
             case ENTITY_IMPORT_CREATE:
                 ret = "Created by import: ";
                 break;
@@ -636,6 +654,12 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
                 break;
             case TERM_DELETE:
                 ret = "Deleted term: ";
+                break;
+            case LABEL_ADD:
+                ret = "Added labels: ";
+                break;
+            case LABEL_DELETE:
+                ret = "Deleted labels: ";
                 break;
             default:
                 ret = "Unknown: ";
