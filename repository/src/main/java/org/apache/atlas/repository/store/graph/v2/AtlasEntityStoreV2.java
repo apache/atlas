@@ -86,8 +86,7 @@ import static java.lang.Boolean.FALSE;
 import static org.apache.atlas.AtlasConfiguration.STORE_DIFFERENTIAL_AUDITS;
 import static org.apache.atlas.bulkimport.BulkImportResponse.ImportStatus.FAILED;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.*;
-import static org.apache.atlas.repository.Constants.IS_INCOMPLETE_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
 import static org.apache.atlas.repository.graph.GraphHelper.isEntityIncomplete;
 import static org.apache.atlas.repository.store.graph.v2.EntityGraphMapper.validateLabels;
@@ -1486,7 +1485,26 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         EntityMutationResponse response = new EntityMutationResponse();
         RequestContext         req      = RequestContext.get();
 
-        deleteDelegate.getHandler().deleteEntities(deletionCandidates); // this will update req with list of deleted/updated entities
+        Collection<AtlasVertex> categories = new ArrayList<>();
+        Collection<AtlasVertex> other = new ArrayList<>();
+        MetricRecorder metric = RequestContext.get().startMetricRecord("filterCategoryVertices");
+        for (AtlasVertex vertex : deletionCandidates) {
+            String typeName = getTypeName(vertex);
+            if ("AtlasGlossaryCategory".equals(typeName)) {
+                categories.add(vertex);
+            } else {
+                other.add(vertex);
+            }
+        }
+        RequestContext.get().endMetricRecord(metric);
+
+        if (CollectionUtils.isNotEmpty(categories)) {
+            deleteDelegate.getHandler(DeleteType.HARD).deleteEntities(categories);
+        }
+
+        if (CollectionUtils.isNotEmpty(other)) {
+            deleteDelegate.getHandler().deleteEntities(other);
+        }
 
         for (AtlasEntityHeader entity : req.getDeletedEntities()) {
             response.addEntity(DELETE, entity);
