@@ -59,7 +59,7 @@ public class EntityAuditListener implements EntityChangeListener {
     private final AtlasTypeRegistry     typeRegistry;
 
     @Inject
-    public EntityAuditListener(EntityAuditRepository auditRepository, AtlasTypeRegistry typeRegistry) {
+    public EntityAuditListener(CassandraBasedAuditRepository auditRepository, AtlasTypeRegistry typeRegistry) {
         this.auditRepository = auditRepository;
         this.typeRegistry    = typeRegistry;
     }

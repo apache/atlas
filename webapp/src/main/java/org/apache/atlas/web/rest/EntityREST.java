@@ -38,7 +38,8 @@ import org.apache.atlas.model.instance.*;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
-import org.apache.atlas.repository.audit.EntityAuditRepository;
+import org.apache.atlas.repository.audit.CassandraBasedAuditRepository;
+import org.apache.atlas.repository.audit.ESBasedAuditRepository;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
@@ -93,15 +94,17 @@ public class EntityREST {
 
     private final AtlasTypeRegistry      typeRegistry;
     private final AtlasEntityStore       entitiesStore;
-    private final EntityAuditRepository  auditRepository;
+    private final CassandraBasedAuditRepository  cassandraBasedAuditRepository;
+    private final ESBasedAuditRepository  esBasedAuditRepository;
     private final AtlasInstanceConverter instanceConverter;
 
     @Inject
     public EntityREST(AtlasTypeRegistry typeRegistry, AtlasEntityStore entitiesStore,
-                      EntityAuditRepository auditRepository, AtlasInstanceConverter instanceConverter) {
+                      CassandraBasedAuditRepository cassandraBasedAuditRepository, ESBasedAuditRepository  esBasedAuditRepository, AtlasInstanceConverter instanceConverter) {
         this.typeRegistry      = typeRegistry;
         this.entitiesStore     = entitiesStore;
-        this.auditRepository   = auditRepository;
+        this.cassandraBasedAuditRepository   = cassandraBasedAuditRepository;
+        this.esBasedAuditRepository = esBasedAuditRepository;
         this.instanceConverter = instanceConverter;
     }
 
@@ -1043,11 +1046,11 @@ public class EntityREST {
             List<EntityAuditEventV2> ret = new ArrayList<>();
 
             if (sortBy != null || offset > -1) {
-                ret = auditRepository.listEventsV2(guid, auditAction, sortBy, StringUtils.equalsIgnoreCase(sortOrder, "desc"), offset, count);
+                ret = cassandraBasedAuditRepository.listEventsV2(guid, auditAction, sortBy, StringUtils.equalsIgnoreCase(sortOrder, "desc"), offset, count);
             } else if(auditAction != null) {
-                ret = auditRepository.listEventsV2(guid, auditAction, startKey, count);
+                ret = cassandraBasedAuditRepository.listEventsV2(guid, auditAction, startKey, count);
             } else {
-                List events = auditRepository.listEvents(guid, startKey, count);
+                List events = cassandraBasedAuditRepository.listEvents(guid, startKey, count);
 
                 if (events != null) {
                     for (Object event : events) {
@@ -1071,7 +1074,7 @@ public class EntityREST {
     @POST
     @Path("{guid}/auditSearch")
     @Timed
-    public EntityAuditSearchResult getAuditEvents(AuditSearchParams parameters, @PathParam("guid") String guid) throws AtlasBaseException {
+    public EntityAuditSearchResult searchAuditEventsByGuid(AuditSearchParams parameters, @PathParam("guid") String guid) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
         try {
@@ -1092,9 +1095,30 @@ public class EntityREST {
                 }
             }
 
-            String dslString = parameters.getQueryString(guid);
+            String dslString = parameters.getQueryStringForGuid(guid);
 
-            EntityAuditSearchResult ret = auditRepository.searchEvents(dslString);
+            EntityAuditSearchResult ret = esBasedAuditRepository.searchEvents(dslString);
+
+            return ret;
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    @POST
+    @Path("auditSearch")
+    @Timed
+    public EntityAuditSearchResult searchAuditEvents(AuditSearchParams parameters) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.searchAuditEvents");
+            }
+
+            String dslString = parameters.getQueryString();
+
+            EntityAuditSearchResult ret = esBasedAuditRepository.searchEvents(dslString);
 
             return ret;
         } finally {
@@ -1120,7 +1144,7 @@ public class EntityREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.getEntityHeaders(" + tagUpdateStartTime + ", " + tagUpdateEndTime + ")");
             }
 
-            ClassificationAssociator.Retriever associator = new ClassificationAssociator.Retriever(typeRegistry, auditRepository);
+            ClassificationAssociator.Retriever associator = new ClassificationAssociator.Retriever(typeRegistry, cassandraBasedAuditRepository);
             return associator.get(tagUpdateStartTime, tagUpdateEndTime);
         } finally {
             AtlasPerfTracer.log(perf);
@@ -1535,7 +1559,7 @@ public class EntityREST {
     }
 
     private AtlasEntityHeader getEntityHeaderFromPurgedAudit(String guid) throws AtlasBaseException {
-        List<EntityAuditEventV2> auditEvents = auditRepository.listEventsV2(guid, EntityAuditActionV2.ENTITY_PURGE, null, (short)1);
+        List<EntityAuditEventV2> auditEvents = cassandraBasedAuditRepository.listEventsV2(guid, EntityAuditActionV2.ENTITY_PURGE, null, (short)1);
         AtlasEntityHeader        ret         = CollectionUtils.isNotEmpty(auditEvents) ? auditEvents.get(0).getEntityHeader() : null;
 
         if (ret == null) {

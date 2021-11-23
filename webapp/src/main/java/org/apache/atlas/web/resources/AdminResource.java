@@ -50,7 +50,7 @@ import org.apache.atlas.model.metrics.AtlasMetrics;
 import org.apache.atlas.model.patches.AtlasPatch.AtlasPatches;
 import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.repository.audit.AtlasAuditService;
-import org.apache.atlas.repository.audit.EntityAuditRepository;
+import org.apache.atlas.repository.audit.CassandraBasedAuditRepository;
 import org.apache.atlas.repository.impexp.AtlasServerService;
 import org.apache.atlas.repository.impexp.ExportImportAuditService;
 import org.apache.atlas.repository.impexp.ExportService;
@@ -178,7 +178,7 @@ public class AdminResource {
     private final  AtlasPatchManager        patchManager;
     private final  AtlasAuditService        auditService;
     private final  String                   defaultUIVersion;
-    private final  EntityAuditRepository    auditRepository;
+    private final  CassandraBasedAuditRepository    auditRepository;
     private final  boolean                  isTimezoneFormatEnabled;
     private final  String                   uiDateFormat;
     private final  AtlasDebugMetricsSink    debugMetricsRESTSink;
@@ -199,7 +199,7 @@ public class AdminResource {
                          MigrationProgressService migrationProgressService,
                          AtlasServerService serverService,
                          ExportImportAuditService exportImportAuditService, AtlasEntityStore entityStore,
-                         AtlasPatchManager patchManager, AtlasAuditService auditService, EntityAuditRepository auditRepository,
+                         AtlasPatchManager patchManager, AtlasAuditService auditService, CassandraBasedAuditRepository auditRepository,
                          TaskManagement taskManagement, AtlasDebugMetricsSink debugMetricsRESTSink) {
         this.serviceState              = serviceState;
         this.metricsService            = metricsService;

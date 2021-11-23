@@ -55,7 +55,7 @@ import javax.inject.Singleton;
  */
 @Singleton
 @Component
-@ConditionalOnAtlasProperty(property = "atlas.EntityAuditRepository.impl")
+@ConditionalOnAtlasProperty(property = "atlas.EntityAuditRepositorySearch.impl")
 public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository {
     private static final Logger LOG = LoggerFactory.getLogger(ESBasedAuditRepository.class);
     public static final String INDEX_BACKEND_CONF = "atlas.graph.index.search.hostname";

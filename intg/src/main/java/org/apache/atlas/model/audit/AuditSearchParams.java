@@ -24,7 +24,7 @@ public class AuditSearchParams {
         return this.dsl;
     }
 
-    public String getQueryString(String guid) {
+    public String getQueryStringForGuid(String guid) {
         String queryWithEntityFilter;
         if (dsl.get("query") == null || ((Map) dsl.get("query")).isEmpty()) {
             String queryTemplate = "{\"bool\":{\"minimum_should_match\":\"100%\",\"should\":[{\"term\":{\"entityid\":\"entity_id\"}}]}}";
@@ -37,5 +37,9 @@ public class AuditSearchParams {
         }
         dsl.put("query", AtlasType.fromJson(queryWithEntityFilter, Map.class));
         return AtlasType.toJson(dsl);
+    }
+
+    public String getQueryString() {
+        return dsl != null ? AtlasType.toJson(dsl) : "";
     }
 }

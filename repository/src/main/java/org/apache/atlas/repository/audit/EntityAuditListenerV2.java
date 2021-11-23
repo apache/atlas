@@ -17,7 +17,9 @@
  */
 package org.apache.atlas.repository.audit;
 
+import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasConfiguration;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.EntityAuditEvent.EntityAuditAction;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
@@ -40,6 +42,7 @@ import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
 import org.apache.atlas.utils.FixedBufferList;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
+import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,11 +50,7 @@ import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 import java.nio.charset.StandardCharsets;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static org.apache.atlas.AtlasConfiguration.STORE_DIFFERENTIAL_AUDITS;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.BUSINESS_ATTRIBUTE_UPDATE;
@@ -81,13 +80,17 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
             ThreadLocal.withInitial(() -> new FixedBufferList<>(EntityAuditEventV2.class,
                     AtlasConfiguration.NOTIFICATION_FIXED_BUFFER_ITEMS_INCREMENT_COUNT.getInt()));
 
-    private final EntityAuditRepository  auditRepository;
+    private static final long AUDIT_REPOSITORY_MAX_SIZE_DEFAULT = 1024 * 1024;
+    private final Set<EntityAuditRepository>  auditRepositories;
     private final AtlasTypeRegistry      typeRegistry;
     private final AtlasInstanceConverter instanceConverter;
+    protected static Configuration APPLICATION_PROPERTIES       = null;
+    protected Map<String, List<String>> auditExcludedAttributesCache = new HashMap<>();
+    private   static final String AUDIT_EXCLUDE_ATTRIBUTE_PROPERTY   = "atlas.audit.hbase.entity";
 
     @Inject
-    public EntityAuditListenerV2(EntityAuditRepository auditRepository, AtlasTypeRegistry typeRegistry, AtlasInstanceConverter instanceConverter) {
-        this.auditRepository   = auditRepository;
+    public EntityAuditListenerV2(Set<EntityAuditRepository> auditRepositories, AtlasTypeRegistry typeRegistry, AtlasInstanceConverter instanceConverter) {
+        this.auditRepositories   = auditRepositories;
         this.typeRegistry      = typeRegistry;
         this.instanceConverter = instanceConverter;
     }
@@ -101,7 +104,9 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
             createEvent(entitiesAdded.next(), entity, isImport ? ENTITY_IMPORT_CREATE : ENTITY_CREATE);
         }
 
-        auditRepository.putEventsV2(entitiesAdded.toList());
+        for (EntityAuditRepository auditRepository: auditRepositories) {
+            auditRepository.putEventsV2(entitiesAdded.toList());
+        }
 
         RequestContext.get().endMetricRecord(metric);
     }
@@ -135,7 +140,9 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
             createEvent(updatedEvents.next(), entity, action);
         }
 
-        auditRepository.putEventsV2(updatedEvents.toList());
+        for (EntityAuditRepository auditRepository: auditRepositories) {
+            auditRepository.putEventsV2(updatedEvents.toList());
+        }
 
         RequestContext.get().endMetricRecord(metric);
     }
@@ -149,7 +156,9 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
             createEvent(deletedEntities.next(), entity, isImport ? ENTITY_IMPORT_DELETE : ENTITY_DELETE, "Deleted entity");
         }
 
-        auditRepository.putEventsV2(deletedEntities.toList());
+        for (EntityAuditRepository auditRepository: auditRepositories) {
+            auditRepository.putEventsV2(deletedEntities.toList());
+        }
 
         RequestContext.get().endMetricRecord(metric);
     }
@@ -163,7 +172,9 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
             createEvent(eventsPurged.next(), entity, ENTITY_PURGE);
         }
 
-        auditRepository.putEventsV2(eventsPurged.toList());
+        for (EntityAuditRepository auditRepository: auditRepositories) {
+            auditRepository.putEventsV2(eventsPurged.toList());
+        }
 
         RequestContext.get().endMetricRecord(metric);
     }
@@ -182,7 +193,9 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
                 }
             }
 
-            auditRepository.putEventsV2(classificationsAdded.toList());
+            for (EntityAuditRepository auditRepository: auditRepositories) {
+                auditRepository.putEventsV2(classificationsAdded.toList());
+            }
 
             RequestContext.get().endMetricRecord(metric);
         }
@@ -204,7 +217,9 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
                 }
             }
 
-            auditRepository.putEventsV2(events.toList());
+            for (EntityAuditRepository auditRepository: auditRepositories) {
+                auditRepository.putEventsV2(events.toList());
+            }
 
             RequestContext.get().endMetricRecord(metric);
         }
@@ -232,7 +247,9 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
                 }
             }
 
-            auditRepository.putEventsV2(events.toList());
+            for (EntityAuditRepository auditRepository: auditRepositories) {
+                auditRepository.putEventsV2(events.toList());
+            }
 
             RequestContext.get().endMetricRecord(metric);
         }
@@ -261,7 +278,9 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
                 }
             }
 
-            auditRepository.putEventsV2(events.toList());
+            for (EntityAuditRepository auditRepository: auditRepositories) {
+                auditRepository.putEventsV2(events.toList());
+            }
 
             RequestContext.get().endMetricRecord(metric);
         }
@@ -283,7 +302,9 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
                 }
             }
 
-            auditRepository.putEventsV2(events.toList());
+            for (EntityAuditRepository auditRepository: auditRepositories) {
+                auditRepository.putEventsV2(events.toList());
+            }
 
             RequestContext.get().endMetricRecord(metric);
         }
@@ -304,7 +325,10 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
                 }
             }
 
-            auditRepository.putEventsV2(events.toList());
+
+            for (EntityAuditRepository auditRepository: auditRepositories) {
+                auditRepository.putEventsV2(events.toList());
+            }
 
             RequestContext.get().endMetricRecord(metric);
         }
@@ -325,7 +349,9 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
                 }
             }
 
-            auditRepository.putEventsV2(events.toList());
+            for (EntityAuditRepository auditRepository: auditRepositories) {
+                auditRepository.putEventsV2(events.toList());
+            }
 
             RequestContext.get().endMetricRecord(metric);
         }
@@ -342,7 +368,9 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
 
             createEvent(events.next(), entity, LABEL_ADD, "Added labels: " + getLabelsString(addedLabels));
 
-            auditRepository.putEventsV2(events.toList());
+            for (EntityAuditRepository auditRepository: auditRepositories) {
+                auditRepository.putEventsV2(events.toList());
+            }
 
             RequestContext.get().endMetricRecord(metric);
         }
@@ -359,7 +387,9 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
 
             createEvent(events.next(), entity, LABEL_DELETE, "Deleted labels: " + getLabelsString(deletedLabels));
 
-            auditRepository.putEventsV2(events.toList());
+            for (EntityAuditRepository auditRepository: auditRepositories) {
+                auditRepository.putEventsV2(events.toList());
+            }
 
             RequestContext.get().endMetricRecord(metric);
         }
@@ -408,7 +438,9 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
                 createEvent(events.next(), entity, BUSINESS_ATTRIBUTE_UPDATE, "Updated business attributes: " + details);
             }
 
-            auditRepository.putEventsV2(events.toList());
+            for (EntityAuditRepository auditRepository: auditRepositories) {
+                auditRepository.putEventsV2(events.toList());
+            }
 
             RequestContext.get().endMetricRecord(metric);
         }
@@ -439,7 +471,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
         String auditString  = auditPrefix + AtlasType.toJson(entity);
         byte[] auditBytes   = auditString.getBytes(StandardCharsets.UTF_8);
         long   auditSize    = auditBytes != null ? auditBytes.length : 0;
-        long   auditMaxSize = auditRepository.repositoryMaxSize();
+        long   auditMaxSize = AUDIT_REPOSITORY_MAX_SIZE_DEFAULT;
 
         if (auditMaxSize >= 0 && auditSize > auditMaxSize) { // don't store attributes in audit
             LOG.warn("audit record too long: entityType={}, guid={}, size={}; maxSize={}. entity attribute values not stored in audit",
@@ -516,7 +548,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
     private Map<String, Object> pruneEntityAttributesForAudit(AtlasEntity entity) {
         Map<String, Object> ret               = null;
         Map<String, Object> entityAttributes  = entity.getAttributes();
-        List<String>        excludeAttributes = auditRepository.getAuditExcludeAttributes(entity.getTypeName());
+        List<String>        excludeAttributes = getAuditExcludeAttributes(entity.getTypeName());
         AtlasEntityType     entityType        = typeRegistry.getEntityTypeByName(entity.getTypeName());
 
         if (CollectionUtils.isNotEmpty(excludeAttributes) && MapUtils.isNotEmpty(entityAttributes) && entityType != null) {
@@ -536,6 +568,37 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
         }
 
         return ret;
+    }
+
+    public List<String> getAuditExcludeAttributes(String entityType) {
+        List<String> ret = null;
+
+        initApplicationProperties();
+
+        if (auditExcludedAttributesCache.containsKey(entityType)) {
+            ret = auditExcludedAttributesCache.get(entityType);
+        } else if (APPLICATION_PROPERTIES != null) {
+            String[] excludeAttributes = APPLICATION_PROPERTIES.getStringArray(AUDIT_EXCLUDE_ATTRIBUTE_PROPERTY + "." +
+                    entityType + "." +  "attributes.exclude");
+
+            if (excludeAttributes != null) {
+                ret = Arrays.asList(excludeAttributes);
+            }
+
+            auditExcludedAttributesCache.put(entityType, ret);
+        }
+
+        return ret;
+    }
+
+    protected void initApplicationProperties() {
+        if (APPLICATION_PROPERTIES == null) {
+            try {
+                APPLICATION_PROPERTIES = ApplicationProperties.get();
+            } catch (AtlasException ex) {
+                // ignore
+            }
+        }
     }
 
     private void restoreEntityAttributes(AtlasEntity entity, Map<String, Object> prunedAttributes) {
