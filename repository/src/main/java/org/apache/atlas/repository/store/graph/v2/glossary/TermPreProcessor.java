@@ -30,7 +30,6 @@ import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
 import org.apache.atlas.type.AtlasEntityType;
-import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
@@ -61,13 +60,10 @@ public class TermPreProcessor implements PreProcessor {
 
     @Override
     public void processAttributes(AtlasStruct entityStruct, AtlasVertex vertex, EntityMutationContext context) throws AtlasBaseException {
-        //Handle name & qualifiedName
         if (LOG.isDebugEnabled()) {
             LOG.debug("TermPreProcessor.processAttributes: pre processing {}, {}",
                     entityStruct.getAttribute(QUALIFIED_NAME), operation);
         }
-
-        LOG.info("TermPreProcessor.processAttributes: pre processing {}", AtlasType.toJson(entityStruct));
 
         AtlasEntity entity = (AtlasEntity) entityStruct;
         setAnchor(entity, context);
@@ -82,11 +78,6 @@ public class TermPreProcessor implements PreProcessor {
         }
     }
 
-    @Override
-    public void processRelationshipAttributes(AtlasEntity entity, AtlasVertex vertex, EntityMutationContext context) throws AtlasBaseException {
-        //TODO
-    }
-
     private void processCreateTerm(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
         String termName = (String) entity.getAttribute(NAME);
         String termQName = vertex.getProperty(QUALIFIED_NAME, String.class);
@@ -99,7 +90,7 @@ public class TermPreProcessor implements PreProcessor {
             throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_TERM_ALREADY_EXISTS, termName);
         }
 
-        entity.setAttribute(QUALIFIED_NAME, createQualifiedName(termQName));
+        entity.setAttribute(QUALIFIED_NAME, createQualifiedName());
     }
 
     private void processUpdateTerm(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
@@ -119,19 +110,17 @@ public class TermPreProcessor implements PreProcessor {
         entity.setAttribute(QUALIFIED_NAME, vertexQnName);
     }
 
-    private String createQualifiedName(String termQualifiedName) {
-        return createQualifiedName(termQualifiedName, (String) anchor.getAttribute(QUALIFIED_NAME));
-    }
 
-    protected static String createQualifiedName(String termQualifiedName, String glossaryQualifiedName) {
-        String qName = "";
+    //private String createQualifiedName(String termQualifiedName, String glossaryQualifiedName) {
+    private String createQualifiedName() {
+ /*       String qName = "";
         if (!StringUtils.isEmpty(termQualifiedName)) {
             //extract existing nanoid for term
             qName = termQualifiedName.split("@")[0];
         }
-        qName = StringUtils.isEmpty(qName) ? getUUID() : qName;
+        qName = StringUtils.isEmpty(qName) ? getUUID() : qName;*/
 
-        return qName + "@" + glossaryQualifiedName;
+        return getUUID() + "@" + anchor.getAttribute(QUALIFIED_NAME);
     }
 
     private boolean termExists(String termName) {

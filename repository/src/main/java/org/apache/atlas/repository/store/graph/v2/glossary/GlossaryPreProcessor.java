@@ -54,12 +54,9 @@ public class GlossaryPreProcessor implements PreProcessor {
 
     @Override
     public void processAttributes(AtlasStruct entity, AtlasVertex vertex, EntityMutationContext context) throws AtlasBaseException {
-        //Handle name & qualifiedName
         if (LOG.isDebugEnabled()) {
             LOG.debug("GlossaryPreProcessor.processAttributes: pre processing {}, {}", entity.getAttribute(QUALIFIED_NAME), operation);
         }
-
-        LOG.info("GlossaryPreProcessor.processAttributes: pre processing {}", AtlasType.toJson(entity));
 
         switch (operation) {
             case CREATE:
@@ -69,11 +66,6 @@ public class GlossaryPreProcessor implements PreProcessor {
                 processUpdateGlossary(entity, vertex);
                 break;
         }
-    }
-
-    @Override
-    public void processRelationshipAttributes(AtlasEntity entity, AtlasVertex vertex, EntityMutationContext context) {
-
     }
 
     private void processCreateGlossary(AtlasStruct entity) throws AtlasBaseException {

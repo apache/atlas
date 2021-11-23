@@ -26,8 +26,6 @@ import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.exception.EntityNotFoundException;
-import org.apache.atlas.glossary.GlossaryService;
-import org.apache.atlas.glossary.GlossaryUtils;
 import org.apache.atlas.model.TimeBoundary;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasClassification;
@@ -59,7 +57,6 @@ import org.apache.atlas.repository.store.graph.v2.glossary.*;
 import org.apache.atlas.tasks.TaskManagement;
  import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.repository.store.graph.v1.RestoreHandlerV1;
-import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasBuiltInTypes;
 import org.apache.atlas.type.AtlasBusinessMetadataType.AtlasBusinessAttribute;
 import org.apache.atlas.type.AtlasClassificationType;
@@ -77,7 +74,6 @@ import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.ListUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -85,17 +81,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -330,10 +316,9 @@ public class EntityGraphMapper {
                 AtlasVertex     vertex     = context.getVertex(guid);
                 AtlasEntityType entityType = context.getType(guid);
 
-                PreProcessor preProcessor = getPreProcessor(createdEntity, CREATE);
+                PreProcessor preProcessor = getPreProcessor(entityType.getTypeName(), CREATE);
                 if (preProcessor != null) {
                     preProcessor.processAttributes(createdEntity, vertex, context);
-                    preProcessor.processRelationshipAttributes(createdEntity, vertex, context);
                 }
 
                 mapAttributes(createdEntity, entityType, vertex, CREATE, context);
@@ -358,11 +343,9 @@ public class EntityGraphMapper {
                 AtlasVertex     vertex     = context.getVertex(guid);
                 AtlasEntityType entityType = context.getType(guid);
 
-                PreProcessor preProcessor = getPreProcessor(updatedEntity, UPDATE);
-
+                PreProcessor preProcessor = getPreProcessor(entityType.getTypeName(), UPDATE);
                 if (preProcessor != null) {
                     preProcessor.processAttributes(updatedEntity, vertex, context);
-                    preProcessor.processRelationshipAttributes(updatedEntity, vertex, context);
                 }
 
                 mapAttributes(updatedEntity, entityType, vertex, updateType, context);
@@ -411,10 +394,10 @@ public class EntityGraphMapper {
         return resp;
     }
 
-    private PreProcessor getPreProcessor(AtlasEntity entity, EntityOperation op) throws AtlasBaseException {
+    private PreProcessor getPreProcessor(String typeName, EntityOperation op) throws AtlasBaseException {
         PreProcessor preProcessor = null;
 
-        switch (entity.getTypeName()) {
+        switch (typeName) {
             case Utils.ATLAS_GLOSSARY_TYPENAME:
                 preProcessor = new GlossaryPreProcessor(typeRegistry, entityRetriever, op);
                 break;
@@ -989,7 +972,7 @@ public class EntityGraphMapper {
                     addGlossaryAttr(ctx, newEdge);
                 }
 
-                if (CATEGORY_PARENT_EDGE_LABEL.equals(edgeLabel)) {
+                if (newEdge!= null && CATEGORY_PARENT_EDGE_LABEL.equals(edgeLabel)) {
                     addCatParentAttr(ctx, newEdge);
                 }
 
@@ -1628,6 +1611,9 @@ public class EntityGraphMapper {
 
             case CATEGORY_TERMS_EDGE_LABEL: addCategoriesToTermEntity(ctx, newElementsCreated, removedElements);
                 break;
+
+            case CATEGORY_PARENT_EDGE_LABEL: addCatParentAttr(ctx, newElementsCreated, removedElements);
+                break;
         }
 
         if (LOG.isDebugEnabled()) {
@@ -1656,6 +1642,22 @@ public class EntityGraphMapper {
             //add __parentCategory attribute of category entity
             String parentQName = edge.getOutVertex().getProperty(QUALIFIED_NAME, String.class);
             AtlasGraphUtilsV2.setEncodedProperty(toVertex, CATEGORIES_PARENT_PROPERTY_KEY, parentQName);
+        }
+    }
+
+    private void addCatParentAttr(AttributeMutationContext ctx, List<Object> newElementsCreated, List<AtlasEdge> removedElements) {
+        AtlasVertex toVertex = ctx.getReferringVertex();
+
+        //add __parentCategory attribute of child category entities
+        if (CollectionUtils.isNotEmpty(newElementsCreated)) {
+            String parentQName = toVertex.getProperty(QUALIFIED_NAME, String.class);
+            List<AtlasVertex> catVertices = newElementsCreated.stream().map(x -> ((AtlasEdge) x).getInVertex()).collect(Collectors.toList());
+            catVertices.stream().forEach(v -> AtlasGraphUtilsV2.setEncodedProperty(v, CATEGORIES_PARENT_PROPERTY_KEY, parentQName));
+        }
+
+        if (CollectionUtils.isNotEmpty(removedElements)) {
+            List<AtlasVertex> termVertices = removedElements.stream().map(x -> x.getInVertex()).collect(Collectors.toList());
+            termVertices.stream().forEach(v -> v.removeProperty(CATEGORIES_PROPERTY_KEY));
         }
     }
 
