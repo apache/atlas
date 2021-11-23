@@ -46,7 +46,9 @@ public enum AtlasPrivilege {
 
      TYPE_READ("type-read"),
 
-     ADMIN_AUDITS("admin-audits");
+     ADMIN_AUDITS("admin-audits"),
+
+     ADMIN_ENTITY_AUDITS("admin-entity-audits");
 
      private final String type;
 
