@@ -155,23 +155,29 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
         // walk through top-level entities and find entity references
         while (entityStream.hasNext()) {
             AtlasEntity entity = entityStream.next();
+            try {
 
-            if (entity == null) {
-                throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "found null entity");
+                if (entity == null) {
+                    throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "found null entity");
+                }
+
+                processDynamicAttributes(entity);
+
+                walkEntityGraph(entity);
+
+                walkedEntities.add(entity.getGuid());
+            } catch (AtlasBaseException exception) {
+                exception.setEntityGuid(entity.getGuid());
+                throw exception;
             }
 
-            processDynamicAttributes(entity);
-
-            walkEntityGraph(entity);
-
-            walkedEntities.add(entity.getGuid());
         }
 
         // walk through entities referenced by other entities
         // referencedGuids will be updated within this for() loop; avoid use of iterators
-        List<String> referencedGuids = discoveryContext.getReferencedGuids();
-        for (int i = 0; i < referencedGuids.size(); i++) {
-            String guid = referencedGuids.get(i);
+        Map<String, String> referencedGuids = discoveryContext.getReferencedGuids();
+        for (Map.Entry<String, String> element : referencedGuids.entrySet()) {
+            String guid = element.getKey();
 
             if (walkedEntities.contains(guid)) {
                 continue;
@@ -203,7 +209,7 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
         RequestContext.get().endMetricRecord(metric);
     }
 
-    private void visitReference(AtlasObjectIdType type, Object val) throws AtlasBaseException {
+    private void visitReference(AtlasObjectIdType type, Object val, String referringEntityGuid) throws AtlasBaseException {
         if (type == null || val == null) {
             return;
         }
@@ -215,7 +221,7 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
                 throw new AtlasBaseException(AtlasErrorCode.INVALID_OBJECT_ID, objId.toString());
             }
 
-            recordObjectReference(objId);
+            recordObjectReference(objId, referringEntityGuid);
         } else if (val instanceof Map) {
             AtlasObjectId objId = new AtlasObjectId((Map)val);
 
@@ -223,13 +229,13 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
                 throw new AtlasBaseException(AtlasErrorCode.INVALID_OBJECT_ID, objId.toString());
             }
 
-            recordObjectReference(objId);
+            recordObjectReference(objId, referringEntityGuid);
         } else {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_OBJECT_ID, val.toString());
         }
     }
 
-    void visitAttribute(AtlasType attrType, Object val) throws AtlasBaseException {
+    void visitAttribute(AtlasType attrType, Object val, String referringEntityGuid) throws AtlasBaseException {
         if (attrType == null || val == null) {
             return;
         }
@@ -243,7 +249,7 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
                 AtlasArrayType arrayType = (AtlasArrayType) attrType;
                 AtlasType      elemType  = arrayType.getElementType();
 
-                visitCollectionReferences(elemType, val);
+                visitCollectionReferences(elemType, val, referringEntityGuid);
             }
             break;
 
@@ -251,16 +257,16 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
                 AtlasType keyType   = ((AtlasMapType) attrType).getKeyType();
                 AtlasType valueType = ((AtlasMapType) attrType).getValueType();
 
-                visitMapReferences(keyType, valueType, val);
+                visitMapReferences(keyType, valueType, val, referringEntityGuid);
             }
             break;
 
             case STRUCT:
-                visitStruct((AtlasStructType)attrType, val);
+                visitStruct((AtlasStructType)attrType, val, referringEntityGuid);
             break;
 
             case OBJECT_ID_TYPE:
-                visitReference((AtlasObjectIdType) attrType,  val);
+                visitReference((AtlasObjectIdType) attrType, val, referringEntityGuid);
             break;
 
             default:
@@ -268,7 +274,7 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
         }
     }
 
-    void visitMapReferences(AtlasType keyType, AtlasType valueType, Object val) throws AtlasBaseException {
+    void visitMapReferences(AtlasType keyType, AtlasType valueType, Object val, String referringEntityGuid) throws AtlasBaseException {
         if (keyType == null || valueType == null || val == null) {
             return;
         }
@@ -281,13 +287,13 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
             Iterator<Map.Entry> it = ((Map) val).entrySet().iterator();
             while (it.hasNext()) {
                 Map.Entry e = it.next();
-                visitAttribute(keyType, e.getKey());
-                visitAttribute(valueType, e.getValue());
+                visitAttribute(keyType, e.getKey(), referringEntityGuid);
+                visitAttribute(valueType, e.getValue(), referringEntityGuid);
             }
         }
     }
 
-    void visitCollectionReferences(AtlasType elemType, Object val) throws AtlasBaseException {
+    void visitCollectionReferences(AtlasType elemType, Object val, String referringEntityGuid) throws AtlasBaseException {
         if (elemType == null || val == null || isPrimitive(elemType.getTypeCategory())) {
             return;
         }
@@ -305,12 +311,12 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
         if (it != null) {
             while (it.hasNext()) {
                 Object elem = it.next();
-                visitAttribute(elemType, elem);
+                visitAttribute(elemType, elem, referringEntityGuid);
             }
         }
     }
 
-    void visitStruct(AtlasStructType structType, Object val) throws AtlasBaseException {
+    void visitStruct(AtlasStructType structType, Object val, String referringEntityGuid) throws AtlasBaseException {
         if (structType == null || val == null) {
             return;
         }
@@ -327,7 +333,7 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_STRUCT_VALUE, val.toString());
         }
 
-        visitStruct(structType, struct);
+        visitStruct(structType, struct, referringEntityGuid);
     }
 
     void visitEntity(AtlasEntityType entityType, AtlasEntity entity) throws AtlasBaseException {
@@ -343,7 +349,7 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
             Object    attrVal  = entity.getAttribute(attrName);
 
             if (entity.hasAttribute(attrName) && !visitedAttributes.contains(attrName)) {
-                visitAttribute(attrType, attrVal);
+                visitAttribute(attrType, attrVal, entity.getGuid());
             }
         }
     }
@@ -357,7 +363,7 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
                 String         relationshipType = AtlasEntityUtil.getRelationshipType(attrVal);
                 AtlasAttribute attribute        = entityType.getRelationshipAttribute(attrName, relationshipType);
 
-                visitAttribute(attribute.getAttributeType(), attrVal);
+                visitAttribute(attribute.getAttributeType(), attrVal, entity.getGuid());
 
                 visitedAttributes.add(attrName);
             } else if (entity.hasAttribute(attrName)) {
@@ -365,19 +371,19 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
                 String         relationshipType = AtlasEntityUtil.getRelationshipType(attrVal);
                 AtlasAttribute attribute        = entityType.getRelationshipAttribute(attrName, relationshipType);
 
-                visitAttribute(attribute.getAttributeType(), attrVal);
+                visitAttribute(attribute.getAttributeType(), attrVal, entity.getGuid());
 
                 visitedAttributes.add(attrName);
             }
         }
     }
 
-    void visitStruct(AtlasStructType structType, AtlasStruct struct) throws AtlasBaseException {
+    void visitStruct(AtlasStructType structType, AtlasStruct struct, String referringEntityGuid) throws AtlasBaseException {
         for (AtlasAttribute attribute : structType.getAllAttributes().values()) {
             AtlasType attrType = attribute.getAttributeType();
             Object    attrVal  = struct.getAttribute(attribute.getName());
 
-            visitAttribute(attrType, attrVal);
+            visitAttribute(attrType, attrVal, referringEntityGuid);
         }
     }
 
@@ -392,7 +398,7 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), entity.getTypeName());
         }
 
-        recordObjectReference(entity.getGuid());
+        recordObjectReference(entity.getGuid(), entity.getGuid());
 
         visitEntity(type, entity);
     }
@@ -402,15 +408,15 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
         return typeCategory == TypeCategory.PRIMITIVE || typeCategory == TypeCategory.ENUM;
     }
 
-    private void recordObjectReference(String guid) {
-        discoveryContext.addReferencedGuid(guid);
+    private void recordObjectReference(String guid, String referringEntityGuid) {
+        discoveryContext.addReferencedGuid(guid, referringEntityGuid);
     }
 
-    private void recordObjectReference(AtlasObjectId objId) {
+    private void recordObjectReference(AtlasObjectId objId, String referringEntityGuid) {
         if (AtlasTypeUtil.isValidGuid(objId)) {
-            discoveryContext.addReferencedGuid(objId.getGuid());
+            discoveryContext.addReferencedGuid(objId.getGuid(), referringEntityGuid);
         } else {
-            discoveryContext.addReferencedByUniqAttribs(objId);
+            discoveryContext.addReferencedByUniqAttribs(objId, referringEntityGuid);
         }
     }
 

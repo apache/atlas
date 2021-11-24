@@ -1348,65 +1348,74 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         EntityMutationContext       context          = new EntityMutationContext(discoveryContext);
         RequestContext              requestContext   = RequestContext.get();
 
-        for (String guid : discoveryContext.getReferencedGuids()) {
+        Map<String, String> referencedGuids = discoveryContext.getReferencedGuids();
+        for (Map.Entry<String, String> element : referencedGuids.entrySet()) {
+            String guid = element.getKey();
             AtlasEntity entity = entityStream.getByGuid(guid);
 
             if (entity != null) { // entity would be null if guid is not in the stream but referenced by an entity in the stream
                 AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
 
                 if (entityType == null) {
-                    throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), entity.getTypeName());
+                    throw new AtlasBaseException(element.getValue(), AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), entity.getTypeName());
                 }
 
                 compactAttributes(entity, entityType);
 
                 AtlasVertex vertex = getResolvedEntityVertex(discoveryContext, entity);
 
-                if (vertex != null) {
-                    if (!isPartialUpdate) {
+                try {
+                    if (vertex != null) {
+                        if (!isPartialUpdate) {
+                            graphDiscoverer.validateAndNormalize(entity);
+
+                            // change entity 'isInComplete' to 'false' during full update
+                            if (isEntityIncomplete(vertex)) {
+                                vertex.removeProperty(IS_INCOMPLETE_PROPERTY_KEY);
+
+                                entity.setIsIncomplete(FALSE);
+                            }
+                        } else {
+                            graphDiscoverer.validateAndNormalizeForUpdate(entity);
+                        }
+
+                        String guidVertex = AtlasGraphUtilsV2.getIdFromVertex(vertex);
+
+                        if (!StringUtils.equals(guidVertex, guid)) { // if entity was found by unique attribute
+                            entity.setGuid(guidVertex);
+
+                            requestContext.recordEntityGuidUpdate(entity, guid);
+                        }
+
+                        context.addUpdated(guid, entity, entityType, vertex);
+                    } else {
                         graphDiscoverer.validateAndNormalize(entity);
 
-                        // change entity 'isInComplete' to 'false' during full update
-                        if (isEntityIncomplete(vertex)) {
-                            vertex.removeProperty(IS_INCOMPLETE_PROPERTY_KEY);
-
-                            entity.setIsIncomplete(FALSE);
+                        //Create vertices which do not exist in the repository
+                        if (RequestContext.get().isImportInProgress() && AtlasTypeUtil.isAssignedGuid(entity.getGuid())) {
+                            vertex = entityGraphMapper.createVertexWithGuid(entity, entity.getGuid());
+                        } else {
+                            vertex = entityGraphMapper.createVertex(entity);
                         }
-                    } else {
-                        graphDiscoverer.validateAndNormalizeForUpdate(entity);
-                    }
 
-                    String guidVertex = AtlasGraphUtilsV2.getIdFromVertex(vertex);
+                        discoveryContext.addResolvedGuid(guid, vertex);
 
-                    if (!StringUtils.equals(guidVertex, guid)) { // if entity was found by unique attribute
-                        entity.setGuid(guidVertex);
+                        discoveryContext.addResolvedIdByUniqAttribs(getAtlasObjectId(entity), vertex);
+
+                        String generatedGuid = AtlasGraphUtilsV2.getIdFromVertex(vertex);
+
+                        entity.setGuid(generatedGuid);
 
                         requestContext.recordEntityGuidUpdate(entity, guid);
+
+                        context.addCreated(guid, entity, entityType, vertex);
                     }
 
-                    context.addUpdated(guid, entity, entityType, vertex);
-                } else {
-                    graphDiscoverer.validateAndNormalize(entity);
-
-                    //Create vertices which do not exist in the repository
-                    if (RequestContext.get().isImportInProgress() && AtlasTypeUtil.isAssignedGuid(entity.getGuid())) {
-                        vertex = entityGraphMapper.createVertexWithGuid(entity, entity.getGuid());
-                    } else {
-                        vertex = entityGraphMapper.createVertex(entity);
-                    }
-
-                    discoveryContext.addResolvedGuid(guid, vertex);
-
-                    discoveryContext.addResolvedIdByUniqAttribs(getAtlasObjectId(entity), vertex);
-
-                    String generatedGuid = AtlasGraphUtilsV2.getIdFromVertex(vertex);
-
-                    entity.setGuid(generatedGuid);
-
-                    requestContext.recordEntityGuidUpdate(entity, guid);
-
-                    context.addCreated(guid, entity, entityType, vertex);
+                } catch (AtlasBaseException exception) {
+                    exception.setEntityGuid(element.getValue());
+                    throw exception;
                 }
+
 
                 String entityStateValue = (String) entity.getAttribute(STATE_PROPERTY_KEY);
                 String entityStatusValue = entity.getStatus() != null ? entity.getStatus().toString() : null;
