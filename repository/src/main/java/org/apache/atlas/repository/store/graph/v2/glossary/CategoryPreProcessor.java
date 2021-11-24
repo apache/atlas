@@ -34,9 +34,8 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.atlas.glossary.GlossaryService.isNameInvalid;
 import static org.apache.atlas.glossary.GlossaryUtils.QUALIFIED_NAME;
-import static org.apache.atlas.repository.store.graph.v2.glossary.Utils.*;
+import static org.apache.atlas.repository.store.graph.v2.glossary.GlossaryUtils.*;
 
 public class CategoryPreProcessor implements PreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(CategoryPreProcessor.class);

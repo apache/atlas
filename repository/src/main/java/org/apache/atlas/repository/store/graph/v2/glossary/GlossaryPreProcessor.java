@@ -20,8 +20,6 @@ package org.apache.atlas.repository.store.graph.v2.glossary;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.glossary.GlossaryService;
-import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -29,7 +27,6 @@ import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
 import org.apache.atlas.type.AtlasEntityType;
-import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -37,7 +34,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Objects;
 
-import static org.apache.atlas.repository.store.graph.v2.glossary.Utils.*;
+import static org.apache.atlas.repository.store.graph.v2.glossary.GlossaryUtils.*;
 
 public class GlossaryPreProcessor implements PreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(GlossaryPreProcessor.class);
@@ -71,7 +68,7 @@ public class GlossaryPreProcessor implements PreProcessor {
     private void processCreateGlossary(AtlasStruct entity) throws AtlasBaseException {
         String glossaryName = (String) entity.getAttribute(NAME);
 
-        if (StringUtils.isEmpty(glossaryName) || GlossaryService.isNameInvalid(glossaryName)) {
+        if (StringUtils.isEmpty(glossaryName) || isNameInvalid(glossaryName)) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME);
         }
 
@@ -90,7 +87,7 @@ public class GlossaryPreProcessor implements PreProcessor {
             throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_ALREADY_EXISTS,glossaryName);
         }
 
-        if (StringUtils.isEmpty(glossaryName) || GlossaryService.isNameInvalid(glossaryName)) {
+        if (StringUtils.isEmpty(glossaryName) || isNameInvalid(glossaryName)) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME);
         }
 

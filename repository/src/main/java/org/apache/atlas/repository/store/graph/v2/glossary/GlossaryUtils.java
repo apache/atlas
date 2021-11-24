@@ -1,8 +1,9 @@
 package org.apache.atlas.repository.store.graph.v2.glossary;
 
 import org.apache.atlas.util.NanoIdUtils;
+import org.apache.commons.lang.StringUtils;
 
-public class Utils {
+public class GlossaryUtils {
 
     public static final String ATLAS_GLOSSARY_TYPENAME          = "AtlasGlossary";
     public static final String ATLAS_GLOSSARY_TERM_TYPENAME     = "AtlasGlossaryTerm";
@@ -11,7 +12,7 @@ public class Utils {
     public static final String NAME           = "name";
     public static final String QUALIFIED_NAME = "qualifiedName";
 
-    public static final char[] invalidNameChars             = {'@', '.'};
+    public static final char[] invalidNameChars             = {'@'};
 
     // Relation name constants
     protected static final String ANCHOR                         = "anchor";
@@ -27,5 +28,9 @@ public class Utils {
 
     protected static String getUUID(){
         return NanoIdUtils.randomNanoId();
+    }
+
+    protected static boolean isNameInvalid(String name) {
+        return StringUtils.containsAny(name, invalidNameChars);
     }
 }

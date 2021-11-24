@@ -39,8 +39,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
-import static org.apache.atlas.glossary.GlossaryService.isNameInvalid;
-import static org.apache.atlas.repository.store.graph.v2.glossary.Utils.*;
+import static org.apache.atlas.repository.store.graph.v2.glossary.GlossaryUtils.*;
 
 public class TermPreProcessor implements PreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(TermPreProcessor.class);
@@ -125,7 +124,7 @@ public class TermPreProcessor implements PreProcessor {
 
     private boolean termExists(String termName) {
 
-        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(Utils.ATLAS_GLOSSARY_TERM_TYPENAME);
+        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(ATLAS_GLOSSARY_TERM_TYPENAME);
         String glossaryQName = (String) anchor.getAttribute(QUALIFIED_NAME);
 
         List<AtlasVertex> vertexList = AtlasGraphUtilsV2.glossaryFindChildByTypeAndPropertyName(entityType, termName, glossaryQName);
