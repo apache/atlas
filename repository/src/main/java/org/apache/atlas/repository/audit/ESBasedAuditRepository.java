@@ -182,12 +182,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
 
     @Override
     public void start() throws AtlasException {
-        initApplicationProperties();
-        initializeSettings();
         startInternal();
-    }
-
-    void initializeSettings() {
     }
 
     @VisibleForTesting
@@ -196,10 +191,12 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
     }
 
     void createSession() throws AtlasException {
+        LOG.info("Create ES Session in ES Based Audit Repo");
         setLowLevelClient();
         try {
             boolean indexExists = checkIfIndexExists();
             if (!indexExists) {
+                LOG.info("Create ES index for entity audits in ES Based Audit Repo");
                 createAuditIndex();
             }
         } catch (IOException e) {
@@ -210,6 +207,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
     }
 
     private boolean createAuditIndex() throws IOException {
+        LOG.info("ESBasedAuditRepo - createAuditIndex!");
         String esMappingsString = getAuditIndexMappings();
         HttpEntity entity = new NStringEntity(esMappingsString, ContentType.APPLICATION_JSON);
         Request request = new Request("PUT", INDEX_NAME);
@@ -232,18 +230,30 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
          Response response = lowLevelClient.performRequest(request);
          int statusCode = response.getStatusLine().getStatusCode();;
          if (statusCode == 200) {
+             LOG.info("Entity audits index exists!");
              return true;
          }
+         LOG.info("Entity audits index does not exist!");
          return false;
      }
 
     @Override
     public void stop() throws AtlasException {
+        try {
+            if (lowLevelClient != null) {
+                lowLevelClient.close();
+                lowLevelClient = null;
+            }
+        } catch (IOException e) {
+            LOG.error("ESBasedAuditRepo - error while closing es lowlevel client", e);
+            throw new AtlasException(e);
+        }
     }
 
     private void setLowLevelClient() throws AtlasException {
         if (lowLevelClient == null) {
             try {
+                LOG.info("ESBasedAuditRepo - setLowLevelClient!");
                 List<HttpHost> httpHosts = getHttpHosts();
 
                 RestClientBuilder builder = RestClient.builder(httpHosts.get(0));
