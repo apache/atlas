@@ -34,8 +34,12 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.atlas.glossary.GlossaryUtils.QUALIFIED_NAME;
-import static org.apache.atlas.repository.store.graph.v2.glossary.GlossaryUtils.*;
+import static org.apache.atlas.repository.Constants.NAME;
+import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
+import static org.apache.atlas.repository.store.graph.v2.glossary.GlossaryUtils.ANCHOR;
+import static org.apache.atlas.repository.store.graph.v2.glossary.GlossaryUtils.CATEGORY_PARENT;
+import static org.apache.atlas.repository.store.graph.v2.glossary.GlossaryUtils.isNameInvalid;
+import static org.apache.atlas.repository.store.graph.v2.glossary.GlossaryUtils.getUUID;
 
 public class CategoryPreProcessor implements PreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(CategoryPreProcessor.class);
@@ -56,7 +60,6 @@ public class CategoryPreProcessor implements PreProcessor {
 
     @Override
     public void processAttributes(AtlasStruct entityStruct, AtlasVertex vertex, EntityMutationContext context) throws AtlasBaseException {
-        //Handle name & qualifiedName
         if (LOG.isDebugEnabled()) {
             LOG.debug("CategoryPreProcessor.processAttributes: pre processing {}, {}",
                     entityStruct.getAttribute(QUALIFIED_NAME), operation);
@@ -147,7 +150,6 @@ public class CategoryPreProcessor implements PreProcessor {
                 return catQName;
             }
         }
-
         return getUUID() + "@" + anchor.getAttribute(QUALIFIED_NAME);
     }
 }

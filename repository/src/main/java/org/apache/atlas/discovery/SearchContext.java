@@ -511,10 +511,10 @@ public class SearchContext {
         if (StringUtils.isNotEmpty(glossaryName) && StringUtils.isNotEmpty(termName)) {
             AtlasEntityType termType = getTermEntityType();
 
-            AtlasEntityType glossaryType = typeRegistry.getEntityTypeByName(TermSearchProcessor.ATLAS_GLOSSARY_ENTITY_TYPE);
+            AtlasEntityType glossaryType = typeRegistry.getEntityTypeByName(Constants.ATLAS_GLOSSARY_ENTITY_TYPE);
             AtlasVertex vertex = AtlasGraphUtilsV2.glossaryFindByTypeAndPropertyName(glossaryType, glossaryName);
             if (vertex != null) {
-                AtlasAttribute attrName = glossaryType.getAttribute(TermSearchProcessor.ATLAS_ATTR_QNAME);
+                AtlasAttribute attrName = glossaryType.getAttribute(Constants.QUALIFIED_NAME);
                 String glossaryQName = vertex.getProperty(attrName.getVertexPropertyName(), String.class);
 
                 List<AtlasVertex> vertexList = AtlasGraphUtilsV2.glossaryFindChildByTypeAndPropertyName(termType, termName, glossaryQName);

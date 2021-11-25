@@ -39,7 +39,12 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
-import static org.apache.atlas.repository.store.graph.v2.glossary.GlossaryUtils.*;
+import static org.apache.atlas.repository.Constants.ATLAS_GLOSSARY_TERM_ENTITY_TYPE;
+import static org.apache.atlas.repository.Constants.NAME;
+import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
+import static org.apache.atlas.repository.store.graph.v2.glossary.GlossaryUtils.ANCHOR;
+import static org.apache.atlas.repository.store.graph.v2.glossary.GlossaryUtils.isNameInvalid;
+import static org.apache.atlas.repository.store.graph.v2.glossary.GlossaryUtils.getUUID;
 
 public class TermPreProcessor implements PreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(TermPreProcessor.class);
@@ -109,22 +114,13 @@ public class TermPreProcessor implements PreProcessor {
         entity.setAttribute(QUALIFIED_NAME, vertexQnName);
     }
 
-
-    //private String createQualifiedName(String termQualifiedName, String glossaryQualifiedName) {
     private String createQualifiedName() {
- /*       String qName = "";
-        if (!StringUtils.isEmpty(termQualifiedName)) {
-            //extract existing nanoid for term
-            qName = termQualifiedName.split("@")[0];
-        }
-        qName = StringUtils.isEmpty(qName) ? getUUID() : qName;*/
-
         return getUUID() + "@" + anchor.getAttribute(QUALIFIED_NAME);
     }
 
     private boolean termExists(String termName) {
 
-        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(ATLAS_GLOSSARY_TERM_TYPENAME);
+        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(ATLAS_GLOSSARY_TERM_ENTITY_TYPE);
         String glossaryQName = (String) anchor.getAttribute(QUALIFIED_NAME);
 
         List<AtlasVertex> vertexList = AtlasGraphUtilsV2.glossaryFindChildByTypeAndPropertyName(entityType, termName, glossaryQName);

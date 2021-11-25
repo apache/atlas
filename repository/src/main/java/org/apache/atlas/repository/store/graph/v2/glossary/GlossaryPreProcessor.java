@@ -32,9 +32,13 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Objects;
+import static org.apache.atlas.repository.Constants.NAME;
+import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
+import static org.apache.atlas.repository.Constants.ATLAS_GLOSSARY_ENTITY_TYPE;
+import static org.apache.atlas.repository.store.graph.v2.glossary.GlossaryUtils.getUUID;
+import static org.apache.atlas.repository.store.graph.v2.glossary.GlossaryUtils.isNameInvalid;
 
-import static org.apache.atlas.repository.store.graph.v2.glossary.GlossaryUtils.*;
+import java.util.Objects;
 
 public class GlossaryPreProcessor implements PreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(GlossaryPreProcessor.class);
@@ -101,7 +105,7 @@ public class GlossaryPreProcessor implements PreProcessor {
     }
 
     private boolean glossaryExists(String glossaryName) {
-        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(ATLAS_GLOSSARY_TYPENAME);
+        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(ATLAS_GLOSSARY_ENTITY_TYPE);
 
         AtlasVertex vertex = AtlasGraphUtilsV2.glossaryFindByTypeAndPropertyName(entityType, glossaryName);
 

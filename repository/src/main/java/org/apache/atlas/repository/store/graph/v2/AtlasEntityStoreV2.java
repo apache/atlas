@@ -86,7 +86,9 @@ import static java.lang.Boolean.FALSE;
 import static org.apache.atlas.AtlasConfiguration.STORE_DIFFERENTIAL_AUDITS;
 import static org.apache.atlas.bulkimport.BulkImportResponse.ImportStatus.FAILED;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.*;
-import static org.apache.atlas.repository.Constants.*;
+import static org.apache.atlas.repository.Constants.IS_INCOMPLETE_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE;
 import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
 import static org.apache.atlas.repository.graph.GraphHelper.isEntityIncomplete;
 import static org.apache.atlas.repository.store.graph.v2.EntityGraphMapper.validateLabels;
@@ -1499,7 +1501,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         MetricRecorder metric = RequestContext.get().startMetricRecord("filterCategoryVertices");
         for (AtlasVertex vertex : deletionCandidates) {
             String typeName = getTypeName(vertex);
-            if ("AtlasGlossaryCategory".equals(typeName)) {
+            if (ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE.equals(typeName)) {
                 categories.add(vertex);
             } else {
                 other.add(vertex);
