@@ -182,6 +182,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
 
     @Override
     public void start() throws AtlasException {
+        LOG.info("ESBasedAuditRepo - start!");
         initApplicationProperties();
         startInternal();
     }
@@ -241,6 +242,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
     @Override
     public void stop() throws AtlasException {
         try {
+            LOG.info("ESBasedAuditRepo - stop!");
             if (lowLevelClient != null) {
                 lowLevelClient.close();
                 lowLevelClient = null;
