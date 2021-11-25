@@ -182,6 +182,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
 
     @Override
     public void start() throws AtlasException {
+        initApplicationProperties();
         startInternal();
     }
 
