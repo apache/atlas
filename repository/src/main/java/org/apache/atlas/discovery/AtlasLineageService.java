@@ -34,6 +34,14 @@ public interface AtlasLineageService {
     AtlasLineageInfo getAtlasLineageInfo(String entityGuid, LineageDirection direction, int depth) throws AtlasBaseException;
 
     /**
+     * @param entityGuid unique ID of the entity
+     * @param direction direction of lineage - INPUT, OUTPUT or BOTH
+     * @param depth number of hops in lineage
+     * @return AtlasLineageInfo
+     */
+    AtlasLineageInfo getAtlasLineageInfo(String entityGuid, LineageDirection direction, int depth, boolean hideProcess) throws AtlasBaseException;
+
+    /**
      * Return the schema for the given datasetName.
      *
      * @param datasetName datasetName

@@ -92,7 +92,8 @@ public class LineageREST {
     @Timed
     public AtlasLineageInfo getLineageGraph(@PathParam("guid") String guid,
                                             @QueryParam("direction") @DefaultValue(DEFAULT_DIRECTION)  LineageDirection direction,
-                                            @QueryParam("depth") @DefaultValue(DEFAULT_DEPTH) int depth) throws AtlasBaseException {
+                                            @QueryParam("depth") @DefaultValue(DEFAULT_DEPTH) int depth,
+                                            @QueryParam("hideProcess") @DefaultValue("false") boolean hideProcess) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
 
         AtlasPerfTracer perf = null;
@@ -103,7 +104,7 @@ public class LineageREST {
                                                                "," + depth + ")");
             }
 
-            return atlasLineageService.getAtlasLineageInfo(guid, direction, depth);
+            return atlasLineageService.getAtlasLineageInfo(guid, direction, depth, hideProcess);
         } finally {
             AtlasPerfTracer.log(perf);
         }
