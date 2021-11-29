@@ -36,6 +36,8 @@ public class EntityMutationContext {
     private List<AtlasVertex> entitiesToDelete = null;
     private List<AtlasVertex> entitiesToRestore = null;
 
+    private Set<String> removedLineageRelations = new HashSet<>();
+
     public EntityMutationContext(final EntityGraphDiscoveryContext context) {
         this.context = context;
     }
@@ -189,5 +191,13 @@ public class EntityMutationContext {
         }
 
         return e;
+    }
+
+    public Set<String> getRemovedLineageRelations() {
+        return removedLineageRelations;
+    }
+
+    public void addRemovedLineageRelations(Set<String> removedLineageRelations) {
+        this.removedLineageRelations.addAll(removedLineageRelations);
     }
 }
