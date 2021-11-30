@@ -46,6 +46,15 @@ define(['require', 'utils/Enums', 'utils/Utils', 'underscore'], function(require
         metricsApiUrl: function() {
             return this.baseUrl + '/admin/metrics'
         },
+        metricsAllCollectionTimeApiUrl: function() {
+            return this.baseUrl + '/admin/metricsstats'
+        },
+        metricsCollectionTimeApiUrl: function() {
+            return this.baseUrl + '/admin/metricsstat/'
+        },
+        metricsGraphUrl:function(){
+            return this.baseUrl + '/admin/metricsstats/charts'
+        },
         pendingTaskApiUrl: function() {
             return this.baseUrl + '/admin/tasks'
         },

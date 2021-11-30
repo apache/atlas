@@ -59,6 +59,7 @@
     <link rel="stylesheet" href="js/libs/jquery-asBreadcrumbs/css/asBreadcrumbs.min.css?bust=<%- bust %>">
     <link rel="stylesheet" href="css/googlefonts.css?bust=<%- bust %>" type='text/css'>
     <link rel="stylesheet" type="text/css" href="js/external_lib/jquery-ui/jquery-ui.min.css?bust=<%- bust %>">
+    <link rel="stylesheet" href="css/nv.d3.min.css?bust=<%- bust %>" >
     <link href="css/bootstrap-sidebar.css?bust=<%- bust %>" rel="stylesheet">
     <link href="js/libs/font-awesome/css/font-awesome.min.css?bust=<%- bust %>" rel="stylesheet">
     <link href="js/external_lib/pnotify/pnotify.custom.min.css?bust=<%- bust %>" rel="stylesheet">

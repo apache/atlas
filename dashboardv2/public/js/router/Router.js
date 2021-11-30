@@ -92,7 +92,7 @@ define([
             var that = this;
             $('body').on('click', 'a.show-stat', function() {
                 require([
-                    'views/site/Statistics',
+                    'views/site/StatisticsTimelineView',
                 ], function(Statistics) {
                     new Statistics(_.extend({}, that.preFetchedCollectionLists, that.sharedObj, that.ventObj));
                 });
