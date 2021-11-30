@@ -120,3 +120,80 @@
         }
     }
 }
+
+.statistics-time-list {
+    padding-right: 0px;
+    width: 230px;
+    float: right;
+}
+
+.entityTable {
+    tbody {
+        border-bottom: 2px solid #ddd;
+    }
+}
+
+.table-row-selected {
+    background-color: #F5F5F5;
+
+    td span {
+        color: $color_jungle_green_approx;
+    }
+}
+
+.entity-type-chart {
+    cursor: pointer;
+}
+
+.entity-chart-panel {
+    margin: 0px !important;
+    padding: 0px !important;
+    border: none;
+
+    .panel-body {
+        padding: 0px;
+    }
+}
+
+.chart-container {
+    margin-top: 20px;
+
+    .chart-heading {
+        display: flex;
+
+        .chart-title {
+            width: 50%;
+            padding: 8px;
+            font-weight: bold;
+        }
+
+        .chart-buttons-container {
+            width: 50%;
+
+            ul {
+                display: flex;
+
+                li {
+                    padding: 8px 0px 8px 0px;
+                    margin: 0px 3px 0px 3px;
+                    cursor: pointer;
+
+                    a {
+                        color: $color_ironside_gray_approx;
+                    }
+                }
+
+                .active a {
+                    color: $color_jungle_green_approx;
+                }
+            }
+
+        }
+    }
+
+    .chart-svg {
+        width: 725px;
+        height: 300px;
+        margin: 0 auto;
+    }
+}

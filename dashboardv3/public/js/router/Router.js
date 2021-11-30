@@ -95,7 +95,7 @@ define([
         bindCommonEvents: function() {
             var that = this;
             $("body").on("click", "a.show-stat", function() {
-                require(["views/site/Statistics"], function(Statistics) {
+                require(["views/site/StatisticsTimelineView"], function(Statistics) {
                     new Statistics(_.extend({}, that.preFetchedCollectionLists, that.sharedObj, that.ventObj));
                 });
             });
