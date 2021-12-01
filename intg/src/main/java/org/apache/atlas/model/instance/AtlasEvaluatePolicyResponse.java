@@ -62,24 +62,30 @@ public class AtlasEvaluatePolicyResponse implements Serializable {
 
 
 
-    public AtlasEvaluatePolicyResponse(String typeName, String entityGuid, String action, String entityId , Boolean allowed) {
+    private String errorCode;
+
+
+
+    public AtlasEvaluatePolicyResponse(String typeName, String entityGuid, String action, String entityId , Boolean allowed ,String errorCode) {
         this.typeName = typeName;
         this.entityGuid = entityGuid;
         this.action = action;
         this.entityId = entityId;
         this.allowed = allowed;
+        this.errorCode = errorCode;
     }
 
-    public AtlasEvaluatePolicyResponse(String typeName, String entityGuid, String action, String entityId , String classification, Boolean allowed) {
+    public AtlasEvaluatePolicyResponse(String typeName, String entityGuid, String action, String entityId , String classification, Boolean allowed, String errorCode) {
         this.typeName = typeName;
         this.entityGuid = entityGuid;
         this.action = action;
         this.entityId = entityId;
         this.classification = classification;
         this.allowed = allowed;
+        this.errorCode = errorCode;
     }
 
-    public AtlasEvaluatePolicyResponse(String action, String relationShipTypeName, String entityTypeEnd1, String entityGuidEnd1, String entityIdEnd1, String entityTypeEnd2, String entityGuidEnd2, String entityIdEnd2, Boolean allowed) {
+    public AtlasEvaluatePolicyResponse(String action, String relationShipTypeName, String entityTypeEnd1, String entityGuidEnd1, String entityIdEnd1, String entityTypeEnd2, String entityGuidEnd2, String entityIdEnd2, Boolean allowed, String errorCode) {
         this.action = action;
         this.relationShipTypeName = relationShipTypeName;
         this.entityTypeEnd1 = entityTypeEnd1;
@@ -89,6 +95,7 @@ public class AtlasEvaluatePolicyResponse implements Serializable {
         this.entityGuidEnd2 = entityGuidEnd2;
         this.entityIdEnd2 = entityIdEnd2;
         this.allowed = allowed;
+        this.errorCode = errorCode;
     }
 
     public String getRelationShipTypeName() {
@@ -194,6 +201,13 @@ public class AtlasEvaluatePolicyResponse implements Serializable {
         this.allowed = allowed;
     }
 
+    public String getErrorCode() {
+        return errorCode;
+    }
+
+    public void setErrorCode(String errorCode) {
+        this.errorCode = errorCode;
+    }
 
     public StringBuilder toString(StringBuilder sb) {
         if (sb == null) {

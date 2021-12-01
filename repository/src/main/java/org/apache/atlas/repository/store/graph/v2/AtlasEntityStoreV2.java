@@ -177,6 +177,28 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     @Override
     @GraphTransaction
+    public AtlasEntityWithExtInfo getByIdWithoutAuthorization(final String guid) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> getByIdWithoutAuthorization({})", guid);
+        }
+
+        EntityGraphRetriever entityRetriever = new EntityGraphRetriever(graph, typeRegistry, true);
+
+        AtlasEntityWithExtInfo ret = entityRetriever.toAtlasEntityWithExtInfo(guid, true);
+
+        if (ret == null) {
+            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== getByIdWithoutAuthorization({}): {}", guid, ret);
+        }
+
+        return ret;
+    }
+
+    @Override
+    @GraphTransaction
     public AtlasEntityHeader getHeaderById(final String guid) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> getHeaderById({})", guid);
