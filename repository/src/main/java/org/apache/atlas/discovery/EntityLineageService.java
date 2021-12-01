@@ -120,6 +120,8 @@ public class EntityLineageService implements AtlasLineageService {
 
             if (!isProcess) {
                 throw new AtlasBaseException(AtlasErrorCode.INVALID_LINEAGE_ENTITY_TYPE, guid, entity.getTypeName());
+            } else if (hideProcess) {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_LINEAGE_ENTITY_TYPE_HIDE_PROCESS, guid, entity.getTypeName());
             }
         }
 
