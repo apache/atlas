@@ -28,6 +28,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2;
+import org.apache.atlas.model.audit.EntityAuditSearchResult;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration.Configuration;
@@ -435,6 +436,11 @@ public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditReposito
         } finally {
             RequestContext.get().endMetricRecord(metric);
         }
+    }
+
+    @Override
+    public EntityAuditSearchResult searchEvents(String queryString) throws AtlasBaseException {
+        return null;
     }
 
     @Override

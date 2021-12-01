@@ -33,6 +33,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 import java.io.Serializable;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
@@ -113,12 +114,14 @@ public class EntityAuditEventV2 implements Serializable, Clearable {
 
     private String              entityId;
     private long                timestamp;
+    private long                created;
     private String              user;
     private EntityAuditActionV2 action;
     private String              details;
     private String              eventKey;
     private AtlasEntity         entity;
     private EntityAuditType     type;
+    private Map<String, Object> detail;
 
     public EntityAuditEventV2() { }
 
@@ -152,6 +155,14 @@ public class EntityAuditEventV2 implements Serializable, Clearable {
 
     public void setTimestamp(long timestamp) {
         this.timestamp = timestamp;
+    }
+
+    public long getCreated() {
+        return created;
+    }
+
+    public void setCreated(long created) {
+        this.created = created;
     }
 
     public String getUser() {
@@ -202,6 +213,14 @@ public class EntityAuditEventV2 implements Serializable, Clearable {
         this.type = type;
     }
 
+    public Map<String, Object> getDetail() {
+        return detail;
+    }
+
+    public void setDetail(Map<String, Object> detail) {
+        this.detail = detail;
+    }
+
     @JsonIgnore
     public String getEntityDefinitionString() {
         if (entity != null) {
@@ -229,12 +248,14 @@ public class EntityAuditEventV2 implements Serializable, Clearable {
                Objects.equals(details, that.details) &&
                Objects.equals(eventKey, that.eventKey) &&
                Objects.equals(entity, that.entity) &&
-               Objects.equals(type, that.type);
+               Objects.equals(type, that.type) &&
+               Objects.equals(detail, that.detail) &&
+               Objects.equals(created, that.created);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(entityId, timestamp, user, action, details, eventKey, entity, type);
+        return Objects.hash(entityId, timestamp, user, action, details, eventKey, entity, type, detail, created);
     }
 
     @Override
@@ -249,6 +270,8 @@ public class EntityAuditEventV2 implements Serializable, Clearable {
         sb.append(", eventKey='").append(eventKey).append('\'');
         sb.append(", entity=").append(entity);
         sb.append(", type=").append(type);
+        sb.append(", detail=").append(detail);
+        sb.append(", created=").append(created);
         sb.append('}');
 
         return sb.toString();
@@ -275,6 +298,8 @@ public class EntityAuditEventV2 implements Serializable, Clearable {
         eventKey = null;
         entity = null;
         type = null;
+        detail = null;
+        created = 0L;
     }
 
     private String getJsonPartFromDetails() {

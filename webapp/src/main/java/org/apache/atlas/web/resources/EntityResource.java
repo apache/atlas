@@ -35,7 +35,7 @@ import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.GuidMapping;
 import org.apache.atlas.model.legacy.EntityResult;
-import org.apache.atlas.repository.audit.EntityAuditRepository;
+import org.apache.atlas.repository.audit.CassandraBasedAuditRepository;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
@@ -96,7 +96,7 @@ public class EntityResource {
     private final AtlasEntityStore       entitiesStore;
     private final AtlasTypeRegistry      typeRegistry;
     private final EntityREST             entityREST;
-    private final EntityAuditRepository  entityAuditRepository;
+    private final CassandraBasedAuditRepository  entityAuditRepository;
     private final AtlasInstanceConverter instanceConverter;
 
     @Context
@@ -107,7 +107,7 @@ public class EntityResource {
                           final AtlasEntityStore entitiesStore,
                           final AtlasTypeRegistry typeRegistry,
                           final EntityREST entityREST,
-                          final EntityAuditRepository entityAuditRepository,
+                          final CassandraBasedAuditRepository entityAuditRepository,
                           final AtlasInstanceConverter instanceConverter) {
         this.restAdapters  = restAdapters;
         this.entitiesStore = entitiesStore;

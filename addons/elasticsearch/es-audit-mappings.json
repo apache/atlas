@@ -1,0 +1,21 @@
+{
+  "mappings": {
+    "properties": {
+      "entityid": {
+        "type": "keyword"
+      },
+      "created": {
+        "type": "date"
+      },
+      "action": {
+        "type": "keyword"
+      },
+      "detail": {
+        "type": "nested"
+      },
+      "user": {
+        "type": "keyword"
+      }
+    }
+  }
+}

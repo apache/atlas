@@ -23,6 +23,7 @@ import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.annotation.ConditionalOnAtlasProperty;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
+import org.apache.atlas.model.audit.EntityAuditSearchResult;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.stereotype.Component;
 
@@ -115,6 +116,11 @@ public class InMemoryEntityAuditRepository implements EntityAuditRepository {
                 Math.min(events.size(), offset),
                 Math.min(events.size(), offset + limit));
         return events;
+    }
+
+    @Override
+    public EntityAuditSearchResult searchEvents(String queryString) throws AtlasBaseException {
+        return null;
     }
 
     @Override
