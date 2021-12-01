@@ -1563,13 +1563,7 @@ public class EntityGraphMapper {
         List<Object>   allArrayElements    = null;
         List<Object>   currentElements;
 
-        boolean deleteExistingRelations = false;
-        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(AtlasGraphUtilsV2.getTypeName(ctx.getReferringVertex()));
-        if (entityType.hasRelationshipAttribute(attribute.getName())) {
-            AtlasRelationshipDef relationshipDef = typeRegistry.getRelationshipDefByName(ctx.getAttribute().getRelationshipName());
-            deleteExistingRelations = !(relationshipDef.getEndDef1().getCardinality() == SET
-                    && relationshipDef.getEndDef2().getCardinality() == SET);
-        }
+        boolean deleteExistingRelations = shouldDeleteExistingRelations(ctx, attribute);
 
         if (isReference && !isSoftReference) {
             currentElements = (List) getCollectionElementsUsingRelationship(ctx.getReferringVertex(), attribute);
@@ -1670,6 +1664,16 @@ public class EntityGraphMapper {
         return allArrayElements;
     }
 
+    private boolean shouldDeleteExistingRelations(AttributeMutationContext ctx, AtlasAttribute attribute) {
+        boolean ret = false;
+
+        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(AtlasGraphUtilsV2.getTypeName(ctx.getReferringVertex()));
+        if (entityType.hasRelationshipAttribute(attribute.getName())) {
+            AtlasRelationshipDef relationshipDef = typeRegistry.getRelationshipDefByName(ctx.getAttribute().getRelationshipName());
+            ret = !(relationshipDef.getEndDef1().getCardinality() == SET && relationshipDef.getEndDef2().getCardinality() == SET);
+        }
+        return ret;
+    }
 
     /*
     * Before creating new edges between referring vertex & new vertex coming from array,
