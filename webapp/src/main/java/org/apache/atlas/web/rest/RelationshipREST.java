@@ -32,6 +32,8 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * REST interface for entity relationships.
@@ -72,6 +74,26 @@ public class RelationshipREST {
     }
 
     /**
+     * Create a new relationship or update existing relationship between entities.
+     */
+    @POST
+    @Path("/bulk")
+    public List<AtlasRelationship> createOrUpdate(List<AtlasRelationship> relationships) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "RelationshipREST.createOrUpdate(" + relationships + ")");
+            }
+
+            return relationshipStore.createOrUpdate(relationships);
+
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    /**
      * Update an existing relationship between entities.
      */
     @PUT
@@ -92,7 +114,7 @@ public class RelationshipREST {
     }
 
     /**
-     * Get relationship information between entities using guid.
+     * Get relationship information between entities using relationship guid.
      */
     @GET
     @Path("/guid/{guid}")

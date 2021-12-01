@@ -213,6 +213,35 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
 
     @Override
     @GraphTransaction
+    public List<AtlasRelationship> createOrUpdate(List<AtlasRelationship> relationships) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> createOrUpdate({})", relationships);
+        }
+        List<AtlasRelationship> ret = new ArrayList<>();
+
+        for (AtlasRelationship relationship : relationships) {
+            AtlasVertex end1Vertex = getVertexFromEndPoint(relationship.getEnd1());
+            AtlasVertex end2Vertex = getVertexFromEndPoint(relationship.getEnd2());
+            String relationshipLabel = getRelationshipEdgeLabel(end1Vertex, end2Vertex, relationship.getTypeName());
+
+            AtlasEdge existingEdge = getRelationshipEdge(end1Vertex, end2Vertex, relationshipLabel);
+
+            if (existingEdge == null) {
+                ret.add(create(relationship));
+            } else {
+                ret.add(update(relationship));
+            }
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== createOrUpdate({}): {}", relationships, ret);
+        }
+
+        return ret;
+    }
+
+    @Override
+    @GraphTransaction
     public AtlasRelationship getById(String guid) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> getById({})", guid);
