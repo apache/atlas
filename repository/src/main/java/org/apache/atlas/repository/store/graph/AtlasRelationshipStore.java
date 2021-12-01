@@ -23,7 +23,6 @@ import org.apache.atlas.model.instance.AtlasRelationship.AtlasRelationshipWithEx
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 
-import java.util.ArrayList;
 import java.util.List;
 
 
