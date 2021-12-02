@@ -47,6 +47,8 @@ import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.metrics.AtlasMetrics;
+import org.apache.atlas.model.metrics.AtlasMetricsMapToChart;
+import org.apache.atlas.model.metrics.AtlasMetricsStat;
 import org.apache.atlas.model.patches.AtlasPatch.AtlasPatches;
 import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.repository.audit.AtlasAuditService;
@@ -78,6 +80,9 @@ import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Bean;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -125,6 +130,7 @@ import static org.apache.atlas.web.filters.AtlasCSRFPreventionFilter.CSRF_TOKEN;
 @Path("admin")
 @Singleton
 @Service
+@EnableScheduling
 public class AdminResource {
     private static final Logger LOG = LoggerFactory.getLogger(AdminResource.class);
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("AdminResource");
@@ -144,6 +150,9 @@ public class AdminResource {
     private static final String UI_DATE_DEFAULT_FORMAT         = "MM/DD/YYYY hh:mm:ss A";
     private static final String OPERATION_STATUS               = "operationStatus";
     private static final List TIMEZONE_LIST                    = Arrays.asList(TimeZone.getAvailableIDs());
+
+    private static final String METRICS_PERSIST_INTERVAL         = "atlas.metrics.persist.schedule";
+    private static final String METRICS_PERSIST_INTERVAL_DEFAULT = "0 0 0/1 * * *";     // 1 hour interval
 
     @Context
     private HttpServletRequest httpServletRequest;
@@ -409,8 +418,156 @@ public class AdminResource {
         return metrics;
     }
 
-    private void releaseExportImportLock() {
-        importExportOperationLock.unlock();
+    /** Auto-scheduling API for both creating a Metrics entity and saving it to the database at in preset time interval,
+     *  and sweeping through entities that are outside of the valid ttl hours.
+     *  @throws AtlasBaseException when the MetricsStat entity has already existed.
+     */
+    @Scheduled(cron="#{getCronExpression}")
+    public void scheduleSaveAndDeleteMetrics() throws AtlasBaseException {
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> AdminResource.scheduleSaveAndDeleteMetrics()");
+        }
+
+        // auto persist
+        saveMetrics();
+
+        // auto purge
+        metricsService.purgeMetricsStats();
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== AdminResource.scheduleSaveAndDeleteMetrics()");
+        }
+    }
+
+    /**
+     * Bulk retrieval API for getting all MetricsStats, with mininfo flag return metrics with specific details, or with minimal information.
+     * @return all MetricsStats in Atlas.
+     * @throws AtlasBaseException when there is no MetricsStats entity in the database.
+     */
+    @GET
+    @Path("metricsstats")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public List<AtlasMetricsStat> getAllMetrics(@QueryParam("mininfo") @DefaultValue("true") Boolean minInfo) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AdminResource.getAllMetrics()");
+            }
+
+            return metricsService.getAllMetricsStats(minInfo);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    /**
+     * Retrieval API for retrieving the MetricsStat with a specific collectionTime.
+     * @return the MetricsStat with the specific collectionTime.
+     * @throws AtlasBaseException when the MetricsStat entity with this specific collectionTime cannot be found.
+     */
+    @GET
+    @Path("metricsstat/{collectionTime}")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public AtlasMetricsStat getMetricsByCollectionTime(@PathParam("collectionTime") String collectionTime) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("collectionTime", collectionTime);
+
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer
+                        .getPerfTracer(PERF_LOG,
+                                "AdminResource.getMetricsByCollectionTime(collectionTime=" + collectionTime + ")");
+            }
+
+            return metricsService.getMetricsStatByCollectionTime(collectionTime);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    /** Retrieval API for retrieving persisted MetricsStats with collectionTime within range of startTime and endTime.
+     * @param startTime start timestamp of the time range.
+     * @param endTime   end timestamp of the time range.
+     * @param typeNames a list of typeNames with their counting information, as well as their metrics' minimal information.
+     * @return          persisted Metrics with its collectionTime within time range, in the form of minimal information.
+     * @throws AtlasBaseException when the input of startTime and endTime is null or invalid.
+     */
+    @GET
+    @Path("metricsstats/range")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public List<AtlasMetricsStat> getMetricsInTimeRange(@QueryParam("startTime") String startTime,
+                                                        @QueryParam("endTime")   String endTime,
+                                                        @QueryParam("typeName")  List<String> typeNames) throws AtlasBaseException {
+        if (StringUtils.isBlank(startTime) || StringUtils.isBlank(endTime)) {
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "startTime or endTime is null/empty.");
+        }
+
+        Servlets.validateQueryParamLength("startTime", startTime);
+        Servlets.validateQueryParamLength("endTime", endTime);
+        for (String typeName : typeNames) {
+            Servlets.validateQueryParamLength("typeName", typeName);
+        }
+
+        AtlasPerfTracer perf = null;
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG,
+                        "AdminResource.getMetricsInTimeRange(startTime=" + startTime + ", " +
+                                "endTime="   + endTime   + ", " +
+                                "listOfTypeNames="  + String.join(", ", typeNames)  + ")" );
+            }
+
+            return metricsService.getMetricsInRangeByTypeNames(Long.parseLong(startTime), Long.parseLong(endTime), typeNames);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    /** Retrieval API for retrieving & formatting MetricsStats (within valid range) to render stacked area chart. The process contains:
+     * 1. retrieve persisted MetricsStats with collectionTime within range of startTime and endTime by one typeName
+     * 2. map the returned MetricsStats to the required format for rendering stacked area chart
+     * Currently, one typeName corresponds to one chart. The API can take multiple typeNames. The returned JSON file can be used to render multiple charts.
+     * @param startTime start timestamp of the time range.
+     * @param endTime   end timestamp of the time range.
+     * @param typeNames a list of typeNames with their counting information, as well as their metrics' minimal information.
+     * @return          formatted metrics to render one or multiple stacked area charts.
+     * @throws AtlasBaseException when the input of startTime and endTime is null or invalid.
+     */
+    @GET
+    @Path("metricsstats/charts")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public Map<String, List<AtlasMetricsMapToChart>> getMetricsForChartByTypeNames(
+            @QueryParam("startTime")  String startTime,
+            @QueryParam("endTime")    String endTime,
+            @QueryParam("typeName")   List<String> typeNames) throws AtlasBaseException {
+
+        if (StringUtils.isBlank(startTime) || StringUtils.isBlank(endTime)) {
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "startTime or endTime is null/empty.");
+        }
+
+        Servlets.validateQueryParamLength("startTime", startTime);
+        Servlets.validateQueryParamLength("endTime", endTime);
+        for (String typeName : typeNames) {
+            Servlets.validateQueryParamLength("typeName", typeName);
+        }
+
+        AtlasPerfTracer perf = null;
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG,
+                        "AdminResource.getMetricsForChartByTypeNames(" +
+                                "startTime="        + startTime + ", " +
+                                "endTime="          + endTime   + ", " +
+                                "listOfTypeNames="  + String.join(", ", typeNames)  + ")" );
+            }
+
+            return metricsService.getMetricsForChartByTypeNames(Long.parseLong(startTime), Long.parseLong(endTime), typeNames);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
     }
 
     @POST
@@ -867,4 +1024,39 @@ public class AdminResource {
 
         auditService.add(auditOperation, params, AtlasJson.toJson(entityCountByType), resultCount);
     }
+
+    private void releaseExportImportLock() {
+        importExportOperationLock.unlock();
+    }
+
+    /** Get customized time interval to persist metrics in CM, or use default persist hour (1hr interval).
+     * There are 6 fields. Default 1 hr interval: 0 0 0/1 * * *
+     */
+    @Bean
+    private String getCronExpression() {
+        if (atlasProperties != null) {
+            return atlasProperties.getString(METRICS_PERSIST_INTERVAL, METRICS_PERSIST_INTERVAL_DEFAULT);
+        } else {
+            return METRICS_PERSIST_INTERVAL_DEFAULT;
+        }
+    }
+
+    /** Save an AtlasMetrics as AtlasMetricsStat to db.
+     * @throws AtlasBaseException when the AtlasMetricsStat is null or when the AtlasMetricsStat already exists in db.
+     */
+    private void saveMetrics() throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> AdminResource.saveMetrics()");
+        }
+
+        AtlasMetrics metrics = metricsService.getMetrics();
+
+        AtlasMetricsStat metricsStat = new AtlasMetricsStat(metrics);
+        metricsService.saveMetricsStat(metricsStat);
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== AdminResource.saveMetrics()");
+        }
+    }
+
 }

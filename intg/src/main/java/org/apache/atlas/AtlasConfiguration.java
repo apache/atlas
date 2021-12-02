@@ -82,8 +82,8 @@ public enum AtlasConfiguration {
     DEBUG_METRICS_ENABLED("atlas.debug.metrics.enabled", false),
     TASKS_USE_ENABLED("atlas.tasks.enabled", true),
     SESSION_TIMEOUT_SECS("atlas.session.timeout.secs", -1),
-    UPDATE_COMPOSITE_INDEX_STATUS("atlas.update.composite.index.status", true);
-
+    UPDATE_COMPOSITE_INDEX_STATUS("atlas.update.composite.index.status", true),
+    METRICS_TIME_TO_LIVE_HOURS( "atlas.metrics.ttl.hours", 336); // 14 days default
 
     private static final Configuration APPLICATION_PROPERTIES;
 

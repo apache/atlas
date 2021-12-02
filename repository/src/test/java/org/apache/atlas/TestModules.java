@@ -52,6 +52,7 @@ import org.apache.atlas.repository.ogm.ExportImportAuditEntryDTO;
 import org.apache.atlas.repository.ogm.glossary.AtlasGlossaryCategoryDTO;
 import org.apache.atlas.repository.ogm.glossary.AtlasGlossaryDTO;
 import org.apache.atlas.repository.ogm.glossary.AtlasGlossaryTermDTO;
+import org.apache.atlas.repository.ogm.metrics.AtlasMetricsStatDTO;
 import org.apache.atlas.repository.ogm.profiles.AtlasSavedSearchDTO;
 import org.apache.atlas.repository.ogm.profiles.AtlasUserProfileDTO;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
@@ -178,6 +179,7 @@ public class TestModules {
             availableDTOs.addBinding().to(AtlasServerDTO.class);
             availableDTOs.addBinding().to(ExportImportAuditEntryDTO.class);
             availableDTOs.addBinding().to(AtlasAuditEntryDTO.class);
+            availableDTOs.addBinding().to(AtlasMetricsStatDTO.class);
 
             bind(DTORegistry.class).asEagerSingleton();
             bind(DataAccess.class).asEagerSingleton();

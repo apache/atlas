@@ -18,8 +18,11 @@
 package org.apache.atlas.utils;
 
 
+import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelatedObjectId;
+import org.apache.atlas.model.metrics.AtlasMetrics;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
@@ -41,6 +44,15 @@ public class AtlasEntityUtil {
     private static final int    SOFT_REFERENCE_FORMAT_INDEX_TYPE_NAME = 0;
     private static final int    SOFT_REFERENCE_FORMAT_INDEX_GUID      = 1;
 
+    public static final String CONF_METADATA_NAMESPACE                = "atlas.metadata.namespace";
+    public static final String CLUSTER_NAME_KEY                       = "atlas.cluster.name";
+    public static final String DEFAULT_CLUSTER_NAME                   = "default";
+
+    protected static final String ENTITY                              = "entity";
+    protected static final String ACTIVE                              = "Active";
+    protected static final String DELETED                             = "Deleted";
+    protected static final String SHELL                               = "Shell";
+    protected static final String[] STATUS_CATEGORY                   = {ACTIVE, DELETED, SHELL};
 
     public static String formatSoftRefValue(String typeName, String guid) {
         return String.format(SOFT_REF_FORMAT, typeName, guid);
@@ -164,6 +176,44 @@ public class AtlasEntityUtil {
         }
 
         return ret;
+    }
+
+    public static String getMetadataNamespace() {
+        String ret = StringUtils.EMPTY;
+        try {
+            ret = ApplicationProperties.get().getString(CONF_METADATA_NAMESPACE, StringUtils.EMPTY);
+            if (StringUtils.isEmpty(ret)) {
+                ret = ApplicationProperties.get().getString(CLUSTER_NAME_KEY, DEFAULT_CLUSTER_NAME);
+            }
+        } catch (AtlasException e) {
+            LOG.info("Failed to load application properties", e);
+        }
+        return StringUtils.isNotEmpty(ret) ? ret : DEFAULT_CLUSTER_NAME;
+    }
+
+    public static void metricsToTypeData(AtlasMetrics metrics, String typeName, Map<String, Object> typeData) {
+        if (typeData == null) {
+            return;
+        }
+
+        Map<String, Integer> innerVal = new HashMap<>();
+
+        for (String status : STATUS_CATEGORY) {
+            Map<String, Integer> metricsMap = (Map<String, Integer>) metrics.getData().get(ENTITY).get(ENTITY + status);
+            innerVal.put(status, metricsMap.getOrDefault(typeName, 0));
+        }
+
+        typeData.put(typeName, innerVal);
+    }
+
+    public static void metricsToTypeData(AtlasMetrics metrics, List<String> typeNames, Map<String, Object> typeData) {
+        if (typeData == null || CollectionUtils.isEmpty(typeNames)) {
+            return;
+        }
+
+        for (String typeName : typeNames) {
+            metricsToTypeData(metrics, typeName, typeData);
+        }
     }
 
 }
