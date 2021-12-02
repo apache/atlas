@@ -109,10 +109,13 @@ public final class Constants {
     /**
      * Glossary property keys.
      */
-    public static final String CATEGORY_PARENT_EDGE_LABEL = "r:AtlasGlossaryCategoryHierarchyLink";
-    public static final String CATEGORY_TERMS_EDGE_LABEL = "r:AtlasGlossaryTermCategorization";
-    public static final String GLOSSARY_TERMS_EDGE_LABEL = "r:AtlasGlossaryTermAnchor";
-    public static final String GLOSSARY_CATEGORY_EDGE_LABEL = "r:AtlasGlossaryCategoryAnchor";
+    public static final String ATLAS_GLOSSARY_ENTITY_TYPE          = "AtlasGlossary";
+    public static final String ATLAS_GLOSSARY_TERM_ENTITY_TYPE     = "AtlasGlossaryTerm";
+    public static final String ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE = "AtlasGlossaryCategory";
+    public static final String CATEGORY_PARENT_EDGE_LABEL          = "r:AtlasGlossaryCategoryHierarchyLink";
+    public static final String CATEGORY_TERMS_EDGE_LABEL           = "r:AtlasGlossaryTermCategorization";
+    public static final String GLOSSARY_TERMS_EDGE_LABEL           = "r:AtlasGlossaryTermAnchor";
+    public static final String GLOSSARY_CATEGORY_EDGE_LABEL        = "r:AtlasGlossaryCategoryAnchor";
 
     /**
      * The homeId field is used when saving into Atlas a copy of an object that is being imported from another
@@ -171,6 +174,7 @@ public final class Constants {
      */
     public static final String INDEX_PREFIX = "janusgraph_";
 
+    public static final String NAME                                    = "name";
     public static final String QUALIFIED_NAME                          = "qualifiedName";
     public static final String TYPE_NAME_PROPERTY_KEY                  = INTERNAL_PROPERTY_KEY_PREFIX + "typeName";
     public static final String INDEX_SEARCH_MAX_RESULT_SET_SIZE        = "atlas.graph.index.search.max-result-set-size";

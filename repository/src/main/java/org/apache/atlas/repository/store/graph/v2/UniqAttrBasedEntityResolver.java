@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class UniqAttrBasedEntityResolver implements EntityResolver {
     private static final Logger LOG = LoggerFactory.getLogger(UniqAttrBasedEntityResolver.class);
@@ -56,12 +57,14 @@ public class UniqAttrBasedEntityResolver implements EntityResolver {
         //Resolve attribute references
         List<AtlasObjectId> resolvedReferences = new ArrayList<>();
 
-        for (AtlasObjectId objId : context.getReferencedByUniqAttribs()) {
+        Map<AtlasObjectId, String> referencedByUniqAttribs = context.getReferencedByUniqAttribs();
+        for (Map.Entry<AtlasObjectId, String> element : referencedByUniqAttribs.entrySet()) {
+            AtlasObjectId objId = element.getKey();
             //query in graph repo that given unique attribute - check for deleted also?
             AtlasEntityType entityType = typeRegistry.getEntityTypeByName(objId.getTypeName());
 
             if (entityType == null) {
-                throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), objId.getTypeName());
+                throw new AtlasBaseException(element.getValue(), AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), objId.getTypeName());
             }
 
             AtlasVertex vertex = AtlasGraphUtilsV2.findByUniqueAttributes(this.graph, entityType, objId.getUniqueAttributes());
@@ -74,7 +77,7 @@ public class UniqAttrBasedEntityResolver implements EntityResolver {
                 context.addResolvedIdByUniqAttribs(objId, vertex);
                 resolvedReferences.add(objId);
             } else {
-                throw new AtlasBaseException(AtlasErrorCode.REFERENCED_ENTITY_NOT_FOUND, objId.toString());
+                throw new AtlasBaseException(element.getValue(), AtlasErrorCode.REFERENCED_ENTITY_NOT_FOUND, objId.toString());
             }
         }
 

@@ -32,6 +32,8 @@ import org.apache.atlas.type.AtlasTypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Map;
+
 
 public class IDBasedEntityResolver implements EntityResolver {
     private static final Logger LOG = LoggerFactory.getLogger(IDBasedEntityResolver.class);
@@ -51,7 +53,9 @@ public class IDBasedEntityResolver implements EntityResolver {
 
         EntityStream entityStream = context.getEntityStream();
 
-        for (String guid : context.getReferencedGuids()) {
+        Map<String, String> referencedGuids = context.getReferencedGuids();
+        for (Map.Entry<String, String> element : referencedGuids.entrySet()) {
+            String guid = element.getKey();
             boolean isAssignedGuid = AtlasTypeUtil.isAssignedGuid(guid);
             AtlasVertex vertex = isAssignedGuid ? AtlasGraphUtilsV2.findByGuid(this.graph, guid) : null;
 
@@ -62,12 +66,12 @@ public class IDBasedEntityResolver implements EntityResolver {
                     AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
 
                     if (entityType == null) {
-                        throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), entity.getTypeName());
+                        throw new AtlasBaseException(element.getValue(), AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), entity.getTypeName());
                     }
 
                     vertex = AtlasGraphUtilsV2.findByUniqueAttributes(this.graph, entityType, entity.getAttributes());
                 } else if (!isAssignedGuid) { // for local-guids, entity must be in the stream
-                    throw new AtlasBaseException(AtlasErrorCode.REFERENCED_ENTITY_NOT_FOUND, guid);
+                    throw new AtlasBaseException(element.getValue(), AtlasErrorCode.REFERENCED_ENTITY_NOT_FOUND, guid);
                 }
             }
 
@@ -75,7 +79,7 @@ public class IDBasedEntityResolver implements EntityResolver {
                 context.addResolvedGuid(guid, vertex);
             } else {
                 if (isAssignedGuid && !RequestContext.get().isImportInProgress()) {
-                    throw new AtlasBaseException(AtlasErrorCode.REFERENCED_ENTITY_NOT_FOUND, guid);
+                    throw new AtlasBaseException(element.getValue(), AtlasErrorCode.REFERENCED_ENTITY_NOT_FOUND, guid);
                 } else {
                     context.addLocalGuidReference(guid);
                 }

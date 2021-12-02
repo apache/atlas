@@ -27,10 +27,17 @@ import java.util.List;
 public class AtlasBaseException extends Exception {
 
     private AtlasErrorCode atlasErrorCode;
+    private String entityGuid;
 
     public AtlasBaseException(AtlasErrorCode errorCode, String ... params) {
         super(errorCode.getFormattedErrorMessage(params));
         this.atlasErrorCode = errorCode;
+    }
+
+    public AtlasBaseException(String entityGuid, AtlasErrorCode errorCode, String ... params) {
+        super(errorCode.getFormattedErrorMessage(params));
+        this.atlasErrorCode = errorCode;
+        this.entityGuid = entityGuid;
     }
 
     public AtlasBaseException(final AtlasErrorCode errorCode, final List<String> params) {
@@ -81,5 +88,13 @@ public class AtlasBaseException extends Exception {
 
     public AtlasErrorCode getAtlasErrorCode() {
         return atlasErrorCode;
+    }
+
+    public String getEntityGuid() {
+        return entityGuid;
+    }
+
+    public void setEntityGuid(String entityGuid) {
+        this.entityGuid = entityGuid;
     }
 }

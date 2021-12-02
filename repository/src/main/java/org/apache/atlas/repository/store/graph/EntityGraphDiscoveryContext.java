@@ -27,10 +27,9 @@ import org.apache.atlas.type.AtlasTypeRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -39,8 +38,8 @@ public final class EntityGraphDiscoveryContext {
 
     private final AtlasTypeRegistry               typeRegistry;
     private final EntityStream                    entityStream;
-    private final List<String>                    referencedGuids          = new ArrayList<>();
-    private final Set<AtlasObjectId>              referencedByUniqAttribs  = new HashSet<>();
+    private final Map<String, String>             referencedGuids          = new LinkedHashMap<>();
+    private final Map<AtlasObjectId, String>      referencedByUniqAttribs  = new HashMap<>();
     private final Map<String, AtlasVertex>        resolvedGuids            = new HashMap<>();
     private final Map<AtlasObjectId, AtlasVertex> resolvedIdsByUniqAttribs = new HashMap<>();
     private final Set<String>                     localGuids               = new HashSet<>();
@@ -54,9 +53,9 @@ public final class EntityGraphDiscoveryContext {
         return entityStream;
     }
 
-    public List<String> getReferencedGuids() { return referencedGuids; }
+    public Map<String, String> getReferencedGuids() { return referencedGuids; }
 
-    public Set<AtlasObjectId> getReferencedByUniqAttribs() { return referencedByUniqAttribs; }
+    public Map<AtlasObjectId, String> getReferencedByUniqAttribs() { return referencedByUniqAttribs; }
 
     public Map<String, AtlasVertex> getResolvedGuids() {
         return resolvedGuids;
@@ -69,13 +68,13 @@ public final class EntityGraphDiscoveryContext {
     public Set<String> getLocalGuids() { return localGuids; }
 
 
-    public void addReferencedGuid(String guid) {
-        if (! referencedGuids.contains(guid)) {
-            referencedGuids.add(guid);
+    public void addReferencedGuid(String guid, String referringEntityGuid) {
+        if (! referencedGuids.containsKey(guid)) {
+            referencedGuids.put(guid, referringEntityGuid);
         }
     }
 
-    public void addReferencedByUniqAttribs(AtlasObjectId objId) { referencedByUniqAttribs.add(objId); }
+    public void addReferencedByUniqAttribs(AtlasObjectId objId, String referringEntityGuid) { referencedByUniqAttribs.put(objId, referringEntityGuid); }
 
 
     public void addResolvedGuid(String guid, AtlasVertex vertex) { resolvedGuids.put(guid, vertex); }
