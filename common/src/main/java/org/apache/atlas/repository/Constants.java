@@ -118,6 +118,12 @@ public final class Constants {
     public static final String GLOSSARY_CATEGORY_EDGE_LABEL        = "r:AtlasGlossaryCategoryAnchor";
 
     /**
+     * Lineage relations.
+     */
+    public static final String PROCESS_OUTPUTS = "__Process.outputs";
+    public static final String PROCESS_INPUTS = "__Process.inputs";
+
+    /**
      * The homeId field is used when saving into Atlas a copy of an object that is being imported from another
      * repository. The homeId will be set to a String that identifies the other repository. The specific format
      * of repository identifiers is domain dependent. Where it is set by Open Metadata Repository Services it will

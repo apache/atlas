@@ -56,7 +56,7 @@ import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.repository.store.graph.v2.glossary.*;
 import org.apache.atlas.tasks.TaskManagement;
- import org.apache.atlas.type.AtlasArrayType;
+import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.repository.store.graph.v1.RestoreHandlerV1;
 import org.apache.atlas.type.AtlasBuiltInTypes;
 import org.apache.atlas.type.AtlasBusinessMetadataType.AtlasBusinessAttribute;
@@ -136,6 +136,7 @@ import static org.apache.atlas.type.Constants.PENDING_TASKS_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.CATEGORIES_PARENT_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.CATEGORIES_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.GLOSSARY_PROPERTY_KEY;
+import static org.apache.atlas.type.Constants.HAS_LINEAGE;
 import static org.apache.atlas.type.Constants.MEANINGS_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.MEANINGS_TEXT_PROPERTY_KEY;
 
@@ -159,6 +160,7 @@ public class EntityGraphMapper {
     private static final String TYPE_GLOSSARY= "AtlasGlossary";
     private static final String TYPE_CATEGORY= "AtlasGlossaryCategory";
     private static final String TYPE_TERM = "AtlasGlossaryTerm";
+    private static final String TYPE_PROCESS = "Process";
     private static final String ATTR_MEANINGS = "meanings";
     private static final String ATTR_ANCHOR = "anchor";
     private static final String ATTR_CATEGORIES = "categories";
@@ -1655,6 +1657,10 @@ public class EntityGraphMapper {
 
             case CATEGORY_PARENT_EDGE_LABEL: addCatParentAttr(ctx, newElementsCreated, removedElements);
                 break;
+
+            case PROCESS_INPUTS:
+            case PROCESS_OUTPUTS: addHasLineage(ctx, context, newElementsCreated, removedElements);
+                break;
         }
 
         if (LOG.isDebugEnabled()) {
@@ -1777,11 +1783,80 @@ public class EntityGraphMapper {
         }
     }
 
+    private void addHasLineage(AttributeMutationContext ctx, EntityMutationContext context,
+                               List<Object> newElementsCreated, List<AtlasEdge> removedElements){
+        MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("addHasLineage");
+        AtlasVertex toVertex = ctx.getReferringVertex();
+
+        if (CollectionUtils.isNotEmpty(newElementsCreated)) {
+            AtlasGraphUtilsV2.setEncodedProperty(toVertex, HAS_LINEAGE, true);
+
+            List<AtlasVertex> vertices;
+            if (TYPE_PROCESS.equals(getTypeName(toVertex))) {
+                vertices = newElementsCreated.stream().map(x -> ((AtlasEdge) x).getInVertex()).collect(Collectors.toList());
+            } else {
+                vertices = newElementsCreated.stream().map(x -> ((AtlasEdge) x).getOutVertex()).collect(Collectors.toList());
+            }
+
+            vertices.stream().forEach(v -> AtlasGraphUtilsV2.setEncodedProperty(v, HAS_LINEAGE, true));
+
+        } else if (CollectionUtils.isNotEmpty(removedElements)) {
+            Set<String> removedGuids = removedElements.stream().map(x ->  GraphHelper.getRelationshipGuid(x)).collect(Collectors.toSet());
+            context.addRemovedLineageRelations(removedGuids);
+
+            boolean removeAttr = true;
+            Iterator<AtlasEdge> edgeIterator;
+
+            if (ctx.getAttribute().getRelationshipEdgeLabel().equals(PROCESS_INPUTS)) {
+                edgeIterator = toVertex.getEdges(AtlasEdgeDirection.OUT, PROCESS_OUTPUTS).iterator();
+            } else {
+                edgeIterator = toVertex.getEdges(AtlasEdgeDirection.OUT, PROCESS_INPUTS).iterator();
+            }
+
+            while (edgeIterator.hasNext()) {
+                AtlasEdge edg = edgeIterator.next();
+                if (ACTIVE.equals(getStatus(edg)) && !context.getRemovedLineageRelations().contains(GraphHelper.getRelationshipGuid(edg))) {
+                    removeAttr = false; break;
+                }
+            }
+
+            if (removeAttr) {
+                toVertex.removeProperty(HAS_LINEAGE);
+            }
+
+            String[] edgeLabels = {PROCESS_OUTPUTS, PROCESS_INPUTS};
+
+            List<AtlasVertex> vertices;
+            if (TYPE_PROCESS.equals(getTypeName(toVertex))) {
+                vertices = removedElements.stream().map(x -> ((AtlasEdge) x).getInVertex()).collect(Collectors.toList());
+            } else {
+                vertices = removedElements.stream().map(x -> ((AtlasEdge) x).getOutVertex()).collect(Collectors.toList());
+            }
+
+            for (AtlasVertex vertex : vertices) {
+                removeAttr = true;
+                edgeIterator = vertex.getEdges(AtlasEdgeDirection.BOTH, edgeLabels).iterator();
+
+                while (edgeIterator.hasNext()) {
+                    AtlasEdge edg = edgeIterator.next();
+                    if (ACTIVE.equals(getStatus(edg)) && !context.getRemovedLineageRelations().contains(GraphHelper.getRelationshipGuid(edg))) {
+                        removeAttr = false; break;
+                    }
+                }
+
+                if (removeAttr) {
+                    vertex.removeProperty(HAS_LINEAGE);
+                }
+            }
+        }
+        RequestContext.get().endMetricRecord(metricRecorder);
+    }
+
     private void addCategoriesToTermEntity(AttributeMutationContext ctx, List<Object> newElementsCreated, List<AtlasEdge> removedElements) {
         AtlasVertex termVertex = ctx.getReferringVertex();
 
         if (TYPE_CATEGORY.equals(getTypeName(termVertex))) {
-            String catQName = ctx.getReferringVertex().getProperty("qualifiedName", String.class);
+            String catQName = ctx.getReferringVertex().getProperty(QUALIFIED_NAME, String.class);
 
             if (CollectionUtils.isNotEmpty(newElementsCreated)) {
                 List<AtlasVertex> termVertices = newElementsCreated.stream().map(x -> ((AtlasEdge) x).getInVertex()).collect(Collectors.toList());
@@ -1807,8 +1882,8 @@ public class EntityGraphMapper {
         // handle __terms attribute of entity
         List<AtlasVertex> meanings = newElementsCreated.stream().map(x -> ((AtlasEdge) x).getOutVertex()).collect(Collectors.toList());
 
-        Set<String> qNames = meanings.stream().map(x -> x.getProperty("qualifiedName", String.class)).collect(Collectors.toSet());
-        List<String> names = meanings.stream().map(x -> x.getProperty("name", String.class)).collect(Collectors.toList());
+        Set<String> qNames = meanings.stream().map(x -> x.getProperty(QUALIFIED_NAME, String.class)).collect(Collectors.toSet());
+        List<String> names = meanings.stream().map(x -> x.getProperty(NAME, String.class)).collect(Collectors.toList());
 
         ctx.getReferringVertex().removeProperty(MEANINGS_PROPERTY_KEY);
         ctx.getReferringVertex().removeProperty(MEANINGS_TEXT_PROPERTY_KEY);
