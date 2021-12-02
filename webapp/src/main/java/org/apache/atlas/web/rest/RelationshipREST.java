@@ -18,6 +18,7 @@
 
 package org.apache.atlas.web.rest;
 
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasRelationship;
@@ -25,6 +26,7 @@ import org.apache.atlas.model.instance.AtlasRelationship.AtlasRelationshipWithEx
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
+import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Service;
 
@@ -161,6 +163,35 @@ public class RelationshipREST {
             }
 
             relationshipStore.deleteById(guid);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+
+    /**
+     * Delete a relationship between entities using guid.
+     */
+    @DELETE
+    @Path("/guid/bulk")
+    @Timed
+    public void deleteByIds(List<String> guids) throws AtlasBaseException {
+        if (CollectionUtils.isEmpty(guids)) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Need list of GUIDs");
+        }
+
+        for (String guid : guids) {
+            Servlets.validateQueryParamLength("guid", guid);
+        }
+
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "RelationshipREST.deleteById(" + guids.size() + ")");
+            }
+
+            relationshipStore.deleteByIds(guids);
         } finally {
             AtlasPerfTracer.log(perf);
         }

@@ -50,6 +50,7 @@ import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.utils.AtlasPerfMetrics;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -274,6 +275,47 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         return ret;
     }
 
+
+    @Override
+    @GraphTransaction
+    public void deleteByIds(List<String> guids) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> deleteByIds({}})", guids.size());
+        }
+
+        List<AtlasRelationship> deletedRelationships = new ArrayList<>();
+        List<AtlasEdge> edgesToDelete = new ArrayList<>();
+
+        for (String guid : guids) {
+            AtlasEdge edge = graphHelper.getEdgeForGUID(guid);
+
+            if (edge == null) {
+                throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIP_GUID_NOT_FOUND, guid);
+            }
+
+            if (getState(edge) == DELETED) {
+                throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIP_ALREADY_DELETED, guid);
+            }
+
+            String            relationShipType = graphHelper.getTypeName(edge);
+            AtlasEntityHeader end1Entity       = entityRetriever.toAtlasEntityHeaderWithClassifications(edge.getOutVertex());
+            AtlasEntityHeader end2Entity       = entityRetriever.toAtlasEntityHeaderWithClassifications(edge.getInVertex());
+
+            AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry,AtlasPrivilege.RELATIONSHIP_REMOVE, relationShipType, end1Entity, end2Entity ));
+
+            edgesToDelete.add(edge);
+            deletedRelationships.add(entityRetriever.mapEdgeToAtlasRelationship(edge));
+        }
+
+        deleteDelegate.getHandler().deleteRelationships(edgesToDelete, false);
+
+        sendNotifications(deletedRelationships, OperationType.RELATIONSHIP_DELETE);
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== deleteByIds({}):", guids.size());
+        }
+    }
+
     @Override
     @GraphTransaction
     public void deleteById(String guid) throws AtlasBaseException {
@@ -317,6 +359,8 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
             LOG.debug("<== deleteById({}): {}", guid);
         }
     }
+
+
 
     @Override
     public AtlasEdge getOrCreate(AtlasVertex end1Vertex, AtlasVertex end2Vertex, AtlasRelationship relationship) throws AtlasBaseException {
@@ -821,6 +865,10 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
     }
 
     private void sendNotifications(AtlasRelationship ret, OperationType relationshipUpdate) throws AtlasBaseException {
+        sendNotifications(Collections.singletonList(ret), relationshipUpdate);
+    }
+
+    private void sendNotifications(List<AtlasRelationship> ret, OperationType relationshipUpdate) throws AtlasBaseException {
         entityChangeNotifier.notifyPropagatedEntities();
         if (notificationsEnabled){
             entityChangeNotifier.notifyRelationshipMutation(ret, relationshipUpdate);
