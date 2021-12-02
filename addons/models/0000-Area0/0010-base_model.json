@@ -371,6 +371,48 @@
       ]
     },
     {
+      "name": "__AtlasMetricsStat",
+      "superTypes": [
+        "__internal"
+      ],
+      "serviceType": "atlas_core",
+      "typeVersion": "1.0",
+      "attributeDefs": [
+        {
+          "name": "metricsId",
+          "typeName": "string",
+          "isOptional": false,
+          "cardinality": "SINGLE",
+          "isUnique": true,
+          "isIndexable": true
+        },
+        {
+          "name": "metrics",
+          "typeName": "string",
+          "isOptional": true,
+          "cardinality": "SINGLE",
+          "isUnique": false,
+          "isIndexable": false
+        },
+        {
+          "name": "collectionTime",
+          "typeName": "long",
+          "isOptional": true,
+          "cardinality": "SINGLE",
+          "isUnique": false,
+          "isIndexable": true
+        },
+        {
+          "name": "timeToLiveMillis",
+          "typeName": "long",
+          "isOptional": true,
+          "cardinality": "SINGLE",
+          "isUnique": false,
+          "isIndexable": true
+        }
+      ]
+    },
+    {
       "name": "__ExportImportAuditEntry",
       "serviceType": "atlas_core",
       "typeVersion": "1.0",

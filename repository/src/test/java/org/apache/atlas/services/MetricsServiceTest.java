@@ -17,10 +17,12 @@
  */
 package org.apache.atlas.services;
 
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.metrics.AtlasMetrics;
+import org.apache.atlas.model.metrics.AtlasMetricsStat;
 import org.apache.atlas.repository.AtlasTestBase;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.impexp.ImportService;
@@ -46,18 +48,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.apache.atlas.model.metrics.AtlasMetrics.*;
+import static org.apache.atlas.services.MetricsService.*;
 import static org.apache.atlas.utils.TestLoadModelUtils.loadModelFromJson;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.runImportWithNoParameters;
-import static org.apache.atlas.services.MetricsService.ENTITY;
-import static org.apache.atlas.services.MetricsService.GENERAL;
-import static org.apache.atlas.services.MetricsService.METRIC_ENTITIES_PER_TAG;
-import static org.apache.atlas.services.MetricsService.METRIC_ENTITY_ACTIVE;
-import static org.apache.atlas.services.MetricsService.METRIC_ENTITY_COUNT;
-import static org.apache.atlas.services.MetricsService.METRIC_ENTITY_DELETED;
-import static org.apache.atlas.services.MetricsService.METRIC_TAG_COUNT;
-import static org.apache.atlas.services.MetricsService.METRIC_TYPE_COUNT;
-import static org.apache.atlas.services.MetricsService.METRIC_TYPE_UNUSED_COUNT;
-import static org.apache.atlas.services.MetricsService.TAG;
 import static org.testng.Assert.*;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
@@ -118,6 +111,9 @@ public class MetricsServiceTest extends AtlasTestBase {
         put(STAT_NOTIFY_FAILED_COUNT_PREV_DAY, 1L);
     }};
 
+    private AtlasMetrics metrics;
+    private AtlasMetricsStat blankMetricsStat, metricsStatInGraph;
+
     @BeforeClass
     public void setup() throws Exception {
         RequestContext.clear();
@@ -145,9 +141,9 @@ public class MetricsServiceTest extends AtlasTestBase {
         super.cleanup();
     }
 
-    @Test
+    @Test(groups = "Metrics.CREATE")
     public void testGetMetrics() {
-        AtlasMetrics metrics = metricsService.getMetrics();
+        metrics = metricsService.getMetrics();
 
         assertNotNull(metrics);
 
@@ -169,6 +165,64 @@ public class MetricsServiceTest extends AtlasTestBase {
         assertEquals(tagMetricsActual, tagMetricsExpected);
         assertEquals(activeEntityMetricsActual, activeEntityMetricsExpected);
         assertEquals(deletedEntityMetricsActual, deletedEntityMetricsExpected);
+    }
+
+    @Test(groups = "Metrics.CREATE", dependsOnMethods = "testGetMetrics")
+    public void testSaveMetricsStat() {
+        try {
+            blankMetricsStat = new AtlasMetricsStat(metrics);
+            metricsStatInGraph = metricsService.saveMetricsStat(blankMetricsStat);
+        } catch (AtlasBaseException e) {
+            fail("Save metricsStat should've succeeded", e);
+        }
+
+        // Duplicate create calls should fail
+        try {
+            AtlasMetricsStat blankMetricsStatDup = new AtlasMetricsStat(metrics);
+            metricsService.saveMetricsStat(blankMetricsStatDup);
+            fail("Save duplicate metricsStat should've failed");
+        } catch (AtlasBaseException e) {
+            assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.METRICSSTAT_ALREADY_EXISTS);
+        }
+    }
+
+    @Test(groups = "Metrics.CREATE", dependsOnMethods = "testSaveMetricsStat")
+    public void testGetMetricsStatByCollectionTime() {
+        // collectionTime is empty string
+        try {
+            AtlasMetricsStat metricsStatRet = metricsService.getMetricsStatByCollectionTime("  ");
+            fail("Get metricsStat by collectionTime should've failed, when collectionTime is empty.");
+        } catch (AtlasBaseException e) {
+            assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.INVALID_PARAMETERS);
+        }
+
+        // collectionTime is null
+        try {
+            AtlasMetricsStat metricsStatRet = metricsService.getMetricsStatByCollectionTime(null);
+            fail("Get metricsStat by collectionTime should've failed, when collectionTime is null.");
+        } catch (AtlasBaseException e) {
+            assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.INVALID_PARAMETERS);
+        }
+
+        // collectionTime is NOT existed
+        try {
+            Long collectionTimeInGraph = System.currentTimeMillis();
+            AtlasMetricsStat metricsStatRet = metricsService.getMetricsStatByCollectionTime(String.valueOf(collectionTimeInGraph));
+            fail("Get metricsStat by collectionTime should've failed, when collectionTime is NOT existed.");
+        } catch (AtlasBaseException e) {
+            assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND);
+        }
+
+        // collectionTime is correct
+        try {
+            Long collectionTimeInGraph = (Long) metrics.getMetric(GENERAL, METRIC_COLLECTION_TIME);
+            AtlasMetricsStat metricsStatRet = metricsService.getMetricsStatByCollectionTime(String.valueOf(collectionTimeInGraph));
+            assertNotNull(metricsStatRet);
+            assertEquals(metricsStatRet.getGuid(), metricsStatInGraph.getGuid());
+            assertEquals(metricsStatRet.getMetricsId(), metricsStatInGraph.getMetricsId());
+        } catch (AtlasBaseException e) {
+            fail("Get metricsStat by valid collectionTime in Graph should've succeeded.");
+        }
     }
 
     @Test
