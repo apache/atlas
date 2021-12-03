@@ -74,6 +74,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import static org.apache.atlas.AtlasErrorCode.RELATIONSHIP_CREATE_INVALID_PARAMS;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
 
@@ -116,7 +117,7 @@ public final class GraphHelper {
         return StringUtils.equals(edge.getLabel(), TERM_ASSIGNMENT_LABEL);
     }
 
-    public AtlasEdge addClassificationEdge(AtlasVertex entityVertex, AtlasVertex classificationVertex, boolean isPropagated) {
+    public AtlasEdge addClassificationEdge(AtlasVertex entityVertex, AtlasVertex classificationVertex, boolean isPropagated) throws AtlasBaseException {
         AtlasEdge ret = addEdge(entityVertex, classificationVertex, CLASSIFICATION_LABEL);
 
         if (ret != null) {
@@ -127,11 +128,17 @@ public final class GraphHelper {
         return ret;
     }
 
-    public AtlasEdge addEdge(AtlasVertex fromVertex, AtlasVertex toVertex, String edgeLabel) {
+    public AtlasEdge addEdge(AtlasVertex fromVertex, AtlasVertex toVertex, String edgeLabel) throws AtlasBaseException {
         AtlasEdge ret;
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("Adding edge for {} -> label {} -> {}", string(fromVertex), edgeLabel, string(toVertex));
+        }
+
+        String fromGuid = getGuid(fromVertex);
+        if (fromGuid.equals(getGuid(toVertex))) {
+            LOG.error("Attempting to create a relationship between same vertex with guid {}", fromGuid);
+            throw new AtlasBaseException(RELATIONSHIP_CREATE_INVALID_PARAMS, fromGuid);
         }
 
         ret = graph.addEdge(fromVertex, toVertex, edgeLabel);
@@ -151,8 +158,9 @@ public final class GraphHelper {
         return ret;
     }
 
-    public AtlasEdge getOrCreateEdge(AtlasVertex outVertex, AtlasVertex inVertex, String edgeLabel) throws RepositoryException {
+    public AtlasEdge getOrCreateEdge(AtlasVertex outVertex, AtlasVertex inVertex, String edgeLabel) throws RepositoryException, AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("getOrCreateEdge");
+        boolean skipRetry = false;
 
         for (int numRetries = 0; numRetries < maxRetries; numRetries++) {
             try {
@@ -167,10 +175,21 @@ public final class GraphHelper {
                     }
                 }
 
-                return addEdge(outVertex, inVertex, edgeLabel);
+                try {
+                    return addEdge(outVertex, inVertex, edgeLabel);
+                } catch (AtlasBaseException abe) {
+                    if (abe.getAtlasErrorCode().getErrorCode().equals(RELATIONSHIP_CREATE_INVALID_PARAMS.getErrorCode())) {
+                        skipRetry = true;
+                        throw abe;
+                    }
+                }
             } catch (Exception e) {
+                if (skipRetry) {
+                    throw e;
+                }
                 LOG.warn(String.format("Exception while trying to create edge from %s to %s with label %s. Retrying",
                         vertexString(outVertex), vertexString(inVertex), edgeLabel), e);
+
                 if (numRetries == (maxRetries - 1)) {
                     LOG.error("Max retries exceeded for edge creation {} {} {} ", outVertex, inVertex, edgeLabel, e);
                     throw new RepositoryException("Edge creation failed after retries", e);

@@ -220,6 +220,7 @@ public enum AtlasErrorCode {
     GLOSSARY_IMPORT_FAILED(409, "ATLAS-409-00-011", "Glossary import failed"),
     TYPE_WITH_DISPLAY_NAME_ALREADY_EXISTS(409, "ATLAS-409-00-012", "Given type {0} already exists"),
     TYPE_ATTR_WITH_DISPLAY_NAME_ALREADY_EXISTS(409, "ATLAS-409-00-013", "Given attributeDef {0} for type {1} already exists"),
+    RELATIONSHIP_CREATE_INVALID_PARAMS(409, "ATLAS-409-00-014", "Relationship create between same vertex not allowed, vertex guid: {0}"),
 
     // All internal errors go here
     INTERNAL_ERROR(500, "ATLAS-500-00-001", "Internal server error {0}"),

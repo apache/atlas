@@ -87,6 +87,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.apache.atlas.AtlasErrorCode.RELATIONSHIP_CREATE_INVALID_PARAMS;
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchDatabase.getClient;
 import static org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchDatabase.getLowLevelClient;
@@ -150,10 +151,16 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
     @Override
     public AtlasEdge<AtlasJanusVertex, AtlasJanusEdge> addEdge(AtlasVertex<AtlasJanusVertex, AtlasJanusEdge> outVertex,
                                                                AtlasVertex<AtlasJanusVertex, AtlasJanusEdge> inVertex,
-                                                               String edgeLabel) {
+                                                               String edgeLabel) throws AtlasBaseException {
         try {
             Vertex oV   = outVertex.getV().getWrappedElement();
             Vertex iV   = inVertex.getV().getWrappedElement();
+
+            if (oV.id().equals(iV.id())) {
+                LOG.error("Attempting to create a relationship between same vertex");
+                throw new AtlasBaseException(RELATIONSHIP_CREATE_INVALID_PARAMS);
+            }
+
             Edge   edge = oV.addEdge(edgeLabel, iV);
 
             return GraphDbObjectFactory.createEdge(this, edge);
