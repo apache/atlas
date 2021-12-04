@@ -59,6 +59,16 @@
         </profile>
 
         <profile>
+            <id>cassandra-elasticsearch</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <packages.to.exclude>WEB-INF/lib/dom4j-*.jar</packages.to.exclude>
+            </properties>
+        </profile>
+
+        <profile>
             <id>berkeley-solr</id>
             <activation>
                 <activeByDefault>false</activeByDefault>
