@@ -162,7 +162,7 @@ public class CassandraBasedAuditRepository extends AbstractStorageBasedAuditRepo
   }
 
   @Override
-  public List<EntityAuditEventV2> listEventsV2(String entityId, EntityAuditEventV2.EntityAuditActionV2 auditAction, String startKey, short maxResults) throws AtlasBaseException {
+  public List<EntityAuditEventV2> listEventsV2(String entityId, EntityAuditEventV2.EntityAuditActionV2 auditAction, String startKey, short maxResults) {
     if (LOG.isDebugEnabled()) {
       LOG.debug("Listing events for entity id {}, starting timestamp {}, #records {}", entityId, startKey, maxResults);
     }
@@ -190,8 +190,8 @@ public class CassandraBasedAuditRepository extends AbstractStorageBasedAuditRepo
   }
 
   @Override
-  public List<EntityAuditEventV2> listEventsV2(String entityId, EntityAuditEventV2.EntityAuditActionV2 auditAction, String sortByColumn, boolean sortOrderDesc, int offset, short limit) throws AtlasBaseException {
-    throw new NotImplementedException();
+  public List<EntityAuditEventV2> listEventsV2(String entityId, EntityAuditEventV2.EntityAuditActionV2 auditAction, String sortByColumn, boolean sortOrderDesc, int offset, short limit) {
+    return listEventsV2(entityId, auditAction, null, limit);
   }
 
   @Override

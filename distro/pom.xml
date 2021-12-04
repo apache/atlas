@@ -299,6 +299,64 @@ atlas.graph.storage.lock.wait-time=300
             </build>
         </profile>
 
+        <!-- profile to configure cassandra and elasticsearch with the distribution -->
+        <profile>
+            <id>cassandra-elasticsearch</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <cassandra.embedded>true</cassandra.embedded>
+                <entity.repository.properties>atlas.EntityAuditRepository.impl=org.apache.atlas.repository.audit.CassandraBasedAuditRepository</entity.repository.properties>
+                <graph.storage.backend>embeddedcassandra</graph.storage.backend>
+                <graph.storage.properties>#Cassandra
+atlas.graph.storage.conf-file=${sys:atlas.home}/conf/cassandra.yml
+                </graph.storage.properties>
+                <hbase.embedded>false</hbase.embedded>
+                <elasticsearch.dir>${project.build.directory}/elasticsearch</elasticsearch.dir>
+                <elasticsearch.folder>elasticsearch-${elasticsearch.version}</elasticsearch.folder>
+                <elasticsearch.managed>true</elasticsearch.managed>
+                <elasticsearch.tar>https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${elasticsearch.version}-linux-x86_64.tar.gz</elasticsearch.tar>
+                <graph.index.backend>elasticsearch</graph.index.backend>
+                <graph.index.properties>#ElasticSearch
+atlas.graph.index.search.hostname=localhost
+atlas.graph.index.search.elasticsearch.client-only=true
+                </graph.index.properties>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>1.7</version>
+                        <executions>
+                            <!-- package elasticsearch -->
+                            <execution>
+                                <id>elasticsearch</id>
+                                <phase>generate-resources</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <configuration>
+                                    <target name="Download Elasticsearch">
+                                        <mkdir dir="${elasticsearch.dir}" />
+                                        <mkdir dir="${project.basedir}/elasticsearch" />
+                                        <get src="${elasticsearch.tar}" dest="${project.basedir}/elasticsearch/${elasticsearch.folder}.tar.gz" usetimestamp="true" verbose="true" skipexisting="true" />
+                                        <untar src="${project.basedir}/elasticsearch/${elasticsearch.folder}.tar.gz" dest="${project.build.directory}/elasticsearch.temp" compression="gzip" />
+                                        <copy todir="${elasticsearch.dir}">
+                                            <fileset dir="${project.build.directory}/elasticsearch.temp/${elasticsearch.folder}">
+                                                <include name="**/*" />
+                                            </fileset>
+                                        </copy>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
         <!-- profile to configure external hbase and solr  with the distribution -->
         <profile>
             <id>external-hbase-solr</id>
