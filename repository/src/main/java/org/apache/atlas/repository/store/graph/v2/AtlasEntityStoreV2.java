@@ -952,9 +952,9 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     @Override
     @GraphTransaction
-    public String setClassifications(AtlasEntityHeaders entityHeaders) {
+    public void setClassifications(AtlasEntityHeaders entityHeaders) throws AtlasBaseException {
         ClassificationAssociator.Updater associator = new ClassificationAssociator.Updater(graph, typeRegistry, this);
-        return associator.setClassifications(entityHeaders.getGuidHeaderMap());
+        associator.setClassifications(entityHeaders.getGuidHeaderMap());
     }
 
     @Override

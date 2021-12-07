@@ -1168,7 +1168,7 @@ public class EntityREST {
     @Produces(Servlets.JSON_MEDIA_TYPE)
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Timed
-    public String setClassifications(AtlasEntityHeaders entityHeaders) throws AtlasBaseException {
+    public void setClassifications(AtlasEntityHeaders entityHeaders) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
         try {
@@ -1177,7 +1177,7 @@ public class EntityREST {
             }
 
             ClassificationAssociator.Updater associator = new ClassificationAssociator.Updater(typeRegistry, entitiesStore);
-            return associator.setClassifications(entityHeaders.getGuidHeaderMap());
+            associator.setClassifications(entityHeaders.getGuidHeaderMap());
         } finally {
             AtlasPerfTracer.log(perf);
         }
