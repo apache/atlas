@@ -9,15 +9,16 @@ public class GlossaryUtils {
 
     private static final char[] invalidNameChars = {'@'};
 
-    static final String ANCHOR          = "anchor";
-    static final String CATEGORY_PARENT = "parentCategory";
+    static final String ANCHOR            = "anchor";
+    static final String CATEGORY_PARENT   = "parentCategory";
+    static final String CATEGORY_CHILDREN = "childrenCategories";
 
 
-    protected static String getUUID(){
+    static String getUUID(){
         return NanoIdUtils.randomNanoId();
     }
 
-    protected static boolean isNameInvalid(String name) {
+    static boolean isNameInvalid(String name) {
         return StringUtils.containsAny(name, invalidNameChars);
     }
 }

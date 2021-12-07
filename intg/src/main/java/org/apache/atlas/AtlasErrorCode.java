@@ -221,6 +221,8 @@ public enum AtlasErrorCode {
     TYPE_WITH_DISPLAY_NAME_ALREADY_EXISTS(409, "ATLAS-409-00-012", "Given type {0} already exists"),
     TYPE_ATTR_WITH_DISPLAY_NAME_ALREADY_EXISTS(409, "ATLAS-409-00-013", "Given attributeDef {0} for type {1} already exists"),
 
+    CATEGORY_PARENT_FROM_OTHER_GLOSSARY(409, "ATLAS-400-00-0015", "Parent category from another Anchor(glossary) not supported"),
+
     // All internal errors go here
     INTERNAL_ERROR(500, "ATLAS-500-00-001", "Internal server error {0}"),
     INDEX_CREATION_FAILED(500, "ATLAS-500-00-002", "Index creation failed for {0}"),
