@@ -223,6 +223,17 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         for (AtlasRelationship relationship : relationships) {
             AtlasVertex end1Vertex = getVertexFromEndPoint(relationship.getEnd1());
             AtlasVertex end2Vertex = getVertexFromEndPoint(relationship.getEnd2());
+
+            if (end1Vertex == null) {
+                throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_END_VERTEX_NOT_FOUND, relationship.getTypeName(),
+                        relationship.getEnd1().getGuid(), relationship.getEnd1().getTypeName());
+            }
+
+            if (end2Vertex == null) {
+                throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_END_VERTEX_NOT_FOUND, relationship.getTypeName(),
+                        relationship.getEnd2().getGuid(), relationship.getEnd2().getTypeName());
+            }
+
             String relationshipLabel = getRelationshipEdgeLabel(end1Vertex, end2Vertex, relationship.getTypeName());
 
             AtlasEdge existingEdge = getRelationshipEdge(end1Vertex, end2Vertex, relationshipLabel);
