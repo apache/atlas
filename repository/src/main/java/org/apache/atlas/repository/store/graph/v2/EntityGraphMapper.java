@@ -1009,7 +1009,7 @@ public class EntityGraphMapper {
                     addGlossaryAttr(ctx, newEdge);
                 }
 
-                if (newEdge!= null && CATEGORY_PARENT_EDGE_LABEL.equals(edgeLabel)) {
+                if (CATEGORY_PARENT_EDGE_LABEL.equals(edgeLabel)) {
                     addCatParentAttr(ctx, newEdge);
                 }
 
@@ -1761,9 +1761,14 @@ public class EntityGraphMapper {
         String toVertexType = getTypeName(toVertex);
 
         if (TYPE_CATEGORY.equals(toVertexType)) {
-            //add __parentCategory attribute of category entity
-            String parentQName = edge.getOutVertex().getProperty(QUALIFIED_NAME, String.class);
-            AtlasGraphUtilsV2.setEncodedProperty(toVertex, CATEGORIES_PARENT_PROPERTY_KEY, parentQName);
+            if (edge == null) {
+                toVertex.removeProperty(CATEGORIES_PARENT_PROPERTY_KEY);
+
+            } else {
+                //add __parentCategory attribute of category entity
+                String parentQName = edge.getOutVertex().getProperty(QUALIFIED_NAME, String.class);
+                AtlasGraphUtilsV2.setEncodedProperty(toVertex, CATEGORIES_PARENT_PROPERTY_KEY, parentQName);
+            }
         }
     }
 
