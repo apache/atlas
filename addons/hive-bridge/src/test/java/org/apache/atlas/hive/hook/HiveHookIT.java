@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Joiner;
 import com.sun.jersey.api.client.ClientResponse;
+import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.hive.HiveITBase;
@@ -36,6 +37,7 @@ import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.conf.HiveConf;
@@ -278,6 +280,32 @@ public class HiveHookIT extends HiveITBase {
 
         validateHDFSPaths(processsEntity, INPUTS, pFile);
     }
+
+    //Disabling for now. Need to revisit and check
+    @Test(enabled = false)
+    public void testCreateTemporaryExternalTable() throws Exception {
+        String tableName          = tableName();
+        String colName            = columnName();
+        String query              = String.format("create TEMPORARY EXTERNAL table %s.%s(%s, %s)", DEFAULT_DB , tableName , colName + " int", "name string");
+        String tableQualifiedName = HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName, true);
+
+        Configuration configuration = ApplicationProperties.get();
+        configuration.setProperty(HiveHook.HOOK_HIVE_SKIP_ALL_TEMP_TABLES, true);
+        runCommand(query);
+
+        Thread.sleep(10000);
+
+        try {
+            atlasClientV2.getEntityByAttribute(HiveDataTypes.HIVE_TABLE.getName(), Collections.singletonMap(ATTRIBUTE_QUALIFIED_NAME, tableQualifiedName));
+        } catch (AtlasServiceException e) {
+            if (e.getStatus() == ClientResponse.Status.NOT_FOUND) {
+                return;
+            }
+        }
+
+        fail(String.format("Entity was not supposed to exist for typeName = %s, attributeName = %s, attributeValue = %s", HiveDataTypes.HIVE_TABLE.getName(), ATTRIBUTE_QUALIFIED_NAME, tableQualifiedName));
+    }
+
 
     private Set<ReadEntity> getInputs(String inputName, Entity.Type entityType) throws HiveException {
         final ReadEntity entity;

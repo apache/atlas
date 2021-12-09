@@ -19,6 +19,7 @@
 package org.apache.atlas.hive.hook.events;
 
 import org.apache.atlas.hive.hook.AtlasHiveHookContext;
+import org.apache.atlas.hive.hook.HiveHook;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.notification.HookNotification;
@@ -189,8 +190,11 @@ public class CreateTable extends BaseHiveEvent {
     }
 
     private boolean skipTemporaryTable(Table table) {
-        // If its an external table, even though the temp table skip flag is on, we create the table since we need the HDFS path to temp table lineage.
-        return table != null && skipTempTables && table.isTemporary() && !EXTERNAL_TABLE.equals(table.getTableType());
+        /**
+         * If its an external table, even though the temp table skip flag(skip.temp.tables) is on, we create the table since we need the HDFS path to temp table lineage.
+         * We skip external temp table only on enabling flag for skip all temp tables including external tables(skip.all.temp.tables)
+         **/
+        return table != null && skipTempTables && table.isTemporary() && (!EXTERNAL_TABLE.equals(table.getTableType()) || HiveHook.isSkipAllTempTablesIncludingExternal());
     }
 
     private boolean isCreateExtTableOperation(Table table) {
