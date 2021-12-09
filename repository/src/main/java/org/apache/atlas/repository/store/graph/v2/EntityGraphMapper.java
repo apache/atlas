@@ -1649,7 +1649,7 @@ public class EntityGraphMapper {
         }
 
         switch (ctx.getAttribute().getRelationshipEdgeLabel()) {
-            case TERM_ASSIGNMENT_LABEL: addMeaningsToEntity(ctx, newElements);
+            case TERM_ASSIGNMENT_LABEL: addMeaningsToEntity(ctx, newElementsCreated);
                 break;
 
             case CATEGORY_TERMS_EDGE_LABEL: addCategoriesToTermEntity(ctx, newElementsCreated, removedElements);
