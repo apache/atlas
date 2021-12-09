@@ -18,6 +18,7 @@
 
 package org.apache.atlas.web.rest;
 
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasRelationship;
@@ -25,6 +26,7 @@ import org.apache.atlas.model.instance.AtlasRelationship.AtlasRelationshipWithEx
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
+import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Service;
 
@@ -32,6 +34,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
+import java.util.List;
 
 /**
  * REST interface for entity relationships.
@@ -72,6 +75,26 @@ public class RelationshipREST {
     }
 
     /**
+     * Create a new relationship or update existing relationship between entities.
+     */
+    @POST
+    @Path("/bulk")
+    public List<AtlasRelationship> createOrUpdate(List<AtlasRelationship> relationships) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "RelationshipREST.createOrUpdate(" + relationships + ")");
+            }
+
+            return relationshipStore.createOrUpdate(relationships);
+
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    /**
      * Update an existing relationship between entities.
      */
     @PUT
@@ -92,7 +115,7 @@ public class RelationshipREST {
     }
 
     /**
-     * Get relationship information between entities using guid.
+     * Get relationship information between entities using relationship guid.
      */
     @GET
     @Path("/guid/{guid}")
@@ -140,6 +163,35 @@ public class RelationshipREST {
             }
 
             relationshipStore.deleteById(guid);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+
+    /**
+     * Delete a relationship between entities using guid.
+     */
+    @DELETE
+    @Path("/guid/bulk")
+    @Timed
+    public void deleteByIds(List<String> guids) throws AtlasBaseException {
+        if (CollectionUtils.isEmpty(guids)) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Need list of GUIDs");
+        }
+
+        for (String guid : guids) {
+            Servlets.validateQueryParamLength("guid", guid);
+        }
+
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "RelationshipREST.deleteById(" + guids.size() + ")");
+            }
+
+            relationshipStore.deleteByIds(guids);
         } finally {
             AtlasPerfTracer.log(perf);
         }

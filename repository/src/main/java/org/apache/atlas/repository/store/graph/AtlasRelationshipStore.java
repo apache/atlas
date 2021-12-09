@@ -23,6 +23,8 @@ import org.apache.atlas.model.instance.AtlasRelationship.AtlasRelationshipWithEx
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 
+import java.util.List;
+
 
 /**
  * Persistence/Retrieval API for AtlasRelationship
@@ -41,6 +43,13 @@ public interface AtlasRelationshipStore {
      * @return AtlasRelationship d
      */
     AtlasRelationship update(AtlasRelationship relationship) throws AtlasBaseException;
+
+    /**
+     * Bulk createOrUpdate relationships
+     * @param relationships list of relationship instance definition
+     * @return AtlasRelationships list
+     */
+    List<AtlasRelationship> createOrUpdate(List<AtlasRelationship> relationships) throws AtlasBaseException;
 
     /**
      * Retrieve a relationship instance using guid.
@@ -75,6 +84,12 @@ public interface AtlasRelationshipStore {
      * @param guid relationship instance guid
      */
     void deleteById(String guid) throws AtlasBaseException;
+
+    /**
+     * Delete relationships instance using guid.
+     * @param guids relationship guids
+     */
+    void deleteByIds(List<String> guids) throws AtlasBaseException;
 
     /**
      * Delete a relationship instance using guid.

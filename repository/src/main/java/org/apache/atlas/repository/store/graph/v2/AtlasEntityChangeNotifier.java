@@ -124,20 +124,20 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
     }
 
     @Override
-    public void notifyRelationshipMutation(AtlasRelationship relationship, EntityNotification.EntityNotificationV2.OperationType operationType) throws AtlasBaseException {
+    public void notifyRelationshipMutation(List<AtlasRelationship> relationships, EntityNotification.EntityNotificationV2.OperationType operationType) throws AtlasBaseException {
         if (CollectionUtils.isEmpty(entityChangeListeners)) {
             return;
         }
 
         switch (operationType) {
             case RELATIONSHIP_CREATE:
-                notifyRelationshipListeners(Collections.singletonList(relationship), EntityOperation.CREATE, false);
+                notifyRelationshipListeners(relationships, EntityOperation.CREATE, false);
                 break;
             case RELATIONSHIP_UPDATE:
-                notifyRelationshipListeners(Collections.singletonList(relationship), EntityOperation.UPDATE, false);
+                notifyRelationshipListeners(relationships, EntityOperation.UPDATE, false);
                 break;
             case RELATIONSHIP_DELETE:
-                notifyRelationshipListeners(Collections.singletonList(relationship), EntityOperation.DELETE, false);
+                notifyRelationshipListeners(relationships, EntityOperation.DELETE, false);
                 break;
         }
     }
