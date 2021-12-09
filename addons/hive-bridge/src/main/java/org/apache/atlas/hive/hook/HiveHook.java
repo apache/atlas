@@ -73,6 +73,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     public static final String HOOK_HIVE_IGNORE_DDL_OPERATIONS                           = CONF_PREFIX + "hs2.ignore.ddl.operations";
     public static final String HOOK_HIVE_FILTER_ENTITY_ADDITIONAL_TYPES_TO_RETAIN        = CONF_PREFIX + "hs2.filter.entity.additional.types.to.retain";
     public static final String HOOK_HIVE_SKIP_TEMP_TABLES                                = CONF_PREFIX + "skip.temp.tables";
+    public static final String HOOK_HIVE_SKIP_ALL_TEMP_TABLES                            = CONF_PREFIX + "skip.all.temp.tables";
     public static final String DEFAULT_HOST_NAME = "localhost";
 
     private static final Map<String, HiveOperation> OPERATION_MAP = new HashMap<>();
@@ -95,6 +96,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     private static final boolean                       hiveProcessPopulateDeprecatedAttributes;
     private static HiveHookObjectNamesCache            knownObjects = null;
     private static String hostName;
+    private static boolean                             skipAllTempTablesIncludingExternal;
     private static boolean                             skipTempTables = true;
 
     static {
@@ -154,10 +156,11 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         defaultDummyDatabase.add(SemanticAnalyzer.DUMMY_DATABASE);
         defaultDummyTable.add(SemanticAnalyzer.DUMMY_TABLE);
 
-        ignoreDummyDatabaseName        = atlasProperties.getList("atlas.hook.hive.ignore.dummy.database.name", defaultDummyDatabase);
-        ignoreDummyTableName           = atlasProperties.getList("atlas.hook.hive.ignore.dummy.table.name", defaultDummyTable);
-        ignoreValuesTmpTableNamePrefix = atlasProperties.getString("atlas.hook.hive.ignore.values.tmp.table.name.prefix", "Values__Tmp__Table__");
-        skipTempTables                 = atlasProperties.getBoolean(HOOK_HIVE_SKIP_TEMP_TABLES, true);
+        ignoreDummyDatabaseName            = atlasProperties.getList("atlas.hook.hive.ignore.dummy.database.name", defaultDummyDatabase);
+        ignoreDummyTableName               = atlasProperties.getList("atlas.hook.hive.ignore.dummy.table.name", defaultDummyTable);
+        ignoreValuesTmpTableNamePrefix     = atlasProperties.getString("atlas.hook.hive.ignore.values.tmp.table.name.prefix", "Values__Tmp__Table__");
+        skipAllTempTablesIncludingExternal = atlasProperties.getBoolean(HOOK_HIVE_SKIP_ALL_TEMP_TABLES, false);
+        skipTempTables                     = skipAllTempTablesIncludingExternal || atlasProperties.getBoolean(HOOK_HIVE_SKIP_TEMP_TABLES, true);
 
         try {
             hostName = InetAddress.getLocalHost().getHostName();
@@ -306,6 +309,10 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
 
     public static boolean isSkipTempTables() {
         return skipTempTables;
+    }
+
+    public static boolean isSkipAllTempTablesIncludingExternal() {
+        return skipAllTempTablesIncludingExternal;
     }
 
     public PreprocessAction getPreprocessActionForHiveTable(String qualifiedName) {
