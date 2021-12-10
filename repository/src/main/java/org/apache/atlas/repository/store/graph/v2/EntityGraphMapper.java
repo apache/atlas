@@ -98,6 +98,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static org.apache.atlas.AtlasClient.PROCESS_SUPER_TYPE;
 import static org.apache.atlas.AtlasConfiguration.LABEL_MAX_LENGTH;
 import static org.apache.atlas.model.TypeCategory.ARRAY;
 import static org.apache.atlas.model.TypeCategory.CLASSIFICATION;
@@ -1791,13 +1792,16 @@ public class EntityGraphMapper {
     private void addHasLineage(AttributeMutationContext ctx, EntityMutationContext context,
                                List<Object> newElementsCreated, List<AtlasEdge> removedElements){
         MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("addHasLineage");
+
         AtlasVertex toVertex = ctx.getReferringVertex();
+        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(getTypeName(toVertex));
+        boolean isProcess = entityType.getTypeAndAllSuperTypes().contains(PROCESS_SUPER_TYPE);
 
         if (CollectionUtils.isNotEmpty(newElementsCreated)) {
             AtlasGraphUtilsV2.setEncodedProperty(toVertex, HAS_LINEAGE, true);
 
             List<AtlasVertex> vertices;
-            if (TYPE_PROCESS.equals(getTypeName(toVertex))) {
+            if (isProcess) {
                 vertices = newElementsCreated.stream().map(x -> ((AtlasEdge) x).getInVertex()).collect(Collectors.toList());
             } else {
                 vertices = newElementsCreated.stream().map(x -> ((AtlasEdge) x).getOutVertex()).collect(Collectors.toList());
@@ -1832,7 +1836,7 @@ public class EntityGraphMapper {
             String[] edgeLabels = {PROCESS_OUTPUTS, PROCESS_INPUTS};
 
             List<AtlasVertex> vertices;
-            if (TYPE_PROCESS.equals(getTypeName(toVertex))) {
+            if (isProcess) {
                 vertices = removedElements.stream().map(x -> ((AtlasEdge) x).getInVertex()).collect(Collectors.toList());
             } else {
                 vertices = removedElements.stream().map(x -> ((AtlasEdge) x).getOutVertex()).collect(Collectors.toList());
