@@ -51,6 +51,7 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
@@ -511,13 +512,21 @@ public class TypesREST {
 
         for (String k : keySet) {
             String key   = String.valueOf(k);
-            String value = String.valueOf(httpServletRequest.getParameter(k));
 
-            if (key.equalsIgnoreCase("excludeInternalTypesAndReferences") && value.equalsIgnoreCase("true")) {
-                FilterUtil.addParamsToHideInternalType(ret);
+            if (key.equalsIgnoreCase("type")) {
+                String[] values = httpServletRequest.getParameterValues(k);
+                ret.setParam(key, Arrays.asList(values));
+
             } else {
-                ret.setParam(key, value);
+                String value = String.valueOf(httpServletRequest.getParameter(k));
+
+                if (key.equalsIgnoreCase("excludeInternalTypesAndReferences") && value.equalsIgnoreCase("true")) {
+                    FilterUtil.addParamsToHideInternalType(ret);
+                } else {
+                    ret.setParam(key, value);
+                }
             }
+
         }
 
         return ret;

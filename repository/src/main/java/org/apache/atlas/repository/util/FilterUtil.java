@@ -32,12 +32,14 @@ import org.apache.commons.lang.StringUtils;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class FilterUtil {
     public static Predicate getPredicateFromSearchFilter(SearchFilter searchFilter) {
         List<Predicate> predicates = new ArrayList<>();
 
-        final String       type           = searchFilter.getParam(SearchFilter.PARAM_TYPE);
+        final List<String> types          = searchFilter.getParams(SearchFilter.PARAM_TYPE);
         final String       name           = searchFilter.getParam(SearchFilter.PARAM_NAME);
         final String       supertype      = searchFilter.getParam(SearchFilter.PARAM_SUPERTYPE);
         final String       serviceType    = searchFilter.getParam(SearchFilter.PARAM_SERVICETYPE);
@@ -46,8 +48,9 @@ public class FilterUtil {
         final List<String> notNames       = searchFilter.getParams(SearchFilter.PARAM_NOT_NAME);
 
         // Add filter for the type/category
-        if (StringUtils.isNotBlank(type)) {
-            predicates.add(getTypePredicate(type));
+        if (CollectionUtils.isNotEmpty(types)) {
+            Set<String> typeSet = types.stream().map(String::toUpperCase).collect(Collectors.toSet());
+            predicates.add(getTypePredicate(typeSet));
         }
 
         // Add filter for the name
@@ -134,36 +137,37 @@ public class FilterUtil {
         };
     }
 
-    private static Predicate getTypePredicate(final String type) {
+    private static Predicate getTypePredicate(final Set<String> types) {
         return new Predicate() {
             @Override
             public boolean evaluate(Object o) {
                 if (o instanceof AtlasType) {
                     AtlasType atlasType = (AtlasType) o;
+                    return validateTypes(atlasType.getTypeCategory(), types);
 
-                    switch (type.toUpperCase()) {
-                        case "CLASS":
-                        case "ENTITY":
-                            return atlasType.getTypeCategory() == TypeCategory.ENTITY;
-                        case "TRAIT":
-                        case "CLASSIFICATION":
-                            return atlasType.getTypeCategory() == TypeCategory.CLASSIFICATION;
-                        case "STRUCT":
-                            return atlasType.getTypeCategory() == TypeCategory.STRUCT;
-                        case "ENUM":
-                            return atlasType.getTypeCategory() == TypeCategory.ENUM;
-                        case "RELATIONSHIP":
-                            return atlasType.getTypeCategory() == TypeCategory.RELATIONSHIP;
-                        case "BUSINESS_METADATA":
-                            return atlasType.getTypeCategory() == TypeCategory.BUSINESS_METADATA;
-                        default:
-                            // This shouldn't have happened
-                            return false;
-                    }
                 }
                 return false;
             }
         };
+    }
+
+    private static boolean validateTypes(TypeCategory typeCategory, Set<String> types) {
+            switch (typeCategory) {
+                case ENTITY:
+                    return types.contains("CLASS") || types.contains("ENTITY");
+                case CLASSIFICATION:
+                    return types.contains("TRAIT") || types.contains("CLASSIFICATION");
+                case STRUCT:
+                    return types.contains("STRUCT");
+                case ENUM:
+                    return types.contains("ENUM");
+                case RELATIONSHIP:
+                    return types.contains("RELATIONSHIP");
+                case BUSINESS_METADATA:
+                    return types.contains("BUSINESS_METADATA");
+
+        }
+        return false;
     }
 
     public static void addParamsToHideInternalType(SearchFilter searchFilter) {
