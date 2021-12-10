@@ -47,7 +47,7 @@ public interface AtlasGraph<V, E> {
      * @param label
      * @return
      */
-    AtlasEdge<V, E> addEdge(AtlasVertex<V, E> outVertex, AtlasVertex<V, E> inVertex, String label);
+    AtlasEdge<V, E> addEdge(AtlasVertex<V, E> outVertex, AtlasVertex<V, E> inVertex, String label) throws AtlasBaseException;
 
     /**
      * Fetch edges between two vertices using relationshipLabel

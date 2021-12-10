@@ -27,6 +27,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.listener.TypeDefChangeListener;
 import org.apache.atlas.model.typedef.*;
 import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
@@ -51,6 +52,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import static org.apache.atlas.AtlasErrorCode.RELATIONSHIP_CREATE_INVALID_PARAMS;
 import static org.apache.atlas.repository.Constants.TYPE_CATEGORY_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.VERTEX_TYPE_PROPERTY_KEY;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.VERTEX_TYPE;
@@ -396,7 +398,7 @@ public class AtlasTypeDefGraphStoreV2 extends AtlasTypeDefGraphStore {
         return ret;
     }
 
-    AtlasEdge getOrCreateEdge(AtlasVertex outVertex, AtlasVertex inVertex, String edgeLabel) {
+    AtlasEdge getOrCreateEdge(AtlasVertex outVertex, AtlasVertex inVertex, String edgeLabel) throws AtlasBaseException {
         AtlasEdge           ret   = null;
         Iterable<AtlasEdge> edges = outVertex.getEdges(AtlasEdgeDirection.OUT, edgeLabel);
 
@@ -414,7 +416,13 @@ public class AtlasTypeDefGraphStoreV2 extends AtlasTypeDefGraphStore {
         return ret;
     }
 
-    AtlasEdge addEdge(AtlasVertex outVertex, AtlasVertex inVertex, String edgeLabel) {
+    AtlasEdge addEdge(AtlasVertex outVertex, AtlasVertex inVertex, String edgeLabel) throws AtlasBaseException {
+        String fromGuid = GraphHelper.getGuid(outVertex);
+
+        if (fromGuid.equals(GraphHelper.getGuid(inVertex))) {
+            LOG.error("Attempting to create a relationship between same vertex with guid {}", fromGuid);
+            throw new AtlasBaseException(RELATIONSHIP_CREATE_INVALID_PARAMS, fromGuid);
+        }
 
         return atlasGraph.addEdge(outVertex, inVertex, edgeLabel);
     }
