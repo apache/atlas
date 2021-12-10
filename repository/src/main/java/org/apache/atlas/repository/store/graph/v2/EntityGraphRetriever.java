@@ -787,6 +787,11 @@ public class EntityGraphRetriever {
         ret.setIsIncomplete(isIncomplete);
         ret.setLabels(getLabels(entityVertex));
 
+        ret.setCreatedBy(GraphHelper.getCreatedByAsString(entityVertex));
+        ret.setUpdatedBy(GraphHelper.getModifiedByAsString(entityVertex));
+        ret.setCreateTime(new Date(GraphHelper.getCreatedTime(entityVertex)));
+        ret.setUpdateTime(new Date(GraphHelper.getModifiedTime(entityVertex)));
+
         List<AtlasTermAssignmentHeader> termAssignmentHeaders = mapAssignedTerms(entityVertex);
         ret.setMeanings(termAssignmentHeaders);
         ret.setMeaningNames(termAssignmentHeaders.stream().map(AtlasTermAssignmentHeader::getDisplayText).collect(Collectors.toList()));

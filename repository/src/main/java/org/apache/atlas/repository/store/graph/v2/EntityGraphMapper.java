@@ -94,6 +94,7 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.Date;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -342,8 +343,8 @@ public class EntityGraphMapper {
                     mapRelationshipAttributes(createdEntity, entityType, vertex, CREATE, context);
 
                     setCustomAttributes(vertex, createdEntity);
-
-                    resp.addEntity(CREATE, constructHeader(createdEntity, vertex));
+                    setSystemAttributesToEntity(vertex, createdEntity);
+                    resp.addEntity(CREATE, constructHeader(createdEntity, vertex,  entityType.getAllAttributes()));
                     addClassifications(context, guid, createdEntity.getClassifications());
 
                     addOrUpdateBusinessAttributes(vertex, entityType, createdEntity.getBusinessAttributes());
@@ -383,8 +384,8 @@ public class EntityGraphMapper {
                     if (replaceBusinessAttributes) {
                         setBusinessAttributes(vertex, entityType, updatedEntity.getBusinessAttributes());
                     }
-
-                    resp.addEntity(updateType, constructHeader(updatedEntity, vertex));
+                    setSystemAttributesToEntity(vertex,updatedEntity);
+                    resp.addEntity(updateType, constructHeader(updatedEntity, vertex, entityType.getAllAttributes()));
                     reqContext.cache(updatedEntity);
 
                 } catch (AtlasBaseException baseException) {
@@ -420,6 +421,15 @@ public class EntityGraphMapper {
 
         return resp;
     }
+
+    private void setSystemAttributesToEntity(AtlasVertex entityVertex, AtlasEntity createdEntity) {
+
+        createdEntity.setCreatedBy(GraphHelper.getCreatedByAsString(entityVertex));
+        createdEntity.setUpdatedBy(GraphHelper.getModifiedByAsString(entityVertex));
+        createdEntity.setCreateTime(new Date(GraphHelper.getCreatedTime(entityVertex)));
+        createdEntity.setUpdateTime(new Date(GraphHelper.getModifiedTime(entityVertex)));
+    }
+
 
     private void setEntityGuidToException(AtlasEntity entity, AtlasBaseException exception, EntityMutationContext context) {
         String guid;
@@ -2357,8 +2367,8 @@ public class EntityGraphMapper {
         }
     }
 
-    private AtlasEntityHeader constructHeader(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
-        AtlasEntityHeader header = entityRetriever.toAtlasEntityHeaderWithClassifications(vertex);
+    private AtlasEntityHeader constructHeader(AtlasEntity entity, AtlasVertex vertex, Map<String, AtlasAttribute> attributeMap ) throws AtlasBaseException {
+        AtlasEntityHeader header = entityRetriever.toAtlasEntityHeaderWithClassifications(vertex, attributeMap.keySet());
         if (entity.getClassifications() == null) {
             entity.setClassifications(header.getClassifications());
         }

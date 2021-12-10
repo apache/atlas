@@ -50,6 +50,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Date;
 
 import static org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2.OperationType.CLASSIFICATION_ADD;
 import static org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2.OperationType.CLASSIFICATION_DELETE;
@@ -204,6 +205,10 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
         ret.setGuid(entity.getGuid());
         ret.setStatus(entity.getStatus());
         ret.setIsIncomplete(entity.getIsIncomplete());
+        ret.setCreatedBy(entity.getCreatedBy());
+        ret.setUpdatedBy(entity.getUpdatedBy());
+        ret.setCreateTime(entity.getCreateTime());
+        ret.setUpdateTime(entity.getUpdateTime());
 
         setAttribute(ret, NAME, name);
         setAttribute(ret, DESCRIPTION, entity.getAttribute(DESCRIPTION));

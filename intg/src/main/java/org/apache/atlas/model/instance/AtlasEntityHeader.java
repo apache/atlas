@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.Date;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
@@ -64,6 +65,10 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
     private Boolean                         isIncomplete        = Boolean.FALSE;
     private Set<String>                     labels              = null;
     private Boolean                         isScrubbed          = null;
+    private String                          createdBy           = null;
+    private String                          updatedBy           = null;
+    private Date                            createTime          = null;
+    private Date                            updateTime          = null;
 
     public AtlasEntityHeader() {
         this(null, null);
@@ -106,6 +111,10 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
             setClassifications(other.getClassifications());
             setIsIncomplete(other.getIsIncomplete());
             setLabels(other.getLabels());
+            setCreateTime(other.getCreateTime());
+            setCreatedBy(other.getCreatedBy());
+            setUpdateTime(other.getUpdateTime());
+            setUpdatedBy(other.getUpdatedBy());
         }
     }
 
@@ -115,6 +124,10 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
         setStatus(entity.getStatus());
         setClassifications(entity.getClassifications());
         setIsIncomplete(entity.getIsIncomplete());
+        setCreateTime(entity.getCreateTime());
+        setCreatedBy(entity.getCreatedBy());
+        setUpdateTime(entity.getUpdateTime());
+        setUpdatedBy(entity.getUpdatedBy());
 
         if (CollectionUtils.isNotEmpty(entity.getClassifications())) {
             this.classificationNames = new ArrayList<>(entity.getClassifications().size());
@@ -192,6 +205,39 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
 
     public void setScrubbed(Boolean scrubbed) {
         isScrubbed = scrubbed;
+    }
+
+
+    public String getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    public String getUpdatedBy() {
+        return updatedBy;
+    }
+
+    public void setUpdatedBy(String updatedBy) {
+        this.updatedBy = updatedBy;
+    }
+
+    public Date getCreateTime() {
+        return createTime;
+    }
+
+    public void setCreateTime(Date createTime) {
+        this.createTime = createTime;
+    }
+
+    public Date getUpdateTime() {
+        return updateTime;
+    }
+
+    public void setUpdateTime(Date updateTime) {
+        this.updateTime = updateTime;
     }
 
     @Override
