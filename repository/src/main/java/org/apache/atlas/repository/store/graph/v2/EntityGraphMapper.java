@@ -344,7 +344,7 @@ public class EntityGraphMapper {
 
                     setCustomAttributes(vertex, createdEntity);
                     setSystemAttributesToEntity(vertex, createdEntity);
-                    resp.addEntity(CREATE, constructHeader(createdEntity, vertex));
+                    resp.addEntity(CREATE, constructHeader(createdEntity, vertex,  entityType.getAllAttributes()));
                     addClassifications(context, guid, createdEntity.getClassifications());
 
                     addOrUpdateBusinessAttributes(vertex, entityType, createdEntity.getBusinessAttributes());
@@ -385,7 +385,7 @@ public class EntityGraphMapper {
                         setBusinessAttributes(vertex, entityType, updatedEntity.getBusinessAttributes());
                     }
                     setSystemAttributesToEntity(vertex,updatedEntity);
-                    resp.addEntity(updateType, constructHeader(updatedEntity, vertex));
+                    resp.addEntity(updateType, constructHeader(updatedEntity, vertex, entityType.getAllAttributes()));
                     reqContext.cache(updatedEntity);
 
                 } catch (AtlasBaseException baseException) {
@@ -2367,8 +2367,8 @@ public class EntityGraphMapper {
         }
     }
 
-    private AtlasEntityHeader constructHeader(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
-        AtlasEntityHeader header = entityRetriever.toAtlasEntityHeaderWithClassifications(vertex);
+    private AtlasEntityHeader constructHeader(AtlasEntity entity, AtlasVertex vertex, Map<String, AtlasAttribute> attributeMap ) throws AtlasBaseException {
+        AtlasEntityHeader header = entityRetriever.toAtlasEntityHeaderWithClassifications(vertex, attributeMap.keySet());
         if (entity.getClassifications() == null) {
             entity.setClassifications(header.getClassifications());
         }
