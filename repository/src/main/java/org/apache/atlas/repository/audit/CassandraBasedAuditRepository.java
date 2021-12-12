@@ -116,11 +116,13 @@ public class CassandraBasedAuditRepository extends AbstractStorageBasedAuditRepo
 
   @Override
   public void putEventsV2(List<EntityAuditEventV2> events) throws AtlasBaseException {
-    BoundStatement stmt = new BoundStatement(insertStatement);
     BatchStatement batch = new BatchStatement();
-    events.forEach(event -> batch.add(stmt.bind(event.getEntityId(), event.getTimestamp(),
-        event.getAction().toString(), event.getUser(), event.getDetails(),
-        (persistEntityDefinition ? event.getEntityDefinitionString() : null))));
+    for (EntityAuditEventV2 event : events) {
+      BoundStatement stmt = new BoundStatement(insertStatement);
+      batch.add(stmt.bind(event.getEntityId(), event.getTimestamp(),
+              event.getAction().toString(), event.getUser(), event.getDetails(),
+              (persistEntityDefinition ? event.getEntityDefinitionString() : null)));
+    }
     cassSession.execute(batch);
   }
 
