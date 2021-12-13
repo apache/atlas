@@ -54,7 +54,13 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
-import org.apache.atlas.repository.store.graph.v2.glossary.*;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.CategoryPreProcessor;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.GlossaryPreProcessor;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.TermPreProcessor;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.sql.QueryCollectionPreProcessor;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.sql.QueryFolderPreProcessor;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.sql.QueryPreProcessor;
 import org.apache.atlas.tasks.TaskManagement;
 import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.repository.store.graph.v1.RestoreHandlerV1;
@@ -334,9 +340,9 @@ public class EntityGraphMapper {
                     AtlasVertex vertex = context.getVertex(guid);
                     AtlasEntityType entityType = context.getType(guid);
 
-                    PreProcessor preProcessor = getPreProcessor(entityType.getTypeName(), CREATE);
+                    PreProcessor preProcessor = getPreProcessor(entityType.getTypeName());
                     if (preProcessor != null) {
-                        preProcessor.processAttributes(createdEntity, vertex, context);
+                        preProcessor.processAttributes(createdEntity, context, CREATE);
                     }
 
                     mapAttributes(createdEntity, entityType, vertex, CREATE, context);
@@ -366,9 +372,9 @@ public class EntityGraphMapper {
                     AtlasVertex     vertex     = context.getVertex(guid);
                     AtlasEntityType entityType = context.getType(guid);
 
-                    PreProcessor preProcessor = getPreProcessor(entityType.getTypeName(), UPDATE);
+                    PreProcessor preProcessor = getPreProcessor(entityType.getTypeName());
                     if (preProcessor != null) {
-                        preProcessor.processAttributes(updatedEntity, vertex, context);
+                        preProcessor.processAttributes(updatedEntity, context, UPDATE);
                     }
 
                     mapAttributes(updatedEntity, entityType, vertex, updateType, context);
@@ -442,20 +448,32 @@ public class EntityGraphMapper {
         exception.setEntityGuid(guid);
     }
 
-    private PreProcessor getPreProcessor(String typeName, EntityOperation op) throws AtlasBaseException {
+    private PreProcessor getPreProcessor(String typeName) throws AtlasBaseException {
         PreProcessor preProcessor = null;
 
         switch (typeName) {
             case ATLAS_GLOSSARY_ENTITY_TYPE:
-                preProcessor = new GlossaryPreProcessor(typeRegistry, entityRetriever, op);
+                preProcessor = new GlossaryPreProcessor(typeRegistry, entityRetriever);
                 break;
 
             case ATLAS_GLOSSARY_TERM_ENTITY_TYPE:
-                preProcessor = new TermPreProcessor(typeRegistry, entityRetriever, op);
+                preProcessor = new TermPreProcessor(typeRegistry, entityRetriever);
                 break;
 
             case ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE:
-                preProcessor = new CategoryPreProcessor(typeRegistry, entityRetriever, op);
+                preProcessor = new CategoryPreProcessor(typeRegistry, entityRetriever);
+                break;
+
+            case QUERY_ENTITY_TYPE:
+                preProcessor = new QueryPreProcessor(typeRegistry, entityRetriever);
+                break;
+
+            case QUERY_FOLDER_ENTITY_TYPE:
+                preProcessor = new QueryFolderPreProcessor(typeRegistry, entityRetriever);
+                break;
+
+            case QUERY_COLLECTION_ENTITY_TYPE:
+                preProcessor = new QueryCollectionPreProcessor(typeRegistry, entityRetriever);
                 break;
 
         }
