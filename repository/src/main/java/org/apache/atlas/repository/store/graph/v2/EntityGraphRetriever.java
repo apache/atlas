@@ -61,6 +61,7 @@ import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.utils.AtlasEntityUtil;
 import org.apache.atlas.utils.AtlasJson;
+import org.apache.atlas.v1.model.instance.Id;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -144,31 +145,6 @@ public class EntityGraphRetriever {
 
     private final boolean ignoreRelationshipAttr;
     private final AtlasGraph graph;
-
-    private static boolean allowAttributesObjectId = false;
-    private static Map<String, Set<String>> attributesObjectIdMap = new HashMap<>();
-
-    static {
-        allowAttributesObjectId = AtlasConfiguration.ALLOW_ATTRIBUTES_OBJECT_ID.getBoolean();
-        if (allowAttributesObjectId) {
-            try {
-                List<String> typeNameAttrPairs = Arrays.stream(AtlasConfiguration.ATTRIBUTES_OBJECT_ID.getStringArray()).collect(Collectors.toList());
-                for (String pair : typeNameAttrPairs) {
-                    String typeName = pair.split(":")[0];
-                    String attr = pair.split(":")[1];
-                    if (attributesObjectIdMap.containsKey(typeName)) {
-                        attributesObjectIdMap.get(typeName).add(attr);
-                    } else {
-                        attributesObjectIdMap.put(typeName, Collections.singleton(attr));
-                    }
-                }
-                LOG.info("attributesObjectIdMap {}", attributesObjectIdMap);
-            } catch (Exception e) {
-                LOG.info("Failed to parse property value {}, {}", AtlasConfiguration.ATTRIBUTES_OBJECT_ID.getPropertyName(), e);
-                allowAttributesObjectId = false;
-            }
-        }
-    }
 
     @Inject
     public EntityGraphRetriever(AtlasGraph graph, AtlasTypeRegistry typeRegistry) {
@@ -1364,6 +1340,10 @@ public class EntityGraphRetriever {
         }
 
         if (GraphHelper.elementExists(edge)) {
+            if (!RequestContext.get().isAllowDeletedRelationsIndexsearch() && getState(edge) == Id.EntityState.DELETED ) {
+                return null;
+            }
+
             AtlasVertex referenceVertex = edge.getInVertex();
 
             if (StringUtils.equals(getIdFromVertex(referenceVertex), getIdFromVertex(entityVertex))) {

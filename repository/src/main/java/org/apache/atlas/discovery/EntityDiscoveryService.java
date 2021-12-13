@@ -34,9 +34,10 @@ import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.AtlasSearchResult.AtlasFullTextResult;
 import org.apache.atlas.model.discovery.AtlasSearchResult.AtlasQueryType;
 import org.apache.atlas.model.discovery.AtlasSuggestionsResult;
-import org.apache.atlas.model.discovery.QuickSearchParameters;
-import org.apache.atlas.model.discovery.SearchParameters;
+import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.discovery.SearchParams;
+import org.apache.atlas.model.discovery.SearchParameters;
+import org.apache.atlas.model.discovery.QuickSearchParameters;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
@@ -992,7 +993,10 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
     @Override
     public AtlasSearchResult directIndexSearch(SearchParams searchParams) throws AtlasBaseException {
-        RequestContext.get().setRelationAttrsForSearch(searchParams.getRelationAttributes());
+        IndexSearchParams params = (IndexSearchParams) searchParams;
+        RequestContext.get().setRelationAttrsForSearch(params.getRelationAttributes());
+        RequestContext.get().setAllowDeletedRelationsIndexsearch(params.isAllowDeletedRelations());
+
         AtlasSearchResult ret = new AtlasSearchResult();
         AtlasIndexQuery indexQuery = null;
 

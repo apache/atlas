@@ -23,17 +23,19 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 public class IndexSearchParams extends SearchParams {
     private static final Logger LOG = LoggerFactory.getLogger(IndexSearchParams.class);
 
-    private static final Map<String, String> attributeNamesMapping = new HashMap<String, String>(){
-        {
-            put("__classificationNames", "__traitNames");
-            put("__propagatedClassificationNames", "__propagatedTraitNames");
-            put("qualifiedName", "Referenceable.qualifiedName");
-        }};
-
     private static final Pattern pattern = Pattern.compile("(?<=\").+?(?=\")");
 
     private Map dsl;
     private String queryString;
+
+    /*
+    * Indexsearch includes all relations (if requested with param attributes) even if relationshipStatus is DELETED
+    * Changing this behaviour to exclude related attributes which has relationshipStatus as DELETED
+    *
+    * Pass allowDeletedRelations with value as true to get all relations back in response
+    * (this will include related attributes which has relationshipStatus as DELETED along with ACTIVE ones)
+    * */
+    private boolean allowDeletedRelations;
 
     @Override
     public String getQuery() {
@@ -43,6 +45,14 @@ public class IndexSearchParams extends SearchParams {
     public void setDsl(Map dsl) {
         this.dsl = dsl;
         queryString = AtlasType.toJson(dsl);
+    }
+
+    public boolean isAllowDeletedRelations() {
+        return allowDeletedRelations;
+    }
+
+    public void setAllowDeletedRelations(boolean allowDeletedRelations) {
+        this.allowDeletedRelations = allowDeletedRelations;
     }
 
     public void setRelationAttributes(Set<String> relationAttributes) {
@@ -57,20 +67,5 @@ public class IndexSearchParams extends SearchParams {
                 ", attributes=" + attributes +
                 ", relationAttributes=" + relationAttributes +
                 '}';
-    }
-
-    private String parseQueryAttrNames(String queryString){
-        Set<String> keysToMap = new HashSet<>();
-        Matcher matcher = pattern.matcher(queryString);
-        while (matcher.find()) {
-            keysToMap.add(matcher.group());
-        }
-        for (String key : keysToMap) {
-            if (attributeNamesMapping.containsKey(key)) {
-                queryString = queryString.replaceAll(key, attributeNamesMapping.get(key));
-            }
-        }
-
-        return queryString;
     }
 }

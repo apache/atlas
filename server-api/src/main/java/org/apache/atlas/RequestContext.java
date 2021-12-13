@@ -81,6 +81,7 @@ public class RequestContext {
     private boolean     isInTypePatching           = false;
     private boolean     createShellEntityForNonExistingReference = false;
     private boolean     skipFailedEntities = false;
+    private boolean     allowDeletedRelationsIndexsearch = false;
     private String      currentTypePatchAction = "";
 
     private RequestContext() {
@@ -145,6 +146,7 @@ public class RequestContext {
     public Set<String> getRelationAttrsForSearch() {
         return relationAttrsForSearch;
     }
+
     public void setRelationAttrsForSearch(Set<String> relationAttrsForSearch) {
         if (CollectionUtils.isNotEmpty(relationAttrsForSearch)){
             this.relationAttrsForSearch.addAll(relationAttrsForSearch);
@@ -253,6 +255,14 @@ public class RequestContext {
 
     public void setSkipFailedEntities(boolean skipFailedEntities) {
         this.skipFailedEntities = skipFailedEntities;
+    }
+
+    public boolean isAllowDeletedRelationsIndexsearch() {
+        return allowDeletedRelationsIndexsearch;
+    }
+
+    public void setAllowDeletedRelationsIndexsearch(boolean allowDeletedRelationsIndexsearch) {
+        this.allowDeletedRelationsIndexsearch = allowDeletedRelationsIndexsearch;
     }
 
     public String getCurrentTypePatchAction() {
