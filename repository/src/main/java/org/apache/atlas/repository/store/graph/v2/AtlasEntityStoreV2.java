@@ -1532,6 +1532,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         RequestContext.get().endMetricRecord(metric);
 
         if (CollectionUtils.isNotEmpty(categories)) {
+            entityGraphMapper.removeAttrForCategoryDelete(categories);
             deleteDelegate.getHandler(DeleteType.HARD).deleteEntities(categories);
         }
 
