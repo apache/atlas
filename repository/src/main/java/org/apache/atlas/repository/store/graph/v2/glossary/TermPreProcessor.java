@@ -19,6 +19,7 @@ package org.apache.atlas.repository.store.graph.v2.glossary;
 
 
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
@@ -30,15 +31,13 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
-import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
 
 import static org.apache.atlas.repository.Constants.ATLAS_GLOSSARY_TERM_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.NAME;
@@ -126,17 +125,15 @@ public class TermPreProcessor implements PreProcessor {
     }
 
     private boolean termExists(String termName) {
-
-        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(ATLAS_GLOSSARY_TERM_ENTITY_TYPE);
+        boolean ret = false;
         String glossaryQName = (String) anchor.getAttribute(QUALIFIED_NAME);
 
-        List<AtlasVertex> vertexList = AtlasGraphUtilsV2.glossaryFindChildByTypeAndPropertyName(entityType, termName, glossaryQName);
-
-        return CollectionUtils.isNotEmpty(vertexList);
+        ret = AtlasGraphUtilsV2.termExists(termName, glossaryQName);
+        return ret;
     }
 
     private void setAnchor(AtlasEntity entity, EntityMutationContext context) throws AtlasBaseException {
-
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("TermPreProcessor.setAnchor");
         if (anchor == null) {
             AtlasObjectId objectId = (AtlasObjectId) entity.getRelationshipAttribute(ANCHOR);
 
@@ -155,5 +152,6 @@ public class TermPreProcessor implements PreProcessor {
 
             }
         }
+        RequestContext.get().endMetricRecord(metricRecorder);
     }
 }
