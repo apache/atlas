@@ -15,21 +15,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.repository.store.graph.v2.glossary;
+package org.apache.atlas.repository.store.graph.v2.preprocessor.glossary;
 
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.model.instance.AtlasEntityHeader;
-import org.apache.atlas.model.instance.AtlasObjectId;
-import org.apache.atlas.model.instance.AtlasRelatedObjectId;
-import org.apache.atlas.model.instance.AtlasStruct;
-import org.apache.atlas.model.instance.EntityMutations;
+import org.apache.atlas.model.instance.*;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
@@ -38,44 +34,41 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.atlas.repository.Constants.NAME;
-import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
-import static org.apache.atlas.repository.store.graph.v2.glossary.GlossaryUtils.ANCHOR;
-import static org.apache.atlas.repository.store.graph.v2.glossary.GlossaryUtils.CATEGORY_CHILDREN;
-import static org.apache.atlas.repository.store.graph.v2.glossary.GlossaryUtils.CATEGORY_PARENT;
-import static org.apache.atlas.repository.store.graph.v2.glossary.GlossaryUtils.isNameInvalid;
-import static org.apache.atlas.repository.store.graph.v2.glossary.GlossaryUtils.getUUID;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static org.apache.atlas.repository.Constants.NAME;
+import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
+import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
 
 public class CategoryPreProcessor implements PreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(CategoryPreProcessor.class);
 
     private final AtlasTypeRegistry typeRegistry;
     private final EntityGraphRetriever entityRetriever;
-    private final EntityMutations.EntityOperation operation;
 
     private AtlasEntityHeader anchor;
     private AtlasEntityHeader parentCategory;
 
-    public CategoryPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever,
-                                EntityMutations.EntityOperation operation) {
+    public CategoryPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever) {
         this.entityRetriever = entityRetriever;
         this.typeRegistry = typeRegistry;
-        this.operation = operation;
     }
 
     @Override
-    public void processAttributes(AtlasStruct entityStruct, AtlasVertex vertex, EntityMutationContext context) throws AtlasBaseException {
+    public void processAttributes(AtlasStruct entityStruct, EntityMutationContext context,
+                                  EntityMutations.EntityOperation operation) throws AtlasBaseException {
+        //Handle name & qualifiedName
         if (LOG.isDebugEnabled()) {
             LOG.debug("CategoryPreProcessor.processAttributes: pre processing {}, {}",
                     entityStruct.getAttribute(QUALIFIED_NAME), operation);
         }
 
         AtlasEntity entity = (AtlasEntity) entityStruct;
+        AtlasVertex vertex = context.getVertex(entity.getGuid());
+
         setAnchorAndParent(entity, context);
 
         switch (operation) {
@@ -89,6 +82,7 @@ public class CategoryPreProcessor implements PreProcessor {
     }
 
     private void processCreateCategory(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processCreateCategory");
         String catName = (String) entity.getAttribute(NAME);
 
         if (StringUtils.isEmpty(catName) || isNameInvalid(catName)) {
@@ -107,9 +101,11 @@ public class CategoryPreProcessor implements PreProcessor {
         validateChildren(entity, null);
 
         entity.setAttribute(QUALIFIED_NAME, createQualifiedName(vertex));
+        RequestContext.get().endMetricRecord(metricRecorder);
     }
 
     private void processUpdateCategory(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processUpdateCategory");
         String catName = (String) entity.getAttribute(NAME);
         String vertexQnName = vertex.getProperty(QUALIFIED_NAME, String.class);
 
@@ -135,6 +131,7 @@ public class CategoryPreProcessor implements PreProcessor {
         validateChildren(entity, storeObject);
 
         entity.setAttribute(QUALIFIED_NAME, vertexQnName);
+        RequestContext.get().endMetricRecord(metricRecorder);
     }
 
     private void validateChildren(AtlasEntity entity, AtlasEntity storeObject) throws AtlasBaseException {
@@ -214,6 +211,7 @@ public class CategoryPreProcessor implements PreProcessor {
                 return catQName;
             }
         }
+
         return getUUID() + "@" + anchor.getAttribute(QUALIFIED_NAME);
     }
 }

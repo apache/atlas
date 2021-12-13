@@ -117,6 +117,16 @@ public final class Constants {
     public static final String GLOSSARY_TERMS_EDGE_LABEL           = "r:AtlasGlossaryTermAnchor";
     public static final String GLOSSARY_CATEGORY_EDGE_LABEL        = "r:AtlasGlossaryCategoryAnchor";
 
+
+    /**
+     * SQL property keys.
+     */
+    public static final String CONNECTION_ENTITY_TYPE       = "Connection";
+    public static final String QUERY_ENTITY_TYPE            = "Query";
+    public static final String QUERY_FOLDER_ENTITY_TYPE     = "QueryFolder";
+    public static final String QUERY_COLLECTION_ENTITY_TYPE = "QueryCollection";
+
+
     /**
      * Lineage relations.
      */
