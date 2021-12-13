@@ -23,29 +23,18 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.GraphTransactionInterceptor;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.SortOrder;
-import org.apache.atlas.discovery.SearchProcessor;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.Status;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
-import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.repository.Constants;
-import org.apache.atlas.repository.converters.AtlasFormatConverters;
-import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.*;
-import org.apache.atlas.repository.graphdb.AtlasIndexQuery.Result;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasEnumType;
 import org.apache.atlas.type.AtlasStructType;
-import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
-import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
-import org.apache.atlas.repository.store.graph.v1.RestoreHandlerV1;
-import org.apache.atlas.repository.store.graph.v2.bulkimport.EntityChangeNotifierNop;
-import org.apache.atlas.repository.store.graph.v2.bulkimport.FullTextMapperV2Nop;
-import org.apache.atlas.type.*;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.util.FileUtils;
@@ -69,17 +58,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.apache.atlas.repository.Constants.ATLAS_GLOSSARY_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_NAMES_KEY;
 import static org.apache.atlas.repository.Constants.ENTITY_TYPE_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.GLOSSARY_TERMS_EDGE_LABEL;
 import static org.apache.atlas.repository.Constants.INDEX_SEARCH_VERTEX_PREFIX_DEFAULT;
 import static org.apache.atlas.repository.Constants.INDEX_SEARCH_VERTEX_PREFIX_PROPERTY;
+import static org.apache.atlas.repository.Constants.NAME;
 import static org.apache.atlas.repository.Constants.PROPAGATED_CLASSIFICATION_NAMES_KEY;
+import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.SUPER_TYPES_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TYPENAME_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TYPE_NAME_PROPERTY_KEY;
 import static org.apache.atlas.repository.graph.AtlasGraphProvider.getGraphInstance;
-import static org.apache.atlas.repository.graph.GraphHelper.getTraitNames;
 import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.SortOrder.ASC;
 import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.SortOrder.DESC;
 
@@ -579,6 +571,57 @@ public class AtlasGraphUtilsV2 {
 
         RequestContext.get().endMetricRecord(metric);
         return result;
+    }
+
+    public static boolean glossaryExists(String name) {
+        MetricRecorder  metric          = RequestContext.get().startMetricRecord("AtlasGraphUtilsV2.glossaryExists");
+        boolean ret = false;
+        AtlasGraph graph      = getGraphInstance();
+        AtlasGraphQuery query = graph.query()
+                .has(ENTITY_TYPE_PROPERTY_KEY, ATLAS_GLOSSARY_ENTITY_TYPE);
+
+        Iterator<AtlasVertex> result = query.vertices().iterator();
+
+        while (result.hasNext()) {
+            AtlasVertex glossaryVertex = result.next();
+            if (getState(glossaryVertex) == Status.ACTIVE) {
+                String existingGlossaryName = glossaryVertex.getProperty(NAME, String.class);
+                if (name.equals(existingGlossaryName)) {
+                    ret = true;
+                }
+            }
+        }
+
+        RequestContext.get().endMetricRecord(metric);
+        return ret;
+    }
+
+    public static boolean termExists(String name, String glossaryQName) {
+        MetricRecorder  metric = RequestContext.get().startMetricRecord("AtlasGraphUtilsV2.termExists");
+
+        AtlasGraphQuery query = getGraphInstance().query()
+                .has(ENTITY_TYPE_PROPERTY_KEY, ATLAS_GLOSSARY_ENTITY_TYPE)
+                .has(QUALIFIED_NAME, glossaryQName);
+
+        Iterator<AtlasVertex> results         = query.vertices().iterator();
+        AtlasVertex           glossaryVertex  = results.hasNext() ? results.next() : null;
+
+        if (glossaryVertex != null) {
+            Iterator<AtlasEdge> termEdges = glossaryVertex.getEdges(AtlasEdgeDirection.OUT, GLOSSARY_TERMS_EDGE_LABEL).iterator();
+
+            while (termEdges.hasNext()) {
+                AtlasVertex term = termEdges.next().getInVertex();
+                if (getState(term) == Status.ACTIVE) {
+                    String termName = term.getProperty(NAME, String.class);
+                    if (name.equals(termName)) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        RequestContext.get().endMetricRecord(metric);
+        return false;
     }
 
     public static AtlasVertex findByTypeAndPropertyName(AtlasGraph graph, String typeName, Map<String, Object> attributeValues) {
