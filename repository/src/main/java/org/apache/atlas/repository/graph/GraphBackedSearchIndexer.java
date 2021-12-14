@@ -635,7 +635,8 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
                 if (isRelationshipType(atlasType)) {
                     createEdgeIndex(management, propertyName, String.class, cardinality, false);
                 } else {
-                    createVertexIndex(management, propertyName, UniqueKind.NONE, String.class, cardinality, isIndexable, false, false);
+                    boolean isStringField = AtlasAttributeDef.IndexType.STRING.equals(indexType);
+                    createVertexIndex(management, propertyName, UniqueKind.NONE, String.class, cardinality, isIndexable, false, isStringField, indexTypeESConfig, indexTypeESFields);
 
                     if (uniqPropName != null) {
                         createVertexIndex(management, uniqPropName, UniqueKind.PER_TYPE_UNIQUE, String.class, cardinality, isIndexable, true, false);
