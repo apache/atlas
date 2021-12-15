@@ -82,8 +82,6 @@ public enum AtlasConfiguration {
     DEBUG_METRICS_ENABLED("atlas.debug.metrics.enabled", false),
     TASKS_USE_ENABLED("atlas.tasks.enabled", true),
     SESSION_TIMEOUT_SECS("atlas.session.timeout.secs", -1),
-    ALLOW_ATTRIBUTES_OBJECT_ID("atlas.objectId.support.entity.attributes", false),
-    ATTRIBUTES_OBJECT_ID("atlas.objectId.entity.attributes", null),
     UPDATE_COMPOSITE_INDEX_STATUS("atlas.update.composite.index.status", true);
 
 
