@@ -81,54 +81,23 @@ jobs:
           tags: |
             ghcr.io/atlanhq/${{ github.event.repository.name }}-${{ steps.get_branch.outputs.branch }}:latest
             ghcr.io/atlanhq/${{ github.event.repository.name }}-${{ steps.get_branch.outputs.branch }}:${{ steps.get_version.outputs.version }}
-     
-      - name: Check out into atlan-v2 repo
+
+
+      - name: Check out into atlan repo
         uses: actions/checkout@v2
         with:
-          fetch-depth: 0
-          ref: master
-          repository: atlanhq/atlan-v2
+          ref: ${{ steps.get_branch.outputs.branch }}
+          repository: atlanhq/atlan
           token: ${{ secrets.my_pat }}
 
-      - name: Get previous tag from atlan-v2 repo
-        id: get_latest_tag
+      - name: Add Changelog
         run: |
-          repo_branch=${{ steps.get_branch.outputs.branch }}
-          if [[ "$repo_branch" == "master" ]]; then
-            charts_tag="staging"
-          else 
-            charts_tag="$repo_branch"
-          fi
-          echo "##[set-output name=charts_tag;]$(echo $charts_tag)"
-          tag=$(git tag | grep "\<$charts_tag\>" | sort -V | grep 'v[0-9].*' | tail -1)
-          echo "##[set-output name=tag;]$(git tag | grep "\<$charts_tag\>" | sort -V | grep 'v[0-9].*' | tail -1)"
-          if echo $tag | grep "999"; then
-              echo "##[set-output name=command;]$(echo 'm')"
-          else
-              echo "##[set-output name=command;]$(echo 'p')"
-          fi
-        shell: bash
-
-      - name: Get new tag by doing semver version bump
-        id: bump_tag
-        run: |
-          chmod +x ./scripts/semver-version-upgrade.sh
-          bumped_tag=$(./scripts/semver-version-upgrade.sh -${{ steps.get_latest_tag.outputs.command }} ${{ steps.get_latest_tag.outputs.tag }})
-          echo "##[set-output name=new_tag;]$(echo $bumped_tag)"
-          
-      - name: Create Release on atlan-v2 repo
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.my_pat }}
-        with:
-          tag_name: ${{ steps.bump_tag.outputs.new_tag }}-${{ steps.get_latest_tag.outputs.charts_tag }}
-          release_name: ${{ github.event.repository.name }}
-          body: |
-            ${{ github.event.head_commit.message }}
-            Commit id - ${{ steps.get_version.outputs.version }}
-          draft: false
-          prerelease: false
-          owner: atlanhq
-          repo: atlan-v2
-          commitish: ${{ steps.get_latest_tag.outputs.charts_tag }}
+          mkdir -p gitlog
+          echo "- ${{ github.event.head_commit.message }}">>gitlog/${{ github.event.repository.name }}.txt
+          chmod +x ./scripts/create_changelog.sh
+          ./scripts/create_changelog.sh
+          git add .
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git commit -m "${{ github.event.repository.name }}"
+          git push origin
