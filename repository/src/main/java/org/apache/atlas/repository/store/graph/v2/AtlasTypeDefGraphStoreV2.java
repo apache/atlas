@@ -206,8 +206,7 @@ public class AtlasTypeDefGraphStoreV2 extends AtlasTypeDefGraphStore {
         ret.setProperty(TYPE_CATEGORY_PROPERTY_KEY, getTypeCategory(typeDef));
 
         ret.setProperty(Constants.TYPENAME_PROPERTY_KEY, typeDef.getName());
-        ret.setProperty(Constants.TYPEDESCRIPTION_PROPERTY_KEY,
-                StringUtils.isNotBlank(typeDef.getDescription()) ? typeDef.getDescription() : typeDef.getName());
+        ret.setProperty(Constants.TYPEDESCRIPTION_PROPERTY_KEY, typeDef.getDescription());
 
         if (StringUtils.isNotEmpty(typeDef.getServiceType())) {
             ret.setProperty(Constants.TYPESERVICETYPE_PROPERTY_KEY, typeDef.getServiceType());
