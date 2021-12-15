@@ -142,7 +142,7 @@ public class AtlasBusinessMetadataType extends AtlasStructType {
     }
 
     private void attachCustomESMappingsOnBMAttributeDef (AtlasType attrType, AtlasAttributeDef attributeDef) {
-        if (attrType instanceof AtlasBuiltInTypes.AtlasStringType) {
+        if (attrType instanceof AtlasBuiltInTypes.AtlasStringType || attrType instanceof AtlasEnumType) {
             attributeDef.setIndexType(AtlasAttributeDef.IndexType.STRING);
             attributeDef.setIndexTypeESConfig(Constants.ES_ATLAN_KEYWORD_ANALYZER_CONFIG);
             attributeDef.setIndexTypeESFields(Constants.TEXT_MULTIFIELD);
