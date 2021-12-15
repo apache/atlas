@@ -6,6 +6,7 @@ public abstract class SearchParams {
 
     Set<String> attributes;
     Set<String> relationAttributes;
+    boolean showSearchScore;
 
     public abstract String getQuery();
 
@@ -23,5 +24,13 @@ public abstract class SearchParams {
 
     public void setRelationAttributes(Set<String> relationAttributes) {
         this.relationAttributes = relationAttributes;
+    }
+
+    public boolean getShowSearchScore() {
+        return showSearchScore;
+    }
+
+    public void setShowSearchScore(boolean showSearchScore) {
+        this.showSearchScore = showSearchScore;
     }
 }

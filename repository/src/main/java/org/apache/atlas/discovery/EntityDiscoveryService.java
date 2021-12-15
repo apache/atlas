@@ -1014,6 +1014,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             DirectIndexQueryResult indexQueryResult = indexQuery.vertices(searchParams);
 
             Iterator<Result> iterator = indexQueryResult.getIterator();
+            boolean showSearchScore = searchParams.getShowSearchScore();
 
             while (iterator.hasNext()) {
                 Result result = iterator.next();
@@ -1021,9 +1022,10 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
                 AtlasEntityHeader header = entityRetriever.toAtlasEntityHeader(vertex, resultAttributes);
                 header.setClassifications(entityRetriever.getAllClassifications(vertex));
-                ret.addEntityScore(header.getGuid(), result.getScore());
+                if (showSearchScore) {
+                    ret.addEntityScore(header.getGuid(), result.getScore());
+                }
                 ret.addEntity(header);
-
             }
 
             ret.setAggregations(indexQueryResult.getAggregationMap());
