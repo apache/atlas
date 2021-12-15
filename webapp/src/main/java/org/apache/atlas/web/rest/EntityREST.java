@@ -881,6 +881,24 @@ public class EntityREST {
         }
     }
 
+    @DELETE
+    @Path("/bulk/uniqueAttribute")
+    @Timed
+    public EntityMutationResponse bulkDeleteByUniqueAttribute(List<AtlasObjectId> objectIds) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.bulkDeleteByUniqueAttribute(" + objectIds.size() + ")");
+            }
+
+            return entitiesStore.deleteByUniqueAttributes(objectIds);
+
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+
     /**
      * Bulk API to restore list of entities identified by its GUIDs
      */

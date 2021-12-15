@@ -233,6 +233,16 @@ public interface AtlasEntityStore {
      */
     EntityMutationResponse deleteByUniqueAttributes(AtlasEntityType entityType, Map<String, Object> uniqAttributes)
             throws AtlasBaseException;
+
+    /**
+     * Deletes entities using its type and unique attributes
+     * @param objectIds      List of object contains entity "typeName" & "unqiueAttributes"
+     * @return EntityMutationResponse details of the updates performed by this call
+     * @throws AtlasBaseException
+     */
+    EntityMutationResponse deleteByUniqueAttributes(List<AtlasObjectId> objectIds)
+            throws AtlasBaseException;
+
     /**
      *
      * Get an entity guid by its unique attributes
