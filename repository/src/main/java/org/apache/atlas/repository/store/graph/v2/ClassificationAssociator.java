@@ -18,7 +18,9 @@
 
 package org.apache.atlas.repository.store.graph.v2;
 
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasEntityHeaders;
@@ -127,46 +129,47 @@ public class ClassificationAssociator {
             this(AtlasGraphProvider.getGraphInstance(), typeRegistry, entitiesStore);
         }
 
-        public String setClassifications(Map<String, AtlasEntityHeader> map) {
-            for (AtlasEntityHeader incomingEntityHeader : map.values()) {
+        public void setClassifications(Map<String, AtlasEntityHeader> map) throws AtlasBaseException {
+            for (String guid  : map.keySet()) {
+                AtlasEntityHeader incomingEntityHeader = map.get(guid);
                 String typeName = incomingEntityHeader.getTypeName();
+                AtlasEntityHeader entityToBeChanged;
 
                 AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
                 if (entityType == null) {
-                    LOG.warn("Entity type: {}: Not found: {}!", typeName, STATUS_SKIPPED);
-                    summarizeFormat("%s: %s", typeName, STATUS_SKIPPED);
-                    continue;
+                    throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), incomingEntityHeader.getTypeName());
                 }
 
-                String qualifiedName = getUniqueAttributeName(entityType, incomingEntityHeader);
-                if (StringUtils.isEmpty(qualifiedName)) {
-                    qualifiedName = "<no unique name>";
-                }
+                entityToBeChanged = getByGuid(guid);
 
-                AtlasEntityHeader entityToBeChanged = getByUniqueAttributes(entityType, qualifiedName, incomingEntityHeader.getAttributes());
                 if (entityToBeChanged == null) {
-                    summarizeFormat("Entity:%s:%s:[Not found]:%s", entityType.getTypeName(), qualifiedName, STATUS_SKIPPED);
-                    continue;
+                    String qualifiedName = getUniqueAttributeName(entityType, incomingEntityHeader);
+                    entityToBeChanged = getByUniqueAttributes(entityType, qualifiedName, incomingEntityHeader.getAttributes());
                 }
 
 
-                String guid = entityToBeChanged.getGuid();
-                Map<String, List<AtlasClassification>> operationListMap = computeChanges(incomingEntityHeader, entityToBeChanged);
-                commitChanges(guid, typeName, qualifiedName, operationListMap);
-            }
+                if (entityToBeChanged == null) {
+                    throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
+                }
 
-            return getJsonArray(actionSummary);
+                Map<String, List<AtlasClassification>> operationListMap = computeChanges(incomingEntityHeader, entityToBeChanged);
+                try {
+                    commitChanges(guid, typeName, operationListMap);
+                } catch (AtlasBaseException e) {
+                    e.setEntityGuid(guid);
+                    throw e;
+                }
+            }
         }
 
-        private void commitChanges(String entityGuid, String typeName, String qualifiedName,
-                                                                     Map<String, List<AtlasClassification>> operationListMap) {
+        private void commitChanges(String entityGuid, String typeName, Map<String, List<AtlasClassification>> operationListMap) throws AtlasBaseException {
             if (MapUtils.isEmpty(operationListMap)) {
                 return;
             }
 
-            deleteClassifications(entityGuid, typeName, qualifiedName, operationListMap.get(PROCESS_DELETE));
-            updateClassifications(entityGuid, typeName, qualifiedName, operationListMap.get(PROCESS_UPDATE));
-            addClassifications(entityGuid, typeName, qualifiedName, operationListMap.get(PROCESS_ADD));
+            deleteClassifications(entityGuid, typeName, operationListMap.get(PROCESS_DELETE));
+            updateClassifications(entityGuid, typeName, operationListMap.get(PROCESS_UPDATE));
+            addClassifications(entityGuid, typeName, operationListMap.get(PROCESS_ADD));
 
             operationListMap.clear();
         }
@@ -201,58 +204,47 @@ public class ClassificationAssociator {
             operationListMap.put(op, results);
         }
 
-        private void addClassifications(String entityGuid, String typeName, String qualifiedName, List<AtlasClassification> list) {
+        private void addClassifications(String entityGuid, String typeName, List<AtlasClassification> list) throws AtlasBaseException {
             if (CollectionUtils.isEmpty(list)) {
                 return;
             }
 
-            String status = STATUS_DONE;
             String classificationNames = getClassificationNames(list);
             try {
                 entitiesStore.addClassifications(entityGuid, list);
             } catch (AtlasBaseException e) {
-                status = STATUS_PARTIAL;
-                LOG.warn("{}:{}:{} -> {}: {}.", PROCESS_UPDATE, typeName, qualifiedName, classificationNames, status);
+                LOG.error("Failed to add classifications {}, entity with guid {}", classificationNames, entityGuid);
+                throw e;
             }
-
-            summarize(PROCESS_ADD, entityGuid, typeName, qualifiedName, classificationNames, status);
         }
 
-        private void updateClassifications(String entityGuid, String typeName, String qualifiedName, List<AtlasClassification> list) {
+        private void updateClassifications(String entityGuid, String typeName, List<AtlasClassification> list) throws AtlasBaseException {
             if (CollectionUtils.isEmpty(list)) {
                 return;
             }
 
-            String status = STATUS_DONE;
             String classificationNames = getClassificationNames(list);
-
             try {
                 entitiesStore.updateClassifications(entityGuid, list);
             } catch (AtlasBaseException e) {
-                status = STATUS_PARTIAL;
-                LOG.warn("{}:{}:{} -> {}: {}.", PROCESS_UPDATE, typeName, qualifiedName, classificationNames, status);
+                LOG.error("Failed to update classifications {}, entity with guid {}", classificationNames, entityGuid);
+                throw e;
             }
-
-            summarize(PROCESS_UPDATE, entityGuid, typeName, qualifiedName, classificationNames, status);
         }
 
-        private void deleteClassifications(String entityGuid, String typeName, String qualifiedName, List<AtlasClassification> list) {
+        private void deleteClassifications(String entityGuid, String typeName, List<AtlasClassification> list) throws AtlasBaseException {
             if (CollectionUtils.isEmpty(list)) {
                 return;
             }
 
-            String status = STATUS_DONE;
-            String classificationTypeName = getClassificationNames(list);
             for (AtlasClassification c : list) {
                 try {
                     entitiesStore.deleteClassification(entityGuid, c.getTypeName());
                 } catch (AtlasBaseException e) {
-                    status = STATUS_PARTIAL;
-                    LOG.warn("{}:{}:{} -> {}: Skipped!", entityGuid, typeName, qualifiedName, c.getTypeName());
+                    LOG.error("Failed to remove classification association between {}, entity with guid {}", c.getTypeName(), c.getEntityGuid());
+                    throw e;
                 }
             }
-
-            summarize(PROCESS_DELETE, entityGuid, typeName, qualifiedName, classificationTypeName, status);
         }
 
         AtlasEntityHeader getByUniqueAttributes(AtlasEntityType entityType, String qualifiedName, Map<String, Object> attrValues) {
@@ -270,6 +262,15 @@ public class ClassificationAssociator {
                 LOG.error("{}:{} could not be processed!", entityType, qualifiedName, ex);
                 return null;
             }
+        }
+
+        AtlasEntityHeader getByGuid(String guid) throws AtlasBaseException {
+            AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(this.graph, guid);
+            if (vertex == null) {
+                return null;
+            }
+
+            return entityRetriever.toAtlasEntityHeaderWithClassifications(vertex);
         }
 
         private String getClassificationNames(List<AtlasClassification> list) {
