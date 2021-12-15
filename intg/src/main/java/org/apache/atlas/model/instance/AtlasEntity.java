@@ -96,6 +96,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
     private Map<String, Map<String, Object>> businessAttributes;
     private Set<String>                      labels;
     private Set<String>                      pendingTasks; // read-only field i.e. value provided is ignored during entity create/update
+    private String                           deleteHandler;
 
     @JsonIgnore
     private static AtomicLong s_nextId = new AtomicLong(System.nanoTime());
@@ -135,6 +136,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         setCreatedBy(header.getCreatedBy());
         setUpdateTime(header.getUpdateTime());
         setUpdatedBy(header.getUpdatedBy());
+        setDeleteHandler(header.getDeleteHandler());
     }
 
     public AtlasEntity(Map map) {
@@ -439,6 +441,14 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         }
         meanings.add(meaning);
         setMeanings(meanings);
+    }
+
+    public String getDeleteHandler() {
+        return deleteHandler;
+    }
+
+    public void setDeleteHandler(String deleteHandler) {
+        this.deleteHandler = deleteHandler;
     }
 
     private void init() {

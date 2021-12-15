@@ -69,6 +69,7 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
     private String                          updatedBy           = null;
     private Date                            createTime          = null;
     private Date                            updateTime          = null;
+    private String                          deleteHandler       = null;
 
     public AtlasEntityHeader() {
         this(null, null);
@@ -115,6 +116,7 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
             setCreatedBy(other.getCreatedBy());
             setUpdateTime(other.getUpdateTime());
             setUpdatedBy(other.getUpdatedBy());
+            setDeleteHandler(other.getDeleteHandler());
         }
     }
 
@@ -238,6 +240,14 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
 
     public void setUpdateTime(Date updateTime) {
         this.updateTime = updateTime;
+    }
+
+    public String getDeleteHandler() {
+        return deleteHandler;
+    }
+
+    public void setDeleteHandler(String deleteHandler) {
+        this.deleteHandler = deleteHandler;
     }
 
     @Override
