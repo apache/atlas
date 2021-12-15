@@ -698,6 +698,55 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     @Override
     @GraphTransaction
+    public EntityMutationResponse deleteByUniqueAttributes(List<AtlasObjectId> objectIds) throws AtlasBaseException {
+        if (CollectionUtils.isEmpty(objectIds)) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS);
+        }
+
+        EntityMutationResponse ret = new EntityMutationResponse();
+        Collection<AtlasVertex> deletionCandidates = new ArrayList<>();
+
+        for (AtlasObjectId objectId: objectIds) {
+            if (StringUtils.isEmpty(objectId.getTypeName())) {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "typeName not specified");
+            }
+
+            if (MapUtils.isEmpty(objectId.getUniqueAttributes())) {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "uniqueAttributes not specified");
+            }
+
+            AtlasEntityType entityType = typeRegistry.getEntityTypeByName(objectId.getTypeName());
+
+            if (entityType == null) {
+                throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), objectId.getTypeName());
+            }
+
+            AtlasVertex vertex = AtlasGraphUtilsV2.findByUniqueAttributes(graph, entityType, objectId.getUniqueAttributes());
+
+            if (vertex != null) {
+                AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(vertex);
+
+                AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_DELETE, entityHeader), "delete entity: typeName=", entityType.getTypeName(), ", uniqueAttributes=", objectId.getUniqueAttributes());
+
+                deletionCandidates.add(vertex);
+            } else {
+                if (LOG.isDebugEnabled()) {
+                    // Entity does not exist - treat as non-error, since the caller
+                    // wanted to delete the entity and it's already gone.
+                    LOG.debug("Deletion request ignored for non-existent entity with uniqueAttributes " + objectId.getUniqueAttributes());
+                }
+            }
+        }
+
+        ret = deleteVertices(deletionCandidates);
+        // Notify the change listeners
+        entityChangeNotifier.onEntitiesMutated(ret, false);
+
+        return ret;
+    }
+
+    @Override
+    @GraphTransaction
     public String getGuidByUniqueAttributes(AtlasEntityType entityType, Map<String, Object> uniqAttributes) throws AtlasBaseException{
         return AtlasGraphUtilsV2.getGuidByUniqueAttributes(graph, entityType, uniqAttributes);
     }
