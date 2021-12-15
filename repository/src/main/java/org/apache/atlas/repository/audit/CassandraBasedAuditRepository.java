@@ -25,6 +25,7 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Lists;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.annotation.ConditionalOnAtlasProperty;
@@ -92,6 +93,7 @@ public class CassandraBasedAuditRepository extends AbstractStorageBasedAuditRepo
   private static final String SELECT_STATEMENT_TEMPLATE = "select * from audit where entityid=? order by created desc limit 10;";
   private static final String SELECT_DATE_STATEMENT_TEMPLATE = "select * from audit where entityid=? and created<=? order by created desc limit 10;";
 
+  private static final int AUDITS_INSERT_BATCH_SIZE = 20;
 
   private String keyspace;
   private int replicationFactor;
@@ -116,12 +118,17 @@ public class CassandraBasedAuditRepository extends AbstractStorageBasedAuditRepo
 
   @Override
   public void putEventsV2(List<EntityAuditEventV2> events) throws AtlasBaseException {
-    BoundStatement stmt = new BoundStatement(insertStatement);
-    BatchStatement batch = new BatchStatement();
-    events.forEach(event -> batch.add(stmt.bind(event.getEntityId(), event.getTimestamp(),
-        event.getAction().toString(), event.getUser(), event.getDetails(),
-        (persistEntityDefinition ? event.getEntityDefinitionString() : null))));
-    cassSession.execute(batch);
+    List<List<EntityAuditEventV2>> chunkedEventsList = Lists.partition(events, AUDITS_INSERT_BATCH_SIZE);
+    for (List<EntityAuditEventV2> chunkedEvents: chunkedEventsList) {
+      BatchStatement batch = new BatchStatement();
+      for (EntityAuditEventV2 event : chunkedEvents) {
+        BoundStatement stmt = new BoundStatement(insertStatement);
+        batch.add(stmt.bind(event.getEntityId(), event.getTimestamp(),
+                event.getAction().toString(), event.getUser(), event.getDetails(),
+                (persistEntityDefinition ? event.getEntityDefinitionString() : null)));
+      }
+      cassSession.execute(batch);
+    }
   }
 
   private BoundStatement getSelectStatement(String entityId, String startKey) {
