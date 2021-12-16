@@ -22,14 +22,12 @@ import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.authorize.AtlasTypeAccessRequest;
 import org.apache.atlas.discovery.EntityDiscoveryService;
-import org.apache.atlas.discovery.SearchContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
-import org.apache.atlas.model.discovery.SearchParameters;
+import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasBusinessMetadataDef;
-import org.apache.atlas.model.typedef.AtlasNamedTypeDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -425,27 +423,22 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
         }
     }
 
+    private Map<String, Object> getMap(String key, Object value) {
+        Map<String, Object> map = new HashMap<>();
+        map.put(key, value);
+
+        return map;
+    }
+
     private boolean isBusinessAttributePresent(String attrName, Set<String> applicableTypes) throws AtlasBaseException {
-        SearchParameters.FilterCriteria criteria = new SearchParameters.FilterCriteria();
-        criteria.setAttributeName(attrName);
-        criteria.setOperator(SearchParameters.Operator.NOT_EMPTY);
+        IndexSearchParams indexSearchParams = new IndexSearchParams();
+        Map<String, Object> dsl = getMap("size", "1");
+        dsl.put("query", getMap("exists", getMap("field", attrName)));
 
-        SearchParameters.FilterCriteria entityFilters = new SearchParameters.FilterCriteria();
-        entityFilters.setCondition(SearchParameters.FilterCriteria.Condition.OR);
-        entityFilters.setCriterion(Collections.singletonList(criteria));
+        indexSearchParams.setDsl(dsl);
 
-        SearchParameters searchParameters = new SearchParameters();
-        searchParameters.setTypeName(String.join(SearchContext.TYPENAME_DELIMITER, applicableTypes));
-        searchParameters.setExcludeDeletedEntities(true);
-        searchParameters.setIncludeSubClassifications(false);
-        searchParameters.setEntityFilters(entityFilters);
-        searchParameters.setAttributes(Collections.singleton(attrName));
-        searchParameters.setOffset(0);
-        searchParameters.setLimit(1);
-
-        AtlasSearchResult atlasSearchResult = entityDiscoveryService.searchWithParameters(searchParameters);
+        AtlasSearchResult atlasSearchResult = entityDiscoveryService.directIndexSearch(indexSearchParams);
 
         return CollectionUtils.isNotEmpty(atlasSearchResult.getEntities());
     }
-
 }
