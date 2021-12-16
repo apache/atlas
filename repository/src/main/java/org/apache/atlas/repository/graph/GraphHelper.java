@@ -1378,10 +1378,11 @@ public final class GraphHelper {
     public static List<Object> getArrayElementsProperty(AtlasType elementType, AtlasVertex instanceVertex, AtlasAttribute attribute) {
         String propertyName = attribute.getVertexPropertyName();
         boolean isArrayOfPrimitiveType = elementType.getTypeCategory().equals(TypeCategory.PRIMITIVE);
+        boolean isArrayOfEnum = elementType.getTypeCategory().equals(TypeCategory.ENUM);
 
         if (isReference(elementType)) {
             return (List) getCollectionElementsUsingRelationship(instanceVertex, attribute);
-        } else if (isArrayOfPrimitiveType) {
+        } else if (isArrayOfPrimitiveType || isArrayOfEnum) {
             return (List) instanceVertex.getMultiValuedProperty(propertyName, elementType.getClass());
         } else {
             return (List) instanceVertex.getListProperty(propertyName);

@@ -108,7 +108,8 @@ public class AtlasStructType extends AtlasType {
             if (attrType instanceof AtlasArrayType) {
                 attrType = ((AtlasArrayType) attrType).getElementType();
                 boolean isArrayOfPrimitiveType = attrType.getTypeCategory().equals(TypeCategory.PRIMITIVE);
-                if (isArrayOfPrimitiveType) {
+                boolean isArrayOfEnum = attrType.getTypeCategory().equals(TypeCategory.ENUM);
+                if (isArrayOfPrimitiveType || isArrayOfEnum) {
                     attributeDef.setCardinality(Cardinality.SET);
                 }
 

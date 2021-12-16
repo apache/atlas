@@ -567,12 +567,14 @@ public class EntityGraphMapper {
                 String bmAttrName          = bmAttribute.getName();
                 Object bmAttrExistingValue = null;
                 boolean isArrayOfPrimitiveType = false;
+                boolean isArrayOfEnum = false;
                 if (bmAttribute.getAttributeType().getTypeCategory().equals(ARRAY)) {
                     AtlasArrayType bmAttributeType = (AtlasArrayType) bmAttribute.getAttributeType();
                     AtlasType elementType = bmAttributeType.getElementType();
                     isArrayOfPrimitiveType = elementType.getTypeCategory().equals(TypeCategory.PRIMITIVE);
+                    isArrayOfEnum = elementType.getTypeCategory().equals(TypeCategory.ENUM);
                 }
-                if (isArrayOfPrimitiveType) {
+                if (isArrayOfPrimitiveType || isArrayOfEnum) {
                     bmAttrExistingValue = entityVertex.getPropertyValues(bmAttribute.getVertexPropertyName(), Object.class);
                 } else {
                     bmAttrExistingValue = entityVertex.getProperty(bmAttribute.getVertexPropertyName(), Object.class);
@@ -653,12 +655,14 @@ public class EntityGraphMapper {
                     Object bmAttrValue   = entityBmAttributes.get(bmAttrName);
                     Object existingValue = null;
                     boolean isArrayOfPrimitiveType = false;
+                    boolean isArrayOfEnum = false;
                     if (bmAttribute.getAttributeType().getTypeCategory().equals(ARRAY)) {
                         AtlasArrayType bmAttributeType = (AtlasArrayType) bmAttribute.getAttributeType();
                         AtlasType elementType = bmAttributeType.getElementType();
                         isArrayOfPrimitiveType = elementType.getTypeCategory().equals(TypeCategory.PRIMITIVE);
+                        isArrayOfEnum = elementType.getTypeCategory().equals(TypeCategory.ENUM);
                     }
-                    if (isArrayOfPrimitiveType) {
+                    if (isArrayOfPrimitiveType || isArrayOfEnum) {
                         existingValue = entityVertex.getPropertyValues(bmAttribute.getVertexPropertyName(), Object.class);
                     } else {
                         existingValue = entityVertex.getProperty(bmAttribute.getVertexPropertyName(), Object.class);
@@ -798,12 +802,14 @@ public class EntityGraphMapper {
                     Object attrValue = struct.getAttribute(attribute.getName());
                     Object attrOldValue = null;
                     boolean isArrayOfPrimitiveType = false;
+                    boolean isArrayOfEnum = false;
                     if (attribute.getAttributeType().getTypeCategory().equals(ARRAY)) {
                         AtlasArrayType attributeType = (AtlasArrayType) attribute.getAttributeType();
                         AtlasType elementType = attributeType.getElementType();
                         isArrayOfPrimitiveType = elementType.getTypeCategory().equals(TypeCategory.PRIMITIVE);
+                        isArrayOfEnum = elementType.getTypeCategory().equals(TypeCategory.ENUM);
                     }
-                    if (isArrayOfPrimitiveType) {
+                    if (isArrayOfPrimitiveType || isArrayOfEnum) {
                         attrOldValue = vertex.getPropertyValues(attribute.getVertexPropertyName(),attribute.getClass());
                     } else {
                         attrOldValue = vertex.getProperty(attribute.getVertexPropertyName(),attribute.getClass());
@@ -823,12 +829,14 @@ public class EntityGraphMapper {
                         Object attrValue = struct.getAttribute(attrName);
                         Object attrOldValue = null;
                         boolean isArrayOfPrimitiveType = false;
+                        boolean isArrayOfEnum = false;
                         if (attribute.getAttributeType().getTypeCategory().equals(ARRAY)) {
                             AtlasArrayType attributeType = (AtlasArrayType) attribute.getAttributeType();
                             AtlasType elementType = attributeType.getElementType();
                             isArrayOfPrimitiveType = elementType.getTypeCategory().equals(TypeCategory.PRIMITIVE);
+                            isArrayOfEnum = elementType.getTypeCategory().equals(TypeCategory.ENUM);
                         }
-                        if (isArrayOfPrimitiveType) {
+                        if (isArrayOfPrimitiveType || isArrayOfEnum) {
                             attrOldValue = vertex.getPropertyValues(attribute.getVertexPropertyName(),attribute.getClass());
                         } else {
                             attrOldValue = vertex.getProperty(attribute.getVertexPropertyName(),attribute.getClass());
@@ -2337,9 +2345,10 @@ public class EntityGraphMapper {
 
     public static List<Object> getArrayElementsProperty(AtlasType elementType, boolean isSoftReference, AtlasVertex vertex, String vertexPropertyName) {
         boolean isArrayOfPrimitiveType = elementType.getTypeCategory().equals(TypeCategory.PRIMITIVE);
+        boolean isArrayOfEnum = elementType.getTypeCategory().equals(TypeCategory.ENUM);
         if (!isSoftReference && isReference(elementType)) {
             return (List)vertex.getListProperty(vertexPropertyName, AtlasEdge.class);
-        } else if (isArrayOfPrimitiveType) {
+        } else if (isArrayOfPrimitiveType || isArrayOfEnum) {
             return (List) vertex.getMultiValuedProperty(vertexPropertyName, elementType.getClass());
         } else {
             return (List)vertex.getListProperty(vertexPropertyName);
@@ -2399,8 +2408,10 @@ public class EntityGraphMapper {
     }
     private void setArrayElementsProperty(AtlasType elementType, boolean isSoftReference, AtlasVertex vertex, String vertexPropertyName, List<Object> allValues, List<Object> currentValues, Cardinality cardinality) {
         boolean isArrayOfPrimitiveType = elementType.getTypeCategory().equals(TypeCategory.PRIMITIVE);
+        boolean isArrayOfEnum = elementType.getTypeCategory().equals(TypeCategory.ENUM);
+
         if (!isReference(elementType) || isSoftReference) {
-            if (isArrayOfPrimitiveType) {
+            if (isArrayOfPrimitiveType || isArrayOfEnum) {
                 vertex.removeProperty(vertexPropertyName);
                 if (CollectionUtils.isNotEmpty(allValues)) {
                     for (Object value: allValues) {
