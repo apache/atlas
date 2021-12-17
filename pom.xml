@@ -770,7 +770,7 @@
         <storm.version>2.3.0</storm.version>
         <surefire.forkCount>2C</surefire.forkCount>
         <surefire.version>3.0.0-M5</surefire.version>
-        <testng.version>6.9.4</testng.version>
+        <testng.version>7.0.0</testng.version>
         <tinkerpop.version>3.5.1</tinkerpop.version>
         <woodstox-core.version>5.0.3</woodstox-core.version>
         <zookeeper.version>3.5.7</zookeeper.version>
