@@ -196,7 +196,9 @@ define([
                 this.options.value = {};
             }
             if (!this.options.value.term && this.options.value.gType != 'category') {
-                this.ui.termSearchTree.jstree(true).deselect_all();
+                if (this.ui.termSearchTree.jstree(true)) {
+                    this.ui.termSearchTree.jstree(true).deselect_all();
+                }
                 this.glossaryTermId = null;
             } else {
                 if (this.options.value.term) {
