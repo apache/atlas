@@ -11,6 +11,13 @@
           "number_filter"
         ]
       },
+      "atlan_text_comma_analyzer": {
+        "type": "custom",
+        "tokenizer": "atlan_comma_tokenizer",
+        "filter": [
+          "lowercase"
+        ]
+      },
       "atlan_text_stemmer": {
         "type": "custom",
         "tokenizer": "atlan_tokenizer",
@@ -49,6 +56,10 @@
       "atlan_tokenizer": {
         "type": "pattern",
         "pattern": "( |_|-|'|/|@)"
+      },
+      "atlan_comma_tokenizer": {
+        "type": "pattern",
+        "pattern": ","
       }
     },
     "char_filter":{
