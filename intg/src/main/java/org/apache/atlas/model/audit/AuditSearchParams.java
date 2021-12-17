@@ -27,10 +27,10 @@ public class AuditSearchParams {
     public String getQueryStringForGuid(String guid) {
         String queryWithEntityFilter;
         if (dsl.get("query") == null || ((Map) dsl.get("query")).isEmpty()) {
-            String queryTemplate = "{\"bool\":{\"minimum_should_match\":\"100%\",\"should\":[{\"term\":{\"entityid\":\"entity_id\"}}]}}";
+            String queryTemplate = "{\"bool\":{\"minimum_should_match\":\"100%\",\"should\":[{\"term\":{\"entityId.keyword\":\"entity_id\"}}]}}";
             queryWithEntityFilter = queryTemplate.replace("entity_id", guid);
         } else {
-            String queryTemplate = "{\"bool\":{\"minimum_should_match\":\"100%\",\"should\":[{\"term\":{\"entityid\":\"entity_id\"}}, query_from_payload]}}";
+            String queryTemplate = "{\"bool\":{\"minimum_should_match\":\"100%\",\"should\":[{\"term\":{\"entityId.keyword\":\"entity_id\"}}, query_from_payload]}}";
             queryWithEntityFilter = queryTemplate.replace("entity_id", guid);
             String queryValue = AtlasType.toJson(dsl.get("query"));
             queryWithEntityFilter = queryWithEntityFilter.replace("query_from_payload", queryValue);
