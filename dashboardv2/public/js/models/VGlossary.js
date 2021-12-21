@@ -64,6 +64,14 @@ define(['require',
             }, options);
             return this.constructor.nonCrudOperation.call(this, url, type, options);
         },
+        deleteGlossary: function(guid, options) {
+            var url = UrlLinks.glossaryApiUrl({ "guid": guid });
+            options = _.extend({
+                contentType: 'application/json',
+                dataType: 'json'
+            }, options);
+            return this.constructor.nonCrudOperation.call(this, url, 'DELETE', options);
+        },
         deleteCategory: function(guid, options) {
             var url = UrlLinks.categoryApiUrl({ "guid": guid });
             options = _.extend({
