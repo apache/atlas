@@ -720,6 +720,9 @@ define(['require',
                             if (!gId) {
                                 gId = guid;
                             }
+                            if (gId === guid) {
+                                that.glossaryCollection.fullCollection.remove(gId);
+                            }
                             var glossary = that.glossaryCollection.fullCollection.get(gId);
                             if (that.value) {
                                 if (that.value.gType == "term") {
@@ -776,7 +779,7 @@ define(['require',
                             that.notificationModal = obj;
                             obj.showButtonLoader();
                             if (type == "Glossary") {
-                                that.glossaryCollection.fullCollection.get(guid).destroy(options, { silent: true, reset: false });
+                                new that.glossaryCollection.model().deleteGlossary(guid, options);
                             } else if (type == "GlossaryCategory") {
                                 new that.glossaryCollection.model().deleteCategory(guid, options);
                             } else if (type == "GlossaryTerm") {
