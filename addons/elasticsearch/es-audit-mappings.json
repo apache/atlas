@@ -1,6 +1,9 @@
 {
   "mappings": {
     "properties": {
+      "entityQualifiedName": {
+        "type": "keyword"
+      },
       "entityId": {
         "type": "keyword"
       },
