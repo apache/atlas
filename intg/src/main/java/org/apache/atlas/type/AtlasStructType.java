@@ -766,7 +766,7 @@ public class AtlasStructType extends AtlasType {
             this.vertexPropertyName       = generateVertexPropertyName(attributeDef);
             this.vertexUniquePropertyName = attrDef.getIsUnique() ? encodePropertyKey(UNIQUE_ATTRIBUTE_SHADE_PROPERTY_PREFIX + attributeDef.getName()) : null;
             this.relationshipName         = relationshipName;
-            this.relationshipEdgeLabel    = getRelationshipEdgeLabel(relationshipLabel);
+            this.relationshipEdgeLabel    = getRelationshipEdgeLabel(definedInType.getStructDef(), relationshipLabel);
             boolean isOwnedRef            = false;
             String  inverseRefAttribute   = null;
 
@@ -1142,7 +1142,19 @@ public class AtlasStructType extends AtlasType {
             return false;
         }
 
-        private String getRelationshipEdgeLabel(String relationshipLabel) {
+        private static boolean isRootType(AtlasStructDef structDef) {
+            return StringUtils.equals(structDef.getName(), AtlasEntityType.ENTITY_ROOT.getTypeName()) ||
+                    StringUtils.equals(structDef.getName(), AtlasClassificationType.CLASSIFICATION_ROOT.getTypeName());
+        }
+
+        private String getRelationshipEdgeLabel(AtlasStructDef structDef, String relationshipLabel) {
+            String qualifiedName = "";
+            if (isRootType(structDef)) {
+                qualifiedName = this.qualifiedName;
+            } else {
+                qualifiedName = String.format("%s.%s", structDef.getName(), this.qualifiedName);
+            }
+
             return (relationshipLabel == null) ? getEdgeLabel(qualifiedName) : relationshipLabel;
         }
 
