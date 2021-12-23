@@ -25,6 +25,7 @@ import org.apache.atlas.model.Clearable;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.type.AtlasType;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 
 import javax.xml.bind.annotation.XmlAccessType;
@@ -112,6 +113,7 @@ public class EntityAuditEventV2 implements Serializable, Clearable {
         }
     }
 
+    private String              entityQualifiedName;
     private String              entityId;
     private long                timestamp;
     private long                created;
@@ -235,6 +237,14 @@ public class EntityAuditEventV2 implements Serializable, Clearable {
         this.entity = AtlasType.fromJson(entityDefinition, AtlasEntity.class);
     }
 
+    public String getEntityQualifiedName() {
+        return entityQualifiedName;
+    }
+
+    public void setEntityQualifiedName(String entityQualifiedName) {
+        this.entityQualifiedName = entityQualifiedName;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) { return true; }
@@ -250,12 +260,13 @@ public class EntityAuditEventV2 implements Serializable, Clearable {
                Objects.equals(entity, that.entity) &&
                Objects.equals(type, that.type) &&
                Objects.equals(detail, that.detail) &&
-               Objects.equals(created, that.created);
+               Objects.equals(created, that.created) &&
+               Objects.equals(entityQualifiedName, that.entityQualifiedName);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(entityId, timestamp, user, action, details, eventKey, entity, type, detail, created);
+        return Objects.hash(entityId, timestamp, user, action, details, eventKey, entity, type, detail, created, entityQualifiedName);
     }
 
     @Override
@@ -263,6 +274,7 @@ public class EntityAuditEventV2 implements Serializable, Clearable {
         final StringBuilder sb = new StringBuilder("EntityAuditEventV2{");
 
         sb.append("entityId='").append(entityId).append('\'');
+        sb.append("entityQualifiedName='").append(entityQualifiedName).append('\'');
         sb.append(", timestamp=").append(timestamp);
         sb.append(", user='").append(user).append('\'');
         sb.append(", action=").append(action);
@@ -309,6 +321,8 @@ public class EntityAuditEventV2 implements Serializable, Clearable {
             if(bracketStartPosition != -1) {
                 ret = details.substring(bracketStartPosition);
             }
+        } else if(MapUtils.isNotEmpty(detail)) {
+            ret = AtlasType.toJson(detail);
         }
 
         return ret;

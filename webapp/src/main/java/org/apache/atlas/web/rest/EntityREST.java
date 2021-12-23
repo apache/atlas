@@ -47,6 +47,7 @@ import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.FileUtils;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.collections.CollectionUtils;
@@ -1144,16 +1145,48 @@ public class EntityREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.searchAuditEvents");
             }
 
-            AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_ENTITY_AUDITS), "search audit events!");
-
             String dslString = parameters.getQueryString();
 
             EntityAuditSearchResult ret = esBasedAuditRepository.searchEvents(dslString);
+
+            scrubEntityAudits(ret);
 
             return ret;
         } finally {
             AtlasPerfTracer.log(perf);
         }
+    }
+
+    private void scrubEntityAudits(EntityAuditSearchResult result) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("scrubEntityAudits");
+        for (EntityAuditEventV2 event : result.getEntityAudits()) {
+            try {
+                AtlasEntityWithExtInfo entityWithExtInfo = entitiesStore.getByIdWithoutAuthorization(event.getEntityId());
+                AtlasEntityHeader entityHeader = new AtlasEntityHeader(entityWithExtInfo.getEntity());
+
+                AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, ENTITY_READ, entityHeader), "read entity audit: guid=", event.getEntityId());
+
+            } catch (AtlasBaseException e) {
+                if (e.getAtlasErrorCode() == AtlasErrorCode.INSTANCE_GUID_NOT_FOUND) {
+                    try {
+                        AtlasEntityHeader entityHeader = getEntityHeaderFromPurgedOrDeletedAudit(event.getEntityId());
+
+                        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, ENTITY_READ, entityHeader), "read entity audit: guid=", event.getEntityId());
+                    } catch (AtlasBaseException abe) {
+                        if (abe.getAtlasErrorCode() == AtlasErrorCode.UNAUTHORIZED_ACCESS) {
+                            event.setDetail(null);
+                        } else {
+                            throw abe;
+                        }
+                    }
+                } else if (e.getAtlasErrorCode() == AtlasErrorCode.UNAUTHORIZED_ACCESS) {
+                    event.setDetail(null);
+                } else {
+                    throw e;
+                }
+            }
+        }
+        RequestContext.get().endMetricRecord(metric);
     }
 
     @GET
@@ -1594,6 +1627,27 @@ public class EntityREST {
 
         if (ret == null) {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
+        }
+
+        return ret;
+    }
+
+    private AtlasEntityHeader getEntityHeaderFromPurgedOrDeletedAudit(String guid) throws AtlasBaseException {
+        List<EntityAuditEventV2> auditEvents = esBasedAuditRepository.listEventsV2(guid, EntityAuditActionV2.ENTITY_DELETE, null, (short)1);
+        AtlasEntityHeader        ret         = CollectionUtils.isNotEmpty(auditEvents) ? auditEvents.get(0).getEntityHeader() : null;
+
+        if (ret == null) {
+            auditEvents = esBasedAuditRepository.listEventsV2(guid, EntityAuditActionV2.ENTITY_PURGE, null, (short)1);
+            ret         = CollectionUtils.isNotEmpty(auditEvents) ? auditEvents.get(0).getEntityHeader() : null;
+
+            if (ret == null) {
+                auditEvents = esBasedAuditRepository.listEventsV2(guid, EntityAuditActionV2.ENTITY_IMPORT_DELETE, null, (short)1);
+                ret         = CollectionUtils.isNotEmpty(auditEvents) ? auditEvents.get(0).getEntityHeader() : null;
+
+                if (ret == null) {
+                    throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
+                }
+            }
         }
 
         return ret;

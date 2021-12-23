@@ -81,6 +81,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
                     AtlasConfiguration.NOTIFICATION_FIXED_BUFFER_ITEMS_INCREMENT_COUNT.getInt()));
 
     private static final long AUDIT_REPOSITORY_MAX_SIZE_DEFAULT = 1024 * 1024;
+    private static final String QUALIFIED_NAME = "qualifiedName";
     private final Set<EntityAuditRepository>  auditRepositories;
     private final AtlasTypeRegistry      typeRegistry;
     private final AtlasInstanceConverter instanceConverter;
@@ -153,7 +154,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
 
         FixedBufferList<EntityAuditEventV2> deletedEntities = getAuditEventsList();
         for (AtlasEntity entity : entities) {
-            createEvent(deletedEntities.next(), entity, isImport ? ENTITY_IMPORT_DELETE : ENTITY_DELETE, "Deleted entity");
+            createEvent(deletedEntities.next(), entity, isImport ? ENTITY_IMPORT_DELETE : ENTITY_DELETE);
         }
 
         for (EntityAuditRepository auditRepository: auditRepositories) {
@@ -468,7 +469,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
         Map<String, Object> prunedAttributes = pruneEntityAttributesForAudit(entity);
 
         String auditPrefix  = getV2AuditPrefix(action);
-        String auditString  = auditPrefix + AtlasType.toJson(entity);
+        String auditString  = auditPrefix + getAuditString(entity, action);
         byte[] auditBytes   = auditString.getBytes(StandardCharsets.UTF_8);
         long   auditSize    = auditBytes != null ? auditBytes.length : 0;
         long   auditMaxSize = AUDIT_REPOSITORY_MAX_SIZE_DEFAULT;
@@ -483,7 +484,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
             entity.setAttributes(null);
             entity.setRelationshipAttributes(null);
 
-            auditString = auditPrefix + AtlasType.toJson(entity);
+            auditString = auditPrefix + getAuditString(entity, attrValues, action);
             auditBytes  = auditString.getBytes(StandardCharsets.UTF_8); // recheck auditString size
             auditSize   = auditBytes != null ? auditBytes.length : 0;
 
@@ -501,6 +502,9 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
                 shallowEntity.setUpdatedBy(entity.getUpdatedBy());
                 shallowEntity.setStatus(entity.getStatus());
                 shallowEntity.setVersion(entity.getVersion());
+
+                //entity.attributes will only have uniqueAttributes
+                shallowEntity.setAttribute(QUALIFIED_NAME, entity.getAttribute(QUALIFIED_NAME));
 
                 auditString = auditPrefix + AtlasType.toJson(shallowEntity);
             }
@@ -543,6 +547,43 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
         }
 
         return ret;
+    }
+
+    private String getAuditString(AtlasEntity entity, Map<String, Object> attrValues, EntityAuditActionV2 action) {
+        AtlasEntityType     entityType        = typeRegistry.getEntityTypeByName(entity.getTypeName());
+        StringBuilder sb = new StringBuilder();
+
+        if (action == ENTITY_DELETE || action == ENTITY_IMPORT_DELETE || action == ENTITY_PURGE) {
+            entity.setAttributes(null);
+            for (AtlasAttribute attribute : entityType.getUniqAttributes().values()) {
+
+                String attrName  = attribute.getName();
+                Object attrValue = attrValues.get(attrName);
+
+                entity.setAttribute(attrName, attrValue);
+            }
+        }
+        sb.append(AtlasType.toJson(entity));
+        return sb.toString();
+    }
+
+    private String getAuditString(AtlasEntity entity, EntityAuditActionV2 action) {
+        AtlasEntityType     entityType        = typeRegistry.getEntityTypeByName(entity.getTypeName());
+        StringBuilder sb = new StringBuilder();
+
+        if (action == ENTITY_DELETE || action == ENTITY_IMPORT_DELETE || action == ENTITY_PURGE) {
+            Map<String, Object> attrValues = new HashMap<>(entity.getAttributes());
+            entity.setAttributes(null);
+            for (AtlasAttribute attribute : entityType.getUniqAttributes().values()) {
+
+                String attrName  = attribute.getName();
+                Object attrValue = attrValues.get(attrName);
+
+                entity.setAttribute(attrName, attrValue);
+            }
+        }
+        sb.append(AtlasType.toJson(entity));
+        return sb.toString();
     }
 
     private Map<String, Object> pruneEntityAttributesForAudit(AtlasEntity entity) {

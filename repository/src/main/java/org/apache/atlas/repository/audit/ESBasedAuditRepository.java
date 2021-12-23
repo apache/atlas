@@ -28,6 +28,7 @@ import org.apache.atlas.model.audit.EntityAuditSearchResult;
 import org.apache.atlas.type.AtlasType;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.NotImplementedException;
+import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
 import org.apache.http.entity.ContentType;
@@ -50,6 +51,8 @@ import java.util.*;
 
 import javax.inject.Singleton;
 
+import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
+
 /**
  * This class provides cassandra support as the backend for audit storage support.
  */
@@ -60,8 +63,10 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
     private static final Logger LOG = LoggerFactory.getLogger(ESBasedAuditRepository.class);
     public static final String INDEX_BACKEND_CONF = "atlas.graph.index.search.hostname";
     public static final String INDEX_NAME = "entity_audits";
-    private static final String ENTITYID = "entityid";
+    private static final String ENTITYID = "entityId";
+    private static final String ENTITY_QUALIFIED_NAME = "entityQualifiedName";
     private static final String CREATED = "created";
+    private static final String EVENT_KEY = "eventKey";
     private static final String ACTION = "action";
     private static final String USER = "user";
     private static final String DETAIL = "detail";
@@ -83,19 +88,17 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
     public void putEventsV2(List<EntityAuditEventV2> events) throws AtlasBaseException {
         try {
             if (events != null && events.size() > 0) {
-                String entityPayloadTemplate = "'{'\"entityid\":\"{0}\",\"created\":{1},\"action\":\"{2}\",\"detail\":{3},\"user\":\"{4}\"'}'";
+                String entityPayloadTemplate = "'{'\"entityId\":\"{0}\",\"created\":{1},\"action\":\"{2}\",\"detail\":{3},\"user\":\"{4}\", \"eventKey\":\"{5}\", " +
+                        "\"entityQualifiedName\": \"{6}\"'}'";
                 String bulkMetadata = String.format("{ \"index\" : { \"_index\" : \"%s\" } }%n", INDEX_NAME);
                 StringBuilder bulkRequestBody = new StringBuilder();
                 for (EntityAuditEventV2 event : events) {
                     String created = String.format("%s", event.getTimestamp());
-                    String details;
-                    if (event.getAction().equals(EntityAuditEventV2.EntityAuditActionV2.ENTITY_DELETE) || event.getAction().equals(EntityAuditEventV2.EntityAuditActionV2.ENTITY_PURGE)) {
-                        details = "{}";
-                    } else {
-                        String auditDetailPrefix = EntityAuditListenerV2.getV2AuditPrefix(event.getAction());
-                        details = event.getDetails().substring(auditDetailPrefix.length());
-                    }
-                    String bulkItem = MessageFormat.format(entityPayloadTemplate, event.getEntityId(), created, event.getAction(), details, event.getUser());
+                    String auditDetailPrefix = EntityAuditListenerV2.getV2AuditPrefix(event.getAction());
+                    String details = event.getDetails().substring(auditDetailPrefix.length());
+
+                    String bulkItem = MessageFormat.format(entityPayloadTemplate, event.getEntityId(), created, event.getAction(), details,
+                            event.getUser(), event.getEntityId() + ":" + created, event.getEntity().getAttribute(QUALIFIED_NAME));
                     bulkRequestBody.append(bulkMetadata);
                     bulkRequestBody.append(bulkItem);
                     bulkRequestBody.append("\n");
@@ -122,7 +125,12 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
 
     @Override
     public List<EntityAuditEventV2> listEventsV2(String entityId, EntityAuditEventV2.EntityAuditActionV2 auditAction, String startKey, short maxResultCount) throws AtlasBaseException {
-        return null;
+        List<EntityAuditEventV2> ret;
+        String queryTemplate = "{\"query\":{\"bool\":{\"must\":[{\"term\":{\"entityId.keyword\":\"%s\"}},{\"term\":{\"action.keyword\":\"%s\"}}]}}}";
+        String queryWithEntityFilter = String.format(queryTemplate, entityId, auditAction);
+        ret = searchEvents(queryWithEntityFilter).getEntityAudits();
+
+        return ret;
     }
 
     @Override
@@ -132,6 +140,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
 
     @Override
     public EntityAuditSearchResult searchEvents(String queryString) throws AtlasBaseException {
+        LOG.info("Hitting ES query to fetch audits: {}", queryString);
         try {
             String response = performSearchOnIndex(queryString);
             return getResultFromResponse(response);
@@ -154,6 +163,15 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
             event.setDetail((Map<String, Object>) source.get(DETAIL));
             event.setUser((String) source.get(USER));
             event.setCreated((long) source.get(CREATED));
+            event.setTimestamp((long) source.get(CREATED));
+            event.setEntityQualifiedName((String) source.get(ENTITY_QUALIFIED_NAME));
+
+            String eventKey = (String) source.get(EVENT_KEY);
+            if (StringUtils.isEmpty(eventKey)) {
+                eventKey = event.getEntityId() + ":" + event.getTimestamp();
+            }
+
+            event.setEventKey(eventKey);
             entityAudits.add(event);
         }
         Map<String, Object> aggregationsMap = (Map<String, Object>) responseMap.get("aggregations");
