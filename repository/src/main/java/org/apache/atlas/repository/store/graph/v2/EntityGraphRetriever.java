@@ -893,6 +893,8 @@ public class EntityGraphRetriever {
         List<AtlasClassification> ret   = new ArrayList<>();
         LOG.info("entityVertex == null -> {}", entityVertex == null);
 
+        LOG.info( "vertex : {}", GraphHelper.vertexString(entityVertex));
+
         AtlasVertexQuery query = entityVertex.query();
         LOG.info("query == null -> {}", query == null);
 
