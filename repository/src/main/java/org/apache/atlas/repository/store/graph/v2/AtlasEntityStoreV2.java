@@ -1593,7 +1593,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         for (AtlasEntityHeader entity : req.getDeletedEntities()) {
             String handler;
-            if (ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE.contains(entity.getTypeName())) {
+            if (ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE.equals(entity.getTypeName())) {
                 handler = "HARD";
             } else {
                 handler = RequestContext.get().getDeleteType().name();
