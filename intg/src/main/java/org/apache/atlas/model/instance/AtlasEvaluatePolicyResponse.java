@@ -17,7 +17,6 @@
  */
 package org.apache.atlas.model.instance;
 
-import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -26,7 +25,6 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.io.Serializable;
-import java.util.Set;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
@@ -49,6 +47,7 @@ public class AtlasEvaluatePolicyResponse implements Serializable {
     private String entityId;
 
     private String classification;
+    private String businessMetadata;
 
     private String relationShipTypeName;
     private String entityTypeEnd1;
@@ -66,13 +65,14 @@ public class AtlasEvaluatePolicyResponse implements Serializable {
 
 
 
-    public AtlasEvaluatePolicyResponse(String typeName, String entityGuid, String action, String entityId , Boolean allowed ,String errorCode) {
+    public AtlasEvaluatePolicyResponse(String typeName, String entityGuid, String action, String entityId , Boolean allowed ,String errorCode, String businessMetadata) {
         this.typeName = typeName;
         this.entityGuid = entityGuid;
         this.action = action;
         this.entityId = entityId;
         this.allowed = allowed;
         this.errorCode = errorCode;
+        this.businessMetadata = businessMetadata;
     }
 
     public AtlasEvaluatePolicyResponse(String typeName, String entityGuid, String action, String entityId , String classification, Boolean allowed, String errorCode) {
@@ -208,6 +208,16 @@ public class AtlasEvaluatePolicyResponse implements Serializable {
     public void setErrorCode(String errorCode) {
         this.errorCode = errorCode;
     }
+
+
+    public String getBusinessMetadata() {
+        return businessMetadata;
+    }
+
+    public void setBusinessMetadata(String businessMetadata) {
+        this.businessMetadata = businessMetadata;
+    }
+
 
     public StringBuilder toString(StringBuilder sb) {
         if (sb == null) {

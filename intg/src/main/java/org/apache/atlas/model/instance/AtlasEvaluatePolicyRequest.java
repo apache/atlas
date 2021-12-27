@@ -60,6 +60,7 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 
 
     private String classification;
+    private String businessMetadata;
 
 
     public AtlasEvaluatePolicyRequest() {
@@ -161,6 +162,14 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 
     public void setClassification(String classification) {
         this.classification = classification;
+    }
+
+    public String getBusinessMetadata() {
+        return businessMetadata;
+    }
+
+    public void setBusinessMetadata(String businessMetadata) {
+        this.businessMetadata = businessMetadata;
     }
 
     public StringBuilder toString(StringBuilder sb) {
