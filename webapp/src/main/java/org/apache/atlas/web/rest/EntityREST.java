@@ -1176,7 +1176,7 @@ public class EntityREST {
             } catch (AtlasBaseException e) {
                 if (e.getAtlasErrorCode() == AtlasErrorCode.INSTANCE_GUID_NOT_FOUND) {
                     try {
-                        AtlasEntityHeader entityHeader = getEntityHeaderFromPurgedOrDeletedAudit(event.getEntityId());
+                        AtlasEntityHeader entityHeader = event.getEntityHeader();
 
                         AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, ENTITY_READ, entityHeader), "read entity audit: guid=", event.getEntityId());
                     } catch (AtlasBaseException abe) {
@@ -1634,27 +1634,6 @@ public class EntityREST {
 
         if (ret == null) {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
-        }
-
-        return ret;
-    }
-
-    private AtlasEntityHeader getEntityHeaderFromPurgedOrDeletedAudit(String guid) throws AtlasBaseException {
-        List<EntityAuditEventV2> auditEvents = esBasedAuditRepository.listEventsV2(guid, EntityAuditActionV2.ENTITY_DELETE, null, (short)1);
-        AtlasEntityHeader        ret         = CollectionUtils.isNotEmpty(auditEvents) ? auditEvents.get(0).getEntityHeader() : null;
-
-        if (ret == null) {
-            auditEvents = esBasedAuditRepository.listEventsV2(guid, EntityAuditActionV2.ENTITY_PURGE, null, (short)1);
-            ret         = CollectionUtils.isNotEmpty(auditEvents) ? auditEvents.get(0).getEntityHeader() : null;
-
-            if (ret == null) {
-                auditEvents = esBasedAuditRepository.listEventsV2(guid, EntityAuditActionV2.ENTITY_IMPORT_DELETE, null, (short)1);
-                ret         = CollectionUtils.isNotEmpty(auditEvents) ? auditEvents.get(0).getEntityHeader() : null;
-
-                if (ret == null) {
-                    throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
-                }
-            }
         }
 
         return ret;
