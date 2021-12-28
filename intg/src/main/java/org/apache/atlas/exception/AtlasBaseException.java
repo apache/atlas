@@ -20,12 +20,14 @@ package org.apache.atlas.exception;
 import org.apache.atlas.AtlasErrorCode;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Base Exception class for Atlas API.
  */
 public class AtlasBaseException extends Exception {
 
+    private Map<String, String> errorDetailsMap;
     private AtlasErrorCode atlasErrorCode;
     private String entityGuid;
 
@@ -42,6 +44,12 @@ public class AtlasBaseException extends Exception {
 
     public AtlasBaseException(final AtlasErrorCode errorCode, final List<String> params) {
         super(errorCode.getFormattedErrorMessage(params.toArray(new String[params.size()])));
+        this.atlasErrorCode = errorCode;
+    }
+
+    public AtlasBaseException(AtlasErrorCode errorCode, Map<String, String> errorDetailsMap, String ... params) {
+        super(errorCode.getFormattedErrorMessage(params));
+        this.errorDetailsMap = errorDetailsMap;
         this.atlasErrorCode = errorCode;
     }
 
@@ -96,5 +104,9 @@ public class AtlasBaseException extends Exception {
 
     public void setEntityGuid(String entityGuid) {
         this.entityGuid = entityGuid;
+    }
+
+    public Map<String, String> getErrorDetailsMap() {
+        return errorDetailsMap;
     }
 }

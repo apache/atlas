@@ -34,10 +34,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import javax.servlet.http.HttpServletRequest;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.List;
-import java.util.Arrays;
+import java.util.*;
 
 public class AtlasAuthorizationUtils {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasAuthorizationUtils.class);
@@ -69,7 +66,17 @@ public class AtlasAuthorizationUtils {
     public static void verifyAccess(AtlasRelationshipAccessRequest request, Object... errorMsgParams) throws AtlasBaseException {
         if (!isAccessAllowed(request)) {
             String message = (errorMsgParams != null && errorMsgParams.length > 0) ? StringUtils.join(errorMsgParams) : "";
-            throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, request.getUser(), message);
+            if (StringUtils.isEmpty(message)){
+                Map<String, String> errorMap = new HashMap<>();
+                errorMap.put("action", request.getAction().toString());
+                errorMap.put("end1", request.getEnd1Entity().getGuid());
+                errorMap.put("end2", request.getEnd2Entity().getGuid());
+
+                throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, errorMap, request.getUser(), "");
+
+            } else {
+                throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, request.getUser(), message);
+            }
         }
     }
 

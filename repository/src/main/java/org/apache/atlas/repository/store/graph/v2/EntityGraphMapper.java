@@ -24,6 +24,9 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.GraphTransactionInterceptor;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.GraphTransaction;
+import org.apache.atlas.authorize.AtlasAuthorizationUtils;
+import org.apache.atlas.authorize.AtlasPrivilege;
+import org.apache.atlas.authorize.AtlasRelationshipAccessRequest;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.exception.EntityNotFoundException;
 import org.apache.atlas.model.TimeBoundary;
@@ -1037,6 +1040,12 @@ public class EntityGraphMapper {
                         recordEntityUpdate(attrVertex);
                     }
 
+                    String            relationShipType = getTypeName(currentEdge);
+                    AtlasEntityHeader end1Entity       = entityRetriever.toAtlasEntityHeaderWithClassifications(currentEdge.getOutVertex());
+                    AtlasEntityHeader end2Entity       = entityRetriever.toAtlasEntityHeaderWithClassifications(currentEdge.getInVertex());
+
+                    AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry,AtlasPrivilege.RELATIONSHIP_REMOVE, relationShipType, end1Entity, end2Entity ));
+
                     //delete old reference
                     deleteDelegate.getHandler().deleteEdgeReference(currentEdge, ctx.getAttrType().getTypeCategory(), ctx.getAttribute().isOwnedRef(),
                             true, ctx.getAttribute().getRelationshipEdgeDirection(), ctx.getReferringVertex());
@@ -1764,6 +1773,13 @@ public class EntityGraphMapper {
                         if (LOG.isDebugEnabled()) {
                             LOG.debug("Delete existing relation");
                         }
+
+                        String            relationShipType = getTypeName(existingEdgeToReferredVertex);
+                        AtlasEntityHeader end1Entity       = entityRetriever.toAtlasEntityHeaderWithClassifications(referredVertexToExistingEdge);
+                        AtlasEntityHeader end2Entity       = entityRetriever.toAtlasEntityHeaderWithClassifications(((AtlasObjectId) arrCtx.getValue()).getGuid());
+
+                        AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry,AtlasPrivilege.RELATIONSHIP_REMOVE, relationShipType, end1Entity, end2Entity ));
+
                         deleteDelegate.getHandler().deleteEdgeReference(existingEdgeToReferredVertex, ctx.getAttrType().getTypeCategory(),
                                 ctx.getAttribute().isOwnedRef(), true, ctx.getAttribute().getRelationshipEdgeDirection(), ctx.getReferringVertex());
                     }
@@ -2391,6 +2407,18 @@ public class EntityGraphMapper {
                     List<AtlasEdge> additionalElements = new ArrayList<>();
 
                     for (AtlasEdge edge : edgesToRemove) {
+
+                        String            relationShipType = getTypeName(edge);
+                        AtlasEntityHeader end1Entity       = entityRetriever.toAtlasEntityHeaderWithClassifications(entityVertex);
+
+                        AtlasVertex end2Vertex = edge.getOutVertex();
+                        if (getIdFromVertex(end2Vertex).equals(end1Entity.getGuid())) {
+                            end2Vertex = edge.getInVertex();
+                        }
+                        AtlasEntityHeader end2Entity       = entityRetriever.toAtlasEntityHeaderWithClassifications(end2Vertex);
+
+                        AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry,AtlasPrivilege.RELATIONSHIP_REMOVE, relationShipType, end1Entity, end2Entity ));
+
                         boolean deleted = deleteDelegate.getHandler().deleteEdgeReference(edge, entryType.getTypeCategory(), attribute.isOwnedRef(),
                                 true, attribute.getRelationshipEdgeDirection(), entityVertex);
 
