@@ -51,6 +51,7 @@ import java.util.*;
 
 import javax.inject.Singleton;
 
+import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditType.ENTITY_AUDIT_V2;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 
 /**
@@ -64,13 +65,21 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
     public static final String INDEX_BACKEND_CONF = "atlas.graph.index.search.hostname";
     public static final String INDEX_NAME = "entity_audits";
     private static final String ENTITYID = "entityId";
+    private static final String TYPE_NAME = "typeName";
     private static final String ENTITY_QUALIFIED_NAME = "entityQualifiedName";
     private static final String CREATED = "created";
+    private static final String TIMESTAMP = "timestamp";
     private static final String EVENT_KEY = "eventKey";
     private static final String ACTION = "action";
     private static final String USER = "user";
     private static final String DETAIL = "detail";
     private static final String ENTITY = "entity";
+
+    /*
+    *    created   → event creation time
+         timestamp → entity modified timestamp
+         eventKey  → entityId:timestamp
+    * */
 
     private RestClient lowLevelClient;
 
@@ -88,8 +97,8 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
     public void putEventsV2(List<EntityAuditEventV2> events) throws AtlasBaseException {
         try {
             if (events != null && events.size() > 0) {
-                String entityPayloadTemplate = "'{'\"entityId\":\"{0}\",\"created\":{1},\"action\":\"{2}\",\"detail\":{3},\"user\":\"{4}\", \"eventKey\":\"{5}\", " +
-                        "\"entityQualifiedName\": \"{6}\"'}'";
+                String entityPayloadTemplate = "'{'\"entityId\":\"{0}\",\"action\":\"{1}\",\"detail\":{2},\"user\":\"{3}\", \"eventKey\":\"{4}\", " +
+                        "\"entityQualifiedName\": \"{5}\", \"typeName\": \"{6}\",\"created\":{7}, \"timestamp\":{8}'}'";
                 String bulkMetadata = String.format("{ \"index\" : { \"_index\" : \"%s\" } }%n", INDEX_NAME);
                 StringBuilder bulkRequestBody = new StringBuilder();
                 for (EntityAuditEventV2 event : events) {
@@ -97,8 +106,17 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
                     String auditDetailPrefix = EntityAuditListenerV2.getV2AuditPrefix(event.getAction());
                     String details = event.getDetails().substring(auditDetailPrefix.length());
 
-                    String bulkItem = MessageFormat.format(entityPayloadTemplate, event.getEntityId(), created, event.getAction(), details,
-                            event.getUser(), event.getEntityId() + ":" + created, event.getEntityQualifiedName());
+                    String bulkItem = MessageFormat.format(entityPayloadTemplate,
+                            event.getEntityId(),
+                            event.getAction(),
+                            details,
+                            event.getUser(),
+                            event.getEntityId() + ":" + event.getEntity().getUpdateTime().getTime(),
+                            event.getEntity().getAttribute(QUALIFIED_NAME),
+                            event.getEntity().getTypeName(),
+                            created,
+                            "" + event.getEntity().getUpdateTime().getTime());
+
                     bulkRequestBody.append(bulkMetadata);
                     bulkRequestBody.append(bulkItem);
                     bulkRequestBody.append("\n");
@@ -163,7 +181,8 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
             event.setDetail((Map<String, Object>) source.get(DETAIL));
             event.setUser((String) source.get(USER));
             event.setCreated((long) source.get(CREATED));
-            event.setTimestamp((long) source.get(CREATED));
+            event.setTimestamp((long) source.get(TIMESTAMP));
+            event.setTypeName((String) source.get(TYPE_NAME));
             event.setEntityQualifiedName((String) source.get(ENTITY_QUALIFIED_NAME));
 
             String eventKey = (String) source.get(EVENT_KEY);

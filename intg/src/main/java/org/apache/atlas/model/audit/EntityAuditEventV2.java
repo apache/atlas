@@ -114,6 +114,7 @@ public class EntityAuditEventV2 implements Serializable, Clearable {
     }
 
     private String              entityQualifiedName;
+    private String              typeName;
     private String              entityId;
     private long                timestamp;
     private long                created;
@@ -223,6 +224,14 @@ public class EntityAuditEventV2 implements Serializable, Clearable {
         this.detail = detail;
     }
 
+    public String getTypeName() {
+        return typeName;
+    }
+
+    public void setTypeName(String typeName) {
+        this.typeName = typeName;
+    }
+
     @JsonIgnore
     public String getEntityDefinitionString() {
         if (entity != null) {
@@ -261,12 +270,13 @@ public class EntityAuditEventV2 implements Serializable, Clearable {
                Objects.equals(type, that.type) &&
                Objects.equals(detail, that.detail) &&
                Objects.equals(created, that.created) &&
+               Objects.equals(typeName, that.typeName) &&
                Objects.equals(entityQualifiedName, that.entityQualifiedName);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(entityId, timestamp, user, action, details, eventKey, entity, type, detail, created, entityQualifiedName);
+        return Objects.hash(entityId, timestamp, user, action, details, eventKey, entity, type, detail, created, entityQualifiedName, typeName);
     }
 
     @Override
@@ -274,6 +284,7 @@ public class EntityAuditEventV2 implements Serializable, Clearable {
         final StringBuilder sb = new StringBuilder("EntityAuditEventV2{");
 
         sb.append("entityId='").append(entityId).append('\'');
+        sb.append("typeName='").append(typeName).append('\'');
         sb.append("entityQualifiedName='").append(entityQualifiedName).append('\'');
         sb.append(", timestamp=").append(timestamp);
         sb.append(", user='").append(user).append('\'');
@@ -303,6 +314,8 @@ public class EntityAuditEventV2 implements Serializable, Clearable {
     @Override
     public void clear() {
         entityId = null;
+        typeName = null;
+        entityQualifiedName = null;
         timestamp = 0L;
         user = null;
         action = null;

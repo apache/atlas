@@ -107,6 +107,7 @@ import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasClient.PROCESS_SUPER_TYPE;
 import static org.apache.atlas.AtlasConfiguration.LABEL_MAX_LENGTH;
+import static org.apache.atlas.AtlasConfiguration.STORE_DIFFERENTIAL_AUDITS;
 import static org.apache.atlas.model.TypeCategory.ARRAY;
 import static org.apache.atlas.model.TypeCategory.CLASSIFICATION;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
@@ -177,6 +178,7 @@ public class EntityGraphMapper {
     private static final boolean ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES = AtlasConfiguration.ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES.getBoolean();
     private static final boolean CLASSIFICATION_PROPAGATION_DEFAULT                  = AtlasConfiguration.CLASSIFICATION_PROPAGATION_DEFAULT.getBoolean();
     private              boolean DEFERRED_ACTION_ENABLED                             = AtlasConfiguration.TASKS_USE_ENABLED.getBoolean();
+    private              boolean DIFFERENTIAL_AUDITS                                 = STORE_DIFFERENTIAL_AUDITS.getBoolean();
 
     private final GraphHelper               graphHelper;
     private final AtlasGraph                graph;
@@ -434,6 +436,15 @@ public class EntityGraphMapper {
         createdEntity.setUpdatedBy(GraphHelper.getModifiedByAsString(entityVertex));
         createdEntity.setCreateTime(new Date(GraphHelper.getCreatedTime(entityVertex)));
         createdEntity.setUpdateTime(new Date(GraphHelper.getModifiedTime(entityVertex)));
+
+
+        if (DIFFERENTIAL_AUDITS) {
+            AtlasEntity diffEntity = RequestContext.get().getDifferentialEntity(createdEntity.getGuid());
+            if (diffEntity != null) {
+                diffEntity.setUpdateTime(createdEntity.getUpdateTime());
+                diffEntity.setUpdatedBy(createdEntity.getUpdatedBy());
+            }
+        }
     }
 
 

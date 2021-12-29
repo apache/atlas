@@ -7,6 +7,9 @@
       "entityId": {
         "type": "keyword"
       },
+      "typeName": {
+        "type": "keyword"
+      },
       "created": {
         "type": "date"
       },
