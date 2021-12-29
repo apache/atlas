@@ -26,29 +26,27 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.lineage.AtlasLineageInfo;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
+import org.apache.atlas.model.lineage.AtlasLineageRequest;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.collections.MapUtils;
+import org.apache.solr.common.StringUtils;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DefaultValue;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
+import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.util.HashMap;
 import java.util.Map;
+
+import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
 
 /**
  * REST interface for an entity's lineage information
@@ -105,6 +103,36 @@ public class LineageREST {
             }
 
             return atlasLineageService.getAtlasLineageInfo(guid, direction, depth, hideProcess);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+
+    /**
+     * Returns lineage info about entity.
+     * @param request - AtlasLineageRequest
+     * @return AtlasLineageInfo
+     * @throws AtlasBaseException
+     * @HTTP 200 If Lineage exists for the given entity
+     * @HTTP 400 Bad query parameters
+     * @HTTP 404 If no lineage is found for the given entity
+     */
+    @POST
+    @Path("/getlineage")
+    @Timed
+    public AtlasLineageInfo getLineageGraph(AtlasLineageRequest request) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+        if (StringUtils.isEmpty(request.getGuid())) {
+            throw new AtlasBaseException(BAD_REQUEST, "guid is not specified");
+        }
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "LineageREST.getLineageGraph(" + request + ")");
+            }
+
+            return atlasLineageService.getAtlasLineageInfo(request);
         } finally {
             AtlasPerfTracer.log(perf);
         }

@@ -146,6 +146,7 @@ public class AtlasLineageInfo implements Serializable {
         private String fromEntityId;
         private String toEntityId;
         private String relationshipId;
+        private String processId;
 
         public LineageRelation() { }
 
@@ -153,6 +154,11 @@ public class AtlasLineageInfo implements Serializable {
             this.fromEntityId = fromEntityId;
             this.toEntityId   = toEntityId;
             this.relationshipId = relationshipId;
+        }
+
+        public LineageRelation(String fromEntityId, String toEntityId, final String relationshipId, String processId) {
+            this(fromEntityId, toEntityId, relationshipId);
+            this.processId = processId;
         }
 
         public String getFromEntityId() {
@@ -179,6 +185,14 @@ public class AtlasLineageInfo implements Serializable {
             this.relationshipId = relationshipId;
         }
 
+        public String getProcessId() {
+            return processId;
+        }
+
+        public void setProcessId(String processId) {
+            this.processId = processId;
+        }
+
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
@@ -186,12 +200,13 @@ public class AtlasLineageInfo implements Serializable {
             LineageRelation that = (LineageRelation) o;
             return Objects.equals(fromEntityId, that.fromEntityId) &&
                     Objects.equals(toEntityId, that.toEntityId) &&
-                    Objects.equals(relationshipId, that.relationshipId);
+                    Objects.equals(relationshipId, that.relationshipId) &&
+                    Objects.equals(processId, that.processId);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(fromEntityId, toEntityId, relationshipId);
+            return Objects.hash(fromEntityId, toEntityId, relationshipId, processId);
         }
 
         @Override
@@ -200,6 +215,7 @@ public class AtlasLineageInfo implements Serializable {
                     "fromEntityId='" + fromEntityId + '\'' +
                     ", toEntityId='" + toEntityId + '\'' +
                     ", relationshipId='" + relationshipId + '\'' +
+                    ", processId='" + processId + '\'' +
                     '}';
         }
     }
