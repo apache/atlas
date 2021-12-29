@@ -98,7 +98,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
                     String details = event.getDetails().substring(auditDetailPrefix.length());
 
                     String bulkItem = MessageFormat.format(entityPayloadTemplate, event.getEntityId(), created, event.getAction(), details,
-                            event.getUser(), event.getEntityId() + ":" + created, event.getEntity().getAttribute(QUALIFIED_NAME));
+                            event.getUser(), event.getEntityId() + ":" + created, event.getEntityQualifiedName());
                     bulkRequestBody.append(bulkMetadata);
                     bulkRequestBody.append(bulkItem);
                     bulkRequestBody.append("\n");
