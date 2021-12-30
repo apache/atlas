@@ -566,8 +566,12 @@ public class EntityGraphRetriever {
     private void traverseImpactedVertices(final AtlasVertex entityVertexStart, final String relationshipGuidToExclude,
                                           final String classificationId, final List<AtlasVertex> result) {
         Set<String>              visitedVertices = new HashSet<>();
-        Queue<AtlasVertex>       queue           = new ArrayDeque<AtlasVertex>() {{ add(entityVertexStart); }};
+        Queue<AtlasVertex>       queue           = new ArrayDeque<>();
         Map<String, AtlasVertex> resultsMap      = new HashMap<>();
+
+        if (entityVertexStart != null) {
+            queue.add(entityVertexStart);
+        }
 
         while (!queue.isEmpty()) {
             AtlasVertex entityVertex   = queue.poll();
