@@ -1,0 +1,120 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.atlas.model.lineage;
+
+import java.util.Set;
+
+import static org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection.BOTH;
+
+public class AtlasLineageContext {
+    private int depth;
+    private String guid;
+    private boolean isDataset;
+    private boolean isProcess;
+    private boolean hideProcess;
+    private boolean skipDeleted;
+    private AtlasLineageInfo.LineageDirection direction = BOTH;
+
+    private Set<String> attributes;
+
+    public AtlasLineageContext(AtlasLineageRequest lineageRequest) {
+        this.guid = lineageRequest.getGuid();
+        this.depth = lineageRequest.getDepth();
+        this.direction = lineageRequest.getDirection();
+        this.skipDeleted = lineageRequest.isSkipDeleted();
+        this.hideProcess = lineageRequest.isHideProcess();
+        this.attributes = lineageRequest.getAttributes();
+    }
+
+    public int getDepth() {
+        return depth;
+    }
+
+    public void setDepth(int depth) {
+        this.depth = depth;
+    }
+
+    public String getGuid() {
+        return guid;
+    }
+
+    public void setGuid(String guid) {
+        this.guid = guid;
+    }
+
+    public boolean isDataset() {
+        return isDataset;
+    }
+
+    public void setDataset(boolean dataset) {
+        isDataset = dataset;
+    }
+
+    public boolean isProcess() {
+        return isProcess;
+    }
+
+    public void setProcess(boolean process) {
+        isProcess = process;
+    }
+
+    public boolean isSkipDeleted() {
+        return skipDeleted;
+    }
+
+    public void setSkipDeleted(boolean skipDeleted) {
+        this.skipDeleted = skipDeleted;
+    }
+
+    public AtlasLineageInfo.LineageDirection getDirection() {
+        return direction;
+    }
+
+    public void setDirection(AtlasLineageInfo.LineageDirection direction) {
+        this.direction = direction;
+    }
+
+    public boolean isHideProcess() {
+        return hideProcess;
+    }
+
+    public void setHideProcess(boolean hideProcess) {
+        this.hideProcess = hideProcess;
+    }
+
+    public Set<String> getAttributes() {
+        return attributes;
+    }
+
+    public void setAttributes(Set<String> attributes) {
+        this.attributes = attributes;
+    }
+
+    @Override
+    public String toString() {
+        return "LineageRequestContext{" +
+                "depth=" + depth +
+                ", guid='" + guid + '\'' +
+                ", isDataset=" + isDataset +
+                ", isProcess=" + isProcess +
+                ", skipDeleted=" + skipDeleted +
+                ", direction=" + direction +
+                ", attributes=" + attributes +
+                '}';
+    }
+}
