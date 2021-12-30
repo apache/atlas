@@ -1742,7 +1742,6 @@ public class EntityGraphMapper {
     * */
     private void removeExistingRelationWithOtherVertex(AttributeMutationContext arrCtx, AttributeMutationContext ctx,
                                                        EntityMutationContext context) throws AtlasBaseException {
-        LOG.info("removeExistingRelationWithOtherVertex");
         MetricRecorder metric = RequestContext.get().startMetricRecord("removeExistingRelationWithOtherVertex");
 
         AtlasVertex referredVertex = context.getVertex(((AtlasObjectId) arrCtx.getValue()).getGuid());
@@ -2405,7 +2404,6 @@ public class EntityGraphMapper {
 
     private List<AtlasEdge> removeUnusedArrayEntries(AtlasAttribute attribute, List<AtlasEdge> currentEntries, List<AtlasEdge> newEntries, AttributeMutationContext ctx) throws AtlasBaseException {
         if (CollectionUtils.isNotEmpty(currentEntries)) {
-            LOG.info("removeUnusedArrayEntries");
             AtlasType entryType = ((AtlasArrayType) attribute.getAttributeType()).getElementType();
             AtlasVertex entityVertex = ctx.getReferringVertex();
 

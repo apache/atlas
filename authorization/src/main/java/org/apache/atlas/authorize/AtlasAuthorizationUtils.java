@@ -64,12 +64,6 @@ public class AtlasAuthorizationUtils {
     }
 
     public static void verifyAccess(AtlasRelationshipAccessRequest request, Object... errorMsgParams) throws AtlasBaseException {
-
-        LOG.info("action {}", request.getAction().toString());
-        LOG.info("type {}", request.getRelationshipType());
-        LOG.info("end1 {}, {}", request.getEnd1Entity().getTypeName(), request.getEnd1Entity().getGuid());
-        LOG.info("end2 {}, {}", request.getEnd2Entity().getTypeName(), request.getEnd2Entity().getGuid());
-
         if (!isAccessAllowed(request)) {
             String message = (errorMsgParams != null && errorMsgParams.length > 0) ? StringUtils.join(errorMsgParams) : "";
             if (StringUtils.isEmpty(message)){
