@@ -181,8 +181,14 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
             event.setDetail((Map<String, Object>) source.get(DETAIL));
             event.setUser((String) source.get(USER));
             event.setCreated((long) source.get(CREATED));
-            event.setTimestamp((long) source.get(TIMESTAMP));
-            event.setTypeName((String) source.get(TYPE_NAME));
+            
+            if (source.get(TIMESTAMP) != null) {
+                event.setTimestamp((long) source.get(TIMESTAMP));
+            }
+            if (source.get(TYPE_NAME) != null) {
+                event.setTypeName((String) source.get(TYPE_NAME));
+            }
+
             event.setEntityQualifiedName((String) source.get(ENTITY_QUALIFIED_NAME));
 
             String eventKey = (String) source.get(EVENT_KEY);
