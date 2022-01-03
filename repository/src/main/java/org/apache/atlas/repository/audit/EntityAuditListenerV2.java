@@ -79,6 +79,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
                     AtlasConfiguration.NOTIFICATION_FIXED_BUFFER_ITEMS_INCREMENT_COUNT.getInt()));
 
     private static final long AUDIT_REPOSITORY_MAX_SIZE_DEFAULT = 1024 * 1024;
+    private static final long CASSANDRA_AUDIT_REPOSITORY_MAX_SIZE_DEFAULT = 50 * 1024;
     private static final String QUALIFIED_NAME = "qualifiedName";
     private final Set<EntityAuditRepository>  auditRepositories;
     private final AtlasTypeRegistry      typeRegistry;
@@ -98,16 +99,22 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
         DIFFERENTIAL_AUDITS = STORE_DIFFERENTIAL_AUDITS.getBoolean();
     }
 
+    private long getAuditMaxSize(EntityAuditRepository auditRepository, int entityCount) {
+        boolean isCassandraRepository = auditRepository.getClass().equals(CassandraBasedAuditRepository.class);
+        long auditMaxSize = isCassandraRepository ? (CASSANDRA_AUDIT_REPOSITORY_MAX_SIZE_DEFAULT / entityCount) : AUDIT_REPOSITORY_MAX_SIZE_DEFAULT;
+        return  auditMaxSize;
+    }
+
     @Override
     public void onEntitiesAdded(List<AtlasEntity> entities, boolean isImport) throws AtlasBaseException {
         MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
 
-        FixedBufferList<EntityAuditEventV2> entitiesAdded = getAuditEventsList();
-        for (AtlasEntity entity : entities) {
-            createEvent(entitiesAdded.next(), entity, isImport ? ENTITY_IMPORT_CREATE : ENTITY_CREATE);
-        }
-
         for (EntityAuditRepository auditRepository: auditRepositories) {
+            FixedBufferList<EntityAuditEventV2> entitiesAdded = getAuditEventsList();
+            for (AtlasEntity entity : entities) {
+                long auditMaxSize = getAuditMaxSize(auditRepository, entities.size());
+                createEvent(entitiesAdded.next(), entity, isImport ? ENTITY_IMPORT_CREATE : ENTITY_CREATE, auditMaxSize);
+            }
             auditRepository.putEventsV2(entitiesAdded.toList());
         }
 
@@ -118,7 +125,6 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
     public void onEntitiesUpdated(List<AtlasEntity> entities, boolean isImport) throws AtlasBaseException {
         RequestContext                      reqContext    = RequestContext.get();
         MetricRecorder                      metric        = reqContext.startMetricRecord("entityAudit");
-        FixedBufferList<EntityAuditEventV2> updatedEvents = getAuditEventsList();
         Collection<AtlasEntity>             updatedEntites;
 
         Map<String, AtlasEntity> entitiesMap = entities.stream().collect(Collectors.toMap(AtlasEntity::getGuid, Function.identity()));
@@ -129,27 +135,28 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
             updatedEntites = entities;
         }
 
-        for (AtlasEntity entity : updatedEntites) {
-            final EntityAuditActionV2 action;
-
-            if (isImport) {
-                action = ENTITY_IMPORT_UPDATE;
-            } else if (reqContext.checkIfEntityIsForCustomAttributeUpdate(entity.getGuid())) {
-                action = CUSTOM_ATTRIBUTE_UPDATE;
-            } else if (reqContext.checkIfEntityIsForBusinessAttributeUpdate(entity.getGuid())) {
-                action = BUSINESS_ATTRIBUTE_UPDATE;
-            } else {
-                action = ENTITY_UPDATE;
-            }
-
-            if (DIFFERENTIAL_AUDITS) {
-                createEvent(updatedEvents.next(), entity, entitiesMap.get(entity.getGuid()), action);
-            } else {
-                createEvent(updatedEvents.next(), entity, action);
-            }
-        }
-
         for (EntityAuditRepository auditRepository: auditRepositories) {
+            FixedBufferList<EntityAuditEventV2> updatedEvents = getAuditEventsList();
+            for (AtlasEntity entity : updatedEntites) {
+                final EntityAuditActionV2 action;
+
+                if (isImport) {
+                    action = ENTITY_IMPORT_UPDATE;
+                } else if (reqContext.checkIfEntityIsForCustomAttributeUpdate(entity.getGuid())) {
+                    action = CUSTOM_ATTRIBUTE_UPDATE;
+                } else if (reqContext.checkIfEntityIsForBusinessAttributeUpdate(entity.getGuid())) {
+                    action = BUSINESS_ATTRIBUTE_UPDATE;
+                } else {
+                    action = ENTITY_UPDATE;
+                }
+
+                long auditMaxSize = getAuditMaxSize(auditRepository, entities.size());
+                if (DIFFERENTIAL_AUDITS) {
+                    createEvent(updatedEvents.next(), entity, entitiesMap.get(entity.getGuid()), action, auditMaxSize);
+                } else {
+                    createEvent(updatedEvents.next(), entity, action, auditMaxSize);
+                }
+            }
             auditRepository.putEventsV2(updatedEvents.toList());
         }
 
@@ -160,12 +167,12 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
     public void onEntitiesDeleted(List<AtlasEntity> entities, boolean isImport) throws AtlasBaseException {
         MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
 
-        FixedBufferList<EntityAuditEventV2> deletedEntities = getAuditEventsList();
-        for (AtlasEntity entity : entities) {
-            createEvent(deletedEntities.next(), entity, isImport ? ENTITY_IMPORT_DELETE : ENTITY_DELETE);
-        }
-
         for (EntityAuditRepository auditRepository: auditRepositories) {
+            FixedBufferList<EntityAuditEventV2> deletedEntities = getAuditEventsList();
+            for (AtlasEntity entity : entities) {
+                long auditMaxSize = getAuditMaxSize(auditRepository, entities.size());
+                createEvent(deletedEntities.next(), entity, isImport ? ENTITY_IMPORT_DELETE : ENTITY_DELETE, auditMaxSize);
+            }
             auditRepository.putEventsV2(deletedEntities.toList());
         }
 
@@ -176,12 +183,12 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
     public void onEntitiesPurged(List<AtlasEntity> entities) throws AtlasBaseException {
         MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
 
-        FixedBufferList<EntityAuditEventV2> eventsPurged = getAuditEventsList();
-        for (AtlasEntity entity : entities) {
-            createEvent(eventsPurged.next(), entity, ENTITY_PURGE);
-        }
-
         for (EntityAuditRepository auditRepository: auditRepositories) {
+            FixedBufferList<EntityAuditEventV2> eventsPurged = getAuditEventsList();
+            for (AtlasEntity entity : entities) {
+                long auditMaxSize = getAuditMaxSize(auditRepository, entities.size());
+                createEvent(eventsPurged.next(), entity, ENTITY_PURGE, auditMaxSize);
+            }
             auditRepository.putEventsV2(eventsPurged.toList());
         }
 
@@ -476,27 +483,26 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
         return entityAuditEventV2;
     }
 
-    private EntityAuditEventV2 createEvent(EntityAuditEventV2 event, AtlasEntity entity, EntityAuditActionV2 action) {
-        String detail = getAuditEventDetail(entity, action);
+    private EntityAuditEventV2 createEvent(EntityAuditEventV2 event, AtlasEntity entity, EntityAuditActionV2 action, long auditMaxSize) {
+        String detail = getAuditEventDetail(entity, action, auditMaxSize);
 
         return createEvent(event, entity, action, detail);
     }
 
-    private EntityAuditEventV2 createEvent(EntityAuditEventV2 event, AtlasEntity entity, AtlasEntity originalEntity, EntityAuditActionV2 action) {
-        String detail = getAuditEventDetail(entity, action);
+    private EntityAuditEventV2 createEvent(EntityAuditEventV2 event, AtlasEntity entity, AtlasEntity originalEntity, EntityAuditActionV2 action, long auditMaxSize) {
+        String detail = getAuditEventDetail(entity, action, auditMaxSize);
 
         return createEvent(event, entity, originalEntity, action, detail);
     }
 
 
-    private String getAuditEventDetail(AtlasEntity entity, EntityAuditActionV2 action) {
+    private String getAuditEventDetail(AtlasEntity entity, EntityAuditActionV2 action, long auditMaxSize) {
         Map<String, Object> prunedAttributes = pruneEntityAttributesForAudit(entity);
 
         String auditPrefix  = getV2AuditPrefix(action);
         String auditString  = auditPrefix + getAuditString(entity, action);
         byte[] auditBytes   = auditString.getBytes(StandardCharsets.UTF_8);
         long   auditSize    = auditBytes != null ? auditBytes.length : 0;
-        long   auditMaxSize = AUDIT_REPOSITORY_MAX_SIZE_DEFAULT;
 
         if (auditMaxSize >= 0 && auditSize > auditMaxSize) { // don't store attributes in audit
             LOG.warn("audit record too long: entityType={}, guid={}, size={}; maxSize={}. entity attribute values not stored in audit",
