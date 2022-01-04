@@ -1040,12 +1040,6 @@ public class EntityGraphMapper {
                         recordEntityUpdate(attrVertex);
                     }
 
-                    String            relationShipType = getTypeName(currentEdge);
-                    AtlasEntityHeader end1Entity       = entityRetriever.toAtlasEntityHeaderWithClassifications(currentEdge.getOutVertex());
-                    AtlasEntityHeader end2Entity       = entityRetriever.toAtlasEntityHeaderWithClassifications(currentEdge.getInVertex());
-
-                    AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry,AtlasPrivilege.RELATIONSHIP_REMOVE, relationShipType, end1Entity, end2Entity ));
-
                     //delete old reference
                     deleteDelegate.getHandler().deleteEdgeReference(currentEdge, ctx.getAttrType().getTypeCategory(), ctx.getAttribute().isOwnedRef(),
                             true, ctx.getAttribute().getRelationshipEdgeDirection(), ctx.getReferringVertex());
@@ -1773,18 +1767,6 @@ public class EntityGraphMapper {
                         if (LOG.isDebugEnabled()) {
                             LOG.debug("Delete existing relation");
                         }
-                        AtlasEntityHeader end1Entity, end2Entity;
-                        String relationShipType = getTypeName(existingEdgeToReferredVertex);
-
-                        if (arrCtx.getAttribute().getRelationshipEdgeDirection().equals(IN)) {
-                            end1Entity = entityRetriever.toAtlasEntityHeaderWithClassifications(((AtlasObjectId) arrCtx.getValue()).getGuid());
-                            end2Entity = entityRetriever.toAtlasEntityHeaderWithClassifications(referredVertexToExistingEdge);
-                        } else {
-                            end1Entity = entityRetriever.toAtlasEntityHeaderWithClassifications(referredVertexToExistingEdge);
-                            end2Entity = entityRetriever.toAtlasEntityHeaderWithClassifications(((AtlasObjectId) arrCtx.getValue()).getGuid());
-                        }
-
-                        AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry,AtlasPrivilege.RELATIONSHIP_REMOVE, relationShipType, end1Entity, end2Entity ));
 
                         deleteDelegate.getHandler().deleteEdgeReference(existingEdgeToReferredVertex, ctx.getAttrType().getTypeCategory(),
                                 ctx.getAttribute().isOwnedRef(), true, ctx.getAttribute().getRelationshipEdgeDirection(), ctx.getReferringVertex());
@@ -2417,18 +2399,6 @@ public class EntityGraphMapper {
                         if (getStatus(edge) == DELETED ) {
                             continue;
                         }
-                        String            relationShipType = getTypeName(edge);
-                        AtlasEntityHeader end1Entity, end2Entity;
-
-                        if (ctx.getAttribute().getRelationshipEdgeDirection() == IN) {
-                            end1Entity = entityRetriever.toAtlasEntityHeaderWithClassifications(edge.getOutVertex());
-                            end2Entity = entityRetriever.toAtlasEntityHeaderWithClassifications(entityVertex);
-                        } else {
-                            end1Entity = entityRetriever.toAtlasEntityHeaderWithClassifications(entityVertex);
-                            end2Entity = entityRetriever.toAtlasEntityHeaderWithClassifications(edge.getInVertex());
-                        }
-
-                        AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry,AtlasPrivilege.RELATIONSHIP_REMOVE, relationShipType, end1Entity, end2Entity ));
 
                         boolean deleted = deleteDelegate.getHandler().deleteEdgeReference(edge, entryType.getTypeCategory(), attribute.isOwnedRef(),
                                 true, attribute.getRelationshipEdgeDirection(), entityVertex);
