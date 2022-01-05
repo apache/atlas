@@ -173,6 +173,7 @@ public enum AtlasErrorCode {
     NO_DATA_FOUND(400, "ATLAS-400-00-09B", "No data found in the uploaded file"),
     NOT_VALID_FILE(400, "ATLAS-400-00-09C", "Invalid {0} file"),
     ATTRIBUTE_NAME_ALREADY_EXISTS_IN_PARENT_TYPE(400, "ATLAS-400-00-09D", "Invalid attribute name: {0}.{1}. Attribute already exists in parent type: {2}"),
+    ATTRIBUTE_NAME_ALREADY_EXISTS_IN_ANOTHER_PARENT_TYPE(400, "ATLAS-400-00-09E", "Invalid attribute name: {0}.{1}. Attribute already exists in another parent type: {2}"),
     UNAUTHORIZED_ACCESS(403, "ATLAS-403-00-001", "{0} is not authorized to perform {1}"),
 
     // All Not found enums go here

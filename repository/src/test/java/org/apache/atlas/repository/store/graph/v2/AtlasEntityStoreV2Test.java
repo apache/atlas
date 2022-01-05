@@ -42,6 +42,8 @@ import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.util.FileUtils;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
@@ -537,7 +539,8 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
         init();
         response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo), false);
         updatedTable = response.getFirstUpdatedEntityByTypeName(TABLE_TYPE);
-        Assert.assertNull(updatedTable.getAttribute("description"));
+        Object updatedDescription = ObjectUtils.defaultIfNull(updatedTable.getAttribute("description"), StringUtils.EMPTY);
+        Assert.assertTrue(StringUtils.isEmpty(updatedDescription.toString()));
         validateEntity(entitiesInfo, getEntityFromStore(updatedTable));
     }
 

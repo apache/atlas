@@ -211,6 +211,7 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
     @Test
     public void testListTypesByFilter() throws Exception {
         AttributeDefinition attr = TypesUtil.createOptionalAttrDef("attr", AtlasBaseTypeDef.ATLAS_TYPE_STRING);
+        AttributeDefinition attr1 = TypesUtil.createOptionalAttrDef("attr1", AtlasBaseTypeDef.ATLAS_TYPE_STRING);
 
         ClassTypeDefinition classTypeDef = TypesUtil.createClassTypeDef("A" + randomString(), null, Collections.emptySet(), attr);
         TypesDef typesDef = new TypesDef(Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.singletonList(classTypeDef));
@@ -220,7 +221,7 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
         typesDef = new TypesDef(Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.singletonList(classTypeDef));
         String a1 = createType(AtlasType.toV1Json(typesDef)).get(0);
 
-        classTypeDef = TypesUtil.createClassTypeDef("B" + randomString(), null, Collections.<String>emptySet(), attr);
+        classTypeDef = TypesUtil.createClassTypeDef("B" + randomString(), null, Collections.<String>emptySet(), attr1);
         typesDef = new TypesDef(Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.singletonList(classTypeDef));
         String b = createType(AtlasType.toV1Json(typesDef)).get(0);
 
