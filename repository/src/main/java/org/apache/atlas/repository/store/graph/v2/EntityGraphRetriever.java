@@ -741,6 +741,8 @@ public class EntityGraphRetriever {
 
                 if (attrValue != null) {
                     ret.setAttribute(headerAttribute.getName(), attrValue);
+                } else {
+                    ret.setAttribute(headerAttribute.getName(), StringUtils.EMPTY);
                 }
             }
 

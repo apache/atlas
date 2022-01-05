@@ -843,9 +843,10 @@ public class AtlasEntityType extends AtlasStructType {
     private void getTypeHierarchyInfo(AtlasTypeRegistry typeRegistry,
                                       Set<String> allSuperTypeNames,
                                       Map<String, AtlasAttribute> allAttributes) throws AtlasBaseException {
-        List<String> visitedTypes = new ArrayList<>();
+        List<String>        visitedTypes             = new ArrayList<>();
+        Map<String, String> attributeToEntityNameMap = new HashMap<>();
 
-        collectTypeHierarchyInfo(typeRegistry, allSuperTypeNames, allAttributes, visitedTypes);
+        collectTypeHierarchyInfo(typeRegistry, allSuperTypeNames, allAttributes, attributeToEntityNameMap, visitedTypes);
     }
 
 
@@ -858,6 +859,7 @@ public class AtlasEntityType extends AtlasStructType {
     private void collectTypeHierarchyInfo(AtlasTypeRegistry typeRegistry,
                                           Set<String> allSuperTypeNames,
                                           Map<String, AtlasAttribute> allAttributes,
+                                          Map<String, String> attributeToEntityNameMap,
                                           List<String> visitedTypes) throws AtlasBaseException {
         if (visitedTypes.contains(entityDef.getName())) {
             throw new AtlasBaseException(AtlasErrorCode.CIRCULAR_REFERENCE, entityDef.getName(),
@@ -870,7 +872,7 @@ public class AtlasEntityType extends AtlasStructType {
                 AtlasEntityType superType = typeRegistry.getEntityTypeByName(superTypeName);
 
                 if (superType != null) {
-                    superType.collectTypeHierarchyInfo(typeRegistry, allSuperTypeNames, allAttributes, visitedTypes);
+                    superType.collectTypeHierarchyInfo(typeRegistry, allSuperTypeNames, allAttributes, attributeToEntityNameMap, visitedTypes);
                 }
             }
             visitedTypes.remove(entityDef.getName());
@@ -879,9 +881,15 @@ public class AtlasEntityType extends AtlasStructType {
 
         if (CollectionUtils.isNotEmpty(entityDef.getAttributeDefs())) {
             for (AtlasAttributeDef attributeDef : entityDef.getAttributeDefs()) {
+                AtlasType type          = typeRegistry.getType(attributeDef.getTypeName());
+                String    attributeName = attributeDef.getName();
 
-                AtlasType type = typeRegistry.getType(attributeDef.getTypeName());
-                allAttributes.put(attributeDef.getName(), new AtlasAttribute(this, attributeDef, type));
+                if (attributeToEntityNameMap.containsKey(attributeName) && !attributeToEntityNameMap.get(attributeName).equals(entityDef.getName())) {
+                    throw new AtlasBaseException(AtlasErrorCode.ATTRIBUTE_NAME_ALREADY_EXISTS_IN_ANOTHER_PARENT_TYPE, entityDef.getName(), attributeName, attributeToEntityNameMap.get(attributeName));
+                }
+
+                allAttributes.put(attributeName, new AtlasAttribute(this, attributeDef, type));
+                attributeToEntityNameMap.put(attributeName, entityDef.getName());
             }
         }
     }
