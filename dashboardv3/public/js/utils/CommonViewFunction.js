@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enums', 'moment', 'utils/Globals', 'moment-timezone'], function(require, Utils, Modal, Messages, Enums, moment, Globals) {
+define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enums', 'moment', 'utils/Globals', 'moment-timezone'], function(require, Utils, Modal, Messages, Enums, moment, Globals, momentTimezone) {
     'use strict';
 
     var CommonViewFunction = {};
@@ -711,12 +711,22 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             var model = options.model,
                 isTermView = options.isTermView,
                 isGlossaryView = options.isGlossaryView,
-                collection = options.collection
+                collection = options.collection;
+            //Below condition is added for sanitizing the longDescription text against XSS attack.
+            if (model) {
+                var longDescriptionContent = isGlossaryView ? model.get('longDescription') : model.longDescription,
+                    sanitizeLongDescriptionContent;
+                if (longDescriptionContent) {
+                    sanitizeLongDescriptionContent = Utils.sanitizeHtmlContent(longDescriptionContent)
+                    isGlossaryView ? model.set("longDescription", sanitizeLongDescriptionContent) : model.longDescription = sanitizeLongDescriptionContent;
+                }
+            }
         }
         require([
             'views/glossary/CreateEditCategoryTermLayoutView',
             'views/glossary/CreateEditGlossaryLayoutView',
-            'modules/Modal'
+            'modules/Modal',
+            'trumbowyg'
         ], function(CreateEditCategoryTermLayoutView, CreateEditGlossaryLayoutView, Modal) {
             var view = null,
                 title = null;
@@ -734,14 +744,40 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 "cancelText": "Cancel",
                 "okCloses": false,
                 "okText": model ? "Update" : "Create",
-                "allowCancel": true
+                "allowCancel": true,
+                "width": "765px"
             }).open();
             modal.$el.find('input[data-id=shortDescription]').on('input keydown', function(e) {
                 $(this).val($(this).val().replace(/\s+/g, ' '));
             });
             modal.$el.find('button.ok').attr("disabled", "true");
+            var longDescriptionEditor = modal.$el.find('textarea[data-id=longDescription]'),
+                okBtn = modal.$el.find('button.ok');
+            longDescriptionEditor.trumbowyg({
+                btns: [
+                    ['formatting'],
+                    ['strong', 'em', 'underline', 'del'],
+                    ['link'],
+                    ['justifyLeft', 'justifyCenter', 'justifyRight', 'justifyFull'],
+                    ['unorderedList', 'orderedList'],
+                    ['viewHTML']
+                ],
+                removeformatPasted: true,
+                urlProtocol: true,
+                defaultLinkTarget: '_blank'
+            }).on('tbwchange', function() {
+                okBtn.removeAttr("disabled");
+            });
             modal.on('ok', function() {
                 modal.$el.find('button.ok').showButtonLoader();
+                //Below condition is added for sanitizing the longDescription text against XSS attack.
+                var editorContent, cleanContent;
+                editorContent = longDescriptionEditor.trumbowyg('html');
+                if (editorContent !== "") {
+                    cleanContent = Utils.sanitizeHtmlContent(editorContent);
+                    longDescriptionEditor.trumbowyg('html', cleanContent);
+                }
+                //End
                 CommonViewFunction.createEditGlossaryCategoryTermSubmit(_.extend({ "ref": view, "modal": modal }, options));
             });
             modal.on('closeModal', function() {

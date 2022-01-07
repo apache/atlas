@@ -24,16 +24,24 @@
     <div data-id="details" class="clearfix form-horizontal col-sm-12">
         <h1 class="title"><span data-id="title"></span></h1>
         <button type="button" data-id="editButton" class="btn btn-sm btn-action pull-right"><i class="fa fa-pencil"></i></button>
-        <div class="form-group col-sm-12">
+        <div class="form-group short-description-container">
             <span class="pull-left text-muted">Short Description:&nbsp;</span>
             <div class="pull-left">
                 <p data-id="shortDescription"></p>
             </div>
         </div>
-        <div class="form-group col-sm-12">
+        <div class="form-group long-description-container">
             <span class="pull-left text-muted">Long Description:&nbsp;</span>
-            <div>
-                <textarea class="form-control long-description" name="longDescription" data-id="longDescription" disabled></textarea>
+            <div class="isTextTypeBtn-wrapper pull-right">
+                <span class="text-muted pull-left">Formatted</span>
+                <label class="switch pull-left">
+                    <input type="checkbox" class="switch-input" name="textType" value="text">
+                    <span class="switch-slider"></span>
+                </label>
+                <span class="text-muted">Plain</span>
+            </div>
+            <div class="glossary-longdescription-wrapper form-control">
+                <div class="long-description" name="longDescription" data-id="longDescription" disabled></div>
             </div>
         </div>
         {{#if isTermView}}

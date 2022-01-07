@@ -569,6 +569,32 @@ div.columnmanager-dropdown-container {
     padding-top: 20px;
 }
 
+.long-description-container {
+    margin-right: 0px !important;
+}
+
+.glossary-longdescription-wrapper {
+    display: inline-block;
+    height: 100px;
+    background-color: #fff !important;
+    overflow: auto;
+    margin-top: 8px;
+    width: 100%;
+
+    ul {
+        list-style: disc !important;
+    }
+}
+
+.isTextTypeBtn-wrapper {
+    display: inline-block;
+    line-height: 22px;
+
+    .switch {
+        margin-bottom: 0px;
+    }
+}
+
 .select2-container--default .select2-search--inline .select2-search__field {
     width: 100% !important;
 }

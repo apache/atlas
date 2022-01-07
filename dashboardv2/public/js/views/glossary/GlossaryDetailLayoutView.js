@@ -70,6 +70,7 @@ define(['require',
                 removeTag: '[data-id="removeTagTerm"]',
                 tagClick: '[data-id="tagClickTerm"]',
                 addTag: '[data-id="addTagTerm"]',
+                textType: '[name="textType"]'
             },
             /** ui events hash */
             events: function() {
@@ -168,6 +169,10 @@ define(['require',
                 events["click " + this.ui.addTerm] = 'onClickAddTermBtn';
                 events["click " + this.ui.addCategory] = 'onClickAddTermBtn';
                 events["click " + this.ui.addTag] = 'onClickAddTagBtn';
+                events["change " + this.ui.textType] = function(e) {
+                    this.isTextTypeChecked = !this.isTextTypeChecked;
+                    this.renderDetails(this.data);
+                };
                 return events;
             },
             /**
@@ -186,6 +191,7 @@ define(['require',
                     }
                 }
                 this.selectedTermAttribute = null;
+                this.isTextTypeChecked = false;
             },
             onRender: function() {
                 this.$('.fontLoader-relative').show();
@@ -297,10 +303,18 @@ define(['require',
             },
             renderDetails: function(data) {
                 Utils.hideTitleLoader(this.$('.fontLoader'), this.ui.details);
+                //Below condition is added for sanitizing the longDescription text against XSS attack.
+                var longDescriptionContent = (data && data.longDescription) ? data.longDescription : "",
+                    sanitizeLongDescriptionContent = "";
+                if (longDescriptionContent !== "") {
+                    sanitizeLongDescriptionContent = Utils.sanitizeHtmlContent(longDescriptionContent);
+                }
+                //End
                 if (data) {
+                    var longDescriptionValue = longDescriptionContent ? sanitizeLongDescriptionContent : "";
                     this.ui.title.text(data.name || data.displayText || data.qualifiedName);
                     this.ui.shortDescription.text(data.shortDescription ? data.shortDescription : "");
-                    this.ui.longDescription.text(data.longDescription ? data.longDescription : "");
+                    this.isTextTypeChecked ? this.ui.longDescription.text(longDescriptionValue) : this.ui.longDescription.html(longDescriptionValue);
                     this.generateCategories(data.categories);
                     this.generateTerm(data.terms);
                     this.generateTag(data.classifications);
