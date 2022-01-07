@@ -162,6 +162,13 @@ require.config({
         },
         'jquery-steps': {
             'deps': ['jquery']
+        },
+        'DOMPurify': {
+            'exports': 'DOMPurify'
+        },
+        'trumbowyg': {
+            'deps': ['jquery'],
+            'exports': 'trumbowyg'
         }
     },
 
@@ -208,7 +215,9 @@ require.config({
         'jquery-steps': 'libs/jquery-steps/jquery.steps.min',
         'dropzone': 'libs/dropzone/js/dropzone-amd-module',
         'lossless-json': 'libs/lossless-json/lossless-json',
-        'store': 'external_lib/idealTimeout/store.min'
+        'store': 'external_lib/idealTimeout/store.min',
+        'DOMPurify': 'external_lib/dompurify/purify.min',
+        'trumbowyg': 'external_lib/trumbowyg/trumbowyg'
     },
 
     /**

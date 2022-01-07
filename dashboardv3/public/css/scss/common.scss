@@ -340,7 +340,8 @@ pre {
 }
 
 .long-description {
-    width: 85%;
+    width: 100%;
+    overflow-wrap: break-word;
     cursor: default !important;
     background-color: transparent !important;
 }

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 'moment', 'store', 'modules/Modal', 'moment-timezone', 'pnotify.buttons', 'pnotify.confirm'], function(require, Globals, pnotify, Messages, Enums, moment, store, Modal) {
+define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 'moment', 'store', 'modules/Modal', 'DOMPurify', 'moment-timezone', 'pnotify.buttons', 'pnotify.confirm'], function(require, Globals, pnotify, Messages, Enums, moment, store, Modal, DOMPurify) {
     'use strict';
 
     var Utils = {};
@@ -964,6 +964,14 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
         }
         return dateValue;
     }
+    //-----------------------------------------DOMPurify--------------------------------------
+    //This below function expects string that needs to be sanitize against XSS attack.
+    Utils.sanitizeHtmlContent = function(string) {
+        if (string) {
+            return DOMPurify.sanitize(string, { FORBID_TAGS: ['img', 'script', 'iframe', 'embed', 'svg', 'meta'], ALLOWED_ATTR: ['target', 'href'] });
+        }
+    }
+    //----------------------------------------------------------------------------------------
     //------------------------------------------------idleTimeout-----------------------------
     $.fn.idleTimeout = function(userRuntimeConfig) {
 
