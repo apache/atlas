@@ -7,6 +7,7 @@ public abstract class SearchParams {
     Set<String> attributes;
     Set<String> relationAttributes;
     boolean showSearchScore;
+    boolean suppressLogs;
 
     public abstract String getQuery();
 
@@ -32,5 +33,13 @@ public abstract class SearchParams {
 
     public void setShowSearchScore(boolean showSearchScore) {
         this.showSearchScore = showSearchScore;
+    }
+
+    public boolean getSuppressLogs() {
+        return suppressLogs;
+    }
+
+    public void setSuppressLogs(boolean suppressLogs) {
+        this.suppressLogs = suppressLogs;
     }
 }

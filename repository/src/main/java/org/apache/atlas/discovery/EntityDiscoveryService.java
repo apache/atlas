@@ -956,7 +956,11 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     }
 
     private void scrubSearchResults(AtlasSearchResult result) throws AtlasBaseException {
-        AtlasAuthorizationUtils.scrubSearchResults(new AtlasSearchResultScrubRequest(typeRegistry, result));
+        scrubSearchResults(result, false);
+    }
+
+    private void scrubSearchResults(AtlasSearchResult result, boolean suppressLogs) throws AtlasBaseException {
+        AtlasAuthorizationUtils.scrubSearchResults(new AtlasSearchResultScrubRequest(typeRegistry, result), suppressLogs);
     }
 
     private Set<String> getAggregationFields() {
@@ -1034,7 +1038,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             throw e;
         }
 
-        scrubSearchResults(ret);
+        scrubSearchResults(ret, searchParams.getSuppressLogs());
         return ret;
     }
 }
