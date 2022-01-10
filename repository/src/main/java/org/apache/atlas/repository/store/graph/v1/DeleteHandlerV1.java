@@ -507,13 +507,10 @@ public abstract class DeleteHandlerV1 {
             return;
         }
 
-        if (getTypeName(edge.getInVertex()).equals(relationshipDef.getEndDef1().getType())) {
-            end1Entity = entityRetriever.toAtlasEntityHeaderWithClassifications(edge.getInVertex());
-            end2Entity = entityRetriever.toAtlasEntityHeaderWithClassifications(edge.getOutVertex());
-        } else {
-            end1Entity = entityRetriever.toAtlasEntityHeaderWithClassifications(edge.getOutVertex());
-            end2Entity = entityRetriever.toAtlasEntityHeaderWithClassifications(edge.getInVertex());
-        }
+        end1Entity = entityRetriever.toAtlasEntityHeaderWithClassifications(edge.getOutVertex());
+        end2Entity = entityRetriever.toAtlasEntityHeaderWithClassifications(edge.getInVertex());
+        LOG.info("end1 {}", end1Entity.getTypeName());
+        LOG.info("end2 {}", end2Entity.getTypeName());
 
         AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry, AtlasPrivilege.RELATIONSHIP_REMOVE, relationShipType, end1Entity, end2Entity ));
 
