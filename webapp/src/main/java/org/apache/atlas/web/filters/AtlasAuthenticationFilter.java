@@ -42,7 +42,6 @@ import org.apache.hadoop.security.authentication.util.SignerException;
 import org.apache.hadoop.security.authentication.util.SignerSecretProvider;
 import org.apache.hadoop.security.authorize.AuthorizationException;
 import org.apache.hadoop.security.authorize.ProxyUsers;
-import org.apache.log4j.NDC;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
@@ -792,17 +791,11 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
             if (httpRequest.getMethod().equals("OPTIONS")) {
                 optionsServlet.service(request, response);
             } else {
-                try {
-                    String requestUser = httpRequest.getRemoteUser();
+                String requestUser = httpRequest.getRemoteUser();
 
-                    NDC.push(requestUser + ":" + httpRequest.getMethod() + httpRequest.getRequestURI());
+                LOG.info("Request from authenticated user: {}, URL={}", requestUser, Servlets.getRequestURI(httpRequest));
 
-                    LOG.info("Request from authenticated user: {}, URL={}", requestUser, Servlets.getRequestURI(httpRequest));
-
-                    filterChain.doFilter(servletRequest, servletResponse);
-                } finally {
-                    NDC.pop();
-                }
+                filterChain.doFilter(servletRequest, servletResponse);
             }
         }
     }
