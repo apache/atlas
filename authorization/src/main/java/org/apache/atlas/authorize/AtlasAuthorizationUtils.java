@@ -73,7 +73,7 @@ public class AtlasAuthorizationUtils {
         }
     }
 
-    public static void scrubSearchResults(AtlasSearchResultScrubRequest request) throws AtlasBaseException {
+    public static void scrubSearchResults(AtlasSearchResultScrubRequest request, boolean suppressLogs) throws AtlasBaseException {
         String userName = getCurrentUserName();
 
         if (StringUtils.isNotEmpty(userName)) {
@@ -85,7 +85,9 @@ public class AtlasAuthorizationUtils {
                 request.setForwardedAddresses(RequestContext.get().getForwardedAddresses());
                 request.setRemoteIPAddress(RequestContext.get().getClientIPAddress());
 
-                authorizer.scrubSearchResults(request, true);
+                boolean isScrubAuditEnabled = !suppressLogs;
+
+                authorizer.scrubSearchResults(request, isScrubAuditEnabled);
             } catch (AtlasAuthorizationException e) {
                 LOG.error("Unable to obtain AtlasAuthorizer", e);
             }
