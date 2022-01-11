@@ -53,7 +53,7 @@
     "requirejs-text": "2.0.15",
     "select2": "4.0.3",
     "table-dragger": "1.0.2",
-    "underscore": "1.8.3"
+    "underscore": "1.13.1"
   },
   "devDependencies": {
     "grunt": "1.0.4",

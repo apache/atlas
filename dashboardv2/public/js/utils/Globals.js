@@ -16,10 +16,13 @@
  * limitations under the License.
  */
 
-define(["require"], function(require) {
+define(["require", "underscore"], function(require, _) {
     "use strict";
 
     var Globals = {};
+    //We have assigned underscore object to the window object, So that we don't have to import,
+    // it in every file where underscore functions are used because of the version update.
+    window._ = _;
     Globals.settings = {};
     Globals.settings.PAGE_SIZE = 25;
     Globals.saveApplicationState = {
