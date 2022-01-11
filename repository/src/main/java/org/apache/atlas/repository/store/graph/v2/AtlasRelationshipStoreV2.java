@@ -308,12 +308,6 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
                 throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIP_ALREADY_DELETED, guid);
             }
 
-            String            relationShipType = graphHelper.getTypeName(edge);
-            AtlasEntityHeader end1Entity       = entityRetriever.toAtlasEntityHeaderWithClassifications(edge.getOutVertex());
-            AtlasEntityHeader end2Entity       = entityRetriever.toAtlasEntityHeaderWithClassifications(edge.getInVertex());
-
-            AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry,AtlasPrivilege.RELATIONSHIP_REMOVE, relationShipType, end1Entity, end2Entity ));
-
             edgesToDelete.add(edge);
             deletedRelationships.add(entityRetriever.mapEdgeToAtlasRelationship(edge));
         }
@@ -354,13 +348,6 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         if (getState(edge) == DELETED) {
             throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIP_ALREADY_DELETED, guid);
         }
-
-        String            relationShipType = graphHelper.getTypeName(edge);
-        AtlasEntityHeader end1Entity       = entityRetriever.toAtlasEntityHeaderWithClassifications(edge.getOutVertex());
-        AtlasEntityHeader end2Entity       = entityRetriever.toAtlasEntityHeaderWithClassifications(edge.getInVertex());
-
-        AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry,AtlasPrivilege.RELATIONSHIP_REMOVE, relationShipType, end1Entity, end2Entity ));
-
 
         deleteDelegate.getHandler().deleteRelationships(Collections.singleton(edge), forceDelete);
 
@@ -443,13 +430,13 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
 
             AtlasRelationshipType relationType = typeRegistry.getRelationshipTypeByName(relationship.getTypeName());
 
-            if (!relationType.hasLegacyAttributeEnd()) { // skip authorization for legacy attributes, as these would be covered as entity-update
-                AtlasEntityHeader end1Entity = entityRetriever.toAtlasEntityHeaderWithClassifications(end1Vertex);
-                AtlasEntityHeader end2Entity = entityRetriever.toAtlasEntityHeaderWithClassifications(end2Vertex);
 
-                AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry, AtlasPrivilege.RELATIONSHIP_ADD,
+            AtlasEntityHeader end1Entity = entityRetriever.toAtlasEntityHeaderWithClassifications(end1Vertex);
+            AtlasEntityHeader end2Entity = entityRetriever.toAtlasEntityHeaderWithClassifications(end2Vertex);
+
+            AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry, AtlasPrivilege.RELATIONSHIP_ADD,
                                                                                         relationship.getTypeName(), end1Entity, end2Entity));
-            }
+
 
             if (existingRelationshipCheck) {
                 ret = graphHelper.getOrCreateEdge(end1Vertex, end2Vertex, relationshipLabel);

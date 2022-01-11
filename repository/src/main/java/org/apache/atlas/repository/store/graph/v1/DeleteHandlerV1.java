@@ -21,6 +21,9 @@ import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.authorize.AtlasAuthorizationUtils;
+import org.apache.atlas.authorize.AtlasPrivilege;
+import org.apache.atlas.authorize.AtlasRelationshipAccessRequest;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasClassification;
@@ -29,6 +32,7 @@ import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.tasks.AtlasTask;
+import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.repository.graph.GraphHelper;
@@ -45,6 +49,7 @@ import org.apache.atlas.type.*;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection;
 import org.apache.atlas.utils.AtlasEntityUtil;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
@@ -491,6 +496,23 @@ public abstract class DeleteHandlerV1 {
         }
 
         return ret;
+    }
+
+    public void authorizeRemoveRelation(AtlasEdge edge) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("authoriseRemoveRelation");
+        AtlasEntityHeader end1Entity, end2Entity;
+        String relationShipType = getTypeName(edge);
+        AtlasRelationshipDef relationshipDef = typeRegistry.getRelationshipDefByName(relationShipType);
+        if (relationshipDef == null) {
+            return;
+        }
+
+        end1Entity = entityRetriever.toAtlasEntityHeaderWithClassifications(edge.getOutVertex());
+        end2Entity = entityRetriever.toAtlasEntityHeaderWithClassifications(edge.getInVertex());
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry, AtlasPrivilege.RELATIONSHIP_REMOVE, relationShipType, end1Entity, end2Entity ));
+
+        RequestContext.get().endMetricRecord(metric);
     }
 
     public void removeTagPropagation(AtlasEdge edge) throws AtlasBaseException {

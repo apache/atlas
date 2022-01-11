@@ -24,6 +24,9 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.GraphTransactionInterceptor;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.GraphTransaction;
+import org.apache.atlas.authorize.AtlasAuthorizationUtils;
+import org.apache.atlas.authorize.AtlasPrivilege;
+import org.apache.atlas.authorize.AtlasRelationshipAccessRequest;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.exception.EntityNotFoundException;
 import org.apache.atlas.model.TimeBoundary;
@@ -1673,7 +1676,7 @@ public class EntityGraphMapper {
             if (isAppendOnPartialUpdate) {
                 allArrayElements = unionCurrentAndNewElements(attribute, (List) currentElements, (List) newElementsCreated);
             } else {
-                removedElements = removeUnusedArrayEntries(attribute, (List) currentElements, (List) newElementsCreated, ctx.getReferringVertex());
+                removedElements = removeUnusedArrayEntries(attribute, (List) currentElements, (List) newElementsCreated, ctx);
 
                 allArrayElements = unionCurrentAndNewElements(attribute, removedElements, (List) newElementsCreated);
             }
@@ -1775,6 +1778,7 @@ public class EntityGraphMapper {
                         if (LOG.isDebugEnabled()) {
                             LOG.debug("Delete existing relation");
                         }
+
                         deleteDelegate.getHandler().deleteEdgeReference(existingEdgeToReferredVertex, ctx.getAttrType().getTypeCategory(),
                                 ctx.getAttribute().isOwnedRef(), true, ctx.getAttribute().getRelationshipEdgeDirection(), ctx.getReferringVertex());
                     }
@@ -2391,9 +2395,10 @@ public class EntityGraphMapper {
 
     //Removes unused edges from the old collection, compared to the new collection
 
-    private List<AtlasEdge> removeUnusedArrayEntries(AtlasAttribute attribute, List<AtlasEdge> currentEntries, List<AtlasEdge> newEntries, AtlasVertex entityVertex) throws AtlasBaseException {
+    private List<AtlasEdge> removeUnusedArrayEntries(AtlasAttribute attribute, List<AtlasEdge> currentEntries, List<AtlasEdge> newEntries, AttributeMutationContext ctx) throws AtlasBaseException {
         if (CollectionUtils.isNotEmpty(currentEntries)) {
             AtlasType entryType = ((AtlasArrayType) attribute.getAttributeType()).getElementType();
+            AtlasVertex entityVertex = ctx.getReferringVertex();
 
             if (isReference(entryType)) {
                 Collection<AtlasEdge> edgesToRemove = CollectionUtils.subtract(currentEntries, newEntries);
@@ -2402,6 +2407,10 @@ public class EntityGraphMapper {
                     List<AtlasEdge> additionalElements = new ArrayList<>();
 
                     for (AtlasEdge edge : edgesToRemove) {
+                        if (getStatus(edge) == DELETED ) {
+                            continue;
+                        }
+
                         boolean deleted = deleteDelegate.getHandler().deleteEdgeReference(edge, entryType.getTypeCategory(), attribute.isOwnedRef(),
                                 true, attribute.getRelationshipEdgeDirection(), entityVertex);
 

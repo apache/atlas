@@ -21,6 +21,7 @@ package org.apache.atlas.web.errors;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.type.AtlasType;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.stereotype.Component;
 
@@ -50,13 +51,17 @@ public class AtlasBaseExceptionMapper implements ExceptionMapper<AtlasBaseExcept
     }
 
     protected Response buildAtlasBaseExceptionResponse(AtlasBaseException baseException) {
-        Map<String, String> errorJsonMap = new LinkedHashMap<>();
+        Map<String, Object> errorJsonMap = new LinkedHashMap<>();
         AtlasErrorCode errorCode = baseException.getAtlasErrorCode();
         errorJsonMap.put("errorCode", errorCode.getErrorCode());
         errorJsonMap.put("errorMessage", baseException.getMessage());
 
         if (StringUtils.isNotEmpty(baseException.getEntityGuid())) {
             errorJsonMap.put("entityGuid", baseException.getEntityGuid());
+        }
+
+        if (MapUtils.isNotEmpty(baseException.getErrorDetailsMap())) {
+            errorJsonMap.put("errorDetailsMap", baseException.getErrorDetailsMap());
         }
 
         if (baseException.getCause() != null) {
