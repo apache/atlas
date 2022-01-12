@@ -120,6 +120,10 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         return this.registry.getAll();
     }
 
+    public List<AtlasTask> getAll(List<String> statusList) {
+        return this.registry.getAll(statusList);
+    }
+
     public void addAll(List<AtlasTask> tasks) {
         if (CollectionUtils.isEmpty(tasks)) {
             return;

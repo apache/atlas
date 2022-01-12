@@ -26,18 +26,17 @@ import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.utils.AtlasJson;
+import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.apache.atlas.repository.Constants.TASK_GUID;
+import static org.apache.atlas.repository.Constants.TRAIT_NAMES_PROPERTY_KEY;
+import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.ComparisionOperator.NOT_EQUAL;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getVertexDetails;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.setEncodedProperty;
 
@@ -154,6 +153,37 @@ public class TaskRegistry {
         AtlasGraphQuery query = graph.query()
                                      .has(Constants.TASK_TYPE_PROPERTY_KEY, Constants.TASK_TYPE_NAME)
                                      .orderBy(Constants.TASK_CREATED_TIME, AtlasGraphQuery.SortOrder.ASC);
+
+        Iterator<AtlasVertex> results = query.vertices().iterator();
+
+        while (results.hasNext()) {
+            ret.add(toAtlasTask(results.next()));
+        }
+
+        return ret;
+    }
+
+    /*
+    * This returns tasks which has status IN statusList
+    * If not specified, return all tasks
+    * */
+    @GraphTransaction
+    public List<AtlasTask> getAll(List<String> statusList) {
+        List<AtlasTask> ret = new ArrayList<>();
+        AtlasGraphQuery query = graph.query()
+                                     .has(Constants.TASK_TYPE_PROPERTY_KEY, Constants.TASK_TYPE_NAME);
+
+        if (CollectionUtils.isNotEmpty(statusList)) {
+            List<AtlasGraphQuery> orConditions = new LinkedList<>();
+
+            for (String status : statusList) {
+                orConditions.add(query.createChildQuery().has(Constants.TASK_STATUS, AtlasTask.Status.from(status)));
+            }
+
+            query.or(orConditions);
+        }
+
+        query.orderBy(Constants.TASK_CREATED_TIME, AtlasGraphQuery.SortOrder.ASC);
 
         Iterator<AtlasVertex> results = query.vertices().iterator();
 
