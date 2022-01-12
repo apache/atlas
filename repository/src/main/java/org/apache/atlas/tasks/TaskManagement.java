@@ -44,7 +44,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class TaskManagement implements Service, ActiveStateChangeHandler {
     private static final Logger LOG = LoggerFactory.getLogger(TaskManagement.class);
 
-    private final ThreadLocal<TaskExecutor> taskExecutorThreadLocal = new ThreadLocal<>();
+    private       TaskExecutor              taskExecutor;
     private final Configuration             configuration;
     private final TaskRegistry              registry;
     private final Statistics                statistics;
@@ -170,16 +170,16 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         }
     }
 
-    private void dispatchTasks(List<AtlasTask> tasks) {
+    private synchronized void dispatchTasks(List<AtlasTask> tasks) {
         if (CollectionUtils.isEmpty(tasks)) {
             return;
         }
 
-        if (this.taskExecutorThreadLocal.get() == null) {
-            this.taskExecutorThreadLocal.set(new TaskExecutor(registry, taskTypeFactoryMap, statistics));
+        if (this.taskExecutor == null) {
+            this.taskExecutor = new TaskExecutor(registry, taskTypeFactoryMap, statistics);
         }
 
-        this.taskExecutorThreadLocal.get().addAll(tasks);
+        this.taskExecutor.addAll(tasks);
 
         this.statistics.print();
     }
