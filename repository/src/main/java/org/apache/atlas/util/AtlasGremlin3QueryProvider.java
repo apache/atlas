@@ -58,9 +58,9 @@ public class AtlasGremlin3QueryProvider extends AtlasGremlin2QueryProvider {
             case RELATIONSHIP_SEARCH:
                 return "g.V().has('__guid', guid).bothE(relation).has('__state', within(states)).otherV().has('__state', within(states))";
             case RELATIONSHIP_SEARCH_ASCENDING_SORT:
-                return ".order().by(sortAttributeName, incr)";
+                return ".order().by(sortAttributeName, asc)";
             case RELATIONSHIP_SEARCH_DESCENDING_SORT:
-                return ".order().by(sortAttributeName, decr)";
+                return ".order().by(sortAttributeName, desc)";
             case GREMLIN_SEARCH_RETURNS_VERTEX_ID:
                 return "g.V().range(0,1).toList()";
             case GREMLIN_SEARCH_RETURNS_EDGE_ID:

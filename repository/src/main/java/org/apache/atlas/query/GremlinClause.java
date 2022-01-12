@@ -39,7 +39,7 @@ public enum GremlinClause {
     NESTED_HAS_OPERATOR("has('%s', %s(%s))"),
     LIMIT("limit(%s)"),
     ORDER_BY("order().by('%s')"),
-    ORDER_BY_DESC("order().by('%s', decr)"),
+    ORDER_BY_DESC("order().by('%s', desc)"),
     OUT("out('%s')"),
     RANGE("range(%s, %s + %s)"),
     SELECT("select('%s')"),
