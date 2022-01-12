@@ -178,7 +178,7 @@ public class GremlinQueryComposerTest {
 
     @Test
     public void fromDBOrderByNameDesc() {
-        verify("from DB orderby name DESC", "g.V().has('__typeName', 'DB').order().by('DB.name', decr).dedup().limit(25).toList()");
+        verify("from DB orderby name DESC", "g.V().has('__typeName', 'DB').order().by('DB.name', desc).dedup().limit(25).toList()");
     }
 
     @Test
