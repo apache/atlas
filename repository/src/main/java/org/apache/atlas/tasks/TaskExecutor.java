@@ -149,7 +149,7 @@ public class TaskExecutor {
 
             runnableTask.run();
 
-            registry.deleteComplete(taskVertex, task);
+            registry.complete(taskVertex, task);
 
             statistics.successPrint();
         }

@@ -124,6 +124,11 @@ public class TaskRegistry {
     }
 
     @GraphTransaction
+    public void complete(AtlasVertex taskVertex, AtlasTask task) {
+        updateStatus(taskVertex, task);
+    }
+
+    @GraphTransaction
     public AtlasTask getById(String guid) {
         AtlasGraphQuery query = graph.query()
                                      .has(Constants.TASK_TYPE_PROPERTY_KEY, Constants.TASK_TYPE_NAME)
