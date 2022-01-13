@@ -64,6 +64,9 @@ define(['require', 'utils/Enums', 'utils/Utils', 'underscore'], function(require
         regitrydataDefApiUrl: function(name) {
             return this.baseUrlV2 + '/entity/getRegistryData';
         },
+        migrationStatusApiUrl: function() {
+            return this.baseUrl + '/admin/status'
+        },
         rootEntityDefUrl: function(name) {
             return this.baseUrlV2 + '/types/entitydef/name/' + name;
         },

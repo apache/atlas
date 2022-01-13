@@ -202,7 +202,8 @@ require.config({
 require([
     'marionette',
     'utils/Helper',
-    'bootstrap'
+    'bootstrap',
+    'select2'
 ], function(Marionette, Helper) {
     var that = this;
     var App = new Marionette.Application();
