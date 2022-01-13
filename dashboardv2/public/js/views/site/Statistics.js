@@ -126,7 +126,7 @@ define(['require',
                     success: function(data) {
                         var data = _.first(data.toJSON()),
                             migrationStatus = data.MigrationStatus || null,
-                            operationStatus = migrationStatus.operationStatus,
+                            operationStatus = migrationStatus ? migrationStatus.operationStatus : null,
                             showProgress = true,
                             totalProgress = 0,
                             progressMessage = "";
