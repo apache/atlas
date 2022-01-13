@@ -128,6 +128,12 @@ public class TaskRegistry {
     }
 
     @GraphTransaction
+    public void inProgress(AtlasVertex taskVertex) {
+        setEncodedProperty(taskVertex, Constants.TASK_STATUS, AtlasTask.Status.IN_PROGRESS);
+        setEncodedProperty(taskVertex, Constants.TASK_UPDATED_TIME, System.currentTimeMillis());
+    }
+
+    @GraphTransaction
     public AtlasTask getById(String guid) {
         AtlasGraphQuery query = graph.query()
                                      .has(Constants.TASK_TYPE_PROPERTY_KEY, Constants.TASK_TYPE_NAME)

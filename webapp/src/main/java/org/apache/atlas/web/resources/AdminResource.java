@@ -879,6 +879,17 @@ public class AdminResource {
         return CollectionUtils.isNotEmpty(guids) ? taskManagement.getByGuids(guids) : taskManagement.getAll(statusList);
     }
 
+    /*
+    * Retry failed tasks on demand
+    * @Param taskGuids list of task guids needed to retry
+    * */
+    @POST
+    @Path("/tasks/retry")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public void retryFailedTasks(@QueryParam("guid") List<String> taskGuids) throws AtlasBaseException {
+        taskManagement.retryTasks(taskGuids);
+    }
+
     @DELETE
     @Path("/tasks")
     @Produces(Servlets.JSON_MEDIA_TYPE)

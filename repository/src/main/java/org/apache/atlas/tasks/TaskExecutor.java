@@ -147,6 +147,8 @@ public class TaskExecutor {
 
             AbstractTask runnableTask = factory.create(task);
 
+            registry.inProgress(taskVertex);
+
             runnableTask.run();
 
             registry.complete(taskVertex, task);
