@@ -24,10 +24,12 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 
+import javax.sound.sampled.Line;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -44,8 +46,10 @@ public class AtlasLineageInfo implements Serializable {
     private String                         baseEntityGuid;
     private LineageDirection               lineageDirection;
     private int                            lineageDepth;
+    private int                            limit;
     private Map<String, AtlasEntityHeader> guidEntityMap;
     private Set<LineageRelation>           relations;
+    private Map<String, Map<LineageDirection, Integer>> childrenCounts = new HashMap<>();
 
     public AtlasLineageInfo() {}
 
@@ -61,10 +65,12 @@ public class AtlasLineageInfo implements Serializable {
      * @param relations list of lineage relations for the entity (fromEntityId -> toEntityId)
      */
     public AtlasLineageInfo(String baseEntityGuid, Map<String, AtlasEntityHeader> guidEntityMap,
-                            Set<LineageRelation> relations, LineageDirection lineageDirection, int lineageDepth) {
+                            Set<LineageRelation> relations, LineageDirection lineageDirection,
+                            int lineageDepth, int limit) {
         this.baseEntityGuid   = baseEntityGuid;
         this.lineageDirection = lineageDirection;
         this.lineageDepth     = lineageDepth;
+        this.limit            = limit;
         this.guidEntityMap    = guidEntityMap;
         this.relations        = relations;
     }
@@ -109,6 +115,31 @@ public class AtlasLineageInfo implements Serializable {
         this.lineageDepth = lineageDepth;
     }
 
+    public int getLimit() {
+        return limit;
+    }
+
+    public void setLimit(int limit) {
+        this.limit = limit;
+    }
+
+    public Map<String, Map<LineageDirection, Integer>> getChildrenCounts() {
+        return childrenCounts;
+    }
+
+    public void addChildrenCount(String guid, LineageDirection direction, int count){
+        Map<LineageDirection, Integer> entityChildrenCountMap = childrenCounts.get(guid);
+        if (entityChildrenCountMap == null) {
+            entityChildrenCountMap = new HashMap<>();
+        }
+        entityChildrenCountMap.put(direction, count);
+        childrenCounts.put(guid, entityChildrenCountMap);
+    }
+
+    public void mergeChildrenCounts(String guid, LineageDirection direction){
+        childrenCounts.get(guid).merge(direction, 1, Integer::sum);
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -118,12 +149,13 @@ public class AtlasLineageInfo implements Serializable {
                 Objects.equals(baseEntityGuid, that.baseEntityGuid) &&
                 lineageDirection == that.lineageDirection &&
                 Objects.equals(guidEntityMap, that.guidEntityMap) &&
-                Objects.equals(relations, that.relations);
+                Objects.equals(relations, that.relations) &&
+                Objects.equals(limit, that.limit);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(baseEntityGuid, lineageDirection, lineageDepth, guidEntityMap, relations);
+        return Objects.hash(baseEntityGuid, lineageDirection, lineageDepth, guidEntityMap, relations, limit);
     }
 
     @Override
@@ -134,6 +166,7 @@ public class AtlasLineageInfo implements Serializable {
                 ", relations=" + relations +
                 ", lineageDirection=" + lineageDirection +
                 ", lineageDepth=" + lineageDepth +
+                ", limit=" + limit +
                 '}';
     }
 

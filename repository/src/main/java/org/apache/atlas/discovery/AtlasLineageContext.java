@@ -34,6 +34,7 @@ public class AtlasLineageContext {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasLineageContext.class);
 
     private int depth;
+    private int limit;
     private String guid;
     private boolean isDataset;
     private boolean isProcess;
@@ -48,6 +49,7 @@ public class AtlasLineageContext {
 
     public AtlasLineageContext(AtlasLineageRequest lineageRequest, AtlasTypeRegistry typeRegistry) {
         this.guid = lineageRequest.getGuid();
+        this.limit = lineageRequest.getLimit();
         this.depth = lineageRequest.getDepth();
         this.direction = lineageRequest.getDirection();
         this.skipDeleted = lineageRequest.isSkipDeleted();
@@ -63,6 +65,14 @@ public class AtlasLineageContext {
 
     public void setDepth(int depth) {
         this.depth = depth;
+    }
+
+    public int getLimit() {
+        return limit;
+    }
+
+    public void setLimit(int limit) {
+        this.limit = limit;
     }
 
     public String getGuid() {
@@ -139,6 +149,10 @@ public class AtlasLineageContext {
             return predicate.evaluate(vertex);
         }
         return true;
+    }
+
+    public boolean shouldApplyLimit() {
+        return limit > 0;
     }
 
     @Override

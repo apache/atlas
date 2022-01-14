@@ -35,6 +35,7 @@ import static org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection.*
 public class AtlasLineageRequest {
     private String guid;
     private int depth;
+    private int limit = -1;
     private boolean skipDeleted;
     private boolean hideProcess;
     private LineageDirection direction = BOTH;
@@ -66,6 +67,14 @@ public class AtlasLineageRequest {
 
     public void setDepth(int depth) {
         this.depth = depth;
+    }
+
+    public int getLimit() {
+        return limit;
+    }
+
+    public void setLimit(int limit) {
+        this.limit = limit;
     }
 
     public boolean isSkipDeleted() {
