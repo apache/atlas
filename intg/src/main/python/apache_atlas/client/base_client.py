@@ -34,7 +34,7 @@ from apache_atlas.utils import HTTPMethod
 from apache_atlas.utils import HTTPStatus
 from apache_atlas.utils import type_coerce
 
-LOG = logging.getLogger('apache_atlas')
+log = logging.getLogger('apache_atlas')
 
 
 class AtlasClient:
@@ -68,11 +68,11 @@ class AtlasClient:
         if request_obj is not None:
             params['data'] = json.dumps(request_obj)
 
-        if LOG.isEnabledFor(logging.DEBUG):
-            LOG.debug("------------------------------------------------------")
-            LOG.debug("Call         : %s %s", api.method, path)
-            LOG.debug("Content-type : %s", api.consumes)
-            LOG.debug("Accept       : %s", api.produces)
+        if log.isEnabledFor(logging.DEBUG):
+            log.debug("------------------------------------------------------")
+            log.debug("Call         : %s %s", api.method, path)
+            log.debug("Content-type : %s", api.consumes)
+            log.debug("Accept       : %s", api.produces)
 
         response = None
 
@@ -86,7 +86,7 @@ class AtlasClient:
             response = self.session.delete(path, **params)
 
         if response is not None:
-            LOG.debug("HTTP Status: %s", response.status_code)
+            log.debug("HTTP Status: %s", response.status_code)
 
         if response is None:
             return None
@@ -96,10 +96,10 @@ class AtlasClient:
 
             try:
                 if response.content is not None:
-                    if LOG.isEnabledFor(logging.DEBUG):
-                        LOG.debug("<== __call_api(%s,%s,%s), result = %s", vars(api), params, request_obj, response)
+                    if log.isEnabledFor(logging.DEBUG):
+                        log.debug("<== __call_api(%s,%s,%s), result = %s", vars(api), params, request_obj, response)
 
-                        LOG.debug(response.json())
+                        log.debug(response.json())
                     if response_type == str:
                         return json.dumps(response.json())
 
@@ -107,13 +107,11 @@ class AtlasClient:
                 else:
                     return None
             except Exception as e:
-                print(e)
-
-                LOG.exception("Exception occurred while parsing response with msg: %s", e)
+                log.exception("Exception occurred while parsing response with msg: %s", e)
 
                 raise AtlasServiceException(api, response)
         elif response.status_code == HTTPStatus.SERVICE_UNAVAILABLE:
-            LOG.error("Atlas Service unavailable. HTTP Status: %s", HTTPStatus.SERVICE_UNAVAILABLE)
+            log.error("Atlas Service unavailable. HTTP Status: %s", HTTPStatus.SERVICE_UNAVAILABLE)
 
             return None
         else:
