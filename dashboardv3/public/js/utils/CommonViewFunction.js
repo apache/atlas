@@ -618,7 +618,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                             } else {
                                 url[2] = Enums.queryBuilderDateRangeUIValueToAPI[_.trim(value)] || value;
                             }
-                        } else if (value.length && type === 'date' && formatedDateToLong) {
+                        } else if (value && value.length && type === 'date' && formatedDateToLong) {
                             url[2] = Date.parse(value);
                         }
                         if (type) {
