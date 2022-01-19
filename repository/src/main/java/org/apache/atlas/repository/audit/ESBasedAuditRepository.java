@@ -101,15 +101,10 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
                         "\"entityQualifiedName\": \"{5}\", \"typeName\": \"{6}\",\"created\":{7}, \"timestamp\":{8}'}'";
                 String bulkMetadata = String.format("{ \"index\" : { \"_index\" : \"%s\" } }%n", INDEX_NAME);
                 StringBuilder bulkRequestBody = new StringBuilder();
-                boolean flaga = true;
                 for (EntityAuditEventV2 event : events) {
                     String created = String.format("%s", event.getTimestamp());
                     String auditDetailPrefix = EntityAuditListenerV2.getV2AuditPrefix(event.getAction());
                     String details = event.getDetails().substring(auditDetailPrefix.length());
-                    if (flaga) {
-                        created = "aaa";
-                        flaga = false;
-                    }
 
                     String bulkItem = MessageFormat.format(entityPayloadTemplate,
                             event.getEntityId(),
