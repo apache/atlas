@@ -603,8 +603,10 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
                     entity = new AtlasEntity(entityHeader);
                 } else {
                     String entityGuid = entityHeader.getGuid();
-
                     entity = fullTextMapperV2.getAndCacheEntity(entityGuid);
+                    if (operation == EntityOperation.UPDATE || entityHeader.getAttributes() != null) {
+                        entity.setAttributes(entityHeader.getAttributes());
+                    }
                 }
 
                 if (entity != null) {
