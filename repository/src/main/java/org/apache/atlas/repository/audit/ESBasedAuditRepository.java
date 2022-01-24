@@ -112,7 +112,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
                             details,
                             event.getUser(),
                             event.getEntityId() + ":" + event.getEntity().getUpdateTime().getTime(),
-                            event.getEntity().getAttribute(QUALIFIED_NAME),
+                            event.getEntityQualifiedName(),
                             event.getEntity().getTypeName(),
                             created,
                             "" + event.getEntity().getUpdateTime().getTime());

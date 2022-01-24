@@ -15,13 +15,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.model.lineage;
+package org.apache.atlas.discovery;
+
+import org.apache.atlas.model.discovery.SearchParameters;
+import org.apache.atlas.model.lineage.AtlasLineageInfo;
+import org.apache.atlas.model.lineage.AtlasLineageRequest;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.commons.collections.Predicate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Set;
 
 import static org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection.BOTH;
 
 public class AtlasLineageContext {
+    private static final Logger LOG = LoggerFactory.getLogger(AtlasLineageContext.class);
+
     private int depth;
     private String guid;
     private boolean isDataset;
@@ -31,14 +42,19 @@ public class AtlasLineageContext {
     private AtlasLineageInfo.LineageDirection direction = BOTH;
 
     private Set<String> attributes;
+    private Predicate predicate;
 
-    public AtlasLineageContext(AtlasLineageRequest lineageRequest) {
+    private AtlasVertex startDatasetVertex = null;
+
+    public AtlasLineageContext(AtlasLineageRequest lineageRequest, AtlasTypeRegistry typeRegistry) {
         this.guid = lineageRequest.getGuid();
         this.depth = lineageRequest.getDepth();
         this.direction = lineageRequest.getDirection();
         this.skipDeleted = lineageRequest.isSkipDeleted();
         this.hideProcess = lineageRequest.isHideProcess();
         this.attributes = lineageRequest.getAttributes();
+
+        predicate = constructInMemoryPredicate(typeRegistry, lineageRequest.getEntityFilters());
     }
 
     public int getDepth() {
@@ -103,6 +119,26 @@ public class AtlasLineageContext {
 
     public void setAttributes(Set<String> attributes) {
         this.attributes = attributes;
+    }
+
+    public AtlasVertex getStartDatasetVertex() {
+        return startDatasetVertex;
+    }
+
+    public void setStartDatasetVertex(AtlasVertex startDatasetVertex) {
+        this.startDatasetVertex = startDatasetVertex;
+    }
+
+    protected Predicate constructInMemoryPredicate(AtlasTypeRegistry typeRegistry, SearchParameters.FilterCriteria filterCriteria) {
+        LineageSearchProcessor lineageSearchProcessor = new LineageSearchProcessor();
+        return lineageSearchProcessor.constructInMemoryPredicate(typeRegistry, filterCriteria);
+    }
+
+    protected boolean evaluate(AtlasVertex vertex) {
+        if (predicate != null) {
+            return predicate.evaluate(vertex);
+        }
+        return true;
     }
 
     @Override
