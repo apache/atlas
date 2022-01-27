@@ -37,23 +37,23 @@ public class TraversalComposerTest extends BaseDSLComposer {
     @Test
     public void queries() {
         verify("hive_db",
-                "[JanusGraphStep([],[__typeName.eq(hive_db)]), DedupGlobalStep, RangeGlobalStep(0,25)]");
+                "[JanusGraphStep([],[__typeName.eq(hive_db)]), DedupGlobalStep(null,null), RangeGlobalStep(0,25)]");
 
         verify("hive_db where owner = 'hdfs'",
-                "[JanusGraphStep([],[__typeName.eq(hive_db), hive_db.owner.eq(hdfs)]), DedupGlobalStep, RangeGlobalStep(0,25)]");
+                "[JanusGraphStep([],[__typeName.eq(hive_db), hive_db.owner.eq(hdfs)]), DedupGlobalStep(null,null), RangeGlobalStep(0,25)]");
 
         verify("DB where owner = ['hdfs', 'anon']",
-                "[JanusGraphStep([],[__typeName.eq(DB), DB.owner.within([hdfs, anon])]), DedupGlobalStep, RangeGlobalStep(0,25)]");
+                "[JanusGraphStep([],[__typeName.eq(DB), DB.owner.within([hdfs, anon])]), DedupGlobalStep(null,null), RangeGlobalStep(0,25)]");
 
         verify("hive_db where hive_db.name='Reporting' and hive_db.createTime < '2017-12-12T02:35:58.440Z'",
-                "[JanusGraphStep([],[__typeName.eq(hive_db), hive_db.name.eq(Reporting), hive_db.createTime.lt(1513046158440)]), DedupGlobalStep, RangeGlobalStep(0,25)]");
+                "[JanusGraphStep([],[__typeName.eq(hive_db), hive_db.name.eq(Reporting), hive_db.createTime.lt(1513046158440)]), DedupGlobalStep(null,null), RangeGlobalStep(0,25)]");
 
         // note that projections are not handled in the conversion
         verify("DB as d select d.name, d.owner",
-                "[JanusGraphStep([],[__typeName.eq(DB)]), DedupGlobalStep@[d], RangeGlobalStep(0,25)]");
+                "[JanusGraphStep([],[__typeName.eq(DB)]), DedupGlobalStep(null,null)@[d], RangeGlobalStep(0,25)]");
 
         verify("Table groupby(owner) select name, owner, clusterName orderby name",
-                "[JanusGraphStep([],[__typeName.eq(Table), Table.owner.neq]), GroupStep(value(Table.owner),[FoldStep]), DedupGlobalStep, RangeGlobalStep(0,25)]");
+                "[JanusGraphStep([],[__typeName.eq(Table), Table.owner.neq]), GroupStep(value([CoalesceStep([value(Table.owner), (null)])]),[FoldStep]), DedupGlobalStep(null,null), RangeGlobalStep(0,25)]");
     }
 
     private void verify(String dsl, String expected) {
