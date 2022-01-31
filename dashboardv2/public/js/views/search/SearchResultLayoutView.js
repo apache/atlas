@@ -212,8 +212,14 @@ define(['require',
                 });
                 this.listenTo(this.searchCollection, "error", function(model, response) {
                     this.hideLoader({ type: 'error' });
+                    if (response.readyState === 0) {
+                        Utils.notifyError({
+                            content: "Request aborted"
+                        });
+                        return;
+                    }
                     var responseJSON = response && response.responseJSON ? response.responseJSON : null,
-                        errorText = (responseJSON && (responseJSON.errorMessage || responseJSON.message || responseJSON.error)) || 'Invalid Expression';
+                        errorText = (responseJSON && (responseJSON.errorMessage || responseJSON.message || responseJSON.error || responseJSON.msgDesc)) || 'Something went wrong';
                     if (errorText) {
                         Utils.notifyError({
                             content: errorText
