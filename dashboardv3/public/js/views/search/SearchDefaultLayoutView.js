@@ -68,6 +68,7 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
 
                 events["click " + this.ui.refreshSearchQuery] = function(e) {
                     this.options.searchVent.trigger('search:refresh');
+                    this.disableRefreshButton();
                 };
 
                 events["click " + this.ui.attrApply] = function(e) {
@@ -167,6 +168,13 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
                         this.options.searchTableFilters["entityFilters"][that.options.value.type] = "";
                     }
                 }
+            },
+            disableRefreshButton: function() {
+                var that = this;
+                this.ui.refreshSearchQuery.attr('disabled', true);
+                setTimeout(function() {
+                    that.ui.refreshSearchQuery.attr('disabled', false);
+                }, 1000);
             },
             onCheckExcludeIncludeResult: function(e) {
 
