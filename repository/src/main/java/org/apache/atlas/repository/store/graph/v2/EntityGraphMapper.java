@@ -1749,13 +1749,29 @@ public class EntityGraphMapper {
                                                        EntityMutationContext context) throws AtlasBaseException {
         MetricRecorder metric = RequestContext.get().startMetricRecord("removeExistingRelationWithOtherVertex");
 
-        AtlasVertex referredVertex = context.getVertex(((AtlasObjectId) arrCtx.getValue()).getGuid());
+        AtlasObjectId entityObject = (AtlasObjectId) arrCtx.getValue();
+        String entityGuid = entityObject.getGuid();
+
+        AtlasVertex referredVertex = null;
+
+        if (StringUtils.isNotEmpty(entityGuid)) {
+            referredVertex = context.getVertex(entityGuid);
+        }
+
         if (referredVertex == null) {
             try {
-                referredVertex = entityRetriever.getEntityVertex(((AtlasObjectId) arrCtx.getValue()).getGuid());
-            } catch (AtlasBaseException ebe) {
+                if (StringUtils.isNotEmpty(entityGuid)) {
+                    referredVertex = entityRetriever.getEntityVertex(((AtlasObjectId) arrCtx.getValue()).getGuid());
+                } else {
+                    AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entityObject.getTypeName());
+                    if (entityType != null && MapUtils.isNotEmpty(entityObject.getUniqueAttributes())) {
+                        referredVertex = AtlasGraphUtilsV2.findByUniqueAttributes(this.graph, entityType, entityObject.getUniqueAttributes());
+                    }
+                }
+            } catch (AtlasBaseException e) {
                 //in case if importing zip, referredVertex might not have been create yet
                 //e.g. importing zip with db & its tables, while processing db edges, tables vertices are not yet created
+                LOG.warn("removeExistingRelationWithOtherVertex - vertex not found!", e);
             }
         }
 
