@@ -19,6 +19,7 @@ package org.apache.atlas.model.lineage;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
 
 import java.util.HashSet;
@@ -37,6 +38,7 @@ public class AtlasLineageRequest {
     private boolean skipDeleted;
     private boolean hideProcess;
     private LineageDirection direction = BOTH;
+    private SearchParameters.FilterCriteria entityFilters;
 
     private Set<String> attributes;
 
@@ -96,5 +98,13 @@ public class AtlasLineageRequest {
 
     public void setAttributes(Set<String> attributes) {
         this.attributes = attributes;
+    }
+
+    public SearchParameters.FilterCriteria getEntityFilters() {
+        return entityFilters;
+    }
+
+    public void setEntityFilters(SearchParameters.FilterCriteria entityFilters) {
+        this.entityFilters = entityFilters;
     }
 }
