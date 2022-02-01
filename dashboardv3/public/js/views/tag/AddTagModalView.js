@@ -154,14 +154,28 @@ define(['require',
                         guid: [],
                         skipEntity: [],
                         deletedEntity: []
-                    };
+                    },
+                    isValidateAttrValue = true,
+                    validationKey = [];
                 tagAttributeNames.each(function(i, item) {
-                    var selection = $(item).data("key");
-                    var datatypeSelection = $(item).data("type");
+                    var selection = $(item).data("key"),
+                        isRequired = $(item).hasClass('required'),
+                        datatypeSelection = $(item).data("type");
+                    $(item).removeClass('errorValidate');
                     if (datatypeSelection === "date") {
                         tagAttributes[selection] = Date.parse($(item).val()) || null;
                     } else {
-                        tagAttributes[selection] = $(item).val() || null;
+                        if (isRequired) {
+                            if ($(item).val().length) {
+                                tagAttributes[selection] = $(item).val() || null;
+                            } else {
+                                isValidateAttrValue = false;
+                                $(item).addClass('errorValidate');
+                                validationKey.push($(item).data("key"));
+                            }
+                        } else {
+                            tagAttributes[selection] = $(item).val() || null;
+                        }
                     }
                 });
 
@@ -246,6 +260,18 @@ define(['require',
                             that.hideLoader();
                         }
                     }
+                } else if (isValidateAttrValue === false) {
+                    var validationMsg = "" + _.each(validationKey, function(key) {
+                        return key + " ";
+                    });
+                    that.modal.$el.find('button.ok').hideButtonLoader();
+                    Utils.notifyInfo({
+                        content: "Value for " + validationMsg + " cannot be empty"
+                    });
+                    if (this.hideLoader) {
+                        this.hideLoader();
+                    };
+                    return;
                 } else {
                     obj.guid.push(that.guid);
                     that.saveTagData(obj);
@@ -385,7 +411,9 @@ define(['require',
             if (attributeDefs) {
                 _.each(attributeDefs, function(obj) {
                     var name = Utils.getName(obj, 'name');
-                    var typeName = Utils.getName(obj, 'typeName');
+                    var typeName = Utils.getName(obj, 'typeName'),
+                        isOptional = obj.isOptional,
+                        inputClassName = "form-control attributeInputVal attrName" + (isOptional ? "" : " required");
                     var typeNameValue = that.enumDefCollection.fullCollection.findWhere({ 'name': typeName });
                     if (typeNameValue) {
                         var str = '<option value=""' + (!that.tagModel ? 'selected' : '') + '>-- Select ' + typeName + " --</option>";
@@ -393,12 +421,17 @@ define(['require',
                         _.each(enumValue, function(key, value) {
                             str += '<option ' + ((that.tagModel && key.value === that.tagModel.attributes[name]) ? 'selected' : '') + '>' + _.escape(key.value) + '</option>';
                         })
-                        that.ui.tagAttribute.append('<div class="form-group"><label>' + name + '</label>' + ' (' + typeName + ')' +
-                            '<select class="form-control attributeInputVal attrName" data-key="' + name + '">' + str + '</select></div>');
+                        that.ui.tagAttribute.append('<div class="form-group"><label class="' + (isOptional ? "" : " required") + '">' + name + '</label>' + ' (' + typeName + ')' +
+                            '<select class="' + inputClassName + '" data-key="' + name + '">' + str + '</select></div>');
+                    } else if (typeName.indexOf('array') == 0) {
+                        var arraytTypeName = new DOMParser().parseFromString(typeName, "text/html");
+
+                        that.ui.tagAttribute.append('<div class="form-group"><label class="' + (isOptional ? "" : " required") + '">' + name + '</label>' + ' (' + typeName + ')' +
+                            '<select class="' + inputClassName + '" data-id="addArryString" multiple="multiple" data-key="' + name + '" data-type="' + arraytTypeName.documentElement.textContent + '"></select></div>');
                     } else {
-                        var textElement = that.getElement(name, typeName);
+                        var textElement = that.getElement(name, typeName, inputClassName);
                         if (_.isTypePrimitive(typeName)) {
-                            that.ui.tagAttribute.append('<div class="form-group"><label>' + name + '</label>' + ' (' + typeName + ')' + textElement + '</div>');
+                            that.ui.tagAttribute.append('<div class="form-group"><label class="' + (isOptional ? "" : " required") + '">' + name + '</label>' + ' (' + typeName + ')' + textElement + '</div>');
                         }
                     }
                 });
@@ -428,18 +461,64 @@ define(['require',
                         this.value = that.tagModel.attributes[labelName];
                     }
                 });
+                that.$('select[data-type="array<string>"]').each(function() {
+                    var stringData = $(this).data('key');
+                    if (that.tagModel) {
+                        var stringValues = that.tagModel.attributes[stringData] || [],
+                            str = stringValues.map(function(label) {
+                                return "<option selected > " + _.escape(label) + " </option>";
+                            });
+                        $(this).html(str);
+                    }
+                    var getLabelData = function(data, selectedData) {
+                        if (data.suggestions.length) {
+                            return _.map(data.suggestions, function(name, index) {
+                                var findValue = _.find(selectedData, { id: name })
+                                if (findValue) {
+                                    return findValue;
+                                } else {
+                                    return {
+                                        id: name,
+                                        text: name
+                                    }
+                                }
+                            });
+                        } else {
+                            var findValue = _.find(selectedData, { id: data.prefixString })
+                            return findValue ? [findValue] : [];
+                        }
+                    };
+                    $(this).select2({
+                        placeholder: "Select String",
+                        allowClear: false,
+                        tags: true,
+                        multiple: true,
+                        createTag: function(data) {
+                            var found = _.find(this.$element.select2("data"), { id: data.term });
+                            if (!found) {
+                                return { id: data.term, text: data.term };
+                            }
+                        },
+                        templateResult: that.formatResultSearch
+                    })
+
+                });
                 this.showAttributeBox();
             }
         },
-        getElement: function(labelName, typeName) {
+        formatResultSearch: function(state) {
+            if (!state.element && state.text.trim() !== "") {
+                return $("<span>Add<strong> '" + _.escape(state.text) + "'</strong></span>");
+            }
+        },
+        getElement: function(labelName, typeName, inputClassName) {
             var value = this.tagModel && this.tagModel.attributes ? (this.tagModel.attributes[_.unescape(labelName)] || "") : "",
-                isTypeNumber = typeName === "int" || typeName === "byte" || typeName === "short" || typeName === "double" || typeName === "float",
-                inputClassName = "form-control attributeInputVal attrName";
+                isTypeNumber = typeName === "int" || typeName === "byte" || typeName === "short" || typeName === "double" || typeName === "float";
             if (isTypeNumber) {
                 inputClassName += ((typeName === "int" || typeName === "byte" || typeName === "short") ? " number-input-negative" : " number-input-exponential");
             }
             if (typeName === "boolean") {
-                return '<select class="form-control attributeInputVal attrName" data-key="' + labelName + '" data-type="' + typeName + '"> ' +
+                return '<select class="' + inputClassName + '" data-key="' + labelName + '" data-type="' + typeName + '"> ' +
                     '<option value="">--Select true or false--</option>' +
                     '<option value="true">true</option>' +
                     '<option value="false">false</option></select>';
