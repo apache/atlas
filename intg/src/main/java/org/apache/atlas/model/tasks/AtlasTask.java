@@ -77,6 +77,7 @@ public class AtlasTask {
     private Date                updatedTime;
     private Date                startTime;
     private Date                endTime;
+    private Long                timeTakenInSeconds;
     private Map<String, Object> parameters;
     private int                 attemptCount;
     private String              errorMessage;
@@ -196,6 +197,14 @@ public class AtlasTask {
 
     public void setEndTime(Date endTime) {
         this.endTime = endTime;
+    }
+
+    public Long getTimeTakenInSeconds() {
+        return timeTakenInSeconds;
+    }
+
+    public void setTimeTakenInSeconds(Long timeTakenInSeconds) {
+        this.timeTakenInSeconds = timeTakenInSeconds;
     }
 
     @JsonIgnore

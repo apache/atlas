@@ -30,6 +30,7 @@ public abstract class AbstractTask {
 
     public void run() throws Exception {
         try {
+            task.start();
             perform();
         } catch (Exception exception) {
             task.setStatusPending();

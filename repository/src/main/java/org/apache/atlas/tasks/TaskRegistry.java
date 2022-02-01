@@ -33,10 +33,9 @@ import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 import static org.apache.atlas.repository.Constants.TASK_GUID;
-import static org.apache.atlas.repository.Constants.TRAIT_NAMES_PROPERTY_KEY;
-import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.ComparisionOperator.NOT_EQUAL;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getVertexDetails;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.setEncodedProperty;
 
@@ -94,6 +93,22 @@ public class TaskRegistry {
         setEncodedProperty(taskVertex, Constants.TASK_STATUS, task.getStatus().toString());
         setEncodedProperty(taskVertex, Constants.TASK_UPDATED_TIME, System.currentTimeMillis());
         setEncodedProperty(taskVertex, Constants.TASK_ERROR_MESSAGE, task.getErrorMessage());
+
+        if (task.getStartTime() != null) {
+            setEncodedProperty(taskVertex, Constants.TASK_START_TIME, task.getStartTime());
+        }
+
+        if (task.getEndTime() != null) {
+            setEncodedProperty(taskVertex, Constants.TASK_END_TIME, task.getEndTime());
+
+            if (task.getStartTime() == null) {
+                LOG.warn("Task start time was not recorded since could not calculate task's total take taken");
+            } else {
+                long timeTaken = task.getEndTime().getTime() - task.getStartTime().getTime();
+                timeTaken = TimeUnit.MILLISECONDS.toSeconds(timeTaken);
+                setEncodedProperty(taskVertex, Constants.TASK_TIME_TAKEN_IN_SECONDS, timeTaken);
+            }
+        }
     }
 
     @GraphTransaction
@@ -122,15 +137,15 @@ public class TaskRegistry {
         deleteVertex(taskVertex);
     }
 
-    @GraphTransaction
-    public void complete(AtlasVertex taskVertex, AtlasTask task) {
-        updateStatus(taskVertex, task);
-    }
-
-    @GraphTransaction
     public void inProgress(AtlasVertex taskVertex) {
         setEncodedProperty(taskVertex, Constants.TASK_STATUS, AtlasTask.Status.IN_PROGRESS);
         setEncodedProperty(taskVertex, Constants.TASK_UPDATED_TIME, System.currentTimeMillis());
+        graph.commit();
+    }
+
+    @GraphTransaction
+    public void complete(AtlasVertex taskVertex, AtlasTask task) {
+        updateStatus(taskVertex, task);
     }
 
     @GraphTransaction
@@ -261,6 +276,11 @@ public class TaskRegistry {
         Long endTime = v.getProperty(Constants.TASK_END_TIME, Long.class);
         if (endTime != null) {
             ret.setEndTime(new Date(endTime));
+
+            Long timeTaken = v.getProperty(Constants.TASK_TIME_TAKEN_IN_SECONDS, Long.class);
+            if (timeTaken != null) {
+                ret.setTimeTakenInSeconds(timeTaken);
+            }
         }
 
         String parametersJson = v.getProperty(Constants.TASK_PARAMETERS, String.class);
