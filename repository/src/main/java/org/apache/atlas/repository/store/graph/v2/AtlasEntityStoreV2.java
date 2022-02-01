@@ -1386,7 +1386,11 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 // Check if authorized to update entities
                 if (!reqContext.isImportInProgress()) {
                     for (AtlasEntity entity : context.getUpdatedEntities()) {
-                        AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(entity.getGuid());
+                        AtlasEntityHeader entityHeaderWithClassifications = entityRetriever.toAtlasEntityHeaderWithClassifications(entity.getGuid());
+                        AtlasEntityHeader entityHeader = new AtlasEntityHeader(entity);
+                        if(CollectionUtils.isNotEmpty(entityHeaderWithClassifications.getClassifications())) {
+                            entityHeader.setClassifications(entityHeaderWithClassifications.getClassifications());
+                        }
                         AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, entityHeader),
                                 "update entity: type=", entity.getTypeName());
                     }
