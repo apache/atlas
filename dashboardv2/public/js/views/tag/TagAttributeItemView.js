@@ -44,7 +44,15 @@ define(['require',
                     this.model.set({ "name": e.target.value.trim() });
                 };
                 events["change " + this.ui.dataTypeSelector] = function(e) {
-                    this.model.set({ "typeName": e.target.value.trim() });
+                    var typeName = e.target.value.trim();
+                    if (typeName.indexOf("array") == 0) {
+                        this.model.set({
+                            "cardinality": "SET",
+                            "valuesMinCount": 1,
+                            "valuesMaxCount": 2147483647
+                        });
+                    }
+                    this.model.set({ "typeName": typeName });
                 };
                 events["click " + this.ui.close] = 'onCloseButton';
                 return events;
