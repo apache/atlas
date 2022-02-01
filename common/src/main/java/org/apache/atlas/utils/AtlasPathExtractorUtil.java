@@ -228,18 +228,22 @@ public class AtlasPathExtractorUtil {
                 String subDirPath          = parentPath + subDirName + Path.SEPARATOR;
                 String subDirQualifiedName = schemeAndBucketName + subDirPath + QNAME_SEP_METADATA_NAMESPACE + metadataNamespace;
 
-                ret = new AtlasEntity(AWS_S3_V2_PSEUDO_DIR);
+                ret = context.getEntity(subDirQualifiedName);
 
-                ret.setRelationshipAttribute(ATTRIBUTE_CONTAINER, parentObjId);
-                ret.setAttribute(ATTRIBUTE_OBJECT_PREFIX, subDirPath);
-                ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, subDirQualifiedName);
-                ret.setAttribute(ATTRIBUTE_NAME, subDirName);
+                if (ret == null) {
+                    ret = new AtlasEntity(AWS_S3_V2_PSEUDO_DIR);
 
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("adding entity: typeName={}, qualifiedName={}", ret.getTypeName(), ret.getAttribute(ATTRIBUTE_QUALIFIED_NAME));
+                    ret.setRelationshipAttribute(ATTRIBUTE_CONTAINER, parentObjId);
+                    ret.setAttribute(ATTRIBUTE_OBJECT_PREFIX, subDirPath);
+                    ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, subDirQualifiedName);
+                    ret.setAttribute(ATTRIBUTE_NAME, subDirName);
+
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("adding entity: typeName={}, qualifiedName={}", ret.getTypeName(), ret.getAttribute(ATTRIBUTE_QUALIFIED_NAME));
+                    }
+
+                    context.putEntity(subDirQualifiedName, ret);
                 }
-
-                context.putEntity(subDirQualifiedName, ret);
 
                 parentObjId = AtlasTypeUtil.getAtlasRelatedObjectId(ret, RELATIONSHIP_AWS_S3_V2_CONTAINER_CONTAINED);
                 parentPath  = subDirPath;
@@ -332,17 +336,21 @@ public class AtlasPathExtractorUtil {
                 String subDirPath          = parentPath + subDirName;
                 String subDirQualifiedName = schemeAndContainerName + subDirPath + QNAME_SEP_METADATA_NAMESPACE + metadataNamespace;
 
-                ret = new AtlasEntity(ADLS_GEN2_DIRECTORY);
+                ret = context.getEntity(subDirQualifiedName);
 
-                ret.setRelationshipAttribute(ATTRIBUTE_PARENT, parentObjId);
-                ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, subDirQualifiedName);
-                ret.setAttribute(ATTRIBUTE_NAME, subDirName);
+                if (ret == null) {
+                    ret = new AtlasEntity(ADLS_GEN2_DIRECTORY);
 
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("adding entity: typeName={}, qualifiedName={}", ret.getTypeName(), ret.getAttribute(ATTRIBUTE_QUALIFIED_NAME));
+                    ret.setRelationshipAttribute(ATTRIBUTE_PARENT, parentObjId);
+                    ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, subDirQualifiedName);
+                    ret.setAttribute(ATTRIBUTE_NAME, subDirName);
+
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("adding entity: typeName={}, qualifiedName={}", ret.getTypeName(), ret.getAttribute(ATTRIBUTE_QUALIFIED_NAME));
+                    }
+
+                    context.putEntity(subDirQualifiedName, ret);
                 }
-
-                context.putEntity(subDirQualifiedName, ret);
 
                 parentObjId = AtlasTypeUtil.getAtlasRelatedObjectId(ret, RELATIONSHIP_ADLS_GEN2_PARENT_CHILDREN);
                 parentPath  = subDirPath + Path.SEPARATOR;
@@ -432,17 +440,21 @@ public class AtlasPathExtractorUtil {
                 String subDirPath          = parentPath + subDirName;
                 String subDirQualifiedName = keyQNamePrefix + subDirPath + QNAME_SEP_METADATA_NAMESPACE + metadataNamespace;
 
-                ret = new AtlasEntity(OZONE_KEY);
+                ret = context.getEntity(subDirQualifiedName);
 
-                ret.setRelationshipAttribute(ATTRIBUTE_PARENT, parentObjId);
-                ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, subDirQualifiedName);
-                ret.setAttribute(ATTRIBUTE_NAME, subDirName);
+                if (ret == null) {
+                    ret = new AtlasEntity(OZONE_KEY);
 
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("adding entity: typeName={}, qualifiedName={}", ret.getTypeName(), ret.getAttribute(ATTRIBUTE_QUALIFIED_NAME));
+                    ret.setRelationshipAttribute(ATTRIBUTE_PARENT, parentObjId);
+                    ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, subDirQualifiedName);
+                    ret.setAttribute(ATTRIBUTE_NAME, subDirName);
+
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("adding entity: typeName={}, qualifiedName={}", ret.getTypeName(), ret.getAttribute(ATTRIBUTE_QUALIFIED_NAME));
+                    }
+
+                    context.putEntity(subDirQualifiedName, ret);
                 }
-
-                context.putEntity(subDirQualifiedName, ret);
 
                 parentObjId = AtlasTypeUtil.getAtlasRelatedObjectId(ret, RELATIONSHIP_OZONE_PARENT_CHILDREN);
                 parentPath  = subDirPath + Path.SEPARATOR;;
@@ -504,18 +516,22 @@ public class AtlasPathExtractorUtil {
                 String subDirPath          = parentPath + subDirName + Path.SEPARATOR;
                 String subDirQualifiedName = schemeAndBucketName + subDirPath + QNAME_SEP_METADATA_NAMESPACE + metadataNamespace;
 
-                ret = new AtlasEntity(GCS_VIRTUAL_DIR);
+                ret = context.getEntity(subDirQualifiedName);
 
-                ret.setRelationshipAttribute(ATTRIBUTE_GCS_PARENT, parentObjId);
-                ret.setAttribute(ATTRIBUTE_OBJECT_PREFIX, parentPath);
-                ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, subDirQualifiedName);
-                ret.setAttribute(ATTRIBUTE_NAME, subDirName);
+                if (ret == null) {
+                    ret = new AtlasEntity(GCS_VIRTUAL_DIR);
 
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("adding entity: typeName={}, qualifiedName={}", ret.getTypeName(), ret.getAttribute(ATTRIBUTE_QUALIFIED_NAME));
+                    ret.setRelationshipAttribute(ATTRIBUTE_GCS_PARENT, parentObjId);
+                    ret.setAttribute(ATTRIBUTE_OBJECT_PREFIX, parentPath);
+                    ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, subDirQualifiedName);
+                    ret.setAttribute(ATTRIBUTE_NAME, subDirName);
+
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("adding entity: typeName={}, qualifiedName={}", ret.getTypeName(), ret.getAttribute(ATTRIBUTE_QUALIFIED_NAME));
+                    }
+
+                    context.putEntity(subDirQualifiedName, ret);
                 }
-
-                context.putEntity(subDirQualifiedName, ret);
 
                 parentObjId = AtlasTypeUtil.getAtlasRelatedObjectId(ret, RELATIONSHIP_GCS_PARENT_CHILDREN);
                 parentPath  = subDirPath;
