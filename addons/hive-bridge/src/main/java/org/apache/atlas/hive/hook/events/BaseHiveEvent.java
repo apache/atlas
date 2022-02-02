@@ -622,8 +622,8 @@ public abstract class BaseHiveEvent {
 
         if (context.isHiveProcessPopulateDeprecatedAttributes()) {
             ret.setAttribute(ATTRIBUTE_USER_NAME, getUserName());
-            ret.setAttribute(ATTRIBUTE_QUERY_TEXT, queryStr);
-            ret.setAttribute(ATTRIBUTE_QUERY_ID, getQueryId());
+            ret.setAttribute(ATTRIBUTE_QUERY_TEXT, StringUtils.isNotEmpty(queryStr)? queryStr : EMPTY_ATTRIBUTE_VALUE);
+            ret.setAttribute(ATTRIBUTE_QUERY_ID, StringUtils.isNotEmpty(getQueryId())? getQueryId() : EMPTY_ATTRIBUTE_VALUE);
         } else {
             ret.setAttribute(ATTRIBUTE_USER_NAME, EMPTY_ATTRIBUTE_VALUE);
             ret.setAttribute(ATTRIBUTE_QUERY_TEXT, EMPTY_ATTRIBUTE_VALUE);
