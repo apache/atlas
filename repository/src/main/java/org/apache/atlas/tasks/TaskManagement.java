@@ -116,6 +116,10 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         return this.registry.createVertex(taskType, createdBy, parameters);
     }
 
+    public List<AtlasTask> getPendingTasks() {
+        return this.registry.getPendingTasks();
+    }
+
     public List<AtlasTask> getAll() {
         return this.registry.getAll();
     }
