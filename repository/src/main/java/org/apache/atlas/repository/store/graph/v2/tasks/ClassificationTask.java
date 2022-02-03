@@ -72,7 +72,7 @@ public abstract class ClassificationTask extends AbstractTask {
     }
 
     @Override
-    public AtlasTask.Status perform() throws Exception {
+    public AtlasTask.Status perform() throws AtlasBaseException {
         Map<String, Object> params = getTaskDef().getParameters();
 
         if (MapUtils.isEmpty(params)) {
@@ -95,7 +95,7 @@ public abstract class ClassificationTask extends AbstractTask {
             run(params);
 
             setStatus(COMPLETE);
-        } catch (Exception e) {
+        } catch (AtlasBaseException e) {
             LOG.error("Task: {}: Error performing task!", getTaskGuid(), e);
 
             setStatus(FAILED);

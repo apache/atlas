@@ -32,7 +32,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static org.apache.atlas.repository.Constants.TASK_GUID;
@@ -93,22 +98,6 @@ public class TaskRegistry {
         setEncodedProperty(taskVertex, Constants.TASK_STATUS, task.getStatus().toString());
         setEncodedProperty(taskVertex, Constants.TASK_UPDATED_TIME, System.currentTimeMillis());
         setEncodedProperty(taskVertex, Constants.TASK_ERROR_MESSAGE, task.getErrorMessage());
-
-        if (task.getStartTime() != null) {
-            setEncodedProperty(taskVertex, Constants.TASK_START_TIME, task.getStartTime());
-        }
-
-        if (task.getEndTime() != null) {
-            setEncodedProperty(taskVertex, Constants.TASK_END_TIME, task.getEndTime());
-
-            if (task.getStartTime() == null) {
-                LOG.warn("Task start time was not recorded since could not calculate task's total take taken");
-            } else {
-                long timeTaken = task.getEndTime().getTime() - task.getStartTime().getTime();
-                timeTaken = TimeUnit.MILLISECONDS.toSeconds(timeTaken);
-                setEncodedProperty(taskVertex, Constants.TASK_TIME_TAKEN_IN_SECONDS, timeTaken);
-            }
-        }
     }
 
     @GraphTransaction
@@ -137,7 +126,10 @@ public class TaskRegistry {
         deleteVertex(taskVertex);
     }
 
-    public void inProgress(AtlasVertex taskVertex) {
+    public void inProgress(AtlasVertex taskVertex, AtlasTask task) {
+        task.setStartTime(new Date());
+
+        setEncodedProperty(taskVertex, Constants.TASK_START_TIME, task.getStartTime());
         setEncodedProperty(taskVertex, Constants.TASK_STATUS, AtlasTask.Status.IN_PROGRESS);
         setEncodedProperty(taskVertex, Constants.TASK_UPDATED_TIME, System.currentTimeMillis());
         graph.commit();
@@ -145,6 +137,18 @@ public class TaskRegistry {
 
     @GraphTransaction
     public void complete(AtlasVertex taskVertex, AtlasTask task) {
+        if (task.getEndTime() != null) {
+            setEncodedProperty(taskVertex, Constants.TASK_END_TIME, task.getEndTime());
+
+            if (task.getStartTime() == null) {
+                LOG.warn("Task start time was not recorded since could not calculate task's total take taken");
+            } else {
+                long timeTaken = task.getEndTime().getTime() - task.getStartTime().getTime();
+                timeTaken = TimeUnit.MILLISECONDS.toSeconds(timeTaken);
+                setEncodedProperty(taskVertex, Constants.TASK_TIME_TAKEN_IN_SECONDS, timeTaken);
+            }
+        }
+
         updateStatus(taskVertex, task);
     }
 
@@ -203,6 +207,27 @@ public class TaskRegistry {
 
             query.or(orConditions);
         }
+
+        query.orderBy(Constants.TASK_CREATED_TIME, AtlasGraphQuery.SortOrder.DESC);
+
+        Iterator<AtlasVertex> results = query.vertices().iterator();
+
+        while (results.hasNext()) {
+            ret.add(toAtlasTask(results.next()));
+        }
+
+        return ret;
+    }
+
+    public List<AtlasTask> getTasksForReQueue() {
+        List<AtlasTask> ret = new ArrayList<>();
+        AtlasGraphQuery query = graph.query()
+                .has(Constants.TASK_TYPE_PROPERTY_KEY, Constants.TASK_TYPE_NAME);
+
+        List<AtlasGraphQuery> orConditions = new LinkedList<>();
+        orConditions.add(query.createChildQuery().has(Constants.TASK_STATUS, AtlasTask.Status.IN_PROGRESS));
+        orConditions.add(query.createChildQuery().has(Constants.TASK_STATUS, AtlasTask.Status.PENDING));
+        query.or(orConditions);
 
         query.orderBy(Constants.TASK_CREATED_TIME, AtlasGraphQuery.SortOrder.ASC);
 

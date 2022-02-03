@@ -2598,23 +2598,23 @@ public class EntityGraphMapper {
     public List<String> propagateClassification(String entityGuid, String classificationVertexId, String relationshipGuid) throws AtlasBaseException {
         try {
             if (StringUtils.isEmpty(entityGuid) || StringUtils.isEmpty(classificationVertexId)) {
-                LOG.warn("propagateClassification(entityGuid={}, classificationVertexId={}): entityGuid and/or classification vertex id is empty", entityGuid, classificationVertexId);
+                LOG.error("propagateClassification(entityGuid={}, classificationVertexId={}): entityGuid and/or classification vertex id is empty", entityGuid, classificationVertexId);
 
-                return null;
+                throw new AtlasBaseException(String.format("propagateClassification(entityGuid=%s, classificationVertexId=%s): entityGuid and/or classification vertex id is empty", entityGuid, classificationVertexId));
             }
 
             AtlasVertex entityVertex = graphHelper.getVertexForGUID(entityGuid);
             if (entityVertex == null) {
-                LOG.warn("propagateClassification(entityGuid={}, classificationVertexId={}): entity vertex not found", entityGuid, classificationVertexId);
+                LOG.error("propagateClassification(entityGuid={}, classificationVertexId={}): entity vertex not found", entityGuid, classificationVertexId);
 
-                return null;
+                throw new AtlasBaseException(String.format("propagateClassification(entityGuid=%s, classificationVertexId=%s): entity vertex not found", entityGuid, classificationVertexId));
             }
 
             AtlasVertex classificationVertex = graph.getVertex(classificationVertexId);
             if (classificationVertex == null) {
-                LOG.warn("propagateClassification(entityGuid={}, classificationVertexId={}): classification vertex not found", entityGuid, classificationVertexId);
+                LOG.error("propagateClassification(entityGuid={}, classificationVertexId={}): classification vertex not found", entityGuid, classificationVertexId);
 
-                return null;
+                throw new AtlasBaseException(String.format("propagateClassification(entityGuid=%s, classificationVertexId=%s): classification vertex not found", entityGuid, classificationVertexId));
             }
 
             List<AtlasVertex> impactedVertices = entityRetriever.getIncludedImpactedVerticesV2(entityVertex, relationshipGuid, classificationVertexId);

@@ -18,10 +18,13 @@
 package org.apache.atlas.tasks;
 
 import org.apache.atlas.model.tasks.AtlasTask;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.apache.atlas.model.tasks.AtlasTask.Status;
 
 public abstract class AbstractTask {
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractTask.class);
     private final AtlasTask task;
 
     public AbstractTask(AtlasTask task) {
@@ -30,10 +33,9 @@ public abstract class AbstractTask {
 
     public void run() throws Exception {
         try {
-            task.start();
             perform();
         } catch (Exception exception) {
-            task.setStatusPending();
+            task.setStatus(Status.FAILED);
 
             task.setErrorMessage(exception.getMessage());
 

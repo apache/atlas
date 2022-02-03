@@ -62,6 +62,10 @@ public class TaskExecutor {
         }
     }
 
+    public void shutdownExecutor() {
+        this.executorService.shutdownNow();
+    }
+
     @VisibleForTesting
     void waitUntilDone() throws InterruptedException {
         Thread.sleep(5000);
@@ -119,8 +123,6 @@ public class TaskExecutor {
                 statistics.error();
             } catch (Exception exception) {
                 if (task != null) {
-                    task.updateStatusFromAttemptCount();
-
                     registry.updateStatus(taskVertex, task);
 
                     TASK_LOG.error("Error executing task. Please perform the operation again!", task, exception);
@@ -147,7 +149,7 @@ public class TaskExecutor {
 
             AbstractTask runnableTask = factory.create(task);
 
-            registry.inProgress(taskVertex);
+            registry.inProgress(taskVertex, task);
 
             runnableTask.run();
 

@@ -129,7 +129,14 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         for (String taskGuid : taskGuids) {
             AtlasTask task = getByGuid(taskGuid);
 
-            if (task != null && task.getStatus().equals(AtlasTask.Status.FAILED)) {
+            if (task != null &&
+                    (task.getStatus().equals(AtlasTask.Status.FAILED) || task.getStatus().equals(AtlasTask.Status.IN_PROGRESS))) {
+                /* Allowing IN_PROGRESS task retry for following scenario
+                -> Started a task
+                -> before task gets completed Cassandra gets completely down
+                -> task is still in IN_PROGRESS state & as Cassandra write is not possible it will never change
+                -> Once cassandra is up & Atlas started communicating to Cassandra again such task may be retried
+                */
                 taskToRetry.add(task);
             }
         }
@@ -222,9 +229,9 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
             return;
         }
 
-        List<AtlasTask> pendingTasks = this.registry.getPendingTasks();
+        List<AtlasTask> pendingTasks = this.registry.getTasksForReQueue();
 
-        LOG.info("TaskManagement: Found: {}: Tasks in pending state.", pendingTasks.size());
+        LOG.info("TaskManagement: Found: {}: Tasks pending. Re submitting...", pendingTasks.size());
 
         addAll(pendingTasks);
     }

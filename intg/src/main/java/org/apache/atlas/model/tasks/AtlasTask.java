@@ -22,7 +22,6 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import org.apache.atlas.DeleteType;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.Date;
@@ -67,7 +66,6 @@ public class AtlasTask {
                     return PENDING;
             }
         }
-
     }
 
     private String              type;
@@ -215,12 +213,29 @@ public class AtlasTask {
 
     @JsonIgnore
     public void end() {
-        this.status = Status.COMPLETE;
         this.setEndTime(new Date());
     }
 
     @JsonIgnore
     public void updateStatusFromAttemptCount() {
         setStatus((attemptCount < MAX_ATTEMPT_COUNT) ? AtlasTask.Status.PENDING : AtlasTask.Status.FAILED);
+    }
+
+    @Override
+    public String toString() {
+        return "AtlasTask{" +
+                "type='" + type + '\'' +
+                ", guid='" + guid + '\'' +
+                ", createdBy='" + createdBy + '\'' +
+                ", createdTime=" + createdTime +
+                ", updatedTime=" + updatedTime +
+                ", startTime=" + startTime +
+                ", endTime=" + endTime +
+                ", timeTakenInSeconds=" + timeTakenInSeconds +
+                ", parameters=" + parameters +
+                ", attemptCount=" + attemptCount +
+                ", errorMessage='" + errorMessage + '\'' +
+                ", status=" + status +
+                '}';
     }
 }
