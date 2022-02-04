@@ -40,6 +40,7 @@ import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations.EntityOperation;
+import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef.AtlasRelationshipAttributeDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
@@ -64,6 +65,7 @@ import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.sql.QueryCollectionPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.sql.QueryFolderPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.sql.QueryPreProcessor;
+import org.apache.atlas.repository.store.graph.v2.tasks.ClassificationTask;
 import org.apache.atlas.tasks.TaskManagement;
 import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.repository.store.graph.v1.RestoreHandlerV1;
@@ -2705,6 +2707,16 @@ public class EntityGraphMapper {
 
         if (isPropagationEnabled(classificationVertex)) {
             if (taskManagement != null && DEFERRED_ACTION_ENABLED) {
+                String classificationVertexId = classificationVertex.getIdForDisplay();
+
+                boolean pendingTaskExists  = taskManagement.getQueuedTasks().stream()
+                        .anyMatch(x -> classificationHasPendingTask(x, classificationVertexId, entityGuid));
+
+                if (pendingTaskExists) {
+                    LOG.error("Another tag propagation is in queue for classification: {} and entity: {}. Please try again", classificationVertexId, entityGuid);
+                    throw new AtlasBaseException(AtlasErrorCode.DELETE_TAG_PROPAGATION_NOT_ALLOWED, classificationVertexId, entityGuid);
+                }
+
                 createAndQueueTask(CLASSIFICATION_PROPAGATION_DELETE, entityVertex, classificationVertex.getIdForDisplay());
 
                 entityVertices = new ArrayList<>();
@@ -2753,6 +2765,11 @@ public class EntityGraphMapper {
             entityChangeNotifier.onClassificationsDeletedFromEntities(propagatedEntities, Collections.singletonList(classification));
         }
         AtlasPerfTracer.log(perf);
+    }
+
+    private boolean classificationHasPendingTask(AtlasTask task, String classificationVertexId, String entityGuid) {
+        return task.getParameters().get(ClassificationTask.PARAM_CLASSIFICATION_VERTEX_ID).equals(classificationVertexId)
+                && task.getParameters().get(ClassificationTask.PARAM_ENTITY_GUID).equals(entityGuid);
     }
 
     private AtlasEntity updateClassificationText(AtlasVertex vertex) throws AtlasBaseException {

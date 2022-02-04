@@ -124,6 +124,10 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         return this.registry.getAll(statusList);
     }
 
+    public List<AtlasTask> getQueuedTasks() {
+        return this.registry.getTasksForReQueue();
+    }
+
     public void retryTasks(List<String> taskGuids) throws AtlasBaseException {
         List<AtlasTask> taskToRetry = new ArrayList<>();
         for (String taskGuid : taskGuids) {

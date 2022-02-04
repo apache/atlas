@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.repository.tagpropagation;
 
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -54,6 +55,7 @@ import static org.apache.atlas.utils.TestLoadModelUtils.loadModelFromJson;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
+import static org.testng.AssertJUnit.assertEquals;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class ClassificationPropagationWithTasksTest extends AtlasTestBase {
@@ -204,7 +206,11 @@ public class ClassificationPropagationWithTasksTest extends AtlasTestBase {
         AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(hdfs_employees.getGuid());
         AtlasVertex classificationVertex = GraphHelper.getClassificationVertex(entityVertex, TAG_NAME);
 
-        entityStore.deleteClassification(HDFS_PATH_EMPLOYEES, tagX.getTypeName());
+        try {
+            entityStore.deleteClassification(HDFS_PATH_EMPLOYEES, tagX.getTypeName());
+        } catch (AtlasBaseException e) {
+            assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.DELETE_TAG_PROPAGATION_NOT_ALLOWED);
+        }
 
         assertNotNull(entityVertex);
         assertNotNull(classificationVertex);
