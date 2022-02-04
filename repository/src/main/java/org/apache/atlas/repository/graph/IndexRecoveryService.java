@@ -123,7 +123,11 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
 
     @Override
     public void instanceIsPassive() throws AtlasException {
-        LOG.info("IndexRecoveryService.instanceIsPassive(): no action needed.");
+        LOG.info("==> IndexRecoveryService.instanceIsPassive()");
+
+        stop();
+
+        LOG.info("<== IndexRecoveryService.instanceIsPassive()");
     }
 
     @Override
@@ -138,7 +142,13 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
             return;
         }
 
-        indexHealthMonitor.start();
+        try {
+            if (indexHealthMonitor.getState() == Thread.State.NEW) {
+                indexHealthMonitor.start();
+            }
+        } catch (Exception ex) {
+            LOG.error("Error while starting Index Health Monitor", ex);
+        }
     }
 
     private static class RecoveryThread implements Runnable {
