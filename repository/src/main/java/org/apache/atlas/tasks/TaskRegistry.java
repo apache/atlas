@@ -116,6 +116,8 @@ public class TaskRegistry {
             LOG.error("Error: deletingByGuid: {}", guid);
 
             throw new AtlasBaseException(exception);
+        } finally {
+            graph.commit();
         }
     }
 
