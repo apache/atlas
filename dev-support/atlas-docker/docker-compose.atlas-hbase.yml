@@ -32,3 +32,4 @@ services:
 
 networks:
   atlas:
+    name: atlasnw
