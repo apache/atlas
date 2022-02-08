@@ -450,6 +450,17 @@
             <organization>Freestone Infotech</organization>
         </developer>
         <developer>
+            <id>radhikakundam</id>
+            <name>Radhika Kundam</name>
+            <email>radhikakundam@apache.org</email>
+            <timezone>America/Los_Angeles</timezone>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <organization>Cloudera Inc.</organization>
+            <!--<organizationUrl>https://www.cloudera.com</organizationUrl>-->
+        </developer>
+        <developer>
             <id>rmani</id>
             <name>Ramesh Mani</name>
             <email>rmani@apache.org</email>
