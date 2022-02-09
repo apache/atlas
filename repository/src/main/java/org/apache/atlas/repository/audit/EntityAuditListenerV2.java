@@ -111,6 +111,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
         MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
 
         for (EntityAuditRepository auditRepository: auditRepositories) {
+            LOG.info("auditRepository {}", auditRepository.getClass());
             FixedBufferList<EntityAuditEventV2> entitiesAdded = getAuditEventsList();
             for (AtlasEntity entity : entities) {
                 long auditMaxSize = getAuditMaxSize(auditRepository, entities.size());
