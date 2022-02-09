@@ -35,7 +35,6 @@ import org.apache.atlas.model.instance.*;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
-import org.apache.atlas.repository.audit.CassandraBasedAuditRepository;
 import org.apache.atlas.repository.audit.ESBasedAuditRepository;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
@@ -71,6 +70,7 @@ import java.io.OutputStream;
 import java.util.*;
 
 import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
+import static org.apache.atlas.AtlasErrorCode.DEPRECATED_API;
 import static org.apache.atlas.authorize.AtlasPrivilege.*;
 
 
@@ -93,16 +93,14 @@ public class EntityREST {
 
     private final AtlasTypeRegistry      typeRegistry;
     private final AtlasEntityStore       entitiesStore;
-    private final CassandraBasedAuditRepository  cassandraBasedAuditRepository;
     private final ESBasedAuditRepository  esBasedAuditRepository;
     private final AtlasInstanceConverter instanceConverter;
 
     @Inject
-    public EntityREST(AtlasTypeRegistry typeRegistry, AtlasEntityStore entitiesStore,
-                      CassandraBasedAuditRepository cassandraBasedAuditRepository, ESBasedAuditRepository  esBasedAuditRepository, AtlasInstanceConverter instanceConverter) {
+    public EntityREST(AtlasTypeRegistry typeRegistry, AtlasEntityStore entitiesStore,ESBasedAuditRepository  esBasedAuditRepository,
+                      AtlasInstanceConverter instanceConverter) {
         this.typeRegistry      = typeRegistry;
         this.entitiesStore     = entitiesStore;
-        this.cassandraBasedAuditRepository   = cassandraBasedAuditRepository;
         this.esBasedAuditRepository = esBasedAuditRepository;
         this.instanceConverter = instanceConverter;
     }
@@ -1059,52 +1057,7 @@ public class EntityREST {
                                                    @QueryParam("offset") @DefaultValue("-1") int offset,
                                                    @QueryParam("sortBy") String sortBy,
                                                    @QueryParam("sortOrder") String sortOrder) throws AtlasBaseException {
-        AtlasPerfTracer perf = null;
-
-        try {
-            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.getAuditEvents(" + guid + ", " + startKey + ", " + count + ")");
-            }
-
-            // Enforces authorization for entity-read
-            try {
-                entitiesStore.getHeaderById(guid);
-            } catch (AtlasBaseException e) {
-                if (e.getAtlasErrorCode() == AtlasErrorCode.INSTANCE_GUID_NOT_FOUND) {
-                    AtlasEntityHeader entityHeader = getEntityHeaderFromPurgedAudit(guid);
-
-                    AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, ENTITY_READ, entityHeader), "read entity audit: guid=", guid);
-                } else {
-                    throw e;
-                }
-            }
-
-            List<EntityAuditEventV2> ret = new ArrayList<>();
-
-            if (sortBy != null || offset > -1) {
-                ret = cassandraBasedAuditRepository.listEventsV2(guid, auditAction, sortBy, StringUtils.equalsIgnoreCase(sortOrder, "desc"), offset, count);
-            } else if(auditAction != null) {
-                ret = cassandraBasedAuditRepository.listEventsV2(guid, auditAction, startKey, count);
-            } else {
-                List events = cassandraBasedAuditRepository.listEvents(guid, startKey, count);
-
-                if (events != null) {
-                    for (Object event : events) {
-                        if (event instanceof EntityAuditEventV2) {
-                            ret.add((EntityAuditEventV2) event);
-                        } else if (event instanceof EntityAuditEvent) {
-                            ret.add(instanceConverter.toV2AuditEvent((EntityAuditEvent) event));
-                        } else {
-                            LOG.warn("unknown entity-audit event type {}. Ignored", event != null ? event.getClass().getCanonicalName() : "null");
-                        }
-                    }
-                }
-            }
-
-            return ret;
-        } finally {
-            AtlasPerfTracer.log(perf);
-        }
+        throw new AtlasBaseException(DEPRECATED_API, "/entity/auditSearch");
     }
 
     @POST
@@ -1214,7 +1167,7 @@ public class EntityREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.getEntityHeaders(" + tagUpdateStartTime + ", " + tagUpdateEndTime + ")");
             }
 
-            ClassificationAssociator.Retriever associator = new ClassificationAssociator.Retriever(typeRegistry, cassandraBasedAuditRepository);
+            ClassificationAssociator.Retriever associator = new ClassificationAssociator.Retriever(typeRegistry, esBasedAuditRepository);
             return associator.get(tagUpdateStartTime, tagUpdateEndTime);
         } finally {
             AtlasPerfTracer.log(perf);
@@ -1629,7 +1582,7 @@ public class EntityREST {
     }
 
     private AtlasEntityHeader getEntityHeaderFromPurgedAudit(String guid) throws AtlasBaseException {
-        List<EntityAuditEventV2> auditEvents = cassandraBasedAuditRepository.listEventsV2(guid, EntityAuditActionV2.ENTITY_PURGE, null, (short)1);
+        List<EntityAuditEventV2> auditEvents = esBasedAuditRepository.listEventsV2(guid, EntityAuditActionV2.ENTITY_PURGE, null, (short)1);
         AtlasEntityHeader        ret         = CollectionUtils.isNotEmpty(auditEvents) ? auditEvents.get(0).getEntityHeader() : null;
 
         if (ret == null) {
