@@ -18,6 +18,7 @@
 package org.apache.atlas.repository.graphdb.janus;
 
 import com.google.common.annotations.VisibleForTesting;
+import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasAggregationEntry;
 import org.apache.atlas.repository.Constants;
@@ -42,6 +43,8 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.TermsResponse;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
+import org.janusgraph.diskstorage.es.ElasticSearch7Index;
+import org.janusgraph.diskstorage.es.ElasticSearchClient;
 import org.janusgraph.diskstorage.solr.Solr6Index;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,7 +73,7 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
     private static final String         TERMS_FIELD                  = "terms.fl";
     private static final int            SOLR_HEALTHY_STATUS          = 0;
     private static final long           SOLR_STATUS_LOG_FREQUENCY_MS = 60000;//Prints SOLR DOWN status for every 1 min
-    private static long                 prevSolrHealthCheckTime;
+    private static       long           prevIdxHealthCheckTime;
 
 
     private final Configuration configuration;
@@ -83,21 +86,26 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
     public boolean isHealthy() {
         boolean isHealthy   = false;
         long    currentTime = System.currentTimeMillis();
+        String  idxBackEnd  = configuration.getString(ApplicationProperties.INDEX_BACKEND_CONF);
 
         try {
-            if (isSolrHealthy()) {
-                isHealthy = true;
+            if (ApplicationProperties.INDEX_BACKEND_SOLR.equals(idxBackEnd)) {
+                isHealthy = isSolrHealthy();
+            } else if (ApplicationProperties.INDEX_BACKEND_ELASTICSEARCH.equals(idxBackEnd)) {
+                isHealthy = isElasticsearchHealthy();
             }
+
+            LOG.info("indexBackEnd={}; isHealthy={}", idxBackEnd, isHealthy);
         } catch (Exception exception) {
             if (LOG.isDebugEnabled()) {
                 LOG.error("Error: isHealthy", exception);
             }
         }
 
-        if (!isHealthy && (prevSolrHealthCheckTime == 0 || currentTime - prevSolrHealthCheckTime > SOLR_STATUS_LOG_FREQUENCY_MS)) {
-            LOG.info("Solr Health: Unhealthy!");
+        if (!isHealthy && (prevIdxHealthCheckTime == 0 || currentTime - prevIdxHealthCheckTime > SOLR_STATUS_LOG_FREQUENCY_MS)) {
+            LOG.info("Backend Health: Unhealthy!");
 
-            prevSolrHealthCheckTime = currentTime;
+            prevIdxHealthCheckTime = currentTime;
         }
 
         return isHealthy;
@@ -377,6 +385,13 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
         SolrClient client = Solr6Index.getSolrClient();
 
         return client != null && client.ping(Constants.VERTEX_INDEX).getStatus() == SOLR_HEALTHY_STATUS;
+    }
+
+    private boolean isElasticsearchHealthy() throws IOException {
+        ElasticSearchClient client           = ElasticSearch7Index.getElasticSearchClient();
+        String              janusVertexIndex = ApplicationProperties.DEFAULT_INDEX_NAME + "_" + Constants.VERTEX_INDEX;
+
+        return client != null && client.indexExists(janusVertexIndex);
     }
 
     private void graphManagementCommit(AtlasGraphManagement management) {

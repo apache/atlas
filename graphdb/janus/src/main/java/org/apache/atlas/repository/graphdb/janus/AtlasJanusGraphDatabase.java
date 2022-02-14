@@ -37,6 +37,7 @@ import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.diskstorage.StandardIndexProvider;
 import org.janusgraph.diskstorage.StandardStoreManager;
+import org.janusgraph.diskstorage.es.ElasticSearch7Index;
 import org.janusgraph.diskstorage.solr.Solr6Index;
 import org.janusgraph.graphdb.database.serialize.attribute.SerializableSerializer;
 import org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry;
@@ -122,6 +123,8 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
         addHBase2Support();
 
         addSolr6Index();
+
+        addElasticSearch7Index();
     }
 
     private static void addHBase2Support() {
@@ -163,6 +166,27 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
             throw new RuntimeException(e);
         }
     }
+
+    private static void addElasticSearch7Index() {
+        try {
+            Field field = StandardIndexProvider.class.getDeclaredField("ALL_MANAGER_CLASSES");
+            field.setAccessible(true);
+
+            Field modifiersField = Field.class.getDeclaredField("modifiers");
+            modifiersField.setAccessible(true);
+            modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
+
+            Map<String, String> customMap = new HashMap<>(StandardIndexProvider.getAllProviderClasses());
+            customMap.put("elasticsearch", ElasticSearch7Index.class.getName());
+            ImmutableMap<String, String> immap = ImmutableMap.copyOf(customMap);
+            field.set(null, immap);
+
+            LOG.debug("Injected es7 index - {}", ElasticSearch7Index.class.getName());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 
     public static JanusGraph getGraphInstance() {
         if (graphInstance == null) {
