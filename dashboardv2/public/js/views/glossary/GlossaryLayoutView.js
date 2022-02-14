@@ -76,6 +76,8 @@ define(['require',
                         },
                         onModalClose: function() {
                             that.ui.createGlossary.removeAttr("disabled");
+                            that.ui.termTree.jstree(true).refresh();
+                            that.ui.categoryTree.jstree(true).refresh();
                         }
                     })
                 };
@@ -217,7 +219,7 @@ define(['require',
                 if (Utils.getUrlState.isGlossaryTab()) {
                     var obj = this.query[this.viewType],
                         $tree = this.ui[(this.viewType == "term" ? "termTree" : "categoryTree")];
-                    obj["gId"] = that.value.gId; //this Property added, Because when we toggle the GlossaryViewButton it does not adds the gId which is required for selection.  
+                    obj["gId"] = that.value ? that.value.gId : null; //this Property added, Because when we toggle the GlossaryViewButton it does not adds the gId which is required for selection.
                     if (obj.guid) {
                         var node = $tree.jstree(true).get_node(obj.guid);
                         if (node) {
@@ -769,6 +771,9 @@ define(['require',
                             });
                         },
                         complete: function() {
+                            if (that.glossaryCollection.fullCollection.length === 0) {
+                                that.guid = null;
+                            }
                             that.notificationModal.hideButtonLoader();
                             that.notificationModal.remove();
                         }
