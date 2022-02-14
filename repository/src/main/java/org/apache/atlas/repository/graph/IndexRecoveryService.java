@@ -166,13 +166,13 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
 
             while (shouldRun.get()) {
                 try {
-                    boolean solrHealthy = isSolrHealthy();
+                    boolean isIdxHealthy = isIndexBackendHealthy();
 
-                    if (this.txRecoveryObject == null && solrHealthy) {
+                    if (this.txRecoveryObject == null && isIdxHealthy) {
                         startMonitoring();
                     }
 
-                    if (this.txRecoveryObject != null && !solrHealthy) {
+                    if (this.txRecoveryObject != null && !isIdxHealthy) {
                         stopMonitoring();
                     }
                 } catch (Exception e) {
@@ -197,7 +197,7 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
             }
         }
 
-        private boolean isSolrHealthy() throws AtlasException, InterruptedException {
+        private boolean isIndexBackendHealthy() throws AtlasException, InterruptedException {
             Thread.sleep(indexStatusCheckRetryMillis);
 
             return this.graph.getGraphIndexClient().isHealthy();
