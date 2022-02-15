@@ -525,12 +525,12 @@ public class EntityLineageService implements AtlasLineageService {
         boolean     isInputEdge   = incomingEdge.getLabel().equalsIgnoreCase(PROCESS_INPUTS_EDGE);
 
         if (!entities.containsKey(inGuid)) {
-            AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications((inVertex, lineageContext.getAttributes());
+            AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(inVertex, lineageContext.getAttributes());
             entities.put(inGuid, entityHeader);
         }
 
         if (!entities.containsKey(outGuid)) {
-            AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications((outVertex, lineageContext.getAttributes());
+            AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(outVertex, lineageContext.getAttributes());
             entities.put(outGuid, entityHeader);
         }
 
@@ -556,17 +556,17 @@ public class EntityLineageService implements AtlasLineageService {
         String processGuid  = AtlasGraphUtilsV2.getIdFromVertex(processVertex);;
 
         if (!entities.containsKey(leftGuid)) {
-            AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications((leftVertex, lineageContext.getAttributes());
+            AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(leftVertex, lineageContext.getAttributes());
             entities.put(leftGuid, entityHeader);
         }
 
         if (!entities.containsKey(processGuid)) {
-            AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications((processVertex, lineageContext.getAttributes());
+            AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(processVertex, lineageContext.getAttributes());
             entities.put(processGuid, entityHeader);
         }
 
         if (!entities.containsKey(rightGuid)) {
-            AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications((rightVertex, lineageContext.getAttributes());
+            AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(rightVertex, lineageContext.getAttributes());
             entities.put(rightGuid, entityHeader);
         }
 
@@ -598,12 +598,12 @@ public class EntityLineageService implements AtlasLineageService {
         boolean     isInputEdge  = edge.getLabel().equalsIgnoreCase(PROCESS_INPUTS_EDGE);
 
         if (!entities.containsKey(inGuid)) {
-            AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications((inVertex, lineageContext.getAttributes());
+            AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(inVertex, lineageContext.getAttributes());
             entities.put(inGuid, entityHeader);
         }
 
         if (!entities.containsKey(outGuid)) {
-            AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications((outVertex, lineageContext.getAttributes());
+            AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(outVertex, lineageContext.getAttributes());
             entities.put(outGuid, entityHeader);
         }
 
@@ -625,12 +625,12 @@ public class EntityLineageService implements AtlasLineageService {
         boolean     isInputEdge  = edge.getLabel().equalsIgnoreCase(PROCESS_INPUTS_EDGE);
 
         if (!entities.containsKey(inGuid)) {
-            AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications((inVertex, lineageContext.getAttributes());
+            AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(inVertex, lineageContext.getAttributes());
             entities.put(inGuid, entityHeader);
         }
 
         if (!entities.containsKey(outGuid)) {
-            AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications((outVertex, lineageContext.getAttributes());
+            AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(outVertex, lineageContext.getAttributes());
             entities.put(outGuid, entityHeader);
         }
 
