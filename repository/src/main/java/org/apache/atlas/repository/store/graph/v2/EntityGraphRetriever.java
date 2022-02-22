@@ -413,6 +413,13 @@ public class EntityGraphRetriever {
         }
 
         if (StringUtils.isEmpty(GraphHelper.getTypeName(ret))) {
+
+            Map<String, Object> vertexProps = new HashMap<>();
+            for (String key : ret.getPropertyKeys()) {
+                vertexProps.put(key, ret.getProperty(key, Object.class));
+            }
+            LOG.warn(AtlasType.toJson(vertexProps));
+
             throw new AtlasBaseException(AtlasErrorCode.NO_TYPE_NAME_ON_VERTEX, guid);
         }
 
