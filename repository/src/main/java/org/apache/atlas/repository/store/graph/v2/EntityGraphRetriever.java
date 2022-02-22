@@ -418,6 +418,7 @@ public class EntityGraphRetriever {
             for (String key : ret.getPropertyKeys()) {
                 vertexProps.put(key, ret.getProperty(key, Object.class));
             }
+            LOG.warn("vertexId: {}", ret.getIdForDisplay());
             LOG.warn(AtlasType.toJson(vertexProps));
 
             throw new AtlasBaseException(AtlasErrorCode.NO_TYPE_NAME_ON_VERTEX, guid);
