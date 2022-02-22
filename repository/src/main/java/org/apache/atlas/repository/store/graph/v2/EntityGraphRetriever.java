@@ -43,11 +43,7 @@ import org.apache.atlas.model.typedef.AtlasRelationshipEndDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.GraphHelper;
-import org.apache.atlas.repository.graphdb.AtlasEdge;
-import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
-import org.apache.atlas.repository.graphdb.AtlasElement;
-import org.apache.atlas.repository.graphdb.AtlasGraph;
-import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.graphdb.*;
 import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasBuiltInTypes.AtlasObjectIdType;
 import org.apache.atlas.type.AtlasEntityType;
@@ -899,6 +895,26 @@ public class EntityGraphRetriever {
 
     public List<AtlasClassification> getAllClassifications(AtlasVertex entityVertex) throws AtlasBaseException {
         List<AtlasClassification> ret   = new ArrayList<>();
+
+        AtlasVertexQuery query = entityVertex.query();
+
+        if (query == null) {
+            LOG.warn("query is null");
+            return null;
+        }
+
+        query = query.direction(AtlasEdgeDirection.OUT);
+        if (query == null) {
+            LOG.warn("query is null");
+            return null;
+        }
+
+        query = query.label(CLASSIFICATION_LABEL);
+        if (query == null) {
+            LOG.warn("query is null");
+            return null;
+        }
+
         Iterable                  edges = entityVertex.query().direction(AtlasEdgeDirection.OUT).label(CLASSIFICATION_LABEL).edges();
 
         if (edges != null) {
