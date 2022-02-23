@@ -248,6 +248,7 @@ define(['require',
                     }
                 }, this);
                 this.listenTo(this.searchVent, "search:refresh", function(model, response) {
+                    this.updateColumnList();
                     this.fetchCollection();
                 }, this);
                 this.listenTo(this.searchCollection, "backgrid:sorted", function(model, response) {
@@ -371,11 +372,11 @@ define(['require',
                     });
                     listOfColumns = _.sortBy(listOfColumns);
                     this.value.attributes = listOfColumns.length ? listOfColumns.join(",") : null;
-                    if (this.value && this.value.type && this.searchTableColumns) {
-                        this.searchTableColumns[this.value.type] = listOfColumns.length ? listOfColumns : null;
+                    if (this.value && (this.value.type || this.value.tag) && this.searchTableColumns) {
+                        this.searchTableColumns[this.value.type || this.value.tag] = listOfColumns.length ? listOfColumns : null;
                     }
-                } else if (this.value && this.value.type && this.searchTableColumns && this.value.attributes) {
-                    this.searchTableColumns[this.value.type] = this.value.attributes.split(",");
+                } else if (this.value && (this.value.type || this.value.tag) && this.searchTableColumns && this.value.attributes) {
+                    this.searchTableColumns[this.value.type || this.value.tag] = this.value.attributes.split(",");
                 }
             },
             fetchCollection: function(value, options) {
@@ -392,7 +393,7 @@ define(['require',
                 }
 
                 if (isPostMethod && isSearchTab) {
-                    var excludeDefaultColumn = this.value.type && this.searchTableColumns ? _.difference(this.searchTableColumns[this.value.type], this.defaultColumns) : null,
+                    var excludeDefaultColumn = ((this.value.type || this.value.tag) && this.searchTableColumns) ? _.difference(this.searchTableColumns[this.value.type || this.value.tag], this.defaultColumns) : null,
                         filterObj = {
                             'entityFilters': entityFilters,
                             'tagFilters': tagFilters,
@@ -666,8 +667,8 @@ define(['require',
                     columnToShow = null,
                     col = {};
                 this.value = this.fromView === "glossary" ? this.value : Utils.getUrlState.getQueryParams() || this.value;
-                if (this.value && this.value.searchType === "basic" && this.searchTableColumns && (this.searchTableColumns[this.value.type] !== undefined)) {
-                    columnToShow = this.searchTableColumns[this.value.type] == null ? [] : this.searchTableColumns[this.value.type];
+                if (this.value && this.value.searchType === "basic" && this.searchTableColumns && (this.searchTableColumns[this.value.type || this.value.tag] !== undefined)) {
+                    columnToShow = this.searchTableColumns[this.value.type || this.value.tag] == null ? [] : this.searchTableColumns[this.value.type || this.value.tag];
                 }
                 col['Check'] = {
                     name: "selected",
