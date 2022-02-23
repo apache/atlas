@@ -87,20 +87,20 @@ public class AtlasPathExtractorUtilTest {
     @DataProvider(name = "ozonePathProvider")
     private Object[][] ozonePathProvider(){
         return new Object[][]{
-                { new OzoneKeyValidator(OZONE_SCHEME, "bucket1.volume1.ozone1.com/files/file.txt",
-                        "files", "bucket1.volume1.ozone1.com/files",
-                        "file.txt", "bucket1.volume1.ozone1.com/files/file.txt")},
+                { new OzoneKeyValidator(OZONE_SCHEME, "ozone1.com/volume1/bucket1/files/file.txt",
+                        "files", "ozone1.com/volume1/bucket1/files",
+                        "file.txt", "ozone1.com/volume1/bucket1/files/file.txt")},
 
-                { new OzoneKeyValidator(OZONE_SCHEME, "bucket1.volume1.ozone1:1234/file21.txt",
-                        "file21.txt", "bucket1.volume1.ozone1:1234/file21.txt") },
+                { new OzoneKeyValidator(OZONE_SCHEME, "ozone1:1234/volume1/bucket1/file21.txt",
+                        "file21.txt", "ozone1:1234/volume1/bucket1/file21.txt")},
 
-                { new OzoneKeyValidator(OZONE_SCHEME, "bucket1.volume1.ozone1/quarter_one/sales",
-                        "quarter_one", "bucket1.volume1.ozone1/quarter_one",
-                        "sales", "bucket1.volume1.ozone1/quarter_one/sales") },
+                { new OzoneKeyValidator(OZONE_SCHEME, "ozone1/volume1/bucket1/quarter_one/sales",
+                        "quarter_one", "ozone1/volume1/bucket1/quarter_one",
+                        "sales", "ozone1/volume1/bucket1/quarter_one/sales")},
 
-                { new OzoneKeyValidator(OZONE_SCHEME, "bucket1.volume1.ozone1/quarter_one/sales/",
-                        "quarter_one", "bucket1.volume1.ozone1/quarter_one",
-                        "sales", "bucket1.volume1.ozone1/quarter_one/sales") },
+                { new OzoneKeyValidator(OZONE_SCHEME, "ozone1/volume1/bucket1/quarter_one/sales/",
+                        "quarter_one", "ozone1/volume1/bucket1/quarter_one",
+                        "sales", "ozone1/volume1/bucket1/quarter_one/sales")},
 
                 { new OzoneKeyValidator(OZONE_3_SCHEME, "bucket1.volume1.ozone1/files/file.txt",
                         "files", "bucket1.volume1.ozone1/files",
