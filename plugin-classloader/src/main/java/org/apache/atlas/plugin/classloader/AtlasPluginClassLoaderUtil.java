@@ -96,19 +96,19 @@ final class AtlasPluginClassLoaderUtil {
         }
     }
 
-    public static String getPluginImplLibPath(String pluginType, Class<?> pluginClass) throws URISyntaxException {
+    public static String[] getPluginImplLibPath(String pluginType, Class<?> pluginClass) throws URISyntaxException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasPluginClassLoaderUtil.getPluginImplLibPath for Class ({})", pluginClass.getName());
         }
 
-        URI uri = pluginClass.getProtectionDomain().getCodeSource().getLocation().toURI();
-        Path path = Paths.get(URI.create(uri.toString()));
-        String ret = path.getParent().toString() + File.separatorChar + ATLAS_PLUGIN_LIBDIR.replaceAll("%", pluginType);
+        URI    uri  = pluginClass.getProtectionDomain().getCodeSource().getLocation().toURI();
+        Path   path = Paths.get(URI.create(uri.toString()));
+        String ret  = path.getParent().toString() + File.separatorChar + ATLAS_PLUGIN_LIBDIR.replaceAll("%", pluginType);
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== AtlasPluginClassLoaderUtil.getPluginImplLibPath for Class {}): {})", pluginClass.getName(), ret);
         }
 
-        return ret;
+        return new String[] { ret };
     }
 }
