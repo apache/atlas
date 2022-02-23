@@ -29,6 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URI;
+import java.util.stream.IntStream;
 
 public class AtlasPathExtractorUtil {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasPathExtractorUtil.class);
@@ -81,6 +82,7 @@ public class AtlasPathExtractorUtil {
     public static final String ATTRIBUTE_VOLUME                     = "volume";
     public static final String RELATIONSHIP_OZONE_VOLUME_BUCKET     = "ozone_volume_buckets";
     public static final String RELATIONSHIP_OZONE_PARENT_CHILDREN   = "ozone_parent_children";
+    public static final String OZONE_SCHEME_NAME                    = "ofs";
 
     //Google Cloud Storage
     public static final String GCS_SCHEME                       = "gs" + SCHEME_SEPARATOR;
@@ -432,12 +434,29 @@ public class AtlasPathExtractorUtil {
 
             String keyQNamePrefix = ozoneScheme + SCHEME_SEPARATOR + path.toUri().getAuthority();
 
-            for (String subDirName : dirPath.split(Path.SEPARATOR)) {
+
+            String[] subDirNames = dirPath.split(Path.SEPARATOR);
+            String[] subDirNameArr = subDirNames;
+            if (ozoneScheme.equals(OZONE_SCHEME_NAME)) {
+                subDirNames = IntStream.range(3, subDirNameArr.length)
+                        .mapToObj(i -> subDirNameArr[i])
+                        .toArray(String[]::new);
+            }
+
+            boolean volumeBucketAdded = false;
+            for (String subDirName : subDirNames) {
                 if (StringUtils.isEmpty(subDirName)) {
                     continue;
                 }
 
-                String subDirPath          = parentPath + subDirName;
+                String subDirPath;
+                if (ozoneScheme.equals(OZONE_SCHEME_NAME) && !volumeBucketAdded) {
+                    subDirPath = "%s%s" + Path.SEPARATOR + "%s" + Path.SEPARATOR + "%s";
+                    subDirPath = String.format(subDirPath, parentPath, subDirNameArr[1], subDirNameArr[2], subDirName);
+                    volumeBucketAdded = true;
+                } else {
+                    subDirPath = parentPath + subDirName;
+                }
                 String subDirQualifiedName = keyQNamePrefix + subDirPath + QNAME_SEP_METADATA_NAMESPACE + metadataNamespace;
 
                 ret = context.getEntity(subDirQualifiedName);
@@ -606,14 +625,33 @@ public class AtlasPathExtractorUtil {
     }
 
     private static String getOzoneVolumeName(Path path) {
-        String pathAuthority = path.toUri().getAuthority();
-        // pathAuthority: "<bucket_name>.<volume_name>.<ozone.service.id>"
-        return pathAuthority.split("\\.")[1];
+        String strPath = path.toString();
+        String volumeName = StringUtils.EMPTY;
+        if (strPath.startsWith(OZONE_3_SCHEME)) {
+            String pathAuthority = path.toUri().getAuthority();
+            volumeName = pathAuthority.split("\\.")[1];
+        } else if (strPath.startsWith(OZONE_SCHEME)) {
+            strPath = strPath.replaceAll(OZONE_SCHEME, StringUtils.EMPTY);
+            if (strPath.split(Path.SEPARATOR).length >= 2) {
+                volumeName = strPath.split(Path.SEPARATOR)[1];
+            }
+        }
+        return volumeName;
     }
 
     private static String getOzoneBucketName(Path path) {
-        String pathAuthority = path.toUri().getAuthority();
-        return pathAuthority.split("\\.")[0];
+        String strPath = path.toString();
+        String bucketName = StringUtils.EMPTY;
+        if (strPath.startsWith(OZONE_3_SCHEME)) {
+            String pathAuthority = path.toUri().getAuthority();
+            bucketName = pathAuthority.split("\\.")[0];
+        } else if (strPath.startsWith(OZONE_SCHEME)) {
+            strPath = strPath.replaceAll(OZONE_SCHEME, StringUtils.EMPTY);
+            if (strPath.split(Path.SEPARATOR).length >= 3) {
+                bucketName = strPath.split(Path.SEPARATOR)[2];
+            }
+        }
+        return bucketName;
     }
 
     private static String getQualifiedName(String path, String metadataNamespace) {
