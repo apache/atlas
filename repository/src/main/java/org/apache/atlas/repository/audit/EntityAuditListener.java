@@ -58,14 +58,11 @@ public class EntityAuditListener implements EntityChangeListener {
 
     private final Set<EntityAuditRepository> auditRepositories;
     private final AtlasTypeRegistry     typeRegistry;
-    private final AbstractStorageBasedAuditRepository abstractStorageBasedAuditRepository;
 
     @Inject
-    public EntityAuditListener(Set<EntityAuditRepository> auditRepositories, AtlasTypeRegistry typeRegistry,
-                               AbstractStorageBasedAuditRepository abstractStorageBasedAuditRepository) {
+    public EntityAuditListener(Set<EntityAuditRepository> auditRepositories, AtlasTypeRegistry typeRegistry) {
         this.auditRepositories = auditRepositories;
         this.typeRegistry    = typeRegistry;
-        this.abstractStorageBasedAuditRepository = abstractStorageBasedAuditRepository;
     }
 
     @Override
@@ -225,7 +222,7 @@ public class EntityAuditListener implements EntityChangeListener {
         String auditString  = auditPrefix + AtlasType.toV1Json(entity);
         byte[] auditBytes   = auditString.getBytes(StandardCharsets.UTF_8);
         long   auditSize    = auditBytes != null ? auditBytes.length : 0;
-        long   auditMaxSize = abstractStorageBasedAuditRepository.repositoryMaxSize();
+        long   auditMaxSize = 1024 * 1024;
 
         if (auditMaxSize >= 0 && auditSize > auditMaxSize) { // don't store attributes in audit
             LOG.warn("audit record too long: entityType={}, guid={}, size={}; maxSize={}. entity attribute values not stored in audit",
@@ -259,7 +256,7 @@ public class EntityAuditListener implements EntityChangeListener {
     private Map<String, Object> pruneEntityAttributesForAudit(Referenceable entity) throws AtlasException {
         Map<String, Object> ret               = null;
         Map<String, Object> entityAttributes  = entity.getValuesMap();
-        List<String>        excludeAttributes = abstractStorageBasedAuditRepository.getAuditExcludeAttributes(entity.getTypeName());
+        List<String>        excludeAttributes = null;
         AtlasEntityType     entityType        = typeRegistry.getEntityTypeByName(entity.getTypeName());
 
         if (CollectionUtils.isNotEmpty(excludeAttributes) && MapUtils.isNotEmpty(entityAttributes) && entityType != null) {

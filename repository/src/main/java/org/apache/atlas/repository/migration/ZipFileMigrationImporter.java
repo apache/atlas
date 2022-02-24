@@ -251,6 +251,7 @@ public class ZipFileMigrationImporter implements Runnable {
             LOG.info("Migration Import: {}: Starting at: {}...", fileToImport, startPosition);
             InputStream fs = new FileInputStream(fileToImport);
             RequestContext.get().setUser(getUserNameFromEnvironment(), null);
+            RequestContext.get().setImportInProgress(true);
 
             importService.run(fs, getImportRequest(fileToImport, streamSize, startPosition),
                     getUserNameFromEnvironment(),
@@ -266,7 +267,7 @@ public class ZipFileMigrationImporter implements Runnable {
     }
 
     private String getUserNameFromEnvironment() {
-        return System.getProperty(ENV_USER_NAME);
+        return RequestContext.get().getUser();
     }
 
     private AtlasImportRequest getImportRequest(String fileToImport, int streamSize, String position) throws AtlasException {

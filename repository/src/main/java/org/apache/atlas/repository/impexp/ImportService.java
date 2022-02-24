@@ -113,12 +113,12 @@ public class ImportService {
             setEntityTransformerHandlers(source, transformers);
 
             startTimestamp = System.currentTimeMillis();
-            processTypes(source.getTypesDef(), result);
+            //processTypes(source.getTypesDef(), result);
             setStartPosition(request, source);
 
             processEntities(userName, source, result);
 
-            processReplicationDeletion(source.getExportResult().getRequest(), request);
+            //processReplicationDeletion(source.getExportResult().getRequest(), request);
 
         } catch (AtlasBaseException excp) {
             LOG.error("import(user={}, from={}): failed", userName, requestingIP, excp);
@@ -239,7 +239,7 @@ public class ImportService {
             return;
         }
 
-        auditsWriter.write(userName, result, startTimestamp, endTimestamp, importSource.getCreationOrder());
+        //auditsWriter.write(userName, result, startTimestamp, endTimestamp, importSource.getCreationOrder());
     }
 
     private void processReplicationDeletion(AtlasExportRequest exportRequest, AtlasImportRequest importRequest) throws AtlasBaseException {
