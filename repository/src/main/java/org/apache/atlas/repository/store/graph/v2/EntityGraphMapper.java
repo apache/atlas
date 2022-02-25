@@ -276,7 +276,9 @@ public class EntityGraphMapper {
 
         setCustomAttributes(ret, entity);
 
-        setLabels(ret, entity.getLabels());
+        if (CollectionUtils.isNotEmpty(entity.getLabels())) {
+            setLabels(ret, entity.getLabels());
+        }
 
         GraphTransactionInterceptor.addToVertexCache(guid, ret);
 

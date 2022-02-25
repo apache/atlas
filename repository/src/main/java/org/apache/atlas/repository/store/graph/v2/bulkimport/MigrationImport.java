@@ -31,12 +31,7 @@ import org.apache.atlas.repository.migration.DataMigrationStatusService;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.repository.store.graph.v1.RestoreHandlerV1;
-import org.apache.atlas.repository.store.graph.v2.AtlasEntityStoreV2;
-import org.apache.atlas.repository.store.graph.v2.AtlasRelationshipStoreV2;
-import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
-import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
-import org.apache.atlas.repository.store.graph.v2.EntityImportStream;
-import org.apache.atlas.repository.store.graph.v2.IAtlasEntityChangeNotifier;
+import org.apache.atlas.repository.store.graph.v2.*;
 import org.apache.atlas.repository.store.graph.v2.bulkimport.pc.EntityConsumerBuilder;
 import org.apache.atlas.repository.store.graph.v2.bulkimport.pc.EntityCreationManager;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -49,11 +44,14 @@ public class MigrationImport extends ImportStrategy {
     private final AtlasGraph graph;
     private final AtlasGraphProvider graphProvider;
     private final AtlasTypeRegistry typeRegistry;
+    private final AtlasEntityChangeNotifier entityChangeNotifier;
 
-    public MigrationImport(AtlasGraph graph, AtlasGraphProvider graphProvider, AtlasTypeRegistry typeRegistry) {
+    public MigrationImport(AtlasGraph graph, AtlasGraphProvider graphProvider,
+                           AtlasTypeRegistry typeRegistry, AtlasEntityChangeNotifier entityChangeNotifier) {
         this.graph = graph;
         this.graphProvider = graphProvider;
         this.typeRegistry = typeRegistry;
+        this.entityChangeNotifier = entityChangeNotifier;
         LOG.info("MigrationImport: Using bulkLoading...");
     }
 
@@ -112,7 +110,7 @@ public class MigrationImport extends ImportStrategy {
                         entityStoreBulk, entityGraphRetrieverBulk, batchSize);
 
         LOG.info("MigrationImport: EntityCreationManager: Created!");
-        return new EntityCreationManager(consumerBuilder, batchSize, numWorkers, importResult, dataMigrationStatusService);
+        return new EntityCreationManager(consumerBuilder, batchSize, numWorkers, importResult, entityChangeNotifier, dataMigrationStatusService);
     }
 
     private static int getNumWorkers(int numWorkersFromOptions) {
@@ -123,14 +121,14 @@ public class MigrationImport extends ImportStrategy {
 
     private AtlasEntityStoreV2 createEntityStore(AtlasGraph graph, AtlasTypeRegistry typeRegistry) {
         FullTextMapperV2Nop fullTextMapperV2 = new FullTextMapperV2Nop();
-        IAtlasEntityChangeNotifier entityChangeNotifier = new EntityChangeNotifierNop();
         DeleteHandlerDelegate deleteDelegate = new DeleteHandlerDelegate(graph, typeRegistry, null);
         RestoreHandlerV1 restoreHandlerV1 = new RestoreHandlerV1(graph, typeRegistry);
         AtlasFormatConverters formatConverters = new AtlasFormatConverters(typeRegistry);
 
         AtlasInstanceConverter instanceConverter = new AtlasInstanceConverter(graph, typeRegistry, formatConverters);
         AtlasRelationshipStore relationshipStore = new AtlasRelationshipStoreV2(graph, typeRegistry, deleteDelegate, entityChangeNotifier);
-        EntityGraphMapper entityGraphMapper = new EntityGraphMapper(deleteDelegate, restoreHandlerV1, typeRegistry, graph, relationshipStore, entityChangeNotifier, instanceConverter, fullTextMapperV2, null);
+        EntityGraphMapper entityGraphMapper = new EntityGraphMapper(deleteDelegate, restoreHandlerV1, typeRegistry,
+                graph, relationshipStore, entityChangeNotifier, getInstanceConverter(graph), fullTextMapperV2, null);
 
         return new AtlasEntityStoreV2(graph, deleteDelegate, restoreHandlerV1, typeRegistry, entityChangeNotifier, entityGraphMapper);
     }
@@ -141,5 +139,10 @@ public class MigrationImport extends ImportStrategy {
         } catch (InterruptedException e) {
             LOG.error("Migration Import: Shutdown: Interrupted!", e);
         }
+    }
+
+    private AtlasInstanceConverter getInstanceConverter(AtlasGraph graph) {
+        AtlasFormatConverters formatConverters = new AtlasFormatConverters(typeRegistry);
+        return new AtlasInstanceConverter(graph, typeRegistry, formatConverters);
     }
 }

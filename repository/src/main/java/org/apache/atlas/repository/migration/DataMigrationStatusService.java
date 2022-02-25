@@ -59,7 +59,7 @@ public class DataMigrationStatusService {
             LOG.error("Not able to create Migration status", e);
         }
 
-        if (!this.migrationStatusVertexManagement.exists(fileToImport)) {
+        if (!this.migrationStatusVertexManagement.exists(status.getFileHash())) {
             return;
         }
 

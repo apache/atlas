@@ -395,6 +395,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             // create edge indexes
             createEdgeIndex(management, RELATIONSHIP_GUID_PROPERTY_KEY, String.class, SINGLE, true);
             createEdgeIndex(management, EDGE_ID_IN_IMPORT_KEY, String.class, SINGLE, true);
+            createEdgeIndex(management, ATTRIBUTE_INDEX_PROPERTY_KEY, Integer.class, SINGLE, true);
 
             // create fulltext indexes
             createFullTextIndex(management, ENTITY_TEXT_PROPERTY_KEY, String.class, SINGLE);
