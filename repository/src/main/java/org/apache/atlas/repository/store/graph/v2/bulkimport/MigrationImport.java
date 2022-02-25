@@ -44,9 +44,10 @@ public class MigrationImport extends ImportStrategy {
     private final AtlasGraph graph;
     private final AtlasGraphProvider graphProvider;
     private final AtlasTypeRegistry typeRegistry;
-    private final AtlasEntityChangeNotifier entityChangeNotifier
+    private final AtlasEntityChangeNotifier entityChangeNotifier;
 
-    public MigrationImport(AtlasGraph graph, AtlasGraphProvider graphProvider, AtlasTypeRegistry typeRegistry) {
+    public MigrationImport(AtlasGraph graph, AtlasGraphProvider graphProvider,
+                           AtlasTypeRegistry typeRegistry, AtlasEntityChangeNotifier entityChangeNotifier) {
         this.graph = graph;
         this.graphProvider = graphProvider;
         this.typeRegistry = typeRegistry;
