@@ -48,14 +48,15 @@ public class AtlasJanusElement<T extends Element> implements AtlasElement {
 
     //excludeProperties: Getting key related issue while Migration mode when fetching few attributes from graph
     //This is dirty fix to ignore getting such attributes value from graph & return null explicitly
-    private Set<String> excludeProperties = new HashSet<>();
+    private static final Set<String> excludeProperties = new HashSet<>();
+    static {
+        excludeProperties.add("replicatedTo");
+        excludeProperties.add("replicatedFrom");
+    }
 
     public AtlasJanusElement(AtlasJanusGraph graph, T element) {
         this.element = element;
         this.graph = graph;
-
-        excludeProperties.add("replicatedTo");
-        excludeProperties.add("replicatedFrom");
     }
 
     @Override
