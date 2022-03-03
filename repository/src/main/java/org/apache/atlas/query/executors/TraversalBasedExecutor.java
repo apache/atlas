@@ -44,7 +44,6 @@ public class TraversalBasedExecutor implements DSLQueryExecutor {
     private static final String DSL_KEYWORD_LIMIT             = "limit";
     private static final String DSL_KEYWORD_OFFSET            = "offset";
     private static final String DEFAULT_LIMIT_OFFSET_TEMPLATE = " limit %d offset %d";
-    private static final String CLAUSE_OFFSET_ZERO            = " offset 0";
 
     private static final Translator translator;
 
@@ -142,10 +141,6 @@ public class TraversalBasedExecutor implements DSLQueryExecutor {
         private String getStringWithLimitOffset(String query, QueryParams params) {
             if (!query.contains(DSL_KEYWORD_LIMIT) && !query.contains(DSL_KEYWORD_OFFSET)) {
                 query += String.format(DEFAULT_LIMIT_OFFSET_TEMPLATE, params.limit(), params.offset());
-            }
-
-            if (query.contains(DSL_KEYWORD_LIMIT) && !query.contains(DSL_KEYWORD_OFFSET)) {
-                query += CLAUSE_OFFSET_ZERO;
             }
 
             return query;

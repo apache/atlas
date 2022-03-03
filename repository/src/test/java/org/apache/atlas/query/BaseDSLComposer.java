@@ -168,6 +168,7 @@ public class BaseDSLComposer {
                     (context.getActiveTypeName().equals("hive_db") && attributeName.equals("createTime")) ||
                     (context.getActiveTypeName().equals("hive_db") && attributeName.equals("description")) ||
                     (context.getActiveTypeName().equals("hive_db") && attributeName.equals("userDescription")) ||
+                    (context.getActiveTypeName().equals("hive_column") && attributeName.equals("name")) ||
                     (context.getActiveTypeName().equals("DB") && attributeName.equals("name")) ||
                     (context.getActiveTypeName().equals("DB") && attributeName.equals("owner")) ||
                     (context.getActiveTypeName().equals("DB") && attributeName.equals("clusterName")) ||

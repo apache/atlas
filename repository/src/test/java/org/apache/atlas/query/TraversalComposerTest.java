@@ -54,6 +54,22 @@ public class TraversalComposerTest extends BaseDSLComposer {
 
         verify("Table groupby(owner) select name, owner, clusterName orderby name",
                 "[JanusGraphStep([],[__typeName.eq(Table), Table.owner.neq]), GroupStep(value([CoalesceStep([value(Table.owner), (null)])]),[FoldStep]), DedupGlobalStep(null,null), RangeGlobalStep(0,25)]");
+
+        verify("hive_column where name = 'test'",
+                "[JanusGraphStep([],[__typeName.eq(hive_column), hive_column.name.eq(test)]), DedupGlobalStep(null,null), RangeGlobalStep(0,25)]");
+
+        verify("hive_column where name = 'test' limit 35 offset 6",
+                "[JanusGraphStep([],[__typeName.eq(hive_column), hive_column.name.eq(test)]), DedupGlobalStep(null,null), DedupGlobalStep(null,null), RangeGlobalStep(6,41)]");
+
+        verify("hive_column where name = 'test_limit'",
+                "[JanusGraphStep([],[__typeName.eq(hive_column), hive_column.name.eq(test_limit)]), DedupGlobalStep(null,null), RangeGlobalStep(0,25)]");
+
+        verify("hive_column where name = 'test_limit' limit 2",
+                "[JanusGraphStep([],[__typeName.eq(hive_column), hive_column.name.eq(test_limit)]), DedupGlobalStep(null,null), RangeGlobalStep(0,2)]");
+
+        verify("hive_column where name = 'test_limit' limit 2 offset 4",
+                "[JanusGraphStep([],[__typeName.eq(hive_column), hive_column.name.eq(test_limit)]), DedupGlobalStep(null,null), DedupGlobalStep(null,null), RangeGlobalStep(4,6)]");
+
     }
 
     private void verify(String dsl, String expected) {
