@@ -906,9 +906,9 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
         List<AtlasEntityHeader> list = relResult.getEntities();
 
         Assert.assertTrue(CollectionUtils.isNotEmpty(list));
-        Assert.assertTrue(list.size() == 4);
+        Assert.assertTrue(list.size() == 6);
         Assert.assertTrue(list.get(0).getDisplayText().equalsIgnoreCase("customer_id"));
-        Assert.assertTrue(list.get(3).getDisplayText().equalsIgnoreCase("time_id"));
+        Assert.assertTrue(list.get(5).getDisplayText().equalsIgnoreCase("time_id"));
 
     }
 
@@ -924,8 +924,8 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
         List<AtlasEntityHeader> list = relResult.getEntities();
 
         Assert.assertTrue(CollectionUtils.isNotEmpty(list));
-        Assert.assertTrue(list.size() == 4);
-        Assert.assertTrue(list.get(3).getDisplayText().equalsIgnoreCase("customer_id"));
+        Assert.assertTrue(list.size() == 6);
+        Assert.assertTrue(list.get(5).getDisplayText().equalsIgnoreCase("customer_id"));
         Assert.assertTrue(list.get(0).getDisplayText().equalsIgnoreCase("time_id"));
     }
 

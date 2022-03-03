@@ -165,7 +165,11 @@ public abstract class BasicTestSetup extends AtlasTestBase {
                 .of(column("time_id", "int", "time id"),
                         column("product_id", "int", "product id"),
                         column("customer_id", "int", "customer id", PII_CLASSIFICATION),
-                        column("sales", "double", "product id", METRIC_CLASSIFICATION));
+                        column("sales", "double", "product id", METRIC_CLASSIFICATION),
+                        column("test", "int", "test 1"),
+                        column("test_limit", "int", "test limit 1")
+                );
+
         entities.addAll(salesFactColumns);
 
         AtlasEntity salesFact = table("sales_fact", "sales fact table", salesDB, sd, "Joe", "Managed", salesFactColumns, FACT_CLASSIFICATION);
@@ -176,7 +180,10 @@ public abstract class BasicTestSetup extends AtlasTestBase {
                     .of(column("time_id", "int", "time id"),
                         column("app_id", "int", "app id"),
                         column("machine_id", "int", "machine id"),
-                        column("log", "string", "log data", LOGDATA_CLASSIFICATION));
+                        column("log", "string", "log data", LOGDATA_CLASSIFICATION),
+                        column("test", "int", "test 2"),
+                        column("test_limit", "int", "test limit 2")
+                    );
         entities.addAll(logFactColumns);
 
         List<AtlasEntity> timeDimColumns = ImmutableList

@@ -55,6 +55,7 @@ public class DSLQueriesTest extends BasicTestSetup {
     private static final Logger LOG = LoggerFactory.getLogger(DSLQueriesTest.class);
 
     private final int DEFAULT_LIMIT = 25;
+    private final int DEFAULT_OFFSET = 0;
 
     @Inject
     private EntityDiscoveryService discoveryService;
@@ -272,7 +273,7 @@ public class DSLQueriesTest extends BasicTestSetup {
     @DataProvider(name = "basicProvider")
     private Object[][] basicQueries() {
         return new Object[][]{
-                {"hive_column where table.name = \"sales_fact_daily_mv\"", 4},
+                {"hive_column where table.name = \"sales_fact_daily_mv\"", 6},
                 {"hive_table where columns.name = \"app_id\"", 2},
                 {"from hive_db", 3},
                 {"hive_db", 3},
@@ -286,10 +287,10 @@ public class DSLQueriesTest extends BasicTestSetup {
                 {"hive_table isa Dimension", 5},
                 {"hive_column where hive_column isa PII", 4},
                 {"hive_column where hive_column isa PII select hive_column.qualifiedName", 4},
-                {"hive_column select hive_column.qualifiedName", 17},
-                {"hive_column select hive_column.qualifiedName, hive_column.description", 17},
-                {"hive_column select qualifiedName", 17},
-                {"hive_column select qualifiedName, description", 17},
+                {"hive_column select hive_column.qualifiedName", 21},
+                {"hive_column select hive_column.qualifiedName, hive_column.description", 21},
+                {"hive_column select qualifiedName", 21},
+                {"hive_column select qualifiedName, description", 21},
                 {"hive_column where hive_column.name=\"customer_id\"", 2},
                 {"hive_column where hive_column.name=\"customer_id\" select qualifiedName, description", 2},
                 {"from hive_table select hive_table.qualifiedName", 10},
@@ -352,12 +353,16 @@ public class DSLQueriesTest extends BasicTestSetup {
     @DataProvider(name = "limitProvider")
     private Object[][] limitQueries() {
         return new Object[][]{
-                {"hive_column", 17, 40, 0},
+                {"hive_column", 21, 40, 0},
                 {"hive_column limit 10", 10, 50, 0},
                 {"hive_column select hive_column.qualifiedName limit 10", 10, 5, 0},
-                {"hive_column select hive_column.qualifiedName limit 40 offset 10", 7, 40, 0},
+                {"hive_column select hive_column.qualifiedName limit 40 offset 10", 11, 40, 0},
                 {"hive_db where name = 'Reporting' limit 10 offset 0", 1, 40, 0},
                 {"hive_table where db.name = 'Reporting' limit 10", 4, 1, 0},
+                {"hive_column where name = 'test' ", 2, DEFAULT_LIMIT, DEFAULT_OFFSET},
+                {"hive_column where name = 'test_limit' ", 2, DEFAULT_LIMIT, DEFAULT_OFFSET},
+                {"hive_column where name = 'test_limit' limit 1 ", 1, DEFAULT_LIMIT, DEFAULT_OFFSET},
+                {"hive_column where name = 'test_limit' limit 1 offset 1", 1, DEFAULT_LIMIT, DEFAULT_OFFSET},
         };
     }
 
@@ -411,11 +416,11 @@ public class DSLQueriesTest extends BasicTestSetup {
                 {"hive_column where hive_column isa PII limit 5 offset 1", 3},
                 {"hive_column where hive_column isa PII limit 5 offset 5", 0},
 
-                {"hive_column select hive_column.qualifiedName", 17},
+                {"hive_column select hive_column.qualifiedName", 21},
                 {"hive_column select hive_column.qualifiedName limit 5", 5},
                 {"hive_column select hive_column.qualifiedName limit 5 offset 36", 0},
 
-                {"hive_column select qualifiedName", 17},
+                {"hive_column select qualifiedName", 21},
                 {"hive_column select qualifiedName limit 5", 5},
                 {"hive_column select qualifiedName limit 5 offset 36 ", 0},
 
@@ -470,17 +475,17 @@ public class DSLQueriesTest extends BasicTestSetup {
     private Object[][] orderByQueries() {
         return new Object[][]{
                 {"from hive_db as h orderby h.owner limit 3", 3, "owner", true},
-                {"hive_column as c select c.qualifiedName orderby hive_column.qualifiedName ", 17, "qualifiedName", true},
+                {"hive_column as c select c.qualifiedName orderby hive_column.qualifiedName ", 21, "qualifiedName", true},
                 {"hive_column as c select c.qualifiedName orderby hive_column.qualifiedName limit 5", 5, "qualifiedName", true},
                 {"hive_column as c select c.qualifiedName orderby hive_column.qualifiedName desc limit 5", 5, "qualifiedName", false},
 
                 {"from hive_db orderby hive_db.owner limit 3", 3, "owner", true},
-                {"hive_column select hive_column.qualifiedName orderby hive_column.qualifiedName ", 17, "qualifiedName", true},
+                {"hive_column select hive_column.qualifiedName orderby hive_column.qualifiedName ", 21, "qualifiedName", true},
                 {"hive_column select hive_column.qualifiedName orderby hive_column.qualifiedName limit 5", 5, "qualifiedName", true},
                 {"hive_column select hive_column.qualifiedName orderby hive_column.qualifiedName desc limit 5", 5, "qualifiedName", false},
 
                 {"from hive_db orderby owner limit 3", 3, "owner", true},
-                {"hive_column select hive_column.qualifiedName orderby qualifiedName ", 17, "qualifiedName", true},
+                {"hive_column select hive_column.qualifiedName orderby qualifiedName ", 21, "qualifiedName", true},
                 {"hive_column select hive_column.qualifiedName orderby qualifiedName limit 5", 5, "qualifiedName", true},
                 {"hive_column select hive_column.qualifiedName orderby qualifiedName desc limit 5", 5, "qualifiedName", false},
 
@@ -500,14 +505,14 @@ public class DSLQueriesTest extends BasicTestSetup {
                 {"hive_table orderby hive_table.owner limit 8 offset 0", 8, "owner", true},
                 {"hive_table orderby hive_table.owner desc limit 8 offset 0", 8, "owner", false},
 
-                {"hive_column select hive_column.qualifiedName orderby hive_column.qualifiedName ", 17, "qualifiedName", true},
+                {"hive_column select hive_column.qualifiedName orderby hive_column.qualifiedName ", 21, "qualifiedName", true},
                 {"hive_column select hive_column.qualifiedName orderby hive_column.qualifiedName limit 5", 5, "qualifiedName", true},
                 {"hive_column select hive_column.qualifiedName orderby hive_column.qualifiedName desc limit 5", 5, "qualifiedName", false},
                 {"hive_column select hive_column.qualifiedName orderby hive_column.qualifiedName limit 5 offset 2", 5, "qualifiedName", true},
 
-                {"hive_column select qualifiedName orderby hive_column.qualifiedName", 17, "qualifiedName", true},
+                {"hive_column select qualifiedName orderby hive_column.qualifiedName", 21, "qualifiedName", true},
                 {"hive_column select qualifiedName orderby hive_column.qualifiedName limit 5", 5, "qualifiedName", true},
-                {"hive_column select qualifiedName orderby hive_column.qualifiedName desc", 17, "qualifiedName", false},
+                {"hive_column select qualifiedName orderby hive_column.qualifiedName desc", 21, "qualifiedName", false},
 
                 {"hive_column where hive_column.name=\"customer_id\" orderby hive_column.name", 2, "name", true},
                 {"hive_column where hive_column.name=\"customer_id\" orderby hive_column.name limit 2", 2, "name", true},
@@ -699,7 +704,7 @@ public class DSLQueriesTest extends BasicTestSetup {
                         new TableValidator("__typeName", "count()")
                                 .row("Asset", 1)
                                 .row("hive_table", 10)
-                                .row("hive_column", 17)
+                                .row("hive_column", 21)
                                 .row("hive_db", 3)
                                 .row("hive_process", 7)
                 }
