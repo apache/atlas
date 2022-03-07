@@ -21,6 +21,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TimeBoundary;
+import org.apache.atlas.model.glossary.AtlasGlossaryCategory;
 import org.apache.atlas.model.glossary.enums.AtlasTermAssignmentStatus;
 import org.apache.atlas.model.glossary.relations.AtlasTermAssignmentHeader;
 import org.apache.atlas.model.instance.AtlasClassification;
@@ -133,6 +134,10 @@ public class EntityGraphRetriever {
     public static final String OWNER          = "owner";
     public static final String CREATE_TIME    = "createTime";
     public static final String QUALIFIED_NAME = "qualifiedName";
+
+    private static final String GLOSSARY_CATEGORY_HIERARCHY_EDGE_LABEL = "r:AtlasGlossaryCategoryHierarchyLink";
+    private static final String GLOSSARY_CATEGORY_TYPE_NAME = AtlasGlossaryCategory.class.getSimpleName();
+    private static final String PARENT_GLOSSARY_CATEGORY_GUID = "parentCategoryGuid";
 
     private static final TypeReference<List<TimeBoundary>> TIME_BOUNDARIES_LIST_TYPE = new TypeReference<List<TimeBoundary>>() {};
     private final GraphHelper graphHelper;
@@ -1537,10 +1542,24 @@ public class EntityGraphRetriever {
                     }
                 }
 
+                populateGlossaryAttributesIfApplicable(ret, referenceVertex, entityTypeName);
             }
         }
 
         return ret;
+    }
+
+    private void populateGlossaryAttributesIfApplicable(AtlasRelatedObjectId ret, AtlasVertex referenceVertex, String entityTypeName) {
+        if (!StringUtils.equals(entityTypeName, GLOSSARY_CATEGORY_TYPE_NAME)) {
+            return;
+        }
+        Iterator<AtlasEdge> edgeIterator = GraphHelper.getIncomingEdgesByLabel(referenceVertex, GLOSSARY_CATEGORY_HIERARCHY_EDGE_LABEL);
+        while (edgeIterator.hasNext()) {
+            AtlasEdge atlasEdge = edgeIterator.next();
+            AtlasVertex parentCategoryVertex = atlasEdge.getOutVertex();
+            String parentCategoryGuid = GraphHelper.getGuid(parentCategoryVertex);
+            ret.getRelationshipAttributes().setAttribute(PARENT_GLOSSARY_CATEGORY_GUID, parentCategoryGuid);
+        }
     }
 
     private Object getDisplayText(AtlasVertex entityVertex, String entityTypeName) throws AtlasBaseException {
