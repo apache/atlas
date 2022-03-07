@@ -36,8 +36,8 @@ public class AtlasLineageRequest {
     private String guid;
     private int depth;
     private int limit = -1;
-    private boolean skipDeleted;
     private boolean hideProcess;
+    private boolean allowDeletedProcess;
     private LineageDirection direction = BOTH;
     private SearchParameters.FilterCriteria entityFilters;
 
@@ -77,14 +77,6 @@ public class AtlasLineageRequest {
         this.limit = limit;
     }
 
-    public boolean isSkipDeleted() {
-        return skipDeleted;
-    }
-
-    public void setSkipDeleted(boolean skipDeleted) {
-        this.skipDeleted = skipDeleted;
-    }
-
     public LineageDirection getDirection() {
         return direction;
     }
@@ -115,5 +107,13 @@ public class AtlasLineageRequest {
 
     public void setEntityFilters(SearchParameters.FilterCriteria entityFilters) {
         this.entityFilters = entityFilters;
+    }
+
+    public boolean isAllowDeletedProcess() {
+        return allowDeletedProcess;
+    }
+
+    public void setAllowDeletedProcess(boolean allowDeletedProcess) {
+        this.allowDeletedProcess = allowDeletedProcess;
     }
 }
