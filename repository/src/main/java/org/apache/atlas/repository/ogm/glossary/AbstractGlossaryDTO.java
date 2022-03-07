@@ -46,6 +46,7 @@ public abstract class AbstractGlossaryDTO<T extends AtlasBaseModelObject> extend
 
         ret.setTermGuid(relatedObjectId.getGuid());
         ret.setRelationGuid(relatedObjectId.getRelationshipGuid());
+        ret.setDisplayText(relatedObjectId.getDisplayText());
 
         AtlasStruct relationshipAttributes = relatedObjectId.getRelationshipAttributes();
         if (relationshipAttributes != null) {
@@ -87,10 +88,13 @@ public abstract class AbstractGlossaryDTO<T extends AtlasBaseModelObject> extend
 
         ret.setCategoryGuid(relatedObjectId.getGuid());
         ret.setRelationGuid(relatedObjectId.getRelationshipGuid());
+        ret.setDisplayText(relatedObjectId.getDisplayText());
 
         AtlasStruct relationshipAttributes = relatedObjectId.getRelationshipAttributes();
         if (relationshipAttributes != null) {
             ret.setDescription((String) relationshipAttributes.getAttribute("description"));
+            ret.setParentCategoryGuid(relationshipAttributes.getAttribute("parentCategoryGuid") == null ? null :
+                    (String) relationshipAttributes.getAttribute("parentCategoryGuid"));
         }
 
         return ret;

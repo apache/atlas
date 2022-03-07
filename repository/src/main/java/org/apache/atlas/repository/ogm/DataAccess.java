@@ -46,6 +46,10 @@ public class DataAccess {
     private final AtlasEntityStore entityStore;
     private final DTORegistry      dtoRegistry;
 
+    public AtlasEntityStore getAtlasEntityStore(){
+        return this.entityStore;
+    }
+
     @Inject
     public DataAccess(AtlasEntityStore entityStore, DTORegistry dtoRegistry) {
         this.entityStore = entityStore;
