@@ -98,7 +98,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
         try {
             if (events != null && events.size() > 0) {
                 String entityPayloadTemplate = "'{'\"entityId\":\"{0}\",\"action\":\"{1}\",\"detail\":{2},\"user\":\"{3}\", \"eventKey\":\"{4}\", " +
-                        "\"entityQualifiedName\": \"{5}\", \"typeName\": \"{6}\",\"created\":{7}, \"timestamp\":{8}'}'";
+                        "\"entityQualifiedName\": {5}, \"typeName\": \"{6}\",\"created\":{7}, \"timestamp\":{8}'}'";
                 String bulkMetadata = String.format("{ \"index\" : { \"_index\" : \"%s\" } }%n", INDEX_NAME);
                 StringBuilder bulkRequestBody = new StringBuilder();
                 for (EntityAuditEventV2 event : events) {
