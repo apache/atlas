@@ -36,11 +36,12 @@ public class AtlasLineageContext {
     private int depth;
     private int limit;
     private String guid;
+    private boolean hideProcess;
+    private boolean allowDeletedProcess;
+    private AtlasLineageInfo.LineageDirection direction = BOTH;
+
     private boolean isDataset;
     private boolean isProcess;
-    private boolean hideProcess;
-    private boolean skipDeleted;
-    private AtlasLineageInfo.LineageDirection direction = BOTH;
 
     private Set<String> attributes;
     private Predicate predicate;
@@ -52,8 +53,8 @@ public class AtlasLineageContext {
         this.limit = lineageRequest.getLimit();
         this.depth = lineageRequest.getDepth();
         this.direction = lineageRequest.getDirection();
-        this.skipDeleted = lineageRequest.isSkipDeleted();
         this.hideProcess = lineageRequest.isHideProcess();
+        this.allowDeletedProcess = lineageRequest.isAllowDeletedProcess();
         this.attributes = lineageRequest.getAttributes();
 
         predicate = constructInMemoryPredicate(typeRegistry, lineageRequest.getEntityFilters());
@@ -99,14 +100,6 @@ public class AtlasLineageContext {
         isProcess = process;
     }
 
-    public boolean isSkipDeleted() {
-        return skipDeleted;
-    }
-
-    public void setSkipDeleted(boolean skipDeleted) {
-        this.skipDeleted = skipDeleted;
-    }
-
     public AtlasLineageInfo.LineageDirection getDirection() {
         return direction;
     }
@@ -139,6 +132,14 @@ public class AtlasLineageContext {
         this.startDatasetVertex = startDatasetVertex;
     }
 
+    public boolean isAllowDeletedProcess() {
+        return allowDeletedProcess;
+    }
+
+    public void setAllowDeletedProcess(boolean allowDeletedProcess) {
+        this.allowDeletedProcess = allowDeletedProcess;
+    }
+
     protected Predicate constructInMemoryPredicate(AtlasTypeRegistry typeRegistry, SearchParameters.FilterCriteria filterCriteria) {
         LineageSearchProcessor lineageSearchProcessor = new LineageSearchProcessor();
         return lineageSearchProcessor.constructInMemoryPredicate(typeRegistry, filterCriteria);
@@ -162,7 +163,7 @@ public class AtlasLineageContext {
                 ", guid='" + guid + '\'' +
                 ", isDataset=" + isDataset +
                 ", isProcess=" + isProcess +
-                ", skipDeleted=" + skipDeleted +
+                ", allowDeletedProcess=" + allowDeletedProcess +
                 ", direction=" + direction +
                 ", attributes=" + attributes +
                 '}';

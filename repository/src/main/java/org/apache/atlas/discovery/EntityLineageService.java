@@ -49,6 +49,7 @@ import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.util.AtlasGremlinQueryProvider;
 import org.apache.atlas.utils.AtlasPerfMetrics;
+import org.apache.atlas.v1.model.instance.Id;
 import org.apache.atlas.v1.model.lineage.SchemaResponse.SchemaDetails;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
@@ -390,7 +391,13 @@ public class EntityLineageService implements AtlasLineageService {
                 Iterator<AtlasEdge> processEdges = datasetVertex.getEdges(IN, isInput ? PROCESS_OUTPUTS_EDGE : PROCESS_INPUTS_EDGE).iterator();
 
                 List<AtlasEdge> processEdgesList = new ArrayList<>();
-                processEdges.forEachRemaining(processEdgesList::add);
+
+                while (processEdges.hasNext()) {
+                    AtlasEdge processEdge = processEdges.next();
+                    if (lineageContext.isAllowDeletedProcess() || GraphHelper.getStatus(processEdge) == AtlasEntity.Status.ACTIVE) {
+                        processEdgesList.add(processEdge);
+                    }
+                }
                 ret.addChildrenCount(GraphHelper.getGuid(datasetVertex), isInput ? INPUT : OUTPUT, processEdgesList.size());
 
                 if (lineageContext.shouldApplyLimit() && processEdgesList.size() > lineageContext.getLimit()) {
