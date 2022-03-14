@@ -1409,8 +1409,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                                     MapUtils.isNotEmpty(diffEntity.getRelationshipAttributes()) &&
                                     diffEntity.getRelationshipAttributes().size() == 1 &&
                                     diffEntity.getRelationshipAttributes().containsKey("meanings")) {
-                                    //only diff is relationshipAttributes.meanings, allow update
-                                    LOG.info("Allowing Update");
+                                    //do nothing, only diff is relationshipAttributes.meanings, allow update
+
                                 } else {
                                     throw ae;
                                 }
