@@ -360,7 +360,10 @@ public class EntityGraphMapper {
                     resp.addEntity(CREATE, constructHeader(createdEntity, vertex,  entityType.getAllAttributes()));
                     addClassifications(context, guid, createdEntity.getClassifications());
 
-                    addOrUpdateBusinessAttributes(vertex, entityType, createdEntity.getBusinessAttributes());
+                    if (MapUtils.isNotEmpty(createdEntity.getBusinessAttributes())) {
+                        validateBusinessAttributes(vertex, entityType, createdEntity.getBusinessAttributes(), true);
+                        addOrUpdateBusinessAttributes(vertex, entityType, createdEntity.getBusinessAttributes());
+                    }
 
                     reqContext.cache(createdEntity);
                 } catch (AtlasBaseException baseException) {
@@ -394,9 +397,11 @@ public class EntityGraphMapper {
                         addClassifications(context, guid, updatedEntity.getClassifications());
                     }
 
-                    if (replaceBusinessAttributes) {
+                    if (replaceBusinessAttributes && MapUtils.isNotEmpty(updatedEntity.getBusinessAttributes())) {
+                        validateBusinessAttributes(vertex, entityType, updatedEntity.getBusinessAttributes(), true);
                         setBusinessAttributes(vertex, entityType, updatedEntity.getBusinessAttributes());
                     }
+                    
                     setSystemAttributesToEntity(vertex,updatedEntity);
                     resp.addEntity(updateType, constructHeader(updatedEntity, vertex, entityType.getAllAttributes()));
                     reqContext.cache(updatedEntity);
@@ -571,6 +576,8 @@ public class EntityGraphMapper {
             LOG.debug("==> setBusinessAttributes(entityVertex={}, entityType={}, businessAttributes={}", entityVertex, entityType.getTypeName(), businessAttributes);
         }
 
+        validateBusinessAttributes(entityVertex, entityType, businessAttributes, true);
+
         Map<String, Map<String, AtlasBusinessAttribute>> entityTypeBusinessAttributes = entityType.getBusinessAttributes();
         Map<String, Map<String, Object>>                 updatedBusinessAttributes    = new HashMap<>();
 
@@ -647,6 +654,8 @@ public class EntityGraphMapper {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> addOrUpdateBusinessAttributes(entityVertex={}, entityType={}, businessAttributes={}", entityVertex, entityType.getTypeName(), businessAttributes);
         }
+
+        validateBusinessAttributes(entityVertex, entityType, businessAttributes, true);
 
         Map<String, Map<String, AtlasBusinessAttribute>> entityTypeBusinessAttributes = entityType.getBusinessAttributes();
         Map<String, Map<String, Object>>                 updatedBusinessAttributes    = new HashMap<>();
@@ -3250,6 +3259,57 @@ public class EntityGraphMapper {
             }
         }
         return relGuidsSet;
+    }
+
+    private void validateBusinessAttributes(AtlasVertex entityVertex, AtlasEntityType entityType, Map<String, Map<String, Object>> businessAttributes, boolean isOverwrite) throws AtlasBaseException {
+        List<String> messages = new ArrayList<>();
+
+        Map<String, Map<String, AtlasBusinessAttribute>> entityTypeBusinessMetadata = entityType.getBusinessAttributes();
+
+        for (String bmName : businessAttributes.keySet()) {
+            if (!entityTypeBusinessMetadata.containsKey(bmName)) {
+                messages.add(bmName + ": invalid business-metadata for entity type " + entityType.getTypeName());
+
+                continue;
+            }
+
+            Map<String, AtlasBusinessAttribute> entityTypeBusinessAttributes = entityTypeBusinessMetadata.get(bmName);
+            Map<String, Object>                         entityBusinessAttributes     = businessAttributes.get(bmName);
+
+            for (AtlasBusinessAttribute bmAttribute : entityTypeBusinessAttributes.values()) {
+                AtlasType attrType  = bmAttribute.getAttributeType();
+                String    attrName  = bmAttribute.getName();
+                Object    attrValue = entityBusinessAttributes.get(attrName);
+                String    fieldName = entityType.getTypeName() + "." + bmName + "." + attrName;
+
+                if (attrValue != null) {
+                    attrType.validateValue(attrValue, fieldName, messages);
+                    boolean isValidLength = bmAttribute.isValidLength(attrValue);
+                    if (!isValidLength) {
+                        messages.add(fieldName + ":  Business attribute-value exceeds maximum length limit");
+                    }
+
+                } else if (!bmAttribute.getAttributeDef().getIsOptional()) {
+                    final boolean isAttrValuePresent;
+
+                    if (isOverwrite) {
+                        isAttrValuePresent = false;
+                    } else {
+                        Object existingValue = AtlasGraphUtilsV2.getEncodedProperty(entityVertex, bmAttribute.getVertexPropertyName(), Object.class);
+
+                        isAttrValuePresent = existingValue != null;
+                    }
+
+                    if (!isAttrValuePresent) {
+                        messages.add(fieldName + ": mandatory business-metadata attribute value missing in type " + entityType.getTypeName());
+                    }
+                }
+            }
+        }
+
+        if (!messages.isEmpty()) {
+            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_CRUD_INVALID_PARAMS, messages);
+        }
     }
 
     public static void validateCustomAttributes(AtlasEntity entity) throws AtlasBaseException {

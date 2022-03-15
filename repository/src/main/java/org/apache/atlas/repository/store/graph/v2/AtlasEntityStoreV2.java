@@ -1123,8 +1123,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             AtlasAuthorizationUtils.verifyAccess(requestBuilder.build(), "add/update business-metadata: guid=", guid, ", business-metadata-name=", bmName);
         }
 
-        validateBusinessAttributes(entityVertex, entityType, businessAttrbutes, isOverwrite);
-
         if (isOverwrite) {
             entityGraphMapper.setBusinessAttributes(entityVertex, entityType, businessAttrbutes);
         } else {
@@ -1743,57 +1741,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                     }
                 }
             }
-        }
-    }
-
-    private void validateBusinessAttributes(AtlasVertex entityVertex, AtlasEntityType entityType, Map<String, Map<String, Object>> businessAttributes, boolean isOverwrite) throws AtlasBaseException {
-        List<String> messages = new ArrayList<>();
-
-        Map<String, Map<String, AtlasBusinessAttribute>> entityTypeBusinessMetadata = entityType.getBusinessAttributes();
-
-        for (String bmName : businessAttributes.keySet()) {
-            if (!entityTypeBusinessMetadata.containsKey(bmName)) {
-                messages.add(bmName + ": invalid business-metadata for entity type " + entityType.getTypeName());
-
-                continue;
-            }
-
-            Map<String, AtlasBusinessAttribute> entityTypeBusinessAttributes = entityTypeBusinessMetadata.get(bmName);
-            Map<String, Object>                         entityBusinessAttributes     = businessAttributes.get(bmName);
-
-            for (AtlasBusinessAttribute bmAttribute : entityTypeBusinessAttributes.values()) {
-                AtlasType attrType  = bmAttribute.getAttributeType();
-                String    attrName  = bmAttribute.getName();
-                Object    attrValue = entityBusinessAttributes.get(attrName);
-                String    fieldName = entityType.getTypeName() + "." + bmName + "." + attrName;
-
-                if (attrValue != null) {
-                    attrType.validateValue(attrValue, fieldName, messages);
-                    boolean isValidLength = bmAttribute.isValidLength(attrValue);
-                    if (!isValidLength) {
-                        messages.add(fieldName + ":  Business attribute-value exceeds maximum length limit");
-                    }
-
-                } else if (!bmAttribute.getAttributeDef().getIsOptional()) {
-                    final boolean isAttrValuePresent;
-
-                    if (isOverwrite) {
-                        isAttrValuePresent = false;
-                    } else {
-                        Object existingValue = AtlasGraphUtilsV2.getEncodedProperty(entityVertex, bmAttribute.getVertexPropertyName(), Object.class);
-
-                        isAttrValuePresent = existingValue != null;
-                    }
-
-                    if (!isAttrValuePresent) {
-                        messages.add(fieldName + ": mandatory business-metadata attribute value missing in type " + entityType.getTypeName());
-                    }
-                }
-            }
-        }
-
-        if (!messages.isEmpty()) {
-            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_CRUD_INVALID_PARAMS, messages);
         }
     }
 
