@@ -1389,27 +1389,29 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                         AtlasEntityHeader entityHeaderWithClassifications = entityRetriever.toAtlasEntityHeaderWithClassifications(entity.getGuid());
                         AtlasEntityHeader entityHeader = new AtlasEntityHeader(entity);
 
-                        if (CollectionUtils.isNotEmpty(entityHeaderWithClassifications.getClassifications())) {
+                        if(CollectionUtils.isNotEmpty(entityHeaderWithClassifications.getClassifications())) {
                             entityHeader.setClassifications(entityHeaderWithClassifications.getClassifications());
                         }
 
                         AtlasEntity diffEntity = reqContext.getDifferentialEntity(entity.getGuid());
 
-                        if (MapUtils.isEmpty(diffEntity.getAttributes()) &&
+                        if (diffEntity != null &&
+                                MapUtils.isNotEmpty(diffEntity.getRelationshipAttributes()) &&
+                                diffEntity.getRelationshipAttributes().containsKey("meanings") &&
+                                diffEntity.getRelationshipAttributes().size() == 1 &&
+                                MapUtils.isEmpty(diffEntity.getAttributes()) &&
                                 MapUtils.isEmpty(diffEntity.getCustomAttributes()) &&
                                 MapUtils.isEmpty(diffEntity.getBusinessAttributes()) &&
                                 CollectionUtils.isEmpty(diffEntity.getClassifications()) &&
-                                CollectionUtils.isEmpty(diffEntity.getLabels()) &&
-                                MapUtils.isNotEmpty(diffEntity.getRelationshipAttributes()) &&
-                                diffEntity.getRelationshipAttributes().size() == 1 &&
-                                diffEntity.getRelationshipAttributes().containsKey("meanings")) {
+                                CollectionUtils.isEmpty(diffEntity.getLabels())) {
                             //do nothing, only diff is relationshipAttributes.meanings, allow update
-
                         } else {
                             AtlasEntityAccessRequest accessRequest = new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, new AtlasEntityHeader(entity));
                             AtlasAuthorizationUtils.verifyAccess(accessRequest, "update entity: type=", entity.getTypeName());
+                        }
                     }
                 }
+
                 reqContext.endMetricRecord(checkForUnchangedEntities);
             }
 
