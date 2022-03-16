@@ -1391,11 +1391,27 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                     for (AtlasEntity entity : context.getUpdatedEntities()) {
                         AtlasEntityHeader entityHeaderWithClassifications = entityRetriever.toAtlasEntityHeaderWithClassifications(entity.getGuid());
                         AtlasEntityHeader entityHeader = new AtlasEntityHeader(entity);
+
                         if(CollectionUtils.isNotEmpty(entityHeaderWithClassifications.getClassifications())) {
                             entityHeader.setClassifications(entityHeaderWithClassifications.getClassifications());
                         }
-                        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, entityHeader),
-                                "update entity: type=", entity.getTypeName());
+
+                        AtlasEntity diffEntity = reqContext.getDifferentialEntity(entity.getGuid());
+
+                        if (diffEntity != null &&
+                                MapUtils.isNotEmpty(diffEntity.getRelationshipAttributes()) &&
+                                diffEntity.getRelationshipAttributes().containsKey("meanings") &&
+                                diffEntity.getRelationshipAttributes().size() == 1 &&
+                                MapUtils.isEmpty(diffEntity.getAttributes()) &&
+                                MapUtils.isEmpty(diffEntity.getCustomAttributes()) &&
+                                MapUtils.isEmpty(diffEntity.getBusinessAttributes()) &&
+                                CollectionUtils.isEmpty(diffEntity.getClassifications()) &&
+                                CollectionUtils.isEmpty(diffEntity.getLabels())) {
+                            //do nothing, only diff is relationshipAttributes.meanings, allow update
+                        } else {
+                            AtlasEntityAccessRequest accessRequest = new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, new AtlasEntityHeader(entity));
+                            AtlasAuthorizationUtils.verifyAccess(accessRequest, "update entity: type=", entity.getTypeName());
+                        }
                     }
                 }
 
