@@ -361,7 +361,6 @@ public class EntityGraphMapper {
                     addClassifications(context, guid, createdEntity.getClassifications());
 
                     if (MapUtils.isNotEmpty(createdEntity.getBusinessAttributes())) {
-                        validateBusinessAttributes(vertex, entityType, createdEntity.getBusinessAttributes(), true);
                         addOrUpdateBusinessAttributes(vertex, entityType, createdEntity.getBusinessAttributes());
                     }
 
@@ -398,7 +397,6 @@ public class EntityGraphMapper {
                     }
 
                     if (replaceBusinessAttributes && MapUtils.isNotEmpty(updatedEntity.getBusinessAttributes())) {
-                        validateBusinessAttributes(vertex, entityType, updatedEntity.getBusinessAttributes(), true);
                         setBusinessAttributes(vertex, entityType, updatedEntity.getBusinessAttributes());
                     }
                     
