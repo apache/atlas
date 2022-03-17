@@ -160,21 +160,24 @@ define(['require',
                 tagAttributeNames.each(function(i, item) {
                     var selection = $(item).data("key"),
                         isRequired = $(item).hasClass('required'),
-                        datatypeSelection = $(item).data("type");
-                    $(item).removeClass('errorValidate');
+                        datatypeSelection = $(item).data("type"),
+                        $valueElement = $(item);
+                    $valueElement.removeClass('errorValidate');
                     if (datatypeSelection === "date") {
-                        tagAttributes[selection] = Date.parse($(item).val()) || null;
+                        tagAttributes[selection] = Date.parse($valueElement.val()) || null;
                     } else {
                         if (isRequired) {
-                            if ($(item).val().length) {
+                            if ($valueElement.val().length) {
                                 tagAttributes[selection] = $(item).val() || null;
+                                // tagAttributes[selection] = that.getValue($valueElement, datatypeSelection);
                             } else {
                                 isValidateAttrValue = false;
-                                $(item).addClass('errorValidate');
+                                $valueElement.addClass('errorValidate');
                                 validationKey.push($(item).data("key"));
                             }
                         } else {
                             tagAttributes[selection] = $(item).val() || null;
+                            // tagAttributes[selection] = that.getValue($valueElement, datatypeSelection);
                         }
                     }
                 });
@@ -281,6 +284,23 @@ define(['require',
                 this.modal.trigger('cancel');
             });
             this.bindEvents();
+        },
+        getValue: function($item, datatypeSelection) {
+            var that = this;
+            return (datatypeSelection && datatypeSelection.indexOf("array") >= 0) ? that.getArrayValues($item) : ($item.val() || null);
+        },
+        getArrayValues: function($item) {
+            var that = this,
+                arrayValues = $item.val();
+            if ($item.hasClass("set-array") || arrayValues.length == 0) {
+                return (arrayValues || null);
+            } else {
+                return _.map(arrayValues, function(value) {
+                    var splitBy = that.guid + "_",
+                        splitedValue = value.split(splitBy);
+                    return (splitedValue.length > 1) ? splitedValue[1] : splitedValue[0];
+                })
+            }
         },
         validateValues: function(attributeDefs) {
             var isValidate = true,
@@ -425,9 +445,9 @@ define(['require',
                             '<select class="' + inputClassName + '" data-key="' + name + '">' + str + '</select></div>');
                     } else if (typeName.indexOf('array') == 0) {
                         var arraytTypeName = new DOMParser().parseFromString(typeName, "text/html");
-
-                        that.ui.tagAttribute.append('<div class="form-group"><label class="' + (isOptional ? "" : " required") + '">' + name + '</label>' + ' (' + typeName + ')' +
-                            '<select class="' + inputClassName + '" data-id="addArryString" multiple="multiple" data-key="' + name + '" data-type="' + arraytTypeName.documentElement.textContent + '"></select></div>');
+                        var addCardinalityClass = inputClassName + " js-states js-example-events form-control" + (obj.cardinality == "SET" ? " set-array" : " list-array");
+                        that.ui.tagAttribute.append('<div class="form-group"><label class="' + (isOptional ? "" : " required") + '">' + name + '</label>' + ' (' + typeName + ') ' + obj.cardinality +
+                            '<select class="' + addCardinalityClass + '" data-id="addArryString" multiple="multiple" data-key="' + name + '" data-type="' + arraytTypeName.documentElement.textContent + '"></select></div>');
                     } else {
                         var textElement = that.getElement(name, typeName, inputClassName);
                         if (_.isTypePrimitive(typeName)) {
@@ -462,11 +482,14 @@ define(['require',
                     }
                 });
                 that.$('select[data-type="array<string>"]').each(function() {
-                    var stringData = $(this).data('key');
+                    var stringData = $(this).data('key'),
+                        self = this;
                     if (that.tagModel) {
                         var stringValues = that.tagModel.attributes[stringData] || [],
                             str = stringValues.map(function(label) {
-                                return "<option selected > " + _.escape(label) + " </option>";
+                                // var id = ($(self).hasClass("list-array")) ? ("" + Utils.generateUUID() + that.guid + "_" + label + "") : ("" + label + "");
+                                // return ($(self).hasClass("list-array")) ? "<option selected value=" + id + "> " + _.escape(label) + " </option>" : "<option selected> " + _.escape(label) + " </option>";
+                                return "<option selected> " + _.escape(label) + " </option>";
                             });
                         $(this).html(str);
                     }
@@ -489,27 +512,41 @@ define(['require',
                         }
                     };
                     $(this).select2({
-                        placeholder: "Select String",
-                        allowClear: false,
-                        tags: true,
-                        multiple: true,
-                        createTag: function(data) {
-                            var found = _.find(this.$element.select2("data"), { id: data.term });
-                            if (!found) {
-                                return { id: data.term, text: data.term };
-                            }
-                        },
-                        templateResult: that.formatResultSearch
-                    })
-
+                            tags: true,
+                            multiple: true,
+                            createTag: function(data) {
+                                // var isSET = this.$element.hasClass("set-array"),
+                                //     found = _.find(this.$element.select2("data"), { id: data.term });
+                                // if (isSET) {
+                                //     if (!found) {
+                                //         return { id: data.term, text: data.term };
+                                //     }
+                                // } else {
+                                //     return { id: data.term, text: data.term };
+                                // }
+                                var found = _.find(this.$element.select2("data"), { id: data.term });
+                                if (!found) {
+                                    return { id: data.term, text: data.term };
+                                }
+                            },
+                            templateResult: that.formatResultSearch
+                        })
+                        // .on("select2:select", function(e) {
+                        //     if ($(this).hasClass("list-array")) { //allow duplicates value for list
+                        //         var options = $(this).find("option"),
+                        //             id = "" + Utils.generateUUID() + that.guid + "_" + e.params.data.text + "";
+                        //         $(self).append('<option value="' + id + '">' + e.params.data.text + '</option>');
+                        //     }
+                        // })
                 });
                 this.showAttributeBox();
             }
         },
         formatResultSearch: function(state) {
-            if (!state.element && state.text.trim() !== "") {
-                return $("<span>Add<strong> '" + _.escape(state.text) + "'</strong></span>");
-            }
+            if (state.text.trim() == "") return;
+            if (!state.id) return $("<span>Add<strong> '" + _.escape(state.text) + "'</strong></span>");;
+            // if (state.element && state.element.selected) return;
+            return $("<span>Add<strong> '" + _.escape(state.text) + "'</strong></span>");
         },
         getElement: function(labelName, typeName, inputClassName) {
             var value = this.tagModel && this.tagModel.attributes ? (this.tagModel.attributes[_.unescape(labelName)] || "") : "",
@@ -525,7 +562,6 @@ define(['require',
             } else {
                 return '<input type="text" value="' + _.escape(value) + '" class="' + inputClassName + '" data-key="' + labelName + '" data-type="' + typeName + '"/>';
             }
-
         },
         checkTimezoneProperty: function(e) {
             if (e.checked) {
