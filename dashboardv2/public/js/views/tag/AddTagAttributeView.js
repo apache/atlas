@@ -72,6 +72,7 @@ define(['require',
                     this.ui.addAttributeDiv.find('input,textarea').placeholder();
                 }
                 that.$('.hide').removeClass('hide');
+                this.ui.addAttributeDiv.find('.toggleDuplicates').addClass("hide");
             },
             bindEvents: function() {},
             collectionAttribute: function() {
