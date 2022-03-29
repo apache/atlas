@@ -240,7 +240,9 @@ public abstract class DeleteHandlerV1 {
                         String        softRefVal = vertex.getProperty(attributeInfo.getVertexPropertyName(), String.class);
                         AtlasObjectId refObjId   = AtlasEntityUtil.parseSoftRefValue(softRefVal);
                         AtlasVertex   refVertex  = refObjId != null ? AtlasGraphUtilsV2.findByGuid(this.graphHelper.getGraph(), refObjId.getGuid()) : null;
-
+                        if (refObjId.getGuid() == null) {
+                            LOG.warn("OBJECT_ID_TYPE type category - null guid passed in findByGuid!");
+                        }
                         if (refVertex != null) {
                             vertices.push(refVertex);
                         }
@@ -274,7 +276,9 @@ public abstract class DeleteHandlerV1 {
                             if (CollectionUtils.isNotEmpty(refObjIds)) {
                                 for (AtlasObjectId refObjId : refObjIds) {
                                     AtlasVertex refVertex = AtlasGraphUtilsV2.findByGuid(this.graphHelper.getGraph(), refObjId.getGuid());
-
+                                    if (refObjId.getGuid() == null) {
+                                        LOG.warn("ARRAY type category - null guid passed in findByGuid!");
+                                    }
                                     if (refVertex != null) {
                                         vertices.push(refVertex);
                                     }
@@ -287,6 +291,9 @@ public abstract class DeleteHandlerV1 {
                             if (MapUtils.isNotEmpty(refObjIds)) {
                                 for (AtlasObjectId refObjId : refObjIds.values()) {
                                     AtlasVertex refVertex = AtlasGraphUtilsV2.findByGuid(this.graphHelper.getGraph(), refObjId.getGuid());
+                                    if (refObjId.getGuid() == null) {
+                                        LOG.warn("MAP type category - null guid passed in findByGuid!");
+                                    }
 
                                     if (refVertex != null) {
                                         vertices.push(refVertex);
@@ -516,6 +523,7 @@ public abstract class DeleteHandlerV1 {
     }
 
     public void removeTagPropagation(AtlasEdge edge) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("removeTagPropagationEdge");
         if (edge == null || !isRelationshipEdge(edge)) {
             return;
         }
@@ -548,6 +556,7 @@ public abstract class DeleteHandlerV1 {
                 removeTagPropagation(classificationVertex, removePropagationsMap.get(classificationVertex));
             }
         }
+        RequestContext.get().endMetricRecord(metric);
     }
 
     public boolean isRelationshipEdge(AtlasEdge edge) {
@@ -565,6 +574,7 @@ public abstract class DeleteHandlerV1 {
     }
 
     public List<AtlasVertex> removeTagPropagation(AtlasVertex classificationVertex) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("removeTagPropagationVertex");
         List<AtlasVertex> ret = new ArrayList<>();
 
         if (classificationVertex != null) {
@@ -585,12 +595,13 @@ public abstract class DeleteHandlerV1 {
                 }
             }
         }
-
+        RequestContext.get().endMetricRecord(metric);
         return ret;
     }
 
     public void removeTagPropagation(AtlasVertex classificationVertex, List<AtlasVertex> entityVertices) throws AtlasBaseException {
         if (classificationVertex != null && CollectionUtils.isNotEmpty(entityVertices)) {
+            AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("removeTagPropagationVertices");
             String              classificationName = getClassificationName(classificationVertex);
             AtlasClassification classification     = entityRetriever.toAtlasClassification(classificationVertex);
             String              entityGuid         = getClassificationEntityGuid(classificationVertex);
@@ -606,6 +617,7 @@ public abstract class DeleteHandlerV1 {
                     context.recordRemovedPropagation(getGuid(entityVertex), classification);
                 }
             }
+            RequestContext.get().endMetricRecord(metric);
         }
     }
 
