@@ -2455,7 +2455,7 @@ public class EntityGraphMapper {
         List<Object> newElementsCreated = RequestContext.get().getNewElementsCreatedMap().get(guid);
 
         Set<AtlasEdge> newEdge = null;
-        if(newElementsCreated!=null && newElementsCreated.size() > 1 ) {
+        if (newElementsCreated != null && newElementsCreated.size() > 0) {
             newEdge = newElementsCreated.stream().map(x -> (AtlasEdge) x).collect(Collectors.toSet());
         }
 
