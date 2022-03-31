@@ -83,6 +83,7 @@ import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.isRef
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.BOTH;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
+import static org.apache.atlas.type.Constants.HAS_LINEAGE;
 
 /**
  * Utility class for graph operations.
@@ -873,6 +874,14 @@ public final class GraphHelper {
         Boolean ret   = value != null && value.equals(INCOMPLETE_ENTITY_VALUE) ? Boolean.TRUE : Boolean.FALSE;
 
         return ret;
+    }
+
+    public static Boolean getEntityHasLineage(AtlasElement element) {
+        if (element.getPropertyKeys().contains(HAS_LINEAGE)) {
+            return element.getProperty(HAS_LINEAGE, Boolean.class);
+        } else {
+            return false;
+        }
     }
 
     public static Map getCustomAttributes(AtlasElement element) {

@@ -1590,7 +1590,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         RequestContext         req      = RequestContext.get();
 
         Collection<AtlasVertex> categories = new ArrayList<>();
-        Collection<AtlasVertex> other = new ArrayList<>();
+        Collection<AtlasVertex> others = new ArrayList<>();
 
         MetricRecorder metric = RequestContext.get().startMetricRecord("filterCategoryVertices");
         for (AtlasVertex vertex : deletionCandidates) {
@@ -1598,7 +1598,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             if (ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE.equals(typeName)) {
                 categories.add(vertex);
             } else {
-                other.add(vertex);
+                others.add(vertex);
             }
         }
         RequestContext.get().endMetricRecord(metric);
@@ -1608,8 +1608,10 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             deleteDelegate.getHandler(DeleteType.HARD).deleteEntities(categories);
         }
 
-        if (CollectionUtils.isNotEmpty(other)) {
-            deleteDelegate.getHandler().deleteEntities(other);
+        if (CollectionUtils.isNotEmpty(others)) {
+
+            deleteDelegate.getHandler().removeHasLineageOnDelete(others);
+            deleteDelegate.getHandler().deleteEntities(others);
         }
 
         for (AtlasEntityHeader entity : req.getDeletedEntities()) {

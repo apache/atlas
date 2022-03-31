@@ -69,7 +69,6 @@ import static org.apache.atlas.type.AtlasTypeUtil.isMapType;
 import static org.apache.atlas.type.Constants.CATEGORIES_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.CATEGORIES_PARENT_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.GLOSSARY_PROPERTY_KEY;
-import static org.apache.atlas.type.Constants.HAS_LINEAGE;
 import static org.apache.atlas.type.Constants.MEANINGS_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.MEANINGS_TEXT_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.PENDING_TASKS_PROPERTY_KEY;
@@ -375,7 +374,6 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             createCommonVertexIndex(management, GLOSSARY_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false, true);
             createCommonVertexIndex(management, CATEGORIES_PROPERTY_KEY, UniqueKind.NONE, String.class, SET, true, false, true);
             createCommonVertexIndex(management, CATEGORIES_PARENT_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false, true);
-            createCommonVertexIndex(management, HAS_LINEAGE, UniqueKind.NONE, Boolean.class, SINGLE, true, false);
 
 
             // tasks

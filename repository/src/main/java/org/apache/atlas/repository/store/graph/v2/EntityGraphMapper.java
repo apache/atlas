@@ -80,6 +80,7 @@ import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.utils.AtlasEntityUtil;
 import org.apache.atlas.utils.AtlasJson;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -138,6 +139,7 @@ import static org.apache.atlas.repository.graph.GraphHelper.isPropagationEnabled
 import static org.apache.atlas.repository.graph.GraphHelper.isRelationshipEdge;
 import static org.apache.atlas.repository.graph.GraphHelper.string;
 import static org.apache.atlas.repository.graph.GraphHelper.updateModificationMetadata;
+import static org.apache.atlas.repository.graph.GraphHelper.getEntityHasLineage;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getIdFromVertex;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.isReference;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_ADD;
@@ -364,6 +366,16 @@ public class EntityGraphMapper {
                         addOrUpdateBusinessAttributes(vertex, entityType, createdEntity.getBusinessAttributes());
                     }
 
+                    Set<AtlasEdge> inOutEdges = getNewCreatedInputOutputEdges(guid);
+                    if (inOutEdges != null && inOutEdges.size() > 0) {
+                        addHasLineage(inOutEdges);
+                    }
+                    Set<AtlasEdge> removedEdges = getRemovedInputOutputEdges(guid);
+
+                    if (removedEdges != null && removedEdges.size() > 0) {
+                        deleteDelegate.getHandler().resetHasLineageOnInputOutputDelete(removedEdges, null);
+                    }
+
                     reqContext.cache(createdEntity);
                 } catch (AtlasBaseException baseException) {
                     setEntityGuidToException(createdEntity, baseException, context);
@@ -402,6 +414,18 @@ public class EntityGraphMapper {
                     
                     setSystemAttributesToEntity(vertex,updatedEntity);
                     resp.addEntity(updateType, constructHeader(updatedEntity, vertex, entityType.getAllAttributes()));
+
+                    Set<AtlasEdge> inOutEdges = getNewCreatedInputOutputEdges(guid);
+                    if (inOutEdges != null && inOutEdges.size() > 0) {
+                        addHasLineage(inOutEdges);
+                    }
+
+                    Set<AtlasEdge> removedEdges = getRemovedInputOutputEdges(guid);
+
+                    if (removedEdges != null && removedEdges.size() > 0) {
+                        deleteDelegate.getHandler().resetHasLineageOnInputOutputDelete(removedEdges, null);
+                    }
+
                     reqContext.cache(updatedEntity);
 
                 } catch (AtlasBaseException baseException) {
@@ -1719,7 +1743,7 @@ public class EntityGraphMapper {
                 break;
 
             case PROCESS_INPUTS:
-            case PROCESS_OUTPUTS: addHasLineage(ctx, context, newElementsCreated, removedElements);
+            case PROCESS_OUTPUTS: addEdgesToContext(GraphHelper.getGuid(ctx.referringVertex), newElementsCreated,  removedElements);
                 break;
         }
 
@@ -1728,6 +1752,34 @@ public class EntityGraphMapper {
         }
 
         return allArrayElements;
+    }
+
+    private void addEdgesToContext(String guid, List<Object> newElementsCreated, List<AtlasEdge> removedElements) {
+
+        if (newElementsCreated.size() > 0) {
+            List<Object> elements = (RequestContext.get().getNewElementsCreatedMap()).get(guid);
+            if (elements == null) {
+                ArrayList newElements = new ArrayList<>();
+                newElements.addAll(newElementsCreated);
+                (RequestContext.get().getNewElementsCreatedMap()).put(guid, newElements);
+            } else {
+                elements.addAll(newElementsCreated);
+                RequestContext.get().getNewElementsCreatedMap().put(guid, elements);
+            }
+        }
+
+        if (removedElements.size() > 0) {
+            List<Object> removedElement = (RequestContext.get().getRemovedElementsMap()).get(guid);
+
+            if (removedElement == null) {
+                removedElement = new ArrayList<>();
+                removedElement.addAll(removedElements);
+                (RequestContext.get().getRemovedElementsMap()).put(guid, removedElement);
+            } else {
+                removedElement.addAll(removedElements);
+                (RequestContext.get().getRemovedElementsMap()).put(guid, removedElement);
+            }
+        }
     }
 
     private boolean shouldDeleteExistingRelations(AttributeMutationContext ctx, AtlasAttribute attribute) {
@@ -1889,77 +1941,6 @@ public class EntityGraphMapper {
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
-    private void addHasLineage(AttributeMutationContext ctx, EntityMutationContext context,
-                               List<Object> newElementsCreated, List<AtlasEdge> removedElements){
-        MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("addHasLineage");
-
-        AtlasVertex toVertex = ctx.getReferringVertex();
-        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(getTypeName(toVertex));
-        boolean isProcess = entityType.getTypeAndAllSuperTypes().contains(PROCESS_SUPER_TYPE);
-
-        if (CollectionUtils.isNotEmpty(newElementsCreated)) {
-            AtlasGraphUtilsV2.setEncodedProperty(toVertex, HAS_LINEAGE, true);
-
-            List<AtlasVertex> vertices;
-            if (isProcess) {
-                vertices = newElementsCreated.stream().map(x -> ((AtlasEdge) x).getInVertex()).collect(Collectors.toList());
-            } else {
-                vertices = newElementsCreated.stream().map(x -> ((AtlasEdge) x).getOutVertex()).collect(Collectors.toList());
-            }
-
-            vertices.stream().forEach(v -> AtlasGraphUtilsV2.setEncodedProperty(v, HAS_LINEAGE, true));
-
-        } else if (CollectionUtils.isNotEmpty(removedElements)) {
-            Set<String> removedGuids = removedElements.stream().map(x ->  GraphHelper.getRelationshipGuid(x)).collect(Collectors.toSet());
-            context.addRemovedLineageRelations(removedGuids);
-
-            boolean removeAttr = true;
-            Iterator<AtlasEdge> edgeIterator;
-
-            if (ctx.getAttribute().getRelationshipEdgeLabel().equals(PROCESS_INPUTS)) {
-                edgeIterator = toVertex.getEdges(AtlasEdgeDirection.OUT, PROCESS_OUTPUTS).iterator();
-            } else {
-                edgeIterator = toVertex.getEdges(AtlasEdgeDirection.OUT, PROCESS_INPUTS).iterator();
-            }
-
-            while (edgeIterator.hasNext()) {
-                AtlasEdge edg = edgeIterator.next();
-                if (ACTIVE.equals(getStatus(edg)) && !context.getRemovedLineageRelations().contains(GraphHelper.getRelationshipGuid(edg))) {
-                    removeAttr = false; break;
-                }
-            }
-
-            if (removeAttr) {
-                toVertex.removeProperty(HAS_LINEAGE);
-            }
-
-            String[] edgeLabels = {PROCESS_OUTPUTS, PROCESS_INPUTS};
-
-            List<AtlasVertex> vertices;
-            if (isProcess) {
-                vertices = removedElements.stream().map(x -> ((AtlasEdge) x).getInVertex()).collect(Collectors.toList());
-            } else {
-                vertices = removedElements.stream().map(x -> ((AtlasEdge) x).getOutVertex()).collect(Collectors.toList());
-            }
-
-            for (AtlasVertex vertex : vertices) {
-                removeAttr = true;
-                edgeIterator = vertex.getEdges(AtlasEdgeDirection.BOTH, edgeLabels).iterator();
-
-                while (edgeIterator.hasNext()) {
-                    AtlasEdge edg = edgeIterator.next();
-                    if (ACTIVE.equals(getStatus(edg)) && !context.getRemovedLineageRelations().contains(GraphHelper.getRelationshipGuid(edg))) {
-                        removeAttr = false; break;
-                    }
-                }
-
-                if (removeAttr) {
-                    vertex.removeProperty(HAS_LINEAGE);
-                }
-            }
-        }
-        RequestContext.get().endMetricRecord(metricRecorder);
-    }
 
     private void addCategoriesToTermEntity(AttributeMutationContext ctx, List<Object> newElementsCreated, List<AtlasEdge> removedElements) {
         MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("addCategoriesToTermEntity");
@@ -2468,6 +2449,30 @@ public class EntityGraphMapper {
             }
         }
     }
+
+
+    private Set<AtlasEdge> getNewCreatedInputOutputEdges(String guid) {
+        List<Object> newElementsCreated = RequestContext.get().getNewElementsCreatedMap().get(guid);
+
+        Set<AtlasEdge> newEdge = null;
+        if(newElementsCreated!=null && newElementsCreated.size() > 1 ) {
+            newEdge = newElementsCreated.stream().map(x -> (AtlasEdge) x).collect(Collectors.toSet());
+        }
+
+        return newEdge;
+    }
+
+    private Set<AtlasEdge> getRemovedInputOutputEdges(String guid) {
+        List<Object> removedElements = RequestContext.get().getRemovedElementsMap().get(guid);
+        Set<AtlasEdge> removedEdges = null;
+
+        if (removedElements != null) {
+            removedEdges = removedElements.stream().map(x -> (AtlasEdge) x).collect(Collectors.toSet());
+        }
+
+        return removedEdges;
+    }
+
 
     private AtlasEntityHeader constructHeader(AtlasEntity entity, AtlasVertex vertex, Map<String, AtlasAttribute> attributeMap ) throws AtlasBaseException {
         AtlasEntityHeader header = entityRetriever.toAtlasEntityHeaderWithClassifications(vertex, attributeMap.keySet());
@@ -3441,4 +3446,39 @@ public class EntityGraphMapper {
 
         AtlasGraphUtilsV2.removeItemFromListProperty(edge, EDGE_PENDING_TASKS_PROPERTY_KEY, taskGuid);
     }
+
+
+    public void addHasLineage(Set<AtlasEdge> inputOutputEdges) {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("addHasLineage");
+
+        for (AtlasEdge atlasEdge : inputOutputEdges) {
+
+            boolean isOutputEdge = PROCESS_OUTPUTS.equals(atlasEdge.getLabel());
+
+            AtlasVertex processVertex = atlasEdge.getOutVertex();
+            AtlasVertex assetVertex = atlasEdge.getInVertex();
+
+            if (getEntityHasLineage(processVertex)) {
+                AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE, true);
+                continue;
+            }
+
+            String oppositeEdgeLabel = isOutputEdge ? PROCESS_INPUTS : PROCESS_OUTPUTS;
+
+            Iterator<AtlasEdge> oppositeEdges = processVertex.getEdges(AtlasEdgeDirection.BOTH, oppositeEdgeLabel).iterator();
+
+            while (oppositeEdges.hasNext()) {
+                AtlasEdge oppositeEdge = oppositeEdges.next();
+                AtlasVertex oppositeEdgeAssetVertex = oppositeEdge.getInVertex();
+
+                if (getStatus(oppositeEdge) == ACTIVE && getStatus(oppositeEdgeAssetVertex) == ACTIVE) {
+                    AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE, true);
+                    AtlasGraphUtilsV2.setEncodedProperty(processVertex, HAS_LINEAGE, true);
+                    break;
+                }
+            }
+        }
+        RequestContext.get().endMetricRecord(metricRecorder);
+    }
+
 }
