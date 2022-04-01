@@ -367,9 +367,15 @@ public class EntityGraphMapper {
                     }
 
                     Set<AtlasEdge> inOutEdges = getNewCreatedInputOutputEdges(guid);
+
                     if (inOutEdges != null && inOutEdges.size() > 0) {
-                        addHasLineage(inOutEdges);
+                        boolean isRestoreEntity = false;
+                        if (CollectionUtils.isNotEmpty(context.getEntitiesToRestore())) {
+                            isRestoreEntity = context.getEntitiesToRestore().contains(vertex);
+                        }
+                        addHasLineage(inOutEdges, isRestoreEntity);
                     }
+
                     Set<AtlasEdge> removedEdges = getRemovedInputOutputEdges(guid);
 
                     if (removedEdges != null && removedEdges.size() > 0) {
@@ -416,8 +422,14 @@ public class EntityGraphMapper {
                     resp.addEntity(updateType, constructHeader(updatedEntity, vertex, entityType.getAllAttributes()));
 
                     Set<AtlasEdge> inOutEdges = getNewCreatedInputOutputEdges(guid);
+
                     if (inOutEdges != null && inOutEdges.size() > 0) {
-                        addHasLineage(inOutEdges);
+                        boolean isRestoreEntity = false;
+                        if (CollectionUtils.isNotEmpty(context.getEntitiesToRestore())) {
+                            isRestoreEntity = context.getEntitiesToRestore().contains(vertex);
+                        }
+
+                        addHasLineage(inOutEdges, isRestoreEntity);
                     }
 
                     Set<AtlasEdge> removedEdges = getRemovedInputOutputEdges(guid);
@@ -3448,7 +3460,7 @@ public class EntityGraphMapper {
     }
 
 
-    public void addHasLineage(Set<AtlasEdge> inputOutputEdges) {
+    public void addHasLineage(Set<AtlasEdge> inputOutputEdges, boolean isRestoreEntity) {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("addHasLineage");
 
         for (AtlasEdge atlasEdge : inputOutputEdges) {
@@ -3466,15 +3478,23 @@ public class EntityGraphMapper {
             String oppositeEdgeLabel = isOutputEdge ? PROCESS_INPUTS : PROCESS_OUTPUTS;
 
             Iterator<AtlasEdge> oppositeEdges = processVertex.getEdges(AtlasEdgeDirection.BOTH, oppositeEdgeLabel).iterator();
-
+            boolean isHasLineageSet = false;
             while (oppositeEdges.hasNext()) {
                 AtlasEdge oppositeEdge = oppositeEdges.next();
                 AtlasVertex oppositeEdgeAssetVertex = oppositeEdge.getInVertex();
 
                 if (getStatus(oppositeEdge) == ACTIVE && getStatus(oppositeEdgeAssetVertex) == ACTIVE) {
-                    AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE, true);
-                    AtlasGraphUtilsV2.setEncodedProperty(processVertex, HAS_LINEAGE, true);
-                    break;
+                    if (!isHasLineageSet) {
+                        AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE, true);
+                        AtlasGraphUtilsV2.setEncodedProperty(processVertex, HAS_LINEAGE, true);
+                        isHasLineageSet = true;
+                    }
+
+                    if (isRestoreEntity) {
+                        AtlasGraphUtilsV2.setEncodedProperty(oppositeEdgeAssetVertex, HAS_LINEAGE, true);
+                    } else {
+                        break;
+                    }
                 }
             }
         }
