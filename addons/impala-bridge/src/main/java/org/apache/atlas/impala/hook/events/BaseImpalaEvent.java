@@ -530,11 +530,12 @@ public abstract class BaseImpalaEvent {
 
         Long startTime = getQueryStartTime();
         Long endTime   = getQueryEndTime();
+        String qualifiedName = getQualifiedName(inputs, outputs);
 
-        ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, getQualifiedName(inputs, outputs));
+        ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, qualifiedName);
         ret.setAttribute(ATTRIBUTE_INPUTS, getObjectIds(inputs));
-        ret.setAttribute(ATTRIBUTE_OUTPUTS,  getObjectIds(outputs));
-        ret.setAttribute(ATTRIBUTE_NAME, queryStr);
+        ret.setAttribute(ATTRIBUTE_OUTPUTS, getObjectIds(outputs));
+        ret.setAttribute(ATTRIBUTE_NAME, qualifiedName);
         ret.setAttribute(ATTRIBUTE_OPERATION_TYPE, context.getImpalaOperationType());
 
         // We are setting an empty value to these attributes, since now we have a new entity type called impala process
@@ -561,11 +562,12 @@ public abstract class BaseImpalaEvent {
 
         Long startTime = getQueryStartTime();
         Long endTime = getQueryEndTime();
+        String qualifiedName = impalaProcess.getAttribute(ATTRIBUTE_QUALIFIED_NAME).toString() +
+                QNAME_SEP_PROCESS + startTime.toString() +
+                QNAME_SEP_PROCESS + endTime.toString();
 
-        ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, impalaProcess.getAttribute(ATTRIBUTE_QUALIFIED_NAME).toString() +
-            QNAME_SEP_PROCESS + startTime.toString() +
-            QNAME_SEP_PROCESS + endTime.toString());
-        ret.setAttribute(ATTRIBUTE_NAME, queryStr + QNAME_SEP_PROCESS + startTime);
+        ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, qualifiedName);
+        ret.setAttribute(ATTRIBUTE_NAME, qualifiedName);
         ret.setAttribute(ATTRIBUTE_START_TIME, startTime);
         ret.setAttribute(ATTRIBUTE_END_TIME, endTime);
         ret.setAttribute(ATTRIBUTE_USER_NAME, getUserName());

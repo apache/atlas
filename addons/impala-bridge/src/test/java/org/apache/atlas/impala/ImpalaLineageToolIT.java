@@ -17,6 +17,9 @@
  */
 package org.apache.atlas.impala;
 
+import static org.apache.atlas.impala.hook.AtlasImpalaHookContext.QNAME_SEP_PROCESS;
+import static org.apache.atlas.impala.hook.events.BaseImpalaEvent.ATTRIBUTE_END_TIME;
+import static org.apache.atlas.impala.hook.events.BaseImpalaEvent.ATTRIBUTE_NAME;
 import static org.apache.atlas.impala.hook.events.BaseImpalaEvent.ATTRIBUTE_QUERY_TEXT;
 
 import java.util.ArrayList;
@@ -31,6 +34,7 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import static org.apache.atlas.impala.hook.events.BaseImpalaEvent.ATTRIBUTE_DDL_QUERIES;
+import static org.apache.atlas.impala.hook.events.BaseImpalaEvent.ATTRIBUTE_START_TIME;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 
@@ -85,10 +89,14 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
             String      queryString             = "create view db_1.view_1 as select count, id from db_1.table_1";
             AtlasEntity processEntity1          = validateProcess(processQFName, queryString);
             AtlasEntity processExecutionEntity1 = validateProcessExecution(processEntity1, queryString);
+            String processExecutionQFName = processQFName + QNAME_SEP_PROCESS + processExecutionEntity1.getAttribute(ATTRIBUTE_START_TIME).toString() +
+                    QNAME_SEP_PROCESS + processExecutionEntity1.getAttribute(ATTRIBUTE_END_TIME).toString();
             AtlasObjectId process1              = toAtlasObjectId(processExecutionEntity1.getRelationshipAttribute(
                 BaseImpalaEvent.ATTRIBUTE_PROCESS));
             Assert.assertEquals(process1.getGuid(), processEntity1.getGuid());
             Assert.assertEquals(numberOfProcessExecutions(processEntity1), 1);
+            assertEquals(processQFName, processEntity1.getAttribute(ATTRIBUTE_NAME).toString());
+            assertEquals(processExecutionQFName, processExecutionEntity1.getAttribute(ATTRIBUTE_NAME).toString());
 
             String      guid       = assertTableIsRegistered(dbName, targetTableName);
             AtlasEntity entity     = atlasClientV2.getEntityByGuid(guid).getEntity();
@@ -151,6 +159,11 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
                     BaseImpalaEvent.ATTRIBUTE_PROCESS));
             Assert.assertEquals(process1.getGuid(), processEntity1.getGuid());
             Assert.assertEquals(numberOfProcessExecutions(processEntity1), 1);
+            String processExecutionQFName = processQFName + QNAME_SEP_PROCESS + processExecutionEntity1.getAttribute(ATTRIBUTE_START_TIME).toString() +
+                    QNAME_SEP_PROCESS + processExecutionEntity1.getAttribute(ATTRIBUTE_END_TIME).toString();
+
+            assertEquals(processQFName, processEntity1.getAttribute(ATTRIBUTE_NAME).toString());
+            assertEquals(processExecutionQFName, processExecutionEntity1.getAttribute(ATTRIBUTE_NAME).toString());
 
             String      guid       = assertTableIsRegistered(dbName, targetTableName);
             AtlasEntity entity     = atlasClientV2.getEntityByGuid(guid).getEntity();
@@ -284,6 +297,11 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
             BaseImpalaEvent.ATTRIBUTE_PROCESS));
         Assert.assertEquals(process1.getGuid(), processEntity1.getGuid());
         Assert.assertEquals(numberOfProcessExecutions(processEntity1), 1);
+        String processExecutionQFName = processQFName + QNAME_SEP_PROCESS + processExecutionEntity1.getAttribute(ATTRIBUTE_START_TIME).toString() +
+                QNAME_SEP_PROCESS + processExecutionEntity1.getAttribute(ATTRIBUTE_END_TIME).toString();
+
+        assertEquals(processQFName, processEntity1.getAttribute(ATTRIBUTE_NAME).toString());
+        assertEquals(processExecutionQFName, processExecutionEntity1.getAttribute(ATTRIBUTE_NAME).toString());
 
         String      guid       = assertTableIsRegistered(dbName, targetTableName);
         AtlasEntity entity     = atlasClientV2.getEntityByGuid(guid).getEntity();
@@ -341,6 +359,12 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
                 BaseImpalaEvent.ATTRIBUTE_PROCESS));
         Assert.assertEquals(process1.getGuid(), processEntity1.getGuid());
         Assert.assertEquals(numberOfProcessExecutions(processEntity1), 1);
+        String processExecutionQFName = processQFName + QNAME_SEP_PROCESS + processExecutionEntity1.getAttribute(ATTRIBUTE_START_TIME).toString() +
+                QNAME_SEP_PROCESS + processExecutionEntity1.getAttribute(ATTRIBUTE_END_TIME).toString();
+
+        assertEquals(processQFName, processEntity1.getAttribute(ATTRIBUTE_NAME).toString());
+        assertEquals(processExecutionQFName, processExecutionEntity1.getAttribute(ATTRIBUTE_NAME).toString());
+
 
         String      guid       = assertTableIsRegistered(dbName, targetTableName);
         AtlasEntity entity     = atlasClientV2.getEntityByGuid(guid).getEntity();
@@ -397,6 +421,11 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
             BaseImpalaEvent.ATTRIBUTE_PROCESS));
         Assert.assertEquals(process1.getGuid(), processEntity1.getGuid());
         Assert.assertEquals(numberOfProcessExecutions(processEntity1), 1);
+        String processExecutionQFName = processQFName + QNAME_SEP_PROCESS + processExecutionEntity1.getAttribute(ATTRIBUTE_START_TIME).toString() +
+                QNAME_SEP_PROCESS + processExecutionEntity1.getAttribute(ATTRIBUTE_END_TIME).toString();
+
+        assertEquals(processQFName, processEntity1.getAttribute(ATTRIBUTE_NAME).toString());
+        assertEquals(processExecutionQFName, processExecutionEntity1.getAttribute(ATTRIBUTE_NAME).toString());
 
         String      guid       = assertTableIsRegistered(dbName, targetTableName);
         AtlasEntity entity     = atlasClientV2.getEntityByGuid(guid).getEntity();
@@ -454,6 +483,11 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
                 BaseImpalaEvent.ATTRIBUTE_PROCESS));
         Assert.assertEquals(process1.getGuid(), processEntity1.getGuid());
         Assert.assertEquals(numberOfProcessExecutions(processEntity1), 1);
+        String processExecutionQFName = processQFName + QNAME_SEP_PROCESS + processExecutionEntity1.getAttribute(ATTRIBUTE_START_TIME).toString() +
+                QNAME_SEP_PROCESS + processExecutionEntity1.getAttribute(ATTRIBUTE_END_TIME).toString();
+
+        assertEquals(processQFName, processEntity1.getAttribute(ATTRIBUTE_NAME).toString());
+        assertEquals(processExecutionQFName, processExecutionEntity1.getAttribute(ATTRIBUTE_NAME).toString());
 
         String      guid       = assertTableIsRegistered(dbName, targetTableName);
         AtlasEntity entity     = atlasClientV2.getEntityByGuid(guid).getEntity();
@@ -504,13 +538,18 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
             CLUSTER_NAME + AtlasImpalaHookContext.QNAME_SEP_PROCESS + createTime2;
         String processQFName = "QUERY:" + sourceQFName.toLowerCase() + "->:INSERT:" + targetQFName.toLowerCase();
 
+
         String queryString = "insert into table " + dbName + "." + targetTableName + " (count, id) select count, id from " + dbName + "." + sourceTableName;
         AtlasEntity processEntity1 = validateProcess(processQFName, queryString);
         AtlasEntity processExecutionEntity1 = validateProcessExecution(processEntity1, queryString);
+        String processExecutionQFName = processQFName + QNAME_SEP_PROCESS + processExecutionEntity1.getAttribute(ATTRIBUTE_START_TIME).toString() +
+                QNAME_SEP_PROCESS + processExecutionEntity1.getAttribute(ATTRIBUTE_END_TIME).toString();
         AtlasObjectId process1 = toAtlasObjectId(processExecutionEntity1.getRelationshipAttribute(
             BaseImpalaEvent.ATTRIBUTE_PROCESS));
         Assert.assertEquals(process1.getGuid(), processEntity1.getGuid());
         Assert.assertEquals(numberOfProcessExecutions(processEntity1), 1);
+        assertEquals(processQFName, processEntity1.getAttribute(ATTRIBUTE_NAME).toString());
+        assertEquals(processExecutionQFName, processExecutionEntity1.getAttribute(ATTRIBUTE_NAME).toString());
 
         String      guid       = assertTableIsRegistered(dbName, targetTableName);
         AtlasEntity entity     = atlasClientV2.getEntityByGuid(guid).getEntity();
@@ -587,6 +626,12 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
                 String errorMessage = String.format("process query text '%s' does not match expected value of '%s' or '%s'", entityQueryText, queryString, queryString2);
                 Assert.assertTrue(false, errorMessage);
             }
+
+            String processExecutionQFName = processQFName + QNAME_SEP_PROCESS + processExecutionEntity.getAttribute(ATTRIBUTE_START_TIME).toString() +
+                    QNAME_SEP_PROCESS + processExecutionEntity.getAttribute(ATTRIBUTE_END_TIME).toString();
+
+            assertEquals(processQFName, processEntity1.getAttribute(ATTRIBUTE_NAME).toString());
+            assertEquals(processExecutionQFName, processExecutionEntity.getAttribute(ATTRIBUTE_NAME).toString());
         }
 
         String      guid       = assertTableIsRegistered(dbName, targetTableName);
@@ -644,6 +689,12 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
             BaseImpalaEvent.ATTRIBUTE_PROCESS));
         Assert.assertEquals(process1.getGuid(), processEntity1.getGuid());
         Assert.assertEquals(numberOfProcessExecutions(processEntity1), 1);
+
+        String processExecutionQFName = processQFName + QNAME_SEP_PROCESS + processExecutionEntity1.getAttribute(ATTRIBUTE_START_TIME).toString() +
+                QNAME_SEP_PROCESS + processExecutionEntity1.getAttribute(ATTRIBUTE_END_TIME).toString();
+
+        assertEquals(processQFName, processEntity1.getAttribute(ATTRIBUTE_NAME).toString());
+        assertEquals(processExecutionQFName, processExecutionEntity1.getAttribute(ATTRIBUTE_NAME).toString());
 
         String      guid       = assertTableIsRegistered(dbName, targetTableName);
         AtlasEntity entity     = atlasClientV2.getEntityByGuid(guid).getEntity();
