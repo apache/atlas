@@ -69,7 +69,8 @@ public class RequestContext {
     private final Set<String> relationAttrsForSearch = new HashSet<>();
 
     private static String USERNAME = "";
-
+    private final Map<String,List<Object>> removedElementsMap = new HashMap<>();
+    private final Map<String,List<Object>> newElementsCreatedMap = new HashMap<>();
 
     private String       user;
     private Set<String>  userGroups;
@@ -134,6 +135,8 @@ public class RequestContext {
         this.onlyBAUpdateEntities.clear();
         this.relationAttrsForSearch.clear();
         this.queuedTasks.clear();
+        this.newElementsCreatedMap.clear();
+        this.removedElementsMap.clear();
 
         if (metrics != null && !metrics.isEmpty()) {
             METRICS.debug(metrics.toString());
@@ -154,6 +157,14 @@ public class RequestContext {
         if (CollectionUtils.isNotEmpty(relationAttrsForSearch)){
             this.relationAttrsForSearch.addAll(relationAttrsForSearch);
         }
+    }
+
+    public Map<String, List<Object>> getRemovedElementsMap() {
+        return removedElementsMap;
+    }
+
+    public Map<String, List<Object>> getNewElementsCreatedMap() {
+        return newElementsCreatedMap;
     }
 
     public static String getCurrentUser() {
