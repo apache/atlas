@@ -1407,7 +1407,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                                 CollectionUtils.isEmpty(diffEntity.getLabels())) {
                             //do nothing, only diff is relationshipAttributes.meanings, allow update
                         } else {
-                            AtlasEntityAccessRequest accessRequest = new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, new AtlasEntityHeader(entity));
+                            AtlasEntityAccessRequest accessRequest = new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, entityHeader);
                             AtlasAuthorizationUtils.verifyAccess(accessRequest, "update entity: type=", entity.getTypeName());
                         }
                     }
