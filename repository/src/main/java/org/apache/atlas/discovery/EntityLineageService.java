@@ -368,7 +368,7 @@ public class EntityLineageService implements AtlasLineageService {
         List<AtlasEdge> qualifyingEdges = new ArrayList<>();
         while (processEdges.hasNext()) {
             AtlasEdge processEdge = processEdges.next();
-            if (lineageContext.evaluate(processEdge.getInVertex())) {
+            if (GraphHelper.getStatus(processEdge) == AtlasEntity.Status.ACTIVE && lineageContext.evaluate(processEdge.getInVertex())) {
                 qualifyingEdges.add(processEdge);
             }
         }
@@ -411,7 +411,7 @@ public class EntityLineageService implements AtlasLineageService {
                     List<AtlasEdge> qualifyingOutgoingEdges = new ArrayList<>();
                     while (outgoingEdges.hasNext()) {
                         AtlasEdge edge = outgoingEdges.next();
-                        if (edge.getInVertex().equals(lineageContext.getStartDatasetVertex()) || lineageContext.evaluate(edge.getInVertex())) {
+                        if (GraphHelper.getStatus(edge) == AtlasEntity.Status.ACTIVE && (edge.getInVertex().equals(lineageContext.getStartDatasetVertex()) || lineageContext.evaluate(edge.getInVertex()))) {
                             qualifyingOutgoingEdges.add(edge);
                         }
                     }
@@ -446,16 +446,21 @@ public class EntityLineageService implements AtlasLineageService {
 
             int qualifyingEdges = 0;
             for (AtlasEdge incomingEdge : processEdgesList) {
-                AtlasVertex         processVertex = incomingEdge.getOutVertex();
-                Iterator<AtlasEdge> outgoingEdges = processVertex.getEdges(OUT, isInput ? PROCESS_INPUTS_EDGE : PROCESS_OUTPUTS_EDGE).iterator();
+                if (GraphHelper.getStatus(incomingEdge) == AtlasEntity.Status.ACTIVE) {
 
-                while (outgoingEdges.hasNext()) {
-                    AtlasEdge edge = outgoingEdges.next();
-                    if (edge.getInVertex().equals(lineageContext.getStartDatasetVertex()) || lineageContext.evaluate(edge.getInVertex())) {
-                        qualifyingEdges++;
-                        break;
+                    AtlasVertex processVertex = incomingEdge.getOutVertex();
+                    Iterator<AtlasEdge> outgoingEdges = processVertex.getEdges(OUT, isInput ? PROCESS_INPUTS_EDGE : PROCESS_OUTPUTS_EDGE).iterator();
+
+                    while (outgoingEdges.hasNext()) {
+                        AtlasEdge edge = outgoingEdges.next();
+                        if (GraphHelper.getStatus(edge) == AtlasEntity.Status.ACTIVE && (edge.getInVertex().equals(lineageContext.getStartDatasetVertex())
+                                || lineageContext.evaluate(edge.getInVertex()))) {
+                            qualifyingEdges++;
+                            break;
+                        }
                     }
                 }
+
             }
             ret.addChildrenCount(GraphHelper.getGuid(datasetVertex), isInput ? INPUT : OUTPUT, qualifyingEdges);
         }
