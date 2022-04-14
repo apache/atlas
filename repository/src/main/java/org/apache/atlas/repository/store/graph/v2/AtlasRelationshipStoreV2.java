@@ -82,6 +82,7 @@ import static org.apache.atlas.repository.Constants.RELATIONSHIP_GUID_PROPERTY_K
 import static org.apache.atlas.repository.Constants.VERSION_PROPERTY_KEY;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getState;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getTypeName;
+import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_ONLY_PROPAGATION_DELETE;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_RELATIONSHIP_UPDATE;
 
 @Component
@@ -315,6 +316,10 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         deleteDelegate.getHandler().resetHasLineageOnInputOutputDelete(edgesToDelete,null);
         deleteDelegate.getHandler().deleteRelationships(edgesToDelete, false);
 
+        if (DEFERRED_ACTION_ENABLED) {
+            deleteDelegate.getHandler().createAndQueueTask(CLASSIFICATION_ONLY_PROPAGATION_DELETE, RequestContext.get().getDeletedEdgesIds());
+        }
+
         sendNotifications(deletedRelationships, OperationType.RELATIONSHIP_DELETE);
 
         if (LOG.isDebugEnabled()) {
@@ -351,6 +356,10 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         }
         deleteDelegate.getHandler().resetHasLineageOnInputOutputDelete(Collections.singleton(edge), null);
         deleteDelegate.getHandler().deleteRelationships(Collections.singleton(edge), forceDelete);
+
+        if (DEFERRED_ACTION_ENABLED) {
+            deleteDelegate.getHandler().createAndQueueTask(CLASSIFICATION_ONLY_PROPAGATION_DELETE, RequestContext.get().getDeletedEdgesIds());
+        }
 
         sendNotifications(entityRetriever.mapEdgeToAtlasRelationship(edge), OperationType.RELATIONSHIP_DELETE);
 

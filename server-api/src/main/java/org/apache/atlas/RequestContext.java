@@ -60,6 +60,7 @@ public class RequestContext {
     private final Map<String, AtlasEntity>               diffEntityCache      = new HashMap<>();
     private final Map<String, List<AtlasClassification>> addedPropagations    = new HashMap<>();
     private final Map<String, List<AtlasClassification>> removedPropagations  = new HashMap<>();
+    private final Set<String>                            deletedEdgesIds      = new HashSet<>();
     private final AtlasPerfMetrics                       metrics              = isMetricsEnabled ? new AtlasPerfMetrics() : null;
     private       List<EntityGuidPair>                   entityGuidInRequest  = null;
     private final Set<String>                            entitiesToSkipUpdate = new HashSet<>();
@@ -87,6 +88,7 @@ public class RequestContext {
     private boolean     skipFailedEntities = false;
     private boolean     allowDeletedRelationsIndexsearch = false;
     private String      currentTypePatchAction = "";
+    private AtlasTask   currentTask;
 
     private RequestContext() {
     }
@@ -137,6 +139,7 @@ public class RequestContext {
         this.queuedTasks.clear();
         this.newElementsCreatedMap.clear();
         this.removedElementsMap.clear();
+        this.deletedEdgesIds.clear();
 
         if (metrics != null && !metrics.isEmpty()) {
             METRICS.debug(metrics.toString());
@@ -354,6 +357,22 @@ public class RequestContext {
 
             addedPropagations.put(guid, classifications);
         }
+    }
+
+    public void addToDeletedEdgesIds(String edgeId) {
+        deletedEdgesIds.add(edgeId);
+    }
+
+    public Set<String> getDeletedEdgesIds() {
+        return deletedEdgesIds;
+    }
+
+    public AtlasTask getCurrentTask() {
+        return currentTask;
+    }
+
+    public void setCurrentTask(AtlasTask currentTask) {
+        this.currentTask = currentTask;
     }
 
     public static int getActiveRequestsCount() {

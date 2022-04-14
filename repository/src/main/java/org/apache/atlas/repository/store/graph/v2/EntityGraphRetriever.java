@@ -18,12 +18,10 @@
 package org.apache.atlas.repository.store.graph.v2;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TimeBoundary;
-import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.glossary.enums.AtlasTermAssignmentStatus;
 import org.apache.atlas.model.glossary.relations.AtlasTermAssignmentHeader;
 import org.apache.atlas.model.instance.AtlasClassification;
@@ -61,6 +59,7 @@ import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.utils.AtlasEntityUtil;
 import org.apache.atlas.utils.AtlasJson;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.v1.model.instance.Id;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
@@ -118,6 +117,7 @@ import static org.apache.atlas.repository.Constants.TERM_ASSIGNMENT_LABEL;
 import static org.apache.atlas.repository.graph.GraphHelper.*;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getIdFromVertex;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.isReference;
+import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_ONLY_PROPAGATION_DELETE;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.BOTH;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
@@ -515,6 +515,7 @@ public class EntityGraphRetriever {
     }
 
     public Map<AtlasVertex, List<AtlasVertex>> getClassificationPropagatedEntitiesMapping(List<AtlasVertex> classificationVertices, String relationshipGuidToExclude) {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getClassificationPropagatedEntitiesMapping");
         Map<AtlasVertex, List<AtlasVertex>> ret = new HashMap<>();
 
         if (CollectionUtils.isNotEmpty(classificationVertices)) {
@@ -528,6 +529,7 @@ public class EntityGraphRetriever {
             }
         }
 
+        RequestContext.get().endMetricRecord(metricRecorder);
         return ret;
     }
 
@@ -565,9 +567,11 @@ public class EntityGraphRetriever {
 
     private void traverseImpactedVertices(final AtlasVertex entityVertexStart, final String relationshipGuidToExclude,
                                           final String classificationId, final List<AtlasVertex> result) {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("traverseImpactedVertices");
         Set<String>              visitedVertices = new HashSet<>();
         Queue<AtlasVertex>       queue           = new ArrayDeque<>();
         Map<String, AtlasVertex> resultsMap      = new HashMap<>();
+        RequestContext requestContext = RequestContext.get();
 
         if (entityVertexStart != null) {
             queue.add(entityVertexStart);
@@ -592,10 +596,12 @@ public class EntityGraphRetriever {
                 continue;
             }
 
-            Iterable<AtlasEdge> propagationEdges = entityVertex.getEdges(AtlasEdgeDirection.BOTH, tagPropagationEdges);
+            Iterator<AtlasEdge> propagationEdges = entityVertex.getEdges(AtlasEdgeDirection.BOTH, tagPropagationEdges).iterator();
 
-            for (AtlasEdge propagationEdge : propagationEdges) {
-                if (getEdgeStatus(propagationEdge) != ACTIVE) {
+            while (propagationEdges.hasNext()) {
+                AtlasEdge propagationEdge = propagationEdges.next();
+
+                if (getEdgeStatus(propagationEdge) != ACTIVE && !(requestContext.getCurrentTask() != null && requestContext.getDeletedEdgesIds().contains(propagationEdge.getIdForDisplay())) ) {
                     continue;
                 }
 
@@ -639,6 +645,7 @@ public class EntityGraphRetriever {
         }
 
         result.addAll(resultsMap.values());
+        RequestContext.get().endMetricRecord(metricRecorder);
     }
 
     private boolean isOutVertex(AtlasVertex vertex, AtlasEdge edge) {

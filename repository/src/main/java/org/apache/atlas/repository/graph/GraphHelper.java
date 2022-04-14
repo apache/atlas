@@ -80,6 +80,7 @@ import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
 
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.isReference;
+import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_ONLY_PROPAGATION_DELETE;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.BOTH;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
@@ -738,7 +739,10 @@ public final class GraphHelper {
     public static List<AtlasVertex> getPropagatableClassifications(AtlasEdge edge) {
         List<AtlasVertex> ret = new ArrayList<>();
 
-        if (edge != null && getStatus(edge) != DELETED) {
+        RequestContext requestContext = RequestContext.get();
+
+        if ((edge != null && getStatus(edge) != DELETED) ||
+                (requestContext.getCurrentTask() != null && CLASSIFICATION_ONLY_PROPAGATION_DELETE.equals(requestContext.getCurrentTask().getType()))) {
             PropagateTags propagateTags = getPropagateTags(edge);
             AtlasVertex   outVertex     = edge.getOutVertex();
             AtlasVertex   inVertex      = edge.getInVertex();

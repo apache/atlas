@@ -19,6 +19,7 @@ package org.apache.atlas.tasks;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.type.AtlasType;
@@ -89,6 +90,7 @@ public class TaskExecutor {
 
             try {
                 taskVertex = registry.getVertex(task.getGuid());
+                RequestContext.get().setCurrentTask(task);
 
                 if (task == null || taskVertex == null || task.getStatus() == AtlasTask.Status.COMPLETE) {
                     TASK_LOG.warn("Task not scheduled as it was not found or status was COMPLETE!", task);
@@ -135,6 +137,8 @@ public class TaskExecutor {
 
                     TASK_LOG.log(task);
                 }
+
+                RequestContext.get().setCurrentTask(null);
             }
         }
 

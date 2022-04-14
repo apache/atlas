@@ -70,7 +70,11 @@ public class SoftDeleteHandlerV1 extends DeleteHandlerV1 {
 
         authorizeRemoveRelation(edge);
 
-        removeTagPropagation(edge);
+        if (DEFERRED_ACTION_ENABLED && RequestContext.get().getCurrentTask() == null) {
+            RequestContext.get().addToDeletedEdgesIds(edge.getIdForDisplay());
+        } else {
+            removeTagPropagation(edge);
+        }
 
         if (force) {
             graphHelper.removeEdge(edge);
