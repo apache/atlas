@@ -23,6 +23,7 @@ import org.apache.atlas.RequestContext;
 import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.utils.AtlasPerfTracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,9 +33,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class TaskExecutor {
+    private static final Logger     PERF_LOG         = AtlasPerfTracer.getPerfLogger("atlas.task");
     private static final Logger     LOG              = LoggerFactory.getLogger(TaskExecutor.class);
     private static final TaskLogger TASK_LOG         = TaskLogger.getLogger();
     private static final String     TASK_NAME_FORMAT = "atlas-task-%d-";
+
+    private static final boolean perfEnabled = AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG);
 
     private final TaskRegistry              registry;
     private final Map<String, TaskFactory>  taskTypeFactoryMap;
@@ -76,6 +80,8 @@ public class TaskExecutor {
         private final TaskManagement.Statistics statistics;
         private final AtlasTask                 task;
 
+        AtlasPerfTracer perf = null;
+
         public TaskConsumer(AtlasTask task, TaskRegistry registry, Map<String, TaskFactory> taskTypeFactoryMap, TaskManagement.Statistics statistics) {
             this.task               = task;
             this.registry           = registry;
@@ -90,13 +96,19 @@ public class TaskExecutor {
 
             try {
                 taskVertex = registry.getVertex(task.getGuid());
-                RequestContext.get().setCurrentTask(task);
 
                 if (task == null || taskVertex == null || task.getStatus() == AtlasTask.Status.COMPLETE) {
                     TASK_LOG.warn("Task not scheduled as it was not found or status was COMPLETE!", task);
 
                     return;
                 }
+
+                if (perfEnabled) {
+                    perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, String.format("atlas.task:%s", task.getGuid(), task.getType()));
+                }
+
+                //TODO: Move this to TaskRegistry.inProgress once tasks PR is merged into master
+                RequestContext.get().setCurrentTask(task);
 
                 statistics.increment(1);
 
@@ -138,7 +150,8 @@ public class TaskExecutor {
                     TASK_LOG.log(task);
                 }
 
-                RequestContext.get().setCurrentTask(null);
+                RequestContext.get().clearCache();
+                AtlasPerfTracer.log(perf);
             }
         }
 

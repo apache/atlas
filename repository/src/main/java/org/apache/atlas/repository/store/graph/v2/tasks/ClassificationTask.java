@@ -25,7 +25,6 @@ import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
-import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
 import org.apache.atlas.tasks.AbstractTask;
 import org.apache.atlas.type.AtlasType;
@@ -97,7 +96,6 @@ public abstract class ClassificationTask extends AbstractTask {
         } catch (Exception e) {
             LOG.error("Task: {}: Error performing task!", getTaskGuid(), e);
 
-            RequestContext.get().setCurrentTask(null);
             setStatus(FAILED);
 
             throw e;

@@ -140,6 +140,7 @@ public class RequestContext {
         this.newElementsCreatedMap.clear();
         this.removedElementsMap.clear();
         this.deletedEdgesIds.clear();
+        this.currentTask = null;
 
         if (metrics != null && !metrics.isEmpty()) {
             METRICS.debug(metrics.toString());
