@@ -39,6 +39,7 @@ import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.repository.audit.ESBasedAuditRepository;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
+import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
 import org.apache.atlas.repository.store.graph.v2.ClassificationAssociator;
@@ -1635,6 +1636,30 @@ public class EntityREST {
             AtlasPerfTracer.log(perf);
         }
 
+    }
+
+    /**
+     * repairHasLineage API to correct haslineage attribute of entity.
+     */
+    @POST
+    @Path("/repairhaslineage")
+    public void repairHasLineage(@QueryParam("guid") final Set<String> guids) throws AtlasBaseException {
+        if (CollectionUtils.isNotEmpty(guids)) {
+            for (String guid : guids) {
+                Servlets.validateQueryParamLength("guid", guid);
+            }
+        }
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.repairHasLineage(" + guids  + ")");
+            }
+
+            entitiesStore.repairHasLineage(guids);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
     }
 
     private boolean hasNoGUIDAndTypeNameAttributes(ClassificationAssociateRequest request) {

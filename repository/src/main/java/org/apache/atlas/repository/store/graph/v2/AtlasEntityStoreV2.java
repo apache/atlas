@@ -45,6 +45,8 @@ import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.repository.graph.GraphHelper;
+import org.apache.atlas.repository.graphdb.AtlasEdge;
+import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.patches.PatchContext;
@@ -70,6 +72,7 @@ import org.apache.atlas.bulkimport.BulkImportResponse;
 import org.apache.atlas.bulkimport.BulkImportResponse.ImportInfo;
 import org.apache.atlas.util.FileUtils;
 import org.apache.atlas.utils.AtlasEntityUtil;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.collections.CollectionUtils;
@@ -86,13 +89,14 @@ import java.util.*;
 import static java.lang.Boolean.FALSE;
 import static org.apache.atlas.AtlasConfiguration.STORE_DIFFERENTIAL_AUDITS;
 import static org.apache.atlas.bulkimport.BulkImportResponse.ImportStatus.FAILED;
+import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.*;
-import static org.apache.atlas.repository.Constants.IS_INCOMPLETE_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE;
-import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
-import static org.apache.atlas.repository.graph.GraphHelper.isEntityIncomplete;
+import static org.apache.atlas.repository.Constants.*;
+import static org.apache.atlas.repository.graph.GraphHelper.*;
+import static org.apache.atlas.repository.graph.GraphHelper.getStatus;
 import static org.apache.atlas.repository.store.graph.v2.EntityGraphMapper.validateLabels;
+import static org.apache.atlas.type.Constants.HAS_LINEAGE;
+import static org.apache.atlas.type.Constants.HAS_LINEAGE_VALID;
 
 
 @Component
@@ -108,6 +112,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     private final EntityGraphMapper          entityGraphMapper;
     private final EntityGraphRetriever       entityRetriever;
     private       boolean                    storeDifferentialAudits;
+    private final GraphHelper                graphHelper;
 
     @Inject
     public AtlasEntityStoreV2(AtlasGraph graph, DeleteHandlerDelegate deleteDelegate, RestoreHandlerV1 restoreHandlerV1, AtlasTypeRegistry typeRegistry,
@@ -120,6 +125,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         this.entityGraphMapper    = entityGraphMapper;
         this.entityRetriever      = new EntityGraphRetriever(graph, typeRegistry);
         this.storeDifferentialAudits = STORE_DIFFERENTIAL_AUDITS.getBoolean();
+        this.graphHelper          = new GraphHelper(graph);
+
     }
 
     @VisibleForTesting
@@ -1986,4 +1993,66 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             throw new AtlasBaseException(AtlasErrorCode.REPAIR_INDEX_FAILED, exception.toString());
         }
     }
+
+    @Override
+    @GraphTransaction
+    public void repairHasLineage(Set<String> guids) throws AtlasBaseException {
+        Set<AtlasEdge> inputOutputEdges = new HashSet<>();
+
+        for (String guid : guids) {
+            inputOutputEdges.add(graphHelper.getEdgeForGUID(guid));
+        }
+        repairHasLineageWithAtlasEdges(inputOutputEdges);
+    }
+
+
+    public void repairHasLineageWithAtlasEdges(Set<AtlasEdge> inputOutputEdges) {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("repairHasLineageWithAtlasEdges");
+
+        for (AtlasEdge atlasEdge : inputOutputEdges) {
+
+            boolean isOutputEdge = PROCESS_OUTPUTS.equals(atlasEdge.getLabel());
+
+            AtlasVertex processVertex = atlasEdge.getOutVertex();
+            AtlasVertex assetVertex = atlasEdge.getInVertex();
+
+            if (getEntityHasLineageValid(processVertex) && getEntityHasLineage(processVertex)) {
+                AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE, true);
+                AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE_VALID, true);
+                continue;
+            }
+
+            String oppositeEdgeLabel = isOutputEdge ? PROCESS_INPUTS : PROCESS_OUTPUTS;
+
+            Iterator<AtlasEdge> oppositeEdges = processVertex.getEdges(AtlasEdgeDirection.BOTH, oppositeEdgeLabel).iterator();
+            boolean isHasLineageSet = false;
+            while (oppositeEdges.hasNext()) {
+                AtlasEdge oppositeEdge = oppositeEdges.next();
+                AtlasVertex oppositeEdgeAssetVertex = oppositeEdge.getInVertex();
+
+                if (getStatus(oppositeEdge) == ACTIVE && getStatus(oppositeEdgeAssetVertex) == ACTIVE) {
+                    if (!isHasLineageSet) {
+                        AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE, true);
+                        AtlasGraphUtilsV2.setEncodedProperty(processVertex, HAS_LINEAGE, true);
+
+                        AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE_VALID, true);
+                        AtlasGraphUtilsV2.setEncodedProperty(processVertex, HAS_LINEAGE_VALID, true);
+
+                        isHasLineageSet = true;
+                    }
+                    break;
+                }
+            }
+
+            if (!isHasLineageSet) {
+                AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE, false);
+                AtlasGraphUtilsV2.setEncodedProperty(processVertex, HAS_LINEAGE, false);
+                AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE_VALID, true);
+                AtlasGraphUtilsV2.setEncodedProperty(processVertex, HAS_LINEAGE_VALID, true);
+            }
+
+        }
+        RequestContext.get().endMetricRecord(metricRecorder);
+    }
+
 }

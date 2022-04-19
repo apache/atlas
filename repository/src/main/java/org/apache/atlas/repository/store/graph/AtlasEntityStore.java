@@ -346,4 +346,6 @@ public interface AtlasEntityStore {
     BulkImportResponse bulkCreateOrUpdateBusinessAttributes(InputStream inputStream, String fileName) throws AtlasBaseException;
 
     void repairIndex() throws AtlasBaseException;
+
+    void repairHasLineage(Set<String> guids) throws AtlasBaseException;
 }

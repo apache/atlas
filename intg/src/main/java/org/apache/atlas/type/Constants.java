@@ -56,6 +56,7 @@ public final class Constants {
     public static final String CATEGORIES_PARENT_PROPERTY_KEY       = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "parentCategory");
     public static final String MEANINGS_TEXT_PROPERTY_KEY           = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "meaningsText");
     public static final String HAS_LINEAGE                          = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "hasLineage");
+    public static final String HAS_LINEAGE_VALID                    = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "hasLineagevalid");
 
     //Classification-Only System Attributes
     public static final String CLASSIFICATION_ENTITY_STATUS_PROPERTY_KEY = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "entityStatus");
