@@ -44,12 +44,12 @@ import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPro
 public abstract class ClassificationTask extends AbstractTask {
     private static final Logger LOG = LoggerFactory.getLogger(ClassificationTask.class);
 
-    protected static final String PARAM_ENTITY_GUID              = "entityGuid";
-    protected static final String PARAM_DELETED_EDGE_IDS         = "deletedEdgeIds";
-    protected static final String PARAM_CLASSIFICATION_VERTEX_ID = "classificationVertexId";
-    protected static final String PARAM_RELATIONSHIP_GUID        = "relationshipGuid";
-    protected static final String PARAM_RELATIONSHIP_OBJECT      = "relationshipObject";
-    protected static final String PARAM_RELATIONSHIP_EDGE_ID     = "relationshipEdgeId";
+    public static final String PARAM_ENTITY_GUID              = "entityGuid";
+    public static final String PARAM_DELETED_EDGE_IDS         = "deletedEdgeIds";
+    public static final String PARAM_CLASSIFICATION_VERTEX_ID = "classificationVertexId";
+    public static final String PARAM_RELATIONSHIP_GUID        = "relationshipGuid";
+    public static final String PARAM_RELATIONSHIP_OBJECT      = "relationshipObject";
+    public static final String PARAM_RELATIONSHIP_EDGE_ID     = "relationshipEdgeId";
   
     protected final AtlasGraph             graph;
     protected final EntityGraphMapper      entityGraphMapper;
