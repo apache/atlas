@@ -22,12 +22,9 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.exception.EntityNotFoundException;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.tasks.AtlasTask;
-import org.apache.atlas.repository.graphdb.AtlasEdge;
-import org.apache.atlas.repository.graphdb.AtlasElement;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
-import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
 import org.apache.atlas.tasks.AbstractTask;
 import org.apache.atlas.type.AtlasType;
@@ -38,21 +35,22 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import static org.apache.atlas.model.tasks.AtlasTask.Status.COMPLETE;
 import static org.apache.atlas.model.tasks.AtlasTask.Status.FAILED;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_RELATIONSHIP_UPDATE;
-import static org.apache.atlas.type.Constants.PENDING_TASKS_PROPERTY_KEY;
 
 public abstract class ClassificationTask extends AbstractTask {
     private static final Logger LOG = LoggerFactory.getLogger(ClassificationTask.class);
 
-    public static final String PARAM_ENTITY_GUID              = "entityGuid";
-    public static final String PARAM_CLASSIFICATION_VERTEX_ID = "classificationVertexId";
-    public static final String PARAM_RELATIONSHIP_GUID        = "relationshipGuid";
-    public static final String PARAM_RELATIONSHIP_OBJECT      = "relationshipObject";
-    public static final String PARAM_RELATIONSHIP_EDGE_ID     = "relationshipEdgeId";
-
+    protected static final String PARAM_ENTITY_GUID              = "entityGuid";
+    protected static final String PARAM_DELETED_EDGE_IDS         = "deletedEdgeIds";
+    protected static final String PARAM_CLASSIFICATION_VERTEX_ID = "classificationVertexId";
+    protected static final String PARAM_RELATIONSHIP_GUID        = "relationshipGuid";
+    protected static final String PARAM_RELATIONSHIP_OBJECT      = "relationshipObject";
+    protected static final String PARAM_RELATIONSHIP_EDGE_ID     = "relationshipEdgeId";
+  
     protected final AtlasGraph             graph;
     protected final EntityGraphMapper      entityGraphMapper;
     protected final DeleteHandlerDelegate  deleteDelegate;
@@ -116,6 +114,12 @@ public abstract class ClassificationTask extends AbstractTask {
         }};
     }
 
+    public static Map<String, Object> toParameters(Set<String> deletedEdgeIds) {
+        return new HashMap<String, Object>() {{
+            put(PARAM_DELETED_EDGE_IDS, AtlasType.toJson(deletedEdgeIds));
+        }};
+    }
+
     public static Map<String, Object> toParameters(String relationshipEdgeId, AtlasRelationship relationship) {
         return new HashMap<String, Object>() {{
             put(PARAM_RELATIONSHIP_EDGE_ID, relationshipEdgeId);
@@ -127,7 +131,7 @@ public abstract class ClassificationTask extends AbstractTask {
         super.setStatus(status);
 
         try {
-            if (getTaskType() == CLASSIFICATION_PROPAGATION_RELATIONSHIP_UPDATE) {
+            if (CLASSIFICATION_PROPAGATION_RELATIONSHIP_UPDATE.equals(getTaskType())) {
                 entityGraphMapper.removePendingTaskFromEdge((String) getTaskDef().getParameters().get(PARAM_RELATIONSHIP_EDGE_ID), getTaskGuid());
             } else {
                 entityGraphMapper.removePendingTaskFromEntity((String) getTaskDef().getParameters().get(PARAM_ENTITY_GUID), getTaskGuid());

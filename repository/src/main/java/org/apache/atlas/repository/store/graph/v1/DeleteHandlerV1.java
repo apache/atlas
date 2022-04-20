@@ -73,6 +73,7 @@ import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getSt
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.*;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_ADD;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_DELETE;
+import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_ONLY_PROPAGATION_DELETE;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
 import static org.apache.atlas.type.Constants.HAS_LINEAGE;
 import static org.apache.atlas.type.Constants.PENDING_TASKS_PROPERTY_KEY;
@@ -80,7 +81,7 @@ import static org.apache.atlas.type.Constants.PENDING_TASKS_PROPERTY_KEY;
 public abstract class DeleteHandlerV1 {
     public static final Logger LOG = LoggerFactory.getLogger(DeleteHandlerV1.class);
 
-    private static final boolean DEFERRED_ACTION_ENABLED = AtlasConfiguration.TASKS_USE_ENABLED.getBoolean();
+    static final boolean DEFERRED_ACTION_ENABLED = AtlasConfiguration.TASKS_USE_ENABLED.getBoolean();
 
     protected final GraphHelper          graphHelper;
     private   final AtlasTypeRegistry    typeRegistry;
@@ -142,8 +143,14 @@ public abstract class DeleteHandlerV1 {
 
         // Delete traits and vertices.
         for (AtlasVertex deletionCandidateVertex : deletionCandidateVertices) {
+            RequestContext.get().getDeletedEdgesIds().clear();
+
             deleteAllClassifications(deletionCandidateVertex);
             deleteTypeVertex(deletionCandidateVertex, isInternalType(deletionCandidateVertex));
+
+            if (DEFERRED_ACTION_ENABLED) {
+                createAndQueueTask(CLASSIFICATION_ONLY_PROPAGATION_DELETE, RequestContext.get().getDeletedEdgesIds());
+            }
         }
     }
 
@@ -525,13 +532,14 @@ public abstract class DeleteHandlerV1 {
         RequestContext.get().endMetricRecord(metric);
     }
 
-    public void removeTagPropagation(AtlasEdge edge) throws AtlasBaseException {
+    public Map<AtlasVertex, List<AtlasVertex>> removeTagPropagation(AtlasEdge edge) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("removeTagPropagationEdge");
         if (edge == null || !isRelationshipEdge(edge)) {
-            return;
+            return null;
         }
 
-        List<AtlasVertex>                   currentClassificationVertices = getPropagatableClassifications(edge);
+        List<AtlasVertex> currentClassificationVertices = getPropagatableClassifications(edge);
+
         Map<AtlasVertex, List<AtlasVertex>> currentClassificationsMap     = entityRetriever.getClassificationPropagatedEntitiesMapping(currentClassificationVertices);
         Map<AtlasVertex, List<AtlasVertex>> updatedClassificationsMap     = entityRetriever.getClassificationPropagatedEntitiesMapping(currentClassificationVertices, getRelationshipGuid(edge));
         Map<AtlasVertex, List<AtlasVertex>> removePropagationsMap         = new HashMap<>();
@@ -560,6 +568,7 @@ public abstract class DeleteHandlerV1 {
             }
         }
         RequestContext.get().endMetricRecord(metric);
+        return removePropagationsMap;
     }
 
     public boolean isRelationshipEdge(AtlasEdge edge) {
@@ -625,6 +634,7 @@ public abstract class DeleteHandlerV1 {
     }
 
     public void deletePropagatedClassification(AtlasVertex entityVertex, String classificationName, String associatedEntityGuid) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("deletePropagatedClassification");
         AtlasEdge propagatedEdge = getPropagatedClassificationEdge(entityVertex, classificationName, associatedEntityGuid);
 
         if (propagatedEdge == null) {
@@ -653,6 +663,8 @@ public abstract class DeleteHandlerV1 {
 
         // record remove propagation details to send notifications at the end
         RequestContext.get().recordRemovedPropagation(getGuid(entityVertex), classification);
+
+        RequestContext.get().endMetricRecord(metricRecorder);
     }
 
     public void deletePropagatedEdge(AtlasEdge edge) throws AtlasBaseException {
@@ -1244,6 +1256,20 @@ public abstract class DeleteHandlerV1 {
         AtlasTask           task        = taskManagement.createTask(taskType, currentUser, taskParams);
 
         AtlasGraphUtilsV2.addEncodedProperty(entityVertex, PENDING_TASKS_PROPERTY_KEY, task.getGuid());
+
+        RequestContext.get().queueTask(task);
+    }
+
+
+    public void createAndQueueTask(String taskType, Set<String> deletedEdgeIds) {
+        String currentUser = RequestContext.getCurrentUser();
+
+        if (CollectionUtils.isEmpty(deletedEdgeIds)) {
+            return;
+        }
+
+        Map<String, Object> taskParams  = ClassificationTask.toParameters(deletedEdgeIds);
+        AtlasTask           task        = taskManagement.createTask(taskType, currentUser, taskParams);
 
         RequestContext.get().queueTask(task);
     }
