@@ -43,6 +43,29 @@ public class AtlasTask {
         IN_PROGRESS,
         COMPLETE,
         FAILED;
+
+        public static Status from(String s) {
+            if(StringUtils.isEmpty(s)) {
+                return PENDING;
+            }
+
+            switch (s.toLowerCase()) {
+                case "pending":
+                    return PENDING;
+
+                case "in_progress":
+                    return IN_PROGRESS;
+
+                case "complete":
+                    return COMPLETE;
+
+                case "failed":
+                    return FAILED;
+
+                default:
+                    return PENDING;
+            }
+        }
     }
 
     private String              type;
@@ -52,6 +75,7 @@ public class AtlasTask {
     private Date                updatedTime;
     private Date                startTime;
     private Date                endTime;
+    private Long                timeTakenInSeconds;
     private Map<String, Object> parameters;
     private int                 attemptCount;
     private String              errorMessage;
@@ -173,6 +197,14 @@ public class AtlasTask {
         this.endTime = endTime;
     }
 
+    public Long getTimeTakenInSeconds() {
+        return timeTakenInSeconds;
+    }
+
+    public void setTimeTakenInSeconds(Long timeTakenInSeconds) {
+        this.timeTakenInSeconds = timeTakenInSeconds;
+    }
+
     @JsonIgnore
     public void start() {
         this.setStatus(Status.IN_PROGRESS);
@@ -181,12 +213,29 @@ public class AtlasTask {
 
     @JsonIgnore
     public void end() {
-        this.status = Status.COMPLETE;
         this.setEndTime(new Date());
     }
 
     @JsonIgnore
     public void updateStatusFromAttemptCount() {
         setStatus((attemptCount < MAX_ATTEMPT_COUNT) ? AtlasTask.Status.PENDING : AtlasTask.Status.FAILED);
+    }
+
+    @Override
+    public String toString() {
+        return "AtlasTask{" +
+                "type='" + type + '\'' +
+                ", guid='" + guid + '\'' +
+                ", createdBy='" + createdBy + '\'' +
+                ", createdTime=" + createdTime +
+                ", updatedTime=" + updatedTime +
+                ", startTime=" + startTime +
+                ", endTime=" + endTime +
+                ", timeTakenInSeconds=" + timeTakenInSeconds +
+                ", parameters=" + parameters +
+                ", attemptCount=" + attemptCount +
+                ", errorMessage='" + errorMessage + '\'' +
+                ", status=" + status +
+                '}';
     }
 }
