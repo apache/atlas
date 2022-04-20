@@ -2011,6 +2011,11 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         for (AtlasEdge atlasEdge : inputOutputEdges) {
 
+            if (getStatus(atlasEdge) != ACTIVE) {
+                LOG.warn("Edge id {} is not Active, so skipping  " , getRelationshipGuid(atlasEdge));
+                continue;
+            }
+
             boolean isOutputEdge = PROCESS_OUTPUTS.equals(atlasEdge.getLabel());
 
             AtlasVertex processVertex = atlasEdge.getOutVertex();
