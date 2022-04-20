@@ -353,6 +353,10 @@ public abstract class DeleteHandlerV1 {
             // for relationship edges, inverse vertex's relationship attribute doesn't need to be updated.
             // only delete the reference relationship edge
             if (GraphHelper.isRelationshipEdge(edge)) {
+                //If the edge is already deleted then skip the further delete operations
+                if (this instanceof SoftDeleteHandlerV1 && GraphHelper.getEdgeStatus(edge) == AtlasRelationship.Status.DELETED) {
+                    return !softDelete || forceDelete;
+                }
                 deleteEdge(edge, isInternalType);
 
                 AtlasVertex referencedVertex = entityRetriever.getReferencedEntityVertex(edge, relationshipDirection, entityVertex);
