@@ -111,9 +111,6 @@ public class TaskExecutor {
                     perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, String.format("atlas.task:%s", task.getGuid(), task.getType()));
                 }
 
-                //TODO: Move this to TaskRegistry.inProgress once tasks PR is merged into master
-                RequestContext.get().setCurrentTask(task);
-
                 statistics.increment(1);
 
                 attemptCount = task.getAttemptCount();
