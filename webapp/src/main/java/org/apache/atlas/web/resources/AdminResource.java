@@ -831,11 +831,29 @@ public class AdminResource {
         return ret;
     }
 
+    /*
+     * This returns all tasks
+     * Filtering support: Either filter by statusList or guids
+     * @param guids filter tasks with specified list of guids, If not specified, return all tasks, will not have any effect if statusList is specified
+     * @param statusList filter tasks with specified list of status, If not specified, return all tasks, will not have any effect if guids is specified
+     * guids takes preference
+     * */
     @GET
     @Path("/tasks")
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public List<AtlasTask> getTaskStatus(@QueryParam("guids") List<String> guids) throws AtlasBaseException {
-        return CollectionUtils.isNotEmpty(guids) ? taskManagement.getByGuids(guids) : taskManagement.getAll();
+    public List<AtlasTask> getTaskStatus(@QueryParam("status") List<String> statusList, @QueryParam("guids") List<String> guids) throws AtlasBaseException {
+        return CollectionUtils.isNotEmpty(guids) ? taskManagement.getByGuids(guids) : taskManagement.getAll(statusList);
+    }
+
+    /*
+    * Retry failed tasks on demand
+    * @Param taskGuids list of task guids needed to retry
+    * */
+    @POST
+    @Path("/tasks/retry")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public void retryFailedTasks(@QueryParam("guid") List<String> taskGuids) throws AtlasBaseException {
+        taskManagement.retryTasks(taskGuids);
     }
 
     @DELETE
