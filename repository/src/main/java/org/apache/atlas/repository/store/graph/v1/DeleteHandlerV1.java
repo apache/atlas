@@ -59,6 +59,8 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.apache.atlas.AtlasClient.DATA_SET_SUPER_TYPE;
+import static org.apache.atlas.AtlasClient.PROCESS_SUPER_TYPE;
 import static org.apache.atlas.model.TypeCategory.*;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
@@ -72,6 +74,7 @@ import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.*;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_ADD;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_DELETE;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
+import static org.apache.atlas.type.Constants.HAS_LINEAGE;
 import static org.apache.atlas.type.Constants.PENDING_TASKS_PROPERTY_KEY;
 
 public abstract class DeleteHandlerV1 {
@@ -240,7 +243,9 @@ public abstract class DeleteHandlerV1 {
                         String        softRefVal = vertex.getProperty(attributeInfo.getVertexPropertyName(), String.class);
                         AtlasObjectId refObjId   = AtlasEntityUtil.parseSoftRefValue(softRefVal);
                         AtlasVertex   refVertex  = refObjId != null ? AtlasGraphUtilsV2.findByGuid(this.graphHelper.getGraph(), refObjId.getGuid()) : null;
-
+                        if (refObjId.getGuid() == null) {
+                            LOG.warn("OBJECT_ID_TYPE type category - null guid passed in findByGuid!");
+                        }
                         if (refVertex != null) {
                             vertices.push(refVertex);
                         }
@@ -274,7 +279,9 @@ public abstract class DeleteHandlerV1 {
                             if (CollectionUtils.isNotEmpty(refObjIds)) {
                                 for (AtlasObjectId refObjId : refObjIds) {
                                     AtlasVertex refVertex = AtlasGraphUtilsV2.findByGuid(this.graphHelper.getGraph(), refObjId.getGuid());
-
+                                    if (refObjId.getGuid() == null) {
+                                        LOG.warn("ARRAY type category - null guid passed in findByGuid!");
+                                    }
                                     if (refVertex != null) {
                                         vertices.push(refVertex);
                                     }
@@ -287,6 +294,9 @@ public abstract class DeleteHandlerV1 {
                             if (MapUtils.isNotEmpty(refObjIds)) {
                                 for (AtlasObjectId refObjId : refObjIds.values()) {
                                     AtlasVertex refVertex = AtlasGraphUtilsV2.findByGuid(this.graphHelper.getGraph(), refObjId.getGuid());
+                                    if (refObjId.getGuid() == null) {
+                                        LOG.warn("MAP type category - null guid passed in findByGuid!");
+                                    }
 
                                     if (refVertex != null) {
                                         vertices.push(refVertex);
@@ -516,6 +526,7 @@ public abstract class DeleteHandlerV1 {
     }
 
     public void removeTagPropagation(AtlasEdge edge) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("removeTagPropagationEdge");
         if (edge == null || !isRelationshipEdge(edge)) {
             return;
         }
@@ -548,6 +559,7 @@ public abstract class DeleteHandlerV1 {
                 removeTagPropagation(classificationVertex, removePropagationsMap.get(classificationVertex));
             }
         }
+        RequestContext.get().endMetricRecord(metric);
     }
 
     public boolean isRelationshipEdge(AtlasEdge edge) {
@@ -565,6 +577,7 @@ public abstract class DeleteHandlerV1 {
     }
 
     public List<AtlasVertex> removeTagPropagation(AtlasVertex classificationVertex) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("removeTagPropagationVertex");
         List<AtlasVertex> ret = new ArrayList<>();
 
         if (classificationVertex != null) {
@@ -585,12 +598,13 @@ public abstract class DeleteHandlerV1 {
                 }
             }
         }
-
+        RequestContext.get().endMetricRecord(metric);
         return ret;
     }
 
     public void removeTagPropagation(AtlasVertex classificationVertex, List<AtlasVertex> entityVertices) throws AtlasBaseException {
         if (classificationVertex != null && CollectionUtils.isNotEmpty(entityVertices)) {
+            AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("removeTagPropagationVertices");
             String              classificationName = getClassificationName(classificationVertex);
             AtlasClassification classification     = entityRetriever.toAtlasClassification(classificationVertex);
             String              entityGuid         = getClassificationEntityGuid(classificationVertex);
@@ -606,6 +620,7 @@ public abstract class DeleteHandlerV1 {
                     context.recordRemovedPropagation(getGuid(entityVertex), classification);
                 }
             }
+            RequestContext.get().endMetricRecord(metric);
         }
     }
 
@@ -1243,4 +1258,111 @@ public abstract class DeleteHandlerV1 {
 
         RequestContext.get().queueTask(task);
     }
+
+    public void removeHasLineageOnDelete(Collection<AtlasVertex> vertices) {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("removeHasLineageOnDelete");
+
+        for (AtlasVertex vertexToBeDeleted : vertices) {
+            if (ACTIVE.equals(getStatus(vertexToBeDeleted))) {
+                AtlasEntityType entityType = typeRegistry.getEntityTypeByName(getTypeName(vertexToBeDeleted));
+                boolean isProcess = entityType.getTypeAndAllSuperTypes().contains(PROCESS_SUPER_TYPE);
+                boolean isCatalog = entityType.getTypeAndAllSuperTypes().contains(DATA_SET_SUPER_TYPE);
+
+                if (isCatalog || isProcess) {
+
+                    Iterator<AtlasEdge> edgeIterator = vertexToBeDeleted.getEdges(AtlasEdgeDirection.BOTH, PROCESS_EDGE_LABELS).iterator();
+
+                    Set<AtlasEdge> edgesToBeDeleted = new HashSet<>();
+
+                    while (edgeIterator.hasNext()) {
+                        AtlasEdge edge = edgeIterator.next();
+                        if (ACTIVE.equals(getStatus(edge))) {
+                            edgesToBeDeleted.add(edge);
+                        }
+                    }
+
+                    resetHasLineageOnInputOutputDelete(edgesToBeDeleted, vertexToBeDeleted);
+                }
+            }
+        }
+        RequestContext.get().endMetricRecord(metricRecorder);
+    }
+
+
+    public void resetHasLineageOnInputOutputDelete(Collection<AtlasEdge> removedEdges, AtlasVertex deletedVertex) {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("resetHasLineageOnInputOutputDelete");
+
+        for (AtlasEdge atlasEdge : removedEdges) {
+
+            boolean isOutputEdge = PROCESS_OUTPUTS.equals(atlasEdge.getLabel());
+
+            AtlasVertex processVertex = atlasEdge.getOutVertex();
+            AtlasVertex assetVertex = atlasEdge.getInVertex();
+
+            if (getStatus(assetVertex) == ACTIVE && !assetVertex.equals(deletedVertex)) {
+                updateAssetHasLineageStatus(assetVertex, atlasEdge, removedEdges);
+            }
+
+            if (getStatus(processVertex) == ACTIVE && !processVertex.equals(deletedVertex)) {
+                String edgeLabel = isOutputEdge ? PROCESS_OUTPUTS : PROCESS_INPUTS;
+
+                Iterator<AtlasEdge> edgeIterator = processVertex.getEdges(AtlasEdgeDirection.BOTH, edgeLabel).iterator();
+                boolean activeEdgeFound = false;
+
+                while (edgeIterator.hasNext()) {
+                    AtlasEdge edge = edgeIterator.next();
+                    if (getStatus(edge) == ACTIVE && !removedEdges.contains(edge)) {
+                        AtlasVertex relatedAssetVertex = edge.getInVertex();
+
+                        if (getStatus(relatedAssetVertex) == ACTIVE) {
+                            activeEdgeFound = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (!activeEdgeFound) {
+                    AtlasGraphUtilsV2.setEncodedProperty(processVertex, HAS_LINEAGE, false);
+
+                    String oppositeEdgeLabel = isOutputEdge ? PROCESS_INPUTS : PROCESS_OUTPUTS;
+
+                    Iterator<AtlasEdge> processEdgeIterator = processVertex.getEdges(AtlasEdgeDirection.BOTH, oppositeEdgeLabel).iterator();
+
+                    while (processEdgeIterator.hasNext()) {
+                        AtlasEdge edge = processEdgeIterator.next();
+
+                        if (!removedEdges.contains(edge)) {
+                            AtlasVertex relatedAssetVertex = edge.getInVertex();
+                            updateAssetHasLineageStatus(relatedAssetVertex, edge, removedEdges);
+                        }
+                    }
+                }
+            }
+        }
+        RequestContext.get().endMetricRecord(metricRecorder);
+    }
+
+    private void updateAssetHasLineageStatus(AtlasVertex assetVertex, AtlasEdge currentEdge, Collection<AtlasEdge> removedEdges) {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("updateAssetHasLineageStatus");
+
+        Iterator<AtlasEdge> edgeIterator = assetVertex.getEdges(AtlasEdgeDirection.BOTH, PROCESS_EDGE_LABELS).iterator();
+        int processHasLineageCount = 0;
+        while (edgeIterator.hasNext()) {
+            AtlasEdge edge = edgeIterator.next();
+            if (getStatus(edge) == ACTIVE && !removedEdges.contains(edge) && !currentEdge.equals(edge)) {
+                AtlasVertex relatedProcessVertex = edge.getOutVertex();
+                boolean processHasLineage = getEntityHasLineage(relatedProcessVertex);
+                if (processHasLineage) {
+                    processHasLineageCount++;
+                    break;
+                }
+            }
+        }
+
+        if (processHasLineageCount == 0) {
+            AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE, false);
+        }
+        RequestContext.get().endMetricRecord(metricRecorder);
+    }
+
 }

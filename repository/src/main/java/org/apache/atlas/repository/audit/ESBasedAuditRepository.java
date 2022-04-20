@@ -98,7 +98,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
         try {
             if (events != null && events.size() > 0) {
                 String entityPayloadTemplate = "'{'\"entityId\":\"{0}\",\"action\":\"{1}\",\"detail\":{2},\"user\":\"{3}\", \"eventKey\":\"{4}\", " +
-                        "\"entityQualifiedName\": \"{5}\", \"typeName\": \"{6}\",\"created\":{7}, \"timestamp\":{8}'}'";
+                        "\"entityQualifiedName\": {5}, \"typeName\": \"{6}\",\"created\":{7}, \"timestamp\":{8}'}'";
                 String bulkMetadata = String.format("{ \"index\" : { \"_index\" : \"%s\" } }%n", INDEX_NAME);
                 StringBuilder bulkRequestBody = new StringBuilder();
                 for (EntityAuditEventV2 event : events) {
@@ -112,7 +112,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
                             details,
                             event.getUser(),
                             event.getEntityId() + ":" + event.getEntity().getUpdateTime().getTime(),
-                            event.getEntity().getAttribute(QUALIFIED_NAME),
+                            event.getEntityQualifiedName(),
                             event.getEntity().getTypeName(),
                             created,
                             "" + event.getEntity().getUpdateTime().getTime());
@@ -133,11 +133,21 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
                 String responseString = EntityUtils.toString(response.getEntity());
                 Map<String, Object> responseMap = AtlasType.fromJson(responseString, Map.class);
                 if ((boolean) responseMap.get("errors")) {
-                    throw new AtlasException("Unable to push entity audits to ES (errors: true returned by es)");
+                    List<String> errors = new ArrayList<>();
+                    List<Map<String, Object>> resultItems = (List<Map<String, Object>>) responseMap.get("items");
+                    for (Map<String, Object> resultItem : resultItems) {
+                        if (resultItem.get("index") != null) {
+                            Map<String, Object> resultIndex = (Map<String, Object>) resultItem.get("index");
+                            if (resultIndex.get("error") != null) {
+                                errors.add(resultIndex.get("error").toString());
+                            }
+                        }
+                    }
+                    throw new AtlasException(errors.toString());
                 }
             }
         } catch (Exception e) {
-            throw new AtlasBaseException(e);
+            throw new AtlasBaseException("Unable to push entity audits to ES", e);
         }
     }
 

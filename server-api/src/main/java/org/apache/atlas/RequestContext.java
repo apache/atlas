@@ -45,6 +45,7 @@ import static org.apache.atlas.model.instance.AtlasObjectId.KEY_GUID;
 
 public class RequestContext {
     private static final Logger METRICS = LoggerFactory.getLogger("METRICS");
+    private static final Logger LOG = LoggerFactory.getLogger(RequestContext.class);
 
     private static final ThreadLocal<RequestContext> CURRENT_CONTEXT = new ThreadLocal<>();
     private static final Set<RequestContext>         ACTIVE_REQUESTS = new HashSet<>();
@@ -67,6 +68,9 @@ public class RequestContext {
     private final List<AtlasTask>                        queuedTasks          = new ArrayList<>();
     private final Set<String> relationAttrsForSearch = new HashSet<>();
 
+    private static String USERNAME = "";
+    private final Map<String,List<Object>> removedElementsMap = new HashMap<>();
+    private final Map<String,List<Object>> newElementsCreatedMap = new HashMap<>();
 
     private String       user;
     private Set<String>  userGroups;
@@ -131,6 +135,8 @@ public class RequestContext {
         this.onlyBAUpdateEntities.clear();
         this.relationAttrsForSearch.clear();
         this.queuedTasks.clear();
+        this.newElementsCreatedMap.clear();
+        this.removedElementsMap.clear();
 
         if (metrics != null && !metrics.isEmpty()) {
             METRICS.debug(metrics.toString());
@@ -153,6 +159,14 @@ public class RequestContext {
         }
     }
 
+    public Map<String, List<Object>> getRemovedElementsMap() {
+        return removedElementsMap;
+    }
+
+    public Map<String, List<Object>> getNewElementsCreatedMap() {
+        return newElementsCreatedMap;
+    }
+
     public static String getCurrentUser() {
         RequestContext context = CURRENT_CONTEXT.get();
         String ret = context != null ? context.getUser() : null;
@@ -173,6 +187,16 @@ public class RequestContext {
     }
 
     public String getUser() {
+        if (isImportInProgress) {
+            if (StringUtils.isEmpty(USERNAME)){
+                try {
+                    USERNAME = ApplicationProperties.get().getString("atlas.migration.user.name", "");
+                } catch (AtlasException e) {
+                    LOG.error("Failed to find value for atlas.migration.user.name from properties");
+                }
+            }
+            return USERNAME;
+        }
         return user;
     }
 

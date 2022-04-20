@@ -50,7 +50,6 @@ import org.apache.atlas.model.metrics.AtlasMetrics;
 import org.apache.atlas.model.patches.AtlasPatch.AtlasPatches;
 import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.repository.audit.AtlasAuditService;
-import org.apache.atlas.repository.audit.CassandraBasedAuditRepository;
 import org.apache.atlas.repository.impexp.AtlasServerService;
 import org.apache.atlas.repository.impexp.ExportImportAuditService;
 import org.apache.atlas.repository.impexp.ExportService;
@@ -122,6 +121,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 import java.util.*;
 
+import static org.apache.atlas.AtlasErrorCode.DEPRECATED_API;
 import static org.apache.atlas.web.filters.AtlasCSRFPreventionFilter.CSRF_TOKEN;
 
 
@@ -178,7 +178,6 @@ public class AdminResource {
     private final  AtlasPatchManager        patchManager;
     private final  AtlasAuditService        auditService;
     private final  String                   defaultUIVersion;
-    private final  CassandraBasedAuditRepository    auditRepository;
     private final  boolean                  isTimezoneFormatEnabled;
     private final  String                   uiDateFormat;
     private final  AtlasDebugMetricsSink    debugMetricsRESTSink;
@@ -199,7 +198,7 @@ public class AdminResource {
                          MigrationProgressService migrationProgressService,
                          AtlasServerService serverService,
                          ExportImportAuditService exportImportAuditService, AtlasEntityStore entityStore,
-                         AtlasPatchManager patchManager, AtlasAuditService auditService, CassandraBasedAuditRepository auditRepository,
+                         AtlasPatchManager patchManager, AtlasAuditService auditService,
                          TaskManagement taskManagement, AtlasDebugMetricsSink debugMetricsRESTSink) {
         this.serviceState              = serviceState;
         this.metricsService            = metricsService;
@@ -214,7 +213,6 @@ public class AdminResource {
         this.importExportOperationLock = new ReentrantLock();
         this.patchManager              = patchManager;
         this.auditService              = auditService;
-        this.auditRepository           = auditRepository;
         this.taskManagement            = taskManagement;
         this.debugMetricsRESTSink      = debugMetricsRESTSink;
 
@@ -778,39 +776,7 @@ public class AdminResource {
     public List<AtlasEntityHeader> getAuditDetails(@PathParam("auditGuid") String auditGuid,
                                     @QueryParam("limit") @DefaultValue("10") int limit,
                                     @QueryParam("offset") @DefaultValue("0") int offset) throws AtlasBaseException {
-        AtlasPerfTracer perf = null;
-
-        try {
-            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AdminResource.getAuditDetails(" + auditGuid + ", " + limit + ", " + offset + ")");
-            }
-
-            List<AtlasEntityHeader> ret = new ArrayList<>();
-
-            AtlasAuditEntry auditEntry = auditService.toAtlasAuditEntry(entityStore.getById(auditGuid, false, true));
-
-            if(auditEntry != null && StringUtils.isNotEmpty(auditEntry.getResult())) {
-                String[] listOfResultGuid = auditEntry.getResult().split(",");
-                EntityAuditActionV2 auditAction = auditEntry.getOperation().toEntityAuditActionV2();
-
-                if(offset <= listOfResultGuid.length) {
-                    for(int index=offset; index < listOfResultGuid.length && index < (offset + limit); index++) {
-                        List<EntityAuditEventV2> events = auditRepository.listEventsV2(listOfResultGuid[index], auditAction, null, (short)1);
-
-                        for (EntityAuditEventV2 event : events) {
-                            AtlasEntityHeader entityHeader = event.getEntityHeader();
-                            if(entityHeader != null) {
-                                ret.add(entityHeader);
-                            }
-                        }
-                    }
-                }
-            }
-
-            return ret;
-        } finally {
-            AtlasPerfTracer.log(perf);
-        }
+        throw new AtlasBaseException(DEPRECATED_API, "/entity/auditSearch");
     }
 
     @GET

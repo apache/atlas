@@ -17,13 +17,7 @@
  */
 package org.apache.atlas.repository.graphdb.janus;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasElement;
@@ -52,6 +46,14 @@ public class AtlasJanusElement<T extends Element> implements AtlasElement {
     private T element;
     protected AtlasJanusGraph graph;
 
+    //excludeProperties: Getting key related issue while Migration mode when fetching few attributes from graph
+    //This is dirty fix to ignore getting such attributes value from graph & return null explicitly
+    private static final Set<String> excludeProperties = new HashSet<>();
+    static {
+        excludeProperties.add("replicatedTo");
+        excludeProperties.add("replicatedFrom");
+    }
+
     public AtlasJanusElement(AtlasJanusGraph graph, T element) {
         this.element = element;
         this.graph = graph;
@@ -59,6 +61,9 @@ public class AtlasJanusElement<T extends Element> implements AtlasElement {
 
     @Override
     public <T> T getProperty(String propertyName, Class<T> clazz) {
+        if (excludeProperties.contains(propertyName)) {
+            return null;
+        }
 
         //add explicit logic to return null if the property does not exist
         //This is the behavior Atlas expects.  Janus throws an exception

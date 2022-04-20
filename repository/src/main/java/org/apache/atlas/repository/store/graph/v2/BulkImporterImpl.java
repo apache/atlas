@@ -53,13 +53,16 @@ public class BulkImporterImpl implements BulkImporter {
 
     private final AtlasEntityStore entityStore;
     private final AtlasGraph atlasGraph;
-    private AtlasTypeRegistry typeRegistry;
+    private final AtlasTypeRegistry typeRegistry;
+    private final AtlasEntityChangeNotifier entityChangeNotifier;
 
     @Inject
-    public BulkImporterImpl(AtlasGraph atlasGraph, AtlasEntityStore entityStore, AtlasTypeRegistry typeRegistry) {
+    public BulkImporterImpl(AtlasGraph atlasGraph, AtlasEntityStore entityStore,
+                            AtlasTypeRegistry typeRegistry, AtlasEntityChangeNotifier entityChangeNotifier) {
         this.atlasGraph = atlasGraph;
         this.entityStore = entityStore;
         this.typeRegistry = typeRegistry;
+        this.entityChangeNotifier = entityChangeNotifier;
     }
 
     @Override
@@ -68,7 +71,7 @@ public class BulkImporterImpl implements BulkImporter {
 
         if (importResult.getRequest().getOptions() != null &&
                 importResult.getRequest().getOptions().containsKey(AtlasImportRequest.OPTION_KEY_MIGRATION)) {
-            importStrategy = new MigrationImport(this.atlasGraph, new AtlasGraphProvider(), this.typeRegistry);
+            importStrategy = new MigrationImport(this.atlasGraph, new AtlasGraphProvider(), this.typeRegistry, entityChangeNotifier);
         } else {
             importStrategy = new RegularImport(this.atlasGraph, this.entityStore, this.typeRegistry);
         }

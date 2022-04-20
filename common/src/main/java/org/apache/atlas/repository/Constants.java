@@ -22,6 +22,8 @@ import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.commons.configuration.Configuration;
 
+import java.util.ArrayList;
+
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.encodePropertyKey;
 
 /**
@@ -132,6 +134,8 @@ public final class Constants {
      */
     public static final String PROCESS_OUTPUTS = "__Process.outputs";
     public static final String PROCESS_INPUTS = "__Process.inputs";
+
+    public static String[] PROCESS_EDGE_LABELS = {PROCESS_OUTPUTS, PROCESS_INPUTS};
 
     /**
      * The homeId field is used when saving into Atlas a copy of an object that is being imported from another

@@ -5,8 +5,19 @@ import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
 
+import java.util.HashSet;
+import java.util.Set;
+
+import static org.apache.atlas.repository.Constants.ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE;
+import static org.apache.atlas.repository.Constants.ATLAS_GLOSSARY_TERM_ENTITY_TYPE;
+
 
 public interface PreProcessor {
+
+    Set<String> skipInitialAuthCheckTypes = new HashSet<String>() {{
+        add(ATLAS_GLOSSARY_TERM_ENTITY_TYPE);
+        add(ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE);
+    }};
 
     void processAttributes(AtlasStruct entity, EntityMutationContext context, EntityMutations.EntityOperation operation) throws AtlasBaseException;
 }

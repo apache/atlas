@@ -15,30 +15,49 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.model.lineage;
+package org.apache.atlas.discovery;
+
+import org.apache.atlas.model.discovery.SearchParameters;
+import org.apache.atlas.model.lineage.AtlasLineageInfo;
+import org.apache.atlas.model.lineage.AtlasLineageRequest;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.commons.collections.Predicate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Set;
 
 import static org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection.BOTH;
 
 public class AtlasLineageContext {
+    private static final Logger LOG = LoggerFactory.getLogger(AtlasLineageContext.class);
+
     private int depth;
+    private int limit;
     private String guid;
-    private boolean isDataset;
-    private boolean isProcess;
     private boolean hideProcess;
-    private boolean skipDeleted;
+    private boolean allowDeletedProcess;
     private AtlasLineageInfo.LineageDirection direction = BOTH;
 
-    private Set<String> attributes;
+    private boolean isDataset;
+    private boolean isProcess;
 
-    public AtlasLineageContext(AtlasLineageRequest lineageRequest) {
+    private Set<String> attributes;
+    private Predicate predicate;
+
+    private AtlasVertex startDatasetVertex = null;
+
+    public AtlasLineageContext(AtlasLineageRequest lineageRequest, AtlasTypeRegistry typeRegistry) {
         this.guid = lineageRequest.getGuid();
+        this.limit = lineageRequest.getLimit();
         this.depth = lineageRequest.getDepth();
         this.direction = lineageRequest.getDirection();
-        this.skipDeleted = lineageRequest.isSkipDeleted();
         this.hideProcess = lineageRequest.isHideProcess();
+        this.allowDeletedProcess = lineageRequest.isAllowDeletedProcess();
         this.attributes = lineageRequest.getAttributes();
+
+        predicate = constructInMemoryPredicate(typeRegistry, lineageRequest.getEntityFilters());
     }
 
     public int getDepth() {
@@ -47,6 +66,14 @@ public class AtlasLineageContext {
 
     public void setDepth(int depth) {
         this.depth = depth;
+    }
+
+    public int getLimit() {
+        return limit;
+    }
+
+    public void setLimit(int limit) {
+        this.limit = limit;
     }
 
     public String getGuid() {
@@ -73,14 +100,6 @@ public class AtlasLineageContext {
         isProcess = process;
     }
 
-    public boolean isSkipDeleted() {
-        return skipDeleted;
-    }
-
-    public void setSkipDeleted(boolean skipDeleted) {
-        this.skipDeleted = skipDeleted;
-    }
-
     public AtlasLineageInfo.LineageDirection getDirection() {
         return direction;
     }
@@ -105,6 +124,38 @@ public class AtlasLineageContext {
         this.attributes = attributes;
     }
 
+    public AtlasVertex getStartDatasetVertex() {
+        return startDatasetVertex;
+    }
+
+    public void setStartDatasetVertex(AtlasVertex startDatasetVertex) {
+        this.startDatasetVertex = startDatasetVertex;
+    }
+
+    public boolean isAllowDeletedProcess() {
+        return allowDeletedProcess;
+    }
+
+    public void setAllowDeletedProcess(boolean allowDeletedProcess) {
+        this.allowDeletedProcess = allowDeletedProcess;
+    }
+
+    protected Predicate constructInMemoryPredicate(AtlasTypeRegistry typeRegistry, SearchParameters.FilterCriteria filterCriteria) {
+        LineageSearchProcessor lineageSearchProcessor = new LineageSearchProcessor();
+        return lineageSearchProcessor.constructInMemoryPredicate(typeRegistry, filterCriteria);
+    }
+
+    protected boolean evaluate(AtlasVertex vertex) {
+        if (predicate != null) {
+            return predicate.evaluate(vertex);
+        }
+        return true;
+    }
+
+    public boolean shouldApplyLimit() {
+        return limit > 0;
+    }
+
     @Override
     public String toString() {
         return "LineageRequestContext{" +
@@ -112,7 +163,7 @@ public class AtlasLineageContext {
                 ", guid='" + guid + '\'' +
                 ", isDataset=" + isDataset +
                 ", isProcess=" + isProcess +
-                ", skipDeleted=" + skipDeleted +
+                ", allowDeletedProcess=" + allowDeletedProcess +
                 ", direction=" + direction +
                 ", attributes=" + attributes +
                 '}';

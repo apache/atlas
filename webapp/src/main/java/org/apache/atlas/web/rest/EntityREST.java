@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.web.rest;
 
+import com.google.common.collect.Lists;
 import com.sun.jersey.core.header.FormDataContentDisposition;
 import com.sun.jersey.multipart.FormDataParam;
 import org.apache.atlas.AtlasErrorCode;
@@ -35,7 +36,6 @@ import org.apache.atlas.model.instance.*;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
-import org.apache.atlas.repository.audit.CassandraBasedAuditRepository;
 import org.apache.atlas.repository.audit.ESBasedAuditRepository;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
@@ -69,8 +69,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.*;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
+import static org.apache.atlas.AtlasErrorCode.DEPRECATED_API;
 import static org.apache.atlas.authorize.AtlasPrivilege.*;
 
 
@@ -89,20 +92,19 @@ public class EntityREST {
     public static final String PREFIX_ATTR  = "attr:";
     public static final String PREFIX_ATTR_ = "attr_";
     public static final String QUALIFIED_NAME  = "qualifiedName";
+    private static final int HUNDRED_THOUSAND = 100000;
 
 
     private final AtlasTypeRegistry      typeRegistry;
     private final AtlasEntityStore       entitiesStore;
-    private final CassandraBasedAuditRepository  cassandraBasedAuditRepository;
     private final ESBasedAuditRepository  esBasedAuditRepository;
     private final AtlasInstanceConverter instanceConverter;
 
     @Inject
-    public EntityREST(AtlasTypeRegistry typeRegistry, AtlasEntityStore entitiesStore,
-                      CassandraBasedAuditRepository cassandraBasedAuditRepository, ESBasedAuditRepository  esBasedAuditRepository, AtlasInstanceConverter instanceConverter) {
+    public EntityREST(AtlasTypeRegistry typeRegistry, AtlasEntityStore entitiesStore,ESBasedAuditRepository  esBasedAuditRepository,
+                      AtlasInstanceConverter instanceConverter) {
         this.typeRegistry      = typeRegistry;
         this.entitiesStore     = entitiesStore;
-        this.cassandraBasedAuditRepository   = cassandraBasedAuditRepository;
         this.esBasedAuditRepository = esBasedAuditRepository;
         this.instanceConverter = instanceConverter;
     }
@@ -452,6 +454,7 @@ public class EntityREST {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.createOrUpdate()");
             }
+            validateAttributeLength(Lists.newArrayList(entity.getEntity()));
 
             return entitiesStore.createOrUpdate(new AtlasEntityStream(entity), replaceClassifications, replaceBusinessAttributes);
         } finally {
@@ -855,11 +858,27 @@ public class EntityREST {
                         (CollectionUtils.isEmpty(entities.getEntities()) ? 0 : entities.getEntities().size()) + ")");
             }
 
+            validateAttributeLength(entities.getEntities());
+
             EntityStream entityStream = new AtlasEntityStream(entities);
 
             return entitiesStore.createOrUpdate(entityStream, replaceClassifications, replaceBusinessAttributes);
         } finally {
             AtlasPerfTracer.log(perf);
+        }
+    }
+
+    private void validateAttributeLength(final List<AtlasEntity> entities) throws AtlasBaseException {
+        //Predicate to check attribute value exceeding length
+        Predicate<Map.Entry<String, Object>> predicateOfAttributeLengthExceedingLimit = attribute ->
+                attribute.getValue() instanceof String && ((String) attribute.getValue()).length() > HUNDRED_THOUSAND;
+
+        for (final AtlasEntity atlasEntity : entities) {
+            Set<String> attributeKeys = org.apache.commons.collections4.MapUtils.emptyIfNull(atlasEntity.getAttributes())
+                    .entrySet().stream().filter(predicateOfAttributeLengthExceedingLimit).map(Map.Entry::getKey).collect(Collectors.toSet());
+            if (!attributeKeys.isEmpty()) {
+                throw new AtlasBaseException("Attribute(s) " + String.join(",", attributeKeys) + " exceeds limit of "+HUNDRED_THOUSAND+" characters");
+            }
         }
     }
 
@@ -1059,52 +1078,7 @@ public class EntityREST {
                                                    @QueryParam("offset") @DefaultValue("-1") int offset,
                                                    @QueryParam("sortBy") String sortBy,
                                                    @QueryParam("sortOrder") String sortOrder) throws AtlasBaseException {
-        AtlasPerfTracer perf = null;
-
-        try {
-            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.getAuditEvents(" + guid + ", " + startKey + ", " + count + ")");
-            }
-
-            // Enforces authorization for entity-read
-            try {
-                entitiesStore.getHeaderById(guid);
-            } catch (AtlasBaseException e) {
-                if (e.getAtlasErrorCode() == AtlasErrorCode.INSTANCE_GUID_NOT_FOUND) {
-                    AtlasEntityHeader entityHeader = getEntityHeaderFromPurgedAudit(guid);
-
-                    AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, ENTITY_READ, entityHeader), "read entity audit: guid=", guid);
-                } else {
-                    throw e;
-                }
-            }
-
-            List<EntityAuditEventV2> ret = new ArrayList<>();
-
-            if (sortBy != null || offset > -1) {
-                ret = cassandraBasedAuditRepository.listEventsV2(guid, auditAction, sortBy, StringUtils.equalsIgnoreCase(sortOrder, "desc"), offset, count);
-            } else if(auditAction != null) {
-                ret = cassandraBasedAuditRepository.listEventsV2(guid, auditAction, startKey, count);
-            } else {
-                List events = cassandraBasedAuditRepository.listEvents(guid, startKey, count);
-
-                if (events != null) {
-                    for (Object event : events) {
-                        if (event instanceof EntityAuditEventV2) {
-                            ret.add((EntityAuditEventV2) event);
-                        } else if (event instanceof EntityAuditEvent) {
-                            ret.add(instanceConverter.toV2AuditEvent((EntityAuditEvent) event));
-                        } else {
-                            LOG.warn("unknown entity-audit event type {}. Ignored", event != null ? event.getClass().getCanonicalName() : "null");
-                        }
-                    }
-                }
-            }
-
-            return ret;
-        } finally {
-            AtlasPerfTracer.log(perf);
-        }
+        throw new AtlasBaseException(DEPRECATED_API, "/entity/auditSearch");
     }
 
     @POST
@@ -1214,7 +1188,7 @@ public class EntityREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.getEntityHeaders(" + tagUpdateStartTime + ", " + tagUpdateEndTime + ")");
             }
 
-            ClassificationAssociator.Retriever associator = new ClassificationAssociator.Retriever(typeRegistry, cassandraBasedAuditRepository);
+            ClassificationAssociator.Retriever associator = new ClassificationAssociator.Retriever(typeRegistry, esBasedAuditRepository);
             return associator.get(tagUpdateStartTime, tagUpdateEndTime);
         } finally {
             AtlasPerfTracer.log(perf);
@@ -1629,7 +1603,7 @@ public class EntityREST {
     }
 
     private AtlasEntityHeader getEntityHeaderFromPurgedAudit(String guid) throws AtlasBaseException {
-        List<EntityAuditEventV2> auditEvents = cassandraBasedAuditRepository.listEventsV2(guid, EntityAuditActionV2.ENTITY_PURGE, null, (short)1);
+        List<EntityAuditEventV2> auditEvents = esBasedAuditRepository.listEventsV2(guid, EntityAuditActionV2.ENTITY_PURGE, null, (short)1);
         AtlasEntityHeader        ret         = CollectionUtils.isNotEmpty(auditEvents) ? auditEvents.get(0).getEntityHeader() : null;
 
         if (ret == null) {

@@ -1024,6 +1024,11 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 Result result = iterator.next();
                 AtlasVertex vertex = result.getVertex();
 
+                if (vertex == null) {
+                    LOG.warn("vertex in null");
+                    continue;
+                }
+
                 AtlasEntityHeader header = entityRetriever.toAtlasEntityHeader(vertex, resultAttributes);
                 header.setClassifications(entityRetriever.getAllClassifications(vertex));
                 if (showSearchScore) {

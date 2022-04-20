@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.stats;
 
+import org.apache.atlas.annotation.EnableConditional;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.listener.EntityChangeListenerV2;
 import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
@@ -33,6 +34,7 @@ import java.util.Map;
 import java.util.Set;
 
 @Component
+@EnableConditional(property = "atlas.enable.entity.stats")
 public class EntityStatsListenerV2 implements EntityChangeListenerV2 {
 
     private final StatsClient statsClient;

@@ -19,6 +19,7 @@ package org.apache.atlas.model.lineage;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
 
 import java.util.HashSet;
@@ -34,9 +35,11 @@ import static org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection.*
 public class AtlasLineageRequest {
     private String guid;
     private int depth;
-    private boolean skipDeleted;
+    private int limit = -1;
     private boolean hideProcess;
+    private boolean allowDeletedProcess;
     private LineageDirection direction = BOTH;
+    private SearchParameters.FilterCriteria entityFilters;
 
     private Set<String> attributes;
 
@@ -66,12 +69,12 @@ public class AtlasLineageRequest {
         this.depth = depth;
     }
 
-    public boolean isSkipDeleted() {
-        return skipDeleted;
+    public int getLimit() {
+        return limit;
     }
 
-    public void setSkipDeleted(boolean skipDeleted) {
-        this.skipDeleted = skipDeleted;
+    public void setLimit(int limit) {
+        this.limit = limit;
     }
 
     public LineageDirection getDirection() {
@@ -96,5 +99,21 @@ public class AtlasLineageRequest {
 
     public void setAttributes(Set<String> attributes) {
         this.attributes = attributes;
+    }
+
+    public SearchParameters.FilterCriteria getEntityFilters() {
+        return entityFilters;
+    }
+
+    public void setEntityFilters(SearchParameters.FilterCriteria entityFilters) {
+        this.entityFilters = entityFilters;
+    }
+
+    public boolean isAllowDeletedProcess() {
+        return allowDeletedProcess;
+    }
+
+    public void setAllowDeletedProcess(boolean allowDeletedProcess) {
+        this.allowDeletedProcess = allowDeletedProcess;
     }
 }

@@ -44,6 +44,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.apache.atlas.EntityAuditEvent.EntityAuditAction.TERM_ADD;
 import static org.apache.atlas.EntityAuditEvent.EntityAuditAction.TERM_DELETE;
@@ -55,12 +56,12 @@ import static org.apache.atlas.EntityAuditEvent.EntityAuditAction.TERM_DELETE;
 public class EntityAuditListener implements EntityChangeListener {
     private static final Logger LOG = LoggerFactory.getLogger(EntityAuditListener.class);
 
-    private final EntityAuditRepository auditRepository;
+    private final Set<EntityAuditRepository> auditRepositories;
     private final AtlasTypeRegistry     typeRegistry;
 
     @Inject
-    public EntityAuditListener(CassandraBasedAuditRepository auditRepository, AtlasTypeRegistry typeRegistry) {
-        this.auditRepository = auditRepository;
+    public EntityAuditListener(Set<EntityAuditRepository> auditRepositories, AtlasTypeRegistry typeRegistry) {
+        this.auditRepositories = auditRepositories;
         this.typeRegistry    = typeRegistry;
     }
 
@@ -68,13 +69,15 @@ public class EntityAuditListener implements EntityChangeListener {
     public void onEntitiesAdded(Collection<Referenceable> entities, boolean isImport) throws AtlasException {
         MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
 
-        List<EntityAuditEvent> events = new ArrayList<>();
-        for (Referenceable entity : entities) {
-            EntityAuditEvent event = createEvent(entity, isImport ? EntityAuditAction.ENTITY_IMPORT_CREATE : EntityAuditAction.ENTITY_CREATE);
-            events.add(event);
-        }
+        for (EntityAuditRepository auditRepository: auditRepositories) {
+            List<EntityAuditEvent> events = new ArrayList<>();
+            for (Referenceable entity : entities) {
+                EntityAuditEvent event = createEvent(entity, isImport ? EntityAuditAction.ENTITY_IMPORT_CREATE : EntityAuditAction.ENTITY_CREATE);
+                events.add(event);
+            }
 
-        auditRepository.putEventsV1(events);
+            auditRepository.putEventsV1(events);
+        }
 
         RequestContext.get().endMetricRecord(metric);
     }
@@ -89,7 +92,9 @@ public class EntityAuditListener implements EntityChangeListener {
             events.add(event);
         }
 
-        auditRepository.putEventsV1(events);
+        for (EntityAuditRepository auditRepository: auditRepositories) {
+            auditRepository.putEventsV1(events);
+        }
 
         RequestContext.get().endMetricRecord(metric);
     }
@@ -103,7 +108,9 @@ public class EntityAuditListener implements EntityChangeListener {
                 EntityAuditEvent event = createEvent(entity, EntityAuditAction.TAG_ADD,
                                                      "Added trait: " + AtlasType.toV1Json(trait));
 
-                auditRepository.putEventsV1(event);
+                for (EntityAuditRepository auditRepository: auditRepositories) {
+                    auditRepository.putEventsV1(event);
+                }
             }
 
             RequestContext.get().endMetricRecord(metric);
@@ -118,7 +125,9 @@ public class EntityAuditListener implements EntityChangeListener {
             for (Struct trait : traits) {
                 EntityAuditEvent event = createEvent(entity, EntityAuditAction.TAG_DELETE, "Deleted trait: " + trait.getTypeName());
 
-                auditRepository.putEventsV1(event);
+                for (EntityAuditRepository auditRepository: auditRepositories) {
+                    auditRepository.putEventsV1(event);
+                }
             }
 
             RequestContext.get().endMetricRecord(metric);
@@ -134,7 +143,9 @@ public class EntityAuditListener implements EntityChangeListener {
                 EntityAuditEvent event = createEvent(entity, EntityAuditAction.TAG_UPDATE,
                                                      "Updated trait: " + AtlasType.toV1Json(trait));
 
-                auditRepository.putEventsV1(event);
+                for (EntityAuditRepository auditRepository: auditRepositories) {
+                    auditRepository.putEventsV1(event);
+                }
             }
 
             RequestContext.get().endMetricRecord(metric);
@@ -151,7 +162,9 @@ public class EntityAuditListener implements EntityChangeListener {
             events.add(event);
         }
 
-        auditRepository.putEventsV1(events);
+        for (EntityAuditRepository auditRepository: auditRepositories) {
+            auditRepository.putEventsV1(events);
+        }
 
         RequestContext.get().endMetricRecord(metric);
     }
@@ -166,7 +179,9 @@ public class EntityAuditListener implements EntityChangeListener {
             events.add(createEvent(entity, TERM_ADD, "Added term: " + term.toAuditString()));
         }
 
-        auditRepository.putEventsV1(events);
+        for (EntityAuditRepository auditRepository: auditRepositories) {
+            auditRepository.putEventsV1(events);
+        }
 
         RequestContext.get().endMetricRecord(metric);
     }
@@ -181,13 +196,11 @@ public class EntityAuditListener implements EntityChangeListener {
             events.add(createEvent(entity, TERM_DELETE, "Deleted term: " + term.toAuditString()));
         }
 
-        auditRepository.putEventsV1(events);
+        for (EntityAuditRepository auditRepository: auditRepositories) {
+            auditRepository.putEventsV1(events);
+        }
 
         RequestContext.get().endMetricRecord(metric);
-    }
-
-    public List<EntityAuditEvent> getAuditEvents(String guid) throws AtlasException{
-        return auditRepository.listEventsV1(guid, null, (short) 10);
     }
 
     private EntityAuditEvent createEvent(Referenceable entity, EntityAuditAction action)
@@ -209,7 +222,7 @@ public class EntityAuditListener implements EntityChangeListener {
         String auditString  = auditPrefix + AtlasType.toV1Json(entity);
         byte[] auditBytes   = auditString.getBytes(StandardCharsets.UTF_8);
         long   auditSize    = auditBytes != null ? auditBytes.length : 0;
-        long   auditMaxSize = auditRepository.repositoryMaxSize();
+        long   auditMaxSize = 1024 * 1024;
 
         if (auditMaxSize >= 0 && auditSize > auditMaxSize) { // don't store attributes in audit
             LOG.warn("audit record too long: entityType={}, guid={}, size={}; maxSize={}. entity attribute values not stored in audit",
@@ -243,7 +256,7 @@ public class EntityAuditListener implements EntityChangeListener {
     private Map<String, Object> pruneEntityAttributesForAudit(Referenceable entity) throws AtlasException {
         Map<String, Object> ret               = null;
         Map<String, Object> entityAttributes  = entity.getValuesMap();
-        List<String>        excludeAttributes = auditRepository.getAuditExcludeAttributes(entity.getTypeName());
+        List<String>        excludeAttributes = null;
         AtlasEntityType     entityType        = typeRegistry.getEntityTypeByName(entity.getTypeName());
 
         if (CollectionUtils.isNotEmpty(excludeAttributes) && MapUtils.isNotEmpty(entityAttributes) && entityType != null) {

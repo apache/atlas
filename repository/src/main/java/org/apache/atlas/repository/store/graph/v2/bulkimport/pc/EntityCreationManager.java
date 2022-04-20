@@ -26,6 +26,7 @@ import org.apache.atlas.pc.WorkItemManager;
 import org.apache.atlas.repository.migration.DataMigrationStatusService;
 import org.apache.atlas.repository.store.graph.v2.BulkImporterImpl;
 import org.apache.atlas.repository.store.graph.v2.EntityImportStream;
+import org.apache.atlas.repository.store.graph.v2.IAtlasEntityChangeNotifier;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,11 +42,16 @@ public class EntityCreationManager<AtlasEntityWithExtInfo> extends WorkItemManag
     private String currentTypeName;
     private float currentPercent;
     private EntityImportStream entityImportStream;
+    private final IAtlasEntityChangeNotifier entityChangeNotifier;
 
-    public EntityCreationManager(WorkItemBuilder builder, int batchSize, int numWorkers, AtlasImportResult importResult, DataMigrationStatusService dataMigrationStatusService) {
+    public EntityCreationManager(WorkItemBuilder builder, int batchSize, int numWorkers,
+                                 AtlasImportResult importResult,
+                                 IAtlasEntityChangeNotifier entityChangeNotifier,
+                                 DataMigrationStatusService dataMigrationStatusService) {
         super(builder, WORKER_PREFIX, batchSize, numWorkers, true);
         this.importResult = importResult;
         this.dataMigrationStatusService = dataMigrationStatusService;
+        this.entityChangeNotifier = entityChangeNotifier;
 
         this.statusReporter = new StatusReporter<>(STATUS_REPORT_TIMEOUT_DURATION);
     }

@@ -55,6 +55,7 @@ import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityComparator.AtlasEntityDiffResult;
 import org.apache.atlas.repository.store.graph.v1.RestoreHandlerV1;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
 import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasBusinessMetadataType;
 import org.apache.atlas.type.AtlasBusinessMetadataType.AtlasBusinessAttribute;
@@ -1122,8 +1123,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             AtlasAuthorizationUtils.verifyAccess(requestBuilder.build(), "add/update business-metadata: guid=", guid, ", business-metadata-name=", bmName);
         }
 
-        validateBusinessAttributes(entityVertex, entityType, businessAttrbutes, isOverwrite);
-
         if (isOverwrite) {
             entityGraphMapper.setBusinessAttributes(entityVertex, entityType, businessAttrbutes);
         } else {
@@ -1334,8 +1333,10 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             // Check if authorized to create entities
             if (!RequestContext.get().isImportInProgress()) {
                 for (AtlasEntity entity : context.getCreatedEntities()) {
-                    AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, new AtlasEntityHeader(entity)),
-                            "create entity: type=", entity.getTypeName());
+                    if (!PreProcessor.skipInitialAuthCheckTypes.contains(entity.getTypeName())) {
+                        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, new AtlasEntityHeader(entity)),
+                                "create entity: type=", entity.getTypeName());
+                    }
                 }
             }
 
@@ -1386,9 +1387,29 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 // Check if authorized to update entities
                 if (!reqContext.isImportInProgress()) {
                     for (AtlasEntity entity : context.getUpdatedEntities()) {
-                        AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(entity.getGuid());
-                        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, entityHeader),
-                                "update entity: type=", entity.getTypeName());
+                        AtlasEntityHeader entityHeaderWithClassifications = entityRetriever.toAtlasEntityHeaderWithClassifications(entity.getGuid());
+                        AtlasEntityHeader entityHeader = new AtlasEntityHeader(entity);
+
+                        if(CollectionUtils.isNotEmpty(entityHeaderWithClassifications.getClassifications())) {
+                            entityHeader.setClassifications(entityHeaderWithClassifications.getClassifications());
+                        }
+
+                        AtlasEntity diffEntity = reqContext.getDifferentialEntity(entity.getGuid());
+
+                        if (diffEntity != null &&
+                                MapUtils.isNotEmpty(diffEntity.getRelationshipAttributes()) &&
+                                diffEntity.getRelationshipAttributes().containsKey("meanings") &&
+                                diffEntity.getRelationshipAttributes().size() == 1 &&
+                                MapUtils.isEmpty(diffEntity.getAttributes()) &&
+                                MapUtils.isEmpty(diffEntity.getCustomAttributes()) &&
+                                MapUtils.isEmpty(diffEntity.getBusinessAttributes()) &&
+                                CollectionUtils.isEmpty(diffEntity.getClassifications()) &&
+                                CollectionUtils.isEmpty(diffEntity.getLabels())) {
+                            //do nothing, only diff is relationshipAttributes.meanings, allow update
+                        } else {
+                            AtlasEntityAccessRequest accessRequest = new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, entityHeader);
+                            AtlasAuthorizationUtils.verifyAccess(accessRequest, "update entity: type=", entity.getTypeName());
+                        }
                     }
                 }
 
@@ -1569,7 +1590,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         RequestContext         req      = RequestContext.get();
 
         Collection<AtlasVertex> categories = new ArrayList<>();
-        Collection<AtlasVertex> other = new ArrayList<>();
+        Collection<AtlasVertex> others = new ArrayList<>();
 
         MetricRecorder metric = RequestContext.get().startMetricRecord("filterCategoryVertices");
         for (AtlasVertex vertex : deletionCandidates) {
@@ -1577,7 +1598,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             if (ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE.equals(typeName)) {
                 categories.add(vertex);
             } else {
-                other.add(vertex);
+                others.add(vertex);
             }
         }
         RequestContext.get().endMetricRecord(metric);
@@ -1587,8 +1608,10 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             deleteDelegate.getHandler(DeleteType.HARD).deleteEntities(categories);
         }
 
-        if (CollectionUtils.isNotEmpty(other)) {
-            deleteDelegate.getHandler().deleteEntities(other);
+        if (CollectionUtils.isNotEmpty(others)) {
+
+            deleteDelegate.getHandler().removeHasLineageOnDelete(others);
+            deleteDelegate.getHandler().deleteEntities(others);
         }
 
         for (AtlasEntityHeader entity : req.getDeletedEntities()) {
@@ -1736,57 +1759,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                     }
                 }
             }
-        }
-    }
-
-    private void validateBusinessAttributes(AtlasVertex entityVertex, AtlasEntityType entityType, Map<String, Map<String, Object>> businessAttributes, boolean isOverwrite) throws AtlasBaseException {
-        List<String> messages = new ArrayList<>();
-
-        Map<String, Map<String, AtlasBusinessAttribute>> entityTypeBusinessMetadata = entityType.getBusinessAttributes();
-
-        for (String bmName : businessAttributes.keySet()) {
-            if (!entityTypeBusinessMetadata.containsKey(bmName)) {
-                messages.add(bmName + ": invalid business-metadata for entity type " + entityType.getTypeName());
-
-                continue;
-            }
-
-            Map<String, AtlasBusinessAttribute> entityTypeBusinessAttributes = entityTypeBusinessMetadata.get(bmName);
-            Map<String, Object>                         entityBusinessAttributes     = businessAttributes.get(bmName);
-
-            for (AtlasBusinessAttribute bmAttribute : entityTypeBusinessAttributes.values()) {
-                AtlasType attrType  = bmAttribute.getAttributeType();
-                String    attrName  = bmAttribute.getName();
-                Object    attrValue = entityBusinessAttributes.get(attrName);
-                String    fieldName = entityType.getTypeName() + "." + bmName + "." + attrName;
-
-                if (attrValue != null) {
-                    attrType.validateValue(attrValue, fieldName, messages);
-                    boolean isValidLength = bmAttribute.isValidLength(attrValue);
-                    if (!isValidLength) {
-                        messages.add(fieldName + ":  Business attribute-value exceeds maximum length limit");
-                    }
-
-                } else if (!bmAttribute.getAttributeDef().getIsOptional()) {
-                    final boolean isAttrValuePresent;
-
-                    if (isOverwrite) {
-                        isAttrValuePresent = false;
-                    } else {
-                        Object existingValue = AtlasGraphUtilsV2.getEncodedProperty(entityVertex, bmAttribute.getVertexPropertyName(), Object.class);
-
-                        isAttrValuePresent = existingValue != null;
-                    }
-
-                    if (!isAttrValuePresent) {
-                        messages.add(fieldName + ": mandatory business-metadata attribute value missing in type " + entityType.getTypeName());
-                    }
-                }
-            }
-        }
-
-        if (!messages.isEmpty()) {
-            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_CRUD_INVALID_PARAMS, messages);
         }
     }
 

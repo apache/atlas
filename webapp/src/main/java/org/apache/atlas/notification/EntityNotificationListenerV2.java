@@ -19,6 +19,7 @@ package org.apache.atlas.notification;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.annotation.EnableConditional;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.listener.EntityChangeListenerV2;
 import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
@@ -69,6 +70,7 @@ import static org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever.OW
 import static org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever.QUALIFIED_NAME;
 
 @Component
+@EnableConditional(property = "atlas.enable.entity.notifications")
 public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
     private static final Logger LOG = LoggerFactory.getLogger(EntityNotificationListenerV2.class);
 

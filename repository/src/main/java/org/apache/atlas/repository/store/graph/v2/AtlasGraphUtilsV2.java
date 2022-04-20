@@ -390,6 +390,11 @@ public class AtlasGraphUtilsV2 {
     public static AtlasVertex findByGuid(AtlasGraph graph, String guid) {
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("findByGuid");
 
+        if (guid == null) {
+            LOG.warn("findByGuid -> called for null guid!");
+            return null;
+        }
+
         AtlasVertex ret = GraphTransactionInterceptor.getVertexFromCache(guid);
 
         if (ret == null) {
