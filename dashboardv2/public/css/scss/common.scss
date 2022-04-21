@@ -122,6 +122,7 @@ pre {
 
         position: relative;
         overflow: hidden;
+        word-break: break-word;
 
         &.shrink {
             height: 112px;
