@@ -99,7 +99,7 @@ fi
 
 KAFKA_CP="${KAFKA_CONF}"
 
-for i in "${KAFKA_HOME}/libs/"*.jar; do
+for i in "${KAFKA_HOME}/libs/kafka-clients"*.jar "${KAFKA_HOME}/libs/slf4j-api"*.jar; do
     KAFKA_CP="${KAFKA_CP}:$i"
 done
 
