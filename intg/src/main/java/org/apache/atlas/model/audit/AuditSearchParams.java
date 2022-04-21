@@ -22,11 +22,14 @@ public class AuditSearchParams {
 
     private Map dsl;
 
+    private boolean suppressLogs;
+
     public AuditSearchParams() {
         Map<String, Object> order = new HashMap<>();
         order.put("order", "desc");
 
         defaultSort.put("created", order);
+        suppressLogs = true;
     }
 
     public void setDsl(Map dsl) {
@@ -35,6 +38,14 @@ public class AuditSearchParams {
 
     public Map getDsl() {
         return this.dsl;
+    }
+
+    public boolean getSuppressLogs() {
+        return suppressLogs;
+    }
+
+    public void setSuppressLogs(boolean suppressLogs) {
+        this.suppressLogs = suppressLogs;
     }
 
     public String getQueryStringForGuid(String guid) {

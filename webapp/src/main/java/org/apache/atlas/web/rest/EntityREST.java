@@ -32,6 +32,7 @@ import org.apache.atlas.model.audit.AuditSearchParams;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2;
 import org.apache.atlas.model.audit.EntityAuditSearchResult;
+import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.instance.*;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
@@ -1130,7 +1131,7 @@ public class EntityREST {
 
             EntityAuditSearchResult ret = esBasedAuditRepository.searchEvents(dslString);
 
-            scrubEntityAudits(ret);
+            scrubEntityAudits(ret, parameters.getSuppressLogs());
 
             return ret;
         } finally {
@@ -1138,32 +1139,34 @@ public class EntityREST {
         }
     }
 
-    private void scrubEntityAudits(EntityAuditSearchResult result) throws AtlasBaseException {
+    private void scrubEntityAudits(EntityAuditSearchResult result, boolean suppressLogs) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("scrubEntityAudits");
         for (EntityAuditEventV2 event : result.getEntityAudits()) {
             try {
                 AtlasEntityWithExtInfo entityWithExtInfo = entitiesStore.getByIdWithoutAuthorization(event.getEntityId());
                 AtlasEntityHeader entityHeader = new AtlasEntityHeader(entityWithExtInfo.getEntity());
-
-                AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, ENTITY_READ, entityHeader), "read entity audit: guid=", event.getEntityId());
+                AtlasSearchResult ret = new AtlasSearchResult();
+                ret.addEntity(entityHeader);
+                AtlasSearchResultScrubRequest request = new AtlasSearchResultScrubRequest(typeRegistry, ret);
+                AtlasAuthorizationUtils.scrubSearchResults(request, suppressLogs);
+                if(entityHeader.getScrubbed()!= null && entityHeader.getScrubbed()){
+                    event.setDetail(null);
+                }
 
             } catch (AtlasBaseException e) {
                 if (e.getAtlasErrorCode() == AtlasErrorCode.INSTANCE_GUID_NOT_FOUND) {
                     try {
                         AtlasEntityHeader entityHeader = event.getEntityHeader();
-
-                        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, ENTITY_READ, entityHeader), "read entity audit: guid=", event.getEntityId());
-                    } catch (AtlasBaseException abe) {
-                        if (abe.getAtlasErrorCode() == AtlasErrorCode.UNAUTHORIZED_ACCESS) {
+                        AtlasSearchResult ret = new AtlasSearchResult();
+                        ret.addEntity(entityHeader);
+                        AtlasSearchResultScrubRequest request = new AtlasSearchResultScrubRequest(typeRegistry, ret);
+                        AtlasAuthorizationUtils.scrubSearchResults(request, suppressLogs);
+                        if(entityHeader.getScrubbed()!= null && entityHeader.getScrubbed()){
                             event.setDetail(null);
-                        } else {
-                            throw abe;
                         }
+                    } catch (AtlasBaseException abe) {
+                            throw abe;
                     }
-                } else if (e.getAtlasErrorCode() == AtlasErrorCode.UNAUTHORIZED_ACCESS) {
-                    event.setDetail(null);
-                } else {
-                    throw e;
                 }
             }
         }
