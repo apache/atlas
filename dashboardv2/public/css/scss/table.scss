@@ -277,7 +277,7 @@ td {
     pre.scroll-y {
         max-height: 200px;
         overflow-y: auto;
-        word-break: break-all;
+        word-break: break-word;
     }
 
     &.searchTableName {
