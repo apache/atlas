@@ -43,7 +43,7 @@ def list_attributes_to_params(attributes_list, query_params=None):
 
     for i, attr in enumerate(attributes_list):
         for key, value in attr.items():
-            new_key = PREFIX_ATTR_ + str(i) + ":" + key
+            new_key = PREFIX_ATTR_ + i + ":" + key
             query_params[new_key] = value
 
     return query_params
