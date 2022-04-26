@@ -2010,7 +2010,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             try {
                 edge = graphHelper.getEdge(processVertex, assetVertex, request.getLabel());
             } catch (RepositoryException re) {
-                throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, re);
+                throw new AtlasBaseException(AtlasErrorCode.HAS_LINEAGE_GET_EDGE_FAILED, re);
             }
 
             if (edge != null) {
