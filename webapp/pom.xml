@@ -504,6 +504,13 @@
             </exclusions>
         </dependency>
 
+        <!-- sentry.io dependency in webapp/pom.xml -->
+        <dependency>
+            <groupId>io.sentry</groupId>
+            <artifactId>sentry-log4j</artifactId>
+            <version>1.7.30</version>
+        </dependency>
+
         <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-testtools</artifactId>
