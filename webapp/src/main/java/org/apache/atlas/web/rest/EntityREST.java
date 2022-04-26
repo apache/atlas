@@ -1643,20 +1643,17 @@ public class EntityREST {
      */
     @POST
     @Path("/repairhaslineage")
-    public void repairHasLineage(@QueryParam("guid") final Set<String> guids) throws AtlasBaseException {
-        if (CollectionUtils.isNotEmpty(guids)) {
-            for (String guid : guids) {
-                Servlets.validateQueryParamLength("guid", guid);
-            }
-        }
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    public void repairHasLineage(AtlasHasLineageRequests request) throws AtlasBaseException {
+
         AtlasPerfTracer perf = null;
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.repairHasLineage(" + guids  + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.repairHasLineage()");
             }
 
-            entitiesStore.repairHasLineage(guids);
+            entitiesStore.repairHasLineage(request);
         } finally {
             AtlasPerfTracer.log(perf);
         }

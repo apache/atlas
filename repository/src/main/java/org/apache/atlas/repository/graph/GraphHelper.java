@@ -161,6 +161,18 @@ public final class GraphHelper {
         return ret;
     }
 
+    public AtlasEdge getEdge(AtlasVertex outVertex, AtlasVertex inVertex, String edgeLabel) throws RepositoryException, AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("getEdge");
+
+        if (inVertex.hasEdges(AtlasEdgeDirection.IN, edgeLabel) && outVertex.hasEdges(AtlasEdgeDirection.OUT, edgeLabel)) {
+            AtlasEdge edge = graph.getEdgeBetweenVertices(outVertex, inVertex, edgeLabel);
+                return edge;
+        }
+
+        RequestContext.get().endMetricRecord(metric);
+        return null;
+    }
+
     public AtlasEdge getOrCreateEdge(AtlasVertex outVertex, AtlasVertex inVertex, String edgeLabel) throws RepositoryException, AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("getOrCreateEdge");
         boolean skipRetry = false;

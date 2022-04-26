@@ -42,8 +42,11 @@ import org.apache.atlas.model.instance.AtlasEntity.Status;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasEntityHeaders;
 import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.model.instance.AtlasHasLineageRequest;
+import org.apache.atlas.model.instance.AtlasHasLineageRequests;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
@@ -1994,17 +1997,28 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
     }
 
+
     @Override
     @GraphTransaction
-    public void repairHasLineage(Set<String> guids) throws AtlasBaseException {
+    public void repairHasLineage(AtlasHasLineageRequests requests) throws AtlasBaseException {
         Set<AtlasEdge> inputOutputEdges = new HashSet<>();
 
-        for (String guid : guids) {
-            inputOutputEdges.add(graphHelper.getEdgeForGUID(guid));
+        for (AtlasHasLineageRequest request : requests.getRequest()) {
+            AtlasVertex processVertex = AtlasGraphUtilsV2.findByGuid(this.graph, request.getProcessGuid());
+            AtlasVertex assetVertex = AtlasGraphUtilsV2.findByGuid(this.graph, request.getEndGuid());
+            AtlasEdge edge = null;
+            try {
+                edge = graphHelper.getEdge(processVertex, assetVertex, request.getLabel());
+            } catch (RepositoryException re) {
+                throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, re);
+            }
+
+            if (edge != null) {
+                inputOutputEdges.add(edge);
+            }
         }
         repairHasLineageWithAtlasEdges(inputOutputEdges);
     }
-
 
     public void repairHasLineageWithAtlasEdges(Set<AtlasEdge> inputOutputEdges) {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("repairHasLineageWithAtlasEdges");

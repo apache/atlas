@@ -27,6 +27,7 @@ import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasEntityHeaders;
 import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.model.instance.AtlasHasLineageRequests;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.repository.store.graph.v2.EntityStream;
 import org.apache.atlas.type.AtlasEntityType;
@@ -347,5 +348,5 @@ public interface AtlasEntityStore {
 
     void repairIndex() throws AtlasBaseException;
 
-    void repairHasLineage(Set<String> guids) throws AtlasBaseException;
+    void repairHasLineage(AtlasHasLineageRequests requests) throws AtlasBaseException;
 }
