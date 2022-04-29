@@ -288,7 +288,13 @@ public class TaskRegistry {
                 Iterator<AtlasIndexQuery.Result> iterator = indexQueryResult.getIterator();
 
                 while (iterator.hasNext()) {
-                    ret.add(toAtlasTask(iterator.next().getVertex()));
+                    AtlasVertex vertex = iterator.next().getVertex();
+                    if (vertex != null) {
+                        ret.add(toAtlasTask(vertex));
+                    } else {
+                        LOG.warn("Null vertex while re queuing tasks at index {}", fetched);
+                    }
+
                     fetched++;
                 }
             }
