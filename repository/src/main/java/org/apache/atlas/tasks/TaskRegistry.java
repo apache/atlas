@@ -20,11 +20,14 @@ package org.apache.atlas.tasks;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
+import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.graphdb.DirectIndexQueryResult;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.commons.collections.CollectionUtils;
@@ -34,7 +37,9 @@ import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -42,6 +47,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static org.apache.atlas.repository.Constants.TASK_GUID;
+import static org.apache.atlas.repository.Constants.TASK_STATUS;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getVertexDetails;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.setEncodedProperty;
 
@@ -245,6 +251,58 @@ public class TaskRegistry {
         return ret;
     }
 
+    public List<AtlasTask> getTasksForReQueueIndexSearch() {
+        DirectIndexQueryResult indexQueryResult = null;
+        List<AtlasTask> ret = new ArrayList<>();
+
+        int size = 1000;
+        int from = 0;
+        boolean hasNext = true;
+
+        IndexSearchParams indexSearchParams = new IndexSearchParams();
+
+        List statusClauseList = new ArrayList();
+        statusClauseList.add(mapOf("match", mapOf(TASK_STATUS, AtlasTask.Status.IN_PROGRESS.toString())));
+        statusClauseList.add(mapOf("match", mapOf(TASK_STATUS, AtlasTask.Status.PENDING.toString())));
+
+        Map<String, Object> dsl = mapOf("query", mapOf("bool", mapOf("should", statusClauseList)));
+        dsl.put("sort", Collections.singletonList(mapOf(Constants.TASK_CREATED_TIME, mapOf("order", "asc"))));
+        dsl.put("size", size);
+
+        while (hasNext) {
+            int fetched = 0;
+
+            dsl.put("from", from);
+            indexSearchParams.setDsl(dsl);
+
+            AtlasIndexQuery indexQuery = graph.elasticsearchQuery(Constants.VERTEX_INDEX, indexSearchParams);
+
+            try {
+                indexQueryResult = indexQuery.vertices(indexSearchParams);
+            } catch (AtlasBaseException e) {
+                LOG.error("Failed to fetch pending/in-progress task vertices to re-que");
+                e.printStackTrace();
+            }
+
+            if (indexQueryResult != null) {
+                Iterator<AtlasIndexQuery.Result> iterator = indexQueryResult.getIterator();
+
+                while (iterator.hasNext()) {
+                    ret.add(toAtlasTask(iterator.next().getVertex()));
+                    fetched++;
+                }
+            }
+
+            if (fetched != size) {
+                hasNext = false;
+            }
+
+            from += size;
+        }
+
+        return ret;
+    }
+
     public void commit() {
         this.graph.commit();
     }
@@ -360,5 +418,12 @@ public class TaskRegistry {
                 TASK_GUID, task.getGuid());
 
         return ret;
+    }
+
+    private Map<String, Object> mapOf(String key, Object value) {
+        Map<String, Object> map = new HashMap<>();
+        map.put(key, value);
+
+        return map;
     }
 }
