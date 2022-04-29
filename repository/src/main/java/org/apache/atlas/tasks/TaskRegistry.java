@@ -252,6 +252,7 @@ public class TaskRegistry {
     }
 
     public List<AtlasTask> getTasksForReQueueIndexSearch() {
+        LOG.info("Running ES query to get pending/in progress tasks");
         DirectIndexQueryResult indexQueryResult = null;
         List<AtlasTask> ret = new ArrayList<>();
 
@@ -288,7 +289,13 @@ public class TaskRegistry {
                 Iterator<AtlasIndexQuery.Result> iterator = indexQueryResult.getIterator();
 
                 while (iterator.hasNext()) {
-                    ret.add(toAtlasTask(iterator.next().getVertex()));
+                    AtlasVertex vertex = iterator.next().getVertex();
+                    if (vertex != null) {
+                        ret.add(toAtlasTask(vertex));
+                    } else {
+                        LOG.error("Null vertex while re queuing tasks at index {}", fetched);
+                    }
+
                     fetched++;
                 }
             }

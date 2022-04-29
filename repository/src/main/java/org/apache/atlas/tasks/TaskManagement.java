@@ -235,15 +235,20 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         boolean useGraphQuery = AtlasConfiguration.TASKS_REQUEUE_GRAPH_QUERY.getBoolean();
 
         List<AtlasTask> pendingTasks;
-        if (useGraphQuery) {
-            pendingTasks = this.registry.getTasksForReQueue();
-        } else {
-            pendingTasks = this.registry.getTasksForReQueueIndexSearch();
+        try {
+            if (useGraphQuery) {
+                pendingTasks = this.registry.getTasksForReQueue();
+            } else {
+                pendingTasks = this.registry.getTasksForReQueueIndexSearch();
+            }
+
+            LOG.info("TaskManagement: Found: {}: Tasks pending. Re submitting...", pendingTasks.size());
+
+            addAll(pendingTasks);
+        } catch (Exception e) {
+            LOG.error("TaskManagement: Error while re queue tasks");
+            e.printStackTrace();
         }
-
-        LOG.info("TaskManagement: Found: {}: Tasks pending. Re submitting...", pendingTasks.size());
-
-        addAll(pendingTasks);
     }
 
     @VisibleForTesting
