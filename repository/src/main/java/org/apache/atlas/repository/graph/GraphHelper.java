@@ -760,6 +760,7 @@ public final class GraphHelper {
     }
 
     public static List<AtlasVertex> getPropagationEnabledClassificationVertices(AtlasVertex entityVertex) {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getPropagationEnabledClassificationVertices");
         List<AtlasVertex> ret   = new ArrayList<>();
         if (entityVertex.hasEdges(AtlasEdgeDirection.OUT, CLASSIFICATION_LABEL)) {
             Iterable edges = entityVertex.query().direction(AtlasEdgeDirection.OUT).label(CLASSIFICATION_LABEL).edges();
@@ -781,6 +782,7 @@ public final class GraphHelper {
             }
         }
 
+        RequestContext.get().endMetricRecord(metricRecorder);
         return ret;
     }
 

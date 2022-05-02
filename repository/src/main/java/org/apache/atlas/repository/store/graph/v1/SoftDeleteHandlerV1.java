@@ -28,6 +28,7 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.tasks.TaskManagement;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.commons.collections.CollectionUtils;
 
 import javax.inject.Inject;
 
@@ -35,6 +36,7 @@ import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
 import static org.apache.atlas.repository.Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.MODIFIED_BY_KEY;
 import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
+import static org.apache.atlas.repository.graph.GraphHelper.getPropagatableClassifications;
 
 public class SoftDeleteHandlerV1 extends DeleteHandlerV1 {
 
@@ -71,7 +73,9 @@ public class SoftDeleteHandlerV1 extends DeleteHandlerV1 {
         authorizeRemoveRelation(edge);
 
         if (DEFERRED_ACTION_ENABLED && RequestContext.get().getCurrentTask() == null) {
-            RequestContext.get().addToDeletedEdgesIds(edge.getIdForDisplay());
+            if (CollectionUtils.isNotEmpty(getPropagatableClassifications(edge))) {
+                RequestContext.get().addToDeletedEdgesIds(edge.getIdForDisplay());
+            }
         } else {
             removeTagPropagation(edge);
         }
