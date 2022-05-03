@@ -1650,7 +1650,7 @@ public class EntityREST {
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.repairHasLineage()");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.repairHasLineage(" + request + ")");
             }
 
             entitiesStore.repairHasLineage(request);

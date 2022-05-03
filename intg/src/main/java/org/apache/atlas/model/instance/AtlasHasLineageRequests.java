@@ -50,7 +50,12 @@ public class AtlasHasLineageRequests implements Serializable {
         this.request = request;
     }
 
-
+    @Override
+    public String toString() {
+        return "AtlasHasLineageRequests{" +
+                "request=" + request +
+                '}';
+    }
 
 }
 

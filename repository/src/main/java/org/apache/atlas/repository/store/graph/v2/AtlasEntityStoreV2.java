@@ -2001,6 +2001,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     @Override
     @GraphTransaction
     public void repairHasLineage(AtlasHasLineageRequests requests) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("repairHasLineage");
+
         Set<AtlasEdge> inputOutputEdges = new HashSet<>();
 
         for (AtlasHasLineageRequest request : requests.getRequest()) {
@@ -2008,7 +2010,12 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             AtlasVertex assetVertex = AtlasGraphUtilsV2.findByGuid(this.graph, request.getEndGuid());
             AtlasEdge edge = null;
             try {
-                edge = graphHelper.getEdge(processVertex, assetVertex, request.getLabel());
+                if (processVertex != null && assetVertex != null) {
+                    edge = graphHelper.getEdge(processVertex, assetVertex, request.getLabel());
+                } else {
+                    LOG.warn("Skipping since vertex is null for processGuid {} and asset Guid {}"
+                            ,request.getProcessGuid(),request.getEndGuid()  );
+                }
             } catch (RepositoryException re) {
                 throw new AtlasBaseException(AtlasErrorCode.HAS_LINEAGE_GET_EDGE_FAILED, re);
             }
@@ -2018,6 +2025,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             }
         }
         repairHasLineageWithAtlasEdges(inputOutputEdges);
+        RequestContext.get().endMetricRecord(metricRecorder);
     }
 
     public void repairHasLineageWithAtlasEdges(Set<AtlasEdge> inputOutputEdges) {

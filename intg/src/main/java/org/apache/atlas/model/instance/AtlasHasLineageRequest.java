@@ -68,6 +68,15 @@ public class AtlasHasLineageRequest implements Serializable {
         this.label = label;
     }
 
+    @Override
+    public String toString() {
+        return "AtlasHasLineageRequest{" +
+                "processGuid='" + processGuid + '\'' +
+                ", endGuid='" + endGuid + '\'' +
+                ", label='" + label + '\'' +
+                '}';
+    }
+
 }
 
 
