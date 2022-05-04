@@ -44,6 +44,7 @@ import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.DeleteType;
 import org.apache.atlas.repository.store.graph.v2.tasks.ClassificationTask;
+import org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTask;
 import org.apache.atlas.tasks.TaskManagement;
 import org.apache.atlas.type.*;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
@@ -81,7 +82,7 @@ import static org.apache.atlas.type.Constants.PENDING_TASKS_PROPERTY_KEY;
 public abstract class DeleteHandlerV1 {
     public static final Logger LOG = LoggerFactory.getLogger(DeleteHandlerV1.class);
 
-    static final boolean DEFERRED_ACTION_ENABLED = AtlasConfiguration.TASKS_USE_ENABLED.getBoolean();
+    public static final boolean DEFERRED_ACTION_ENABLED = AtlasConfiguration.TASKS_USE_ENABLED.getBoolean();
 
     protected final GraphHelper          graphHelper;
     private   final AtlasTypeRegistry    typeRegistry;
@@ -1281,6 +1282,17 @@ public abstract class DeleteHandlerV1 {
         AtlasTask           task               = taskManagement.createTask(taskType, currentUser, taskParams);
 
         AtlasGraphUtilsV2.addItemToListProperty(relationshipEdge, EDGE_PENDING_TASKS_PROPERTY_KEY, task.getGuid());
+
+        RequestContext.get().queueTask(task);
+    }
+
+    public void createAndQueueTask(String taskType, String updateTerm, String termQname, AtlasVertex termVertex, int offset) {
+        String termGUID = GraphHelper.getGuid(termVertex);
+        String currentUser = RequestContext.getCurrentUser();
+        Map<String, Object> taskParams = MeaningsTask.toParameters(updateTerm, termQname, termGUID, offset);
+        AtlasTask task = taskManagement.createTask(taskType, currentUser, taskParams);
+
+        AtlasGraphUtilsV2.addItemToListProperty(termVertex, EDGE_PENDING_TASKS_PROPERTY_KEY, task.getGuid());
 
         RequestContext.get().queueTask(task);
     }

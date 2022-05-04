@@ -127,7 +127,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     private final StatsClient                     statsClient;
 
     @Inject
-    EntityDiscoveryService(AtlasTypeRegistry typeRegistry,
+    public EntityDiscoveryService(AtlasTypeRegistry typeRegistry,
                            AtlasGraph graph,
                            GraphBackedSearchIndexer indexer,
                            SearchTracker searchTracker,
