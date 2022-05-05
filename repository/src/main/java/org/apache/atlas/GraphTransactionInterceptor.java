@@ -168,10 +168,6 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
             }
 
             OBJECT_UPDATE_SYNCHRONIZER.releaseLockedObjects();
-
-            if (isSuccess) {
-                submitTasks();
-            }
         }
     }
 

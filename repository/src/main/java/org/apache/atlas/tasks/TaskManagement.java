@@ -50,6 +50,7 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
     private final Statistics                statistics;
     private final Map<String, TaskFactory>  taskTypeFactoryMap;
     private       boolean                   hasStarted;
+    private static boolean                  hasStopped = false;
 
     @Inject
     public TaskManagement(Configuration configuration, TaskRegistry taskRegistry) {
@@ -69,6 +70,10 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         createTaskTypeFactoryMap(taskTypeFactoryMap, taskFactory);
     }
 
+    public static boolean isStopped() {
+        return hasStopped;
+    }
+
     @Override
     public void start() throws AtlasException {
         if (configuration == null || !HAConfiguration.isHAEnabled(configuration)) {
@@ -86,6 +91,7 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
 
     @Override
     public void stop() throws AtlasException {
+        hasStopped = true;
         LOG.info("TaskManagement: Stopped!");
     }
 
@@ -120,8 +126,8 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         return this.registry.getAll();
     }
 
-    public List<AtlasTask> getAll(List<String> statusList) {
-        return this.registry.getAll(statusList);
+    public List<AtlasTask> getAll(List<String> statusList, int offset, int limit) {
+        return this.registry.getAll(statusList, offset, limit);
     }
 
     public List<AtlasTask> getQueuedTasks() {
@@ -155,7 +161,7 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
             return;
         }
 
-        dispatchTasks(tasks);
+        dispatchTasks();
     }
 
     public AtlasTask getByGuid(String guid) throws AtlasBaseException {
@@ -200,16 +206,13 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         }
     }
 
-    private synchronized void dispatchTasks(List<AtlasTask> tasks) {
-        if (CollectionUtils.isEmpty(tasks)) {
-            return;
-        }
+    private synchronized void dispatchTasks() {
 
         if (this.taskExecutor == null) {
             this.taskExecutor = new TaskExecutor(registry, taskTypeFactoryMap, statistics);
         }
 
-        this.taskExecutor.addAll(tasks);
+        this.taskExecutor.addAll();
 
         this.statistics.print();
     }
@@ -232,19 +235,9 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         if (AtlasConfiguration.TASKS_USE_ENABLED.getBoolean() == false) {
             return;
         }
-        boolean useGraphQuery = AtlasConfiguration.TASKS_REQUEUE_GRAPH_QUERY.getBoolean();
 
-        List<AtlasTask> pendingTasks;
         try {
-            if (useGraphQuery) {
-                pendingTasks = this.registry.getTasksForReQueue();
-            } else {
-                pendingTasks = this.registry.getTasksForReQueueIndexSearch();
-            }
-
-            LOG.info("TaskManagement: Found: {}: Tasks pending. Re submitting...", pendingTasks.size());
-
-            addAll(pendingTasks);
+            dispatchTasks();
         } catch (Exception e) {
             LOG.error("TaskManagement: Error while re queue tasks");
             e.printStackTrace();

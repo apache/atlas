@@ -29,8 +29,10 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
+
 
 public class TaskExecutor {
     private static final Logger     PERF_LOG         = AtlasPerfTracer.getPerfLogger("atlas.task");
@@ -40,35 +42,29 @@ public class TaskExecutor {
 
     private static final boolean perfEnabled = AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG);
 
-    private final TaskRegistry              registry;
-    private final Map<String, TaskFactory>  taskTypeFactoryMap;
-    private final TaskManagement.Statistics statistics;
-    private final ExecutorService           executorService;
+    private final TaskQueueWatcher watcher;
+
+    static CountDownLatch latch;
 
     public TaskExecutor(TaskRegistry registry, Map<String, TaskFactory> taskTypeFactoryMap, TaskManagement.Statistics statistics) {
-        this.registry           = registry;
-        this.taskTypeFactoryMap = taskTypeFactoryMap;
-        this.statistics         = statistics;
-        this.executorService    = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder()
+        ExecutorService taskExecutorService = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder()
                                                                     .setDaemon(true)
                                                                     .setNameFormat(TASK_NAME_FORMAT + Thread.currentThread().getName())
                                                                     .build());
+
+        latch = new CountDownLatch(0);
+        watcher = new TaskQueueWatcher(taskExecutorService, registry, taskTypeFactoryMap, statistics, latch);
     }
 
-    public void addAll(List<AtlasTask> tasks) {
-        for (AtlasTask task : tasks) {
-            if (task == null) {
-                continue;
-            }
-
-            TASK_LOG.log(task);
-
-            this.executorService.submit(new TaskConsumer(task, this.registry, this.taskTypeFactoryMap, this.statistics));
+    public void addAll() {
+        if (!RequestContext.isWatcherThreadAlive()) {
+            new Thread(watcher).start();
         }
     }
 
-    public void shutdownExecutor() {
-        this.executorService.shutdownNow();
+    //only called from Unit tests
+    public void addAll(List<AtlasTask> tasks) {
+        //do nothing as tasks will be queued by watcher thread
     }
 
     @VisibleForTesting
@@ -83,14 +79,17 @@ public class TaskExecutor {
         private final TaskRegistry              registry;
         private final TaskManagement.Statistics statistics;
         private final AtlasTask                 task;
+        private CountDownLatch  latch;
 
         AtlasPerfTracer perf = null;
 
-        public TaskConsumer(AtlasTask task, TaskRegistry registry, Map<String, TaskFactory> taskTypeFactoryMap, TaskManagement.Statistics statistics) {
+        public TaskConsumer(AtlasTask task, TaskRegistry registry, Map<String, TaskFactory> taskTypeFactoryMap, TaskManagement.Statistics statistics,
+                            CountDownLatch latch) {
             this.task               = task;
             this.registry           = registry;
             this.taskTypeFactoryMap = taskTypeFactoryMap;
             this.statistics         = statistics;
+            this.latch = latch;
         }
 
         @Override
@@ -99,12 +98,18 @@ public class TaskExecutor {
             int         attemptCount;
 
             try {
-                taskVertex = registry.getVertex(task.getGuid());
-
-                if (task == null || taskVertex == null || task.getStatus() == AtlasTask.Status.COMPLETE) {
-                    TASK_LOG.warn("Task not scheduled as it was not found or status was COMPLETE!", task);
-
+                if (task == null) {
+                    TASK_LOG.info("Task not scheduled as it was not found");
                     return;
+                }
+
+                taskVertex = registry.getVertex(task.getGuid());
+                if (taskVertex == null) {
+                    TASK_LOG.warn("Task not scheduled as vertex not found", task);
+                }
+
+                if (task.getStatus() == AtlasTask.Status.COMPLETE) {
+                    TASK_LOG.warn("Task not scheduled as status was COMPLETE!", task);
                 }
 
                 if (perfEnabled) {
@@ -122,14 +127,10 @@ public class TaskExecutor {
                 }
 
                 performTask(taskVertex, task);
-            } catch (InterruptedException exception) {
-                if (task != null) {
-                    registry.updateStatus(taskVertex, task);
 
-                    TASK_LOG.error("{}: {}: Interrupted!", task, exception);
-                } else {
-                    LOG.error("Interrupted!", exception);
-                }
+            } catch (InterruptedException exception) {
+                registry.updateStatus(taskVertex, task);
+                TASK_LOG.error("{}: {}: Interrupted!", task, exception);
 
                 statistics.error();
             } catch (Exception exception) {
@@ -149,6 +150,7 @@ public class TaskExecutor {
                     TASK_LOG.log(task);
                 }
 
+                latch.countDown();
                 RequestContext.get().clearCache();
                 AtlasPerfTracer.log(perf);
             }
