@@ -2011,7 +2011,7 @@ public class EntityGraphMapper {
                 if (propagateTags && taskManagement != null && DEFERRED_ACTION_ENABLED) {
                     propagateTags = false;
 
-                    createAndQueueTask(CLASSIFICATION_PROPAGATION_ADD, entityVertex, classificationVertex.getIdForDisplay());
+                    createAndQueueTask(CLASSIFICATION_PROPAGATION_ADD, entityVertex, classificationVertex.getIdForDisplay(), classificationName);
                 }
 
                 // add the attributes for the trait instance
@@ -2193,7 +2193,7 @@ public class EntityGraphMapper {
                     throw new AtlasBaseException(AtlasErrorCode.DELETE_TAG_PROPAGATION_NOT_ALLOWED, classificationVertexId, entityGuid);
                 }
 
-                createAndQueueTask(CLASSIFICATION_PROPAGATION_DELETE, entityVertex, classificationVertexId);
+                createAndQueueTask(CLASSIFICATION_PROPAGATION_DELETE, entityVertex, classificationVertexId, classificationName);
 
                 entityVertices = new ArrayList<>();
             } else {
@@ -2428,7 +2428,7 @@ public class EntityGraphMapper {
             if (updatedTagPropagation != null && taskManagement != null && DEFERRED_ACTION_ENABLED) {
                 String propagationType = updatedTagPropagation ? CLASSIFICATION_PROPAGATION_ADD : CLASSIFICATION_PROPAGATION_DELETE;
 
-                createAndQueueTask(propagationType, entityVertex, classificationVertex.getIdForDisplay());
+                createAndQueueTask(propagationType, entityVertex, classificationVertex.getIdForDisplay(), classificationName);
 
                 updatedTagPropagation = null;
             }
@@ -2823,10 +2823,9 @@ public class EntityGraphMapper {
         attributes.put(bmAttribute.getName(), attrValue);
     }
 
-    private void createAndQueueTask(String taskType, AtlasVertex entityVertex, String classificationVertexId) {
-        deleteDelegate.getHandler().createAndQueueTask(taskType, entityVertex, classificationVertexId, null);
+    private void createAndQueueTask(String taskType, AtlasVertex entityVertex, String classificationVertexId, String classificationName) {
+        deleteDelegate.getHandler().createAndQueueTask(taskType, entityVertex, classificationVertexId, null, classificationName);
     }
-
     public void removePendingTaskFromEntity(String entityGuid, String taskGuid) throws EntityNotFoundException {
         if (StringUtils.isEmpty(entityGuid) || StringUtils.isEmpty(taskGuid)) {
             return;
