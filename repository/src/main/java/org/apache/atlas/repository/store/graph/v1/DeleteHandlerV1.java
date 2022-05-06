@@ -405,7 +405,7 @@ public abstract class DeleteHandlerV1 {
 
         if (taskManagement != null && DEFERRED_ACTION_ENABLED) {
             for (AtlasVertex classificationVertex : classificationVertices) {
-                createAndQueueTask(CLASSIFICATION_PROPAGATION_ADD, toVertex, classificationVertex.getIdForDisplay(), relationshipGuid);
+                createAndQueueTask(CLASSIFICATION_PROPAGATION_ADD, toVertex, classificationVertex.getIdForDisplay(), relationshipGuid, GraphHelper.getClassificationName(classificationVertex));
             }
         } else {
             final List<AtlasVertex> propagatedEntityVertices = CollectionUtils.isNotEmpty(classificationVertices) ? entityRetriever.getIncludedImpactedVerticesV2(toVertex, relationshipGuid) : null;
@@ -1016,7 +1016,7 @@ public abstract class DeleteHandlerV1 {
 
             if (isClassificationEdge && removePropagations) {
                 if (taskManagement != null && DEFERRED_ACTION_ENABLED) {
-                    createAndQueueTask(CLASSIFICATION_PROPAGATION_DELETE, instanceVertex, classificationVertex.getIdForDisplay(), null);
+                    createAndQueueTask(CLASSIFICATION_PROPAGATION_DELETE, instanceVertex, classificationVertex.getIdForDisplay(), null, GraphHelper.getClassificationName(classificationVertex));
                 } else {
                     removeTagPropagation(classificationVertex);
                 }
@@ -1190,17 +1190,16 @@ public abstract class DeleteHandlerV1 {
         }
     }
 
-    public void createAndQueueTask(String taskType, AtlasVertex entityVertex, String classificationVertexId, String relationshipGuid) {
+    public void createAndQueueTask(String taskType, AtlasVertex entityVertex, String classificationVertexId, String relationshipGuid, String classificationName) {
         String              currentUser = RequestContext.getCurrentUser();
         String              entityGuid  = GraphHelper.getGuid(entityVertex);
-        Map<String, Object> taskParams  = ClassificationTask.toParameters(entityGuid, classificationVertexId, relationshipGuid);
+        Map<String, Object> taskParams  = ClassificationTask.toParameters(entityGuid, classificationVertexId, relationshipGuid, classificationName);
         AtlasTask           task        = taskManagement.createTask(taskType, currentUser, taskParams);
 
         AtlasGraphUtilsV2.addEncodedProperty(entityVertex, PENDING_TASKS_PROPERTY_KEY, task.getGuid());
 
         RequestContext.get().queueTask(task);
     }
-
     public void createAndQueueTask(String taskType, AtlasEdge relationshipEdge, AtlasRelationship relationship) {
         String              currentUser        = RequestContext.getCurrentUser();
         String              relationshipEdgeId = relationshipEdge.getIdForDisplay();
