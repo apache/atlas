@@ -183,7 +183,7 @@ public class TermPreProcessor implements PreProcessor {
         while (true) {
             Map<String, Object> dsl = getMap("from", from);
             dsl.put("size", offset);
-            dsl.put("query", getMap("bool", getMap("must", getMap("match", getMap("__meanings", termQname)))));
+            dsl.put("query", getMap("bool", getMap("must", getMap("term", getMap("__meanings", getMap("value",termQname))))));
             indexSearchParams.setDsl(dsl);
             AtlasSearchResult searchResult = discovery.directIndexSearch(indexSearchParams);
             List<AtlasEntityHeader> entityHeaders = searchResult.getEntities();
