@@ -60,7 +60,7 @@ public class TaskQueueWatcher implements Runnable {
 
         while (true) {
             try {
-                if (TaskManagement.isStopped()) {
+                if (TaskManagement.hasStopped()) {
                     break;
                 }
 

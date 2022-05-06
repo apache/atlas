@@ -70,7 +70,7 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         createTaskTypeFactoryMap(taskTypeFactoryMap, taskFactory);
     }
 
-    public static boolean isStopped() {
+    public static boolean hasStopped() {
         return hasStopped;
     }
 
