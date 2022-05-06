@@ -56,7 +56,7 @@ public class TaskExecutor {
         watcher = new TaskQueueWatcher(taskExecutorService, registry, taskTypeFactoryMap, statistics, latch);
     }
 
-    public void addAll() {
+    public void startWatcherThread() {
         if (!RequestContext.isWatcherThreadAlive()) {
             new Thread(watcher).start();
         }

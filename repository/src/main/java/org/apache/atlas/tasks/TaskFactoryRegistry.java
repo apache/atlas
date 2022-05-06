@@ -45,7 +45,7 @@ public class TaskFactoryRegistry {
     @PostConstruct
     public void startTaskManagement() throws AtlasException {
         try {
-            if (!taskManagement.hasStarted()) {
+            if (!TaskManagement.isRunning()) {
                 LOG.info("TaskFactoryRegistry: TaskManagement start skipped! Someone else will start it.");
                 return;
             }

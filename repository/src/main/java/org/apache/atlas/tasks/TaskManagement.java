@@ -20,6 +20,7 @@ package org.apache.atlas.tasks;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
@@ -49,8 +50,7 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
     private final TaskRegistry              registry;
     private final Statistics                statistics;
     private final Map<String, TaskFactory>  taskTypeFactoryMap;
-    private       boolean                   hasStarted;
-    private static boolean                  hasStopped = false;
+    private static boolean                  isRunning;
 
     @Inject
     public TaskManagement(Configuration configuration, TaskRegistry taskRegistry) {
@@ -70,28 +70,23 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         createTaskTypeFactoryMap(taskTypeFactoryMap, taskFactory);
     }
 
-    public static boolean hasStopped() {
-        return hasStopped;
-    }
-
     @Override
     public void start() throws AtlasException {
         if (configuration == null || !HAConfiguration.isHAEnabled(configuration)) {
+            isRunning = true;
             startInternal();
         } else {
             LOG.info("TaskManagement.start(): deferring until instance activation");
         }
-
-        this.hasStarted = true;
     }
 
-    public boolean hasStarted() {
-        return this.hasStarted;
+    public static boolean isRunning() {
+        return isRunning;
     }
 
     @Override
     public void stop() throws AtlasException {
-        hasStopped = true;
+        isRunning = false;
         LOG.info("TaskManagement: Stopped!");
     }
 
@@ -99,6 +94,7 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
     public void instanceIsActive() throws AtlasException {
         LOG.info("==> TaskManagement.instanceIsActive()");
 
+        isRunning = true;
         startInternal();
 
         LOG.info("<== TaskManagement.instanceIsActive()");
@@ -106,6 +102,8 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
 
     @Override
     public void instanceIsPassive() throws AtlasException {
+        isRunning = false;
+        RequestContext.setWatcherThreadAlive(false);
         LOG.info("TaskManagement.instanceIsPassive(): no action needed");
     }
 
@@ -212,7 +210,7 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
             this.taskExecutor = new TaskExecutor(registry, taskTypeFactoryMap, statistics);
         }
 
-        this.taskExecutor.addAll();
+        this.taskExecutor.startWatcherThread();
 
         this.statistics.print();
     }

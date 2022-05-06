@@ -60,7 +60,7 @@ public class TaskQueueWatcher implements Runnable {
 
         while (true) {
             try {
-                if (TaskManagement.hasStopped()) {
+                if (!TaskManagement.isRunning()) {
                     break;
                 }
 
@@ -89,15 +89,18 @@ public class TaskQueueWatcher implements Runnable {
                 Thread.sleep(pollInterval);
 
             } catch (InterruptedException interruptedException) {
+                RequestContext.setWatcherThreadAlive(false);
                 LOG.error("TaskQueueWatcher: Interrupted");
                 LOG.error("TaskQueueWatcher thread is terminated, new tasks will not be loaded into the queue until next restart");
                 RequestContext.setWatcherThreadAlive(false);
                 break;
             } catch (Exception e){
+                RequestContext.setWatcherThreadAlive(false);
                 LOG.error("TaskQueueWatcher: Exception occurred");
                 e.printStackTrace();
             }
         }
+        RequestContext.setWatcherThreadAlive(false);
     }
 
     private void addAll(List<AtlasTask> tasks) {
