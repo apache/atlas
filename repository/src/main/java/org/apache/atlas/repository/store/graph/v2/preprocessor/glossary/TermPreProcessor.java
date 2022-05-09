@@ -63,6 +63,7 @@ import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcess
 import static org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTaskFactory.MEANINGS_TEXT_UPDATE;
 import static org.apache.atlas.type.Constants.MEANINGS_TEXT_PROPERTY_KEY;
 
+@Component
 public class TermPreProcessor implements PreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(TermPreProcessor.class);
 
