@@ -82,7 +82,7 @@ import static org.apache.atlas.type.Constants.PENDING_TASKS_PROPERTY_KEY;
 public abstract class DeleteHandlerV1 {
     public static final Logger LOG = LoggerFactory.getLogger(DeleteHandlerV1.class);
 
-    public static final boolean DEFERRED_ACTION_ENABLED = AtlasConfiguration.TASKS_USE_ENABLED.getBoolean();
+    static final boolean DEFERRED_ACTION_ENABLED = AtlasConfiguration.TASKS_USE_ENABLED.getBoolean();
 
     protected final GraphHelper          graphHelper;
     private   final AtlasTypeRegistry    typeRegistry;
@@ -1286,16 +1286,6 @@ public abstract class DeleteHandlerV1 {
         RequestContext.get().queueTask(task);
     }
 
-    public void createAndQueueTask(String taskType, String updateTerm, String termQname, AtlasVertex termVertex, int offset) {
-        String termGUID = GraphHelper.getGuid(termVertex);
-        String currentUser = RequestContext.getCurrentUser();
-        Map<String, Object> taskParams = MeaningsTask.toParameters(updateTerm, termQname, termGUID, offset);
-        AtlasTask task = taskManagement.createTask(taskType, currentUser, taskParams);
-
-        AtlasGraphUtilsV2.addItemToListProperty(termVertex, EDGE_PENDING_TASKS_PROPERTY_KEY, task.getGuid());
-
-        RequestContext.get().queueTask(task);
-    }
 
     public void removeHasLineageOnDelete(Collection<AtlasVertex> vertices) {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("removeHasLineageOnDelete");

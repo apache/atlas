@@ -14,8 +14,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Component
-public class MeaningsUpdateTaskFactory implements TaskFactory {
-    private static final Logger LOG = LoggerFactory.getLogger(MeaningsUpdateTaskFactory.class);
+public class MeaningsTaskFactory implements TaskFactory {
+    private static final Logger LOG = LoggerFactory.getLogger(MeaningsTaskFactory.class);
 
     public static final String MEANINGS_TEXT_UPDATE = "MEANINGS_TEXT_UPDATE";
 
@@ -28,7 +28,7 @@ public class MeaningsUpdateTaskFactory implements TaskFactory {
     protected final TermPreProcessor preprocessor;
 
     @Inject
-    public MeaningsUpdateTaskFactory(EntityDiscoveryService entityDiscovery, EntityGraphMapper entityGraphMapper, TermPreProcessor preprocessor) {
+    public MeaningsTaskFactory(EntityDiscoveryService entityDiscovery, EntityGraphMapper entityGraphMapper, TermPreProcessor preprocessor) {
         this.entityDiscovery = entityDiscovery;
         this.entityGraphMapper = entityGraphMapper;
         this.preprocessor = preprocessor;
@@ -40,7 +40,7 @@ public class MeaningsUpdateTaskFactory implements TaskFactory {
         String taskGuid = atlasTask.getGuid();
 
         if (MEANINGS_TEXT_UPDATE.equals(taskType)) {
-            return new MeaningsUpdateTasks.Update(atlasTask, entityDiscovery, entityGraphMapper, preprocessor);
+            return new MeaningsTasks.Update(atlasTask, entityDiscovery, entityGraphMapper, preprocessor);
         }
         LOG.warn("Type: {} - {} not found!. The task will be ignored.", taskType, taskGuid);
         return null;

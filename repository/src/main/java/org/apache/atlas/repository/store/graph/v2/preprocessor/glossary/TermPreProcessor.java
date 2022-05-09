@@ -18,6 +18,7 @@
 package org.apache.atlas.repository.store.graph.v2.preprocessor.glossary;
 
 
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
@@ -35,6 +36,7 @@ import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.instance.EntityMutations;
+import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -43,6 +45,7 @@ import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
+import org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTask;
 import org.apache.atlas.tasks.TaskManagement;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
@@ -58,14 +61,16 @@ import java.util.List;
 import java.util.Map;
 
 import static org.apache.atlas.repository.Constants.*;
-import static org.apache.atlas.repository.store.graph.v1.DeleteHandlerV1.DEFERRED_ACTION_ENABLED;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
-import static org.apache.atlas.repository.store.graph.v2.tasks.MeaningsUpdateTaskFactory.MEANINGS_TEXT_UPDATE;
+import static org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTaskFactory.MEANINGS_TEXT_UPDATE;
 import static org.apache.atlas.type.Constants.MEANINGS_TEXT_PROPERTY_KEY;
 
 @Component
 public class TermPreProcessor implements PreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(TermPreProcessor.class);
+
+    static final boolean DEFERRED_ACTION_ENABLED = AtlasConfiguration.TASKS_USE_ENABLED.getBoolean();
+
 
     private final AtlasTypeRegistry typeRegistry;
     private final EntityGraphRetriever entityRetriever;
@@ -149,16 +154,16 @@ public class TermPreProcessor implements PreProcessor {
             throw new AtlasBaseException(AtlasErrorCode.ACHOR_UPDATION_NOT_SUPPORTED);
         }
 
-        String vertexQnName = vertex.getProperty(QUALIFIED_NAME, String.class);
+        String vertexQName = vertex.getProperty(QUALIFIED_NAME, String.class);
 
-        entity.setAttribute(QUALIFIED_NAME, vertexQnName);
+        entity.setAttribute(QUALIFIED_NAME, vertexQName);
 
-        String termGUID = GraphHelper.getGuid(vertex);
+        String termGuid = GraphHelper.getGuid(vertex);
         try {
             if (taskManagement != null && DEFERRED_ACTION_ENABLED) {
-                createAndQueueTask(MEANINGS_TEXT_UPDATE, termName, vertexQnName, vertex, ELASTICSEARCH_PAGINATION_OFFSET);
+                createAndQueueTask(MEANINGS_TEXT_UPDATE, termName, vertexQName, vertex, ELASTICSEARCH_PAGINATION_OFFSET);
             } else {
-                updateMeaningsNamesInEntities(termName, vertexQnName, termGUID, ELASTICSEARCH_PAGINATION_OFFSET);
+                updateMeaningsNamesInEntities(termName, vertexQName, termGuid, ELASTICSEARCH_PAGINATION_OFFSET);
             }
         } catch (AtlasBaseException e) {
             throw e;
@@ -167,9 +172,6 @@ public class TermPreProcessor implements PreProcessor {
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
-    private void createAndQueueTask(String taskType, String updateTerm, String termQname, AtlasVertex termVertex, int offset) {
-        deleteDelegate.getHandler().createAndQueueTask(taskType, updateTerm, termQname, termVertex, offset);
-    }
 
     private Map<String, Object> getMap(String key, Object value) {
         Map<String, Object> map = new HashMap<>();
@@ -177,13 +179,13 @@ public class TermPreProcessor implements PreProcessor {
         return map;
     }
 
-    public void updateMeaningsNamesInEntities(String updateTerm, String termQname, String termGUID, int offset) throws AtlasBaseException {
+    public void updateMeaningsNamesInEntities(String updatedTermName, String termQname, String termGuid, int size) throws AtlasBaseException {
         IndexSearchParams indexSearchParams = new IndexSearchParams();
         int from = 0;
         while (true) {
             Map<String, Object> dsl = getMap("from", from);
-            dsl.put("size", offset);
-            dsl.put("query", getMap("bool", getMap("must", getMap("term", getMap("__meanings", getMap("value",termQname))))));
+            dsl.put("size", size);
+            dsl.put("query", getMap("term", getMap("__meanings", getMap("value",termQname))));
             indexSearchParams.setDsl(dsl);
             AtlasSearchResult searchResult = discovery.directIndexSearch(indexSearchParams);
             List<AtlasEntityHeader> entityHeaders = searchResult.getEntities();
@@ -198,24 +200,35 @@ public class TermPreProcessor implements PreProcessor {
                     for (AtlasTermAssignmentHeader meaning : meanings) {
                         String guid = meaning.getTermGuid();
 
-                        if (termGUID == guid) {
-                            meaningsText.append("," + updateTerm);
+                        if (termGuid == guid) {
+                            meaningsText.append("," + updatedTermName);
                         } else {
                             meaningsText.append("," + meaning.getDisplayText());
                         }
                     }
+                    meaningsText.deleteCharAt(0);
                 }
-                meaningsText.deleteCharAt(0);
+
                 AtlasGraphUtilsV2.setEncodedProperty(AtlasGraphUtilsV2.findByGuid(entityHeader.getGuid()), MEANINGS_TEXT_PROPERTY_KEY, meaningsText.toString());
             }
-            from += offset;
+            from += size;
 
-            if (entityHeaders.size() < offset)
+            if (entityHeaders.size() < size)
                 break;
         }
 
     }
 
+    public void createAndQueueTask(String taskType, String updatedTermName, String termQName, AtlasVertex termVertex, int size) {
+        String termGuid = GraphHelper.getGuid(termVertex);
+        String currentUser = RequestContext.getCurrentUser();
+        Map<String, Object> taskParams = MeaningsTask.toParameters(updatedTermName, termQName, termGuid, size);
+        AtlasTask task = taskManagement.createTask(taskType, currentUser, taskParams);
+
+        AtlasGraphUtilsV2.addItemToListProperty(termVertex, EDGE_PENDING_TASKS_PROPERTY_KEY, task.getGuid());
+
+        RequestContext.get().queueTask(task);
+    }
 
     private String createQualifiedName() {
         return getUUID() + "@" + anchor.getAttribute(QUALIFIED_NAME);

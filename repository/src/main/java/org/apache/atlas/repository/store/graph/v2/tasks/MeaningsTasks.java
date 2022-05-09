@@ -8,7 +8,7 @@ import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.TermPreP
 
 import java.util.Map;
 
-public class MeaningsUpdateTasks {
+public class MeaningsTasks {
     public static class Update extends MeaningsTask {
         public Update(AtlasTask task, EntityDiscoveryService entityDiscovery, EntityGraphMapper entityGraphMapper, TermPreProcessor preprocessor) {
             super(task, entityDiscovery, entityGraphMapper, preprocessor);
@@ -16,12 +16,12 @@ public class MeaningsUpdateTasks {
 
         @Override
         protected void run(Map<String, Object> parameters) throws AtlasBaseException {
-            String termEntityGuid = (String) parameters.get(PARAM_ENTITY_GUID);
-            String termQualifiedName = (String) parameters.get(PARAM_ENTITY_QUALIFIED_NAME);
-            String updateTerm = (String) parameters.get(PARAM_TERM_NAME);
-            int offset = (int) parameters.get(PARAM_PAGINATION_OFFSET);
+            String termGuid = (String) parameters.get(PARAM_ENTITY_GUID);
+            String termQName = (String) parameters.get(PARAM_ENTITY_QUALIFIED_NAME);
+            String updatedTermName = (String) parameters.get(PARAM_TERM_NAME);
+            int size = (int) parameters.get(PARAM_PAGINATION_SIZE);
 
-            preprocessor.updateMeaningsNamesInEntities(updateTerm, termQualifiedName, termEntityGuid, offset);
+            preprocessor.updateMeaningsNamesInEntities(updatedTermName, termQName, termGuid, size);
 
         }
     }
