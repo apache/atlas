@@ -40,7 +40,6 @@ import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
@@ -74,11 +73,9 @@ public class TermPreProcessor implements PreProcessor {
     private final EntityGraphRetriever entityRetriever;
     private final TaskManagement taskManagement;
     private EntityDiscoveryService discovery;
-    private final DeleteHandlerDelegate deleteDelegate;
 
     private AtlasEntityHeader anchor;
-    public TermPreProcessor(DeleteHandlerDelegate deleteDelegate, AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, AtlasGraph graph, TaskManagement taskManagement) {
-        this.deleteDelegate = deleteDelegate;
+    public TermPreProcessor( AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, AtlasGraph graph, TaskManagement taskManagement) {
         this.entityRetriever = entityRetriever;
         this.typeRegistry = typeRegistry;
         this.taskManagement = taskManagement;
