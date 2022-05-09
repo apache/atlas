@@ -79,8 +79,6 @@ public class TermPreProcessor implements PreProcessor {
     private final DeleteHandlerDelegate deleteDelegate;
 
     private AtlasEntityHeader anchor;
-
-    @Inject
     public TermPreProcessor(DeleteHandlerDelegate deleteDelegate, AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, AtlasGraph graph, TaskManagement taskManagement) {
         this.deleteDelegate = deleteDelegate;
         this.entityRetriever = entityRetriever;
