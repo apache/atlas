@@ -54,8 +54,6 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-
-import javax.inject.Inject;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -65,7 +63,6 @@ import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcess
 import static org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTaskFactory.MEANINGS_TEXT_UPDATE;
 import static org.apache.atlas.type.Constants.MEANINGS_TEXT_PROPERTY_KEY;
 
-@Component
 public class TermPreProcessor implements PreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(TermPreProcessor.class);
 
