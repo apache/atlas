@@ -92,7 +92,6 @@ public class TaskQueueWatcher implements Runnable {
                 RequestContext.setWatcherThreadAlive(false);
                 LOG.error("TaskQueueWatcher: Interrupted");
                 LOG.error("TaskQueueWatcher thread is terminated, new tasks will not be loaded into the queue until next restart");
-                RequestContext.setWatcherThreadAlive(false);
                 break;
             } catch (Exception e){
                 RequestContext.setWatcherThreadAlive(false);
