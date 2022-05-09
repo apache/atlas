@@ -251,7 +251,9 @@ public enum AtlasErrorCode {
     FAILED_TO_UPDATE_GLOSSARY_TERM(500, "ATLAS-500-00-017", "Error occurred while updating glossary term: {0}"),
     REPAIR_INDEX_FAILED(500, "ATLAS-500-00-018", "Error occurred while repairing indices: {0}"),
     INDEX_SEARCH_FAILED(400, "ATLAS-400-00-102", "Error occurred while running direct index query on ES: {0}"),
-    DEPRECATED_API(400, "ATLAS-400-00-103", "Deprecated API. Use {0} instead");
+    DEPRECATED_API(400, "ATLAS-400-00-103", "Deprecated API. Use {0} instead"),
+    DISABLED_API(400, "ATLAS-400-00-104", "API temporarily disabled. Reason: {0}");
+
 
     private String errorCode;
     private String errorMessage;

@@ -122,6 +122,7 @@ import java.util.stream.Collectors;
 import java.util.*;
 
 import static org.apache.atlas.AtlasErrorCode.DEPRECATED_API;
+import static org.apache.atlas.AtlasErrorCode.DISABLED_API;
 import static org.apache.atlas.web.filters.AtlasCSRFPreventionFilter.CSRF_TOKEN;
 
 
@@ -855,7 +856,8 @@ public class AdminResource {
     @Path("/tasks/retry")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public void retryFailedTasks(@QueryParam("guid") List<String> taskGuids) throws AtlasBaseException {
-        taskManagement.retryTasks(taskGuids);
+        //taskManagement.retryTasks(taskGuids);
+        throw new AtlasBaseException(DISABLED_API, "META-2979: Limit tasks queue");
     }
 
     @DELETE

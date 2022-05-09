@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.tasks;
 
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.tasks.AtlasTask;
@@ -44,6 +45,8 @@ public class TaskExecutorTest extends BaseTaskFixture {
     @Inject
     private TaskManagement taskManagement;
 
+    private long pollingInterval = AtlasConfiguration.TASKS_REQUEUE_POLL_INTERVAL.getLong();
+
     @Test
     public void noTasksExecuted() {
         TaskManagementTest.SpyingFactory spyingFactory = new TaskManagementTest.SpyingFactory();
@@ -65,9 +68,9 @@ public class TaskExecutorTest extends BaseTaskFixture {
         TaskManagement.Statistics statistics = new TaskManagement.Statistics();
         TaskExecutor taskExecutor = new TaskExecutor(taskRegistry, taskFactoryMap, statistics);
 
-        taskExecutor.addAll(Collections.singletonList(new AtlasTask(SPYING_TASK_ADD, "test", Collections.emptyMap())));
+        taskManagement.createTask(SPYING_TASK_ADD, "test", Collections.emptyMap());
 
-        taskExecutor.waitUntilDone();
+        Thread.sleep(pollingInterval + 5000);
         Assert.assertEquals(statistics.getTotal(), 0);
     }
 
@@ -82,16 +85,11 @@ public class TaskExecutorTest extends BaseTaskFixture {
         AtlasTask errorThrowingTask = taskManagement.createTask("errorThrowingTask", "test", Collections.emptyMap());
 
         TaskManagement.Statistics statistics = new TaskManagement.Statistics();
-        List<AtlasTask> tasks = new ArrayList<AtlasTask>() {{
-            add(addTask);
-            add(errorThrowingTask);
-            }};
         graph.commit();
 
         TaskExecutor taskExecutor = new TaskExecutor(taskRegistry, taskFactoryMap, statistics);
-        taskExecutor.addAll(tasks);
 
-        taskExecutor.waitUntilDone();
+        Thread.sleep(pollingInterval + 5000);
         Assert.assertEquals(statistics.getTotal(), 2);
         Assert.assertEquals(statistics.getTotalSuccess(), 1);
         Assert.assertEquals(statistics.getTotalError(), 1);
@@ -113,10 +111,10 @@ public class TaskExecutorTest extends BaseTaskFixture {
         Assert.assertEquals(errorTaskFromDB.getStatus(), AtlasTask.Status.PENDING);
 
         for (int i = errorTaskFromDB.getAttemptCount(); i <= AtlasTask.MAX_ATTEMPT_COUNT; i++) {
-            taskExecutor.addAll(Collections.singletonList(errorThrowingTask));
+            taskManagement.createTask(errorThrowingTask.getType(), errorThrowingTask.getCreatedBy(), errorThrowingTask.getParameters());
         }
 
-        taskExecutor.waitUntilDone();
+        Thread.sleep(pollingInterval + 5000);
         graph.commit();
         Assert.assertEquals(errorThrowingTask.getStatus(), AtlasTask.Status.FAILED);
     }

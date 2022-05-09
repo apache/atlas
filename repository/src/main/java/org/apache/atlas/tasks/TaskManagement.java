@@ -52,6 +52,8 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
     private final Map<String, TaskFactory>  taskTypeFactoryMap;
     private static boolean                  isRunning;
 
+    private Thread watcherThread = null;
+
     @Inject
     public TaskManagement(Configuration configuration, TaskRegistry taskRegistry) {
         this.configuration      = configuration;
@@ -72,11 +74,16 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
 
     @Override
     public void start() throws AtlasException {
-        if (configuration == null || !HAConfiguration.isHAEnabled(configuration)) {
-            isRunning = true;
-            startInternal();
-        } else {
-            LOG.info("TaskManagement.start(): deferring until instance activation");
+        try {
+            if (configuration == null || !HAConfiguration.isHAEnabled(configuration)) {
+                isRunning = true;
+                startInternal();
+            } else {
+                LOG.info("TaskManagement.start(): deferring until instance activation");
+            }
+        } catch (Exception e) {
+            isRunning = false;
+            throw e;
         }
     }
 
@@ -87,6 +94,7 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
     @Override
     public void stop() throws AtlasException {
         isRunning = false;
+        stopQueueWatcher();
         LOG.info("TaskManagement: Stopped!");
     }
 
@@ -94,8 +102,13 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
     public void instanceIsActive() throws AtlasException {
         LOG.info("==> TaskManagement.instanceIsActive()");
 
-        isRunning = true;
-        startInternal();
+        try {
+            isRunning = true;
+            startInternal();
+        } catch (Exception e) {
+            isRunning = false;
+            throw e;
+        }
 
         LOG.info("<== TaskManagement.instanceIsActive()");
     }
@@ -103,7 +116,7 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
     @Override
     public void instanceIsPassive() throws AtlasException {
         isRunning = false;
-        RequestContext.setWatcherThreadAlive(false);
+        stopQueueWatcher();
         LOG.info("TaskManagement.instanceIsPassive(): no action needed");
     }
 
@@ -150,16 +163,8 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         }
 
         if (CollectionUtils.isNotEmpty(taskToRetry)) {
-            addAll(taskToRetry);
+            //addAll(taskToRetry);
         }
-    }
-
-    public void addAll(List<AtlasTask> tasks) {
-        if (CollectionUtils.isEmpty(tasks)) {
-            return;
-        }
-
-        dispatchTasks();
     }
 
     public AtlasTask getByGuid(String guid) throws AtlasBaseException {
@@ -204,13 +209,15 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         }
     }
 
-    private synchronized void dispatchTasks() {
+    private synchronized void startWatcherThread() {
 
         if (this.taskExecutor == null) {
             this.taskExecutor = new TaskExecutor(registry, taskTypeFactoryMap, statistics);
         }
 
-        this.taskExecutor.startWatcherThread();
+        if (watcherThread == null) {
+            watcherThread = this.taskExecutor.startWatcherThread();
+        }
 
         this.statistics.print();
     }
@@ -226,16 +233,8 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
             return;
         }
 
-        queuePendingTasks();
-    }
-
-    private void queuePendingTasks() {
-        if (AtlasConfiguration.TASKS_USE_ENABLED.getBoolean() == false) {
-            return;
-        }
-
         try {
-            dispatchTasks();
+            startWatcherThread();
         } catch (Exception e) {
             LOG.error("TaskManagement: Error while re queue tasks");
             e.printStackTrace();
@@ -257,6 +256,11 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         }
 
         return taskTypeFactoryMap;
+    }
+
+    private void stopQueueWatcher() {
+        taskExecutor.stopQueueWatcher();
+        watcherThread = null;
     }
 
     static class Statistics {

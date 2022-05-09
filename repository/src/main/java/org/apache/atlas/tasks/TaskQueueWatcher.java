@@ -18,14 +18,17 @@
 package org.apache.atlas.tasks;
 
 import org.apache.atlas.AtlasConfiguration;
-import org.apache.atlas.RequestContext;
 import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class TaskQueueWatcher implements Runnable {
     private static final Logger LOG = LoggerFactory.getLogger(TaskQueueWatcher.class);
@@ -40,6 +43,8 @@ public class TaskQueueWatcher implements Runnable {
 
     private CountDownLatch latch = null;
 
+    private final AtomicBoolean shouldRun = new AtomicBoolean(false);
+
     public TaskQueueWatcher(ExecutorService executorService, TaskRegistry registry,
                             Map<String, TaskFactory> taskTypeFactoryMap, TaskManagement.Statistics statistics,
                             CountDownLatch latch) {
@@ -51,16 +56,23 @@ public class TaskQueueWatcher implements Runnable {
         this.latch = latch;
     }
 
+    public void shutdown() {
+        shouldRun.set(false);
+        LOG.info("TaskQueueWatcher: Shutdown");
+    }
+
     @Override
     public void run() {
+        shouldRun.set(true);
+
         if (LOG.isDebugEnabled()) {
             LOG.debug("TaskQueueWatcher: running {}:{}", Thread.currentThread().getName(), Thread.currentThread().getId());
         }
-        RequestContext.setWatcherThreadAlive(true);
 
-        while (true) {
+        while (shouldRun.get()) {
             try {
                 if (!TaskManagement.isRunning()) {
+                    LOG.error("TaskQueueWatcher: TaskManagement is not running");
                     break;
                 }
 
@@ -89,17 +101,13 @@ public class TaskQueueWatcher implements Runnable {
                 Thread.sleep(pollInterval);
 
             } catch (InterruptedException interruptedException) {
-                RequestContext.setWatcherThreadAlive(false);
-                LOG.error("TaskQueueWatcher: Interrupted");
-                LOG.error("TaskQueueWatcher thread is terminated, new tasks will not be loaded into the queue until next restart");
+                LOG.error("TaskQueueWatcher: Interrupted: thread is terminated, new tasks will not be loaded into the queue until next restart");
                 break;
             } catch (Exception e){
-                RequestContext.setWatcherThreadAlive(false);
                 LOG.error("TaskQueueWatcher: Exception occurred");
                 e.printStackTrace();
             }
         }
-        RequestContext.setWatcherThreadAlive(false);
     }
 
     private void addAll(List<AtlasTask> tasks) {

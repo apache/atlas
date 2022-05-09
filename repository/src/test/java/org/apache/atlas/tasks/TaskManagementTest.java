@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.tasks;
 
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -32,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class TaskManagementTest extends BaseTaskFixture {
+    long pollingInterval = AtlasConfiguration.TASKS_REQUEUE_POLL_INTERVAL.getLong();
 
     private static class NullFactory implements TaskFactory {
         @Override
@@ -61,9 +63,7 @@ public class TaskManagementTest extends BaseTaskFixture {
         AtlasTask spyTaskError = createTask(taskManagement, SPYING_TASK_ERROR_THROWING);
         graph.commit();
 
-        taskManagement.addAll(Arrays.asList(spyTask, spyTaskError));
-
-        TimeUnit.SECONDS.sleep(5);
+        TimeUnit.MILLISECONDS.sleep(pollingInterval + 5000);
         Assert.assertTrue(spyingFactory.getAddTask().taskPerformed());
         Assert.assertTrue(spyingFactory.getErrorTask().taskPerformed());
 
@@ -85,12 +85,9 @@ public class TaskManagementTest extends BaseTaskFixture {
                     AtlasTask spyAdd = taskManagement.createTask(SPYING_TASK_ADD, "test", Collections.emptyMap());
                     AtlasTask spyErr = taskManagement.createTask(SPYING_TASK_ERROR_THROWING, "test", Collections.emptyMap());
 
-                    taskManagement.addAll(Collections.singletonList(spyAdd));
-                    taskManagement.addAll(Collections.singletonList(spyErr));
-
                     Thread.sleep(10000);
                     for (int j = 0; j <= AtlasTask.MAX_ATTEMPT_COUNT; j++) {
-                        taskManagement.addAll(Collections.singletonList(spyErr));
+                        taskManagement.createTask(SPYING_TASK_ERROR_THROWING, "test", Collections.emptyMap());
                     }
                 } catch (InterruptedException e) {
                     e.printStackTrace();

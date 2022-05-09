@@ -235,14 +235,6 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
         edgeStateCache.get().clear();
     }
 
-    private void submitTasks() {
-        if (CollectionUtils.isEmpty(RequestContext.get().getQueuedTasks()) || taskManagement == null) {
-            return;
-        }
-
-        taskManagement.addAll(RequestContext.get().getQueuedTasks());
-    }
-
     boolean logException(Throwable t) {
         if (t instanceof AtlasBaseException) {
             Response.Status httpCode = ((AtlasBaseException) t).getAtlasErrorCode().getHttpCode();

@@ -51,8 +51,6 @@ public class RequestContext {
     private static final Set<RequestContext>         ACTIVE_REQUESTS = new HashSet<>();
     private static final boolean                     isMetricsEnabled = METRICS.isDebugEnabled();
 
-    private static boolean                           watcherThreadAlive = false;
-
     private final long                                   requestTime          = System.currentTimeMillis();
     private final Map<String, AtlasEntityHeader>         updatedEntities      = new HashMap<>();
     private final Map<String, AtlasEntityHeader>         deletedEntities      = new HashMap<>();
@@ -213,14 +211,6 @@ public class RequestContext {
     public void setUser(String user, Set<String> userGroups) {
         this.user       = user;
         this.userGroups = userGroups;
-    }
-
-    public static boolean isWatcherThreadAlive() {
-        return watcherThreadAlive;
-    }
-
-    public static void setWatcherThreadAlive(boolean watcherThreadAlive) {
-        RequestContext.watcherThreadAlive = watcherThreadAlive;
     }
 
     public DeleteType getDeleteType() { return deleteType; }
