@@ -152,19 +152,36 @@ public class TermPreProcessor implements PreProcessor {
         entity.setAttribute(QUALIFIED_NAME, vertexQName);
 
         String termGuid = GraphHelper.getGuid(vertex);
-        try {
-            if (taskManagement != null && DEFERRED_ACTION_ENABLED) {
-                createAndQueueTask(MEANINGS_TEXT_UPDATE, termName, vertexQName, vertex, ELASTICSEARCH_PAGINATION_OFFSET);
-            } else {
-                updateMeaningsNamesInEntities(termName, vertexQName, termGuid, ELASTICSEARCH_PAGINATION_OFFSET);
+
+        if(!termName.equals(vertexName) && checkForEntityAssociationToTerm(vertexQName)){
+            try {
+                if (taskManagement != null && DEFERRED_ACTION_ENABLED) {
+                    createAndQueueTask(MEANINGS_TEXT_UPDATE, termName, vertexQName, vertex, ELASTICSEARCH_PAGINATION_OFFSET);
+                } else {
+                    updateMeaningsNamesInEntities(termName, vertexQName, termGuid, ELASTICSEARCH_PAGINATION_OFFSET);
+                }
+            } catch (AtlasBaseException e) {
+                throw e;
             }
-        } catch (AtlasBaseException e) {
-            throw e;
         }
+
 
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
+    private boolean checkForEntityAssociationToTerm(String termQName) throws AtlasBaseException{
+        List<AtlasEntityHeader> entityHeader;
+
+        try {
+             entityHeader= fetchEntityHeadersByTermQualifiedName(0,1,termQName);
+        } catch (AtlasBaseException e) {
+            throw e;
+        }
+
+        Boolean hasEntityAssociation = entityHeader!=null?true:false;
+
+        return hasEntityAssociation;
+    }
 
     private Map<String, Object> getMap(String key, Object value) {
         Map<String, Object> map = new HashMap<>();
@@ -172,16 +189,26 @@ public class TermPreProcessor implements PreProcessor {
         return map;
     }
 
-    public void updateMeaningsNamesInEntities(String updatedTermName, String termQname, String termGuid, int size) throws AtlasBaseException {
+    private List<AtlasEntityHeader> fetchEntityHeadersByTermQualifiedName(int from,int size,String termQName) throws AtlasBaseException{
         IndexSearchParams indexSearchParams = new IndexSearchParams();
+        Map<String, Object> dsl = getMap("from", from);
+        dsl.put("size", size);
+        dsl.put("query", getMap("term", getMap("__meanings", getMap("value",termQName))));
+        indexSearchParams.setDsl(dsl);
+        AtlasSearchResult searchResult = null;
+        try {
+            searchResult = discovery.directIndexSearch(indexSearchParams);
+        } catch (AtlasBaseException e) {
+            throw e;
+        }
+        List<AtlasEntityHeader> entityHeaders = searchResult.getEntities();
+        return  entityHeaders;
+    }
+
+    public void updateMeaningsNamesInEntities(String updatedTermName, String termQName, String termGuid, int size) throws AtlasBaseException {
         int from = 0;
         while (true) {
-            Map<String, Object> dsl = getMap("from", from);
-            dsl.put("size", size);
-            dsl.put("query", getMap("term", getMap("__meanings", getMap("value",termQname))));
-            indexSearchParams.setDsl(dsl);
-            AtlasSearchResult searchResult = discovery.directIndexSearch(indexSearchParams);
-            List<AtlasEntityHeader> entityHeaders = searchResult.getEntities();
+            List<AtlasEntityHeader> entityHeaders = fetchEntityHeadersByTermQualifiedName(from,size,termQName);
 
             if (entityHeaders == null)
                 break;
