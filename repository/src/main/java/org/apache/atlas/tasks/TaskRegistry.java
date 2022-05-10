@@ -297,7 +297,12 @@ public class TaskRegistry {
             try {
                 dsl.put("from", from);
                 if (from + size > queueSize) {
-                    dsl.put("size", queueSize - from);
+                    int remainSize = queueSize - from;
+                    if (remainSize <= 0) {
+                        break;
+                    }
+
+                    dsl.put("size", remainSize);
                 }
                 indexSearchParams.setDsl(dsl);
 
