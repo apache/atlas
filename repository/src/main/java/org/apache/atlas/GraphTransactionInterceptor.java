@@ -168,10 +168,6 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
             }
 
             OBJECT_UPDATE_SYNCHRONIZER.releaseLockedObjects();
-
-            if (isSuccess) {
-                submitTasks();
-            }
         }
     }
 
@@ -237,14 +233,6 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
         vertexGuidCache.get().clear();
         vertexStateCache.get().clear();
         edgeStateCache.get().clear();
-    }
-
-    private void submitTasks() {
-        if (CollectionUtils.isEmpty(RequestContext.get().getQueuedTasks()) || taskManagement == null) {
-            return;
-        }
-
-        taskManagement.addAll(RequestContext.get().getQueuedTasks());
     }
 
     boolean logException(Throwable t) {

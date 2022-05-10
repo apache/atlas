@@ -17,7 +17,6 @@
  */
 package org.apache.atlas.tasks;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.model.tasks.AtlasTask;
@@ -29,8 +28,10 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
+
 
 public class TaskExecutor {
     private static final Logger     PERF_LOG         = AtlasPerfTracer.getPerfLogger("atlas.task");
@@ -40,40 +41,40 @@ public class TaskExecutor {
 
     private static final boolean perfEnabled = AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG);
 
-    private final TaskRegistry              registry;
-    private final Map<String, TaskFactory>  taskTypeFactoryMap;
+    private final ExecutorService taskExecutorService;
+    private final TaskRegistry registry;
+    private final Map<String, TaskFactory> taskTypeFactoryMap;
     private final TaskManagement.Statistics statistics;
-    private final ExecutorService           executorService;
+
+    private TaskQueueWatcher watcher;
+    private Thread watcherThread;
+
+    static CountDownLatch latch;
 
     public TaskExecutor(TaskRegistry registry, Map<String, TaskFactory> taskTypeFactoryMap, TaskManagement.Statistics statistics) {
-        this.registry           = registry;
-        this.taskTypeFactoryMap = taskTypeFactoryMap;
-        this.statistics         = statistics;
-        this.executorService    = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder()
+        this.taskExecutorService = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder()
                                                                     .setDaemon(true)
                                                                     .setNameFormat(TASK_NAME_FORMAT + Thread.currentThread().getName())
                                                                     .build());
+
+        this.registry = registry;
+        this.statistics = statistics;
+        this.taskTypeFactoryMap = taskTypeFactoryMap;
     }
 
-    public void addAll(List<AtlasTask> tasks) {
-        for (AtlasTask task : tasks) {
-            if (task == null) {
-                continue;
-            }
+    public Thread startWatcherThread() {
+        latch = new CountDownLatch(0);
 
-            TASK_LOG.log(task);
+        watcher = new TaskQueueWatcher(taskExecutorService, registry, taskTypeFactoryMap, statistics, latch);
+        watcherThread = new Thread(watcher);
+        watcherThread.start();
+        return watcherThread;
+    }
 
-            this.executorService.submit(new TaskConsumer(task, this.registry, this.taskTypeFactoryMap, this.statistics));
+    public void stopQueueWatcher() {
+        if (watcher != null) {
+            watcher.shutdown();
         }
-    }
-
-    public void shutdownExecutor() {
-        this.executorService.shutdownNow();
-    }
-
-    @VisibleForTesting
-    void waitUntilDone() throws InterruptedException {
-        Thread.sleep(5000);
     }
 
     static class TaskConsumer implements Runnable {
@@ -83,14 +84,17 @@ public class TaskExecutor {
         private final TaskRegistry              registry;
         private final TaskManagement.Statistics statistics;
         private final AtlasTask                 task;
+        private CountDownLatch  latch;
 
         AtlasPerfTracer perf = null;
 
-        public TaskConsumer(AtlasTask task, TaskRegistry registry, Map<String, TaskFactory> taskTypeFactoryMap, TaskManagement.Statistics statistics) {
+        public TaskConsumer(AtlasTask task, TaskRegistry registry, Map<String, TaskFactory> taskTypeFactoryMap, TaskManagement.Statistics statistics,
+                            CountDownLatch latch) {
             this.task               = task;
             this.registry           = registry;
             this.taskTypeFactoryMap = taskTypeFactoryMap;
             this.statistics         = statistics;
+            this.latch = latch;
         }
 
         @Override
@@ -99,12 +103,18 @@ public class TaskExecutor {
             int         attemptCount;
 
             try {
-                taskVertex = registry.getVertex(task.getGuid());
-
-                if (task == null || taskVertex == null || task.getStatus() == AtlasTask.Status.COMPLETE) {
-                    TASK_LOG.warn("Task not scheduled as it was not found or status was COMPLETE!", task);
-
+                if (task == null) {
+                    TASK_LOG.info("Task not scheduled as it was not found");
                     return;
+                }
+
+                taskVertex = registry.getVertex(task.getGuid());
+                if (taskVertex == null) {
+                    TASK_LOG.warn("Task not scheduled as vertex not found", task);
+                }
+
+                if (task.getStatus() == AtlasTask.Status.COMPLETE) {
+                    TASK_LOG.warn("Task not scheduled as status was COMPLETE!", task);
                 }
 
                 if (perfEnabled) {
@@ -122,14 +132,10 @@ public class TaskExecutor {
                 }
 
                 performTask(taskVertex, task);
-            } catch (InterruptedException exception) {
-                if (task != null) {
-                    registry.updateStatus(taskVertex, task);
 
-                    TASK_LOG.error("{}: {}: Interrupted!", task, exception);
-                } else {
-                    LOG.error("Interrupted!", exception);
-                }
+            } catch (InterruptedException exception) {
+                registry.updateStatus(taskVertex, task);
+                TASK_LOG.error("{}: {}: Interrupted!", task, exception);
 
                 statistics.error();
             } catch (Exception exception) {
@@ -149,6 +155,7 @@ public class TaskExecutor {
                     TASK_LOG.log(task);
                 }
 
+                latch.countDown();
                 RequestContext.get().clearCache();
                 AtlasPerfTracer.log(perf);
             }

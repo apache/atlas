@@ -20,6 +20,7 @@ package org.apache.atlas.tasks;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
@@ -49,7 +50,8 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
     private final TaskRegistry              registry;
     private final Statistics                statistics;
     private final Map<String, TaskFactory>  taskTypeFactoryMap;
-    private       boolean                   hasStarted;
+
+    private Thread watcherThread = null;
 
     @Inject
     public TaskManagement(Configuration configuration, TaskRegistry taskRegistry) {
@@ -71,21 +73,24 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
 
     @Override
     public void start() throws AtlasException {
-        if (configuration == null || !HAConfiguration.isHAEnabled(configuration)) {
-            startInternal();
-        } else {
-            LOG.info("TaskManagement.start(): deferring until instance activation");
+        try {
+            if (configuration == null || !HAConfiguration.isHAEnabled(configuration)) {
+                startInternal();
+            } else {
+                LOG.info("TaskManagement.start(): deferring until instance activation");
+            }
+        } catch (Exception e) {
+            throw e;
         }
-
-        this.hasStarted = true;
     }
 
-    public boolean hasStarted() {
-        return this.hasStarted;
+    public boolean isWatcherActive() {
+        return watcherThread != null;
     }
 
     @Override
     public void stop() throws AtlasException {
+        stopQueueWatcher();
         LOG.info("TaskManagement: Stopped!");
     }
 
@@ -93,13 +98,18 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
     public void instanceIsActive() throws AtlasException {
         LOG.info("==> TaskManagement.instanceIsActive()");
 
-        startInternal();
+        try {
+            startInternal();
+        } catch (Exception e) {
+            throw e;
+        }
 
         LOG.info("<== TaskManagement.instanceIsActive()");
     }
 
     @Override
     public void instanceIsPassive() throws AtlasException {
+        stopQueueWatcher();
         LOG.info("TaskManagement.instanceIsPassive(): no action needed");
     }
 
@@ -120,8 +130,8 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         return this.registry.getAll();
     }
 
-    public List<AtlasTask> getAll(List<String> statusList) {
-        return this.registry.getAll(statusList);
+    public List<AtlasTask> getAll(List<String> statusList, int offset, int limit) {
+        return this.registry.getAll(statusList, offset, limit);
     }
 
     public List<AtlasTask> getQueuedTasks() {
@@ -146,16 +156,8 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         }
 
         if (CollectionUtils.isNotEmpty(taskToRetry)) {
-            addAll(taskToRetry);
+            //addAll(taskToRetry);
         }
-    }
-
-    public void addAll(List<AtlasTask> tasks) {
-        if (CollectionUtils.isEmpty(tasks)) {
-            return;
-        }
-
-        dispatchTasks(tasks);
     }
 
     public AtlasTask getByGuid(String guid) throws AtlasBaseException {
@@ -200,16 +202,15 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         }
     }
 
-    private synchronized void dispatchTasks(List<AtlasTask> tasks) {
-        if (CollectionUtils.isEmpty(tasks)) {
-            return;
-        }
+    private synchronized void startWatcherThread() {
 
         if (this.taskExecutor == null) {
             this.taskExecutor = new TaskExecutor(registry, taskTypeFactoryMap, statistics);
         }
 
-        this.taskExecutor.addAll(tasks);
+        if (watcherThread == null) {
+            watcherThread = this.taskExecutor.startWatcherThread();
+        }
 
         this.statistics.print();
     }
@@ -225,26 +226,8 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
             return;
         }
 
-        queuePendingTasks();
-    }
-
-    private void queuePendingTasks() {
-        if (AtlasConfiguration.TASKS_USE_ENABLED.getBoolean() == false) {
-            return;
-        }
-        boolean useGraphQuery = AtlasConfiguration.TASKS_REQUEUE_GRAPH_QUERY.getBoolean();
-
-        List<AtlasTask> pendingTasks;
         try {
-            if (useGraphQuery) {
-                pendingTasks = this.registry.getTasksForReQueue();
-            } else {
-                pendingTasks = this.registry.getTasksForReQueueIndexSearch();
-            }
-
-            LOG.info("TaskManagement: Found: {}: Tasks pending. Re submitting...", pendingTasks.size());
-
-            addAll(pendingTasks);
+            startWatcherThread();
         } catch (Exception e) {
             LOG.error("TaskManagement: Error while re queue tasks");
             e.printStackTrace();
@@ -266,6 +249,11 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         }
 
         return taskTypeFactoryMap;
+    }
+
+    private void stopQueueWatcher() {
+        taskExecutor.stopQueueWatcher();
+        watcherThread = null;
     }
 
     static class Statistics {
