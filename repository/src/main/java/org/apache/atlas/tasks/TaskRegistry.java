@@ -278,10 +278,8 @@ public class TaskRegistry {
         DirectIndexQueryResult indexQueryResult = null;
         List<AtlasTask> ret = new ArrayList<>();
 
-        int fetched = 0;
-        int size = queueSize;
+        int size = 1000;
         int from = 0;
-        boolean hasNext = true;
 
         IndexSearchParams indexSearchParams = new IndexSearchParams();
 
@@ -293,11 +291,12 @@ public class TaskRegistry {
         dsl.put("sort", Collections.singletonList(mapOf(Constants.TASK_CREATED_TIME, mapOf("order", "asc"))));
         dsl.put("size", size);
 
-        while (hasNext && fetched < queueSize) {
+        while (true) {
+            int fetched = 0;
 
             try {
                 dsl.put("from", from);
-                if (from + fetched > queueSize) {
+                if (from + size > queueSize) {
                     dsl.put("size", queueSize - from);
                 }
                 indexSearchParams.setDsl(dsl);
@@ -307,9 +306,9 @@ public class TaskRegistry {
                 try {
                     indexQueryResult = indexQuery.vertices(indexSearchParams);
                 } catch (AtlasBaseException e) {
-                    hasNext = false;
                     LOG.error("Failed to fetch pending/in-progress task vertices to re-que");
                     e.printStackTrace();
+                    break;
                 }
 
                 if (indexQueryResult != null) {
@@ -328,13 +327,13 @@ public class TaskRegistry {
                     }
                 }
 
-                if (fetched == 0 || fetched % size != 0) {
-                    hasNext = false;
+                if (fetched == 0 || fetched < size) {
+                    break;
                 }
 
                 from += size;
             } catch (Exception e){
-                hasNext = false;
+                break;
             }
         }
 
