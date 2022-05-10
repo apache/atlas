@@ -71,11 +71,6 @@ public class TaskQueueWatcher implements Runnable {
 
         while (shouldRun.get()) {
             try {
-                if (!TaskManagement.isRunning()) {
-                    LOG.error("TaskQueueWatcher: TaskManagement is not running");
-                    break;
-                }
-
                 if (latch != null && latch.getCount() != 0) {
                     LOG.info("TaskQueueWatcher: Waiting on Latch, current count: {}", latch.getCount());
                     latch.await();
