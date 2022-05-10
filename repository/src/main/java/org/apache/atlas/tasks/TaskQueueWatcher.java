@@ -100,7 +100,7 @@ public class TaskQueueWatcher implements Runnable {
                 break;
             } catch (Exception e){
                 LOG.error("TaskQueueWatcher: Exception occurred");
-                e.printStackTrace();
+                throw e;
             }
         }
     }
