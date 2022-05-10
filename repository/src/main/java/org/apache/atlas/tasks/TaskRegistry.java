@@ -290,20 +290,17 @@ public class TaskRegistry {
         Map<String, Object> dsl = mapOf("query", mapOf("bool", mapOf("should", statusClauseList)));
         dsl.put("sort", Collections.singletonList(mapOf(Constants.TASK_CREATED_TIME, mapOf("order", "asc"))));
         dsl.put("size", size);
-
+        int totalFetched = 0;
         while (true) {
             int fetched = 0;
-
             try {
-                dsl.put("from", from);
-                if (from + size > queueSize) {
-                    int remainSize = queueSize - from;
-                    if (remainSize <= 0) {
-                        break;
-                    }
-
-                    dsl.put("size", remainSize);
+                if (totalFetched + size > queueSize) {
+                    size = queueSize - totalFetched;
                 }
+
+                dsl.put("from", from);
+                dsl.put("size", size);
+
                 indexSearchParams.setDsl(dsl);
 
                 AtlasIndexQuery indexQuery = graph.elasticsearchQuery(Constants.VERTEX_INDEX, indexSearchParams);
@@ -332,11 +329,11 @@ public class TaskRegistry {
                     }
                 }
 
-                if (fetched == 0 || fetched < size) {
+                totalFetched += fetched;
+                from += size;
+                if (fetched < size || totalFetched >= queueSize) {
                     break;
                 }
-
-                from += size;
             } catch (Exception e){
                 break;
             }
