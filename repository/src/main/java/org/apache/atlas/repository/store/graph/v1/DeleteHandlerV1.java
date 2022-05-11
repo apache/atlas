@@ -1235,6 +1235,7 @@ public abstract class DeleteHandlerV1 {
                 break;
             }
         }
+        
         return ret;
     }
 
@@ -1283,7 +1284,6 @@ public abstract class DeleteHandlerV1 {
 
         RequestContext.get().queueTask(task);
     }
-
 
     public void removeHasLineageOnDelete(Collection<AtlasVertex> vertices) {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("removeHasLineageOnDelete");
