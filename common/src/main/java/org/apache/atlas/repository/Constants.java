@@ -322,6 +322,8 @@ public final class Constants {
     public static final String CLASSIFICATION_PROPAGATION_TIME_METRIC = "classification.propagation.time";
     public static final String CLASSIFICATION_PROPAGATION_JOB_COUNT_METRIC = "classification.propagation.job.count";
 
+    public static final int ELASTICSEARCH_PAGINATION_SIZE = 50;
+
     private Constants() {
     }
 
