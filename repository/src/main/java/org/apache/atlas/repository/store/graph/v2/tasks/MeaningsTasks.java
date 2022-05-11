@@ -19,9 +19,8 @@ public class MeaningsTasks {
             String termGuid = (String) parameters.get(PARAM_ENTITY_GUID);
             String termQName = (String) parameters.get(PARAM_ENTITY_QUALIFIED_NAME);
             String updatedTermName = (String) parameters.get(PARAM_TERM_NAME);
-            int size = (int) parameters.get(PARAM_PAGINATION_SIZE);
 
-            preprocessor.updateMeaningsNamesInEntities(updatedTermName, termQName, termGuid, size);
+            preprocessor.updateMeaningsNamesInEntities(updatedTermName, termQName, termGuid);
 
         }
     }
