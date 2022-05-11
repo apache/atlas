@@ -24,7 +24,6 @@ public abstract class MeaningsTask extends AbstractTask {
     protected static final String PARAM_ENTITY_GUID = "entityGuid";
     protected static final String PARAM_ENTITY_QUALIFIED_NAME = "entityQname";
     protected static final String PARAM_TERM_NAME = "termName";
-    protected static final String PARAM_PAGINATION_SIZE = "size";
     protected final EntityDiscoveryService entityDiscovery;
     protected final EntityGraphMapper entityGraphMapper;
     protected final TermPreProcessor preprocessor;
@@ -70,12 +69,11 @@ public abstract class MeaningsTask extends AbstractTask {
         }
     }
 
-    public static Map<String, Object> toParameters(String updateTerm, String termQName, String termGuid, int size) {
+    public static Map<String, Object> toParameters(String updateTerm, String termQName, String termGuid) {
         return new HashMap<String, Object>() {{
             put(PARAM_ENTITY_GUID, termGuid);
             put(PARAM_ENTITY_QUALIFIED_NAME, termQName);
             put(PARAM_TERM_NAME, updateTerm);
-            put(PARAM_PAGINATION_SIZE, size);
         }};
     }
 

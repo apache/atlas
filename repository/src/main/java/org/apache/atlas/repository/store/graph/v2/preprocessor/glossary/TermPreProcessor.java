@@ -208,7 +208,7 @@ public class TermPreProcessor implements PreProcessor {
     public void updateMeaningsNamesInEntities(String updatedTermName, String termQName, String termGuid) throws AtlasBaseException {
         int from = 0;
         while (true) {
-            List<AtlasEntityHeader> entityHeaders = fetchEntityHeadersByTermQualifiedName(from, ELASTICSEARCH_PAGINATION_OFFSET, termQName);
+            List<AtlasEntityHeader> entityHeaders = fetchEntityHeadersByTermQualifiedName(from, ELASTICSEARCH_PAGINATION_SIZE, termQName);
             if (entityHeaders == null)
                 break;
             for (AtlasEntityHeader entityHeader : entityHeaders) {
@@ -219,9 +219,9 @@ public class TermPreProcessor implements PreProcessor {
                            .collect(Collectors.joining(","));
                 AtlasGraphUtilsV2.setEncodedProperty(AtlasGraphUtilsV2.findByGuid(entityHeader.getGuid()), MEANINGS_TEXT_PROPERTY_KEY, updatedMeaningsText);
             }
-            from += ELASTICSEARCH_PAGINATION_OFFSET;
+            from += ELASTICSEARCH_PAGINATION_SIZE;
 
-            if (entityHeaders.size() < ELASTICSEARCH_PAGINATION_OFFSET)
+            if (entityHeaders.size() < ELASTICSEARCH_PAGINATION_SIZE)
                 break;
         }
 
@@ -230,7 +230,7 @@ public class TermPreProcessor implements PreProcessor {
     public void createAndQueueTask(String taskType, String updatedTermName, String termQName, AtlasVertex termVertex) {
         String termGuid = GraphHelper.getGuid(termVertex);
         String currentUser = RequestContext.getCurrentUser();
-        Map<String, Object> taskParams = MeaningsTask.toParameters(updatedTermName, termQName, termGuid, ELASTICSEARCH_PAGINATION_OFFSET);
+        Map<String, Object> taskParams = MeaningsTask.toParameters(updatedTermName, termQName, termGuid);
         AtlasTask task = taskManagement.createTask(taskType, currentUser, taskParams);
 
         AtlasGraphUtilsV2.addItemToListProperty(termVertex, EDGE_PENDING_TASKS_PROPERTY_KEY, task.getGuid());
