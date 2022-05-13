@@ -237,9 +237,9 @@ public class EntityREST {
         }
 
         try {
-            validateEntityAccessorRequest(request);
+            validateAccessorRequest(request);
 
-            ret = entitiesStore.getAssetAccessors(request);
+            ret = entitiesStore.getAccessors(request);
 
         } finally {
             AtlasPerfTracer.log(perf);
@@ -1686,7 +1686,7 @@ public class EntityREST {
                 (CollectionUtils.isEmpty(request.getEntitiesUniqueAttributes()) || request.getEntityTypeName() == null)));
     }
 
-    private void validateEntityAccessorRequest(List<AtlasAccessor> request) throws AtlasBaseException {
+    private void validateAccessorRequest(List<AtlasAccessor> request) throws AtlasBaseException {
 
         if (CollectionUtils.isEmpty(request)) {
             throw new AtlasBaseException(BAD_REQUEST, "Requires list of AtlasAccessor");

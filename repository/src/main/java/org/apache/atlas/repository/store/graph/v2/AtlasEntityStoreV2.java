@@ -1797,7 +1797,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     }
 
     @Override
-    public List<AtlasAccessor> getAssetAccessors(List<AtlasAccessor> request) throws AtlasBaseException {
+    public List<AtlasAccessor> getAccessors(List<AtlasAccessor> request) throws AtlasBaseException {
 
         for (AtlasAccessor element : request) {
             AtlasPrivilege action = null;
