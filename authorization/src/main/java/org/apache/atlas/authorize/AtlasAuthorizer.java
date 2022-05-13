@@ -19,6 +19,7 @@
 package org.apache.atlas.authorize;
 
 
+import org.apache.atlas.model.instance.AtlasAccessor;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType;
@@ -58,6 +59,12 @@ public interface AtlasAuthorizer {
      * @throws AtlasAuthorizationException
      */
     boolean isAccessAllowed(AtlasTypeAccessRequest request) throws AtlasAuthorizationException;
+
+    AtlasAccessor getAccessors(AtlasEntityAccessRequest request);
+
+    AtlasAccessor getAccessors(AtlasRelationshipAccessRequest request);
+
+    AtlasAccessor getAccessors(AtlasTypeAccessRequest request);
 
     /**
      * authorize relationship type
