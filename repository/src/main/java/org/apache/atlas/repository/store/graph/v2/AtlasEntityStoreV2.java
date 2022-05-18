@@ -1797,74 +1797,93 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     }
 
     @Override
-    public List<AtlasAccessor> getAccessors(List<AtlasAccessor> request) throws AtlasBaseException {
+    public List<AtlasAccessorResponse> getAccessors(List<AtlasAccessorRequest> atlasAccessorRequestList) throws AtlasBaseException {
+        List<AtlasAccessorResponse> ret = new ArrayList<>();
 
-        for (AtlasAccessor element : request) {
-            AtlasPrivilege action = null;
-
+        for (AtlasAccessorRequest accessorRequest : atlasAccessorRequestList) {
             try {
-                action = AtlasPrivilege.valueOf(element.getAction());
-            } catch (IllegalArgumentException el) {
-                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid action provided " + element.getAction());
-            }
+                AtlasAccessorResponse result = null;
+                AtlasPrivilege action = AtlasPrivilege.valueOf(accessorRequest.getAction());;
 
-            AtlasAccessor result = null;
+                switch (action) {
+                    case ENTITY_READ:
+                    case ENTITY_CREATE:
+                    case ENTITY_UPDATE:
+                    case ENTITY_DELETE:
+                        AtlasEntityAccessRequestBuilder entityAccessRequestBuilder = getEntityAccessRequest(accessorRequest, action);
+                        result = AtlasAuthorizationUtils.getAccessors(entityAccessRequestBuilder.build());
+                        break;
 
-            switch (action) {
-                case ENTITY_READ:
-                case ENTITY_CREATE:
-                case ENTITY_UPDATE:
-                case ENTITY_DELETE:
-                case ENTITY_READ_CLASSIFICATION:
-                case ENTITY_ADD_CLASSIFICATION:
-                case ENTITY_UPDATE_CLASSIFICATION:
-                case ENTITY_REMOVE_CLASSIFICATION:
-                case ENTITY_ADD_LABEL:
-                case ENTITY_REMOVE_LABEL:
-                case ENTITY_UPDATE_BUSINESS_METADATA:
-                    AtlasEntityHeader entityHeader = extractEntityHeader(element.getGuid(), element.getQualifiedName(), element.getTypeName());
+                    case ENTITY_READ_CLASSIFICATION:
+                    case ENTITY_ADD_CLASSIFICATION:
+                    case ENTITY_UPDATE_CLASSIFICATION:
+                    case ENTITY_REMOVE_CLASSIFICATION:
+                        entityAccessRequestBuilder = getEntityAccessRequest(accessorRequest, action);
+                        entityAccessRequestBuilder.setClassification(new AtlasClassification(accessorRequest.getClassification()));
+                        result = AtlasAuthorizationUtils.getAccessors(entityAccessRequestBuilder.build());
+                        break;
 
-                    AtlasEntityAccessRequest entityAccessRequest = new AtlasEntityAccessRequest(typeRegistry, action, entityHeader);
-                    result = AtlasAuthorizationUtils.getAccessors(entityAccessRequest);
-                    break;
+                    case ENTITY_ADD_LABEL:
+                    case ENTITY_REMOVE_LABEL:
+                        entityAccessRequestBuilder = getEntityAccessRequest(accessorRequest, action);
+                        entityAccessRequestBuilder.setLabel(accessorRequest.getLabel());
+                        result = AtlasAuthorizationUtils.getAccessors(entityAccessRequestBuilder.build());
+                        break;
 
-
-                case RELATIONSHIP_ADD:
-                case RELATIONSHIP_UPDATE:
-                case RELATIONSHIP_REMOVE:
-                    AtlasEntityHeader end1EntityHeader = extractEntityHeader(element.getEntityGuidEnd1(), element.getEntityQualifiedNameEnd1(), element.getEntityTypeEnd1());
-                    AtlasEntityHeader end2EntityHeader = extractEntityHeader(element.getEntityGuidEnd2(), element.getEntityQualifiedNameEnd2(), element.getEntityTypeEnd2());
-
-                    AtlasRelationshipAccessRequest relAccessRequest = new AtlasRelationshipAccessRequest(typeRegistry,
-                            action, element.getRelationshipTypeName(), end1EntityHeader, end2EntityHeader);
-
-                    result = AtlasAuthorizationUtils.getAccessors(relAccessRequest);
-
-                    break;
+                    case ENTITY_UPDATE_BUSINESS_METADATA:
+                        entityAccessRequestBuilder = getEntityAccessRequest(accessorRequest, action);
+                        entityAccessRequestBuilder.setBusinessMetadata(accessorRequest.getBusinessMetadata());
+                        result = AtlasAuthorizationUtils.getAccessors(entityAccessRequestBuilder.build());
+                        break;
 
 
-                case TYPE_READ:
-                case TYPE_CREATE:
-                case TYPE_UPDATE:
-                case TYPE_DELETE:
-                    AtlasBaseTypeDef typeDef = typeRegistry.getTypeDefByName(element.getTypeName());
-                    AtlasTypeAccessRequest typeAccessRequest = new AtlasTypeAccessRequest(action, typeDef);
+                    case RELATIONSHIP_ADD:
+                    case RELATIONSHIP_UPDATE:
+                    case RELATIONSHIP_REMOVE:
+                        AtlasEntityHeader end1EntityHeader = extractEntityHeader(accessorRequest.getEntityGuidEnd1(), accessorRequest.getEntityQualifiedNameEnd1(), accessorRequest.getEntityTypeEnd1());
+                        AtlasEntityHeader end2EntityHeader = extractEntityHeader(accessorRequest.getEntityGuidEnd2(), accessorRequest.getEntityQualifiedNameEnd2(), accessorRequest.getEntityTypeEnd2());
 
-                    result = AtlasAuthorizationUtils.getAccessors(typeAccessRequest);
+                        AtlasRelationshipAccessRequest relAccessRequest = new AtlasRelationshipAccessRequest(typeRegistry,
+                                action, accessorRequest.getRelationshipTypeName(), end1EntityHeader, end2EntityHeader);
 
-                    break;
+                        result = AtlasAuthorizationUtils.getAccessors(relAccessRequest);
+                        break;
 
 
-                default:
-                    LOG.error("No implementation found for action: {}", action);
-            }
+                    case TYPE_READ:
+                    case TYPE_CREATE:
+                    case TYPE_UPDATE:
+                    case TYPE_DELETE:
+                        AtlasBaseTypeDef typeDef = typeRegistry.getTypeDefByName(accessorRequest.getTypeName());
+                        AtlasTypeAccessRequest typeAccessRequest = new AtlasTypeAccessRequest(action, typeDef);
 
-            if (result != null) {
-                element.copyAccessors(result);
+                        result = AtlasAuthorizationUtils.getAccessors(typeAccessRequest);
+                        break;
+
+
+                    default:
+                        LOG.error("No implementation found for action: {}", accessorRequest.getAction());
+                }
+
+                if (result == null) {
+                    throw new AtlasBaseException();
+                }
+                result.populateRequestDetails(accessorRequest);
+                ret.add(result);
+
+            } catch (AtlasBaseException e) {
+                e.getErrorDetailsMap().put("accessorRequest", AtlasType.toJson(accessorRequest));
+                throw e;
             }
         }
 
-        return request;
+        return ret;
+    }
+
+    private AtlasEntityAccessRequestBuilder getEntityAccessRequest(AtlasAccessorRequest element, AtlasPrivilege action) throws AtlasBaseException {
+        AtlasEntityHeader entityHeader = extractEntityHeader(element.getGuid(), element.getQualifiedName(), element.getTypeName());
+
+        return new AtlasEntityAccessRequestBuilder(typeRegistry, action, entityHeader);
     }
 
     private AtlasEntityHeader extractEntityHeader(String guid, String qualifiedName, String typeName) throws AtlasBaseException {

@@ -22,7 +22,6 @@ package org.apache.atlas.authorize;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.instance.AtlasAccessor;
 import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -209,8 +208,8 @@ public class AtlasAuthorizationUtils {
         return ret;
     }
 
-    public static AtlasAccessor getAccessors(AtlasEntityAccessRequest request) {
-        AtlasAccessor ret = null;
+    public static AtlasAccessorResponse getAccessors(AtlasEntityAccessRequest request) {
+        AtlasAccessorResponse ret = null;
 
         try {
             AtlasAuthorizer authorizer = AtlasAuthorizerFactory.getAtlasAuthorizer();
@@ -224,8 +223,8 @@ public class AtlasAuthorizationUtils {
         return ret;
     }
 
-    public static AtlasAccessor getAccessors(AtlasRelationshipAccessRequest request) {
-        AtlasAccessor ret = null;
+    public static AtlasAccessorResponse getAccessors(AtlasRelationshipAccessRequest request) {
+        AtlasAccessorResponse ret = null;
 
         try {
             AtlasAuthorizer authorizer = AtlasAuthorizerFactory.getAtlasAuthorizer();
@@ -239,8 +238,8 @@ public class AtlasAuthorizationUtils {
         return ret;
     }
 
-    public static AtlasAccessor getAccessors(AtlasTypeAccessRequest request) {
-        AtlasAccessor ret = null;
+    public static AtlasAccessorResponse getAccessors(AtlasTypeAccessRequest request) {
+        AtlasAccessorResponse ret = null;
 
         try {
             AtlasAuthorizer authorizer = AtlasAuthorizerFactory.getAtlasAuthorizer();

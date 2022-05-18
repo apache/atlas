@@ -15,19 +15,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.model.instance;
+package org.apache.atlas.authorize;
 
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
-import java.util.HashSet;
-import java.util.Set;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
@@ -37,7 +35,7 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 @JsonIgnoreProperties(ignoreUnknown=true)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
-public class AtlasAccessor {
+public class AtlasAccessorRequest {
 
     private String action;
 
@@ -57,9 +55,6 @@ public class AtlasAccessor {
     private String entityTypeEnd2;
 
     private AtlasEntityHeader entity = null;
-    private Set<String> users = new HashSet<>();
-    private Set<String> groups = new HashSet<>();
-    private Set<String> roles = new HashSet<>();
 
     public String getGuid() {
         return guid;
@@ -117,30 +112,6 @@ public class AtlasAccessor {
         this.businessMetadata = businessMetadata;
     }
 
-    public Set<String> getUsers() {
-        return users;
-    }
-
-    public void setUsers(Set<String> users) {
-        this.users = users;
-    }
-
-    public Set<String> getGroups() {
-        return groups;
-    }
-
-    public void setGroups(Set<String> groups) {
-        this.groups = groups;
-    }
-
-    public Set<String> getRoles() {
-        return roles;
-    }
-
-    public void setRoles(Set<String> roles) {
-        this.roles = roles;
-    }
-
     public AtlasEntityHeader getEntity() {
         return entity;
     }
@@ -177,20 +148,6 @@ public class AtlasAccessor {
         return entityTypeEnd2;
     }
 
-    public void copyAccessors(AtlasAccessor accessor) {
-        if (CollectionUtils.isNotEmpty(accessor.getUsers())) {
-            this.users.addAll(accessor.getUsers());
-        }
-
-        if (CollectionUtils.isNotEmpty(accessor.getRoles())) {
-            this.roles.addAll(accessor.getRoles());
-        }
-
-        if (CollectionUtils.isNotEmpty(accessor.getGroups())) {
-            this.groups.addAll(accessor.getGroups());
-        }
-    }
-
     @Override
     public String toString() {
         return "AtlasAccessor{" +
@@ -200,9 +157,6 @@ public class AtlasAccessor {
                 ", label='" + label + '\'' +
                 ", classification='" + classification + '\'' +
                 ", businessMetadata='" + businessMetadata + '\'' +
-                ", users=" + users +
-                ", groups=" + groups +
-                ", roles=" + roles +
                 '}';
     }
 }
