@@ -1519,6 +1519,10 @@ public class EntityGraphRetriever {
             }
 
             if (referenceVertex != null) {
+                if (CollectionUtils.isEmpty(referenceVertex.getPropertyKeys())) {
+                    LOG.warn("Reference vertex found empty with vertexId: {} . Returning AtlasRelatedObjectId object as null", referenceVertex.getId());
+                    return null;
+                }
                 String             entityTypeName = getTypeName(referenceVertex);
                 String             entityGuid     = getGuid(referenceVertex);
                 AtlasEntity.Status entityStatus   = GraphHelper.getStatus(referenceVertex);
