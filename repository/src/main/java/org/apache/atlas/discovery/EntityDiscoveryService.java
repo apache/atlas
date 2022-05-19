@@ -1052,7 +1052,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         return map;
     }
 
-    public List<AtlasEntityHeader> searchUsingQualifiedName(int from, int size, String termQName,
+    public List<AtlasEntityHeader> searchUsingTermQualifiedName(int from, int size, String termQName,
                                                         Set<String> attributes, Set<String>relationAttributes) throws AtlasBaseException {
         IndexSearchParams indexSearchParams = new IndexSearchParams();
         Map<String, Object> dsl = getMap("from", from);

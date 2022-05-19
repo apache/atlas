@@ -606,7 +606,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         List<AtlasEntityHeader> entityHeader;
 
         try {
-            entityHeader = discovery.searchUsingQualifiedName(0, 1, termQName,null, null);
+            entityHeader = discovery.searchUsingTermQualifiedName(0, 1, termQName,null, null);
         } catch (AtlasBaseException e) {
             throw e;
         }
@@ -628,7 +628,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }};
 
         while (true) {
-            List<AtlasEntityHeader> entityHeaders = discovery.searchUsingQualifiedName(from, ELASTICSEARCH_PAGINATION_SIZE,
+            List<AtlasEntityHeader> entityHeaders = discovery.searchUsingTermQualifiedName(from, ELASTICSEARCH_PAGINATION_SIZE,
                     termQName, attributes, relationAttributes);
 
             if (entityHeaders == null)

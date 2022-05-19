@@ -170,7 +170,7 @@ public class TermPreProcessor implements PreProcessor {
 
     private boolean checkEntityTermAssociation(String termQName) throws AtlasBaseException{
         List<AtlasEntityHeader> entityHeader;
-        entityHeader = discovery.searchUsingQualifiedName(0,1,termQName,null,null);
+        entityHeader = discovery.searchUsingTermQualifiedName(0,1,termQName,null,null);
         Boolean hasEntityAssociation = entityHeader != null ? true : false;
         return hasEntityAssociation;
     }
@@ -186,7 +186,7 @@ public class TermPreProcessor implements PreProcessor {
             add("name");
         }};
         while (true) {
-            List<AtlasEntityHeader> entityHeaders = discovery.searchUsingQualifiedName(from, ELASTICSEARCH_PAGINATION_SIZE,
+            List<AtlasEntityHeader> entityHeaders = discovery.searchUsingTermQualifiedName(from, ELASTICSEARCH_PAGINATION_SIZE,
                     termQName,attributes,relationAttributes);
             if (entityHeaders == null)
                 break;
