@@ -30,8 +30,6 @@ import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
-import org.apache.atlas.model.discovery.AtlasSearchResult;
-import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.instance.AtlasCheckStateRequest;
 import org.apache.atlas.model.instance.AtlasCheckStateResult;
 import org.apache.atlas.model.instance.AtlasClassification;
@@ -45,6 +43,7 @@ import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasHasLineageRequest;
 import org.apache.atlas.model.instance.AtlasHasLineageRequests;
 import org.apache.atlas.model.instance.EntityMutationResponse;
+import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graph.GraphHelper;
@@ -61,6 +60,8 @@ import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityComparator.AtlasEntityDiffResult;
 import org.apache.atlas.repository.store.graph.v1.RestoreHandlerV1;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
+import org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTask;
+import org.apache.atlas.tasks.TaskManagement;
 import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasBusinessMetadataType;
 import org.apache.atlas.type.AtlasBusinessMetadataType.AtlasBusinessAttribute;
@@ -81,7 +82,6 @@ import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.tinkerpop.shaded.minlog.Log;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -90,7 +90,6 @@ import javax.inject.Inject;
 import java.io.InputStream;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static java.lang.Boolean.FALSE;
 import static org.apache.atlas.AtlasConfiguration.STORE_DIFFERENTIAL_AUDITS;
@@ -101,15 +100,20 @@ import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.GraphHelper.*;
 import static org.apache.atlas.repository.graph.GraphHelper.getStatus;
 import static org.apache.atlas.repository.store.graph.v2.EntityGraphMapper.validateLabels;
+import static org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTaskFactory.*;
 import static org.apache.atlas.type.Constants.HAS_LINEAGE;
 import static org.apache.atlas.type.Constants.HAS_LINEAGE_VALID;
 import static org.apache.atlas.type.Constants.MEANINGS_TEXT_PROPERTY_KEY;
+import static org.apache.atlas.type.Constants.MEANINGS_PROPERTY_KEY;
+
 
 
 @Component
 public class AtlasEntityStoreV2 implements AtlasEntityStore {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasEntityStoreV2.class);
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("store.EntityStore");
+
+    static final boolean DEFERRED_ACTION_ENABLED = AtlasConfiguration.TASKS_USE_ENABLED.getBoolean();
 
     private final AtlasGraph                graph;
     private final DeleteHandlerDelegate     deleteDelegate;
@@ -120,11 +124,12 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     private final EntityGraphRetriever       entityRetriever;
     private       boolean                    storeDifferentialAudits;
     private final GraphHelper                graphHelper;
+    private final TaskManagement             taskManagement;
     private EntityDiscoveryService discovery;
 
     @Inject
     public AtlasEntityStoreV2(AtlasGraph graph, DeleteHandlerDelegate deleteDelegate, RestoreHandlerV1 restoreHandlerV1, AtlasTypeRegistry typeRegistry,
-                              IAtlasEntityChangeNotifier entityChangeNotifier, EntityGraphMapper entityGraphMapper) {
+                              IAtlasEntityChangeNotifier entityChangeNotifier, EntityGraphMapper entityGraphMapper, TaskManagement taskManagement) {
         this.graph                = graph;
         this.deleteDelegate       = deleteDelegate;
         this.restoreHandlerV1     = restoreHandlerV1;
@@ -134,6 +139,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         this.entityRetriever      = new EntityGraphRetriever(graph, typeRegistry);
         this.storeDifferentialAudits = STORE_DIFFERENTIAL_AUDITS.getBoolean();
         this.graphHelper          = new GraphHelper(graph);
+        this.taskManagement = taskManagement;
         try {
             this.discovery = new EntityDiscoveryService(typeRegistry, graph, null, null, null, null);
         } catch (AtlasException e) {
@@ -562,13 +568,24 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
 
         EntityMutationResponse ret = deleteVertices(deletionCandidates);
+
         if(ret.getMutatedEntities()!=null){
             List<AtlasEntityHeader> deletedEntities = ret.getDeletedEntities();
+
             for(AtlasEntityHeader entity:deletedEntities){
                 if(ATLAS_GLOSSARY_TERM_ENTITY_TYPE.equals(entity.getTypeName())){
+
                     String qualifiedName  = entity.getAttribute("qualifiedName").toString();
                     String Guid = entity.getGuid();
-                    updateMeaningsNamesInEntities(qualifiedName,Guid);
+                    Boolean isHardDelete = entity.getDeleteHandler().equals("HARD");
+
+                    if(checkEntityTermAssociation(qualifiedName)){
+                        if(DEFERRED_ACTION_ENABLED && taskManagement!=null){
+                            createAndQueueTask(qualifiedName,Guid,isHardDelete);
+                        }else{
+                            updateMeaningsNamesInEntitiesOnTermDelete(qualifiedName,Guid);
+                        }
+                    }
                 }
             }
         }
@@ -579,65 +596,51 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         return ret;
     }
+
     private boolean checkEntityTermAssociation(String termQName) throws AtlasBaseException{
         List<AtlasEntityHeader> entityHeader;
 
         try {
-            entityHeader = fetchEntityHeadersByTermQualifiedName(0,1,termQName);
+            entityHeader = discovery.searchUsingQualifiedName(0,1,termQName,new HashSet<>(),new HashSet<>());
         } catch (AtlasBaseException e) {
             throw e;
         }
-
         Boolean hasEntityAssociation = entityHeader != null ? true : false;
 
         return hasEntityAssociation;
     }
 
-    private Map<String, Object> getMap(String key, Object value) {
-        Map<String, Object> map = new HashMap<>();
-        map.put(key, value);
-        return map;
-    }
 
-    private List<AtlasEntityHeader> fetchEntityHeadersByTermQualifiedName(int from, int size, String termQName) throws AtlasBaseException{
-        IndexSearchParams indexSearchParams = new IndexSearchParams();
-        Map<String, Object> dsl = getMap("from", from);
-        dsl.put("size", size);
-        dsl.put("query", getMap("term", getMap("__meanings", getMap("value",termQName))));
-        Set<String> attributes = new HashSet<>();
-        attributes.add("meanings");
-        Set<String> relationAttributes = new HashSet<>();
-        relationAttributes.add("__state");
-        relationAttributes.add("name");
-        relationAttributes.add("qualifiedName");
-        indexSearchParams.setDsl(dsl);
-        indexSearchParams.setAttributes(attributes);
-        indexSearchParams.setRelationAttributes(relationAttributes);
-        AtlasSearchResult searchResult = null;
-        try {
-            searchResult = discovery.directIndexSearch(indexSearchParams);
-        } catch (AtlasBaseException e) {
-            throw e;
-        }
-        List<AtlasEntityHeader> entityHeaders = searchResult.getEntities();
-        return  entityHeaders;
-    }
-
-    public void updateMeaningsNamesInEntities(String termQName, String termGuid) throws AtlasBaseException {
+    public void updateMeaningsNamesInEntitiesOnTermDelete(String termQName, String termGuid) throws AtlasBaseException {
         int from = 0;
         while (true) {
-            List<AtlasEntityHeader> entityHeaders = fetchEntityHeadersByTermQualifiedName(from, ELASTICSEARCH_PAGINATION_SIZE, termQName);
+            Set<String> attributes = new HashSet<String>(){{
+                add("meanings");
+            }};
+            Set<String> relationAttributes = new HashSet<String>(){{
+                add("__state");
+                add("name");
+            }};
+
+            List<AtlasEntityHeader> entityHeaders = discovery.searchUsingQualifiedName(from, ELASTICSEARCH_PAGINATION_SIZE,
+                    termQName, attributes, relationAttributes);
+
             if (entityHeaders == null)
                 break;
+
             for (AtlasEntityHeader entityHeader : entityHeaders) {
                 List<AtlasObjectId> meanings = (List<AtlasObjectId>) entityHeader.getAttribute("meanings");
+
                 String updatedMeaningsText = meanings.stream()
                         .filter(x-> !termGuid.equals(x.getGuid()))
                         .filter(x->!x.getAttributes().get("__state").equals("DELETED"))
                         .map(x->x.getAttributes().get("name").toString())
                         .collect(Collectors.joining(","));
 
-                AtlasGraphUtilsV2.setEncodedProperty(AtlasGraphUtilsV2.findByGuid(entityHeader.getGuid()), MEANINGS_TEXT_PROPERTY_KEY, updatedMeaningsText);
+
+                AtlasVertex entityvertex = AtlasGraphUtilsV2.findByGuid(entityHeader.getGuid());
+                AtlasGraphUtilsV2.removeItemFromListPropertyValue(entityvertex,MEANINGS_PROPERTY_KEY,termQName);
+                AtlasGraphUtilsV2.setEncodedProperty(entityvertex, MEANINGS_TEXT_PROPERTY_KEY, updatedMeaningsText);
             }
             from += ELASTICSEARCH_PAGINATION_SIZE;
 
@@ -645,6 +648,19 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 break;
         }
 
+    }
+    public void createAndQueueTask(String termQName, String termGuid, Boolean isHardDelete){
+        String taskType = isHardDelete ? MEANINGS_TEXT_HARD_DELETE : MEANINGS_TEXT_SOFT_DELETE;
+        String currentUser = RequestContext.getCurrentUser();
+        Map<String, Object> taskParams = MeaningsTask.toParameters(termQName, termGuid);
+        AtlasTask task = taskManagement.createTask(taskType, currentUser, taskParams);
+
+        if(!isHardDelete){
+            AtlasVertex termVertex = AtlasGraphUtilsV2.findByGuid(termGuid);
+            AtlasGraphUtilsV2.addItemToListProperty(termVertex, EDGE_PENDING_TASKS_PROPERTY_KEY, task.getGuid());
+        }
+
+        RequestContext.get().queueTask(task);
     }
 
     @Override

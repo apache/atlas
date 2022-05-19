@@ -27,8 +27,6 @@ import org.apache.atlas.authorize.AtlasEntityAccessRequest;
 import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.discovery.AtlasSearchResult;
-import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
@@ -52,9 +50,10 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.repository.Constants.*;
@@ -171,51 +170,32 @@ public class TermPreProcessor implements PreProcessor {
 
     private boolean checkEntityTermAssociation(String termQName) throws AtlasBaseException{
         List<AtlasEntityHeader> entityHeader;
-
-        try {
-             entityHeader = fetchEntityHeadersByTermQualifiedName(0,1,termQName);
-        } catch (AtlasBaseException e) {
-            throw e;
-        }
-
+        entityHeader = discovery.searchUsingQualifiedName(0,1,termQName,null,null);
         Boolean hasEntityAssociation = entityHeader != null ? true : false;
-
         return hasEntityAssociation;
     }
 
-    private Map<String, Object> getMap(String key, Object value) {
-        Map<String, Object> map = new HashMap<>();
-        map.put(key, value);
-        return map;
-    }
-
-    private List<AtlasEntityHeader> fetchEntityHeadersByTermQualifiedName(int from, int size, String termQName) throws AtlasBaseException{
-        IndexSearchParams indexSearchParams = new IndexSearchParams();
-        Map<String, Object> dsl = getMap("from", from);
-        dsl.put("size", size);
-        dsl.put("query", getMap("term", getMap("__meanings", getMap("value",termQName))));
-        indexSearchParams.setDsl(dsl);
-        AtlasSearchResult searchResult = null;
-        try {
-            searchResult = discovery.directIndexSearch(indexSearchParams);
-        } catch (AtlasBaseException e) {
-            throw e;
-        }
-        List<AtlasEntityHeader> entityHeaders = searchResult.getEntities();
-        return  entityHeaders;
-    }
 
     public void updateMeaningsNamesInEntities(String updatedTermName, String termQName, String termGuid) throws AtlasBaseException {
         int from = 0;
+        Set<String> attributes = new HashSet<String>(){{
+            add("meanings");
+        }};
+        Set<String> relationAttributes = new HashSet<String>(){{
+            add("__state");
+            add("name");
+        }};
         while (true) {
-            List<AtlasEntityHeader> entityHeaders = fetchEntityHeadersByTermQualifiedName(from, ELASTICSEARCH_PAGINATION_SIZE, termQName);
+            List<AtlasEntityHeader> entityHeaders = discovery.searchUsingQualifiedName(from, ELASTICSEARCH_PAGINATION_SIZE,
+                    termQName,attributes,relationAttributes);
             if (entityHeaders == null)
                 break;
             for (AtlasEntityHeader entityHeader : entityHeaders) {
-                   String updatedMeaningsText = entityHeader
-                           .getMeanings()
+                List<AtlasObjectId> meanings = (List<AtlasObjectId>) entityHeader.getAttribute("meanings");
+                   String updatedMeaningsText = meanings
                            .stream()
-                           .map(x -> x.getTermGuid().equals(termGuid) ? updatedTermName : x.getDisplayText())
+                           .filter(x->!x.getAttributes().get("__state").equals("DELETED"))
+                           .map(x -> x.getGuid().equals(termGuid) ? updatedTermName : x.getAttributes().get("name").toString())
                            .collect(Collectors.joining(","));
                 AtlasGraphUtilsV2.setEncodedProperty(AtlasGraphUtilsV2.findByGuid(entityHeader.getGuid()), MEANINGS_TEXT_PROPERTY_KEY, updatedMeaningsText);
             }
