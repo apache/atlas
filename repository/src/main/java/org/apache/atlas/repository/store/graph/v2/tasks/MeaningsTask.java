@@ -18,7 +18,7 @@ import java.util.Map;
 
 import static org.apache.atlas.model.tasks.AtlasTask.Status.COMPLETE;
 import static org.apache.atlas.model.tasks.AtlasTask.Status.FAILED;
-import static org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTaskFactory.MEANINGS_TEXT_HARD_DELETE;
+import static org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTaskFactory.UPDATE_ENTITY_MEANINGS_ON_TERM_HARD_DELETE;
 
 public abstract class MeaningsTask extends AbstractTask {
     private static final Logger LOG = LoggerFactory.getLogger(MeaningsTask.class);
@@ -89,7 +89,7 @@ public abstract class MeaningsTask extends AbstractTask {
     protected void setStatus(AtlasTask.Status status) {
         super.setStatus(status);
         try {
-            if(MEANINGS_TEXT_HARD_DELETE.equals(getTaskType())){
+            if(UPDATE_ENTITY_MEANINGS_ON_TERM_HARD_DELETE.equals(getTaskType())){
                 LOG.info("Entity Vertex Deleted, No Need to remove pending task for: {} ",getTaskGuid());
             }else {
                 entityGraphMapper.removePendingTaskFromEntity((String) getTaskDef().getParameters().get(PARAM_ENTITY_GUID), getTaskGuid());

@@ -17,14 +17,14 @@ import java.util.List;
 public class MeaningsTaskFactory implements TaskFactory {
     private static final Logger LOG = LoggerFactory.getLogger(MeaningsTaskFactory.class);
 
-    public static final String MEANINGS_TEXT_UPDATE = "MEANINGS_TEXT_UPDATE";
-    public static final String MEANINGS_TEXT_SOFT_DELETE = "MEANINGS_TEXT_SOFT_DELETE";
-    public static final String MEANINGS_TEXT_HARD_DELETE = "MEANINGS_TEXT_HARD_DELETE";
+    public static final String UPDATE_ENTITY_MEANINGS_ON_TERM_UPDATE = "UPDATE_ENTITY_MEANINGS_ON_TERM_UPDATE";
+    public static final String UPDATE_ENTITY_MEANINGS_ON_TERM_SOFT_DELETE = "UPDATE_ENTITY_MEANINGS_ON_TERM_SOFT_DELETE";
+    public static final String UPDATE_ENTITY_MEANINGS_ON_TERM_HARD_DELETE = "UPDATE_ENTITY_MEANINGS_ON_TERM_HARD_DELETE";
 
     private static final List<String> supportedTypes = new ArrayList<String>() {{
-        add(MEANINGS_TEXT_UPDATE);
-        add(MEANINGS_TEXT_SOFT_DELETE);
-        add(MEANINGS_TEXT_HARD_DELETE);
+        add(UPDATE_ENTITY_MEANINGS_ON_TERM_UPDATE);
+        add(UPDATE_ENTITY_MEANINGS_ON_TERM_SOFT_DELETE);
+        add(UPDATE_ENTITY_MEANINGS_ON_TERM_HARD_DELETE);
     }};
 
 
@@ -45,11 +45,11 @@ public class MeaningsTaskFactory implements TaskFactory {
         String taskType = atlasTask.getType();
         String taskGuid = atlasTask.getGuid();
         switch (taskType) {
-            case MEANINGS_TEXT_UPDATE:
+            case UPDATE_ENTITY_MEANINGS_ON_TERM_UPDATE:
                 return new MeaningsTasks.Update(atlasTask,entityGraphMapper, preprocessor);
-            case MEANINGS_TEXT_SOFT_DELETE:
+            case UPDATE_ENTITY_MEANINGS_ON_TERM_SOFT_DELETE:
                 return  new MeaningsTasks.Delete(atlasTask,entityGraphMapper,entityStoreV2);
-            case MEANINGS_TEXT_HARD_DELETE:
+            case UPDATE_ENTITY_MEANINGS_ON_TERM_HARD_DELETE:
                 return new MeaningsTasks.Delete(atlasTask,entityGraphMapper,entityStoreV2);
         }
         LOG.warn("Type: {} - {} not found!. The task will be ignored.", taskType, taskGuid);

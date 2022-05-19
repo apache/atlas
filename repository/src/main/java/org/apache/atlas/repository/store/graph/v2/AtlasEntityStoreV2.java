@@ -20,7 +20,12 @@ package org.apache.atlas.repository.store.graph.v2;
 
 
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.atlas.*;
+import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.DeleteType;
+import org.apache.atlas.GraphTransactionInterceptor;
+import org.apache.atlas.RequestContext;
+import org.apache.atlas.AtlasException;
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.authorize.AtlasAdminAccessRequest;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
@@ -613,15 +618,16 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     public void updateMeaningsNamesInEntitiesOnTermDelete(String termQName, String termGuid) throws AtlasBaseException {
         int from = 0;
-        while (true) {
-            Set<String> attributes = new HashSet<String>(){{
-                add("meanings");
-            }};
-            Set<String> relationAttributes = new HashSet<String>(){{
-                add("__state");
-                add("name");
-            }};
 
+        Set<String> attributes = new HashSet<String>(){{
+            add("meanings");
+        }};
+        Set<String> relationAttributes = new HashSet<String>(){{
+            add("__state");
+            add("name");
+        }};
+
+        while (true) {
             List<AtlasEntityHeader> entityHeaders = discovery.searchUsingQualifiedName(from, ELASTICSEARCH_PAGINATION_SIZE,
                     termQName, attributes, relationAttributes);
 
@@ -632,15 +638,15 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 List<AtlasObjectId> meanings = (List<AtlasObjectId>) entityHeader.getAttribute("meanings");
 
                 String updatedMeaningsText = meanings.stream()
-                        .filter(x-> !termGuid.equals(x.getGuid()))
-                        .filter(x->!x.getAttributes().get("__state").equals("DELETED"))
-                        .map(x->x.getAttributes().get("name").toString())
+                        .filter(x -> !termGuid.equals(x.getGuid()))
+                        .filter(x -> !x.getAttributes().get("__state").equals("DELETED"))
+                        .map(x -> x.getAttributes().get("name").toString())
                         .collect(Collectors.joining(","));
 
 
-                AtlasVertex entityvertex = AtlasGraphUtilsV2.findByGuid(entityHeader.getGuid());
-                AtlasGraphUtilsV2.removeItemFromListPropertyValue(entityvertex,MEANINGS_PROPERTY_KEY,termQName);
-                AtlasGraphUtilsV2.setEncodedProperty(entityvertex, MEANINGS_TEXT_PROPERTY_KEY, updatedMeaningsText);
+                AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(entityHeader.getGuid());
+                AtlasGraphUtilsV2.removeItemFromListPropertyValue(entityVertex, MEANINGS_PROPERTY_KEY, termQName);
+                AtlasGraphUtilsV2.setEncodedProperty(entityVertex, MEANINGS_TEXT_PROPERTY_KEY, updatedMeaningsText);
             }
             from += ELASTICSEARCH_PAGINATION_SIZE;
 
@@ -650,7 +656,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     }
     public void createAndQueueTask(String termQName, String termGuid, Boolean isHardDelete){
-        String taskType = isHardDelete ? MEANINGS_TEXT_HARD_DELETE : MEANINGS_TEXT_SOFT_DELETE;
+        String taskType = isHardDelete ? UPDATE_ENTITY_MEANINGS_ON_TERM_HARD_DELETE : UPDATE_ENTITY_MEANINGS_ON_TERM_SOFT_DELETE;
         String currentUser = RequestContext.getCurrentUser();
         Map<String, Object> taskParams = MeaningsTask.toParameters(termQName, termGuid);
         AtlasTask task = taskManagement.createTask(taskType, currentUser, taskParams);

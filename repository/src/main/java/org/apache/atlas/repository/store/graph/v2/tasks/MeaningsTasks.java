@@ -20,7 +20,7 @@ public class MeaningsTasks {
             String termQName = (String) parameters.get(PARAM_ENTITY_QUALIFIED_NAME);
             String updatedTermName = (String) parameters.get(PARAM_TERM_NAME);
 
-            preprocessor.updateMeaningsNamesInEntities(updatedTermName, termQName, termGuid);
+            preprocessor.updateMeaningsNamesInEntitiesOnTermUpdate(updatedTermName, termQName, termGuid);
 
         }
     }
