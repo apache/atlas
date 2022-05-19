@@ -601,7 +601,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         List<AtlasEntityHeader> entityHeader;
 
         try {
-            entityHeader = discovery.searchUsingQualifiedName(0,1,termQName,new HashSet<>(),new HashSet<>());
+            entityHeader = discovery.searchUsingQualifiedName(0, 1, termQName,null, null);
         } catch (AtlasBaseException e) {
             throw e;
         }
