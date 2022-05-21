@@ -574,32 +574,76 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         EntityMutationResponse ret = deleteVertices(deletionCandidates);
 
-        if(ret.getMutatedEntities()!=null){
-            List<AtlasEntityHeader> deletedEntities = ret.getDeletedEntities();
-
-            for(AtlasEntityHeader entity:deletedEntities){
-                if(ATLAS_GLOSSARY_TERM_ENTITY_TYPE.equals(entity.getTypeName())){
-
-                    String qualifiedName  = entity.getAttribute("qualifiedName").toString();
-                    String Guid = entity.getGuid();
-                    Boolean isHardDelete = entity.getDeleteHandler().equals("HARD");
-
-                    if(checkEntityTermAssociation(qualifiedName)){
-                        if(DEFERRED_ACTION_ENABLED && taskManagement!=null){
-                            createAndQueueTask(qualifiedName,Guid,isHardDelete);
-                        }else{
-                            updateMeaningsNamesInEntitiesOnTermDelete(qualifiedName,Guid);
-                        }
-                    }
-                }
-            }
-        }
-
+        if(ret.getDeletedEntities()!=null)
+            processEntityDeletion(ret.getDeletedEntities());
 
         // Notify the change listeners
         entityChangeNotifier.onEntitiesMutated(ret, false);
 
         return ret;
+    }
+
+    @Override
+    @GraphTransaction
+    public EntityMutationResponse deleteByIds(final List<String> guids) throws AtlasBaseException {
+        if (CollectionUtils.isEmpty(guids)) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Guid(s) not specified");
+        }
+
+        Collection<AtlasVertex> deletionCandidates = new ArrayList<>();
+
+        for (String guid : guids) {
+            AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(graph, guid);
+
+            if (vertex == null) {
+                if (LOG.isDebugEnabled()) {
+                    // Entity does not exist - treat as non-error, since the caller
+                    // wanted to delete the entity and it's already gone.
+                    LOG.debug("Deletion request ignored for non-existent entity with guid " + guid);
+                }
+
+                continue;
+            }
+
+            AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(vertex);
+
+            AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_DELETE, entityHeader), "delete entity: guid=", guid);
+
+            deletionCandidates.add(vertex);
+        }
+
+        if (deletionCandidates.isEmpty()) {
+            LOG.info("No deletion candidate entities were found for guids %s", guids);
+        }
+
+        EntityMutationResponse ret = deleteVertices(deletionCandidates);
+
+        if(ret.getDeletedEntities()!=null)
+            processEntityDeletion(ret.getDeletedEntities());
+
+        // Notify the change listeners
+        entityChangeNotifier.onEntitiesMutated(ret, false);
+
+        return ret;
+    }
+
+    private void processEntityDeletion(List<AtlasEntityHeader> deletedEntities) throws AtlasBaseException{
+        for(AtlasEntityHeader entity:deletedEntities){
+            if(ATLAS_GLOSSARY_TERM_ENTITY_TYPE.equals(entity.getTypeName())){
+
+                String qualifiedName  = entity.getAttribute("qualifiedName").toString();
+                String Guid = entity.getGuid();
+                Boolean isHardDelete = entity.getDeleteHandler().equals("HARD");
+
+                if(checkEntityTermAssociation(qualifiedName)){
+                    if(DEFERRED_ACTION_ENABLED && taskManagement!=null){
+                        createAndQueueTask(qualifiedName,Guid,isHardDelete);
+                    }else{
+                        updateMeaningsNamesInEntitiesOnTermDelete(qualifiedName,Guid);
+                    }
+                }
+            }
+        }
     }
 
     private boolean checkEntityTermAssociation(String termQName) throws AtlasBaseException{
@@ -614,7 +658,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         return hasEntityAssociation;
     }
-
 
     public void updateMeaningsNamesInEntitiesOnTermDelete(String termQName, String termGuid) throws AtlasBaseException {
         int from = 0;
@@ -655,6 +698,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
 
     }
+
     public void createAndQueueTask(String termQName, String termGuid, Boolean isHardDelete){
         String taskType = isHardDelete ? UPDATE_ENTITY_MEANINGS_ON_TERM_HARD_DELETE : UPDATE_ENTITY_MEANINGS_ON_TERM_SOFT_DELETE;
         String currentUser = RequestContext.getCurrentUser();
@@ -669,46 +713,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         RequestContext.get().queueTask(task);
     }
 
-    @Override
-    @GraphTransaction
-    public EntityMutationResponse deleteByIds(final List<String> guids) throws AtlasBaseException {
-        if (CollectionUtils.isEmpty(guids)) {
-            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Guid(s) not specified");
-        }
-
-        Collection<AtlasVertex> deletionCandidates = new ArrayList<>();
-
-        for (String guid : guids) {
-            AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(graph, guid);
-
-            if (vertex == null) {
-                if (LOG.isDebugEnabled()) {
-                    // Entity does not exist - treat as non-error, since the caller
-                    // wanted to delete the entity and it's already gone.
-                    LOG.debug("Deletion request ignored for non-existent entity with guid " + guid);
-                }
-
-                continue;
-            }
-
-            AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(vertex);
-
-            AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_DELETE, entityHeader), "delete entity: guid=", guid);
-
-            deletionCandidates.add(vertex);
-        }
-
-        if (deletionCandidates.isEmpty()) {
-            LOG.info("No deletion candidate entities were found for guids %s", guids);
-        }
-
-        EntityMutationResponse ret = deleteVertices(deletionCandidates);
-
-        // Notify the change listeners
-        entityChangeNotifier.onEntitiesMutated(ret, false);
-
-        return ret;
-    }
 
     @Override
     @GraphTransaction

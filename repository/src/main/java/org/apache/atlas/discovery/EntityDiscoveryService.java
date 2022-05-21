@@ -1063,11 +1063,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         indexSearchParams.setAttributes(attributes);
         indexSearchParams.setRelationAttributes(relationAttributes);
         AtlasSearchResult searchResult = null;
-        try {
-            searchResult = directIndexSearch(indexSearchParams);
-        } catch (AtlasBaseException e) {
-            throw e;
-        }
+        searchResult = directIndexSearch(indexSearchParams);
         List<AtlasEntityHeader> entityHeaders = searchResult.getEntities();
         return  entityHeaders;
     }
