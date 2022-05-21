@@ -153,6 +153,7 @@ import static org.apache.atlas.type.Constants.GLOSSARY_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.HAS_LINEAGE;
 import static org.apache.atlas.type.Constants.MEANINGS_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.MEANINGS_TEXT_PROPERTY_KEY;
+import static org.apache.atlas.type.Constants.MEANINGS_NAMES_PROPERTY_KEY;
 
 
 @Component
@@ -1757,7 +1758,7 @@ public class EntityGraphMapper {
         }
 
         switch (ctx.getAttribute().getRelationshipEdgeLabel()) {
-            case TERM_ASSIGNMENT_LABEL: addMeaningsToEntity(ctx, newElementsCreated);
+            case TERM_ASSIGNMENT_LABEL: addMeaningsToEntity(ctx, newElementsCreated, removedElements);
                 break;
 
             case CATEGORY_TERMS_EDGE_LABEL: addCategoriesToTermEntity(ctx, newElementsCreated, removedElements);
@@ -1994,13 +1995,23 @@ public class EntityGraphMapper {
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
-    private void addMeaningsToEntity(AttributeMutationContext ctx, List<Object> newElementsCreated) {
+    private void addMeaningsToEntity(AttributeMutationContext ctx, List<Object> createdElements, List<AtlasEdge> deletedElements) {
         MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("addMeaningsToEntity");
         // handle __terms attribute of entity
-        List<AtlasVertex> meanings = newElementsCreated.stream().map(x -> ((AtlasEdge) x).getOutVertex()).collect(Collectors.toList());
+        List<AtlasVertex> meanings = createdElements.stream().map(x -> ((AtlasEdge) x).getOutVertex()).collect(Collectors.toList());
+        List<String> currentMeaningsQNames = ctx.getReferringVertex().getMultiValuedProperty(MEANINGS_PROPERTY_KEY,String.class);
 
         Set<String> qNames = meanings.stream().map(x -> x.getProperty(QUALIFIED_NAME, String.class)).collect(Collectors.toSet());
         List<String> names = meanings.stream().map(x -> x.getProperty(NAME, String.class)).collect(Collectors.toList());
+
+        List<String> deletedMeaningsNames = deletedElements.stream().map(x -> x.getOutVertex())
+                . map(x -> x.getProperty(NAME,String.class))
+                .collect(Collectors.toList());
+
+        List<String> newMeaningsNames = meanings.stream()
+                .filter(x -> !currentMeaningsQNames.contains(x.getProperty(QUALIFIED_NAME,String.class)))
+                .map(x -> x.getProperty(NAME, String.class))
+                .collect(Collectors.toList());
 
         ctx.getReferringVertex().removeProperty(MEANINGS_PROPERTY_KEY);
         ctx.getReferringVertex().removeProperty(MEANINGS_TEXT_PROPERTY_KEY);
@@ -2012,6 +2023,19 @@ public class EntityGraphMapper {
         if (CollectionUtils.isNotEmpty(names)) {
             AtlasGraphUtilsV2.setEncodedProperty(ctx.referringVertex, MEANINGS_TEXT_PROPERTY_KEY, StringUtils.join(names, ","));
         }
+
+        if (CollectionUtils.isNotEmpty(newMeaningsNames)) {
+            newMeaningsNames.forEach(q -> AtlasGraphUtilsV2.addListProperty(ctx.getReferringVertex(), MEANINGS_NAMES_PROPERTY_KEY, q, true));
+        }
+
+        if(createdElements.isEmpty()){
+            ctx.getReferringVertex().removeProperty(MEANINGS_NAMES_PROPERTY_KEY);
+        }
+
+        if (CollectionUtils.isNotEmpty(deletedMeaningsNames) && !createdElements.isEmpty()) {
+            deletedMeaningsNames.forEach(q -> AtlasGraphUtilsV2.removeItemFromListPropertyValue(ctx.getReferringVertex(), MEANINGS_NAMES_PROPERTY_KEY, q));
+        }
+
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
