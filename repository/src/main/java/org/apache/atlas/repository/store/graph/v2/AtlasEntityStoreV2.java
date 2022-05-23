@@ -575,7 +575,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         EntityMutationResponse ret = deleteVertices(deletionCandidates);
 
         if(ret.getDeletedEntities()!=null)
-            processEntityDeletion(ret.getDeletedEntities());
+            processTermEntityDeletion(ret.getDeletedEntities());
 
         // Notify the change listeners
         entityChangeNotifier.onEntitiesMutated(ret, false);
@@ -619,7 +619,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         EntityMutationResponse ret = deleteVertices(deletionCandidates);
 
         if(ret.getDeletedEntities()!=null)
-            processEntityDeletion(ret.getDeletedEntities());
+            processTermEntityDeletion(ret.getDeletedEntities());
 
         // Notify the change listeners
         entityChangeNotifier.onEntitiesMutated(ret, false);
@@ -730,7 +730,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         EntityMutationResponse ret = deleteVertices(deletionCandidates);
 
         if(ret.getDeletedEntities()!=null)
-            processEntityDeletion(ret.getDeletedEntities());
+            processTermEntityDeletion(ret.getDeletedEntities());
 
         // Notify the change listeners
         entityChangeNotifier.onEntitiesMutated(ret, false);
@@ -783,14 +783,14 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         ret = deleteVertices(deletionCandidates);
 
         if(ret.getDeletedEntities()!=null)
-            processEntityDeletion(ret.getDeletedEntities());
+            processTermEntityDeletion(ret.getDeletedEntities());
         // Notify the change listeners
         entityChangeNotifier.onEntitiesMutated(ret, false);
 
         return ret;
     }
 
-    private void processEntityDeletion(List<AtlasEntityHeader> deletedEntities) throws AtlasBaseException{
+    private void processTermEntityDeletion(List<AtlasEntityHeader> deletedEntities) throws AtlasBaseException{
         for(AtlasEntityHeader entity:deletedEntities){
             if(ATLAS_GLOSSARY_TERM_ENTITY_TYPE.equals(entity.getTypeName())){
 
