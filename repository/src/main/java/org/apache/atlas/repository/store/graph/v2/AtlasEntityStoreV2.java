@@ -627,92 +627,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         return ret;
     }
 
-    private void processEntityDeletion(List<AtlasEntityHeader> deletedEntities) throws AtlasBaseException{
-        for(AtlasEntityHeader entity:deletedEntities){
-            if(ATLAS_GLOSSARY_TERM_ENTITY_TYPE.equals(entity.getTypeName())){
-
-                String qualifiedName  = entity.getAttribute("qualifiedName").toString();
-                String Guid = entity.getGuid();
-                Boolean isHardDelete = entity.getDeleteHandler().equals("HARD");
-
-                if(checkEntityTermAssociation(qualifiedName)){
-                    if(DEFERRED_ACTION_ENABLED && taskManagement!=null){
-                        createAndQueueTask(qualifiedName,Guid,isHardDelete);
-                    }else{
-                        updateMeaningsNamesInEntitiesOnTermDelete(qualifiedName,Guid);
-                    }
-                }
-            }
-        }
-    }
-
-    private boolean checkEntityTermAssociation(String termQName) throws AtlasBaseException{
-        List<AtlasEntityHeader> entityHeader;
-
-        try {
-            entityHeader = discovery.searchUsingTermQualifiedName(0, 1, termQName,null, null);
-        } catch (AtlasBaseException e) {
-            throw e;
-        }
-        Boolean hasEntityAssociation = entityHeader != null ? true : false;
-
-        return hasEntityAssociation;
-    }
-
-    public void updateMeaningsNamesInEntitiesOnTermDelete(String termQName, String termGuid) throws AtlasBaseException {
-        int from = 0;
-
-        Set<String> attributes = new HashSet<String>(){{
-            add("meanings");
-        }};
-        Set<String> relationAttributes = new HashSet<String>(){{
-            add("__state");
-            add("name");
-        }};
-
-        while (true) {
-            List<AtlasEntityHeader> entityHeaders = discovery.searchUsingTermQualifiedName(from, ELASTICSEARCH_PAGINATION_SIZE,
-                    termQName, attributes, relationAttributes);
-
-            if (entityHeaders == null)
-                break;
-
-            for (AtlasEntityHeader entityHeader : entityHeaders) {
-                List<AtlasObjectId> meanings = (List<AtlasObjectId>) entityHeader.getAttribute("meanings");
-
-                String updatedMeaningsText = meanings.stream()
-                        .filter(x -> !termGuid.equals(x.getGuid()))
-                        .filter(x -> !x.getAttributes().get("__state").equals("DELETED"))
-                        .map(x -> x.getAttributes().get("name").toString())
-                        .collect(Collectors.joining(","));
-
-
-                AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(entityHeader.getGuid());
-                AtlasGraphUtilsV2.removeItemFromListPropertyValue(entityVertex, MEANINGS_PROPERTY_KEY, termQName);
-                AtlasGraphUtilsV2.setEncodedProperty(entityVertex, MEANINGS_TEXT_PROPERTY_KEY, updatedMeaningsText);
-            }
-            from += ELASTICSEARCH_PAGINATION_SIZE;
-
-            if (entityHeaders.size() < ELASTICSEARCH_PAGINATION_SIZE)
-                break;
-        }
-
-    }
-
-    public void createAndQueueTask(String termQName, String termGuid, Boolean isHardDelete){
-        String taskType = isHardDelete ? UPDATE_ENTITY_MEANINGS_ON_TERM_HARD_DELETE : UPDATE_ENTITY_MEANINGS_ON_TERM_SOFT_DELETE;
-        String currentUser = RequestContext.getCurrentUser();
-        Map<String, Object> taskParams = MeaningsTask.toParameters(termQName, termGuid);
-        AtlasTask task = taskManagement.createTask(taskType, currentUser, taskParams);
-
-        if(!isHardDelete){
-            AtlasVertex termVertex = AtlasGraphUtilsV2.findByGuid(termGuid);
-            AtlasGraphUtilsV2.addItemToListProperty(termVertex, EDGE_PENDING_TASKS_PROPERTY_KEY, task.getGuid());
-        }
-
-        RequestContext.get().queueTask(task);
-    }
-
 
     @Override
     @GraphTransaction
@@ -815,6 +729,9 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         EntityMutationResponse ret = deleteVertices(deletionCandidates);
 
+        if(ret.getDeletedEntities()!=null)
+            processEntityDeletion(ret.getDeletedEntities());
+
         // Notify the change listeners
         entityChangeNotifier.onEntitiesMutated(ret, false);
 
@@ -864,11 +781,101 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
 
         ret = deleteVertices(deletionCandidates);
+
+        if(ret.getDeletedEntities()!=null)
+            processEntityDeletion(ret.getDeletedEntities());
         // Notify the change listeners
         entityChangeNotifier.onEntitiesMutated(ret, false);
 
         return ret;
     }
+
+    private void processEntityDeletion(List<AtlasEntityHeader> deletedEntities) throws AtlasBaseException{
+        for(AtlasEntityHeader entity:deletedEntities){
+            if(ATLAS_GLOSSARY_TERM_ENTITY_TYPE.equals(entity.getTypeName())){
+
+                String qualifiedName  = entity.getAttribute("qualifiedName").toString();
+                String Guid = entity.getGuid();
+                Boolean isHardDelete = entity.getDeleteHandler().equals("HARD");
+
+                if(checkEntityTermAssociation(qualifiedName)){
+                    if(DEFERRED_ACTION_ENABLED && taskManagement!=null){
+                        createAndQueueTask(qualifiedName,Guid,isHardDelete);
+                    }else{
+                        updateMeaningsNamesInEntitiesOnTermDelete(qualifiedName,Guid);
+                    }
+                }
+            }
+        }
+    }
+
+    private boolean checkEntityTermAssociation(String termQName) throws AtlasBaseException{
+        List<AtlasEntityHeader> entityHeader;
+
+        try {
+            entityHeader = discovery.searchUsingTermQualifiedName(0, 1, termQName,null, null);
+        } catch (AtlasBaseException e) {
+            throw e;
+        }
+        Boolean hasEntityAssociation = entityHeader != null ? true : false;
+
+        return hasEntityAssociation;
+    }
+
+    public void updateMeaningsNamesInEntitiesOnTermDelete(String termQName, String termGuid) throws AtlasBaseException {
+        int from = 0;
+
+        Set<String> attributes = new HashSet<String>(){{
+            add("meanings");
+        }};
+        Set<String> relationAttributes = new HashSet<String>(){{
+            add("__state");
+            add("name");
+        }};
+
+        while (true) {
+            List<AtlasEntityHeader> entityHeaders = discovery.searchUsingTermQualifiedName(from, ELASTICSEARCH_PAGINATION_SIZE,
+                    termQName, attributes, relationAttributes);
+
+            if (entityHeaders == null)
+                break;
+
+            for (AtlasEntityHeader entityHeader : entityHeaders) {
+                List<AtlasObjectId> meanings = (List<AtlasObjectId>) entityHeader.getAttribute("meanings");
+
+                String updatedMeaningsText = meanings.stream()
+                        .filter(x -> !termGuid.equals(x.getGuid()))
+                        .filter(x -> !x.getAttributes().get("__state").equals("DELETED"))
+                        .map(x -> x.getAttributes().get("name").toString())
+                        .collect(Collectors.joining(","));
+
+
+                AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(entityHeader.getGuid());
+                AtlasGraphUtilsV2.removeItemFromListPropertyValue(entityVertex, MEANINGS_PROPERTY_KEY, termQName);
+                AtlasGraphUtilsV2.setEncodedProperty(entityVertex, MEANINGS_TEXT_PROPERTY_KEY, updatedMeaningsText);
+            }
+            from += ELASTICSEARCH_PAGINATION_SIZE;
+
+            if (entityHeaders.size() < ELASTICSEARCH_PAGINATION_SIZE)
+                break;
+        }
+
+    }
+
+    public void createAndQueueTask(String termQName, String termGuid, Boolean isHardDelete){
+        String taskType = isHardDelete ? UPDATE_ENTITY_MEANINGS_ON_TERM_HARD_DELETE : UPDATE_ENTITY_MEANINGS_ON_TERM_SOFT_DELETE;
+        String currentUser = RequestContext.getCurrentUser();
+        Map<String, Object> taskParams = MeaningsTask.toParameters(termQName, termGuid);
+        AtlasTask task = taskManagement.createTask(taskType, currentUser, taskParams);
+
+        if(!isHardDelete){
+            AtlasVertex termVertex = AtlasGraphUtilsV2.findByGuid(termGuid);
+            AtlasGraphUtilsV2.addItemToListProperty(termVertex, EDGE_PENDING_TASKS_PROPERTY_KEY, task.getGuid());
+        }
+
+        RequestContext.get().queueTask(task);
+    }
+
 
     @Override
     @GraphTransaction
