@@ -651,6 +651,9 @@ define(['require',
                     },
                     cust_error: function() {},
                     complete: function() {
+                        if(that.collection.fullCollection.length === 0){
+                            that.setUrl('#!/tag', true);
+                        }
                         that.notificationModal.hideButtonLoader();
                         that.notificationModal.remove();
                     }
