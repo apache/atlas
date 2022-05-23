@@ -2030,9 +2030,7 @@ public class EntityGraphMapper {
 
         if(createdElements.isEmpty()){
             ctx.getReferringVertex().removeProperty(MEANINGS_NAMES_PROPERTY_KEY);
-        }
-
-        if (CollectionUtils.isNotEmpty(deletedMeaningsNames) && !createdElements.isEmpty()) {
+        }else if (CollectionUtils.isNotEmpty(deletedMeaningsNames)) {
             deletedMeaningsNames.forEach(q -> AtlasGraphUtilsV2.removeItemFromListPropertyValue(ctx.getReferringVertex(), MEANINGS_NAMES_PROPERTY_KEY, q));
         }
 
