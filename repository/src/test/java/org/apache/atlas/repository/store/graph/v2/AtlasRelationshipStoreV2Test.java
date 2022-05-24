@@ -39,7 +39,6 @@ import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.repository.store.graph.v1.RestoreHandlerV1;
-import org.apache.atlas.runner.LocalSolrRunner;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.DeleteType;
 import org.apache.atlas.type.AtlasEntityType;
@@ -135,7 +134,7 @@ public abstract class AtlasRelationshipStoreV2Test extends AtlasTestBase {
 
     @BeforeTest
     public void init() throws Exception {
-        entityStore       = new AtlasEntityStoreV2(atlasGraph, deleteDelegate, restoreHandlerV1, typeRegistry, mockChangeNotifier, graphMapper);
+        entityStore       = new AtlasEntityStoreV2(atlasGraph, deleteDelegate, restoreHandlerV1, typeRegistry, mockChangeNotifier, graphMapper, null);
         relationshipStore = new AtlasRelationshipStoreV2(atlasGraph, typeRegistry, deleteDelegate, entityNotifier);
 
         RequestContext.clear();

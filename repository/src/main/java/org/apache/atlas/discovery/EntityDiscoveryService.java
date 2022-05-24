@@ -94,7 +94,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 import javax.script.ScriptException;
 
 import static org.apache.atlas.AtlasErrorCode.*;
@@ -1045,5 +1044,27 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
         scrubSearchResults(ret, searchParams.getSuppressLogs());
         return ret;
+    }
+
+    private Map<String, Object> getMap(String key, Object value) {
+        Map<String, Object> map = new HashMap<>();
+        map.put(key, value);
+        return map;
+    }
+
+    public List<AtlasEntityHeader> searchUsingTermQualifiedName(int from, int size, String termQName,
+                                                        Set<String> attributes, Set<String>relationAttributes) throws AtlasBaseException {
+        IndexSearchParams indexSearchParams = new IndexSearchParams();
+        Map<String, Object> dsl = getMap("from", from);
+        dsl.put("size", size);
+        dsl.put("query", getMap("term", getMap("__meanings", getMap("value",termQName))));
+
+        indexSearchParams.setDsl(dsl);
+        indexSearchParams.setAttributes(attributes);
+        indexSearchParams.setRelationAttributes(relationAttributes);
+        AtlasSearchResult searchResult = null;
+        searchResult = directIndexSearch(indexSearchParams);
+        List<AtlasEntityHeader> entityHeaders = searchResult.getEntities();
+        return  entityHeaders;
     }
 }
