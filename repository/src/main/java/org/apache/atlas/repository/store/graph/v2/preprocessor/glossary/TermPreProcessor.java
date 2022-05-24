@@ -75,14 +75,14 @@ public class TermPreProcessor implements PreProcessor {
     private EntityDiscoveryService discovery;
 
     private AtlasEntityHeader anchor;
-    public TermPreProcessor( AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, AtlasGraph graph, TaskManagement taskManagement) throws AtlasBaseException{
+    public TermPreProcessor( AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, AtlasGraph graph, TaskManagement taskManagement) {
         this.entityRetriever = entityRetriever;
         this.typeRegistry = typeRegistry;
         this.taskManagement = taskManagement;
         try {
             this.discovery = new EntityDiscoveryService(typeRegistry, graph, null, null, null, null);
         } catch (AtlasException e) {
-            throw new AtlasBaseException(e.getMessage(), e.getCause());
+            e.printStackTrace();
         }
     }
 
