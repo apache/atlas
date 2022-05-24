@@ -110,6 +110,7 @@ import static org.apache.atlas.type.Constants.HAS_LINEAGE;
 import static org.apache.atlas.type.Constants.HAS_LINEAGE_VALID;
 import static org.apache.atlas.type.Constants.MEANINGS_TEXT_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.MEANINGS_PROPERTY_KEY;
+import static org.apache.atlas.type.Constants.PENDING_TASKS_PROPERTY_KEY;
 
 
 
@@ -870,7 +871,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         if(!isHardDelete){
             AtlasVertex termVertex = AtlasGraphUtilsV2.findByGuid(termGuid);
-            AtlasGraphUtilsV2.addItemToListProperty(termVertex, EDGE_PENDING_TASKS_PROPERTY_KEY, task.getGuid());
+            AtlasGraphUtilsV2.addEncodedProperty(termVertex, PENDING_TASKS_PROPERTY_KEY, task.getGuid());
         }
 
         RequestContext.get().queueTask(task);

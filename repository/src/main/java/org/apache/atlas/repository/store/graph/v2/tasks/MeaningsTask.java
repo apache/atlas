@@ -4,6 +4,7 @@ import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.exception.EntityNotFoundException;
 import org.apache.atlas.model.tasks.AtlasTask;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStoreV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.TermPreProcessor;
@@ -27,14 +28,16 @@ public abstract class MeaningsTask extends AbstractTask {
     protected static final String PARAM_TERM_NAME = "termName";
 
     protected final EntityGraphMapper entityGraphMapper;
+    protected final AtlasGraph graph;
     protected final TermPreProcessor preprocessor;
     protected final AtlasEntityStoreV2 entityStoreV2;
 
 
     public MeaningsTask(AtlasTask task, EntityGraphMapper entityGraphMapper,
-                        TermPreProcessor preprocessor, AtlasEntityStoreV2 entityStoreV2) {
+                        AtlasGraph graph, TermPreProcessor preprocessor, AtlasEntityStoreV2 entityStoreV2) {
         super(task);
         this.entityGraphMapper = entityGraphMapper;
+        this.graph = graph;
         this.preprocessor = preprocessor;
         this.entityStoreV2 = entityStoreV2;
     }
@@ -63,6 +66,8 @@ public abstract class MeaningsTask extends AbstractTask {
                 setStatus(FAILED);
 
                 throw e;
+            } finally {
+                graph.commit();
             }
             return getStatus();
         } else {

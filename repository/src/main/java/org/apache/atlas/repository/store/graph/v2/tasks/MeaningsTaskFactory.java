@@ -1,6 +1,7 @@
 package org.apache.atlas.repository.store.graph.v2.tasks;
 
 import org.apache.atlas.model.tasks.AtlasTask;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStoreV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.TermPreProcessor;
@@ -31,13 +32,15 @@ public class MeaningsTaskFactory implements TaskFactory {
     protected final EntityGraphMapper entityGraphMapper;
     protected final TermPreProcessor preprocessor;
     protected  final AtlasEntityStoreV2 entityStoreV2;
+    protected final AtlasGraph graph;
 
     @Inject
     public MeaningsTaskFactory(EntityGraphMapper entityGraphMapper,
-                               TermPreProcessor preprocessor,AtlasEntityStoreV2 entityStoreV2) {
+                               TermPreProcessor preprocessor, AtlasEntityStoreV2 entityStoreV2, AtlasGraph graph) {
         this.entityGraphMapper = entityGraphMapper;
         this.preprocessor = preprocessor;
         this.entityStoreV2 = entityStoreV2;
+        this.graph = graph;
     }
 
     @Override
@@ -46,11 +49,11 @@ public class MeaningsTaskFactory implements TaskFactory {
         String taskGuid = atlasTask.getGuid();
         switch (taskType) {
             case UPDATE_ENTITY_MEANINGS_ON_TERM_UPDATE:
-                return new MeaningsTasks.Update(atlasTask,entityGraphMapper, preprocessor);
+                return new MeaningsTasks.Update(atlasTask, entityGraphMapper, graph, preprocessor);
             case UPDATE_ENTITY_MEANINGS_ON_TERM_SOFT_DELETE:
-                return  new MeaningsTasks.Delete(atlasTask,entityGraphMapper,entityStoreV2);
+                return new MeaningsTasks.Delete(atlasTask, entityGraphMapper, graph, entityStoreV2);
             case UPDATE_ENTITY_MEANINGS_ON_TERM_HARD_DELETE:
-                return new MeaningsTasks.Delete(atlasTask,entityGraphMapper,entityStoreV2);
+                return new MeaningsTasks.Delete(atlasTask, entityGraphMapper, graph, entityStoreV2);
         }
         LOG.warn("Type: {} - {} not found!. The task will be ignored.", taskType, taskGuid);
         return null;
