@@ -17,11 +17,12 @@ public class MeaningsTasks {
 
         @Override
         protected void run(Map<String, Object> parameters) throws AtlasBaseException {
-            String termGuid = (String) parameters.get(PARAM_ENTITY_GUID);
-            String termQName = (String) parameters.get(PARAM_ENTITY_QUALIFIED_NAME);
-            String updatedTermName = (String) parameters.get(PARAM_TERM_NAME);
+            String termGuid         = (String) parameters.get(PARAM_ENTITY_GUID);
+            String termQName        = (String) parameters.get(PARAM_ENTITY_QUALIFIED_NAME);
+            String currentTermName  = (String) parameters.get(PARAM_CURRENT_TERM_NAME);
+            String updatedTermName  = (String) parameters.get(PARAM_UPDATED_TERM_NAME);
 
-            preprocessor.updateMeaningsNamesInEntitiesOnTermUpdate(updatedTermName, termQName, termGuid);
+            preprocessor.updateMeaningsNamesInEntitiesOnTermUpdate(currentTermName, updatedTermName, termQName, termGuid);
 
         }
     }
@@ -34,11 +35,12 @@ public class MeaningsTasks {
 
         @Override
         protected void run(Map<String, Object> parameters) throws AtlasBaseException {
-            String termGuid = (String) parameters.get(PARAM_ENTITY_GUID);
-            String termQName = (String) parameters.get(PARAM_ENTITY_QUALIFIED_NAME);
+            String termGuid     = (String) parameters.get(PARAM_ENTITY_GUID);
+            String termQName    = (String) parameters.get(PARAM_ENTITY_QUALIFIED_NAME);
+            String termName     = (String) parameters.get(PARAM_CURRENT_TERM_NAME);
 
 
-            entityStoreV2.updateMeaningsNamesInEntitiesOnTermDelete(termQName, termGuid);
+            entityStoreV2.updateMeaningsNamesInEntitiesOnTermDelete(termName, termQName, termGuid);
 
         }
     }
