@@ -122,6 +122,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     static final boolean DEFERRED_ACTION_ENABLED = AtlasConfiguration.TASKS_USE_ENABLED.getBoolean();
 
+    private static final String ATTR_MEANINGS = "meanings";
+
     private final AtlasGraph                graph;
     private final DeleteHandlerDelegate     deleteDelegate;
     private final RestoreHandlerV1          restoreHandlerV1;
@@ -829,11 +831,11 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         int from = 0;
 
         Set<String> attributes = new HashSet<String>(){{
-            add("meanings");
+            add(ATTR_MEANINGS);
         }};
         Set<String> relationAttributes = new HashSet<String>(){{
-            add("__state");
-            add("name");
+            add(STATE_PROPERTY_KEY);
+            add(NAME);
         }};
 
         while (true) {
@@ -848,8 +850,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
                 String updatedMeaningsText = meanings.stream()
                         .filter(x -> !termGuid.equals(x.getGuid()))
-                        .filter(x -> !x.getAttributes().get("__state").equals("DELETED"))
-                        .map(x -> x.getAttributes().get("name").toString())
+                        .filter(x -> !x.getAttributes().get(STATE_PROPERTY_KEY).equals("DELETED"))
+                        .map(x -> x.getAttributes().get(NAME).toString())
                         .collect(Collectors.joining(","));
 
 

@@ -57,6 +57,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.repository.Constants.*;
+import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
 import static org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTaskFactory.UPDATE_ENTITY_MEANINGS_ON_TERM_UPDATE;
 import static org.apache.atlas.type.Constants.*;
@@ -64,6 +65,8 @@ import static org.apache.atlas.type.Constants.*;
 @Component
 public class TermPreProcessor implements PreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(TermPreProcessor.class);
+
+    private static final String ATTR_MEANINGS = "meanings";
 
     static final boolean DEFERRED_ACTION_ENABLED = AtlasConfiguration.TASKS_USE_ENABLED.getBoolean();
 
@@ -179,11 +182,11 @@ public class TermPreProcessor implements PreProcessor {
     public void updateMeaningsNamesInEntitiesOnTermUpdate(String currentTermName, String updatedTermName, String termQName, String termGuid) throws AtlasBaseException {
         int from = 0;
         Set<String> attributes = new HashSet<String>(){{
-            add("meanings");
+            add(ATTR_MEANINGS);
         }};
         Set<String> relationAttributes = new HashSet<String>(){{
-            add("__state");
-            add("name");
+            add(STATE_PROPERTY_KEY);
+            add(NAME);
         }};
         while (true) {
             List<AtlasEntityHeader> entityHeaders = discovery.searchUsingTermQualifiedName(from, ELASTICSEARCH_PAGINATION_SIZE,
@@ -191,11 +194,11 @@ public class TermPreProcessor implements PreProcessor {
             if (entityHeaders == null)
                 break;
             for (AtlasEntityHeader entityHeader : entityHeaders) {
-                List<AtlasObjectId> meanings = (List<AtlasObjectId>) entityHeader.getAttribute("meanings");
+                List<AtlasObjectId> meanings = (List<AtlasObjectId>) entityHeader.getAttribute(ATTR_MEANINGS);
 
                 String updatedMeaningsText = meanings
                            .stream()
-                           .filter(x->!x.getAttributes().get("__state").equals("DELETED"))
+                           .filter(x->!x.getAttributes().get(STATE_PROPERTY_KEY).equals("DELETED"))
                            .map(x -> x.getGuid().equals(termGuid) ? updatedTermName : x.getAttributes().get(NAME).toString())
                            .collect(Collectors.joining(","));
                    AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(entityHeader.getGuid());
