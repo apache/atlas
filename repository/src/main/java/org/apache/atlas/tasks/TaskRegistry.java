@@ -322,7 +322,7 @@ public class TaskRegistry {
                         if (vertex != null) {
                             ret.add(toAtlasTask(vertex));
                         } else {
-                            LOG.error("Null vertex while re-queuing tasks at index {}", fetched);
+                            LOG.warn("Null vertex while re-queuing tasks at index {}", fetched);
                         }
 
                         fetched++;
