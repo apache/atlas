@@ -2826,7 +2826,7 @@ public class EntityGraphMapper {
                         && task.getParameters().get(ClassificationTask.PARAM_ENTITY_GUID).equals(entityGuid);
             }
         } catch (NullPointerException npe) {
-
+            LOG.warn("Task classificationVertexId or entityGuid is null");
         }
         return false;
     }
