@@ -1998,9 +1998,12 @@ public class EntityGraphMapper {
     private void addMeaningsToEntity(AttributeMutationContext ctx, List<Object> createdElements, List<AtlasEdge> deletedElements) {
         MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("addMeaningsToEntity");
         // handle __terms attribute of entity
-        List<AtlasVertex> meanings = createdElements.stream().map(x -> ((AtlasEdge) x).getOutVertex()).collect(Collectors.toList());
-        List<String> currentMeaningsQNames = ctx.getReferringVertex().getMultiValuedProperty(MEANINGS_PROPERTY_KEY,String.class);
+        List<AtlasVertex> meanings = createdElements.stream()
+                .map(x -> ((AtlasEdge) x).getOutVertex())
+                .filter(x -> !x.getProperty(STATE_PROPERTY_KEY, String.class).equals("DELETED"))
+                .collect(Collectors.toList());
 
+        List<String> currentMeaningsQNames = ctx.getReferringVertex().getMultiValuedProperty(MEANINGS_PROPERTY_KEY,String.class);
         Set<String> qNames = meanings.stream().map(x -> x.getProperty(QUALIFIED_NAME, String.class)).collect(Collectors.toSet());
         List<String> names = meanings.stream().map(x -> x.getProperty(NAME, String.class)).collect(Collectors.toList());
 

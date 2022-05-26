@@ -846,7 +846,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 break;
 
             for (AtlasEntityHeader entityHeader : entityHeaders) {
-                List<AtlasObjectId> meanings = (List<AtlasObjectId>) entityHeader.getAttribute("meanings");
+                List<AtlasObjectId> meanings = (List<AtlasObjectId>) entityHeader.getAttribute(ATTR_MEANINGS);
 
                 String updatedMeaningsText = meanings.stream()
                         .filter(x -> !termGuid.equals(x.getGuid()))
