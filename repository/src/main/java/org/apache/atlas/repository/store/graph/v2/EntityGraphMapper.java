@@ -2820,8 +2820,15 @@ public class EntityGraphMapper {
     }
 
     private boolean classificationHasPendingTask(AtlasTask task, String classificationVertexId, String entityGuid) {
-        return task.getParameters().get(ClassificationTask.PARAM_CLASSIFICATION_VERTEX_ID).equals(classificationVertexId)
-                && task.getParameters().get(ClassificationTask.PARAM_ENTITY_GUID).equals(entityGuid);
+        try {
+            if (CLASSIFICATION_PROPAGATION_ADD.equals(task.getType()) || CLASSIFICATION_PROPAGATION_DELETE.equals(task.getType())) {
+                return task.getParameters().get(ClassificationTask.PARAM_CLASSIFICATION_VERTEX_ID).equals(classificationVertexId)
+                        && task.getParameters().get(ClassificationTask.PARAM_ENTITY_GUID).equals(entityGuid);
+            }
+        } catch (NullPointerException npe) {
+
+        }
+        return false;
     }
 
     private AtlasEntity updateClassificationText(AtlasVertex vertex) throws AtlasBaseException {
