@@ -799,9 +799,9 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             if(ATLAS_GLOSSARY_TERM_ENTITY_TYPE.equals(entity.getTypeName())){
 
                 String termQualifiedName    = entity.getAttribute(QUALIFIED_NAME).toString();
-                String termName          = entity.getAttribute(NAME).toString();
-                String Guid = entity.getGuid();
-                Boolean isHardDelete = entity.getDeleteHandler().equals("HARD");
+                String termName             = entity.getAttribute(NAME).toString();
+                String Guid                 = entity.getGuid();
+                Boolean isHardDelete        = DELETE_HANDLER_TYPE_HARD.equals(entity.getDeleteHandler());
 
                 if(checkEntityTermAssociation(termQualifiedName)){
                     if(DEFERRED_ACTION_ENABLED && taskManagement!=null){
@@ -850,7 +850,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
                 String updatedMeaningsText = meanings.stream()
                         .filter(x -> !termGuid.equals(x.getGuid()))
-                        .filter(x -> !x.getAttributes().get(STATE_PROPERTY_KEY).equals("DELETED"))
+                        .filter(x -> !ENTITY_DELETED_STATUS.equals(x.getAttributes().get(STATE_PROPERTY_KEY)))
                         .map(x -> x.getAttributes().get(NAME).toString())
                         .collect(Collectors.joining(","));
 

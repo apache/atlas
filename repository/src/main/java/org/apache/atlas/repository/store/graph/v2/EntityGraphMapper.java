@@ -2000,7 +2000,7 @@ public class EntityGraphMapper {
         // handle __terms attribute of entity
         List<AtlasVertex> meanings = createdElements.stream()
                 .map(x -> ((AtlasEdge) x).getOutVertex())
-                .filter(x -> !x.getProperty(STATE_PROPERTY_KEY, String.class).equals("DELETED"))
+                .filter(x -> !ENTITY_DELETED_STATUS.equals(x.getProperty(STATE_PROPERTY_KEY, String.class)))
                 .collect(Collectors.toList());
 
         List<String> currentMeaningsQNames = ctx.getReferringVertex().getMultiValuedProperty(MEANINGS_PROPERTY_KEY,String.class);

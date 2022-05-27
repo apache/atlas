@@ -156,15 +156,11 @@ public class TermPreProcessor implements PreProcessor {
         String termGuid = GraphHelper.getGuid(vertex);
 
         if(!termName.equals(vertexName) && checkEntityTermAssociation(vertexQName)){
-            try {
-                if (taskManagement != null && DEFERRED_ACTION_ENABLED) {
+            if (taskManagement != null && DEFERRED_ACTION_ENABLED) {
                     createAndQueueTask(UPDATE_ENTITY_MEANINGS_ON_TERM_UPDATE, vertexName, termName, vertexQName, vertex);
                 } else {
                     updateMeaningsNamesInEntitiesOnTermUpdate(vertexName, termName, vertexQName, termGuid);
                 }
-            } catch (AtlasBaseException e) {
-                throw e;
-            }
         }
 
 
@@ -198,7 +194,7 @@ public class TermPreProcessor implements PreProcessor {
 
                 String updatedMeaningsText = meanings
                            .stream()
-                           .filter(x->!x.getAttributes().get(STATE_PROPERTY_KEY).equals("DELETED"))
+                           .filter(x -> !ENTITY_DELETED_STATUS.equals(x.getAttributes().get(STATE_PROPERTY_KEY)))
                            .map(x -> x.getGuid().equals(termGuid) ? updatedTermName : x.getAttributes().get(NAME).toString())
                            .collect(Collectors.joining(","));
                    AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(entityHeader.getGuid());
