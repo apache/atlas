@@ -194,7 +194,7 @@ public class TermPreProcessor implements PreProcessor {
 
                 String updatedMeaningsText = meanings
                            .stream()
-                           .filter(x -> !ENTITY_DELETED_STATUS.equals(x.getAttributes().get(STATE_PROPERTY_KEY)))
+                           .filter(x -> !AtlasEntity.Status.DELETED.name().equals(x.getAttributes().get(STATE_PROPERTY_KEY)))
                            .map(x -> x.getGuid().equals(termGuid) ? updatedTermName : x.getAttributes().get(NAME).toString())
                            .collect(Collectors.joining(","));
                    AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(entityHeader.getGuid());

@@ -850,7 +850,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
                 String updatedMeaningsText = meanings.stream()
                         .filter(x -> !termGuid.equals(x.getGuid()))
-                        .filter(x -> !ENTITY_DELETED_STATUS.equals(x.getAttributes().get(STATE_PROPERTY_KEY)))
+                        .filter(x -> !Status.DELETED.name().equals(x.getAttributes().get(STATE_PROPERTY_KEY)))
                         .map(x -> x.getAttributes().get(NAME).toString())
                         .collect(Collectors.joining(","));
 
