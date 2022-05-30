@@ -108,7 +108,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static org.apache.atlas.AtlasClient.PROCESS_SUPER_TYPE;
 import static org.apache.atlas.AtlasConfiguration.LABEL_MAX_LENGTH;
 import static org.apache.atlas.AtlasConfiguration.STORE_DIFFERENTIAL_AUDITS;
 import static org.apache.atlas.model.TypeCategory.ARRAY;
@@ -153,7 +152,7 @@ import static org.apache.atlas.type.Constants.GLOSSARY_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.HAS_LINEAGE;
 import static org.apache.atlas.type.Constants.MEANINGS_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.MEANINGS_TEXT_PROPERTY_KEY;
-import static org.apache.atlas.type.Constants.MEANINGS_NAMES_PROPERTY_KEY;
+import static org.apache.atlas.type.Constants.MEANING_NAMES_PROPERTY_KEY;
 
 
 @Component
@@ -2000,7 +1999,7 @@ public class EntityGraphMapper {
         // handle __terms attribute of entity
         List<AtlasVertex> meanings = createdElements.stream()
                 .map(x -> ((AtlasEdge) x).getOutVertex())
-                .filter(x -> !DELETED.name().equals(x.getProperty(STATE_PROPERTY_KEY, String.class)))
+                .filter(x -> ACTIVE.name().equals(x.getProperty(STATE_PROPERTY_KEY, String.class)))
                 .collect(Collectors.toList());
 
         List<String> currentMeaningsQNames = ctx.getReferringVertex().getMultiValuedProperty(MEANINGS_PROPERTY_KEY,String.class);
@@ -2028,14 +2027,14 @@ public class EntityGraphMapper {
         }
 
         if (CollectionUtils.isNotEmpty(newMeaningsNames)) {
-            newMeaningsNames.forEach(q -> AtlasGraphUtilsV2.addListProperty(ctx.getReferringVertex(), MEANINGS_NAMES_PROPERTY_KEY, q, true));
+            newMeaningsNames.forEach(q -> AtlasGraphUtilsV2.addListProperty(ctx.getReferringVertex(), MEANING_NAMES_PROPERTY_KEY, q, true));
         }
 
         if(createdElements.isEmpty()){
-            ctx.getReferringVertex().removeProperty(MEANINGS_NAMES_PROPERTY_KEY);
+            ctx.getReferringVertex().removeProperty(MEANING_NAMES_PROPERTY_KEY);
 
         } else if (CollectionUtils.isNotEmpty(deletedMeaningsNames)) {
-            deletedMeaningsNames.forEach(q -> AtlasGraphUtilsV2.removeItemFromListPropertyValue(ctx.getReferringVertex(), MEANINGS_NAMES_PROPERTY_KEY, q));
+            deletedMeaningsNames.forEach(q -> AtlasGraphUtilsV2.removeItemFromListPropertyValue(ctx.getReferringVertex(), MEANING_NAMES_PROPERTY_KEY, q));
 
         }
 

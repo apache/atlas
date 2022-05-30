@@ -62,7 +62,7 @@ import static org.apache.atlas.type.Constants.CATEGORIES_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.GLOSSARY_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.MEANINGS_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.MEANINGS_TEXT_PROPERTY_KEY;
-import static org.apache.atlas.type.Constants.MEANINGS_NAMES_PROPERTY_KEY;
+import static org.apache.atlas.type.Constants.MEANING_NAMES_PROPERTY_KEY;
 
 public class GlossaryTermUtils extends GlossaryUtils {
     private static final Logger  LOG           = LoggerFactory.getLogger(GlossaryTermUtils.class);
@@ -117,7 +117,7 @@ public class GlossaryTermUtils extends GlossaryUtils {
             AtlasVertex vertex = getVertexById(objectId.getGuid());
             addEntityAttr(vertex, MEANINGS_PROPERTY_KEY, glossaryTerm.getQualifiedName());
             addEntityAttr(vertex, MEANINGS_TEXT_PROPERTY_KEY, glossaryTerm.getName());
-            addEntityAttr(vertex, MEANINGS_NAMES_PROPERTY_KEY, glossaryTerm.getName());
+            addEntityAttr(vertex, MEANING_NAMES_PROPERTY_KEY, glossaryTerm.getName());
         }
 
         if (DEBUG_ENABLED) {
@@ -154,7 +154,7 @@ public class GlossaryTermUtils extends GlossaryUtils {
                     AtlasVertex vertex = getVertexById(relatedObjectId.getGuid());
                     removeEntityAttr(vertex, MEANINGS_PROPERTY_KEY, glossaryTerm.getQualifiedName());
                     removeEntityAttr(vertex, MEANINGS_TEXT_PROPERTY_KEY, glossaryTerm.getName());
-                    removeEntityAttr(vertex, MEANINGS_NAMES_PROPERTY_KEY, glossaryTerm.getName());
+                    removeEntityAttr(vertex, MEANING_NAMES_PROPERTY_KEY, glossaryTerm.getName());
 
                 } else {
                     throw new AtlasBaseException(AtlasErrorCode.INVALID_TERM_DISSOCIATION, relatedObjectId.getRelationshipGuid(), glossaryTerm.getGuid(), relatedObjectId.getGuid());

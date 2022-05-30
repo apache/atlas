@@ -110,7 +110,7 @@ import static org.apache.atlas.type.Constants.HAS_LINEAGE;
 import static org.apache.atlas.type.Constants.HAS_LINEAGE_VALID;
 import static org.apache.atlas.type.Constants.MEANINGS_TEXT_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.MEANINGS_PROPERTY_KEY;
-import static org.apache.atlas.type.Constants.MEANINGS_NAMES_PROPERTY_KEY;
+import static org.apache.atlas.type.Constants.MEANING_NAMES_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.PENDING_TASKS_PROPERTY_KEY;
 
 
@@ -850,7 +850,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
                 String updatedMeaningsText = meanings.stream()
                         .filter(x -> !termGuid.equals(x.getGuid()))
-                        .filter(x -> !Status.DELETED.name().equals(x.getAttributes().get(STATE_PROPERTY_KEY)))
+                        .filter(x -> ACTIVE.name().equals(x.getAttributes().get(STATE_PROPERTY_KEY)))
                         .map(x -> x.getAttributes().get(NAME).toString())
                         .collect(Collectors.joining(","));
 
@@ -858,7 +858,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(entityHeader.getGuid());
                 AtlasGraphUtilsV2.removeItemFromListPropertyValue(entityVertex, MEANINGS_PROPERTY_KEY, termQName);
                 AtlasGraphUtilsV2.setEncodedProperty(entityVertex, MEANINGS_TEXT_PROPERTY_KEY, updatedMeaningsText);
-                AtlasGraphUtilsV2.removeItemFromListPropertyValue(entityVertex, MEANINGS_NAMES_PROPERTY_KEY, termName);
+                AtlasGraphUtilsV2.removeItemFromListPropertyValue(entityVertex, MEANING_NAMES_PROPERTY_KEY, termName);
             }
             from += ELASTICSEARCH_PAGINATION_SIZE;
 

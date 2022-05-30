@@ -194,17 +194,17 @@ public class TermPreProcessor implements PreProcessor {
 
                 String updatedMeaningsText = meanings
                            .stream()
-                           .filter(x -> !AtlasEntity.Status.DELETED.name().equals(x.getAttributes().get(STATE_PROPERTY_KEY)))
+                           .filter(x -> AtlasEntity.Status.ACTIVE.name().equals(x.getAttributes().get(STATE_PROPERTY_KEY)))
                            .map(x -> x.getGuid().equals(termGuid) ? updatedTermName : x.getAttributes().get(NAME).toString())
                            .collect(Collectors.joining(","));
                    AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(entityHeader.getGuid());
 
                 AtlasGraphUtilsV2.setEncodedProperty(entityVertex, MEANINGS_TEXT_PROPERTY_KEY, updatedMeaningsText);
-                List<String> meaningsNames = entityVertex.getMultiValuedProperty(MEANINGS_NAMES_PROPERTY_KEY, String.class);
+                List<String> meaningsNames = entityVertex.getMultiValuedProperty(MEANING_NAMES_PROPERTY_KEY, String.class);
 
                 if(meaningsNames.contains(currentTermName)){
-                    AtlasGraphUtilsV2.removeItemFromListPropertyValue(entityVertex, MEANINGS_NAMES_PROPERTY_KEY, currentTermName);
-                    AtlasGraphUtilsV2.addListProperty(entityVertex, MEANINGS_NAMES_PROPERTY_KEY, updatedTermName, true);
+                    AtlasGraphUtilsV2.removeItemFromListPropertyValue(entityVertex, MEANING_NAMES_PROPERTY_KEY, currentTermName);
+                    AtlasGraphUtilsV2.addListProperty(entityVertex, MEANING_NAMES_PROPERTY_KEY, updatedTermName, true);
                 }
             }
             from += ELASTICSEARCH_PAGINATION_SIZE;

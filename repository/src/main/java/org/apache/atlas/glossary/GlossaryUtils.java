@@ -42,7 +42,7 @@ import static org.apache.atlas.type.Constants.CATEGORIES_PARENT_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.GLOSSARY_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.MEANINGS_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.MEANINGS_TEXT_PROPERTY_KEY;
-import static org.apache.atlas.type.Constants.MEANINGS_NAMES_PROPERTY_KEY;
+import static org.apache.atlas.type.Constants.MEANING_NAMES_PROPERTY_KEY;
 
 public abstract class GlossaryUtils {
 
@@ -147,9 +147,9 @@ public abstract class GlossaryUtils {
             }
 
             AtlasGraphUtilsV2.setEncodedProperty(vertex, MEANINGS_TEXT_PROPERTY_KEY, propValue);
-        } else if (MEANINGS_NAMES_PROPERTY_KEY.equals(propName)){
+        } else if (MEANING_NAMES_PROPERTY_KEY.equals(propName)){
 
-            AtlasGraphUtilsV2.addListProperty(vertex, MEANINGS_NAMES_PROPERTY_KEY, propValue,true);
+            AtlasGraphUtilsV2.addListProperty(vertex, MEANING_NAMES_PROPERTY_KEY, propValue,true);
         }
     }
 
@@ -174,8 +174,8 @@ public abstract class GlossaryUtils {
                 }
                 AtlasGraphUtilsV2.setEncodedProperty(vertex, propName, org.apache.commons.lang3.StringUtils.join(nameList, ","));
             }
-        } else if (MEANINGS_NAMES_PROPERTY_KEY.equals(propName)){
-            AtlasGraphUtilsV2.removeItemFromListPropertyValue(vertex, MEANINGS_NAMES_PROPERTY_KEY, propValue);
+        } else if (MEANING_NAMES_PROPERTY_KEY.equals(propName)){
+            AtlasGraphUtilsV2.removeItemFromListPropertyValue(vertex, MEANING_NAMES_PROPERTY_KEY, propValue);
 
         }
     }
