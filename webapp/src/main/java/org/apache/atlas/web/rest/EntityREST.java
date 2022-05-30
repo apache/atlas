@@ -21,7 +21,6 @@ import com.google.common.collect.Lists;
 import com.sun.jersey.core.header.FormDataContentDisposition;
 import com.sun.jersey.multipart.FormDataParam;
 import org.apache.atlas.AtlasErrorCode;
-import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.authorize.*;
@@ -39,7 +38,6 @@ import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.repository.audit.ESBasedAuditRepository;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
-import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
 import org.apache.atlas.repository.store.graph.v2.ClassificationAssociator;
@@ -223,6 +221,30 @@ public class EntityREST {
         }
 
         return response;
+    }
+
+    /**
+     * API to get accessors info such as roles/groups/users who can perform specific action
+     */
+    @POST
+    @Path("/accessors")
+    public List<AtlasAccessorResponse> getAccessors(List<AtlasAccessorRequest> atlasAccessorRequestList) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+        List<AtlasAccessorResponse> ret;
+
+        if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+            perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.getAccessorss()");
+        }
+
+        try {
+            validateAccessorRequest(atlasAccessorRequestList);
+
+            ret = entitiesStore.getAccessors(atlasAccessorRequestList);
+
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+        return ret;
     }
 
     private AtlasEntityHeader getAtlasEntityHeader(String entityGuid, String entityId, String entityType) throws AtlasBaseException {
@@ -1662,5 +1684,102 @@ public class EntityREST {
     private boolean hasNoGUIDAndTypeNameAttributes(ClassificationAssociateRequest request) {
         return (request == null || (CollectionUtils.isEmpty(request.getEntityGuids()) &&
                 (CollectionUtils.isEmpty(request.getEntitiesUniqueAttributes()) || request.getEntityTypeName() == null)));
+    }
+
+    private void validateAccessorRequest(List<AtlasAccessorRequest> atlasAccessorRequestList) throws AtlasBaseException {
+
+        if (CollectionUtils.isEmpty(atlasAccessorRequestList)) {
+            throw new AtlasBaseException(BAD_REQUEST, "Requires list of AtlasAccessor");
+        } else {
+
+            for (AtlasAccessorRequest accessorRequest : atlasAccessorRequestList) {
+                try {
+                    if (StringUtils.isEmpty(accessorRequest.getAction())) {
+                        throw new AtlasBaseException(BAD_REQUEST, "Requires action parameter");
+                    }
+
+                    AtlasPrivilege action = null;
+                    try {
+                        action = AtlasPrivilege.valueOf(accessorRequest.getAction());
+                    } catch (IllegalArgumentException el) {
+                        throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid action provided " + accessorRequest.getAction());
+                    }
+
+                    switch (action) {
+                        case ENTITY_READ:
+                        case ENTITY_CREATE:
+                        case ENTITY_UPDATE:
+                        case ENTITY_DELETE:
+                            validateEntityForAccessors(accessorRequest.getGuid(), accessorRequest.getQualifiedName(), accessorRequest.getTypeName());
+                            break;
+
+                        case ENTITY_READ_CLASSIFICATION:
+                        case ENTITY_ADD_CLASSIFICATION:
+                        case ENTITY_UPDATE_CLASSIFICATION:
+                        case ENTITY_REMOVE_CLASSIFICATION:
+                            if (StringUtils.isEmpty(accessorRequest.getClassification())) {
+                                throw new AtlasBaseException(BAD_REQUEST, "Requires classification");
+                            }
+                            validateEntityForAccessors(accessorRequest.getGuid(), accessorRequest.getQualifiedName(), accessorRequest.getTypeName());
+                            break;
+
+                        case ENTITY_ADD_LABEL:
+                        case ENTITY_REMOVE_LABEL:
+                            if (StringUtils.isEmpty(accessorRequest.getLabel())) {
+                                throw new AtlasBaseException(BAD_REQUEST, "Requires label");
+                            }
+                            validateEntityForAccessors(accessorRequest.getGuid(), accessorRequest.getQualifiedName(), accessorRequest.getTypeName());
+                            break;
+
+                        case ENTITY_UPDATE_BUSINESS_METADATA:
+                            if (StringUtils.isEmpty(accessorRequest.getBusinessMetadata())) {
+                                throw new AtlasBaseException(BAD_REQUEST, "Requires businessMetadata");
+                            }
+                            validateEntityForAccessors(accessorRequest.getGuid(), accessorRequest.getQualifiedName(), accessorRequest.getTypeName());
+                            break;
+
+
+                        case RELATIONSHIP_ADD:
+                        case RELATIONSHIP_UPDATE:
+                        case RELATIONSHIP_REMOVE:
+                            if (StringUtils.isEmpty(accessorRequest.getRelationshipTypeName())) {
+                                throw new AtlasBaseException(BAD_REQUEST, "Requires relationshipTypeName");
+                            }
+
+                            validateEntityForAccessors(accessorRequest.getEntityGuidEnd1(), accessorRequest.getEntityQualifiedNameEnd1(), accessorRequest.getEntityTypeEnd1());
+                            validateEntityForAccessors(accessorRequest.getEntityGuidEnd2(), accessorRequest.getEntityQualifiedNameEnd2(), accessorRequest.getEntityTypeEnd2());
+                            break;
+
+
+                        case TYPE_READ:
+                        case TYPE_CREATE:
+                        case TYPE_UPDATE:
+                        case TYPE_DELETE:
+                            if (StringUtils.isEmpty(accessorRequest.getTypeName())) {
+                                throw new AtlasBaseException(BAD_REQUEST, "Requires typeName of the asset");
+                            }
+                            break;
+
+                        default:
+                            throw new AtlasBaseException(BAD_REQUEST, "Please add validation support for action {}", accessorRequest.getAction());
+
+                    }
+
+                } catch (AtlasBaseException e) {
+                    e.getErrorDetailsMap().put("accessorRequest", AtlasType.toJson(accessorRequest));
+                    throw e;
+                }
+            }
+        }
+    }
+
+    private void validateEntityForAccessors(String guid, String qualifiedName, String typeName) throws AtlasBaseException {
+        if (StringUtils.isEmpty(typeName) && StringUtils.isNotEmpty(qualifiedName)) {
+            throw new AtlasBaseException(BAD_REQUEST, "Requires typeName of the asset with qualifiedName");
+        }
+
+        if (StringUtils.isEmpty(guid) && StringUtils.isEmpty(qualifiedName)) {
+            throw new AtlasBaseException(BAD_REQUEST, "Requires either qualifiedName or GUID of the asset");
+        }
     }
 }

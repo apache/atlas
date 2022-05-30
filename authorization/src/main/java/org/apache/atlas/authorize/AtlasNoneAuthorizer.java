@@ -46,6 +46,21 @@ public class AtlasNoneAuthorizer implements AtlasAuthorizer {
     }
 
     @Override
+    public AtlasAccessorResponse getAccessors(AtlasEntityAccessRequest request) {
+        return null;
+    }
+
+    @Override
+    public AtlasAccessorResponse getAccessors(AtlasRelationshipAccessRequest request) {
+        return null;
+    }
+
+    @Override
+    public AtlasAccessorResponse getAccessors(AtlasTypeAccessRequest request) {
+        return null;
+    }
+
+    @Override
     public boolean isAccessAllowed(AtlasRelationshipAccessRequest request) throws AtlasAuthorizationException {
         return true;
     }

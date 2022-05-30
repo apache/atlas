@@ -22,7 +22,6 @@ package org.apache.atlas.authorize;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -209,6 +208,51 @@ public class AtlasAuthorizationUtils {
         return ret;
     }
 
+    public static AtlasAccessorResponse getAccessors(AtlasEntityAccessRequest request) {
+        AtlasAccessorResponse ret = null;
+
+        try {
+            AtlasAuthorizer authorizer = AtlasAuthorizerFactory.getAtlasAuthorizer();
+            setAuthInfo(request);
+
+            ret = authorizer.getAccessors(request);
+        } catch (AtlasAuthorizationException e) {
+            LOG.error("Unable to obtain AtlasAuthorizer", e);
+        }
+
+        return ret;
+    }
+
+    public static AtlasAccessorResponse getAccessors(AtlasRelationshipAccessRequest request) {
+        AtlasAccessorResponse ret = null;
+
+        try {
+            AtlasAuthorizer authorizer = AtlasAuthorizerFactory.getAtlasAuthorizer();
+            setAuthInfo(request);
+
+            ret = authorizer.getAccessors(request);
+        } catch (AtlasAuthorizationException e) {
+            LOG.error("Unable to obtain AtlasAuthorizer", e);
+        }
+
+        return ret;
+    }
+
+    public static AtlasAccessorResponse getAccessors(AtlasTypeAccessRequest request) {
+        AtlasAccessorResponse ret = null;
+
+        try {
+            AtlasAuthorizer authorizer = AtlasAuthorizerFactory.getAtlasAuthorizer();
+            setAuthInfo(request);
+
+            ret = authorizer.getAccessors(request);
+        } catch (AtlasAuthorizationException e) {
+            LOG.error("Unable to obtain AtlasAuthorizer", e);
+        }
+
+        return ret;
+    }
+
     public static void filterTypesDef(AtlasTypesDefFilterRequest request) {
         MetricRecorder metric  = RequestContext.get().startMetricRecord("filterTypesDef");
         String        userName = getCurrentUserName();
@@ -275,5 +319,12 @@ public class AtlasAuthorizationUtils {
         }
 
         return ret;
+    }
+
+    private static void setAuthInfo(AtlasAccessRequest request) {
+        request.setUser(getCurrentUserName(), getCurrentUserGroups());
+        request.setClientIPAddress(RequestContext.get().getClientIPAddress());
+        request.setForwardedAddresses(RequestContext.get().getForwardedAddresses());
+        request.setRemoteIPAddress(RequestContext.get().getClientIPAddress());
     }
 }

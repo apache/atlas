@@ -18,10 +18,10 @@
  */
 package org.apache.atlas.repository.store.graph;
 
+import org.apache.atlas.authorize.AtlasAccessorRequest;
+import org.apache.atlas.authorize.AtlasAccessorResponse;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.instance.AtlasCheckStateRequest;
-import org.apache.atlas.model.instance.AtlasCheckStateResult;
-import org.apache.atlas.model.instance.AtlasClassification;
+import org.apache.atlas.model.instance.*;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
@@ -345,6 +345,9 @@ public interface AtlasEntityStore {
      *
      */
     BulkImportResponse bulkCreateOrUpdateBusinessAttributes(InputStream inputStream, String fileName) throws AtlasBaseException;
+
+
+    List<AtlasAccessorResponse> getAccessors(List<AtlasAccessorRequest> request) throws AtlasBaseException;
 
     void repairIndex() throws AtlasBaseException;
 

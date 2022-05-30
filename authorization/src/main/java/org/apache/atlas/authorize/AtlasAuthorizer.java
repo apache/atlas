@@ -59,6 +59,12 @@ public interface AtlasAuthorizer {
      */
     boolean isAccessAllowed(AtlasTypeAccessRequest request) throws AtlasAuthorizationException;
 
+    AtlasAccessorResponse getAccessors(AtlasEntityAccessRequest request);
+
+    AtlasAccessorResponse getAccessors(AtlasRelationshipAccessRequest request);
+
+    AtlasAccessorResponse getAccessors(AtlasTypeAccessRequest request);
+
     /**
      * authorize relationship type
      * @param request

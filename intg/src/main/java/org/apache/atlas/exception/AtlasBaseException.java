@@ -19,6 +19,7 @@ package org.apache.atlas.exception;
 
 import org.apache.atlas.AtlasErrorCode;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -27,7 +28,7 @@ import java.util.Map;
  */
 public class AtlasBaseException extends Exception {
 
-    private Map<String, String> errorDetailsMap;
+    private Map<String, String> errorDetailsMap = new HashMap<>();
     private AtlasErrorCode atlasErrorCode;
     private String entityGuid;
 
