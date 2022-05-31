@@ -25,7 +25,9 @@ public abstract class MeaningsTask extends AbstractTask {
     private static final Logger LOG = LoggerFactory.getLogger(MeaningsTask.class);
     protected static final String PARAM_ENTITY_GUID = "entityGuid";
     protected static final String PARAM_ENTITY_QUALIFIED_NAME = "entityQName";
-    protected static final String PARAM_TERM_NAME = "termName";
+    protected static final String PARAM_UPDATED_TERM_NAME = "updatedTermName";
+    protected static final String PARAM_CURRENT_TERM_NAME = "currentTermName";
+
 
     protected final EntityGraphMapper entityGraphMapper;
     protected final AtlasGraph graph;
@@ -77,17 +79,19 @@ public abstract class MeaningsTask extends AbstractTask {
         }
     }
 
-    public static Map<String, Object> toParameters(String updateTerm, String termQName, String termGuid) {
+    public static Map<String, Object> toParameters(String currentTerm, String updateTerm, String termQName, String termGuid) {
         return new HashMap<String, Object>() {{
             put(PARAM_ENTITY_GUID, termGuid);
             put(PARAM_ENTITY_QUALIFIED_NAME, termQName);
-            put(PARAM_TERM_NAME, updateTerm);
+            put(PARAM_CURRENT_TERM_NAME, currentTerm);
+            put(PARAM_UPDATED_TERM_NAME, updateTerm);
         }};
     }
-    public static  Map<String,Object> toParameters(String termQName, String termGuid){
+    public static  Map<String,Object> toParameters(String termName, String termQName, String termGuid){
         return new HashMap<String,Object>(){{
             put(PARAM_ENTITY_QUALIFIED_NAME, termQName);
             put(PARAM_ENTITY_GUID, termGuid);
+            put(PARAM_CURRENT_TERM_NAME, termName);
         }};
     }
 

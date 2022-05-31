@@ -32,7 +32,6 @@ import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.ogm.DataAccess;
-import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.type.AtlasRelationshipType;
@@ -63,6 +62,7 @@ import static org.apache.atlas.type.Constants.CATEGORIES_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.GLOSSARY_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.MEANINGS_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.MEANINGS_TEXT_PROPERTY_KEY;
+import static org.apache.atlas.type.Constants.MEANING_NAMES_PROPERTY_KEY;
 
 public class GlossaryTermUtils extends GlossaryUtils {
     private static final Logger  LOG           = LoggerFactory.getLogger(GlossaryTermUtils.class);
@@ -117,6 +117,7 @@ public class GlossaryTermUtils extends GlossaryUtils {
             AtlasVertex vertex = getVertexById(objectId.getGuid());
             addEntityAttr(vertex, MEANINGS_PROPERTY_KEY, glossaryTerm.getQualifiedName());
             addEntityAttr(vertex, MEANINGS_TEXT_PROPERTY_KEY, glossaryTerm.getName());
+            addEntityAttr(vertex, MEANING_NAMES_PROPERTY_KEY, glossaryTerm.getName());
         }
 
         if (DEBUG_ENABLED) {
@@ -153,6 +154,8 @@ public class GlossaryTermUtils extends GlossaryUtils {
                     AtlasVertex vertex = getVertexById(relatedObjectId.getGuid());
                     removeEntityAttr(vertex, MEANINGS_PROPERTY_KEY, glossaryTerm.getQualifiedName());
                     removeEntityAttr(vertex, MEANINGS_TEXT_PROPERTY_KEY, glossaryTerm.getName());
+                    removeEntityAttr(vertex, MEANING_NAMES_PROPERTY_KEY, glossaryTerm.getName());
+
                 } else {
                     throw new AtlasBaseException(AtlasErrorCode.INVALID_TERM_DISSOCIATION, relatedObjectId.getRelationshipGuid(), glossaryTerm.getGuid(), relatedObjectId.getGuid());
                 }

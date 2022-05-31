@@ -57,14 +57,16 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.repository.Constants.*;
+import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
 import static org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTaskFactory.UPDATE_ENTITY_MEANINGS_ON_TERM_UPDATE;
-import static org.apache.atlas.type.Constants.MEANINGS_TEXT_PROPERTY_KEY;
-import static org.apache.atlas.type.Constants.PENDING_TASKS_PROPERTY_KEY;
+import static org.apache.atlas.type.Constants.*;
 
 @Component
 public class TermPreProcessor implements PreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(TermPreProcessor.class);
+
+    private static final String ATTR_MEANINGS = "meanings";
 
     static final boolean DEFERRED_ACTION_ENABLED = AtlasConfiguration.TASKS_USE_ENABLED.getBoolean();
 
@@ -154,15 +156,11 @@ public class TermPreProcessor implements PreProcessor {
         String termGuid = GraphHelper.getGuid(vertex);
 
         if(!termName.equals(vertexName) && checkEntityTermAssociation(vertexQName)){
-            try {
-                if (taskManagement != null && DEFERRED_ACTION_ENABLED) {
-                    createAndQueueTask(UPDATE_ENTITY_MEANINGS_ON_TERM_UPDATE, termName, vertexQName, vertex);
+            if (taskManagement != null && DEFERRED_ACTION_ENABLED) {
+                    createAndQueueTask(UPDATE_ENTITY_MEANINGS_ON_TERM_UPDATE, vertexName, termName, vertexQName, vertex);
                 } else {
-                    updateMeaningsNamesInEntitiesOnTermUpdate(termName, vertexQName, termGuid);
+                    updateMeaningsNamesInEntitiesOnTermUpdate(vertexName, termName, vertexQName, termGuid);
                 }
-            } catch (AtlasBaseException e) {
-                throw e;
-            }
         }
 
 
@@ -177,14 +175,14 @@ public class TermPreProcessor implements PreProcessor {
     }
 
 
-    public void updateMeaningsNamesInEntitiesOnTermUpdate(String updatedTermName, String termQName, String termGuid) throws AtlasBaseException {
+    public void updateMeaningsNamesInEntitiesOnTermUpdate(String currentTermName, String updatedTermName, String termQName, String termGuid) throws AtlasBaseException {
         int from = 0;
         Set<String> attributes = new HashSet<String>(){{
-            add("meanings");
+            add(ATTR_MEANINGS);
         }};
         Set<String> relationAttributes = new HashSet<String>(){{
-            add("__state");
-            add("name");
+            add(STATE_PROPERTY_KEY);
+            add(NAME);
         }};
         while (true) {
             List<AtlasEntityHeader> entityHeaders = discovery.searchUsingTermQualifiedName(from, ELASTICSEARCH_PAGINATION_SIZE,
@@ -192,15 +190,22 @@ public class TermPreProcessor implements PreProcessor {
             if (entityHeaders == null)
                 break;
             for (AtlasEntityHeader entityHeader : entityHeaders) {
-                List<AtlasObjectId> meanings = (List<AtlasObjectId>) entityHeader.getAttribute("meanings");
+                List<AtlasObjectId> meanings = (List<AtlasObjectId>) entityHeader.getAttribute(ATTR_MEANINGS);
 
-                   String updatedMeaningsText = meanings
+                String updatedMeaningsText = meanings
                            .stream()
-                           .filter(x->!x.getAttributes().get("__state").equals("DELETED"))
-                           .map(x -> x.getGuid().equals(termGuid) ? updatedTermName : x.getAttributes().get("name").toString())
+                           .filter(x -> AtlasEntity.Status.ACTIVE.name().equals(x.getAttributes().get(STATE_PROPERTY_KEY)))
+                           .map(x -> x.getGuid().equals(termGuid) ? updatedTermName : x.getAttributes().get(NAME).toString())
                            .collect(Collectors.joining(","));
+                   AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(entityHeader.getGuid());
 
-                AtlasGraphUtilsV2.setEncodedProperty(AtlasGraphUtilsV2.findByGuid(entityHeader.getGuid()), MEANINGS_TEXT_PROPERTY_KEY, updatedMeaningsText);
+                AtlasGraphUtilsV2.setEncodedProperty(entityVertex, MEANINGS_TEXT_PROPERTY_KEY, updatedMeaningsText);
+                List<String> meaningsNames = entityVertex.getMultiValuedProperty(MEANING_NAMES_PROPERTY_KEY, String.class);
+
+                if(meaningsNames.contains(currentTermName)){
+                    AtlasGraphUtilsV2.removeItemFromListPropertyValue(entityVertex, MEANING_NAMES_PROPERTY_KEY, currentTermName);
+                    AtlasGraphUtilsV2.addListProperty(entityVertex, MEANING_NAMES_PROPERTY_KEY, updatedTermName, true);
+                }
             }
             from += ELASTICSEARCH_PAGINATION_SIZE;
 
@@ -210,10 +215,10 @@ public class TermPreProcessor implements PreProcessor {
 
     }
 
-    public void createAndQueueTask(String taskType, String updatedTermName, String termQName, AtlasVertex termVertex) {
+    public void createAndQueueTask(String taskType,String currentTermName, String updatedTermName, String termQName, AtlasVertex termVertex) {
         String termGuid = GraphHelper.getGuid(termVertex);
         String currentUser = RequestContext.getCurrentUser();
-        Map<String, Object> taskParams = MeaningsTask.toParameters(updatedTermName, termQName, termGuid);
+        Map<String, Object> taskParams = MeaningsTask.toParameters(currentTermName, updatedTermName, termQName, termGuid);
         AtlasTask task = taskManagement.createTask(taskType, currentUser, taskParams);
 
         AtlasGraphUtilsV2.addEncodedProperty(termVertex, PENDING_TASKS_PROPERTY_KEY, task.getGuid());
