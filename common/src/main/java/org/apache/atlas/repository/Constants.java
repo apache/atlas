@@ -324,8 +324,6 @@ public final class Constants {
 
     public static final int ELASTICSEARCH_PAGINATION_SIZE = 50;
 
-    public static final String DELETE_HANDLER_TYPE_HARD = "HARD";
-
     private Constants() {
     }
 

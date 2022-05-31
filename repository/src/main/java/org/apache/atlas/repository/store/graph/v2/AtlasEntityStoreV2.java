@@ -800,14 +800,14 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
                 String termQualifiedName    = entity.getAttribute(QUALIFIED_NAME).toString();
                 String termName             = entity.getAttribute(NAME).toString();
-                String Guid                 = entity.getGuid();
-                Boolean isHardDelete        = DELETE_HANDLER_TYPE_HARD.equals(entity.getDeleteHandler());
+                String guid                 = entity.getGuid();
+                Boolean isHardDelete        = DeleteType.HARD.name().equals(entity.getDeleteHandler());
 
                 if(checkEntityTermAssociation(termQualifiedName)){
                     if(DEFERRED_ACTION_ENABLED && taskManagement!=null){
-                        createAndQueueTask(termName, termQualifiedName, Guid, isHardDelete);
+                        createAndQueueTask(termName, termQualifiedName, guid, isHardDelete);
                     }else{
-                        updateMeaningsNamesInEntitiesOnTermDelete(termName, termQualifiedName, Guid);
+                        updateMeaningsNamesInEntitiesOnTermDelete(termName, termQualifiedName, guid);
                     }
                 }
             }
