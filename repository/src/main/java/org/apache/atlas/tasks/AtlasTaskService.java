@@ -22,8 +22,8 @@ import static org.apache.atlas.tasks.TaskRegistry.toAtlasTask;
 
 @Component
 public class AtlasTaskService implements TaskService {
-
     private static final Logger LOG = LoggerFactory.getLogger(AtlasTaskService.class);
+
     private final AtlasGraph graph;
 
     @Inject
@@ -66,12 +66,10 @@ public class AtlasTaskService implements TaskService {
                 ret.setApproximateCount(indexQuery.vertexTotals());
                 ret.setAggregations(indexQueryResult.getAggregationMap());
             }
-
         } catch (Exception e) {
             throw e;
         }
 
         return ret;
-
     }
 }

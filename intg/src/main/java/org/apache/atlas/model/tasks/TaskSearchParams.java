@@ -23,7 +23,9 @@ import org.apache.atlas.type.AtlasType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 public class TaskSearchParams extends SearchParams {
     private static final Logger LOG = LoggerFactory.getLogger(TaskSearchParams.class);
@@ -50,7 +52,6 @@ public class TaskSearchParams extends SearchParams {
                 if (query.containsKey("match_all")) {
                     dsl.put("query", mapOf("exists", mapOf("field", "__task_v_type")));
                 }
-                LOG.info("dsl {}", dsl);
             } catch (Exception e) {
                 LOG.warn("Failed to verify match_all clause in query");
             }

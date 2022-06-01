@@ -34,7 +34,7 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 
 /**
- * REST interface for CRUD operations on type definitions
+ * REST interface for CRUD operations on tasks
  */
 @Path("v2/task")
 @Singleton
@@ -70,6 +70,4 @@ public class TaskREST {
             AtlasPerfTracer.log(perf);
         }
     }
-
-
 }

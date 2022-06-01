@@ -20,12 +20,8 @@ package org.apache.atlas.tasks;
 
 
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.discovery.*;
-import org.apache.atlas.model.profile.AtlasUserSavedSearch;
 import org.apache.atlas.model.tasks.TaskSearchParams;
 import org.apache.atlas.model.tasks.TaskSearchResult;
-
-import java.util.List;
 
 public interface TaskService {
 
