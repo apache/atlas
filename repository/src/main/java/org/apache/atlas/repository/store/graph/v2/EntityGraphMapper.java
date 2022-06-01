@@ -2787,12 +2787,18 @@ public class EntityGraphMapper {
             if (taskManagement != null && DEFERRED_ACTION_ENABLED) {
                 String classificationVertexId = classificationVertex.getIdForDisplay();
 
-                boolean pendingTaskExists  = taskManagement.getQueuedTasks().stream()
-                        .anyMatch(x -> classificationHasPendingTask(x, classificationVertexId, entityGuid));
+                List<String> entityTaskGuids = (List<String>) entityVertex.getPropertyValues(PENDING_TASKS_PROPERTY_KEY, String.class);
 
-                if (pendingTaskExists) {
-                    LOG.error("Another tag propagation is in queue for classification: {} and entity: {}. Please try again", classificationVertexId, entityGuid);
-                    throw new AtlasBaseException(AtlasErrorCode.DELETE_TAG_PROPAGATION_NOT_ALLOWED, classificationVertexId, entityGuid);
+                if (CollectionUtils.isNotEmpty(entityTaskGuids)) {
+                    List<AtlasTask> entityPendingTasks = taskManagement.getByGuidsES(entityTaskGuids);
+
+                    boolean pendingTaskExists  = entityPendingTasks.stream()
+                            .anyMatch(x -> classificationHasPendingTask(x, classificationVertexId, entityGuid));
+
+                    if (pendingTaskExists) {
+                        LOG.error("Another tag propagation is in queue for classification: {} and entity: {}. Please try again", classificationVertexId, entityGuid);
+                        throw new AtlasBaseException(AtlasErrorCode.DELETE_TAG_PROPAGATION_NOT_ALLOWED, classificationVertexId, entityGuid);
+                    }
                 }
 
                 createAndQueueTask(CLASSIFICATION_PROPAGATION_DELETE, entityVertex, classificationVertex.getIdForDisplay());

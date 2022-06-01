@@ -20,7 +20,6 @@ package org.apache.atlas.tasks;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
@@ -182,6 +181,10 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         }
 
         return ret;
+    }
+
+    public List<AtlasTask> getByGuidsES(List<String> guids) throws AtlasBaseException {
+        return registry.getByIdsES(guids);
     }
 
     public void deleteByGuid(String guid) throws AtlasBaseException {
