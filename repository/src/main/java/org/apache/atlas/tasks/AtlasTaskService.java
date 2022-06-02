@@ -1,5 +1,6 @@
 package org.apache.atlas.tasks;
 
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.model.tasks.TaskSearchParams;
@@ -63,6 +64,9 @@ public class AtlasTaskService implements TaskService {
         } catch (AtlasBaseException e) {
             LOG.error("Failed to fetch tasks: {}", e.getMessage());
             throw e;
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new AtlasBaseException(AtlasErrorCode.RUNTIME_EXCEPTION, e);
         }
 
         return ret;
