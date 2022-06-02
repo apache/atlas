@@ -53,7 +53,7 @@ public class TaskREST {
     }
 
     @POST
-    @Path("tasks")
+    @Path("search")
     @Timed
     public TaskSearchResult getTasks(TaskSearchParams parameters) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
