@@ -422,8 +422,15 @@ public class EntityGraphMapper {
                         addClassifications(context, guid, updatedEntity.getClassifications());
                     }
 
-                    if (replaceBusinessAttributes && MapUtils.isNotEmpty(updatedEntity.getBusinessAttributes())) {
-                        setBusinessAttributes(vertex, entityType, updatedEntity.getBusinessAttributes());
+                    if (replaceBusinessAttributes) {
+                        if (MapUtils.isEmpty(updatedEntity.getBusinessAttributes())) {
+                            Map<String, Map<String, Object>> businessMetadata = entityRetriever.getBusinessMetadata(vertex);
+                            if (MapUtils.isNotEmpty(businessMetadata)){
+                                removeBusinessAttributes(vertex, entityType, businessMetadata);
+                            }
+                        } else {
+                            setBusinessAttributes(vertex, entityType, updatedEntity.getBusinessAttributes());
+                        }
                     }
                     
                     setSystemAttributesToEntity(vertex,updatedEntity);
