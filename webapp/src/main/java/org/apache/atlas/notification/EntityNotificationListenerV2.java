@@ -58,6 +58,7 @@ import static org.apache.atlas.model.notification.EntityNotification.EntityNotif
 import static org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2.OperationType.RELATIONSHIP_CREATE;
 import static org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2.OperationType.RELATIONSHIP_DELETE;
 import static org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2.OperationType.RELATIONSHIP_UPDATE;
+import static org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2.OperationType.BUSINESS_ATTRIBUTE_UPDATE;
 import static org.apache.atlas.repository.graph.GraphHelper.isInternalType;
 import static org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever.CREATE_TIME;
 import static org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever.DESCRIPTION;
@@ -153,7 +154,7 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
         // do nothing -> notification not sent out for label assignment to entities
     }
 
-    private void notifyEntityEvents(List<AtlasEntity> entities, OperationType operationType, Object mutated) throws AtlasBaseException {
+    private void notifyEntityEvents(List<AtlasEntity> entities, OperationType operationType, Object mutatedObj) throws AtlasBaseException {
         RequestContext requestContext = RequestContext.get();
         MetricRecorder metric = requestContext.startMetricRecord("entityNotification");
         Map<String,AtlasEntity> differentialEntities  = requestContext.getDifferentialEntitiesMap();
@@ -164,14 +165,16 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
                 continue;
             }
             String guid = entity.getGuid();
-             if(differentialEntities.containsKey(guid)){
-                 messages.add(new EntityNotificationV2(toNotificationHeader(entity, false),
-                         toNotificationHeader(differentialEntities.get(guid), true),
-                         operationType, RequestContext.get().getRequestTime(), mutated));
-             } else{
-                 messages.add(new EntityNotificationV2(toNotificationHeader(entity, false),
-                         operationType, RequestContext.get().getRequestTime(), mutated));
-             }
+            if(differentialEntities.containsKey(guid)){
+                if(mutatedObj.getClass().isArray()){
+                    ArrayList<Object> objects = (ArrayList<Object>)mutatedObj;
+                    objects.add(toNotificationHeader(differentialEntities.get(guid), true));
+                }
+            }
+
+            messages.add(new EntityNotificationV2(toNotificationHeader(entity, false), mutatedObj,
+                         operationType, RequestContext.get().getRequestTime()));
+
         }
 
         sendNotifications(operationType, messages);
@@ -189,6 +192,17 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
 
             messages.add(new EntityNotificationV2(toNotificationHeader(relationship), operationType, RequestContext.get().getRequestTime()));
         }
+
+        sendNotifications(operationType, messages);
+        RequestContext.get().endMetricRecord(metric);
+    }
+
+    private void notifyBusinessMetadataEvents(AtlasEntity entity, OperationType operationType, Map<String, Map<String, Object>> updatedBusinessAttributes) throws AtlasBaseException {
+        MetricRecorder metric = RequestContext.get().startMetricRecord("entityBMNotification");
+        List<EntityNotificationV2> messages = new ArrayList<>();
+
+
+            messages.add(new EntityNotificationV2(toNotificationHeader(entity, false),updatedBusinessAttributes, operationType, RequestContext.get().getRequestTime()));
 
         sendNotifications(operationType, messages);
         RequestContext.get().endMetricRecord(metric);
@@ -348,6 +362,6 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
 
     @Override
     public void onBusinessAttributesUpdated(AtlasEntity entity, Map<String, Map<String, Object>> updatedBusinessAttributes) throws AtlasBaseException{
-        // do nothing -> notification not sent out for business metadata attribute updation from entities
+        notifyBusinessMetadataEvents(entity, BUSINESS_ATTRIBUTE_UPDATE, updatedBusinessAttributes);
     }
 }

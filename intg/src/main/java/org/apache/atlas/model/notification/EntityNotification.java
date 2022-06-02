@@ -100,22 +100,17 @@ public class EntityNotification implements Serializable {
     public static class EntityNotificationV2 extends EntityNotification implements Serializable {
         private static final long serialVersionUID = 1L;
 
-        public void setMutatedObject(Object mutatedObject) {
-            this.mutatedObject = mutatedObject;
-        }
-
         public enum OperationType {
-            ENTITY_CREATE, ENTITY_UPDATE, ENTITY_DELETE,
-            CLASSIFICATION_ADD, CLASSIFICATION_DELETE, CLASSIFICATION_UPDATE,
-            RELATIONSHIP_CREATE, RELATIONSHIP_UPDATE, RELATIONSHIP_DELETE
+            ENTITY_CREATE, ENTITY_UPDATE, ENTITY_DELETE, CLASSIFICATION_ADD,
+            CLASSIFICATION_DELETE, CLASSIFICATION_UPDATE, RELATIONSHIP_CREATE,
+            RELATIONSHIP_UPDATE, RELATIONSHIP_DELETE, BUSINESS_ATTRIBUTE_UPDATE
         }
 
         private AtlasEntityHeader       entity;
-        private AtlasEntityHeader       diffEntity;
         private AtlasRelationshipHeader relationship;
         private OperationType           operationType;
-        private Object mutatedObject;
         private long              eventTime;
+        private Object       mutatedDetails;
 
         public EntityNotificationV2() {
             super(ENTITY_NOTIFICATION_V2);
@@ -126,23 +121,14 @@ public class EntityNotification implements Serializable {
         }
 
 
-        public EntityNotificationV2(AtlasEntityHeader entity, OperationType operationType, long eventTime, Object mutatedObject) {
+
+        public EntityNotificationV2(AtlasEntityHeader entity, Object mutatedDetails, OperationType operationType, long eventTime) {
             super(ENTITY_NOTIFICATION_V2);
 
             setEntity(entity);
             setOperationType(operationType);
             setEventTime(eventTime);
-            setMutatedObject(mutatedObject);
-        }
-
-        public EntityNotificationV2(AtlasEntityHeader entity,AtlasEntityHeader diffEntity, OperationType operationType, long eventTime, Object mutatedObject) {
-            super(ENTITY_NOTIFICATION_V2);
-
-            setEntity(entity);
-            setMutatedObject(mutatedObject);
-            setDiffEntity(diffEntity);
-            setOperationType(operationType);
-            setEventTime(eventTime);
+            setMutatedDetails(mutatedDetails);
         }
 
         public EntityNotificationV2(AtlasRelationshipHeader relationship, OperationType operationType, long eventTime) {
@@ -161,8 +147,8 @@ public class EntityNotification implements Serializable {
             this.entity = entity;
         }
 
-        public void setDiffEntity(AtlasEntityHeader diffEntity){
-            this.diffEntity = diffEntity;
+        public void setMutatedDetails(Object mutatedDetails){
+            this.mutatedDetails = mutatedDetails;
         }
 
         public AtlasRelationshipHeader getRelationship() {
