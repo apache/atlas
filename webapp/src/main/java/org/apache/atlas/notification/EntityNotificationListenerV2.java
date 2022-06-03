@@ -155,9 +155,14 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
             }
             String guid = entity.getGuid();
             if(differentialEntities.containsKey(guid)){
-                if(mutatedObj.getClass().isArray()){
-                    ArrayList<Object> objects = (ArrayList<Object>)mutatedObj;
-                    objects.add(toNotificationHeader(differentialEntities.get(guid), true));
+                if(mutatedObj != null){
+                    if(mutatedObj.getClass().isArray()){
+                        ArrayList<Object> objects = (ArrayList<Object>)mutatedObj;
+                        objects.add(toNotificationHeader(differentialEntities.get(guid), true));
+                    }
+
+                }else{
+                    mutatedObj = toNotificationHeader(differentialEntities.get(guid), true);
                 }
             }
 
@@ -197,11 +202,11 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
 
     private void sendNotifications(OperationType operationType, List<EntityNotificationV2> messages) throws AtlasBaseException {
         if (!messages.isEmpty()) {
-            try {
-                notificationSender.send(messages);
-            } catch (NotificationException e) {
-                throw new AtlasBaseException(AtlasErrorCode.ENTITY_NOTIFICATION_FAILED, e, operationType.name());
-            }
+//            try {
+//                notificationSender.send(messages);
+//            } catch (NotificationException e) {
+//                throw new AtlasBaseException(AtlasErrorCode.ENTITY_NOTIFICATION_FAILED, e, operationType.name());
+//            }
         }
     }
 
