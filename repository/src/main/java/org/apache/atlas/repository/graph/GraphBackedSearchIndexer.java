@@ -384,6 +384,16 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             createCommonVertexIndex(management, TASK_CREATED_TIME, UniqueKind.NONE, Long.class, SINGLE, true, false);
             createCommonVertexIndex(management, TASK_STATUS, UniqueKind.NONE, String.class, SINGLE, true, false);
 
+            createCommonVertexIndex(management, TASK_TYPE, UniqueKind.NONE, String.class, SINGLE, true, false, true);
+            createCommonVertexIndex(management, TASK_CREATED_BY, UniqueKind.NONE, String.class, SINGLE, false, false, true);
+            createCommonVertexIndex(management, TASK_ERROR_MESSAGE, UniqueKind.NONE, String.class, SINGLE, false, false);
+            createCommonVertexIndex(management, TASK_ATTEMPT_COUNT, UniqueKind.NONE, Integer.class, SINGLE, false, false);
+
+            createCommonVertexIndex(management, TASK_UPDATED_TIME, UniqueKind.NONE, Long.class, SINGLE, false, false);
+            createCommonVertexIndex(management, TASK_TIME_TAKEN_IN_SECONDS, UniqueKind.NONE, Long.class, SINGLE, false, false);
+            createCommonVertexIndex(management, TASK_START_TIME, UniqueKind.NONE, Long.class, SINGLE, false, false);
+            createCommonVertexIndex(management, TASK_END_TIME, UniqueKind.NONE, Long.class, SINGLE, false, false);
+
             // index recovery
             createCommonVertexIndex(management, PROPERTY_KEY_INDEX_RECOVERY_NAME, UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false);
 
@@ -802,15 +812,15 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
 
             if (propertyKey == null) {
                 propertyKey = management.makePropertyKey(propertyName, propertyClass, cardinality);
+            }
 
-                if (isIndexApplicable(propertyClass, cardinality)) {
-                    if (LOG.isDebugEnabled()) {
-                        LOG.debug("Creating backing index for vertex property {} of type {} ", propertyName, propertyClass.getName());
-                    }
-
-                    indexFieldName = management.addMixedIndex(VERTEX_INDEX, propertyKey, isStringField, indexTypeESConfig, indexTypeESFields);
-                    LOG.info("Created backing index for vertex property {} of type {} ", propertyName, propertyClass.getName());
+            if (isIndexApplicable(propertyClass, cardinality) && !management.getGraphIndex(VERTEX_INDEX).getFieldKeys().contains(propertyKey)) {
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Creating backing index for vertex property {} of type {} ", propertyName, propertyClass.getName());
                 }
+
+                indexFieldName = management.addMixedIndex(VERTEX_INDEX, propertyKey, isStringField, indexTypeESConfig, indexTypeESFields);
+                LOG.info("Created backing index for vertex property {} of type {} ", propertyName, propertyClass.getName());
             }
 
             if(indexFieldName == null && isIndexApplicable(propertyClass, cardinality)) {
