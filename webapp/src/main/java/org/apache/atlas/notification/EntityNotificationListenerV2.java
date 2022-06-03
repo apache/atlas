@@ -40,25 +40,14 @@ import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration.Configuration;
-import org.apache.poi.hpsf.GUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 import java.util.*;
-import java.util.stream.Collectors;
 
-import static org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2.OperationType.CLASSIFICATION_ADD;
-import static org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2.OperationType.CLASSIFICATION_DELETE;
-import static org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2.OperationType.CLASSIFICATION_UPDATE;
-import static org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2.OperationType.ENTITY_CREATE;
-import static org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2.OperationType.ENTITY_DELETE;
-import static org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2.OperationType.ENTITY_UPDATE;
-import static org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2.OperationType.RELATIONSHIP_CREATE;
-import static org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2.OperationType.RELATIONSHIP_DELETE;
-import static org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2.OperationType.RELATIONSHIP_UPDATE;
-import static org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2.OperationType.BUSINESS_ATTRIBUTE_UPDATE;
+import static org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2.OperationType.*;
 import static org.apache.atlas.repository.graph.GraphHelper.isInternalType;
 import static org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever.CREATE_TIME;
 import static org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever.DESCRIPTION;
