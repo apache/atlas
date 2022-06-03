@@ -78,7 +78,23 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
 
     @Override
     public void onEntitiesUpdated(List<AtlasEntity> entities, boolean isImport) throws AtlasBaseException {
-        notifyEntityEvents(entities, ENTITY_UPDATE, null);
+        Map<String,AtlasEntity> differentialEntities  = RequestContext.get().getDifferentialEntitiesMap();
+
+        if(differentialEntities != null){
+            ArrayList<Object> mutatedObjs = new ArrayList<>();
+            for (AtlasEntity entity : entities){
+                String guid  = entity.getGuid();
+                if(differentialEntities.containsKey(guid)){
+                    mutatedObjs.add(toNotificationHeader(differentialEntities.get(guid), true));
+                }
+            }
+            notifyEntityEvents(entities, ENTITY_UPDATE, mutatedObjs);
+        }else{
+            notifyEntityEvents(entities, ENTITY_UPDATE, null);
+        }
+
+
+
     }
 
     @Override
@@ -144,29 +160,16 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
     }
 
     private void notifyEntityEvents(List<AtlasEntity> entities, OperationType operationType, Object mutatedObj) throws AtlasBaseException {
-        RequestContext requestContext = RequestContext.get();
-        MetricRecorder metric = requestContext.startMetricRecord("entityNotification");
-        Map<String,AtlasEntity> differentialEntities  = requestContext.getDifferentialEntitiesMap();
+        MetricRecorder metric = RequestContext.get().startMetricRecord("entityNotification");
+
         List<EntityNotificationV2> messages = new ArrayList<>();
 
         for (AtlasEntity entity : entities) {
              if (isInternalType(entity.getTypeName())) {
                 continue;
             }
-            String guid = entity.getGuid();
-            if(differentialEntities.containsKey(guid)){
-                if(mutatedObj != null){
-                    if(mutatedObj.getClass().isArray()){
-                        ArrayList<Object> objects = (ArrayList<Object>)mutatedObj;
-                        objects.add(toNotificationHeader(differentialEntities.get(guid), true));
-                    }
 
-                }else{
-                    mutatedObj = toNotificationHeader(differentialEntities.get(guid), true);
-                }
-            }
-
-            messages.add(new EntityNotificationV2(toNotificationHeader(entity, false), mutatedObj,
+             messages.add(new EntityNotificationV2(toNotificationHeader(entity, true), mutatedObj,
                          operationType, RequestContext.get().getRequestTime()));
 
         }
