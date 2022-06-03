@@ -161,6 +161,11 @@ public class EntityNotification implements Serializable {
             this.mutatedDetails = mutatedDetails;
         }
 
+        public Object getMutatedDetails(){
+            return mutatedDetails;
+        }
+
+
         public AtlasRelationshipHeader getRelationship() {
             return relationship;
         }
