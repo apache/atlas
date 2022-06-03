@@ -120,7 +120,17 @@ public class EntityNotification implements Serializable {
             setEventTime(System.currentTimeMillis());
         }
 
+        public EntityNotificationV2(AtlasEntityHeader entity, OperationType operationType) {
+            this(entity, operationType, System.currentTimeMillis());
+        }
 
+        public EntityNotificationV2(AtlasEntityHeader entity, OperationType operationType, long eventTime) {
+            super(ENTITY_NOTIFICATION_V2);
+
+            setEntity(entity);
+            setOperationType(operationType);
+            setEventTime(eventTime);
+        }
 
         public EntityNotificationV2(AtlasEntityHeader entity, Object mutatedDetails, OperationType operationType, long eventTime) {
             super(ENTITY_NOTIFICATION_V2);
