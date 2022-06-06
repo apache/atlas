@@ -162,7 +162,7 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
                 continue;
             }
 
-             messages.add(new EntityNotificationV2(toNotificationHeader(entity, true), mutatedObj,
+             messages.add(new EntityNotificationV2(toNotificationHeader(entity, false), mutatedObj,
                          operationType, RequestContext.get().getRequestTime()));
 
         }
