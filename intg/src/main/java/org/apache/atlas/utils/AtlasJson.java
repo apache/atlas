@@ -108,7 +108,6 @@ public class AtlasJson {
             if (obj instanceof JsonNode && ((JsonNode) obj).isTextual()) {
                 ret = ((JsonNode) obj).textValue();
             } else {
-                mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
                 ret = mapper.writeValueAsString(obj);
             }
         }catch (IOException e){
