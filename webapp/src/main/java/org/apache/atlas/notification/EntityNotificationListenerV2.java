@@ -80,21 +80,14 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
     public void onEntitiesUpdated(List<AtlasEntity> entities, boolean isImport) throws AtlasBaseException {
         Map<String,AtlasEntity> differentialEntities  = RequestContext.get().getDifferentialEntitiesMap();
 
-        if(differentialEntities != null){
-            ArrayList<Object> mutatedObjs = new ArrayList<>();
             for (AtlasEntity entity : entities){
                 String guid  = entity.getGuid();
                 if(differentialEntities.containsKey(guid)){
-                    mutatedObjs.add(toNotificationHeader(differentialEntities.get(guid), true));
+                    notifyEntityEvents(Arrays.asList(entity), ENTITY_UPDATE, toNotificationHeader(differentialEntities.get(guid), true));
+                }else{
+                    notifyEntityEvents(Arrays.asList(entity), ENTITY_UPDATE, null);
                 }
             }
-            notifyEntityEvents(entities, ENTITY_UPDATE, mutatedObjs);
-        }else{
-            notifyEntityEvents(entities, ENTITY_UPDATE, null);
-        }
-
-
-
     }
 
     @Override
@@ -197,7 +190,7 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
         MetricRecorder metric = RequestContext.get().startMetricRecord("entityBMNotification");
         List<EntityNotificationV2> messages = new ArrayList<>();
 
-        messages.add(new EntityNotificationV2(toNotificationHeader(entity, false),updatedBusinessAttributes, operationType, RequestContext.get().getRequestTime()));
+        messages.add(new EntityNotificationV2(toNotificationHeader(entity, false), updatedBusinessAttributes, operationType, RequestContext.get().getRequestTime()));
 
         sendNotifications(operationType, messages);
         RequestContext.get().endMetricRecord(metric);
@@ -253,8 +246,8 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
             Map<String, Object> rel = new HashMap<>();
             for (Map<String, AtlasAttribute> attrs : entityType.getRelationshipAttributes().values()) {
                 for (AtlasAttribute attr : attrs.values()) {
-                    if (!attr.getAttributeDef().getIsOptional() || includeOptional) {
-                        String attrName = attr.getAttributeDef().getName();
+                    String attrName = attr.getAttributeDef().getName();
+                    if (!attr.getAttributeDef().getIsOptional() || includeOptional && entity.getRelationshipAttribute(attrName) != null) {
                         rel.put(attrName, entity.getRelationshipAttribute(attrName));
                     }
                 }
