@@ -139,21 +139,6 @@ public interface AtlasAuthorizer {
 
         entity.setScrubbed(isScrubbed);
 
-        if (entity.getClassifications() != null) {
-            entity.getClassifications().clear();
-        }
-
-        if (entity.getClassificationNames() != null) {
-            entity.getClassificationNames().clear();
-        }
-
-        if (entity.getMeanings() != null) {
-            entity.getMeanings().clear();
-        }
-
-        if (entity.getMeaningNames() != null) {
-            entity.getMeaningNames().clear();
-        }
     }
 
 
