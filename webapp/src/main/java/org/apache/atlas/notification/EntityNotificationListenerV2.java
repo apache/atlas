@@ -73,26 +73,17 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
 
     @Override
     public void onEntitiesAdded(List<AtlasEntity> entities, boolean isImport) throws AtlasBaseException {
-        notifyEntityEvents(entities, ENTITY_CREATE, null);
+        notifyEntityEvents(entities, ENTITY_CREATE);
     }
 
     @Override
     public void onEntitiesUpdated(List<AtlasEntity> entities, boolean isImport) throws AtlasBaseException {
-        Map<String,AtlasEntity> differentialEntities  = RequestContext.get().getDifferentialEntitiesMap();
-
-            for (AtlasEntity entity : entities){
-                String guid  = entity.getGuid();
-                if(differentialEntities.containsKey(guid)){
-                    notifyEntityEvents(Arrays.asList(entity), ENTITY_UPDATE, toNotificationHeader(differentialEntities.get(guid), true));
-                }else{
-                    notifyEntityEvents(Arrays.asList(entity), ENTITY_UPDATE, null);
-                }
-            }
+        notifyEntityEvents(entities, ENTITY_UPDATE);
     }
 
     @Override
     public void onEntitiesDeleted(List<AtlasEntity> entities, boolean isImport) throws AtlasBaseException {
-        notifyEntityEvents(entities, ENTITY_DELETE, null);
+        notifyEntityEvents(entities, ENTITY_DELETE);
     }
 
     @Override
@@ -102,12 +93,12 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
 
     @Override
     public void onClassificationsAdded(AtlasEntity entity, List<AtlasClassification> classifications) throws AtlasBaseException {
-        notifyEntityEvents(Collections.singletonList(entity), CLASSIFICATION_ADD, classifications);
+        notifyClassificationEvents(Collections.singletonList(entity), CLASSIFICATION_ADD, classifications);
     }
 
     @Override
     public void onClassificationsAdded(List<AtlasEntity> entities, List<AtlasClassification> classifications) throws AtlasBaseException {
-        notifyEntityEvents(entities, CLASSIFICATION_ADD, classifications);
+        notifyClassificationEvents(entities, CLASSIFICATION_ADD, classifications);
     }
 
     @Override
@@ -116,20 +107,20 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
         Map<String, List<AtlasClassification>> removedPropagations = RequestContext.get().getRemovedPropagations();
 
         if (addedPropagations.containsKey(entity.getGuid())) {
-            notifyEntityEvents(Collections.singletonList(entity), CLASSIFICATION_ADD, classifications);
+            notifyClassificationEvents(Collections.singletonList(entity), CLASSIFICATION_ADD, classifications);
         } else if (!removedPropagations.containsKey(entity.getGuid())) {
-            notifyEntityEvents(Collections.singletonList(entity), CLASSIFICATION_UPDATE, classifications);
+            notifyClassificationEvents(Collections.singletonList(entity), CLASSIFICATION_UPDATE, classifications);
         }
     }
 
     @Override
     public void onClassificationsDeleted(AtlasEntity entity, List<AtlasClassification> classifications) throws AtlasBaseException {
-        notifyEntityEvents(Collections.singletonList(entity), CLASSIFICATION_DELETE, classifications);
+        notifyClassificationEvents(Collections.singletonList(entity), CLASSIFICATION_DELETE, classifications);
     }
 
     @Override
     public void onClassificationsDeleted(List<AtlasEntity> entities, List<AtlasClassification> classifications) throws AtlasBaseException {
-        notifyEntityEvents(entities, CLASSIFICATION_DELETE, classifications);
+        notifyClassificationEvents(entities, CLASSIFICATION_DELETE, classifications);
     }
 
     @Override
@@ -152,8 +143,10 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
         // do nothing -> notification not sent out for label assignment to entities
     }
 
-    private void notifyEntityEvents(List<AtlasEntity> entities, OperationType operationType, Object mutatedObj) throws AtlasBaseException {
+    private void notifyEntityEvents(List<AtlasEntity> entities, OperationType operationType) throws AtlasBaseException {
         MetricRecorder metric = RequestContext.get().startMetricRecord("entityNotification");
+
+        Map<String,AtlasEntity> differentialEntities  = RequestContext.get().getDifferentialEntitiesMap();
 
         List<EntityNotificationV2> messages = new ArrayList<>();
 
@@ -161,10 +154,39 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
              if (isInternalType(entity.getTypeName())) {
                 continue;
             }
+             String entityGuid = entity.getGuid();
 
-             messages.add(new EntityNotificationV2(toNotificationHeader(entity, false), mutatedObj,
+             if(differentialEntities != null){
+                 ArrayList<AtlasEntity> mutatedEntities  = new ArrayList<>();
+                 if (differentialEntities.containsKey(entityGuid)) {
+                     mutatedEntities.add(differentialEntities.get(entityGuid));
+                     messages.add(new EntityNotificationV2(toNotificationHeader(entity), mutatedEntities,
+                             operationType, RequestContext.get().getRequestTime()));
+                 }else {
+                     messages.add(new EntityNotificationV2(toNotificationHeader(entity), new ArrayList<>(),
+                             operationType, RequestContext.get().getRequestTime()));
+                 }
+             }else{
+                 messages.add(new EntityNotificationV2(toNotificationHeader(entity), new ArrayList<>(),
                          operationType, RequestContext.get().getRequestTime()));
+             }
 
+        }
+
+        sendNotifications(operationType, messages);
+        RequestContext.get().endMetricRecord(metric);
+    }
+
+    private void notifyClassificationEvents(List<AtlasEntity> entities, OperationType operationType, Object mutatedObj) throws AtlasBaseException {
+        MetricRecorder metric = RequestContext.get().startMetricRecord("classificationNotification");
+        List<EntityNotificationV2> messages = new ArrayList<>();
+
+        for (AtlasEntity entity : entities) {
+            if (isInternalType(entity.getTypeName())) {
+                continue;
+            }
+
+            messages.add(new EntityNotificationV2(toNotificationHeader(entity), mutatedObj, operationType, RequestContext.get().getRequestTime()));
         }
 
         sendNotifications(operationType, messages);
@@ -190,7 +212,7 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
         MetricRecorder metric = RequestContext.get().startMetricRecord("entityBMNotification");
         List<EntityNotificationV2> messages = new ArrayList<>();
 
-        messages.add(new EntityNotificationV2(toNotificationHeader(entity, false), updatedBusinessAttributes, operationType, RequestContext.get().getRequestTime()));
+        messages.add(new EntityNotificationV2(toNotificationHeader(entity), updatedBusinessAttributes, operationType, RequestContext.get().getRequestTime()));
 
         sendNotifications(operationType, messages);
         RequestContext.get().endMetricRecord(metric);
@@ -206,7 +228,7 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
         }
     }
 
-    private AtlasEntityHeaderWithRelations toNotificationHeader(AtlasEntity entity, Boolean includeOptional) {
+    private AtlasEntityHeaderWithRelations toNotificationHeader(AtlasEntity entity) {
         AtlasEntityHeaderWithRelations ret = new AtlasEntityHeaderWithRelations(entity.getTypeName(), entity.getGuid(), new HashMap<>());
         Object            name        = entity.getAttribute(NAME);
         Object            displayText = name != null ? name : entity.getAttribute(QUALIFIED_NAME);
@@ -246,8 +268,8 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
             Map<String, Object> rel = new HashMap<>();
             for (Map<String, AtlasAttribute> attrs : entityType.getRelationshipAttributes().values()) {
                 for (AtlasAttribute attr : attrs.values()) {
-                    String attrName = attr.getAttributeDef().getName();
-                    if (!attr.getAttributeDef().getIsOptional() || includeOptional && entity.getRelationshipAttribute(attrName) != null) {
+                    if (!attr.getAttributeDef().getIsOptional()) {
+                        String attrName = attr.getAttributeDef().getName();
                         rel.put(attrName, entity.getRelationshipAttribute(attrName));
                     }
                 }
@@ -273,7 +295,6 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
 
         return ret;
     }
-
     private AtlasRelationshipHeader toNotificationHeader(AtlasRelationship relationship) {
         return new AtlasRelationshipHeader(relationship);
     }
