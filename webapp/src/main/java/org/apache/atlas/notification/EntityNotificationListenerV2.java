@@ -157,17 +157,15 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
              String entityGuid = entity.getGuid();
 
              if(differentialEntities != null){
-                 ArrayList<AtlasEntity> mutatedEntities  = new ArrayList<>();
                  if (differentialEntities.containsKey(entityGuid)) {
-                     mutatedEntities.add(differentialEntities.get(entityGuid));
-                     messages.add(new EntityNotificationV2(toNotificationHeader(entity), mutatedEntities,
+                     messages.add(new EntityNotificationV2(toNotificationHeader(entity), differentialEntities.get(entityGuid),
                              operationType, RequestContext.get().getRequestTime()));
                  }else {
-                     messages.add(new EntityNotificationV2(toNotificationHeader(entity), new ArrayList<>(),
+                     messages.add(new EntityNotificationV2(toNotificationHeader(entity), null,
                              operationType, RequestContext.get().getRequestTime()));
                  }
              }else{
-                 messages.add(new EntityNotificationV2(toNotificationHeader(entity), new ArrayList<>(),
+                 messages.add(new EntityNotificationV2(toNotificationHeader(entity), null,
                          operationType, RequestContext.get().getRequestTime()));
              }
 
