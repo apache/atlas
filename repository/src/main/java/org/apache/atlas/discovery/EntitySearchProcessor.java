@@ -252,7 +252,7 @@ public class EntitySearchProcessor extends SearchProcessor {
             if (marker != null) {
                 qryOffset = marker;
             } else {
-                qryOffset = (nextProcessor != null || (graphQuery != null && indexQuery != null)) ? 0 : startIdx;
+                qryOffset = (nextProcessor != null || (graphQuery != null && indexQuery != null) || isEntityRootType()) ? 0 : startIdx;
             }
             int resultIdx = qryOffset;
 
