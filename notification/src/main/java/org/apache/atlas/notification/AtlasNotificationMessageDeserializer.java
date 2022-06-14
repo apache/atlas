@@ -26,6 +26,7 @@ import org.apache.atlas.model.notification.AtlasNotificationMessage;
 import org.apache.atlas.model.notification.AtlasNotificationStringMessage;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.model.notification.MessageVersion;
+import org.apache.atlas.model.notification.MessageSource;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -233,6 +234,7 @@ public abstract class AtlasNotificationMessageDeserializer<T> implements Message
 
                 AtlasNotificationMessage<T> atlasNotificationMessage = AtlasType.fromV1Json(msgJson, notificationMessageType);
 
+                checkCrossCombatMessageVersion(atlasNotificationMessage);
                 checkVersion(atlasNotificationMessage, msgJson);
 
                 ret = atlasNotificationMessage.getMessage();
@@ -315,6 +317,17 @@ public abstract class AtlasNotificationMessageDeserializer<T> implements Message
         // message has older version
         if (comp < 0) {
             notificationLogger.info(String.format(VERSION_MISMATCH_MSG, expectedVersion, notificationMessage.getVersion(), messageJson));
+        }
+    }
+
+    protected void checkCrossCombatMessageVersion(AtlasNotificationBaseMessage notificationMessage) {
+        String        sourceVersion             = new MessageSource(this.getClass().getSimpleName()).getVersion();
+        MessageSource notificationSourceVersion = notificationMessage.getSource();
+
+        if (notificationMessage.getSource() != null) {
+            if (!StringUtils.equalsIgnoreCase(notificationSourceVersion.getVersion(), sourceVersion)) {
+                LOG.warn("Hook and Atlas server build versions are not similar : {}, {}", notificationSourceVersion.getVersion(), sourceVersion);
+            }
         }
     }
 }
