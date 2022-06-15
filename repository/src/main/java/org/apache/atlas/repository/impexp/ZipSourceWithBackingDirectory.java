@@ -45,11 +45,15 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import static org.apache.atlas.AtlasErrorCode.IMPORT_ATTEMPTING_EMPTY_ZIP;
+import static org.apache.atlas.AtlasErrorCode.IMPORT_INVALID_ZIP_ENTRY;
 
 public class ZipSourceWithBackingDirectory implements EntityImportStream {
     private static final Logger LOG = LoggerFactory.getLogger(ZipSourceWithBackingDirectory.class);
     private static final String TEMPORARY_DIRECTORY_PREFIX = "atlas-import-temp-";
     private static final String EXT_JSON = ".json";
+    private static final String RELATIVE_PARENT_PATH                 = "..";
+    private static final String RELATIVE_PARENT_PATH_WITH_SEP_PREFIX = File.separator + RELATIVE_PARENT_PATH;
+    private static final String RELATIVE_PARENT_PATH_WITH_SEP_SUFFIX = RELATIVE_PARENT_PATH + File.separator;
 
     private Path tempDirectory;
 
@@ -174,7 +178,11 @@ public class ZipSourceWithBackingDirectory implements EntityImportStream {
 
     @Override
     public void onImportComplete(String guid) {
-        getFileFromTemporaryDirectory(guid + EXT_JSON).delete();
+        try {
+            getFileFromTemporaryDirectory(guid + EXT_JSON).delete();
+        } catch (AtlasBaseException excp) {
+            LOG.error("onImportComplete(guid={}): failed", guid, excp);
+        }
     }
 
     @Override
@@ -205,8 +213,10 @@ public class ZipSourceWithBackingDirectory implements EntityImportStream {
     @Override
     public void close() {
         creationOrder.clear();
+
         try {
-            LOG.error("Import: Removing temporary directory: {}", tempDirectory.toString());
+            LOG.info("Import: Removing temporary directory: {}", tempDirectory.toString());
+
             FileUtils.deleteDirectory(tempDirectory.toFile());
         } catch (IOException e) {
             LOG.error("Import: Error deleting: {}", tempDirectory.toString(), e);
@@ -227,9 +237,21 @@ public class ZipSourceWithBackingDirectory implements EntityImportStream {
     }
 
     private void setupBackingStore(InputStream inputStream, String backingDirectory) throws AtlasBaseException, IOException {
-        initTempDirectory(backingDirectory);
-        unzipToTempDirectory(inputStream);
-        setupIterator();
+        try {
+            initTempDirectory(backingDirectory);
+            unzipToTempDirectory(inputStream);
+            setupIterator();
+        } catch (Exception excp) {
+            try {
+                LOG.info("ZipSourceWithBackingDirectory: setupBackingStore() failed. Cleaning up..");
+
+                this.close();
+            } catch (Throwable t) {
+                LOG.warn("ZipSourceWithBackingDirectory cleanup failed", t);
+            }
+
+            throw excp;
+        }
     }
 
     private void initTempDirectory(String backingDirectory) throws AtlasBaseException {
@@ -277,12 +299,39 @@ public class ZipSourceWithBackingDirectory implements EntityImportStream {
     }
 
     private void writeJsonToFile(String entryName, byte[] jsonPayload) throws IOException {
-        File f = getFileFromTemporaryDirectory(entryName);
-        Files.write(f.toPath(), jsonPayload);
+        try {
+            File f = getFileFromTemporaryDirectory(entryName);
+
+            Files.write(f.toPath(), jsonPayload);
+        } catch (AtlasBaseException excp) {
+            LOG.error("writeJsonToFile(entryName={}): failed", entryName, excp);
+
+            throw new IOException(excp);
+        }
     }
 
-    private File getFileFromTemporaryDirectory(String entryName) {
+    private File getFileFromTemporaryDirectory(String entryName) throws AtlasBaseException {
+        if (hasRelativeParentPath(entryName)) {
+            LOG.error("failed to initialize import: found zipEntry having relative parent path '{}'", entryName);
+
+            throw new AtlasBaseException(IMPORT_INVALID_ZIP_ENTRY, entryName, "has relative parent path");
+        }
+
         return new File(tempDirectory.toFile(), entryName);
+    }
+
+    private boolean hasRelativeParentPath(String path) {
+        final boolean ret;
+
+        if (path == null || !path.contains(RELATIVE_PARENT_PATH)) {
+            ret = false;
+        } else {
+            ret = path.equals(RELATIVE_PARENT_PATH) ||
+                  path.contains(RELATIVE_PARENT_PATH_WITH_SEP_PREFIX) ||
+                  path.contains(RELATIVE_PARENT_PATH_WITH_SEP_SUFFIX);
+        }
+
+        return ret;
     }
 
     private void setupIterator() {
