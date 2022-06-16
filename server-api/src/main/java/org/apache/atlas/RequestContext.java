@@ -445,6 +445,8 @@ public class RequestContext {
 
     public Collection<AtlasEntity> getDifferentialEntities() { return diffEntityCache.values(); }
 
+    public Map<String,AtlasEntity> getDifferentialEntitiesMap() { return diffEntityCache; }
+
     public Collection<AtlasEntityHeader> getUpdatedEntities() {
         return updatedEntities.values();
     }

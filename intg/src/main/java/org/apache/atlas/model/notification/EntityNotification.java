@@ -100,15 +100,16 @@ public class EntityNotification implements Serializable {
         private static final long serialVersionUID = 1L;
 
         public enum OperationType {
-            ENTITY_CREATE, ENTITY_UPDATE, ENTITY_DELETE,
-            CLASSIFICATION_ADD, CLASSIFICATION_DELETE, CLASSIFICATION_UPDATE,
-            RELATIONSHIP_CREATE, RELATIONSHIP_UPDATE, RELATIONSHIP_DELETE
+            ENTITY_CREATE, ENTITY_UPDATE, ENTITY_DELETE, CLASSIFICATION_ADD,
+            CLASSIFICATION_DELETE, CLASSIFICATION_UPDATE, RELATIONSHIP_CREATE,
+            RELATIONSHIP_UPDATE, RELATIONSHIP_DELETE, BUSINESS_ATTRIBUTE_UPDATE
         }
 
-        private AtlasEntityHeader entity;
+        private AtlasEntityHeader       entity;
         private AtlasRelationshipHeader relationship;
-        private OperationType     operationType;
+        private OperationType           operationType;
         private long              eventTime;
+        private Object       mutatedDetails;
 
         public EntityNotificationV2() {
             super(ENTITY_NOTIFICATION_V2);
@@ -130,6 +131,15 @@ public class EntityNotification implements Serializable {
             setEventTime(eventTime);
         }
 
+        public EntityNotificationV2(AtlasEntityHeader entity, Object mutatedDetails, OperationType operationType, long eventTime) {
+            super(ENTITY_NOTIFICATION_V2);
+
+            setEntity(entity);
+            setOperationType(operationType);
+            setEventTime(eventTime);
+            setMutatedDetails(mutatedDetails);
+        }
+
         public EntityNotificationV2(AtlasRelationshipHeader relationship, OperationType operationType, long eventTime) {
             super(ENTITY_NOTIFICATION_V2);
 
@@ -145,6 +155,15 @@ public class EntityNotification implements Serializable {
         public void setEntity(AtlasEntityHeader entity) {
             this.entity = entity;
         }
+
+        public void setMutatedDetails(Object mutatedDetails){
+            this.mutatedDetails = mutatedDetails;
+        }
+
+        public Object getMutatedDetails(){
+            return mutatedDetails;
+        }
+
 
         public AtlasRelationshipHeader getRelationship() {
             return relationship;
