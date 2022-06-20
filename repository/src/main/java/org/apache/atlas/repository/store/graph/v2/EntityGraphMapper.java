@@ -754,9 +754,15 @@ public class EntityGraphMapper {
                         }
                     } else {
                         if (!Objects.equals(existingValue, bmAttrValue)) {
-                            mapAttribute(bmAttribute, bmAttrValue, entityVertex, UPDATE, new EntityMutationContext());
 
-                            addToUpdatedBusinessAttributes(updatedBusinessAttributes, bmAttribute, bmAttrValue);
+                            if( bmAttrValue != null) {
+                                mapAttribute(bmAttribute, bmAttrValue, entityVertex, UPDATE, new EntityMutationContext());
+
+                                addToUpdatedBusinessAttributes(updatedBusinessAttributes, bmAttribute, bmAttrValue);
+                            } else {
+                                entityVertex.removeProperty(bmAttribute.getVertexPropertyName());
+                                addToUpdatedBusinessAttributes(updatedBusinessAttributes, bmAttribute, null);
+                            }
                         }
                     }
                 }
