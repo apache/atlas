@@ -178,7 +178,7 @@ public enum AtlasErrorCode {
     TYPEDEF_ATTR_DISPLAY_NAME_IS_REQUIRED(400, "ATLAS-400-00-09F", "displayName is required for typedef \"{0}\" attribute"),
     EMPTY_REQUEST(400, "ATLAS-400-00-100", "Empty Request or null, expects Map of List of RelatedObjects with term-id as key"),
     TYPEDEF_DISPLAY_NAME_IS_REQUIRED(400, "ATLAS-400-00-101", "displayName is required for typedef"),
-    IMPORT_INVALID_ZIP_ENTRY(400, "ATLAS-400-00-09F", "{0}: invalid zip entry. Reason: {1}"),
+    IMPORT_INVALID_ZIP_ENTRY(400, "ATLAS-400-00-10F", "{0}: invalid zip entry. Reason: {1}"),
 
     // All Not found enums go here
     TYPE_NAME_NOT_FOUND(404, "ATLAS-404-00-001", "Given typename {0} was invalid"),
