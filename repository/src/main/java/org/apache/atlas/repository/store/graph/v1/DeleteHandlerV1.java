@@ -1285,6 +1285,19 @@ public abstract class DeleteHandlerV1 {
         RequestContext.get().queueTask(task);
     }
 
+    public void removeTaskFromQueue(String taskGuid) {
+        try {
+            AtlasTask task = taskManagement.getByGuid(taskGuid);
+            RequestContext.get().removeTask(task);
+        } catch (AtlasBaseException e) {
+            try {
+                throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, taskGuid);
+            } catch (AtlasBaseException ex) {
+                throw new RuntimeException(ex);
+            }
+        }
+    }
+
     public void removeHasLineageOnDelete(Collection<AtlasVertex> vertices) {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("removeHasLineageOnDelete");
 

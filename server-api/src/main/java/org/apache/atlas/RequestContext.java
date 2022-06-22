@@ -538,6 +538,10 @@ public class RequestContext {
         queuedTasks.add(task);
     }
 
+    public void removeTask(AtlasTask task) {
+        queuedTasks.remove(task);
+    }
+
     public List<AtlasTask> getQueuedTasks() {
         return this.queuedTasks;
     }
