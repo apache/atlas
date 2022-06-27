@@ -20,9 +20,11 @@ package org.apache.atlas.repository.audit;
 import com.datastax.driver.core.BatchStatement;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.JdkSSLOptions;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
+import com.datastax.driver.core.SSLOptions;
 import com.datastax.driver.core.Session;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.AtlasException;
@@ -36,6 +38,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.security.KeyManagementException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -43,6 +55,8 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.inject.Singleton;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
 
 /**
  * This class provides cassandra support as the backend for audit storage support.
@@ -69,6 +83,17 @@ public class CassandraBasedAuditRepository extends AbstractStorageBasedAuditRepo
   public static final String CASSANDRA_PORT_PROPERTY = "atlas.graph.storage.port";
   public static final String CASSANDRA_REPLICATION_FACTOR_PROPERTY = "atlas.EntityAuditRepository.replicationFactor";
   public static final String CASSANDRA_AUDIT_KEYSPACE_PROPERTY = "atlas.EntityAuditRepository.keyspace";
+  
+  //flag to indicate if SSL is enabled for cassandra (server side SSL)
+  public static final String CASSANDRA_SSL_ENABLED = "atlas.graph.storage.sslEnabled";
+  public static final String CASSANDRA_SSL_TRUSTSTORE_LOCATION = "atlas.graph.storage.cassandra.ssl.truststore.location";
+  public static final String CASSANDRA_SSL_TRUSTSTORE_PASSWORD = "atlas.graph.storage.cassandra.ssl.truststore.password";
+
+  // cassandra login credentials
+  public static final String CASSANDRA_USERNAME = "atlas.graph.storage.username";
+  public static final String CASSANDRA_PASSWORD = "atlas.graph.storage.password";
+  public static final String KEYSTORE_TYPE = "JKS";
+  public static final String SSL_PROTOCOL = "TLS";
 
   private static final String  AUDIT_TABLE_SCHEMA =
       "CREATE TABLE audit(entityid text, "
@@ -97,6 +122,12 @@ public class CassandraBasedAuditRepository extends AbstractStorageBasedAuditRepo
   private Session cassSession;
   private String clusterName;
   private int port;
+  
+  private boolean isSSLEnabled;
+  private String username;
+  private String password;
+  private String truststoreLocation;
+  private String truststorePassword;
 
   private Map<String, List<String>> auditExcludedAttributesCache = new HashMap<>();
   private PreparedStatement insertStatement;
@@ -211,6 +242,11 @@ public class CassandraBasedAuditRepository extends AbstractStorageBasedAuditRepo
     replicationFactor = APPLICATION_PROPERTIES.getInt(CASSANDRA_REPLICATION_FACTOR_PROPERTY, DEFAULT_REPLICATION_FACTOR);
     clusterName = APPLICATION_PROPERTIES.getString(CASSANDRA_CLUSTERNAME_PROPERTY, DEFAULT_CLUSTER_NAME);
     port = APPLICATION_PROPERTIES.getInt(CASSANDRA_PORT_PROPERTY, DEFAULT_PORT);
+    isSSLEnabled = APPLICATION_PROPERTIES.getBoolean(CASSANDRA_SSL_ENABLED, false);
+    username = APPLICATION_PROPERTIES.getString(CASSANDRA_USERNAME, null);
+    password = APPLICATION_PROPERTIES.getString(CASSANDRA_PASSWORD, null);
+    truststoreLocation = APPLICATION_PROPERTIES.getString(CASSANDRA_SSL_TRUSTSTORE_LOCATION, null);
+    truststorePassword = APPLICATION_PROPERTIES.getString(CASSANDRA_SSL_TRUSTSTORE_PASSWORD, null);
   }
 
   @VisibleForTesting
@@ -222,7 +258,22 @@ public class CassandraBasedAuditRepository extends AbstractStorageBasedAuditRepo
     Cluster.Builder cassandraClusterBuilder = Cluster.builder();
 
     String hostname = APPLICATION_PROPERTIES.getString(CASSANDRA_HOSTNAME_PROPERTY, "localhost");
-    Cluster cluster = cassandraClusterBuilder.addContactPoint(hostname).withClusterName(clusterName).withPort(port).build();
+
+    Cluster cluster = null;
+    if (isSSLEnabled) {
+      if (StringUtils.isNotEmpty(username) && StringUtils.isNotEmpty(password)) {
+        try {
+          cluster = cassandraClusterBuilder.addContactPoint(hostname).withClusterName(clusterName).withPort(port)
+              .withCredentials(username, password).withSSL(createSSLOptions()).build();
+        } catch (KeyManagementException | KeyStoreException | NoSuchAlgorithmException | CertificateException
+            | IOException e) {
+          throw new AtlasException(e);
+        }
+      }
+    } else {
+      cluster = cassandraClusterBuilder.addContactPoint(hostname).withClusterName(clusterName).withPort(port).build();
+    }
+    
     try {
       cassSession = cluster.connect();
       if (cluster.getMetadata().getKeyspace(keyspace) == null) {
@@ -244,6 +295,21 @@ public class CassandraBasedAuditRepository extends AbstractStorageBasedAuditRepo
     } catch (Exception e) {
       throw new AtlasException(e);
     }
+  }
+
+  private SSLOptions createSSLOptions() throws KeyStoreException, NoSuchAlgorithmException, CertificateException,
+      FileNotFoundException, IOException, KeyManagementException {
+    TrustManagerFactory tmf = null;
+
+    KeyStore tks = KeyStore.getInstance(KEYSTORE_TYPE);
+    tks.load((InputStream) new FileInputStream(new File(truststoreLocation)), truststorePassword.toCharArray());
+    tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+    tmf.init(tks);
+
+    SSLContext sslContext = SSLContext.getInstance(SSL_PROTOCOL);
+    sslContext.init(null, tmf != null ? tmf.getTrustManagers() : null, null);
+
+    return JdkSSLOptions.builder().withSSLContext(sslContext).build();
   }
 
   @Override
