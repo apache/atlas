@@ -29,13 +29,13 @@ allows the user to discover/work with data in the vocabulary that is more famili
 ### What is a Glossary term ?
 
 A term is a useful word for an enterprise. For the term(s) to be useful and meaningful, they need to grouped around their
-use and context. A term in Apache Atlas must have a unique qualifiedName, there can be term(s) with same name but they
+use and context. A term in Apache Atlas must have a unique qualifiedName; there can be term(s) with same name but they
 cannot belong to the same glossary. Term(s) with same name can exist only across different glossaries. A term name can
 contain spaces, underscores and dashes (as natural ways of referring to words) but no "." or "@", as the qualifiedName
 takes the following form `term name`@`glossary qualified name`. The fully qualified name makes it easier to work with
 a specific term.
 
-A term can only belong to single glossary and it's lifecycle is bound to the same i.e. if the Glossary is deleted then
+A term can only belong to single glossary and it's lifecycle is bound to the same, i.e. if the Glossary is deleted then
 the term gets deleted as well. A term can belong to zero or more categories, which allows scoping them into narrower or
 wider contexts. A term can be assigned/linked to zero or more entities in Apache Atlas. A term can be classified using
 classifications (tags) and the same classification gets applied to the entities that the term is assigned to.
@@ -198,7 +198,7 @@ Both the actions will present the following modal, follow prompts on screen to c
 
 ##### Propagated classification
 
-If a term has classification then the entity is has been assigned inherits the same.
+If a term has any classifications, then any entity to which the term is assigned will inherit those same classifications.
 
 <Img src={`/images/markdown/term_details_with_classification.png`} />
 
