@@ -341,6 +341,18 @@ public final class GraphHelper {
         return ret;
     }
 
+    public static boolean getPropagateThroughLineage(AtlasVertex classificationVertex) {
+        boolean ret = false;
+
+        if (classificationVertex != null) {
+            Boolean enabled = AtlasGraphUtilsV2.getEncodedProperty(classificationVertex, CLASSIFICATION_VERTEX_PROPAGATE_THROUGH_LINEAGE, Boolean.class);
+
+            ret = (enabled == null) ? true : enabled;
+        }
+
+        return ret;
+    }
+
     public static AtlasVertex getClassificationVertex(AtlasVertex entityVertex, String classificationName) {
         AtlasVertex ret   = null;
         Iterable    edges = entityVertex.query().direction(AtlasEdgeDirection.OUT).label(CLASSIFICATION_LABEL)

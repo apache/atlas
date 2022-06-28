@@ -41,8 +41,9 @@ public class ClassificationPropagationTasks {
             String entityGuid             = (String) parameters.get(PARAM_ENTITY_GUID);
             String classificationVertexId = (String) parameters.get(PARAM_CLASSIFICATION_VERTEX_ID);
             String relationshipGuid       = (String) parameters.get(PARAM_RELATIONSHIP_GUID);
+            String propagationMode        = (String) parameters.get(PARAM_CLASSIFICATION_PROPAGATION_MODE);
 
-            entityGraphMapper.propagateClassification(entityGuid, classificationVertexId, relationshipGuid);
+            entityGraphMapper.propagateClassification(entityGuid, classificationVertexId, relationshipGuid, propagationMode);
         }
     }
 
