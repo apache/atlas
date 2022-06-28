@@ -197,6 +197,10 @@ public class CuratorFactory {
     }
 
     public InterProcessMutex lockInstance(String zkRoot) {
-        return new InterProcessMutex(curatorFramework, zkRoot+ SETUP_LOCK);
+        return lockInstance(zkRoot, SETUP_LOCK);
+    }
+
+    public InterProcessMutex lockInstance(String zkRoot, String lockName) {
+        return new InterProcessMutex(curatorFramework, zkRoot + lockName);
     }
 }

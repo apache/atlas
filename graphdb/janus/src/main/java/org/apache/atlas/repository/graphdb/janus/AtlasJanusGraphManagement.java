@@ -423,6 +423,14 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
     }
 
     @Override
+    public void resetIndexCache(String indexName) {
+        JanusGraphIndex index = management.getGraphIndex(indexName);
+        ManagementSystem managementSystem = (ManagementSystem) management;
+        IndexType indexType = managementSystem.getSchemaVertex(index).asIndexType();
+        indexType.resetCache();
+    }
+
+    @Override
     public void reindex(String indexName, List<AtlasElement> elements) throws Exception {
         try {
             JanusGraphIndex index = management.getGraphIndex(indexName);
