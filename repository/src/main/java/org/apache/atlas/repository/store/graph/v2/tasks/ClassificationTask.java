@@ -50,7 +50,7 @@ public abstract class ClassificationTask extends AbstractTask {
     public static final String PARAM_RELATIONSHIP_GUID        = "relationshipGuid";
     public static final String PARAM_RELATIONSHIP_OBJECT      = "relationshipObject";
     public static final String PARAM_RELATIONSHIP_EDGE_ID     = "relationshipEdgeId";
-    public static final String PARAM_CLASSIFICATION_PROPAGATION_MODE = "propagationMode";
+    public static final String PARAM_CLASSIFICATION_PROPAGATE_THROUGH_LINEAGE = "propagateThroughLineage";
   
     protected final AtlasGraph             graph;
     protected final EntityGraphMapper      entityGraphMapper;
@@ -107,12 +107,12 @@ public abstract class ClassificationTask extends AbstractTask {
         return getStatus();
     }
 
-    public static Map<String, Object> toParameters(String entityGuid, String classificationVertexId, String relationshipGuid, String propagationMode) {
+    public static Map<String, Object> toParameters(String entityGuid, String classificationVertexId, String relationshipGuid, Boolean propagateThroughLineage) {
         return new HashMap<String, Object>() {{
             put(PARAM_ENTITY_GUID, entityGuid);
             put(PARAM_CLASSIFICATION_VERTEX_ID, classificationVertexId);
             put(PARAM_RELATIONSHIP_GUID, relationshipGuid);
-            put(PARAM_CLASSIFICATION_PROPAGATION_MODE, propagationMode);
+            put(PARAM_CLASSIFICATION_PROPAGATE_THROUGH_LINEAGE, propagateThroughLineage);
         }};
     }
 

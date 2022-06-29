@@ -110,11 +110,7 @@ import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_STRING;
 import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.NONE;
 import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.ONE_TO_TWO;
 import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.TWO_TO_ONE;
-import static org.apache.atlas.repository.Constants.CLASSIFICATION_ENTITY_GUID;
-import static org.apache.atlas.repository.Constants.CLASSIFICATION_LABEL;
-import static org.apache.atlas.repository.Constants.CLASSIFICATION_VALIDITY_PERIODS_KEY;
-import static org.apache.atlas.repository.Constants.TERM_ASSIGNMENT_LABEL;
-import static org.apache.atlas.repository.Constants.CLASSIFICATION_PROPAGATION_MAP;
+import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.GraphHelper.*;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getIdFromVertex;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.isReference;
@@ -525,14 +521,14 @@ public class EntityGraphRetriever {
                 String            classificationId      = classificationVertex.getIdForDisplay();
                 String            sourceEntityId        = getClassificationEntityGuid(classificationVertex);
                 AtlasVertex       sourceEntityVertex    = AtlasGraphUtilsV2.findByGuid(this.graph, sourceEntityId);
-                String propagationMode = "DEFAULT";
+                String propagationMode = CLASSIFICATION_PROPAGATION_MODE_DEFAULT;
 
                 if(!toAtlasClassification(classificationVertex).getPropagateThroughLineage()){
-                    propagationMode = "EXCLUDE_LINEAGE";
+                    propagationMode = CLASSIFICATION_PROPAGATION_MODE_LINEAGE;
                 }
 
                 List<AtlasVertex> entitiesPropagatingTo = getImpactedVerticesV2(sourceEntityVertex, relationshipGuidToExclude,
-                        classificationId, CLASSIFICATION_PROPAGATION_MAP.get(propagationMode));
+                        classificationId, CLASSIFICATION_PROPAGATION_EXCLUSION_MAP.get(propagationMode));
 
                 ret.put(classificationVertex, entitiesPropagatingTo);
             }
@@ -621,7 +617,7 @@ public class EntityGraphRetriever {
             }
             if(edgeLabelsToExclude != null) {
                 if (!edgeLabelsToExclude.isEmpty()) {
-                    tagPropagationEdges = Arrays.stream(tagPropagationEdges).filter(x -> edgeLabelsToExclude.contains(x)).collect(Collectors.toList()).toArray(new String[0]);
+                    tagPropagationEdges = Arrays.stream(tagPropagationEdges).filter(x -> !edgeLabelsToExclude.contains(x)).collect(Collectors.toList()).toArray(new String[0]);
                 }
             }
 
