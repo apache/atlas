@@ -364,6 +364,12 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     @Override
     @GraphTransaction
+    public AtlasEntityHeader getAtlasEntityHeaderWithoutAuthorization(String guid, String qualifiedName, String typeName) throws AtlasBaseException {
+        return extractEntityHeader( guid,  qualifiedName,  typeName);
+    }
+
+    @Override
+    @GraphTransaction
     public AtlasEntityHeader getEntityHeaderByUniqueAttributes(AtlasEntityType entityType, Map<String, Object> uniqAttributes) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> getEntityHeaderByUniqueAttributes({}, {})", entityType.getTypeName(), uniqAttributes);
