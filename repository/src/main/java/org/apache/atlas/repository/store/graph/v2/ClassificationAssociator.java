@@ -319,12 +319,12 @@ public class ClassificationAssociator {
 
             List<V> result = new ArrayList<>();
             for (V c : rhs) {
-                V found = findFrom(lhs, c);
-                if (found != null) {
-                    result.add(found);
+                V foundSame = findObjectFrom(lhs, c);
+                V foundSameTypeName = findFrom(lhs, c);
+                if ((foundSameTypeName != null) && (foundSame == null)) {
+                    result.add(foundSameTypeName);
                 }
             }
-
             return result;
         }
 
@@ -342,6 +342,11 @@ public class ClassificationAssociator {
             }
 
             return result;
+        }
+
+        private V findObjectFrom(List<V> reference, V check) {
+            return (V) CollectionUtils.find(reference, ox ->
+                    ((V) ox).equals(check));
         }
 
         private V findFrom(List<V> reference, V check) {
