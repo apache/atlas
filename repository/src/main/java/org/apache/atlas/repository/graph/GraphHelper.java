@@ -341,11 +341,11 @@ public final class GraphHelper {
         return ret;
     }
 
-    public static boolean getPropagateThroughLineage(AtlasVertex classificationVertex) {
+    public static boolean getRestrictPropagationThroughLineage(AtlasVertex classificationVertex) {
         boolean ret = false;
 
         if (classificationVertex != null) {
-            Boolean enabled = AtlasGraphUtilsV2.getEncodedProperty(classificationVertex, CLASSIFICATION_VERTEX_PROPAGATE_THROUGH_LINEAGE, Boolean.class);
+            Boolean enabled = AtlasGraphUtilsV2.getEncodedProperty(classificationVertex, CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_LINEAGE, Boolean.class);
 
             ret = (enabled == null) ? true : enabled;
         }

@@ -373,7 +373,7 @@ public class EntityGraphRetriever {
             ret.setEntityStatus(getClassificationEntityStatus(classificationVertex));
             ret.setPropagate(isPropagationEnabled(classificationVertex));
             ret.setRemovePropagationsOnEntityDelete(getRemovePropagations(classificationVertex));
-            ret.setPropagateThroughLineage(getPropagateThroughLineage(classificationVertex));
+            ret.setRestrictPropagationThroughLineage(getRestrictPropagationThroughLineage(classificationVertex));
 
             String strValidityPeriods = AtlasGraphUtilsV2.getEncodedProperty(classificationVertex, CLASSIFICATION_VALIDITY_PERIODS_KEY, String.class);
 
@@ -523,8 +523,8 @@ public class EntityGraphRetriever {
                 AtlasVertex       sourceEntityVertex    = AtlasGraphUtilsV2.findByGuid(this.graph, sourceEntityId);
                 String propagationMode = CLASSIFICATION_PROPAGATION_MODE_DEFAULT;
 
-                if(!toAtlasClassification(classificationVertex).getPropagateThroughLineage()){
-                    propagationMode = CLASSIFICATION_PROPAGATION_MODE_LINEAGE;
+                if(toAtlasClassification(classificationVertex).getRestrictPropagationThroughLineage()){
+                    propagationMode = CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE;
                 }
 
                 List<AtlasVertex> entitiesPropagatingTo = getImpactedVerticesV2(sourceEntityVertex, relationshipGuidToExclude,
