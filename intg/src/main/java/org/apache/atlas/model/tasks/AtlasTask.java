@@ -42,7 +42,8 @@ public class AtlasTask {
         PENDING,
         IN_PROGRESS,
         COMPLETE,
-        FAILED;
+        FAILED,
+        DELETED;
 
         public static Status from(String s) {
             if(StringUtils.isEmpty(s)) {
@@ -61,6 +62,9 @@ public class AtlasTask {
 
                 case "failed":
                     return FAILED;
+
+                case "deleted":
+                    return DELETED;
 
                 default:
                     return PENDING;

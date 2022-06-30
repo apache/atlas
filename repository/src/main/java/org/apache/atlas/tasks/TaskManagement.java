@@ -52,6 +52,11 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
 
     private Thread watcherThread = null;
 
+    public enum DeleteType {
+        SOFT,
+        HARD
+    }
+
     @Inject
     public TaskManagement(Configuration configuration, TaskRegistry taskRegistry) {
         this.configuration      = configuration;
@@ -190,6 +195,19 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
     public void deleteByGuid(String guid) throws AtlasBaseException {
         try {
             this.registry.deleteByGuid(guid);
+        } catch (Exception exception) {
+            throw new AtlasBaseException(exception);
+        }
+    }
+
+    public void deleteByGuid(String guid, DeleteType deleteType) throws AtlasBaseException {
+        try {
+            if (deleteType == DeleteType.SOFT) {
+                this.registry.softDelete(guid);
+            }
+            else {
+                this.registry.deleteByGuid(guid);
+            }
         } catch (Exception exception) {
             throw new AtlasBaseException(exception);
         }

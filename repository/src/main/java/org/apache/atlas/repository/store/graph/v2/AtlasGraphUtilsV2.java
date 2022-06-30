@@ -48,15 +48,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static org.apache.atlas.repository.Constants.ATLAS_GLOSSARY_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_NAMES_KEY;
@@ -232,6 +224,19 @@ public class AtlasGraphUtilsV2 {
         }
 
         vertex.addListProperty(propertyName, value);
+
+        return vertex;
+    }
+
+    public static AtlasVertex deleteProperty(AtlasVertex vertex, String encodedPropertyName, String propertyValue) {
+        Collection<Object> existingValues = vertex.getPropertyValues(encodedPropertyName, Object.class);
+
+        if (! existingValues.isEmpty() && existingValues.contains(propertyValue)) {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Removing value {} from property {} of entity {}", propertyValue, encodedPropertyName, toString(vertex));
+            }
+            vertex.removePropertyValue(encodedPropertyName, propertyValue);
+        }
 
         return vertex;
     }
