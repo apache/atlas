@@ -171,7 +171,7 @@ public class AtlasClassification extends AtlasStruct implements Serializable {
                Objects.equals(removePropagationsOnEntityDelete, that.removePropagationsOnEntityDelete) &&
                Objects.equals(entityGuid, that.entityGuid) &&
                entityStatus == that.entityStatus &&
-               Objects.equals(validityPeriods, that.validityPeriods);
+               Objects.equals(validityPeriods, that.validityPeriods) && Objects.equals(propagateThroughLineage, that.propagateThroughLineage);
     }
 
     @Override
