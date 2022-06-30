@@ -345,9 +345,9 @@ public final class GraphHelper {
         boolean ret = false;
 
         if (classificationVertex != null) {
-            Boolean enabled = AtlasGraphUtilsV2.getEncodedProperty(classificationVertex, CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_LINEAGE, Boolean.class);
+            Boolean restrictPropagationThroughLineage = AtlasGraphUtilsV2.getEncodedProperty(classificationVertex, CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_LINEAGE, Boolean.class);
 
-            ret = (enabled == null) ? true : enabled;
+            ret = (restrictPropagationThroughLineage == null) ? false : restrictPropagationThroughLineage;
         }
 
         return ret;
