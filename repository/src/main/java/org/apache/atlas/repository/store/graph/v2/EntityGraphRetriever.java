@@ -1046,6 +1046,7 @@ public class EntityGraphRetriever {
                 ret = AtlasGraphUtilsV2.getEncodedProperty(entityVertex, attribute.getVertexPropertyName(), Object.class);
                 break;
             case STRUCT:
+                edgeLabel = AtlasGraphUtilsV2.getEdgeLabel(attribute.getName());
                 ret = mapVertexToStruct(entityVertex, edgeLabel, null, entityExtInfo, isMinExtInfo);
                 break;
             case OBJECT_ID_TYPE:
