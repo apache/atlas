@@ -2720,15 +2720,12 @@ public class EntityGraphMapper {
              */
             Boolean updatedRestrictPropagationThroughLineage = entityRetriever.toAtlasClassification(classificationVertex).getRestrictPropagationThroughLineage();
 
-            if(currentRestrictPropagationThroughLineage!=null &&
-                    updatedRestrictPropagationThroughLineage != currentRestrictPropagationThroughLineage){
-                if(updatedRestrictPropagationThroughLineage){
+            if (currentRestrictPropagationThroughLineage!=null && !currentRestrictPropagationThroughLineage && updatedRestrictPropagationThroughLineage) {
                     deleteDelegate.getHandler().removeTagPropagation(classificationVertex);
-                }
             }
 
             String propagationMode = CLASSIFICATION_PROPAGATION_MODE_DEFAULT;
-            if(updatedRestrictPropagationThroughLineage){
+            if (updatedRestrictPropagationThroughLineage) {
                 propagationMode = CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE;
             }
 

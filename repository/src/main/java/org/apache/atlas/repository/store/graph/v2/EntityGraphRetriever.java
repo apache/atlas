@@ -523,7 +523,7 @@ public class EntityGraphRetriever {
                 AtlasVertex       sourceEntityVertex    = AtlasGraphUtilsV2.findByGuid(this.graph, sourceEntityId);
                 String propagationMode = CLASSIFICATION_PROPAGATION_MODE_DEFAULT;
 
-                if(toAtlasClassification(classificationVertex).getRestrictPropagationThroughLineage()){
+                if (toAtlasClassification(classificationVertex).getRestrictPropagationThroughLineage()) {
                     propagationMode = CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE;
                 }
 
@@ -615,13 +615,13 @@ public class EntityGraphRetriever {
             if (tagPropagationEdges == null) {
                 continue;
             }
-            if(edgeLabelsToExclude != null) {
-                if (!edgeLabelsToExclude.isEmpty()) {
-                    tagPropagationEdges = Arrays.stream(tagPropagationEdges).filter(x -> !edgeLabelsToExclude.contains(x)).collect(Collectors.toList()).toArray(new String[0]);
-                }
+
+            if (edgeLabelsToExclude != null && !edgeLabelsToExclude.isEmpty()) {
+                tagPropagationEdges = Arrays.stream(tagPropagationEdges)
+                        .filter(x -> !edgeLabelsToExclude.contains(x))
+                        .collect(Collectors.toList())
+                        .toArray(new String[0]);
             }
-
-
 
             Iterator<AtlasEdge> propagationEdges = entityVertex.getEdges(AtlasEdgeDirection.BOTH, tagPropagationEdges).iterator();
 
