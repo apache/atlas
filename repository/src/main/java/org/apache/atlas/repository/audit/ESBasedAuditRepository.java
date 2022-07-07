@@ -54,6 +54,7 @@ import java.nio.file.Files;
 import java.text.MessageFormat;
 import java.util.*;
 
+import static java.nio.charset.Charset.defaultCharset;
 import static org.springframework.util.StreamUtils.copyToString;
 
 /**
@@ -267,7 +268,6 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
             if (isFieldLimitDifferent()) {
                 LOG.info("Updating ES total field limit");
                 updateFieldLimit();
-                LOG.info("ES total field limit has been updated");
             }
         } catch (IOException e) {
             LOG.error("error", e);
@@ -307,8 +307,14 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
         return false;
     }
 
-    private boolean isFieldLimitDifferent() throws IOException {
-        JsonNode fieldLimit = getIndexFieldLimit();
+    private boolean isFieldLimitDifferent() {
+        JsonNode fieldLimit;
+        try {
+            fieldLimit = getIndexFieldLimit();
+        } catch (IOException e) {
+            LOG.error("Problem while retrieving the index field limit!", e);
+            return false;
+        }
         Integer fieldLimitFromConfigurationFile = configuration.getInt(TOTAL_FIELD_LIMIT);
         return fieldLimit == null || fieldLimitFromConfigurationFile.equals(fieldLimit.intValue());
     }
@@ -317,19 +323,25 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
         Request request = new Request("GET", INDEX_NAME + "/_settings");
         Response response = lowLevelClient.performRequest(request);
         ObjectMapper objectMapper = new ObjectMapper();
-        String fieldName = "entity_audits.settings.index.mapping.total_fields.limit";
+        String fieldName = INDEX_NAME + ".settings.index.mapping.total_fields.limit";
         return objectMapper.readTree(copyToString(response.getEntity().getContent(), Charset.defaultCharset())).get(fieldName);
     }
 
-    private void updateFieldLimit() throws IOException, AtlasException {
+    private void updateFieldLimit() {
         Request request = new Request("PUT", INDEX_NAME + "/_settings");
         String requestBody = String.format("{\"index.mapping.total_fields.limit\": %d}", configuration.getInt(TOTAL_FIELD_LIMIT));
         HttpEntity entity = new NStringEntity(requestBody, ContentType.APPLICATION_JSON);
         request.setEntity(entity);
-        Response response = lowLevelClient.performRequest(request);
-        if (response.getStatusLine().getStatusCode() != 200) {
-            LOG.error("Error while updating the Elasticsearch total field limits!");
-            throw new AtlasException(copyToString(response.getEntity().getContent(), Charset.defaultCharset()));
+        Response response;
+        try {
+            response = lowLevelClient.performRequest(request);
+            if (response.getStatusLine().getStatusCode() != 200) {
+                LOG.error("Error while updating the Elasticsearch total field limits! Error: " + copyToString(response.getEntity().getContent(), defaultCharset()));
+            } else {
+                LOG.info("ES total field limit has been updated");
+            }
+        } catch (IOException e) {
+            LOG.error("Error while updating the field limit", e);
         }
     }
 
