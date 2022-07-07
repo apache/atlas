@@ -538,6 +538,7 @@ public class EntityLineageService implements AtlasLineageService {
         AtlasVertex processVertex = outgoingEdge.getOutVertex();
         String      inGuid        = AtlasGraphUtilsV2.getIdFromVertex(inVertex);
         String      outGuid       = AtlasGraphUtilsV2.getIdFromVertex(outVertex);
+        String      processGuid   = AtlasGraphUtilsV2.getIdFromVertex(processVertex);
         String      relationGuid  = null;
         boolean     isInputEdge   = incomingEdge.getLabel().equalsIgnoreCase(PROCESS_INPUTS_EDGE);
 
@@ -549,6 +550,11 @@ public class EntityLineageService implements AtlasLineageService {
         if (!entities.containsKey(outGuid)) {
             AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(outVertex, lineageContext.getAttributes());
             entities.put(outGuid, entityHeader);
+        }
+
+        if (!entities.containsKey(processGuid)) {
+            AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(processVertex, lineageContext.getAttributes());
+            entities.put(processGuid, entityHeader);    
         }
 
         if (isInputEdge) {
