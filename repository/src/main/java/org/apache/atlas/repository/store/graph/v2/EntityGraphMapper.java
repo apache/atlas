@@ -2718,7 +2718,7 @@ public class EntityGraphMapper {
             /*
                 If propagateThroughLineage was true at past then updated to false we need to delete the propagated
              */
-            Boolean updatedRestrictPropagationThroughLineage = entityRetriever.toAtlasClassification(classificationVertex).getRestrictPropagationThroughLineage();
+            Boolean updatedRestrictPropagationThroughLineage = AtlasGraphUtilsV2.getProperty(classificationVertex, CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_LINEAGE, Boolean.class);
 
             if (currentRestrictPropagationThroughLineage!=null && !currentRestrictPropagationThroughLineage && updatedRestrictPropagationThroughLineage) {
                     deleteDelegate.getHandler().removeTagPropagation(classificationVertex);
