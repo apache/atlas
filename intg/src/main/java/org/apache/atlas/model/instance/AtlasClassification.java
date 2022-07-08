@@ -181,6 +181,19 @@ public class AtlasClassification extends AtlasStruct implements Serializable {
                Objects.equals(validityPeriods, that.validityPeriods) && Objects.equals(restrictPropagationThroughLineage, that.restrictPropagationThroughLineage);
     }
 
+    public boolean checkForUpdate(Object o) {
+        if (this == o) { return true; }
+        if (o == null || getClass() != o.getClass()) { return false; }
+        if (!super.equals(o)) { return false; }
+        AtlasClassification that = (AtlasClassification) o;
+        return Objects.equals(entityGuid, that.entityGuid) &&
+                entityStatus == that.entityStatus &&
+                Objects.equals(validityPeriods, that.validityPeriods) &&
+                (Objects.equals(propagate, that.propagate) || (propagate == null)) &&
+                (Objects.equals(removePropagationsOnEntityDelete, that.removePropagationsOnEntityDelete) || (removePropagationsOnEntityDelete == null)) &&
+                (Objects.equals(restrictPropagationThroughLineage, that.restrictPropagationThroughLineage) || (restrictPropagationThroughLineage == null));
+    }
+
     @Override
     public int hashCode() {
         return Objects.hash(super.hashCode(), entityGuid, entityStatus, propagate, removePropagationsOnEntityDelete, restrictPropagationThroughLineage);

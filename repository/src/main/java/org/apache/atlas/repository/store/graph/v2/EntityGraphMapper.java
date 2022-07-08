@@ -182,6 +182,7 @@ public class EntityGraphMapper {
 
     private static final boolean ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES = AtlasConfiguration.ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES.getBoolean();
     private static final boolean CLASSIFICATION_PROPAGATION_DEFAULT                  = AtlasConfiguration.CLASSIFICATION_PROPAGATION_DEFAULT.getBoolean();
+    private static final boolean RESTRICT_PROPAGATION_THROUGH_LINEAGE_DEFAULT        = false;
     private              boolean DEFERRED_ACTION_ENABLED                             = AtlasConfiguration.TASKS_USE_ENABLED.getBoolean();
     private              boolean DIFFERENTIAL_AUDITS                                 = STORE_DIFFERENTIAL_AUDITS.getBoolean();
 
@@ -2600,6 +2601,10 @@ public class EntityGraphMapper {
                     classification.setRemovePropagationsOnEntityDelete(removePropagations);
                 }
 
+                if (restrictPropagationThroughLineage == null) {
+                    classification.setRestrictPropagationThroughLineage(RESTRICT_PROPAGATION_THROUGH_LINEAGE_DEFAULT);
+                }
+
                 // set associated entity id to classification
                 if (classification.getEntityGuid() == null) {
                     classification.setEntityGuid(guid);
@@ -2608,10 +2613,6 @@ public class EntityGraphMapper {
                 // set associated entity status to classification
                 if (classification.getEntityStatus() == null) {
                     classification.setEntityStatus(ACTIVE);
-                }
-
-                if (restrictPropagationThroughLineage == null) {
-                    classification.setRestrictPropagationThroughLineage(false);
                 }
 
                 // ignore propagated classifications
@@ -2716,16 +2717,20 @@ public class EntityGraphMapper {
             }
 
             /*
-                If propagateThroughLineage was true at past then updated to false we need to delete the propagated
+                If restrictPropagateThroughLineage was false at past
+                 then updated to true we need to delete the propagated
+                 classifications and then put the classifications as intended
              */
+
             Boolean updatedRestrictPropagationThroughLineage = AtlasGraphUtilsV2.getProperty(classificationVertex, CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_LINEAGE, Boolean.class);
 
-            if (currentRestrictPropagationThroughLineage!=null && !currentRestrictPropagationThroughLineage && updatedRestrictPropagationThroughLineage) {
-                    deleteDelegate.getHandler().removeTagPropagation(classificationVertex);
+            if (currentRestrictPropagationThroughLineage != null && !currentRestrictPropagationThroughLineage && updatedRestrictPropagationThroughLineage) {
+                deleteDelegate.getHandler().removeTagPropagation(classificationVertex);
             }
 
             String propagationMode = CLASSIFICATION_PROPAGATION_MODE_DEFAULT;
-            if (updatedRestrictPropagationThroughLineage) {
+
+            if (updatedRestrictPropagationThroughLineage != null && updatedRestrictPropagationThroughLineage) {
                 propagationMode = CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE;
             }
 
@@ -2998,10 +3003,6 @@ public class EntityGraphMapper {
 
             if (classificationVertex == null) {
                 throw new AtlasBaseException(AtlasErrorCode.CLASSIFICATION_NOT_ASSOCIATED_WITH_ENTITY, classificationName);
-            }
-
-            if(classification.getRestrictPropagationThroughLineage() == null){
-                classification.setRestrictPropagationThroughLineage(false);
             }
 
             if (LOG.isDebugEnabled()) {
