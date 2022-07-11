@@ -189,7 +189,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
         }
     }
 
-    private EntityAuditSearchResult getResultFromResponse(String responseString, Set<String> attributes) {
+    private EntityAuditSearchResult getResultFromResponse(String responseString, Set<String> attributes) throws AtlasBaseException {
         List<EntityAuditEventV2> entityAudits = new ArrayList<>();
         EntityAuditSearchResult searchResult = new EntityAuditSearchResult();
         Map<String, Object> responseMap = AtlasType.fromJson(responseString, Map.class);
@@ -205,16 +205,12 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
             event.setDetail((Map<String, Object>) source.get(DETAIL));
             event.setUser((String) source.get(USER));
             event.setCreated((long) source.get(CREATED));
-            try {
-                if(requestContext.getCachedEntityHeader(entityGuid) != null){
-                    event.setCurrentEntity(requestContext.getCachedEntityHeader(entityGuid));
-                }else{
-                    AtlasEntityHeader entityHeader = entityGraphRetriever.toAtlasEntityHeader(entityGuid, attributes);
-                    requestContext.setEntityHeaderCache(entityHeader);
-                    event.setCurrentEntity(entityHeader);
-                }
-            } catch (AtlasBaseException e) {
-                e.printStackTrace();
+            if (requestContext.getCachedEntityHeader(entityGuid) != null) {
+                event.setEntityDetail(requestContext.getCachedEntityHeader(entityGuid));
+            } else {
+                AtlasEntityHeader entityHeader = entityGraphRetriever.toAtlasEntityHeader(entityGuid, attributes);
+                requestContext.setEntityHeaderCache(entityHeader);
+                event.setEntityDetail(entityHeader);
             }
             if (source.get(TIMESTAMP) != null) {
                 event.setTimestamp((long) source.get(TIMESTAMP));

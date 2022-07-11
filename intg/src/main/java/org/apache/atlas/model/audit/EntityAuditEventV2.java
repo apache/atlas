@@ -54,12 +54,12 @@ public class EntityAuditEventV2 implements Serializable, Clearable {
     public static final String SORT_COLUMN_ACTION    = "action";
     public static final String SORT_COLUMN_TIMESTAMP = "timestamp";
 
-    public AtlasEntityHeader getCurrentEntity() {
-        return currentEntity;
+    public AtlasEntityHeader getEntityDetail() {
+        return entityDetail;
     }
 
-    public void setCurrentEntity(AtlasEntityHeader currentEntity) {
-        this.currentEntity = currentEntity;
+    public void setEntityDetail(AtlasEntityHeader entityDetail) {
+        this.entityDetail = entityDetail;
     }
 
     public enum EntityAuditType { ENTITY_AUDIT_V1, ENTITY_AUDIT_V2 }
@@ -133,7 +133,7 @@ public class EntityAuditEventV2 implements Serializable, Clearable {
     private AtlasEntity         entity;
     private EntityAuditType     type;
     private Map<String, Object> detail;
-    private AtlasEntityHeader   currentEntity;
+    private AtlasEntityHeader   entityDetail;
 
     public EntityAuditEventV2() { }
 
