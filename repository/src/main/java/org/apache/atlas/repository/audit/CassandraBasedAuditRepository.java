@@ -261,4 +261,8 @@ public class CassandraBasedAuditRepository extends AbstractStorageBasedAuditRepo
     cassSession.close();
   }
 
+  @Override
+  public EntityAuditSearchResult searchEvents(String queryString, Set<String> attributes) throws AtlasBaseException {
+    return null;
+  }
 }

@@ -21,10 +21,14 @@ import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.EntityAuditEvent;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.ConditionalOnAtlasProperty;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.atlas.model.audit.EntityAuditSearchResult;
+import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.type.AtlasType;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.NotImplementedException;
@@ -49,10 +53,8 @@ import java.nio.file.Files;
 import java.text.MessageFormat;
 import java.util.*;
 
+import javax.inject.Inject;
 import javax.inject.Singleton;
-
-import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditType.ENTITY_AUDIT_V2;
-import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 
 /**
  * This class provides cassandra support as the backend for audit storage support.
@@ -82,6 +84,12 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
     * */
 
     private RestClient lowLevelClient;
+    private final EntityGraphRetriever entityGraphRetriever;
+
+    @Inject
+    public ESBasedAuditRepository(EntityGraphRetriever entityGraphRetriever){
+        this.entityGraphRetriever = entityGraphRetriever;
+    }
 
     @Override
     public void putEventsV1(List<EntityAuditEvent> events) throws AtlasException {
@@ -168,30 +176,46 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
 
     @Override
     public EntityAuditSearchResult searchEvents(String queryString) throws AtlasBaseException {
+       return searchEvents(queryString, null);
+    }
+
+    public EntityAuditSearchResult searchEvents(String queryString, Set<String> attributes) throws AtlasBaseException {
         LOG.info("Hitting ES query to fetch audits: {}", queryString);
         try {
             String response = performSearchOnIndex(queryString);
-            return getResultFromResponse(response);
+            return getResultFromResponse(response, attributes);
         } catch (IOException e) {
             throw new AtlasBaseException(e);
         }
     }
 
-    private EntityAuditSearchResult getResultFromResponse(String responseString) {
+    private EntityAuditSearchResult getResultFromResponse(String responseString, Set<String> attributes) {
         List<EntityAuditEventV2> entityAudits = new ArrayList<>();
         EntityAuditSearchResult searchResult = new EntityAuditSearchResult();
         Map<String, Object> responseMap = AtlasType.fromJson(responseString, Map.class);
         Map<String, Object> hits_0 = (Map<String, Object>) responseMap.get("hits");
         List<LinkedHashMap> hits_1 = (List<LinkedHashMap>) hits_0.get("hits");
+        RequestContext requestContext = RequestContext.get();
         for (LinkedHashMap hit: hits_1) {
             Map source = (Map) hit.get("_source");
+            String entityGuid = (String) source.get(ENTITYID);
             EntityAuditEventV2 event = new EntityAuditEventV2();
-            event.setEntityId((String) source.get(ENTITYID));
+            event.setEntityId(entityGuid);
             event.setAction(EntityAuditEventV2.EntityAuditActionV2.fromString((String) source.get(ACTION)));
             event.setDetail((Map<String, Object>) source.get(DETAIL));
             event.setUser((String) source.get(USER));
             event.setCreated((long) source.get(CREATED));
-            
+            try {
+                if(requestContext.getCachedEntityHeader(entityGuid) != null){
+                    event.setCurrentEntity(requestContext.getCachedEntityHeader(entityGuid));
+                }else{
+                    AtlasEntityHeader entityHeader = entityGraphRetriever.toAtlasEntityHeader(entityGuid, attributes);
+                    requestContext.setEntityHeaderCache(entityHeader);
+                    event.setCurrentEntity(entityHeader);
+                }
+            } catch (AtlasBaseException e) {
+                e.printStackTrace();
+            }
             if (source.get(TIMESTAMP) != null) {
                 event.setTimestamp((long) source.get(TIMESTAMP));
             }
