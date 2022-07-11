@@ -2648,7 +2648,11 @@ public class EntityGraphMapper {
                 if (propagateTags) {
                     // compute propagatedEntityVertices only once
                     if (entitiesToPropagateTo == null) {
-                        entitiesToPropagateTo = entityRetriever.getImpactedVerticesV2(entityVertex);
+                        String propagationMode = CLASSIFICATION_PROPAGATION_MODE_DEFAULT;
+                        if (classification.getRestrictPropagationThroughLineage() != null && classification.getRestrictPropagationThroughLineage()) {
+                            propagationMode = CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE;
+                        }
+                        entitiesToPropagateTo = entityRetriever.getImpactedVerticesV2(entityVertex, CLASSIFICATION_PROPAGATION_EXCLUSION_MAP.get(propagationMode));
                     }
 
                     if (CollectionUtils.isNotEmpty(entitiesToPropagateTo)) {
@@ -3087,12 +3091,23 @@ public class EntityGraphMapper {
 
                 updatedTagPropagation = null;
             }
+            Boolean currentRestrictThroughLineage = currentClassification.getRestrictPropagationThroughLineage();
+            Boolean updatedRestrictThroughLineage = classification.getRestrictPropagationThroughLineage();
 
             // compute propagatedEntityVertices once and use it for subsequent iterations and notifications
-            if (updatedTagPropagation != null && currentTagPropagation != updatedTagPropagation) {
+            if (updatedTagPropagation != null && (currentTagPropagation != updatedTagPropagation || currentRestrictThroughLineage != updatedRestrictThroughLineage)) {
                 if (updatedTagPropagation) {
+                    if (classification.getRestrictPropagationThroughLineage() != null &&
+                            !currentClassification.getRestrictPropagationThroughLineage() && classification.getRestrictPropagationThroughLineage()) {
+                        deleteDelegate.getHandler().removeTagPropagation(classificationVertex);
+
+                    }
                     if (CollectionUtils.isEmpty(entitiesToPropagateTo)) {
-                        entitiesToPropagateTo = entityRetriever.getImpactedVerticesV2(entityVertex, null, classificationVertex.getIdForDisplay());
+                        String propagationMode = CLASSIFICATION_PROPAGATION_MODE_DEFAULT;
+                        if(classification.getRestrictPropagationThroughLineage()!=null && classification.getRestrictPropagationThroughLineage()){
+                            propagationMode = CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE;
+                        }
+                        entitiesToPropagateTo = entityRetriever.getImpactedVerticesV2(entityVertex, null, classificationVertex.getIdForDisplay(), CLASSIFICATION_PROPAGATION_EXCLUSION_MAP.get(propagationMode));
                     }
 
                     if (CollectionUtils.isNotEmpty(entitiesToPropagateTo)) {

@@ -541,7 +541,14 @@ public class EntityGraphRetriever {
     }
 
     public List<AtlasVertex> getImpactedVerticesV2(AtlasVertex entityVertex) {
-        return getImpactedVerticesV2(entityVertex, null);
+        return getImpactedVerticesV2(entityVertex, (List<String>) null);
+    }
+
+    public List<AtlasVertex> getImpactedVerticesV2(AtlasVertex entityVertex,  List<String> edgeLabelsToExclude){
+        List<AtlasVertex> ret = new ArrayList<>();
+        traverseImpactedVertices(entityVertex, null, null, ret, edgeLabelsToExclude);
+
+        return ret;
     }
 
     public List<AtlasVertex> getImpactedVerticesV2(AtlasVertex entityVertex, String relationshipGuidToExclude) {
