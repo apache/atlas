@@ -2698,7 +2698,7 @@ public class EntityGraphMapper {
     }
 
     @GraphTransaction
-    public List<String> propagateClassification(String entityGuid, String classificationVertexId, String relationshipGuid, Boolean currentRestrictPropagationThroughLineage) throws AtlasBaseException {
+    public List<String> propagateClassification(String entityGuid, String classificationVertexId, String relationshipGuid, Boolean previousRestrictPropagationThroughLineage) throws AtlasBaseException {
         try {
             if (StringUtils.isEmpty(entityGuid) || StringUtils.isEmpty(classificationVertexId)) {
                 LOG.error("propagateClassification(entityGuid={}, classificationVertexId={}): entityGuid and/or classification vertex id is empty", entityGuid, classificationVertexId);
@@ -2726,15 +2726,15 @@ public class EntityGraphMapper {
                  classifications and then put the classifications as intended
              */
 
-            Boolean updatedRestrictPropagationThroughLineage = AtlasGraphUtilsV2.getProperty(classificationVertex, CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_LINEAGE, Boolean.class);
+            Boolean currentRestrictPropagationThroughLineage = AtlasGraphUtilsV2.getProperty(classificationVertex, CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_LINEAGE, Boolean.class);
 
-            if (currentRestrictPropagationThroughLineage != null && !currentRestrictPropagationThroughLineage && updatedRestrictPropagationThroughLineage) {
+            if (previousRestrictPropagationThroughLineage != null && !previousRestrictPropagationThroughLineage && currentRestrictPropagationThroughLineage) {
                 deleteDelegate.getHandler().removeTagPropagation(classificationVertex);
             }
 
             String propagationMode = CLASSIFICATION_PROPAGATION_MODE_DEFAULT;
 
-            if (updatedRestrictPropagationThroughLineage != null && updatedRestrictPropagationThroughLineage) {
+            if (currentRestrictPropagationThroughLineage != null && currentRestrictPropagationThroughLineage) {
                 propagationMode = CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE;
             }
 
