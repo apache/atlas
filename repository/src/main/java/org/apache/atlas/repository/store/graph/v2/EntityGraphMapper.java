@@ -3084,27 +3084,28 @@ public class EntityGraphMapper {
                |   true      |    false    | => Remove Tag Propagation (send REMOVE classification notifications)
                |-------------|-------------| */
 
+            Boolean currentRestrictPropagationThroughLineage = currentClassification.getRestrictPropagationThroughLineage();
+            Boolean updatedRestrictPropagationThroughLineage = classification.getRestrictPropagationThroughLineage();
+
             if (taskManagement != null && DEFERRED_ACTION_ENABLED) {
                 String propagationType = updatedTagPropagation ? CLASSIFICATION_PROPAGATION_ADD : CLASSIFICATION_PROPAGATION_DELETE;
 
-                createAndQueueTask(propagationType, entityVertex, classificationVertex.getIdForDisplay(), currentClassification.getRestrictPropagationThroughLineage());
+                createAndQueueTask(propagationType, entityVertex, classificationVertex.getIdForDisplay(), currentRestrictPropagationThroughLineage);
 
                 updatedTagPropagation = null;
             }
-            Boolean currentRestrictThroughLineage = currentClassification.getRestrictPropagationThroughLineage();
-            Boolean updatedRestrictThroughLineage = classification.getRestrictPropagationThroughLineage();
+
 
             // compute propagatedEntityVertices once and use it for subsequent iterations and notifications
-            if (updatedTagPropagation != null && (currentTagPropagation != updatedTagPropagation || currentRestrictThroughLineage != updatedRestrictThroughLineage)) {
+            if (updatedTagPropagation != null && (currentTagPropagation != updatedTagPropagation || currentRestrictPropagationThroughLineage != updatedRestrictPropagationThroughLineage)) {
                 if (updatedTagPropagation) {
-                    if (classification.getRestrictPropagationThroughLineage() != null &&
-                            !currentClassification.getRestrictPropagationThroughLineage() && classification.getRestrictPropagationThroughLineage()) {
+                    if (updatedRestrictPropagationThroughLineage != null && !currentRestrictPropagationThroughLineage && updatedRestrictPropagationThroughLineage) {
                         deleteDelegate.getHandler().removeTagPropagation(classificationVertex);
 
                     }
                     if (CollectionUtils.isEmpty(entitiesToPropagateTo)) {
                         String propagationMode = CLASSIFICATION_PROPAGATION_MODE_DEFAULT;
-                        if(classification.getRestrictPropagationThroughLineage()!=null && classification.getRestrictPropagationThroughLineage()){
+                        if (updatedRemovePropagations !=null && updatedRestrictPropagationThroughLineage) {
                             propagationMode = CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE;
                         }
                         entitiesToPropagateTo = entityRetriever.getImpactedVerticesV2(entityVertex, null, classificationVertex.getIdForDisplay(), CLASSIFICATION_PROPAGATION_EXCLUSION_MAP.get(propagationMode));
