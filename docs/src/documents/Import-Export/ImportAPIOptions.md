@@ -103,7 +103,7 @@ Steps to use the behavior:
 
 The output of Export has _atlas-typedef.json_ that contains the type definitions for the entities exported.
 
-By default (that is if no options are specified), the type definitions are imported and applied to the system being imported to. The entity import is performed after this.
+By default, (that is if no options are specified), the type definitions are imported and applied to the system being imported to. The entity import is performed after this.
 
 In some cases, you would not want to modify the type definitions. The import may be better off failing than the types be modified.
 
@@ -152,7 +152,7 @@ _CURL_
 
 #### Handling Large Imports
 
-By default, the Import Service stores all of the data in memory. This may be limiting for ZIPs containing a large amount of data.
+By default, the Import Service stores all the data in memory. This may be limiting for ZIPs containing a large amount of data.
 
 To configure the temporary directory use the application property _atlas.import.temp.directory_. If this property is left blank, the default in-memory implementation is used.
 

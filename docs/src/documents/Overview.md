@@ -40,7 +40,7 @@ capabilities around these data assets for data scientists, analysts and the data
    * SQL like query language to search entities - Domain Specific Language (DSL)
 
 ### Security & Data Masking
-   * Fine grained security for metadata access, enabling controls on access to entity instances and operations like add/update/remove classifications
+   * Fine-grained security for metadata access, enabling controls on access to entity instances and operations like add/update/remove classifications
    * Integration with Apache Ranger enables authorization/data-masking on data access based on classifications associated with entities in Apache Atlas. For example:
       * who can access data classified as PII, SENSITIVE
       * customer-service users can only see last 4 digits of columns classified as NATIONAL_ID

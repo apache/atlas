@@ -80,7 +80,7 @@ Follow the instructions below to setup Atlas hook in Hive:
 The following properties in atlas-application.properties control the thread pool and notification details:
 
 <SyntaxHighlighter wrapLines={true} language="shell" style={theme.dark}>
-{`atlas.hook.hive.synchronous=false # whether to run the hook synchronously. false recommended to avoid delays in Hive query completion. Default: false
+{`atlas.hook.hive.synchronous=false # whether to run the hook synchronously. false is recommended to avoid delays in Hive query completion. Default: false
 atlas.hook.hive.numRetries=3      # number of retries for notification failure. Default: 3
 atlas.hook.hive.queueSize=10000   # queue size for the threadpool. Default: 10000
 atlas.cluster.name=primary # clusterName to use in qualifiedName of entities. Default: primary
@@ -128,7 +128,7 @@ The lineage is captured as
 ## NOTES
 
    * Column level lineage works with Hive version 1.2.1 after the patch for <a href="https://issues.apache.org/jira/browse/HIVE-13112">HIVE-13112</a> is applied to Hive source
-   * Since database name, table name and column names are case insensitive in hive, the corresponding names in entities are lowercase. So, any search APIs should use lowercase while querying on the entity names
+   * Since database name, table name and column names are case-insensitive in hive, the corresponding names in entities are lowercase. So, any search APIs should use lowercase while querying on the entity names
    * The following hive operations are captured by hive hook currently
       * create database
       * create table/view, create table as select

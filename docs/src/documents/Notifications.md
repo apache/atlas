@@ -60,7 +60,7 @@ Notification includes the following data.
 </SyntaxHighlighter>
 
 Apache Atlas 1.0 can be configured to send notifications in older version format, instead of the latest version format.
-This can be helpful in deployments that are not yet ready to process notifications in latest version format.
+This can be helpful in deployments that are not yet ready to process notifications in the latest version format.
 To configure Apache Atlas 1.0 to send notifications in earlier version format, please set following configuration in atlas-application.properties:
 
 <SyntaxHighlighter wrapLines={true} language="shell" style={theme.dark}>

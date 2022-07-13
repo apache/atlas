@@ -17,9 +17,9 @@ submenu: Whats New
 ## Enhancements
 * **Search**: ability to find entities by more than one classification
 * **Performance**: improvements in lineage retrieval and classification-propagation
-* **Notification**: ability to process notificaitons from multiple Kafka topics
+* **Notification**: ability to process notifications from multiple Kafka topics
 * **Hive Hook**: tracks process-executions via hive_process_execution entities
-* **Hive Hook**: catures DDL operations via hive_db_ddl and hive_table_ddl entities
+* **Hive Hook**: captures DDL operations via hive_db_ddl and hive_table_ddl entities
 * **Notification**: introduced shell entities to record references to non-existing entities in notifications
 * **Spark**: added model to capture Spark entities, processes and relationships
 * **AWS S3**: introduced updated model to capture AWS S3 entities and relationships
