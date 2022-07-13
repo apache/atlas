@@ -27,8 +27,8 @@ Both SSL one-way (server authentication) and two-way (server and client authenti
    * `keystore.file` - the path to the keystore file leveraged by the server.  This file contains the server certificate.
    * `truststore.file` - the path to the truststore file. This file contains the certificates of other trusted entities (e.g. the certificates for client processes if two-way SSL is enabled).  In most instances this can be set to the same value as the keystore.file property (especially if one-way SSL is enabled).
    * `client.auth.enabled` (false|true) [default: false] - enable/disable client authentication.  If enabled, the client will have to authenticate to the server during the transport session key creation process (i.e. two-way SSL is in effect).
-   * `cert.stores.credential.provider.path` - the path to the Credential Provider store file.  The passwords for the keystore, truststore, and server certificate are maintained in this secure file.  Utilize the cputil script in the 'bin' directoy (see below) to populate this file with the passwords required.
-   * `atlas.ssl.exclude.cipher.suites` - the excluded Cipher Suites list -  *NULL.*,.*RC4.*,.*MD5.*,.*DES.*,.*DSS.* are weak and unsafe Cipher Suites that are excluded by default. If additional Ciphers need to be excluded, set this property with the default Cipher Suites such as atlas.ssl.exclude.cipher.suites=.*NULL.*, .*RC4.*, .*MD5.*, .*DES.*, .*DSS.*, and add the additional Ciper Suites to the list with a comma separator. They can be added with their full name or a regular expression. The Cipher Suites listed in the atlas.ssl.exclude.cipher.suites property will have precedence over the default Cipher Suites. One would keep the default Cipher Suites, and add additional ones to be safe.
+   * `cert.stores.credential.provider.path` - the path to the Credential Provider store file.  The passwords for the keystore, truststore, and server certificate are maintained in this secure file.  Utilize the cputil script in the 'bin' directory (see below) to populate this file with the passwords required.
+   * `atlas.ssl.exclude.cipher.suites` - the excluded Cipher Suites list -  *NULL.*,.*RC4.*,.*MD5.*,.*DES.*,.*DSS.* are weak and unsafe Cipher Suites that are excluded by default. If additional Ciphers need to be excluded, set this property with the default Cipher Suites such as atlas.ssl.exclude.cipher.suites=.*NULL.*, .*RC4.*, .*MD5.*, .*DES.*, .*DSS.*, and add the additional Cipher Suites to the list with a comma separator. They can be added with their full name or a regular expression. The Cipher Suites listed in the atlas.ssl.exclude.cipher.suites property will have precedence over the default Cipher Suites. One would keep the default Cipher Suites, and add additional ones to be safe.
 
 ####  Credential Provider Utility Script
 
@@ -58,7 +58,7 @@ The properties for configuring service authentication are:
 
 ### JAAS configuration
 
-In a secure cluster, some of the components (such as Kafka) that Atlas interacts with, require Atlas to authenticate itself to them using JAAS. The following properties are used to set up appropriate JAAS Configuration.
+In a secure cluster, some components (such as Kafka) that Atlas interacts with, require Atlas to authenticate itself to them using JAAS. The following properties are used to set up appropriate JAAS Configuration.
 
    * `atlas.jaas.client-id.loginModuleName` - the authentication method used by the component (for example, com.sun.security.auth.module.Krb5LoginModule)
    * `atlas.jaas.client-id.loginModuleControlFlag` (required|requisite|sufficient|optional) [default: required]
@@ -126,9 +126,9 @@ MyClient {
 
 ## SPNEGO-based HTTP Authentication
 
-HTTP access to the Atlas platform can be secured by enabling the platform's SPNEGO support.  There are currently two supported authentication mechanisms:
+HTTP accesses to the Atlas platform can be secured by enabling the platform's SPNEGO support.  There are currently two supported authentication mechanisms:
 
-   * `simple` - authentication is performed via a provided user name
+   * `simple` - authentication is performed via a provided username
    * `kerberos` - the KDC authenticated identity of the client is leveraged to authenticate to the server
 
 The kerberos support requires the client accessing the server to first authenticate to the KDC (usually this is done via the 'kinit' command).  Once authenticated, the user may access the server (the authenticated identity will be related to the server via the SPNEGO negotiation mechanism).

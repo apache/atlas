@@ -12,7 +12,7 @@ import Img from 'theme/components/shared/Img'
 
 # Glossary
 
-A Glossary provides appropriate vocabularies for business users and it allows the terms (words) to be related to each
+A Glossary provides appropriate vocabularies for business users, and it allows the terms (words) to be related to each
 other and categorized so that they can be understood in different contexts. These terms can be then mapped to assets
 like a Database, tables, columns etc. This helps abstract the technical jargon associated with the repositories and
 allows the user to discover/work with data in the vocabulary that is more familiar to them.
@@ -29,13 +29,13 @@ allows the user to discover/work with data in the vocabulary that is more famili
 ### What is a Glossary term ?
 
 A term is a useful word for an enterprise. For the term(s) to be useful and meaningful, they need to grouped around their
-use and context. A term in Apache Atlas must have a unique qualifiedName, there can be term(s) with same name but they
+use and context. A term in Apache Atlas must have a unique qualifiedName, there can be term(s) with same name, but they
 cannot belong to the same glossary. Term(s) with same name can exist only across different glossaries. A term name can
 contain spaces, underscores and dashes (as natural ways of referring to words) but no "." or "@", as the qualifiedName
 takes the following form `term name`@`glossary qualified name`. The fully qualified name makes it easier to work with
 a specific term.
 
-A term can only belong to single glossary and it's lifecycle is bound to the same i.e. if the Glossary is deleted then
+A term can only belong to single glossary, and it's lifecycle is bound to the same i.e. if the Glossary is deleted then
 the term gets deleted as well. A term can belong to zero or more categories, which allows scoping them into narrower or
 wider contexts. A term can be assigned/linked to zero or more entities in Apache Atlas. A term can be classified using
 classifications (tags) and the same classification gets applied to the entities that the term is assigned to.
@@ -43,7 +43,7 @@ classifications (tags) and the same classification gets applied to the entities 
 ### What is a Glossary category ?
 
 A category is a way of organizing the term(s) so that the term's context can be enriched. A category may or may not have
-contained hierarchies i.e. child category hierarchy. A category's qualifiedName is derived using it's hierarchical location
+contained hierarchies i.e. child category hierarchy. A category's qualifiedName is derived using its hierarchical location
 within the glossary e.g. `Category name`.`parent category qualifiedName`. This qualified name gets updated when any
 hierarchical change happens, e.g. addition of a parent category, removal of parent category or change of parent category.
 
@@ -52,19 +52,19 @@ hierarchical change happens, e.g. addition of a parent category, removal of pare
 Apache Atlas UI has been updated to provide user-friendly interface to work with various aspects of glossary, including:
 
 * create glossaries, terms and categories
-* create various relationships between terms - like synonymns, antonymns, seeAlso
+* create various relationships between terms - like synonyms, antonyms, seeAlso
 * organize categories in hierarchies
 * assign terms to entities
 * search for entities using associated terms
 
-Most of glossary related UI can be found under a new tab named GLOSSARY, which is present right next to existing
+Most glossary related UI can be found under a new tab named GLOSSARY, which is present right next to existing
 familiar tabs SEARCH and CLASSIFICATION.
 
 #### **Glossary tab**
 
 Apache Atlas UI provides two ways to work with a glossary - term view and category view.
 
-Term view allows an user to perform the following operations:
+Term view allows a user to perform the following operations:
 
 * create, update and delete terms
 * add, remove and update classifications associated with a term
@@ -72,7 +72,7 @@ Term view allows an user to perform the following operations:
 * create various relationships between terms
 * view entities associated with a term
 
-Category view allows an user to perform the following operations:
+Category view allows a user to perform the following operations:
 
 * create, update and delete categories and sub-categories
 * associate terms to categories

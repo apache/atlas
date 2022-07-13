@@ -112,7 +112,7 @@ atlas.authentication.method.ldap.ad.user.searchfilter=(sAMAccountName={0})
 atlas.authentication.method.ldap.ad.default.role=ROLE_USER`}
  </SyntaxHighlighter>
 
-### LDAP Directroy
+### LDAP Directory
 
 <SyntaxHighlighter wrapLines={true} language="shell" style={theme.dark}>
 {`atlas.authentication.method.ldap.url=ldap://<Ldap server ip>:389
@@ -130,8 +130,8 @@ atlas.authentication.method.ldap.default.role=ROLE_USER`}
 
 ### Keycloak Method.
 
-To enable Keycloak authentication mode in Atlas, set the property `atlas.authentication.method.keycloak` to true and also set the property `atlas.authentication.method.keycloak.file` to the localtion of your `keycloak.json` in `atlas-application.properties`.
-Also set `atlas.authentication.method.keycloak.ugi-groups` to false if you want to pickup groups from Keycloak. By default the groups will be picked up from the *roles* defined in Keycloak. In case you want to use the groups
+To enable Keycloak authentication mode in Atlas, set the property `atlas.authentication.method.keycloak` to true and also set the property `atlas.authentication.method.keycloak.file` to the location of your `keycloak.json` in `atlas-application.properties`.
+Also set `atlas.authentication.method.keycloak.ugi-groups` to false if you want to pickup groups from Keycloak. By default, the groups will be picked up from the *roles* defined in Keycloak. In case you want to use the groups
 you need to create a mapping in keycloak and define `atlas.authentication.method.keycloak.groups_claim` equal to the token claim name. Make sure **not** to use the full group path and add the information to the access token.
 
 <SyntaxHighlighter wrapLines={true} language="shell" style={theme.dark}>
@@ -140,7 +140,7 @@ atlas.authentication.method.keycloak.file=/opt/atlas/conf/keycloak.json
 atlas.authentication.method.keycloak.ugi-groups=false`}
  </SyntaxHighlighter>
 
-Setup you keycloak.json per instructions from Keycloak. Make sure to include `"principal-attribute": "preferred_username"` to ensure readable user names and `"autodetect-bearer-only": true`.
+Setup you keycloak.json per instructions from Keycloak. Make sure to include `"principal-attribute": "preferred_username"` to ensure readable usernames and `"autodetect-bearer-only": true`.
 
 <SyntaxHighlighter wrapLines={true} language="shell" style={theme.dark}>
 {`{

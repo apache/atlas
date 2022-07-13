@@ -43,8 +43,8 @@ Atlas command line tools are written in Python.
 * Install the Scala IDE, TestNG, and m2eclipse-scala features/plugins as described below.
 
 **Scala IDE Eclipse feature**
-Some of the Atlas source code is written in the Scala programming language. The Scala IDE feature is required to compile Scala source code in Eclipse.
-   * In Eclipse, choose Help - Install New Software..
+Some Atlas source code is written in the Scala programming language. The Scala IDE feature is required to compile Scala source code in Eclipse.
+   * In Eclipse, choose Help - Install New Software...
    * Click Add... to add an update site, and set Location to http://download.scala-ide.org/sdk/lithium/e44/scala211/stable/site
    * Select Scala IDE for Eclipse from the list of available features
    * Restart Eclipse after install
@@ -52,13 +52,13 @@ Some of the Atlas source code is written in the Scala programming language. The 
 *TestNG Eclipse plug-in*
 
 Atlas tests use the [TestNG framework](http://testng.org/doc/documentation-main.html), which is similar to JUnit. The TestNG plug-in is required to run TestNG tests from Eclipse.
-   * In Eclipse, choose Help - Install New Software..
+   * In Eclipse, choose Help - Install New Software...
    * Click Add... to add an update site, and set Location to http://beust.com/eclipse-old/eclipse_6.9.9.201510270734
       * Choose TestNG and continue with install
       * Restart Eclipse after installing the plugin
       * In Window - Preferences - TestNG, <b>un</b>check "Use project TestNG jar"
 *m2eclipse-scala Eclipse plugin*
-   * In Eclipse, choose Help - Install New Software..
+   * In Eclipse, choose Help - Install New Software...
    * Click Add... to add an update site, and set Location to http://alchim31.free.fr/m2e-scala/update-site/
    * Choose Maven Integration for Scala IDE, and continue with install
    * Restart Eclipse after install
@@ -95,7 +95,7 @@ g. Restart Eclipse
 
 h. Choose Project - Clean, select Clean all projects, and click OK.
 
-Some projects may not pick up the Scala library – if this occurs, quick fix on those projects to add in the Scala library – projects atlas-typesystem, atlas-repository, hdfs-model, storm-bridge and altas-webapp.
+Some projects may not pick up the Scala library – if this occurs, quick fix on those projects to add in the Scala library – projects atlas-typesystem, atlas-repository, hdfs-model, storm-bridge and atlas-webapp.
 
 You should now have a clean workspace.
 

@@ -117,7 +117,7 @@ STORM_JAR_JVM_OPTS:"-Datlas.conf=$ATLAS_HOME/conf/"
 
 where ATLAS_HOME is pointing to where ATLAS is installed.
 
-You could also set this up programatically in Storm Config as:
+You could also set this up programmatically in Storm Config as:
 
 <SyntaxHighlighter wrapLines={true} language="shell" style={theme.dark}>
     {`Config stormConf = new Config();

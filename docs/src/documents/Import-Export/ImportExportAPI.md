@@ -27,7 +27,7 @@ The Import-Export APIs for Atlas facilitate the transfer of data to and from a c
 The APIs when integrated with backup and/or disaster recovery process will ensure participation of Atlas.
 
 ### Introduction
-There are 2 broad categories viz. Export & Import. The details of the APIs are as discussed below.
+There are 2 broad categories' viz. Export & Import. The details of the APIs are as discussed below.
 
 The APIs are available only to _admin_ user.
 

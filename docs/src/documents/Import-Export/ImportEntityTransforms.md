@@ -28,8 +28,8 @@ The existing transformation frameworks allowed this to happen.
 
 #### Reason for New Transformation Framework
 
-While the existing framework provided the basic benefits of the transformation framework, it did not have support for some of the commonly used Atlas types. Which meant that users of this framework would have to meticulously define transformations for every type they are working with. This can be tedious and potentially error-prone.
-The new framework addresses this problem by providing built-in transformations for some of the commonly used types. It can also be extended to accommodate new types.
+While the existing framework provided the basic benefits of the transformation framework, it did not have support for some commonly used Atlas types. Which meant that users of this framework would have to meticulously define transformations for every type they are working with. This can be tedious and potentially error-prone.
+The new framework addresses this problem by providing built-in transformations for some commonly used types. It can also be extended to accommodate new types.
 
 #### Approach
 

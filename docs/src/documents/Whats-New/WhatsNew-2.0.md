@@ -25,7 +25,7 @@ submenu: Whats New
     * Notification processing to support batch-commits
     * New option in notification processing to ignore potentially incorrect hive_column_lineage
     * Updated Hive hook to avoid duplicate column-lineage entities; also updated Atlas server to skip duplicate column-lineage entities
-    * Improved batch processing in notificaiton handler to avoid processing of an entity multiple times
+    * Improved batch processing in notification handler to avoid processing of an entity multiple times
     * Add option to ignore/prune metadata for temporary/staging hive tables
     * Avoid unnecessary lookup when creating new relationships
 * UI Improvements:

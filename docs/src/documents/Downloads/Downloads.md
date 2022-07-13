@@ -104,9 +104,9 @@ pgp downloaded_file.asc`}
    * Entity Purge: added REST APIs to purge deleted entities
    * Search: ability to find entities by more than one classification
    * Performance: improvements in lineage retrieval and classification-propagation
-   * Notification: ability to process notificaitons from multiple Kafka topics
+   * Notification: ability to process notifications from multiple Kafka topics
    * Hive Hook: tracks process-executions via hive_process_execution entities
-   * Hive Hook: catures DDL operations via hive_db_ddl and hive_table_ddl entities
+   * Hive Hook: captures DDL operations via hive_db_ddl and hive_table_ddl entities
    * Notification: introduced shell entities to record references to non-existing entities in notifications
    * Spark: added model to capture Spark entities, processes and relationships
    * AWS S3: introduced updated model to capture AWS S3 entities and relationships
@@ -133,7 +133,7 @@ pgp downloaded_file.asc`}
       * Notification processing to support batch-commits
       * New option in notification processing to ignore potentially incorrect hive_column_lineage
       * Updated Hive hook to avoid duplicate column-lineage entities; also updated Atlas server to skip duplicate column-lineage entities
-      * Improved batch processing in notificaiton handler to avoid processing of an entity multiple times
+      * Improved batch processing in notification handler to avoid processing of an entity multiple times
       * Add option to ignore/prune metadata for temporary/staging hive tables
       * Avoid unnecessary lookup when creating new relationships
    * UI Improvements:
@@ -159,7 +159,7 @@ pgp downloaded_file.asc`}
    * Support for JanusGraph graph database
    * New DSL implementation, using ANTLR instead of Scala
    * Removal of older type system implementation in atlas-typesystem library
-   * Metadata security - fine grained authorization
+   * Metadata security - fine-grained authorization
    * Notification enhancements to support V2 style data structures
    * Jackson library update from 1.9.13 to 2.9.2
    * Classification propagation via entity relationships

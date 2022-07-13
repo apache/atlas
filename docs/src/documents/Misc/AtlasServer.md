@@ -37,7 +37,7 @@ The _additionalInfo_ attribute property is discussed in detail below.
 
 #### Export/Import Audits
 
-The table has following columns:
+The table has the following columns:
 
 * _Operation_: EXPORT or IMPORT that denotes the operation performed on instance.
 * _Source Server_: For an export operation performed on this instance, the value in this column will always be the cluster name of the current Atlas instance. This is the value specified in _atlas-application.properties_ by the key _atlas.cluster.name_. If not value is specified 'default' is used.
@@ -67,7 +67,7 @@ The following export request will end up creating _AtlasServer_ entity with _clM
 
 Often times it is necessary to disambiguate the name of the cluster by specifying the location or the data center within which the Atlas instance resides.
 
-The name of the cluster can be specified by separating the location name and cluster name by '$'. For example, a clsuter name specified as 'SFO$cl1' can be a cluster in San Fancisco (SFO) data center with the name 'cl1'.
+The name of the cluster can be specified by separating the location name and cluster name by '$'. For example, a cluster name specified as 'SFO$cl1' can be a cluster in San Francisco (SFO) data center with the name 'cl1'.
 
 The _AtlasServer_ will handle this and set its name as 'cl1' and _fullName_ as 'SFO@cl1'.
 

@@ -13,11 +13,11 @@ import SyntaxHighlighter from 'react-syntax-highlighter';
 
 #### Background
 
-Entity attributes are specified using attribute definitions. An attributes persistence strategy is determined by based on their type.
+Entity attributes are specified using attribute definitions. An attributes' persistence strategy is determined by based on their type.
 
 Primitive types are persisted as properties within the vertex of their parent.
 
-Non-primitive attributes get a vertex of their own and and edge is created between the parent the child to establish ownership.
+Non-primitive attributes get a vertex of their own and edge is created between the parent the child to establish ownership.
 
 Attribute with _isSoftReference_ option set to _true_, is non-primitive attribute that gets treatment of a primitive attribute.
 

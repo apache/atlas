@@ -34,7 +34,7 @@ atlas-index-repair/repair_index.py
 This will result in vertex_index, edge_index and fulltext_index to be re-built completely. It is recommended that existing contents of these indexes be deleted before executing this restore.
 
 ###### Caveats
-Note that the full index repair is a time consuming process. Depending on the size of data the process may take days to complete. During the restore process the Basic Search functionality will not be available. Be sure to allocate sufficient time for this activity.
+Note that the full index repair is a time-consuming process. Depending on the size of data the process may take days to complete. During the restore process the Basic Search functionality will not be available. Be sure to allocate sufficient time for this activity.
 
 ##### Selective Restore
 

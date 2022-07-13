@@ -6,7 +6,7 @@ menu: ASF
 
 import {CustomLink} from "theme/components/shared/common/CustomLink";
 
-# ASF Infomation
+# ASF Information
 
 
 1. <CustomLink href="http://www.apache.org/foundation/how-it-works.html">How Apache Works</CustomLink>

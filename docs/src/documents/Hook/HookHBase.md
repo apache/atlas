@@ -54,7 +54,7 @@ Follow the instructions below to setup Atlas hook in HBase:
 The following properties in atlas-application.properties control the thread pool and notification details:
 
 <SyntaxHighlighter wrapLines={true} language="java" style={theme.dark}>
-{`atlas.hook.hbase.synchronous=false # whether to run the hook synchronously. false recommended to avoid delays in HBase operations. Default: false
+{`atlas.hook.hbase.synchronous=false # whether to run the hook synchronously. false is recommended to avoid delays in HBase operations. Default: false
 atlas.hook.hbase.numRetries=3      # number of retries for notification failure. Default: 3
 atlas.hook.hbase.queueSize=10000   # queue size for the threadpool. Default: 10000
 atlas.cluster.name=primary # clusterName to use in qualifiedName of entities. Default: primary
@@ -68,12 +68,12 @@ Other configurations for Kafka notification producer can be specified by prefixi
 For list of configuration supported by Kafka producer, please refer to [Kafka Producer Configs](http://kafka.apache.org/documentation/#producerconfigs)
 
 ## NOTES
-   * Only the namespace, table and column-family create/update/ delete operations are captured by Atlas HBase hook. Changes to columns are be captured.
+   * Only the namespace, table and column-family create/update/delete operations are captured by Atlas HBase hook. Changes to columns are be captured.
 
 
 ## Importing HBase Metadata
 Apache Atlas provides a command-line utility, import-hbase.sh, to import metadata of Apache HBase namespaces and tables into Apache Atlas.
-This utility can be used to initialize Apache Atlas with namespaces/tables present in a Apache HBase cluster.
+This utility can be used to initialize Apache Atlas with namespaces/tables present in an Apache HBase cluster.
 This utility supports importing metadata of a specific table, tables in a specific namespace or all tables.
 
 <SyntaxHighlighter wrapLines={true} language="java" style={theme.dark}>
