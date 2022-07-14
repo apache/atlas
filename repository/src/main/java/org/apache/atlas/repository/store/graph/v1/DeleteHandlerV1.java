@@ -1249,6 +1249,17 @@ public abstract class DeleteHandlerV1 {
         }
     }
 
+    public void createAndQueueTask(String taskType, AtlasVertex entityVertex, String classificationVertexId, String relationshipGuid, Boolean currentRestrictPropagationThroughLineage) {
+        String              currentUser = RequestContext.getCurrentUser();
+        String              entityGuid  = GraphHelper.getGuid(entityVertex);
+        Map<String, Object> taskParams  = ClassificationTask.toParameters(entityGuid, classificationVertexId, relationshipGuid, currentRestrictPropagationThroughLineage);
+        AtlasTask           task        = taskManagement.createTask(taskType, currentUser, taskParams);
+
+        AtlasGraphUtilsV2.addEncodedProperty(entityVertex, PENDING_TASKS_PROPERTY_KEY, task.getGuid());
+
+        RequestContext.get().queueTask(task);
+    }
+
     public void createAndQueueTask(String taskType, AtlasVertex entityVertex, String classificationVertexId, String relationshipGuid) {
         String              currentUser = RequestContext.getCurrentUser();
         String              entityGuid  = GraphHelper.getGuid(entityVertex);

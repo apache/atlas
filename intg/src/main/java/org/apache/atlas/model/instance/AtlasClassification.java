@@ -60,6 +60,7 @@ public class AtlasClassification extends AtlasStruct implements Serializable {
     private Boolean            propagate                         = null;
     private List<TimeBoundary> validityPeriods                   = null;
     private Boolean            removePropagationsOnEntityDelete  = null;
+    private Boolean            restrictPropagationThroughLineage = null;
 
     public AtlasClassification() {
         this(null, null);
@@ -91,6 +92,7 @@ public class AtlasClassification extends AtlasStruct implements Serializable {
             setValidityPeriods(other.getValidityPeriods());
             setDisplayName(other.getDisplayName());
             setRemovePropagationsOnEntityDelete(other.getRemovePropagationsOnEntityDelete());
+            setRestrictPropagationThroughLineage(other.getRestrictPropagationThroughLineage());
         }
     }
 
@@ -145,6 +147,13 @@ public class AtlasClassification extends AtlasStruct implements Serializable {
     public void setRemovePropagationsOnEntityDelete(Boolean removePropagationsOnEntityDelete) {
         this.removePropagationsOnEntityDelete = removePropagationsOnEntityDelete;
     }
+    public void setRestrictPropagationThroughLineage(Boolean restrictPropagationThroughLineage){
+        this.restrictPropagationThroughLineage = restrictPropagationThroughLineage;
+    }
+
+    public Boolean getRestrictPropagationThroughLineage(){
+        return restrictPropagationThroughLineage;
+    }
 
     @JsonIgnore
     public void addValityPeriod(TimeBoundary validityPeriod) {
@@ -169,12 +178,25 @@ public class AtlasClassification extends AtlasStruct implements Serializable {
                Objects.equals(removePropagationsOnEntityDelete, that.removePropagationsOnEntityDelete) &&
                Objects.equals(entityGuid, that.entityGuid) &&
                entityStatus == that.entityStatus &&
-               Objects.equals(validityPeriods, that.validityPeriods);
+               Objects.equals(validityPeriods, that.validityPeriods) && Objects.equals(restrictPropagationThroughLineage, that.restrictPropagationThroughLineage);
+    }
+
+    public boolean checkForUpdate(Object o) {
+        if (this == o) { return true; }
+        if (o == null || getClass() != o.getClass()) { return false; }
+        if (!super.equals(o)) { return false; }
+        AtlasClassification that = (AtlasClassification) o;
+        return Objects.equals(entityGuid, that.entityGuid) &&
+                entityStatus == that.entityStatus &&
+                Objects.equals(validityPeriods, that.validityPeriods) &&
+                (Objects.equals(propagate, that.propagate) || (propagate == null)) &&
+                (Objects.equals(removePropagationsOnEntityDelete, that.removePropagationsOnEntityDelete) || (removePropagationsOnEntityDelete == null)) &&
+                (Objects.equals(restrictPropagationThroughLineage, that.restrictPropagationThroughLineage) || (restrictPropagationThroughLineage == null));
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), entityGuid, entityStatus, propagate, removePropagationsOnEntityDelete);
+        return Objects.hash(super.hashCode(), entityGuid, entityStatus, propagate, removePropagationsOnEntityDelete, restrictPropagationThroughLineage);
     }
 
     @Override
@@ -187,9 +209,11 @@ public class AtlasClassification extends AtlasStruct implements Serializable {
         sb.append(", removePropagationsOnEntityDelete=").append(removePropagationsOnEntityDelete);
         sb.append(", displayName=").append(displayName);
         sb.append(", validityPeriods=").append(validityPeriods);
+        sb.append(", restrictPropagationThroughLineage=").append(restrictPropagationThroughLineage);
         sb.append('}');
         return sb.toString();
     }
+
 
     /**
      * REST serialization friendly list.

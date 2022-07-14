@@ -38,11 +38,12 @@ public class ClassificationPropagationTasks {
 
         @Override
         protected void run(Map<String, Object> parameters) throws AtlasBaseException {
-            String entityGuid             = (String) parameters.get(PARAM_ENTITY_GUID);
-            String classificationVertexId = (String) parameters.get(PARAM_CLASSIFICATION_VERTEX_ID);
-            String relationshipGuid       = (String) parameters.get(PARAM_RELATIONSHIP_GUID);
+            String entityGuid               = (String) parameters.get(PARAM_ENTITY_GUID);
+            String classificationVertexId   = (String) parameters.get(PARAM_CLASSIFICATION_VERTEX_ID);
+            String relationshipGuid         = (String) parameters.get(PARAM_RELATIONSHIP_GUID);
+            Boolean previousRestrictPropagationThroughLineage = (Boolean) parameters.get(PARAM_PREVIOUS_CLASSIFICATION_RESTRICT_PROPAGATE_THROUGH_LINEAGE);
 
-            entityGraphMapper.propagateClassification(entityGuid, classificationVertexId, relationshipGuid);
+            entityGraphMapper.propagateClassification(entityGuid, classificationVertexId, relationshipGuid, previousRestrictPropagationThroughLineage);
         }
     }
 
