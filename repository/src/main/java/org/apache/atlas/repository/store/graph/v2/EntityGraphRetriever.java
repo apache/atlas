@@ -525,7 +525,7 @@ public class EntityGraphRetriever {
 
                 Boolean restrictPropagationThroughLineage = AtlasGraphUtilsV2.getProperty(classificationVertex, CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_LINEAGE, Boolean.class);
 
-                if (restrictPropagationThroughLineage) {
+                if (restrictPropagationThroughLineage != null && restrictPropagationThroughLineage) {
                     propagationMode = CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE;
                 }
 
