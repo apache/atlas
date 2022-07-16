@@ -22,6 +22,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.ICuratorFactory;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.apache.curator.framework.AuthInfo;
@@ -49,7 +50,7 @@ import java.util.List;
  */
 @Singleton
 @Component
-public class CuratorFactory {
+public class CuratorFactory implements ICuratorFactory {
 
     private static final Logger LOG = LoggerFactory.getLogger(CuratorFactory.class);
 
@@ -64,6 +65,7 @@ public class CuratorFactory {
 
     private final Configuration configuration;
     private CuratorFramework curatorFramework;
+    private String defaultZkRoot;
 
     /**
      * Initializes the {@link CuratorFramework} that is used for all interaction with Zookeeper.
@@ -82,6 +84,7 @@ public class CuratorFactory {
     protected void initializeCuratorFramework() {
         HAConfiguration.ZookeeperProperties zookeeperProperties =
                 HAConfiguration.getZookeeperProperties(configuration);
+        defaultZkRoot = zookeeperProperties.getZkRoot();
         CuratorFrameworkFactory.Builder builder = getBuilder(zookeeperProperties);
         enhanceBuilderWithSecurityParameters(zookeeperProperties, builder);
         curatorFramework = builder.build();
@@ -202,5 +205,10 @@ public class CuratorFactory {
 
     public InterProcessMutex lockInstance(String zkRoot, String lockName) {
         return new InterProcessMutex(curatorFramework, zkRoot + lockName);
+    }
+
+    @Override
+    public InterProcessMutex lockInstanceWithDefaultZkRoot(String lockName) {
+        return new InterProcessMutex(curatorFramework, defaultZkRoot + lockName);
     }
 }
