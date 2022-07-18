@@ -117,9 +117,9 @@ public class TaskQueueWatcher implements Runnable {
     private void releaseLock(InterProcessMutex lock) {
         try {
             if(lock != null && lock.isOwnedByCurrentThread()) {
-                LOG.info("About to release lock");
+                LOG.info("About to release task lock");
                 lock.release();
-                LOG.info("successfully released lock");
+                LOG.info("successfully released task lock");
             }
         } catch (Exception e) {
             LOG.error(e.getMessage(),e);
