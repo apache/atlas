@@ -92,8 +92,8 @@ public class TaskQueueWatcher implements Runnable {
                 } else {
                     LOG.info("No tasks to queue, sleeping for {} ms", pollInterval);
                     releaseLock(lock);
-                    Thread.sleep(pollInterval);
                 }
+                Thread.sleep(pollInterval);
             } catch (InterruptedException interruptedException) {
                 LOG.error("TaskQueueWatcher: Interrupted: thread is terminated, new tasks will not be loaded into the queue until next restart");
                 break;

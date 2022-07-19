@@ -109,6 +109,7 @@ public class TaskExecutor {
                     return;
                 }
 
+                TASK_LOG.info("Task guid = "+task.getGuid());
                 taskVertex = registry.getVertex(task.getGuid());
                 if (taskVertex == null) {
                     TASK_LOG.warn("Task not scheduled as vertex not found", task);
