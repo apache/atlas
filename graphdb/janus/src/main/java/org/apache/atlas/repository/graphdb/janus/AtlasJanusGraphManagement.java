@@ -428,6 +428,7 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
         ManagementSystem managementSystem = (ManagementSystem) management;
         IndexType indexType = managementSystem.getSchemaVertex(index).asIndexType();
         indexType.resetCache();
+        indexType.getFieldKeys();
     }
 
     @Override
