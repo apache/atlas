@@ -32,13 +32,7 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static org.apache.atlas.model.instance.AtlasObjectId.KEY_GUID;
 
@@ -61,27 +55,28 @@ public class RequestContext {
     private final Map<String, List<AtlasClassification>> addedPropagations    = new HashMap<>();
     private final Map<String, List<AtlasClassification>> removedPropagations  = new HashMap<>();
     private final Set<String>                            deletedEdgesIds      = new HashSet<>();
-    private final AtlasPerfMetrics                       metrics              = isMetricsEnabled ? new AtlasPerfMetrics() : null;
-    private       List<EntityGuidPair>                   entityGuidInRequest  = null;
-    private final Set<String>                            entitiesToSkipUpdate = new HashSet<>();
-    private final Set<String>                            onlyCAUpdateEntities = new HashSet<>();
-    private final Set<String>                            onlyBAUpdateEntities = new HashSet<>();
-    private final List<AtlasTask>                        queuedTasks          = new ArrayList<>();
+    private final AtlasPerfMetrics metrics = isMetricsEnabled ? new AtlasPerfMetrics() : null;
+    private List<EntityGuidPair> entityGuidInRequest = null;
+    private final Set<String> entitiesToSkipUpdate = new HashSet<>();
+    private final Set<String> onlyCAUpdateEntities = new HashSet<>();
+    private final Set<String> onlyBAUpdateEntities = new HashSet<>();
+    private final List<AtlasTask> queuedTasks = new ArrayList<>();
     private final Set<String> relationAttrsForSearch = new HashSet<>();
 
     private static String USERNAME = "";
-    private final Map<String,List<Object>> removedElementsMap = new HashMap<>();
-    private final Map<String,List<Object>> newElementsCreatedMap = new HashMap<>();
+    private final Map<String, List<Object>> removedElementsMap = new HashMap<>();
+    private final Map<String, List<Object>> newElementsCreatedMap = new HashMap<>();
+    public static int hebele = 0;
 
-    private String       user;
-    private Set<String>  userGroups;
-    private String       clientIPAddress;
+    private String user;
+    private Set<String> userGroups;
+    private String clientIPAddress;
     private List<String> forwardedAddresses;
-    private DeleteType   deleteType   = DeleteType.DEFAULT;
-    private boolean     isPurgeRequested = false;
-    private int         maxAttempts  = 1;
-    private int         attemptCount = 1;
-    private boolean     isImportInProgress = false;
+    private DeleteType deleteType = DeleteType.DEFAULT;
+    private boolean isPurgeRequested = false;
+    private int maxAttempts = 1;
+    private int attemptCount = 1;
+    private boolean isImportInProgress = false;
     private boolean     isInNotificationProcessing = false;
     private boolean     isInTypePatching           = false;
     private boolean     createShellEntityForNonExistingReference = false;
@@ -144,6 +139,7 @@ public class RequestContext {
 
         if (metrics != null && !metrics.isEmpty()) {
             METRICS.debug(metrics.toString());
+            System.out.println(metrics);
 
             metrics.clear();
         }
@@ -462,7 +458,7 @@ public class RequestContext {
     public void clearAddedPropagations() {
         addedPropagations.clear();
     }
-    
+
     public Collection<AtlasEntityHeader> getRestoredEntities() {
         return restoreEntities.values();
     }

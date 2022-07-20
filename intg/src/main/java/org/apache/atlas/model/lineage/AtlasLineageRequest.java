@@ -27,7 +27,7 @@ import java.util.Set;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
-import static org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection.*;
+import static org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection.BOTH;
 
 
 @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
@@ -35,7 +35,8 @@ import static org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection.*
 public class AtlasLineageRequest {
     private String guid;
     private int depth;
-    private int limit = -1;
+    private int page;
+    private int recordPerPage;
     private boolean hideProcess;
     private boolean allowDeletedProcess;
     private LineageDirection direction = BOTH;
@@ -43,13 +44,14 @@ public class AtlasLineageRequest {
 
     private Set<String> attributes;
 
-    public AtlasLineageRequest() {}
 
-    public AtlasLineageRequest(String guid, int depth, LineageDirection direction, boolean hideProcess) {
+    public AtlasLineageRequest(String guid, int depth, LineageDirection direction, boolean hideProcess, int page, int recordPerPage) {
         this.guid = guid;
         this.depth = depth;
         this.direction = direction;
         this.hideProcess = hideProcess;
+        this.page = page;
+        this.recordPerPage = recordPerPage;
         this.attributes = new HashSet<>();
     }
 
@@ -69,12 +71,12 @@ public class AtlasLineageRequest {
         this.depth = depth;
     }
 
-    public int getLimit() {
-        return limit;
+    public int getRecordPerPage() {
+        return recordPerPage;
     }
 
-    public void setLimit(int limit) {
-        this.limit = limit;
+    public void setRecordPerPage(int recordPerPage) {
+        this.recordPerPage = recordPerPage;
     }
 
     public LineageDirection getDirection() {
@@ -115,5 +117,9 @@ public class AtlasLineageRequest {
 
     public void setAllowDeletedProcess(boolean allowDeletedProcess) {
         this.allowDeletedProcess = allowDeletedProcess;
+    }
+
+    public int getPage() {
+        return page;
     }
 }

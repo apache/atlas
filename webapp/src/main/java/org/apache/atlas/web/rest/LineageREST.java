@@ -63,7 +63,9 @@ public class LineageREST {
     private final AtlasTypeRegistry typeRegistry;
     private final AtlasLineageService atlasLineageService;
     private static final String DEFAULT_DIRECTION = "BOTH";
-    private static final String DEFAULT_DEPTH     = "3";
+    private static final String DEFAULT_DEPTH = "3";
+    private static final String DEFAULT_PAGE = "-1";
+    private static final String DEFAULT_RECORD_PER_PAGE = "-1";
 
     @Context
     private HttpServletRequest httpServletRequest;
@@ -76,9 +78,10 @@ public class LineageREST {
 
     /**
      * Returns lineage info about entity.
-     * @param guid - unique entity id
+     *
+     * @param guid      - unique entity id
      * @param direction - input, output or both
-     * @param depth - number of hops for lineage
+     * @param depth     - number of hops for lineage
      * @return AtlasLineageInfo
      * @throws AtlasBaseException
      * @HTTP 200 If Lineage exists for the given entity
@@ -89,20 +92,27 @@ public class LineageREST {
     @Path("/{guid}")
     @Timed
     public AtlasLineageInfo getLineageGraph(@PathParam("guid") String guid,
-                                            @QueryParam("direction") @DefaultValue(DEFAULT_DIRECTION)  LineageDirection direction,
+                                            @QueryParam("direction") @DefaultValue(DEFAULT_DIRECTION) LineageDirection direction,
                                             @QueryParam("depth") @DefaultValue(DEFAULT_DEPTH) int depth,
-                                            @QueryParam("hideProcess") @DefaultValue("false") boolean hideProcess) throws AtlasBaseException {
+                                            @QueryParam("hideProcess") @DefaultValue("false") boolean hideProcess,
+                                            @QueryParam("page") @DefaultValue(DEFAULT_PAGE) int page,
+                                            @QueryParam("recordPerPage") @DefaultValue(DEFAULT_RECORD_PER_PAGE) int recordPerPage) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
+        if ((page != -1 && recordPerPage == -1) || (page == -1 && recordPerPage != -1)) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PAGINATION_STATE);
+        } else if (depth != 1 && page != -1) {
+            throw new AtlasBaseException(AtlasErrorCode.PAGINATION_CAN_ONLY_BE_USED_WITH_DEPTH_ONE);
+        }
 
         AtlasPerfTracer perf = null;
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "LineageREST.getLineageGraph(" + guid + "," + direction +
-                                                               "," + depth + ")");
+                        "," + depth + ")");
             }
 
-            return atlasLineageService.getAtlasLineageInfo(guid, direction, depth, hideProcess);
+            return atlasLineageService.getAtlasLineageInfo(guid, direction, depth, hideProcess, page, recordPerPage);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -111,6 +121,7 @@ public class LineageREST {
 
     /**
      * Returns lineage info about entity.
+     *
      * @param request - AtlasLineageRequest
      * @return AtlasLineageInfo
      * @throws AtlasBaseException
@@ -140,16 +151,16 @@ public class LineageREST {
 
     /**
      * Returns lineage info about entity.
-     *
+     * <p>
      * In addition to the typeName path parameter, attribute key-value pair(s) can be provided in the following format
-     *
+     * <p>
      * attr:<attrName>=<attrValue>
-     *
+     * <p>
      * NOTE: The attrName and attrValue should be unique across entities, eg. qualifiedName
      *
-     * @param typeName - typeName of entity
+     * @param typeName  - typeName of entity
      * @param direction - input, output or both
-     * @param depth - number of hops for lineage
+     * @param depth     - number of hops for lineage
      * @return AtlasLineageInfo
      * @throws AtlasBaseException
      * @HTTP 200 If Lineage exists for the given entity

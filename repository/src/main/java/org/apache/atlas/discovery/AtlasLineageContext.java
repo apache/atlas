@@ -34,7 +34,8 @@ public class AtlasLineageContext {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasLineageContext.class);
 
     private int depth;
-    private int limit;
+    private int page;
+    private int recordPerPage;
     private String guid;
     private boolean hideProcess;
     private boolean allowDeletedProcess;
@@ -50,12 +51,13 @@ public class AtlasLineageContext {
 
     public AtlasLineageContext(AtlasLineageRequest lineageRequest, AtlasTypeRegistry typeRegistry) {
         this.guid = lineageRequest.getGuid();
-        this.limit = lineageRequest.getLimit();
+        this.recordPerPage = lineageRequest.getRecordPerPage();
         this.depth = lineageRequest.getDepth();
         this.direction = lineageRequest.getDirection();
         this.hideProcess = lineageRequest.isHideProcess();
         this.allowDeletedProcess = lineageRequest.isAllowDeletedProcess();
         this.attributes = lineageRequest.getAttributes();
+        this.page = lineageRequest.getPage();
 
         predicate = constructInMemoryPredicate(typeRegistry, lineageRequest.getEntityFilters());
     }
@@ -68,12 +70,12 @@ public class AtlasLineageContext {
         this.depth = depth;
     }
 
-    public int getLimit() {
-        return limit;
+    public int getRecordPerPage() {
+        return recordPerPage;
     }
 
-    public void setLimit(int limit) {
-        this.limit = limit;
+    public void setRecordPerPage(int recordPerPage) {
+        this.recordPerPage = recordPerPage;
     }
 
     public String getGuid() {
@@ -140,6 +142,10 @@ public class AtlasLineageContext {
         this.allowDeletedProcess = allowDeletedProcess;
     }
 
+    public int getPage() {
+        return page;
+    }
+
     protected Predicate constructInMemoryPredicate(AtlasTypeRegistry typeRegistry, SearchParameters.FilterCriteria filterCriteria) {
         LineageSearchProcessor lineageSearchProcessor = new LineageSearchProcessor();
         return lineageSearchProcessor.constructInMemoryPredicate(typeRegistry, filterCriteria);
@@ -152,8 +158,8 @@ public class AtlasLineageContext {
         return true;
     }
 
-    public boolean shouldApplyLimit() {
-        return limit > 0;
+    public boolean shouldApplyPagination() {
+        return page > -1;
     }
 
     @Override
