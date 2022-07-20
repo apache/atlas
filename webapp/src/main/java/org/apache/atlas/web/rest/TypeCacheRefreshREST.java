@@ -1,7 +1,10 @@
 package org.apache.atlas.web.rest;
 
+import com.google.common.collect.Lists;
 import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.typedef.AtlasEntityDef;
+import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraph;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.web.util.Servlets;
@@ -47,17 +50,19 @@ public class TypeCacheRefreshREST {
     @Timed
     public void refreshCache() throws AtlasBaseException {
         LOG.info("Initiating type-def cache refresh");
+        //Reload in-memory cache of type-registry
         typeDefStore.init();
         typeDefStore.notifyLoadCompletion();
-        resetJanusgraphIndexCache();
+
+        //Reload janus graph index cache
+        updateTypeToReloadCache();
         LOG.info("Completed type-def cache refresh");
     }
 
-    private void resetJanusgraphIndexCache()  {
-        LOG.info("Starting resetting JanusgraphIndexCache");
-        atlasJanusGraph.getManagementSystem().resetIndexCache(VERTEX_INDEX);
-        atlasJanusGraph.getManagementSystem().resetIndexCache(EDGE_INDEX);
-        atlasJanusGraph.getManagementSystem().resetIndexCache(FULLTEXT_INDEX);
-        LOG.info("Completed resetting JanusgraphIndexCache");
+    private void updateTypeToReloadCache() throws AtlasBaseException {
+        final AtlasTypesDef typesDef = new AtlasTypesDef();
+        final AtlasEntityDef entityDef = new AtlasEntityDef("cache_refresh");
+        typesDef.setEntityDefs(Lists.newArrayList(entityDef));
+        typeDefStore.updateTypesDef(typesDef);
     }
 }

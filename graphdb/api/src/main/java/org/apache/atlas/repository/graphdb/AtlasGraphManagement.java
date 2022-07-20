@@ -200,13 +200,6 @@ public interface AtlasGraphManagement {
      */
     void reindex(String indexName, List<AtlasElement> elements) throws Exception;
 
-
-    /**
-     * Reset in-memory cache of janus graph index.
-     * @param indexName indexName to reset cache
-     */
-    void resetIndexCache(String indexName);
-
     /**
      * Starts recovering indices from the specified recovery time and returns TransactionRecovery
      * @param startTime
