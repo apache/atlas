@@ -5,10 +5,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.apache.atlas.type.AtlasType;
 import org.apache.commons.collections.CollectionUtils;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
+import java.util.*;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
@@ -21,6 +18,7 @@ public class AuditSearchParams {
     private static Map<String, Object> defaultSort = new HashMap<>();
 
     private Map dsl;
+    private Set<String> attributes;
 
     private boolean suppressLogs;
 
@@ -71,5 +69,13 @@ public class AuditSearchParams {
             return AtlasType.toJson(dsl);
         }
         return "";
+    }
+
+    public Set<String> getAttributes() {
+        return attributes;
+    }
+
+    public void setAttributes(Set<String> attributes) {
+        this.attributes = attributes;
     }
 }

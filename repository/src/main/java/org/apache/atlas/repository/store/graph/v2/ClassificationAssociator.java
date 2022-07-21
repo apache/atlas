@@ -346,7 +346,7 @@ public class ClassificationAssociator {
 
         private V findObjectFrom(List<V> reference, V check) {
             return (V) CollectionUtils.find(reference, ox ->
-                    ((V) ox).equals(check));
+                    ((V) ox).checkForUpdate(check));
         }
 
         private V findFrom(List<V> reference, V check) {
