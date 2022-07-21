@@ -2,8 +2,12 @@ package org.apache.atlas.web.rest;
 
 import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.listener.ChangedTypeDefs;
+import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraph;
 import org.apache.atlas.store.AtlasTypeDefStore;
+import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.web.util.Servlets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,8 +20,8 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
-
-import static org.apache.atlas.repository.Constants.*;
+import java.util.ArrayList;
+import java.util.List;
 
 
 @Path("admin/types")
@@ -29,12 +33,14 @@ public class TypeCacheRefreshREST {
     private static final Logger LOG = LoggerFactory.getLogger(TypeCacheRefreshREST.class);
 
     private final AtlasTypeDefStore typeDefStore;
-    private final AtlasJanusGraph atlasJanusGraph;
+    private final GraphBackedSearchIndexer graphBackedSearchIndexer;
+    private final AtlasTypeRegistry typeRegistry;
 
     @Inject
-    public TypeCacheRefreshREST(AtlasTypeDefStore typeDefStore, AtlasJanusGraph atlasJanusGraph) {
+    public TypeCacheRefreshREST(AtlasTypeDefStore typeDefStore, GraphBackedSearchIndexer graphBackedSearchIndexer, AtlasTypeRegistry typeRegistry) {
         this.typeDefStore = typeDefStore;
-        this.atlasJanusGraph = atlasJanusGraph;
+        this.graphBackedSearchIndexer = graphBackedSearchIndexer;
+        this.typeRegistry = typeRegistry;
     }
 
     /**
@@ -48,9 +54,25 @@ public class TypeCacheRefreshREST {
     @Timed
     public void refreshCache() throws AtlasBaseException {
         LOG.info("Initiating type-def cache refresh");
+
         //Reload in-memory cache of type-registry
         typeDefStore.init();
+
+        ChangedTypeDefs changedTypeDefs = new ChangedTypeDefs();
+        List<AtlasBaseTypeDef> updatedTypeDefs = new ArrayList<>();
+        updatedTypeDefs.addAll(typeRegistry.getAllEnumDefs());
+        updatedTypeDefs.addAll(typeRegistry.getAllBusinessMetadataDefs());
+        updatedTypeDefs.addAll(typeRegistry.getAllClassificationDefs());
+        updatedTypeDefs.addAll(typeRegistry.getAllStructDefs());
+        updatedTypeDefs.addAll(typeRegistry.getAllRelationshipDefs());
+        updatedTypeDefs.addAll(typeRegistry.getAllEntityDefs());
+        changedTypeDefs.setUpdatedTypeDefs(updatedTypeDefs);
+
+        LOG.info("total type-defs to being updated = {}",updatedTypeDefs.size());
+        graphBackedSearchIndexer.onChange(changedTypeDefs);
+
         typeDefStore.notifyLoadCompletion();
+
         LOG.info("Completed type-def cache refresh");
     }
 }
