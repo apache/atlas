@@ -53,11 +53,6 @@
   "classificationDefs": [],
   "entityDefs": [
     {
-      "name": "cache_refresh",
-      "superTypes": [],
-      "attributeDefs": []
-    },
-    {
       "name": "__internal",
       "superTypes": [],
       "serviceType": "atlas_core",

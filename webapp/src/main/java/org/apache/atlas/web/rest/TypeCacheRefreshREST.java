@@ -1,10 +1,7 @@
 package org.apache.atlas.web.rest;
 
-import com.google.common.collect.Lists;
 import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.typedef.AtlasEntityDef;
-import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraph;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.web.util.Servlets;
@@ -21,6 +18,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
 import static org.apache.atlas.repository.Constants.*;
+
 
 @Path("admin/types")
 @Singleton
@@ -53,16 +51,6 @@ public class TypeCacheRefreshREST {
         //Reload in-memory cache of type-registry
         typeDefStore.init();
         typeDefStore.notifyLoadCompletion();
-
-        //Reload janus graph index cache
-        updateTypeToReloadCache();
         LOG.info("Completed type-def cache refresh");
-    }
-
-    private void updateTypeToReloadCache() throws AtlasBaseException {
-        final AtlasTypesDef typesDef = new AtlasTypesDef();
-        final AtlasEntityDef entityDef = new AtlasEntityDef("cache_refresh");
-        typesDef.setEntityDefs(Lists.newArrayList(entityDef));
-        typeDefStore.updateTypesDef(typesDef);
     }
 }
