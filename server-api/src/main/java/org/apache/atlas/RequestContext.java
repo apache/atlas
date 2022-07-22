@@ -50,6 +50,7 @@ public class RequestContext {
     private final Map<String, AtlasEntityHeader>         deletedEntities      = new HashMap<>();
     private final Map<String, AtlasEntityHeader>         restoreEntities      = new HashMap<>();
     private final Map<String, AtlasEntity>               entityCache          = new HashMap<>();
+    private final Map<String, AtlasEntityHeader>         entityHeaderCache    = new HashMap<>();
     private final Map<String, AtlasEntityWithExtInfo>    entityExtInfoCache   = new HashMap<>();
     private final Map<String, AtlasEntity>               diffEntityCache      = new HashMap<>();
     private final Map<String, List<AtlasClassification>> addedPropagations    = new HashMap<>();
@@ -123,6 +124,7 @@ public class RequestContext {
         this.updatedEntities.clear();
         this.deletedEntities.clear();
         this.entityCache.clear();
+        this.entityHeaderCache.clear();
         this.entityExtInfoCache.clear();
         this.diffEntityCache.clear();
         this.addedPropagations.clear();
@@ -433,6 +435,19 @@ public class RequestContext {
         if (entity != null && entity.getGuid() != null) {
             diffEntityCache.put(entity.getGuid(), entity);
         }
+    }
+
+    public void setEntityHeaderCache(AtlasEntityHeader headerCache){
+        if(headerCache != null && headerCache.getGuid() != null){
+            entityHeaderCache.put(headerCache.getGuid(), headerCache);
+        }
+    }
+
+    public AtlasEntityHeader getCachedEntityHeader(String guid){
+        if(guid == null){
+            return null;
+        }
+        return entityHeaderCache.get(guid);
     }
 
     public AtlasEntity getDifferentialEntity(String guid) {

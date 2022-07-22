@@ -23,6 +23,8 @@ import org.apache.atlas.AtlasException;
 import org.apache.commons.configuration.Configuration;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.encodePropertyKey;
 
@@ -67,7 +69,7 @@ public final class Constants {
      */
     public static final String TYPE_CATEGORY_PROPERTY_KEY   = getEncodedTypePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "type.category");
     public static final String VERTEX_TYPE_PROPERTY_KEY     = getEncodedTypePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "type");
-    public static final String TYPENAME_PROPERTY_KEY        = getEncodedTypePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "type.name");
+    public static final String  TYPENAME_PROPERTY_KEY        = getEncodedTypePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "type.name");
     public static final String TYPE_DISPLAYNAME_PROPERTY_KEY= getEncodedTypePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "type.displayName");
     public static final String TYPEDESCRIPTION_PROPERTY_KEY = getEncodedTypePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "type.description");
     public static final String TYPEVERSION_PROPERTY_KEY     = getEncodedTypePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "type.version");
@@ -218,6 +220,7 @@ public final class Constants {
     public static final String CLASSIFICATION_VALIDITY_PERIODS_KEY            = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "validityPeriods");
     public static final String CLASSIFICATION_VERTEX_PROPAGATE_KEY            = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "propagate");
     public static final String CLASSIFICATION_VERTEX_REMOVE_PROPAGATIONS_KEY  = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "removePropagations");
+    public static final String CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_LINEAGE= encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "restrictPropagationThroughLineage");
     public static final String CLASSIFICATION_VERTEX_NAME_KEY                 = encodePropertyKey(TYPE_NAME_PROPERTY_KEY);
     public static final String CLASSIFICATION_EDGE_NAME_PROPERTY_KEY          = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "name");
     public static final String CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "isPropagated");
@@ -323,6 +326,21 @@ public final class Constants {
     public static final String CLASSIFICATION_PROPAGATION_JOB_COUNT_METRIC = "classification.propagation.job.count";
 
     public static final int ELASTICSEARCH_PAGINATION_SIZE = 50;
+
+    public static final String CATALOG_PROCESS_INPUT_RELATIONSHIP_LABEL = "__Process.inputs";
+    public static final String CATALOG_PROCESS_OUTPUT_RELATIONSHIP_LABEL = "__Process.outputs";
+    public static final String COLUMN_LINEAGE_RELATIONSHIP_LABEL = "__Process.columnProcesses";
+    public static final String CLASSIFICATION_PROPAGATION_MODE_DEFAULT  ="DEFAULT";
+    public static final String CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE  ="RESTRICT_LINEAGE";
+
+    public static final HashMap<String, ArrayList<String>> CLASSIFICATION_PROPAGATION_EXCLUSION_MAP = new HashMap<String, ArrayList<String>>(){{
+        put(CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE, new ArrayList<>(
+                Arrays.asList(CATALOG_PROCESS_INPUT_RELATIONSHIP_LABEL,
+                CATALOG_PROCESS_OUTPUT_RELATIONSHIP_LABEL,
+                COLUMN_LINEAGE_RELATIONSHIP_LABEL
+        )));
+        put(CLASSIFICATION_PROPAGATION_MODE_DEFAULT, null);
+    }};
 
     private Constants() {
     }
