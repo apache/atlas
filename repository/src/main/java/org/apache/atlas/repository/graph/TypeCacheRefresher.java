@@ -41,6 +41,13 @@ public class TypeCacheRefresher {
             LOG.info("Did not find any hosts to refresh type-def cache");
             return;
         }
+
+        try {
+            //Added delay so that other node has this committed types available
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            LOG.error(e.getMessage(),e);
+        }
         ExecutorService executorService = Executors.newFixedThreadPool(atlasHosts.size());
         List<CompletableFuture<?>> completableFutureList = new ArrayList<>(atlasHosts.size());
         try {

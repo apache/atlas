@@ -2,10 +2,7 @@ package org.apache.atlas.web.rest;
 
 import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.listener.ChangedTypeDefs;
-import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
-import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraph;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.web.util.Servlets;
@@ -20,8 +17,6 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
-import java.util.ArrayList;
-import java.util.List;
 
 
 @Path("admin/types")
@@ -58,7 +53,7 @@ public class TypeCacheRefreshREST {
         //Reload in-memory cache of type-registry
         typeDefStore.init();
 
-        ChangedTypeDefs changedTypeDefs = new ChangedTypeDefs();
+        /*ChangedTypeDefs changedTypeDefs = new ChangedTypeDefs();
         List<AtlasBaseTypeDef> updatedTypeDefs = new ArrayList<>();
         updatedTypeDefs.addAll(typeRegistry.getAllEnumDefs());
         updatedTypeDefs.addAll(typeRegistry.getAllBusinessMetadataDefs());
@@ -69,7 +64,7 @@ public class TypeCacheRefreshREST {
         changedTypeDefs.setUpdatedTypeDefs(updatedTypeDefs);
 
         LOG.info("total type-defs to being updated = {}",updatedTypeDefs.size());
-        graphBackedSearchIndexer.onChange(changedTypeDefs);
+        graphBackedSearchIndexer.onChange(changedTypeDefs);*/
 
         typeDefStore.notifyLoadCompletion();
 
