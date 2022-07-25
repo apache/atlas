@@ -56,6 +56,7 @@ import org.apache.atlas.model.instance.ClassificationAssociateRequest;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.lineage.AtlasLineageInfo;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
+import org.apache.atlas.model.lineage.LineageOnDemandConstraints;
 import org.apache.atlas.model.profile.AtlasUserSavedSearch;
 import org.apache.atlas.model.typedef.AtlasBusinessMetadataDef;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
@@ -627,6 +628,9 @@ public class AtlasClientV2 extends AtlasBaseClient {
         return callAPI(API_V2.GET_LINEAGE_BY_ATTRIBUTES, AtlasLineageInfo.class, queryParams, typeName);
     }
 
+    public AtlasLineageInfo getLineageInfoOnDemand(String guid, Map<String, LineageOnDemandConstraints> lineageConstraintsByGuid) throws AtlasServiceException {
+        return callAPI(API_V2.LINEAGE_INFO_ON_DEMAND, AtlasLineageInfo.class, lineageConstraintsByGuid, guid);
+    }
 
     /* Discovery APIs */
     public AtlasSearchResult dslSearch(String query) throws AtlasServiceException {
@@ -1206,6 +1210,7 @@ public class AtlasClientV2 extends AtlasBaseClient {
         // Lineage APIs
         public static final API_V2 LINEAGE_INFO                = new API_V2(LINEAGE_URI, HttpMethod.GET, Response.Status.OK);
         public static final API_V2 GET_LINEAGE_BY_ATTRIBUTES   = new API_V2(LINEAGE_URI + "uniqueAttribute/type/", HttpMethod.GET, Response.Status.OK);
+        public static final API_V2 LINEAGE_INFO_ON_DEMAND      = new API_V2(LINEAGE_URI, HttpMethod.POST, Response.Status.OK);
 
         // Discovery APIs
         public static final API_V2 DSL_SEARCH                  = new API_V2(DSL_SEARCH_URI, HttpMethod.GET, Response.Status.OK);

@@ -22,7 +22,10 @@ package org.apache.atlas.discovery;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.lineage.AtlasLineageInfo;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
+import org.apache.atlas.model.lineage.LineageOnDemandConstraints;
 import org.apache.atlas.v1.model.lineage.SchemaResponse.SchemaDetails;
+
+import java.util.Map;
 
 public interface AtlasLineageService {
     /**
@@ -32,6 +35,13 @@ public interface AtlasLineageService {
      * @return AtlasLineageInfo
      */
     AtlasLineageInfo getAtlasLineageInfo(String entityGuid, LineageDirection direction, int depth) throws AtlasBaseException;
+
+    /**
+     * @param entityGuid unique ID of the entity
+     * @param lineageOnDemandConstraintsByGuid map of constraints to fetch lineage for each guid
+     * @return AtlasLineageInfo
+     */
+    AtlasLineageInfo getAtlasLineageInfo(String entityGuid, Map<String, LineageOnDemandConstraints> lineageOnDemandConstraintsByGuid) throws AtlasBaseException;
 
     /**
      * Return the schema for the given datasetName.
