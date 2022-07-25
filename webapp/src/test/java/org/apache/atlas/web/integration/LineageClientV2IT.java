@@ -18,8 +18,12 @@
 
 package org.apache.atlas.web.integration;
 
+import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasConfiguration;
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.lineage.AtlasLineageInfo;
+import org.apache.atlas.model.lineage.LineageOnDemandConstraints;
 import org.apache.atlas.v1.model.instance.Id;
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.slf4j.Logger;
@@ -44,6 +48,7 @@ public class LineageClientV2IT extends DataSetLineageJerseyResourceIT {
     private static final Logger LOG = LoggerFactory.getLogger(LineageClientV2IT.class);
     private String salesFactTable;
     private String salesMonthlyTable;
+    private String salesMonthlyTableOnDemand;
     private String salesDBName;
 
     @BeforeClass
@@ -72,6 +77,67 @@ public class LineageClientV2IT extends DataSetLineageJerseyResourceIT {
         Assert.assertEquals(inputLineageInfo.getLineageDirection(), AtlasLineageInfo.LineageDirection.INPUT);
         Assert.assertEquals(inputLineageInfo.getLineageDepth(), 5);
         Assert.assertEquals(inputLineageInfo.getBaseEntityGuid(), tableId);
+    }
+
+    @Test
+    public void testGetLineageInfoOnDemand() throws Exception {
+        String tableId = atlasClientV1.getEntity(HIVE_TABLE_TYPE,
+                REFERENCEABLE_ATTRIBUTE_NAME, salesMonthlyTableOnDemand).getId()._getId();
+
+        //Get entire Lineage Info
+        AtlasLineageInfo inputLineageInfo = atlasClientV2.getLineageInfo(tableId, AtlasLineageInfo.LineageDirection.INPUT, 5);
+        Assert.assertNotNull(inputLineageInfo);
+        Map<String, AtlasEntityHeader> entities = inputLineageInfo.getGuidEntityMap();
+        Assert.assertNotNull(entities);
+
+        Set<AtlasLineageInfo.LineageRelation> relations = inputLineageInfo.getRelations();
+        Assert.assertNotNull(relations);
+
+        Map<String, AtlasLineageInfo.LineageInfoOnDemand> relationsOnDemand = inputLineageInfo.getRelationsOnDemand();
+        Assert.assertTrue(relationsOnDemand == null || relationsOnDemand.size() == 0);
+
+        Assert.assertEquals(entities.size(), 21);
+        Assert.assertEquals(relations.size(), 20);
+        Assert.assertEquals(inputLineageInfo.getLineageDirection(), AtlasLineageInfo.LineageDirection.INPUT);
+        Assert.assertEquals(inputLineageInfo.getLineageDepth(), 5);
+        Assert.assertEquals(inputLineageInfo.getBaseEntityGuid(), tableId);
+
+        //Get lineage info on-demand with input and output limit as 3
+        ApplicationProperties.get().setProperty(AtlasConfiguration.LINEAGE_ON_DEMAND_ENABLED.getPropertyName(), true);
+
+        LineageOnDemandConstraints lineageConstraints = new LineageOnDemandConstraints(AtlasLineageInfo.LineageDirection.INPUT, 3, 3, 5);
+        Map<String, LineageOnDemandConstraints> lineageConstraintsByGuid = new HashMap<>();
+        lineageConstraintsByGuid.put(tableId, lineageConstraints);
+
+        if (!isLineageOnDemandEnabled) {
+            Assert.fail(AtlasErrorCode.LINEAGE_ON_DEMAND_NOT_ENABLED.getFormattedErrorMessage(ATLAS_LINEAGE_ON_DEMAND_ENABLED));
+        }
+
+        AtlasLineageInfo inputLineageInfoOnDemand = atlasClientV2.getLineageInfoOnDemand(tableId, lineageConstraintsByGuid);
+        Assert.assertNotNull(inputLineageInfoOnDemand);
+        entities = inputLineageInfoOnDemand.getGuidEntityMap();
+        Assert.assertNotNull(entities);
+
+        relations = inputLineageInfoOnDemand.getRelations();
+        Assert.assertNotNull(relations);
+
+        relationsOnDemand = inputLineageInfoOnDemand.getRelationsOnDemand();
+        Assert.assertNotNull(relationsOnDemand);
+
+        Assert.assertEquals(entities.size(), 7);
+        Assert.assertEquals(relations.size(), 6);
+        Assert.assertEquals(relationsOnDemand.size(), 1);
+
+        Assert.assertEquals(inputLineageInfoOnDemand.getLineageDirection(), AtlasLineageInfo.LineageDirection.INPUT);
+        Assert.assertEquals(inputLineageInfoOnDemand.getLineageDepth(), 5);
+        Assert.assertEquals(inputLineageInfoOnDemand.getBaseEntityGuid(), tableId);
+
+        AtlasLineageInfo.LineageInfoOnDemand relationsOnDemandByTableId = relationsOnDemand.get(tableId);
+        Assert.assertNotNull(relationsOnDemandByTableId);
+
+        boolean hasMoreInputs = relationsOnDemandByTableId.hasMoreInputs();
+        Assert.assertTrue(hasMoreInputs);
+
     }
 
     @Test
@@ -129,5 +195,19 @@ public class LineageClientV2IT extends DataSetLineageJerseyResourceIT {
 
         loadProcess("loadSalesMonthly" + randomString(), "John ETL", Collections.singletonList(salesFactDaily),
                 Collections.singletonList(salesFactMonthly), "create table as select ", "plan", "id", "graph");
+
+        salesMonthlyTableOnDemand = "sales_fact_monthly_mv_on_demand_" + randomString();
+        Id salesFactMonthlyOnDemand =
+                table(salesMonthlyTableOnDemand, "sales fact monthly materialized view", salesDB, "Jane BI",
+                        "MANAGED", salesFactColumns);
+
+        for (int i = 1; i <= 10; i++) {
+            Id salesFactDailyOnDemand =
+                    table("sales_fact_daily_mv_on_demand_" + randomString() + "_" + i, "sales fact daily materialized view -"+i, salesDB,
+                            "Joe BI", "MANAGED", salesFactColumns);
+
+            loadProcess("loadSalesMonthly" + randomString() + "_" + i, "John ETL", Collections.singletonList(salesFactDailyOnDemand),
+                    Collections.singletonList(salesFactMonthlyOnDemand), "create table as select ", "plan", "id", "graph");
+        }
     }
 }

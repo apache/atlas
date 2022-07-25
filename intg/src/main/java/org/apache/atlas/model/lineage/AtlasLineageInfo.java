@@ -20,6 +20,7 @@ package org.apache.atlas.model.lineage;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import org.apache.atlas.model.instance.AtlasEntityHeader;
@@ -37,15 +38,19 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 
 @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
-@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonIgnoreProperties(ignoreUnknown = true, value = {"visitedEdges"})
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class AtlasLineageInfo implements Serializable {
-    private String                         baseEntityGuid;
-    private LineageDirection               lineageDirection;
-    private int                            lineageDepth;
-    private Map<String, AtlasEntityHeader> guidEntityMap;
-    private Set<LineageRelation>           relations;
+
+    private String                                  baseEntityGuid;
+    private LineageDirection                        lineageDirection;
+    private int                                     lineageDepth;
+    private Map<String, AtlasEntityHeader>          guidEntityMap;
+    private Set<LineageRelation>                    relations;
+    private Set<String>                             visitedEdges;
+    private Map<String, LineageInfoOnDemand>        relationsOnDemand;
+    private Map<String, LineageOnDemandConstraints> lineageOnDemandPayload;
 
     public AtlasLineageInfo() {}
 
@@ -62,11 +67,18 @@ public class AtlasLineageInfo implements Serializable {
      */
     public AtlasLineageInfo(String baseEntityGuid, Map<String, AtlasEntityHeader> guidEntityMap,
                             Set<LineageRelation> relations, LineageDirection lineageDirection, int lineageDepth) {
-        this.baseEntityGuid   = baseEntityGuid;
-        this.lineageDirection = lineageDirection;
-        this.lineageDepth     = lineageDepth;
-        this.guidEntityMap    = guidEntityMap;
-        this.relations        = relations;
+        this(baseEntityGuid, guidEntityMap, relations, null, null, lineageDirection, lineageDepth);
+    }
+
+    public AtlasLineageInfo(String baseEntityGuid, Map<String, AtlasEntityHeader> guidEntityMap,
+                            Set<LineageRelation> relations, Set<String> visitedEdges, Map<String, LineageInfoOnDemand> relationsOnDemand, LineageDirection lineageDirection, int lineageDepth) {
+        this.baseEntityGuid               = baseEntityGuid;
+        this.lineageDirection             = lineageDirection;
+        this.lineageDepth                 = lineageDepth;
+        this.guidEntityMap                = guidEntityMap;
+        this.relations                    = relations;
+        this.visitedEdges                 = visitedEdges;
+        this.relationsOnDemand            = relationsOnDemand;
     }
 
     public String getBaseEntityGuid() {
@@ -93,6 +105,22 @@ public class AtlasLineageInfo implements Serializable {
         this.relations = relations;
     }
 
+    public Set<String> getVisitedEdges() {
+        return visitedEdges;
+    }
+
+    public void setVisitedEdges(Set<String> visitedEdges) {
+        this.visitedEdges = visitedEdges;
+    }
+
+    public Map<String, LineageInfoOnDemand> getRelationsOnDemand() {
+        return relationsOnDemand;
+    }
+
+    public void setRelationsOnDemand(Map<String, LineageInfoOnDemand> relationsOnDemand) {
+        this.relationsOnDemand = relationsOnDemand;
+    }
+
     public LineageDirection getLineageDirection() {
         return lineageDirection;
     }
@@ -107,6 +135,14 @@ public class AtlasLineageInfo implements Serializable {
 
     public void setLineageDepth(int lineageDepth) {
         this.lineageDepth = lineageDepth;
+    }
+
+    public Map<String, LineageOnDemandConstraints> getLineageOnDemandPayload() {
+        return lineageOnDemandPayload;
+    }
+
+    public void setLineageOnDemandPayload(Map<String, LineageOnDemandConstraints> lineageOnDemandPayload) {
+        this.lineageOnDemandPayload = lineageOnDemandPayload;
     }
 
     @Override
@@ -132,6 +168,7 @@ public class AtlasLineageInfo implements Serializable {
                 "baseEntityGuid=" + baseEntityGuid +
                 ", guidEntityMap=" + guidEntityMap +
                 ", relations=" + relations +
+                ", relationsOnDemand=" + relationsOnDemand +
                 ", lineageDirection=" + lineageDirection +
                 ", lineageDepth=" + lineageDepth +
                 '}';
@@ -202,6 +239,122 @@ public class AtlasLineageInfo implements Serializable {
                     ", relationshipId='" + relationshipId + '\'' +
                     '}';
         }
+    }
+
+    @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+    @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown = true, value = {"inputRelationsReachedLimit", "outputRelationsReachedLimit"})
+    @XmlRootElement
+    @XmlAccessorType(XmlAccessType.PROPERTY)
+    public static class LineageInfoOnDemand {
+        @JsonProperty
+        boolean                    hasMoreInputs;
+        @JsonProperty
+        boolean                    hasMoreOutputs;
+        int                        inputRelationsCount;
+        int                        outputRelationsCount;
+        boolean                    isInputRelationsReachedLimit;
+        boolean                    isOutputRelationsReachedLimit;
+        LineageOnDemandConstraints onDemandConstraints;
+
+        public LineageInfoOnDemand() { }
+
+        public LineageInfoOnDemand(LineageOnDemandConstraints onDemandConstraints) {
+            this.onDemandConstraints           = onDemandConstraints;
+            this.hasMoreInputs                 = false;
+            this.hasMoreOutputs                = false;
+            this.inputRelationsCount           = 0;
+            this.outputRelationsCount          = 0;
+            this.isInputRelationsReachedLimit  = false;
+            this.isOutputRelationsReachedLimit = false;
+        }
+
+        public boolean isInputRelationsReachedLimit() {
+            return isInputRelationsReachedLimit;
+        }
+
+        public void setInputRelationsReachedLimit(boolean inputRelationsReachedLimit) {
+            isInputRelationsReachedLimit = inputRelationsReachedLimit;
+        }
+
+        public boolean isOutputRelationsReachedLimit() {
+            return isOutputRelationsReachedLimit;
+        }
+
+        public void setOutputRelationsReachedLimit(boolean outputRelationsReachedLimit) {
+            isOutputRelationsReachedLimit = outputRelationsReachedLimit;
+        }
+
+        public boolean hasMoreInputs() {
+            return hasMoreInputs;
+        }
+
+        public void setHasMoreInputs(boolean hasMoreInputs) {
+            this.hasMoreInputs = hasMoreInputs;
+        }
+
+        public boolean hasMoreOutputs() {
+            return hasMoreOutputs;
+        }
+
+        public void setHasMoreOutputs(boolean hasMoreOutputs) {
+            this.hasMoreOutputs = hasMoreOutputs;
+        }
+
+        public int getInputRelationsCount() {
+            return inputRelationsCount;
+        }
+
+        public void incrementInputRelationsCount() {
+            if (hasMoreInputs) {
+                return;
+            }
+
+            if (isInputRelationsReachedLimit) {
+                setHasMoreInputs(true);
+                return;
+            }
+
+            this.inputRelationsCount++;
+
+            if (inputRelationsCount == onDemandConstraints.getInputRelationsLimit()) {
+                this.setInputRelationsReachedLimit(true);
+                return;
+            }
+        }
+
+        public int getOutputRelationsCount() {
+            return outputRelationsCount;
+        }
+
+        public void incrementOutputRelationsCount() {
+            if (hasMoreOutputs) {
+                return;
+            }
+
+            if (isOutputRelationsReachedLimit) {
+                setHasMoreOutputs(true);
+                return;
+            }
+
+            this.outputRelationsCount++;
+
+            if (outputRelationsCount == onDemandConstraints.getOutputRelationsLimit()) {
+                this.setOutputRelationsReachedLimit(true);
+                return;
+            }
+        }
+
+        @Override
+        public String toString() {
+            return "LineageInfoOnDemand{" +
+                    "hasMoreInputs='" + hasMoreInputs + '\'' +
+                    ", hasMoreOutputs='" + hasMoreOutputs + '\'' +
+                    ", inputRelationsCount='" + inputRelationsCount + '\'' +
+                    ", outputRelationsCount='" + outputRelationsCount + '\'' +
+                    '}';
+        }
+
     }
 
 }
