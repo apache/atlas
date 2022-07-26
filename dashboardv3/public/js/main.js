@@ -327,6 +327,12 @@ require(['App',
                     Globals.isTasksEnabled = response['atlas.tasks.enabled'];
                 }
                 if (response['atlas.session.timeout.secs']) { Globals.idealTimeoutSeconds = response['atlas.session.timeout.secs']; }
+                if(response['atlas.lineage.on.demand.enabled'] !== undefined){
+                    Globals.isLineageOnDemandEnabled = response['atlas.lineage.on.demand.enabled'];
+                }
+                if(response['atlas.lineage.on.demand.default.node.count'] !== undefined){
+                    Globals.lineageNodeCount = response['atlas.lineage.on.demand.default.node.count'];
+                }
                 /*  Atlas idealTimeout 
        redirectUrl: url to redirect after timeout
        idealTimeLimit: timeout in seconds

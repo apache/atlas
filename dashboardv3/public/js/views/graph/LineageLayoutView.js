@@ -52,6 +52,7 @@ define(['require',
                 checkHideProcess: "[data-id='checkHideProcess']",
                 checkDeletedEntity: "[data-id='checkDeletedEntity']",
                 selectDepth: 'select[data-id="selectDepth"]',
+                selectNodeCount: 'select[data-id="selectNodeCount"]',
                 filterToggler: '[data-id="filter-toggler"]',
                 settingToggler: '[data-id="setting-toggler"]',
                 searchToggler: '[data-id="search-toggler"]',
@@ -74,7 +75,8 @@ define(['require',
             templateHelpers: function() {
                 return {
                     width: "100%",
-                    height: "100%"
+                    height: "100%",
+                    compactLineageEnabled: Globals.isLineageOnDemandEnabled
                 };
             },
             /** ui events hash */
@@ -83,6 +85,7 @@ define(['require',
                 events["click " + this.ui.checkHideProcess] = 'onCheckUnwantedEntity';
                 events["click " + this.ui.checkDeletedEntity] = 'onCheckUnwantedEntity';
                 events['change ' + this.ui.selectDepth] = 'onSelectDepthChange';
+                events['change ' + this.ui.selectNodeCount] = 'onSelectNodeCount';
                 events["click " + this.ui.filterToggler] = 'onClickFilterToggler';
                 events["click " + this.ui.boxClose] = 'toggleBoxPanel';
                 events["click " + this.ui.settingToggler] = 'onClickSettingToggler';
@@ -109,7 +112,7 @@ define(['require',
                 this.filterObj = {
                     isProcessHideCheck: false,
                     isDeletedEntityHideCheck: false,
-                    depthCount: ''
+                    depthCount: Globals.lineageDepth
                 };
                 this.searchNodeObj = {
                     selectedNode: ''
@@ -117,15 +120,29 @@ define(['require',
                 this.labelFullText = false;
             },
             onRender: function() {
-                var that = this;
+                var that = this,
+                    nodeCountArray = _.uniq([3, 6, Globals.lineageNodeCount]);
+                this.initialQueryObj = {};
                 this.ui.searchToggler.prop("disabled", true);
-                this.$graphButtonsEl = this.$(".graph-button-group button, select[data-id='selectDepth']")
-                this.fetchGraphData();
+                this.$graphButtonsEl = this.$(".graph-button-group button, select[data-id='selectDepth']");
+                if (Globals.isLineageOnDemandEnabled) {
+                    this.ui.resetLineage.attr("title", "Reset Lineage");
+                    this.initialQueryObj[this.guid] = {
+                        "direction": "BOTH",
+                        "inputRelationsLimit": Globals.lineageNodeCount,
+                        "outputRelationsLimit": Globals.lineageNodeCount,
+                        "depth": Globals.lineageDepth,
+                    }
+                }
+                this.fetchGraphData({ queryParam: this.initialQueryObj });
                 if (this.layoutRendered) {
                     this.layoutRendered();
                 }
                 if (this.processCheck) {
                     this.hideCheckForProcess();
+                }
+                if (this.entity.status === "DELETED") {
+                    this.hideCheckForDeletedEntity();
                 }
                 //this.initializeGraph();
                 this.ui.selectDepth.select2({
@@ -134,6 +151,13 @@ define(['require',
                     dropdownCssClass: "number-input",
                     multiple: false
                 });
+                this.ui.selectNodeCount.select2({
+                    data: _.sortBy(nodeCountArray),
+                    tags: true,
+                    dropdownCssClass: "number-input",
+                    multiple: false
+                });
+                this.ui.selectNodeCount.val(Globals.lineageNodeCount).trigger("change");
             },
             onShow: function() {
                 this.$('.fontLoader').show();
@@ -150,6 +174,7 @@ define(['require',
                     panel = $(e.target).parents('.tab-pane').first();
                 icon.toggleClass('fa-expand fa-compress');
                 if (icon.hasClass('fa-expand')) {
+                    Globals.isFullScreenView = false;
                     icon.parent('button').attr("data-original-title", "Full Screen");
                 } else {
                     icon.parent('button').attr("data-original-title", "Default View");
@@ -165,17 +190,22 @@ define(['require',
             onCheckUnwantedEntity: function(e) {
                 var that = this;
                 //this.initializeGraph();
+                this.searchNodeObj.selectedNode = "";
                 if ($(e.target).data("id") === "checkHideProcess") {
                     this.filterObj.isProcessHideCheck = e.target.checked;
                 } else {
                     this.filterObj.isDeletedEntityHideCheck = e.target.checked;
                 }
-                this.LineageHelperRef.refresh();
+                this.renderLineageTypeSearch(this.data);
+                this.LineageHelperRef.refresh({ compactLineageEnabled: Globals.isLineageOnDemandEnabled, filterObj: this.filterObj });
             },
             toggleBoxPanel: function(options) {
                 var el = options && options.el,
                     nodeDetailToggler = options && options.nodeDetailToggler,
                     currentTarget = options.currentTarget;
+                if (options.nodeDetailToggler) {
+                    this.ui.lineageTypeSearch.select2("close");
+                }
                 this.$el.find('.show-box-panel').removeClass('show-box-panel');
                 if (el && el.addClass) {
                     el.addClass('show-box-panel');
@@ -214,12 +244,33 @@ define(['require',
             },
             onSelectDepthChange: function(e, options) {
                 //this.initializeGraph();
-                this.filterObj.depthCount = e.currentTarget.value;
+                Globals.lineageDepth = parseInt(e.currentTarget.value);
                 //legends property is added in queryParam to stop the legend getting added in lineage graph whenever dept is changed. 
-                this.fetchGraphData({ queryParam: { 'depth': this.filterObj.depthCount }, 'legends': false });
+                if (!Globals.isLineageOnDemandEnabled) {
+                    this.fetchGraphData({ queryParam: { 'depth': Globals.lineageDepth }, 'legends': false });
+                }
+
+                if (Globals.isLineageOnDemandEnabled) {
+                    this.initialQueryObj[this.guid].depth = Globals.lineageDepth;
+                    this.fetchGraphData({ queryParam: this.initialQueryObj, 'legends': false })
+                }
+            },
+            onSelectNodeCount: function(e, options) {
+                Globals.lineageNodeCount = parseInt(e.target.value);
+                if (Globals.lineageNodeCount === 0) {
+                    Utils.notifyWarn({
+                        content: 'Value cannot be less than 1'
+                    });
+                    this.ui.selectNodeCount.val(3).trigger("change");
+                }
             },
             onClickResetLineage: function() {
-                this.LineageHelperRef.refresh();
+                if (Globals.isLineageOnDemandEnabled) {
+                    this.fetchGraphData({ queryParam: this.initialQueryObj, 'legends': false });
+                }
+                if (!Globals.isLineageOnDemandEnabled) {
+                    this.LineageHelperRef.refresh();
+                }
                 this.searchNodeObj.selectedNode = "";
                 this.ui.lineageTypeSearch.data({ refresh: true }).val("").trigger("change");
                 this.ui.labelFullName.prop("checked", false);
@@ -270,13 +321,14 @@ define(['require',
                 }
                 _.extend(this.currentEntityData, _.pick(this.entity, 'attributes', 'guid', 'isIncomplete', 'status', 'typeName'));
                 //End
-                this.collection.getLineage(this.guid, {
-                    queryParam: queryParam,
+                var dataObj = {
+                    compactLineageEnabled: Globals.isLineageOnDemandEnabled,
                     success: function(data) {
                         if (that.isDestroyed) {
                             return;
                         }
                         data["legends"] = options ? options.legends : true;
+                        that.lineageOnDemandPayload = data.lineageOnDemandPayload ? data.lineageOnDemandPayload : {};
                         // show only main part of lineage current entity is at bottom, so reverse is done
                         var relationsReverse = data.relations ? data.relations.reverse() : null,
                             lineageMaxRelationCount = 9000;
@@ -292,6 +344,10 @@ define(['require',
                                 data.guidEntityMap[data.baseEntityGuid] = that.currentEntityData;
                             }
                         }
+                        that.data = data;
+                        var updatedData = that.updateLineageData(data);
+                        _.extend(data.guidEntityMap, updatedData.plusBtnsObj);
+                        data.relations = data.relations.concat(updatedData.plusBtnRelationsArray);
                         that.createGraph(data);
                         that.renderLineageTypeSearch(data);
                     },
@@ -302,7 +358,68 @@ define(['require',
                         that.$('.fontLoader').hide();
                         that.$('svg>g').show();
                     }
-                })
+                };
+                Globals.isLineageOnDemandEnabled ? dataObj.data = queryParam : dataObj.queryParam = queryParam;
+
+                this.collection.getLineage(this.guid, dataObj)
+            },
+            updateLineageData: function(data) {
+                var that = this,
+                    rawData = data,
+                    plusBtnsObj = {},
+                    plusBtnRelationsArray = [];
+                this.relationsOnDemand = data.relationsOnDemand ? data.relationsOnDemand : null;
+                this.lineageOnDemandPayload = data.lineageOnDemandPayload ? data.lineageOnDemandPayload : null;
+                if (this.relationsOnDemand) {
+                    _.each(this.relationsOnDemand, function(values, nodeId) {
+                        if (values.hasMoreInputs) {
+                            var btnType = "Input",
+                                moreInputBtnObj = that.createExpandButtonObj({ nodeId: nodeId, btnType: btnType });
+                            plusBtnsObj[moreInputBtnObj.guid] = moreInputBtnObj;
+                            plusBtnRelationsArray.push({ fromEntityId: moreInputBtnObj.guid, toEntityId: nodeId, relationshipId: 'dummy' });
+                        }
+                        if (values.hasMoreOutputs) {
+                            var btnType = "Output",
+                                moreOutputBtnObj = that.createExpandButtonObj({ nodeId: nodeId, btnType: btnType });
+                            plusBtnsObj[moreOutputBtnObj.guid] = moreOutputBtnObj;
+                            plusBtnRelationsArray.push({ fromEntityId: nodeId, toEntityId: moreOutputBtnObj.guid, relationshipId: 'dummy' });
+                        }
+                    });
+                    return {
+                        plusBtnsObj: plusBtnsObj,
+                        plusBtnRelationsArray: plusBtnRelationsArray
+                    }
+                }
+            },
+            generateAddButtonId: function(btnType) {
+                return btnType + Math.random().toString(16).slice(2)
+            },
+            createExpandButtonObj: function(options) {
+                var defaultObj = {
+                        attributes: {
+                            owner: '',
+                            createTime: 0,
+                            qualifiedName: 'PlusBtn',
+                            name: 'PlusBtn',
+                            description: ''
+                        },
+                        isExpandBtn: true,
+                        classificationNames: [],
+                        displayText: "Expand",
+                        isIncomplete: false,
+                        labels: [],
+                        meaningNames: [],
+                        meanings: [],
+                        status: "ACTIVE",
+                        typeName: "Table"
+                    },
+                    btnObj = Object.assign({}, defaultObj),
+                    btnType = (options.btnType === "Input") ? "more-inputs" : "more-outputs",
+                    btnId = this.generateAddButtonId(btnType);
+                btnObj.guid = btnId;
+                btnObj.parentNodeGuid = options.nodeId;
+                btnObj.btnType = options.btnType;
+                return btnObj;
             },
             createGraph: function(data) {
                 var that = this;
@@ -323,7 +440,6 @@ define(['require',
                     isShowHoverPath: function() { return that.ui.showOnlyHoverPath.prop('checked') },
                     isShowTooltip: function() { return that.ui.showTooltip.prop('checked') },
                     onPathClick: function(d) {
-                        console.log("Path Clicked");
                         if (d.pathRelationObj) {
                             var relationshipId = d.pathRelationObj.relationshipId;
                             require(['views/graph/PropagationPropertyModal'], function(PropagationPropertyModal) {
@@ -338,12 +454,21 @@ define(['require',
                         }
                     },
                     onNodeClick: function(d) {
+                        if (d.clickedData.indexOf("more") >= 0) {
+                            that.onExpandNodeClick({ guid: d.clickedData });
+                            return;
+                        }
                         that.onClickNodeToggler();
                         that.updateRelationshipDetails({ guid: d.clickedData });
                         that.calculateLineageDetailPanelHeight();
                     },
                     onLabelClick: function(d) {
                         var guid = d.clickedData;
+                        Globals.isFullScreenView = true;
+                        that.ui.lineageTypeSearch.select2("close");
+                        if (guid.indexOf("more") >= 0) {
+                            return;
+                        }
                         if (that.guid == guid) {
                             Utils.notifyInfo({
                                 html: true,
@@ -376,6 +501,55 @@ define(['require',
                     }
                 });
             },
+            onExpandNodeClick: function(options) {
+                var parentNodeData = this.LineageHelperRef.getNode(options.guid);
+                this.updateQueryObject(parentNodeData.parentNodeGuid, parentNodeData.btnType);
+            },
+            updateQueryObject: function(parentId, btnType) {
+                var inputLimit = null,
+                    outputLimit = null,
+                    that = this,
+                    queryParam;
+                if (_.has(that.lineageOnDemandPayload, parentId)) {
+                    _.find(that.lineageOnDemandPayload, function(value, key) {
+                        if (key === parentId) {
+                            if (btnType === "Input") {
+                                value.inputRelationsLimit = value.inputRelationsLimit + Globals.lineageNodeCount;
+                                value.outputRelationsLimit = value.outputRelationsLimit;
+                            }
+                            if (btnType === "Output") {
+                                value.inputRelationsLimit = value.inputRelationsLimit;
+                                value.outputRelationsLimit = value.outputRelationsLimit + Globals.lineageNodeCount;
+                            }
+                        }
+                    });
+                } else {
+                    var relationCount = that.validateInputOutputLimit(parentId, btnType);
+                    if (btnType === "Input") {
+                        inputLimit = relationCount.inputRelationCount + Globals.lineageNodeCount;
+                        outputLimit = relationCount.outputRelationCount;
+                    }
+                    if (btnType === "Output") {
+                        inputLimit = relationCount.inputRelationCount;
+                        outputLimit = relationCount.outputRelationCount + Globals.lineageNodeCount;
+                    }
+                    this.lineageOnDemandPayload[parentId] = { direction: "BOTH", inputRelationsLimit: inputLimit, outputRelationsLimit: outputLimit, depth: Globals.lineageDepth };
+                }
+                this.fetchGraphData({ queryParam: this.lineageOnDemandPayload, 'legends': false });
+            },
+            validateInputOutputLimit: function(parentId, btnType) {
+                var inputRelationCount, outputRelationCount;
+                for (var guid in this.relationsOnDemand) {
+                    if (parentId === guid && (btnType === "Input" || btnType === "Output")) {
+                        inputRelationCount = this.relationsOnDemand[guid].inputRelationsCount ? this.relationsOnDemand[guid].inputRelationsCount : Globals.lineageNodeCount;
+                        outputRelationCount = this.relationsOnDemand[guid].outputRelationsCount ? this.relationsOnDemand[guid].outputRelationsCount : Globals.lineageNodeCount;
+                    }
+                }
+                return {
+                    inputRelationCount: inputRelationCount,
+                    outputRelationCount: outputRelationCount
+                };
+            },
             noLineage: function() {
                 this.$('.fontLoader').hide();
                 this.$('.depth-container').hide();
@@ -387,6 +561,10 @@ define(['require',
             hideCheckForProcess: function() {
                 this.$('.hideProcessContainer').hide();
             },
+            hideCheckForDeletedEntity: function() {
+                //This has been added to handle the scenario where hideDeletedEntityCheck should hide form filters when baseEntity is deleted.
+                this.$('.hideDeletedContainer').hide();
+            },
             renderLineageTypeSearch: function(data) {
                 var that = this;
                 return new Promise(function(resolve, reject) {
@@ -395,7 +573,7 @@ define(['require',
                         if (!_.isEmpty(data)) {
                             _.each(data.guidEntityMap, function(obj, index) {
                                 var nodeData = that.LineageHelperRef.getNode(obj.guid);
-                                if ((that.filterObj.isProcessHideCheck || that.filterObj.isDeletedEntityHideCheck) && nodeData && (nodeData.isProcess || nodeData.isDeleted)) {
+                                if ((that.filterObj.isProcessHideCheck && obj && obj.isProcess) || (that.filterObj.isDeletedEntityHideCheck && obj && obj.isDeleted) || (Globals.isLineageOnDemandEnabled && obj && _.contains(["Input", "Output"], obj.btnType))) {
                                     return;
                                 }
                                 typeStr += '<option value="' + obj.guid + '">' + obj.displayText + '</option>';
