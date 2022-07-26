@@ -17,10 +17,11 @@
  */
 define(['require',
     'utils/Utils',
+    'utils/Globals',
     'd3',
     'marionette',
     'jquery-ui'
-], function(require, Utils, d3) {
+], function(require, Utils, Globals, d3) {
     'use strict';
     _.mixin({
         numberFormatWithComma: function(number) {
@@ -372,7 +373,13 @@ define(['require',
         });
     }
     //For closing the modal on browsers navigation
-    $(window).on('popstate', function(){
+    $(window).on('popstate', function() {
         $('body').find('.modal-dialog .close').click();
+        //To close the full-screen mode in lineage on browsers navigation.
+        if (!Globals.isFullScreenView) {
+            $('#tab-lineage').removeClass("fullscreen-mode");
+            $("#r_lineageLayoutView").find('button[data-id="fullScreen-toggler"]').attr("data-original-title", "Full Screen").find("i").removeClass("fa-compress").addClass("fa-expand");
+        }
+        Globals.isFullScreenView = false;
     });
 })
