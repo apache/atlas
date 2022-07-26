@@ -95,12 +95,12 @@ public class LineageREST {
                                             @QueryParam("direction") @DefaultValue(DEFAULT_DIRECTION) LineageDirection direction,
                                             @QueryParam("depth") @DefaultValue(DEFAULT_DEPTH) int depth,
                                             @QueryParam("hideProcess") @DefaultValue("false") boolean hideProcess,
-                                            @QueryParam("page") @DefaultValue(DEFAULT_PAGE) int page,
-                                            @QueryParam("recordPerPage") @DefaultValue(DEFAULT_RECORD_PER_PAGE) int recordPerPage) throws AtlasBaseException {
+                                            @QueryParam("offset") @DefaultValue(DEFAULT_PAGE) int offset,
+                                            @QueryParam("limit") @DefaultValue(DEFAULT_RECORD_PER_PAGE) int limit) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
-        if ((page != -1 && recordPerPage == -1) || (page == -1 && recordPerPage != -1)) {
+        if ((offset != -1 && limit == -1) || (offset == -1 && limit != -1)) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PAGINATION_STATE);
-        } else if (depth != 1 && page != -1) {
+        } else if (depth != 1 && offset != -1) {
             throw new AtlasBaseException(AtlasErrorCode.PAGINATION_CAN_ONLY_BE_USED_WITH_DEPTH_ONE);
         }
 
@@ -112,7 +112,7 @@ public class LineageREST {
                         "," + depth + ")");
             }
 
-            return atlasLineageService.getAtlasLineageInfo(guid, direction, depth, hideProcess, page, recordPerPage);
+            return atlasLineageService.getAtlasLineageInfo(guid, direction, depth, hideProcess, offset, limit);
         } finally {
             AtlasPerfTracer.log(perf);
         }

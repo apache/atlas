@@ -34,8 +34,8 @@ public class AtlasLineageContext {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasLineageContext.class);
 
     private int depth;
-    private int page;
-    private int recordPerPage;
+    private int offset;
+    private int limit;
     private String guid;
     private boolean hideProcess;
     private boolean allowDeletedProcess;
@@ -51,13 +51,13 @@ public class AtlasLineageContext {
 
     public AtlasLineageContext(AtlasLineageRequest lineageRequest, AtlasTypeRegistry typeRegistry) {
         this.guid = lineageRequest.getGuid();
-        this.recordPerPage = lineageRequest.getRecordPerPage();
+        this.limit = lineageRequest.getLimit();
         this.depth = lineageRequest.getDepth();
         this.direction = lineageRequest.getDirection();
         this.hideProcess = lineageRequest.isHideProcess();
         this.allowDeletedProcess = lineageRequest.isAllowDeletedProcess();
         this.attributes = lineageRequest.getAttributes();
-        this.page = lineageRequest.getPage();
+        this.offset = lineageRequest.getOffset();
 
         predicate = constructInMemoryPredicate(typeRegistry, lineageRequest.getEntityFilters());
     }
@@ -70,12 +70,12 @@ public class AtlasLineageContext {
         this.depth = depth;
     }
 
-    public int getRecordPerPage() {
-        return recordPerPage;
+    public int getLimit() {
+        return limit;
     }
 
-    public void setRecordPerPage(int recordPerPage) {
-        this.recordPerPage = recordPerPage;
+    public void setLimit(int limit) {
+        this.limit = limit;
     }
 
     public String getGuid() {
@@ -142,8 +142,8 @@ public class AtlasLineageContext {
         this.allowDeletedProcess = allowDeletedProcess;
     }
 
-    public int getPage() {
-        return page;
+    public int getOffset() {
+        return offset;
     }
 
     protected Predicate constructInMemoryPredicate(AtlasTypeRegistry typeRegistry, SearchParameters.FilterCriteria filterCriteria) {
@@ -159,7 +159,7 @@ public class AtlasLineageContext {
     }
 
     public boolean shouldApplyPagination() {
-        return page > -1;
+        return offset > -1;
     }
 
     @Override

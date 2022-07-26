@@ -35,8 +35,8 @@ import static org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection.B
 public class AtlasLineageRequest {
     private String guid;
     private int depth;
-    private int page;
-    private int recordPerPage;
+    private int offset;
+    private int limit;
     private boolean hideProcess;
     private boolean allowDeletedProcess;
     private LineageDirection direction = BOTH;
@@ -45,13 +45,13 @@ public class AtlasLineageRequest {
     private Set<String> attributes;
 
 
-    public AtlasLineageRequest(String guid, int depth, LineageDirection direction, boolean hideProcess, int page, int recordPerPage) {
+    public AtlasLineageRequest(String guid, int depth, LineageDirection direction, boolean hideProcess, int offset, int limit) {
         this.guid = guid;
         this.depth = depth;
         this.direction = direction;
         this.hideProcess = hideProcess;
-        this.page = page;
-        this.recordPerPage = recordPerPage;
+        this.offset = offset;
+        this.limit = limit;
         this.attributes = new HashSet<>();
     }
 
@@ -71,12 +71,12 @@ public class AtlasLineageRequest {
         this.depth = depth;
     }
 
-    public int getRecordPerPage() {
-        return recordPerPage;
+    public int getLimit() {
+        return limit;
     }
 
-    public void setRecordPerPage(int recordPerPage) {
-        this.recordPerPage = recordPerPage;
+    public void setLimit(int limit) {
+        this.limit = limit;
     }
 
     public LineageDirection getDirection() {
@@ -119,7 +119,7 @@ public class AtlasLineageRequest {
         this.allowDeletedProcess = allowDeletedProcess;
     }
 
-    public int getPage() {
-        return page;
+    public int getOffset() {
+        return offset;
     }
 }
