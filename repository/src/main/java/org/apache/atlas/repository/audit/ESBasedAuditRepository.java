@@ -17,6 +17,8 @@
  */
 package org.apache.atlas.repository.audit;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
@@ -46,12 +48,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.text.MessageFormat;
 import java.util.*;
+
+import static java.nio.charset.Charset.defaultCharset;
+import static org.springframework.util.StreamUtils.copyToString;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -65,6 +73,7 @@ import javax.inject.Singleton;
 public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository {
     private static final Logger LOG = LoggerFactory.getLogger(ESBasedAuditRepository.class);
     public static final String INDEX_BACKEND_CONF = "atlas.graph.index.search.hostname";
+    private static final String TOTAL_FIELD_LIMIT = "atlas.index.audit.elasticsearch.total_field_limit";
     public static final String INDEX_NAME = "entity_audits";
     private static final String ENTITYID = "entityId";
     private static final String TYPE_NAME = "typeName";
@@ -85,11 +94,14 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
 
     private RestClient lowLevelClient;
     private final EntityGraphRetriever entityGraphRetriever;
+    private final Configuration configuration;
 
     @Inject
-    public ESBasedAuditRepository(EntityGraphRetriever entityGraphRetriever){
+    public ESBasedAuditRepository(EntityGraphRetriever entityGraphRetriever, Configuration configuration) {
         this.entityGraphRetriever = entityGraphRetriever;
+        this.configuration = configuration;
     }
+
 
     @Override
     public void putEventsV1(List<EntityAuditEvent> events) throws AtlasException {
@@ -134,7 +146,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
                 Request request = new Request("POST", endpoint);
                 request.setEntity(entity);
                 Response response = lowLevelClient.performRequest(request);
-                int statusCode = response.getStatusLine().getStatusCode();;
+                int statusCode = response.getStatusLine().getStatusCode();
                 if (statusCode != 200) {
                     throw new AtlasException("Unable to push entity audits to ES");
                 }
@@ -176,7 +188,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
 
     @Override
     public EntityAuditSearchResult searchEvents(String queryString) throws AtlasBaseException {
-       return searchEvents(queryString, null);
+        return searchEvents(queryString, null);
     }
 
     public EntityAuditSearchResult searchEvents(String queryString, Set<String> attributes) throws AtlasBaseException {
@@ -196,7 +208,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
         Map<String, Object> hits_0 = (Map<String, Object>) responseMap.get("hits");
         List<LinkedHashMap> hits_1 = (List<LinkedHashMap>) hits_0.get("hits");
         RequestContext requestContext = RequestContext.get();
-        for (LinkedHashMap hit: hits_1) {
+        for (LinkedHashMap hit : hits_1) {
             Map source = (Map) hit.get("_source");
             String entityGuid = (String) source.get(ENTITYID);
             EntityAuditEventV2 event = new EntityAuditEventV2();
@@ -274,6 +286,10 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
                 LOG.info("Create ES index for entity audits in ES Based Audit Repo");
                 createAuditIndex();
             }
+            if (isFieldLimitDifferent()) {
+                LOG.info("Updating ES total field limit");
+                updateFieldLimit();
+            }
         } catch (IOException e) {
             LOG.error("error", e);
             throw new AtlasException(e);
@@ -288,29 +304,67 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
         Request request = new Request("PUT", INDEX_NAME);
         request.setEntity(entity);
         Response response = lowLevelClient.performRequest(request);
-        int statusCode = response.getStatusLine().getStatusCode();;
-        return statusCode == 200 ? true: false;
+        int statusCode = response.getStatusLine().getStatusCode();
+        return statusCode == 200 ? true : false;
     }
 
     private String getAuditIndexMappings() throws IOException {
-        String atlasHomeDir  = System.getProperty("atlas.home");
+        String atlasHomeDir = System.getProperty("atlas.home");
         String elasticsearchSettingsFilePath = (org.apache.commons.lang3.StringUtils.isEmpty(atlasHomeDir) ? "." : atlasHomeDir) + File.separator + "elasticsearch" + File.separator + "es-audit-mappings.json";
-        File elasticsearchSettingsFile  = new File(elasticsearchSettingsFilePath);
-        String jsonString  = new String(Files.readAllBytes(elasticsearchSettingsFile.toPath()), StandardCharsets.UTF_8);
+        File elasticsearchSettingsFile = new File(elasticsearchSettingsFilePath);
+        String jsonString = new String(Files.readAllBytes(elasticsearchSettingsFile.toPath()), StandardCharsets.UTF_8);
         return jsonString;
     }
 
-     private boolean checkIfIndexExists() throws IOException {
-         Request request = new Request("HEAD", INDEX_NAME);
-         Response response = lowLevelClient.performRequest(request);
-         int statusCode = response.getStatusLine().getStatusCode();;
-         if (statusCode == 200) {
-             LOG.info("Entity audits index exists!");
-             return true;
-         }
-         LOG.info("Entity audits index does not exist!");
-         return false;
-     }
+    private boolean checkIfIndexExists() throws IOException {
+        Request request = new Request("HEAD", INDEX_NAME);
+        Response response = lowLevelClient.performRequest(request);
+        int statusCode = response.getStatusLine().getStatusCode();
+        if (statusCode == 200) {
+            LOG.info("Entity audits index exists!");
+            return true;
+        }
+        LOG.info("Entity audits index does not exist!");
+        return false;
+    }
+
+    private boolean isFieldLimitDifferent() {
+        JsonNode fieldLimit;
+        try {
+            fieldLimit = getIndexFieldLimit();
+        } catch (IOException e) {
+            LOG.error("Problem while retrieving the index field limit!", e);
+            return false;
+        }
+        Integer fieldLimitFromConfigurationFile = configuration.getInt(TOTAL_FIELD_LIMIT);
+        return fieldLimit == null || fieldLimitFromConfigurationFile.equals(fieldLimit.intValue());
+    }
+
+    private JsonNode getIndexFieldLimit() throws IOException {
+        Request request = new Request("GET", INDEX_NAME + "/_settings");
+        Response response = lowLevelClient.performRequest(request);
+        ObjectMapper objectMapper = new ObjectMapper();
+        String fieldName = INDEX_NAME + ".settings.index.mapping.total_fields.limit";
+        return objectMapper.readTree(copyToString(response.getEntity().getContent(), Charset.defaultCharset())).get(fieldName);
+    }
+
+    private void updateFieldLimit() {
+        Request request = new Request("PUT", INDEX_NAME + "/_settings");
+        String requestBody = String.format("{\"index.mapping.total_fields.limit\": %d}", configuration.getInt(TOTAL_FIELD_LIMIT));
+        HttpEntity entity = new NStringEntity(requestBody, ContentType.APPLICATION_JSON);
+        request.setEntity(entity);
+        Response response;
+        try {
+            response = lowLevelClient.performRequest(request);
+            if (response.getStatusLine().getStatusCode() != 200) {
+                LOG.error("Error while updating the Elasticsearch total field limits! Error: " + copyToString(response.getEntity().getContent(), defaultCharset()));
+            } else {
+                LOG.info("ES total field limit has been updated");
+            }
+        } catch (IOException e) {
+            LOG.error("Error while updating the field limit", e);
+        }
+    }
 
     @Override
     public void stop() throws AtlasException {
@@ -350,7 +404,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
         Configuration configuration = ApplicationProperties.get();
         String indexConf = configuration.getString(INDEX_BACKEND_CONF);
         String[] hosts = indexConf.split(",");
-        for (String host: hosts) {
+        for (String host : hosts) {
             host = host.trim();
             String[] hostAndPort = host.split(":");
             if (hostAndPort.length == 1) {
