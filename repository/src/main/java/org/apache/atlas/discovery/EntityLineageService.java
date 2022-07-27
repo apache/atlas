@@ -316,10 +316,6 @@ public class EntityLineageService implements AtlasLineageService {
                 List<AtlasEdge> qualifyingEdges = getQualifyingProcessEdges(processEdges, lineageContext);
                 ret.addChildrenCount(GraphHelper.getGuid(processVertex), INPUT, qualifyingEdges.size());
 
-                if (lineageContext.shouldApplyPagination()) {
-                    qualifyingEdges = applyPagination(lineageContext, qualifyingEdges);
-                }
-
                 for (AtlasEdge processEdge : qualifyingEdges) {
                     addEdgeToResult(processEdge, ret, lineageContext);
 
@@ -335,10 +331,6 @@ public class EntityLineageService implements AtlasLineageService {
                 List<AtlasEdge> qualifyingEdges = getQualifyingProcessEdges(processEdges, lineageContext);
                 ret.addChildrenCount(GraphHelper.getGuid(processVertex), OUTPUT, qualifyingEdges.size());
 
-                if (lineageContext.shouldApplyPagination()) {
-                    qualifyingEdges = applyPagination(lineageContext, qualifyingEdges);
-                }
-
                 for (AtlasEdge processEdge : qualifyingEdges) {
                     addEdgeToResult(processEdge, ret, lineageContext);
 
@@ -350,16 +342,6 @@ public class EntityLineageService implements AtlasLineageService {
         }
 
         return ret;
-    }
-
-    private List<AtlasEdge> applyPagination(AtlasLineageContext lineageContext, List<AtlasEdge> qualifyingEdges) {
-        int startIndex = lineageContext.getOffset() * lineageContext.getLimit();
-        int endIndex = startIndex + lineageContext.getLimit();
-        if (qualifyingEdges.size() < startIndex || endIndex > qualifyingEdges.size()) {
-            return qualifyingEdges;
-        } else {
-            return qualifyingEdges.subList(startIndex, endIndex);
-        }
     }
 
     private List<AtlasEdge> getQualifyingProcessEdges(Iterator<AtlasEdge> processEdges, AtlasLineageContext lineageContext) {
@@ -443,7 +425,7 @@ public class EntityLineageService implements AtlasLineageService {
                         if (currentOffset > 0) {
                             currentOffset--;
                         }
-                        if (ret.getGuidEntityMap().size() == lineageContext.getLimit()) {
+                        if (nonProcessEntityCount(ret) >= lineageContext.getLimit()) {
                             return;
                         }
                     }
@@ -453,6 +435,18 @@ public class EntityLineageService implements AtlasLineageService {
                 currentOffset -= edgesOfProcess.size();
             }
         }
+    }
+
+    private long nonProcessEntityCount(AtlasLineageInfo ret) {
+        long nonProcessVertexCount = ret.getGuidEntityMap()
+                .values()
+                .stream()
+                .filter(vertex -> !vertex.getTypeName().contains("Process"))
+                .count();
+
+        //We subtract 1 because the base entity is added to the result as well. We want 'limit' number of child
+        //vertices, excluding the base entity.
+        return nonProcessVertexCount - 1;
     }
 
     private void addLimitlessVerticesToResult(boolean isInput, int depth, Set<String> visitedVertices, AtlasLineageInfo ret, AtlasLineageContext lineageContext, List<AtlasEdge> currentVertexEdges) throws AtlasBaseException {
@@ -523,17 +517,12 @@ public class EntityLineageService implements AtlasLineageService {
     }
 
     private List<AtlasEdge> getEdgesOfCurrentVertex(AtlasVertex currentVertex, boolean isInput, AtlasLineageContext lineageContext) {
-        List<AtlasEdge> processEdgesList = vertexEdgeCache
+        return vertexEdgeCache
                 .getEdges(currentVertex, IN, isInput ? PROCESS_OUTPUTS_EDGE : PROCESS_INPUTS_EDGE)
                 .stream()
-                .sorted(Comparator.comparing(AtlasEdge::getIdForDisplay))
+                .sorted(Comparator.comparing(edge -> edge.getProperty("_r__guid", String.class)))
                 .filter(edge -> shouldProcessEdge(lineageContext, edge))
                 .collect(Collectors.toList());
-
-        if (lineageContext.shouldApplyPagination()) {
-            return applyPagination(lineageContext, processEdgesList);
-        }
-        return processEdgesList;
     }
 
     private void addEdgeToResult(AtlasEdge edge, AtlasLineageInfo lineageInfo,
