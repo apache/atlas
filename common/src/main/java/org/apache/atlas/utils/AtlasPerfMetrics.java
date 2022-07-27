@@ -86,7 +86,7 @@ public class AtlasPerfMetrics {
 
     public class MetricRecorder {
         private final String name;
-        private long startTimeMs = System.currentTimeMillis();
+        private final long startTimeMs = System.currentTimeMillis();
 
         MetricRecorder(String name) {
             this.name = name;
@@ -94,10 +94,6 @@ public class AtlasPerfMetrics {
 
         long getElapsedTime() {
             return System.currentTimeMillis() - startTimeMs;
-        }
-
-        public void resetStartTime() {
-            startTimeMs = System.currentTimeMillis();
         }
     }
 

@@ -141,7 +141,6 @@ public class RequestContext {
 
         if (metrics != null && !metrics.isEmpty()) {
             METRICS.debug(metrics.toString());
-            System.out.println(metrics);
 
             metrics.clear();
         }
