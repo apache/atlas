@@ -40,7 +40,6 @@ import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageRelation;
 import org.apache.atlas.model.lineage.AtlasLineageRequest;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
-import org.apache.atlas.repository.graphdb.AtlasElement;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
@@ -504,7 +503,7 @@ public class EntityLineageService implements AtlasLineageService {
         return vertexEdgeCache.getEdges(processVertex, OUT, isInput ? PROCESS_INPUTS_EDGE : PROCESS_OUTPUTS_EDGE)
                 .stream()
                 .filter(edge -> shouldProcessEdge(lineageContext, edge) && vertexMatchesEvaluation(edge.getInVertex(), lineageContext))
-                .sorted(Comparator.comparing(AtlasElement::getIdForDisplay))
+                .sorted(Comparator.comparing(edge -> edge.getProperty("_r__guid", String.class)))
                 .collect(Collectors.toList());
     }
 
