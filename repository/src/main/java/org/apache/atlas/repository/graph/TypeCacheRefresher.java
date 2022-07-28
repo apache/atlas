@@ -7,6 +7,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.slf4j.Logger;
@@ -14,7 +15,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import javax.inject.Inject;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -23,11 +26,19 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
+import static org.apache.atlas.repository.Constants.VERTEX_INDEX;
+
 @Component
 public class TypeCacheRefresher {
     private static final Logger LOG = LoggerFactory.getLogger(TypeCacheRefresher.class);
     private static final String URI = "/api/atlas/admin/types/refresh";
     private List<String> atlasHosts;
+    private final IAtlasGraphProvider provider;
+
+    @Inject
+    public TypeCacheRefresher(final IAtlasGraphProvider provider) {
+        this.provider = provider;
+    }
 
     @PostConstruct
     public void init() throws AtlasException{
@@ -42,17 +53,13 @@ public class TypeCacheRefresher {
             return;
         }
 
-        try {
-            //Added delay so that other node has this committed types available
-            Thread.sleep(5000);
-        } catch (InterruptedException e) {
-            LOG.error(e.getMessage(),e);
-        }
         ExecutorService executorService = Executors.newFixedThreadPool(atlasHosts.size());
         List<CompletableFuture<?>> completableFutureList = new ArrayList<>(atlasHosts.size());
         try {
+            int totalFieldKeys = provider.get().getManagementSystem().getGraphIndex(VERTEX_INDEX).getFieldKeys().size();
+            LOG.info("Found {} totalFieldKeys to be expected in other nodes",totalFieldKeys);
             atlasHosts.forEach(hostUrl -> {
-                CompletableFuture<Void> httpApiFuture = CompletableFuture.runAsync(() -> refreshCache(hostUrl), executorService);
+                CompletableFuture<Void> httpApiFuture = CompletableFuture.runAsync(() -> refreshCache(hostUrl,totalFieldKeys), executorService);
                 completableFutureList.add(httpApiFuture);
             });
             //Wait for all nodes to finish
@@ -67,18 +74,21 @@ public class TypeCacheRefresher {
         }
     }
 
-    private void refreshCache(final String hostUrl) {
+    private void refreshCache(final String hostUrl,final int totalFieldKeys) {
         final CloseableHttpClient client = HttpClients.createDefault();
         CloseableHttpResponse response = null;
-        final HttpPost httpPost = new HttpPost(hostUrl+URI);
+        final HttpPost httpPost;
         try {
+            URIBuilder builder = new URIBuilder(hostUrl+URI);
+            builder.setParameter("expectedFieldKeys", String.valueOf(totalFieldKeys));
+            httpPost = new HttpPost(builder.build());
             LOG.info("Refreshing cache on host {}",hostUrl);
             response = client.execute(httpPost);
             if(response.getStatusLine().getStatusCode() != 204) {
                 throw new RuntimeException("Could not refresh cache on host "+hostUrl+". HTTP code = "+ response.getStatusLine().getStatusCode());
             }
             LOG.info("Refreshed cache successfully on host {}",hostUrl);
-        } catch (IOException e) {
+        } catch (IOException | URISyntaxException e) {
             LOG.error(e.getMessage(),e);
             throw new RuntimeException(e);
         }
