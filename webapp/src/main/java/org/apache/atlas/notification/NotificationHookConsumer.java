@@ -19,7 +19,6 @@ package org.apache.atlas.notification;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import kafka.utils.ShutdownableThread;
 import org.apache.atlas.*;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.ha.HAConfiguration;
@@ -122,6 +121,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     private static final String ATTRIBUTE_QUALIFIED_NAME = "qualifiedName";
     private static final String EXCEPTION_CLASS_NAME_JANUSGRAPH_EXCEPTION = "JanusGraphException";
     private static final String EXCEPTION_CLASS_NAME_PERMANENTLOCKING_EXCEPTION = "PermanentLockingException";
+    private static final int KAFKA_CONSUMER_SHUTDOWN_WAIT = 30000;
 
     // from org.apache.hadoop.hive.ql.parse.SemanticAnalyzer
     public static final String DUMMY_DATABASE               = "_dummy_database";
@@ -379,7 +379,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
             if (executors != null) {
                 executors.shutdown();
 
-                if (!executors.awaitTermination(5000, TimeUnit.MILLISECONDS)) {
+                if (!executors.awaitTermination(KAFKA_CONSUMER_SHUTDOWN_WAIT, TimeUnit.MILLISECONDS)) {
                     LOG.error("Timed out waiting for consumer threads to shut down, exiting uncleanly");
                 }
 
@@ -523,21 +523,21 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     }
 
     @VisibleForTesting
-    class HookConsumer extends ShutdownableThread {
+    class HookConsumer extends Thread {
         private final NotificationConsumer<HookNotification> consumer;
         private final AtomicBoolean                          shouldRun      = new AtomicBoolean(false);
         private final List<String>                           failedMessages = new ArrayList<>();
         private final AdaptiveWaiter                         adaptiveWaiter = new AdaptiveWaiter(minWaitDuration, maxWaitDuration, minWaitDuration);
 
         public HookConsumer(NotificationConsumer<HookNotification> consumer) {
-            super("atlas-hook-consumer-thread", false);
+            super("atlas-hook-consumer-thread");
 
             this.consumer = consumer;
         }
 
         @Override
-        public void doWork() {
-            LOG.info("==> HookConsumer doWork()");
+        public void run() {
+            LOG.info("==> HookConsumer run()");
 
             shouldRun.set(true);
 
@@ -572,12 +572,12 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                     consumer.close();
                 }
 
-                LOG.info("<== HookConsumer doWork()");
+                LOG.info("<== HookConsumer run()");
             }
         }
 
         @VisibleForTesting
-        void handleMessage(AtlasKafkaMessage<HookNotification> kafkaMsg) throws AtlasServiceException, AtlasException {
+        void handleMessage(AtlasKafkaMessage<HookNotification> kafkaMsg) {
             AtlasPerfTracer  perf           = null;
             HookNotification message        = kafkaMsg.getMessage();
             String           messageUser    = message.getUser();
@@ -957,25 +957,18 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
             return true;
         }
 
-        @Override
         public void shutdown() {
             LOG.info("==> HookConsumer shutdown()");
 
             // handle the case where thread was not started at all
             // and shutdown called
-            if (shouldRun.get() == false) {
+            if (!shouldRun.compareAndSet(true, false)) {
                 return;
             }
-
-            super.initiateShutdown();
-
-            shouldRun.set(false);
 
             if (consumer != null) {
                 consumer.wakeup();
             }
-
-            super.awaitShutdown();
 
             LOG.info("<== HookConsumer shutdown()");
         }
