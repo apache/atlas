@@ -186,23 +186,19 @@ public class NotificationHookConsumerKafkaTest {
     }
 
     void consumeOneMessage(NotificationConsumer<HookNotification> consumer,
-                           NotificationHookConsumer.HookConsumer hookConsumer) throws InterruptedException {
-        try {
-            long startTime = System.currentTimeMillis(); //fetch starting time
+                           NotificationHookConsumer.HookConsumer hookConsumer) {
+        long startTime = System.currentTimeMillis(); //fetch starting time
 
-            while ((System.currentTimeMillis() - startTime) < 10000) {
-                List<AtlasKafkaMessage<HookNotification>> messages = consumer.receive();
+        while ((System.currentTimeMillis() - startTime) < 10000) {
+            List<AtlasKafkaMessage<HookNotification>> messages = consumer.receive();
 
-                for (AtlasKafkaMessage<HookNotification> msg : messages) {
-                    hookConsumer.handleMessage(msg);
-                }
-
-                if (messages.size() > 0) {
-                    break;
-                }
+            for (AtlasKafkaMessage<HookNotification> msg : messages) {
+                hookConsumer.handleMessage(msg);
             }
-        } catch (AtlasServiceException | AtlasException e) {
-            Assert.fail("Consumer failed with exception ", e);
+
+            if (messages.size() > 0) {
+                break;
+            }
         }
     }
 
