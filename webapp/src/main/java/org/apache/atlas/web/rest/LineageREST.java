@@ -33,7 +33,6 @@ import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.collections.MapUtils;
-import org.apache.solr.common.StringUtils;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Service;
 
@@ -45,8 +44,6 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.util.HashMap;
 import java.util.Map;
-
-import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
 
 /**
  * REST interface for an entity's lineage information
@@ -98,11 +95,6 @@ public class LineageREST {
                                             @QueryParam("offset") @DefaultValue(DEFAULT_PAGE) int offset,
                                             @QueryParam("limit") @DefaultValue(DEFAULT_RECORD_PER_PAGE) int limit) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
-        if ((offset != -1 && limit == -1) || (offset == -1 && limit != -1)) {
-            throw new AtlasBaseException(AtlasErrorCode.INVALID_PAGINATION_STATE);
-        } else if (depth != 1 && offset != -1) {
-            throw new AtlasBaseException(AtlasErrorCode.PAGINATION_CAN_ONLY_BE_USED_WITH_DEPTH_ONE);
-        }
 
         AtlasPerfTracer perf = null;
 
@@ -134,9 +126,7 @@ public class LineageREST {
     @Timed
     public AtlasLineageInfo getLineageGraph(AtlasLineageRequest request) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
-        if (StringUtils.isEmpty(request.getGuid())) {
-            throw new AtlasBaseException(BAD_REQUEST, "guid is not specified");
-        }
+        request.performValidation();
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
