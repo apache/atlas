@@ -69,7 +69,7 @@ public class TypeCacheRefresher {
             URIBuilder builder = new URIBuilder(hostUrl);
             builder.setParameter("expectedFieldKeys", String.valueOf(totalFieldKeys));
             final HttpPost httpPost = new HttpPost(builder.build());
-            LOG.info("Invoking cache refresh endpoint");
+            LOG.info("Invoking cache refresh endpoint {}",hostUrl);
             response = client.execute(httpPost);
             LOG.info("Received HTTP response code {} from cache refresh endpoint",response.getStatusLine().getStatusCode());
             if(response.getStatusLine().getStatusCode() != 200) {
@@ -88,7 +88,7 @@ public class TypeCacheRefresher {
 
             LOG.info("Refreshed cache successfully on all hosts");
         } catch (IOException | URISyntaxException e) {
-            LOG.error(e.getMessage(),e);
+            LOG.error("Error while invoking cache-refresh endpoint " + e.getMessage(),e);
             throw new RuntimeException(e);
         }
         finally {

@@ -63,7 +63,7 @@ public class TypeCacheRefreshREST {
         }
         //This condition will hold true when expected fieldKeys did not appear even after waiting for totalWaitTimeInMillis
         if (counter > totalIterationsAllowed) {
-            LOG.warn("Could not find desired count of fieldKeys {} after {} ms of wait", expectedFieldKeys, totalWaitTimeInMillis);
+            LOG.error("Could not find desired count of fieldKeys {} after {} ms of wait", expectedFieldKeys, totalWaitTimeInMillis);
             throw new AtlasBaseException(FAILED_TO_REFRESH_TYPE_DEF_CACHE);
         } else {
             LOG.info("Found desired size of fieldKeys in iteration {}", counter);
