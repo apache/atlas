@@ -15,6 +15,7 @@ import javax.inject.Singleton;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 
+import static org.apache.atlas.AtlasErrorCode.FAILED_TO_REFRESH_TYPE_DEF_CACHE;
 import static org.apache.atlas.repository.Constants.VERTEX_INDEX;
 
 
@@ -50,15 +51,22 @@ public class TypeCacheRefreshREST {
         int currentSize = provider.get().getManagementSystem().getGraphIndex(VERTEX_INDEX).getFieldKeys().size();
         LOG.info("Size of field keys before refresh = {}", currentSize);
 
-        long totalWaitTimeInMillis = 10 * 1000;//10 seconds
+        long totalWaitTimeInMillis = 15 * 1000;//15 seconds
         long sleepTimeInMillis = 500;
-        long totalIterations = Math.floorDiv(totalWaitTimeInMillis, sleepTimeInMillis);
+        long totalIterationsAllowed = Math.floorDiv(totalWaitTimeInMillis, sleepTimeInMillis);
         int counter = 0;
 
-        while (currentSize != expectedFieldKeys && counter++ < totalIterations) {
+        while (currentSize != expectedFieldKeys && counter++ < totalIterationsAllowed) {
             currentSize = provider.get().getManagementSystem().getGraphIndex(VERTEX_INDEX).getFieldKeys().size();
             LOG.info("Size found = {} at iteration {}", currentSize, counter);
             Thread.sleep(sleepTimeInMillis);
+        }
+        //This condition will hold true when expected fieldKeys did not appear even after waiting for totalWaitTimeInMillis
+        if (counter > totalIterationsAllowed) {
+            LOG.warn("Could not find desired count of fieldKeys {} after {} ms of wait", expectedFieldKeys, totalWaitTimeInMillis);
+            throw new AtlasBaseException(FAILED_TO_REFRESH_TYPE_DEF_CACHE);
+        } else {
+            LOG.info("Found desired size of fieldKeys in iteration {}", counter);
         }
         //Reload in-memory cache of type-registry
         typeDefStore.init();
