@@ -105,7 +105,7 @@ define(['require',
                     }
                     this.schemaCollection.find(function(item) {
                         var obj = item.toJSON();
-                        if (item.get('isEnable')) {
+                        if (item.get('isEnable') && item.get('status') === 'ACTIVE') {
                             that.arr.push({
                                 id: obj.guid,
                                 model: obj
