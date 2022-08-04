@@ -1,6 +1,5 @@
 package org.apache.atlas.repository.graph;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.atlas.ApplicationProperties;
@@ -80,8 +79,8 @@ public class TypeCacheRefresher {
             CacheRefreshResponseEnvelope cacheRefreshResponseEnvelope = convertStringToObject(responseBody);
 
             for (CacheRefreshResponse responseOfEachNode : cacheRefreshResponseEnvelope.getResponse()) {
-                LOG.info("Host {} returns response code {}", responseOfEachNode.getHost(), responseOfEachNode.getHttpStatus());
-                if(responseOfEachNode.getHttpStatus() != 204) {
+                LOG.info("Host {} returns response code {}", responseOfEachNode.getHost(), responseOfEachNode.getStatus());
+                if(responseOfEachNode.getStatus() != 204) {
                     throw new RuntimeException("Error while performing cache refresh on host "+hostUrl+". HTTP code = "+ response.getStatusLine().getStatusCode());
                 }
             }
@@ -98,8 +97,6 @@ public class TypeCacheRefresher {
     }
 
     private CacheRefreshResponseEnvelope convertStringToObject(final String responseBody) throws JsonProcessingException {
-        //Sample string response
-        //String input= "{\"response\": [{\"atlas-2\": \"status: 204, headers: {'Date': 'Mon, 01 Aug 2022 16:21:23 GMT', 'Content-Type': 'application/json;charset=utf-8', 'requestId': '38f26130-27d8-4910-b4a8-728ed47621e7'}\"}, {\"atlas-1\": \"status: 204, headers: {'Date': 'Mon, 01 Aug 2022 16:21:23 GMT', 'Content-Type': 'application/json;charset=utf-8', 'requestId': 'dc67d322-5219-4204-a558-fa5cf9ae8cd6'}\"}, {\"atlas-3\": \"status: 204, headers: {'Date': 'Mon, 01 Aug 2022 16:21:23 GMT', 'Content-Type': 'application/json;charset=utf-8', 'requestId': 'e60ae5d7-91cf-4d61-9499-16a1c44793be'}\"}]}";
         final ObjectMapper mapper = new ObjectMapper();
         return mapper.readValue(responseBody, CacheRefreshResponseEnvelope.class);
     }
@@ -116,24 +113,34 @@ class CacheRefreshResponseEnvelope {
         this.response = response;
     }
 }
-class CacheRefreshResponse {
-    private final Map<String,String> response;
 
-    @JsonCreator
-    public CacheRefreshResponse(Map<String, String> response){
-        this.response = response;
-    }
+class CacheRefreshResponse {
+    private String host;
+    private int status;
+    private Map<String,String> headers;
 
     public String getHost() {
-        return response.entrySet().stream().findFirst().get().getKey();
+        return host;
     }
 
-    public int getHttpStatus() {
-        String responseValue = response.entrySet().stream().findFirst().get().getValue();
-        //Parsing status: 204, headers: {'Date': 'Mon, 01 Aug 2022 16:21:23 GMT', 'Content-Type': 'application/json;charset=utf-8', 'requestId': 'dc67d322-5219-4204-a558-fa5cf9ae8cd6'}]
-        String httpStatusCodeInString = responseValue.split(",")[0].split(":")[1].trim();
-        return Integer.parseInt(httpStatusCodeInString);
+    public void setHost(String host) {
+        this.host = host;
     }
 
+    public int getStatus() {
+        return status;
+    }
+
+    public void setStatus(int status) {
+        this.status = status;
+    }
+
+    public Map<String, String> getHeaders() {
+        return headers;
+    }
+
+    public void setHeaders(Map<String, String> headers) {
+        this.headers = headers;
+    }
 }
 
