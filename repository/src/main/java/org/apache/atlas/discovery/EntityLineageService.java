@@ -617,21 +617,18 @@ public class EntityLineageService implements AtlasLineageService {
         if (!entities.containsKey(inGuid)) {
             AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeader(inVertex, lineageContext.getAttributes());
             GraphTransactionInterceptor.addToVertexGuidCache(inVertex.getId(), entityHeader.getGuid());
-            System.out.println("Input vertex: " + entityHeader.getDisplayText());
             entities.put(inGuid, entityHeader);
         }
 
         if (!entities.containsKey(outGuid)) {
             AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeader(outVertex, lineageContext.getAttributes());
             GraphTransactionInterceptor.addToVertexGuidCache(outVertex.getId(), entityHeader.getGuid());
-            System.out.println("Output vertex: " + entityHeader.getDisplayText());
             entities.put(outGuid, entityHeader);
         }
 
         if (!entities.containsKey(processGuid)) {
             AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeader(processVertex, lineageContext.getAttributes());
             GraphTransactionInterceptor.addToVertexGuidCache(processVertex.getId(), entityHeader.getGuid());
-            System.out.println("Process vertex: " + entityHeader.getDisplayText());
             entities.put(processGuid, entityHeader);
         }
 
