@@ -21,7 +21,6 @@ package org.apache.atlas.model.lineage;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 
 import javax.xml.bind.annotation.XmlAccessType;
@@ -42,36 +41,50 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class AtlasLineageInfo implements Serializable {
-    private String                         baseEntityGuid;
-    private LineageDirection               lineageDirection;
-    private int                            lineageDepth;
-    private int                            limit;
+    private String baseEntityGuid;
+    private LineageDirection lineageDirection;
+    private int lineageDepth;
+    private int limit;
+    private int offset;
+    private long remainingUpstreamVertexCount;
+    private long remainingDownstreamVertexCount;
     private Map<String, AtlasEntityHeader> guidEntityMap;
-    private Set<LineageRelation>           relations;
+    private Set<LineageRelation> relations;
     private Map<String, Map<LineageDirection, Integer>> childrenCounts = new HashMap<>();
 
-    public AtlasLineageInfo() {}
+    public AtlasLineageInfo() {
+    }
 
-    public enum LineageDirection { INPUT, OUTPUT, BOTH }
+    public enum LineageDirection {INPUT, OUTPUT, BOTH}
 
     /**
      * Captures lineage information for an entity instance like hive_table
-
-     * @param baseEntityGuid guid of the lineage entity .
+     *
+     * @param baseEntityGuid   guid of the lineage entity .
+     * @param guidEntityMap    map of entity guid to AtlasEntityHeader (minimal entity info)
+     * @param relations        list of lineage relations for the entity (fromEntityId -> toEntityId)
      * @param lineageDirection direction of lineage, can be INPUT, OUTPUT or INPUT_AND_OUTPUT
-     * @param lineageDepth  lineage depth to be fetched.
-     * @param guidEntityMap map of entity guid to AtlasEntityHeader (minimal entity info)
-     * @param relations list of lineage relations for the entity (fromEntityId -> toEntityId)
+     * @param lineageDepth     lineage depth to be fetched.
+     * @param offset
      */
     public AtlasLineageInfo(String baseEntityGuid, Map<String, AtlasEntityHeader> guidEntityMap,
                             Set<LineageRelation> relations, LineageDirection lineageDirection,
-                            int lineageDepth, int limit) {
-        this.baseEntityGuid   = baseEntityGuid;
+                            int lineageDepth, int limit, int offset) {
+        this.baseEntityGuid = baseEntityGuid;
         this.lineageDirection = lineageDirection;
-        this.lineageDepth     = lineageDepth;
-        this.limit            = limit;
-        this.guidEntityMap    = guidEntityMap;
-        this.relations        = relations;
+        this.lineageDepth = lineageDepth;
+        this.limit = limit;
+        this.guidEntityMap = guidEntityMap;
+        this.relations = relations;
+        this.offset = offset;
+    }
+
+    public void calculateRemainingUpstreamVertexCount(Long totalUpstreamVertexCount) {
+        remainingUpstreamVertexCount = Math.max(totalUpstreamVertexCount - offset - limit, 0);
+    }
+
+    public void calculateRemainingDownstreamVertexCount(Long totalUpstreamVertexCount) {
+        remainingDownstreamVertexCount = Math.max(totalUpstreamVertexCount - offset - limit, 0);
     }
 
     public String getBaseEntityGuid() {
@@ -122,11 +135,27 @@ public class AtlasLineageInfo implements Serializable {
         this.limit = limit;
     }
 
+    public int getOffset() {
+        return offset;
+    }
+
+    public void setOffset(int offset) {
+        this.offset = offset;
+    }
+
+    public long getRemainingUpstreamVertexCount() {
+        return remainingUpstreamVertexCount;
+    }
+
+    public long getRemainingDownstreamVertexCount() {
+        return remainingDownstreamVertexCount;
+    }
+
     public Map<String, Map<LineageDirection, Integer>> getChildrenCounts() {
         return childrenCounts;
     }
 
-    public void addChildrenCount(String guid, LineageDirection direction, int count){
+    public void addChildrenCount(String guid, LineageDirection direction, int count) {
         Map<LineageDirection, Integer> entityChildrenCountMap = childrenCounts.get(guid);
         if (entityChildrenCountMap == null) {
             entityChildrenCountMap = new HashMap<>();
@@ -135,7 +164,7 @@ public class AtlasLineageInfo implements Serializable {
         childrenCounts.put(guid, entityChildrenCountMap);
     }
 
-    public void mergeChildrenCounts(String guid, LineageDirection direction){
+    public void mergeChildrenCounts(String guid, LineageDirection direction) {
         childrenCounts.get(guid).merge(direction, 1, Integer::sum);
     }
 
@@ -180,11 +209,12 @@ public class AtlasLineageInfo implements Serializable {
         private String relationshipId;
         private String processId;
 
-        public LineageRelation() { }
+        public LineageRelation() {
+        }
 
         public LineageRelation(String fromEntityId, String toEntityId, final String relationshipId) {
             this.fromEntityId = fromEntityId;
-            this.toEntityId   = toEntityId;
+            this.toEntityId = toEntityId;
             this.relationshipId = relationshipId;
         }
 
