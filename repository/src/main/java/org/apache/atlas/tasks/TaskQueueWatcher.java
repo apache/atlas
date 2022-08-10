@@ -35,6 +35,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class TaskQueueWatcher implements Runnable {
     private static final Logger LOG = LoggerFactory.getLogger(TaskQueueWatcher.class);
     private static final TaskExecutor.TaskLogger TASK_LOG         = TaskExecutor.TaskLogger.getLogger();
+    private final boolean isActiveActiveHAEnabled;
 
     private TaskRegistry registry;
     private final ExecutorService executorService;
@@ -49,13 +50,14 @@ public class TaskQueueWatcher implements Runnable {
 
     public TaskQueueWatcher(ExecutorService executorService, TaskRegistry registry,
                             Map<String, TaskFactory> taskTypeFactoryMap, TaskManagement.Statistics statistics,
-                           ICuratorFactory curatorFactory) {
+                           ICuratorFactory curatorFactory, boolean isActiveActiveHAEnabled) {
 
         this.registry = registry;
         this.executorService = executorService;
         this.taskTypeFactoryMap = taskTypeFactoryMap;
         this.statistics = statistics;
         this.curatorFactory = curatorFactory;
+        this.isActiveActiveHAEnabled = isActiveActiveHAEnabled;
     }
 
     public void shutdown() {
@@ -74,10 +76,9 @@ public class TaskQueueWatcher implements Runnable {
 
         while (shouldRun.get()) {
             try {
-                lock = curatorFactory.lockInstanceWithDefaultZkRoot(TASK_LOCK);
-                LOG.info("Attempting to acquire a lock on task");
-                lock.acquire();
-                LOG.info("Acquired a lock on task");
+                if (isActiveActiveHAEnabled) {
+                    lock = acquireDistributedLock();
+                }
                 TasksFetcher fetcher = new TasksFetcher(registry);
 
                 Thread tasksFetcherThread = new Thread(fetcher);
@@ -106,6 +107,14 @@ public class TaskQueueWatcher implements Runnable {
         }
     }
 
+    private InterProcessMutex acquireDistributedLock() throws Exception {
+        InterProcessMutex lockForTask = curatorFactory.lockInstanceWithDefaultZkRoot(TASK_LOCK);
+        LOG.info("Attempting to acquire a lock on task");
+        lockForTask.acquire();
+        LOG.info("Acquired a lock on task");
+        return lockForTask;
+    }
+
     private void waitForTasksToComplete(final CountDownLatch latch) throws InterruptedException {
         if (latch.getCount() != 0) {
             LOG.info("TaskQueueWatcher: Waiting on Latch, current count: {}", latch.getCount());
@@ -116,13 +125,13 @@ public class TaskQueueWatcher implements Runnable {
 
     private void releaseLock(InterProcessMutex lock) {
         try {
-            if(lock != null && lock.isOwnedByCurrentThread()) {
+            if (isActiveActiveHAEnabled && lock != null && lock.isOwnedByCurrentThread()) {
                 LOG.info("About to release task lock");
                 lock.release();
                 LOG.info("successfully released task lock");
             }
         } catch (Exception e) {
-            LOG.error(e.getMessage(),e);
+            LOG.error(e.getMessage(), e);
         }
     }
     private void submitAll(List<AtlasTask> tasks, CountDownLatch latch) {

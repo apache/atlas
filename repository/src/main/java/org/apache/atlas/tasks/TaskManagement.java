@@ -230,7 +230,8 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
     private synchronized void startWatcherThread() {
 
         if (this.taskExecutor == null) {
-            this.taskExecutor = new TaskExecutor(registry, taskTypeFactoryMap, statistics, curatorFactory);
+            final boolean isActiveActiveHAEnabled = HAConfiguration.isActiveActiveHAEnabled(configuration);
+            this.taskExecutor = new TaskExecutor(registry, taskTypeFactoryMap, statistics, curatorFactory, isActiveActiveHAEnabled);
         }
 
         if (watcherThread == null) {

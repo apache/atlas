@@ -75,6 +75,15 @@ public final class HAConfiguration {
     }
 
     /**
+     * Return whether HS (Active-Active HA) is enabled or not.
+     * @param configuration underlying configuration instance
+     * @return
+     */
+    public static boolean isActiveActiveHAEnabled(Configuration configuration) {
+        return !isHAEnabled(configuration);
+    }
+
+    /**
      * Get the web server address that a server instance with the passed ID is bound to.
      *
      * This method uses the property {@link SecurityProperties#TLS_ENABLED} to determine whether

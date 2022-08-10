@@ -46,13 +46,12 @@ public class TaskExecutor {
     private final Map<String, TaskFactory> taskTypeFactoryMap;
     private final TaskManagement.Statistics statistics;
     private final ICuratorFactory curatorFactory;
+    private final boolean isActiveActiveHAEnabled;
 
     private TaskQueueWatcher watcher;
     private Thread watcherThread;
 
-    static CountDownLatch latch;
-
-    public TaskExecutor(TaskRegistry registry, Map<String, TaskFactory> taskTypeFactoryMap, TaskManagement.Statistics statistics, ICuratorFactory curatorFactory) {
+    public TaskExecutor(TaskRegistry registry, Map<String, TaskFactory> taskTypeFactoryMap, TaskManagement.Statistics statistics, ICuratorFactory curatorFactory, boolean isActiveActiveHAEnabled) {
         this.taskExecutorService = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder()
                                                                     .setDaemon(true)
                                                                     .setNameFormat(TASK_NAME_FORMAT + Thread.currentThread().getName())
@@ -62,11 +61,12 @@ public class TaskExecutor {
         this.statistics = statistics;
         this.taskTypeFactoryMap = taskTypeFactoryMap;
         this.curatorFactory = curatorFactory;
+        this.isActiveActiveHAEnabled = isActiveActiveHAEnabled;
     }
 
     public Thread startWatcherThread() {
 
-        watcher = new TaskQueueWatcher(taskExecutorService, registry, taskTypeFactoryMap, statistics, curatorFactory);
+        watcher = new TaskQueueWatcher(taskExecutorService, registry, taskTypeFactoryMap, statistics, curatorFactory, isActiveActiveHAEnabled);
         watcherThread = new Thread(watcher);
         watcherThread.start();
         return watcherThread;

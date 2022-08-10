@@ -66,6 +66,7 @@ public class TypesREST {
     private final AtlasTypeDefStore typeDefStore;
     private final CuratorFactory curatorFactory;
     private final TypeCacheRefresher typeCacheRefresher;
+    private final boolean isActiveActiveHAEnabled;
 
     @Inject
     public TypesREST(AtlasTypeDefStore typeDefStore, CuratorFactory curatorFactory, Configuration configuration, TypeCacheRefresher typeCacheRefresher) {
@@ -73,6 +74,7 @@ public class TypesREST {
         this.curatorFactory = curatorFactory;
         this.typeCacheRefresher = typeCacheRefresher;
         this.zkRoot = HAConfiguration.getZookeeperProperties(configuration).getZkRoot();
+        this.isActiveActiveHAEnabled = HAConfiguration.isActiveActiveHAEnabled(configuration);
     }
 
     /**
@@ -376,6 +378,9 @@ public class TypesREST {
     }
 
     private void attemptAcquiringLock(InterProcessMutex lock) throws AtlasBaseException {
+        if(!isActiveActiveHAEnabled)
+            return;
+
         try {
             if(!lock.acquire(1, TimeUnit.MILLISECONDS)) {
                 LOG.info("Lock is already acquired. Returning now");
@@ -391,6 +396,8 @@ public class TypesREST {
     }
 
     private void releaseLock(InterProcessMutex lock) throws AtlasBaseException {
+        if(!isActiveActiveHAEnabled)
+            return;
         try {
             if(lock.isOwnedByCurrentThread()) {
                 LOG.info("About to release lock");

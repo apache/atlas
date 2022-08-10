@@ -5,6 +5,8 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graph.IAtlasGraphProvider;
 import org.apache.atlas.store.AtlasTypeDefStore;
+import org.apache.atlas.web.service.AtlasHealthStatus;
+import org.apache.atlas.web.service.ServiceState;
 import org.apache.atlas.web.util.Servlets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,11 +31,15 @@ public class TypeCacheRefreshREST {
 
     private final AtlasTypeDefStore typeDefStore;
     private final IAtlasGraphProvider provider;
+    private final ServiceState serviceState;
+    private final AtlasHealthStatus atlasHealthStatus;
 
     @Inject
-    public TypeCacheRefreshREST(AtlasTypeDefStore typeDefStore, IAtlasGraphProvider provider) {
+    public TypeCacheRefreshREST(AtlasTypeDefStore typeDefStore, IAtlasGraphProvider provider, ServiceState serviceState, AtlasHealthStatus atlasHealthStatus) {
         this.typeDefStore = typeDefStore;
         this.provider = provider;
+        this.serviceState = serviceState;
+        this.atlasHealthStatus = atlasHealthStatus;
     }
 
     /**
@@ -47,6 +53,17 @@ public class TypeCacheRefreshREST {
     @Path("/refresh")
     @Timed
     public void refreshCache(@QueryParam("expectedFieldKeys") int expectedFieldKeys) throws AtlasBaseException, RepositoryException, InterruptedException {
+        try {
+            refreshTypeDef(expectedFieldKeys);
+        } catch (Exception e) {
+            LOG.error(e.getMessage(),e);
+            serviceState.setState(ServiceState.ServiceStateValue.PASSIVE, true);
+            atlasHealthStatus.markUnhealthy(AtlasHealthStatus.Component.TYPE_DEF_CACHE,"type-def-cache is not in sync");
+            throw e;
+        }
+    }
+
+    private void refreshTypeDef(int expectedFieldKeys) throws RepositoryException, InterruptedException, AtlasBaseException {
         LOG.info("Initiating type-def cache refresh with expectedFieldKeys = {}", expectedFieldKeys);
         int currentSize = provider.get().getManagementSystem().getGraphIndex(VERTEX_INDEX).getFieldKeys().size();
         LOG.info("Size of field keys before refresh = {}", currentSize);
