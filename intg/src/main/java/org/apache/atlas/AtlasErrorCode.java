@@ -212,7 +212,6 @@ public enum AtlasErrorCode {
     // All data conflict errors go here
     TYPE_ALREADY_EXISTS(409, "ATLAS-409-00-001", "Given type {0} already exists"),
     TYPE_HAS_REFERENCES(409, "ATLAS-409-00-002", "Given type {0} has references"),
-    CLASSIFICATION_TYPE_HAS_REFERENCES(409, "ATLAS-409-00-002", "Given classification {0} [{1}] has references"),
     INSTANCE_ALREADY_EXISTS(409, "ATLAS-409-00-003", "failed to update entity: {0}"),
     RELATIONSHIP_ALREADY_EXISTS(409, "ATLAS-409-00-004", "relationship {0} already exists between entities {1} and {2}"),
     TYPE_HAS_RELATIONSHIPS(409, "ATLAS-409-00-005", "Given type {0} has associated relationshipDefs"),
@@ -227,6 +226,7 @@ public enum AtlasErrorCode {
     RELATIONSHIP_CREATE_INVALID_PARAMS(409, "ATLAS-409-00-014", "Relationship create between same vertex not allowed, vertex guid: {0}"),
 
     CATEGORY_PARENT_FROM_OTHER_GLOSSARY(409, "ATLAS-400-00-0015", "Parent category from another Anchor(glossary) not supported"),
+    CLASSIFICATION_TYPE_HAS_REFERENCES(409, "ATLAS-400-00-0016", "Given classification {0} [{1}] has references"),
 
     // All internal errors go here
     INTERNAL_ERROR(500, "ATLAS-500-00-001", "Internal server error {0}"),
