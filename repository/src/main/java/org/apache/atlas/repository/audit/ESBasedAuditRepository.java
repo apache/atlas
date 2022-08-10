@@ -24,6 +24,7 @@ import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.annotation.ConditionalOnAtlasProperty;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
@@ -220,9 +221,20 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
             if (requestContext.getCachedEntityHeader(entityGuid) != null) {
                 event.setEntityDetail(requestContext.getCachedEntityHeader(entityGuid));
             } else {
-                AtlasEntityHeader entityHeader = entityGraphRetriever.toAtlasEntityHeader(entityGuid, attributes);
-                requestContext.setEntityHeaderCache(entityHeader);
-                event.setEntityDetail(entityHeader);
+                AtlasEntityHeader entityHeader = null;
+
+                try {
+                    entityHeader = entityGraphRetriever.toAtlasEntityHeader(entityGuid, attributes);
+                }catch (AtlasBaseException exception){
+                    if (exception.getAtlasErrorCode() != AtlasErrorCode.INSTANCE_GUID_NOT_FOUND){
+                        throw exception;
+                    }
+                }
+
+                if (entityHeader != null) {
+                    requestContext.setEntityHeaderCache(entityHeader);
+                    event.setEntityDetail(entityHeader);
+                }
             }
             if (source.get(TIMESTAMP) != null) {
                 event.setTimestamp((long) source.get(TIMESTAMP));
