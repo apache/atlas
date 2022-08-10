@@ -46,6 +46,10 @@ public class AtlasAccessorResponse {
     private Set<String> groups = new HashSet<>();
     private Set<String> roles = new HashSet<>();
 
+    private Set<String> denyUsers = new HashSet<>();
+    private Set<String> denyGroups = new HashSet<>();
+    private Set<String> denyRoles = new HashSet<>();
+
     public AtlasAccessorResponse() {
 
     }
@@ -148,6 +152,30 @@ public class AtlasAccessorResponse {
         this.roles = roles;
     }
 
+    public Set<String> getDenyUsers() {
+        return denyUsers;
+    }
+
+    public void setDenyUsers(Set<String> denyUsers) {
+        this.denyUsers = denyUsers;
+    }
+
+    public Set<String> getDenyGroups() {
+        return denyGroups;
+    }
+
+    public void setDenyGroups(Set<String> denyGroups) {
+        this.denyGroups = denyGroups;
+    }
+
+    public Set<String> getDenyRoles() {
+        return denyRoles;
+    }
+
+    public void setDenyRoles(Set<String> denyRoles) {
+        this.denyRoles = denyRoles;
+    }
+
     @Override
     public String toString() {
         return "AtlasAccessorResponse{" +
@@ -160,6 +188,9 @@ public class AtlasAccessorResponse {
                 ", users=" + users +
                 ", groups=" + groups +
                 ", roles=" + roles +
+                ", denyUsers=" + denyUsers +
+                ", denyGroups=" + denyGroups +
+                ", denyRoles=" + denyRoles +
                 '}';
     }
 }
