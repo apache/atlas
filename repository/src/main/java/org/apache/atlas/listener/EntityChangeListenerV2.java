@@ -81,7 +81,7 @@ public interface EntityChangeListenerV2 {
      * @param classifications classifications that are to be added to entities
      * @throws AtlasBaseException if the listener notification fails
      */
-    void onClassificationsAdded(List<AtlasEntity> entities, List<AtlasClassification> classifications) throws AtlasBaseException;
+    void onClassificationsAdded(List<AtlasEntity> entities, List<AtlasClassification> classifications, boolean forceInline) throws AtlasBaseException;
 
     /**
      * This is upon updating classifications to an entity.

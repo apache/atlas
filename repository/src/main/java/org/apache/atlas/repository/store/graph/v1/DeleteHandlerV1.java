@@ -446,7 +446,7 @@ public abstract class DeleteHandlerV1 {
     }
 
     public List<AtlasVertex> addTagPropagation(AtlasVertex classificationVertex, List<AtlasVertex> propagatedEntityVertices) throws AtlasBaseException {
-        List<AtlasVertex> ret = null;
+        List<AtlasVertex> ret = new ArrayList<>();
 
         if (CollectionUtils.isNotEmpty(propagatedEntityVertices) && classificationVertex != null) {
             String                  classificationName     = getTypeName(classificationVertex);
@@ -461,7 +461,8 @@ public abstract class DeleteHandlerV1 {
                     }
 
                     continue;
-                } else if (getPropagatedClassificationEdge(propagatedEntityVertex, classificationVertex) != null) {
+                }
+                if (getPropagatedClassificationEdge(propagatedEntityVertex, classificationVertex) != null) {
                     if (LOG.isDebugEnabled()) {
                         LOG.debug(" --> Propagated classification edge already exists from [{}] --> [{}][{}] using edge label: [{}]",
                                 getTypeName(propagatedEntityVertex), getTypeName(classificationVertex), getTypeName(associatedEntityVertex), CLASSIFICATION_LABEL);
@@ -469,6 +470,7 @@ public abstract class DeleteHandlerV1 {
 
                     continue;
                 }
+                AtlasPerfMetrics.MetricRecorder countMetricRecorder = RequestContext.get().startMetricRecord("countPropagations");
 
                 String          entityTypeName = getTypeName(propagatedEntityVertex);
                 AtlasEntityType entityType     = typeRegistry.getEntityTypeByName(entityTypeName);
@@ -483,19 +485,9 @@ public abstract class DeleteHandlerV1 {
                     continue;
                 }
 
-                AtlasEdge existingEdge = getPropagatedClassificationEdge(propagatedEntityVertex, classificationVertex);
-
-                if (existingEdge != null) {
-                    continue;
-                }
-
                 if (LOG.isDebugEnabled()) {
                     LOG.debug(" --> Adding propagated classification: [{}] to {} ({}) using edge label: [{}]", classificationName, getTypeName(propagatedEntityVertex),
                             GraphHelper.getGuid(propagatedEntityVertex), CLASSIFICATION_LABEL);
-                }
-
-                if (ret == null) {
-                    ret = new ArrayList<>();
                 }
 
                 ret.add(propagatedEntityVertex);
@@ -509,9 +501,9 @@ public abstract class DeleteHandlerV1 {
                 AtlasClassification classification = entityRetriever.toAtlasClassification(classificationVertex);
 
                 context.recordAddedPropagation(entityGuid, classification);
+                RequestContext.get().endMetricRecord(countMetricRecorder);
             }
         }
-
         return ret;
     }
 

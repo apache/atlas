@@ -173,12 +173,12 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
     }
 
     @Override
-    public void onClassificationsAddedToEntities(List<AtlasEntity> entities, List<AtlasClassification> addedClassifications) throws AtlasBaseException {
+    public void onClassificationsAddedToEntities(List<AtlasEntity> entities, List<AtlasClassification> addedClassifications, boolean forceInline) throws AtlasBaseException {
         if (isV2EntityNotificationEnabled) {
             doFullTextMappingHelper(entities);
 
             for (EntityChangeListenerV2 listener : entityChangeListenersV2) {
-                listener.onClassificationsAdded(entities, addedClassifications);
+                listener.onClassificationsAdded(entities, addedClassifications, forceInline);
             }
         } else {
             updateFullTextMapping(entities, addedClassifications);
