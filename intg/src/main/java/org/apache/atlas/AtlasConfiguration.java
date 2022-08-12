@@ -85,7 +85,9 @@ public enum AtlasConfiguration {
     TASKS_REQUEUE_POLL_INTERVAL("atlas.tasks.requeue.poll.interval.millis", 60000),
     TASKS_QUEUE_SIZE("atlas.tasks.queue.size", 1000),
     SESSION_TIMEOUT_SECS("atlas.session.timeout.secs", -1),
-    UPDATE_COMPOSITE_INDEX_STATUS("atlas.update.composite.index.status", true);
+    UPDATE_COMPOSITE_INDEX_STATUS("atlas.update.composite.index.status", true),
+    TASKS_GRAPH_COMMIT_CHUNK_SIZE("atlas.tasks.graph.commit.chunk.size", 30),
+    MAX_NUMBER_OF_RETRIES("atlas.tasks.graph.retry.count", 3);
 
 
     private static final Configuration APPLICATION_PROPERTIES;
