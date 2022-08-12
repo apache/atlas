@@ -20,14 +20,15 @@ package org.apache.atlas.repository.graph;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.ICuratorFactory;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.service.Service;
-import org.apache.atlas.util.NanoIdUtils;
 import org.apache.commons.configuration.Configuration;
+import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
@@ -55,6 +56,7 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
     private static final String SOLR_STATUS_CHECK_RETRY_INTERVAL          = "atlas.graph.index.status.check.frequency";
     private static final String SOLR_INDEX_RECOVERY_CONFIGURED_START_TIME = "atlas.graph.index.recovery.start.time";
     private static final long   SOLR_STATUS_RETRY_DEFAULT_MS              = 30000; // 30 secs default
+    private static final String INDEX_RECOVERY_LOCK = "/index-recovery-lock";
 
     private final Thread                 indexHealthMonitor;
     private final RecoveryInfoManagement recoveryInfoManagement;
@@ -63,14 +65,16 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
     private       RecoveryThread         recoveryThread;
 
     @Inject
-    public IndexRecoveryService(Configuration config, AtlasGraph graph) {
+    public IndexRecoveryService(Configuration config, AtlasGraph graph, ICuratorFactory curatorFactory) {
         this.configuration               = config;
         this.isIndexRecoveryEnabled      = config.getBoolean(ApplicationProperties.INDEX_RECOVERY_CONF, DEFAULT_INDEX_RECOVERY);
         long recoveryStartTimeFromConfig = getRecoveryStartTimeFromConfig(config);
         long healthCheckFrequencyMillis  = config.getLong(SOLR_STATUS_CHECK_RETRY_INTERVAL, SOLR_STATUS_RETRY_DEFAULT_MS);
         this.recoveryInfoManagement      = new RecoveryInfoManagement(graph);
 
-        this.recoveryThread = new RecoveryThread(recoveryInfoManagement, graph, recoveryStartTimeFromConfig, healthCheckFrequencyMillis);
+        final InterProcessMutex indexRecoveryLock = curatorFactory.lockInstanceWithDefaultZkRoot(INDEX_RECOVERY_LOCK);
+        final boolean isActiveActiveHAEnabled = HAConfiguration.isActiveActiveHAEnabled(configuration);
+        this.recoveryThread = new RecoveryThread(recoveryInfoManagement, graph, recoveryStartTimeFromConfig, healthCheckFrequencyMillis, indexRecoveryLock, isActiveActiveHAEnabled);
         this.indexHealthMonitor = new Thread(recoveryThread, INDEX_HEALTH_MONITOR_THREAD_NAME);
     }
 
@@ -153,13 +157,18 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
         private final RecoveryInfoManagement recoveryInfoManagement;
         private       long                   indexStatusCheckRetryMillis;
         private       Object                 txRecoveryObject;
+        private final InterProcessMutex indexRecoveryLock;
+        private final boolean isActiveActiveHAEnabled;
 
         private final AtomicBoolean          shouldRun = new AtomicBoolean(false);
 
-        private RecoveryThread(RecoveryInfoManagement recoveryInfoManagement, AtlasGraph graph, long startTimeFromConfig, long healthCheckFrequencyMillis) {
+        private RecoveryThread(RecoveryInfoManagement recoveryInfoManagement, AtlasGraph graph, long startTimeFromConfig, long healthCheckFrequencyMillis,
+                               InterProcessMutex indexRecoveryLock, boolean isActiveActiveHAEnabled) {
             this.graph                       = graph;
             this.recoveryInfoManagement      = recoveryInfoManagement;
             this.indexStatusCheckRetryMillis = healthCheckFrequencyMillis;
+            this.indexRecoveryLock = indexRecoveryLock;
+            this.isActiveActiveHAEnabled = isActiveActiveHAEnabled;
 
             if (startTimeFromConfig > 0) {
                 this.recoveryInfoManagement.updateStartTime(startTimeFromConfig);
@@ -174,6 +183,11 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
             while (true) {
                 if (shouldRun.get()) {
                     try {
+                        if (isActiveActiveHAEnabled) {
+                            LOG.info("Attempting to acquire a lock on Index recovery");
+                            indexRecoveryLock.acquire();
+                            LOG.info("Acquired a lock on Index recovery");
+                        }
                         boolean indexHealthy = isIndexHealthy();
 
                         if (this.txRecoveryObject == null && indexHealthy) {
@@ -185,6 +199,9 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
                         }
                     } catch (Exception e) {
                         LOG.error("Error: Index recovery monitoring!", e);
+                    }
+                    finally {
+                        releaseLock(indexRecoveryLock);
                     }
                 }
             }
@@ -247,6 +264,18 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
 
         private void printIndexRecoveryStats() {
             this.graph.getManagementSystem().printIndexRecoveryStats(txRecoveryObject);
+        }
+
+        private void releaseLock(InterProcessMutex lock) {
+            try {
+                if (isActiveActiveHAEnabled && lock != null && lock.isOwnedByCurrentThread()) {
+                    LOG.info("About to release index recovery lock");
+                    lock.release();
+                    LOG.info("successfully released index recovery lock");
+                }
+            } catch (Exception e) {
+                LOG.error(e.getMessage(), e);
+            }
         }
     }
 
