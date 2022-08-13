@@ -426,6 +426,7 @@ public class TypesREST {
     @Timed
     public AtlasTypesDef createAtlasTypeDefs(final AtlasTypesDef typesDef) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
+        typeCacheRefresher.verifyCacheRefresherHealth();
         final InterProcessMutex lock = curatorFactory.lockInstance(zkRoot,TYPE_DEF_LOCK);
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
@@ -458,6 +459,7 @@ public class TypesREST {
     @Timed
     public AtlasTypesDef updateAtlasTypeDefs(final AtlasTypesDef typesDef) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
+        typeCacheRefresher.verifyCacheRefresherHealth();
         final InterProcessMutex lock = curatorFactory.lockInstance(zkRoot,TYPE_DEF_LOCK);
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
@@ -508,6 +510,7 @@ public class TypesREST {
     @Timed
     public void deleteAtlasTypeDefs(final AtlasTypesDef typesDef) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
+        typeCacheRefresher.verifyCacheRefresherHealth();
         final InterProcessMutex lock = curatorFactory.lockInstance(zkRoot,TYPE_DEF_LOCK);
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
@@ -535,6 +538,7 @@ public class TypesREST {
     @Timed
     public void deleteAtlasTypeByName(@PathParam("typeName") final String typeName) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
+        typeCacheRefresher.verifyCacheRefresherHealth();
         final InterProcessMutex lock = curatorFactory.lockInstance(zkRoot,TYPE_DEF_LOCK);
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {

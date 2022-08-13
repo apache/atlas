@@ -11,6 +11,7 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -26,12 +27,14 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.*;
 
+import static org.apache.atlas.AtlasErrorCode.CINV_UNHEALTHY;
 import static org.apache.atlas.repository.Constants.VERTEX_INDEX;
 
 @Component
 public class TypeCacheRefresher {
     private static final Logger LOG = LoggerFactory.getLogger(TypeCacheRefresher.class);
     private String cacheRefresherEndpoint;
+    private String cacheRefresherHealthEndpoint;
     private final IAtlasGraphProvider provider;
     private boolean isActiveActiveHAEnabled;
 
@@ -44,8 +47,40 @@ public class TypeCacheRefresher {
     public void init() throws AtlasException {
         Configuration configuration = ApplicationProperties.get();
         this.cacheRefresherEndpoint = configuration.getString("atlas.server.type.cache-refresher");
+        this.cacheRefresherHealthEndpoint = configuration.getString("atlas.server.type.cache-refresher-health");
         this.isActiveActiveHAEnabled = HAConfiguration.isActiveActiveHAEnabled(configuration);
         LOG.info("Found {} as cache-refresher endpoint", cacheRefresherEndpoint);
+        LOG.info("Found {} as cache-refresher-health endpoint", cacheRefresherHealthEndpoint);
+    }
+
+    public void verifyCacheRefresherHealth() throws AtlasBaseException {
+        if (StringUtils.isBlank(cacheRefresherHealthEndpoint) || !isActiveActiveHAEnabled) {
+            LOG.info("Skipping type-def cache refresher health checking as URL is {} and isActiveActiveHAEnabled is {}", cacheRefresherHealthEndpoint, isActiveActiveHAEnabled);
+            return;
+        }
+        final CloseableHttpClient client = HttpClients.createDefault();
+        CloseableHttpResponse closeableHttpResponse = null;
+        try {
+            final HttpGet healthRequest = new HttpGet(cacheRefresherHealthEndpoint);
+            closeableHttpResponse = client.execute(healthRequest);
+            LOG.info("Received HTTP response code {} from cache refresh health endpoint", closeableHttpResponse.getStatusLine().getStatusCode());
+            if (closeableHttpResponse.getStatusLine().getStatusCode() != 200) {
+                throw new AtlasBaseException(CINV_UNHEALTHY);
+            }
+            final String responseBody = EntityUtils.toString(closeableHttpResponse.getEntity());
+            LOG.debug("Response Body from cache-refresh-health = {}", responseBody);
+            final ObjectMapper mapper = new ObjectMapper();
+            final CacheRefresherHealthResponse jsonResponse = mapper.readValue(responseBody, CacheRefresherHealthResponse.class);
+            if (!"Healthy".equalsIgnoreCase(jsonResponse.getMessage())) {
+                throw new AtlasBaseException(CINV_UNHEALTHY);
+            }
+        } catch (IOException ioException) {
+            LOG.error(ioException.getMessage(),ioException);
+            throw new AtlasBaseException("Error while calling cinv health");
+        } finally {
+            IOUtils.closeQuietly(closeableHttpResponse);
+            IOUtils.closeQuietly(client);
+        }
     }
 
     public void refreshAllHostCache() throws AtlasBaseException {
@@ -151,3 +186,14 @@ class CacheRefreshResponse {
     }
 }
 
+class CacheRefresherHealthResponse {
+    private String message;
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
+}
