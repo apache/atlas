@@ -422,6 +422,7 @@ public class EntityLineageService implements AtlasLineageService {
                                               AtlasLineageContext lineageContext,
                                               List<AtlasEdge> currentVertexEdges,
                                               LineageDirection direction) throws AtlasBaseException {
+        long inputVertexCount = !isInput ? nonProcessEntityCount(ret) : 0;
         int currentOffset = lineageContext.getOffset();
         for (AtlasEdge edge : currentVertexEdges) {
             AtlasVertex processVertex = edge.getOutVertex();
@@ -443,12 +444,8 @@ public class EntityLineageService implements AtlasLineageService {
                         if (currentOffset > 0) {
                             currentOffset--;
                         }
-                        if (direction == BOTH) {
-                            if (isInput && nonProcessEntityCount(ret) == lineageContext.getLimit()) {
-                                return;
-                            } else if (nonProcessEntityCount(ret) == lineageContext.getLimit() * 2L) {
-                                return;
-                            }
+                        if (!isInput && direction == BOTH && nonProcessEntityCount(ret) - inputVertexCount == lineageContext.getLimit()) {
+                            return;
                         } else if (nonProcessEntityCount(ret) == lineageContext.getLimit()) {
                             return;
                         }
