@@ -66,7 +66,7 @@ class AtlasClient:
             params['params'] = query_params
 
         if request_obj is not None:
-            params['json'] = json.dumps(request_obj)
+            params['json'] = request_obj
 
         LOG.debug("------------------------------------------------------")
         LOG.debug("Call         : %s %s", api.method, path)
