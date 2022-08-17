@@ -68,11 +68,10 @@ class AtlasClient:
         if request_obj is not None:
             params['json'] = json.dumps(request_obj)
 
-        if LOG.isEnabledFor(logging.DEBUG):
-            LOG.debug("------------------------------------------------------")
-            LOG.debug("Call         : %s %s", api.method, path)
-            LOG.debug("Content-type : %s", api.consumes)
-            LOG.debug("Accept       : %s", api.produces)
+        LOG.debug("------------------------------------------------------")
+        LOG.debug("Call         : %s %s", api.method, path)
+        LOG.debug("Content-type : %s", api.consumes)
+        LOG.debug("Accept       : %s", api.produces)
 
         method = HTTPMethod(api.method).lower()
         response = getattr(self.session, method)(path, **params)
@@ -90,10 +89,8 @@ class AtlasClient:
                 if response.content is None:
                     return None
 
-                if LOG.isEnabledFor(logging.DEBUG):
-                    LOG.debug("<== __call_api(%s,%s,%s), result = %s", vars(api), params, request_obj, response)
-
-                    LOG.debug(response.json())
+                LOG.debug("<== __call_api(%s,%s,%s), result = %s", vars(api), params, request_obj, response)
+                LOG.debug(response.json())
 
                 if response_type == str:
                     return json.dumps(response.json())
