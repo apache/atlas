@@ -66,15 +66,15 @@ class AtlasClient:
             params['params'] = query_params
 
         if request_obj is not None:
-            params['json'] = request_obj
+            params['data'] = json.dumps(request_obj)
 
         LOG.debug("------------------------------------------------------")
         LOG.debug("Call         : %s %s", api.method, path)
         LOG.debug("Content-type : %s", api.consumes)
         LOG.debug("Accept       : %s", api.produces)
 
-        method = HTTPMethod(api.method).lower()
-        response = getattr(self.session, method)(path, **params)
+        method = HTTPMethod(api.method)
+        response = self.session.request(method.value, path, **params)
 
         if response is None:
             return None
@@ -84,12 +84,12 @@ class AtlasClient:
         if response.status_code == api.expected_status:
             if response_type is None:
                 return None
+                
+            if response.content is None:
+                return None
 
+            LOG.debug("<== __call_api(%s,%s,%s), result = %s", vars(api), params, request_obj, response)
             try:
-                if response.content is None:
-                    return None
-
-                LOG.debug("<== __call_api(%s,%s,%s), result = %s", vars(api), params, request_obj, response)
                 LOG.debug(response.json())
 
                 if response_type == str:
@@ -97,9 +97,7 @@ class AtlasClient:
 
                 return type_coerce(response.json(), response_type)
             except Exception as e:
-                print(e)
-
-                LOG.exception("Exception occurred while parsing response with msg: %s", e)
+                LOG.exception("Exception occurred while parsing response")
 
                 raise AtlasServiceException(api, response) from e
 
