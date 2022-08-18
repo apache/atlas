@@ -305,6 +305,22 @@ public class EntityLineageService implements AtlasLineageService {
             if (direction == OUTPUT || direction == BOTH) {
                 traverseEdges(datasetVertex, false, depth, new HashSet<>(), ret, lineageContext, direction);
             }
+
+            if (lineageContext.shouldApplyPagination()) {
+                if (direction == INPUT) {
+                    ret.calculateRemainingUpstreamVertexCount(getTotalUpstreamVertexCount(guid));
+
+                    ret.setRemainingDownstreamVertexCount(getTotalDownstreamVertexCount(guid));
+                } else if (direction == OUTPUT) {
+                    ret.calculateRemainingDownstreamVertexCount(getTotalDownstreamVertexCount(guid));
+
+                    ret.setRemainingUpstreamVertexCount(getTotalUpstreamVertexCount(guid));
+                } else {
+                    ret.calculateRemainingUpstreamVertexCount(getTotalUpstreamVertexCount(guid));
+
+                    ret.calculateRemainingDownstreamVertexCount(getTotalDownstreamVertexCount(guid));
+                }
+            }
         } else {
             AtlasVertex processVertex = AtlasGraphUtilsV2.findByGuid(this.graph, guid);
 
@@ -338,6 +354,7 @@ public class EntityLineageService implements AtlasLineageService {
                     traverseEdges(datasetVertex, false, depth - 1, new HashSet<>(), ret, lineageContext, direction);
                 }
             }
+
         }
 
         return ret;

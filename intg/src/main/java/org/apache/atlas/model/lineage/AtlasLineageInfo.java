@@ -87,6 +87,14 @@ public class AtlasLineageInfo implements Serializable {
         remainingDownstreamVertexCount = Math.max(totalUpstreamVertexCount - offset - limit, 0);
     }
 
+    public void setRemainingUpstreamVertexCount(long remainingUpstreamVertexCount) {
+        this.remainingUpstreamVertexCount = remainingUpstreamVertexCount;
+    }
+
+    public void setRemainingDownstreamVertexCount(long remainingDownstreamVertexCount) {
+        this.remainingDownstreamVertexCount = remainingDownstreamVertexCount;
+    }
+
     public String getBaseEntityGuid() {
         return baseEntityGuid;
     }
