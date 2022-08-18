@@ -446,7 +446,7 @@ public class EntityLineageService implements AtlasLineageService {
                         }
                         if (!isInput && direction == BOTH && nonProcessEntityCount(ret) - inputVertexCount == lineageContext.getLimit()) {
                             return;
-                        } else if (nonProcessEntityCount(ret) == lineageContext.getLimit()) {
+                        } else if (direction != BOTH && nonProcessEntityCount(ret) == lineageContext.getLimit()) {
                             return;
                         }
                     }
