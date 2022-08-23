@@ -72,9 +72,9 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
         long healthCheckFrequencyMillis  = config.getLong(SOLR_STATUS_CHECK_RETRY_INTERVAL, SOLR_STATUS_RETRY_DEFAULT_MS);
         this.recoveryInfoManagement      = new RecoveryInfoManagement(graph);
 
-        final InterProcessMutex indexRecoveryLock = curatorFactory.lockInstanceWithDefaultZkRoot(INDEX_RECOVERY_LOCK);
+        final String zkRoot = HAConfiguration.getZookeeperProperties(configuration).getZkRoot();
         final boolean isActiveActiveHAEnabled = HAConfiguration.isActiveActiveHAEnabled(configuration);
-        this.recoveryThread = new RecoveryThread(recoveryInfoManagement, graph, recoveryStartTimeFromConfig, healthCheckFrequencyMillis, indexRecoveryLock, isActiveActiveHAEnabled);
+        this.recoveryThread = new RecoveryThread(recoveryInfoManagement, graph, recoveryStartTimeFromConfig, healthCheckFrequencyMillis, curatorFactory, zkRoot, isActiveActiveHAEnabled);
         this.indexHealthMonitor = new Thread(recoveryThread, INDEX_HEALTH_MONITOR_THREAD_NAME);
     }
 
@@ -157,17 +157,19 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
         private final RecoveryInfoManagement recoveryInfoManagement;
         private       long                   indexStatusCheckRetryMillis;
         private       Object                 txRecoveryObject;
-        private final InterProcessMutex indexRecoveryLock;
+        private final ICuratorFactory curatorFactory;
+        private final String zkRoot;
         private final boolean isActiveActiveHAEnabled;
 
         private final AtomicBoolean          shouldRun = new AtomicBoolean(false);
 
         private RecoveryThread(RecoveryInfoManagement recoveryInfoManagement, AtlasGraph graph, long startTimeFromConfig, long healthCheckFrequencyMillis,
-                               InterProcessMutex indexRecoveryLock, boolean isActiveActiveHAEnabled) {
+                               ICuratorFactory curatorFactory, String zkRoot, boolean isActiveActiveHAEnabled) {
             this.graph                       = graph;
             this.recoveryInfoManagement      = recoveryInfoManagement;
             this.indexStatusCheckRetryMillis = healthCheckFrequencyMillis;
-            this.indexRecoveryLock = indexRecoveryLock;
+            this.curatorFactory = curatorFactory;
+            this.zkRoot = zkRoot;
             this.isActiveActiveHAEnabled = isActiveActiveHAEnabled;
 
             if (startTimeFromConfig > 0) {
@@ -180,14 +182,12 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
 
             LOG.info("Index Health Monitor: Starting...");
 
+            InterProcessMutex lock = null;
             while (true) {
                 if (shouldRun.get()) {
                     try {
-                        if (isActiveActiveHAEnabled) {
-                            LOG.info("Attempting to acquire a lock on Index recovery");
-                            indexRecoveryLock.acquire();
-                            LOG.info("Acquired a lock on Index recovery");
-                        }
+                        lock = acquireDistributedLock();
+
                         boolean indexHealthy = isIndexHealthy();
 
                         if (this.txRecoveryObject == null && indexHealthy) {
@@ -201,7 +201,7 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
                         LOG.error("Error: Index recovery monitoring!", e);
                     }
                     finally {
-                        releaseLock(indexRecoveryLock);
+                        releaseLock(lock);
                     }
                 }
             }
@@ -266,15 +266,31 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
             this.graph.getManagementSystem().printIndexRecoveryStats(txRecoveryObject);
         }
 
-        private void releaseLock(InterProcessMutex lock) {
+        private InterProcessMutex acquireDistributedLock() throws Exception {
+            if (!isActiveActiveHAEnabled)
+                return null;
+
+            final InterProcessMutex indexRecoveryLock = curatorFactory.lockInstance(zkRoot, INDEX_RECOVERY_LOCK);
+
+            LOG.info("Attempting to acquire a lock on Index recovery");
+            indexRecoveryLock.acquire();
+            LOG.info("Acquired a lock on Index recovery");
+            return indexRecoveryLock;
+        }
+
+        private void releaseLock(InterProcessMutex indexRecoveryLock) {
+            if (indexRecoveryLock == null)
+                return;
+
             try {
-                if (isActiveActiveHAEnabled && lock != null && lock.isOwnedByCurrentThread()) {
+                if (indexRecoveryLock.isOwnedByCurrentThread()) {
                     LOG.info("About to release index recovery lock");
-                    lock.release();
+                    indexRecoveryLock.release();
                     LOG.info("successfully released index recovery lock");
                 }
             } catch (Exception e) {
-                LOG.error(e.getMessage(), e);
+                LOG.error("Error while releasing a lock of index recovery " + e.getMessage(), e);
+                //Do not throw exception as it will terminate continuous while loop
             }
         }
     }

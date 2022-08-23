@@ -35,6 +35,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class TaskQueueWatcher implements Runnable {
     private static final Logger LOG = LoggerFactory.getLogger(TaskQueueWatcher.class);
     private static final TaskExecutor.TaskLogger TASK_LOG         = TaskExecutor.TaskLogger.getLogger();
+    private final String zkRoot;
     private final boolean isActiveActiveHAEnabled;
 
     private TaskRegistry registry;
@@ -50,13 +51,14 @@ public class TaskQueueWatcher implements Runnable {
 
     public TaskQueueWatcher(ExecutorService executorService, TaskRegistry registry,
                             Map<String, TaskFactory> taskTypeFactoryMap, TaskManagement.Statistics statistics,
-                           ICuratorFactory curatorFactory, boolean isActiveActiveHAEnabled) {
+                            ICuratorFactory curatorFactory, final String zkRoot, boolean isActiveActiveHAEnabled) {
 
         this.registry = registry;
         this.executorService = executorService;
         this.taskTypeFactoryMap = taskTypeFactoryMap;
         this.statistics = statistics;
         this.curatorFactory = curatorFactory;
+        this.zkRoot = zkRoot;
         this.isActiveActiveHAEnabled = isActiveActiveHAEnabled;
     }
 
@@ -76,9 +78,8 @@ public class TaskQueueWatcher implements Runnable {
 
         while (shouldRun.get()) {
             try {
-                if (isActiveActiveHAEnabled) {
-                    lock = acquireDistributedLock();
-                }
+                lock = acquireDistributedLock();
+
                 TasksFetcher fetcher = new TasksFetcher(registry);
 
                 Thread tasksFetcherThread = new Thread(fetcher);
@@ -108,7 +109,10 @@ public class TaskQueueWatcher implements Runnable {
     }
 
     private InterProcessMutex acquireDistributedLock() throws Exception {
-        InterProcessMutex lockForTask = curatorFactory.lockInstanceWithDefaultZkRoot(TASK_LOCK);
+        if (!isActiveActiveHAEnabled)
+            return null;
+
+        final InterProcessMutex lockForTask = curatorFactory.lockInstance(zkRoot, TASK_LOCK);
         LOG.info("Attempting to acquire a lock on task");
         lockForTask.acquire();
         LOG.info("Acquired a lock on task");
@@ -124,14 +128,17 @@ public class TaskQueueWatcher implements Runnable {
     }
 
     private void releaseLock(InterProcessMutex lock) {
+        if (lock == null)
+            return;
         try {
-            if (isActiveActiveHAEnabled && lock != null && lock.isOwnedByCurrentThread()) {
+            if (lock.isOwnedByCurrentThread()) {
                 LOG.info("About to release task lock");
                 lock.release();
                 LOG.info("successfully released task lock");
             }
         } catch (Exception e) {
-            LOG.error(e.getMessage(), e);
+            LOG.error("Error while releasing a lock of Task " + e.getMessage(), e);
+            //Not throwing exception here as it will terminate continuous while-loop
         }
     }
     private void submitAll(List<AtlasTask> tasks, CountDownLatch latch) {

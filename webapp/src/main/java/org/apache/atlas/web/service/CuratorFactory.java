@@ -65,7 +65,6 @@ public class CuratorFactory implements ICuratorFactory {
 
     private final Configuration configuration;
     private CuratorFramework curatorFramework;
-    private String defaultZkRoot;
 
     /**
      * Initializes the {@link CuratorFramework} that is used for all interaction with Zookeeper.
@@ -84,7 +83,6 @@ public class CuratorFactory implements ICuratorFactory {
     protected void initializeCuratorFramework() {
         HAConfiguration.ZookeeperProperties zookeeperProperties =
                 HAConfiguration.getZookeeperProperties(configuration);
-        defaultZkRoot = zookeeperProperties.getZkRoot();
         CuratorFrameworkFactory.Builder builder = getBuilder(zookeeperProperties);
         enhanceBuilderWithSecurityParameters(zookeeperProperties, builder);
         curatorFramework = builder.build();
@@ -203,12 +201,8 @@ public class CuratorFactory implements ICuratorFactory {
         return lockInstance(zkRoot, SETUP_LOCK);
     }
 
+    @Override
     public InterProcessMutex lockInstance(String zkRoot, String lockName) {
         return new InterProcessMutex(curatorFramework, zkRoot + lockName);
-    }
-
-    @Override
-    public InterProcessMutex lockInstanceWithDefaultZkRoot(String lockName) {
-        return new InterProcessMutex(curatorFramework, defaultZkRoot + lockName);
     }
 }

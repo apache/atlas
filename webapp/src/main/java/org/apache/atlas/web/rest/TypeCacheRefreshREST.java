@@ -52,14 +52,14 @@ public class TypeCacheRefreshREST {
     @POST
     @Path("/refresh")
     @Timed
-    public void refreshCache(@QueryParam("expectedFieldKeys") int expectedFieldKeys) throws AtlasBaseException, RepositoryException, InterruptedException {
+    public void refreshCache(@QueryParam("expectedFieldKeys") int expectedFieldKeys) throws AtlasBaseException {
         try {
             refreshTypeDef(expectedFieldKeys);
         } catch (Exception e) {
-            LOG.error(e.getMessage(),e);
+            LOG.error("Error during refreshing cache " + e.getMessage(), e);
             serviceState.setState(ServiceState.ServiceStateValue.PASSIVE, true);
-            atlasHealthStatus.markUnhealthy(AtlasHealthStatus.Component.TYPE_DEF_CACHE,"type-def-cache is not in sync");
-            throw e;
+            atlasHealthStatus.markUnhealthy(AtlasHealthStatus.Component.TYPE_DEF_CACHE, "type-def-cache is not in sync");
+            throw new AtlasBaseException(FAILED_TO_REFRESH_TYPE_DEF_CACHE);
         }
     }
 
@@ -75,12 +75,12 @@ public class TypeCacheRefreshREST {
 
         while (currentSize != expectedFieldKeys && counter++ < totalIterationsAllowed) {
             currentSize = provider.get().getManagementSystem().getGraphIndex(VERTEX_INDEX).getFieldKeys().size();
-            LOG.info("Size found = {} at iteration {}", currentSize, counter);
+            LOG.info("field keys size found = {} at iteration {}", currentSize, counter);
             Thread.sleep(sleepTimeInMillis);
         }
         //This condition will hold true when expected fieldKeys did not appear even after waiting for totalWaitTimeInMillis
         if (counter > totalIterationsAllowed) {
-            LOG.error("Could not find desired count of fieldKeys {} after {} ms of wait", expectedFieldKeys, totalWaitTimeInMillis);
+            LOG.error("Could not find desired count of fieldKeys {} after {} ms of wait. Current size of field keys is {}", expectedFieldKeys, totalWaitTimeInMillis, currentSize);
             throw new AtlasBaseException(FAILED_TO_REFRESH_TYPE_DEF_CACHE);
         } else {
             LOG.info("Found desired size of fieldKeys in iteration {}", counter);

@@ -231,7 +231,8 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
 
         if (this.taskExecutor == null) {
             final boolean isActiveActiveHAEnabled = HAConfiguration.isActiveActiveHAEnabled(configuration);
-            this.taskExecutor = new TaskExecutor(registry, taskTypeFactoryMap, statistics, curatorFactory, isActiveActiveHAEnabled);
+            final String zkRoot = HAConfiguration.getZookeeperProperties(configuration).getZkRoot();
+            this.taskExecutor = new TaskExecutor(registry, taskTypeFactoryMap, statistics, curatorFactory, zkRoot,isActiveActiveHAEnabled);
         }
 
         if (watcherThread == null) {

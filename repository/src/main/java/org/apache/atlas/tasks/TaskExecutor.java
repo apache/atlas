@@ -47,11 +47,13 @@ public class TaskExecutor {
     private final TaskManagement.Statistics statistics;
     private final ICuratorFactory curatorFactory;
     private final boolean isActiveActiveHAEnabled;
+    private final String zkRoot;
 
     private TaskQueueWatcher watcher;
     private Thread watcherThread;
 
-    public TaskExecutor(TaskRegistry registry, Map<String, TaskFactory> taskTypeFactoryMap, TaskManagement.Statistics statistics, ICuratorFactory curatorFactory, boolean isActiveActiveHAEnabled) {
+    public TaskExecutor(TaskRegistry registry, Map<String, TaskFactory> taskTypeFactoryMap, TaskManagement.Statistics statistics,
+                        ICuratorFactory curatorFactory,final String zkRoot, boolean isActiveActiveHAEnabled) {
         this.taskExecutorService = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder()
                                                                     .setDaemon(true)
                                                                     .setNameFormat(TASK_NAME_FORMAT + Thread.currentThread().getName())
@@ -62,11 +64,12 @@ public class TaskExecutor {
         this.taskTypeFactoryMap = taskTypeFactoryMap;
         this.curatorFactory = curatorFactory;
         this.isActiveActiveHAEnabled = isActiveActiveHAEnabled;
+        this.zkRoot = zkRoot;
     }
 
     public Thread startWatcherThread() {
 
-        watcher = new TaskQueueWatcher(taskExecutorService, registry, taskTypeFactoryMap, statistics, curatorFactory, isActiveActiveHAEnabled);
+        watcher = new TaskQueueWatcher(taskExecutorService, registry, taskTypeFactoryMap, statistics, curatorFactory, zkRoot, isActiveActiveHAEnabled);
         watcherThread = new Thread(watcher);
         watcherThread.start();
         return watcherThread;
