@@ -757,8 +757,8 @@
         <opencsv.version>5.0</opencsv.version>
         <paranamer.version>2.7</paranamer.version>
         <PermGen>64m</PermGen>
-        <poi-ooxml.version>4.1.1</poi-ooxml.version>
-        <poi.version>4.1.1</poi.version>
+        <poi-ooxml.version>5.2.2</poi-ooxml.version>
+        <poi.version>5.2.2</poi.version>
         <project.build.dashboardv2.gruntBuild>build-minify</project.build.dashboardv2.gruntBuild>
         <project.build.dashboardv3.gruntBuild>build-minify</project.build.dashboardv3.gruntBuild>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
