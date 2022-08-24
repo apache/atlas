@@ -199,13 +199,14 @@ public class EntityGraphMapper {
     private final AtlasInstanceConverter    instanceConverter;
     private final EntityGraphRetriever      entityRetriever;
     private final IFullTextMapper           fullTextMapperV2;
-    private final TaskManagement taskManagement;
+    private final TaskManagement            taskManagement;
+    private final TransactionInterceptHelper   transactionInterceptHelper;
 
     @Inject
     public EntityGraphMapper(DeleteHandlerDelegate deleteDelegate, RestoreHandlerV1 restoreHandlerV1, AtlasTypeRegistry typeRegistry, AtlasGraph graph,
                              AtlasRelationshipStore relationshipStore, IAtlasEntityChangeNotifier entityChangeNotifier,
                              AtlasInstanceConverter instanceConverter, IFullTextMapper fullTextMapperV2,
-                             TaskManagement taskManagement) {
+                             TaskManagement taskManagement, TransactionInterceptHelper transactionInterceptHelper) {
         this.restoreHandlerV1 = restoreHandlerV1;
         this.graphHelper          = new GraphHelper(graph);
         this.deleteDelegate       = deleteDelegate;
@@ -217,6 +218,7 @@ public class EntityGraphMapper {
         this.entityRetriever      = new EntityGraphRetriever(graph, typeRegistry);
         this.fullTextMapperV2     = fullTextMapperV2;
         this.taskManagement       = taskManagement;
+        this.transactionInterceptHelper = transactionInterceptHelper;
     }
 
     @VisibleForTesting
@@ -2700,7 +2702,6 @@ public class EntityGraphMapper {
         }
     }
 
-    @GraphTransaction
     public List<String> propagateClassification(String entityGuid, String classificationVertexId, String relationshipGuid, Boolean previousRestrictPropagationThroughLineage) throws AtlasBaseException {
         try {
             if (StringUtils.isEmpty(entityGuid) || StringUtils.isEmpty(classificationVertexId)) {
@@ -2765,6 +2766,8 @@ public class EntityGraphMapper {
 
                 List<String> chunkedGuids = processChunkedPropagation(impactedVertices.subList(offset, toIndex), classificationVertex);
 
+                transactionInterceptHelper.intercept();
+
                 if((chunkedGuids != null) && (! chunkedGuids.isEmpty())){
                     propagatedEntitiesGuid.addAll(chunkedGuids);
                 }
@@ -2796,10 +2799,8 @@ public class EntityGraphMapper {
 
             List<AtlasEntity> propagatedEntitiesChunked = updateClassificationText(classification, entitiesPropagatedTo);
 
-            graph.commit();
-
             List<String> chunkedPropagatedEntitiesGuid = propagatedEntitiesChunked.stream().map(x -> x.getGuid()).collect(Collectors.toList());
-            entityChangeNotifier.onClassificationsAddedToEntities(propagatedEntitiesChunked, Collections.singletonList(classification), true);
+            entityChangeNotifier.onClassificationsAddedToEntities(propagatedEntitiesChunked, Collections.singletonList(classification), false);
 
             return chunkedPropagatedEntitiesGuid;
         } catch (AtlasBaseException ex) {
