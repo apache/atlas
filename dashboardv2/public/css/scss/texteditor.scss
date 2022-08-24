@@ -19,14 +19,29 @@
 
 .trumbowyg {
     border-radius: 4px !important;
-    min-height: 150px !important;
+    min-height: 106px !important;
 
     .trumbowyg-button-pane {
-        background-color: #f6f7fb !important;
+        background: none;
+        border-bottom: none;
+        position: absolute;
+        bottom: 0px;
+
+        button {
+            transition: none;
+        }
+    }
+
+    .trumbowyg-button-pane-hidden {
+        display: none;
+    }
+
+    .trumbowyg-button-pane::after {
+        background: none !important;
     }
 
     .trumbowyg-editor {
-        min-height: 150px !important;
+        min-height: 70px !important;
         overflow-wrap: break-word;
     }
 
@@ -35,7 +50,19 @@
     }
 
     .trumbowyg-textarea {
-        min-height: 150px !important;
+        min-height: 106px !important;
+    }
+
+    .trumbowyg-button-pane .trumbowyg-button-group::after {
+        height: 25px;
+        vertical-align: middle;
+    }
+
+    .trumbowyg-button-pane button.trumbowyg-active,
+    .trumbowyg-button-pane button:not(.trumbowyg-disable):focus,
+    .trumbowyg-button-pane button:not(.trumbowyg-disable):hover {
+        background-color: #e8e9ee;
+        border-radius: 20px;
     }
 }
 
@@ -62,15 +89,31 @@
     width: 101px !important;
 }
 
-.trumbowyg-h1-dropdown-button{
+.trumbowyg-h1-dropdown-button {
     font-size: 36px !important;
 }
-.trumbowyg-h2-dropdown-button{
+
+.trumbowyg-h2-dropdown-button {
     font-size: 30px !important;
 }
-.trumbowyg-h3-dropdown-button{
+
+.trumbowyg-h3-dropdown-button {
     font-size: 24px !important;
 }
-.trumbowyg-h4-dropdown-button{
+
+.trumbowyg-h4-dropdown-button {
     font-size: 18px !important;
+}
+
+.small-texteditor {
+    .trumbowyg-button-pane button {
+        width: 25px !important;
+        height: 25px !important;
+    }
+    .trumbowyg-button-pane button.trumbowyg-active,
+    .trumbowyg-button-pane button:not(.trumbowyg-disable):focus,
+    .trumbowyg-button-pane button:not(.trumbowyg-disable):hover {
+        background-color: #e8e9ee;
+        border-radius: 20px;
+    }
 }

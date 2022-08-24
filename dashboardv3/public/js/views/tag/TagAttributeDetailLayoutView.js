@@ -48,7 +48,8 @@ define(['require',
                 superType: "[data-id='superType']",
                 subType: "[data-id='subType']",
                 entityType: "[data-id='entityType']",
-                backButton: '[data-id="backButton"]'
+                backButton: '[data-id="backButton"]',
+                textType: '[name="textType"]'
             },
             /** ui events hash */
             events: function() {
@@ -58,6 +59,10 @@ define(['require',
                 events["click " + this.ui.backButton] = function() {
                     Utils.backButtonClick();
                 };
+                events["change " + this.ui.textType] = function(e) {
+                    this.isTextTypeChecked = !this.isTextTypeChecked;
+                    this.isTextTypeChecked ? this.ui.description.text(this.model.get("description")) : this.ui.description.html(this.model.get("description"));
+                };
                 return events;
             },
             /**
@@ -66,6 +71,7 @@ define(['require',
              */
             initialize: function(options) {
                 _.extend(this, _.pick(options, 'tag', 'collection', 'enumDefCollection'));
+                this.isTextTypeChecked = false;
             },
             bindEvents: function() {
                 this.listenTo(this.collection, 'reset', function() {
@@ -125,7 +131,7 @@ define(['require',
                     }
                 this.ui.title.html('<span>' + (Utils.getName(this.model.toJSON())) + '</span>');
                 if (this.model.get("description")) {
-                    this.ui.description.text(this.model.get("description"));
+                    this.isTextTypeChecked ? this.ui.description.text(this.model.get("description")) : this.ui.description.html(this.model.get("description"));
                 }
                 if (attributeDefs) {
                     if (!_.isArray(attributeDefs)) {

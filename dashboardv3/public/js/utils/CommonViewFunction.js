@@ -715,12 +715,13 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             //Below condition is added for sanitizing the longDescription text against XSS attack.
             if (model) {
                 var longDescriptionContent = isGlossaryView ? model.get('longDescription') : model.longDescription,
-                    sanitizeLongDescriptionContent;
+                    sanitizeLongDescriptionContent = "";
                 if (longDescriptionContent) {
-                    sanitizeLongDescriptionContent = Utils.sanitizeHtmlContent(longDescriptionContent)
+                    sanitizeLongDescriptionContent = Utils.sanitizeHtmlContent({ data: longDescriptionContent });
                     isGlossaryView ? model.set("longDescription", sanitizeLongDescriptionContent) : model.longDescription = sanitizeLongDescriptionContent;
                 }
             }
+            //End
         }
         require([
             'views/glossary/CreateEditCategoryTermLayoutView',
@@ -745,38 +746,22 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 "okCloses": false,
                 "okText": model ? "Update" : "Create",
                 "allowCancel": true,
-                "width": "765px"
+                "width": "640px"
             }).open();
             modal.$el.find('input[data-id=shortDescription]').on('input keydown', function(e) {
                 $(this).val($(this).val().replace(/\s+/g, ' '));
             });
             modal.$el.find('button.ok').attr("disabled", "true");
             var longDescriptionEditor = modal.$el.find('textarea[data-id=longDescription]'),
-                okBtn = modal.$el.find('button.ok');
-            longDescriptionEditor.trumbowyg({
-                btns: [
-                    ['formatting'],
-                    ['strong', 'em', 'underline', 'del'],
-                    ['link'],
-                    ['justifyLeft', 'justifyCenter', 'justifyRight', 'justifyFull'],
-                    ['unorderedList', 'orderedList'],
-                    ['viewHTML']
-                ],
-                removeformatPasted: true,
-                urlProtocol: true,
-                defaultLinkTarget: '_blank'
-            }).on('tbwchange', function() {
-                okBtn.removeAttr("disabled");
-            });
+                okBtn = modal.$el.find('button.ok'),
+                modalOkBtn = function() {
+                    okBtn.removeAttr("disabled");
+                };
+            Utils.addCustomTextEditor({ selector: longDescriptionEditor, callback: modalOkBtn, initialHide: false });
             modal.on('ok', function() {
                 modal.$el.find('button.ok').showButtonLoader();
                 //Below condition is added for sanitizing the longDescription text against XSS attack.
-                var editorContent, cleanContent;
-                editorContent = longDescriptionEditor.trumbowyg('html');
-                if (editorContent !== "") {
-                    cleanContent = Utils.sanitizeHtmlContent(editorContent);
-                    longDescriptionEditor.trumbowyg('html', cleanContent);
-                }
+                longDescriptionEditor.trumbowyg('html', Utils.sanitizeHtmlContent({ selector: longDescriptionEditor }));
                 //End
                 CommonViewFunction.createEditGlossaryCategoryTermSubmit(_.extend({ "ref": view, "modal": modal }, options));
             });
@@ -785,6 +770,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 if (options.onModalClose) {
                     options.onModalClose()
                 }
+                longDescriptionEditor.trumbowyg('closeModal');
             });
         });
     }

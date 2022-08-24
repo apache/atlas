@@ -687,7 +687,7 @@ define([
                     }).open();
                 modal.$el.find("button.ok").attr("disabled", "true");
                 view.ui.tagName.on('keyup input', function(e) {
-                    view.ui.description.val($(this).val().replace(/\s+/g, ' '));
+                    $(view.ui.description).trumbowyg('html', $(this).val().replace(/\s+/g, ' '));
                 });
                 view.ui.description.on('input keydown', function(e) {
                     $(this).val($(this).val().replace(/\s+/g, ' '));
@@ -732,7 +732,7 @@ define([
             }
 
             var name = ref.ui.tagName.val(),
-                description = ref.ui.description.val(),
+                description = Utils.sanitizeHtmlContent({ data: ref.ui.description.val() }),
                 superTypes = [],
                 parentTagVal = ref.ui.parentTag.val();
             if (parentTagVal && parentTagVal.length) {
