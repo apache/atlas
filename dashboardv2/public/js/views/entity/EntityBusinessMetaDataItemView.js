@@ -387,7 +387,7 @@ define(['require',
                 trs = "";
             _.each(this.model.attributes, function(val, key) {
                 if (key !== "__internal_UI_businessMetadataName" && key !== "isNew") {
-                    var td = '<td class="custom-col-1" data-key=' + key + '>' + key + ' (' + _.escape(val.typeName) + ')</td><td class="custom-col-0">:</td><td class="custom-col-1" data-id="value">' + that.getAttrElement({ businessMetadata: that.model.get("__internal_UI_businessMetadataName"), key: key, val: val }) + '</td>';
+                    var td = '<td class="custom-col-1" data-key="' + key + '">' + key + ' (' + _.escape(val.typeName) + ')</td><td class="custom-col-0">:</td><td class="custom-col-1" data-id="value">' + that.getAttrElement({ businessMetadata: that.model.get("__internal_UI_businessMetadataName"), key: key, val: val }) + '</td>';
 
                     td += '<td class="custom-col-2 btn-group">' +
                         '<button class="btn btn-default btn-sm" data-key="' + key + '" data-id="deleteItem">' +
