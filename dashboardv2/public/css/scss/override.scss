@@ -573,7 +573,7 @@ div.columnmanager-dropdown-container {
     margin-right: 0px !important;
 }
 
-.glossary-longdescription-wrapper {
+.longdescription-wrapper {
     display: inline-block;
     height: 100px;
     background-color: #fff !important;
@@ -616,4 +616,10 @@ div.columnmanager-dropdown-container {
 
 .user-circle {
     display: inline;
+}
+
+.business-metadata-detail-attr {
+    ul {
+        list-style: disc
+    }
 }

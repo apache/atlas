@@ -307,7 +307,7 @@ define(['require',
                 var longDescriptionContent = (data && data.longDescription) ? data.longDescription : "",
                     sanitizeLongDescriptionContent = "";
                 if (longDescriptionContent !== "") {
-                    sanitizeLongDescriptionContent = Utils.sanitizeHtmlContent(longDescriptionContent);
+                    sanitizeLongDescriptionContent = Utils.sanitizeHtmlContent({ data: longDescriptionContent });
                 }
                 //End
                 if (data) {

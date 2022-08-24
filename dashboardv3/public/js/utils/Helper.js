@@ -134,6 +134,12 @@ define(['require',
     $("body").on('click', '.btn', function() {
         $(this).blur();
     });
+    $('body').on('click', function(e) {
+        if ($(e.target).hasClass('trumbowyg-editor-hidden')) {
+            $('.trumbowyg').find('.trumbowyg-button-pane').removeClass('trumbowyg-button-pane-hidden');
+            $('.trumbowyg').css('border', '1px solid #8fa5b1');
+        }
+    });
     $('body').on('keyup input', '.modal-body', function(e) {
         var target = e.target,
             isGlossary = (e.target.dataset.id === "searchTerm" || e.target.dataset.id === "searchCategory") ? true : false; // assign term/category modal
