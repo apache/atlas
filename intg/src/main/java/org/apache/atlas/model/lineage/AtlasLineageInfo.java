@@ -48,6 +48,8 @@ public class AtlasLineageInfo implements Serializable {
     private int offset;
     private long remainingUpstreamVertexCount;
     private long remainingDownstreamVertexCount;
+    private Boolean hasMoreUpstreamVertices;
+    private Boolean hasMoreDownstreamVertices;
     private Map<String, AtlasEntityHeader> guidEntityMap;
     private Set<LineageRelation> relations;
     private Map<String, Map<LineageDirection, Integer>> childrenCounts = new HashMap<>();
@@ -93,6 +95,22 @@ public class AtlasLineageInfo implements Serializable {
 
     public void setRemainingDownstreamVertexCount(long remainingDownstreamVertexCount) {
         this.remainingDownstreamVertexCount = remainingDownstreamVertexCount;
+    }
+
+    public Boolean getHasMoreUpstreamVertices() {
+        return hasMoreUpstreamVertices;
+    }
+
+    public void setHasMoreUpstreamVertices(boolean hasMoreUpstreamVertices) {
+        this.hasMoreUpstreamVertices = hasMoreUpstreamVertices;
+    }
+
+    public Boolean getHasMoreDownstreamVertices() {
+        return hasMoreDownstreamVertices;
+    }
+
+    public void setHasMoreDownstreamVertices(boolean hasMoreDownstreamVertices) {
+        this.hasMoreDownstreamVertices = hasMoreDownstreamVertices;
     }
 
     public String getBaseEntityGuid() {

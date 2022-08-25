@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.discovery;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.lineage.AtlasLineageInfo;
 import org.apache.atlas.model.lineage.AtlasLineageRequest;
@@ -60,6 +61,10 @@ public class AtlasLineageContext {
         this.offset = lineageRequest.getOffset();
 
         predicate = constructInMemoryPredicate(typeRegistry, lineageRequest.getEntityFilters());
+    }
+
+    @VisibleForTesting
+    AtlasLineageContext() {
     }
 
     public int getDepth() {
