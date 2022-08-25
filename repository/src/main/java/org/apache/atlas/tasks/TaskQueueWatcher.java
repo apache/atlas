@@ -18,8 +18,10 @@
 package org.apache.atlas.tasks;
 
 import org.apache.atlas.AtlasConfiguration;
+import org.apache.atlas.ICuratorFactory;
 import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,27 +35,31 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class TaskQueueWatcher implements Runnable {
     private static final Logger LOG = LoggerFactory.getLogger(TaskQueueWatcher.class);
     private static final TaskExecutor.TaskLogger TASK_LOG         = TaskExecutor.TaskLogger.getLogger();
+    private final String zkRoot;
+    private final boolean isActiveActiveHAEnabled;
 
     private TaskRegistry registry;
     private final ExecutorService executorService;
     private final Map<String, TaskFactory> taskTypeFactoryMap;
     private final TaskManagement.Statistics statistics;
+    private final ICuratorFactory curatorFactory;
 
     private static long pollInterval = AtlasConfiguration.TASKS_REQUEUE_POLL_INTERVAL.getLong();
-
-    private CountDownLatch latch = null;
+    private static final String TASK_LOCK = "/task-lock";
 
     private final AtomicBoolean shouldRun = new AtomicBoolean(false);
 
     public TaskQueueWatcher(ExecutorService executorService, TaskRegistry registry,
                             Map<String, TaskFactory> taskTypeFactoryMap, TaskManagement.Statistics statistics,
-                            CountDownLatch latch) {
+                            ICuratorFactory curatorFactory, final String zkRoot, boolean isActiveActiveHAEnabled) {
 
         this.registry = registry;
         this.executorService = executorService;
         this.taskTypeFactoryMap = taskTypeFactoryMap;
         this.statistics = statistics;
-        this.latch = latch;
+        this.curatorFactory = curatorFactory;
+        this.zkRoot = zkRoot;
+        this.isActiveActiveHAEnabled = isActiveActiveHAEnabled;
     }
 
     public void shutdown() {
@@ -68,17 +74,11 @@ public class TaskQueueWatcher implements Runnable {
         if (LOG.isDebugEnabled()) {
             LOG.debug("TaskQueueWatcher: running {}:{}", Thread.currentThread().getName(), Thread.currentThread().getId());
         }
+        InterProcessMutex lock = null;
 
         while (shouldRun.get()) {
             try {
-                if (latch != null && latch.getCount() != 0) {
-                    LOG.info("TaskQueueWatcher: Waiting on Latch, current count: {}", latch.getCount());
-                    latch.await();
-                }
-
-                if (latch != null) {
-                    LOG.info("TaskQueueWatcher: Latch wait complete!!");
-                }
+                lock = acquireDistributedLock();
 
                 TasksFetcher fetcher = new TasksFetcher(registry);
 
@@ -88,41 +88,72 @@ public class TaskQueueWatcher implements Runnable {
 
                 List<AtlasTask> tasks = fetcher.getTasks();
                 if (CollectionUtils.isNotEmpty(tasks)) {
-                    addAll(tasks);
+                    final CountDownLatch latch = new CountDownLatch(tasks.size());
+                    submitAll(tasks, latch);
+                    waitForTasksToComplete(latch);
                 } else {
                     LOG.info("No tasks to queue, sleeping for {} ms", pollInterval);
+                    releaseLock(lock);
                 }
-
                 Thread.sleep(pollInterval);
-
             } catch (InterruptedException interruptedException) {
                 LOG.error("TaskQueueWatcher: Interrupted: thread is terminated, new tasks will not be loaded into the queue until next restart");
                 break;
             } catch (Exception e){
-                LOG.error("TaskQueueWatcher: Exception occurred");
-                throw e;
+                LOG.error("TaskQueueWatcher: Exception occurred " +e.getMessage(),e);
+            }
+            finally {
+                releaseLock(lock);
             }
         }
     }
 
-    private void addAll(List<AtlasTask> tasks) {
+    private InterProcessMutex acquireDistributedLock() throws Exception {
+        if (!isActiveActiveHAEnabled)
+            return null;
+
+        final InterProcessMutex lockForTask = curatorFactory.lockInstance(zkRoot, TASK_LOCK);
+        LOG.info("Attempting to acquire a lock on task");
+        lockForTask.acquire();
+        LOG.info("Acquired a lock on task");
+        return lockForTask;
+    }
+
+    private void waitForTasksToComplete(final CountDownLatch latch) throws InterruptedException {
+        if (latch.getCount() != 0) {
+            LOG.info("TaskQueueWatcher: Waiting on Latch, current count: {}", latch.getCount());
+            latch.await();
+            LOG.info("TaskQueueWatcher: Waiting completed on Latch, current count: {}", latch.getCount());
+        }
+    }
+
+    private void releaseLock(InterProcessMutex lock) {
+        if (lock == null)
+            return;
+        try {
+            if (lock.isOwnedByCurrentThread()) {
+                LOG.info("About to release task lock");
+                lock.release();
+                LOG.info("successfully released task lock");
+            }
+        } catch (Exception e) {
+            LOG.error("Error while releasing a lock of Task " + e.getMessage(), e);
+            //Not throwing exception here as it will terminate continuous while-loop
+        }
+    }
+    private void submitAll(List<AtlasTask> tasks, CountDownLatch latch) {
         if (CollectionUtils.isNotEmpty(tasks)) {
-            latch = new CountDownLatch(tasks.size());
 
             for (AtlasTask task : tasks) {
-                if (task == null) {
-                    continue;
+                if (task != null) {
+                    TASK_LOG.log(task);
                 }
-                TASK_LOG.log(task);
 
                 this.executorService.submit(new TaskExecutor.TaskConsumer(task, this.registry, this.taskTypeFactoryMap, this.statistics, latch));
             }
 
             LOG.info("TasksFetcher: Submitted {} tasks to the queue", tasks.size());
         } else {
-            if (LOG.isDebugEnabled()){
-                LOG.debug("TasksFetcher: No task to queue");
-            }
             LOG.info("TasksFetcher: No task to queue");
         }
     }

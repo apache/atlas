@@ -28,10 +28,8 @@ import org.testng.annotations.Test;
 import org.testng.Assert;
 
 import javax.inject.Inject;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
@@ -47,6 +45,8 @@ public class TaskExecutorTest extends BaseTaskFixture {
 
     private long pollingInterval = AtlasConfiguration.TASKS_REQUEUE_POLL_INTERVAL.getLong();
 
+    private final String defaultZkRoot = "/apache-atlas";
+
     @Test
     public void noTasksExecuted() {
         TaskManagementTest.SpyingFactory spyingFactory = new TaskManagementTest.SpyingFactory();
@@ -54,7 +54,7 @@ public class TaskExecutorTest extends BaseTaskFixture {
         TaskManagement.createTaskTypeFactoryMap(new HashMap<>(), spyingFactory);
 
         TaskManagement.Statistics statistics = new TaskManagement.Statistics();
-        new TaskExecutor(taskRegistry, taskFactoryMap, statistics);
+        new TaskExecutor(taskRegistry, taskFactoryMap, statistics, null, defaultZkRoot, false);
 
         Assert.assertEquals(statistics.getTotal(), 0);
     }
@@ -66,7 +66,7 @@ public class TaskExecutorTest extends BaseTaskFixture {
         TaskManagement.createTaskTypeFactoryMap(taskFactoryMap, spyingFactory);
 
         TaskManagement.Statistics statistics = new TaskManagement.Statistics();
-        TaskExecutor taskExecutor = new TaskExecutor(taskRegistry, taskFactoryMap, statistics);
+        TaskExecutor taskExecutor = new TaskExecutor(taskRegistry, taskFactoryMap, statistics, null,defaultZkRoot,false);
 
         taskManagement.createTask(SPYING_TASK_ADD, "test", Collections.emptyMap());
 
@@ -87,7 +87,7 @@ public class TaskExecutorTest extends BaseTaskFixture {
         TaskManagement.Statistics statistics = new TaskManagement.Statistics();
         graph.commit();
 
-        TaskExecutor taskExecutor = new TaskExecutor(taskRegistry, taskFactoryMap, statistics);
+        TaskExecutor taskExecutor = new TaskExecutor(taskRegistry, taskFactoryMap, statistics, null,defaultZkRoot,false);
 
         Thread.sleep(pollingInterval + 5000);
         Assert.assertEquals(statistics.getTotal(), 2);

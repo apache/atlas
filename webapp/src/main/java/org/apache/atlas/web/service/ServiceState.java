@@ -89,12 +89,16 @@ public class ServiceState {
         setState(ServiceStateValue.BECOMING_ACTIVE);
     }
 
-    private void setState(ServiceStateValue newState) {
-        Preconditions.checkState(HAConfiguration.isHAEnabled(configuration), "Cannot change state as requested, as HA is not enabled for this instance.");
-
+    public void setState(ServiceStateValue newState, final boolean skipValidation) {
+        if (!skipValidation) {
+            Preconditions.checkState(HAConfiguration.isHAEnabled(configuration), "Cannot change state as requested, as HA is not enabled for this instance.");
+        }
         state = newState;
-
         auditServerStatus();
+    }
+
+    private void setState(ServiceStateValue newState) {
+        this.setState(newState, false);
     }
 
     private void auditServerStatus() {
