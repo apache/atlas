@@ -493,36 +493,41 @@ public class EntityLineageService implements AtlasLineageService {
                             long inputVertexCount,
                             int currentVertexEdgeIndex,
                             List<AtlasEdge> edgesOfProcess,
-                            int currentProcessVertexIndex) {
-        if (!isInput && lineageContext.getDirection() == BOTH && nonProcessEntityCount(ret) - inputVertexCount == lineageContext.getLimit()) {
-            if (hasMoreVertices(currentVertexEdges, currentVertexEdgeIndex, edgesOfProcess, currentProcessVertexIndex)) {
-                ret.setHasMoreDownstreamVertices(true);
-            } else {
-                ret.setHasMoreDownstreamVertices(false);
+                            int processEdgeIndex) {
+        if (lineageContext.getDirection() == BOTH) {
+            if (isInput && nonProcessEntityCount(ret) == lineageContext.getLimit()) {
+                ret.setHasMoreUpstreamVertices(hasMoreVertices(currentVertexEdges, currentVertexEdgeIndex, edgesOfProcess, processEdgeIndex));
+                return true;
+            } else if (!isInput && nonProcessEntityCount(ret) - inputVertexCount == lineageContext.getLimit()) {
+                ret.setHasMoreDownstreamVertices(hasMoreVertices(currentVertexEdges, currentVertexEdgeIndex, edgesOfProcess, processEdgeIndex));
+                return true;
             }
-            return true;
-        } else if ((isInput || lineageContext.getDirection() != BOTH) && nonProcessEntityCount(ret) == lineageContext.getLimit()) {
-            if (hasMoreVertices(currentVertexEdges, currentVertexEdgeIndex, edgesOfProcess, currentProcessVertexIndex)) {
-                if (isInput) {
-                    ret.setHasMoreUpstreamVertices(true);
-                } else {
-                    ret.setHasMoreDownstreamVertices(true);
-                }
-            } else {
-                if (isInput) {
-                    ret.setHasMoreUpstreamVertices(false);
-                } else {
-                    ret.setHasMoreDownstreamVertices(false);
-                }
-            }
+        } else if (nonProcessEntityCount(ret) == lineageContext.getLimit()) {
+            setVertexCountsForOneDirection(isInput, ret, currentVertexEdges, currentVertexEdgeIndex, edgesOfProcess, processEdgeIndex);
             return true;
         }
         return false;
     }
 
-    private boolean hasMoreVertices(List<AtlasEdge> currentVertexEdges, int currentVertexEdgeIndex, List<AtlasEdge> edgesOfProcess, int currentProcessVertexIndex) {
-        return (currentProcessVertexIndex < edgesOfProcess.size() - 1 || currentVertexEdgeIndex < currentVertexEdges.size() - 1) &&
-                !(currentProcessVertexIndex == edgesOfProcess.size() - 1 && currentVertexEdgeIndex == currentVertexEdges.size() - 1);
+    private void setVertexCountsForOneDirection(boolean isInput, AtlasLineageInfo ret, List<AtlasEdge> currentVertexEdges, int currentVertexEdgeIndex, List<AtlasEdge> edgesOfProcess, int processEdgeIndex) {
+        if (hasMoreVertices(currentVertexEdges, currentVertexEdgeIndex, edgesOfProcess, processEdgeIndex)) {
+            if (isInput) {
+                ret.setHasMoreUpstreamVertices(true);
+            } else {
+                ret.setHasMoreDownstreamVertices(true);
+            }
+        } else {
+            if (isInput) {
+                ret.setHasMoreUpstreamVertices(false);
+            } else {
+                ret.setHasMoreDownstreamVertices(false);
+            }
+        }
+    }
+
+    private boolean hasMoreVertices(List<AtlasEdge> currentVertexEdges, int currentVertexEdgeIndex, List<AtlasEdge> edgesOfProcess, int currentProcessEdgeIndex) {
+        return (currentProcessEdgeIndex < edgesOfProcess.size() - 1 || currentVertexEdgeIndex < currentVertexEdges.size() - 1) &&
+                !(currentProcessEdgeIndex == edgesOfProcess.size() - 1 && currentVertexEdgeIndex == currentVertexEdges.size() - 1);
     }
 
     private long nonProcessEntityCount(AtlasLineageInfo ret) {
