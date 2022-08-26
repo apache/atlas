@@ -9,12 +9,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import static org.testng.Assert.*;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertTrue;
 
 public class ShouldTerminateTestCases {
 
     private final EntityLineageService entityLineageService = new EntityLineageService();
-//    DirectionIsInputCases {
 
     @Test
     public void when_it_is_input_and_there_are_more_vertices_it_should_return_false() {
@@ -29,8 +29,8 @@ public class ShouldTerminateTestCases {
         boolean shouldTerminate = entityLineageService.shouldTerminate(true, lineageInfo, context, currentVertexEdges, 0, 50, processEdges, 1);
 
         assertFalse(shouldTerminate);
-        assertNull(lineageInfo.getHasMoreUpstreamVertices());
-        assertNull(lineageInfo.getHasMoreDownstreamVertices());
+        assertFalse(lineageInfo.getHasMoreUpstreamVertices());
+        assertFalse(lineageInfo.getHasMoreDownstreamVertices());
 
     }
 
@@ -62,9 +62,8 @@ public class ShouldTerminateTestCases {
 
         assertTrue(shouldTerminate);
         assertFalse(lineageInfo.getHasMoreUpstreamVertices());
-        assertNull(lineageInfo.getHasMoreDownstreamVertices());
+        assertFalse(lineageInfo.getHasMoreDownstreamVertices());
     }
-//    }
 
     @Test
     public void when_it_is_output_and_there_are_more_vertices_it_should_return_true() {
@@ -77,8 +76,8 @@ public class ShouldTerminateTestCases {
         List<AtlasEdge> processEdges = fillEdgedWithNull(3);
         boolean shouldTerminate = entityLineageService.shouldTerminate(false, lineageInfo, context, currentVertexEdges, 0, 50, processEdges, 1);
         assertFalse(shouldTerminate);
-        assertNull(lineageInfo.getHasMoreUpstreamVertices());
-        assertNull(lineageInfo.getHasMoreDownstreamVertices());
+        assertFalse(lineageInfo.getHasMoreUpstreamVertices());
+        assertFalse(lineageInfo.getHasMoreDownstreamVertices());
     }
 
     @Test
@@ -105,7 +104,7 @@ public class ShouldTerminateTestCases {
         boolean shouldTerminate = entityLineageService.shouldTerminate(false, lineageInfo, context, currentVertexEdges, 0, 5999, processEdges, 2);
         assertTrue(shouldTerminate);
         assertFalse(lineageInfo.getHasMoreDownstreamVertices());
-        assertNull(lineageInfo.getHasMoreUpstreamVertices());
+        assertFalse(lineageInfo.getHasMoreUpstreamVertices());
     }
 
     @Test
@@ -121,8 +120,8 @@ public class ShouldTerminateTestCases {
         boolean shouldTerminate = entityLineageService.shouldTerminate(true, lineageInfo, context, currentVertexEdges, 0, 50, processEdges, 1);
 
         assertFalse(shouldTerminate);
-        assertNull(lineageInfo.getHasMoreUpstreamVertices());
-        assertNull(lineageInfo.getHasMoreDownstreamVertices());
+        assertFalse(lineageInfo.getHasMoreUpstreamVertices());
+        assertFalse(lineageInfo.getHasMoreDownstreamVertices());
     }
 
     @Test
@@ -138,7 +137,7 @@ public class ShouldTerminateTestCases {
 
         assertTrue(shouldTerminate);
         assertTrue(lineageInfo.getHasMoreUpstreamVertices());
-        assertNull(lineageInfo.getHasMoreDownstreamVertices());
+        assertFalse(lineageInfo.getHasMoreDownstreamVertices());
     }
 
     @Test
@@ -154,7 +153,7 @@ public class ShouldTerminateTestCases {
 
         assertTrue(shouldTerminate);
         assertFalse(lineageInfo.getHasMoreUpstreamVertices());
-        assertNull(lineageInfo.getHasMoreDownstreamVertices());
+        assertFalse(lineageInfo.getHasMoreDownstreamVertices());
     }
 
     @Test
@@ -170,8 +169,8 @@ public class ShouldTerminateTestCases {
         boolean shouldTerminate = entityLineageService.shouldTerminate(false, lineageInfo, context, currentVertexEdges, 0, 50, processEdges, 1);
 
         assertFalse(shouldTerminate);
-        assertNull(lineageInfo.getHasMoreUpstreamVertices());
-        assertNull(lineageInfo.getHasMoreDownstreamVertices());
+        assertFalse(lineageInfo.getHasMoreUpstreamVertices());
+        assertFalse(lineageInfo.getHasMoreDownstreamVertices());
     }
 
     @Test
@@ -187,7 +186,7 @@ public class ShouldTerminateTestCases {
 
         assertTrue(shouldTerminate);
         assertTrue(lineageInfo.getHasMoreDownstreamVertices());
-        assertNull(lineageInfo.getHasMoreUpstreamVertices());
+        assertFalse(lineageInfo.getHasMoreUpstreamVertices());
     }
 
     @Test
@@ -206,7 +205,7 @@ public class ShouldTerminateTestCases {
 
         assertTrue(shouldTerminate);
         assertTrue(lineageInfo.getHasMoreDownstreamVertices());
-        assertNull(lineageInfo.getHasMoreUpstreamVertices());
+        assertFalse(lineageInfo.getHasMoreUpstreamVertices());
     }
 
     @Test
@@ -222,7 +221,7 @@ public class ShouldTerminateTestCases {
 
         assertTrue(shouldTerminate);
         assertFalse(lineageInfo.getHasMoreDownstreamVertices());
-        assertNull(lineageInfo.getHasMoreUpstreamVertices());
+        assertFalse(lineageInfo.getHasMoreUpstreamVertices());
     }
 
     private AtlasLineageInfo createFullLineageInfo() {
