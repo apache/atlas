@@ -40,6 +40,7 @@ public class AtlasLineageContext {
     private String guid;
     private boolean hideProcess;
     private boolean allowDeletedProcess;
+    private boolean calculateRemainingVertexCounts;
     private AtlasLineageInfo.LineageDirection direction = BOTH;
 
     private boolean isDataset;
@@ -59,6 +60,7 @@ public class AtlasLineageContext {
         this.allowDeletedProcess = lineageRequest.isAllowDeletedProcess();
         this.attributes = lineageRequest.getAttributes();
         this.offset = lineageRequest.getOffset();
+        this.calculateRemainingVertexCounts = lineageRequest.getCalculateRemainingVertexCounts();
 
         predicate = constructInMemoryPredicate(typeRegistry, lineageRequest.getEntityFilters());
     }
@@ -165,6 +167,10 @@ public class AtlasLineageContext {
 
     public boolean shouldApplyPagination() {
         return offset > -1;
+    }
+
+    public boolean isCalculateRemainingVertexCounts() {
+        return calculateRemainingVertexCounts;
     }
 
     @Override

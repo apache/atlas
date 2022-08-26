@@ -46,8 +46,8 @@ public class AtlasLineageInfo implements Serializable {
     private int lineageDepth;
     private int limit;
     private int offset;
-    private long remainingUpstreamVertexCount;
-    private long remainingDownstreamVertexCount;
+    private Long remainingUpstreamVertexCount;
+    private Long remainingDownstreamVertexCount;
     private Boolean hasMoreUpstreamVertices;
     private Boolean hasMoreDownstreamVertices;
     private Map<String, AtlasEntityHeader> guidEntityMap;
@@ -169,11 +169,11 @@ public class AtlasLineageInfo implements Serializable {
         this.offset = offset;
     }
 
-    public long getRemainingUpstreamVertexCount() {
+    public Long getRemainingUpstreamVertexCount() {
         return remainingUpstreamVertexCount;
     }
 
-    public long getRemainingDownstreamVertexCount() {
+    public Long getRemainingDownstreamVertexCount() {
         return remainingDownstreamVertexCount;
     }
 

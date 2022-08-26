@@ -107,8 +107,8 @@ public class EntityLineageService implements AtlasLineageService {
     }
 
     @Override
-    public AtlasLineageInfo getAtlasLineageInfo(String guid, LineageDirection direction, int depth, boolean hideProcess, int page, int recordPerPage) throws AtlasBaseException {
-        return getAtlasLineageInfo(new AtlasLineageRequest(guid, depth, direction, hideProcess, page, recordPerPage));
+    public AtlasLineageInfo getAtlasLineageInfo(String guid, LineageDirection direction, int depth, boolean hideProcess, int offset, int limit, boolean calculateRemainingVertexCounts) throws AtlasBaseException {
+        return getAtlasLineageInfo(new AtlasLineageRequest(guid, depth, direction, hideProcess, offset, limit, calculateRemainingVertexCounts));
     }
 
     @Override
@@ -155,7 +155,7 @@ public class EntityLineageService implements AtlasLineageService {
     @Override
     @GraphTransaction
     public AtlasLineageInfo getAtlasLineageInfo(String guid, LineageDirection direction, int depth) throws AtlasBaseException {
-        return getAtlasLineageInfo(guid, direction, depth, false, -1, -1);
+        return getAtlasLineageInfo(guid, direction, depth, false, -1, -1, false);
     }
 
     @Override
@@ -315,22 +315,6 @@ public class EntityLineageService implements AtlasLineageService {
             if (direction == OUTPUT || direction == BOTH) {
                 traverseEdges(datasetVertex, false, depth, new HashSet<>(), ret, lineageContext);
             }
-
-            if (lineageContext.shouldApplyPagination()) {
-                if (direction == INPUT) {
-                    ret.calculateRemainingUpstreamVertexCount(getTotalUpstreamVertexCount(guid));
-
-                    ret.setRemainingDownstreamVertexCount(getTotalDownstreamVertexCount(guid));
-                } else if (direction == OUTPUT) {
-                    ret.calculateRemainingDownstreamVertexCount(getTotalDownstreamVertexCount(guid));
-
-                    ret.setRemainingUpstreamVertexCount(getTotalUpstreamVertexCount(guid));
-                } else {
-                    ret.calculateRemainingUpstreamVertexCount(getTotalUpstreamVertexCount(guid));
-
-                    ret.calculateRemainingDownstreamVertexCount(getTotalDownstreamVertexCount(guid));
-                }
-            }
         } else {
             AtlasVertex processVertex = AtlasGraphUtilsV2.findByGuid(this.graph, guid);
 
@@ -407,12 +391,14 @@ public class EntityLineageService implements AtlasLineageService {
         List<AtlasEdge> currentVertexEdges = getEdgesOfCurrentVertex(currentVertex, isInput, lineageContext);
         ret.addChildrenCount(GraphHelper.getGuid(currentVertex), isInput ? INPUT : OUTPUT, currentVertexEdges.size());
         if (lineageContext.shouldApplyPagination()) {
-            if (isInput) {
-                Long totalUpstreamVertexCount = getTotalUpstreamVertexCount(GraphHelper.getGuid(currentVertex));
-                ret.calculateRemainingUpstreamVertexCount(totalUpstreamVertexCount);
-            } else {
-                Long totalDownstreamVertexCount = getTotalDownstreamVertexCount(GraphHelper.getGuid(currentVertex));
-                ret.calculateRemainingDownstreamVertexCount(totalDownstreamVertexCount);
+            if (lineageContext.isCalculateRemainingVertexCounts()) {
+                if (isInput) {
+                    Long totalUpstreamVertexCount = getTotalUpstreamVertexCount(GraphHelper.getGuid(currentVertex));
+                    ret.calculateRemainingUpstreamVertexCount(totalUpstreamVertexCount);
+                } else {
+                    Long totalDownstreamVertexCount = getTotalDownstreamVertexCount(GraphHelper.getGuid(currentVertex));
+                    ret.calculateRemainingDownstreamVertexCount(totalDownstreamVertexCount);
+                }
             }
             addPaginatedVerticesToResult(isInput, depth, visitedVertices, ret, lineageContext, currentVertexEdges);
         } else {

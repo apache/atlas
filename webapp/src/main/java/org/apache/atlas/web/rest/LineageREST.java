@@ -93,7 +93,8 @@ public class LineageREST {
                                             @QueryParam("depth") @DefaultValue(DEFAULT_DEPTH) int depth,
                                             @QueryParam("hideProcess") @DefaultValue("false") boolean hideProcess,
                                             @QueryParam("offset") @DefaultValue(DEFAULT_PAGE) int offset,
-                                            @QueryParam("limit") @DefaultValue(DEFAULT_RECORD_PER_PAGE) int limit) throws AtlasBaseException {
+                                            @QueryParam("limit") @DefaultValue(DEFAULT_RECORD_PER_PAGE) int limit,
+                                            @QueryParam("calculateRemainingVertexCounts") @DefaultValue("false") boolean calculateRemainingVertexCounts) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
 
         AtlasPerfTracer perf = null;
@@ -104,7 +105,7 @@ public class LineageREST {
                         "," + depth + ")");
             }
 
-            return atlasLineageService.getAtlasLineageInfo(guid, direction, depth, hideProcess, offset, limit);
+            return atlasLineageService.getAtlasLineageInfo(guid, direction, depth, hideProcess, offset, limit, calculateRemainingVertexCounts);
         } finally {
             AtlasPerfTracer.log(perf);
         }

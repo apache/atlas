@@ -42,7 +42,7 @@ public interface AtlasLineageService {
      * @param recordPerPage
      * @return AtlasLineageInfo
      */
-    AtlasLineageInfo getAtlasLineageInfo(String entityGuid, LineageDirection direction, int depth, boolean hideProcess, int page, int recordPerPage) throws AtlasBaseException;
+    AtlasLineageInfo getAtlasLineageInfo(String guid, LineageDirection direction, int depth, boolean hideProcess, int offset, int limit, boolean calculateRemainingVertexCounts) throws AtlasBaseException;
 
     /**
      * @param lineageRequest AtlasLineageRequest
