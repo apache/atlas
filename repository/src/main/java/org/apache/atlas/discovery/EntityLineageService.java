@@ -378,7 +378,7 @@ public class EntityLineageService implements AtlasLineageService {
         if (depth != 0) {
             processIntermediateLevel(currentVertex, isInput, depth, visitedVertices, ret, lineageContext);
         } else {
-            processLastLevel(currentVertex, isInput, ret, lineageContext);
+            processLastLevel(currentVertex, isInput, ret);
         }
     }
 
@@ -558,28 +558,9 @@ public class EntityLineageService implements AtlasLineageService {
         }
     }
 
-    private void processLastLevel(AtlasVertex currentVertex, boolean isInput, AtlasLineageInfo ret, AtlasLineageContext lineageContext) {
+    private void processLastLevel(AtlasVertex currentVertex, boolean isInput, AtlasLineageInfo ret) {
         List<AtlasEdge> processEdges = vertexEdgeCache.getEdges(currentVertex, IN, isInput ? PROCESS_OUTPUTS_EDGE : PROCESS_INPUTS_EDGE);
         ret.setHasChildrenForDirection(getGuid(currentVertex), new LineageChildrenInfo(isInput ? INPUT : OUTPUT, hasMoreChildren(processEdges)));
-
-//        List<AtlasEdge> processEdgesList = new ArrayList<>();
-//        processEdges.forEachRemaining(processEdgesList::add);
-//
-//        int qualifyingEdges = 0;
-//        for (AtlasEdge incomingEdge : processEdgesList) {
-//            if (shouldProcessEdge(lineageContext, incomingEdge)) {
-//
-//                AtlasVertex processVertex = incomingEdge.getOutVertex();
-//
-//                for (AtlasEdge edge : vertexEdgeCache.getEdges(processVertex, OUT, isInput ? PROCESS_INPUTS_EDGE : PROCESS_OUTPUTS_EDGE)) {
-//                    if (shouldProcessEdge(lineageContext, edge) && vertexMatchesEvaluation(edge.getInVertex(), lineageContext)) {
-//                        qualifyingEdges++;
-//                        break;
-//                    }
-//                }
-//            }
-//        }
-//        ret.setHasChildrenForDirection(getGuid(currentVertex), isInput ? INPUT : OUTPUT, qualifyingEdges);
     }
 
     private List<AtlasEdge> getEdgesOfProcess(boolean isInput, AtlasLineageContext lineageContext, AtlasVertex processVertex) {
