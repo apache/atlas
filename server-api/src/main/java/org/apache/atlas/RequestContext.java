@@ -90,6 +90,7 @@ public class RequestContext {
     private boolean     allowDeletedRelationsIndexsearch = false;
     private String      currentTypePatchAction = "";
     private AtlasTask   currentTask;
+    private String traceId;
 
     private RequestContext() {
     }
@@ -143,6 +144,7 @@ public class RequestContext {
         this.removedElementsMap.clear();
         this.deletedEdgesIds.clear();
         this.currentTask = null;
+        setTraceId(null);
 
         if (metrics != null && !metrics.isEmpty()) {
             METRICS.debug(metrics.toString());
@@ -555,6 +557,14 @@ public class RequestContext {
 
     public List<AtlasTask> getQueuedTasks() {
         return this.queuedTasks;
+    }
+
+    public String getTraceId() {
+        return traceId;
+    }
+
+    public void setTraceId(String traceId) {
+        this.traceId = traceId;
     }
 
     public class EntityGuidPair {
