@@ -356,10 +356,6 @@ public class EntityLineageService implements AtlasLineageService {
         return ret;
     }
 
-    private boolean hasMoreChildren(List<AtlasEdge> edges) {
-        return edges.stream().anyMatch(edge -> GraphHelper.getStatus(edge) == AtlasEntity.Status.ACTIVE);
-    }
-
     private List<AtlasEdge> getQualifyingProcessEdges(Iterator<AtlasEdge> processEdges, AtlasLineageContext lineageContext) {
 
         List<AtlasEdge> qualifyingEdges = new ArrayList<>();
@@ -371,6 +367,17 @@ public class EntityLineageService implements AtlasLineageService {
         }
 
         return qualifyingEdges;
+    }
+
+    private void addEdgeToResult(AtlasEdge edge, AtlasLineageInfo lineageInfo,
+                                 AtlasLineageContext requestContext) throws AtlasBaseException {
+        if (!lineageContainsEdge(lineageInfo, edge)) {
+            processEdge(edge, lineageInfo, requestContext);
+        }
+    }
+
+    private boolean hasMoreChildren(List<AtlasEdge> edges) {
+        return edges.stream().anyMatch(edge -> GraphHelper.getStatus(edge) == AtlasEntity.Status.ACTIVE);
     }
 
     private void traverseEdges(AtlasVertex currentVertex, boolean isInput, int depth, Set<String> visitedVertices, AtlasLineageInfo ret,
@@ -458,9 +465,9 @@ public class EntityLineageService implements AtlasLineageService {
                         continue;
                     }
                     if (lineageContext.isHideProcess()) {
-                        addVirtualEdgeToResult(edge, edgeOfProcess, ret, lineageContext);
+                        processVirtualEdge(edge, edgeOfProcess, ret, lineageContext);
                     } else {
-                        addEdgesToResult(edge, edgeOfProcess, ret, lineageContext);
+                        processEdges(edge, edgeOfProcess, ret, lineageContext);
                     }
                     if (!visitedVertices.contains(getId(entityVertex))) {
                         traverseEdges(entityVertex, isInput, depth - 1, visitedVertices, ret, lineageContext);
@@ -545,9 +552,9 @@ public class EntityLineageService implements AtlasLineageService {
 
                 if (entityVertex != null) {
                     if (lineageContext.isHideProcess()) {
-                        addVirtualEdgeToResult(edge, outgoingEdge, ret, lineageContext);
+                        processVirtualEdge(edge, outgoingEdge, ret, lineageContext);
                     } else {
-                        addEdgesToResult(edge, outgoingEdge, ret, lineageContext);
+                        processEdges(edge, outgoingEdge, ret, lineageContext);
                     }
 
                     if (!visitedVertices.contains(getId(entityVertex))) {
@@ -586,23 +593,6 @@ public class EntityLineageService implements AtlasLineageService {
                 .sorted(Comparator.comparing(edge -> edge.getProperty("_r__guid", String.class)))
                 .filter(edge -> shouldProcessEdge(lineageContext, edge))
                 .collect(Collectors.toList());
-    }
-
-    private void addEdgeToResult(AtlasEdge edge, AtlasLineageInfo lineageInfo,
-                                 AtlasLineageContext requestContext) throws AtlasBaseException {
-        if (!lineageContainsEdge(lineageInfo, edge)) {
-            processEdge(edge, lineageInfo, requestContext);
-        }
-    }
-
-    private void addEdgesToResult(AtlasEdge incomingEdge, AtlasEdge outgoingEdge, AtlasLineageInfo lineageInfo,
-                                  AtlasLineageContext requestContext) throws AtlasBaseException {
-        processEdges(incomingEdge, outgoingEdge, lineageInfo, requestContext);
-    }
-
-    private boolean addVirtualEdgeToResult(AtlasEdge incomingEdge, AtlasEdge outgoingEdge, AtlasLineageInfo lineageInfo,
-                                           AtlasLineageContext lineageContext) throws AtlasBaseException {
-        return processVirtualEdge(incomingEdge, outgoingEdge, lineageInfo, lineageContext);
     }
 
     private boolean lineageContainsEdge(AtlasLineageInfo lineageInfo, AtlasEdge edge) {
