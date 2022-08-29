@@ -71,6 +71,8 @@ public class AtlasLineageRequest {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PAGINATION_STATE);
         } else if (depth != 1 && offset != -1) {
             throw new AtlasBaseException(AtlasErrorCode.PAGINATION_CAN_ONLY_BE_USED_WITH_DEPTH_ONE);
+        } else if (offset == -1 && calculateRemainingVertexCounts) {
+            throw new AtlasBaseException(AtlasErrorCode.CANT_CALCULATE_VERTEX_COUNTS_WITHOUT_PAGINATION);
         }
     }
 
