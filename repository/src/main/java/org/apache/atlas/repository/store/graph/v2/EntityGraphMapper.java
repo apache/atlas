@@ -121,23 +121,8 @@ import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.PA
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.UPDATE;
 import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinality.SET;
 import static org.apache.atlas.repository.Constants.*;
-import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEdge;
-import static org.apache.atlas.repository.graph.GraphHelper.getClassificationVertex;
-import static org.apache.atlas.repository.graph.GraphHelper.getCollectionElementsUsingRelationship;
-import static org.apache.atlas.repository.graph.GraphHelper.getDelimitedClassificationNames;
-import static org.apache.atlas.repository.graph.GraphHelper.getLabels;
-import static org.apache.atlas.repository.graph.GraphHelper.getMapElementsProperty;
-import static org.apache.atlas.repository.graph.GraphHelper.getStatus;
-import static org.apache.atlas.repository.graph.GraphHelper.getTraitLabel;
-import static org.apache.atlas.repository.graph.GraphHelper.getTraitNames;
-import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
-import static org.apache.atlas.repository.graph.GraphHelper.getTypeNames;
-import static org.apache.atlas.repository.graph.GraphHelper.isActive;
-import static org.apache.atlas.repository.graph.GraphHelper.isPropagationEnabled;
-import static org.apache.atlas.repository.graph.GraphHelper.isRelationshipEdge;
-import static org.apache.atlas.repository.graph.GraphHelper.string;
-import static org.apache.atlas.repository.graph.GraphHelper.updateModificationMetadata;
-import static org.apache.atlas.repository.graph.GraphHelper.getEntityHasLineage;
+import static org.apache.atlas.repository.graph.GraphHelper.*;
+import static org.apache.atlas.repository.graph.GraphHelper.getRelationshipGuid;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getIdFromVertex;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.isReference;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_ADD;
@@ -3317,43 +3302,67 @@ public class EntityGraphMapper {
         }
     }
 
-    @GraphTransaction
     public void deleteClassificationOnlyPropagation(Set<String> deletedEdgeIds) throws AtlasBaseException {
         RequestContext.get().getDeletedEdgesIds().clear();
         RequestContext.get().getDeletedEdgesIds().addAll(deletedEdgeIds);
-        Map<String, Set<String>> removedPropagationsMap = new HashMap<>();
 
         for (AtlasEdge edge : deletedEdgeIds.stream().map(x -> graph.getEdge(x)).collect(Collectors.toList())) {
-            Map<AtlasVertex, List<AtlasVertex>> removedMap = deleteDelegate.getHandler().removeTagPropagation(edge);
+            if (edge == null || !isRelationshipEdge(edge)) {
+                continue;
+            }
+            List<AtlasVertex> currentClassificationVertices = getPropagatableClassifications(edge);
 
-            if (MapUtils.isNotEmpty(removedMap)) {
-                for (AtlasVertex classificationVertex : removedMap.keySet()) {
-                    String classificationVertexId = classificationVertex.getIdForDisplay();
-                    Set<String> newEntityGuids = removedMap.get(classificationVertex).stream().map(GraphHelper::getGuid).collect(Collectors.toSet());
+            Map<AtlasVertex, List<AtlasVertex>> currentClassificationsMap     = entityRetriever.getClassificationPropagatedEntitiesMapping(currentClassificationVertices);
+            Map<AtlasVertex, List<AtlasVertex>> updatedClassificationsMap     = entityRetriever.getClassificationPropagatedEntitiesMapping(currentClassificationVertices, getRelationshipGuid(edge));
+            Map<AtlasVertex, List<AtlasVertex>> removePropagationsMap         = new HashMap<>();
 
-                    if (removedPropagationsMap.containsKey(classificationVertexId)) {
-                        Set<String> existingEntityGuids = removedPropagationsMap.get(classificationVertexId);
-                        newEntityGuids.addAll(existingEntityGuids);
+            if (MapUtils.isNotEmpty(currentClassificationsMap) && MapUtils.isEmpty(updatedClassificationsMap)) {
+                removePropagationsMap.putAll(currentClassificationsMap);
+            } else {
+                for (AtlasVertex classificationVertex : updatedClassificationsMap.keySet()) {
+                    List<AtlasVertex> currentPropagatingEntities = currentClassificationsMap.containsKey(classificationVertex) ? currentClassificationsMap.get(classificationVertex) : Collections.emptyList();
+                    List<AtlasVertex> updatedPropagatingEntities = updatedClassificationsMap.containsKey(classificationVertex) ? updatedClassificationsMap.get(classificationVertex) : Collections.emptyList();
+                    List<AtlasVertex> entitiesRemoved            = (List<AtlasVertex>) CollectionUtils.subtract(currentPropagatingEntities, updatedPropagatingEntities);
+
+                    if (CollectionUtils.isNotEmpty(entitiesRemoved)) {
+                        removePropagationsMap.put(classificationVertex, entitiesRemoved);
                     }
+                }
+            }
+            currentClassificationsMap.clear();
+            updatedClassificationsMap.clear();
 
-                    removedPropagationsMap.put(classificationVertexId, newEntityGuids);
+
+            boolean isTermEntityEdge = isTermEntityEdge(edge);
+
+            for (AtlasVertex classificationVertex : removePropagationsMap.keySet()) {
+                AtlasClassification classification = entityRetriever.toAtlasClassification(classificationVertex);
+                boolean removePropagations = getRemovePropagations(classificationVertex);
+
+                if (isTermEntityEdge || removePropagations) {
+                    List<AtlasVertex> verticesToRemove = removePropagationsMap.get(classificationVertex);
+
+                    do {
+                        List<AtlasVertex> chunkedVerticesToRemoveTag = verticesToRemove.subList(0, CHUNK_SIZE);
+                        List<AtlasVertex> updatedVertices = deleteDelegate.getHandler().removeTagPropagation(classificationVertex, chunkedVerticesToRemoveTag);
+                        List<AtlasEntity> updatedEntities = updatedVertices.stream().map(this::getEntity).collect(Collectors.toList());
+                        entityChangeNotifier.onClassificationsDeletedFromEntities(updatedEntities, Collections.singletonList(classification));
+
+                        chunkedVerticesToRemoveTag.clear();
+
+                        transactionInterceptHelper.intercept();
+                    } while (verticesToRemove.size() >= CHUNK_SIZE);
                 }
             }
         }
-
-        for (String classificationVertexId : removedPropagationsMap.keySet()) {
-            AtlasClassification classification = entityRetriever.toAtlasClassification(graph.getVertex(classificationVertexId));
-            List<AtlasEntity> entities = removedPropagationsMap.get(classificationVertexId).stream().map(this::getEntity).collect(Collectors.toList());
-
-            entityChangeNotifier.onClassificationsDeletedFromEntities(entities, Collections.singletonList(classification));
-        }
     }
 
-    private AtlasEntity getEntity(String guid) {
+
+    private AtlasEntity getEntity(AtlasVertex vertex) {
         try {
-            return entityRetriever.toAtlasEntity(guid);
+            return entityRetriever.toAtlasEntity(vertex);
         } catch (AtlasBaseException e) {
-            LOG.error("Failed to get entity vertex for guid {}", guid);
+            LOG.error("Failed to get entity vertex for vertex id {}", vertex.getId());
         }
         return null;
     }

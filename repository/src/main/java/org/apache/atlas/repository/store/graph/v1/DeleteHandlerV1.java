@@ -603,7 +603,8 @@ public abstract class DeleteHandlerV1 {
         return ret;
     }
 
-    public void removeTagPropagation(AtlasVertex classificationVertex, List<AtlasVertex> entityVertices) throws AtlasBaseException {
+    public List<AtlasVertex> removeTagPropagation(AtlasVertex classificationVertex, List<AtlasVertex> entityVertices) throws AtlasBaseException {
+        List<AtlasVertex> ret = new ArrayList<>();
         if (classificationVertex != null && CollectionUtils.isNotEmpty(entityVertices)) {
             AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("removeTagPropagationVertices");
             String              classificationName = getClassificationName(classificationVertex);
@@ -617,12 +618,15 @@ public abstract class DeleteHandlerV1 {
                 if (propagatedEdge != null) {
                     deletePropagatedEdge(propagatedEdge);
 
+                    ret.add(entityVertex);
+
                     // record remove propagation details to send notifications at the end
                     context.recordRemovedPropagation(getGuid(entityVertex), classification);
                 }
             }
             RequestContext.get().endMetricRecord(metric);
         }
+        return ret;
     }
 
     public void deletePropagatedClassification(AtlasVertex entityVertex, String classificationName, String associatedEntityGuid) throws AtlasBaseException {
