@@ -3307,13 +3307,13 @@ public class EntityGraphMapper {
         RequestContext.get().getDeletedEdgesIds().addAll(deletedEdgeIds);
 
         for (AtlasEdge edge : deletedEdgeIds.stream().map(x -> graph.getEdge(x)).collect(Collectors.toList())) {
-            if (edge == null || !isRelationshipEdge(edge)) {
+            if (edge == null || !deleteDelegate.getHandler().isRelationshipEdge(edge)) {
                 continue;
             }
             List<AtlasVertex> currentClassificationVertices = getPropagatableClassifications(edge);
 
             Map<AtlasVertex, List<AtlasVertex>> currentClassificationsMap     = entityRetriever.getClassificationPropagatedEntitiesMapping(currentClassificationVertices);
-            Map<AtlasVertex, List<AtlasVertex>> updatedClassificationsMap     = entityRetriever.getClassificationPropagatedEntitiesMapping(currentClassificationVertices, getRelationshipGuid(edge));
+            Map<AtlasVertex, List<AtlasVertex>> updatedClassificationsMap     = entityRetriever.getClassificationPropagatedEntitiesMapping(currentClassificationVertices,GraphHelper.getRelationshipGuid(edge));
             Map<AtlasVertex, List<AtlasVertex>> removePropagationsMap         = new HashMap<>();
 
             if (MapUtils.isNotEmpty(currentClassificationsMap) && MapUtils.isEmpty(updatedClassificationsMap)) {
@@ -3343,7 +3343,13 @@ public class EntityGraphMapper {
                     List<AtlasVertex> verticesToRemove = removePropagationsMap.get(classificationVertex);
 
                     do {
-                        List<AtlasVertex> chunkedVerticesToRemoveTag = verticesToRemove.subList(0, CHUNK_SIZE);
+                        List<AtlasVertex> chunkedVerticesToRemoveTag = new ArrayList<>();
+                        if (verticesToRemove.size() < CHUNK_SIZE) {
+                            chunkedVerticesToRemoveTag = verticesToRemove.subList(0, verticesToRemove.size());
+                        } else {
+                            verticesToRemove.subList(0, CHUNK_SIZE);
+                        }
+
                         List<AtlasVertex> updatedVertices = deleteDelegate.getHandler().removeTagPropagation(classificationVertex, chunkedVerticesToRemoveTag);
                         List<AtlasEntity> updatedEntities = updatedVertices.stream().map(this::getEntity).collect(Collectors.toList());
                         entityChangeNotifier.onClassificationsDeletedFromEntities(updatedEntities, Collections.singletonList(classification));
