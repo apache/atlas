@@ -577,6 +577,26 @@ public abstract class DeleteHandlerV1 {
         return ret;
     }
 
+    public List<AtlasVertex> removeTagPropagation(AtlasClassification classification, List<AtlasEdge> propagatedEdges) throws AtlasBaseException {
+        List<AtlasVertex> ret = new ArrayList<>();
+
+        for (AtlasEdge propagatedEdge : propagatedEdges) {
+            AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("removeTagPropagationEdge");
+            AtlasVertex entityVertex = propagatedEdge.getOutVertex();
+
+            ret.add(entityVertex);
+
+            // record remove propagation details to send notifications inline
+            RequestContext.get().recordRemovedPropagation(getGuid(entityVertex), classification);
+
+            deletePropagatedEdge(propagatedEdge);
+
+            RequestContext.get().endMetricRecord(metric);
+        }
+
+        return ret;
+    }
+
     public List<AtlasVertex> removeTagPropagation(AtlasVertex classificationVertex) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("removeTagPropagationVertex");
         List<AtlasVertex> ret = new ArrayList<>();
@@ -1002,6 +1022,17 @@ public abstract class DeleteHandlerV1 {
 
         // delete classification vertex only if it has no more entity references (direct or propagated)
         if (!hasEntityReferences(classificationVertex)) {
+            _deleteVertex(classificationVertex, force);
+        }
+    }
+
+    public void deleteClassificationVertex(AtlasVertex classificationVertex, boolean force, long referenceCount) {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Deleting classification vertex", string(classificationVertex));
+        }
+        LOG.info("Reference count " + referenceCount);
+        // delete classification vertex only if count of references is 0
+        if (referenceCount == 0) {
             _deleteVertex(classificationVertex, force);
         }
     }
