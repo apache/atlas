@@ -1026,17 +1026,6 @@ public abstract class DeleteHandlerV1 {
         }
     }
 
-    public void deleteClassificationVertex(AtlasVertex classificationVertex, boolean force, long referenceCount) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Deleting classification vertex", string(classificationVertex));
-        }
-        LOG.info("Reference count " + referenceCount);
-        // delete classification vertex only if count of references is 0
-        if (referenceCount == 0) {
-            _deleteVertex(classificationVertex, force);
-        }
-    }
-
     private boolean isInternalType(final AtlasVertex instanceVertex) {
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName(GraphHelper.getTypeName(instanceVertex));
         return Objects.nonNull(entityType) && entityType.isInternalType();

@@ -3292,7 +3292,6 @@ public class EntityGraphMapper {
 
             List<String> deletedPropagationsGuid = new ArrayList<>();
             long propagatedEdgesSize = propagatedEdges.size();
-            long deletedEdgeCountDown = propagatedEdgesSize;
             int toIndex;
             int offset = 0;
 
@@ -3306,8 +3305,6 @@ public class EntityGraphMapper {
                 if (CollectionUtils.isEmpty(entityVertices)) {
                     return null;
                 }
-
-                deletedEdgeCountDown -= entityVertices.size();
 
                 List<String> impactedGuids = entityVertices.stream().map(x -> GraphHelper.getGuid(x)).collect(Collectors.toList());
                 GraphTransactionInterceptor.lockObjectAndReleasePostCommit(impactedGuids);
@@ -3325,7 +3322,7 @@ public class EntityGraphMapper {
             }
             while (offset < propagatedEdgesSize);
 
-            deleteDelegate.getHandler().deleteClassificationVertex(classificationVertex, true, deletedEdgeCountDown);
+            deleteDelegate.getHandler().deleteClassificationVertex(classificationVertex, true);
 
             return deletedPropagationsGuid;
         } catch (Exception e) {
