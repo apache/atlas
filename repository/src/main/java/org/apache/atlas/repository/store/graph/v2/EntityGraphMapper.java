@@ -3265,7 +3265,6 @@ public class EntityGraphMapper {
         }
     }
 
-    @GraphTransaction
     public List<String> deleteClassificationPropagation(String entityGuid, String classificationVertexId) throws AtlasBaseException {
         try {
             if (StringUtils.isEmpty(classificationVertexId)) {
@@ -3323,6 +3322,8 @@ public class EntityGraphMapper {
             while (offset < propagatedEdgesSize);
 
             deleteDelegate.getHandler().deleteClassificationVertex(classificationVertex, true);
+
+            transactionInterceptHelper.intercept();
 
             return deletedPropagationsGuid;
         } catch (Exception e) {
