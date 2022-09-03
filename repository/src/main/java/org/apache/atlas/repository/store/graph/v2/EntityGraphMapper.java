@@ -3341,25 +3341,31 @@ public class EntityGraphMapper {
                 if (isTermEntityEdge || removePropagations) {
                     List<AtlasVertex> verticesToRemove = removePropagationsMap.get(classificationVertex);
 
-                    do {
-                        List<AtlasVertex> chunkedVerticesToRemoveTag = new ArrayList<>();
-                        if (verticesToRemove.size() < CHUNK_SIZE) {
-                            chunkedVerticesToRemoveTag = verticesToRemove.subList(0, verticesToRemove.size());
-                        } else {
-                            verticesToRemove.subList(0, CHUNK_SIZE);
-                        }
+                    while (verticesToRemove.size() >= CHUNK_SIZE)
+                    {
+                        List<AtlasVertex> chunkedVerticesToRemoveTag = verticesToRemove.subList(0, CHUNK_SIZE);
 
-                        List<AtlasVertex> updatedVertices = deleteDelegate.getHandler().removeTagPropagation(classificationVertex, chunkedVerticesToRemoveTag);
-                        List<AtlasEntity> updatedEntities = updatedVertices.stream().map(this::getEntity).collect(Collectors.toList());
-                        entityChangeNotifier.onClassificationsDeletedFromEntities(updatedEntities, Collections.singletonList(classification));
+                        processClassificationDeletionFromVerticesInChunk(chunkedVerticesToRemoveTag, classificationVertex, classification);
 
                         chunkedVerticesToRemoveTag.clear();
 
                         transactionInterceptHelper.intercept();
-                    } while (verticesToRemove.size() >= CHUNK_SIZE);
+                    }
+                    processClassificationDeletionFromVerticesInChunk(verticesToRemove, classificationVertex, classification);
+
+                    transactionInterceptHelper.intercept();
                 }
             }
         }
+    }
+
+    void processClassificationDeletionFromVerticesInChunk(List<AtlasVertex> VerticesToRemoveTag, AtlasVertex classificationVertex, AtlasClassification classification) throws AtlasBaseException {
+
+        List<AtlasVertex> updatedVertices = deleteDelegate.getHandler().removeTagPropagation(classificationVertex, VerticesToRemoveTag);
+
+        List<AtlasEntity> updatedEntities = updatedVertices.stream().map(this::getEntity).collect(Collectors.toList());
+
+        entityChangeNotifier.onClassificationsDeletedFromEntities(updatedEntities, Collections.singletonList(classification));
     }
 
 
