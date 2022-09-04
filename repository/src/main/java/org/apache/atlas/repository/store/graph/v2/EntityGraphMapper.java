@@ -3341,6 +3341,8 @@ public class EntityGraphMapper {
                 if (isTermEntityEdge || removePropagations) {
                     List<AtlasVertex> verticesToRemove = removePropagationsMap.get(classificationVertex);
 
+                    LOG.info("{} classifications to remove from entity {} with name {}", verticesToRemove.size(), classification.getEntityGuid(), classification.getTypeName());
+
                     while (verticesToRemove.size() >= CHUNK_SIZE)
                     {
                         List<AtlasVertex> chunkedVerticesToRemoveTag = verticesToRemove.subList(0, CHUNK_SIZE);
