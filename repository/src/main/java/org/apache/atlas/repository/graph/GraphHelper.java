@@ -1429,7 +1429,12 @@ public final class GraphHelper {
         boolean isArrayOfEnum = elementType.getTypeCategory().equals(TypeCategory.ENUM);
 
         if (isReference(elementType)) {
-            return (List) getCollectionElementsUsingRelationship(instanceVertex, attribute);
+            if (elementType.getTypeCategory().equals(TypeCategory.STRUCT)) {
+                String edgeLabel = AtlasGraphUtilsV2.getEdgeLabel(attribute.getName());
+                return (List) getCollectionElementsUsingRelationship(instanceVertex, attribute, edgeLabel);
+            } else {
+                return (List) getCollectionElementsUsingRelationship(instanceVertex, attribute);
+            }
         } else if (isArrayOfPrimitiveType || isArrayOfEnum) {
             return (List) instanceVertex.getMultiValuedProperty(propertyName, elementType.getClass());
         } else {
@@ -1479,8 +1484,12 @@ public final class GraphHelper {
     }
 
     public static List<AtlasEdge> getCollectionElementsUsingRelationship(AtlasVertex vertex, AtlasAttribute attribute) {
+        String edgeLabel = attribute.getRelationshipEdgeLabel();
+        return getCollectionElementsUsingRelationship(vertex, attribute, edgeLabel);
+    }
+
+    public static List<AtlasEdge> getCollectionElementsUsingRelationship(AtlasVertex vertex, AtlasAttribute attribute, String edgeLabel) {
         List<AtlasEdge>                ret;
-        String                         edgeLabel     = attribute.getRelationshipEdgeLabel();
         AtlasRelationshipEdgeDirection edgeDirection = attribute.getRelationshipEdgeDirection();
         Iterator<AtlasEdge>            edgesForLabel = getEdgesForLabel(vertex, edgeLabel, edgeDirection);
 
