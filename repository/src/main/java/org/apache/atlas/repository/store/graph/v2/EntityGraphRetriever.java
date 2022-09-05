@@ -22,6 +22,7 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TimeBoundary;
+import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.glossary.enums.AtlasTermAssignmentStatus;
 import org.apache.atlas.model.glossary.relations.AtlasTermAssignmentHeader;
 import org.apache.atlas.model.instance.AtlasClassification;
@@ -1097,6 +1098,10 @@ public class EntityGraphRetriever {
                 break;
             case OBJECT_ID_TYPE:
                 if (includeReferences) {
+                    if (attribute.getDefinedInType().getTypeCategory() == TypeCategory.STRUCT) {
+                        //Struct attribute having ObjectId as type
+                        edgeLabel = AtlasGraphUtilsV2.getEdgeLabel(attribute.getName());
+                    }
                     ret = attribute.getAttributeDef().isSoftReferenced() ? mapVertexToObjectIdForSoftRef(entityVertex, attribute, entityExtInfo, isMinExtInfo) :
                                                                            mapVertexToObjectId(entityVertex, edgeLabel, null, entityExtInfo, isOwnedAttribute, edgeDirection, isMinExtInfo);
                 } else {

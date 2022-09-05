@@ -139,7 +139,7 @@ public final class GraphHelper {
         }
 
         String fromGuid = getGuid(fromVertex);
-        if (fromGuid.equals(getGuid(toVertex))) {
+        if (fromGuid != null && fromGuid.equals(getGuid(toVertex))) {
             LOG.error("Attempting to create a relationship between same vertex with guid {}", fromGuid);
             throw new AtlasBaseException(RELATIONSHIP_CREATE_INVALID_PARAMS, fromGuid);
         }
@@ -1429,7 +1429,10 @@ public final class GraphHelper {
         boolean isArrayOfEnum = elementType.getTypeCategory().equals(TypeCategory.ENUM);
 
         if (isReference(elementType)) {
-            if (elementType.getTypeCategory().equals(TypeCategory.STRUCT)) {
+            boolean isStruct = TypeCategory.STRUCT == attribute.getDefinedInType().getTypeCategory() ||
+                               TypeCategory.STRUCT == elementType.getTypeCategory();
+
+            if (isStruct) {
                 String edgeLabel = AtlasGraphUtilsV2.getEdgeLabel(attribute.getName());
                 return (List) getCollectionElementsUsingRelationship(instanceVertex, attribute, edgeLabel);
             } else {
