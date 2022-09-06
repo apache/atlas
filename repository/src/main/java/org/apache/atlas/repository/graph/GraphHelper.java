@@ -21,6 +21,7 @@ package org.apache.atlas.repository.graph;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import com.sun.tools.javac.util.GraphUtils;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
@@ -1490,6 +1491,13 @@ public final class GraphHelper {
         String edgeLabel = attribute.getRelationshipEdgeLabel();
         return getCollectionElementsUsingRelationship(vertex, attribute, edgeLabel);
     }
+
+    public static List<AtlasEdge> getCollectionElementsUsingRelationship(AtlasVertex vertex, AtlasAttribute attribute,
+                                                                         boolean isStructType) {
+        String edgeLabel = isStructType ? AtlasGraphUtilsV2.getEdgeLabel(attribute.getName()) :  attribute.getRelationshipEdgeLabel();
+        return getCollectionElementsUsingRelationship(vertex, attribute, edgeLabel);
+    }
+
 
     public static List<AtlasEdge> getCollectionElementsUsingRelationship(AtlasVertex vertex, AtlasAttribute attribute, String edgeLabel) {
         List<AtlasEdge>                ret;

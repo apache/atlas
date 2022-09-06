@@ -1696,7 +1696,7 @@ public class EntityGraphMapper {
         boolean deleteExistingRelations = shouldDeleteExistingRelations(ctx, attribute);
 
         if (isReference && !isSoftReference) {
-            currentElements = (List) getCollectionElementsUsingRelationship(ctx.getReferringVertex(), attribute);
+            currentElements = (List) getCollectionElementsUsingRelationship(ctx.getReferringVertex(), attribute, isStructType);
         } else {
             currentElements = (List) getArrayElementsProperty(elementType, isSoftReference, ctx.getReferringVertex(), ctx.getVertexProperty());
         }
