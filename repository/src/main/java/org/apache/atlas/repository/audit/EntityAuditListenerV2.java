@@ -128,6 +128,8 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
                 action = CUSTOM_ATTRIBUTE_UPDATE;
             } else if (reqContext.checkIfEntityIsForBusinessAttributeUpdate(entity.getGuid())) {
                 action = BUSINESS_ATTRIBUTE_UPDATE;
+            } else if (isShellEntity(entity)) {
+                action = ENTITY_CREATE;
             } else {
                 action = ENTITY_UPDATE;
             }
@@ -650,5 +652,12 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
         ret.reset();
         return ret;
 
+    }
+
+    private boolean isShellEntity(AtlasEntity entity) {
+        if (entity.getIsIncomplete() != null && entity.getCreateTime() != null && entity.getUpdateTime() != null) {
+            return entity.getIsIncomplete() && entity.getCreateTime().getTime() == entity.getUpdateTime().getTime();
+        }
+        return false;
     }
 }
