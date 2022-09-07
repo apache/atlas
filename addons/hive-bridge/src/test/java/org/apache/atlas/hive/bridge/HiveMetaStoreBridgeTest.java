@@ -22,8 +22,12 @@ import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasClientV2;
 import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.hive.model.HiveDataTypes;
+import org.apache.atlas.model.discovery.AtlasSearchResult;
+import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.EntityMutationResponse;
+import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.metastore.TableType;
@@ -47,6 +51,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.apache.atlas.hive.hook.events.BaseHiveEvent.*;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.anyObject;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.mock;
@@ -57,6 +62,12 @@ public class HiveMetaStoreBridgeTest {
     private static final String TEST_DB_NAME       = "default";
     public  static final String METADATA_NAMESPACE = "primary";
     public  static final String TEST_TABLE_NAME    = "test_table";
+    public  static final String TEST_DB_NAME_2     = "enr_edl";
+    public  static final String TEST_DB_NAME_3     = "dummy";
+    public  static final String TEST_TABLE_NAME_2  = "testing_enr_edl_1";
+    public  static final String TEST_TABLE_NAME_3  = "testing_enr_edl_2";
+    public  static final String TEST_TABLE_NAME_4  = "testing_dummy_1";
+    public  static final String TEST_TABLE_NAME_5  = "testing_dummy_2";
 
     @Mock
     private Hive hiveClient;
@@ -324,4 +335,103 @@ public class HiveMetaStoreBridgeTest {
             return attrValue.equals(((AtlasEntity) o).getAttribute(attrName));
         }
     }
+
+    @Test
+    public void testDeleteEntitiesForNonExistingHiveMetadata() throws Exception {
+
+        String DB1_GUID = "72e06b34-9151-4023-aa9d-b82103a50e76";
+        String DB2_GUID = "98w06b34-9151-4023-aa9d-b82103a50w67";
+        String DB1_TABLE1_GUID = "82e06b34-9151-4023-aa9d-b82103a50e77";
+        String DB1_TABLE2_GUID = "66e06b34-9151-4023-aa9d-b82103a50e55";
+        String DB2_TABLE1_GUID = "99q06b34-9151-4023-aa9d-b82103a50i22";
+        String DB2_TABLE2_GUID = "48z06b34-9151-4023-aa9d-b82103a50n39";
+
+        // IN BOTH HIVE AND ATLAS GUID IS PRESENT MEANS TABLE/ENTITY IS PRESENT SO WILL DO IMPORT HIVE SCRIPT RUN
+        // 1) WHEN DB 1 AND TABLE 1 BOTH ARE PRESENT IN IMPORT-HIVE SCRIPT COMMAND, THEN DELETING ONLY SINGLE TABLE FROM DB 1.
+
+        AtlasEntityHeader atlasEntityHeader = new AtlasEntityHeader(HIVE_TYPE_DB, DB1_TABLE1_GUID,
+                Collections.singletonMap(AtlasClient.QUALIFIED_NAME, HiveMetaStoreBridge.getDBQualifiedName(METADATA_NAMESPACE, TEST_DB_NAME)));
+        AtlasSearchResult atlasSearchResult = new AtlasSearchResult();
+        atlasSearchResult.setEntities(Collections.singletonList(atlasEntityHeader));
+
+        SearchParameters.FilterCriteria filterCriteria = new SearchParameters.FilterCriteria();
+        filterCriteria.setAttributeName(ATTRIBUTE_CLUSTER_NAME);
+        filterCriteria.setAttributeValue(METADATA_NAMESPACE);
+        filterCriteria.setOperator(SearchParameters.Operator.EQ);
+
+        when(atlasClientV2.basicSearch(HIVE_TYPE_DB, filterCriteria, null, TEST_DB_NAME_2, true, 1, 100))
+                .thenReturn(atlasSearchResult);
+
+        AtlasEntityHeader atlasEntityHeader1 = new AtlasEntityHeader(HIVE_TYPE_TABLE, DB1_TABLE1_GUID,
+                Collections.singletonMap(AtlasClient.QUALIFIED_NAME, HiveMetaStoreBridge.getTableQualifiedName(METADATA_NAMESPACE, TEST_DB_NAME_2, TEST_TABLE_NAME_2)));
+        AtlasEntityHeader atlasEntityHeader2 = new AtlasEntityHeader(HIVE_TYPE_TABLE, DB1_TABLE2_GUID,
+                Collections.singletonMap(AtlasClient.QUALIFIED_NAME, HiveMetaStoreBridge.getTableQualifiedName(METADATA_NAMESPACE, TEST_DB_NAME_2, TEST_TABLE_NAME_3)));
+        AtlasSearchResult atlasSearchResult1 = new AtlasSearchResult();
+        atlasSearchResult1.setEntities(Arrays.asList(atlasEntityHeader1, atlasEntityHeader2));
+
+        SearchParameters.FilterCriteria filterCriteria1 = new SearchParameters.FilterCriteria();
+        filterCriteria1.setAttributeName(ATTRIBUTE_CLUSTER_NAME);
+        filterCriteria1.setAttributeValue(HiveMetaStoreBridge.getTableQualifiedName(METADATA_NAMESPACE, TEST_DB_NAME_2.toLowerCase(), TEST_TABLE_NAME_2.toLowerCase()));
+        filterCriteria1.setAttributeValue(METADATA_NAMESPACE);
+        filterCriteria1.setOperator(SearchParameters.Operator.EQ);
+
+        when(atlasClientV2.basicSearch(HIVE_TYPE_TABLE, filterCriteria1, null, TEST_TABLE_NAME_2, true, 1, 100))
+                .thenReturn(atlasSearchResult1);
+
+        EntityMutationResponse entityMutationResponse1 = new EntityMutationResponse();
+        entityMutationResponse1.setMutatedEntities(Collections.singletonMap(EntityMutations.EntityOperation.DELETE, Arrays.asList(atlasEntityHeader1)));
+        when(atlasClientV2.deleteEntityByGuid(DB1_TABLE1_GUID)).thenReturn(entityMutationResponse1);
+
+        HiveMetaStoreBridge hiveMetaStoreBridge = new HiveMetaStoreBridge(METADATA_NAMESPACE, hiveClient, atlasClientV2);
+        hiveMetaStoreBridge.deleteEntitiesForNonExistingHiveMetadata(true, TEST_DB_NAME_2, TEST_TABLE_NAME_2);
+
+        assertEquals(DB1_TABLE1_GUID, entityMutationResponse1.getMutatedEntities().get(EntityMutations.EntityOperation.DELETE).get(0).getGuid());
+
+        // 1) WHEN DB 2 AND TABLE 1 BOTH ARE PRESENT, THEN DELETING ONLY SINGLE TABLE FROM DB 2.
+
+        AtlasEntityHeader atlasEntityHeader3 = new AtlasEntityHeader(HIVE_TYPE_DB, DB2_TABLE1_GUID,
+                Collections.singletonMap(AtlasClient.QUALIFIED_NAME, HiveMetaStoreBridge.getDBQualifiedName(METADATA_NAMESPACE, TEST_DB_NAME)));
+        AtlasSearchResult atlasSearchResult2 = new AtlasSearchResult();
+        atlasSearchResult2.setEntities(Collections.singletonList(atlasEntityHeader3));
+
+        when(atlasClientV2.basicSearch(HIVE_TYPE_DB, filterCriteria, null, TEST_DB_NAME_3, true, 1, 100))
+                .thenReturn(atlasSearchResult2);
+
+        AtlasSearchResult atlasSearchResult3 = new AtlasSearchResult();
+        atlasSearchResult3.setEntities(Arrays.asList(new AtlasEntityHeader(HIVE_TYPE_TABLE, DB2_TABLE1_GUID,
+                        Collections.singletonMap(AtlasClient.QUALIFIED_NAME, HiveMetaStoreBridge.getTableQualifiedName(METADATA_NAMESPACE, TEST_DB_NAME_3, TEST_TABLE_NAME_4))),
+                new AtlasEntityHeader(HIVE_TYPE_TABLE, DB2_TABLE1_GUID,
+                        Collections.singletonMap(AtlasClient.QUALIFIED_NAME, HiveMetaStoreBridge.getTableQualifiedName(METADATA_NAMESPACE, TEST_DB_NAME_3, TEST_TABLE_NAME_4)))));
+
+        SearchParameters.FilterCriteria filterCriteria2 = new SearchParameters.FilterCriteria();
+        filterCriteria2.setAttributeName(ATTRIBUTE_CLUSTER_NAME);
+        filterCriteria2.setAttributeValue(HiveMetaStoreBridge.getTableQualifiedName(METADATA_NAMESPACE, TEST_DB_NAME_3.toLowerCase(), TEST_TABLE_NAME_4.toLowerCase()));
+        filterCriteria2.setAttributeValue(METADATA_NAMESPACE);
+        filterCriteria2.setOperator(SearchParameters.Operator.EQ);
+
+        when(atlasClientV2.basicSearch(HIVE_TYPE_TABLE, filterCriteria2, null, TEST_TABLE_NAME_4, true, 1, 100))
+                .thenReturn(atlasSearchResult1);
+
+        EntityMutationResponse entityMutationResponse2 = new EntityMutationResponse();
+        entityMutationResponse2.setMutatedEntities(Collections.singletonMap(EntityMutations.EntityOperation.DELETE, Arrays.asList(new AtlasEntityHeader(HIVE_TYPE_TABLE, DB2_TABLE1_GUID,
+                Collections.singletonMap(AtlasClient.QUALIFIED_NAME, HiveMetaStoreBridge.getTableQualifiedName(METADATA_NAMESPACE, TEST_DB_NAME_3, TEST_TABLE_NAME_4))))));
+        when(atlasClientV2.deleteEntityByGuid(DB2_TABLE1_GUID)).thenReturn(entityMutationResponse2);
+
+        hiveMetaStoreBridge.deleteEntitiesForNonExistingHiveMetadata(true, TEST_DB_NAME_3, TEST_TABLE_NAME_4);
+
+        assertEquals(DB2_TABLE1_GUID, entityMutationResponse2.getMutatedEntities().get(EntityMutations.EntityOperation.DELETE).get(0).getGuid());
+
+        // 3) WHEN DB 1 IS PRESENT, THEN DELETING ALL TABLE FROM DB
+
+        EntityMutationResponse entityMutationResponse3 = new EntityMutationResponse();
+        entityMutationResponse3.setMutatedEntities(Collections.singletonMap(EntityMutations.EntityOperation.DELETE, Arrays.asList(atlasEntityHeader1, atlasEntityHeader2)));
+        when(atlasClientV2.deleteEntityByGuid(DB1_TABLE1_GUID)).thenReturn(entityMutationResponse2);
+        when(atlasClientV2.deleteEntityByGuid(DB1_TABLE2_GUID)).thenReturn(entityMutationResponse2);
+        hiveMetaStoreBridge.deleteEntitiesForNonExistingHiveMetadata(true, TEST_DB_NAME_2, null);
+
+        assertEquals(DB1_TABLE1_GUID, entityMutationResponse3.getMutatedEntities().get(EntityMutations.EntityOperation.DELETE).get(0).getGuid());
+        assertEquals(DB1_TABLE2_GUID, entityMutationResponse3.getMutatedEntities().get(EntityMutations.EntityOperation.DELETE).get(1).getGuid());
+    }
+
+
 }
