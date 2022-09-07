@@ -3306,36 +3306,17 @@ public class EntityGraphMapper {
         RequestContext.get().getDeletedEdgesIds().addAll(deletedEdgeIds);
 
         for (AtlasEdge edge : deletedEdgeIds.stream().map(x -> graph.getEdge(x)).collect(Collectors.toList())) {
-            if (edge == null || !deleteDelegate.getHandler().isRelationshipEdge(edge)) {
+            Map<AtlasVertex, List<AtlasVertex>> removePropagationsMap  = deleteDelegate.getHandler().getRemovePropagationMap(edge);
+
+            if (removePropagationsMap == null) {
                 continue;
             }
-            List<AtlasVertex> currentClassificationVertices = getPropagatableClassifications(edge);
-
-            Map<AtlasVertex, List<AtlasVertex>> currentClassificationsMap     = entityRetriever.getClassificationPropagatedEntitiesMapping(currentClassificationVertices);
-            Map<AtlasVertex, List<AtlasVertex>> updatedClassificationsMap     = entityRetriever.getClassificationPropagatedEntitiesMapping(currentClassificationVertices,GraphHelper.getRelationshipGuid(edge));
-            Map<AtlasVertex, List<AtlasVertex>> removePropagationsMap         = new HashMap<>();
-
-            if (MapUtils.isNotEmpty(currentClassificationsMap) && MapUtils.isEmpty(updatedClassificationsMap)) {
-                removePropagationsMap.putAll(currentClassificationsMap);
-            } else {
-                for (AtlasVertex classificationVertex : updatedClassificationsMap.keySet()) {
-                    List<AtlasVertex> currentPropagatingEntities = currentClassificationsMap.containsKey(classificationVertex) ? currentClassificationsMap.get(classificationVertex) : Collections.emptyList();
-                    List<AtlasVertex> updatedPropagatingEntities = updatedClassificationsMap.containsKey(classificationVertex) ? updatedClassificationsMap.get(classificationVertex) : Collections.emptyList();
-                    List<AtlasVertex> entitiesRemoved            = (List<AtlasVertex>) CollectionUtils.subtract(currentPropagatingEntities, updatedPropagatingEntities);
-
-                    if (CollectionUtils.isNotEmpty(entitiesRemoved)) {
-                        removePropagationsMap.put(classificationVertex, entitiesRemoved);
-                    }
-                }
-            }
-            currentClassificationsMap.clear();
-            updatedClassificationsMap.clear();
-
 
             boolean isTermEntityEdge = isTermEntityEdge(edge);
 
             for (AtlasVertex classificationVertex : removePropagationsMap.keySet()) {
                 AtlasClassification classification = entityRetriever.toAtlasClassification(classificationVertex);
+
                 boolean removePropagations = getRemovePropagations(classificationVertex);
 
                 if (isTermEntityEdge || removePropagations) {
