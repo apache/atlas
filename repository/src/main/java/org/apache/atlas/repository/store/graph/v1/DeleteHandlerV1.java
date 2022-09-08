@@ -581,7 +581,7 @@ public abstract class DeleteHandlerV1 {
         List<AtlasVertex> ret = new ArrayList<>();
 
         for (AtlasEdge propagatedEdge : propagatedEdges) {
-            AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("removeTagPropagationEdge");
+            AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("removeTagPropagationEdges");
             AtlasVertex entityVertex = propagatedEdge.getOutVertex();
 
             ret.add(entityVertex);
