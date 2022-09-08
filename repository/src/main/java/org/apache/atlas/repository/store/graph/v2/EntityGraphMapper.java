@@ -3307,14 +3307,14 @@ public class EntityGraphMapper {
             }
 
             List<String> deletedPropagationsGuid = new ArrayList<>();
-            long propagatedEdgesSize = propagatedEdges.size();
+            int propagatedEdgesSize = propagatedEdges.size();
             int toIndex;
             int offset = 0;
 
             LOG.info(String.format("Number of edges to be deleted : %s for classification vertex with id : %s", propagatedEdgesSize, classificationVertexId));
 
             do {
-                toIndex = ((offset + CHUNK_SIZE > propagatedEdgesSize) ? (int) propagatedEdgesSize : (offset + CHUNK_SIZE));
+                toIndex = ((offset + CHUNK_SIZE > propagatedEdgesSize) ? propagatedEdgesSize : (offset + CHUNK_SIZE));
 
                 List<AtlasVertex> entityVertices = deleteDelegate.getHandler().removeTagPropagation(classification, propagatedEdges.subList(offset, toIndex));
 
