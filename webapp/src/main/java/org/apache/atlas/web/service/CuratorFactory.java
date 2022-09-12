@@ -22,6 +22,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.ICuratorFactory;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.apache.curator.framework.AuthInfo;
@@ -49,7 +50,7 @@ import java.util.List;
  */
 @Singleton
 @Component
-public class CuratorFactory {
+public class CuratorFactory implements ICuratorFactory {
 
     private static final Logger LOG = LoggerFactory.getLogger(CuratorFactory.class);
 
@@ -197,6 +198,11 @@ public class CuratorFactory {
     }
 
     public InterProcessMutex lockInstance(String zkRoot) {
-        return new InterProcessMutex(curatorFramework, zkRoot+ SETUP_LOCK);
+        return lockInstance(zkRoot, SETUP_LOCK);
+    }
+
+    @Override
+    public InterProcessMutex lockInstance(String zkRoot, String lockName) {
+        return new InterProcessMutex(curatorFramework, zkRoot + lockName);
     }
 }

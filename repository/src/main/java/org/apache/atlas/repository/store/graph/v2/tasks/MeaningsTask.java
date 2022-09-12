@@ -17,8 +17,7 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.apache.atlas.model.tasks.AtlasTask.Status.COMPLETE;
-import static org.apache.atlas.model.tasks.AtlasTask.Status.FAILED;
+import static org.apache.atlas.model.tasks.AtlasTask.Status.*;
 import static org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTaskFactory.UPDATE_ENTITY_MEANINGS_ON_TERM_HARD_DELETE;
 
 public abstract class MeaningsTask extends AbstractTask {
@@ -59,6 +58,8 @@ public abstract class MeaningsTask extends AbstractTask {
 
             RequestContext.get().setUser(userName, null);
             try {
+                setStatus(IN_PROGRESS);
+
                 run(params);
 
                 setStatus(COMPLETE);

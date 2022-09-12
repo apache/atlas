@@ -17,43 +17,36 @@
  */
 package org.apache.atlas.web.rest;
 
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.model.SearchFilter;
-import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
-import org.apache.atlas.model.typedef.AtlasBusinessMetadataDef;
-import org.apache.atlas.model.typedef.AtlasClassificationDef;
-import org.apache.atlas.model.typedef.AtlasEntityDef;
-import org.apache.atlas.model.typedef.AtlasEnumDef;
-import org.apache.atlas.model.typedef.AtlasRelationshipDef;
-import org.apache.atlas.model.typedef.AtlasStructDef;
-import org.apache.atlas.model.typedef.AtlasTypeDefHeader;
-import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.model.typedef.*;
+import org.apache.atlas.repository.graph.TypeCacheRefresher;
 import org.apache.atlas.repository.util.FilterUtil;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.utils.AtlasPerfTracer;
+import org.apache.atlas.web.service.CuratorFactory;
 import org.apache.atlas.web.util.Servlets;
+import org.apache.commons.configuration.Configuration;
+import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.apache.http.annotation.Experimental;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
+import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 /**
  * REST interface for CRUD operations on type definitions
@@ -65,12 +58,23 @@ import java.util.Set;
 @Produces({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
 public class TypesREST {
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.TypesREST");
+    private static final Logger LOG = LoggerFactory.getLogger(TypesREST.class);
+    private static final String TYPE_DEF_LOCK = "/type-def-lock";
+    private final String zkRoot;
+
 
     private final AtlasTypeDefStore typeDefStore;
+    private final CuratorFactory curatorFactory;
+    private final TypeCacheRefresher typeCacheRefresher;
+    private final boolean isActiveActiveHAEnabled;
 
     @Inject
-    public TypesREST(AtlasTypeDefStore typeDefStore) {
+    public TypesREST(AtlasTypeDefStore typeDefStore, CuratorFactory curatorFactory, Configuration configuration, TypeCacheRefresher typeCacheRefresher) {
         this.typeDefStore = typeDefStore;
+        this.curatorFactory = curatorFactory;
+        this.typeCacheRefresher = typeCacheRefresher;
+        this.zkRoot = HAConfiguration.getZookeeperProperties(configuration).getZkRoot();
+        this.isActiveActiveHAEnabled = HAConfiguration.isActiveActiveHAEnabled(configuration);
     }
 
     /**
@@ -373,6 +377,40 @@ public class TypesREST {
         return ret;
     }
 
+    private InterProcessMutex attemptAcquiringLock() throws AtlasBaseException {
+        if (!isActiveActiveHAEnabled)
+            return null;
+
+        final InterProcessMutex lock = curatorFactory.lockInstance(zkRoot, TYPE_DEF_LOCK);
+        try {
+            if (!lock.acquire(1, TimeUnit.MILLISECONDS)) {
+                LOG.info("Lock is already acquired. Returning now");
+                throw new AtlasBaseException(AtlasErrorCode.FAILED_TO_OBTAIN_TYPE_UPDATE_LOCK);
+            }
+            LOG.info("successfully acquired lock");
+        } catch (AtlasBaseException e) {
+            throw e;
+        } catch (Exception e) {
+            LOG.error("Error while acquiring lock on type-defs " + e.getMessage(), e);
+            throw new AtlasBaseException("Error while acquiring a lock on type-defs");
+        }
+        return lock;
+    }
+
+    private void releaseLock(InterProcessMutex lock) throws AtlasBaseException {
+        if (lock == null)
+            return;
+        try {
+            if(lock.isOwnedByCurrentThread()) {
+                LOG.info("About to release type-def lock");
+                lock.release();
+                LOG.info("successfully released type-def lock");
+            }
+        } catch (Exception e) {
+          throw new AtlasBaseException(e.getMessage(),e);
+        }
+    }
+
     /* Bulk API operation */
 
     /**
@@ -390,16 +428,21 @@ public class TypesREST {
     @Timed
     public AtlasTypesDef createAtlasTypeDefs(final AtlasTypesDef typesDef) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
-
+        typeCacheRefresher.verifyCacheRefresherHealth();
+        InterProcessMutex lock = null;
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.createAtlasTypeDefs(" +
                                                                AtlasTypeUtil.toDebugString(typesDef) + ")");
             }
+            lock = attemptAcquiringLock();
             typesDef.getBusinessMetadataDefs().forEach(AtlasBusinessMetadataDef::setRandomNameForEntityAndAttributeDefs);
             typesDef.getClassificationDefs().forEach(AtlasClassificationDef::setRandomNameForEntityAndAttributeDefs);
-            return typeDefStore.createTypesDef(typesDef);
+            AtlasTypesDef atlasTypesDef = typeDefStore.createTypesDef(typesDef);
+            typeCacheRefresher.refreshAllHostCache();
+            return atlasTypesDef;
         } finally {
+            releaseLock(lock);
             AtlasPerfTracer.log(perf);
         }
     }
@@ -418,12 +461,15 @@ public class TypesREST {
     @Timed
     public AtlasTypesDef updateAtlasTypeDefs(final AtlasTypesDef typesDef) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
-
+        typeCacheRefresher.verifyCacheRefresherHealth();
+        InterProcessMutex lock = null;
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.updateAtlasTypeDefs(" +
                                                                AtlasTypeUtil.toDebugString(typesDef) + ")");
             }
+            lock = attemptAcquiringLock();
+
             for (AtlasBusinessMetadataDef mb : typesDef.getBusinessMetadataDefs()) {
                 AtlasBusinessMetadataDef existingMB;
                 try{
@@ -444,8 +490,11 @@ public class TypesREST {
                 }
                 classificationDef.setRandomNameForNewAttributeDefs(existingClassificationDef);
             }
-            return typeDefStore.updateTypesDef(typesDef);
+            AtlasTypesDef atlasTypesDef = typeDefStore.updateTypesDef(typesDef);
+            typeCacheRefresher.refreshAllHostCache();
+            return atlasTypesDef;
         } finally {
+            releaseLock(lock);
             AtlasPerfTracer.log(perf);
         }
     }
@@ -463,17 +512,18 @@ public class TypesREST {
     @Timed
     public void deleteAtlasTypeDefs(final AtlasTypesDef typesDef) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
-
+        typeCacheRefresher.verifyCacheRefresherHealth();
+        InterProcessMutex lock = null;
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.deleteAtlasTypeDefs(" +
                                                                AtlasTypeUtil.toDebugString(typesDef) + ")");
             }
-
-
-
+            lock = attemptAcquiringLock();
             typeDefStore.deleteTypesDef(typesDef);
+            typeCacheRefresher.refreshAllHostCache();
         } finally {
+            releaseLock(lock);
             AtlasPerfTracer.log(perf);
         }
     }
@@ -490,14 +540,17 @@ public class TypesREST {
     @Timed
     public void deleteAtlasTypeByName(@PathParam("typeName") final String typeName) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
-
+        typeCacheRefresher.verifyCacheRefresherHealth();
+        InterProcessMutex lock = null;
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.deleteAtlasTypeByName(" + typeName + ")");
             }
-
+            lock = attemptAcquiringLock();
             typeDefStore.deleteTypeByName(typeName);
+            typeCacheRefresher.refreshAllHostCache();
         } finally {
+            releaseLock(lock);
             AtlasPerfTracer.log(perf);
         }
     }

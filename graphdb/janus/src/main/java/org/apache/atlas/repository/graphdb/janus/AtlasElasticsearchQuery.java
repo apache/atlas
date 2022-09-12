@@ -19,7 +19,6 @@ package org.apache.atlas.repository.graphdb.janus;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.discovery.SearchParams;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -53,6 +52,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
+
 
 public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex, AtlasJanusEdge> {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasElasticsearchQuery.class);
@@ -116,7 +116,7 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
 
         try {
 
-            String responseString =  perfromDirectIndexQuery(searchParams.getQuery());
+            String responseString =  performDirectIndexQuery(searchParams.getQuery());
             if (LOG.isDebugEnabled()) {
                 LOG.debug("runQueryWithLowLevelClient.response : {}", responseString);
             }
@@ -131,7 +131,7 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         return result;
     }
 
-    private String perfromDirectIndexQuery(String query) throws IOException {
+    private String performDirectIndexQuery(String query) throws IOException {
         HttpEntity entity = new NStringEntity(query, ContentType.APPLICATION_JSON);
 
         String endPoint = index + "/_search?_source=false";

@@ -20,6 +20,7 @@ package org.apache.atlas.tasks;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.ICuratorFactory;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
@@ -49,6 +50,7 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
     private final TaskRegistry              registry;
     private final Statistics                statistics;
     private final Map<String, TaskFactory>  taskTypeFactoryMap;
+    private final ICuratorFactory curatorFactory;
 
     private Thread watcherThread = null;
 
@@ -58,19 +60,21 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
     }
 
     @Inject
-    public TaskManagement(Configuration configuration, TaskRegistry taskRegistry) {
+    public TaskManagement(Configuration configuration, TaskRegistry taskRegistry, ICuratorFactory curatorFactory) {
         this.configuration      = configuration;
         this.registry           = taskRegistry;
         this.statistics         = new Statistics();
         this.taskTypeFactoryMap = new HashMap<>();
+        this.curatorFactory = curatorFactory;
     }
 
     @VisibleForTesting
-    TaskManagement(Configuration configuration, TaskRegistry taskRegistry, TaskFactory taskFactory) {
+    TaskManagement(Configuration configuration, TaskRegistry taskRegistry, TaskFactory taskFactory, ICuratorFactory curatorFactory) {
         this.configuration      = configuration;
         this.registry           = taskRegistry;
         this.statistics         = new Statistics();
         this.taskTypeFactoryMap = new HashMap<>();
+        this.curatorFactory = curatorFactory;
 
         createTaskTypeFactoryMap(taskTypeFactoryMap, taskFactory);
     }
@@ -192,6 +196,10 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         return registry.getByIdsES(guids);
     }
 
+    public List<AtlasTask> getInProgressTasks() {
+        return registry.getInProgressTasks();
+    }
+
     public void deleteByGuid(String guid) throws AtlasBaseException {
         try {
             this.registry.deleteByGuid(guid);
@@ -226,7 +234,9 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
     private synchronized void startWatcherThread() {
 
         if (this.taskExecutor == null) {
-            this.taskExecutor = new TaskExecutor(registry, taskTypeFactoryMap, statistics);
+            final boolean isActiveActiveHAEnabled = HAConfiguration.isActiveActiveHAEnabled(configuration);
+            final String zkRoot = HAConfiguration.getZookeeperProperties(configuration).getZkRoot();
+            this.taskExecutor = new TaskExecutor(registry, taskTypeFactoryMap, statistics, curatorFactory, zkRoot,isActiveActiveHAEnabled);
         }
 
         if (watcherThread == null) {

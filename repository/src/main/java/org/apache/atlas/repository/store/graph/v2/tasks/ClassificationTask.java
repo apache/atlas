@@ -28,6 +28,7 @@ import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
 import org.apache.atlas.tasks.AbstractTask;
 import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -37,8 +38,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import static org.apache.atlas.model.tasks.AtlasTask.Status.COMPLETE;
-import static org.apache.atlas.model.tasks.AtlasTask.Status.FAILED;
+import static org.apache.atlas.model.tasks.AtlasTask.Status.*;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_RELATIONSHIP_UPDATE;
 
 public abstract class ClassificationTask extends AbstractTask {
@@ -73,6 +73,7 @@ public abstract class ClassificationTask extends AbstractTask {
     @Override
     public AtlasTask.Status perform() throws AtlasBaseException {
         Map<String, Object> params = getTaskDef().getParameters();
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord(getTaskGuid());
 
         if (MapUtils.isEmpty(params)) {
             LOG.warn("Task: {}: Unable to process task: Parameters is not readable!", getTaskGuid());
@@ -91,6 +92,8 @@ public abstract class ClassificationTask extends AbstractTask {
         RequestContext.get().setUser(userName, null);
 
         try {
+            setStatus(IN_PROGRESS);
+
             run(params);
 
             setStatus(COMPLETE);
@@ -101,6 +104,7 @@ public abstract class ClassificationTask extends AbstractTask {
 
             throw e;
         } finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
             graph.commit();
         }
 
@@ -139,6 +143,7 @@ public abstract class ClassificationTask extends AbstractTask {
 
     protected void setStatus(AtlasTask.Status status) {
         super.setStatus(status);
+        LOG.info(String.format("ClassificationTask status is set %s for the task: %s ", status, super.getTaskGuid()));
 
         try {
             if (CLASSIFICATION_PROPAGATION_RELATIONSHIP_UPDATE.equals(getTaskType())) {
@@ -149,6 +154,7 @@ public abstract class ClassificationTask extends AbstractTask {
         } catch (EntityNotFoundException | AtlasBaseException e) {
             LOG.error("Error updating associated element for: {}", getTaskGuid(), e);
         }
+        graph.commit();
     }
 
     protected abstract void run(Map<String, Object> parameters) throws AtlasBaseException;

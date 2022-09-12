@@ -446,7 +446,7 @@ public abstract class DeleteHandlerV1 {
     }
 
     public List<AtlasVertex> addTagPropagation(AtlasVertex classificationVertex, List<AtlasVertex> propagatedEntityVertices) throws AtlasBaseException {
-        List<AtlasVertex> ret = null;
+        List<AtlasVertex> ret = new ArrayList<>();
 
         if (CollectionUtils.isNotEmpty(propagatedEntityVertices) && classificationVertex != null) {
             String                  classificationName     = getTypeName(classificationVertex);
@@ -461,7 +461,8 @@ public abstract class DeleteHandlerV1 {
                     }
 
                     continue;
-                } else if (getPropagatedClassificationEdge(propagatedEntityVertex, classificationVertex) != null) {
+                }
+                if (getPropagatedClassificationEdge(propagatedEntityVertex, classificationVertex) != null) {
                     if (LOG.isDebugEnabled()) {
                         LOG.debug(" --> Propagated classification edge already exists from [{}] --> [{}][{}] using edge label: [{}]",
                                 getTypeName(propagatedEntityVertex), getTypeName(classificationVertex), getTypeName(associatedEntityVertex), CLASSIFICATION_LABEL);
@@ -469,6 +470,7 @@ public abstract class DeleteHandlerV1 {
 
                     continue;
                 }
+                AtlasPerfMetrics.MetricRecorder countMetricRecorder = RequestContext.get().startMetricRecord("countPropagations");
 
                 String          entityTypeName = getTypeName(propagatedEntityVertex);
                 AtlasEntityType entityType     = typeRegistry.getEntityTypeByName(entityTypeName);
@@ -483,19 +485,9 @@ public abstract class DeleteHandlerV1 {
                     continue;
                 }
 
-                AtlasEdge existingEdge = getPropagatedClassificationEdge(propagatedEntityVertex, classificationVertex);
-
-                if (existingEdge != null) {
-                    continue;
-                }
-
                 if (LOG.isDebugEnabled()) {
                     LOG.debug(" --> Adding propagated classification: [{}] to {} ({}) using edge label: [{}]", classificationName, getTypeName(propagatedEntityVertex),
                             GraphHelper.getGuid(propagatedEntityVertex), CLASSIFICATION_LABEL);
-                }
-
-                if (ret == null) {
-                    ret = new ArrayList<>();
                 }
 
                 ret.add(propagatedEntityVertex);
@@ -509,9 +501,9 @@ public abstract class DeleteHandlerV1 {
                 AtlasClassification classification = entityRetriever.toAtlasClassification(classificationVertex);
 
                 context.recordAddedPropagation(entityGuid, classification);
+                RequestContext.get().endMetricRecord(countMetricRecorder);
             }
         }
-
         return ret;
     }
 
@@ -534,28 +526,11 @@ public abstract class DeleteHandlerV1 {
 
     public Map<AtlasVertex, List<AtlasVertex>> removeTagPropagation(AtlasEdge edge) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("removeTagPropagationEdge");
-        if (edge == null || !isRelationshipEdge(edge)) {
+
+        Map<AtlasVertex, List<AtlasVertex>> removePropagationsMap = getRemovePropagationMap(edge);
+
+        if (removePropagationsMap == null) {
             return null;
-        }
-
-        List<AtlasVertex> currentClassificationVertices = getPropagatableClassifications(edge);
-
-        Map<AtlasVertex, List<AtlasVertex>> currentClassificationsMap     = entityRetriever.getClassificationPropagatedEntitiesMapping(currentClassificationVertices);
-        Map<AtlasVertex, List<AtlasVertex>> updatedClassificationsMap     = entityRetriever.getClassificationPropagatedEntitiesMapping(currentClassificationVertices, getRelationshipGuid(edge));
-        Map<AtlasVertex, List<AtlasVertex>> removePropagationsMap         = new HashMap<>();
-
-        if (MapUtils.isNotEmpty(currentClassificationsMap) && MapUtils.isEmpty(updatedClassificationsMap)) {
-            removePropagationsMap.putAll(currentClassificationsMap);
-        } else {
-            for (AtlasVertex classificationVertex : updatedClassificationsMap.keySet()) {
-                List<AtlasVertex> currentPropagatingEntities = currentClassificationsMap.containsKey(classificationVertex) ? currentClassificationsMap.get(classificationVertex) : Collections.emptyList();
-                List<AtlasVertex> updatedPropagatingEntities = updatedClassificationsMap.containsKey(classificationVertex) ? updatedClassificationsMap.get(classificationVertex) : Collections.emptyList();
-                List<AtlasVertex> entitiesRemoved            = (List<AtlasVertex>) CollectionUtils.subtract(currentPropagatingEntities, updatedPropagatingEntities);
-
-                if (CollectionUtils.isNotEmpty(entitiesRemoved)) {
-                    removePropagationsMap.put(classificationVertex, entitiesRemoved);
-                }
-            }
         }
 
         boolean isTermEntityEdge = isTermEntityEdge(edge);
@@ -567,8 +542,38 @@ public abstract class DeleteHandlerV1 {
                 removeTagPropagation(classificationVertex, removePropagationsMap.get(classificationVertex));
             }
         }
+
         RequestContext.get().endMetricRecord(metric);
         return removePropagationsMap;
+    }
+
+    public Map<AtlasVertex, List<AtlasVertex>> getRemovePropagationMap(AtlasEdge edge) throws AtlasBaseException{
+
+        if (edge == null || !isRelationshipEdge(edge)) {
+            return null;
+        }
+
+        List<AtlasVertex> currentClassificationVertices = getPropagatableClassifications(edge);
+
+        Map<AtlasVertex, List<AtlasVertex>> classificationMapWithEdge     = entityRetriever.getClassificationPropagatedEntitiesMapping(currentClassificationVertices);
+        Map<AtlasVertex, List<AtlasVertex>> classificationMapWithOutEdge  = entityRetriever.getClassificationPropagatedEntitiesMapping(currentClassificationVertices, getRelationshipGuid(edge));
+        Map<AtlasVertex, List<AtlasVertex>> removePropagationsMap         = new HashMap<>();
+
+        if (MapUtils.isNotEmpty(classificationMapWithEdge) && MapUtils.isEmpty(classificationMapWithOutEdge)) {
+            removePropagationsMap.putAll(classificationMapWithEdge);
+        } else {
+            for (AtlasVertex classificationVertex : classificationMapWithOutEdge.keySet()) {
+
+                List<AtlasVertex> currentPropagatingEntities = classificationMapWithEdge.getOrDefault(classificationVertex, Collections.emptyList());
+                List<AtlasVertex> updatedPropagatingEntities = classificationMapWithOutEdge.getOrDefault(classificationVertex, Collections.emptyList());
+                List<AtlasVertex> entitiesRemoved            = (List<AtlasVertex>) CollectionUtils.subtract(currentPropagatingEntities, updatedPropagatingEntities);
+
+                if (CollectionUtils.isNotEmpty(entitiesRemoved)) {
+                    removePropagationsMap.put(classificationVertex, entitiesRemoved);
+                }
+            }
+        }
+        return  removePropagationsMap;
     }
 
     public boolean isRelationshipEdge(AtlasEdge edge) {
@@ -580,6 +585,26 @@ public abstract class DeleteHandlerV1 {
 
             ret = GraphHelper.isRelationshipEdge(edge) || edge.getPropertyKeys().contains(RELATIONSHIP_GUID_PROPERTY_KEY) ||
                     (typeRegistry.getEntityTypeByName(outVertexType) != null && typeRegistry.getEntityTypeByName(inVertexType) != null);
+        }
+
+        return ret;
+    }
+
+    public List<AtlasVertex> removeTagPropagation(AtlasClassification classification, List<AtlasEdge> propagatedEdges) throws AtlasBaseException {
+        List<AtlasVertex> ret = new ArrayList<>();
+
+        for (AtlasEdge propagatedEdge : propagatedEdges) {
+            AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("removeTagPropagationEdges");
+            AtlasVertex entityVertex = propagatedEdge.getOutVertex();
+
+            ret.add(entityVertex);
+
+            // record remove propagation details to send notifications inline
+            RequestContext.get().recordRemovedPropagation(getGuid(entityVertex), classification);
+
+            deletePropagatedEdge(propagatedEdge);
+
+            RequestContext.get().endMetricRecord(metric);
         }
 
         return ret;
@@ -611,7 +636,8 @@ public abstract class DeleteHandlerV1 {
         return ret;
     }
 
-    public void removeTagPropagation(AtlasVertex classificationVertex, List<AtlasVertex> entityVertices) throws AtlasBaseException {
+    public List<AtlasVertex> removeTagPropagation(AtlasVertex classificationVertex, List<AtlasVertex> entityVertices) throws AtlasBaseException {
+        List<AtlasVertex> ret = new ArrayList<>();
         if (classificationVertex != null && CollectionUtils.isNotEmpty(entityVertices)) {
             AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("removeTagPropagationVertices");
             String              classificationName = getClassificationName(classificationVertex);
@@ -625,12 +651,15 @@ public abstract class DeleteHandlerV1 {
                 if (propagatedEdge != null) {
                     deletePropagatedEdge(propagatedEdge);
 
+                    ret.add(entityVertex);
+
                     // record remove propagation details to send notifications at the end
                     context.recordRemovedPropagation(getGuid(entityVertex), classification);
                 }
             }
             RequestContext.get().endMetricRecord(metric);
         }
+        return ret;
     }
 
     public void deletePropagatedClassification(AtlasVertex entityVertex, String classificationName, String associatedEntityGuid) throws AtlasBaseException {
