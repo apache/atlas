@@ -196,6 +196,10 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         return registry.getByIdsES(guids);
     }
 
+    public List<AtlasTask> getInProgressTasks() {
+        return registry.getInProgressTasks();
+    }
+
     public void deleteByGuid(String guid) throws AtlasBaseException {
         try {
             this.registry.deleteByGuid(guid);
