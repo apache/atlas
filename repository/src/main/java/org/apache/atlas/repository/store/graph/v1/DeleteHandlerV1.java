@@ -577,6 +577,26 @@ public abstract class DeleteHandlerV1 {
         return ret;
     }
 
+    public List<AtlasVertex> removeTagPropagation(AtlasClassification classification, List<AtlasEdge> propagatedEdges) throws AtlasBaseException {
+        List<AtlasVertex> ret = new ArrayList<>();
+
+        for (AtlasEdge propagatedEdge : propagatedEdges) {
+            AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("removeTagPropagationEdges");
+            AtlasVertex entityVertex = propagatedEdge.getOutVertex();
+
+            ret.add(entityVertex);
+
+            // record remove propagation details to send notifications inline
+            RequestContext.get().recordRemovedPropagation(getGuid(entityVertex), classification);
+
+            deletePropagatedEdge(propagatedEdge);
+
+            RequestContext.get().endMetricRecord(metric);
+        }
+
+        return ret;
+    }
+
     public List<AtlasVertex> removeTagPropagation(AtlasVertex classificationVertex) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("removeTagPropagationVertex");
         List<AtlasVertex> ret = new ArrayList<>();
