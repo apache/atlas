@@ -752,8 +752,8 @@
         <maven-site-plugin.version>3.7</maven-site-plugin.version>
         <MaxPermGen>512m</MaxPermGen>
         <netty.version>4.1.78.Final</netty.version>
-        <node-for-v2.version>v12.16.0</node-for-v2.version>
-        <npm-for-v2.version>6.13.7</npm-for-v2.version>
+        <node-for-v2.version>v18.9.0</node-for-v2.version>
+        <npm-for-v2.version>8.19.1</npm-for-v2.version>
         <opencsv.version>5.0</opencsv.version>
         <paranamer.version>2.7</paranamer.version>
         <PermGen>64m</PermGen>
