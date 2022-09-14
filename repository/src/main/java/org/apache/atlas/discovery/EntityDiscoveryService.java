@@ -468,6 +468,32 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 ret.setNextMarker(nextMarker);
             }
 
+            //If excludeHeaderAttributes is true, only primitive attributes requested in 'attributes' field will be sent in the response
+            Set<String> attributes = searchParameters.getAttributes();
+            if (searchContext.excludeHeaderAttributes()) {
+
+                AtlasSearchResult.AttributeSearchResult attributeSearchResult = new AtlasSearchResult.AttributeSearchResult();
+                attributeSearchResult.setName(new ArrayList<>(attributes));
+
+                Collection<List<Object>> values = new ArrayList<>();
+                for (AtlasVertex vertex : resultList) {
+                    List<Object> row = new ArrayList<>();
+
+                    for (String attrName : attributes) {
+                        AtlasEntityType entityType = searchContext.getEntityTypes().iterator().next();
+                        AtlasAttribute  attribute  = entityType.getAttribute(attrName);
+                        Object value               = vertex.getProperty(attribute.getVertexPropertyName(), Object.class);
+
+                        row.add(value != null ? value : StringUtils.EMPTY);
+                    }
+                    values.add(row);
+                }
+                attributeSearchResult.setValues(new ArrayList<>(values));
+
+                ret.setAttributes(attributeSearchResult);
+                return ret;
+            }
+
             // By default any attribute that shows up in the search parameter should be sent back in the response
             // If additional values are requested then the entityAttributes will be a superset of the all search attributes
             // and the explicitly requested attribute(s)
@@ -922,6 +948,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         searchParameters.setAttributes(quickSearchParameters.getAttributes());
         searchParameters.setSortBy(quickSearchParameters.getSortBy());
         searchParameters.setSortOrder(quickSearchParameters.getSortOrder());
+        searchParameters.setExcludeHeaderAttributes(quickSearchParameters.getExcludeHeaderAttributes());
 
         return searchParameters;
     }
