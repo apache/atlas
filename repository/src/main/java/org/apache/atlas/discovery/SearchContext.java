@@ -32,10 +32,13 @@ import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
+import org.apache.atlas.type.AtlasArrayType;
+import org.apache.atlas.type.AtlasBuiltInTypes;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.AtlasRepositoryConfiguration;
 import org.apache.commons.collections.CollectionUtils;
@@ -86,6 +89,7 @@ public class SearchContext {
     private boolean                       terminateSearch = false;
     private SearchProcessor               searchProcessor;
     private Integer                       marker;
+    private boolean                       hasRelationshipAttributes = false;
 
     public final static AtlasClassificationType MATCH_ALL_WILDCARD_CLASSIFICATION = new AtlasClassificationType(new AtlasClassificationDef(WILDCARD_CLASSIFICATIONS));
     public final static AtlasClassificationType MATCH_ALL_CLASSIFIED              = new AtlasClassificationType(new AtlasClassificationDef(ALL_CLASSIFICATIONS));
@@ -145,6 +149,9 @@ public class SearchContext {
 
         //remove other types if builtin type is present
         filterStructTypes();
+
+        //validate 'attributes' field
+        validateAttributes();
 
         //gather all classifications and its corresponding subtypes
         Set<String> classificationTypeAndSubTypes  = new HashSet<>();
@@ -343,6 +350,37 @@ public class SearchContext {
                 throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_ATTRIBUTE, attributeName, name);
             }
         }
+    }
+
+    private void validateAttributes() throws AtlasBaseException {
+        Set<String> attributes = searchParameters.getAttributes();
+        if (CollectionUtils.isNotEmpty(attributes) && CollectionUtils.isNotEmpty(entityTypes)) {
+
+            AtlasEntityType entityType = entityTypes.iterator().next();
+            for (String attr : attributes) {
+                AtlasAttribute attribute = entityType.getAttribute(attr);
+
+                if (attribute == null) {
+                    attribute = entityType.getRelationshipAttribute(attr, null);
+                    hasRelationshipAttributes = attribute != null;
+                }
+
+                if (attribute == null) {
+                    throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_ATTRIBUTE, attr, entityType.getTypeName());
+                }
+            }
+        }
+    }
+
+    public boolean excludeHeaderAttributes() {
+        if (CollectionUtils.isNotEmpty(entityTypes) &&
+                searchParameters.getExcludeHeaderAttributes() &&
+                CollectionUtils.isNotEmpty(searchParameters.getAttributes()) &&
+                !hasRelationshipAttributes){
+            return true;
+        }
+
+        return false;
     }
 
     public boolean hasAttributeFilter(FilterCriteria filterCriteria) {

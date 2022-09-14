@@ -50,6 +50,7 @@ public class QuickSearchParameters implements Serializable {
     private Set<String>    attributes;
     private String         sortBy;
     private SortOrder      sortOrder;
+    private boolean        excludeHeaderAttributes;
 
     /**
      * for framework use.
@@ -157,5 +158,13 @@ public class QuickSearchParameters implements Serializable {
 
     public void setSortOrder(SortOrder sortOrder) {
         this.sortOrder = sortOrder;
+    }
+
+    public boolean getExcludeHeaderAttributes() {
+        return excludeHeaderAttributes;
+    }
+
+    public void setExcludeHeaderAttributes(boolean excludeHeaderAttributes) {
+        this.excludeHeaderAttributes = excludeHeaderAttributes;
     }
 }
