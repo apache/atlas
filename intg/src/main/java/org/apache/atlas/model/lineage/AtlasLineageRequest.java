@@ -27,7 +27,7 @@ import java.util.Set;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
-import static org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection.*;
+import static org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection.BOTH;
 
 
 @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
@@ -42,6 +42,7 @@ public class AtlasLineageRequest {
     private SearchParameters.FilterCriteria entityFilters;
 
     private Set<String> attributes;
+    private Set<String> relationAttributes;
 
     public AtlasLineageRequest() {}
 
@@ -115,5 +116,13 @@ public class AtlasLineageRequest {
 
     public void setAllowDeletedProcess(boolean allowDeletedProcess) {
         this.allowDeletedProcess = allowDeletedProcess;
+    }
+
+    public Set<String> getRelationAttributes() {
+        return relationAttributes;
+    }
+
+    public void setRelationAttributes(Set<String> relationAttributes) {
+        this.relationAttributes = relationAttributes;
     }
 }
