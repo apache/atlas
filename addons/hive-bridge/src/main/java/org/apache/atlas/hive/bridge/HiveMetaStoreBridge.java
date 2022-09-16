@@ -249,6 +249,9 @@ public class HiveMetaStoreBridge {
         System.out.println("    Usage 7: import-hive.sh -i -o <output Path or file> [-f <filename>] [-d <database> OR --database <database>] [-t <table> OR --table <table>]");
         System.out.println("        To create zip file with exported data without importing to Atlas which can be imported later ...");
         System.out.println();
+        System.out.println("    Usage 8: import-hive.sh [-d <database> OR --database <database>] [-t <table> OR --table <table>] [-deleteNonExisting] ");
+        System.out.println("        Delete database and table wise which are not present in ATLAS and present in HIVE ...");
+        System.out.println();
     }
 
     /**
@@ -319,7 +322,7 @@ public class HiveMetaStoreBridge {
         LOG.info("delete non existing flag : {} ", deleteNonExisting);
 
         if (deleteNonExisting) {
-            deleteEntitiesForNonExistingHiveMetadata(failOnError);
+            deleteEntitiesForNonExistingHiveMetadata(failOnError, databaseToImport, tableToImport);
             ret = true;
         } else if (StringUtils.isNotEmpty(fileToImport)) {
             File f = new File(fileToImport);
@@ -1161,13 +1164,18 @@ public class HiveMetaStoreBridge {
         }
     }
 
-    public void deleteEntitiesForNonExistingHiveMetadata(boolean failOnError) throws Exception {
+    public void deleteEntitiesForNonExistingHiveMetadata(boolean failOnError, String databaseToDelete, String tableToDelete) throws Exception {
 
         //fetch databases from Atlas
         List<AtlasEntityHeader> dbs = null;
         try {
-            dbs = getAllDatabaseInCluster();
-            LOG.info("Total Databases in cluster {} : {} ", metadataNamespace, dbs.size());
+            if (!StringUtils.isEmpty(databaseToDelete))
+                dbs = getSingleDatabaseInCluster(databaseToDelete);
+           else {
+                dbs = getAllDatabaseInCluster();
+                LOG.info("Total Databases in cluster {} : {} ", metadataNamespace, dbs.size());
+            }
+
         } catch (AtlasServiceException e) {
             LOG.error("Failed to retrieve database entities for cluster {} from Atlas", metadataNamespace, e);
             if (failOnError) {
@@ -1189,8 +1197,13 @@ public class HiveMetaStoreBridge {
 
                 List<AtlasEntityHeader> tables;
                 try {
-                    tables = getAllTablesInDb(dbGuid);
-                    LOG.info("Total Tables in database {} : {} ", hiveDbName, tables.size());
+                    if (!StringUtils.isEmpty(tableToDelete))
+                       tables = getSingleTableInCluster(databaseToDelete, tableToDelete);
+                    else {
+                        tables = getAllTablesInDb(dbGuid);
+                        LOG.info("Total Tables in database {} : {} ", hiveDbName, tables.size());
+                    }
+
                 } catch (AtlasServiceException e) {
                     LOG.error("Failed to retrieve table entities for database {} from Atlas", hiveDbName, e);
                     if (failOnError) {
@@ -1260,5 +1273,39 @@ public class HiveMetaStoreBridge {
             LOG.info("No database found in service.");
         }
 
+    }
+
+    private List<AtlasEntityHeader> getSingleDatabaseInCluster(String databaseName) throws AtlasServiceException {
+
+        String dbQualifiedName = getDBQualifiedName(metadataNamespace, databaseName.toLowerCase());
+
+        SearchParameters.FilterCriteria fc = new SearchParameters.FilterCriteria();
+        fc.setAttributeName(ATTRIBUTE_QUALIFIED_NAME);
+        fc.setAttributeValue(dbQualifiedName);
+        fc.setOperator(SearchParameters.Operator.EQ);
+        fc.setCondition(SearchParameters.FilterCriteria.Condition.AND);
+        LOG.info("Searching for database : {}", dbQualifiedName);
+
+        AtlasSearchResult searchResult = atlasClientV2.basicSearch(HIVE_TYPE_DB, fc, null, null, true, 25, 0);
+
+        List<AtlasEntityHeader> entityHeaders = searchResult == null ? null : searchResult.getEntities();
+        return entityHeaders;
+    }
+
+    private List<AtlasEntityHeader> getSingleTableInCluster(String databaseName, String tableName) throws AtlasServiceException {
+
+        String tableQualifiedName = getTableQualifiedName(metadataNamespace, databaseName.toLowerCase(), tableName.toLowerCase());
+
+        SearchParameters.FilterCriteria fc = new SearchParameters.FilterCriteria();
+        fc.setAttributeName(ATTRIBUTE_QUALIFIED_NAME);
+        fc.setAttributeValue(tableQualifiedName);
+        fc.setOperator(SearchParameters.Operator.EQ);
+        fc.setCondition(SearchParameters.FilterCriteria.Condition.AND);
+        LOG.info("Searching for table : {}", tableQualifiedName);
+
+        AtlasSearchResult searchResult = atlasClientV2.basicSearch(HIVE_TYPE_TABLE, fc, null, null, true, 25, 0);
+
+        List<AtlasEntityHeader> entityHeaders = searchResult == null ? null : searchResult.getEntities();
+        return entityHeaders;
     }
 }
