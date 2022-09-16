@@ -700,7 +700,7 @@
         <commons-collections.version>3.2.2</commons-collections.version>
         <commons-collections4.version>4.4</commons-collections4.version>
         <commons-conf.version>1.10</commons-conf.version>
-        <commons-conf2.version>2.2</commons-conf2.version>
+        <commons-conf2.version>2.8.0</commons-conf2.version>
         <commons-el.version>1.0</commons-el.version>
         <commons-io.version>2.11.0</commons-io.version>
         <commons-lang.version>2.6</commons-lang.version>
