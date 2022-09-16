@@ -56,7 +56,6 @@ pyasn1==0.4.4
 pycodestyle==2.4.0
 pycrypto==2.6.1
 Pygments==2.2.0
-PyJWT==1.6.4
 pylint==2.0.1
 pylint-django==2.0
 pylint-plugin-utils==0.4
