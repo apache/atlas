@@ -61,7 +61,6 @@ python-nmap==0.6.1
 pytz==2018.5
 raven==6.9.0
 redis==2.10.6
-requests==2.19.1
 s3transfer==0.1.13
 simplegeneric==0.8.1
 six==1.11.0
