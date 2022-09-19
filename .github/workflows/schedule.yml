@@ -1,4 +1,4 @@
-name: Example workflow for Python using Snyk
+name: Example workflow for using Snyk
 on: push
 jobs:
   security:
@@ -7,7 +7,6 @@ jobs:
       - uses: actions/checkout@master
       - name: Run Snyk to check for Python vulnerabilities
         uses: snyk/actions/python-3.8@master
-        uses: snyk/actions/maven@master
         continue-on-error: true 
       - name: Run Snyk to check for NodeJS vulnerabilities
         uses: snyk/actions/node@master
@@ -15,5 +14,7 @@ jobs:
       - name: Run Snyk to check for Java vulnerabilities
         uses: snyk/actions/maven@master
         continue-on-error: true
+        with:
+          command: monitor
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
