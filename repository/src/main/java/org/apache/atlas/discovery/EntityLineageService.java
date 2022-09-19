@@ -467,11 +467,6 @@ public class EntityLineageService implements AtlasLineageService {
                     if (entityVertex == null) {
                         continue;
                     }
-                    if (lineageContext.isHideProcess()) {
-                        processVirtualEdge(edge, edgeOfProcess, ret, lineageContext);
-                    } else {
-                        processEdges(edge, edgeOfProcess, ret, lineageContext);
-                    }
                     if (!visitedVertices.contains(getId(entityVertex))) {
                         traverseEdges(entityVertex, isInput, depth - 1, visitedVertices, ret, lineageContext);
                     }
@@ -479,6 +474,12 @@ public class EntityLineageService implements AtlasLineageService {
                     if (shouldTerminate(isInput, ret, lineageContext, currentVertexEdges, inputVertexCount, i, edgesOfProcess, j)) {
                         return;
                     }
+                    if (lineageContext.isHideProcess()) {
+                        processVirtualEdge(edge, edgeOfProcess, ret, lineageContext);
+                    } else {
+                        processEdges(edge, edgeOfProcess, ret, lineageContext);
+                    }
+
                 }
                 currentOffset = Math.max(0, currentOffset - 1);
             } else {
