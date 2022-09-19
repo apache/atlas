@@ -20,9 +20,6 @@ numpy==1.19.5
 o365==2.0.11
 pandas==0.25.3
 paramiko==2.7.1
-pdftotext==2.1.4
-psycopg2-binary==2.9.3
-pyexcel-xlsx==0.6.0
 pyjwt==1.7.1
 pymssql==2.2.4
 pyotp==2.6.0
