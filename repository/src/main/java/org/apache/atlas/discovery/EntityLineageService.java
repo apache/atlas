@@ -455,6 +455,9 @@ public class EntityLineageService implements AtlasLineageService {
         for (int i = 0; i < currentVertexEdges.size(); i++) {
             AtlasEdge edge = currentVertexEdges.get(i);
             AtlasVertex processVertex = edge.getOutVertex();
+            if (!isVertexActive(processVertex) && !lineageContext.isAllowDeletedProcess()) {
+                continue;
+            }
             List<AtlasEdge> edgesOfProcess = getEdgesOfProcess(isInput, lineageContext, processVertex);
             if (edgesOfProcess.size() > currentOffset) {
                 ret.setHasChildrenForDirection(getGuid(processVertex), new LineageChildrenInfo(isInput ? INPUT : OUTPUT, hasMoreChildren(edgesOfProcess)));
@@ -482,6 +485,10 @@ public class EntityLineageService implements AtlasLineageService {
                 currentOffset -= edgesOfProcess.size();
             }
         }
+    }
+
+    private boolean isVertexActive(AtlasVertex vertex) {
+        return GraphHelper.getStatus(vertex) == AtlasEntity.Status.ACTIVE;
     }
 
     @VisibleForTesting
