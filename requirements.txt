@@ -18,7 +18,6 @@ mysql-connector-python==8.0.28
 mysqlclient==2.1.0
 numpy==1.19.5
 o365==2.0.11
-pandas==0.25.3
 paramiko==2.7.1
 pyjwt==1.7.1
 pymssql==2.2.4
