@@ -5,9 +5,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
-      - name: Run Snyk to check for vulnerabilities
+      - name: Run Snyk to check for Python vulnerabilities
         uses: snyk/actions/python-3.8@master
+        uses: snyk/actions/maven@master
+        continue-on-error: true 
+      - name: Run Snyk to check for NodeJS vulnerabilities
+        uses: snyk/actions/node@master
+        continue-on-error: true 
+      - name: Run Snyk to check for Java vulnerabilities
+        uses: snyk/actions/maven@master
+        continue-on-error: true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: --severity-threshold=high
