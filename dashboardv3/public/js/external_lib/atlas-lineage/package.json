@@ -37,7 +37,7 @@
     "path": "^0.12.7",
     "sass": "^1.26.5",
     "sass-loader": "^8.0.2",
-    "webpack": "^4.43.0",
+    "webpack": "^4.44.1",
     "webpack-cli": "^3.3.11"
   }
 }
