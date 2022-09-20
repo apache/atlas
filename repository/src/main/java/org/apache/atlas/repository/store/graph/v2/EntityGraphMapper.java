@@ -1464,7 +1464,7 @@ public class EntityGraphMapper {
        for (int index = 0; allArrayElements != null && index < allArrayElements.size(); index++) {
            Object element = allArrayElements.get(index);
 
-           if (element instanceof AtlasEdge) {
+           if (element instanceof AtlasEdge  && GraphHelper.getEdgeStatus((AtlasEdge)element) == AtlasRelationship.Status.ACTIVE) {
                AtlasGraphUtilsV2.setEncodedProperty((AtlasEdge) element, ATTRIBUTE_INDEX_PROPERTY_KEY, index);
             }
         }
