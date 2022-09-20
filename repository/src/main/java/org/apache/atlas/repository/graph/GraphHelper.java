@@ -33,7 +33,6 @@ import org.apache.atlas.model.instance.AtlasEntity.Status;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
-import org.apache.atlas.repository.graphdb.AtlasVertexQuery;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasMapType;
@@ -51,6 +50,7 @@ import org.apache.atlas.repository.graphdb.AtlasElement;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.graphdb.AtlasVertexQuery;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.exception.EntityNotFoundException;
@@ -453,6 +453,24 @@ public final class GraphHelper {
         }
 
         return ret;
+    }
+
+    public static Iterator<AtlasEdge> getPropagatedEdgesIterator (AtlasVertex classificationVertex) {
+        AtlasVertexQuery      edges = classificationVertex.query().direction(AtlasEdgeDirection.IN).label(CLASSIFICATION_LABEL)
+                .has(CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY, true)
+                .has(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, getTypeName(classificationVertex));
+
+        LOG.info("Traversed via iterator {} vertices for classification {}", edges.count(), classificationVertex.getId());
+
+        return edges.edges().iterator();
+    }
+
+    public static Iterator<AtlasVertex> getPropagatedEdgesVerticesIterator (AtlasVertex classificationVertex) {
+        Iterator<AtlasVertex>      vertices = classificationVertex.query().direction(AtlasEdgeDirection.IN).label(CLASSIFICATION_LABEL)
+                .has(CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY, true)
+                .has(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, getTypeName(classificationVertex)).vertices().iterator();
+
+        return vertices;
     }
 
     public static boolean hasEntityReferences(AtlasVertex classificationVertex) {
