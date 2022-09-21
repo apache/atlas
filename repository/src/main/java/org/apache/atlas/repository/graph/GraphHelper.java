@@ -465,12 +465,21 @@ public final class GraphHelper {
         return edges.edges().iterator();
     }
 
-    public static Iterator<AtlasVertex> getPropagatedEdgesVerticesIterator (AtlasVertex classificationVertex) {
-        Iterator<AtlasVertex>      vertices = classificationVertex.query().direction(AtlasEdgeDirection.IN).label(CLASSIFICATION_LABEL)
+    public static List<AtlasVertex> getPropagatedVertices (AtlasVertex classificationVertex) {
+        List<AtlasVertex> ret   = new ArrayList<>();
+        Iterable        vertices = classificationVertex.query().direction(AtlasEdgeDirection.IN).label(CLASSIFICATION_LABEL)
                 .has(CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY, true)
-                .has(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, getTypeName(classificationVertex)).vertices().iterator();
+                .has(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, getTypeName(classificationVertex)).vertices();
+        if (vertices != null) {
+            Iterator<AtlasVertex> iterator = vertices.iterator();
+            while (iterator.hasNext()) {
+                AtlasVertex vertex = iterator.next();
 
-        return vertices;
+                ret.add(vertex);
+            }
+        }
+
+        return ret;
     }
 
     public static boolean hasEntityReferences(AtlasVertex classificationVertex) {
