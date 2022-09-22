@@ -455,7 +455,7 @@ public class EntityLineageService implements AtlasLineageService {
         for (int i = 0; i < currentVertexEdges.size(); i++) {
             AtlasEdge edge = currentVertexEdges.get(i);
             AtlasVertex processVertex = edge.getOutVertex();
-            if (!isVertexActive(processVertex) && !lineageContext.isAllowDeletedProcess()) {
+            if (shouldProcessDeletedProcess(lineageContext, processVertex)) {
                 continue;
             }
             List<AtlasEdge> edgesOfProcess = getEdgesOfProcess(isInput, lineageContext, processVertex);
@@ -467,13 +467,13 @@ public class EntityLineageService implements AtlasLineageService {
                     if (entityVertex == null) {
                         continue;
                     }
+                    if (shouldTerminate(isInput, ret, lineageContext, currentVertexEdges, inputVertexCount, i, edgesOfProcess, j)) {
+                        return;
+                    }
                     if (!visitedVertices.contains(getId(entityVertex))) {
                         traverseEdges(entityVertex, isInput, depth - 1, visitedVertices, ret, lineageContext);
                     }
                     currentOffset = Math.max(0, currentOffset - 1);
-                    if (shouldTerminate(isInput, ret, lineageContext, currentVertexEdges, inputVertexCount, i, edgesOfProcess, j)) {
-                        return;
-                    }
                     if (lineageContext.isHideProcess()) {
                         processVirtualEdge(edge, edgeOfProcess, ret, lineageContext);
                     } else {
@@ -486,6 +486,10 @@ public class EntityLineageService implements AtlasLineageService {
                 currentOffset -= edgesOfProcess.size();
             }
         }
+    }
+
+    private boolean shouldProcessDeletedProcess(AtlasLineageContext lineageContext, AtlasVertex processVertex) {
+        return !(isVertexActive(processVertex) || lineageContext.isAllowDeletedProcess());
     }
 
     private boolean isVertexActive(AtlasVertex vertex) {
