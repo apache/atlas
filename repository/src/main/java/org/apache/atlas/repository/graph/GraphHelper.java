@@ -456,20 +456,14 @@ public final class GraphHelper {
     }
 
     public static List<AtlasVertex> getPropagatedVertices (AtlasVertex classificationVertex) {
-        List<AtlasVertex>   ret      =  new ArrayList<>();
-        Iterable            vertices =  classificationVertex.query().direction(AtlasEdgeDirection.IN).label(CLASSIFICATION_LABEL)
+        List<AtlasVertex>   ret      =  new ArrayList<AtlasVertex>();
+        Iterator<AtlasVertex>            vertices =  classificationVertex.query().direction(AtlasEdgeDirection.IN).label(CLASSIFICATION_LABEL)
                                                             .has(CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY, true)
                                                             .has(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, getTypeName(classificationVertex))
-                                                            .vertices();
+                                                            .vertices().iterator();
 
         if (vertices != null) {
-            Iterator<AtlasVertex> iterator = vertices.iterator();
-
-            while (iterator.hasNext()) {
-                AtlasVertex vertex = iterator.next();
-
-                ret.add(vertex);
-            }
+           ret = IteratorUtils.toList(vertices);
         }
 
         return ret;
