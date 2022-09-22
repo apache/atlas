@@ -455,23 +455,16 @@ public final class GraphHelper {
         return ret;
     }
 
-    public static Iterator<AtlasEdge> getPropagatedEdgesIterator (AtlasVertex classificationVertex) {
-        AtlasVertexQuery      edges = classificationVertex.query().direction(AtlasEdgeDirection.IN).label(CLASSIFICATION_LABEL)
-                .has(CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY, true)
-                .has(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, getTypeName(classificationVertex));
-
-        LOG.info("Traversed via iterator {} vertices for classification {}", edges.count(), classificationVertex.getId());
-
-        return edges.edges().iterator();
-    }
-
     public static List<AtlasVertex> getPropagatedVertices (AtlasVertex classificationVertex) {
-        List<AtlasVertex> ret   = new ArrayList<>();
-        Iterable        vertices = classificationVertex.query().direction(AtlasEdgeDirection.IN).label(CLASSIFICATION_LABEL)
-                .has(CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY, true)
-                .has(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, getTypeName(classificationVertex)).vertices();
+        List<AtlasVertex>   ret      =  new ArrayList<>();
+        Iterable            vertices =  classificationVertex.query().direction(AtlasEdgeDirection.IN).label(CLASSIFICATION_LABEL)
+                                                            .has(CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY, true)
+                                                            .has(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, getTypeName(classificationVertex))
+                                                            .vertices();
+
         if (vertices != null) {
             Iterator<AtlasVertex> iterator = vertices.iterator();
+
             while (iterator.hasNext()) {
                 AtlasVertex vertex = iterator.next();
 
