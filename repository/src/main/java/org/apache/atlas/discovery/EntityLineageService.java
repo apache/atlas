@@ -69,6 +69,7 @@ import static org.apache.atlas.AtlasClient.DATA_SET_SUPER_TYPE;
 import static org.apache.atlas.AtlasClient.PROCESS_SUPER_TYPE;
 import static org.apache.atlas.AtlasErrorCode.INSTANCE_LINEAGE_QUERY_FAILED;
 import static org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection.*;
+import static org.apache.atlas.repository.Constants.GUID_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.RELATIONSHIP_GUID_PROPERTY_KEY;
 import static org.apache.atlas.repository.graph.GraphHelper.getGuid;
 import static org.apache.atlas.repository.graphdb.AtlasEdgeDirection.IN;
@@ -452,12 +453,14 @@ public class EntityLineageService implements AtlasLineageService {
                                               List<AtlasEdge> currentVertexEdges) throws AtlasBaseException {
         long inputVertexCount = !isInput ? nonProcessEntityCount(ret) : 0;
         int currentOffset = lineageContext.getOffset();
+        LOG.info("{} entity has {} output edges", lineageContext.getGuid(), currentVertexEdges.size());
         for (int i = 0; i < currentVertexEdges.size(); i++) {
             AtlasEdge edge = currentVertexEdges.get(i);
             AtlasVertex processVertex = edge.getOutVertex();
-            if (shouldProcessDeletedProcess(lineageContext, processVertex)) {
+            if (shouldProcessDeletedProcess(lineageContext, processVertex) || GraphHelper.getStatus(edge) == AtlasEntity.Status.DELETED) {
                 continue;
             }
+            LOG.info("Processing process with GUID {} for base vertex  {}", processVertex.getProperty(GUID_PROPERTY_KEY, String.class), lineageContext.getGuid());
             List<AtlasEdge> edgesOfProcess = getEdgesOfProcess(isInput, lineageContext, processVertex);
             if (edgesOfProcess.size() > currentOffset) {
                 ret.setHasChildrenForDirection(getGuid(processVertex), new LineageChildrenInfo(isInput ? INPUT : OUTPUT, hasMoreChildren(edgesOfProcess)));
