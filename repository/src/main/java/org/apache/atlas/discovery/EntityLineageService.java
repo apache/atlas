@@ -462,7 +462,7 @@ public class EntityLineageService implements AtlasLineageService {
             }
             List<AtlasEdge> edgesOfProcess = getEdgesOfProcess(isInput, lineageContext, processVertex);
             edgesOfProcess = edgesOfProcess.stream()
-                    .filter(processEdge -> !currentVertexEdges.contains(edge))
+                    .filter(processEdge -> !visitedVertices.contains(getGuid(processEdge.getInVertex())))
                     .collect(Collectors.toList());
 
             LOG.info("Processing process with GUID {} for base vertex  {}", processVertex.getProperty(GUID_PROPERTY_KEY, String.class), lineageContext.getGuid());
