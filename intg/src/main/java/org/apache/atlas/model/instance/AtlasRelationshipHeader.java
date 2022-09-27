@@ -83,6 +83,14 @@ public class AtlasRelationshipHeader extends AtlasStruct implements Serializable
         }
     }
 
+    public AtlasRelationshipHeader(AtlasRelationship relationship, boolean withAttributes) {
+        this(relationship);
+
+        if (withAttributes) {
+            setAttributes(relationship.getAttributes());
+        }
+    }
+
 
     public String getGuid() {
         return guid;

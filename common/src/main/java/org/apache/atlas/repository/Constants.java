@@ -46,6 +46,8 @@ public final class Constants {
      * Entity type name property key.
      */
     public static final String ENTITY_TYPE_PROPERTY_KEY = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "typeName");
+    public static final String RELATIONSHIP_TYPE_PROPERTY_KEY = encodePropertyKey(RELATIONSHIP_PROPERTY_KEY_PREFIX + ENTITY_TYPE_PROPERTY_KEY);
+
     public static final String TYPE_NAME_INTERNAL       = INTERNAL_PROPERTY_KEY_PREFIX + "internal";
     public static final String ASSET_ENTITY_TYPE = "Asset";
     public static final String OWNER_ATTRIBUTE   = "owner";

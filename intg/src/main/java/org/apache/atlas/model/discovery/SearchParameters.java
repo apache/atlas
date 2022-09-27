@@ -44,6 +44,7 @@ public class SearchParameters implements Serializable {
     private String  query;
     private String  typeName;
     private String  classification;
+    private String  relationshipName;
     private String  termName;
     private String  sortBy;
     private boolean excludeDeletedEntities;
@@ -58,6 +59,7 @@ public class SearchParameters implements Serializable {
 
     private FilterCriteria entityFilters;
     private FilterCriteria tagFilters;
+    private FilterCriteria relationshipFilters;
     private Set<String>    attributes;
     private SortOrder      sortOrder;
 
@@ -127,6 +129,14 @@ public class SearchParameters implements Serializable {
      */
     public void setClassification(String classification) {
         this.classification = classification;
+    }
+
+    public String getRelationshipName() {
+        return relationshipName;
+    }
+
+    public void setRelationshipName(String relationshipName) {
+        this.relationshipName = relationshipName;
     }
 
     /**
@@ -259,6 +269,19 @@ public class SearchParameters implements Serializable {
     public void setTagFilters(FilterCriteria tagFilters) {
         this.tagFilters = tagFilters;
     }
+
+    /**
+     * Relationship attribute filters for the relationship
+     * @return
+     */
+    public FilterCriteria getRelationshipFilters() { return relationshipFilters; }
+
+    /**
+     * Filter the relationship on this criteria
+     * @param relationshipFilters
+     */
+    public void setRelationshipFilters(FilterCriteria relationshipFilters) { this.relationshipFilters = relationshipFilters; }
+
 
     public boolean getExcludeHeaderAttributes() {
         return excludeHeaderAttributes;

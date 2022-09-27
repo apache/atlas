@@ -70,6 +70,7 @@ import static org.apache.atlas.repository.Constants.ENTITY_TYPE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.INDEX_SEARCH_VERTEX_PREFIX_DEFAULT;
 import static org.apache.atlas.repository.Constants.INDEX_SEARCH_VERTEX_PREFIX_PROPERTY;
 import static org.apache.atlas.repository.Constants.PROPAGATED_CLASSIFICATION_NAMES_KEY;
+import static org.apache.atlas.repository.Constants.RELATIONSHIP_TYPE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.SUPER_TYPES_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TYPENAME_PROPERTY_KEY;
@@ -133,7 +134,11 @@ public class AtlasGraphUtilsV2 {
     }
 
     public static String getTypeName(AtlasElement element) {
-        return element.getProperty(ENTITY_TYPE_PROPERTY_KEY, String.class);
+        if (element instanceof AtlasEdge) {
+            return element.getProperty(RELATIONSHIP_TYPE_PROPERTY_KEY, String.class);
+        } else {
+            return element.getProperty(ENTITY_TYPE_PROPERTY_KEY, String.class);
+        }
     }
 
     public static String getEdgeLabel(String fromNode, String toNode) {

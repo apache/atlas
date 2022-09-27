@@ -20,12 +20,14 @@ package org.apache.atlas.repository.graphdb.janus;
 import java.util.Iterator;
 
 import com.google.common.base.Preconditions;
+import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Iterators;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
+import org.janusgraph.core.JanusGraphEdge;
 import org.janusgraph.core.JanusGraphIndexQuery;
 import org.janusgraph.core.JanusGraphVertex;
 
@@ -106,24 +108,99 @@ public class AtlasJanusIndexQuery implements AtlasIndexQuery<AtlasJanusVertex, A
         return query.vertexTotals();
     }
 
+    @Override
+    public Long edgeTotals() {
+        return query.edgeTotals();
+    }
+
+    @Override
+    public Iterator<Result<AtlasJanusVertex, AtlasJanusEdge>> edges() {
+        Iterator<JanusGraphIndexQuery.Result<JanusGraphEdge>> results = query.edges().iterator();
+
+        Function<JanusGraphIndexQuery.Result<JanusGraphEdge>, Result<AtlasJanusVertex, AtlasJanusEdge>> function =
+                new Function<JanusGraphIndexQuery.Result<JanusGraphEdge>, Result<AtlasJanusVertex, AtlasJanusEdge>>() {
+
+                    @Override
+                    public Result<AtlasJanusVertex, AtlasJanusEdge> apply(JanusGraphIndexQuery.Result<JanusGraphEdge> source) {
+                        return new ResultImpl(source, null);
+                    }
+                };
+
+        return Iterators.transform(results, function);
+    }
+
+    @Override
+    public Iterator<Result<AtlasJanusVertex, AtlasJanusEdge>> edges(int offset, int limit) {
+        Preconditions.checkArgument(offset >=0, "Index offset should be greater than or equals to 0");
+        Preconditions.checkArgument(limit >=0, "Index limit should be greater than or equals to 0");
+        Iterator<JanusGraphIndexQuery.Result<JanusGraphEdge>> results = query
+                .offset(offset)
+                .limit(limit)
+                .edges().iterator();
+
+        Function<JanusGraphIndexQuery.Result<JanusGraphEdge>, Result<AtlasJanusVertex, AtlasJanusEdge>> function =
+                new Function<JanusGraphIndexQuery.Result<JanusGraphEdge>, Result<AtlasJanusVertex, AtlasJanusEdge>>() {
+
+                    @Override
+                    public Result<AtlasJanusVertex, AtlasJanusEdge> apply(JanusGraphIndexQuery.Result<JanusGraphEdge> source) {
+                        return new ResultImpl(source, null);
+                    }
+                };
+
+        return Iterators.transform(results, function);
+    }
+
+    @Override
+    public Iterator<Result<AtlasJanusVertex, AtlasJanusEdge>> edges(int offset, int limit, String sortBy, Order sortOrder) {
+        Preconditions.checkArgument(offset >=0, "Index offset should be greater than or equals to 0");
+        Preconditions.checkArgument(limit >=0, "Index limit should be greater than or equals to 0");
+
+        Iterator<JanusGraphIndexQuery.Result<JanusGraphEdge>> results = query
+                .orderBy(sortBy, sortOrder)
+                .offset(offset)
+                .limit(limit)
+                .edges().iterator();
+
+        Function<JanusGraphIndexQuery.Result<JanusGraphEdge>, Result<AtlasJanusVertex, AtlasJanusEdge>> function =
+                new Function<JanusGraphIndexQuery.Result<JanusGraphEdge>, Result<AtlasJanusVertex, AtlasJanusEdge>>() {
+
+                    @Override
+                    public Result<AtlasJanusVertex, AtlasJanusEdge> apply(JanusGraphIndexQuery.Result<JanusGraphEdge> source) {
+                        return new ResultImpl(source, null);
+                    }
+                };
+        return Iterators.transform(results, function);
+    }
+
+
     /**
      * Janus implementation of AtlasIndexQuery.Result.
      */
     public final class ResultImpl implements AtlasIndexQuery.Result<AtlasJanusVertex, AtlasJanusEdge> {
-        private JanusGraphIndexQuery.Result<JanusGraphVertex> source;
+        private JanusGraphIndexQuery.Result<JanusGraphVertex> vertex;
+        private JanusGraphIndexQuery.Result<JanusGraphEdge>   edge;
 
         public ResultImpl(JanusGraphIndexQuery.Result<JanusGraphVertex> source) {
-            this.source = source;
+            this.vertex = source;
+        }
+
+        public ResultImpl(JanusGraphIndexQuery.Result<JanusGraphEdge> source, AtlasJanusEdge edge) {
+            this.edge = source;
         }
 
         @Override
         public AtlasVertex<AtlasJanusVertex, AtlasJanusEdge> getVertex() {
-            return GraphDbObjectFactory.createVertex(graph, source.getElement());
+            return GraphDbObjectFactory.createVertex(graph, vertex.getElement());
+        }
+
+        @Override
+        public AtlasEdge<AtlasJanusVertex, AtlasJanusEdge> getEdge() {
+            return GraphDbObjectFactory.createEdge(graph, edge.getElement());
         }
 
         @Override
         public double getScore() {
-            return source.getScore();
+            return vertex.getScore();
         }
     }
 }

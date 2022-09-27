@@ -34,6 +34,7 @@ import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.instance.AtlasRelationship.AtlasRelationshipWithExtInfo;
+import org.apache.atlas.model.instance.AtlasRelationshipHeader;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags;
@@ -718,6 +719,16 @@ public class EntityGraphRetriever {
 
     private AtlasEntityHeader mapVertexToAtlasEntityHeader(AtlasVertex entityVertex) throws AtlasBaseException {
         return mapVertexToAtlasEntityHeader(entityVertex, Collections.<String>emptySet());
+    }
+
+    public AtlasRelationshipHeader mapEdgeToAtlasRelationshipHeader(AtlasEdge edge) throws AtlasBaseException {
+
+        AtlasRelationshipWithExtInfo withExtInfo = new AtlasRelationshipWithExtInfo();
+
+        mapSystemAttributes(edge, withExtInfo, false);
+        mapAttributes(edge, withExtInfo);
+
+        return new AtlasRelationshipHeader(withExtInfo.getRelationship(), true);
     }
 
     private AtlasEntityHeader mapVertexToAtlasEntityHeader(AtlasVertex entityVertex, Set<String> attributes) throws AtlasBaseException {

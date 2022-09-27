@@ -26,6 +26,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasQuickSearchResult;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.QuickSearchParameters;
+import org.apache.atlas.model.discovery.RelationshipSearchParameters;
 import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.discovery.AtlasAggregationEntry;
 import org.apache.atlas.model.instance.AtlasClassification;
@@ -67,6 +68,7 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
         setupTestData();
         createDimensionalTaggedEntity("sales");
         createSpecialCharTestEntities();
+        setupRelationshipTestData();
     }
 
     /*  TermSearchProcessor(TSP),
@@ -1033,6 +1035,17 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
         discoveryService.searchWithParameters(params);
     }
 
+    @Test
+    public void searchRelations() throws AtlasBaseException {
+        RelationshipSearchParameters sp = new RelationshipSearchParameters();
+        sp.setRelationshipName("highlight_post");
+        sp.setMarker("*");
+        sp.setLimit(10);
+        sp.setRelationshipFilters(getSingleFilterCondition("highlight_name", Operator.EQ, "year2021@Ajay"));
+
+        AtlasSearchResult sr = discoveryService.searchRelationsWithParameters(sp);
+        assertEquals(sr.getRelations().size(), 4);
+    }
 
     private String gethiveTableSalesFactGuid() throws AtlasBaseException {
         if (salesFactGuid == null) {

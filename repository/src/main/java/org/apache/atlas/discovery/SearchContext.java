@@ -36,6 +36,7 @@ import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasBuiltInTypes;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.type.AtlasRelationshipType;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasType;
@@ -78,9 +79,12 @@ public class SearchContext {
     private final AtlasGraph              graph;
     private final Set<AtlasEntityType>    entityTypes;
     private final Set<String>             indexedKeys;
+    private       Set<String>             edgeIndexKeys;
     private final Set<String>             entityAttributes;
+    private final Set<String>             relationAttributes;
     private final SearchParameters        searchParameters;
     private final Set<AtlasClassificationType> classificationTypes;
+    private final Set<AtlasRelationshipType>   relationshipTypes;
     private final Set<String>                  classificationNames;
     private final Set<String>             typeAndSubTypes;
     private final Set<String>             classificationTypeAndSubTypes;
@@ -105,9 +109,11 @@ public class SearchContext {
         this.graph              = graph;
         this.indexedKeys        = indexedKeys;
         this.entityAttributes   = new HashSet<>();
+        this.relationAttributes = new HashSet<>();
         this.entityTypes        = getEntityTypes(searchParameters.getTypeName());
         this.classificationNames = getClassificationNames(searchParameters.getClassification());
         this.classificationTypes = getClassificationTypes(this.classificationNames);
+        this.relationshipTypes   = getRelationshipTypes(searchParameters.getRelationshipName());
 
         AtlasVertex glossaryTermVertex = getGlossaryTermVertex(searchParameters.getTermName());
 
@@ -140,6 +146,13 @@ public class SearchContext {
         if (CollectionUtils.isNotEmpty(classificationTypes)) {
             for (AtlasClassificationType classificationType : classificationTypes) {
                 validateAttributes(classificationType, searchParameters.getTagFilters());
+            }
+        }
+
+        // Invalid relationship attributes will raise an exception with 400 error code
+        if (CollectionUtils.isNotEmpty(relationshipTypes)) {
+            for (AtlasRelationshipType relationshipType : relationshipTypes) {
+                validateAttributes(relationshipType, searchParameters.getRelationshipFilters());
             }
         }
 
@@ -239,7 +252,15 @@ public class SearchContext {
 
     public Set<String> getIndexedKeys() { return indexedKeys; }
 
+    public void setEdgeIndexKeys(Set<String> edgeIndexKeys) {
+        this.edgeIndexKeys = edgeIndexKeys;
+    }
+
+    public Set<String> getEdgeIndexKeys() { return edgeIndexKeys; }
+
     public Set<String> getEntityAttributes() { return entityAttributes; }
+
+    public Set<String> getRelationAttributes() { return relationAttributes; }
 
     public Set<AtlasClassificationType> getClassificationTypes() { return classificationTypes; }
 
@@ -258,6 +279,8 @@ public class SearchContext {
     public Set<String> getClassificationNames() {return classificationNames;}
 
     public Integer getMarker() { return marker; }
+
+    public Set<AtlasRelationshipType> getRelationshipTypes() { return relationshipTypes; }
 
     public boolean includeEntityType(String entityType) {
         return typeAndSubTypes.isEmpty() || typeAndSubTypes.contains(entityType);
@@ -302,6 +325,10 @@ public class SearchContext {
 
     boolean needFullTextProcessor() {
         return StringUtils.isNotEmpty(searchParameters.getQuery());
+    }
+
+    boolean needRelationshipProcessor() {
+        return CollectionUtils.isNotEmpty(relationshipTypes);
     }
 
     boolean needClassificationProcessor() {
@@ -559,6 +586,35 @@ public class SearchContext {
 
     private AtlasEntityType getTermEntityType() {
         return typeRegistry.getEntityTypeByName(TermSearchProcessor.ATLAS_GLOSSARY_TERM_ENTITY_TYPE);
+    }
+
+    private Set<AtlasRelationshipType> getRelationshipTypes(String relationship) throws AtlasBaseException {
+        Set<AtlasRelationshipType> relationshipTypes = null;
+        //split multiple typeNames by comma
+        if (StringUtils.isNotEmpty(relationship)) {
+
+            String[] types        = relationship.split(TYPENAME_DELIMITER);
+            Set<String> typeNames = new HashSet<>(Arrays.asList(types));
+            relationshipTypes     = typeNames.stream().map(n ->
+                    typeRegistry.getRelationshipTypeByName(n)).filter(Objects::nonNull).collect(Collectors.toSet());
+
+            // Validate if the type name is incorrect
+            if (CollectionUtils.isEmpty(relationshipTypes)) {
+                throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_TYPENAME,relationship);
+
+            } else if (relationshipTypes.size() != typeNames.size()) {
+                Set<String> validEntityTypes = new HashSet<>();
+                for (AtlasRelationshipType entityType : relationshipTypes) {
+                    validEntityTypes.add(entityType.getTypeName());
+                }
+
+                typeNames.removeAll(validEntityTypes);
+
+                LOG.info("Could not search for {} , invalid typeNames", String.join(TYPENAME_DELIMITER, typeNames));
+            }
+        }
+
+        return relationshipTypes;
     }
 
     public static class MarkerUtil {

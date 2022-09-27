@@ -60,6 +60,36 @@ public interface AtlasIndexQuery<V, E> {
     Long vertexTotals();
 
     /**
+     * Gets the query results.
+     *
+     * @return
+     */
+    Iterator<Result<V, E>> edges();
+
+    /**
+     * Gets the sorted query results
+     * @param offset starting offset
+     * @param limit max number of results
+     * @param sortBy sort attribute
+     * @param sortOrder sorting order asc, desc
+     * @return
+     */
+    Iterator<Result<V, E>> edges(int offset, int limit, String sortBy, Order sortOrder);
+
+    /**
+     * Gets the query results
+     * @param offset starting offset
+     * @param limit max number of results
+     * @return
+     */
+    Iterator<Result<V, E>> edges(int offset, int limit);
+
+    /**
+     * Gets the total count of query results
+     * @return
+     */
+    Long edgeTotals();
+    /**
      * Query result from an index query.
      *
      * @param <V>
@@ -71,6 +101,11 @@ public interface AtlasIndexQuery<V, E> {
          * Gets the vertex for this result.
          */
         AtlasVertex<V, E> getVertex();
+
+        /**
+         * Gets the edge for this result.
+         */
+        AtlasEdge<V, E> getEdge();
 
         /**
          * Gets the score for this result.
