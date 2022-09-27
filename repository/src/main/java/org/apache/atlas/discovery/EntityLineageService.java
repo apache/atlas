@@ -460,8 +460,12 @@ public class EntityLineageService implements AtlasLineageService {
             if (shouldProcessDeletedProcess(lineageContext, processVertex) || GraphHelper.getStatus(edge) == AtlasEntity.Status.DELETED) {
                 continue;
             }
-            LOG.info("Processing process with GUID {} for base vertex  {}", processVertex.getProperty(GUID_PROPERTY_KEY, String.class), lineageContext.getGuid());
             List<AtlasEdge> edgesOfProcess = getEdgesOfProcess(isInput, lineageContext, processVertex);
+            edgesOfProcess = edgesOfProcess.stream()
+                    .filter(processEdge -> !currentVertexEdges.contains(edge))
+                    .collect(Collectors.toList());
+
+            LOG.info("Processing process with GUID {} for base vertex  {}", processVertex.getProperty(GUID_PROPERTY_KEY, String.class), lineageContext.getGuid());
             if (edgesOfProcess.size() > currentOffset) {
                 ret.setHasChildrenForDirection(getGuid(processVertex), new LineageChildrenInfo(isInput ? INPUT : OUTPUT, hasMoreChildren(edgesOfProcess)));
                 for (int j = currentOffset; j < edgesOfProcess.size(); j++) {
@@ -470,10 +474,10 @@ public class EntityLineageService implements AtlasLineageService {
                     if (entityVertex == null) {
                         continue;
                     }
-                    if (getGuid(entityVertex).equals(lineageContext.getGuid())) {
-                        currentOffset++;
-                        continue;
-                    }
+//                    if (getGuid(entityVertex).equals(lineageContext.getGuid())) {
+//                        currentOffset++;
+//                        continue;
+//                    }
                     if (shouldTerminate(isInput, ret, lineageContext, currentVertexEdges, inputVertexCount, i, edgesOfProcess, j)) {
                         return;
                     }
