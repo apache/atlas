@@ -96,4 +96,15 @@ public class GraphIndexQueryBuilder {
                 .append("\":").append(typeAndAllSubTypesQryStr).append(")");
         }
     }
+
+    void addTypeAndSubTypesQueryFilterEdges(StringBuilder indexQuery, String typeAndAllSubTypesQryStr) {
+        if (indexQuery != null && StringUtils.isNotEmpty(typeAndAllSubTypesQryStr)) {
+            if (indexQuery.length() > 0) {
+                indexQuery.append(" AND ");
+            }
+
+            indexQuery.append("(").append(INDEX_SEARCH_PREFIX + "\"").append(Constants.RELATIONSHIP_TYPE_PROPERTY_KEY)
+                    .append("\":").append(typeAndAllSubTypesQryStr).append(")");
+        }
+    }
 }

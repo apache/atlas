@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.model.instance.AtlasRelationshipHeader;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 
@@ -49,6 +50,7 @@ public class AtlasSearchResult implements Serializable {
     private String                         type;
     private String                         classification;
     private List<AtlasEntityHeader>        entities;
+    private List<AtlasRelationshipHeader>  relations;
     private AttributeSearchResult          attributes;
     private List<AtlasFullTextResult>      fullTextResult;
     private Map<String, AtlasEntityHeader> referredEntities;
@@ -66,6 +68,7 @@ public class AtlasSearchResult implements Serializable {
         setQueryType(queryType);
         setSearchParameters(null);
         setEntities(null);
+        setRelations(null);
         setAttributes(null);
         setFullTextResult(null);
         setReferredEntities(null);
@@ -78,6 +81,7 @@ public class AtlasSearchResult implements Serializable {
             setQueryText(searchParameters.getQuery());
             setSearchParameters(searchParameters);
             setEntities(null);
+            setRelations(null);
             setAttributes(null);
             setFullTextResult(null);
             setReferredEntities(null);
@@ -112,6 +116,14 @@ public class AtlasSearchResult implements Serializable {
 
     public void setEntities(List<AtlasEntityHeader> entities) { this.entities = entities; }
 
+    public List<AtlasRelationshipHeader> getRelations() {
+        return relations;
+    }
+
+    public void setRelations(List<AtlasRelationshipHeader> relations) {
+        this.relations = relations;
+    }
+
     public AttributeSearchResult getAttributes() { return attributes; }
 
     public void setAttributes(AttributeSearchResult attributes) { this.attributes = attributes; }
@@ -137,7 +149,7 @@ public class AtlasSearchResult implements Serializable {
     public void setNextMarker(String nextMarker) { this.nextMarker = nextMarker; }
 
     @Override
-    public int hashCode() { return Objects.hash(queryType, searchParameters, queryText, type, classification, entities, attributes, fullTextResult, referredEntities, nextMarker); }
+    public int hashCode() { return Objects.hash(queryType, searchParameters, queryText, type, classification, entities, relations, attributes, fullTextResult, referredEntities, nextMarker); }
 
     @Override
     public boolean equals(Object o) {
@@ -150,6 +162,7 @@ public class AtlasSearchResult implements Serializable {
                Objects.equals(type, that.type) &&
                Objects.equals(classification, that.classification) &&
                Objects.equals(entities, that.entities) &&
+               Objects.equals(relations, that.relations) &&
                Objects.equals(attributes, that.attributes) &&
                Objects.equals(fullTextResult, that.fullTextResult) &&
                Objects.equals(referredEntities, that.referredEntities) &&
@@ -183,6 +196,33 @@ public class AtlasSearchResult implements Serializable {
         }
     }
 
+    public void addRelation(AtlasRelationshipHeader relation) {
+        if (relations == null) {
+            relations = new ArrayList<>();
+        }
+
+        if (relations.isEmpty()) {
+            relations.add(relation);
+        } else {
+            removeRelation(relation);
+            relations.add(relation);
+        }
+    }
+
+    public void removeRelation(AtlasRelationshipHeader relation) {
+        List<AtlasRelationshipHeader> relations = this.relations;
+
+        if (CollectionUtils.isNotEmpty(relations)) {
+            Iterator<AtlasRelationshipHeader> iter = relations.iterator();
+            while (iter.hasNext()) {
+                AtlasRelationshipHeader currEntity = iter.next();
+                if (StringUtils.equals(currEntity.getGuid(), relation.getGuid())) {
+                    iter.remove();
+                }
+            }
+        }
+    }
+
     @Override
     public String toString() {
         return "AtlasSearchResult{" +
@@ -192,6 +232,7 @@ public class AtlasSearchResult implements Serializable {
                 ", type=" + type +
                 ", classification=" + classification +
                 ", entities=" + entities +
+                ", relations=" + relations +
                 ", attributes=" + attributes +
                 ", fullTextResult=" + fullTextResult +
                 ", referredEntities=" + referredEntities +

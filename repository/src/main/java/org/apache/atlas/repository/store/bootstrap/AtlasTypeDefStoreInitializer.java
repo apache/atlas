@@ -776,6 +776,18 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
                     typeDefStore.updateStructDefByName(typeName, updatedDef);
 
                     ret = APPLIED;
+                } else if (typeDef.getClass().equals(AtlasRelationshipDef.class)) {
+                    AtlasRelationshipDef updatedDef = new AtlasRelationshipDef((AtlasRelationshipDef)typeDef);
+
+                    for (AtlasAttributeDef attributeDef : patch.getAttributeDefs()) {
+                        updatedDef.addAttribute(attributeDef);
+                    }
+
+                    updatedDef.setTypeVersion(patch.getUpdateToVersion());
+
+                    typeDefStore.updateRelationshipDefByName(typeName, updatedDef);
+
+                    ret = APPLIED;
                 } else {
                     throw new AtlasBaseException(AtlasErrorCode.PATCH_NOT_APPLICABLE_FOR_TYPE, patch.getAction(), typeDef.getClass().getSimpleName());
                 }

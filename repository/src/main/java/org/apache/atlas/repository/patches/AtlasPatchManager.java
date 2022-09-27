@@ -96,6 +96,7 @@ public class AtlasPatchManager {
         handlers.add(new ReIndexPatch(context));
         handlers.add(new ProcessNamePatch(context));
         handlers.add(new UpdateCompositeIndexStatusPatch(context));
+        handlers.add(new RelationshipTypeNamePatch(context));
 
         LOG.info("<== AtlasPatchManager.init()");
     }

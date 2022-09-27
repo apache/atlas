@@ -38,10 +38,18 @@ public class AtlasUserSavedSearch extends AtlasBaseModelObject implements Serial
 
     public enum SavedSearchType {
         BASIC,
-        ADVANCED;
+        ADVANCED,
+        BASIC_RELATIONSHIP;
 
         public static SavedSearchType to(String val) {
-            return SavedSearchType.ADVANCED.name().equalsIgnoreCase(val) ? SavedSearchType.ADVANCED : SavedSearchType.BASIC;
+            SavedSearchType searchType = SavedSearchType.BASIC;
+            if (SavedSearchType.ADVANCED.name().equalsIgnoreCase(val)) {
+                searchType = SavedSearchType.ADVANCED;
+            } else if (SavedSearchType.BASIC_RELATIONSHIP.name().equalsIgnoreCase(val)) {
+                searchType = SavedSearchType.BASIC_RELATIONSHIP;
+            }
+
+            return  searchType;
         }
     }
 

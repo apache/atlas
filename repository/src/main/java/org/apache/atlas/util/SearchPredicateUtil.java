@@ -22,6 +22,7 @@ import org.apache.atlas.repository.graphdb.AtlasElement;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.type.AtlasRelationshipType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.Predicate;
@@ -1539,4 +1540,34 @@ public class SearchPredicateUtil {
 
     }
 
+    public static Predicate generateIsRelationshipEdgePredicate(AtlasTypeRegistry typeRegistry) {
+        return new IsRelationshipEdgePredicate(typeRegistry);
+    }
+
+    static class IsRelationshipEdgePredicate implements Predicate {
+        final AtlasTypeRegistry typeRegistry;
+
+
+        public IsRelationshipEdgePredicate(AtlasTypeRegistry typeRegistry) {
+            this.typeRegistry = typeRegistry;
+        }
+
+        @Override
+        public boolean evaluate(final Object object) {
+            final boolean ret;
+
+            AtlasEdge edge = (object instanceof AtlasEdge) ? (AtlasEdge) object : null;
+
+            if (edge != null) {
+                String typeName            = AtlasGraphUtilsV2.getTypeName(edge);
+                AtlasRelationshipType type = typeRegistry.getRelationshipTypeByName(typeName);
+
+                ret = type != null;
+            } else {
+                ret = false;
+            }
+
+            return ret;
+        }
+    }
 }

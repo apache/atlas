@@ -356,6 +356,82 @@ public class DiscoveryREST {
     }
 
     /**
+     * Relationship search to search for relations(edges)
+     *
+     * @param parameters  RelationshipSearchParameters
+     * @return Atlas search result
+     * @throws AtlasBaseException
+     * @HTTP 200 On successful search
+     */
+    @Path("relations")
+    @POST
+    @Timed
+    public AtlasSearchResult relationSearch(RelationshipSearchParameters parameters) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.relationSearch(" + parameters + ")");
+            }
+
+            if (parameters.getLimit() < 0 || parameters.getOffset() < 0) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Limit/offset should be non-negative");
+            }
+
+            if (StringUtils.isEmpty(parameters.getRelationshipName()) && !isEmpty(parameters.getRelationshipFilters())) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "RelationshipFilters specified without Type name");
+            }
+
+            return discoveryService.searchRelationsWithParameters(parameters);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    /**
+     * Relationship search to search for relations(edges)
+     *
+     * @param relationshipName AtlasRelationshipType name
+     * @param sortByAttribute sort the result using this attribute name, default value is 'name'
+     * @param sortOrder       sorting order
+     * @param limit           limit the result set to only include the specified number of entries
+     * @param offset          start offset of the result set (useful for pagination)
+     * @return Atlas search result
+     * @throws AtlasBaseException
+     * @HTTP 200 On successful search
+     */
+
+    @Path("/relations")
+    @GET
+    @Timed
+    public AtlasSearchResult relationSearch(@QueryParam("relationshipName") String    relationshipName,
+                                                    @QueryParam("offset")           int       offset,
+                                                    @QueryParam("limit")            int       limit,
+                                                    @QueryParam("sortBy")           String    sortByAttribute,
+                                                    @QueryParam("sortOrder")        SortOrder sortOrder,
+                                                    @QueryParam("marker")           String    marker) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.relationSearch(" + relationshipName +
+                        ", " + sortByAttribute + ", " + sortOrder + ", " + limit + ", " + offset + ", " + marker + ")");
+            }
+
+            RelationshipSearchParameters parameters = new RelationshipSearchParameters();
+            parameters.setRelationshipName(relationshipName);
+            parameters.setSortBy(sortByAttribute);
+            parameters.setSortOrder(sortOrder);
+            parameters.setLimit(limit);
+            parameters.setOffset(offset);
+            parameters.setMarker(marker);
+            return discoveryService.searchRelationsWithParameters(parameters);
+
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+    /**
      * Relationship search to search for related entities satisfying the search parameters
      *
      * @param guid            Attribute name
