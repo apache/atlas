@@ -55,6 +55,7 @@ import org.apache.atlas.v1.model.lineage.SchemaResponse.SchemaDetails;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -64,6 +65,7 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptException;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.apache.atlas.AtlasClient.DATA_SET_SUPER_TYPE;
 import static org.apache.atlas.AtlasClient.PROCESS_SUPER_TYPE;
@@ -403,12 +405,14 @@ public class EntityLineageService implements AtlasLineageService {
             return;
         }
         List<AtlasEdge> currentVertexEdges = getEdgesOfCurrentVertex(currentVertex, isInput, lineageContext);
+        Set<String> paginationCalculatedVertices = new HashSet<>();
+        paginationCalculatedVertices.add(currentVertex.getIdForDisplay());
         ret.setHasChildrenForDirection(getGuid(currentVertex), new LineageChildrenInfo(isInput ? INPUT : OUTPUT, hasMoreChildren(currentVertexEdges)));
         if (lineageContext.shouldApplyPagination()) {
             if (lineageContext.isCalculateRemainingVertexCounts()) {
                 calculateRemainingVertexCounts(currentVertex, isInput, ret);
             }
-            addPaginatedVerticesToResult(isInput, depth, visitedVertices, ret, lineageContext, currentVertexEdges);
+            addPaginatedVerticesToResult(isInput, depth, visitedVertices, ret, lineageContext, currentVertexEdges, paginationCalculatedVertices);
         } else {
             addLimitlessVerticesToResult(isInput, depth, visitedVertices, ret, lineageContext, currentVertexEdges);
         }
@@ -454,7 +458,7 @@ public class EntityLineageService implements AtlasLineageService {
                                               Set<String> visitedVertices,
                                               AtlasLineageInfo ret,
                                               AtlasLineageContext lineageContext,
-                                              List<AtlasEdge> currentVertexEdges) throws AtlasBaseException {
+                                              List<AtlasEdge> currentVertexEdges, Set<String> paginationCalculatedVertices) throws AtlasBaseException {
         long inputVertexCount = !isInput ? nonProcessEntityCount(ret) : 0;
         int currentOffset = lineageContext.getOffset();
         LOG.info("{} entity has {} output edges", lineageContext.getGuid(), currentVertexEdges.size());
@@ -465,9 +469,14 @@ public class EntityLineageService implements AtlasLineageService {
                 continue;
             }
             LOG.info("Visited vertices for {}: {}", lineageContext.getGuid(), visitedVertices.toString());
-            List<AtlasEdge> edgesOfProcess = getEdgesOfProcess(isInput, lineageContext, processVertex);
-            edgesOfProcess = edgesOfProcess.stream()
-                    .filter(processEdge -> !visitedVertices.contains(processEdge.getInVertex().getIdForDisplay()))
+            Stream<Pair<AtlasEdge, String>> processEdgeOutputVertexIdStream = getEdgesOfProcess(isInput, lineageContext, processVertex)
+                    .stream()
+                    .map(processEdge -> Pair.of(processEdge, processEdge.getInVertex().getIdForDisplay()))
+                    .filter(pair -> !paginationCalculatedVertices.contains(pair.getRight()));
+
+            processEdgeOutputVertexIdStream.forEach(pair -> paginationCalculatedVertices.add(pair.getRight()));
+            List<AtlasEdge> edgesOfProcess = processEdgeOutputVertexIdStream
+                    .map(Pair::getLeft)
                     .collect(Collectors.toList());
 
             LOG.info("Processing process with GUID {} for base vertex  {}", processVertex.getProperty(GUID_PROPERTY_KEY, String.class), lineageContext.getGuid());
