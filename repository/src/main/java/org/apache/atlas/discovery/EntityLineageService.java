@@ -471,7 +471,9 @@ public class EntityLineageService implements AtlasLineageService {
             LOG.info("Visited vertices for {}: {}", lineageContext.getGuid(), visitedVertices.toString());
             Stream<Pair<AtlasEdge, String>> processEdgeOutputVertexIdStream = getEdgesOfProcess(isInput, lineageContext, processVertex)
                     .stream()
-                    .map(processEdge -> Pair.of(processEdge, processEdge.getInVertex().getIdForDisplay()))
+                    .map(processEdge -> Pair.of(processEdge, processEdge.getInVertex()))
+                    .filter(pair -> pair.getRight() != null)
+                    .map(pair -> Pair.of(pair.getLeft(), pair.getRight().getIdForDisplay()))
                     .filter(pair -> !paginationCalculatedVertices.contains(pair.getRight()));
 
             processEdgeOutputVertexIdStream.forEach(pair -> paginationCalculatedVertices.add(pair.getRight()));
