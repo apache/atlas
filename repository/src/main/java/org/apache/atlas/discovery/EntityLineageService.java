@@ -460,9 +460,14 @@ public class EntityLineageService implements AtlasLineageService {
             if (shouldProcessDeletedProcess(lineageContext, processVertex) || GraphHelper.getStatus(edge) == AtlasEntity.Status.DELETED) {
                 continue;
             }
+            LOG.info("Visited vertices for {}: {}", lineageContext.getGuid(), visitedVertices.toString());
             List<AtlasEdge> edgesOfProcess = getEdgesOfProcess(isInput, lineageContext, processVertex);
             edgesOfProcess = edgesOfProcess.stream()
-                    .filter(processEdge -> !visitedVertices.contains(getGuid(processEdge.getInVertex())))
+                    .filter(processEdge -> {
+                        String guid = getGuid(processEdge.getInVertex());
+                        LOG.info("Vertice with GUID {} for base vertex {}", guid, lineageContext.getGuid());
+                        return !visitedVertices.contains(guid);
+                    })
                     .collect(Collectors.toList());
 
             LOG.info("Processing process with GUID {} for base vertex  {}", processVertex.getProperty(GUID_PROPERTY_KEY, String.class), lineageContext.getGuid());
