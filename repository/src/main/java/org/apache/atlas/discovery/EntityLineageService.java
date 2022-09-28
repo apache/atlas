@@ -65,7 +65,6 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptException;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.apache.atlas.AtlasClient.DATA_SET_SUPER_TYPE;
 import static org.apache.atlas.AtlasClient.PROCESS_SUPER_TYPE;
@@ -469,15 +468,17 @@ public class EntityLineageService implements AtlasLineageService {
                 continue;
             }
             LOG.info("Visited vertices for {}: {}", lineageContext.getGuid(), visitedVertices.toString());
-            Stream<Pair<AtlasEdge, String>> processEdgeOutputVertexIdStream = getEdgesOfProcess(isInput, lineageContext, processVertex)
+            List<Pair<AtlasEdge, String>> processEdgeOutputVertexIdStream = getEdgesOfProcess(isInput, lineageContext, processVertex)
                     .stream()
                     .map(processEdge -> Pair.of(processEdge, processEdge.getInVertex()))
                     .filter(pair -> pair.getRight() != null)
                     .map(pair -> Pair.of(pair.getLeft(), pair.getRight().getIdForDisplay()))
-                    .filter(pair -> !paginationCalculatedVertices.contains(pair.getRight()));
+                    .filter(pair -> !paginationCalculatedVertices.contains(pair.getRight()))
+                    .collect(Collectors.toList());
 
             processEdgeOutputVertexIdStream.forEach(pair -> paginationCalculatedVertices.add(pair.getRight()));
             List<AtlasEdge> edgesOfProcess = processEdgeOutputVertexIdStream
+                    .stream()
                     .map(Pair::getLeft)
                     .collect(Collectors.toList());
 
