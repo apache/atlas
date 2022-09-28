@@ -102,6 +102,8 @@ public class EntityLineageService implements AtlasLineageService {
     @Override
     @GraphTransaction
     public AtlasLineageInfo getAtlasLineageInfo(AtlasLineageRequest lineageRequest) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("getAtlasLineageInfo");
+
         AtlasLineageInfo ret;
         String guid = lineageRequest.getGuid();
         AtlasLineageContext lineageRequestContext = new AtlasLineageContext(lineageRequest, atlasTypeRegistry);
@@ -137,7 +139,7 @@ public class EntityLineageService implements AtlasLineageService {
         }
 
         scrubLineageEntities(ret.getGuidEntityMap().values());
-
+        RequestContext.get().endMetricRecord(metric);
         return ret;
     }
 
@@ -283,6 +285,8 @@ public class EntityLineageService implements AtlasLineageService {
     }
 
     private AtlasLineageInfo getLineageInfoV2(AtlasLineageContext lineageContext) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("getLineageInfoV2");
+
         int depth = lineageContext.getDepth();
         String guid = lineageContext.getGuid();
         LineageDirection direction = lineageContext.getDirection();
@@ -346,11 +350,13 @@ public class EntityLineageService implements AtlasLineageService {
                 }
             }
         }
+        RequestContext.get().endMetricRecord(metric);
 
         return ret;
     }
 
     private List<AtlasEdge> getQualifyingProcessEdges(Iterator<AtlasEdge> processEdges, AtlasLineageContext lineageContext) {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("getQualifyingProcessEdges");
 
         List<AtlasEdge> qualifyingEdges = new ArrayList<>();
         while (processEdges.hasNext()) {
@@ -362,6 +368,8 @@ public class EntityLineageService implements AtlasLineageService {
             }
         }
 
+        RequestContext.get().endMetricRecord(metric);
+
         return qualifyingEdges;
     }
 
@@ -372,6 +380,8 @@ public class EntityLineageService implements AtlasLineageService {
 
     private void traverseEdges(AtlasVertex datasetVertex, boolean isInput, int depth, Set<String> visitedVertices, AtlasLineageInfo ret,
                                AtlasLineageContext lineageContext) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("traverseEdges");
+
         if (depth != 0) {
             // keep track of visited vertices to avoid circular loop
             visitedVertices.add(getId(datasetVertex));
@@ -456,6 +466,8 @@ public class EntityLineageService implements AtlasLineageService {
             }
             ret.addChildrenCount(GraphHelper.getGuid(datasetVertex), isInput ? INPUT : OUTPUT, qualifyingEdges);
         }
+
+        RequestContext.get().endMetricRecord(metric);
     }
 
     private void addEdgeToResult(AtlasEdge edge, AtlasLineageInfo lineageInfo,
@@ -517,6 +529,8 @@ public class EntityLineageService implements AtlasLineageService {
 
     private boolean processVirtualEdge(final AtlasEdge incomingEdge, final AtlasEdge outgoingEdge, AtlasLineageInfo lineageInfo,
                                        AtlasLineageContext lineageContext) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("processVirtualEdge");
+
         final Map<String, AtlasEntityHeader> entities = lineageInfo.getGuidEntityMap();
         final Set<LineageRelation> relations          = lineageInfo.getRelations();
 
@@ -549,11 +563,14 @@ public class EntityLineageService implements AtlasLineageService {
         } else {
             relations.add(new LineageRelation(outGuid, inGuid, relationGuid, GraphHelper.getGuid(processVertex)));
         }
+        RequestContext.get().endMetricRecord(metric);
         return false;
     }
 
     private void processEdges(final AtlasEdge incomingEdge, AtlasEdge outgoingEdge, AtlasLineageInfo lineageInfo,
                                  AtlasLineageContext lineageContext) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("processEdges");
+
         final Map<String, AtlasEntityHeader> entities = lineageInfo.getGuidEntityMap();
         final Set<LineageRelation> relations          = lineageInfo.getRelations();
 
@@ -593,6 +610,8 @@ public class EntityLineageService implements AtlasLineageService {
         } else {
             relations.add(new LineageRelation(processGuid, rightGuid, relationGuid));
         }
+        RequestContext.get().endMetricRecord(metric);
+
     }
 
     private void processEdge(final AtlasEdge edge, AtlasLineageInfo lineageInfo,
@@ -626,6 +645,8 @@ public class EntityLineageService implements AtlasLineageService {
 
     private void processEdge(final AtlasEdge edge, final Map<String, AtlasEntityHeader> entities,
                              final Set<LineageRelation> relations, AtlasLineageContext lineageContext) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("processEdge");
+
         //Backward compatibility method
         AtlasVertex inVertex     = edge.getInVertex();
         AtlasVertex outVertex    = edge.getOutVertex();
@@ -649,6 +670,7 @@ public class EntityLineageService implements AtlasLineageService {
         } else {
             relations.add(new LineageRelation(outGuid, inGuid, relationGuid));
         }
+        RequestContext.get().endMetricRecord(metric);
     }
 
     private AtlasLineageInfo getBothLineageInfoV1(AtlasLineageContext lineageContext) throws AtlasBaseException {
