@@ -225,15 +225,14 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
         //@formatter:on
 
         boolean configMigrationEnabled = !StringUtils.isEmpty(configuration.getString(ATLAS_MIGRATION_MODE_FILENAME));
-        if (configuration.getBoolean("atlas.server.ha.enabled", false) ||
-                configMigrationEnabled) {
-            if(configMigrationEnabled) {
-                LOG.info("Atlas is in Migration Mode, enabling ActiveServerFilter");
-            } else {
-                LOG.info("Atlas is in HA Mode, enabling ActiveServerFilter");
-            }
-            httpSecurity.addFilterAfter(activeServerFilter, BasicAuthenticationFilter.class);
+        if (configMigrationEnabled) {
+            LOG.info("Atlas is in Migration Mode, enabling ActiveServerFilter");
+        } else {
+            LOG.info("Atlas is in HA or HS Mode, enabling ActiveServerFilter");
         }
+        //Enable activeServerFilter regardless of HA or HS
+        httpSecurity.addFilterAfter(activeServerFilter, BasicAuthenticationFilter.class);
+
         httpSecurity
                 .addFilterAfter(staleTransactionCleanupFilter, BasicAuthenticationFilter.class)
                 .addFilterBefore(ssoAuthenticationFilter, BasicAuthenticationFilter.class)
