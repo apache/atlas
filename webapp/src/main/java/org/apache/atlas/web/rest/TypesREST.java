@@ -386,7 +386,7 @@ public class TypesREST {
         final String traceId = RequestContext.get().getTraceId();
         final InterProcessMutex lock = curatorFactory.lockInstance(zkRoot, TYPE_DEF_LOCK);
         try {
-            if (!lock.acquire(1, TimeUnit.MILLISECONDS)) {
+            if (!lock.acquire(15, TimeUnit.SECONDS)) {
                 LOG.info("Lock is already acquired. Returning now :: traceId {}", traceId);
                 throw new AtlasBaseException(AtlasErrorCode.FAILED_TO_OBTAIN_TYPE_UPDATE_LOCK);
             }
