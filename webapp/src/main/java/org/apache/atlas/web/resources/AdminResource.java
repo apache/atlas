@@ -32,8 +32,6 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.audit.AtlasAuditEntry;
 import org.apache.atlas.model.audit.AtlasAuditEntry.AuditOperation;
 import org.apache.atlas.model.audit.AuditSearchParameters;
-import org.apache.atlas.model.audit.EntityAuditEventV2;
-import org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2;
 import org.apache.atlas.model.impexp.AtlasExportRequest;
 import org.apache.atlas.model.impexp.AtlasExportResult;
 import org.apache.atlas.model.impexp.AtlasImportRequest;
@@ -68,6 +66,7 @@ import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.filters.AtlasCSRFPreventionFilter;
 import org.apache.atlas.web.service.ActiveInstanceElectorService;
 import org.apache.atlas.web.service.AtlasDebugMetricsSink;
+import org.apache.atlas.web.service.AtlasHealthStatus;
 import org.apache.atlas.web.service.ServiceState;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.collections.CollectionUtils;
@@ -108,7 +107,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.SecureRandom;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -160,6 +158,9 @@ public class AdminResource {
 
     @Context
     private HttpServletResponse httpServletResponse;
+
+    @Inject
+    private AtlasHealthStatus atlasHealthStatus;
 
     private Response version;
 
@@ -414,6 +415,11 @@ public class AdminResource {
 
         boolean cassandraFailed = false;
         try {
+            List<HealthStatus> healthStatuses = atlasHealthStatus.getHealthStatuses();
+            for (final HealthStatus healthStatus : healthStatuses) {
+                result.put(healthStatus.name, healthStatus);
+            }
+
             GraphTraversal t = graph.V().limit(1);
             t.hasNext();
             result.put("cassandra", new HealthStatus("cassandra", "ok", true, new Date().toString(), ""));
@@ -426,7 +432,7 @@ public class AdminResource {
             LOG.debug("<== AdminResource.healthCheck()");
         }
 
-        if (cassandraFailed) {
+        if (cassandraFailed || atlasHealthStatus.isAtleastOneComponentUnHealthy()) {
             return Response.status(500).entity(result).build();
         }
 

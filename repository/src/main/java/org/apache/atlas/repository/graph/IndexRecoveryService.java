@@ -20,14 +20,15 @@ package org.apache.atlas.repository.graph;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.ICuratorFactory;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.service.Service;
-import org.apache.atlas.util.NanoIdUtils;
 import org.apache.commons.configuration.Configuration;
+import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
@@ -55,6 +56,7 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
     private static final String SOLR_STATUS_CHECK_RETRY_INTERVAL          = "atlas.graph.index.status.check.frequency";
     private static final String SOLR_INDEX_RECOVERY_CONFIGURED_START_TIME = "atlas.graph.index.recovery.start.time";
     private static final long   SOLR_STATUS_RETRY_DEFAULT_MS              = 30000; // 30 secs default
+    private static final String INDEX_RECOVERY_LOCK = "/index-recovery-lock";
 
     private final Thread                 indexHealthMonitor;
     private final RecoveryInfoManagement recoveryInfoManagement;
@@ -63,14 +65,16 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
     private       RecoveryThread         recoveryThread;
 
     @Inject
-    public IndexRecoveryService(Configuration config, AtlasGraph graph) {
+    public IndexRecoveryService(Configuration config, AtlasGraph graph, ICuratorFactory curatorFactory) {
         this.configuration               = config;
         this.isIndexRecoveryEnabled      = config.getBoolean(ApplicationProperties.INDEX_RECOVERY_CONF, DEFAULT_INDEX_RECOVERY);
         long recoveryStartTimeFromConfig = getRecoveryStartTimeFromConfig(config);
         long healthCheckFrequencyMillis  = config.getLong(SOLR_STATUS_CHECK_RETRY_INTERVAL, SOLR_STATUS_RETRY_DEFAULT_MS);
         this.recoveryInfoManagement      = new RecoveryInfoManagement(graph);
 
-        this.recoveryThread = new RecoveryThread(recoveryInfoManagement, graph, recoveryStartTimeFromConfig, healthCheckFrequencyMillis);
+        final String zkRoot = HAConfiguration.getZookeeperProperties(configuration).getZkRoot();
+        final boolean isActiveActiveHAEnabled = HAConfiguration.isActiveActiveHAEnabled(configuration);
+        this.recoveryThread = new RecoveryThread(recoveryInfoManagement, graph, recoveryStartTimeFromConfig, healthCheckFrequencyMillis, curatorFactory, zkRoot, isActiveActiveHAEnabled);
         this.indexHealthMonitor = new Thread(recoveryThread, INDEX_HEALTH_MONITOR_THREAD_NAME);
     }
 
@@ -153,13 +157,20 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
         private final RecoveryInfoManagement recoveryInfoManagement;
         private       long                   indexStatusCheckRetryMillis;
         private       Object                 txRecoveryObject;
+        private final ICuratorFactory curatorFactory;
+        private final String zkRoot;
+        private final boolean isActiveActiveHAEnabled;
 
         private final AtomicBoolean          shouldRun = new AtomicBoolean(false);
 
-        private RecoveryThread(RecoveryInfoManagement recoveryInfoManagement, AtlasGraph graph, long startTimeFromConfig, long healthCheckFrequencyMillis) {
+        private RecoveryThread(RecoveryInfoManagement recoveryInfoManagement, AtlasGraph graph, long startTimeFromConfig, long healthCheckFrequencyMillis,
+                               ICuratorFactory curatorFactory, String zkRoot, boolean isActiveActiveHAEnabled) {
             this.graph                       = graph;
             this.recoveryInfoManagement      = recoveryInfoManagement;
             this.indexStatusCheckRetryMillis = healthCheckFrequencyMillis;
+            this.curatorFactory = curatorFactory;
+            this.zkRoot = zkRoot;
+            this.isActiveActiveHAEnabled = isActiveActiveHAEnabled;
 
             if (startTimeFromConfig > 0) {
                 this.recoveryInfoManagement.updateStartTime(startTimeFromConfig);
@@ -171,9 +182,12 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
 
             LOG.info("Index Health Monitor: Starting...");
 
+            InterProcessMutex lock = null;
             while (true) {
                 if (shouldRun.get()) {
                     try {
+                        lock = acquireDistributedLock();
+
                         boolean indexHealthy = isIndexHealthy();
 
                         if (this.txRecoveryObject == null && indexHealthy) {
@@ -185,6 +199,9 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
                         }
                     } catch (Exception e) {
                         LOG.error("Error: Index recovery monitoring!", e);
+                    }
+                    finally {
+                        releaseLock(lock);
                     }
                 }
             }
@@ -247,6 +264,34 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
 
         private void printIndexRecoveryStats() {
             this.graph.getManagementSystem().printIndexRecoveryStats(txRecoveryObject);
+        }
+
+        private InterProcessMutex acquireDistributedLock() throws Exception {
+            if (!isActiveActiveHAEnabled)
+                return null;
+
+            final InterProcessMutex indexRecoveryLock = curatorFactory.lockInstance(zkRoot, INDEX_RECOVERY_LOCK);
+
+            LOG.info("Attempting to acquire a lock on Index recovery");
+            indexRecoveryLock.acquire();
+            LOG.info("Acquired a lock on Index recovery");
+            return indexRecoveryLock;
+        }
+
+        private void releaseLock(InterProcessMutex indexRecoveryLock) {
+            if (indexRecoveryLock == null)
+                return;
+
+            try {
+                if (indexRecoveryLock.isOwnedByCurrentThread()) {
+                    LOG.info("About to release index recovery lock");
+                    indexRecoveryLock.release();
+                    LOG.info("successfully released index recovery lock");
+                }
+            } catch (Exception e) {
+                LOG.error("Error while releasing a lock of index recovery " + e.getMessage(), e);
+                //Do not throw exception as it will terminate continuous while loop
+            }
         }
     }
 

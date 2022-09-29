@@ -49,14 +49,14 @@ public class TaskManagementTest extends BaseTaskFixture {
 
     @Test
     public void factoryReturningNullIsHandled() throws AtlasException {
-        TaskManagement taskManagement = new TaskManagement(null, taskRegistry, new NullFactory());
+        TaskManagement taskManagement = new TaskManagement(null, taskRegistry, new NullFactory(),null);
         taskManagement.start();
     }
 
     @Test
     public void taskSucceedsTaskVertexRemoved() throws AtlasException, InterruptedException, AtlasBaseException {
         SpyingFactory spyingFactory = new SpyingFactory();
-        TaskManagement taskManagement = new TaskManagement(null, taskRegistry, spyingFactory);
+        TaskManagement taskManagement = new TaskManagement(null, taskRegistry, spyingFactory,null);
         taskManagement.start();
 
         AtlasTask spyTask = createTask(taskManagement, SPYING_TASK_ADD);
@@ -75,7 +75,7 @@ public class TaskManagementTest extends BaseTaskFixture {
     public void severalTaskAdds() throws AtlasException, InterruptedException {
         int MAX_THREADS = 5;
 
-        TaskManagement taskManagement = new TaskManagement(null, taskRegistry);
+        TaskManagement taskManagement = new TaskManagement(null, taskRegistry,null,null);
         taskManagement.start();
 
         Thread[] threads = new Thread[MAX_THREADS];

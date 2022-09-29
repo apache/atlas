@@ -48,6 +48,7 @@ public class AtlasLineageRequest {
     private SearchParameters.FilterCriteria entityFilters;
 
     private Set<String> attributes;
+    private Set<String> relationAttributes;
 
     public AtlasLineageRequest() {
     }
@@ -154,5 +155,13 @@ public class AtlasLineageRequest {
 
     public void setCalculateRemainingVertexCounts(boolean calculateRemainingVertexCounts) {
         this.calculateRemainingVertexCounts = calculateRemainingVertexCounts;
+    }
+
+    public Set<String> getRelationAttributes() {
+        return relationAttributes;
+    }
+
+    public void setRelationAttributes(Set<String> relationAttributes) {
+        this.relationAttributes = relationAttributes;
     }
 }

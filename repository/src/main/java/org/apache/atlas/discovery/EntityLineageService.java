@@ -120,6 +120,7 @@ public class EntityLineageService implements AtlasLineageService {
         AtlasLineageInfo ret;
         String guid = lineageRequest.getGuid();
         AtlasLineageContext lineageRequestContext = new AtlasLineageContext(lineageRequest, atlasTypeRegistry);
+        RequestContext.get().setRelationAttrsForSearch(lineageRequest.getRelationAttributes());
 
         AtlasEntityHeader entity = entityRetriever.toAtlasEntityHeaderWithClassifications(guid);
 

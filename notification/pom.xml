@@ -89,6 +89,13 @@
             <scope>test</scope>
         </dependency>
 
+        <dependency>
+            <groupId>ch.qos.reload4j</groupId>
+            <artifactId>reload4j</artifactId>
+            <version>${reload4j.version}</version>
+            <scope>compile</scope>
+        </dependency>
+
     </dependencies>
 
     <build>
@@ -160,9 +167,9 @@
                                     <version>${slf4j.version}</version>
                                 </artifactItem>
                                 <artifactItem>
-                                    <groupId>log4j</groupId>
-                                    <artifactId>log4j</artifactId>
-                                    <version>${log4j.version}</version>
+                                    <groupId>ch.qos.reload4j</groupId>
+                                    <artifactId>reload4j</artifactId>
+                                    <version>${reload4j.version}</version>
                                 </artifactItem>
                                 <artifactItem>
                                     <groupId>org.apache.kafka</groupId>

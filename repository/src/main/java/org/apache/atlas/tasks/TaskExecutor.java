@@ -18,6 +18,7 @@
 package org.apache.atlas.tasks;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import org.apache.atlas.ICuratorFactory;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -26,7 +27,6 @@ import org.apache.atlas.utils.AtlasPerfTracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -45,13 +45,15 @@ public class TaskExecutor {
     private final TaskRegistry registry;
     private final Map<String, TaskFactory> taskTypeFactoryMap;
     private final TaskManagement.Statistics statistics;
+    private final ICuratorFactory curatorFactory;
+    private final boolean isActiveActiveHAEnabled;
+    private final String zkRoot;
 
     private TaskQueueWatcher watcher;
     private Thread watcherThread;
 
-    static CountDownLatch latch;
-
-    public TaskExecutor(TaskRegistry registry, Map<String, TaskFactory> taskTypeFactoryMap, TaskManagement.Statistics statistics) {
+    public TaskExecutor(TaskRegistry registry, Map<String, TaskFactory> taskTypeFactoryMap, TaskManagement.Statistics statistics,
+                        ICuratorFactory curatorFactory,final String zkRoot, boolean isActiveActiveHAEnabled) {
         this.taskExecutorService = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder()
                                                                     .setDaemon(true)
                                                                     .setNameFormat(TASK_NAME_FORMAT + Thread.currentThread().getName())
@@ -60,12 +62,14 @@ public class TaskExecutor {
         this.registry = registry;
         this.statistics = statistics;
         this.taskTypeFactoryMap = taskTypeFactoryMap;
+        this.curatorFactory = curatorFactory;
+        this.isActiveActiveHAEnabled = isActiveActiveHAEnabled;
+        this.zkRoot = zkRoot;
     }
 
     public Thread startWatcherThread() {
-        latch = new CountDownLatch(0);
 
-        watcher = new TaskQueueWatcher(taskExecutorService, registry, taskTypeFactoryMap, statistics, latch);
+        watcher = new TaskQueueWatcher(taskExecutorService, registry, taskTypeFactoryMap, statistics, curatorFactory, zkRoot, isActiveActiveHAEnabled);
         watcherThread = new Thread(watcher);
         watcherThread.start();
         return watcherThread;
@@ -108,6 +112,7 @@ public class TaskExecutor {
                     return;
                 }
 
+                TASK_LOG.info("Task guid = "+task.getGuid());
                 taskVertex = registry.getVertex(task.getGuid());
                 if (taskVertex == null) {
                     TASK_LOG.warn("Task not scheduled as vertex not found", task);
