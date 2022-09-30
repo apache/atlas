@@ -40,7 +40,6 @@ import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageRelation;
 import org.apache.atlas.model.lineage.AtlasLineageRequest;
 import org.apache.atlas.model.lineage.LineageChildrenInfo;
-import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -69,9 +68,11 @@ import java.util.stream.Collectors;
 import static org.apache.atlas.AtlasClient.DATA_SET_SUPER_TYPE;
 import static org.apache.atlas.AtlasClient.PROCESS_SUPER_TYPE;
 import static org.apache.atlas.AtlasErrorCode.INSTANCE_LINEAGE_QUERY_FAILED;
+import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
 import static org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection.*;
 import static org.apache.atlas.repository.Constants.RELATIONSHIP_GUID_PROPERTY_KEY;
 import static org.apache.atlas.repository.graph.GraphHelper.getGuid;
+import static org.apache.atlas.repository.graph.GraphHelper.getStatus;
 import static org.apache.atlas.repository.graphdb.AtlasEdgeDirection.IN;
 import static org.apache.atlas.repository.graphdb.AtlasEdgeDirection.OUT;
 import static org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery.*;
@@ -379,7 +380,7 @@ public class EntityLineageService implements AtlasLineageService {
     }
 
     private boolean hasMoreChildren(List<AtlasEdge> edges) {
-        return edges.stream().anyMatch(edge -> GraphHelper.getStatus(edge) == AtlasEntity.Status.ACTIVE);
+        return edges.stream().anyMatch(edge -> getStatus(edge) == AtlasEntity.Status.ACTIVE);
     }
 
     private void traverseEdges(AtlasVertex currentVertex, boolean isInput, int depth, Set<String> visitedVertices, AtlasLineageInfo ret,
@@ -463,19 +464,13 @@ public class EntityLineageService implements AtlasLineageService {
         for (int i = 0; i < currentVertexEdges.size(); i++) {
             AtlasEdge edge = currentVertexEdges.get(i);
             AtlasVertex processVertex = edge.getOutVertex();
-            if (shouldProcessDeletedProcess(lineageContext, processVertex) || GraphHelper.getStatus(edge) == AtlasEntity.Status.DELETED) {
+            if (!shouldProcessDeletedProcess(lineageContext, processVertex) || getStatus(edge) == DELETED) {
                 continue;
             }
-            List<Pair<AtlasEdge, String>> processEdgeOutputVertexIdStream = getEdgesOfProcess(isInput, lineageContext, processVertex)
-                    .stream()
-                    .map(processEdge -> Pair.of(processEdge, processEdge.getInVertex()))
-                    .filter(pair -> pair.getRight() != null)
-                    .map(pair -> Pair.of(pair.getLeft(), pair.getRight().getIdForDisplay()))
-                    .filter(pair -> !paginationCalculatedVertices.contains(pair.getRight()))
-                    .collect(Collectors.toList());
+            List<Pair<AtlasEdge, String>> processEdgeOutputVertexIdPairs = getUnvisitedProcessEdgesWithOutputVertexIds(isInput, lineageContext, paginationCalculatedVertices, processVertex);
 
-            processEdgeOutputVertexIdStream.forEach(pair -> paginationCalculatedVertices.add(pair.getRight()));
-            List<AtlasEdge> edgesOfProcess = processEdgeOutputVertexIdStream
+            processEdgeOutputVertexIdPairs.forEach(pair -> paginationCalculatedVertices.add(pair.getRight()));
+            List<AtlasEdge> edgesOfProcess = processEdgeOutputVertexIdPairs
                     .stream()
                     .map(Pair::getLeft)
                     .collect(Collectors.toList());
@@ -510,11 +505,21 @@ public class EntityLineageService implements AtlasLineageService {
     }
 
     private boolean shouldProcessDeletedProcess(AtlasLineageContext lineageContext, AtlasVertex processVertex) {
-        return !(isVertexActive(processVertex) || lineageContext.isAllowDeletedProcess());
+        return isVertexActive(processVertex) || lineageContext.isAllowDeletedProcess();
     }
 
     private boolean isVertexActive(AtlasVertex vertex) {
-        return GraphHelper.getStatus(vertex) == AtlasEntity.Status.ACTIVE;
+        return getStatus(vertex) == AtlasEntity.Status.ACTIVE;
+    }
+
+    private List<Pair<AtlasEdge, String>> getUnvisitedProcessEdgesWithOutputVertexIds(boolean isInput, AtlasLineageContext lineageContext, Set<String> paginationCalculatedVertices, AtlasVertex processVertex) {
+        return getEdgesOfProcess(isInput, lineageContext, processVertex)
+                .stream()
+                .map(processEdge -> Pair.of(processEdge, processEdge.getInVertex()))
+                .filter(pair -> pair.getRight() != null)
+                .map(pair -> Pair.of(pair.getLeft(), pair.getRight().getIdForDisplay()))
+                .filter(pair -> !paginationCalculatedVertices.contains(pair.getRight()))
+                .collect(Collectors.toList());
     }
 
     @VisibleForTesting
@@ -616,7 +621,7 @@ public class EntityLineageService implements AtlasLineageService {
     }
 
     private boolean shouldProcessEdge(AtlasLineageContext lineageContext, AtlasEdge edge) {
-        return lineageContext.isAllowDeletedProcess() || GraphHelper.getStatus(edge) == AtlasEntity.Status.ACTIVE;
+        return lineageContext.isAllowDeletedProcess() || getStatus(edge) == AtlasEntity.Status.ACTIVE;
     }
 
     private List<AtlasEdge> getEdgesOfCurrentVertex(AtlasVertex currentVertex, boolean isInput, AtlasLineageContext lineageContext) {
