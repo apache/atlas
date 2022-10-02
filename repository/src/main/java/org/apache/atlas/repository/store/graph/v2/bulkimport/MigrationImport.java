@@ -39,6 +39,7 @@ import org.apache.atlas.repository.store.graph.v2.IAtlasEntityChangeNotifier;
 import org.apache.atlas.repository.store.graph.v2.bulkimport.pc.EntityConsumerBuilder;
 import org.apache.atlas.repository.store.graph.v2.bulkimport.pc.EntityCreationManager;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.utils.AtlasStringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -89,7 +90,7 @@ public class MigrationImport extends ImportStrategy {
 
     private DataMigrationStatusService createMigrationStatusService(AtlasImportResult importResult) {
         DataMigrationStatusService dataMigrationStatusService = new DataMigrationStatusService();
-        dataMigrationStatusService.init(importResult.getRequest().getOptions().get(AtlasImportRequest.OPTION_KEY_MIGRATION_FILE_NAME));
+        dataMigrationStatusService.init(AtlasStringUtil.getOption(importResult.getRequest().getOptions(), AtlasImportRequest.OPTION_KEY_MIGRATION_FILE_NAME));
         return dataMigrationStatusService;
     }
 

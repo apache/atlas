@@ -34,6 +34,7 @@ import org.apache.atlas.repository.store.graph.v2.EntityImportStream;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.utils.AtlasStringUtil;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -106,10 +107,10 @@ public class ImportService {
 
             RequestContext.get().setImportInProgress(true);
 
-            String transforms = MapUtils.isNotEmpty(request.getOptions()) ? request.getOptions().get(TRANSFORMS_KEY) : null;
+            String transforms = AtlasStringUtil.getOption(request.getOptions(), TRANSFORMS_KEY);
             setImportTransform(source, transforms);
 
-            String transformers = MapUtils.isNotEmpty(request.getOptions()) ? request.getOptions().get(TRANSFORMERS_KEY) : null;
+            String transformers = AtlasStringUtil.getOption(request.getOptions(), TRANSFORMERS_KEY);
             setEntityTransformerHandlers(source, transformers);
 
             startTimestamp = System.currentTimeMillis();
@@ -254,9 +255,8 @@ public class ImportService {
 
     private EntityImportStream createZipSource(AtlasImportRequest request, InputStream inputStream, String configuredTemporaryDirectory) throws AtlasBaseException {
         try {
-            if (isMigrationMode(request) || (request.getOptions().containsKey(AtlasImportRequest.OPTION_KEY_FORMAT) &&
-                    request.getOptions().get(AtlasImportRequest.OPTION_KEY_FORMAT).equals(AtlasImportRequest.OPTION_KEY_FORMAT_ZIP_DIRECT))) {
-                LOG.info("ZipSource Format: ZipDirect: Size: {}", request.getOptions().get("size"));
+            if (isMigrationMode(request) || AtlasStringUtil.optionEquals(request.getOptions(), AtlasImportRequest.OPTION_KEY_FORMAT, AtlasImportRequest.OPTION_KEY_FORMAT_ZIP_DIRECT)) {
+                LOG.info("ZipSource Format: ZipDirect: Size: {}", AtlasStringUtil.getOption(request.getOptions(), "size"));
                 return getZipDirectEntityImportStream(request, inputStream);
             }
 
@@ -294,6 +294,6 @@ public class ImportService {
     }
 
     private boolean isMigrationMode(AtlasImportRequest request) {
-        return request.getOptions().containsKey(AtlasImportRequest.OPTION_KEY_MIGRATION);
+        return AtlasStringUtil.hasOption(request.getOptions(), AtlasImportRequest.OPTION_KEY_MIGRATION);
     }
 }
