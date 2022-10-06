@@ -18,6 +18,7 @@
 package org.apache.atlas.type;
 
 
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.*;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
@@ -657,6 +658,70 @@ public class TestAtlasTypeRegistry {
 
         validateAllSuperTypes(typeRegistry, "L1", new HashSet<>(Arrays.asList("L0")));
         validateAllSubTypes(typeRegistry, "L1", new HashSet<String>());
+    }
+
+    @Test
+    public void testRegistryValiditySuperTypesUpdateWithExistingAttributeForClassification() throws AtlasBaseException {
+        AtlasClassificationDef class0 = new AtlasClassificationDef("class0");
+        AtlasClassificationDef class1 = new AtlasClassificationDef("class1");
+        AtlasClassificationDef class2 = new AtlasClassificationDef("class2");
+
+        class1.addSuperType(class0.getName());
+
+        class0.addAttribute(new AtlasAttributeDef("attr1", AtlasBaseTypeDef.ATLAS_TYPE_INT));
+        class1.addAttribute(new AtlasAttributeDef("attr2", AtlasBaseTypeDef.ATLAS_TYPE_INT));
+        class2.addAttribute(new AtlasAttributeDef("attr1", AtlasBaseTypeDef.ATLAS_TYPE_INT));
+
+        AtlasTypesDef typesDef = new AtlasTypesDef();
+
+        typesDef.getClassificationDefs().add(class0);
+        typesDef.getClassificationDefs().add(class1);
+        typesDef.getClassificationDefs().add(class2);
+
+        AtlasTypeRegistry          typeRegistry = new AtlasTypeRegistry();
+        AtlasTransientTypeRegistry ttr          = null;
+        boolean                    commit       = false;
+        String                     failureMsg   = null;
+
+        try {
+            ttr = typeRegistry.lockTypeRegistryForUpdate();
+
+            ttr.addTypes(typesDef);
+
+            commit = true;
+        } catch (AtlasBaseException excp) {
+            failureMsg = excp.getMessage();
+        } finally {
+            typeRegistry.releaseTypeRegistryForUpdate(ttr, commit);
+        }
+        assertNull(failureMsg);
+
+        validateAllSuperTypes(typeRegistry, "class1", new HashSet<>(Arrays.asList("class0")));
+        validateAllSubTypes(typeRegistry, "class1", new HashSet<String>());
+
+        //Add class2 as supertype for class1
+        class1.addSuperType(class2.getName());
+
+        AtlasErrorCode atlasErrorCode = null;
+        try {
+            commit = false;
+
+            ttr = typeRegistry.lockTypeRegistryForUpdate();
+
+            ttr.updateTypes(typesDef);
+
+            commit = true;
+        } catch (AtlasBaseException excp) {
+            failureMsg = excp.getMessage();
+            atlasErrorCode = excp.getAtlasErrorCode();
+        } finally {
+            typeRegistry.releaseTypeRegistryForUpdate(ttr, commit);
+        }
+        assertNotNull(failureMsg);
+        assertEquals(atlasErrorCode, AtlasErrorCode.ATTRIBUTE_NAME_ALREADY_EXISTS_IN_ANOTHER_PARENT_TYPE);
+
+        validateAllSuperTypes(typeRegistry, "class1", new HashSet<>(Arrays.asList("class0")));
+        validateAllSubTypes(typeRegistry, "class1", new HashSet<String>());
     }
 
     private boolean addType(AtlasTypeRegistry typeRegistry, AtlasBaseTypeDef typeDef) {
