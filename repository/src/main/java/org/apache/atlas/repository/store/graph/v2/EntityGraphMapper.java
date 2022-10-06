@@ -1687,7 +1687,8 @@ public class EntityGraphMapper {
         List           newElements         = (List) ctx.getValue();
         AtlasArrayType arrType             = (AtlasArrayType) attribute.getAttributeType();
         AtlasType      elementType         = arrType.getElementType();
-        boolean        isStructType        = (elementType.getTypeCategory() == TypeCategory.STRUCT);
+        boolean        isStructType        = (TypeCategory.STRUCT == elementType.getTypeCategory()) ||
+                                             (TypeCategory.STRUCT == attribute.getDefinedInType().getTypeCategory());
         boolean        isReference         = isReference(elementType);
         boolean        isSoftReference     = ctx.getAttribute().getAttributeDef().isSoftReferenced();
         AtlasAttribute inverseRefAttribute = attribute.getInverseRefAttribute();
@@ -1700,7 +1701,7 @@ public class EntityGraphMapper {
         boolean deleteExistingRelations = shouldDeleteExistingRelations(ctx, attribute);
 
         if (isReference && !isSoftReference) {
-            currentElements = (List) getCollectionElementsUsingRelationship(ctx.getReferringVertex(), attribute);
+            currentElements = (List) getCollectionElementsUsingRelationship(ctx.getReferringVertex(), attribute, isStructType);
         } else {
             currentElements = (List) getArrayElementsProperty(elementType, isSoftReference, ctx.getReferringVertex(), ctx.getVertexProperty());
         }
