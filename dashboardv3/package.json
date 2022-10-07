@@ -35,10 +35,10 @@
     "dagre-d3": "0.6.4",
     "dropzone": "5.7.0",
     "font-awesome": "4.7.0",
-    "jQuery-QueryBuilder": "2.4.3",
     "jquery": "3.5.1",
     "jquery-asBreadcrumbs": "0.2.2",
     "jquery-placeholder": "2.3.1",
+    "jQuery-QueryBuilder": "2.4.3",
     "jquery-sparkline": "2.4.0",
     "jquery-steps": "1.1.0",
     "jstree": "3.3.5",
@@ -70,6 +70,6 @@
     "grunt-sass": "3.1.0",
     "grunt-template": "1.0.0",
     "load-grunt-tasks": "3.5.2",
-    "node-sass": "4.13.1"
+    "node-sass": "^7.0.3"
   }
 }
