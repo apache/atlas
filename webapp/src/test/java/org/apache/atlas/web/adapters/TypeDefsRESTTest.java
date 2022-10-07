@@ -80,7 +80,7 @@ public class TypeDefsRESTTest {
     private void createTestEntity() throws AtlasBaseException {
         AtlasEntity dbEntity = TestUtilsV2.createDBEntity();
 
-        final EntityMutationResponse response = entityREST.createOrUpdate(new AtlasEntity.AtlasEntitiesWithExtInfo(dbEntity), false, false);
+        final EntityMutationResponse response = entityREST.createOrUpdate(new AtlasEntity.AtlasEntitiesWithExtInfo(dbEntity), false, false, false);
 
         Assert.assertNotNull(response);
         List<AtlasEntityHeader> entitiesMutated = response.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE);

@@ -24,6 +24,9 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.GraphTransactionInterceptor;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.GraphTransaction;
+import org.apache.atlas.authorize.AtlasAuthorizationUtils;
+import org.apache.atlas.authorize.AtlasEntityAccessRequest;
+import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.exception.EntityNotFoundException;
 import org.apache.atlas.model.TimeBoundary;
@@ -340,7 +343,12 @@ public class EntityGraphMapper {
         }
     }
 
-    public EntityMutationResponse mapAttributesAndClassifications(EntityMutationContext context, final boolean isPartialUpdate, final boolean replaceClassifications, boolean replaceBusinessAttributes) throws AtlasBaseException {
+    public EntityMutationResponse mapAttributesAndClassifications(EntityMutationContext context,
+                                                                  final boolean isPartialUpdate,
+                                                                  final boolean replaceClassifications,
+                                                                  boolean replaceBusinessAttributes,
+                                                                  boolean isOverwriteBusinessAttribute) throws AtlasBaseException {
+
         MetricRecorder metric = RequestContext.get().startMetricRecord("mapAttributesAndClassifications");
 
         EntityMutationResponse resp       = new EntityMutationResponse();
@@ -434,13 +442,13 @@ public class EntityGraphMapper {
                     }
 
                     if (replaceBusinessAttributes) {
-                        if (MapUtils.isEmpty(updatedEntity.getBusinessAttributes())) {
+                        if (MapUtils.isEmpty(updatedEntity.getBusinessAttributes()) && isOverwriteBusinessAttribute) {
                             Map<String, Map<String, Object>> businessMetadata = entityRetriever.getBusinessMetadata(vertex);
                             if (MapUtils.isNotEmpty(businessMetadata)){
                                 removeBusinessAttributes(vertex, entityType, businessMetadata);
                             }
                         } else {
-                            setBusinessAttributes(vertex, entityType, updatedEntity.getBusinessAttributes());
+                            addOrUpdateBusinessAttributes(guid, updatedEntity.getBusinessAttributes(), isOverwriteBusinessAttribute);
                         }
                     }
                     
@@ -632,6 +640,57 @@ public class EntityGraphMapper {
         }
     }
 
+    public void addOrUpdateBusinessAttributes(String guid, Map<String, Map<String, Object>> businessAttrbutes, boolean isOverwrite) throws AtlasBaseException {
+        if (StringUtils.isEmpty(guid)) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "guid is null/empty");
+        }
+
+        if (MapUtils.isEmpty(businessAttrbutes)) {
+            return;
+        }
+
+        AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(graph, guid);
+
+        if (entityVertex == null) {
+            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
+        }
+
+        String                           typeName                     = getTypeName(entityVertex);
+        AtlasEntityType                  entityType                   = typeRegistry.getEntityTypeByName(typeName);
+        AtlasEntityHeader                entityHeader                 = entityRetriever.toAtlasEntityHeaderWithClassifications(entityVertex);
+        Map<String, Map<String, Object>> currEntityBusinessAttributes = entityRetriever.getBusinessMetadata(entityVertex);
+        Set<String>                      updatedBusinessMetadataNames = new HashSet<>();
+
+        for (String bmName : entityType.getBusinessAttributes().keySet()) {
+            Map<String, Object> bmAttrs     = businessAttrbutes.get(bmName);
+            Map<String, Object> currBmAttrs = currEntityBusinessAttributes != null ? currEntityBusinessAttributes.get(bmName) : null;
+
+            if (bmAttrs == null && !isOverwrite) {
+                continue;
+            } else if (MapUtils.isEmpty(bmAttrs) && MapUtils.isEmpty(currBmAttrs)) { // no change
+                continue;
+            } else if (Objects.equals(bmAttrs, currBmAttrs)) { // no change
+                continue;
+            }
+
+            updatedBusinessMetadataNames.add(bmName);
+        }
+
+        AtlasEntityAccessRequest.AtlasEntityAccessRequestBuilder requestBuilder = new AtlasEntityAccessRequest.AtlasEntityAccessRequestBuilder(typeRegistry, AtlasPrivilege.ENTITY_UPDATE_BUSINESS_METADATA, entityHeader);
+
+        for (String bmName : updatedBusinessMetadataNames) {
+            requestBuilder.setBusinessMetadata(bmName);
+
+            AtlasAuthorizationUtils.verifyAccess(requestBuilder.build(), "add/update business-metadata: guid=", guid, ", business-metadata-name=", bmName);
+        }
+
+        if (isOverwrite) {
+            setBusinessAttributes(entityVertex, entityType, businessAttrbutes);
+        } else {
+            addOrUpdateBusinessAttributes(entityVertex, entityType, businessAttrbutes);
+        }
+    }
+
     /*
      * reset/overwrite business attributes of the entity with given values
      */
@@ -795,6 +854,15 @@ public class EntityGraphMapper {
     public void removeBusinessAttributes(AtlasVertex entityVertex, AtlasEntityType entityType, Map<String, Map<String, Object>> businessAttributes) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> removeBusinessAttributes(entityVertex={}, entityType={}, businessAttributes={}", entityVertex, entityType.getTypeName(), businessAttributes);
+        }
+
+        AtlasEntityHeader               entityHeader   = entityRetriever.toAtlasEntityHeaderWithClassifications(entityVertex);
+        AtlasEntityAccessRequest.AtlasEntityAccessRequestBuilder requestBuilder = new AtlasEntityAccessRequest.AtlasEntityAccessRequestBuilder(typeRegistry, AtlasPrivilege.ENTITY_UPDATE_BUSINESS_METADATA, entityHeader);
+
+        for (String bmName : businessAttributes.keySet()) {
+            requestBuilder.setBusinessMetadata(bmName);
+
+            AtlasAuthorizationUtils.verifyAccess(requestBuilder.build(), "remove business-metadata: guid=", entityHeader.getGuid(), ", business-metadata=", bmName);
         }
 
         Map<String, Map<String, AtlasBusinessAttribute>> entityTypeBusinessAttributes = entityType.getBusinessAttributes();
