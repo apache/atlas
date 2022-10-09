@@ -19,6 +19,7 @@ package org.apache.atlas.repository.store.graph.v2;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
@@ -64,6 +65,7 @@ import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.v1.model.instance.Id;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.IteratorUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -576,7 +578,6 @@ public class EntityGraphRetriever {
     }
     public List<AtlasVertex> getIncludedImpactedVerticesV2(AtlasVertex entityVertex, String relationshipGuidToExclude, String classificationId, List<String> edgeLabelsToExclude) {
         List<AtlasVertex> ret = new ArrayList<>(Arrays.asList(entityVertex));
-
         traverseImpactedVerticesByLevel(entityVertex, relationshipGuidToExclude, classificationId, ret, edgeLabelsToExclude);
         return ret;
     }
@@ -692,7 +693,7 @@ public class EntityGraphRetriever {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("traverseImpactedVerticesByLevel");
         Set<String>                 visitedVertices        = new HashSet<>();
         Set<String>                 levelVertices          = new HashSet<>();
-        Set<AtlasVertex>            traversedVertices        = new HashSet<>();
+        Set<String>            traversedVerticesIds        = new HashSet<>();
         RequestContext              requestContext         = RequestContext.get();
 
         //Add Source vertex to level 1
@@ -702,15 +703,15 @@ public class EntityGraphRetriever {
         // Start Processing the level
         while (!levelVertices.isEmpty()) {
             Set<String> nextLevelVisitedVertices = new HashSet<>();
-            Iterable<List<String>> chunkedLevelVerticesIterable = Iterables.partition(levelVertices, 10);
+            Iterable<List<String>> chunkedLevelVerticesIterable = Iterables.partition(levelVertices, 100);
             chunkedLevelVerticesIterable.forEach(x -> {
                 x.parallelStream().forEach(y -> {
                     AtlasVertex entityVertex = graph.getVertex(y);
                     if (!visitedVertices.contains(y)) {
-                       Set<AtlasVertex> adjacentVertices =  getAdjacentVertices(entityVertex, classificationId,
+                       Set<String> adjacentVerticesIds =  getAdjacentVertices(entityVertex, classificationId,
                                 relationshipGuidToExclude, edgeLabelsToExclude, visitedVertices);
-                        nextLevelVisitedVertices.addAll(adjacentVertices.stream().map( z-> z.getIdForDisplay()).collect(Collectors.toSet()));
-                        traversedVertices.addAll(adjacentVertices);
+                        nextLevelVisitedVertices.addAll(adjacentVerticesIds);
+                        traversedVerticesIds.addAll(adjacentVerticesIds);
                         visitedVertices.add(entityVertex.getIdForDisplay());
                     }
                 });
@@ -720,17 +721,18 @@ public class EntityGraphRetriever {
         }
         // Chunk the Levels into n parts
         // Process the chunks in Parallel get the Vertices for next level
+        List<AtlasVertex> traversedVertices = traversedVerticesIds.stream().map(x -> graph.getVertex(x)).collect(Collectors.toList());
         result.addAll(traversedVertices);
         requestContext.endMetricRecord(metricRecorder);
 
     }
 
-    private Set<AtlasVertex> getAdjacentVertices(AtlasVertex entityVertex,final String classificationId, final String relationshipGuidToExclude
+    private Set<String> getAdjacentVertices(AtlasVertex entityVertex,final String classificationId, final String relationshipGuidToExclude
             ,List<String> edgeLabelsToExclude, Set<String> visitedVertices) {
 
         AtlasEntityType         entityType          = typeRegistry.getEntityTypeByName(getTypeName(entityVertex));
         String[]                tagPropagationEdges = entityType != null ? entityType.getTagPropagationEdgesArray() : null;
-        Set<AtlasVertex>       ret                 = new HashSet<>();
+        Set<String>       ret                 = new HashSet<>();
         RequestContext requestContext = RequestContext.get();
 
         if (tagPropagationEdges == null) {
@@ -785,7 +787,7 @@ public class EntityGraphRetriever {
             String      adjacentVertexIdForDisplay = adjacentVertex.getIdForDisplay();
 
             if (!visitedVertices.contains(adjacentVertexIdForDisplay)) {
-                ret.add(adjacentVertex);
+                ret.add(adjacentVertexIdForDisplay);
             }
         }
 
