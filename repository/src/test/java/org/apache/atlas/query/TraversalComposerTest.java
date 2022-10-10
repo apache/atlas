@@ -70,6 +70,8 @@ public class TraversalComposerTest extends BaseDSLComposer {
         verify("hive_column where name = 'test_limit' limit 2 offset 4",
                 "[JanusGraphStep([],[__typeName.eq(hive_column), hive_column.name.eq(test_limit)]), DedupGlobalStep(null,null), DedupGlobalStep(null,null), RangeGlobalStep(4,6)]");
 
+        verify("hive_db where owner != 'hdfs'",
+                "[JanusGraphStep([],[__typeName.eq(hive_db)]), OrStep([[HasStep([hive_db.owner.neq(hdfs)])], [NotStep([JanusGraphPropertiesStep([hive_db.owner],property)])]]), DedupGlobalStep(null,null), RangeGlobalStep(0,25)]");
     }
 
     private void verify(String dsl, String expected) {
