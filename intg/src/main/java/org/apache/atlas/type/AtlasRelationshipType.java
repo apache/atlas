@@ -311,8 +311,9 @@ public class AtlasRelationshipType extends AtlasStructType {
             throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_DOUBLE_CONTAINERS, name);
         }
         if ((isContainer1 || isContainer2)) {
-            // we have an isContainer defined in an end
-            if (relationshipCategory == RelationshipCategory.ASSOCIATION) {
+            // we have an isContainer defined in an end.
+            // the default relationshipCategory is ASSOCIATION.
+            if (relationshipCategory == null || relationshipCategory == RelationshipCategory.ASSOCIATION) {
                 // associations are not containment relationships - so do not allow an endpoint with isContainer
                 throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_ASSOCIATION_AND_CONTAINER, name);
             }
