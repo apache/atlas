@@ -458,9 +458,9 @@ public class DSLQueriesTest extends BasicTestSetup {
                 {"hive_db as d where owner = ['John ETL', 'Jane BI']", 2},
                 {"hive_db as d where owner = ['John ETL', 'Jane BI'] limit 10", 2},
                 {"hive_db as d where owner = ['John ETL', 'Jane BI'] limit 10 offset 1", 1},
-                {"hive_db where description != 'Random'", 3},
+                {"hive_db where description != '/apps/warehouse/logging'", 2},
                 {"hive_db where (owner = \"John ETL\" and description != Random)", 1},
-                {"hive_db where (owner = \"Tim ETL\" and description != Random)", 1},
+                {"hive_table where description != ''", 8},
                 {"hive_db where (name='Reporting' or ((name='Logging' and owner = 'Jane BI') and (name='Logging' and owner = 'John ETL')))", 1}
         };
     }
