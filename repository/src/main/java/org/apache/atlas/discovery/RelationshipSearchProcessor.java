@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.discovery;
 
+import org.apache.atlas.SortOrder;
 import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
@@ -30,6 +31,7 @@ import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.Predicate;
 import org.apache.commons.collections.PredicateUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,6 +45,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.repository.Constants.RELATIONSHIP_TYPE_PROPERTY_KEY;
+import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.SortOrder.ASC;
+import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.SortOrder.DESC;
 
 public class RelationshipSearchProcessor extends SearchProcessor {
     private static final Logger LOG      = LoggerFactory.getLogger(RelationshipSearchProcessor.class);
@@ -63,6 +67,8 @@ public class RelationshipSearchProcessor extends SearchProcessor {
         final Set<String> typeNames                          = CollectionUtils.isNotEmpty(types) ? types.stream().map(AtlasRelationshipType::getTypeName).collect(Collectors.toSet()) : null;
         final String      typeAndSubTypesQryStr              = AtlasStructType.AtlasAttribute.escapeIndexQueryValue(typeNames, true);
         final Predicate   typeNamePredicate                  = SearchPredicateUtil.generateIsRelationshipEdgePredicate(context.getTypeRegistry());
+        final String      sortBy                             = context.getSearchParameters().getSortBy();
+        final SortOrder   sortOrder                          = context.getSearchParameters().getSortOrder();
         inMemoryPredicate = typeNamePredicate;
 
         processSearchAttributes(types, filterCriteria, indexAttributes, graphAttributes, allAttributes);
@@ -111,6 +117,17 @@ public class RelationshipSearchProcessor extends SearchProcessor {
             Predicate attributePredicate = constructInMemoryPredicate(types, filterCriteria, graphAttributes);
             if (attributePredicate != null) {
                 inMemoryPredicate = PredicateUtils.andPredicate(inMemoryPredicate, attributePredicate);
+            }
+
+            if (StringUtils.isNotEmpty(sortBy)) {
+                final AtlasRelationshipType relationshipType   = types.iterator().next();
+                AtlasStructType.AtlasAttribute sortByAttribute = relationshipType.getAttribute(sortBy);
+
+                if (sortByAttribute != null && StringUtils.isNotEmpty(sortByAttribute.getVertexPropertyName())) {
+                    AtlasGraphQuery.SortOrder qrySortOrder = sortOrder == SortOrder.ASCENDING ? ASC : DESC;
+
+                    graphQuery.orderBy(sortByAttribute.getVertexPropertyName(), qrySortOrder);
+                }
             }
         } else {
             graphQuery = null;

@@ -1366,10 +1366,12 @@ public abstract class SearchProcessor {
     }
 
     protected static Iterator<AtlasIndexQuery.Result> executeIndexQueryForEdge(SearchContext context, AtlasIndexQuery indexQuery, int qryOffset, int limit) {
-        String sortBy = getSortByAttribute(context);
-        if (sortBy != null && !sortBy.isEmpty()) {
+        final AtlasRelationshipType relationshipType   = context.getRelationshipTypes().iterator().next();
+        AtlasStructType.AtlasAttribute sortByAttribute = relationshipType.getAttribute(context.getSearchParameters().getSortBy());
+
+        if (sortByAttribute != null && StringUtils.isNotEmpty(sortByAttribute.getVertexPropertyName())) {
             Order sortOrder = getSortOrderAttribute(context);
-            return indexQuery.edges(qryOffset, limit, sortBy, sortOrder);
+            return indexQuery.edges(qryOffset, limit, sortByAttribute.getVertexPropertyName(), sortOrder);
         }
         return indexQuery.edges(qryOffset, limit);
     }
