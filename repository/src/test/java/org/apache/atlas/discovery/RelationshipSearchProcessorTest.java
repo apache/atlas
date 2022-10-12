@@ -132,6 +132,21 @@ public class RelationshipSearchProcessorTest extends BasicTestSetup {
     }
 
     @Test
+    public void sortByReaction() throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+        params.setRelationshipName("user_post");
+        params.setRelationshipFilters(getSingleFilterCondition("user_name", SearchParameters.Operator.CONTAINS, "Ajay"));
+        params.setLimit(20);
+        params.setSortBy("reaction");
+        params.setSortOrder(SortOrder.DESCENDING);
+
+        List<AtlasEdge> edges = executeAndAssert(params, 7);
+
+        assertEquals("wow", edges.get(0).getProperty("user_post.reaction", String.class));
+        assertEquals("create", edges.get(6).getProperty("user_post.reaction", String.class));
+
+    }
+    @Test
     public void searchBymultipleTypes() throws AtlasBaseException {
         SearchParameters params = new SearchParameters();
         params.setRelationshipName("user_post,highlight_post");
