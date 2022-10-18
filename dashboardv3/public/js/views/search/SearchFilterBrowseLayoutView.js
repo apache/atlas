@@ -37,7 +37,8 @@ define([
             RClassificationTreeRender: '[data-id="r_classificationTreeRender"]',
             REntityTreeRender: '[data-id="r_entityTreeRender"]',
             RCustomFilterTreeRender: '[data-id="r_customFilterTreeRender"]',
-            RBusinessMetadataTreeRender: '[data-id="r_businessMetadataTreeRender"]'
+            RBusinessMetadataTreeRender: '[data-id="r_businessMetadataTreeRender"]',
+            RRelationshipTreeRender: '[data-id="r_relationshipTreeRender"]'
         },
         ui: {
             searchNode: '[data-id="searchNode"]',
@@ -74,6 +75,7 @@ define([
                 this.termSearchTree = this.$('[data-id="termSearchTree"]');
                 this.customFilterSearchTree = this.$('[data-id="customFilterSearchTree"]');
                 this.businessMetadataSearchTree = this.$('[data-id="businessMetadataSearchTree"]');
+                this.RelationshipSearchTree = this.$('[data-id="relationshipSearchTree"]');
                 this.entitySearchTree.jstree(true).show_all();
                 this.entitySearchTree.jstree("search", searchString);
                 this.classificationSearchTree.jstree(true).show_all();
@@ -106,6 +108,7 @@ define([
                     "entityDefCollection",
                     "enumDefCollection",
                     "classificationDefCollection",
+                    "relationshipDefCollection",
                     "searchTableColumns",
                     "searchTableFilters",
                     "metricCollection",
@@ -121,6 +124,7 @@ define([
             this.renderGlossaryTree(opt);
             this.renderCustomFilterTree();
             this.renderBusinessMetadataTree();
+            this.renderRelationshipTree();
             this.showHideGlobalFilter();
             this.showDefaultPage();
         },
@@ -211,6 +215,9 @@ define([
                 if (this.REntityTreeRender.currentView) {
                     this.REntityTreeRender.currentView.manualRender(this.options);
                 }
+                if (this.RRelationshipTreeRender.currentView) {
+                    this.RRelationshipTreeRender.currentView.manualRender(this.options);
+                }
             }
         },
         renderEntityTree: function(opt) {
@@ -241,6 +248,12 @@ define([
             var that = this;
             require(["views/search/tree/BusinessMetadataTreeLayoutView"], function(BusinessMetadataTreeLayoutView) {
                 that.RBusinessMetadataTreeRender.show(new BusinessMetadataTreeLayoutView(_.extend({ query: that.query }, that.options)));
+            });
+        },
+        renderRelationshipTree: function(){
+            var that = this;
+            require(["views/search/tree/RelationshipSearchTreeLayoutView"], function(RelationshipSearchTreeLayoutView) {
+                that.RRelationshipTreeRender.show(new RelationshipSearchTreeLayoutView(_.extend({ query: that.query }, that.options)));
             });
         }
     });

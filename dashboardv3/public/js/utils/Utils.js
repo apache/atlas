@@ -355,6 +355,8 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
                     urlUpdate['administratorUrl'] = options.url;
                 } else if (Utils.getUrlState.isDebugMetricsTab(options.url)) {
                     urlUpdate['debugMetricsUrl'] = options.url;
+                } else if (Utils.getUrlState.isRelationTab(options.url)) {
+                    urlUpdate['relationUrl'] = options.url;
                 }
                 $.extend(Globals.saveApplicationState.tabState, urlUpdate);
             }
@@ -396,6 +398,18 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
                 matchString: "search"
             });
         },
+        isRelationTab: function(url) {
+            return this.checkTabUrl({
+                url: url,
+                matchString: "relationship"
+            });
+        },
+        isRelationSearch: function(url) {
+            return this.checkTabUrl({
+                url: url,
+                matchString: "relationship/relationshipSearchResult"
+            });
+        },
         isAdministratorTab: function(url) {
             return this.checkTabUrl({
                 url: url,
@@ -422,6 +436,12 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
             return this.checkTabUrl({
                 url: url,
                 matchString: "detailPage"
+            });
+        },
+        isRelationshipDetailPage: function(url) {
+            return this.checkTabUrl({
+                url: url,
+                matchString: "relationshipDetailPage"
             });
         },
         getLastValue: function() {
@@ -583,6 +603,9 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
             } else if (queryParams.from == "bm") {
                 urlPath = "administratorUrl";
             }
+        }
+        if (Globals.fromRelationshipSearch) {
+            urlPath = 'relationUrl';
         }
         Utils.setUrl({
             url: Globals.saveApplicationState.tabState[urlPath],

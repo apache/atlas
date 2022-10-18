@@ -43,6 +43,9 @@ define(['require', 'utils/Enums', 'utils/Utils', 'underscore'], function(require
         enumDefApiUrl: function(name) {
             return this.getDefApiUrl('enum', name);
         },
+        relationshipDefApiUrl: function() {
+            return this.getDefApiUrl('relationship', name);
+        },
         metricsApiUrl: function() {
             return this.baseUrl + '/admin/metrics'
         },
@@ -109,6 +112,16 @@ define(['require', 'utils/Enums', 'utils/Utils', 'underscore'], function(require
                 return entitiesUrl += '?minExtInfo=' + (minExtInfo);
             }
         },
+        relationApiUrl: function(options) {
+            var relationsUrl = this.baseUrlV2 + '/relationship';
+            if (options) {
+                var guid = options.guid,
+                    name = options.name;
+                if (guid)
+                    relationsUrl += '/guid/' + guid;
+            }
+            return relationsUrl;
+        },
         entityLabelsAPIUrl: function(guid) {
             return this.entitiesApiUrl({ guid: guid }) + "/labels";
         },
@@ -172,6 +185,9 @@ define(['require', 'utils/Enums', 'utils/Utils', 'underscore'], function(require
             } else {
                 return relationshipUrl
             }
+        },
+        relationshipSearchApiUrl: function() {
+            return this.baseUrlV2 + '/search/relations';
         },
         schemaApiUrl: function(guid) {
             var lineageUrl = this.baseUrl + '/lineage';

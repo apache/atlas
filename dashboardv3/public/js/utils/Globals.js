@@ -33,7 +33,8 @@ define(["require", "underscore"], function(require, _) {
             searchUrl: "#!/search",
             glossaryUrl: "#!/glossary",
             administratorUrl: "#!/administrator",
-            debugMetricsUrl: "#!/debugMetrics"
+            debugMetricsUrl: "#!/debugMetrics",
+            relationUrl: '#!/relationSearch'
         },
         detailPageState: {}
     };
@@ -58,6 +59,7 @@ define(["require", "underscore"], function(require, _) {
     Globals.isLineageOnDemandEnabled = false;
     Globals.lineageNodeCount = 3;
     Globals.lineageDepth = 3;
+    Globals.fromRelationshipSearch = false;
 
     return Globals;
 });

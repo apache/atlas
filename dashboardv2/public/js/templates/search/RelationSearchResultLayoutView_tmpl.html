@@ -20,9 +20,10 @@
     <div class="fontLoader" style="z-index:999">
         <i class="fa fa-refresh fa-spin-custom"></i>
     </div>
-    <div class="ellipsis-with-margin" style="display: none;"><span class="searchResult" style=" font-size: 16px;"></span></div>
+    <div class="ellipsis-with-margin" style="display: none;"><span class="searchResult" style=" font-size: 16px;"></span>
+    </div>
     <div class="searchTable">
-        <div class="no-data" style="display: none;">
+        <div class="row no-data" style="display: none;">
             <div class="position-relative thick-border">
                 <div style="padding-top: 20px; " class="table-responsive tableBorder">
                     <table class="table table-hover backgrid table-quickMenu">
@@ -35,47 +36,20 @@
                 </div>
             </div>
         </div>
-        <div class="pagination-box clearfix row" style="display: none;{{#unless isSearchTab}}margin-top: 0px;{{/unless}}">
-            <div class="form-group filter-box col-md-12" {{#if isSearchTab}} style="position: absolute;right: 0;top: -44px; padding: 0;width:auto" {{/if}}>
-                <div class="pull-right inline-content-fr no-padding-left">
+        <div style="padding-top: 0px;" class="">
+            <div class="row form-group pagination-box filter-box" style="display: none;">
+                <div class="col-sm-12 inline-content-fr no-padding-left">
                     <div class="inline" data-id="colManager"></div>
-                    {{#if isSearchTab}}
-                    {{#if entityCreate}}
-                    <div class="inline"><button class="btn btn-action btn-sm" data-id="createEntity"><i class="fa fa-plus"></i>&nbsp;Create Entity</button></div>
-                    {{/if}}
-                    <div class="inline"><button title="Save as custom filter" class="btn btn-action btn-sm" data-id="saveFilter"><i class="fa fa-save"></i>&nbsp;Save Filter</button></div>
-                    {{/if}}
-                    <div class="inline">
-                        <a href="javascript:void(0)" class="multiSelectTag assignTag btn btn-action btn-sm" style="display:none" title="Assign Classification" data-id="addAssignTag"><i class="fa fa-plus"></i>&nbsp;Classification</a>
-                    </div>
-                    {{#unless isGlossaryView}}
-                    <div class="inline">
-                        <a href="javascript:void(0)" class="multiSelectTerm assignTerm btn btn-action btn-sm" style="display:none" title="Assign Term" data-id="addAssignTerm"><i class="fa fa-plus"></i>&nbsp;Term</a>
-                    </div>
-                    {{/unless}}
-                    <div class="action-box pull-right inline-content-fr">
-                        <div class="inline" data-id="containerCheckBox" style="display: none;">
-                            <label class="checkbox-inline btn" for="historicalentities">
-                                <input type="checkbox" data-id="checkDeletedEntity" data-value="includeDE" id="historicalentities" />
-                                <b>Show historical entities</b></label>
-                        </div>
-                        <div class="inline" data-id="containerCheckBox" style="display: none;">
-                            <label class="checkbox-inline btn" for="subclassifications">
-                                <input type="checkbox" data-id="checkSubClassification" data-value="excludeSC" id="subclassifications" />
-                                <b>Exclude sub-classifications</b></label>
-                        </div>
-                        {{#ifCond fromView '!==' "classification"}}
-                        <div class="inline" data-id="containerCheckBox" style="display: none;">
-                            <label class="checkbox-inline btn" for="subtypes">
-                                <input type="checkbox" data-id="checkSubType" data-value="excludeST" id="subtypes" />
-                                <b>Exclude sub-types</b></label>
-                        </div>
-                        {{/ifCond}}
-                    </div>
                 </div>
             </div>
-            <div id="r_searchResultTableLayoutView" class="col-sm-12"></div>
-            <div class="pagination-box searach-result-pagination col-sm-12 no-padding" style="display: none">
+            <div id="r_relationSearchResultTableLayoutView">
+                <h1><b>Relationship Search</b></h1>
+                <div class="relationLink" style="display:none">
+                    <p class="relationLink">Search Atlas for existing relationships
+                    </p>
+                </div>
+            </div>
+            <div class="pagination-box searach-result-pagination row" style="display: none">
                 <div class="col-sm-4">
                     <span class="labelShowRecord pull-left" data-id="pageRecordText"> </span>
                 </div>

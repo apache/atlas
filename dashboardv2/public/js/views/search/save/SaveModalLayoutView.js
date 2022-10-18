@@ -47,7 +47,7 @@ define(['require',
         },
         initialize: function(options) {
             var that = this;
-            _.extend(this, _.pick(options, 'selectedModel', 'collection', 'getValue', 'isBasic', 'saveObj'));
+            _.extend(this, _.pick(options, 'selectedModel', 'collection', 'getValue', 'isBasic', 'saveObj', 'isRelationship'));
 
             this.model = new VSearch();
             if (this.saveObj) {
@@ -87,6 +87,8 @@ define(['require',
                 var saveObj = CommonViewFunction.generateObjectForSaveSearchApi(obj);
                 if (this.isBasic) {
                     saveObj['searchType'] = "BASIC";
+                } else if (this.isRelationship) {
+                    saveObj['searchType'] = "BASIC_RELATIONSHIP"
                 } else {
                     saveObj['searchType'] = "ADVANCED";
                 }

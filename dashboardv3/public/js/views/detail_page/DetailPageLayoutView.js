@@ -444,7 +444,7 @@ define(['require',
                 this.updateTab();
             },
             onDestroy: function() {
-                if (!Utils.getUrlState.isDetailPage()) {
+                if (!Utils.getUrlState.isDetailPage() && !Utils.getUrlState.isRelationshipDetailPage()) {
                     $('body').removeClass("detail-page");
                 }
             },
