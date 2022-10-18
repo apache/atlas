@@ -605,6 +605,12 @@ atlas.graph.storage.conf-file=${sys:atlas.home}/conf/cassandra.yml
         <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>storm-bridge</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.commons</groupId>
+                    <artifactId>commons-text</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 </project>
