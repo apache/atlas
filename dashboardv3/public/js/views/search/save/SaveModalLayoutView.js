@@ -49,12 +49,16 @@ define(['require',
         },
         initialize: function(options) {
             var that = this;
-            _.extend(this, _.pick(options, 'rename', 'selectedModel', 'collection', 'getValue', 'isBasic', 'saveObj'));
+            _.extend(this, _.pick(options, 'rename', 'selectedModel', 'collection', 'getValue', 'isBasic', 'saveObj', 'isRelationship'));
             this.model = new VSearch();
             this.saveSearchCollection = new VSearchList();
             this.saveSearchCollection.url = UrlLinks.saveSearchApiUrl();
             this.saveSearchCollection.fullCollection.comparator = function(model) {
                 return getModelName(model);
+            }
+            var title = this.isBasic ? " Basic" : " Advanced";
+            if(this.isRelationship){
+                title = " Relationship";
             }
 
             function getModelName(model) {
@@ -67,7 +71,7 @@ define(['require',
             } else {
                 this.modal = modal = new Modal({
                     titleHtml: true,
-                    title: '<span>' + (this.selectedModel && this.rename ? 'Rename' : 'Save') + (this.isBasic ? " Basic" : " Advanced") + ' Custom Filter</span>',
+                    title: '<span>' + (this.selectedModel && this.rename ? 'Rename' : 'Save') + title + ' Custom Filter</span>',
                     content: this,
                     cancelText: "Cancel",
                     okCloses: false,
@@ -96,7 +100,11 @@ define(['require',
                 var that = this;
                 this.saveSearchCollection.fetch({
                     success: function(collection, data) {
-                        that.saveSearchCollection.fullCollection.reset(_.where(data, { searchType: that.isBasic ? "BASIC" : "ADVANCED" }));
+                        if(that.isRelationship){
+                            that.saveSearchCollection.fullCollection.reset(_.where(data, { searchType: "BASIC_RELATIONSHIP" }));
+                        } else {
+                            that.saveSearchCollection.fullCollection.reset(_.where(data, { searchType: that.isBasic ? "BASIC" : "ADVANCED" }));
+                        }
                         var options = "";
                         that.saveSearchCollection.fullCollection.each(function(model) {
                             options += '<option value="' + model.get("name") + '">' + model.get("name") + '</option>';
@@ -158,6 +166,8 @@ define(['require',
             } else {
                 if (this.isBasic) {
                     saveObj['searchType'] = "BASIC";
+                } else if(this.isRelationship){
+                    saveObj['searchType'] = "BASIC_RELATIONSHIP";
                 } else {
                     saveObj['searchType'] = "ADVANCED";
                 }

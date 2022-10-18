@@ -31,7 +31,8 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
                 RGlobalSearchLayoutView: "#r_globalSearchLayoutView",
                 RSearchResultLayoutView: "#r_searchResultLayoutView",
                 RQueryBuilderEntity: "#r_attributeQueryBuilderEntity",
-                RQueryBuilderClassification: "#r_attributeQueryBuilderClassification"
+                RQueryBuilderClassification: "#r_attributeQueryBuilderClassification",
+                RQueryBuilderRelationship: '#r_attributeQueryBuilderRelationship'
             },
 
             /** ui selector cache */
@@ -42,14 +43,17 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
                 attrClose: "[data-id='attrClose']",
                 entityRegion: "[data-id='entityRegion']",
                 classificationRegion: "[data-id='classificationRegion']",
+                relationshipRegion: "[data-id='relationshipRegion']",
                 checkDeletedEntity: "[data-id='checkDeletedEntity']",
                 checkSubClassification: "[data-id='checkSubClassification']",
                 checkSubType: "[data-id='checkSubType']",
                 entityName: ".entityName",
+                relationshipName: ".relationshipName",
                 classificationName: ".classificationName",
                 createNewEntity: '[data-id="createNewEntity"]',
                 clearQuerySearch: "[data-id='clearQuerySearch']",
-                refreshSearchQuery: "[data-id='refreshSearchResult']"
+                refreshSearchQuery: "[data-id='refreshSearchResult']",
+                includeExclude : "[data-id='includeExclude']"
             },
             /** ui events hash */
             events: function() {
@@ -67,7 +71,12 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
                 };
 
                 events["click " + this.ui.refreshSearchQuery] = function(e) {
-                    this.options.searchVent.trigger('search:refresh');
+                    if (Utils.getUrlState.isSearchTab()) {
+                        this.options.searchVent.trigger('search:refresh');
+                    }
+                    if(Utils.getUrlState.isRelationTab()){
+                        this.options.searchVent.trigger('relationSearch:refresh');
+                    }
                     this.disableRefreshButton();
                 };
 
@@ -88,11 +97,13 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
 
                     switch (type) {
                         case "entityFilters":
-                            that.filtersQueryUpdate(e, false);
+                            that.filtersQueryUpdate(e, false, false);
                             break;
                         case "tagFilters":
-                            that.filtersQueryUpdate(e, true);
+                            that.filtersQueryUpdate(e, true, false);
                             break;
+                        case "relationshipFilters":
+                            that.filtersQueryUpdate(e, false, true);
                         default:
                             this.options.value[type] = null;
                     }
@@ -137,6 +148,7 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
                 this.hidenFilter = false;
                 this.tagAttributeLength = 0;
                 this.entityAttributeLength = 0;
+                this.relationshipAttributeLength = 0;
                 this.tagEntityCheck = false;
                 this.typeEntityCheck = false;
             },
@@ -144,15 +156,21 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
             onRender: function() {
                 this.toggleLayoutClass = this.$(".col-sm-9.f-right, .col-sm-12.f-right");
                 this.renderGlobalSearch();
-                this.renderSearchResult();
+                if (!Utils.getUrlState.isRelationSearch()) {
+                    this.renderSearchResult();
+                }
+                if (Utils.getUrlState.isRelationSearch()) {
+                    this.renderRelationSearchResult();
+                }
                 this.updateView();
                 this.ui.entityRegion.hide();
                 this.ui.classificationRegion.hide();
+                this.ui.relationshipRegion.hide();
             },
-            filtersQueryUpdate: function(e, isTag) {
-                var filters = CommonViewFunction.attributeFilter.extractUrl({ "value": isTag ? this.options.value.tagFilters : this.options.value.entityFilters, "formatDate": true }),
+            filtersQueryUpdate: function(e, isTag, isRelationship) {
+                var filters = CommonViewFunction.attributeFilter.extractUrl({ "value": isTag ? this.options.value.tagFilters : (isRelationship ? this.options.value.relationshipFilters : this.options.value.entityFilters), "formatDate": true }),
                     rules = filters.rules,
-                    filtertype = isTag ? "tagFilters" : "entityFilters",
+                    filtertype = isTag ? "tagFilters" : (isRelationship ? "relationshipFilters" : "entityFilters"),
                     that = this;
 
                 filters.rules = _.filter(rules, function(obj, key) {
@@ -162,8 +180,10 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
                     that.updateFilterOptions(filters, filtertype, isTag);
                 }
                 if (filters.rules.length == 0) {
-                    if (isTag) {
+                    if (isTag && !isRelationship) {
                         this.options.searchTableFilters["tagFilters"][that.options.value.tag] = "";
+                    } else if (isRelationship) {
+                        this.options.searchTableFilters["relationshipFilters"][that.options.value.relationshipName] = "";
                     } else {
                         this.options.searchTableFilters["entityFilters"][that.options.value.type] = "";
                     }
@@ -222,7 +242,12 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
                 _.extend(this.options, options);
                 this.updateView();
                 this.onClickAttrFilter();
-                this.renderSearchResult();
+                if (!Utils.getUrlState.isRelationSearch()) {
+                    this.renderSearchResult();
+                }
+                if (Utils.getUrlState.isRelationSearch()) {
+                    this.renderRelationSearchResult();
+                }
             },
             renderGlobalSearch: function() {
                 var that = this;
@@ -235,6 +260,12 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
                 var that = this;
                 require(["views/search/SearchResultLayoutView"], function(SearchResultLayoutView) {
                     that.RSearchResultLayoutView.show(new SearchResultLayoutView(that.options));
+                });
+            },
+            renderRelationSearchResult: function() {
+                var that = this;
+                require(["views/search/RelationSearchResultLayoutView"], function(RelationSearchResultLayoutView) {
+                    that.RSearchResultLayoutView.show(new RelationSearchResultLayoutView(that.options));
                 });
             },
             checkEntityFilter: function(options) {
@@ -252,12 +283,14 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
                 var that = this,
                     obj = {
                         value: that.options.value,
+                        relationship: Utils.getUrlState.isRelationSearch() ? true : false,
                         searchVent: that.options.searchVent,
                         entityDefCollection: that.options.entityDefCollection,
                         enumDefCollection: that.options.enumDefCollection,
                         typeHeaders: that.options.typeHeaders,
                         classificationDefCollection: that.options.classificationDefCollection,
                         businessMetadataDefCollection: that.options.businessMetadataDefCollection,
+                        relationshipDefCollection: that.options.relationshipDefCollection,
                         searchTableFilters: that.checkEntityFilter(that.options)
                     };
                 this.tagEntityCheck = false;
@@ -280,6 +313,7 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
                     }
                     if (that.options.value.tag) {
                         this.ui.classificationRegion.show();
+                        this.ui.includeExclude.show();
                         // this.ui.entityRegion.hide();
                         var attrTagObj = that.options.classificationDefCollection.fullCollection.find({ name: that.options.value.tag });
                         if (attrTagObj) {
@@ -303,6 +337,7 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
                     }
                     if (that.options.value.type) {
                         this.ui.entityRegion.show();
+                        this.ui.includeExclude.show();
                         var attrTypeObj = that.options.entityDefCollection.fullCollection.find({ name: that.options.value.type });
                         if (attrTypeObj) {
                             attrTypeObj = Utils.getNestedSuperTypeObj({
@@ -324,11 +359,33 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
 
                         this.ui.entityName.html(_.escape(that.options.value.type));
                     }
+                    if (that.options.value.relationshipName) {
+                        this.ui.relationshipRegion.show();
+                        this.ui.includeExclude.hide();
+                        var attrTypeObj = that.options.relationshipDefCollection.fullCollection.find({ name: that.options.value.relationshipName });
+                        if (attrTypeObj) {
+                            attrTypeObj = Utils.getNestedSuperTypeObj({
+                                data: attrTypeObj.toJSON(),
+                                collection: that.options.relationshipDefCollection,
+                                attrMerge: true
+                            });
+                            this.relationshipAttributeLength = attrTypeObj.length;
+                        }
+                        this.renderQueryBuilder(_.extend({}, obj, {
+                            tag: false,
+                            type: false,
+                            relation: true,
+                            attrObj: attrTypeObj
+                        }), this.RQueryBuilderRelationship);
+
+                        this.ui.relationshipName.html(_.escape(that.options.value.relationshipName));
+                    }
                 }
 
             },
             okAttrFilterButton: function(e) {
                 var isTag,
+                    isRelationship,
                     filtertype,
                     queryBuilderRef,
                     isFilterValidate = true,
@@ -347,6 +404,15 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
                     filtertype = isTag ? "tagFilters" : "entityFilters";
                     if (this.entityAttributeLength !== 0) {
                         queryBuilderRef = this.RQueryBuilderEntity.currentView.ui.builder;
+                        searchAttribute();
+                    }
+                }
+                if (this.options.value.relationshipName) {
+                    isTag = false;
+                    isRelationship = true;
+                    filtertype = "relationshipFilters";
+                    if (this.relationshipAttributeLength !== 0) {
+                        queryBuilderRef = this.RQueryBuilderRelationship.currentView.ui.builder;
                         searchAttribute();
                     }
                 }
@@ -407,12 +473,22 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
             updateFilterOptions: function(rule, filtertype, isTag) {
                 var that = this,
                     ruleUrl = CommonViewFunction.attributeFilter.generateUrl({ value: rule, formatedDateToLong: true });
-                this.options.searchTableFilters[filtertype][isTag ? this.options.value.tag : this.options.value.type] = ruleUrl;
+                if (filtertype === "relationshipFilters") {
+                    this.options.searchTableFilters[filtertype][this.options.value.relationshipName] = ruleUrl;
+                } else {
+                    this.options.searchTableFilters[filtertype][isTag ? this.options.value.tag : this.options.value.type] = ruleUrl;
+                }
                 if (!isTag && this.options.value && this.options.value.type && this.options.searchTableColumns) {
                     if (!this.options.searchTableColumns[this.options.value.type]) {
                         this.options.searchTableColumns[this.options.value.type] = ["selected", "name", "description", "typeName", "owner", "tag", "term"];
                     }
                     this.options.searchTableColumns[this.options.value.type] = _.sortBy(_.union(_.without(this.options.searchTableColumns[this.options.value.type]), this.getIdFromRuleObj(rule)));
+                }
+                if (!isTag && this.options.value && this.options.value.relationshipName && this.options.searchTableColumns) {
+                    if (!this.options.searchTableColumns[this.options.value.relationshipName]) {
+                        this.options.searchTableColumns[this.options.value.relationshipName] = ["name", "typeName", "end1", "end2", "label"];
+                    }
+                    this.options.searchTableColumns[this.options.value.relationshipName] = _.sortBy(_.union(this.options.searchTableColumns[this.options.value.relationshipName], this.getIdFromRuleObj(rule)));
                 }
             },
             renderQueryBuilder: function(obj, rQueryBuilder) {
@@ -423,17 +499,19 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
             },
             searchAttrFilter: function() {
                 var selectedNodeId,
-                    name = this.options.value.type || this.options.value.tag,
+                    name = this.options.value.type || this.options.value.tag || this.options.value.relationshipName,
                     typeValue,
                     tagValue,
                     termValue,
                     entityFilterObj = this.options.searchTableFilters["entityFilters"],
                     tagFilterObj = this.options.searchTableFilters["tagFilters"],
+                    relationshipFilterObj = this.options.searchTableFilters["relationshipFilters"],
                     params = {
                         searchType: "basic",
                         dslChecked: false,
                         tagFilters: null,
                         entityFilters: null,
+                        relationshipFilterObj: null,
                         query: null,
                         type: null,
                         tag: null,
@@ -451,6 +529,9 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
                     }
                     if (this.options.value.type) {
                         params["type"] = this.options.value.type;
+                    }
+                    if (this.options.value.relationshipName) {
+                        params["relationshipName"] = this.options.value.relationshipName;
                     }
                     if (this.options.value.term) {
                         params["term"] = this.options.value.term;
@@ -472,6 +553,9 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
                 if (tagFilterObj) {
                     params['tagFilters'] = tagFilterObj[this.options.value.tag];
                 }
+                if (relationshipFilterObj) {
+                    params['relationshipFilters'] = relationshipFilterObj[this.options.value.relationshipName]
+                }
                 params["pageOffset"] = 0;
 
                 if (!this.options.value.tag && !this.options.value.type && !this.options.value.term && !this.options.value.query) {
@@ -486,6 +570,9 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
                     updatedUrl = '#!/search';
                 } else {
                     updatedUrl = '#!/search/searchResult';
+                }
+                if (this.options.value.relationshipName) {
+                    updatedUrl = '#!/relationship/relationshipSearchResult';
                 }
                 Utils.setUrl({
                     url: updatedUrl,

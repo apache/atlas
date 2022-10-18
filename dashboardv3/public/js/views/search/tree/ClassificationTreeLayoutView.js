@@ -343,6 +343,7 @@ define([
             }
         },
         onNodeSelect: function(options) {
+            Globals.fromRelationshipSearch = false;
             if (this.classificationTreeUpdate) {
                 this.classificationTreeUpdate = false;
                 return;

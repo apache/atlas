@@ -22,10 +22,11 @@ define(['require',
     'views/search/save/SaveSearchItemView',
     'collection/VSearchList',
     'utils/Utils',
+    'utils/Globals',
     'utils/UrlLinks',
     'utils/CommonViewFunction',
     'utils/Messages'
-], function(require, Backbone, SaveSearchViewTmpl, SaveSearchItemView, VSearchList, Utils, UrlLinks, CommonViewFunction, Messages) {
+], function(require, Backbone, SaveSearchViewTmpl, SaveSearchItemView, VSearchList, Utils, Globals, UrlLinks, CommonViewFunction, Messages) {
     'use strict';
 
     return Backbone.Marionette.CompositeView.extend({
@@ -42,8 +43,10 @@ define(['require',
                 typeHeaders: this.typeHeaders,
                 applyValue: this.applyValue,
                 isBasic: this.isBasic,
+                isRelationship: this.isRelationship,
                 classificationDefCollection: this.classificationDefCollection,
                 entityDefCollection: this.entityDefCollection,
+                relationshipDefCollection: this.relationshipDefCollection,
                 fetchFavioriteCollection: this.fetchCollection.bind(this),
                 searchTypeObj: this.searchTypeObj
             };
@@ -63,7 +66,7 @@ define(['require',
         },
         initialize: function(options) {
             var that = this;
-            _.extend(this, _.pick(options, 'collection', 'value', 'searchVent', 'typeHeaders', 'applyValue', 'getValue', 'isBasic', 'fetchCollection', 'classificationDefCollection', 'entityDefCollection'));
+            _.extend(this, _.pick(options, 'collection', 'value', 'searchVent', 'typeHeaders', 'applyValue', 'getValue', 'isBasic', 'isRelationship', 'fetchCollection', 'classificationDefCollection', 'entityDefCollection', 'relationshipDefCollection'));
             this.searchTypeObj = {
                 'searchType': 'dsl',
                 'dslChecked': 'true'
@@ -77,7 +80,15 @@ define(['require',
             this.bindEvents();
         },
         bindEvents: function() {
-            var that = this;
+            var that = this,
+                searchType;
+            if (that.isRelationship) {
+                searchType = "isRelationship"
+            } else if (that.isBasic) {
+                searchType = "isBasic";
+            } else {
+                searchType = "isAdvance"
+            }
             this.listenTo(this.collection, "add reset error remove", function(model, collection) {
                 this.$('.fontLoader-relative').hide();
                 if (this.collection && this.collection.length) {
@@ -86,7 +97,7 @@ define(['require',
                     this.$(".noFavoriteSearch").show();
                 }
             }, this);
-            $('body').on('click', '.saveSearchPopoverList_' + (this.isBasic ? 'isBasic' : 'isAdvance') + ' li', function(e) {
+            $('body').on('click', '.saveSearchPopoverList_' + searchType + ' li', function(e) {
                 that.$('.saveSearchPopover').popover('hide');
                 var id = $(this).parent('ul').data('id');
                 that[$(this).find('a').data('fn')]({
@@ -102,6 +113,12 @@ define(['require',
                     'getValue': this.getValue,
                     'isBasic': this.isBasic
                 });
+            } else if (value && value.relationshipName) {
+                this.callSaveModalLayoutView({
+                    'collection': this.collection,
+                    'getValue': this.getValue,
+                    'isRelationship': this.isRelationship
+                });
             } else {
                 Utils.notifyInfo({
                     content: Messages.search.favoriteSearch.notSelectedSearchFilter
@@ -115,12 +132,22 @@ define(['require',
                     modal: true,
                     html: true,
                     ok: function(argument) {
-                        that.callSaveModalLayoutView({
-                            'saveObj': obj,
-                            'collection': that.collection,
-                            'getValue': that.getValue,
-                            'isBasic': that.isBasic
-                        })
+                        if (that.isRelationship) {
+                            that.callSaveModalLayoutView({
+                                'saveObj': obj,
+                                'collection': that.collection,
+                                'getValue': that.getValue,
+                                'isRelationship': that.isRelationship,
+                            });
+                        } else {
+                            that.callSaveModalLayoutView({
+                                'saveObj': obj,
+                                'collection': that.collection,
+                                'getValue': that.getValue,
+                                'isBasic': that.isBasic,
+                            });
+                        }
+
                     },
                     cancel: function(argument) {}
                 },
@@ -146,18 +173,32 @@ define(['require',
         onSearch: function(options) {
             if (options && options.model) {
                 var searchParameters = options.model.toJSON().searchParameters,
+                    searchType = options.model.get('searchType'),
                     params = CommonViewFunction.generateUrlFromSaveSearchObject({
                         value: { "searchParameters": searchParameters, "uiParameters": options.model.get('uiParameters') },
                         classificationDefCollection: this.classificationDefCollection,
-                        entityDefCollection: this.entityDefCollection
+                        entityDefCollection: this.entityDefCollection,
+                        relationshipDefCollection: this.relationshipDefCollection
                     });
-                Utils.setUrl({
-                    url: '#!/search/searchResult',
-                    urlParams: _.extend({}, this.searchTypeObj, params),
-                    mergeBrowserUrl: false,
-                    trigger: true,
-                    updateTabState: true
-                });
+                if (searchType === "BASIC_RELATIONSHIP") {
+                    Globals.fromRelationshipSearch = true;
+                    Utils.setUrl({
+                        url: '#!/relationship/relationshipSearchResult',
+                        urlParams: _.extend({}, { 'searchType': 'basic' }, params),
+                        mergeBrowserUrl: false,
+                        trigger: true,
+                        updateTabState: true
+                    });
+                } else {
+                    Globals.fromRelationshipSearch = false;
+                    Utils.setUrl({
+                        url: '#!/search/searchResult',
+                        urlParams: _.extend({}, this.searchTypeObj, params),
+                        mergeBrowserUrl: false,
+                        trigger: true,
+                        updateTabState: true
+                    });
+                }
             }
         },
         onRename: function(options) {
@@ -166,7 +207,7 @@ define(['require',
                 require([
                     'views/search/save/SaveModalLayoutView'
                 ], function(SaveModalLayoutView) {
-                    new SaveModalLayoutView({ 'selectedModel': options.model, 'collection': that.collection, 'getValue': that.getValue, 'isBasic': that.isBasic });
+                    new SaveModalLayoutView({ 'selectedModel': options.model, 'collection': that.collection, 'getValue': that.getValue, 'isBasic': that.isBasic, 'isRelationship': that.isRelationship });
                 });
             }
         },

@@ -103,6 +103,7 @@ define(["require", "backbone"], function(require) {
         "searchParameters": {
             "pageLimit": "limit",
             "type": "typeName",
+            "relationshipName": "relationshipName",
             "tag": "classification",
             "query": "query",
             "pageOffset": "offset",
@@ -111,6 +112,7 @@ define(["require", "backbone"], function(require) {
             "excludeSC": "includeSubClassifications",
             "tagFilters": "tagFilters",
             "entityFilters": "entityFilters",
+            "relationshipFilters": "relationshipFilters",
             "attributes": "attributes",
             "term": "termName"
         },

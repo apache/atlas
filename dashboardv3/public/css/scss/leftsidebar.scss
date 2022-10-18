@@ -308,6 +308,10 @@
             .basic-tree:after {
                 content: "B";
             }
+
+            .relationship-tree:after {
+                content: "R"
+            }
         }
 
         .switch-button {

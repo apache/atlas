@@ -107,9 +107,24 @@ define([
                 },
                 this
             );
+            this.listenTo(
+                this.saveSearchRelationshipCollection.fullCollection,
+                "reset add change remove",
+                function() {
+                    if (this.ui.customFilterSearchTree.jstree(true)) {
+                        this.ui.customFilterSearchTree.jstree(true).refresh();
+                    } else {
+                        this.renderCustomFilterTree();
+                    }
+                },
+                this
+            );
             this.searchVent.on("Save:Filter", function(data) {
                 that.saveAs();
             })
+            this.searchVent.on("SaveRelationship:Filter", function(data) {
+                that.relationshipSaveAs();
+            });
             $('body').on('click', '.customFilterPopoverOptions li', function(e) {
                 that.$('.customFilterPopoverOptions').popover('hide');
                 that[$(this).find('a').data('fn') + "CustomFilter"](e)
@@ -124,6 +139,7 @@ define([
                     "typeHeaders",
                     "searchVent",
                     "entityDefCollection",
+                    "relationshipDefCollection",
                     "enumDefCollection",
                     "classificationDefCollection",
                     "searchTableColumns",
@@ -134,11 +150,15 @@ define([
             this.saveSearchBaiscCollection = new VSearchList();
             this.saveSearchCollection = new VSearchList();
             this.saveSearchAdvanceCollection = new VSearchList();
+            this.saveSearchRelationshipCollection = new VSearchList();
             this.saveSearchCollection.url = UrlLinks.saveSearchApiUrl();
             this.saveSearchBaiscCollection.fullCollection.comparator = function(model) {
                 return getModelName(model);
             }
             this.saveSearchAdvanceCollection.fullCollection.comparator = function(model) {
+                return getModelName(model);
+            }
+            this.saveSearchRelationshipCollection.fullCollection.comparator = function(model) {
                 return getModelName(model);
             }
 
@@ -190,6 +210,7 @@ define([
                 success: function(collection, data) {
                     that.saveSearchBaiscCollection.fullCollection.reset(_.where(data, { searchType: "BASIC" }));
                     that.saveSearchAdvanceCollection.fullCollection.reset(_.where(data, { searchType: "ADVANCED" }));
+                    that.saveSearchRelationshipCollection.fullCollection.reset(_.where(data, { searchType: "BASIC_RELATIONSHIP" }));
                     that.changeLoaderState(false);
                     that.ui.refreshTree.attr("disabled", false);
                 },
@@ -300,9 +321,11 @@ define([
             var that = this,
                 customFilterBasicList = [],
                 customFilterAdvanceList = [],
+                customFilterRelationshipList = [],
                 allCustomFilter = [],
                 customFilterBasicTreeData = that.saveSearchBaiscCollection.fullCollection.models,
                 customFilterAdvanceTreeData = that.saveSearchAdvanceCollection.fullCollection.models,
+                customFilterRelationshipTreeData = that.saveSearchRelationshipCollection.fullCollection.models,
                 openClassificationNodesState = function(treeDate) {
                     if (treeDate.length == 1) {
                         _.each(treeDate, function(model) {
@@ -311,13 +334,21 @@ define([
                     }
                 },
                 generateNode = function(nodeOptions) {
-                    var searchType = nodeOptions.get('searchType');
+                    var searchType = nodeOptions.get('searchType'),
+                        icon;
+                        if(searchType === 'BASIC'){
+                            icon = "fa fa-circle-thin basic-tree";
+                        } else if (searchType === "BASIC_RELATIONSHIP"){
+                            icon = "fa fa-circle-thin relationship-tree";
+                        } else {
+                            icon = "fa fa-circle-thin advance-tree";
+                        }
                     var nodeStructure = {
                         text: _.escape(nodeOptions.get('name')),
                         name: _.escape(nodeOptions.get('name')),
                         type: "customFilter",
                         id: nodeOptions.get('guid'),
-                        icon: (searchType === 'BASIC' ? "fa fa-circle-thin basic-tree" : "fa fa-circle-thin advance-tree"),
+                        icon: icon,
                         gType: "CustomFilter",
                         model: nodeOptions
                     }
@@ -331,6 +362,10 @@ define([
             });
             _.each(customFilterAdvanceTreeData, function(filterNode) {
                 customFilterAdvanceList.push(generateNode(filterNode));
+                allCustomFilter.push(generateNode(filterNode));
+            });
+            _.each(customFilterRelationshipTreeData, function(filterNode) {
+                customFilterRelationshipList.push(generateNode(filterNode));
                 allCustomFilter.push(generateNode(filterNode));
             });
 
@@ -350,6 +385,14 @@ define([
                 text: "Advanced Search",
                 name: "Advanced Search",
                 state: { opened: true }
+            }, {
+                icon: "fa fa-folder-o",
+                gType: "customFilter",
+                type: "customFilterFolder",
+                children: customFilterRelationshipList,
+                text: "Relationship Search",
+                name: "Relationship Search",
+                state: { opened: true }
             }];
             var customFilterList = that.isGroupView ? treeView : allCustomFilter;
             return customFilterList;
@@ -366,9 +409,17 @@ define([
                         params = CommonViewFunction.generateUrlFromSaveSearchObject({
                             value: { "searchParameters": searchParameters },
                             classificationDefCollection: that.classificationDefCollection,
-                            entityDefCollection: that.entityDefCollection
+                            entityDefCollection: that.entityDefCollection,
+                            relationshipDefCollection: that.relationshipDefCollection
                         });
-                    searchType === 'ADVANCED' ? that.isBasic = false : that.isBasic = true;
+                    if (searchType === 'ADVANCED') {
+                        that.isBasic = false
+                    } else if (searchType === 'BASIC_RELATIONSHIP') {
+                        that.isRelationship = true;
+                    } else {
+                        that.isBasic = true;
+                    }
+
                     if (searchType === 'ADVANCED') {
                         Globals.advanceSearchData.searchByQuery = searchParameters.query;
                         Globals.advanceSearchData.searchByType = searchParameters.typeName;
@@ -377,14 +428,25 @@ define([
                     // Utils.notifyInfo({
                     //     content: "Saved values are selected."
                     // })
-
-                    Utils.setUrl({
-                        url: '#!/search/searchResult',
-                        urlParams: _.extend({}, { 'searchType': that.isBasic ? 'basic' : 'dsl', 'isCF': true }, params),
-                        mergeBrowserUrl: false,
-                        trigger: true,
-                        updateTabState: true
-                    });
+                    if (searchType === "BASIC" || searchType === "ADVANCED") {
+                        Globals.fromRelationshipSearch = false;
+                        Utils.setUrl({
+                            url: '#!/search/searchResult',
+                            urlParams: _.extend({}, { 'searchType': that.isBasic ? 'basic' : 'dsl', 'isCF': true }, params),
+                            mergeBrowserUrl: false,
+                            trigger: true,
+                            updateTabState: true
+                        });
+                    } else {
+                        Globals.fromRelationshipSearch = true;
+                        Utils.setUrl({
+                            url: '#!/relationship/relationshipSearchResult',
+                            urlParams: _.extend({}, params, { 'searchType': 'basic', 'isCF': true }),
+                            mergeBrowserUrl: false,
+                            trigger: true,
+                            updateTabState: true
+                        });
+                    }
                 }
 
             } else {
@@ -420,7 +482,11 @@ define([
                 require([
                     'views/search/save/SaveModalLayoutView'
                 ], function(SaveModalLayoutView) {
-                    new SaveModalLayoutView({ 'rename': true, 'selectedModel': options.model.clone(), 'collection': that.isBasic ? that.saveSearchBaiscCollection.fullCollection : that.saveSearchAdvanceCollection.fullCollection, 'getValue': that.getValue, 'isBasic': that.isBasic });
+                    if(options.model.attributes.searchType === "BASIC" || options.model.attributes.searchType === "ADVANCED"){
+                        new SaveModalLayoutView({ 'rename': true, 'selectedModel': options.model.clone(), 'collection': that.isBasic ? that.saveSearchBaiscCollection.fullCollection : that.saveSearchAdvanceCollection.fullCollection, 'getValue': that.getValue, 'isBasic': that.isBasic });
+                    } else {
+                        new SaveModalLayoutView({ 'rename': true, 'selectedModel': options.model.clone(), 'collection': that.saveSearchRelationshipCollection.fullCollection, 'getValue': that.getValue, 'isRelationship': that.isRelationship });
+                    }
                 });
             }
         },
@@ -488,6 +554,24 @@ define([
                         return _.extend({}, value, urlObj);
                     },
                     'isBasic': this.isBasic
+                });
+            } else {
+                Utils.notifyInfo({
+                    content: Messages.search.favoriteSearch.notSelectedSearchFilter
+                })
+            }
+        },
+        relationshipSaveAs: function(e) {
+            var value = this.getValue();
+            if (value && value.relationshipName) {
+                this.isRelationship = true;
+                var urlObj = Utils.getUrlState.getQueryParams();
+                this.callSaveModalLayoutView({
+                    'collection': this.saveSearchRelationshipCollection.fullCollection,
+                    getValue: function() {
+                        return _.extend({}, value, urlObj);
+                    },
+                    'isRelationship': this.isRelationship
                 });
             } else {
                 Utils.notifyInfo({

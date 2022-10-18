@@ -87,6 +87,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             showListCount = options.showListCount || true,
             highlightString = options.highlightString,
             formatStringVal = options.formatStringVal,
+            isRelationshipAttr = options.isRelationshipAttribute, //For relationshipDetailpage
             numberFormat = options.numberFormat || _.numberFormatWithComma;
 
         var table = "",
@@ -197,7 +198,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                                 valueOfArray.push('<span class="json-string">' + tmpVal + '</span>');
                             }
                         }
-                    } else if (_.isObject(inputOutputField) && !id) {
+                    } else if ((_.isObject(inputOutputField) && (!id || isRelationshipAttr))) {
                         var attributesList = inputOutputField;
                         if (scope.typeHeaders && inputOutputField.typeName) {
                             var typeNameCategory = scope.typeHeaders.fullCollection.findWhere({ name: inputOutputField.typeName });
@@ -228,7 +229,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                             valueOfArray.push(Utils.JSONPrettyPrint(attributesList, getValue));
                         }
                     }
-                    if (id && inputOutputField) {
+                    if (id && inputOutputField && !isRelationshipAttr) {
                         var name = Utils.getName(inputOutputField);
                         if ((name === "-" || name === id) && !inputOutputField.attributes) {
                             var fetch = true;
@@ -305,10 +306,18 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 if (options.guidHyperLink === false) {
                     val = getValue(keyValue, key);
                 } else {
-                    val = '<a title="' + key + '" href="#!/detailPage/' + _.escape(keyValue) + '">' + getValue(keyValue, key) + '</a>';
+                    if (isRelationshipAttr) {
+                        val = '<a title="' + key + '" href="#!/detailPage/' + _.escape(keyValue) + '?from=relationshipSearch">' + getValue(keyValue, key) + '</a>';
+                    } else {
+                        val = '<a title="' + key + '" href="#!/detailPage/' + _.escape(keyValue) + '">' + getValue(keyValue, key) + '</a>';
+                    }
                 }
             } else {
-                val = getValue(keyValue, key);
+                if (isRelationshipAttr && (key === "createTime" || key === "updateTime")) {
+                    val = Utils.formatDate({ date: keyValue });
+                } else {
+                    val = getValue(keyValue, key);
+                }
             }
             if (isTable) {
                 var value = val,
@@ -414,6 +423,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
         value = Utils.getUrlState.getQueryParams();
         var entityFilters = CommonViewFunction.attributeFilter.extractUrl({ "value": value.entityFilters, "formatDate": true }),
             tagFilters = CommonViewFunction.attributeFilter.extractUrl({ "value": value.tagFilters, "formatDate": true }),
+            relationshipFilters = CommonViewFunction.attributeFilter.extractUrl({ "value": value.relationshipFilters, "formatDate": true }),
             queryArray = [];
 
         function objToString(filterObj) {
@@ -450,6 +460,14 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             }
             queryArray.push(tagKeyValue);
         }
+        if (value.relationshipName) {
+            var relationshipKeyValue = '<span class="key">Relationship:</span>&nbsp<span class="value">' + _.escape(value.relationshipName) + '</span>';
+            if (relationshipFilters) {
+                var conditionForRealtionship = (relationshipFilters.rules && relationshipFilters.rules.length == 1) ? '' : 'AND';
+                relationshipKeyValue += '&nbsp<span class="operator">' + conditionForRealtionship + '</span>&nbsp(<span class="operator">' + relationshipFilters.condition + '</span>&nbsp(' + objToString(relationshipFilters) + '))';
+            }
+            queryArray.push(relationshipKeyValue);
+        }
         if (value.term) {
             var tagKeyValue = '<span class="key">Term:</span>&nbsp<span class="value">' + _.escape(value.term) + '</span>';
             queryArray.push(tagKeyValue);
@@ -478,7 +496,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                         if (!_.isUndefinedNull(val)) {
                             if (k == "attributes") {
                                 val = val.split(',');
-                            } else if (_.contains(["tagFilters", "entityFilters"], k)) {
+                            } else if (_.contains(["tagFilters", "entityFilters", "relationshipFilters"], k)) {
                                 val = CommonViewFunction.attributeFilter.generateAPIObj(val);
                             } else if (_.contains(["includeDE", "excludeST", "excludeSC"], k)) {
                                 val = val ? false : true;
@@ -503,6 +521,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
         var value = options.value,
             classificationDefCollection = options.classificationDefCollection,
             entityDefCollection = options.entityDefCollection,
+            relationshipDefCollection = options.relationshipDefCollection,
             obj = {};
         if (value) {
             _.each(Enums.extractFromUrlForSearch, function(svalue, skey) {
@@ -547,6 +566,22 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                                     }
                                     if (Globals._ALL_ENTITY_TYPES && Globals._ALL_ENTITY_TYPES.attributeDefs) {
                                         attributeDefs = attributeDefs.concat(Globals._ALL_ENTITY_TYPES.attributeDefs);
+                                    }
+                                }
+                                val = CommonViewFunction.attributeFilter.generateUrl({ "value": val, "attributeDefs": attributeDefs });
+                            } else if (k == "relationshipFilters") {
+                                if (relationshipDefCollection) {
+                                    var relationshipDef = relationshipDefCollection.fullCollection.findWhere({ 'name': value[skey].relationshipName }),
+                                        attributeDefs = [];
+                                    if (relationshipDef) {
+                                        attributeDefs = Utils.getNestedSuperTypeObj({
+                                            collection: relationshipDefCollection,
+                                            attrMerge: true,
+                                            data: relationshipDef.toJSON()
+                                        });
+                                    }
+                                    if (Globals[value[skey].relationshipName]) {
+                                        attributeDefs = Globals[value[skey].relationshipName].attributeDefs;
                                     }
                                 }
                                 val = CommonViewFunction.attributeFilter.generateUrl({ "value": val, "attributeDefs": attributeDefs });

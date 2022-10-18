@@ -18,10 +18,10 @@
 /* override.scss */
 
 .tabs li.tab.active {
-    border-bottom: 2px solid $color_keppel_approx;
+    border-bottom: 2px solid $white;
 
     a {
-        color: $color_keppel_approx;
+        color: $white;
     }
 }
 
@@ -621,5 +621,42 @@ div.columnmanager-dropdown-container {
 .business-metadata-detail-attr {
     ul {
         list-style: disc
+    }
+}
+
+#r_searchLayoutView {
+    .nav-tabs {
+        border-bottom: 1px solid #38bb9b;
+
+        li {
+            text-align: center;
+            width: 50%;
+            font-size: 14px;
+
+            a:hover {
+                background-color: transparent !important;
+                border-color: transparent !important;
+                border: 1px solid #38bb9b !important;
+            }
+
+            a {
+                color: #38bb9b;
+            }
+        }
+
+        & li:first-child {
+            margin-left: 0px;
+        }
+
+        li.active>a {
+            background-color: transparent !important;
+            border-bottom-color: #323544 !important;
+            border: 1px solid #38bb9b;
+            color: #fff;
+        }
+
+        li.active>a:hover {
+            background-color: #323544 !important;
+        }
     }
 }

@@ -41,7 +41,7 @@ define(['require',
             return events;
         },
         initialize: function(options) {
-            _.extend(this, _.pick(options, 'collection', 'typeHeaders', 'applyValue', 'fetchFavioriteCollection', 'isBasic', 'classificationDefCollection', 'entityDefCollection', 'searchTypeObj'));
+            _.extend(this, _.pick(options, 'collection', 'typeHeaders', 'applyValue', 'fetchFavioriteCollection', 'isBasic', 'classificationDefCollection', 'entityDefCollection', 'searchTypeObj', 'isRelationship'));
             this.model.id = this.model.get('guid');
             this.model.idAttribute = 'guid';
         },
@@ -57,13 +57,21 @@ define(['require',
             'change': 'render'
         },
         showToolTip: function(e) {
-            var that = this;
+            var that = this,
+                searchType;
+            if (that.isRelationship) {
+                searchType = "isRelationship"
+            } else if (that.isBasic) {
+                searchType = "isBasic";
+            } else {
+                searchType = "isAdvance"
+            }
             Utils.generatePopover({
                 el: this.$('.saveSearchPopover'),
                 viewFixedPopover: true,
                 popoverOptions: {
                     content: function() {
-                        return "<ul class='saveSearchPopoverList_" + (that.isBasic ? 'isBasic' : 'isAdvance') + "' data-id=" + that.model.id + ">" +
+                        return "<ul class='saveSearchPopoverList_" + searchType + "' data-id=" + that.model.id + ">" +
                             "<li class='listTerm' ><i class='fa fa-search'></i> <a href='javascript:void(0)' data-fn='onSearch'>Search </a></li>" +
                             "<li class='listTerm' ><i class='fa fa-pencil'></i> <a href='javascript:void(0)' data-fn='onRename'>Rename</a></li>" +
                             "<li class='listTerm' ><i class='fa fa-trash-o'></i> <a href='javascript:void(0)' data-fn='onDelete'>Delete</a></li>" +
