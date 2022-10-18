@@ -74,6 +74,7 @@ public abstract class ClassificationTask extends AbstractTask {
 
     @Override
     public AtlasTask.Status perform() throws Exception {
+        RequestContext.clear();
         Map<String, Object> params = getTaskDef().getParameters();
 
         if (MapUtils.isEmpty(params)) {
@@ -104,6 +105,7 @@ public abstract class ClassificationTask extends AbstractTask {
             throw e;
         } finally {
             graph.commit();
+            RequestContext.clear();
         }
 
         return getStatus();
