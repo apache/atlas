@@ -355,7 +355,7 @@ public class EntityLineageService implements AtlasLineageService {
         List<AtlasEdge> qualifyingEdges = new ArrayList<>();
         while (processEdges.hasNext()) {
             AtlasEdge processEdge = processEdges.next();
-            if(lineageContext.isAllowDeletedProcess() || GraphHelper.getStatus(processEdge) == AtlasEntity.Status.ACTIVE ) {
+            if(lineageContext.isAllowDeletedProcess() || GraphHelper.getStatus(processEdge.getOutVertex()) == AtlasEntity.Status.ACTIVE ) {
                 if (lineageContext.evaluate(processEdge.getInVertex())) {
                     qualifyingEdges.add(processEdge);
                 }
@@ -383,7 +383,7 @@ public class EntityLineageService implements AtlasLineageService {
 
                 while (processEdges.hasNext()) {
                     AtlasEdge processEdge = processEdges.next();
-                    if (lineageContext.isAllowDeletedProcess() || GraphHelper.getStatus(processEdge) == AtlasEntity.Status.ACTIVE) {
+                    if (lineageContext.isAllowDeletedProcess() || GraphHelper.getStatus(processEdge.getOutVertex()) == AtlasEntity.Status.ACTIVE) {
                         processEdgesList.add(processEdge);
                     }
                 }
@@ -400,7 +400,7 @@ public class EntityLineageService implements AtlasLineageService {
                     List<AtlasEdge> qualifyingOutgoingEdges = new ArrayList<>();
                     while (outgoingEdges.hasNext()) {
                         AtlasEdge edge = outgoingEdges.next();
-                        if (lineageContext.isAllowDeletedProcess() || GraphHelper.getStatus(edge) == AtlasEntity.Status.ACTIVE) {
+                        if (lineageContext.isAllowDeletedProcess() || GraphHelper.getStatus(edge.getOutVertex()) == AtlasEntity.Status.ACTIVE) {
                             if ((edge.getInVertex().equals(lineageContext.getStartDatasetVertex()) || lineageContext.evaluate(edge.getInVertex()))) {
                                 qualifyingOutgoingEdges.add(edge);
                             }
@@ -437,14 +437,14 @@ public class EntityLineageService implements AtlasLineageService {
 
             int qualifyingEdges = 0;
             for (AtlasEdge incomingEdge : processEdgesList) {
-                if (lineageContext.isAllowDeletedProcess() || GraphHelper.getStatus(incomingEdge) == AtlasEntity.Status.ACTIVE) {
+                if (lineageContext.isAllowDeletedProcess() || GraphHelper.getStatus(incomingEdge.getOutVertex()) == AtlasEntity.Status.ACTIVE) {
 
                     AtlasVertex processVertex = incomingEdge.getOutVertex();
                     Iterator<AtlasEdge> outgoingEdges = processVertex.getEdges(OUT, isInput ? PROCESS_INPUTS_EDGE : PROCESS_OUTPUTS_EDGE).iterator();
 
                     while (outgoingEdges.hasNext()) {
                         AtlasEdge edge = outgoingEdges.next();
-                        if (lineageContext.isAllowDeletedProcess() || GraphHelper.getStatus(edge) == AtlasEntity.Status.ACTIVE) {
+                        if (lineageContext.isAllowDeletedProcess() || GraphHelper.getStatus(edge.getOutVertex()) == AtlasEntity.Status.ACTIVE) {
                             if ((edge.getInVertex().equals(lineageContext.getStartDatasetVertex()) || lineageContext.evaluate(edge.getInVertex()))) {
                                 qualifyingEdges++;
                                 break;
