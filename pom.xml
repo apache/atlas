@@ -384,6 +384,16 @@
             <!--<organizationUrl>https://www.privacera.com</organizationUrl>-->
         </developer>
         <developer>
+            <id>mandarambawane</id>
+            <name>Mandar Ambawane</name>
+            <email>mandarambawane@apache.org</email>
+            <timezone>Asia/Kolkata</timezone>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <organization>Freestone Infotech</organization>
+        </developer>
+        <developer>
             <id>mandy</id>
             <name>Mandy Chessell</name>
             <email>mandy@apache.org</email>
