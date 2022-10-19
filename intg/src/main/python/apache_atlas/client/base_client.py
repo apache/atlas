@@ -18,9 +18,9 @@
 import copy
 import json
 import logging
-import os
 
 from requests import Session
+from urllib.parse import urljoin
 
 from apache_atlas.client.admin import AdminClient
 from apache_atlas.client.discovery import DiscoveryClient
@@ -42,7 +42,7 @@ class AtlasClient:
         session = Session()
         session.auth = auth
 
-        self.host = host
+        self.host = host.rstrip('/')
         self.session = session
         self.request_params = {'headers': {}}
         self.typedef = TypeDefClient(self)
@@ -57,7 +57,7 @@ class AtlasClient:
 
     def call_api(self, api, response_type=None, query_params=None, request_obj=None):
         params = copy.deepcopy(self.request_params)
-        path = os.path.join(self.host, api.path)
+        path = urljoin(self.host, api.path.lstrip('/'))
 
         params['headers']['Accept'] = api.consumes
         params['headers']['Content-type'] = api.produces
