@@ -2031,7 +2031,10 @@ public class EntityGraphMapper {
             Iterator<AtlasEdge> edgeIterator = vertex.getEdges(AtlasEdgeDirection.OUT, CATEGORY_PARENT_EDGE_LABEL).iterator();
             while (edgeIterator.hasNext()) {
                 AtlasEdge childEdge = edgeIterator.next();
-                childEdge.getInVertex().removeProperty(CATEGORIES_PARENT_PROPERTY_KEY);
+                AtlasEntity.Status edgeStatus = getStatus(childEdge);
+                if (ACTIVE.equals(edgeStatus)) {
+                    childEdge.getInVertex().removeProperty(CATEGORIES_PARENT_PROPERTY_KEY);
+                }
             }
 
             String catQualifiedName = vertex.getProperty(QUALIFIED_NAME, String.class);
