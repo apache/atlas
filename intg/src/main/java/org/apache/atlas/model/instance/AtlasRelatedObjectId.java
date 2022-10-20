@@ -54,6 +54,7 @@ public class AtlasRelatedObjectId extends AtlasObjectId implements Serializable 
     private String                   relationshipGuid       = null;
     private AtlasRelationship.Status relationshipStatus     = null;
     private AtlasStruct              relationshipAttributes = null;
+    private String qualifiedName = null;
 
     public AtlasRelatedObjectId() { }
 
@@ -155,6 +156,13 @@ public class AtlasRelatedObjectId extends AtlasObjectId implements Serializable 
             setRelationshipType(relationshipAttributes.getTypeName());
         }
     }
+    public String getQualifiedName() {
+        return qualifiedName;
+    }
+
+    public void setQualifiedName(String qualifiedName) {
+        this.qualifiedName = qualifiedName;
+    }
 
     @Override
     public boolean equals(Object o) {
@@ -190,6 +198,7 @@ public class AtlasRelatedObjectId extends AtlasObjectId implements Serializable 
         super.toString(sb);
         sb.append("entityStatus='").append(entityStatus).append('\'');
         sb.append(", displayText='").append(displayText).append('\'');
+        sb.append(", qualifiedName='").append(qualifiedName).append('\'');
         sb.append(", relationshipType='").append(relationshipType).append('\'');
         sb.append(", relationshipGuid='").append(relationshipGuid).append('\'');
         sb.append(", relationshipStatus='").append(relationshipStatus).append('\'');

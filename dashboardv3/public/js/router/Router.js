@@ -252,7 +252,7 @@ define([
             require(["views/site/Header", "views/tag/TagContainerLayoutView", "views/site/SideNavLayoutView"], function(Header, TagContainerLayoutView, SideNavLayoutView) {
                 var paramObj = Utils.getUrlState.getQueryParams();
                 //Below if condition is added  to handle "when Classification tab does not have any classification and selected in Old UI and switched to New UI is show continous loading
-                if (paramObj === undefined || tagName === "viewType=tree" || tagName === "viewType=flat") {
+                if ((paramObj === undefined && !tagName) || tagName === "viewType=tree" || tagName === "viewType=flat") {
                     that.defaultAction();
                     return;
                 }
@@ -282,7 +282,7 @@ define([
             require(["views/site/Header", "views/glossary/GlossaryContainerLayoutView", "views/search/SearchDefaultLayoutView", "views/site/SideNavLayoutView"], function(Header, GlossaryContainerLayoutView, SearchDefaultLayoutView, SideNavLayoutView) {
                 var paramObj = Utils.getUrlState.getQueryParams();
                 //Below if condition is added  to handle "when Glossary tab does not have any glossary and selected in Old UI and switched to New UI is show continous loading
-                if (paramObj === undefined || id === "viewType=category" || id === "viewType=term") {
+                if ((paramObj === undefined && !id) || id === "viewType=category" || id === "viewType=term") {
                     that.defaultAction();
                     return;
                 }

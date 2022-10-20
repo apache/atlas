@@ -77,6 +77,7 @@ public class GlossaryService {
     private static final String  GLOSSARY_QUALIFIED_NAME_PROPERTY = "AtlasGlossary." + QUALIFIED_NAME_ATTR;
     private static final String  GLOSSARY_CATEGORY_NAME_PROPERTY  = "AtlasGlossaryCategory.name";
     private static final String  GLOSSARY_TERM_NAME_PROPERTY      = ATLAS_GLOSSARY_TERM + "." + NAME_ATTR;
+    private static final String  GLOSSARY_TERM_QUALIFIED_NAME_PROPERTY = ATLAS_GLOSSARY_TERM + "." + QUALIFIED_NAME_ATTR;
     private static final String  TERM_UNIQUE_QUALIFIED_NAME_PROPERTY = ATLAS_GLOSSARY_TERM + ".__u_" + QUALIFIED_NAME_ATTR;
     private static final String  GLOSSARY_TERM_ANCHOR_EDGE_LABEL  = "r:AtlasGlossaryTermAnchor";
 
@@ -1072,6 +1073,7 @@ public class GlossaryService {
         if (Objects.nonNull(glossaryTerm.getRelatedTerms())) {
             for (Map.Entry<AtlasGlossaryTerm.Relation, Set<AtlasRelatedTermHeader>> entry : glossaryTerm.getRelatedTerms().entrySet()) {
                 setDisplayNameForTerms(entry.getValue());
+                setQualifiedNameForTerms(entry.getValue());
             }
         }
     }
@@ -1122,9 +1124,20 @@ public class GlossaryService {
             String      termGuid        = termHeader.getTermGuid();
             AtlasVertex termVertex      = AtlasGraphUtilsV2.findByGuid(termGuid);
             String      termDisplayText = termVertex.getProperty(GLOSSARY_TERM_NAME_PROPERTY, String.class);
-
             if (StringUtils.isNotEmpty(termDisplayText)) {
                 termHeader.setDisplayText(termDisplayText);
+            }
+        }
+    }
+
+    private void setQualifiedNameForTerms(final Collection<AtlasRelatedTermHeader> termHeaders) throws AtlasBaseException {
+
+        for (AtlasRelatedTermHeader termHeader : termHeaders) {
+            String      termGuid        = termHeader.getTermGuid();
+            AtlasVertex termVertex      = AtlasGraphUtilsV2.findByGuid(termGuid);
+            String      termQualifiedName = termVertex.getProperty(GLOSSARY_TERM_QUALIFIED_NAME_PROPERTY, String.class);
+            if (StringUtils.isNotEmpty(termQualifiedName)) {
+                termHeader.setQualifiedName(termQualifiedName);
             }
         }
     }

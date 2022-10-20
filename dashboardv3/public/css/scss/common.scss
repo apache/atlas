@@ -81,6 +81,27 @@
 }
 
 .detail-page {
+
+    .entityDetail {
+
+        .tagBox,
+        .termBox,
+        .propagatedTagBox {
+            span {
+                >span {
+                    @include ellipsis();
+                    float: left;
+                    max-width: 200px;
+                }
+            }
+
+            i {
+                float: right;
+                line-height: 21px;
+            }
+        }
+    }
+
     .details-backbutton {
         display: table-cell !important;
     }
@@ -349,4 +370,12 @@ pre {
     overflow-wrap: break-word;
     cursor: default !important;
     background-color: transparent !important;
+}
+
+.tagBox {
+    z-index: 2;
+}
+
+.termBox {
+    z-index: 1;
 }

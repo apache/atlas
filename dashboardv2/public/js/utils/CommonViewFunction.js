@@ -347,7 +347,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
         });
         return table && table.length > 0 ? table : '<tr class="empty"><td colspan="22"><span>No Record found!</span></td></tr>';
     }
-    CommonViewFunction.tagForTable = function(obj) {
+    CommonViewFunction.tagForTable = function(obj, classificationDefCollection) {
         var traits = obj.classifications,
             tagHtml = "",
             addTag = "",
@@ -365,7 +365,13 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 } else {
                     className += " propagte-classification";
                 }
-                var tagString = '<a class="' + className + '" data-id="tagClick"><span title="' + tag.typeName + '">' + tag.typeName + '</span>' + deleteIcon + '</a>';
+                var tagObj = classificationDefCollection.fullCollection.find({ "name": tag.typeName }),
+                    tagParents = tagObj ? tagObj.get('superTypes') : null,
+                    parentName = tag.typeName;
+                if (tagParents && tagParents.length) {
+                    parentName += (tagParents.length > 1) ? ("@(" + tagParents.join() + ")") : ("@" + tagParents.join());
+                }
+                var tagString = '<a class="' + className + '" data-id="tagClick"><span title="' + parentName + '">' + parentName + '</span>' + deleteIcon + '</a>';
                 if (count >= 1) {
                     popTag += tagString;
                 } else {
@@ -395,10 +401,11 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             entityName = Utils.getName(obj);
         if (terms) {
             terms.map(function(term) {
-                var displayText = _.escape(term.displayText);
-                var className = "btn btn-action btn-sm btn-blue btn-icon",
+                var displayText = _.escape(term.displayText),
+                    gloassaryName = _.escape(term.qualifiedName) || displayText,
+                    className = "btn btn-action btn-sm btn-blue btn-icon",
                     deleteIcon = '<i class="fa fa-times" data-id="delete"  data-assetname="' + entityName + '" data-name="' + displayText + '" data-type="term" data-guid="' + obj.guid + '" data-termGuid="' + term.termGuid + '" ></i>',
-                    termString = '<a class="' + className + '" data-id="termClick"><span title="' + displayText + '">' + displayText + '</span>' + deleteIcon + '</a>';
+                    termString = '<a class="' + className + '" data-id="termClick"><span title="' + gloassaryName + '">' + gloassaryName + '</span>' + deleteIcon + '</a>';
                 if (count >= 1) {
                     popTerm += termString;
                 } else {

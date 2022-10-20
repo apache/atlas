@@ -33,8 +33,8 @@ public class AtlasTermAssignmentHeader {
     private String steward;
     private String source;
     private int    confidence;
-
     private AtlasTermAssignmentStatus status;
+    private String qualifiedName;
 
     public AtlasTermAssignmentHeader() {
     }
@@ -111,6 +111,10 @@ public class AtlasTermAssignmentHeader {
         this.displayText = displayText;
     }
 
+    public String getQualifiedName() { return qualifiedName; }
+
+    public void setQualifiedName(String qualifiedName) { this.qualifiedName = qualifiedName; }
+
     @Override
     public boolean equals(final Object o) {
         if (this == o) return true;
@@ -140,11 +144,12 @@ public class AtlasTermAssignmentHeader {
         sb.append(", relationGuid='").append(relationGuid).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", displayText='").append(displayText).append('\'');
+        sb.append(", qualifiedName='").append(qualifiedName).append('\'');
         sb.append(", expression='").append(expression).append('\'');
         sb.append(", createdBy='").append(createdBy).append('\'');
         sb.append(", steward='").append(steward).append('\'');
         sb.append(", source='").append(source).append('\'');
-        sb.append(", confidence=").append(confidence);
+        sb.append(", confidence=").append(confidence).append('\'');;
         sb.append(", status=").append(status);
         sb.append('}');
         return sb.toString();

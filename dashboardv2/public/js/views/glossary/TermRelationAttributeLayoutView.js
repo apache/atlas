@@ -62,7 +62,7 @@ define(['require',
             this.modal = new Modal({
                 "title": ((this.editMode ? "Edit attributes" : "Attributes") + " of " + this.selectedTermAttribute),
                 "content": this,
-                "okText": (this.editMode ? "Update" : "ok"),
+                "okText": (this.editMode ? "Update" : "Close"),
                 "allowCancel": (this.editMode ? true : false),
                 "okCloses": true,
                 "width": "80%",
@@ -197,6 +197,7 @@ define(['require',
                     notifyObj = {
                         modal: true,
                         text: "Are you sure you want to remove term association",
+                        okText:"Remove",
                         ok: function(argument) {
                             var model = new that.glossaryCollection.model(),
                                 selectedGuid = $(e.currentTarget).data('termguid'),
@@ -230,8 +231,8 @@ define(['require',
                     relationTypeTable: true,
                     getTerms: function(key) {
                         var terms = _.map(that.data[key], function(obj) {
-                                var name = _.escape(obj.displayText);
-                                return '<span data-guid="' + obj.termGuid + '" class="btn btn-action btn-sm btn-icon btn-blue" data-id="termClick"><span>' + name + '</span><i class="fa fa-close" data-id="deleteAttribute" data-attributename="' + key + '" data-termguid="' + obj.termGuid + '" data-type="term" title="Remove Term"></i></span>';
+                                var name = _.escape(obj.qualifiedName) || _.escape(obj.displayText);
+                                return '<span data-guid="' + obj.termGuid + '" class="btn btn-action btn-sm btn-icon btn-blue" data-id="termClick"><span title="' + name + '">' + name + '</span><i class="fa fa-close" data-id="deleteAttribute" data-attributename="' + key + '" data-termguid="' + obj.termGuid + '" data-type="term" title="Remove Term"></i></span>';
                             }).join(""),
                             attributeButtons = "";
                         if (terms.length) {

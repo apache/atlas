@@ -127,6 +127,7 @@ public class EntityGraphRetriever {
     private static final Logger LOG = LoggerFactory.getLogger(EntityGraphRetriever.class);
 
     private static final String GLOSSARY_TERM_DISPLAY_NAME_ATTR = "AtlasGlossaryTerm.name";
+    private static final String GLOSSARY_TERM_QUALIFIED_NAME_ATTR = "AtlasGlossaryTerm.qualifiedName";
     public  static final String TERM_RELATION_NAME              = "AtlasGlossarySemanticAssignment";
 
     public static final String NAME           = "name";
@@ -929,6 +930,11 @@ public class EntityGraphRetriever {
             ret.setDisplayText((String) displayName);
         }
 
+        Object qualifiedName = AtlasGraphUtilsV2.getEncodedProperty(termVertex, GLOSSARY_TERM_QUALIFIED_NAME_ATTR, Object.class);
+        if (qualifiedName instanceof String) {
+            ret.setQualifiedName((String) qualifiedName);
+        }
+
         String description = edge.getProperty(TERM_ASSIGNMENT_ATTR_DESCRIPTION, String.class);
         if (description != null) {
             ret.setDescription(description);
@@ -1549,6 +1555,11 @@ public class EntityGraphRetriever {
                     ret.setDisplayText(displayText.toString());
                 }
 
+                Object qualifiedName = getQualifiedName(referenceVertex, entityTypeName);
+                if (qualifiedName != null) {
+                    ret.setQualifiedName(qualifiedName.toString());
+                }
+
                 if (isOwnedRef && entityExtInfo != null) {
                     if (isMinExtInfo) {
                         mapVertexToAtlasEntityMin(referenceVertex, entityExtInfo);
@@ -1604,6 +1615,18 @@ public class EntityGraphRetriever {
             }
         }
 
+        return ret;
+    }
+
+    private Object getQualifiedName(AtlasVertex entityVertex, String entityTypeName) throws AtlasBaseException {
+        return getQualifiedName(entityVertex, typeRegistry.getEntityTypeByName(entityTypeName));
+    }
+
+    private Object getQualifiedName(AtlasVertex entityVertex, AtlasEntityType entityType) throws AtlasBaseException {
+        Object ret = null;
+        if (entityType != null) {
+            ret = getVertexAttribute(entityVertex, entityType.getAttribute(QUALIFIED_NAME));
+        }
         return ret;
     }
 
