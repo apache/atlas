@@ -91,7 +91,7 @@ define(['require',
                         this.onClickTagCross(e);
                     } else {
                         this.triggerUrl({
-                            url: '#!/tag/tagAttribute/' + scope.text(),
+                            url: '#!/tag/tagAttribute/' + scope.text().split('@')[0],
                             urlParams: null,
                             mergeBrowserUrl: false,
                             trigger: true,
@@ -1029,9 +1029,9 @@ define(['require',
                                     return
                                 }
                                 if (obj.status && Enums.entityStateReadOnly[obj.status]) {
-                                    return '<div class="readOnly">' + CommonViewFunction.tagForTable(obj); + '</div>';
+                                    return '<div class="readOnly">' + CommonViewFunction.tagForTable(obj, that.classificationDefCollection); + '</div>';
                                 } else {
-                                    return CommonViewFunction.tagForTable(obj);
+                                    return CommonViewFunction.tagForTable(obj, that.classificationDefCollection);
                                 }
 
                             }

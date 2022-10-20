@@ -234,9 +234,9 @@ define(['require',
                             fromRaw: function(rawValue, model) {
                                 var obj = model.toJSON();
                                 if (obj.status && Enums.entityStateReadOnly[obj.status]) {
-                                    return '<div class="readOnly">' + CommonViewFunction.tagForTable(obj); + '</div>';
+                                    return '<div class="readOnly">' + CommonViewFunction.tagForTable(objthat.classificationDefCollection); + '</div>';
                                 } else {
-                                    return CommonViewFunction.tagForTable(obj);
+                                    return CommonViewFunction.tagForTable(objthat.classificationDefCollection);
                                 }
                             }
                         })

@@ -33,6 +33,7 @@ public class AtlasRelatedTermHeader {
     private String source;
 
     private AtlasTermRelationshipStatus status;
+    private String qualifiedName;
 
     public AtlasRelatedTermHeader() {
     }
@@ -112,6 +113,7 @@ public class AtlasRelatedTermHeader {
         sb.append(", relationGuid='").append(relationGuid).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", displayText='").append(displayText).append('\'');
+        sb.append(", qualifiedName='").append(qualifiedName).append('\'');
         sb.append(", expression='").append(expression).append('\'');
         sb.append(", steward='").append(steward).append('\'');
         sb.append(", source='").append(source).append('\'');
@@ -135,4 +137,7 @@ public class AtlasRelatedTermHeader {
     public void setRelationGuid(final String relationGuid) {
         this.relationGuid = relationGuid;
     }
+    public String getQualifiedName() { return qualifiedName; }
+    public void setQualifiedName(String qualifiedName) { this.qualifiedName = qualifiedName; }
+
 }

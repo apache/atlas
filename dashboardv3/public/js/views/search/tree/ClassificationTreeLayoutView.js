@@ -688,7 +688,7 @@ define([
                     }).open();
                 modal.$el.find("button.ok").attr("disabled", "true");
                 view.ui.tagName.on('keyup input', function(e) {
-                    $(view.ui.description).trumbowyg('html', $(this).val().replace(/\s+/g, ' '));
+                    $(view.ui.description).trumbowyg('html', _.escape($(this).val()).replace(/\s+/g, ' '));
                 });
                 view.ui.description.on('input keydown', function(e) {
                     $(this).val($(this).val().replace(/\s+/g, ' '));

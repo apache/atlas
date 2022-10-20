@@ -115,7 +115,7 @@ define(['require',
                         this.onClickTagCross(e);
                     } else {
                         Utils.setUrl({
-                            url: '#!/tag/tagAttribute/' + e.currentTarget.textContent,
+                            url: '#!/tag/tagAttribute/' + e.currentTarget.textContent.split('@')[0],
                             mergeBrowserUrl: false,
                             trigger: true
                         });
@@ -359,9 +359,11 @@ define(['require',
             },
             generateTag: function(tagObject) {
                 var that = this,
-                    tagData = "";
+                    tagData = "",
+                    propagatedTagListData = "";
                 _.each(tagObject, function(val) {
-                    tagData += '<span class="btn btn-action btn-sm btn-icon btn-blue" data-id="tagClickTerm"><span>' + val.typeName + '</span><i class="fa fa-close" data-id="removeTagTerm" data-type="tag" title="Remove Classification"></i></span>';
+                    var parentName = that.getTagParentList(val.typeName);
+                    tagData += '<span class="btn btn-action btn-sm btn-icon btn-blue" data-id="tagClickTerm"><span title="' + parentName + '">' + _.escape(parentName) + '</span><i class="fa fa-close" data-id="removeTagTerm" data-type="tag" title="Remove Classification"></i></span>';
                 });
                 this.ui.tagList.find("span.btn").remove();
                 this.ui.tagList.prepend(tagData);
@@ -374,6 +376,15 @@ define(['require',
                     }
                 });
                 return terms;
+            },
+            getTagParentList: function(name) {
+                var tagObj = this.classificationDefCollection.fullCollection.find({ "name": name }),
+                    tagParents = tagObj ? tagObj.get('superTypes') : null,
+                    parentName = name;
+                if (tagParents && tagParents.length) {
+                    parentName += (tagParents.length > 1) ? ("@(" + tagParents.join() + ")") : ("@" + tagParents.join());
+                }
+                return parentName;
             },
             onClickAddTermBtn: function(e) {
                 var that = this,
@@ -453,7 +464,7 @@ define(['require',
             },
             onClickTagCross: function(e) {
                 var that = this,
-                    tagName = $(e.currentTarget).text(),
+                    tagName = $(e.currentTarget).text().split('@')[0],
                     termName = this.data.name;
                 CommonViewFunction.deleteTag(_.extend({}, {
                     msg: "<div class='ellipsis-with-margin'>Remove: " + "<b>" + _.escape(tagName) + "</b> assignment from <b>" + _.escape(termName) + "?</b></div>",

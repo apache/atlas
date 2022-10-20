@@ -403,7 +403,7 @@ define(['require',
                         }).open();
                     modal.$el.find('button.ok').attr("disabled", "true");
                     view.ui.tagName.on('keyup input', function(e) {
-                        $(view.ui.description).trumbowyg('html', $(this).val().replace(/\s+/g, ' '));
+                        $(view.ui.description).trumbowyg('html', _.escape($(this).val()).replace(/\s+/g, ' '));
                     });
                     view.ui.description.on('input keydown', function(e) {
                         $(this).val($(this).val().replace(/\s+/g, ' '));
@@ -651,7 +651,7 @@ define(['require',
                     },
                     cust_error: function() {},
                     complete: function() {
-                        if(that.collection.fullCollection.length === 0){
+                        if (that.collection.fullCollection.length === 0) {
                             that.setUrl('#!/tag', true);
                         }
                         that.notificationModal.hideButtonLoader();

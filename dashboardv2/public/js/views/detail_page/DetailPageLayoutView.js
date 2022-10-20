@@ -68,7 +68,9 @@ define(['require',
                 termList: '[data-id="termList"]',
                 propagatedTagList: '[data-id="propagatedTagList"]',
                 tablist: '[data-id="tab-list"] li',
-                entityIcon: '[data-id="entityIcon"]'
+                entityIcon: '[data-id="entityIcon"]',
+                tagParent: '[data-id="tagParent"]',
+                termGlossary: '[data-id="termGlossary"]'
             },
             templateHelpers: function() {
                 return {
@@ -80,9 +82,9 @@ define(['require',
             events: function() {
                 var events = {};
                 events["click " + this.ui.tagClick] = function(e) {
-                    if (e.target.nodeName.toLocaleLowerCase() != "i") {
+                    if ((e.target.nodeName.toLocaleLowerCase() != "i") && (!$(e.target).hasClass("parent-list-btn")) && (!$(e.target).hasClass("fa"))) {
                         Utils.setUrl({
-                            url: '#!/tag/tagAttribute/' + e.currentTarget.textContent,
+                            url: '#!/tag/tagAttribute/' + e.target.textContent.split('@')[0],
                             mergeBrowserUrl: false,
                             trigger: true
                         });
@@ -97,11 +99,13 @@ define(['require',
                     });
                 };
                 events["click " + this.ui.termClick] = function(e) {
-                    if (e.target.nodeName.toLocaleLowerCase() != "i") {
+                    if ((e.target.nodeName.toLocaleLowerCase() != "i") && (!$(e.target).hasClass("parent-list-btn")) && (!$(e.target).hasClass("fa"))) {
+                        var guid = $(e.currentTarget).find('.fa-close').data('guid'),
+                            gType = "term";
                         Utils.setUrl({
-                            url: '#!/glossary/' + $(e.currentTarget).find('i').data('guid'),
+                            url: '#!/glossary/' + guid,
                             mergeBrowserUrl: false,
-                            urlParams: { gType: "term", viewType: "term", fromView: "entity" },
+                            urlParams: { gType: gType, viewType: "term", fromView: "entity" },
                             trigger: true
                         });
                     }
@@ -121,7 +125,6 @@ define(['require',
                     });
 
                 };
-
                 return events;
             },
             /**
@@ -465,7 +468,7 @@ define(['require',
             },
             onClickTagCross: function(e) {
                 var that = this,
-                    tagName = $(e.currentTarget).parent().text(),
+                    tagName = $(e.currentTarget).parent().text().split('@')[0],
                     entityGuid = $(e.currentTarget).data("entityguid");
                 CommonViewFunction.deleteTag(_.extend({}, {
                     guid: that.id,
@@ -510,10 +513,12 @@ define(['require',
                     tagData = "",
                     propagatedTagListData = "";
                 _.each(tagObject.self, function(val) {
-                    tagData += '<span class="btn btn-action btn-sm btn-icon btn-blue" data-id="tagClick"><span>' + val.typeName + '</span><i class="fa fa-close" data-id="deleteTag" data-type="tag" title="Remove Classification"></i></span>';
+                    var parentName = that.getTagParentList(val.typeName);
+                    tagData += '<span class="btn btn-action btn-sm btn-icon btn-blue" data-id="tagClick"><span title="' + parentName + '">' + _.escape(parentName) + '</span><i class="fa fa-close" data-id="deleteTag" data-type="tag" title="Remove Classification"></i></span>';
                 });
                 _.each(tagObject.propagatedMap, function(val, key) {
-                    propagatedTagListData += '<span class="btn btn-action btn-sm btn-icon btn-blue"><span data-id="tagClick">' + val.typeName + '</span>' + (val.count > 1 ? '<span class="active" data-id="pTagCountClick">(' + val.count + ')</span>' : "") + '</span>';
+                    var parentName = that.getTagParentList(val.typeName);
+                    propagatedTagListData += '<span class="btn btn-action btn-sm btn-icon btn-blue"><span data-id="tagClick" title="' + parentName + '">' + parentName + '</span>' + (val.count > 1 ? '<span class="active" data-id="pTagCountClick">(' + val.count + ')</span>' : "") + '</span>';
                 });
                 propagatedTagListData !== "" ? this.ui.propagatedTagDiv.show() : this.ui.propagatedTagDiv.hide();
                 this.ui.tagList.find("span.btn").remove();
@@ -525,10 +530,20 @@ define(['require',
                 var that = this,
                     termData = "";
                 _.each(data, function(val) {
-                    termData += '<span class="btn btn-action btn-sm btn-icon btn-blue" data-id="termClick"><span>' + _.escape(val.displayText) + '</span><i class="' + (val.relationshipStatus == "ACTIVE" ? 'fa fa-close' : "") + '" data-id="deleteTerm" data-guid="' + val.guid + '" data-type="term" title="Remove Term"></i></span>';
+                    var glossaryName = val.qualifiedName ? val.qualifiedName : val.displayText;
+                    termData += '<span class="btn btn-action btn-sm btn-icon btn-blue" data-id="termClick" title= "' + glossaryName + '"><span>' + _.escape(glossaryName) + '</span><i class="' + (val.relationshipStatus == "ACTIVE" ? 'fa fa-close' : "") + '" data-id="deleteTerm" data-guid="' + val.guid + '" data-type="term" title="Remove Term"></i></span>';
                 });
                 this.ui.termList.find("span.btn").remove();
                 this.ui.termList.prepend(termData);
+            },
+            getTagParentList: function(name) {
+                var tagObj = this.classificationDefCollection.fullCollection.find({ "name": name }),
+                    tagParents = tagObj ? tagObj.get('superTypes') : null,
+                    parentName = name;
+                if (tagParents && tagParents.length) {
+                    parentName += (tagParents.length > 1) ? ("@(" + tagParents.join() + ")") : ("@" + tagParents.join());
+                }
+                return parentName;
             },
             hideLoader: function() {
                 Utils.hideTitleLoader(this.$('.page-title .fontLoader'), this.$('.entityDetail'));
