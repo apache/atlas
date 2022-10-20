@@ -460,6 +460,16 @@
             <organization>Freestone Infotech</organization>
         </developer>
         <developer>
+            <id>ppawar</id>
+            <name>Prasad Pawar</name>
+            <email>ppawar@apache.org</email>
+            <timezone>Asia/Kolkata</timezone>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <organization>Freestone Infotech</organization>
+        </developer>
+        <developer>
             <id>radhikakundam</id>
             <name>Radhika Kundam</name>
             <email>radhikakundam@apache.org</email>
