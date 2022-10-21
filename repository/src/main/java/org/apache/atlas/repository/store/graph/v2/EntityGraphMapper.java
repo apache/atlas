@@ -2825,7 +2825,7 @@ public class EntityGraphMapper {
 
             List<String> edgeLabelsToExclude = CLASSIFICATION_PROPAGATION_EXCLUSION_MAP.get(propagationMode);
 
-            List<AtlasVertex> impactedVertices = entityRetriever.getIncludedImpactedVerticesV3(entityVertex, relationshipGuid, classificationVertexId, edgeLabelsToExclude);
+            List<AtlasVertex> impactedVertices = entityRetriever.getIncludedImpactedVerticesV2(entityVertex, relationshipGuid, classificationVertexId, edgeLabelsToExclude);
 
             if (CollectionUtils.isEmpty(impactedVertices)) {
                 LOG.debug("propagateClassification(entityGuid={}, classificationVertexId={}): found no entities to propagate the classification", entityGuid, classificationVertexId);
@@ -3446,20 +3446,18 @@ public class EntityGraphMapper {
                     propagationMode = CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE;
                 }
 
-                List<String> propagatedVerticesIds = GraphHelper.getPropagatedVerticesIds(currentClassificationVertex);
-                LOG.info("Traversed {} vertices with edge {} for classification vertex {}", propagatedVerticesIds.size(), edge.getId(), classificationId);
+                List<AtlasVertex> propagatedVertices = GraphHelper.getPropagatedVertices(currentClassificationVertex);
+                LOG.info("Traversed {} vertices with edge {} for classification vertex {}", propagatedVertices.size(), edge.getId(), classificationId);
 
-                List<String> propagatedVerticesIdsWithoutEdge = entityRetriever.getImpactedVerticesIds(sourceEntityVertex, GraphHelper.getRelationshipGuid(edge), classificationId,
+                List<AtlasVertex> propagatedEntitiesWithoutEdge = entityRetriever.getImpactedVerticesV2(sourceEntityVertex, GraphHelper.getRelationshipGuid(edge), classificationId,
                         CLASSIFICATION_PROPAGATION_EXCLUSION_MAP.get(propagationMode));
 
-                LOG.info("Traversed {} vertices except edge {} for classification vertex {}", propagatedVerticesIdsWithoutEdge.size(), edge.getId(), classificationId);
+                LOG.info("Traversed {} vertices except edge {} for classification vertex {}", propagatedEntitiesWithoutEdge.size(), edge.getId(), classificationId);
 
-                List<String>   verticesIdsToRemove = (List<String>)CollectionUtils.subtract(propagatedVerticesIds, propagatedVerticesIdsWithoutEdge);
+                List<AtlasVertex>   verticesToRemove = (List<AtlasVertex>)CollectionUtils.subtract(propagatedVertices, propagatedEntitiesWithoutEdge);
 
-                propagatedVerticesIdsWithoutEdge.clear();
-                propagatedVerticesIds.clear();
-
-                List<AtlasVertex> verticesToRemove = verticesIdsToRemove.stream().map(x -> graph.getVertex(x)).collect(Collectors.toList());
+                propagatedEntitiesWithoutEdge.clear();
+                propagatedVertices.clear();
 
                 LOG.info("To delete classification from {} vertices for deletion of edge {} and classification {}", verticesToRemove.size(), edge.getId(), classificationId);
 
@@ -3491,6 +3489,15 @@ public class EntityGraphMapper {
         List<AtlasEntity> updatedEntities = updateClassificationText(classification, updatedVertices);
 
         entityChangeNotifier.onClassificationsDeletedFromEntities(updatedEntities, Collections.singletonList(classification));
+    }
+
+    private AtlasEntity getEntity(AtlasVertex vertex) {
+        try {
+            return entityRetriever.toAtlasEntity(vertex);
+        } catch (AtlasBaseException e) {
+            LOG.error("Failed to get entity vertex for vertex id {}", vertex.getId());
+        }
+        return null;
     }
 
     List<String> processClassificationEdgeDeletionInChunk(AtlasClassification classification, List<AtlasEdge> propagatedEdges) throws AtlasBaseException {
