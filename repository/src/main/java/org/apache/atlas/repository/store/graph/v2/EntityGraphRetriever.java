@@ -18,8 +18,6 @@
 package org.apache.atlas.repository.store.graph.v2;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.google.common.collect.Iterables;
-import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -117,6 +115,7 @@ import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.GraphHelper.*;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getIdFromVertex;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.isReference;
+import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_ONLY_PROPAGATION_DELETE;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.BOTH;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
@@ -544,10 +543,21 @@ public class EntityGraphRetriever {
         return ret;
     }
 
+    public List<AtlasVertex> getImpactedVerticesV2(AtlasVertex entityVertex) {
+        return getImpactedVerticesV2(entityVertex, (List<String>) null);
+    }
 
     public List<AtlasVertex> getImpactedVerticesV2(AtlasVertex entityVertex,  List<String> edgeLabelsToExclude){
         List<AtlasVertex> ret = new ArrayList<>();
         traverseImpactedVertices(entityVertex, null, null, ret, edgeLabelsToExclude);
+
+        return ret;
+    }
+
+    public List<AtlasVertex> getImpactedVerticesV2(AtlasVertex entityVertex, String relationshipGuidToExclude) {
+        List<AtlasVertex> ret = new ArrayList<>();
+
+        traverseImpactedVertices(entityVertex, relationshipGuidToExclude, null, ret, null);
 
         return ret;
     }
@@ -560,6 +570,13 @@ public class EntityGraphRetriever {
         List<AtlasVertex> ret = new ArrayList<>(Arrays.asList(entityVertex));
 
         traverseImpactedVertices(entityVertex, relationshipGuidToExclude, classificationId, ret, null);
+
+        return ret;
+    }
+    public List<AtlasVertex> getIncludedImpactedVerticesV2(AtlasVertex entityVertex, String relationshipGuidToExclude, String classificationId, List<String> edgeLabelsToExclude) {
+        List<AtlasVertex> ret = new ArrayList<>(Arrays.asList(entityVertex));
+
+        traverseImpactedVertices(entityVertex, relationshipGuidToExclude, classificationId, ret, edgeLabelsToExclude);
 
         return ret;
     }
@@ -576,24 +593,6 @@ public class EntityGraphRetriever {
         List<AtlasVertex> ret = new ArrayList<>();
 
         traverseImpactedVertices(entityVertex, relationshipGuidToExclude, classificationId, ret, edgeLabelsToExclude);
-
-        return ret;
-    }
-
-    public List<AtlasVertex> getIncludedImpactedVerticesV3(AtlasVertex entityVertex, String relationshipGuidToExclude, String classificationId, List<String> edgeLabelsToExclude) {
-        List<String> verticesIds = new ArrayList<>(Arrays.asList(entityVertex.getIdForDisplay()));
-
-        traverseImpactedVerticesByLevel(entityVertex, relationshipGuidToExclude, classificationId, verticesIds, edgeLabelsToExclude);
-
-        List<AtlasVertex> ret = verticesIds.stream().map(x -> graph.getVertex(x)).collect(Collectors.toList());
-
-        return ret;
-    }
-
-    public List<String> getImpactedVerticesIds(AtlasVertex entityVertex, String relationshipGuidToExclude, String classificationId, List<String> edgeLabelsToExclude) {
-        List<String > ret = new ArrayList<>();
-
-        traverseImpactedVerticesByLevel(entityVertex, relationshipGuidToExclude, classificationId, ret, edgeLabelsToExclude);
 
         return ret;
     }
@@ -686,113 +685,6 @@ public class EntityGraphRetriever {
 
         result.addAll(resultsMap.values());
         RequestContext.get().endMetricRecord(metricRecorder);
-    }
-
-    private void traverseImpactedVerticesByLevel(final AtlasVertex entityVertexStart, final String relationshipGuidToExclude,
-                                          final String classificationId, final List<String> result, List<String> edgeLabelsToExclude) {
-        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("traverseImpactedVerticesByLevel");
-        Set<String>                 visitedVerticesIds        = new HashSet<>();
-        Set<String>                 verticesAtCurrentLevel    = new HashSet<>();
-        Set<String>                 traversedVerticesIds      = new HashSet<>();
-        RequestContext              requestContext            = RequestContext.get();
-
-        //Add Source vertex to level 1
-        if (entityVertexStart != null) {
-            verticesAtCurrentLevel.add(entityVertexStart.getIdForDisplay());
-        }
-        // Start Processing the level
-        while (!verticesAtCurrentLevel.isEmpty()) {
-            Set<String> verticesToVisitNextLevel = new HashSet<>();
-            // Chunk the Levels into n parts, with constant bucket size
-            Iterable<List<String>> chunkedLevelVerticesIterable = Iterables.partition(verticesAtCurrentLevel, AtlasConfiguration.GRAPH_TRAVERSE_LEVEL_BUCKET_SIZE.getInt());
-            chunkedLevelVerticesIterable.forEach(x -> {
-                // Process the chunks in Parallel get the Vertices for next level
-                x.parallelStream().forEach(y -> {
-                    AtlasVertex entityVertex = graph.getVertex(y);
-                    if (!visitedVerticesIds.contains(y)) {
-                        //get adjacent vertices of the current level vertex to be added to next level
-                       Set<String> adjacentVerticesIds =  getAdjacentVertices(entityVertex, classificationId,
-                                relationshipGuidToExclude, edgeLabelsToExclude, visitedVerticesIds);
-                        verticesToVisitNextLevel.addAll(adjacentVerticesIds);
-                        traversedVerticesIds.addAll(adjacentVerticesIds);
-                        visitedVerticesIds.add(entityVertex.getIdForDisplay());
-                    }
-                });
-            });
-            verticesAtCurrentLevel.clear();
-            verticesAtCurrentLevel.addAll(verticesToVisitNextLevel);
-        }
-
-        result.addAll(traversedVerticesIds);
-        requestContext.endMetricRecord(metricRecorder);
-
-    }
-
-    private Set<String> getAdjacentVertices(AtlasVertex entityVertex,final String classificationId, final String relationshipGuidToExclude
-            ,List<String> edgeLabelsToExclude, Set<String> visitedVerticesIds) {
-
-        AtlasEntityType         entityType          = typeRegistry.getEntityTypeByName(getTypeName(entityVertex));
-        String[]                tagPropagationEdges = entityType != null ? entityType.getTagPropagationEdgesArray() : null;
-        Set<String>             ret                 = new HashSet<>();
-        RequestContext          requestContext      = RequestContext.get();
-
-        if (tagPropagationEdges == null) {
-            return null;
-        }
-
-        if (edgeLabelsToExclude != null && !edgeLabelsToExclude.isEmpty()) {
-            tagPropagationEdges = Arrays.stream(tagPropagationEdges)
-                    .filter(x -> !edgeLabelsToExclude.contains(x))
-                    .collect(Collectors.toList())
-                    .toArray(new String[0]);
-        }
-
-        Iterator<AtlasEdge> propagationEdges = entityVertex.getEdges(AtlasEdgeDirection.BOTH, tagPropagationEdges).iterator();
-
-        while (propagationEdges.hasNext()) {
-            AtlasEdge propagationEdge = propagationEdges.next();
-
-            if (getEdgeStatus(propagationEdge) != ACTIVE && !(requestContext.getCurrentTask() != null && requestContext.getDeletedEdgesIds().contains(propagationEdge.getIdForDisplay())) ) {
-                continue;
-            }
-
-            PropagateTags tagPropagation = getPropagateTags(propagationEdge);
-
-            if (tagPropagation == null || tagPropagation == NONE) {
-                continue;
-            } else if (tagPropagation == TWO_TO_ONE) {
-                if (isOutVertex(entityVertex, propagationEdge)) {
-                    continue;
-                }
-            } else if (tagPropagation == ONE_TO_TWO) {
-                if (!isOutVertex(entityVertex, propagationEdge)) {
-                    continue;
-                }
-            }
-
-            if (relationshipGuidToExclude != null) {
-                if (StringUtils.equals(getRelationshipGuid(propagationEdge), relationshipGuidToExclude)) {
-                    continue;
-                }
-            }
-
-            if (classificationId != null) {
-                List<String> blockedClassificationIds = getBlockedClassificationIds(propagationEdge);
-
-                if (CollectionUtils.isNotEmpty(blockedClassificationIds) && blockedClassificationIds.contains(classificationId)) {
-                    continue;
-                }
-            }
-
-            AtlasVertex adjacentVertex             = getOtherVertex(propagationEdge, entityVertex);
-            String      adjacentVertexIdForDisplay = adjacentVertex.getIdForDisplay();
-
-            if (!visitedVerticesIds.contains(adjacentVertexIdForDisplay)) {
-                ret.add(adjacentVertexIdForDisplay);
-            }
-        }
-
-        return ret;
     }
 
     private boolean isOutVertex(AtlasVertex vertex, AtlasEdge edge) {
