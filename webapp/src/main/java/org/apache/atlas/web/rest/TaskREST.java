@@ -26,6 +26,7 @@ import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
@@ -66,6 +67,25 @@ public class TaskREST {
             TaskSearchResult ret = taskService.getTasks(parameters);
 
             return ret;
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    @PUT
+    @Path("retry/{guid}")
+    @Timed
+    public HttpStatus retryTask(@PathParam("guid") final String guid) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.retryTask");
+            }
+
+            taskService.retryTask(guid);
+
+            return HttpStatus.OK;
         } finally {
             AtlasPerfTracer.log(perf);
         }
