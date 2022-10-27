@@ -53,7 +53,7 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
                 createNewEntity: '[data-id="createNewEntity"]',
                 clearQuerySearch: "[data-id='clearQuerySearch']",
                 refreshSearchQuery: "[data-id='refreshSearchResult']",
-                includeExclude : "[data-id='includeExclude']"
+                includeExclude: "[data-id='includeExclude']"
             },
             /** ui events hash */
             events: function() {
@@ -74,7 +74,7 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
                     if (Utils.getUrlState.isSearchTab()) {
                         this.options.searchVent.trigger('search:refresh');
                     }
-                    if(Utils.getUrlState.isRelationTab()){
+                    if (Utils.getUrlState.isRelationTab()) {
                         this.options.searchVent.trigger('relationSearch:refresh');
                     }
                     this.disableRefreshButton();
@@ -540,9 +540,7 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
                         params["query"] = this.options.value.query;
                     }
                     var columnList = this.options.value && this.options.value.type && this.options.searchTableColumns ? this.options.searchTableColumns[this.options.value.type] : null;
-                    if (columnList) {
-                        params["attributes"] = columnList.join(",");
-                    }
+                    params['attributes'] = columnList ? columnList.join(',') : null;
                     params['includeDE'] = _.isUndefinedNull(this.options.value.includeDE) ? false : this.options.value.includeDE;
                     params["excludeST"] = _.isUndefinedNull(this.options.value.excludeST) ? false : this.options.value.excludeST;
                     params["excludeSC"] = _.isUndefinedNull(this.options.value.excludeSC) ? false : this.options.value.excludeSC;
