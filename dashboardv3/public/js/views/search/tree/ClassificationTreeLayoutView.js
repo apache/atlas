@@ -314,6 +314,7 @@ define([
                 this.ui.classificationSearchTree.jstree(true).deselect_all();
                 this.tagId = null;
             } else {
+                if (that.options.value.attributes) { that.options.value.attributes = null; }
                 if ((that.options.value.tag === "_ALL_CLASSIFICATION_TYPES" && this.tagId !== "_ALL_CLASSIFICATION_TYPES") || (that.options.value.tag === "_NOT_CLASSIFIED" && this.tagId !== "_NOT_CLASSIFIED") || (that.options.value.tag === "_CLASSIFIED" && this.tagId !== "_CLASSIFIED")) {
                     this.fromManualRender = true;
                     if (this.tagId) {

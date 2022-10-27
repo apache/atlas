@@ -256,12 +256,12 @@ define(['require',
                     this.setInitialEntityVal = false;
                 }
             },
-            disableRefreshButton : function(){
+            disableRefreshButton: function() {
                 var that = this;
                 this.ui.refreshBtn.attr('disabled', true);
-                setTimeout( function(){
+                setTimeout(function() {
                     that.ui.refreshBtn.attr('disabled', false);
-                },1000);
+                }, 1000);
             },
             makeFilterButtonActive: function(filtertypeParam) {
                 var filtertype = ['entityFilters', 'tagFilters'],
@@ -829,9 +829,7 @@ define(['require',
                             params['entityFilters'] = entityFilterObj[this.value.type]
                         }
                         var columnList = this.value.type && this.searchTableColumns ? this.searchTableColumns[this.value.type] : null;
-                        if (columnList) {
-                            params['attributes'] = columnList.join(',');
-                        }
+                        params['attributes'] = columnList ? columnList.join(',') : null;
                         params['includeDE'] = _.isUndefinedNull(this.value.includeDE) ? false : this.value.includeDE;
                         params['excludeST'] = _.isUndefinedNull(this.value.excludeST) ? false : this.value.excludeST;
                         params['excludeSC'] = _.isUndefinedNull(this.value.excludeSC) ? false : this.value.excludeSC;
