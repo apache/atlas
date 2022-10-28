@@ -626,7 +626,7 @@ public class EntityLineageService implements AtlasLineageService {
     }
 
     private boolean shouldProcessEdge(AtlasLineageContext lineageContext, AtlasEdge edge) {
-        return lineageContext.isAllowDeletedProcess() || getStatus(edge) == AtlasEntity.Status.ACTIVE;
+        return lineageContext.isAllowDeletedProcess() || getStatus(edge.getOutVertex()) == AtlasEntity.Status.ACTIVE;
     }
 
     private List<AtlasEdge> getEdgesOfCurrentVertex(AtlasVertex currentVertex, boolean isInput, AtlasLineageContext lineageContext) {
