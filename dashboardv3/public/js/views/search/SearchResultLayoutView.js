@@ -71,7 +71,9 @@ define(['require',
                 gotoPage: "[data-id='gotoPage']",
                 gotoPagebtn: "[data-id='gotoPagebtn']",
                 activePage: "[data-id='activePage']",
-                saveFilter: "[data-id='saveFilter']"
+                saveFilter: "[data-id='saveFilter']",
+                excludeSubtypes: ".exclude-subtypes",
+                excludeSubClassifications: ".exclude-subclassifications"
             },
             templateHelpers: function() {
                 return {
@@ -636,6 +638,12 @@ define(['require',
                     }
                     that.REntityTableLayoutView.$el.find('.colSort thead tr th:not(.select-all-header-cell)').addClass('dragHandler');
                     tableDragger(document.querySelector(".colSort"), { dragHandler: ".dragHandler" }).on('drop', tableDropFunction);
+                }
+                if (Utils.getUrlState.isGlossaryTab()) {
+                    this.ui.excludeSubtypes.hide();
+                    this.ui.excludeSubClassifications.hide();
+                } else {
+                    this.ui.excludeSubtypes.hide();
                 }
             },
             renderTableLayoutView: function(col) {
