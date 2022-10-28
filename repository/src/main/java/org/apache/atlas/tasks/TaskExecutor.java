@@ -133,6 +133,9 @@ public class TaskExecutor {
                 if (attemptCount >= MAX_ATTEMPT_COUNT) {
                     TASK_LOG.warn("Max retry count for task exceeded! Skipping!", task);
 
+                    task.setStatus(AtlasTask.Status.FAILED);
+                    registry.updateStatus(taskVertex, task);
+
                     return;
                 }
 

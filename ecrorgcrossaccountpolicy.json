@@ -1,0 +1,26 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Sid": "AllowPull",
+        "Effect": "Allow",
+        "Principal": "*",
+        "Action": [
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:BatchGetImage",
+          "ecr:DescribeImages",
+          "ecr:DescribeRepositories",
+          "ecr:GetDownloadUrlForLayer"
+        ],
+        "Condition": {
+          "ForAnyValue:StringLike": {
+            "aws:PrincipalOrgPaths": [
+                "o-c64vo42aib/*",
+                "o-zjrs0debz8/*",
+                "o-jgyaklzq1t/*"
+            ]
+          }
+        }
+      }
+    ]
+}

@@ -3,12 +3,12 @@ package org.apache.atlas.repository.graph;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.atlas.ApplicationProperties;
-import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.ha.HAConfiguration;
+import org.apache.atlas.repository.RepositoryException;
 import org.apache.commons.configuration.Configuration;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -53,88 +53,79 @@ public class TypeCacheRefresher {
         LOG.info("Found {} as cache-refresher-health endpoint", cacheRefresherHealthEndpoint);
     }
 
-    public void verifyCacheRefresherHealth() throws AtlasBaseException {
+    public void verifyCacheRefresherHealth() throws AtlasBaseException, IOException {
         if (StringUtils.isBlank(cacheRefresherHealthEndpoint) || !isActiveActiveHAEnabled) {
             LOG.info("Skipping type-def cache refresher health checking as URL is {} and isActiveActiveHAEnabled is {}", cacheRefresherHealthEndpoint, isActiveActiveHAEnabled);
             return;
         }
-        final CloseableHttpClient client = HttpClients.createDefault();
-        CloseableHttpResponse closeableHttpResponse = null;
-        try {
+        final String healthResponseBody;
+        try (CloseableHttpClient client = HttpClients.createDefault()) {
             final HttpGet healthRequest = new HttpGet(cacheRefresherHealthEndpoint);
-            closeableHttpResponse = client.execute(healthRequest);
+            healthResponseBody = executeGet(client, healthRequest);
+        }
+        LOG.debug("Response Body from cache-refresh-health = {}", healthResponseBody);
+        final ObjectMapper mapper = new ObjectMapper();
+        final CacheRefresherHealthResponse jsonResponse = mapper.readValue(healthResponseBody, CacheRefresherHealthResponse.class);
+        if (!"Healthy".equalsIgnoreCase(jsonResponse.getMessage())) {
+            throw new AtlasBaseException(CINV_UNHEALTHY);
+        }
+    }
+
+    public void refreshAllHostCache() throws IOException, URISyntaxException, RepositoryException {
+        final String traceId = RequestContext.get().getTraceId();
+        if(StringUtils.isBlank(cacheRefresherEndpoint) || !isActiveActiveHAEnabled) {
+            LOG.info("Skipping type-def cache refresh :: traceId {}", traceId);
+            return;
+        }
+
+        int totalFieldKeys = provider.get().getManagementSystem().getGraphIndex(VERTEX_INDEX).getFieldKeys().size();
+        LOG.info("Found {} totalFieldKeys to be expected in other nodes :: traceId {}", totalFieldKeys, traceId);
+        refreshCache(totalFieldKeys, traceId);
+    }
+
+    private void refreshCache(final int totalFieldKeys, final String traceId) throws IOException, URISyntaxException {
+        URIBuilder builder = new URIBuilder(cacheRefresherEndpoint);
+        builder.setParameter("expectedFieldKeys", String.valueOf(totalFieldKeys));
+        builder.setParameter("traceId", traceId);
+        final HttpPost httpPost = new HttpPost(builder.build());
+        LOG.info("Invoking cache refresh endpoint {} :: traceId {}", cacheRefresherEndpoint, traceId);
+
+        String responseBody;
+        try (CloseableHttpClient client = HttpClients.createDefault()) {
+            responseBody = executePost(traceId, client, httpPost);
+        }
+        LOG.info("Response Body from cache-refresh = {} :: traceId {}", responseBody, traceId);
+        CacheRefreshResponseEnvelope cacheRefreshResponseEnvelope = convertStringToObject(responseBody);
+
+        for (CacheRefreshResponse responseOfEachNode : cacheRefreshResponseEnvelope.getResponse()) {
+            if (responseOfEachNode.getStatus() != 204) {
+                //Do not throw exception in this case as node must have been in passive state now
+                LOG.error("Error while performing cache refresh on host {} . HTTP code = {} :: traceId {}", responseOfEachNode.getHost(),
+                        responseOfEachNode.getStatus(), traceId);
+            } else {
+                LOG.info("Host {} returns response code {} :: traceId {}", responseOfEachNode.getHost(), responseOfEachNode.getStatus(), traceId);
+            }
+        }
+        LOG.info("Refreshed cache successfully on all hosts :: traceId {}", traceId);
+    }
+
+    private String executePost(String traceId, CloseableHttpClient client, HttpPost httpPost) throws IOException {
+        try (CloseableHttpResponse response = client.execute(httpPost)) {
+            LOG.info("Received HTTP response code {} from cache refresh endpoint :: traceId {}", response.getStatusLine().getStatusCode(), traceId);
+            if (response.getStatusLine().getStatusCode() != 200) {
+                throw new RuntimeException("Error while calling cache-refresher on host " + cacheRefresherEndpoint + ". HTTP code = " + response.getStatusLine().getStatusCode() + " :: traceId " + traceId);
+            }
+            return EntityUtils.toString(response.getEntity());
+        }
+    }
+
+    private String executeGet(CloseableHttpClient client, HttpGet getRequest) throws IOException, AtlasBaseException {
+        try (CloseableHttpResponse closeableHttpResponse = client.execute(getRequest)) {
             LOG.info("Received HTTP response code {} from cache refresh health endpoint", closeableHttpResponse.getStatusLine().getStatusCode());
             if (closeableHttpResponse.getStatusLine().getStatusCode() != 200) {
                 throw new AtlasBaseException(CINV_UNHEALTHY);
             }
-            final String responseBody = EntityUtils.toString(closeableHttpResponse.getEntity());
-            LOG.debug("Response Body from cache-refresh-health = {}", responseBody);
-            final ObjectMapper mapper = new ObjectMapper();
-            final CacheRefresherHealthResponse jsonResponse = mapper.readValue(responseBody, CacheRefresherHealthResponse.class);
-            if (!"Healthy".equalsIgnoreCase(jsonResponse.getMessage())) {
-                throw new AtlasBaseException(CINV_UNHEALTHY);
-            }
-        } catch (IOException ioException) {
-            LOG.error(ioException.getMessage(),ioException);
-            throw new AtlasBaseException("Error while calling cinv health");
-        } finally {
-            IOUtils.closeQuietly(closeableHttpResponse);
-            IOUtils.closeQuietly(client);
-        }
-    }
-
-    public void refreshAllHostCache() throws AtlasBaseException {
-        if(StringUtils.isBlank(cacheRefresherEndpoint) || !isActiveActiveHAEnabled) {
-            LOG.info("Skipping type-def cache refresh");
-            return;
-        }
-
-        try {
-            int totalFieldKeys = provider.get().getManagementSystem().getGraphIndex(VERTEX_INDEX).getFieldKeys().size();
-            LOG.info("Found {} totalFieldKeys to be expected in other nodes",totalFieldKeys);
-            refreshCache(cacheRefresherEndpoint,totalFieldKeys);
-        }
-        catch (final Exception exception) {
-            LOG.error(exception.getMessage(),exception);
-            throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, "Could not update type definition cache");
-        }
-    }
-
-    private void refreshCache(final String hostUrl,final int totalFieldKeys) {
-        final CloseableHttpClient client = HttpClients.createDefault();
-        CloseableHttpResponse response = null;
-
-        try {
-            URIBuilder builder = new URIBuilder(hostUrl);
-            builder.setParameter("expectedFieldKeys", String.valueOf(totalFieldKeys));
-            final HttpPost httpPost = new HttpPost(builder.build());
-            LOG.info("Invoking cache refresh endpoint {}",hostUrl);
-            response = client.execute(httpPost);
-            LOG.info("Received HTTP response code {} from cache refresh endpoint",response.getStatusLine().getStatusCode());
-            if(response.getStatusLine().getStatusCode() != 200) {
-                throw new RuntimeException("Error while calling cache-refresher on host "+hostUrl+". HTTP code = "+ response.getStatusLine().getStatusCode());
-            }
-            final String responseBody = EntityUtils.toString(response.getEntity());
-            LOG.info("Response Body from cache-refresh = {}", responseBody);
-            CacheRefreshResponseEnvelope cacheRefreshResponseEnvelope = convertStringToObject(responseBody);
-
-            for (CacheRefreshResponse responseOfEachNode : cacheRefreshResponseEnvelope.getResponse()) {
-                if (responseOfEachNode.getStatus() != 204) {
-                    //Do not throw exception in this case as node must have been in passive state now
-                    LOG.error("Error while performing cache refresh on host {} . HTTP code = {}", responseOfEachNode.getHost(), responseOfEachNode.getStatus());
-                } else {
-                    LOG.info("Host {} returns response code {}", responseOfEachNode.getHost(), responseOfEachNode.getStatus());
-                }
-            }
-
-            LOG.info("Refreshed cache successfully on all hosts");
-        } catch (IOException | URISyntaxException e) {
-            LOG.error("Error while invoking cache-refresh endpoint " + e.getMessage(),e);
-            throw new RuntimeException(e);
-        }
-        finally {
-            IOUtils.closeQuietly(response);
-            IOUtils.closeQuietly(client);
+            return EntityUtils.toString(closeableHttpResponse.getEntity());
         }
     }
 

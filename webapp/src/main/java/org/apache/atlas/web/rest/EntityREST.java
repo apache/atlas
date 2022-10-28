@@ -478,7 +478,8 @@ public class EntityREST {
     @Timed
     public EntityMutationResponse createOrUpdate(AtlasEntityWithExtInfo entity,
                                                  @QueryParam("replaceClassifications") @DefaultValue("false") boolean replaceClassifications,
-                                                 @QueryParam("replaceBusinessAttributes") @DefaultValue("false") boolean replaceBusinessAttributes) throws AtlasBaseException {
+                                                 @QueryParam("replaceBusinessAttributes") @DefaultValue("false") boolean replaceBusinessAttributes,
+                                                 @QueryParam("overwriteBusinessAttributes") @DefaultValue("false") boolean isOverwriteBusinessAttributes) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
         try {
@@ -487,7 +488,7 @@ public class EntityREST {
             }
             validateAttributeLength(Lists.newArrayList(entity.getEntity()));
 
-            return entitiesStore.createOrUpdate(new AtlasEntityStream(entity), replaceClassifications, replaceBusinessAttributes);
+            return entitiesStore.createOrUpdate(new AtlasEntityStream(entity), replaceClassifications, replaceBusinessAttributes, isOverwriteBusinessAttributes);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -880,7 +881,8 @@ public class EntityREST {
     @Timed
     public EntityMutationResponse createOrUpdate(AtlasEntitiesWithExtInfo entities,
                                                  @QueryParam("replaceClassifications") @DefaultValue("false") boolean replaceClassifications,
-                                                 @QueryParam("replaceBusinessAttributes") @DefaultValue("false") boolean replaceBusinessAttributes) throws AtlasBaseException {
+                                                 @QueryParam("replaceBusinessAttributes") @DefaultValue("false") boolean replaceBusinessAttributes,
+                                                 @QueryParam("overwriteBusinessAttributes") @DefaultValue("false") boolean isOverwriteBusinessAttributes) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
         try {
@@ -893,7 +895,7 @@ public class EntityREST {
 
             EntityStream entityStream = new AtlasEntityStream(entities);
 
-            return entitiesStore.createOrUpdate(entityStream, replaceClassifications, replaceBusinessAttributes);
+            return entitiesStore.createOrUpdate(entityStream, replaceClassifications, replaceBusinessAttributes, isOverwriteBusinessAttributes);
         } finally {
             AtlasPerfTracer.log(perf);
         }
