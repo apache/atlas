@@ -71,7 +71,8 @@ define(['require',
                 tagClick: '[data-id="tagClickTerm"]',
                 addTag: '[data-id="addTagTerm"]',
                 backButton: '[data-id="backButton"]',
-                textType: '[name="textType"]'
+                textType: '[name="textType"]',
+                tablist: '[data-id="tab-list"] li'
             },
             /** ui events hash */
             events: function() {
@@ -179,6 +180,16 @@ define(['require',
                     this.isTextTypeChecked = !this.isTextTypeChecked;
                     this.renderDetails(this.data);
                 };
+                events["click " + this.ui.tablist] = function(e) {
+                    var tabValue = $(e.currentTarget).attr('role');
+                    Utils.setUrl({
+                        url: Utils.getUrlState.getQueryUrl().queyParams[0],
+                        urlParams: { tabActive: tabValue || 'entities' },
+                        mergeBrowserUrl: true,
+                        trigger: false,
+                        updateTabState: true
+                    });
+                };
                 return events;
             },
             /**
@@ -203,6 +214,7 @@ define(['require',
                 this.$('.fontLoader-relative').show();
                 this.getData();
                 this.bindEvents();
+                this.updateTab();
             },
             bindEvents: function() {
                 var that = this;
@@ -210,6 +222,12 @@ define(['require',
                     that.options.categoryEvent.on("Success:Term", function(options) {
                         that.glossaryCollection.fetch({ reset: true, silent: true });
                     })
+                }
+            },
+            updateTab: function() {
+                if (this.value && this.value.tabActive) {
+                    this.$('.nav.nav-tabs').find('[role="' + this.value.tabActive + '"]').addClass('active').siblings().removeClass('active');
+                    this.$('.tab-content').find('[role="' + this.value.tabActive + '"]').addClass('active').siblings().removeClass('active');
                 }
             },
             onBeforeDestroy: function() {
@@ -293,6 +311,7 @@ define(['require',
                                         "glossaryCollection": that.glossaryCollection,
                                         "searchVent": that.searchVent,
                                         "tags": tags,
+                                        "value": that.value,
                                         "getSelectedTermAttribute": function() {
                                             return that.selectedTermAttribute;
                                         },
@@ -535,7 +554,11 @@ define(['require',
                 require(['views/search/SearchResultLayoutView'], function(SearchResultLayoutView) {
                     if (that.RSearchResultLayoutView) {
                         that.RSearchResultLayoutView.show(new SearchResultLayoutView(_.extend({}, options, {
-                            "value": { "searchType": "basic", "term": that.data.qualifiedName },
+                            "value": {
+                                "searchType": "basic",
+                                "term": that.data.qualifiedName,
+                                "includeDE": options.value.includeDE || false
+                            },
                             "fromView": "glossary"
                         })));
                     }

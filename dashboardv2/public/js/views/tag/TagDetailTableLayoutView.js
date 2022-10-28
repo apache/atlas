@@ -146,7 +146,7 @@ define(['require',
             },
             triggetUrl: function() {
                 var paramObj = Utils.getUrlState.getQueryParams();
-                if (paramObj && paramObj.tabActive === "classification") {
+                if (paramObj && paramObj.tabActive === "classification" && paramObj.viewType !== "term") {
                     Utils.setUrl({
                         url: '#!/detailPage/' + this.guid,
                         mergeBrowserUrl: false,
