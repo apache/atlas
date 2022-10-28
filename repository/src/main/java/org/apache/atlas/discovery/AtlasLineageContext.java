@@ -47,6 +47,7 @@ public class AtlasLineageContext {
     private boolean isProcess;
 
     private Set<String> attributes;
+    private Set<String> ignoredProcesses;
     private Predicate predicate;
 
     private AtlasVertex startDatasetVertex = null;
@@ -59,6 +60,7 @@ public class AtlasLineageContext {
         this.hideProcess = lineageRequest.isHideProcess();
         this.allowDeletedProcess = lineageRequest.isAllowDeletedProcess();
         this.attributes = lineageRequest.getAttributes();
+        this.ignoredProcesses = lineageRequest.getIgnoredProcesses();
         this.offset = lineageRequest.getOffset();
         this.calculateRemainingVertexCounts = lineageRequest.getCalculateRemainingVertexCounts();
 
@@ -133,6 +135,14 @@ public class AtlasLineageContext {
         this.attributes = attributes;
     }
 
+    public Set<String> getIgnoredProcesses() {
+        return ignoredProcesses;
+    }
+
+    public void setIgnoredProcesses(Set<String> ignoredProcesses) {
+        this.ignoredProcesses = ignoredProcesses;
+    }
+
     public AtlasVertex getStartDatasetVertex() {
         return startDatasetVertex;
     }
@@ -183,6 +193,7 @@ public class AtlasLineageContext {
                 ", allowDeletedProcess=" + allowDeletedProcess +
                 ", direction=" + direction +
                 ", attributes=" + attributes +
+                ", ignoredProcesses=" + ignoredProcesses +
                 '}';
     }
 }

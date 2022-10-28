@@ -40,6 +40,7 @@ import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageRelation;
 import org.apache.atlas.model.lineage.AtlasLineageRequest;
 import org.apache.atlas.model.lineage.LineageChildrenInfo;
+import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -407,7 +408,6 @@ public class EntityLineageService implements AtlasLineageService {
         List<AtlasEdge> currentVertexEdges = getEdgesOfCurrentVertex(currentVertex, isInput, lineageContext);
         Set<String> paginationCalculatedVertices = new HashSet<>();
         paginationCalculatedVertices.add(currentVertex.getIdForDisplay());
-        ret.setHasChildrenForDirection(getGuid(currentVertex), new LineageChildrenInfo(isInput ? INPUT : OUTPUT, hasMoreChildren(currentVertexEdges)));
         if (lineageContext.shouldApplyPagination()) {
             if (lineageContext.isCalculateRemainingVertexCounts()) {
                 calculateRemainingVertexCounts(currentVertex, isInput, ret);
@@ -609,6 +609,11 @@ public class EntityLineageService implements AtlasLineageService {
     }
 
     private List<AtlasEdge> getEdgesOfProcess(boolean isInput, AtlasLineageContext lineageContext, AtlasVertex processVertex) {
+        if (lineageContext.getIgnoredProcesses() != null &&
+                lineageContext.getIgnoredProcesses().contains(processVertex.getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY, String.class))) {
+            return Collections.emptyList();
+        }
+
         return vertexEdgeCache.getEdges(processVertex, OUT, isInput ? PROCESS_INPUTS_EDGE : PROCESS_OUTPUTS_EDGE)
                 .stream()
                 .filter(edge -> shouldProcessEdge(lineageContext, edge) && vertexMatchesEvaluation(edge.getInVertex(), lineageContext))
