@@ -35,12 +35,14 @@ public interface AtlasLineageService {
     AtlasLineageInfo getAtlasLineageInfo(String entityGuid, LineageDirection direction, int depth) throws AtlasBaseException;
 
     /**
-     * @param entityGuid unique ID of the entity
-     * @param direction direction of lineage - INPUT, OUTPUT or BOTH
-     * @param depth number of hops in lineage
+     * @param entityGuid    unique ID of the entity
+     * @param direction     direction of lineage - INPUT, OUTPUT or BOTH
+     * @param depth         number of hops in lineage
+     * @param page
+     * @param recordPerPage
      * @return AtlasLineageInfo
      */
-    AtlasLineageInfo getAtlasLineageInfo(String entityGuid, LineageDirection direction, int depth, boolean hideProcess) throws AtlasBaseException;
+    AtlasLineageInfo getAtlasLineageInfo(String guid, LineageDirection direction, int depth, boolean hideProcess, int offset, int limit, boolean calculateRemainingVertexCounts) throws AtlasBaseException;
 
     /**
      * @param lineageRequest AtlasLineageRequest
