@@ -101,7 +101,7 @@ define(['require',
                 };
                 events["click " + this.ui.termClick] = function(e) {
                     if ((e.target.nodeName.toLocaleLowerCase() != "i") && (!$(e.target).hasClass("parent-list-btn")) && (!$(e.target).hasClass("fa"))) {
-                        var guid = $(e.currentTarget).find('.fa-close').data('guid'),
+                        var guid = $(e.currentTarget).find('i').data('guid'),
                             gType = "term";
                         Utils.setUrl({
                             url: '#!/glossary/' + guid,
