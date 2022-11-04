@@ -73,7 +73,8 @@ public class ClassificationPropagationTasks {
                 entityGraphMapper.deleteClassificationOnlyPropagation(deletedEdgeIds);
             } else {
                 String deletedEdgeId          =  (String) parameters.get(PARAM_DELETED_EDGE_ID);
-                entityGraphMapper.deleteClassificationOnlyPropagation(deletedEdgeId);
+                String classificationVertexId =  (String) parameters.get(PARAM_CLASSIFICATION_VERTEX_ID);
+                entityGraphMapper.deleteClassificationOnlyPropagation(deletedEdgeId, classificationVertexId);
             }
         }
     }
