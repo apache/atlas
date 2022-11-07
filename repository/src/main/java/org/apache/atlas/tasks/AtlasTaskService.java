@@ -15,10 +15,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
+import static org.apache.atlas.repository.Constants.TASK_GUID;
+import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.setEncodedProperty;
 import static org.apache.atlas.tasks.TaskRegistry.toAtlasTask;
 
 @Component
@@ -27,9 +27,15 @@ public class AtlasTaskService implements TaskService {
 
     private final AtlasGraph graph;
 
+    private final List<String> retryAllowedStatuses;
+
     @Inject
     public AtlasTaskService(AtlasGraph graph) {
         this.graph = graph;
+        retryAllowedStatuses = new ArrayList<>();
+        retryAllowedStatuses.add(AtlasTask.Status.COMPLETE.toString());
+        retryAllowedStatuses.add(AtlasTask.Status.FAILED.toString());
+        // Since classification vertex is deleted after the task gets deleted, no need to retry the DELETED task
     }
 
     @Override
@@ -40,7 +46,7 @@ public class AtlasTaskService implements TaskService {
         DirectIndexQueryResult indexQueryResult;
 
         try {
-            indexQuery = graph.elasticsearchQuery(Constants.VERTEX_INDEX, searchParams);
+            indexQuery = searchTask(searchParams);
             indexQueryResult = indexQuery.vertices(searchParams);
 
             if (indexQueryResult != null) {
@@ -70,5 +76,53 @@ public class AtlasTaskService implements TaskService {
         }
 
         return ret;
+    }
+
+    @Override
+    public void retryTask(String taskGuid) throws AtlasBaseException {
+        TaskSearchParams taskSearchParams = getMatchQuery(taskGuid);
+        AtlasIndexQuery atlasIndexQuery = searchTask(taskSearchParams);
+        DirectIndexQueryResult indexQueryResult = atlasIndexQuery.vertices(taskSearchParams);
+
+        AtlasVertex atlasVertex = getTaskVertex(indexQueryResult.getIterator(), taskGuid);
+
+        String status = atlasVertex.getProperty(Constants.TASK_STATUS, String.class);
+
+        // Retrial ability of the task is not limited to FAILED ones due to testing/debugging
+        if (! retryAllowedStatuses.contains(status)) {
+            throw new AtlasBaseException(AtlasErrorCode.TASK_STATUS_NOT_APPROPRIATE, taskGuid, status);
+        }
+
+        setEncodedProperty(atlasVertex, Constants.TASK_STATUS, AtlasTask.Status.PENDING);
+        int attemptCount = atlasVertex.getProperty(Constants.TASK_ATTEMPT_COUNT, Integer.class);
+        setEncodedProperty(atlasVertex, Constants.TASK_ATTEMPT_COUNT, attemptCount+1);
+        graph.commit();
+    }
+
+    private AtlasVertex getTaskVertex(Iterator<AtlasIndexQuery.Result> iterator, String taskGuid) throws AtlasBaseException {
+        while(iterator.hasNext()) {
+            AtlasVertex atlasVertex = iterator.next().getVertex();
+            if (atlasVertex.getProperty(Constants.TASK_GUID, String.class).equals(taskGuid)) {
+                return atlasVertex;
+            }
+        }
+        throw new AtlasBaseException(AtlasErrorCode.TASK_NOT_FOUND, taskGuid);
+    }
+
+    private TaskSearchParams getMatchQuery(String guid) {
+        TaskSearchParams params = new TaskSearchParams();
+        params.setDsl(mapOf("query", mapOf("match", mapOf(TASK_GUID, guid))));
+        return params;
+    }
+
+    private Map<String, Object> mapOf(String key, Object value) {
+        Map<String, Object> map = new HashMap<>();
+        map.put(key, value);
+
+        return map;
+    }
+
+    private AtlasIndexQuery searchTask(TaskSearchParams searchParams) {
+        return graph.elasticsearchQuery(Constants.VERTEX_INDEX, searchParams);
     }
 }

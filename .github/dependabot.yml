@@ -1,0 +1,100 @@
+# Use `allow` to specify which dependencies to maintain
+
+version: 2
+updates:
+  - package-ecosystem: "npm" #npm
+    directory: "/"
+    schedule:
+      interval: "daily"
+    allow:
+      # Allow direct and indirect updates for all packages
+      - dependency-type: "all"
+
+  - package-ecosystem: "composer" #composer
+    directory: "/"
+    schedule:
+      interval: "daily"
+    allow:
+      #  Allow direct and indirect  updates for all packages
+      - dependency-type: "all"
+
+  - package-ecosystem: "pip" #python
+    directory: "/"
+    schedule:
+      interval: "daily"
+    allow:
+      #  Allow direct and indirect  updates for all packages
+      - dependency-type: "all"
+ 
+  # Maintain dependencies for GitHub Actions
+  - package-ecosystem: "github-actions" #github-actions
+    directory: "/"
+    schedule:
+      interval: "daily"
+    allow:
+      #  Allow direct and indirect  updates for all packages
+      - dependency-type: "all"
+
+  - package-ecosystem: "bundler"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    allow:
+      #  Allow direct and indirect  updates for all packages
+      - dependency-type: "all"
+
+  - package-ecosystem: "cargo"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    allow:
+      #  Allow direct and indirect  updates for all packages
+      - dependency-type: "all"
+
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    allow:
+      #  Allow direct updates for all packages
+      - dependency-type: "all"
+  
+  - package-ecosystem: "gomod"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    allow:
+      #  Allow direct and indirect  updates for all packages
+      - dependency-type: "all"
+
+  - package-ecosystem: "gradle"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    allow:
+      #  Allow direct and indirect  updates for all packages
+      - dependency-type: "all"
+
+  - package-ecosystem: "maven"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    allow:
+      #  Allow direct and indirect  updates for all packages
+      - dependency-type: "all"
+
+  - package-ecosystem: "pub"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    allow:
+      #  Allow direct and indirect  updates for all packages
+      - dependency-type: "all"
+
+  - package-ecosystem: "terraform"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    allow:
+      #  Allow direct and indirect  updates for all packages
+      - dependency-type: "all"

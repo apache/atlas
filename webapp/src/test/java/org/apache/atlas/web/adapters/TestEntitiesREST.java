@@ -162,7 +162,7 @@ public class TestEntitiesREST {
         dbWithCustomAttr.setCustomAttributes(customAttr);
 
         AtlasEntitiesWithExtInfo atlasEntitiesWithExtInfo = new AtlasEntitiesWithExtInfo(dbWithCustomAttr);
-        EntityMutationResponse   response                 = entityREST.createOrUpdate(atlasEntitiesWithExtInfo, false, false);
+        EntityMutationResponse   response                 = entityREST.createOrUpdate(atlasEntitiesWithExtInfo, false, false, false);
 
         Assert.assertNotNull(response.getUpdatedEntitiesByTypeName(DATABASE_TYPE));
 
@@ -646,7 +646,7 @@ public class TestEntitiesREST {
             newEntities.addReferredEntity(serDeserEntity(column));
         }
 
-        EntityMutationResponse response2 = entityREST.createOrUpdate(newEntities, false, false);
+        EntityMutationResponse response2 = entityREST.createOrUpdate(newEntities, false, false, false);
 
         List<AtlasEntityHeader> newGuids = response2.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE);
         Assert.assertNotNull(newGuids);
@@ -775,7 +775,7 @@ public class TestEntitiesREST {
             entities.addReferredEntity(column);
         }
 
-        EntityMutationResponse response = entityREST.createOrUpdate(entities, false, false);
+        EntityMutationResponse response = entityREST.createOrUpdate(entities, false, false, false);
         List<AtlasEntityHeader> guids = response.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE);
 
         Assert.assertNotNull(guids);

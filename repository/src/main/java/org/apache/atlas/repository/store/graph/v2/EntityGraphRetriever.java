@@ -18,13 +18,13 @@
 package org.apache.atlas.repository.store.graph.v2;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.google.common.collect.Iterables;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TimeBoundary;
+import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.glossary.enums.AtlasTermAssignmentStatus;
 import org.apache.atlas.model.glossary.relations.AtlasTermAssignmentHeader;
 import org.apache.atlas.model.instance.AtlasClassification;
@@ -121,6 +121,7 @@ import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.GraphHelper.*;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getIdFromVertex;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.isReference;
+import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_ONLY_PROPAGATION_DELETE;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.BOTH;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
@@ -548,10 +549,21 @@ public class EntityGraphRetriever {
         return ret;
     }
 
+    public List<AtlasVertex> getImpactedVerticesV2(AtlasVertex entityVertex) {
+        return getImpactedVerticesV2(entityVertex, (List<String>) null);
+    }
 
     public List<AtlasVertex> getImpactedVerticesV2(AtlasVertex entityVertex,  List<String> edgeLabelsToExclude){
         List<AtlasVertex> ret = new ArrayList<>();
         traverseImpactedVertices(entityVertex, null, null, ret, edgeLabelsToExclude);
+
+        return ret;
+    }
+
+    public List<AtlasVertex> getImpactedVerticesV2(AtlasVertex entityVertex, String relationshipGuidToExclude) {
+        List<AtlasVertex> ret = new ArrayList<>();
+
+        traverseImpactedVertices(entityVertex, relationshipGuidToExclude, null, ret, null);
 
         return ret;
     }
@@ -564,6 +576,13 @@ public class EntityGraphRetriever {
         List<AtlasVertex> ret = new ArrayList<>(Arrays.asList(entityVertex));
 
         traverseImpactedVertices(entityVertex, relationshipGuidToExclude, classificationId, ret, null);
+
+        return ret;
+    }
+    public List<AtlasVertex> getIncludedImpactedVerticesV2(AtlasVertex entityVertex, String relationshipGuidToExclude, String classificationId, List<String> edgeLabelsToExclude) {
+        List<AtlasVertex> ret = new ArrayList<>(Arrays.asList(entityVertex));
+
+        traverseImpactedVertices(entityVertex, relationshipGuidToExclude, classificationId, ret, edgeLabelsToExclude);
 
         return ret;
     }
@@ -580,24 +599,6 @@ public class EntityGraphRetriever {
         List<AtlasVertex> ret = new ArrayList<>();
 
         traverseImpactedVertices(entityVertex, relationshipGuidToExclude, classificationId, ret, edgeLabelsToExclude);
-
-        return ret;
-    }
-
-    public List<AtlasVertex> getIncludedImpactedVerticesV3(AtlasVertex entityVertex, String relationshipGuidToExclude, String classificationId, List<String> edgeLabelsToExclude) {
-        List<String> verticesIds = new ArrayList<>(Arrays.asList(entityVertex.getIdForDisplay()));
-
-        traverseImpactedVerticesByLevel(entityVertex, relationshipGuidToExclude, classificationId, verticesIds, edgeLabelsToExclude);
-
-        List<AtlasVertex> ret = verticesIds.stream().map(x -> graph.getVertex(x)).collect(Collectors.toList());
-
-        return ret;
-    }
-
-    public List<String> getImpactedVerticesIds(AtlasVertex entityVertex, String relationshipGuidToExclude, String classificationId, List<String> edgeLabelsToExclude) {
-        List<String > ret = new ArrayList<>();
-
-        traverseImpactedVerticesByLevel(entityVertex, relationshipGuidToExclude, classificationId, ret, edgeLabelsToExclude);
 
         return ret;
     }
@@ -815,7 +816,6 @@ public class EntityGraphRetriever {
 
         return ret;
     }
-
     private boolean isOutVertex(AtlasVertex vertex, AtlasEdge edge) {
         return StringUtils.equals(vertex.getIdForDisplay(), edge.getOutVertex().getIdForDisplay());
     }
@@ -1229,6 +1229,10 @@ public class EntityGraphRetriever {
                 break;
             case OBJECT_ID_TYPE:
                 if (includeReferences) {
+                    if (attribute.getDefinedInType().getTypeCategory() == TypeCategory.STRUCT) {
+                        //Struct attribute having ObjectId as type
+                        edgeLabel = AtlasGraphUtilsV2.getEdgeLabel(attribute.getName());
+                    }
                     ret = attribute.getAttributeDef().isSoftReferenced() ? mapVertexToObjectIdForSoftRef(entityVertex, attribute, entityExtInfo, isMinExtInfo) :
                                                                            mapVertexToObjectId(entityVertex, edgeLabel, null, entityExtInfo, isOwnedAttribute, edgeDirection, isMinExtInfo);
                 } else {

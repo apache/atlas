@@ -171,7 +171,10 @@ public interface AtlasEntityStore {
      * @return EntityMutationResponse Entity mutations operations with the corresponding set of entities on which these operations were performed
      * @throws AtlasBaseException
      */
-    EntityMutationResponse createOrUpdate(EntityStream entityStream, boolean replaceClassifications, boolean replaceBusinessAttributes) throws AtlasBaseException;
+    EntityMutationResponse createOrUpdate(EntityStream entityStream,
+                                          boolean replaceClassifications,
+                                          boolean replaceBusinessAttributes,
+                                          boolean isOverwriteBusinessAttributes) throws AtlasBaseException;
 
 
     /**

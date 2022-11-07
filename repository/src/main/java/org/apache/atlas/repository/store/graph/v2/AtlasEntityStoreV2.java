@@ -427,8 +427,9 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     @Override
     @GraphTransaction
-    public EntityMutationResponse createOrUpdate(EntityStream entityStream,  boolean replaceClassifications, boolean replaceBusinessAttributes) throws AtlasBaseException {
-        return createOrUpdate(entityStream, false, replaceClassifications, replaceBusinessAttributes);
+    public EntityMutationResponse createOrUpdate(EntityStream entityStream,  boolean replaceClassifications,
+                                                 boolean replaceBusinessAttributes, boolean isOverwriteBusinessAttributes) throws AtlasBaseException {
+        return createOrUpdate(entityStream, false, replaceClassifications, replaceBusinessAttributes, isOverwriteBusinessAttributes);
     }
 
     @Override
@@ -440,12 +441,12 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     @Override
     @GraphTransaction(logRollback = false)
     public EntityMutationResponse createOrUpdateForImport(EntityStream entityStream) throws AtlasBaseException {
-        return createOrUpdate(entityStream, false, true, true);
+        return createOrUpdate(entityStream, false, true, true, false);
     }
 
     @Override
     public EntityMutationResponse createOrUpdateForImportNoCommit(EntityStream entityStream) throws AtlasBaseException {
-        return createOrUpdate(entityStream, false, true, true);
+        return createOrUpdate(entityStream, false, true, true, false);
     }
 
     @Override
@@ -477,7 +478,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         entity.setGuid(guid);
 
-        return createOrUpdate(new AtlasEntityStream(updatedEntityInfo), isPartialUpdate, false, false);
+        return createOrUpdate(new AtlasEntityStream(updatedEntityInfo), isPartialUpdate, false, false, false);
     }
 
     @Override
@@ -499,7 +500,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, new AtlasEntityHeader(entity)), "update entity ByUniqueAttributes");
 
-        return createOrUpdate(new AtlasEntityStream(updatedEntityInfo), true, false, false);
+        return createOrUpdate(new AtlasEntityStream(updatedEntityInfo), true, false, false, false);
     }
 
     @Override
@@ -553,7 +554,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 throw new AtlasBaseException(AtlasErrorCode.ATTRIBUTE_UPDATE_NOT_SUPPORTED, attrName, attrType.getTypeName());
         }
 
-        return createOrUpdate(new AtlasEntityStream(updateEntity), true, false, false);
+        return createOrUpdate(new AtlasEntityStream(updateEntity), true, false, false, false);
     }
 
     @Override
@@ -1221,54 +1222,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             LOG.debug("==> addOrUpdateBusinessAttributes(guid={}, businessAttributes={}, isOverwrite={})", guid, businessAttrbutes, isOverwrite);
         }
 
-        if (StringUtils.isEmpty(guid)) {
-            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "guid is null/empty");
-        }
-
-        if (MapUtils.isEmpty(businessAttrbutes)) {
-            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "businessAttributes is null/empty");
-        }
-
-        AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(graph, guid);
-
-        if (entityVertex == null) {
-            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
-        }
-
-        String                           typeName                     = getTypeName(entityVertex);
-        AtlasEntityType                  entityType                   = typeRegistry.getEntityTypeByName(typeName);
-        AtlasEntityHeader                entityHeader                 = entityRetriever.toAtlasEntityHeaderWithClassifications(entityVertex);
-        Map<String, Map<String, Object>> currEntityBusinessAttributes = entityRetriever.getBusinessMetadata(entityVertex);
-        Set<String>                      updatedBusinessMetadataNames = new HashSet<>();
-
-        for (String bmName : entityType.getBusinessAttributes().keySet()) {
-            Map<String, Object> bmAttrs     = businessAttrbutes.get(bmName);
-            Map<String, Object> currBmAttrs = currEntityBusinessAttributes != null ? currEntityBusinessAttributes.get(bmName) : null;
-
-            if (bmAttrs == null && !isOverwrite) {
-                continue;
-            } else if (MapUtils.isEmpty(bmAttrs) && MapUtils.isEmpty(currBmAttrs)) { // no change
-                continue;
-            } else if (Objects.equals(bmAttrs, currBmAttrs)) { // no change
-                continue;
-            }
-
-            updatedBusinessMetadataNames.add(bmName);
-        }
-
-        AtlasEntityAccessRequestBuilder  requestBuilder = new AtlasEntityAccessRequestBuilder(typeRegistry, AtlasPrivilege.ENTITY_UPDATE_BUSINESS_METADATA, entityHeader);
-
-        for (String bmName : updatedBusinessMetadataNames) {
-            requestBuilder.setBusinessMetadata(bmName);
-
-            AtlasAuthorizationUtils.verifyAccess(requestBuilder.build(), "add/update business-metadata: guid=", guid, ", business-metadata-name=", bmName);
-        }
-
-        if (isOverwrite) {
-            entityGraphMapper.setBusinessAttributes(entityVertex, entityType, businessAttrbutes);
-        } else {
-            entityGraphMapper.addOrUpdateBusinessAttributes(entityVertex, entityType, businessAttrbutes);
-        }
+        entityGraphMapper.addOrUpdateBusinessAttributes(guid, businessAttrbutes, isOverwrite);
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== addOrUpdateBusinessAttributes(guid={}, businessAttributes={}, isOverwrite={})", guid, businessAttrbutes, isOverwrite);
@@ -1298,14 +1252,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         String                          typeName       = getTypeName(entityVertex);
         AtlasEntityType                 entityType     = typeRegistry.getEntityTypeByName(typeName);
-        AtlasEntityHeader               entityHeader   = entityRetriever.toAtlasEntityHeaderWithClassifications(entityVertex);
-        AtlasEntityAccessRequestBuilder requestBuilder = new AtlasEntityAccessRequestBuilder(typeRegistry, AtlasPrivilege.ENTITY_UPDATE_BUSINESS_METADATA, entityHeader);
-
-        for (String bmName : businessAttributes.keySet()) {
-            requestBuilder.setBusinessMetadata(bmName);
-
-            AtlasAuthorizationUtils.verifyAccess(requestBuilder.build(), "remove business-metadata: guid=", guid, ", business-metadata=", bmName);
-        }
 
         entityGraphMapper.removeBusinessAttributes(entityVertex, entityType, businessAttributes);
 
@@ -1451,7 +1397,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
     }
 
-    private EntityMutationResponse createOrUpdate(EntityStream entityStream, boolean isPartialUpdate, boolean replaceClassifications, boolean replaceBusinessAttributes) throws AtlasBaseException {
+    private EntityMutationResponse createOrUpdate(EntityStream entityStream, boolean isPartialUpdate, boolean replaceClassifications, boolean replaceBusinessAttributes, boolean isOverwriteBusinessAttribute) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> createOrUpdate()");
         }
@@ -1557,7 +1503,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 reqContext.endMetricRecord(checkForUnchangedEntities);
             }
 
-            EntityMutationResponse ret = entityGraphMapper.mapAttributesAndClassifications(context, isPartialUpdate, replaceClassifications, replaceBusinessAttributes);
+            EntityMutationResponse ret = entityGraphMapper.mapAttributesAndClassifications(context, isPartialUpdate,
+                    replaceClassifications, replaceBusinessAttributes, isOverwriteBusinessAttribute);
 
             ret.setGuidAssignments(context.getGuidAssignments());
 

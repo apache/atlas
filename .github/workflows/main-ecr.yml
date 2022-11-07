@@ -1,0 +1,193 @@
+name: Build and Push Atlas Metastore docker image to ECR
+
+on:
+  push:
+    branches:
+      - alpha
+      - beta
+      - development
+      - master
+
+permissions:
+  id-token: write
+  contents: write
+  
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repo
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - name: Get branch name
+      run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+      id: get_branch
+
+    - name: Get repository name
+      run:   echo "REPOSITORY_NAME=`echo "$GITHUB_REPOSITORY" | awk -F / '{print $2}' | sed -e "s/:refs//"`" >> $GITHUB_ENV
+      shell: bash
+    
+    - name: Set up JDK 1.8
+      uses: actions/setup-java@v1
+      with:
+        java-version: 1.8
+      
+    - name: Cache Maven packages
+      uses: actions/cache@v2
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/build.sh') }}
+        restore-keys: ${{ runner.os }}-m2
+
+    - name: Build with Maven
+      run: chmod +x ./build.sh && ./build.sh
+
+    - name: Get IAM Role and Region to login into ECR
+      id: get_ecr-details
+      run: |
+        branch_name=${{ steps.get_branch.outputs.branch }} 
+        if [[ $branch_name == 'main' || $branch_name == 'staging' || $branch_name == 'master' ]]
+            then
+              iamRole=${{ secrets.AWS_PROD_PLATFORM_ECR_ACCESS }}
+              region='us-east-1'
+            else
+              iamRole=${{ secrets.AWS_DEV_PLATFORM_ECR_ACCESS }}
+              region='ap-south-1'
+        fi
+        echo "##[set-output name=iamRole;]$(echo ${iamRole})"
+        echo "##[set-output name=region;]$(echo ${region})"
+      
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        role-to-assume: ${{ steps.get_ecr-details.outputs.iamRole }}
+        aws-region: ${{ steps.get_ecr-details.outputs.region }}
+
+    - name: Check and create ECR Repo if it does not exist
+      uses: nick-fields/retry@v2
+      id: check_and_create_repo
+      with:
+        timeout_minutes: 10
+        max_attempts: 5
+        command: |
+              aws ecr describe-repositories --repository-names atlanhq/${{ github.event.repository.name }} || aws ecr create-repository --repository-name atlanhq/${{ github.event.repository.name }} --image-tag-mutability IMMUTABLE
+              while ! $(aws ecr get-repository-policy --repository-name atlanhq/${{ github.event.repository.name }})
+              do
+                aws ecr set-repository-policy --repository-name atlanhq/${{ github.event.repository.name }} --policy-text file://ecrorgcrossaccountpolicy.json
+                registryIdfrompolicy=$(aws ecr get-repository-policy --repository-name atlanhq/${{ github.event.repository.name }} | jq -r '.registryId')
+                registryIdfromfromecrrepo=$(aws ecr describe-repositories --repository-names atlanhq/${{ github.event.repository.name }} | jq -r '.repositories[0].registryId')
+                echo "registryIdfrompolicy : $registryIdfrompolicy and registryIdfromfromecrrepo : $registryIdfromfromecrrepo" 
+                  if [ $registryIdfrompolicy == $registryIdfromfromecrrepo ]
+                  then
+                      break
+                  fi
+              done
+
+    - name: Get Semantic Version tag
+      id: semver_tag
+      run: |
+        branch_name=${{ steps.get_branch.outputs.branch }}
+        tag=$(git tag --sort=v:refname | grep -E "^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)-$branch_name$" | tail -1)
+        if [[ -z $tag ]]
+        then
+            echo "Creating a new tag series"
+            updated_full_tag="1.0.0-$branch_name"
+            new_tag=1.0.0
+        else
+            # echo "Current tag is $tag"
+            patch_version=$(echo $tag | cut -d '.' -f 3 | cut -d '-' -f 1)
+            minor_version=$(echo $tag | cut -d '.' -f 2)
+            major_version=$(echo $tag | cut -d '.' -f 1)
+            if [[ $patch_version == '999' && $minor_version == '999' ]]
+            then
+                bump_type='M'
+            elif [[ $patch_version == '999' && $minor_version != '999' ]]
+            then
+                bump_type='m'
+            else
+                bump_type='p'
+            fi
+            plain_tag_value=$major_version.$minor_version.$patch_version
+            chmod +x ./sem-ver-bump.sh
+            new_tag=$(./sem-ver-bump.sh -$bump_type $plain_tag_value)
+            updated_full_tag=$new_tag-$branch_name
+            # echo "Last tag is $tag, Bumping up to $updated_full_tag"
+        fi
+
+        commit_tag=$(git describe --tags --exact-match $GITHUB_SHA 2>/dev/null || echo "no_tag_found")
+        if [[ $commit_tag == "no_tag_found" ]]
+        then
+            echo "No associated tag found, tagging $GITHUB_SHA with $updated_full_tag"
+            git tag $updated_full_tag $GITHUB_SHA
+            git push --tags
+            echo "##[set-output name=build;]$(echo true)"
+            echo "##[set-output name=new_tag;]$(echo $new_tag)"
+            echo "Image will be tagged with $new_tag"
+        else
+            echo "$GITHUB_SHA is already tagged with $commit_tag"
+            IMAGE_META=$(aws ecr describe-images --repository-name=atlanhq/${{ github.event.repository.name }} --image-ids=imageTag=$commit_tag 2>/dev/null || echo "no_tag_found")
+            if [[ $IMAGE_META == "no_tag_found" ]]; then
+                echo "Image with specified tag does not exist, proceeding to build and push"
+                existing_tag=$(echo $commit_tag | cut -d '-' -f 1)
+                echo "##[set-output name=new_tag;]$(echo $existing_tag)"
+                echo "##[set-output name=build;]$(echo true)"
+                echo "Image will be tagged with $existing_tag"
+            else
+                IMAGE_TAGS="$( echo ${IMAGE_META} | jq '.imageDetails[0].imageTags[0]' -r )"
+                echo "Image with the specified tag exists, Skipping build"
+                existing_tag=$(echo $commit_tag | cut -d '-' -f 1)
+                echo "##[set-output name=new_tag;]$(echo $existing_tag)"
+                echo "##[set-output name=build;]$(echo false)"
+            fi
+        fi
+
+    - name: Keep last 10 tags and delete rest of the old tags
+      id: cleanup-tags
+      run: |
+        branch_name=${{ steps.get_branch.outputs.branch }}
+        git tag --sort=v:refname | grep -E "^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)-$branch_name" > tagsfile
+        cat tagsfile
+
+        vars=($(awk -F= '{print $1}' tagsfile))
+
+        Npars=${#vars[@]}
+        echo "Npars : $Npars"
+        numberOfTagsToKeep=10
+        if [ $Npars -gt $numberOfTagsToKeep ]
+
+        then
+            for ((i=0; i<$Npars - $numberOfTagsToKeep; i++)); do
+            echo "var $i : ${vars[$i]}"
+            git push --delete origin ${vars[$i]}
+            done
+        fi
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      if: steps.semver_tag.outputs.build == 'true'
+      uses: aws-actions/amazon-ecr-login@v1
+
+    - name: Set up Buildx 
+      id: buildx
+      if: steps.semver_tag.outputs.build == 'true'
+      uses: docker/setup-buildx-action@v2
+      with:
+        driver-opts: image=moby/buildkit:master
+    
+    - name: Build and push docker image
+      id: docker_build
+      if: steps.semver_tag.outputs.build == 'true'
+      uses: docker/build-push-action@v3
+      with:
+        context: .
+        file: ./Dockerfile
+        push: true
+        tags: |
+          ${{ steps.login-ecr.outputs.registry }}/atlanhq/${{ github.event.repository.name }}:${{ steps.semver_tag.outputs.new_tag }}-${{ steps.get_branch.outputs.branch }}
+          ${{ steps.login-ecr.outputs.registry }}/atlanhq/${{ github.event.repository.name }}:${{ steps.get_branch.outputs.branch }}-${{ steps.semver_tag.outputs.new_tag }}
+        build-args: |
+          ACCESS_TOKEN_USR=$GITHUB_ACTOR
+          ACCESS_TOKEN_PWD=${{ secrets.my_pat }}  
