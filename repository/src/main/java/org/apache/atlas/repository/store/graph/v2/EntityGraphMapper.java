@@ -3446,18 +3446,23 @@ public class EntityGraphMapper {
                     propagationMode = CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE;
                 }
 
-                List<AtlasVertex> propagatedVertices = GraphHelper.getPropagatedVertices(currentClassificationVertex);
-                LOG.info("Traversed {} vertices with edge {} for classification vertex {}", propagatedVertices.size(), edge.getId(), classificationId);
+                List<String> propagatedVerticesIds = GraphHelper.getPropagatedVerticesIds(currentClassificationVertex);
+                LOG.info("Traversed {} vertices with edge {} for classification vertex {}", propagatedVerticesIds.size(), edge.getId(), classificationId);
 
-                List<AtlasVertex> propagatedEntitiesWithoutEdge = entityRetriever.getImpactedVerticesV2(sourceEntityVertex, GraphHelper.getRelationshipGuid(edge), classificationId,
+                List<String> propagatedVerticesIdWithoutEdge = entityRetriever.getImpactedVerticesIds(sourceEntityVertex, GraphHelper.getRelationshipGuid(edge), classificationId,
                         CLASSIFICATION_PROPAGATION_EXCLUSION_MAP.get(propagationMode));
 
-                LOG.info("Traversed {} vertices except edge {} for classification vertex {}", propagatedEntitiesWithoutEdge.size(), edge.getId(), classificationId);
+                LOG.info("Traversed {} vertices except edge {} for classification vertex {}", propagatedVerticesIdWithoutEdge.size(), edge.getId(), classificationId);
 
-                List<AtlasVertex>   verticesToRemove = (List<AtlasVertex>)CollectionUtils.subtract(propagatedVertices, propagatedEntitiesWithoutEdge);
+                List<String> verticesIdsToRemove = (List<String>)CollectionUtils.subtract(propagatedVerticesIds, propagatedVerticesIdWithoutEdge);
 
-                propagatedEntitiesWithoutEdge.clear();
-                propagatedVertices.clear();
+                List<AtlasVertex> verticesToRemove = verticesIdsToRemove.stream()
+                        .map(x -> graph.getVertex(x))
+                        .filter(vertex -> vertex != null)
+                        .collect(Collectors.toList());
+
+                propagatedVerticesIdWithoutEdge.clear();
+                propagatedVerticesIds.clear();
 
                 LOG.info("To delete classification from {} vertices for deletion of edge {} and classification {}", verticesToRemove.size(), edge.getId(), classificationId);
 

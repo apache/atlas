@@ -580,9 +580,13 @@ public class EntityGraphRetriever {
         return ret;
     }
     public List<AtlasVertex> getIncludedImpactedVerticesV2(AtlasVertex entityVertex, String relationshipGuidToExclude, String classificationId, List<String> edgeLabelsToExclude) {
-        List<AtlasVertex> ret = new ArrayList<>(Arrays.asList(entityVertex));
+        List<String> vertexIds = new ArrayList<>();
+        traverseImpactedVerticesByLevel(entityVertex, relationshipGuidToExclude, classificationId, vertexIds, edgeLabelsToExclude);
 
-        traverseImpactedVertices(entityVertex, relationshipGuidToExclude, classificationId, ret, edgeLabelsToExclude);
+        List<AtlasVertex> ret = vertexIds.stream().map(x -> graph.getVertex(x))
+                .filter(vertex -> vertex != null)
+                .collect(Collectors.toList());
+        ret.add(entityVertex);
 
         return ret;
     }
@@ -599,6 +603,15 @@ public class EntityGraphRetriever {
         List<AtlasVertex> ret = new ArrayList<>();
 
         traverseImpactedVertices(entityVertex, relationshipGuidToExclude, classificationId, ret, edgeLabelsToExclude);
+
+        return ret;
+    }
+
+
+    public List<String> getImpactedVerticesIds(AtlasVertex entityVertex, String relationshipGuidToExclude, String classificationId, List<String> edgeLabelsToExclude) {
+        List<String> ret = new ArrayList<>();
+
+        traverseImpactedVerticesByLevel(entityVertex, relationshipGuidToExclude, classificationId, ret, edgeLabelsToExclude);
 
         return ret;
     }
