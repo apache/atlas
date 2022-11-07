@@ -987,7 +987,7 @@ public abstract class DeleteHandlerV1 {
         }
     }
 
-    public void deleteVertex(AtlasVertex instanceVertex, boolean force) throws AtlasBaseException {
+    protected void deleteVertex(AtlasVertex instanceVertex, boolean force) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("Setting the external references to {} to null(removing edges)", string(instanceVertex));
         }

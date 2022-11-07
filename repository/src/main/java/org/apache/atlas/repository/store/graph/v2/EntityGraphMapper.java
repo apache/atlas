@@ -1008,14 +1008,13 @@ public class EntityGraphMapper {
                             isArrayOfEnum = elementType.getTypeCategory().equals(TypeCategory.ENUM);
                         }
 
-
                         if (isArrayOfPrimitiveType || isArrayOfEnum) {
-                            attrOldValue = vertex.getPropertyValues(attribute.getVertexPropertyName(), attribute.getClass());
+                            attrOldValue = vertex.getPropertyValues(attribute.getVertexPropertyName(),attribute.getClass());
                         } else if (isStruct) {
                             String edgeLabel = AtlasGraphUtilsV2.getEdgeLabel(attribute.getName());
                             attrOldValue = getCollectionElementsUsingRelationship(vertex, attribute, edgeLabel);
                         } else {
-                            attrOldValue = vertex.getProperty(attribute.getVertexPropertyName(), attribute.getClass());
+                            attrOldValue = vertex.getProperty(attribute.getVertexPropertyName(),attribute.getClass());
                         }
 
                         if (attrValue != null && !attrValue.equals(attrOldValue)) {
@@ -1142,7 +1141,7 @@ public class EntityGraphMapper {
 
                 AtlasEdge newEdge = mapStructValue(ctx, context);
 
-                if (currentEdge != null && newEdge!= null && !currentEdge.equals(newEdge)) {
+                if (currentEdge != null && !currentEdge.equals(newEdge)) {
                     deleteDelegate.getHandler().deleteEdgeReference(currentEdge, ctx.getAttrType().getTypeCategory(), false, true, ctx.getReferringVertex());
                 }
 
@@ -1488,7 +1487,6 @@ public class EntityGraphMapper {
                 updateVertex(structVal, ctx.getCurrentEdge().getInVertex(), context);
                 ret = ctx.getCurrentEdge();
             } else {
-                deleteDelegate.getHandler().deleteVertex(ctx.getCurrentEdge().getInVertex(),true);
                 ret = null;
             }
 
