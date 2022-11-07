@@ -19,6 +19,7 @@ package org.apache.atlas.repository.store.graph.v2;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.Iterables;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
@@ -87,6 +88,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.glossary.GlossaryUtils.TERM_ASSIGNMENT_ATTR_CONFIDENCE;
@@ -695,29 +700,46 @@ public class EntityGraphRetriever {
         Set<String>                 traversedVerticesIds      = new HashSet<>();
         RequestContext              requestContext            = RequestContext.get();
 
+        final ThreadFactory threadFactory = new ThreadFactoryBuilder()
+                .setNameFormat("Tasks-BFS-%d")
+                .setDaemon(true)
+                .build();
+
+        ExecutorService executorService = Executors.newFixedThreadPool(AtlasConfiguration.GRAPH_TRAVERSAL_PARALLELISM.getInt(), threadFactory);
+
         //Add Source vertex to level 1
         if (entityVertexStart != null) {
             verticesAtCurrentLevel.add(entityVertexStart.getIdForDisplay());
         }
-        // Start Processing the level
+        /*
+            Steps in each level:
+                1. Add vertices to Visited Vertices set
+                2. Then fetch adjacent vertices of that vertex using getAdjacentVerticesIds
+                3. Use future to fetch it later as it is a Blocking call,so we want to execute it asynchronously
+                4. Then fetch the result from futures
+                5. It will return the adjacent vertices of the current level
+            After processing current level:
+                1. Add the adjacent vertices of current level to verticesToVisitNextLevel
+                2. Clear the processed vertices of current level
+                3. After that insert verticesToVisitNextLevel into current level
+           Continue the steps until all vertices are processed by checking if verticesAtCurrentLevel is empty
+         */
         while (!verticesAtCurrentLevel.isEmpty()) {
             Set<String> verticesToVisitNextLevel = new HashSet<>();
-            // Chunk the Levels into n parts, with constant bucket size
-            Iterable<List<String>> chunkedLevelVerticesIterable = Iterables.partition(verticesAtCurrentLevel, AtlasConfiguration.GRAPH_TRAVERSE_LEVEL_BUCKET_SIZE.getInt());
-            chunkedLevelVerticesIterable.forEach(x -> {
-                // Process the chunks in Parallel get the Vertices for next level
-                x.parallelStream().forEach(y -> {
-                    AtlasVertex entityVertex = graph.getVertex(y);
-                    if (!visitedVerticesIds.contains(y)) {
-                        //get adjacent vertices of the current level vertex to be added to next level
-                       Set<String> adjacentVerticesIds =  getAdjacentVertices(entityVertex, classificationId,
-                                relationshipGuidToExclude, edgeLabelsToExclude, visitedVerticesIds);
-                        verticesToVisitNextLevel.addAll(adjacentVerticesIds);
-                        traversedVerticesIds.addAll(adjacentVerticesIds);
+
+            List<CompletableFuture<Set<String>>> futures = verticesAtCurrentLevel.stream()
+                    .map(t -> {
+                        AtlasVertex entityVertex = graph.getVertex(t);
                         visitedVerticesIds.add(entityVertex.getIdForDisplay());
-                    }
-                });
+                        return CompletableFuture.supplyAsync(() -> getAdjacentVerticesIds(entityVertex, classificationId,
+                                relationshipGuidToExclude, edgeLabelsToExclude, visitedVerticesIds), executorService);
+                    }).collect(Collectors.toList());
+
+            futures.stream().map(CompletableFuture::join).forEach(x -> {
+                verticesToVisitNextLevel.addAll(x);
+                traversedVerticesIds.addAll(x);
             });
+
             verticesAtCurrentLevel.clear();
             verticesAtCurrentLevel.addAll(verticesToVisitNextLevel);
         }
@@ -727,7 +749,7 @@ public class EntityGraphRetriever {
 
     }
 
-    private Set<String> getAdjacentVertices(AtlasVertex entityVertex,final String classificationId, final String relationshipGuidToExclude
+    private Set<String> getAdjacentVerticesIds(AtlasVertex entityVertex,final String classificationId, final String relationshipGuidToExclude
             ,List<String> edgeLabelsToExclude, Set<String> visitedVerticesIds) {
 
         AtlasEntityType         entityType          = typeRegistry.getEntityTypeByName(getTypeName(entityVertex));
