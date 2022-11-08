@@ -410,7 +410,8 @@ public class EntityGraphMapper {
                         for (String deletedEdgeId : deletedEdgeIds) {
                             AtlasEdge edge = graph.getEdge(deletedEdgeId);
                             deleteDelegate.getHandler().createClassificationOnlyPropagationDeleteTasksAndQueue(GraphHelper.getPropagatableClassifications(edge), deletedEdgeId);
-                        }                    }
+                        }
+                    }
                 } catch (AtlasBaseException baseException) {
                     setEntityGuidToException(createdEntity, baseException, context);
                     throw baseException;
@@ -482,7 +483,8 @@ public class EntityGraphMapper {
                         for (String deletedEdgeId : deletedEdgeIds) {
                             AtlasEdge edge = graph.getEdge(deletedEdgeId);
                             deleteDelegate.getHandler().createClassificationOnlyPropagationDeleteTasksAndQueue(GraphHelper.getPropagatableClassifications(edge), deletedEdgeId);
-                        }                    }
+                        }
+                    }
 
                 } catch (AtlasBaseException baseException) {
                     setEntityGuidToException(updatedEntity, baseException, context);
