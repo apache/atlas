@@ -324,7 +324,8 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
                         GraphHelper.getPropagatableClassifications(deletedEdge),
                         deletedEdgeId
                 );
-            }        }
+            }
+        }
 
         sendNotifications(deletedRelationships, OperationType.RELATIONSHIP_DELETE);
 
@@ -371,7 +372,8 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
                         GraphHelper.getPropagatableClassifications(deletedEdge),
                         deletedEdgeId
                 );
-            }        }
+            }
+        }
 
         sendNotifications(entityRetriever.mapEdgeToAtlasRelationship(edge), OperationType.RELATIONSHIP_DELETE);
 
