@@ -1,0 +1,78 @@
+{
+  "mappings": {
+    "properties": {
+      "request.dsl": {
+        "type": "nested"
+      },
+      "request.attributes": {
+        "type": "keyword"
+      },
+      "request.relationAttributes": {
+        "type": "keyword"
+      },
+
+      "userAgent": {
+        "type": "keyword"
+      },
+      "host": {
+        "type": "keyword"
+      },
+      "ipAddress": {
+        "type": "keyword"
+      },
+      "userName": {
+        "type": "keyword"
+      },
+
+
+      "entityGuidsAll": {
+        "type": "keyword"
+      },
+      "entityQFNamesAll": {
+        "type": "keyword"
+      },
+      "entityGuidsAllowed": {
+        "type": "keyword"
+      },
+      "entityQFNamesAllowed": {
+        "type": "keyword"
+      },
+      "entityGuidsDenied": {
+        "type": "keyword"
+      },
+      "entityQFNamesDenied": {
+        "type": "keyword"
+      },
+      "utmTags": {
+        "type": "keyword"
+      },
+
+      "hasResult": {
+        "type": "boolean"
+      },
+      "isFailed": {
+        "type": "boolean"
+      },
+
+      "errorDetails": {
+        "type": "text"
+      },
+      "errorCode": {
+        "type": "keyword"
+      },
+
+      "resultsCount": {
+        "type": "long"
+      },
+      "timestamp": {
+        "type": "long"
+      },
+      "created": {
+        "type": "long"
+      },
+      "responseTime": {
+        "type": "long"
+      }
+    }
+  }
+}
