@@ -65,7 +65,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'value', 'searchVent', 'typeHeaders', 'searchTableColumns', 'searchTableFilters', 'relationshipDefCollection', 'metricCollection', 'relationshipEventAgg'));
+                _.extend(this, _.pick(options, 'value', 'searchVent', 'typeHeaders', 'searchTableColumns', 'searchTableFilters', 'entityDefCollection', 'enumDefCollection', 'classificationDefCollection', 'businessMetadataDefCollection', 'relationshipDefCollection', 'metricCollection', 'relationshipEventAgg'));
                 if (!this.value) {
                     this.value = {};
                 }
