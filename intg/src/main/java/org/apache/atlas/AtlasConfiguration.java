@@ -88,7 +88,10 @@ public enum AtlasConfiguration {
     UPDATE_COMPOSITE_INDEX_STATUS("atlas.update.composite.index.status", true),
     TASKS_GRAPH_COMMIT_CHUNK_SIZE("atlas.tasks.graph.commit.chunk.size", 1000),
     MAX_NUMBER_OF_RETRIES("atlas.tasks.graph.retry.count", 3),
-    GRAPH_TRAVERSAL_PARALLELISM("atlas.graph.traverse.bucket.size",10);
+    GRAPH_TRAVERSAL_PARALLELISM("atlas.graph.traverse.bucket.size",10),
+    LINEAGE_ON_DEMAND_ENABLED("atlas.lineage.on.demand.enabled", false),
+    LINEAGE_ON_DEMAND_DEFAULT_NODE_COUNT("atlas.lineage.on.demand.default.node.count", 3),
+    LINEAGE_MAX_NODE_COUNT("atlas.lineage.max.node.count", 9000);
 
 
     private static final Configuration APPLICATION_PROPERTIES;
