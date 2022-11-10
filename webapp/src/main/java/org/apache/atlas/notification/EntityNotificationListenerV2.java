@@ -35,6 +35,7 @@ import org.apache.atlas.model.notification.EntityNotification.EntityNotification
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
 import org.apache.commons.collections.CollectionUtils;
@@ -149,6 +150,7 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
         MetricRecorder metric = RequestContext.get().startMetricRecord("entityNotification");
 
         Map<String,AtlasEntity> differentialEntities  = RequestContext.get().getDifferentialEntitiesMap();
+        Map<String, String>     requestContextHeaders = RequestContext.get().getRequestContextHeaders();
 
         List<EntityNotificationV2> messages = new ArrayList<>();
 
@@ -161,14 +163,14 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
              if(differentialEntities != null){
                  if (differentialEntities.containsKey(entityGuid)) {
                      messages.add(new EntityNotificationV2(toNotificationHeader(entity), differentialEntities.get(entityGuid),
-                             operationType, RequestContext.get().getRequestTime()));
+                             operationType, RequestContext.get().getRequestTime(), requestContextHeaders));
                  }else {
                      messages.add(new EntityNotificationV2(toNotificationHeader(entity), null,
-                             operationType, RequestContext.get().getRequestTime()));
+                             operationType, RequestContext.get().getRequestTime(), requestContextHeaders));
                  }
              }else{
                  messages.add(new EntityNotificationV2(toNotificationHeader(entity), null,
-                         operationType, RequestContext.get().getRequestTime()));
+                         operationType, RequestContext.get().getRequestTime(), requestContextHeaders));
              }
 
         }
@@ -184,13 +186,15 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
     private void notifyClassificationEvents(List<AtlasEntity> entities, OperationType operationType, Object mutatedObj, boolean forceInline) throws AtlasBaseException {
         MetricRecorder metric = RequestContext.get().startMetricRecord("classificationNotification");
         List<EntityNotificationV2> messages = new ArrayList<>();
+        Map<String, String> requestContextHeaders = RequestContext.get().getRequestContextHeaders();
 
         for (AtlasEntity entity : entities) {
             if (isInternalType(entity.getTypeName())) {
                 continue;
             }
 
-            messages.add(new EntityNotificationV2(toNotificationHeader(entity), mutatedObj, operationType, RequestContext.get().getRequestTime()));
+            messages.add(new EntityNotificationV2(toNotificationHeader(entity), mutatedObj, operationType,
+                    RequestContext.get().getRequestTime(), requestContextHeaders));
         }
 
         sendNotifications(operationType, messages, forceInline);
@@ -201,12 +205,14 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
     private void notifyRelationshipEvents(List<AtlasRelationship> relationships, OperationType operationType) throws AtlasBaseException {
         MetricRecorder metric = RequestContext.get().startMetricRecord("entityNotification");
         List<EntityNotificationV2> messages = new ArrayList<>();
+        Map<String, String> requestContextHeaders = RequestContext.get().getRequestContextHeaders();
 
         for (AtlasRelationship relationship : relationships) {
             if (isInternalType(relationship.getTypeName())) {
                 continue;
             }
-            messages.add(new EntityNotificationV2(toNotificationHeader(relationship), operationType, RequestContext.get().getRequestTime()));
+            messages.add(new EntityNotificationV2(toNotificationHeader(relationship), operationType,
+                    RequestContext.get().getRequestTime(), requestContextHeaders));
         }
 
         sendNotifications(operationType, messages);
@@ -216,8 +222,10 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
     private void notifyBusinessMetadataEvents(AtlasEntity entity, OperationType operationType, Map<String, Map<String, Object>> updatedBusinessAttributes) throws AtlasBaseException {
         MetricRecorder metric = RequestContext.get().startMetricRecord("entityBMNotification");
         List<EntityNotificationV2> messages = new ArrayList<>();
+        Map<String, String> requestContextHeaders = RequestContext.get().getRequestContextHeaders();
 
-        messages.add(new EntityNotificationV2(toNotificationHeader(entity), updatedBusinessAttributes, operationType, RequestContext.get().getRequestTime()));
+        messages.add(new EntityNotificationV2(toNotificationHeader(entity), updatedBusinessAttributes, operationType,
+                RequestContext.get().getRequestTime(), requestContextHeaders));
 
         sendNotifications(operationType, messages);
         RequestContext.get().endMetricRecord(metric);
