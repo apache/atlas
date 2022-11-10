@@ -25,6 +25,7 @@ on:
       - beta
       - development
       - master
+      - lineageondemand
 
 jobs:
   build:
