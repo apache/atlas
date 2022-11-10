@@ -283,7 +283,7 @@ public class EntityLineageService implements AtlasLineageService {
         LineageDirection direction = lineageConstraintsByGuid.getDirection();
         int              depth     = lineageConstraintsByGuid.getDepth();
 
-        AtlasLineageInfo ret = initializeLineageInfo(guid, direction, depth, 0,0);
+        AtlasLineageInfo ret = initializeLineageInfo(guid, direction, depth);
 
         if (depth == 0) {
             depth = -1;
@@ -985,6 +985,10 @@ public class EntityLineageService implements AtlasLineageService {
 
     private AtlasLineageInfo initializeLineageInfo(String guid, LineageDirection direction, int depth, int limit, int offset) {
         return new AtlasLineageInfo(guid, new HashMap<>(), new HashSet<>(), direction, depth, limit, offset);
+    }
+
+    private AtlasLineageInfo initializeLineageInfo(String guid, LineageDirection direction, int depth) {
+        return new AtlasLineageInfo(guid, new HashMap<>(), new HashSet<>(), new HashSet<>(), new HashMap<>(), direction, depth);
     }
 
     private List executeGremlinScript(Map<String, Object> bindings, String lineageQuery) throws AtlasBaseException {
