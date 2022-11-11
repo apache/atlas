@@ -474,7 +474,9 @@ public class EntityGraphMapper {
                                     activeEdges.add(edge);
                                 }
                             }
-                            addHasLineage(activeEdges, true);
+                            if (activeEdges.size() > 0) {
+                                addHasLineage(activeEdges, true);
+                            }
                         }
                     }
 
