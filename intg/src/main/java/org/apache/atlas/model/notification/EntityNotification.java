@@ -27,6 +27,7 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.io.Serializable;
+import java.util.Map;
 import java.util.Objects;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
@@ -110,6 +111,7 @@ public class EntityNotification implements Serializable {
         private OperationType           operationType;
         private long              eventTime;
         private Object       mutatedDetails;
+        private Map<String, String> headers;
 
         public EntityNotificationV2() {
             super(ENTITY_NOTIFICATION_V2);
@@ -131,21 +133,25 @@ public class EntityNotification implements Serializable {
             setEventTime(eventTime);
         }
 
-        public EntityNotificationV2(AtlasEntityHeader entity, Object mutatedDetails, OperationType operationType, long eventTime) {
+        public EntityNotificationV2(AtlasEntityHeader entity, Object mutatedDetails, OperationType operationType,
+                                    long eventTime, Map<String, String> requestContextHeaders) {
             super(ENTITY_NOTIFICATION_V2);
 
             setEntity(entity);
             setOperationType(operationType);
             setEventTime(eventTime);
             setMutatedDetails(mutatedDetails);
+            setHeaders(requestContextHeaders);
         }
 
-        public EntityNotificationV2(AtlasRelationshipHeader relationship, OperationType operationType, long eventTime) {
+        public EntityNotificationV2(AtlasRelationshipHeader relationship, OperationType operationType,
+                                    long eventTime, Map<String, String> requestContextHeaders) {
             super(ENTITY_NOTIFICATION_V2);
 
             setRelationship(relationship);
             setOperationType(operationType);
             setEventTime(eventTime);
+            setHeaders(requestContextHeaders);
         }
 
         public AtlasEntityHeader getEntity() {
@@ -189,6 +195,14 @@ public class EntityNotification implements Serializable {
             this.eventTime = eventTime;
         }
 
+        public Map<String, String> getHeaders() {
+            return headers;
+        }
+
+        public void setHeaders(Map<String, String> headers) {
+            this.headers = headers;
+        }
+
         @Override
         public boolean equals(Object o) {
             if (this == o) { return true; }
@@ -196,12 +210,13 @@ public class EntityNotification implements Serializable {
             EntityNotificationV2 that = (EntityNotificationV2) o;
             return Objects.equals(type, that.type) &&
                    Objects.equals(entity, that.entity) &&
-                   operationType == that.operationType;
+                   operationType == that.operationType &&
+                   headers == that.headers;
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(type, entity, operationType);
+            return Objects.hash(type, entity, operationType, headers);
         }
 
         @Override
@@ -220,6 +235,7 @@ public class EntityNotification implements Serializable {
             }
             sb.append(", operationType=").append(operationType);
             sb.append(", eventTime=").append(eventTime);
+            sb.append(", headers=").append(headers);
             sb.append("}");
 
             return sb;

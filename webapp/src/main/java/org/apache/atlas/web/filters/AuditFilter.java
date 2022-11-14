@@ -103,6 +103,8 @@ public class AuditFilter implements Filter {
                 }
             }
 
+            HeadersUtil.setRequestContextHeaders((HttpServletRequest)request);
+
             filterChain.doFilter(request, response);
         } finally {
             long timeTaken = System.currentTimeMillis() - startTime;
