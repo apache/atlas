@@ -89,6 +89,7 @@ public abstract class DeleteHandlerV1 {
     private   final boolean              shouldUpdateInverseReferences;
     private   final boolean              softDelete;
     private   final TaskManagement       taskManagement;
+    private   final AtlasGraph           graph;
 
 
     public DeleteHandlerV1(AtlasGraph graph, AtlasTypeRegistry typeRegistry, boolean shouldUpdateInverseReference, boolean softDelete, TaskManagement taskManagement) {
@@ -98,6 +99,7 @@ public abstract class DeleteHandlerV1 {
         this.shouldUpdateInverseReferences = shouldUpdateInverseReference;
         this.softDelete                    = softDelete;
         this.taskManagement                = taskManagement;
+        this.graph                         = graph;
     }
 
     /**
@@ -149,7 +151,11 @@ public abstract class DeleteHandlerV1 {
             deleteTypeVertex(deletionCandidateVertex, isInternalType(deletionCandidateVertex));
 
             if (DEFERRED_ACTION_ENABLED) {
-                createAndQueueTask(CLASSIFICATION_ONLY_PROPAGATION_DELETE, RequestContext.get().getDeletedEdgesIds());
+                Set<String> deletedEdgeIds = RequestContext.get().getDeletedEdgesIds();
+                for (String deletedEdgeId : deletedEdgeIds) {
+                    AtlasEdge edge = graph.getEdge(deletedEdgeId);
+                    createClassificationOnlyPropagationDeleteTasksAndQueue(GraphHelper.getPropagatableClassifications(edge), deletedEdgeId);
+                }
             }
         }
     }
@@ -1278,6 +1284,13 @@ public abstract class DeleteHandlerV1 {
         }
     }
 
+    public void createClassificationOnlyPropagationDeleteTasksAndQueue(List<AtlasVertex> classificationVertices, String deletedEdgeId) {
+        for (AtlasVertex classificationVertex : classificationVertices) {
+            String classificationVertexId = classificationVertex.getIdForDisplay();
+            createAndQueueTask(CLASSIFICATION_ONLY_PROPAGATION_DELETE, deletedEdgeId, classificationVertexId);
+        }
+    }
+
     public void createAndQueueTask(String taskType, AtlasVertex entityVertex, String classificationVertexId, String relationshipGuid, Boolean currentRestrictPropagationThroughLineage) {
         String              currentUser = RequestContext.getCurrentUser();
         String              entityGuid  = GraphHelper.getGuid(entityVertex);
@@ -1301,14 +1314,14 @@ public abstract class DeleteHandlerV1 {
     }
 
 
-    public void createAndQueueTask(String taskType, Set<String> deletedEdgeIds) {
+    public void createAndQueueTask(String taskType, String deletedEdgeId, String classificationVertexId) {
         String currentUser = RequestContext.getCurrentUser();
 
-        if (CollectionUtils.isEmpty(deletedEdgeIds)) {
+        if (deletedEdgeId == null) {
             return;
         }
 
-        Map<String, Object> taskParams  = ClassificationTask.toParameters(deletedEdgeIds);
+        Map<String, Object> taskParams  = ClassificationTask.toParameters(deletedEdgeId, classificationVertexId);
         AtlasTask           task        = taskManagement.createTask(taskType, currentUser, taskParams);
 
         RequestContext.get().queueTask(task);
