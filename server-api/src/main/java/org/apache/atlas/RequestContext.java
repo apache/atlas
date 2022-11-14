@@ -55,6 +55,7 @@ public class RequestContext {
     private final Map<String, AtlasEntity>               diffEntityCache      = new HashMap<>();
     private final Map<String, List<AtlasClassification>> addedPropagations    = new HashMap<>();
     private final Map<String, List<AtlasClassification>> removedPropagations  = new HashMap<>();
+    private final Map<String, String>                    requestContextHeaders= new HashMap<>();
     private final Set<String>                            deletedEdgesIds      = new HashSet<>();
     private final AtlasPerfMetrics metrics = isMetricsEnabled ? new AtlasPerfMetrics() : null;
     private List<EntityGuidPair> entityGuidInRequest = null;
@@ -67,7 +68,6 @@ public class RequestContext {
     private static String USERNAME = "";
     private final Map<String, List<Object>> removedElementsMap = new HashMap<>();
     private final Map<String, List<Object>> newElementsCreatedMap = new HashMap<>();
-    public static int hebele = 0;
 
     private String user;
     private Set<String> userGroups;
@@ -138,6 +138,7 @@ public class RequestContext {
         this.newElementsCreatedMap.clear();
         this.removedElementsMap.clear();
         this.deletedEdgesIds.clear();
+        this.requestContextHeaders.clear();
         this.currentTask = null;
         setTraceId(null);
 
@@ -508,6 +509,16 @@ public class RequestContext {
 
     public boolean isRestoredEntity(String guid) {
         return restoreEntities.containsKey(guid);
+    }
+
+    public void addRequestContextHeader(String headerName, String headerValue) {
+        if (StringUtils.isNotEmpty(headerName)) {
+            requestContextHeaders.put(headerName, headerValue);
+        }
+    }
+
+    public Map<String, String> getRequestContextHeaders() {
+        return requestContextHeaders;
     }
 
     public MetricRecorder startMetricRecord(String name) { return metrics != null ? metrics.getMetricRecorder(name) : null; }
