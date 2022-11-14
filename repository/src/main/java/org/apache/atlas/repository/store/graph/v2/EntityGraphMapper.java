@@ -470,7 +470,7 @@ public class EntityGraphMapper {
                             Iterator<AtlasEdge> iterator = vertex.getEdges(AtlasEdgeDirection.BOTH).iterator();
                             while (iterator.hasNext()) {
                                 AtlasEdge edge = iterator.next();
-                                if (edge.getProperty(Constants.STATE_PROPERTY_KEY, String.class).equalsIgnoreCase("ACTIVE")) {
+                                if (edge.getProperty(STATE_PROPERTY_KEY, String.class).equalsIgnoreCase(ACTIVE_STATE_VALUE)) {
                                     activeEdges.add(edge);
                                 }
                             }
