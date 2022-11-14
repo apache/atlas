@@ -134,6 +134,7 @@ public class EntityAuditEventV2 implements Serializable, Clearable {
     private EntityAuditType     type;
     private Map<String, Object> detail;
     private AtlasEntityHeader   entityDetail;
+    private Map<String, String> headers;
 
     public EntityAuditEventV2() { }
 
@@ -241,6 +242,14 @@ public class EntityAuditEventV2 implements Serializable, Clearable {
         this.typeName = typeName;
     }
 
+    public Map<String, String> getHeaders() {
+        return headers;
+    }
+
+    public void setHeaders(Map<String, String> headers) {
+        this.headers = headers;
+    }
+
     @JsonIgnore
     public String getEntityDefinitionString() {
         if (entity != null) {
@@ -280,12 +289,13 @@ public class EntityAuditEventV2 implements Serializable, Clearable {
                Objects.equals(detail, that.detail) &&
                Objects.equals(created, that.created) &&
                Objects.equals(typeName, that.typeName) &&
-               Objects.equals(entityQualifiedName, that.entityQualifiedName);
+               Objects.equals(entityQualifiedName, that.entityQualifiedName) &&
+               Objects.equals(headers, that.headers);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(entityId, timestamp, user, action, details, eventKey, entity, type, detail, created, entityQualifiedName, typeName);
+        return Objects.hash(entityId, timestamp, user, action, details, eventKey, entity, type, detail, created, entityQualifiedName, typeName, headers);
     }
 
     @Override
@@ -304,6 +314,7 @@ public class EntityAuditEventV2 implements Serializable, Clearable {
         sb.append(", type=").append(type);
         sb.append(", detail=").append(detail);
         sb.append(", created=").append(created);
+        sb.append(", headers=").append(headers);
         sb.append('}');
 
         return sb.toString();
@@ -334,6 +345,7 @@ public class EntityAuditEventV2 implements Serializable, Clearable {
         type = null;
         detail = null;
         created = 0L;
+        headers = null;
     }
 
     private String getJsonPartFromDetails() {
