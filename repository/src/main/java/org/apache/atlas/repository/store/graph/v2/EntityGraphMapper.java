@@ -997,17 +997,26 @@ public class EntityGraphMapper {
                         Object attrOldValue = null;
                         boolean isArrayOfPrimitiveType = false;
                         boolean isArrayOfEnum = false;
+
+                        boolean isStruct = (TypeCategory.STRUCT == attribute.getDefinedInType().getTypeCategory()
+                                || TypeCategory.STRUCT == attribute.getAttributeType().getTypeCategory());
+
                         if (attribute.getAttributeType().getTypeCategory().equals(ARRAY)) {
                             AtlasArrayType attributeType = (AtlasArrayType) attribute.getAttributeType();
                             AtlasType elementType = attributeType.getElementType();
                             isArrayOfPrimitiveType = elementType.getTypeCategory().equals(TypeCategory.PRIMITIVE);
                             isArrayOfEnum = elementType.getTypeCategory().equals(TypeCategory.ENUM);
                         }
+
                         if (isArrayOfPrimitiveType || isArrayOfEnum) {
                             attrOldValue = vertex.getPropertyValues(attribute.getVertexPropertyName(),attribute.getClass());
+                        } else if (isStruct) {
+                            String edgeLabel = AtlasGraphUtilsV2.getEdgeLabel(attribute.getName());
+                            attrOldValue = getCollectionElementsUsingRelationship(vertex, attribute, edgeLabel);
                         } else {
                             attrOldValue = vertex.getProperty(attribute.getVertexPropertyName(),attribute.getClass());
                         }
+
                         if (attrValue != null && !attrValue.equals(attrOldValue)) {
                             addValuesToAutoUpdateAttributesList(attribute, userAutoUpdateAttributes, timestampAutoUpdateAttributes);
                         }
@@ -1476,9 +1485,11 @@ public class EntityGraphMapper {
 
             if (structVal != null) {
                 updateVertex(structVal, ctx.getCurrentEdge().getInVertex(), context);
+                ret = ctx.getCurrentEdge();
+            } else {
+                ret = null;
             }
 
-            ret = ctx.getCurrentEdge();
         } else if (ctx.getValue() != null) {
             String edgeLabel = AtlasGraphUtilsV2.getEdgeLabel(ctx.getVertexProperty());
 
