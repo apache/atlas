@@ -455,29 +455,17 @@ public class EntityGraphMapper {
                     setSystemAttributesToEntity(vertex,updatedEntity);
                     resp.addEntity(updateType, constructHeader(updatedEntity, vertex, entityType.getAllAttributes()));
 
-                    Set<AtlasEdge> inOutEdges = getNewCreatedInputOutputEdges(guid);
+                    Set<AtlasEdge> inOutEdges = new HashSet<>();
+                    inOutEdges.addAll(getNewCreatedInputOutputEdges(guid));
+                    inOutEdges.addAll(getRestoredInputOutputEdges(vertex));
 
-                    if (inOutEdges != null && inOutEdges.size() > 0) {
+                    if (inOutEdges.size() > 0) {
                         boolean isRestoreEntity = false;
                         if (CollectionUtils.isNotEmpty(context.getEntitiesToRestore())) {
                             isRestoreEntity = context.getEntitiesToRestore().contains(vertex);
                         }
 
                         addHasLineage(inOutEdges, isRestoreEntity);
-                    } else {
-                        if (CollectionUtils.isNotEmpty(context.getEntitiesToRestore()) && context.getEntitiesToRestore().contains(vertex)) {
-                            Set<AtlasEdge> activeEdges = new HashSet<>();
-                            Iterator<AtlasEdge> iterator = vertex.getEdges(AtlasEdgeDirection.BOTH).iterator();
-                            while (iterator.hasNext()) {
-                                AtlasEdge edge = iterator.next();
-                                if (edge.getProperty(STATE_PROPERTY_KEY, String.class).equalsIgnoreCase(ACTIVE_STATE_VALUE)) {
-                                    activeEdges.add(edge);
-                                }
-                            }
-                            if (activeEdges.size() > 0) {
-                                addHasLineage(activeEdges, true);
-                            }
-                        }
                     }
 
                     Set<AtlasEdge> removedEdges = getRemovedInputOutputEdges(guid);
@@ -2618,12 +2606,24 @@ public class EntityGraphMapper {
     private Set<AtlasEdge> getNewCreatedInputOutputEdges(String guid) {
         List<Object> newElementsCreated = RequestContext.get().getNewElementsCreatedMap().get(guid);
 
-        Set<AtlasEdge> newEdge = null;
+        Set<AtlasEdge> newEdge = new HashSet<>();
         if (newElementsCreated != null && newElementsCreated.size() > 0) {
             newEdge = newElementsCreated.stream().map(x -> (AtlasEdge) x).collect(Collectors.toSet());
         }
 
         return newEdge;
+    }
+
+    private Set<AtlasEdge> getRestoredInputOutputEdges(AtlasVertex vertex) {
+        Set<AtlasEdge> activatedEdges = new HashSet<>();
+        Iterator<AtlasEdge> iterator = vertex.getEdges(AtlasEdgeDirection.BOTH, new String[]{PROCESS_INPUTS, PROCESS_OUTPUTS}).iterator();
+        while (iterator.hasNext()) {
+            AtlasEdge edge = iterator.next();
+            if (edge.getProperty(STATE_PROPERTY_KEY, String.class).equalsIgnoreCase(ACTIVE_STATE_VALUE)) {
+                activatedEdges.add(edge);
+            }
+        }
+        return activatedEdges;
     }
 
     private Set<AtlasEdge> getRemovedInputOutputEdges(String guid) {
