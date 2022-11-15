@@ -134,7 +134,7 @@ public class KafkaBridge {
 
             KafkaBridge importer = new KafkaBridge(atlasConf, atlasClientV2, kafkaUtils);
 
-            if(!KAFKA_SCHEMA_REGISTRY_ENV_VARIABLE.isEmpty()){
+            if(StringUtils.isNotEmpty(KAFKA_SCHEMA_REGISTRY_ENV_VARIABLE)) {
                 KAFKA_SCHEMA_REGISTRY_HOSTNAME = KAFKA_SCHEMA_REGISTRY_ENV_VARIABLE;
             }
 
