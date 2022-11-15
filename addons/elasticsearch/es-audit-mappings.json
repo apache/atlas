@@ -28,6 +28,18 @@
       "eventKey": {
         "type": "keyword"
       }
-    }
+    },
+    "dynamic_templates": [
+      {
+        "atlan_headers_as_keyword": {
+          "path_match": "headers.x-atlan-*",
+          "mapping": {
+            "type": "keyword"
+          }
+        }
+      }
+    ],
+    "date_detection": false,
+    "numeric_detection": false
   }
 }
