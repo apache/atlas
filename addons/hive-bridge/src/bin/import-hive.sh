@@ -92,9 +92,9 @@ fi
 
 HIVE_CP="${HIVE_CONF}"
 # Multiple jars in HIVE_CP_EXCLUDE_LIST can be added using "\|" separator
-# Ex: HIVE_CP_EXCLUDE_LIST="javax.ws.rs-api\|jersey-multipart"
+# Ex: HIVE_CP_EXCLUDE_LIST="jersey-multipart"
 # exclude log4j libs from hive classpath to avoid conflict
-HIVE_CP_EXCLUDE_LIST="javax.ws.rs-api\|log4j-slf4j-impl\|log4j-1.2-api\|log4j-api\|log4j-core\|log4j-web"
+HIVE_CP_EXCLUDE_LIST="log4j-slf4j-impl\|log4j-1.2-api\|log4j-api\|log4j-core\|log4j-web"
 
 for i in $(find "${HIVE_HOME}/lib/" -name  "*.jar" | grep -v "$HIVE_CP_EXCLUDE_LIST"); do
     HIVE_CP="${HIVE_CP}:$i"

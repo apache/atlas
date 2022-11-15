@@ -734,7 +734,7 @@
         <hadoop.hdfs-client.version>${hadoop.version}</hadoop.hdfs-client.version>
         <hadoop.version>3.3.0</hadoop.version>
         <hbase.version>2.3.3</hbase.version>
-        <hive.version>3.1.0</hive.version>
+        <hive.version>3.1.2</hive.version>
         <hppc.version>0.8.1</hppc.version>
         <httpcomponents-httpclient.version>4.5.13</httpcomponents-httpclient.version>
         <httpcomponents-httpcore.version>4.4.13</httpcomponents-httpcore.version>
