@@ -611,7 +611,7 @@ public class EntityLineageService implements AtlasLineageService {
 
     private void processLastLevel(AtlasVertex currentVertex, boolean isInput, AtlasLineageInfo ret, AtlasLineageContext lineageContext) {
         List<AtlasEdge> processEdges = vertexEdgeCache.getEdges(currentVertex, IN, isInput ? PROCESS_OUTPUTS_EDGE : PROCESS_INPUTS_EDGE);
-        processEdges = lineageContext.getIgnoredProcesses() != null ? eliminateIgnoredProcesses(processEdges, isInput, lineageContext) : processEdges;
+        processEdges = CollectionUtils.isNotEmpty(lineageContext.getIgnoredProcesses()) ? eliminateIgnoredProcesses(processEdges, isInput, lineageContext) : processEdges;
         ret.setHasChildrenForDirection(getGuid(currentVertex), new LineageChildrenInfo(isInput ? INPUT : OUTPUT, hasMoreChildren(processEdges)));
     }
 
