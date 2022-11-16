@@ -97,8 +97,14 @@ fi
 
 HBASE_CP="${HBASE_CONF}"
 
-for i in "${HBASE_HOME}/lib/"*.jar; do
-    HBASE_CP="${HBASE_CP}:$i"
+# Multiple jars in HBASE_CP_EXCLUDE_LIST can be added using "\|" separator
+# Ex: HBASE_CP_EXCLUDE_LIST="commons-configuration-1."
+HBASE_CP_EXCLUDE_LIST="commons-configuration-1\|jersey-client"
+
+for i in "${HBASE_HOME}/lib/"*.jar "${HBASE_HOME}/lib/client-facing-thirdparty/"*.jar; do
+    if [ "`echo $i | grep -v \"$HBASE_CP_EXCLUDE_LIST\"`" == "$i" ]; then
+      HBASE_CP="${HBASE_CP}:$i"
+    fi
 done
 
 #Add hadoop conf in classpath
@@ -110,11 +116,14 @@ elif [ $(command -v hadoop) ]; then
     HADOOP_CP=`hadoop classpath`
     echo $HADOOP_CP
 else
-    echo "Environment variable HADOOP_CLASSPATH or HADOOP_HOME need to be set"
-    exit 1
+    echo "WARN: Environment variable HADOOP_CLASSPATH or HADOOP_HOME need to be set"
 fi
 
-CP="${HBASE_CP}:${HADOOP_CP}:${ATLASCPPATH}"
+if [ ! -z "$HADOOP_CP" ]; then
+  CP="${HBASE_CP}:${HADOOP_CP}:${ATLASCPPATH}"
+else
+  CP="${HBASE_CP}:${ATLASCPPATH}"
+fi
 
 # If running in cygwin, convert pathnames and classpath to Windows format.
 if [ "${CYGWIN}" == "true" ]
