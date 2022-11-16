@@ -455,17 +455,16 @@ public class EntityGraphMapper {
                     setSystemAttributesToEntity(vertex,updatedEntity);
                     resp.addEntity(updateType, constructHeader(updatedEntity, vertex, entityType.getAllAttributes()));
 
-                    Set<AtlasEdge> inOutEdges = new HashSet<>();
-                    inOutEdges.addAll(getNewCreatedInputOutputEdges(guid));
-                    inOutEdges.addAll(getRestoredInputOutputEdges(vertex));
+                    // Add hasLineage for newly created edges
+                    Set<AtlasEdge> newlyCreatedEdges = getNewCreatedInputOutputEdges(guid);
+                    if (newlyCreatedEdges.size() > 0) {
+                        addHasLineage(newlyCreatedEdges, false);
+                    }
 
-                    if (inOutEdges.size() > 0) {
-                        boolean isRestoreEntity = false;
-                        if (CollectionUtils.isNotEmpty(context.getEntitiesToRestore())) {
-                            isRestoreEntity = context.getEntitiesToRestore().contains(vertex);
-                        }
-
-                        addHasLineage(inOutEdges, isRestoreEntity);
+                    // Add hasLineage for restored edges
+                    if (CollectionUtils.isNotEmpty(context.getEntitiesToRestore()) && context.getEntitiesToRestore().contains(vertex)) {
+                        Set<AtlasEdge> restoredInputOutputEdges = getRestoredInputOutputEdges(vertex);
+                        addHasLineage(restoredInputOutputEdges, true);
                     }
 
                     Set<AtlasEdge> removedEdges = getRemovedInputOutputEdges(guid);
