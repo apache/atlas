@@ -17,7 +17,6 @@
  */
 package org.apache.atlas.repository.tagpropagation;
 
-import com.vividsolutions.jts.util.Assert;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.TestModules;
@@ -694,7 +693,7 @@ public class ClassificationPropagationTest extends AtlasTestBase {
             deletePropagatedClassification(entity, classification);
             fail();
         } catch (AtlasBaseException ex) {
-            Assert.equals(ex.getAtlasErrorCode(), PROPAGATED_CLASSIFICATION_REMOVAL_NOT_SUPPORTED);
+            assertEquals(ex.getAtlasErrorCode(), PROPAGATED_CLASSIFICATION_REMOVAL_NOT_SUPPORTED);
         }
     }
 
