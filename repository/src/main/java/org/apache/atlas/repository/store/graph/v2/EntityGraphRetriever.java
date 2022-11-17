@@ -901,7 +901,7 @@ public class EntityGraphRetriever {
 
         if (edges != null) {
             for (final AtlasEdge edge : (Iterable<AtlasEdge>) edges) {
-                if (edge != null && GraphHelper.getStatus(edge) != AtlasEntity.Status.DELETED) {
+                if (edge != null) {
                     ret.add(toTermAssignmentHeader(edge));
                 }
             }
