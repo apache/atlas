@@ -40,6 +40,3 @@ su -c "${HIVE_HOME}/bin/schematool -dbType postgres -initSchema" hive
 mkdir -p /opt/hive/logs
 chown -R hive:hadoop /opt/hive/
 chmod g+w /opt/hive/logs
-
-cd ${ATLAS_HOME}/atlas-hive-plugin
-./enable-hive-plugin.sh
