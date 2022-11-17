@@ -21,7 +21,9 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.SortOrder;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.bulkimport.BulkImportResponse;
+import org.apache.atlas.discovery.AtlasDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.glossary.AtlasGlossary;
 import org.apache.atlas.model.glossary.AtlasGlossaryCategory;
 import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
@@ -30,6 +32,7 @@ import org.apache.atlas.model.glossary.relations.AtlasGlossaryHeader;
 import org.apache.atlas.model.glossary.relations.AtlasRelatedCategoryHeader;
 import org.apache.atlas.model.glossary.relations.AtlasRelatedTermHeader;
 import org.apache.atlas.model.glossary.relations.AtlasTermCategorizationHeader;
+import org.apache.atlas.model.glossary.relations.AtlasTermAssignmentHeader;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
@@ -40,6 +43,7 @@ import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
 import org.apache.atlas.store.AtlasTypeDefStore;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.FileUtils;
 import org.apache.atlas.utils.AtlasJson;
@@ -90,6 +94,8 @@ public class GlossaryServiceTest {
     private AtlasGlossaryCategory customerCategory, accountCategory, mortgageCategory;
 
     private AtlasRelatedObjectId relatedObjectId;
+    @Inject
+    private AtlasDiscoveryService discoveryService;
 
     public static final String CSV_FILES   = "/csvFiles/";
     public static final String EXCEL_FILES = "/excelFiles/";
@@ -289,6 +295,42 @@ public class GlossaryServiceTest {
             assertNotNull(savingsAccount.getGuid());
         } catch (AtlasBaseException e) {
             fail("Term creation with relation should've succeeded", e);
+        }
+    }
+    @Test(groups = "Glossary.UPDATE", dependsOnGroups = "Glossary.CREATE")
+    public void testTermAfterEntityIsDeleted() throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+        params.setTypeName("Asset");
+        AtlasTermAssignmentHeader loan = new AtlasTermAssignmentHeader();
+        loan.setTermGuid(fixedRateMortgage.getGuid());
+        loan.setRelationGuid(fixedRateMortgage.getAnchor().getRelationGuid());
+        loan.setQualifiedName(fixedRateMortgage.getQualifiedName());
+        AtlasEntity assetEntity = new AtlasEntity("Asset");
+        assetEntity.setAttribute("qualifiedName", "testAsset");
+        assetEntity.setAttribute("name", "testAsset");
+        assetEntity.addMeaning(loan);
+        try {
+
+            EntityMutationResponse response = entityStore.createOrUpdate(new AtlasEntityStream(assetEntity), false);
+            AtlasEntityHeader      firstEntityCreated = response.getFirstEntityCreated();
+            relatedObjectId = new AtlasRelatedObjectId();
+            relatedObjectId.setGuid(firstEntityCreated.getGuid());
+            relatedObjectId.setTypeName(firstEntityCreated.getTypeName());
+            assertNotNull(relatedObjectId);
+        } catch (AtlasBaseException e) {
+            fail("Entity creation should've succeeded", e);
+        }
+        try {
+            glossaryService.assignTermToEntities(fixedRateMortgage.getGuid(), Arrays.asList(relatedObjectId));
+        } catch (AtlasBaseException e) {
+            fail("Term assignment to asset should've succeeded", e);
+        }
+        try {
+            entityStore.deleteById(relatedObjectId.getGuid());
+            List<AtlasEntityHeader> entityHeaders = discoveryService.searchWithParameters(params).getEntities();
+            assertNotNull(AtlasType.toJson(entityHeaders.get(0).getMeaningNames()));
+        } catch (AtlasBaseException e) {
+            fail("Entity delete should've succeeded");
         }
     }
 
