@@ -738,24 +738,28 @@ public class EntityGraphRetriever {
                 3. After that insert verticesToVisitNextLevel into current level
            Continue the steps until all vertices are processed by checking if verticesAtCurrentLevel is empty
          */
-        while (!verticesAtCurrentLevel.isEmpty()) {
-            Set<String> verticesToVisitNextLevel = new HashSet<>();
+        try {
+            while (!verticesAtCurrentLevel.isEmpty()) {
+                Set<String> verticesToVisitNextLevel = new HashSet<>();
 
-            List<CompletableFuture<Set<String>>> futures = verticesAtCurrentLevel.stream()
-                    .map(t -> {
-                        AtlasVertex entityVertex = graph.getVertex(t);
-                        visitedVerticesIds.add(entityVertex.getIdForDisplay());
-                        return CompletableFuture.supplyAsync(() -> getAdjacentVerticesIds(entityVertex, classificationId,
-                                relationshipGuidToExclude, edgeLabelsToExclude, visitedVerticesIds), executorService);
-                    }).collect(Collectors.toList());
+                List<CompletableFuture<Set<String>>> futures = verticesAtCurrentLevel.stream()
+                        .map(t -> {
+                            AtlasVertex entityVertex = graph.getVertex(t);
+                            visitedVerticesIds.add(entityVertex.getIdForDisplay());
+                            return CompletableFuture.supplyAsync(() -> getAdjacentVerticesIds(entityVertex, classificationId,
+                                    relationshipGuidToExclude, edgeLabelsToExclude, visitedVerticesIds), executorService);
+                        }).collect(Collectors.toList());
 
-            futures.stream().map(CompletableFuture::join).forEach(x -> {
-                verticesToVisitNextLevel.addAll(x);
-                traversedVerticesIds.addAll(x);
-            });
+                futures.stream().map(CompletableFuture::join).forEach(x -> {
+                    verticesToVisitNextLevel.addAll(x);
+                    traversedVerticesIds.addAll(x);
+                });
 
-            verticesAtCurrentLevel.clear();
-            verticesAtCurrentLevel.addAll(verticesToVisitNextLevel);
+                verticesAtCurrentLevel.clear();
+                verticesAtCurrentLevel.addAll(verticesToVisitNextLevel);
+            }
+        }finally {
+            executorService.shutdown();
         }
 
         result.addAll(traversedVerticesIds);
