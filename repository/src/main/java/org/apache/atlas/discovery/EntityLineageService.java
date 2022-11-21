@@ -394,7 +394,7 @@ public class EntityLineageService implements AtlasLineageService {
         if (depth != 0) {
             processIntermediateLevel(currentVertex, isInput, depth, visitedVertices, ret, lineageContext);
         } else {
-            processLastLevel(currentVertex, isInput, ret);
+            processLastLevel(currentVertex, isInput, ret, lineageContext);
         }
         RequestContext.get().endMetricRecord(metric);
     }
@@ -609,9 +609,29 @@ public class EntityLineageService implements AtlasLineageService {
         }
     }
 
-    private void processLastLevel(AtlasVertex currentVertex, boolean isInput, AtlasLineageInfo ret) {
+    private void processLastLevel(AtlasVertex currentVertex, boolean isInput, AtlasLineageInfo ret, AtlasLineageContext lineageContext) {
         List<AtlasEdge> processEdges = vertexEdgeCache.getEdges(currentVertex, IN, isInput ? PROCESS_OUTPUTS_EDGE : PROCESS_INPUTS_EDGE);
+        processEdges = CollectionUtils.isNotEmpty(lineageContext.getIgnoredProcesses()) ? eliminateIgnoredProcesses(processEdges, isInput, lineageContext) : processEdges;
         ret.setHasChildrenForDirection(getGuid(currentVertex), new LineageChildrenInfo(isInput ? INPUT : OUTPUT, hasMoreChildren(processEdges)));
+    }
+
+    private List<AtlasEdge> eliminateIgnoredProcesses(List<AtlasEdge> processEdges, boolean isInput, AtlasLineageContext lineageContext) {
+        List<AtlasEdge> edges = new ArrayList<>();
+        for (AtlasEdge processEdge : processEdges) {
+            AtlasVertex processVertex;
+            if (isInput) {
+                processVertex = processEdge.getOutVertex();
+            }
+            else {
+                processVertex = processEdge.getInVertex();
+            }
+            if (processVertex != null) {
+                if (!lineageContext.getIgnoredProcesses().contains(processVertex.getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY, String.class))) {
+                    edges.add(processEdge);
+                }
+            }
+        }
+        return edges;
     }
 
     private List<AtlasEdge> getEdgesOfProcess(boolean isInput, AtlasLineageContext lineageContext, AtlasVertex processVertex) {
