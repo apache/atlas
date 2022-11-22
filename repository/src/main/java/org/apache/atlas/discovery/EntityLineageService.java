@@ -524,7 +524,6 @@ public class EntityLineageService implements AtlasLineageService {
                 .map(processEdge -> Pair.of(processEdge, processEdge.getInVertex()))
                 .filter(pair -> pair.getRight() != null)
                 .map(pair -> Pair.of(pair.getLeft(), pair.getRight().getIdForDisplay()))
-                .filter(pair -> !paginationCalculatedVertices.contains(pair.getRight()))
                 .collect(Collectors.toList());
     }
 
