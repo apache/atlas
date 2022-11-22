@@ -37,13 +37,18 @@
                 <exclude>**/*.log</exclude>
                 <exclude>**/*.pyc</exclude> <!-- python compiled executable -->
                 <exclude>**/test-output/**</exclude>
+                <exclude>distro/elasticsearch/**</exclude>
                 <exclude>distro/hbase/**</exclude>
                 <exclude>distro/solr/**</exclude>
+                <exclude>distro/zk/**</exclude>
                 <exclude>**/${sys:atlas.data}/**</exclude>
                 <exclude>**/atlas.data/**</exclude>
                 <exclude>**/*.patch</exclude>
+                <exclude>dashboardv2/node_modules/**</exclude>
+                <exclude>dashboardv3/node_modules/**</exclude>
                 <exclude>dev-support/atlas-docker/data/**</exclude>
                 <exclude>dev-support/atlas-docker/dist/**</exclude>
+                <exclude>dev-support/atlas-docker/downloads/**</exclude>
             </excludes>
         </fileSet>
     </fileSets>
