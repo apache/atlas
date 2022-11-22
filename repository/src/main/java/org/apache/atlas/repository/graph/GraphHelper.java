@@ -470,6 +470,25 @@ public final class GraphHelper {
         return ret;
     }
 
+    public static List<String> getPropagatedVerticesIds (AtlasVertex classificationVertex) {
+        List<String>   ret      =  new ArrayList<>();
+        Iterator<AtlasVertex>            vertices =  classificationVertex.query().direction(AtlasEdgeDirection.IN).label(CLASSIFICATION_LABEL)
+                .has(CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY, true)
+                .has(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, getTypeName(classificationVertex))
+                .vertices().iterator();
+
+        if (vertices != null) {
+            while (vertices.hasNext()) {
+                AtlasVertex vertex = vertices.next();
+                if (vertex != null) {
+                    ret.add(vertex.getIdForDisplay());
+                }
+            }
+        }
+
+        return ret;
+    }
+
     public static boolean hasEntityReferences(AtlasVertex classificationVertex) {
         return classificationVertex.hasEdges(AtlasEdgeDirection.IN, CLASSIFICATION_LABEL);
     }
