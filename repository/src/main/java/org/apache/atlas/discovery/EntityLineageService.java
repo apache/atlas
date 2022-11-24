@@ -569,8 +569,7 @@ public class EntityLineageService implements AtlasLineageService {
     }
 
     private boolean hasMoreVertices(List<AtlasEdge> currentVertexEdges, int currentVertexEdgeIndex, List<AtlasEdge> edgesOfProcess, int currentProcessEdgeIndex) {
-        return (currentProcessEdgeIndex < edgesOfProcess.size() - 1 || currentVertexEdgeIndex < currentVertexEdges.size() - 1) &&
-                !(currentProcessEdgeIndex == edgesOfProcess.size() - 1 && currentVertexEdgeIndex == currentVertexEdges.size() - 1);
+        return currentProcessEdgeIndex < edgesOfProcess.size() || currentVertexEdgeIndex < currentVertexEdges.size();
     }
 
     private long nonProcessEntityCount(AtlasLineageInfo ret) {
