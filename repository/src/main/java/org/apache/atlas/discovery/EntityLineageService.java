@@ -482,8 +482,8 @@ public class EntityLineageService implements AtlasLineageService {
             if (edgesOfProcess.size() > currentOffset) {
                 isFirstValidProcessReached = true;
                 ret.setHasChildrenForDirection(getGuid(processVertex), new LineageChildrenInfo(isInput ? INPUT : OUTPUT, hasMoreChildren(edgesOfProcess)));
-                boolean graphTerminated = executeCurrentProcessVertex(isInput, depth, visitedVertices, ret, lineageContext, currentVertexEdges, inputVertexCount, currentOffset, i, edge, edgesOfProcess);
-                if (graphTerminated)
+                boolean isLimitReached = executeCurrentProcessVertex(isInput, depth, visitedVertices, ret, lineageContext, currentVertexEdges, inputVertexCount, currentOffset, i, edge, edgesOfProcess);
+                if (isLimitReached)
                     return;
             } else
                 currentOffset -= edgesOfProcess.size();
@@ -559,10 +559,12 @@ public class EntityLineageService implements AtlasLineageService {
                             int processEdgeIndex) {
         if (lineageContext.getDirection() == BOTH) {
             if (isInput && nonProcessEntityCount(ret) == lineageContext.getLimit()) {
-                ret.setHasMoreUpstreamVertices(hasMoreVertices(currentVertexEdges, currentVertexEdgeIndex, edgesOfProcess, processEdgeIndex));
+                //ret.setHasMoreUpstreamVertices(hasMoreVertices(currentVertexEdges, currentVertexEdgeIndex, edgesOfProcess, processEdgeIndex));
+                ret.setHasMoreUpstreamVertices(true);
                 return true;
             } else if (!isInput && nonProcessEntityCount(ret) - inputVertexCount == lineageContext.getLimit()) {
-                ret.setHasMoreDownstreamVertices(hasMoreVertices(currentVertexEdges, currentVertexEdgeIndex, edgesOfProcess, processEdgeIndex));
+                //ret.setHasMoreDownstreamVertices(hasMoreVertices(currentVertexEdges, currentVertexEdgeIndex, edgesOfProcess, processEdgeIndex));
+                ret.setHasMoreDownstreamVertices(true);
                 return true;
             }
         } else if (nonProcessEntityCount(ret) == lineageContext.getLimit()) {
