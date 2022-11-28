@@ -63,6 +63,13 @@
                 display: none;
             }
         }
+        &.btn[data-id="termClick"] {
+            i.fa-close[data-id="deleteTag"],
+            i.fa-times[data-id="deleteTag"],
+            i.fa-times[data-id="delete"] {
+                display: none;
+            }
+        }
     }
 }
 
