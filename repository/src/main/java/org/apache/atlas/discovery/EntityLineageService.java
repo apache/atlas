@@ -572,23 +572,11 @@ public class EntityLineageService implements AtlasLineageService {
     }
 
     private void setVertexCountsForOneDirection(boolean isInput, AtlasLineageInfo ret, List<AtlasEdge> currentVertexEdges, int currentVertexEdgeIndex, List<AtlasEdge> edgesOfProcess, int processEdgeIndex) {
-        if (hasMoreVertices(currentVertexEdges, currentVertexEdgeIndex, edgesOfProcess, processEdgeIndex)) {
-            if (isInput) {
-                ret.setHasMoreUpstreamVertices(true);
-            } else {
-                ret.setHasMoreDownstreamVertices(true);
-            }
+        if (isInput) {
+            ret.setHasMoreUpstreamVertices(true);
         } else {
-            if (isInput) {
-                ret.setHasMoreUpstreamVertices(false);
-            } else {
-                ret.setHasMoreDownstreamVertices(false);
-            }
+            ret.setHasMoreDownstreamVertices(true);
         }
-    }
-
-    private boolean hasMoreVertices(List<AtlasEdge> currentVertexEdges, int currentVertexEdgeIndex, List<AtlasEdge> edgesOfProcess, int currentProcessEdgeIndex) {
-        return currentProcessEdgeIndex < edgesOfProcess.size() || currentVertexEdgeIndex < currentVertexEdges.size();
     }
 
     private long nonProcessEntityCount(AtlasLineageInfo ret) {
