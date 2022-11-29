@@ -71,6 +71,7 @@ import static org.apache.atlas.AtlasClient.PROCESS_SUPER_TYPE;
 import static org.apache.atlas.AtlasErrorCode.INSTANCE_LINEAGE_QUERY_FAILED;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
 import static org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection.*;
+import static org.apache.atlas.repository.Constants.PROCESS_EDGE_LABELS;
 import static org.apache.atlas.repository.Constants.RELATIONSHIP_GUID_PROPERTY_KEY;
 import static org.apache.atlas.repository.graph.GraphHelper.getGuid;
 import static org.apache.atlas.repository.graph.GraphHelper.getStatus;
@@ -524,6 +525,7 @@ public class EntityLineageService implements AtlasLineageService {
                 .map(processEdge -> Pair.of(processEdge, processEdge.getInVertex()))
                 .filter(pair -> pair.getRight() != null)
                 .map(pair -> Pair.of(pair.getLeft(), pair.getRight().getIdForDisplay()))
+                .filter(pair -> !paginationCalculatedVertices.contains(pair.getRight()))
                 .collect(Collectors.toList());
     }
 
@@ -610,11 +612,11 @@ public class EntityLineageService implements AtlasLineageService {
 
     private void processLastLevel(AtlasVertex currentVertex, boolean isInput, AtlasLineageInfo ret, AtlasLineageContext lineageContext) {
         List<AtlasEdge> processEdges = vertexEdgeCache.getEdges(currentVertex, IN, isInput ? PROCESS_OUTPUTS_EDGE : PROCESS_INPUTS_EDGE);
-        processEdges = CollectionUtils.isNotEmpty(lineageContext.getIgnoredProcesses()) ? eliminateIgnoredProcesses(processEdges, isInput, lineageContext) : processEdges;
+        processEdges = CollectionUtils.isNotEmpty(lineageContext.getIgnoredProcesses()) ? eliminateIgnoredProcesses(processEdges, isInput, lineageContext, currentVertex) : processEdges;
         ret.setHasChildrenForDirection(getGuid(currentVertex), new LineageChildrenInfo(isInput ? INPUT : OUTPUT, hasMoreChildren(processEdges)));
     }
 
-    private List<AtlasEdge> eliminateIgnoredProcesses(List<AtlasEdge> processEdges, boolean isInput, AtlasLineageContext lineageContext) {
+    private List<AtlasEdge> eliminateIgnoredProcesses(List<AtlasEdge> processEdges, boolean isInput, AtlasLineageContext lineageContext, AtlasVertex currentVertex) {
         List<AtlasEdge> edges = new ArrayList<>();
         for (AtlasEdge processEdge : processEdges) {
             AtlasVertex processVertex;
@@ -625,7 +627,16 @@ public class EntityLineageService implements AtlasLineageService {
                 processVertex = processEdge.getInVertex();
             }
             if (processVertex != null) {
-                if (!lineageContext.getIgnoredProcesses().contains(processVertex.getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY, String.class))) {
+                Iterator<AtlasEdge> processEdgeIterator = processVertex.getEdges(OUT, isInput ? PROCESS_INPUTS_EDGE : PROCESS_OUTPUTS_EDGE).iterator();
+                Set<AtlasEdge> processOutputEdges = new HashSet<>();
+                while (processEdgeIterator.hasNext()) {
+                    processOutputEdges.add(processEdgeIterator.next());
+                }
+
+                List<AtlasVertex> linkedVertices = processOutputEdges.stream().map(x -> x.getInVertex()).collect(Collectors.toList());
+
+                if (!linkedVertices.contains(currentVertex) &&
+                        !lineageContext.getIgnoredProcesses().contains(processVertex.getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY, String.class))) {
                     edges.add(processEdge);
                 }
             }
