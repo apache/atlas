@@ -160,5 +160,5 @@ public abstract class AbstractStorageBasedAuditRepository implements Service, En
     return Bytes.toBytes(keyStr);
   }
 
-  public abstract EntityAuditSearchResult searchEvents(String queryString, Set<String> attributes) throws AtlasBaseException;
+  public abstract EntityAuditSearchResult searchEvents(String queryString) throws AtlasBaseException;
 }

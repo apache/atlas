@@ -582,10 +582,6 @@ public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditReposito
         return ret;
     }
 
-    @Override
-    public EntityAuditSearchResult searchEvents(String queryString, Set<String> attributes) throws AtlasBaseException {
-        return null;
-    }
 
     private String getResultString(Result result, byte[] columnName) {
         byte[] rawValue = result.getValue(COLUMN_FAMILY, columnName);

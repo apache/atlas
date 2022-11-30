@@ -97,12 +97,10 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
     * */
 
     private RestClient lowLevelClient;
-    private final EntityGraphRetriever entityGraphRetriever;
     private final Configuration configuration;
 
     @Inject
-    public ESBasedAuditRepository(EntityGraphRetriever entityGraphRetriever, Configuration configuration) {
-        this.entityGraphRetriever = entityGraphRetriever;
+    public ESBasedAuditRepository(Configuration configuration) {
         this.configuration = configuration;
     }
 
@@ -212,26 +210,21 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
 
     @Override
     public EntityAuditSearchResult searchEvents(String queryString) throws AtlasBaseException {
-        return searchEvents(queryString, null);
-    }
-
-    public EntityAuditSearchResult searchEvents(String queryString, Set<String> attributes) throws AtlasBaseException {
         LOG.info("Hitting ES query to fetch audits: {}", queryString);
         try {
             String response = performSearchOnIndex(queryString);
-            return getResultFromResponse(response, attributes);
+            return getResultFromResponse(response);
         } catch (IOException e) {
             throw new AtlasBaseException(e);
         }
     }
 
-    private EntityAuditSearchResult getResultFromResponse(String responseString, Set<String> attributes) throws AtlasBaseException {
+    private EntityAuditSearchResult getResultFromResponse(String responseString) throws AtlasBaseException {
         List<EntityAuditEventV2> entityAudits = new ArrayList<>();
         EntityAuditSearchResult searchResult = new EntityAuditSearchResult();
         Map<String, Object> responseMap = AtlasType.fromJson(responseString, Map.class);
         Map<String, Object> hits_0 = (Map<String, Object>) responseMap.get("hits");
         List<LinkedHashMap> hits_1 = (List<LinkedHashMap>) hits_0.get("hits");
-        RequestContext requestContext = RequestContext.get();
         for (LinkedHashMap hit : hits_1) {
             Map source = (Map) hit.get("_source");
             String entityGuid = (String) source.get(ENTITYID);
@@ -241,24 +234,6 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
             event.setDetail((Map<String, Object>) source.get(DETAIL));
             event.setUser((String) source.get(USER));
             event.setCreated((long) source.get(CREATED));
-            if (requestContext.getCachedEntityHeader(entityGuid) != null) {
-                event.setEntityDetail(requestContext.getCachedEntityHeader(entityGuid));
-            } else {
-                AtlasEntityHeader entityHeader = null;
-
-                try {
-                    entityHeader = entityGraphRetriever.toAtlasEntityHeader(entityGuid, attributes);
-                }catch (AtlasBaseException exception){
-                    if (exception.getAtlasErrorCode() != AtlasErrorCode.INSTANCE_GUID_NOT_FOUND){
-                        throw exception;
-                    }
-                }
-
-                if (entityHeader != null) {
-                    requestContext.setEntityHeaderCache(entityHeader);
-                    event.setEntityDetail(entityHeader);
-                }
-            }
             if (source.get(TIMESTAMP) != null) {
                 event.setTimestamp((long) source.get(TIMESTAMP));
             }
