@@ -627,21 +627,31 @@ public class EntityLineageService implements AtlasLineageService {
                 processVertex = processEdge.getInVertex();
             }
             if (processVertex != null) {
-                Iterator<AtlasEdge> processEdgeIterator = processVertex.getEdges(OUT, isInput ? PROCESS_INPUTS_EDGE : PROCESS_OUTPUTS_EDGE).iterator();
-                Set<AtlasEdge> processOutputEdges = new HashSet<>();
-                while (processEdgeIterator.hasNext()) {
-                    processOutputEdges.add(processEdgeIterator.next());
-                }
-
-                List<AtlasVertex> linkedVertices = processOutputEdges.stream().map(x -> x.getInVertex()).collect(Collectors.toList());
-
-                if (!linkedVertices.contains(currentVertex) &&
+                if (!childHasSelfCycle(processVertex, currentVertex, isInput) &&
                         !lineageContext.getIgnoredProcesses().contains(processVertex.getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY, String.class))) {
                     edges.add(processEdge);
                 }
             }
         }
         return edges;
+    }
+
+    private boolean childHasSelfCycle(AtlasVertex processVertex, AtlasVertex currentVertex, boolean isInput) {
+        Iterator<AtlasEdge> processEdgeIterator;
+        if (isInput) {
+            processEdgeIterator = processVertex.getEdges(OUT, isInput ? PROCESS_INPUTS_EDGE : PROCESS_OUTPUTS_EDGE).iterator();
+        }
+        else {
+            processEdgeIterator = processVertex.getEdges(IN, isInput ? PROCESS_OUTPUTS_EDGE : PROCESS_INPUTS_EDGE).iterator();
+
+        }
+        Set<AtlasEdge> processOutputEdges = new HashSet<>();
+        while (processEdgeIterator.hasNext()) {
+            processOutputEdges.add(processEdgeIterator.next());
+        }
+
+        List<AtlasVertex> linkedVertices = processOutputEdges.stream().map(x -> x.getInVertex()).collect(Collectors.toList());
+        return linkedVertices.contains(currentVertex);
     }
 
     private List<AtlasEdge> getEdgesOfProcess(boolean isInput, AtlasLineageContext lineageContext, AtlasVertex processVertex) {
