@@ -620,12 +620,7 @@ public class EntityLineageService implements AtlasLineageService {
         List<AtlasEdge> edges = new ArrayList<>();
         for (AtlasEdge processEdge : processEdges) {
             AtlasVertex processVertex;
-            if (isInput) {
-                processVertex = processEdge.getOutVertex();
-            }
-            else {
-                processVertex = processEdge.getInVertex();
-            }
+            processVertex = processEdge.getOutVertex();
             if (processVertex != null) {
                 if (!childHasSelfCycle(processVertex, currentVertex, isInput) &&
                         !lineageContext.getIgnoredProcesses().contains(processVertex.getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY, String.class))) {
@@ -638,13 +633,7 @@ public class EntityLineageService implements AtlasLineageService {
 
     private boolean childHasSelfCycle(AtlasVertex processVertex, AtlasVertex currentVertex, boolean isInput) {
         Iterator<AtlasEdge> processEdgeIterator;
-        if (isInput) {
-            processEdgeIterator = processVertex.getEdges(OUT, isInput ? PROCESS_INPUTS_EDGE : PROCESS_OUTPUTS_EDGE).iterator();
-        }
-        else {
-            processEdgeIterator = processVertex.getEdges(IN, isInput ? PROCESS_OUTPUTS_EDGE : PROCESS_INPUTS_EDGE).iterator();
-
-        }
+        processEdgeIterator = processVertex.getEdges(OUT, isInput ? PROCESS_INPUTS_EDGE : PROCESS_OUTPUTS_EDGE).iterator();
         Set<AtlasEdge> processOutputEdges = new HashSet<>();
         while (processEdgeIterator.hasNext()) {
             processOutputEdges.add(processEdgeIterator.next());
