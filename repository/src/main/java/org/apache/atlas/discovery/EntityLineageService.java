@@ -35,12 +35,14 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.lineage.AtlasLineageInfo;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageRelation;
 import org.apache.atlas.model.lineage.AtlasLineageRequest;
 import org.apache.atlas.model.lineage.LineageChildrenInfo;
 import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -69,11 +71,12 @@ import java.util.stream.Collectors;
 import static org.apache.atlas.AtlasClient.DATA_SET_SUPER_TYPE;
 import static org.apache.atlas.AtlasClient.PROCESS_SUPER_TYPE;
 import static org.apache.atlas.AtlasErrorCode.INSTANCE_LINEAGE_QUERY_FAILED;
+import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
 import static org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection.*;
+import static org.apache.atlas.repository.Constants.ACTIVE_STATE_VALUE;
 import static org.apache.atlas.repository.Constants.RELATIONSHIP_GUID_PROPERTY_KEY;
-import static org.apache.atlas.repository.graph.GraphHelper.getGuid;
-import static org.apache.atlas.repository.graph.GraphHelper.getStatus;
+import static org.apache.atlas.repository.graph.GraphHelper.*;
 import static org.apache.atlas.repository.graphdb.AtlasEdgeDirection.IN;
 import static org.apache.atlas.repository.graphdb.AtlasEdgeDirection.OUT;
 import static org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery.*;
@@ -92,14 +95,16 @@ public class EntityLineageService implements AtlasLineageService {
     private final EntityGraphRetriever entityRetriever;
     private final AtlasTypeRegistry atlasTypeRegistry;
     private final VertexEdgeCache vertexEdgeCache;
+    private final AtlasInstanceConverter instanceConverter;
 
     @Inject
-    EntityLineageService(AtlasTypeRegistry typeRegistry, AtlasGraph atlasGraph, VertexEdgeCache vertexEdgeCache) {
+    EntityLineageService(AtlasTypeRegistry typeRegistry, AtlasGraph atlasGraph, VertexEdgeCache vertexEdgeCache, AtlasInstanceConverter instanceConverter) {
         this.graph = atlasGraph;
         this.gremlinQueryProvider = AtlasGremlinQueryProvider.INSTANCE;
         this.entityRetriever = new EntityGraphRetriever(atlasGraph, typeRegistry);
         this.atlasTypeRegistry = typeRegistry;
         this.vertexEdgeCache = vertexEdgeCache;
+        this.instanceConverter    = instanceConverter;
     }
 
     @VisibleForTesting
@@ -109,6 +114,7 @@ public class EntityLineageService implements AtlasLineageService {
         this.entityRetriever = null;
         this.atlasTypeRegistry = null;
         this.vertexEdgeCache = null;
+        this.instanceConverter = null;
     }
 
     @Override
@@ -658,7 +664,8 @@ public class EntityLineageService implements AtlasLineageService {
     }
 
     private boolean shouldProcessEdge(AtlasLineageContext lineageContext, AtlasEdge edge) {
-        return lineageContext.isAllowDeletedProcess() || getStatus(edge.getOutVertex()) == AtlasEntity.Status.ACTIVE;
+        return lineageContext.isAllowDeletedProcess() ||
+                (getStatus(edge.getOutVertex()) == AtlasEntity.Status.ACTIVE && getStateAsString(edge).equals(ACTIVE_STATE_VALUE));
     }
 
     private List<AtlasEdge> getEdgesOfCurrentVertex(AtlasVertex currentVertex, boolean isInput, AtlasLineageContext lineageContext) {
