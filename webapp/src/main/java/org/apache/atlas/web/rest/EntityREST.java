@@ -1179,13 +1179,18 @@ public class EntityREST {
         for (EntityAuditEventV2 event : result.getEntityAudits()) {
             try {
                 AtlasSearchResult ret = new AtlasSearchResult();
-                AtlasEntityHeader entityHeader = entityGraphRetriever.toAtlasEntityHeader(event.getEntityId(), attributes);
+                AtlasEntityWithExtInfo entityWithExtInfo = entitiesStore.getByIdWithoutAuthorization(event.getEntityId());
+                AtlasEntityHeader entityHeader = new AtlasEntityHeader(entityWithExtInfo.getEntity());
                 ret.addEntity(entityHeader);
                 AtlasSearchResultScrubRequest request = new AtlasSearchResultScrubRequest(typeRegistry, ret);
                 AtlasAuthorizationUtils.scrubSearchResults(request, suppressLogs);
                 if(entityHeader.getScrubbed()!= null && entityHeader.getScrubbed()){
                     event.setDetail(null);
                 }
+                Map<String, Object> entityAttrs = entityHeader.getAttributes();
+                if(attributes ==null) entityAttrs.clear();
+                else entityAttrs.keySet().retainAll(attributes);
+
                 event.setEntityDetail(entityHeader);
 
             } catch (AtlasBaseException e) {
