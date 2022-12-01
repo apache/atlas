@@ -41,7 +41,6 @@ import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageRelation;
 import org.apache.atlas.model.lineage.AtlasLineageRequest;
 import org.apache.atlas.model.lineage.LineageChildrenInfo;
 import org.apache.atlas.repository.Constants;
-import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
