@@ -37,11 +37,9 @@ import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.repository.audit.ESBasedAuditRepository;
-import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
 import org.apache.atlas.repository.store.graph.v2.ClassificationAssociator;
-import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityStream;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
@@ -99,17 +97,12 @@ public class EntityREST {
     private final AtlasTypeRegistry      typeRegistry;
     private final AtlasEntityStore       entitiesStore;
     private final ESBasedAuditRepository  esBasedAuditRepository;
-    private final AtlasInstanceConverter instanceConverter;
-    private final EntityGraphRetriever entityGraphRetriever;
 
     @Inject
-    public EntityREST(AtlasTypeRegistry typeRegistry, AtlasEntityStore entitiesStore, ESBasedAuditRepository  esBasedAuditRepository,
-                      AtlasInstanceConverter instanceConverter, EntityGraphRetriever entityGraphRetriever) {
+    public EntityREST(AtlasTypeRegistry typeRegistry, AtlasEntityStore entitiesStore, ESBasedAuditRepository  esBasedAuditRepository) {
         this.typeRegistry      = typeRegistry;
         this.entitiesStore     = entitiesStore;
         this.esBasedAuditRepository = esBasedAuditRepository;
-        this.instanceConverter = instanceConverter;
-        this.entityGraphRetriever = entityGraphRetriever;
     }
 
     /**
@@ -1188,7 +1181,7 @@ public class EntityREST {
                     event.setDetail(null);
                 }
                 Map<String, Object> entityAttrs = entityHeader.getAttributes();
-                if(attributes ==null) entityAttrs.clear();
+                if(attributes == null) entityAttrs.clear();
                 else entityAttrs.keySet().retainAll(attributes);
 
                 event.setEntityDetail(entityHeader);
