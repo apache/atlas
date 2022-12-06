@@ -25,7 +25,6 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Lists;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.annotation.ConditionalOnAtlasProperty;
@@ -259,10 +258,5 @@ public class CassandraBasedAuditRepository extends AbstractStorageBasedAuditRepo
   @Override
   public void stop() throws AtlasException {
     cassSession.close();
-  }
-
-  @Override
-  public EntityAuditSearchResult searchEvents(String queryString, Set<String> attributes) throws AtlasBaseException {
-    return null;
   }
 }
