@@ -71,9 +71,9 @@ import static org.apache.atlas.AtlasClient.PROCESS_SUPER_TYPE;
 import static org.apache.atlas.AtlasErrorCode.INSTANCE_LINEAGE_QUERY_FAILED;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
 import static org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection.*;
+import static org.apache.atlas.repository.Constants.ACTIVE_STATE_VALUE;
 import static org.apache.atlas.repository.Constants.RELATIONSHIP_GUID_PROPERTY_KEY;
-import static org.apache.atlas.repository.graph.GraphHelper.getGuid;
-import static org.apache.atlas.repository.graph.GraphHelper.getStatus;
+import static org.apache.atlas.repository.graph.GraphHelper.*;
 import static org.apache.atlas.repository.graphdb.AtlasEdgeDirection.IN;
 import static org.apache.atlas.repository.graphdb.AtlasEdgeDirection.OUT;
 import static org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery.*;
@@ -658,7 +658,8 @@ public class EntityLineageService implements AtlasLineageService {
     }
 
     private boolean shouldProcessEdge(AtlasLineageContext lineageContext, AtlasEdge edge) {
-        return lineageContext.isAllowDeletedProcess() || getStatus(edge.getOutVertex()) == AtlasEntity.Status.ACTIVE;
+        return lineageContext.isAllowDeletedProcess() ||
+                (getStatus(edge.getOutVertex()) == AtlasEntity.Status.ACTIVE && getStateAsString(edge).equals(ACTIVE_STATE_VALUE));
     }
 
     private List<AtlasEdge> getEdgesOfCurrentVertex(AtlasVertex currentVertex, boolean isInput, AtlasLineageContext lineageContext) {
