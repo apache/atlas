@@ -637,6 +637,7 @@ public class EntityLineageService implements AtlasLineageService {
     }
 
     private boolean childHasSelfCycle(AtlasVertex processVertex, AtlasVertex currentVertex, boolean isInput) {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("childHasSelfCycle");
         Iterator<AtlasEdge> processEdgeIterator;
         processEdgeIterator = processVertex.getEdges(OUT, isInput ? PROCESS_INPUTS_EDGE : PROCESS_OUTPUTS_EDGE).iterator();
         Set<AtlasEdge> processOutputEdges = new HashSet<>();
@@ -645,6 +646,7 @@ public class EntityLineageService implements AtlasLineageService {
         }
 
         List<AtlasVertex> linkedVertices = processOutputEdges.stream().map(x -> x.getInVertex()).collect(Collectors.toList());
+        RequestContext.get().endMetricRecord(metricRecorder);
         return linkedVertices.contains(currentVertex);
     }
 
