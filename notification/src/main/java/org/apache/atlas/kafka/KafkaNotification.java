@@ -58,6 +58,7 @@ public class KafkaNotification extends AbstractNotification implements Service {
     public static final Logger LOG = LoggerFactory.getLogger(KafkaNotification.class);
 
     public    static final String PROPERTY_PREFIX            = "atlas.kafka";
+    public    static final String UNSORTED_POSTFIX           = "_UNSORTED";
     public    static final String ATLAS_HOOK_TOPIC           = AtlasConfiguration.NOTIFICATION_HOOK_TOPIC_NAME.getString();
     public    static final String ATLAS_ENTITIES_TOPIC       = AtlasConfiguration.NOTIFICATION_ENTITIES_TOPIC_NAME.getString();
     protected static final String CONSUMER_GROUP_ID_PROPERTY = "group.id";
@@ -67,9 +68,27 @@ public class KafkaNotification extends AbstractNotification implements Service {
 
     private static final String DEFAULT_CONSUMER_CLOSED_ERROR_MESSAGE = "This consumer has already been closed.";
 
+    public    static String ATLAS_HOOK_TOPIC_UNSORTED;
+    public    static String[] ATLAS_HOOK_UNSORTED_CONSUMER_TOPICS;
+
+    static {
+        try {
+            ATLAS_HOOK_TOPIC_UNSORTED = ATLAS_HOOK_TOPIC + UNSORTED_POSTFIX;
+            ATLAS_HOOK_UNSORTED_CONSUMER_TOPICS = ATLAS_HOOK_CONSUMER_TOPICS != null && ATLAS_HOOK_CONSUMER_TOPICS.length > 0
+                    ? new String[ATLAS_HOOK_CONSUMER_TOPICS.length] : new String[] {ATLAS_HOOK_TOPIC_UNSORTED};
+
+            for (int i = 0; i < ATLAS_HOOK_CONSUMER_TOPICS.length; i++) {
+                ATLAS_HOOK_UNSORTED_CONSUMER_TOPICS[i] = ATLAS_HOOK_CONSUMER_TOPICS[i] + UNSORTED_POSTFIX;
+            }
+        } catch (Exception e) {
+            LOG.error("Error while initializing Kafka Notification", e);
+        }
+    }
+
     private static final Map<NotificationType, String> PRODUCER_TOPIC_MAP = new HashMap<NotificationType, String>() {
         {
             put(NotificationType.HOOK, ATLAS_HOOK_TOPIC);
+            put(NotificationType.HOOK_UNSORTED, ATLAS_HOOK_TOPIC_UNSORTED);
             put(NotificationType.ENTITIES, ATLAS_ENTITIES_TOPIC);
         }
     };
@@ -77,6 +96,7 @@ public class KafkaNotification extends AbstractNotification implements Service {
     private static final Map<NotificationType, String[]> CONSUMER_TOPICS_MAP = new HashMap<NotificationType, String[]>() {
         {
             put(NotificationType.HOOK, trimAndPurge(ATLAS_HOOK_CONSUMER_TOPICS));
+            put(NotificationType.HOOK_UNSORTED, trimAndPurge(ATLAS_HOOK_UNSORTED_CONSUMER_TOPICS));
             put(NotificationType.ENTITIES, trimAndPurge(ATLAS_ENTITIES_CONSUMER_TOPICS));
         }
     };
@@ -86,6 +106,7 @@ public class KafkaNotification extends AbstractNotification implements Service {
     private final Map<NotificationType, List<KafkaConsumer>> consumers = new HashMap<>();
     private final Map<NotificationType, KafkaProducer>       producers = new HashMap<>();
     private       String                                     consumerClosedErrorMsg;
+    private final Map<String, KafkaProducer>                 producersByTopic = new HashMap<>();
 
     // ----- Constructors ----------------------------------------------------
 
@@ -255,6 +276,21 @@ public class KafkaNotification extends AbstractNotification implements Service {
         LOG.info("<== KafkaNotification.close()");
     }
 
+    //Sending messages received through HTTP or REST Notification Service to Producer
+    public void sendInternal(String topic, List<String> messages, boolean isSortNeeded) throws NotificationException {
+        KafkaProducer producer;
+        if (isSortNeeded) {
+            topic = topic + UNSORTED_POSTFIX;
+        }
+        producer = getOrCreateProducer(topic);
+        sendInternalToProducer(producer, topic, messages);
+    }
+
+    public void sendInternal(String topic, List<String> messages) throws NotificationException {
+        KafkaProducer producer = getOrCreateProducer(topic);
+
+        sendInternalToProducer(producer, topic, messages);
+    }
 
     // ----- AbstractNotification --------------------------------------------
     @Override
@@ -266,7 +302,11 @@ public class KafkaNotification extends AbstractNotification implements Service {
 
     @VisibleForTesting
     void sendInternalToProducer(Producer p, NotificationType notificationType, List<String> messages) throws NotificationException {
-        String               topic           = PRODUCER_TOPIC_MAP.get(notificationType);
+        String topic = PRODUCER_TOPIC_MAP.get(notificationType);
+        sendInternalToProducer(p, topic, messages);
+    }
+
+    void sendInternalToProducer(Producer p, String topic , List<String> messages) throws NotificationException {
         List<MessageContext> messageContexts = new ArrayList<>();
 
         for (String message : messages) {
@@ -308,6 +348,9 @@ public class KafkaNotification extends AbstractNotification implements Service {
     public Properties getConsumerProperties(NotificationType notificationType) {
         // find the configured group id for the given notification type
         String groupId = properties.getProperty(notificationType.toString().toLowerCase() + "." + CONSUMER_GROUP_ID_PROPERTY);
+        if (StringUtils.isEmpty(groupId)) {
+            groupId = "atlas";
+        }
 
         if (StringUtils.isEmpty(groupId)) {
             throw new IllegalStateException("No configuration group id set for the notification type " + notificationType);
@@ -346,21 +389,45 @@ public class KafkaNotification extends AbstractNotification implements Service {
     private KafkaProducer getOrCreateProducer(NotificationType notificationType) {
         LOG.debug("==> KafkaNotification.getOrCreateProducer()");
 
-        KafkaProducer ret = producers.get(notificationType);
+        KafkaProducer ret = getOrCreateProducerByCriteria(notificationType, producers, false);
+
+        LOG.debug("<== KafkaNotification.getOrCreateProducer()");
+
+        return ret;
+    }
+
+    private KafkaProducer getOrCreateProducer(String topic) {
+        LOG.debug("==> KafkaNotification.getOrCreateProducer() by Topic");
+
+        KafkaProducer ret = getOrCreateProducerByCriteria(topic, producersByTopic, true);
+
+        LOG.debug("<== KafkaNotification.getOrCreateProducer by Topic");
+
+        return ret;
+    }
+
+    private KafkaProducer getOrCreateProducerByCriteria(Object producerCriteria, Map producersByCriteria, boolean fetchByTopic) {
+        LOG.debug("==> KafkaNotification.getOrCreateProducerByCriteria()");
+
+        if ((fetchByTopic && !(producerCriteria instanceof String)) || (!fetchByTopic && !(producerCriteria instanceof NotificationType))) {
+            LOG.error("Error while retrieving Producer due to invalid criteria");
+        }
+
+        KafkaProducer ret = (KafkaProducer) producersByCriteria.get(producerCriteria);
 
         if (ret == null) {
             synchronized (this) {
-                ret = producers.get(notificationType);
+                ret = (KafkaProducer) producersByCriteria.get(producerCriteria);
 
                 if (ret == null) {
                     ret = new KafkaProducer(properties);
 
-                    producers.put(notificationType, ret);
+                    producersByCriteria.put(producerCriteria, ret);
                 }
             }
         }
 
-        LOG.debug("<== KafkaNotification.getOrCreateProducer()");
+        LOG.debug("<== KafkaNotification.getOrCreateProducerByCriteria()");
 
         return ret;
     }

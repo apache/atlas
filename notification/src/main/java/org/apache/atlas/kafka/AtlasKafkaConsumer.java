@@ -73,6 +73,11 @@ public class AtlasKafkaConsumer<T> extends AbstractNotificationConsumer<T> {
         return receive(this.pollTimeoutMilliSeconds, lastCommittedPartitionOffset);
     }
 
+    @Override
+    public List<AtlasKafkaMessage<T>> receiveRawRecordsWithCheckedCommit(Map<TopicPartition, Long> lastCommittedPartitionOffset) {
+        return receiveRawRecords(this.pollTimeoutMilliSeconds, lastCommittedPartitionOffset);
+    }
+
 
     @Override
     public void commit(TopicPartition partition, long offset) {
@@ -98,7 +103,15 @@ public class AtlasKafkaConsumer<T> extends AbstractNotificationConsumer<T> {
         }
     }
 
+    private List<AtlasKafkaMessage<T>> receiveRawRecords(long timeoutMilliSeconds, Map<TopicPartition, Long> lastCommittedPartitionOffset) {
+        return receive(timeoutMilliSeconds, lastCommittedPartitionOffset, true);
+    }
+
     private List<AtlasKafkaMessage<T>> receive(long timeoutMilliSeconds, Map<TopicPartition, Long> lastCommittedPartitionOffset) {
+        return receive(timeoutMilliSeconds, lastCommittedPartitionOffset, false);
+    }
+
+    private List<AtlasKafkaMessage<T>> receive(long timeoutMilliSeconds, Map<TopicPartition, Long> lastCommittedPartitionOffset, boolean isRawDataRequired) {
         List<AtlasKafkaMessage<T>> messages = new ArrayList();
 
         ConsumerRecords<?, ?> records = kafkaConsumer != null ? kafkaConsumer.poll(timeoutMilliSeconds) : null;
@@ -134,8 +147,17 @@ public class AtlasKafkaConsumer<T> extends AbstractNotificationConsumer<T> {
                     continue;
                 }
 
-                messages.add(new AtlasKafkaMessage(message, record.offset(), record.topic(), record.partition(),
-                                                            deserializer.getMsgCreated(), deserializer.getSpooled()));
+                AtlasKafkaMessage kafkaMessage = null;
+
+                if (isRawDataRequired) {
+                    kafkaMessage = new AtlasKafkaMessage(message, record.offset(), record.topic(), record.partition(),
+                            deserializer.getMsgCreated(), deserializer.getSpooled(), deserializer.getSource(), record.value().toString());
+                } else {
+                    kafkaMessage = new AtlasKafkaMessage(message, record.offset(), record.topic(), record.partition(),
+                            deserializer.getMsgCreated(), deserializer.getSpooled(), deserializer.getSource());
+                }
+
+                messages.add(kafkaMessage);
             }
         }
 

@@ -65,6 +65,7 @@ public abstract class AtlasNotificationMessageDeserializer<T> implements Message
     private final AtomicLong                          messageCountSinceLastInterval = new AtomicLong(0);
     private long                                      msgCreated;
     private boolean                                   spooled;
+    private String                                    source;
     // ----- Constructors ----------------------------------------------------
 
     /**
@@ -112,6 +113,10 @@ public abstract class AtlasNotificationMessageDeserializer<T> implements Message
         return this.spooled;
     }
 
+    public String getSource() {
+        return this.source;
+    }
+
     @Override
     public T deserialize(String messageJson) {
         final T ret;
@@ -120,6 +125,7 @@ public abstract class AtlasNotificationMessageDeserializer<T> implements Message
         messageCountSinceLastInterval.incrementAndGet();
         this.msgCreated = 0;
         this.spooled = false;
+        this.source  = null;
 
         AtlasNotificationBaseMessage msg = AtlasType.fromV1Json(messageJson, AtlasNotificationMessage.class);
 
@@ -128,6 +134,7 @@ public abstract class AtlasNotificationMessageDeserializer<T> implements Message
         } else  {
             this.msgCreated = ((AtlasNotificationMessage) msg).getMsgCreationTime();
             this.spooled = ((AtlasNotificationMessage) msg).getSpooled();
+            this.source = msg.getSource() != null ? msg.getSource().getSource() : null;
 
             String msgJson = messageJson;
 

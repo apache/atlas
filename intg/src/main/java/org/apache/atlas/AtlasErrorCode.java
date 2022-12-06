@@ -176,6 +176,7 @@ public enum AtlasErrorCode {
     ATTRIBUTE_NAME_ALREADY_EXISTS_IN_ANOTHER_PARENT_TYPE(400, "ATLAS-400-00-09E", "Invalid attribute name: {0}.{1}. Attribute already exists in another parent type: {2}"),
     IMPORT_INVALID_ZIP_ENTRY(400, "ATLAS-400-00-09F", "{0}: invalid zip entry. Reason: {1}"),
     LINEAGE_ON_DEMAND_NOT_ENABLED(400, "ATLAS-400-00-100", "Lineage on demand config: {0} is not enabled"),
+    INVALID_TOPIC_NAME(400, "ATLAS-400-00-101", "Unsupported topic name : {0}"),
 
     UNAUTHORIZED_ACCESS(403, "ATLAS-403-00-001", "{0} is not authorized to perform {1}"),
 
@@ -243,7 +244,8 @@ public enum AtlasErrorCode {
     ENTITY_NOTIFICATION_FAILED(500, "ATLAS-500-00-014", "Notification failed for operation: {0} : {1}"),
     FAILED_TO_UPLOAD(500, "ATLAS-500-00-015", "Error occurred while uploading the file: {0}"),
     FAILED_TO_CREATE_GLOSSARY_TERM(500, "ATLAS-500-00-016", "Error occurred while creating glossary term: {0}"),
-    FAILED_TO_UPDATE_GLOSSARY_TERM(500, "ATLAS-500-00-017", "Error occurred while updating glossary term: {0}");
+    FAILED_TO_UPDATE_GLOSSARY_TERM(500, "ATLAS-500-00-017", "Error occurred while updating glossary term: {0}"),
+    NOTIFICATION_EXCEPTION(500, "ATLAS-500-00-018", "{0}");
 
     private String errorCode;
     private String errorMessage;
