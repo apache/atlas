@@ -1,0 +1,1 @@
+{"version":{"version":"1.0.0","versionParts":[1]},"msgCompressionKind":"NONE","msgSplitIdx":1,"msgSplitCount":1,"msgSourceIP":"172.27.72.140","msgCreatedBy":"hive","msgCreationTime":"--ts--","spooled":false,"message":{"type":"ENTITY_DELETE_V2","user":"hive","entities":[{"typeName":"hive_db","uniqueAttributes":{"qualifiedName":"--name--@--clName--"}}]}}

@@ -134,6 +134,9 @@ public class AtlasClientV2 extends AtlasBaseClient {
     private static final String GLOSSARY_CATEGORY    = GLOSSARY_URI + "/category";
     private static final String GLOSSARY_CATEGORIES  = GLOSSARY_URI + "/categories";
 
+    //Notification APIs
+    private static final String NOTIFICATION_URI         = BASE_URI + "v2/notification";
+
 
     public AtlasClientV2(String[] baseUrl, String[] basicAuthUserNamePassword) {
         super(baseUrl, basicAuthUserNamePassword);
@@ -173,7 +176,7 @@ public class AtlasClientV2 extends AtlasBaseClient {
     }
 
     @VisibleForTesting
-    AtlasClientV2(WebResource service, Configuration configuration) {
+    public AtlasClientV2(WebResource service, Configuration configuration) {
         super(service, configuration);
     }
 
@@ -1024,6 +1027,14 @@ public class AtlasClientV2 extends AtlasBaseClient {
         return callAPI(API_V2.IMPORT_GLOSSARY, BulkImportResponse.class, multipartEntity);
     }
 
+    public void postNotificationToTopic(String topic, List<String> messages) throws AtlasServiceException {
+        callAPI(formatPathParameters(API_V2.POST_NOTIFICATIONS_TO_TOPIC, topic), (Class<?>) null, messages);
+    }
+
+    @VisibleForTesting
+    public API formatPathWithParameter(API api, String... params) {
+        return formatPathParameters(api, params);
+    }
 
     @Override
     protected API formatPathParameters(API api, String... params) {
@@ -1198,6 +1209,8 @@ public class AtlasClientV2 extends AtlasBaseClient {
         public static final API_V2 DELETE_BUSINESS_ATTRIBUTE_BY_NAME = new API_V2(ENTITY_API + "guid/%s/businessmetadata/%s", HttpMethod.DELETE, Response.Status.NO_CONTENT);
         public static final API_V2 GET_BUSINESS_METADATA_TEMPLATE    = new API_V2(ENTITY_API + "businessmetadata/import/template", HttpMethod.GET, Response.Status.OK, MediaType.APPLICATION_JSON, MediaType.APPLICATION_OCTET_STREAM);
         public static final API_V2 IMPORT_BUSINESS_METADATA          = new API_V2(ENTITY_API + "businessmetadata/import", HttpMethod.POST, Response.Status.OK, MediaType.MULTIPART_FORM_DATA, MediaType.APPLICATION_JSON);
+
+        public static final API_V2 POST_NOTIFICATIONS_TO_TOPIC     = new API_V2(NOTIFICATION_URI + "/topic/%s", HttpMethod.POST, Response.Status.NO_CONTENT);
 
         // labels APIs
         public static final API_V2 ADD_LABELS                        = new API_V2(ENTITY_API + "guid/%s/labels", HttpMethod.PUT, Response.Status.NO_CONTENT);

@@ -63,7 +63,7 @@
         <dependency>
             <groupId>com.sun.jersey</groupId>
             <artifactId>jersey-bundle</artifactId>
-            <version>1.19</version>
+            <version>${jersey.version}</version>
             <scope>test</scope>
         </dependency>
 
@@ -399,11 +399,6 @@
                                             <artifactId>jersey-bundle</artifactId>
                                             <version>${jersey.version}</version>
                                         </artifactItem>
-                                        <artifactItem>
-                                            <groupId>javax.ws.rs</groupId>
-                                            <artifactId>jsr311-api</artifactId>
-                                            <version>${jsr.version}</version>
-                                        </artifactItem>
                                     </artifactItems>
                                 </configuration>
                             </execution>
@@ -621,7 +616,6 @@
                     </execution>
                 </executions>
             </plugin>
-
         </plugins>
     </build>
 </project>

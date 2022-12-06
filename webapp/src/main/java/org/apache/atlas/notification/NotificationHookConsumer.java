@@ -22,7 +22,9 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.atlas.*;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.ha.HAConfiguration;
+import org.apache.atlas.hook.AtlasHook;
 import org.apache.atlas.kafka.AtlasKafkaMessage;
+import org.apache.atlas.kafka.KafkaNotification;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
@@ -83,6 +85,7 @@ import org.springframework.stereotype.Component;
 import javax.inject.Inject;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -91,6 +94,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -122,6 +126,9 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     private static final String EXCEPTION_CLASS_NAME_JANUSGRAPH_EXCEPTION = "JanusGraphException";
     private static final String EXCEPTION_CLASS_NAME_PERMANENTLOCKING_EXCEPTION = "PermanentLockingException";
     private static final int KAFKA_CONSUMER_SHUTDOWN_WAIT = 30000;
+
+    private static final String ATLAS_HOOK_CONSUMER_THREAD_NAME          = "atlas-hook-consumer-thread";
+    private static final String ATLAS_HOOK_UNSORTED_CONSUMER_THREAD_NAME = "atlas-hook-unsorted-consumer-thread";
 
     // from org.apache.hadoop.hive.ql.parse.SemanticAnalyzer
     public static final String DUMMY_DATABASE               = "_dummy_database";
@@ -195,6 +202,8 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     private       Instant                       nextStatsLogTime = AtlasMetricsCounter.getNextHourStartTime(Instant.now());
     private final Map<TopicPartition, Long>     lastCommittedPartitionOffset;
     private final EntityCorrelationManager      entityCorrelationManager;
+    private final long                          consumerMsgBufferingIntervalMS;
+    private final int                           consumerMsgBufferingBatchSize;
 
     @VisibleForTesting
     final int consumerRetryInterval;
@@ -230,6 +239,8 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         largeMessageProcessingTimeThresholdMs         = applicationProperties.getInt("atlas.notification.consumer.large.message.processing.time.threshold.ms", 60 * 1000);  //  60 sec by default
         createShellEntityForNonExistingReference      = AtlasConfiguration.NOTIFICATION_CREATE_SHELL_ENTITY_FOR_NON_EXISTING_REF.getBoolean();
         authorizeUsingMessageUser                     = applicationProperties.getBoolean(CONSUMER_AUTHORIZE_USING_MESSAGE_USER, false);
+        consumerMsgBufferingIntervalMS                = AtlasConfiguration.NOTIFICATION_HOOK_CONSUMER_BUFFERING_INTERVAL.getInt() * 1000;
+        consumerMsgBufferingBatchSize                 = AtlasConfiguration.NOTIFICATION_HOOK_CONSUMER_BUFFERING_BATCH_SIZE.getInt();
 
         int authnCacheTtlSeconds = applicationProperties.getInt(CONSUMER_AUTHORIZE_AUTHN_CACHE_TTL_SECONDS, 300);
 
@@ -350,17 +361,35 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     }
 
     private void startConsumers(ExecutorService executorService) {
-        int                                          numThreads            = applicationProperties.getInt(CONSUMER_THREADS_PROPERTY, 1);
+        int                                                           numThreads                  = applicationProperties.getInt(CONSUMER_THREADS_PROPERTY, 1);
+        Map<NotificationConsumer<HookNotification>, NotificationType> notificationConsumersByType = new HashMap<>();
+
         List<NotificationConsumer<HookNotification>> notificationConsumers = notificationInterface.createConsumers(NotificationType.HOOK, numThreads);
+        for (NotificationConsumer<HookNotification> notificationConsumer : notificationConsumers) {
+            notificationConsumersByType.put(notificationConsumer, NotificationType.HOOK);
+        }
+
+        if (AtlasHook.isHookMsgsSortEnabled) {
+            List<NotificationConsumer<HookNotification>> unsortedNotificationConsumers = notificationInterface.createConsumers(NotificationType.HOOK_UNSORTED, numThreads);
+            for (NotificationConsumer<HookNotification> unsortedNotificationConsumer : unsortedNotificationConsumers) {
+                notificationConsumersByType.put(unsortedNotificationConsumer, NotificationType.HOOK_UNSORTED);
+            }
+        }
 
         if (executorService == null) {
-            executorService = Executors.newFixedThreadPool(notificationConsumers.size(), new ThreadFactoryBuilder().setNameFormat(THREADNAME_PREFIX + " thread-%d").build());
+            executorService = Executors.newFixedThreadPool(notificationConsumersByType.size(), new ThreadFactoryBuilder().setNameFormat(THREADNAME_PREFIX + " thread-%d").build());
         }
 
         executors = executorService;
 
-        for (final NotificationConsumer<HookNotification> consumer : notificationConsumers) {
-            HookConsumer hookConsumer = new HookConsumer(consumer);
+        for (final NotificationConsumer<HookNotification> consumer : notificationConsumersByType.keySet()) {
+            String hookConsumerName   = ATLAS_HOOK_CONSUMER_THREAD_NAME;
+
+            if (notificationConsumersByType.get(consumer).equals(NotificationType.HOOK_UNSORTED)) {
+                hookConsumerName   = ATLAS_HOOK_UNSORTED_CONSUMER_THREAD_NAME;
+            }
+
+            HookConsumer hookConsumer = new HookConsumer(hookConsumerName, consumer);
 
             consumers.add(hookConsumer);
             executors.submit(hookConsumer);
@@ -529,8 +558,16 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         private final List<String>                           failedMessages = new ArrayList<>();
         private final AdaptiveWaiter                         adaptiveWaiter = new AdaptiveWaiter(minWaitDuration, maxWaitDuration, minWaitDuration);
 
+        private int duplicateKeyCounter = 1;
+
         public HookConsumer(NotificationConsumer<HookNotification> consumer) {
-            super("atlas-hook-consumer-thread");
+            super(ATLAS_HOOK_CONSUMER_THREAD_NAME);
+
+            this.consumer = consumer;
+        }
+
+        public HookConsumer(String consumerThreadName, NotificationConsumer<HookNotification> consumer) {
+            super(consumerThreadName);
 
             this.consumer = consumer;
         }
@@ -548,10 +585,15 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
             try {
                 while (shouldRun.get()) {
                     try {
-                        List<AtlasKafkaMessage<HookNotification>> messages = consumer.receiveWithCheckedCommit(lastCommittedPartitionOffset);
-
-                        for (AtlasKafkaMessage<HookNotification> msg : messages) {
-                            handleMessage(msg);
+                        if (StringUtils.equals(ATLAS_HOOK_UNSORTED_CONSUMER_THREAD_NAME, this.getName())) {
+                            long                                            msgBufferingStartTime = System.currentTimeMillis();
+                            Map<String,AtlasKafkaMessage<HookNotification>> msgBuffer             = new TreeMap<>();
+                            sortAndPublishMsgsToAtlasHook(msgBufferingStartTime, msgBuffer);
+                        } else {
+                            List<AtlasKafkaMessage<HookNotification>> messages = consumer.receiveWithCheckedCommit(lastCommittedPartitionOffset);
+                            for (AtlasKafkaMessage<HookNotification> msg : messages) {
+                                handleMessage(msg);
+                            }
                         }
                     } catch (IllegalStateException ex) {
                         adaptiveWaiter.pause(ex);
@@ -574,6 +616,63 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
                 LOG.info("<== HookConsumer run()");
             }
+        }
+
+        private void resetDuplicateKeyCounter() {
+            duplicateKeyCounter = 1;
+        }
+
+        private String getKey(String msgCreated, String source) {
+            return String.format("%s_%s", msgCreated, source);
+        }
+
+        private void sortMessages(AtlasKafkaMessage<HookNotification> msg, Map<String,AtlasKafkaMessage<HookNotification>> msgBuffer) {
+            String key = getKey(Long.toString(msg.getMsgCreated()), msg.getSource());
+            if (msgBuffer.containsKey(key)) { //Duplicate key can possible for messages from same source with same msgCreationTime
+                key = getKey(key, Integer.toString(duplicateKeyCounter));
+                duplicateKeyCounter++;
+            }
+            msgBuffer.put(key, msg);
+        }
+
+        void sortAndPublishMsgsToAtlasHook(long msgBufferingStartTime, Map<String,AtlasKafkaMessage<HookNotification>> msgBuffer) throws NotificationException {
+
+            List<AtlasKafkaMessage<HookNotification>> messages     = consumer.receiveRawRecordsWithCheckedCommit(lastCommittedPartitionOffset);
+            AtlasKafkaMessage<HookNotification>       maxOffsetMsg = null;
+            long                                      maxOffsetProcessed = 0;
+
+            messages.stream().forEach(x -> sortMessages(x, msgBuffer));
+
+            if (msgBuffer.size() < consumerMsgBufferingBatchSize && System.currentTimeMillis() - msgBufferingStartTime < consumerMsgBufferingIntervalMS) {
+                sortAndPublishMsgsToAtlasHook(msgBufferingStartTime, msgBuffer);
+                return;
+            }
+
+            for (AtlasKafkaMessage<HookNotification> msg : msgBuffer.values()) {
+                String hookTopic   = StringUtils.isNotEmpty(msg.getTopic()) ? msg.getTopic().split(KafkaNotification.UNSORTED_POSTFIX)[0] : KafkaNotification.ATLAS_HOOK_TOPIC;
+                if (maxOffsetProcessed == 0 || maxOffsetProcessed < msg.getOffset()) {
+                    maxOffsetMsg       = msg;
+                    maxOffsetProcessed = msg.getOffset();
+                }
+
+                ((KafkaNotification)notificationInterface).sendInternal(hookTopic,
+                        StringUtils.isNotEmpty(msg.getRawRecordData()) ? Arrays.asList(msg.getRawRecordData()) : Arrays.asList(msg.getMessage().toString()));
+            }
+
+
+            /** In case of failure while publishing sorted messages(above for loop), consuming of unsorted messages should start from the initial offset
+              * Explicitly keeping this for loop separate to commit messages only after sending all batch messages to hook topic
+              */
+            for (AtlasKafkaMessage<HookNotification> msg : msgBuffer.values()) {
+                commit(msg);
+            }
+
+            if (maxOffsetMsg != null) {
+                commit(maxOffsetMsg);
+            }
+
+            msgBuffer.clear();
+            resetDuplicateKeyCounter();
         }
 
         @VisibleForTesting

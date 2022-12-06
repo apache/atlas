@@ -17,17 +17,18 @@
  */
 package org.apache.atlas.kafka;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.notification.LogConfigUtils;
+import org.apache.atlas.hook.AtlasHook;
+import org.apache.atlas.notification.AbstractNotification;
 import org.apache.atlas.notification.NotificationInterface;
+import org.apache.atlas.notification.rest.RestNotification;
 import org.apache.atlas.notification.spool.AtlasFileSpool;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.File;
 
 /**
  * Provider class for Notification interfaces
@@ -35,8 +36,9 @@ import java.io.File;
 public class NotificationProvider {
     private static final Logger LOG = LoggerFactory.getLogger(NotificationProvider.class);
 
-    private static final String CONF_ATLAS_HOOK_SPOOL_ENABLED    = "atlas.hook.spool.enabled";
-    private static final String CONF_ATLAS_HOOK_SPOOL_DIR        = "atlas.hook.spool.dir";
+    @VisibleForTesting
+    public  static final String CONF_ATLAS_HOOK_SPOOL_ENABLED = "atlas.hook.spool.enabled";
+    private static final String CONF_ATLAS_HOOK_SPOOL_DIR     = "atlas.hook.spool.dir";
 
     private static final boolean CONF_ATLAS_HOOK_SPOOL_ENABLED_DEFAULT = false;
 
@@ -45,25 +47,32 @@ public class NotificationProvider {
     public static NotificationInterface get() {
         if (notificationProvider == null) {
             try {
-                Configuration     conf     = ApplicationProperties.get();
-                KafkaNotification kafka    = new KafkaNotification(conf);
-                String            spoolDir = getSpoolDir(conf);
+                Configuration        conf        = ApplicationProperties.get();
+                String               spoolDir    = getSpoolDir(conf);
+                AbstractNotification absNotifier = null;
+
+                if (AtlasHook.isRESTNotificationEnabled) {
+                    absNotifier = new RestNotification(conf);
+                } else {
+                    absNotifier = new KafkaNotification(conf);
+                }
 
                 if (isSpoolingEnabled(conf) && StringUtils.isNotEmpty(spoolDir)) {
                     LOG.info("Notification spooling is enabled: spool directory={}", spoolDir);
 
                     conf.setProperty(CONF_ATLAS_HOOK_SPOOL_DIR, spoolDir);
 
-                    notificationProvider = new AtlasFileSpool(conf, kafka);
+                    notificationProvider = new AtlasFileSpool(conf, absNotifier);
                 } else {
                     LOG.info("Notification spooling is not enabled");
 
-                    notificationProvider = kafka;
+                    notificationProvider = absNotifier;
                 }
             } catch (AtlasException e) {
-                throw new RuntimeException(e);
+                throw new RuntimeException("Error while initializing Notification interface", e);
             }
         }
+        LOG.debug("NotificationInterface of type {} is enabled", notificationProvider.getClass().getSimpleName());
         return notificationProvider;
     }
 

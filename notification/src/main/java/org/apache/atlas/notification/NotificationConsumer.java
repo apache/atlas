@@ -63,4 +63,11 @@ public interface NotificationConsumer<T> {
      * @return List containing kafka message and partionId and offset.
      */
     List<AtlasKafkaMessage<T>> receiveWithCheckedCommit(Map<TopicPartition, Long> lastCommittedPartitionOffset);
+
+    /**
+     * Fetch raw data for the topics from Kafka, if lastCommittedOffset same as message
+     * received offset, it will proceed with commit.
+     * @return List containing kafka message and partitionId and offset.
+     */
+    List<AtlasKafkaMessage<T>> receiveRawRecordsWithCheckedCommit(Map<TopicPartition, Long> lastCommittedPartitionOffset);
 }

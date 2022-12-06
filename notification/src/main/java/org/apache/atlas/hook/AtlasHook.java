@@ -21,6 +21,7 @@ package org.apache.atlas.hook;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.kafka.NotificationProvider;
 import org.apache.atlas.model.notification.HookNotification;
@@ -63,6 +64,7 @@ public abstract class AtlasHook {
     public static final String CONF_METADATA_NAMESPACE                            = "atlas.metadata.namespace";
     public static final String CLUSTER_NAME_KEY                                   = "atlas.cluster.name";
     public static final String DEFAULT_CLUSTER_NAME                               = "primary";
+    public static final String CONF_ATLAS_HOOK_MESSAGES_SORT_ENABLED              = "atlas.hook.messages.sort.enabled";
 
     protected static Configuration         atlasProperties;
     protected static NotificationInterface notificationInterface;
@@ -75,6 +77,8 @@ public abstract class AtlasHook {
     private static final int                  notificationMaxRetries;
     private static final int                  notificationRetryInterval;
     private static       ExecutorService      executor = null;
+    public  static final boolean              isRESTNotificationEnabled;
+    public  static final boolean              isHookMsgsSortEnabled;
 
 
     static {
@@ -95,6 +99,8 @@ public abstract class AtlasHook {
             failedMessagesLogger = null;
         }
 
+        isRESTNotificationEnabled = AtlasConfiguration.NOTIFICATION_HOOK_REST_ENABLED.getBoolean();
+        isHookMsgsSortEnabled     = atlasProperties.getBoolean(CONF_ATLAS_HOOK_MESSAGES_SORT_ENABLED, isRESTNotificationEnabled);
         metadataNamespace         = getMetadataNamespace(atlasProperties);
         notificationMaxRetries    = atlasProperties.getInt(ATLAS_NOTIFICATION_MAX_RETRIES, 3);
         notificationRetryInterval = atlasProperties.getInt(ATLAS_NOTIFICATION_RETRY_INTERVAL, 1000);

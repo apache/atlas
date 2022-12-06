@@ -46,6 +46,9 @@ public interface NotificationInterface {
         // Notifications from the Atlas integration hooks.
         HOOK(new HookMessageDeserializer()),
 
+        // Notifications from the Atlas integration hooks - unsorted.
+        HOOK_UNSORTED(new HookMessageDeserializer()),
+
         // Notifications to entity change consumers.
         ENTITIES(new EntityMessageDeserializer());
 
