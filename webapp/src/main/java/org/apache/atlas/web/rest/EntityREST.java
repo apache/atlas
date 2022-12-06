@@ -37,7 +37,6 @@ import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.repository.audit.ESBasedAuditRepository;
-import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
 import org.apache.atlas.repository.store.graph.v2.ClassificationAssociator;
@@ -98,15 +97,12 @@ public class EntityREST {
     private final AtlasTypeRegistry      typeRegistry;
     private final AtlasEntityStore       entitiesStore;
     private final ESBasedAuditRepository  esBasedAuditRepository;
-    private final AtlasInstanceConverter instanceConverter;
 
     @Inject
-    public EntityREST(AtlasTypeRegistry typeRegistry, AtlasEntityStore entitiesStore,ESBasedAuditRepository  esBasedAuditRepository,
-                      AtlasInstanceConverter instanceConverter) {
+    public EntityREST(AtlasTypeRegistry typeRegistry, AtlasEntityStore entitiesStore, ESBasedAuditRepository  esBasedAuditRepository) {
         this.typeRegistry      = typeRegistry;
         this.entitiesStore     = entitiesStore;
         this.esBasedAuditRepository = esBasedAuditRepository;
-        this.instanceConverter = instanceConverter;
     }
 
     /**
@@ -1161,9 +1157,9 @@ public class EntityREST {
 
             String dslString = parameters.getQueryString();
 
-            EntityAuditSearchResult ret = esBasedAuditRepository.searchEvents(dslString, parameters.getAttributes());
+            EntityAuditSearchResult ret = esBasedAuditRepository.searchEvents(dslString);
 
-            scrubEntityAudits(ret, parameters.getSuppressLogs());
+            scrubAndSetEntityAudits(ret, parameters.getSuppressLogs(), parameters.getAttributes());
 
             return ret;
         } finally {
@@ -1171,19 +1167,24 @@ public class EntityREST {
         }
     }
 
-    private void scrubEntityAudits(EntityAuditSearchResult result, boolean suppressLogs) throws AtlasBaseException {
+    private void scrubAndSetEntityAudits(EntityAuditSearchResult result, boolean suppressLogs, Set<String> attributes) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("scrubEntityAudits");
         for (EntityAuditEventV2 event : result.getEntityAudits()) {
             try {
+                AtlasSearchResult ret = new AtlasSearchResult();
                 AtlasEntityWithExtInfo entityWithExtInfo = entitiesStore.getByIdWithoutAuthorization(event.getEntityId());
                 AtlasEntityHeader entityHeader = new AtlasEntityHeader(entityWithExtInfo.getEntity());
-                AtlasSearchResult ret = new AtlasSearchResult();
                 ret.addEntity(entityHeader);
                 AtlasSearchResultScrubRequest request = new AtlasSearchResultScrubRequest(typeRegistry, ret);
                 AtlasAuthorizationUtils.scrubSearchResults(request, suppressLogs);
                 if(entityHeader.getScrubbed()!= null && entityHeader.getScrubbed()){
                     event.setDetail(null);
                 }
+                Map<String, Object> entityAttrs = entityHeader.getAttributes();
+                if(attributes == null) entityAttrs.clear();
+                else entityAttrs.keySet().retainAll(attributes);
+
+                event.setEntityDetail(entityHeader);
 
             } catch (AtlasBaseException e) {
                 if (e.getAtlasErrorCode() == AtlasErrorCode.INSTANCE_GUID_NOT_FOUND) {
