@@ -617,27 +617,37 @@ public class EntityLineageService implements AtlasLineageService {
 
     private void processLastLevel(AtlasVertex currentVertex, boolean isInput, AtlasLineageInfo ret, AtlasLineageContext lineageContext) {
         List<AtlasEdge> processEdges = vertexEdgeCache.getEdges(currentVertex, IN, isInput ? PROCESS_OUTPUTS_EDGE : PROCESS_INPUTS_EDGE);
-        processEdges = CollectionUtils.isNotEmpty(lineageContext.getIgnoredProcesses()) ? eliminateIgnoredProcesses(processEdges, isInput, lineageContext) : processEdges;
+        processEdges = CollectionUtils.isNotEmpty(lineageContext.getIgnoredProcesses()) ? eliminateIgnoredProcesses(processEdges, isInput, lineageContext, currentVertex) : processEdges;
         ret.setHasChildrenForDirection(getGuid(currentVertex), new LineageChildrenInfo(isInput ? INPUT : OUTPUT, hasMoreChildren(processEdges)));
     }
 
-    private List<AtlasEdge> eliminateIgnoredProcesses(List<AtlasEdge> processEdges, boolean isInput, AtlasLineageContext lineageContext) {
+    private List<AtlasEdge> eliminateIgnoredProcesses(List<AtlasEdge> processEdges, boolean isInput, AtlasLineageContext lineageContext, AtlasVertex currentVertex) {
         List<AtlasEdge> edges = new ArrayList<>();
         for (AtlasEdge processEdge : processEdges) {
             AtlasVertex processVertex;
-            if (isInput) {
-                processVertex = processEdge.getOutVertex();
-            }
-            else {
-                processVertex = processEdge.getInVertex();
-            }
+            processVertex = processEdge.getOutVertex();
             if (processVertex != null) {
-                if (!lineageContext.getIgnoredProcesses().contains(processVertex.getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY, String.class))) {
+                if (!childHasSelfCycle(processVertex, currentVertex, isInput) &&
+                        !lineageContext.getIgnoredProcesses().contains(processVertex.getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY, String.class))) {
                     edges.add(processEdge);
                 }
             }
         }
         return edges;
+    }
+
+    private boolean childHasSelfCycle(AtlasVertex processVertex, AtlasVertex currentVertex, boolean isInput) {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("childHasSelfCycle");
+        Iterator<AtlasEdge> processEdgeIterator;
+        processEdgeIterator = processVertex.getEdges(OUT, isInput ? PROCESS_INPUTS_EDGE : PROCESS_OUTPUTS_EDGE).iterator();
+        Set<AtlasEdge> processOutputEdges = new HashSet<>();
+        while (processEdgeIterator.hasNext()) {
+            processOutputEdges.add(processEdgeIterator.next());
+        }
+
+        List<AtlasVertex> linkedVertices = processOutputEdges.stream().map(x -> x.getInVertex()).collect(Collectors.toList());
+        RequestContext.get().endMetricRecord(metricRecorder);
+        return linkedVertices.contains(currentVertex);
     }
 
     private List<AtlasEdge> getEdgesOfProcess(boolean isInput, AtlasLineageContext lineageContext, AtlasVertex processVertex) {
