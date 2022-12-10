@@ -89,7 +89,7 @@ public enum AtlasConfiguration {
     TASKS_GRAPH_COMMIT_CHUNK_SIZE("atlas.tasks.graph.commit.chunk.size", 1000),
     MAX_NUMBER_OF_RETRIES("atlas.tasks.graph.retry.count", 3),
     GRAPH_TRAVERSAL_PARALLELISM("atlas.graph.traverse.bucket.size",10),
-    LINEAGE_ON_DEMAND_ENABLED("atlas.lineage.on.demand.enabled", false),
+    LINEAGE_ON_DEMAND_ENABLED("atlas.lineage.on.demand.enabled", true),
     LINEAGE_ON_DEMAND_DEFAULT_NODE_COUNT("atlas.lineage.on.demand.default.node.count", 3),
     LINEAGE_MAX_NODE_COUNT("atlas.lineage.max.node.count", 9000);
 
