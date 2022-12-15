@@ -189,7 +189,7 @@ public class EntityLineageService implements AtlasLineageService {
         appendLineageOnDemandPayload(ret, lineageConstraintsMap);
 
         // filtering out on-demand relations which has input & output nodes within the limit
-        cleanupRelationsOnDemand(ret);
+        cleanupRelationsOnDemand(ret, guid);
 
         return ret;
     }
@@ -265,9 +265,11 @@ public class EntityLineageService implements AtlasLineageService {
     }
 
     //Consider only relationsOnDemand which has either more inputs or more outputs than given limit
-    private void cleanupRelationsOnDemand(AtlasLineageInfo lineageInfo) {
+    private void cleanupRelationsOnDemand(AtlasLineageInfo lineageInfo, String baseGuid) {
         if (lineageInfo != null && MapUtils.isNotEmpty(lineageInfo.getRelationsOnDemand())) {
-            lineageInfo.getRelationsOnDemand().entrySet().removeIf(x -> !(x.getValue().hasMoreInputs() || x.getValue().hasMoreOutputs()));
+            lineageInfo.getRelationsOnDemand().entrySet().removeIf(x ->
+                    !(x.getValue().hasMoreInputs() || x.getValue().hasMoreOutputs() || x.getValue().hasMoreInputChildren() || x.getValue().hasMoreOutputChildren())
+                            || x.getKey().equals(baseGuid));
         }
     }
 
@@ -327,7 +329,7 @@ public class EntityLineageService implements AtlasLineageService {
         for (AtlasEdge processEdge : processEdges) {
             boolean isInputEdge  = processEdge.getLabel().equalsIgnoreCase(PROCESS_INPUTS_EDGE);
 
-            if (incrementAndCheckIfRelationsLimitReached(processEdge, isInputEdge, lineageConstraintsMap, ret)) {
+            if (incrementAndCheckIfRelationsLimitReached(processEdge, isInputEdge, lineageConstraintsMap, ret, depth == 1)) {
                 break;
             } else {
                 addEdgeToResult(processEdge, ret);
@@ -355,7 +357,7 @@ public class EntityLineageService implements AtlasLineageService {
 
             for (AtlasEdge incomingEdge : incomingEdges) {
 
-                if (incrementAndCheckIfRelationsLimitReached(incomingEdge, !isInput, lineageConstraintsMap, ret)) {
+                if (incrementAndCheckIfRelationsLimitReached(incomingEdge, !isInput, lineageConstraintsMap, ret, false)) {
                     break;
                 } else {
                     addEdgeToResult(incomingEdge, ret);
@@ -366,7 +368,7 @@ public class EntityLineageService implements AtlasLineageService {
 
                 for (AtlasEdge outgoingEdge : outgoingEdges) {
 
-                    if (incrementAndCheckIfRelationsLimitReached(outgoingEdge, isInput, lineageConstraintsMap, ret)) {
+                    if (incrementAndCheckIfRelationsLimitReached(outgoingEdge, isInput, lineageConstraintsMap, ret, depth == 1)) {
                         break;
                     } else {
                         addEdgeToResult(outgoingEdge, ret);
@@ -386,7 +388,7 @@ public class EntityLineageService implements AtlasLineageService {
         return vertex.getIdForDisplay();
     }
 
-    private boolean incrementAndCheckIfRelationsLimitReached(AtlasEdge atlasEdge, boolean isInput, Map<String, LineageOnDemandConstraints> lineageConstraintsMap, AtlasLineageInfo ret) {
+    private boolean incrementAndCheckIfRelationsLimitReached(AtlasEdge atlasEdge, boolean isInput, Map<String, LineageOnDemandConstraints> lineageConstraintsMap, AtlasLineageInfo ret, boolean checkForChildren) {
 
         if (lineageContainsEdgeV2(ret, atlasEdge)) {
             return false;
@@ -417,6 +419,15 @@ public class EntityLineageService implements AtlasLineageService {
             hasRelationsLimitReached = true;
         } else {
             outLineageInfo.incrementOutputRelationsCount();
+        }
+
+        // Handle horizontal pagination
+        if (checkForChildren) {
+            if (isInput) {
+                outLineageInfo.setHasMoreOutputChildren(outVertex.getEdges(IN, PROCESS_OUTPUTS_EDGE).iterator().hasNext());
+            } else {
+                inLineageInfo.setHasMoreInputChildren(inVertex.getEdges(IN, PROCESS_INPUTS_EDGE).iterator().hasNext());
+            }
         }
 
         if (!hasRelationsLimitReached) {

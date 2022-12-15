@@ -273,6 +273,10 @@ public class AtlasLineageInfo implements Serializable {
         int                        outputRelationsCount;
         boolean                    isInputRelationsReachedLimit;
         boolean                    isOutputRelationsReachedLimit;
+        @JsonProperty
+        boolean                    hasMoreInputChildren;
+        @JsonProperty
+        boolean                    hasMoreOutputChildren;
         LineageOnDemandConstraints onDemandConstraints;
 
         public LineageInfoOnDemand() { }
@@ -285,6 +289,8 @@ public class AtlasLineageInfo implements Serializable {
             this.outputRelationsCount          = 0;
             this.isInputRelationsReachedLimit  = false;
             this.isOutputRelationsReachedLimit = false;
+            this.hasMoreInputChildren          = false;
+            this.hasMoreOutputChildren         = false;
         }
 
         public boolean isInputRelationsReachedLimit() {
@@ -317,6 +323,22 @@ public class AtlasLineageInfo implements Serializable {
 
         public void setHasMoreOutputs(boolean hasMoreOutputs) {
             this.hasMoreOutputs = hasMoreOutputs;
+        }
+
+        public boolean hasMoreInputChildren() {
+            return hasMoreInputChildren;
+        }
+
+        public void setHasMoreInputChildren(boolean hasMoreInputChildren) {
+            this.hasMoreInputChildren = hasMoreInputChildren;
+        }
+
+        public boolean hasMoreOutputChildren() {
+            return hasMoreOutputChildren;
+        }
+
+        public void setHasMoreOutputChildren(boolean hasMoreOutputChildren) {
+            this.hasMoreOutputChildren = hasMoreOutputChildren;
         }
 
         public int getInputRelationsCount() {
@@ -370,6 +392,8 @@ public class AtlasLineageInfo implements Serializable {
                     ", hasMoreOutputs='" + hasMoreOutputs + '\'' +
                     ", inputRelationsCount='" + inputRelationsCount + '\'' +
                     ", outputRelationsCount='" + outputRelationsCount + '\'' +
+                    ", hasMoreInputChildren='" + hasMoreInputChildren + '\'' +
+                    ", hasMoreOutputChildren='" + hasMoreOutputChildren + '\'' +
                     '}';
         }
 
