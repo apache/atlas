@@ -817,8 +817,8 @@ public final class GraphHelper {
 
         return ret;
     }
-
-    public static AtlasVertex getEndVertex(AtlasEdge edge) {
+    //Returns the vertex from which the tag is being propagated
+    public static AtlasVertex getPropagatingVertex(AtlasEdge edge) {
         if(edge != null) {
             PropagateTags propagateTags = getPropagateTags(edge);
             AtlasVertex   outVertex     = edge.getOutVertex();

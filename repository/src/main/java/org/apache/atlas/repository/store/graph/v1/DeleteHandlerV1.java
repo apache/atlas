@@ -652,6 +652,9 @@ public abstract class DeleteHandlerV1 {
             RequestContext      context            = RequestContext.get();
 
             for (AtlasVertex entityVertex : entityVertices) {
+                if(!entityVertex.exists()) {
+                    continue;
+                }
                 AtlasEdge propagatedEdge = getPropagatedClassificationEdge(entityVertex, classificationName, entityGuid);
 
                 if (propagatedEdge != null) {
@@ -1357,7 +1360,7 @@ public abstract class DeleteHandlerV1 {
         List<AtlasVertex> currentClassificationVertices = GraphHelper.getPropagatableClassifications(edge);
         for (AtlasVertex currentClassificationVertex : currentClassificationVertices) {
 
-            AtlasVertex referenceVertex = GraphHelper.getEndVertex(edge);
+            AtlasVertex referenceVertex = GraphHelper.getPropagatingVertex(edge);
             if(referenceVertex == null) {
                 return;
             }
