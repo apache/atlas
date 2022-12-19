@@ -361,7 +361,9 @@ public class EntityLineageService implements AtlasLineageService {
             // keep track of visited vertices to avoid circular loop
             visitedVertices.add(getId(datasetVertex));
 
+            AtlasPerfMetrics.MetricRecorder traverseEdgesOnDemandGetEdgesIn = RequestContext.get().startMetricRecord("traverseEdgesOnDemandGetEdgesIn");
             Iterable<AtlasEdge> incomingEdges = datasetVertex.getEdges(IN, isInput ? PROCESS_OUTPUTS_EDGE : PROCESS_INPUTS_EDGE);
+            RequestContext.get().endMetricRecord(traverseEdgesOnDemandGetEdgesIn);
 
             for (AtlasEdge incomingEdge : incomingEdges) {
 
@@ -371,8 +373,10 @@ public class EntityLineageService implements AtlasLineageService {
                     addEdgeToResult(incomingEdge, ret);
                 }
 
+                AtlasPerfMetrics.MetricRecorder traverseEdgesOnDemandGetEdgesOut = RequestContext.get().startMetricRecord("traverseEdgesOnDemandGetEdgesOut");
                 AtlasVertex         processVertex = incomingEdge.getOutVertex();
                 Iterable<AtlasEdge> outgoingEdges = processVertex.getEdges(OUT, isInput ? PROCESS_INPUTS_EDGE : PROCESS_OUTPUTS_EDGE);
+                RequestContext.get().endMetricRecord(traverseEdgesOnDemandGetEdgesOut);
 
                 for (AtlasEdge outgoingEdge : outgoingEdges) {
 
