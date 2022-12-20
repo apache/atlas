@@ -439,9 +439,9 @@ public class EntityLineageService implements AtlasLineageService {
         // Handle horizontal pagination
         if (checkForChildren) {
             if (isInput) {
-                outLineageInfo.setHasMoreOutputChildren(outVertex.getEdges(IN, PROCESS_OUTPUTS_EDGE).iterator().hasNext());
+                outLineageInfo.setHasMoreInputChildren(outVertex.getEdges(IN, PROCESS_OUTPUTS_EDGE).iterator().hasNext());
             } else {
-                inLineageInfo.setHasMoreInputChildren(inVertex.getEdges(IN, PROCESS_INPUTS_EDGE).iterator().hasNext());
+                inLineageInfo.setHasMoreOutputChildren(inVertex.getEdges(IN, PROCESS_INPUTS_EDGE).iterator().hasNext());
             }
         }
 
