@@ -817,6 +817,24 @@ public final class GraphHelper {
 
         return ret;
     }
+    //Returns the vertex from which the tag is being propagated
+    public static AtlasVertex getPropagatingVertex(AtlasEdge edge) {
+        if(edge != null) {
+            PropagateTags propagateTags = getPropagateTags(edge);
+            AtlasVertex   outVertex     = edge.getOutVertex();
+            AtlasVertex   inVertex      = edge.getInVertex();
+
+            if (propagateTags == PropagateTags.ONE_TO_TWO || propagateTags == PropagateTags.BOTH) {
+                return outVertex;
+            }
+
+            if (propagateTags == PropagateTags.TWO_TO_ONE || propagateTags == PropagateTags.BOTH) {
+                return inVertex;
+            }
+
+        }
+        return null;
+    }
 
     public static List<AtlasVertex> getPropagationEnabledClassificationVertices(AtlasVertex entityVertex) {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getPropagationEnabledClassificationVertices");
@@ -843,6 +861,21 @@ public final class GraphHelper {
 
         RequestContext.get().endMetricRecord(metricRecorder);
         return ret;
+    }
+
+    public static boolean propagatedClassificationAttachedToVertex(AtlasVertex classificationVertex, AtlasVertex entityVertex) {
+        Iterator<AtlasVertex> classificationVertices =  entityVertex.query().direction(AtlasEdgeDirection.OUT)
+                .label(CLASSIFICATION_LABEL)
+                .has(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, getTypeName(classificationVertex))
+                .vertices().iterator();
+
+        while (classificationVertices.hasNext()) {
+            String _classificationVertexId = classificationVertices.next().getIdForDisplay();
+            if (_classificationVertexId.equals(classificationVertex.getIdForDisplay())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public static List<AtlasEdge> getClassificationEdges(AtlasVertex entityVertex) {

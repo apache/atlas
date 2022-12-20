@@ -79,6 +79,21 @@ public class ClassificationPropagationTasks {
         }
     }
 
+    public static class DeleteOnlyPropagationsOnHardDelete extends ClassificationTask {
+        public DeleteOnlyPropagationsOnHardDelete(AtlasTask task, AtlasGraph graph, EntityGraphMapper entityGraphMapper, DeleteHandlerDelegate deleteDelegate, AtlasRelationshipStore relationshipStore) {
+            super(task, graph, entityGraphMapper, deleteDelegate, relationshipStore);
+        }
+
+        @Override
+        protected void run(Map<String, Object> parameters) throws AtlasBaseException {
+            String classificationVertexId =  (String) parameters.get(PARAM_CLASSIFICATION_VERTEX_ID);
+            String referencedVertexId = (String) parameters.get(PARAM_REFERENCED_VERTEX_ID);
+            boolean isTermEntityEdge = (boolean) parameters.get(PARAM_IS_TERM_ENTITY_EDGE);
+
+            entityGraphMapper.deleteClassificationOnlyPropagation(classificationVertexId, referencedVertexId, isTermEntityEdge);
+        }
+    }
+
     public static class UpdateRelationship extends ClassificationTask {
         public UpdateRelationship(AtlasTask task, AtlasGraph graph, EntityGraphMapper entityGraphMapper, DeleteHandlerDelegate deleteDelegate, AtlasRelationshipStore relationshipStore) {
             super(task, graph, entityGraphMapper, deleteDelegate, relationshipStore);
