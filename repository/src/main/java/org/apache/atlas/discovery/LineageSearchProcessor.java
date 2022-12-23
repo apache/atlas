@@ -79,6 +79,25 @@ public class LineageSearchProcessor {
         return ret;
     }
 
+    protected Predicate constructInMemoryPredicate(AtlasTypeRegistry typeRegistry, List<SearchParameters.FilterCriteria> filterCriteriaList) {
+        Predicate ret = null;
+        if (filterCriteriaList != null && ! filterCriteriaList.isEmpty()) {
+            for (SearchParameters.FilterCriteria filterCriteria : filterCriteriaList) {
+                if (filterCriteria != null) {
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("Processing Filters");
+                    }
+                    final List<AtlasEntityType> entityTypes = new ArrayList<>(typeRegistry.getAllEntityTypes());
+                    Set<String> allAttributes = new HashSet<>();
+                    getAllAttributes(filterCriteria, allAttributes);
+
+                    ret = toInMemoryPredicate(entityTypes, filterCriteria, allAttributes);
+                }
+            }
+        }
+        return ret;
+    }
+
     private Predicate toInMemoryPredicate(List<? extends AtlasStructType> structTypes, SearchParameters.FilterCriteria criteria,
                                           Set<String> allAttributes) {
 
