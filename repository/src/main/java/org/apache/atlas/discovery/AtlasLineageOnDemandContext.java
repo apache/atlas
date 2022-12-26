@@ -25,7 +25,7 @@ public class AtlasLineageOnDemandContext {
         this.constraints = lineageOnDemandRequest.getConstraints();
         this.attributes = lineageOnDemandRequest.getAttributes();
         this.relationAttributes = lineageOnDemandRequest.getRelationAttributes();
-        this.predicate = constructInMemoryPredicate(typeRegistry, lineageOnDemandRequest.getEntityFilters());
+        this.predicate = constructInMemoryPredicate(typeRegistry, lineageOnDemandRequest.getTraversalFilters());
     }
 
     public Map<String, LineageOnDemandConstraints> getConstraints() {
