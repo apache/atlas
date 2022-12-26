@@ -259,7 +259,7 @@ public abstract class DeleteHandlerV1 {
                     } else {
                         AtlasEdge edge = graphHelper.getEdgeForLabel(vertex, edgeLabel);
 
-                        if (edge == null || (getState(edge) == (isPurgeRequested ? ACTIVE : DELETED))) {
+                        if (edge == null || (!isPurgeRequested && DELETED.equals(getState(edge)))) {
                             continue;
                         }
 
