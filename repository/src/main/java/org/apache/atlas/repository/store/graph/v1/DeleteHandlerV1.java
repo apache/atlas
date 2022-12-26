@@ -113,18 +113,13 @@ public abstract class DeleteHandlerV1 {
     public void deleteEntities(Collection<AtlasVertex> instanceVertices) throws AtlasBaseException {
         final RequestContext   requestContext            = RequestContext.get();
         final Set<AtlasVertex> deletionCandidateVertices = new HashSet<>();
-        final boolean          isPurgeRequested          = requestContext.isPurgeRequested();
 
         for (AtlasVertex instanceVertex : instanceVertices) {
             final String             guid  = AtlasGraphUtilsV2.getIdFromVertex(instanceVertex);
 
             if (skipVertexForDelete(instanceVertex)) {
                 if (LOG.isDebugEnabled()) {
-                    if (isPurgeRequested) {
-                        LOG.debug("Skipping purging of entity={} as it is active or already purged", guid);
-                    } else {
                         LOG.debug("Skipping deletion of entity={} as it is already deleted", guid);
-                    }
                 }
                 continue;
             }
@@ -217,13 +212,6 @@ public abstract class DeleteHandlerV1 {
 
         while (vertices.size() > 0) {
             AtlasVertex        vertex = vertices.pop();
-            AtlasEntity.Status state  = getState(vertex);
-
-            //In case of purge If the reference vertex is active then skip it or else
-            //If the vertex marked for deletion, skip it
-            if (state == (isPurgeRequested ? ACTIVE : DELETED)) {
-                continue;
-            }
 
             String guid = GraphHelper.getGuid(vertex);
 
@@ -1134,7 +1122,7 @@ public abstract class DeleteHandlerV1 {
                 if(guid != null && !reqContext.isDeletedEntity(guid)) {
                     final AtlasEntity.Status vertexState = getState(vertex);
                     if (reqContext.isPurgeRequested()) {
-                        ret = vertexState == ACTIVE; // skip purging ACTIVE vertices
+                        ret = false; // Delete all ACTIVE or DELETED assets in PURGING
                     } else {
                         ret = vertexState == DELETED; // skip deleting DELETED vertices
                     }

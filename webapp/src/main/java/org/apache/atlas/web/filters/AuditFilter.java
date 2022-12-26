@@ -83,7 +83,6 @@ public class AuditFilter implements Filter {
         final Set<String>         userGroups         = AtlasAuthorizationUtils.getCurrentUserGroups();
         final String              deleteType         = httpRequest.getParameter("deleteType");
         final boolean             skipFailedEntities = Boolean.parseBoolean(httpRequest.getParameter("skipFailedEntities"));
-        final boolean             isPurgeRequested = Boolean.parseBoolean(httpRequest.getParameter("isPurgeRequested"));
 
         try {
             currentThread.setName(formatName(oldName, requestId));
@@ -95,7 +94,6 @@ public class AuditFilter implements Filter {
             requestContext.setCreateShellEntityForNonExistingReference(createShellEntityForNonExistingReference);
             requestContext.setForwardedAddresses(AtlasAuthorizationUtils.getForwardedAddressesFromRequest(httpRequest));
             requestContext.setSkipFailedEntities(skipFailedEntities);
-            requestContext.setPurgeRequested(isPurgeRequested);
 
             if (StringUtils.isNotEmpty(deleteType)) {
                 if (deleteTypeOverrideEnabled) {
