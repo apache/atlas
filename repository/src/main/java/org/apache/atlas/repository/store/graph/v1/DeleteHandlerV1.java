@@ -212,6 +212,12 @@ public abstract class DeleteHandlerV1 {
 
         while (vertices.size() > 0) {
             AtlasVertex        vertex = vertices.pop();
+            AtlasEntity.Status state  = getState(vertex);
+
+            //If the vertex marked for deletion, if we are not purging, skip it
+            if (!isPurgeRequested && DELETED.equals(state)) {
+                continue;
+            }
 
             String guid = GraphHelper.getGuid(vertex);
 
@@ -311,7 +317,7 @@ public abstract class DeleteHandlerV1 {
 
                         if (CollectionUtils.isNotEmpty(edges)) {
                             for (AtlasEdge edge : edges) {
-                                if (edge == null || (getState(edge) == (isPurgeRequested ? ACTIVE : DELETED))) {
+                                if (edge == null || (!isPurgeRequested && DELETED.equals(getState(edge)))) {
                                     continue;
                                 }
 
@@ -1097,7 +1103,7 @@ public abstract class DeleteHandlerV1 {
             return;
 
         List<AtlasEdge> classificationEdges = getAllClassificationEdges(instanceVertex);
-    
+
         for (AtlasEdge edge : classificationEdges) {
             AtlasVertex classificationVertex = edge.getInVertex();
             boolean     isClassificationEdge = isClassificationEdge(edge);
