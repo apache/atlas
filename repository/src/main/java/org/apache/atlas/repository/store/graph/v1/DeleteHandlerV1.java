@@ -1092,6 +1092,10 @@ public abstract class DeleteHandlerV1 {
      * @throws AtlasException
      */
     private void deleteAllClassifications(AtlasVertex instanceVertex) throws AtlasBaseException {
+        // If instance is deleted no need to operate classification deleted
+        if (getState(instanceVertex).equals(DELETED))
+            return;
+
         List<AtlasEdge> classificationEdges = getAllClassificationEdges(instanceVertex);
 
         for (AtlasEdge edge : classificationEdges) {
