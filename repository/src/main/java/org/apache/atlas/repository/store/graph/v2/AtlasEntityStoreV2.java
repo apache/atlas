@@ -683,6 +683,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Guid(s) not specified");
         }
 
+        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_PURGE), "purge entity: guids=", guids);
         Collection<AtlasVertex> purgeCandidates = new ArrayList<>();
 
         for (String guid : guids) {
@@ -695,10 +696,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
                 continue;
             }
-
-            AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(vertex);
-
-            AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_DELETE, entityHeader), "delete entity: guid=", guid);
 
             purgeCandidates.add(vertex);
         }
