@@ -56,7 +56,6 @@ public class DeleteHandlerDelegate {
     }
 
     public DeleteHandlerV1 getHandler(DeleteType deleteType) {
-        RequestContext requestContext = RequestContext.get();
         if (deleteType == null) {
             deleteType = DeleteType.DEFAULT;
         }
@@ -69,7 +68,6 @@ public class DeleteHandlerDelegate {
                 return hardDeleteHandler;
 
             case PURGE:
-                requestContext.setPurgeRequested(true);
                 return hardDeleteHandler;
 
             default:

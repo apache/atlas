@@ -177,15 +177,11 @@ public abstract class DeleteHandlerV1 {
 
         for (AtlasEdge edge : edges) {
             boolean isInternal = isInternalType(edge.getInVertex()) && isInternalType(edge.getOutVertex());
-            boolean needToSkip = !isInternal && (getState(edge) == (isPurgeRequested ? ACTIVE : DELETED));
+            boolean needToSkip = !isInternal && (!isPurgeRequested && DELETED.equals(getState(edge)));
 
             if (needToSkip) {
                 if (LOG.isDebugEnabled()) {
-                    if(isPurgeRequested) {
-                        LOG.debug("Skipping purging of edge={} as it is active or already purged", getIdFromEdge(edge));
-                    } else{
-                        LOG.debug("Skipping deletion of edge={} as it is already deleted", getIdFromEdge(edge));
-                    }
+                    LOG.debug("Skipping deletion of edge={} as it is already deleted", getIdFromEdge(edge));
                 }
 
                 continue;
