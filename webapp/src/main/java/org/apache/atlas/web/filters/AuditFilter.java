@@ -97,6 +97,9 @@ public class AuditFilter implements Filter {
 
             if (StringUtils.isNotEmpty(deleteType)) {
                 if (deleteTypeOverrideEnabled) {
+                    if(DeleteType.PURGE.name().equals(deleteType)) {
+                        requestContext.setPurgeRequested(true);
+                    }
                     requestContext.setDeleteType(DeleteType.from(deleteType));
                 } else {
                     LOG.warn("Override of deleteType is not enabled. Ignoring parameter deleteType={}, in request from user={}", deleteType, user);
