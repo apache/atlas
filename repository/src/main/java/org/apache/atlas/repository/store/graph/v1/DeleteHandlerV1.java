@@ -1292,7 +1292,7 @@ public abstract class DeleteHandlerV1 {
         String              currentUser = RequestContext.getCurrentUser();
         String              entityGuid  = GraphHelper.getGuid(entityVertex);
         Map<String, Object> taskParams  = ClassificationTask.toParameters(entityGuid, classificationVertexId, relationshipGuid, currentRestrictPropagationThroughLineage);
-        AtlasTask           task        = taskManagement.createTask(taskType, currentUser, taskParams);
+        AtlasTask           task        = taskManagement.createTask(taskType, currentUser, taskParams, classificationVertexId, entityGuid);
 
         AtlasGraphUtilsV2.addEncodedProperty(entityVertex, PENDING_TASKS_PROPERTY_KEY, task.getGuid());
 
@@ -1303,7 +1303,7 @@ public abstract class DeleteHandlerV1 {
         String              currentUser = RequestContext.getCurrentUser();
         String              entityGuid  = GraphHelper.getGuid(entityVertex);
         Map<String, Object> taskParams  = ClassificationTask.toParameters(entityGuid, classificationVertexId, relationshipGuid);
-        AtlasTask           task        = taskManagement.createTask(taskType, currentUser, taskParams);
+        AtlasTask           task        = taskManagement.createTask(taskType, currentUser, taskParams, classificationVertexId, entityGuid);
 
         AtlasGraphUtilsV2.addEncodedProperty(entityVertex, PENDING_TASKS_PROPERTY_KEY, task.getGuid());
 
@@ -1319,7 +1319,7 @@ public abstract class DeleteHandlerV1 {
         }
 
         Map<String, Object> taskParams  = ClassificationTask.toParameters(deletedEdgeId, classificationVertexId);
-        AtlasTask           task        = taskManagement.createTask(taskType, currentUser, taskParams);
+        AtlasTask           task        = taskManagement.createTask(taskType, currentUser, taskParams, classificationVertexId, deletedEdgeId);
 
         RequestContext.get().queueTask(task);
     }
@@ -1328,7 +1328,7 @@ public abstract class DeleteHandlerV1 {
         String              currentUser        = RequestContext.getCurrentUser();
         String              relationshipEdgeId = relationshipEdge.getIdForDisplay();
         Map<String, Object> taskParams         = ClassificationTask.toParameters(relationshipEdgeId, relationship);
-        AtlasTask           task               = taskManagement.createTask(taskType, currentUser, taskParams);
+        AtlasTask           task               = taskManagement.createTask(taskType, currentUser, taskParams, relationshipEdgeId, relationship.getGuid());
 
         AtlasGraphUtilsV2.addItemToListProperty(relationshipEdge, EDGE_PENDING_TASKS_PROPERTY_KEY, task.getGuid());
 
@@ -1361,7 +1361,7 @@ public abstract class DeleteHandlerV1 {
 
             Map<String, Object> taskParams = ClassificationTask.toParameters(currentClassificationVertex.getIdForDisplay(),
                     referenceVertex.getIdForDisplay(), isTermEntityEdge);
-            AtlasTask task  =  taskManagement.createTask(taskType,currentUser,taskParams);
+            AtlasTask task  =  taskManagement.createTask(taskType, currentUser, taskParams, currentClassificationVertex.getIdForDisplay(), referenceVertex.getIdForDisplay());
 
             RequestContext.get().queueTask(task);
         }
