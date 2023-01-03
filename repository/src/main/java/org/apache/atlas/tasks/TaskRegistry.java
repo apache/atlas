@@ -440,8 +440,8 @@ public class TaskRegistry {
         this.graph.commit();
     }
 
-    public AtlasTask createVertex(String taskType, String createdBy, Map<String, Object> parameters) {
-        AtlasTask ret = new AtlasTask(taskType, createdBy, parameters);
+    public AtlasTask createVertex(String taskType, String createdBy, Map<String, Object> parameters, String uniqueParameter, String referenceId) {
+        AtlasTask ret = new AtlasTask(taskType, createdBy, parameters, uniqueParameter, referenceId);
 
         createVertex(ret);
 
@@ -509,6 +509,16 @@ public class TaskRegistry {
             ret.setParameters(AtlasType.fromJson(parametersJson, Map.class));
         }
 
+        String uniqueParameter = v.getProperty(Constants.TASK_UNIQUE_PARAMETER, String.class);
+        if (uniqueParameter != null) {
+            ret.setUniqueParameter(uniqueParameter);
+        }
+
+        String referenceId = v.getProperty(Constants.TASK_REFERENCE_ID, String.class);
+        if(referenceId != null) {
+            ret.setReferenceId(referenceId);
+        }
+
         Integer attemptCount = v.getProperty(Constants.TASK_ATTEMPT_COUNT, Integer.class);
         if (attemptCount != null) {
             ret.setAttemptCount(attemptCount);
@@ -518,6 +528,7 @@ public class TaskRegistry {
         if (errorMessage != null) {
             ret.setErrorMessage(errorMessage);
         }
+
 
         return ret;
     }
@@ -532,6 +543,9 @@ public class TaskRegistry {
         setEncodedProperty(ret, Constants.TASK_CREATED_BY, task.getCreatedBy());
         setEncodedProperty(ret, Constants.TASK_CREATED_TIME, task.getCreatedTime());
         setEncodedProperty(ret, Constants.TASK_UPDATED_TIME, task.getUpdatedTime());
+        setEncodedProperty(ret, Constants.TASK_UNIQUE_PARAMETER, task.getUniqueParameter());
+        setEncodedProperty(ret, Constants.TASK_REFERENCE_ID, task.getReferenceId());
+
 
         if (task.getStartTime() != null) {
             setEncodedProperty(ret, Constants.TASK_START_TIME, task.getStartTime().getTime());

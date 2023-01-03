@@ -390,6 +390,29 @@ public final class GraphHelper {
         return ret;
     }
 
+    public static boolean isClassificationAttached(AtlasVertex entityVertex, AtlasVertex classificationVertex) {
+        boolean ret = false;
+        Iterator<AtlasVertex> vertices = entityVertex.query()
+                .direction(AtlasEdgeDirection.OUT)
+                .label(CLASSIFICATION_LABEL)
+                .has(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, getTypeName(classificationVertex)).vertices().iterator();
+
+        if (vertices != null) {
+            while (vertices.hasNext()) {
+                AtlasVertex vertex = vertices.next();
+                if (vertex != null) {
+                    if (vertex.getIdForDisplay().equals(classificationVertex.getIdForDisplay())) {
+                        ret = true;
+                        break;
+                    }
+
+                }
+            }
+        }
+        return ret;
+
+    }
+
     public static AtlasEdge getPropagatedClassificationEdge(AtlasVertex entityVertex, String classificationName, String associatedEntityGuid) {
         AtlasEdge ret   = null;
         Iterable  edges = entityVertex.query().direction(AtlasEdgeDirection.OUT).label(CLASSIFICATION_LABEL)
@@ -451,20 +474,6 @@ public final class GraphHelper {
 
                 ret.add(edge);
             }
-        }
-
-        return ret;
-    }
-
-    public static List<AtlasVertex> getPropagatedVertices (AtlasVertex classificationVertex) {
-        List<AtlasVertex>   ret      =  new ArrayList<AtlasVertex>();
-        Iterator<AtlasVertex>            vertices =  classificationVertex.query().direction(AtlasEdgeDirection.IN).label(CLASSIFICATION_LABEL)
-                                                            .has(CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY, true)
-                                                            .has(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, getTypeName(classificationVertex))
-                                                            .vertices().iterator();
-
-        if (vertices != null) {
-           ret = IteratorUtils.toList(vertices);
         }
 
         return ret;

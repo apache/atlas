@@ -10,6 +10,8 @@ import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.DirectIndexQueryResult;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -78,6 +80,27 @@ public class AtlasTaskService implements TaskService {
         return ret;
     }
 
+    @Override
+    public TaskSearchResult getTasksByCondition(int from, int size, List<Map<String,Object>> mustConditions, List<Map<String,Object>> shouldConditions,
+                                                List<Map<String,Object>> mustNotConditions) throws AtlasBaseException {
+        Map<String, Object> dsl = getMap("from", from);
+        dsl.put("size", size);
+        Map<String, Map<String, Object>> boolCondition = Collections.singletonMap("bool", new HashMap<>());
+        boolCondition.get("bool").put("must", mustConditions);
+        boolCondition.get("bool").put("must_not", mustNotConditions);
+        boolCondition.get("bool").put("should", shouldConditions);
+        dsl.put("query", boolCondition);
+        TaskSearchParams taskSearchParams = new TaskSearchParams();
+        taskSearchParams.setDsl(dsl);
+        TaskSearchResult tasks = getTasks(taskSearchParams);
+        return tasks;
+    }
+
+    private Map<String, Object> getMap(String key, Object value) {
+        Map<String, Object> map = new HashMap<>();
+        map.put(key, value);
+        return map;
+    }
     @Override
     public void retryTask(String taskGuid) throws AtlasBaseException {
         TaskSearchParams taskSearchParams = getMatchQuery(taskGuid);

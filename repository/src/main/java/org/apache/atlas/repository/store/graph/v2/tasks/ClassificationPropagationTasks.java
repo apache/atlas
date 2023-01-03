@@ -94,6 +94,19 @@ public class ClassificationPropagationTasks {
         }
     }
 
+    public static class RefreshPropagation extends ClassificationTask {
+        public RefreshPropagation(AtlasTask task, AtlasGraph graph, EntityGraphMapper entityGraphMapper, DeleteHandlerDelegate deleteDelegate, AtlasRelationshipStore relationshipStore) {
+            super(task, graph, entityGraphMapper, deleteDelegate, relationshipStore);
+        }
+
+        @Override
+        protected void run(Map<String, Object> parameters) throws AtlasBaseException {
+            String            classificationVertexId = (String) parameters.get(PARAM_CLASSIFICATION_VERTEX_ID);
+
+            entityGraphMapper.classificationRefreshPropagation(classificationVertexId);
+        }
+    }
+
     public static class UpdateRelationship extends ClassificationTask {
         public UpdateRelationship(AtlasTask task, AtlasGraph graph, EntityGraphMapper entityGraphMapper, DeleteHandlerDelegate deleteDelegate, AtlasRelationshipStore relationshipStore) {
             super(task, graph, entityGraphMapper, deleteDelegate, relationshipStore);
