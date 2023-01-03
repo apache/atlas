@@ -342,6 +342,9 @@ public final class Constants {
         put(CLASSIFICATION_PROPAGATION_MODE_DEFAULT, null);
     }};
 
+    public static final String REQUEST_HEADER_USER_AGENT = "User-Agent";
+    public static final String REQUEST_HEADER_HOST = "Host";
+
     private Constants() {
     }
 
