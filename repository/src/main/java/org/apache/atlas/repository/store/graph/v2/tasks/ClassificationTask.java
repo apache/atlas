@@ -153,6 +153,12 @@ public abstract class ClassificationTask extends AbstractTask {
         }};
     }
 
+    public static Map<String, Object> toParameters(String classificationId) {
+        return new HashMap<String, Object>() {{
+            put(PARAM_CLASSIFICATION_VERTEX_ID, classificationId);
+        }};
+    }
+
     protected void setStatus(AtlasTask.Status status) {
         super.setStatus(status);
         LOG.info(String.format("ClassificationTask status is set %s for the task: %s ", status, super.getTaskGuid()));

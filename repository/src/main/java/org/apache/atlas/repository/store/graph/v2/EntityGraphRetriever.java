@@ -581,7 +581,7 @@ public class EntityGraphRetriever {
     }
     public List<AtlasVertex> getIncludedImpactedVerticesV2(AtlasVertex entityVertex, String relationshipGuidToExclude, String classificationId, List<String> edgeLabelsToExclude) {
         List<String> vertexIds = new ArrayList<>();
-        traverseImpactedVerticesByLevel(entityVertex, relationshipGuidToExclude, classificationId, vertexIds, edgeLabelsToExclude);
+        traverseImpactedVerticesByLevel(entityVertex, relationshipGuidToExclude, classificationId, vertexIds, edgeLabelsToExclude, null);
 
         List<AtlasVertex> ret = vertexIds.stream().map(x -> graph.getVertex(x))
                 .filter(vertex -> vertex != null)
@@ -611,10 +611,20 @@ public class EntityGraphRetriever {
     public List<String> getImpactedVerticesIds(AtlasVertex entityVertex, String relationshipGuidToExclude, String classificationId, List<String> edgeLabelsToExclude) {
         List<String> ret = new ArrayList<>();
 
-        traverseImpactedVerticesByLevel(entityVertex, relationshipGuidToExclude, classificationId, ret, edgeLabelsToExclude);
+        traverseImpactedVerticesByLevel(entityVertex, relationshipGuidToExclude, classificationId, ret, edgeLabelsToExclude, null);
 
         return ret;
     }
+
+    public List<String> getImpactedVerticesIds(AtlasVertex entityVertex, String classificationId, List<String> edgeLabelsToExclude, List<String> verticesWithoutClassification) {
+        List<String> ret = new ArrayList<>();
+
+        traverseImpactedVerticesByLevel(entityVertex, null, classificationId, ret, edgeLabelsToExclude, verticesWithoutClassification);
+
+        return ret;
+    }
+
+
 
     private void traverseImpactedVertices(final AtlasVertex entityVertexStart, final String relationshipGuidToExclude,
                                           final String classificationId, final List<AtlasVertex> result, List<String> edgeLabelsToExclude) {
@@ -707,12 +717,14 @@ public class EntityGraphRetriever {
     }
 
     private void traverseImpactedVerticesByLevel(final AtlasVertex entityVertexStart, final String relationshipGuidToExclude,
-                                          final String classificationId, final List<String> result, List<String> edgeLabelsToExclude) {
+                                          final String classificationId, final List<String> result, List<String> edgeLabelsToExclude, List<String> excludeClassificationAttachedVertices) {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("traverseImpactedVerticesByLevel");
         Set<String>                 visitedVerticesIds        = new HashSet<>();
         Set<String>                 verticesAtCurrentLevel    = new HashSet<>();
         Set<String>                 traversedVerticesIds      = new HashSet<>();
+        Set<String>                 verticesWithOutClassification = new HashSet<>();
         RequestContext              requestContext            = RequestContext.get();
+        AtlasVertex                 classificationVertex      = graph.getVertex(classificationId);
 
         final ThreadFactory threadFactory = new ThreadFactoryBuilder()
                 .setNameFormat("Tasks-BFS-%d")
@@ -746,6 +758,9 @@ public class EntityGraphRetriever {
                         .map(t -> {
                             AtlasVertex entityVertex = graph.getVertex(t);
                             visitedVerticesIds.add(entityVertex.getIdForDisplay());
+                            if(!GraphHelper.isClassificationAttached(entityVertex, classificationVertex)) {
+                                verticesWithOutClassification.add(entityVertex.getIdForDisplay());
+                            }
                             return CompletableFuture.supplyAsync(() -> getAdjacentVerticesIds(entityVertex, classificationId,
                                     relationshipGuidToExclude, edgeLabelsToExclude, visitedVerticesIds), executorService);
                         }).collect(Collectors.toList());
@@ -761,8 +776,10 @@ public class EntityGraphRetriever {
         }finally {
             executorService.shutdown();
         }
-
         result.addAll(traversedVerticesIds);
+        if(excludeClassificationAttachedVertices != null)
+            excludeClassificationAttachedVertices.addAll(verticesWithOutClassification);
+
         requestContext.endMetricRecord(metricRecorder);
 
     }
