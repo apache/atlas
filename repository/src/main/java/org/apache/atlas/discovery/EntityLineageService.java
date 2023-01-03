@@ -389,7 +389,7 @@ public class EntityLineageService implements AtlasLineageService {
 
     private boolean incrementAndCheckIfRelationsLimitReached(AtlasEdge atlasEdge, boolean isInput, Map<String, LineageOnDemandConstraints> lineageConstraintsMap, AtlasLineageInfo ret) {
 
-        if (lineageContainsEdge(ret, atlasEdge)) {
+        if (lineageContainsEdgeV2(ret, atlasEdge)) {
             return false;
         }
 
@@ -641,13 +641,13 @@ public class EntityLineageService implements AtlasLineageService {
 
     private void addEdgeToResult(AtlasEdge edge, AtlasLineageInfo lineageInfo,
                                  AtlasLineageContext requestContext) throws AtlasBaseException {
-        if (!lineageContainsEdge(lineageInfo, edge) && !lineageMaxNodeCountReached(lineageInfo.getRelations())) {
+        if (!lineageContainsEdge(lineageInfo, edge)) {
             processEdge(edge, lineageInfo, requestContext);
         }
     }
 
     private void addEdgeToResult(AtlasEdge edge, AtlasLineageInfo lineageInfo) throws AtlasBaseException {
-        if (!lineageContainsEdge(lineageInfo, edge) && !lineageMaxNodeCountReached(lineageInfo.getRelations())) {
+        if (!lineageContainsEdgeV2(lineageInfo, edge) && !lineageMaxNodeCountReached(lineageInfo.getRelations())) {
             processEdge(edge, lineageInfo);
         }
     }
@@ -966,6 +966,23 @@ public class EntityLineageService implements AtlasLineageService {
     }
 
     private boolean lineageContainsEdge(AtlasLineageInfo lineageInfo, AtlasEdge edge) {
+        boolean ret = false;
+
+        if (lineageInfo != null && CollectionUtils.isNotEmpty(lineageInfo.getRelations()) && edge != null) {
+            String relationGuid = AtlasGraphUtilsV2.getEncodedProperty(edge, RELATIONSHIP_GUID_PROPERTY_KEY, String.class);
+            Set<LineageRelation> relations = lineageInfo.getRelations();
+            for (LineageRelation relation : relations) {
+                if (relation.getRelationshipId().equals(relationGuid)) {
+                    ret = true;
+                    break;
+                }
+            }
+        }
+
+        return ret;
+    }
+
+    private boolean lineageContainsEdgeV2(AtlasLineageInfo lineageInfo, AtlasEdge edge) {
         boolean ret = false;
 
         if (edge != null && lineageInfo != null && CollectionUtils.isNotEmpty(lineageInfo.getVisitedEdges())) {
