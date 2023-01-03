@@ -23,7 +23,8 @@ import org.apache.commons.lang.StringUtils;
 public enum DeleteType {
     DEFAULT,
     SOFT,
-    HARD;
+    HARD,
+    PURGE;
 
     public static DeleteType from(String s) {
         if(StringUtils.isEmpty(s)) {
@@ -36,6 +37,9 @@ public enum DeleteType {
 
             case "hard":
                 return HARD;
+
+            case "purge":
+                return  PURGE;
 
             default:
                 return DEFAULT;

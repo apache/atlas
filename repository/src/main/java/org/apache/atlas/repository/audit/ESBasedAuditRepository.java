@@ -24,15 +24,12 @@ import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.RequestContext;
-import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.annotation.ConditionalOnAtlasProperty;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.atlas.model.audit.EntityAuditSearchResult;
-import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.model.instance.AtlasEntityHeader;
-import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.type.AtlasType;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang.StringUtils;
@@ -56,14 +53,12 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.text.MessageFormat;
 import java.util.*;
 
 import static java.nio.charset.Charset.defaultCharset;
 import static org.springframework.util.StreamUtils.copyToString;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
 /**
  * This class provides cassandra support as the backend for audit storage support.
@@ -86,6 +81,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
     private static final String USER = "user";
     private static final String DETAIL = "detail";
     private static final String ENTITY = "entity";
+    private static final String bulkMetadata = String.format("{ \"index\" : { \"_index\" : \"%s\" } }%n", INDEX_NAME);
 
     /*
     *    created   → event creation time
@@ -94,12 +90,10 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
     * */
 
     private RestClient lowLevelClient;
-    private final EntityGraphRetriever entityGraphRetriever;
     private final Configuration configuration;
 
     @Inject
-    public ESBasedAuditRepository(EntityGraphRetriever entityGraphRetriever, Configuration configuration) {
-        this.entityGraphRetriever = entityGraphRetriever;
+    public ESBasedAuditRepository(Configuration configuration) {
         this.configuration = configuration;
     }
 
@@ -118,9 +112,10 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
     public void putEventsV2(List<EntityAuditEventV2> events) throws AtlasBaseException {
         try {
             if (events != null && events.size() > 0) {
-                String entityPayloadTemplate = "'{'\"entityId\":\"{0}\",\"action\":\"{1}\",\"detail\":{2},\"user\":\"{3}\", \"eventKey\":\"{4}\", " +
-                        "\"entityQualifiedName\": {5}, \"typeName\": \"{6}\",\"created\":{7}, \"timestamp\":{8}'}'";
-                String bulkMetadata = String.format("{ \"index\" : { \"_index\" : \"%s\" } }%n", INDEX_NAME);
+
+                Map<String, String> requestContextHeaders = RequestContext.get().getRequestContextHeaders();
+                String entityPayloadTemplate = getQueryTemplate(requestContextHeaders);
+
                 StringBuilder bulkRequestBody = new StringBuilder();
                 for (EntityAuditEventV2 event : events) {
                     String created = String.format("%s", event.getTimestamp());
@@ -172,6 +167,25 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
         }
     }
 
+    private String getQueryTemplate(Map<String, String> requestContextHeaders) {
+        StringBuilder template = new StringBuilder();
+
+        template.append("'{'\"entityId\":\"{0}\",\"action\":\"{1}\",\"detail\":{2},\"user\":\"{3}\", \"eventKey\":\"{4}\", " +
+                        "\"entityQualifiedName\": {5}, \"typeName\": \"{6}\",\"created\":{7}, \"timestamp\":{8}");
+
+        if (MapUtils.isNotEmpty(requestContextHeaders)) {
+            template.append(",")
+                    .append("\"").append("headers").append("\"")
+                    .append(":")
+                    .append(AtlasType.toJson(requestContextHeaders).replaceAll("\\{", "'{").replaceAll("\\}", "'}"));
+
+        }
+
+        template.append("'}'");
+
+        return template.toString();
+    }
+
     @Override
     public List<EntityAuditEventV2> listEventsV2(String entityId, EntityAuditEventV2.EntityAuditActionV2 auditAction, String startKey, short maxResultCount) throws AtlasBaseException {
         List<EntityAuditEventV2> ret;
@@ -189,26 +203,21 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
 
     @Override
     public EntityAuditSearchResult searchEvents(String queryString) throws AtlasBaseException {
-        return searchEvents(queryString, null);
-    }
-
-    public EntityAuditSearchResult searchEvents(String queryString, Set<String> attributes) throws AtlasBaseException {
         LOG.info("Hitting ES query to fetch audits: {}", queryString);
         try {
             String response = performSearchOnIndex(queryString);
-            return getResultFromResponse(response, attributes);
+            return getResultFromResponse(response);
         } catch (IOException e) {
             throw new AtlasBaseException(e);
         }
     }
 
-    private EntityAuditSearchResult getResultFromResponse(String responseString, Set<String> attributes) throws AtlasBaseException {
+    private EntityAuditSearchResult getResultFromResponse(String responseString) throws AtlasBaseException {
         List<EntityAuditEventV2> entityAudits = new ArrayList<>();
         EntityAuditSearchResult searchResult = new EntityAuditSearchResult();
         Map<String, Object> responseMap = AtlasType.fromJson(responseString, Map.class);
         Map<String, Object> hits_0 = (Map<String, Object>) responseMap.get("hits");
         List<LinkedHashMap> hits_1 = (List<LinkedHashMap>) hits_0.get("hits");
-        RequestContext requestContext = RequestContext.get();
         for (LinkedHashMap hit : hits_1) {
             Map source = (Map) hit.get("_source");
             String entityGuid = (String) source.get(ENTITYID);
@@ -218,24 +227,6 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
             event.setDetail((Map<String, Object>) source.get(DETAIL));
             event.setUser((String) source.get(USER));
             event.setCreated((long) source.get(CREATED));
-            if (requestContext.getCachedEntityHeader(entityGuid) != null) {
-                event.setEntityDetail(requestContext.getCachedEntityHeader(entityGuid));
-            } else {
-                AtlasEntityHeader entityHeader = null;
-
-                try {
-                    entityHeader = entityGraphRetriever.toAtlasEntityHeader(entityGuid, attributes);
-                }catch (AtlasBaseException exception){
-                    if (exception.getAtlasErrorCode() != AtlasErrorCode.INSTANCE_GUID_NOT_FOUND){
-                        throw exception;
-                    }
-                }
-
-                if (entityHeader != null) {
-                    requestContext.setEntityHeaderCache(entityHeader);
-                    event.setEntityDetail(entityHeader);
-                }
-            }
             if (source.get(TIMESTAMP) != null) {
                 event.setTimestamp((long) source.get(TIMESTAMP));
             }
@@ -249,6 +240,8 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
             if (StringUtils.isEmpty(eventKey)) {
                 eventKey = event.getEntityId() + ":" + event.getTimestamp();
             }
+
+            event.setHeaders((Map<String, String>) source.get("headers"));
 
             event.setEventKey(eventKey);
             entityAudits.add(event);
@@ -302,30 +295,12 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
                 LOG.info("Updating ES total field limit");
                 updateFieldLimit();
             }
+            updateMappingsIfChanged();
         } catch (IOException e) {
             LOG.error("error", e);
             throw new AtlasException(e);
         }
 
-    }
-
-    private boolean createAuditIndex() throws IOException {
-        LOG.info("ESBasedAuditRepo - createAuditIndex!");
-        String esMappingsString = getAuditIndexMappings();
-        HttpEntity entity = new NStringEntity(esMappingsString, ContentType.APPLICATION_JSON);
-        Request request = new Request("PUT", INDEX_NAME);
-        request.setEntity(entity);
-        Response response = lowLevelClient.performRequest(request);
-        int statusCode = response.getStatusLine().getStatusCode();
-        return statusCode == 200 ? true : false;
-    }
-
-    private String getAuditIndexMappings() throws IOException {
-        String atlasHomeDir = System.getProperty("atlas.home");
-        String elasticsearchSettingsFilePath = (org.apache.commons.lang3.StringUtils.isEmpty(atlasHomeDir) ? "." : atlasHomeDir) + File.separator + "elasticsearch" + File.separator + "es-audit-mappings.json";
-        File elasticsearchSettingsFile = new File(elasticsearchSettingsFilePath);
-        String jsonString = new String(Files.readAllBytes(elasticsearchSettingsFile.toPath()), StandardCharsets.UTF_8);
-        return jsonString;
     }
 
     private boolean checkIfIndexExists() throws IOException {
@@ -338,6 +313,16 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
         }
         LOG.info("Entity audits index does not exist!");
         return false;
+    }
+
+    private boolean createAuditIndex() throws IOException {
+        LOG.info("ESBasedAuditRepo - createAuditIndex!");
+        String esMappingsString = getAuditIndexMappings();
+        HttpEntity entity = new NStringEntity(esMappingsString, ContentType.APPLICATION_JSON);
+        Request request = new Request("PUT", INDEX_NAME);
+        request.setEntity(entity);
+        Response response = lowLevelClient.performRequest(request);
+        return isSuccess(response);
     }
 
     private boolean isFieldLimitDifferent() {
@@ -376,6 +361,47 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
         } catch (IOException e) {
             LOG.error("Error while updating the field limit", e);
         }
+    }
+
+    private void updateMappingsIfChanged() throws IOException, AtlasException {
+        LOG.info("ESBasedAuditRepo - updateMappings!");
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode activeIndexInformation = getActiveIndexInfoAsJson(mapper);
+        JsonNode indexInformationFromConfigurationFile = mapper.readTree(getAuditIndexMappings());
+        if (!areConfigurationsSame(activeIndexInformation, indexInformationFromConfigurationFile)) {
+            Response response = updateMappings(indexInformationFromConfigurationFile);
+            if (isSuccess(response)) {
+                LOG.info("ESBasedAuditRepo - Elasticsearch mappings have been updated!");
+            } else {
+                LOG.error("Error while updating the Elasticsearch indexes!");
+                throw new AtlasException(copyToString(response.getEntity().getContent(), Charset.defaultCharset()));
+            }
+        }
+    }
+
+    private JsonNode getActiveIndexInfoAsJson(ObjectMapper mapper) throws IOException {
+        Request request = new Request("GET", INDEX_NAME);
+        Response response = lowLevelClient.performRequest(request);
+        String responseString = copyToString(response.getEntity().getContent(), Charset.defaultCharset());
+        return mapper.readTree(responseString);
+    }
+
+    private boolean areConfigurationsSame(JsonNode activeIndexInformation, JsonNode indexInformationFromConfigurationFile) {
+        return indexInformationFromConfigurationFile.get("mappings").equals(activeIndexInformation.get("entity_audits").get("mappings"));
+    }
+
+    private Response updateMappings(JsonNode indexInformationFromConfigurationFile) throws IOException {
+        Request request = new Request("PUT", INDEX_NAME + "/_mapping");
+        HttpEntity entity = new NStringEntity(indexInformationFromConfigurationFile.get("mappings").toString(), ContentType.APPLICATION_JSON);
+        request.setEntity(entity);
+        return lowLevelClient.performRequest(request);
+    }
+
+    private String getAuditIndexMappings() throws IOException {
+        String atlasHomeDir = System.getProperty("atlas.home");
+        String atlasHome = StringUtils.isEmpty(atlasHomeDir) ? "." : atlasHomeDir;
+        File elasticsearchSettingsFile = Paths.get(atlasHome, "elasticsearch", "es-audit-mappings.json").toFile();
+        return new String(Files.readAllBytes(elasticsearchSettingsFile.toPath()), StandardCharsets.UTF_8);
     }
 
     @Override
@@ -430,4 +456,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
         return httpHosts;
     }
 
+    private boolean isSuccess(Response response) {
+        return response.getStatusLine().getStatusCode() == 200;
+    }
 }

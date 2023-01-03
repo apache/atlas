@@ -627,7 +627,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         EntityMutationResponse ret = deleteVertices(deletionCandidates);
 
-        if(ret.getDeletedEntities()!=null)
+        if(ret.getDeletedEntities() != null)
             processTermEntityDeletion(ret.getDeletedEntities());
 
         // Notify the change listeners
@@ -1705,7 +1705,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         for (AtlasEntityHeader entity : req.getDeletedEntities()) {
             String handler;
             if (ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE.equals(entity.getTypeName())) {
-                handler = "HARD";
+                handler  = req.getDeleteType().equals(DeleteType.PURGE) ?
+                        DeleteType.PURGE.name() : DeleteType.HARD.name();
             } else {
                 handler = RequestContext.get().getDeleteType().name();
             }

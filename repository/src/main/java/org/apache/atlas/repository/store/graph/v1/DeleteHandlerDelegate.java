@@ -67,6 +67,9 @@ public class DeleteHandlerDelegate {
             case HARD:
                 return hardDeleteHandler;
 
+            case PURGE:
+                return hardDeleteHandler;
+
             default:
                 return defaultHandler;
         }

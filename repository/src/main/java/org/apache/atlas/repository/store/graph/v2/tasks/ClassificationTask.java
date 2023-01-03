@@ -45,11 +45,14 @@ public abstract class ClassificationTask extends AbstractTask {
     private static final Logger LOG = LoggerFactory.getLogger(ClassificationTask.class);
 
     public static final String PARAM_ENTITY_GUID              = "entityGuid";
-    public static final String PARAM_DELETED_EDGE_IDS         = "deletedEdgeIds";
+    public static final String PARAM_DELETED_EDGE_IDS         = "deletedEdgeIds"; // TODO: Will be deprecated
+    public static final String PARAM_DELETED_EDGE_ID          = "deletedEdgeId";
     public static final String PARAM_CLASSIFICATION_VERTEX_ID = "classificationVertexId";
     public static final String PARAM_RELATIONSHIP_GUID        = "relationshipGuid";
     public static final String PARAM_RELATIONSHIP_OBJECT      = "relationshipObject";
     public static final String PARAM_RELATIONSHIP_EDGE_ID     = "relationshipEdgeId";
+    public static final String PARAM_REFERENCED_VERTEX_ID     = "referencedVertexId";
+    public static final String PARAM_IS_TERM_ENTITY_EDGE       = "isTermEntityEdge";
     public static final String PARAM_PREVIOUS_CLASSIFICATION_RESTRICT_PROPAGATE_THROUGH_LINEAGE = "previousRestrictPropagationThroughLineage";
   
     protected final AtlasGraph             graph;
@@ -128,9 +131,18 @@ public abstract class ClassificationTask extends AbstractTask {
         }};
     }
 
-    public static Map<String, Object> toParameters(Set<String> deletedEdgeIds) {
+    public static Map<String, Object> toParameters(String deletedEdgeId, String classificationVertexId) {
         return new HashMap<String, Object>() {{
-            put(PARAM_DELETED_EDGE_IDS, AtlasType.toJson(deletedEdgeIds));
+            put(PARAM_DELETED_EDGE_ID, deletedEdgeId);
+            put(PARAM_CLASSIFICATION_VERTEX_ID, classificationVertexId);
+        }};
+    }
+
+    public static Map<String, Object> toParameters(String classificationVertexId, String referencedVertexId, boolean isTermEntityEdge) {
+        return new HashMap<String, Object>() {{
+            put(PARAM_CLASSIFICATION_VERTEX_ID, classificationVertexId);
+            put(PARAM_REFERENCED_VERTEX_ID, referencedVertexId);
+            put(PARAM_IS_TERM_ENTITY_EDGE, isTermEntityEdge);
         }};
     }
 
@@ -152,7 +164,7 @@ public abstract class ClassificationTask extends AbstractTask {
                 entityGraphMapper.removePendingTaskFromEntity((String) getTaskDef().getParameters().get(PARAM_ENTITY_GUID), getTaskGuid());
             }
         } catch (EntityNotFoundException | AtlasBaseException e) {
-            LOG.error("Error updating associated element for: {}", getTaskGuid(), e);
+            LOG.warn("Error updating associated element for: {}", getTaskGuid(), e);
         }
         graph.commit();
     }
