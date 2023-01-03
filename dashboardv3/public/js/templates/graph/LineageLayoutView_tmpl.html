@@ -90,10 +90,20 @@
                 <div class="pretty p-switch p-fill">
                     <input type="checkbox" class="pull-left" data-id="labelFullName" value="" id="labelFullName"/>
                     <div class="state p-primary">
-                        <label>Display fullname</label>
+                        <label>Display full name</label>
                     </div>
                 </div>
             </div>
+            {{#if compactLineageEnabled}}
+            <div class="showTooltip text-left col-sm-12">
+                <div class="nodeCount-container">
+                    <label class="col-sm-8 no-padding">Nodes On Demand</label>
+                    <div class="col-sm-4 no-padding">
+                        <select data-id="selectNodeCount" class="form-control"></select>
+                    </div>
+                </div>
+            </div>
+            {{/if}}
         </div>
     </div>
     <div class="graph-button-group pull-right">

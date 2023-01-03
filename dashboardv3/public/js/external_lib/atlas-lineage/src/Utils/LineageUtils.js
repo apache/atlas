@@ -31,25 +31,25 @@ const LineageUtils = {
      * @type {Number}
      */
     nodeArrowDistance: 24,
-    refreshGraphForSafari: function (options) {
+    refreshGraphForSafari: function(options) {
         var edgePathEl = options.edgeEl,
             IEGraphRenderDone = 0;
-        edgePathEl.each(function (argument) {
+        edgePathEl.each(function(argument) {
             var eleRef = this,
                 childNode = $(this).find("pattern");
-            setTimeout(function (argument) {
+            setTimeout(function(argument) {
                 $(eleRef).find("defs").append(childNode);
             }, 500);
         });
     },
-    refreshGraphForIE: function ({ edgePathEl }) {
+    refreshGraphForIE: function({ edgePathEl }) {
         var IEGraphRenderDone = 0;
-        edgePathEl.each(function (argument) {
+        edgePathEl.each(function(argument) {
             var childNode = $(this).find("marker");
             $(this).find("marker").remove();
             var eleRef = this;
             ++IEGraphRenderDone;
-            setTimeout(function (argument) {
+            setTimeout(function(argument) {
                 $(eleRef).find("defs").append(childNode);
                 --IEGraphRenderDone;
                 if (IEGraphRenderDone === 0) {
@@ -67,9 +67,9 @@ const LineageUtils = {
      * @param  {[type]} options.edgePathEl [description]
      * @return {[type]}                    [description]
      */
-    dragNode: function ({ g, svg, guid, edgePathEl }) {
+    dragNode: function({ g, svg, guid, edgePathEl }) {
         var dragHelper = {
-            dragmove: function (el, d) {
+            dragmove: function(el, d) {
                 var node = select(el),
                     selectedNode = g.node(d),
                     prevX = selectedNode.x,
@@ -91,13 +91,13 @@ const LineageUtils = {
                 });
                 //LineageUtils.refreshGraphForIE({ edgePathEl: edgePathEl });
             },
-            translateEdge: function (e, dx, dy) {
-                e.points.forEach(function (p) {
+            translateEdge: function(e, dx, dy) {
+                e.points.forEach(function(p) {
                     p.x = p.x + dx;
                     p.y = p.y + dy;
                 });
             },
-            calcPoints: function (e) {
+            calcPoints: function(e) {
                 var edge = g.edge(e.v, e.w),
                     tail = g.node(e.v),
                     head = g.node(e.w),
@@ -106,10 +106,10 @@ const LineageUtils = {
                 points.unshift(this.intersectRect(tail, points[0]));
                 points.push(this.intersectRect(head, points[points.length - 1]));
                 return line()
-                    .x(function (d) {
+                    .x(function(d) {
                         return d.x;
                     })
-                    .y(function (d) {
+                    .y(function(d) {
                         return d.y;
                     })
                     .curve(curveBasis)(points);
@@ -146,10 +146,10 @@ const LineageUtils = {
                 };
             }
         };
-        var dragNodeHandler = drag().on("drag", function (d) {
+        var dragNodeHandler = drag().on("drag", function(d) {
                 dragHelper.dragmove.call(dragHelper, this, d);
             }),
-            dragEdgePathHandler = drag().on("drag", function (d) {
+            dragEdgePathHandler = drag().on("drag", function(d) {
                 dragHelper.translateEdge(g.edge(d.v, d.w), event.dx, event.dy);
                 var edgeObj = g.edge(d.v, d.w);
                 select(edgeObj.elem).select("path").attr("d", dragHelper.calcPoints(d));
@@ -158,16 +158,16 @@ const LineageUtils = {
         dragNodeHandler(svg.selectAll("g.node"));
         dragEdgePathHandler(svg.selectAll("g.edgePath"));
     },
-    zoomIn: function ({ svg, scaleFactor = 1.3 }) {
+    zoomIn: function({ svg, scaleFactor = 1.3 }) {
         this.d3Zoom.scaleBy(svg.transition().duration(750), scaleFactor);
     },
-    zoomOut: function ({ svg, scaleFactor = 0.8 }) {
+    zoomOut: function({ svg, scaleFactor = 0.8 }) {
         this.d3Zoom.scaleBy(svg.transition().duration(750), scaleFactor);
     },
-    zoom: function ({ svg, xa, ya, scale }) {
+    zoom: function({ svg, xa, ya, scale }) {
         svg.transition().duration(750).call(this.d3Zoom.transform, zoomIdentity.translate(xa, ya).scale(scale));
     },
-    fitToScreen: function ({ svg }) {
+    fitToScreen: function({ svg }) {
         var node = svg.node();
         var bounds = node.getBBox();
 
@@ -197,14 +197,14 @@ const LineageUtils = {
      * @param  {[type]} options.onCenterZoomed [description]
      * @return {[type]}                        [description]
      */
-    centerNode: function ({ guid, g, svg, svgGroupEl, edgePathEl, width, height, fitToScreen, onCenterZoomed }) {
+    centerNode: function({ guid, g, svg, svgGroupEl, edgePathEl, width, height, fitToScreen, onCenterZoomed, isSelected }) {
         this.d3Zoom = zoom();
         svg.call(this.d3Zoom).on("dblclick.zoom", null);
 
         // restrict events
 
         let selectedNodeEl = svg.selectAll("g.nodes>g[id='" + guid + "']"),
-            zoomListener = this.d3Zoom.scaleExtent([0.01, 50]).on("zoom", function () {
+            zoomListener = this.d3Zoom.scaleExtent([0.01, 50]).on("zoom", function() {
                 svgGroupEl.attr("transform", event.transform);
             }),
             x = null,
@@ -236,7 +236,13 @@ const LineageUtils = {
         var xa = -(x * scale - width / 2),
             ya = -(y * scale - height / 2);
         this.zoom({ svg, xa, ya, scale });
-        svg.transition().duration(750).call(this.d3Zoom.transform, zoomIdentity.translate(xa, ya).scale(scale));
+
+        if (!isSelected) {
+            svg.call(this.d3Zoom.transform, zoomIdentity.translate(xa, ya).scale(scale));
+        } else {
+            svg.transition().duration(750).call(this.d3Zoom.transform, zoomIdentity.translate(xa, ya).scale(scale));
+        }
+
 
         if (onCenterZoomed) {
             onCenterZoomed({ newScale: scale, newTranslate: [xa, ya], d3Zoom: this.d3Zoom, selectedNodeEl });
@@ -250,7 +256,7 @@ const LineageUtils = {
      * @param  {[type]} options.el [description]
      * @return {[type]}            [description]
      */
-    getToolTipDirection: function ({ el }) {
+    getToolTipDirection: function({ el }) {
         var width = select("body").node().getBoundingClientRect().width,
             currentELWidth = select(el).node().getBoundingClientRect(),
             direction = "e";
@@ -279,10 +285,10 @@ const LineageUtils = {
      * @param  {[type]} options.hoveredNode      [description]
      * @return {[type]}                          [description]
      */
-    onHoverFade: function ({ svg, g, mouseenter, nodesToHighlight, hoveredNode }) {
+    onHoverFade: function({ svg, g, mouseenter, nodesToHighlight, hoveredNode }) {
         var node = svg.selectAll(".node"),
             path = svg.selectAll(".edgePath"),
-            isConnected = function (a, b, o) {
+            isConnected = function(a, b, o) {
                 if (a === o || (b && b.length && b.indexOf(o) != -1)) {
                     return true;
                 }
@@ -292,14 +298,14 @@ const LineageUtils = {
             var nextNode = g.successors(hoveredNode),
                 previousNode = g.predecessors(hoveredNode),
                 nodesToHighlight = nextNode.concat(previousNode);
-            node.classed("hover-active-node", function (currentNode, i, nodes) {
+            node.classed("hover-active-node", function(currentNode, i, nodes) {
                 if (isConnected(hoveredNode, nodesToHighlight, currentNode)) {
                     return true;
                 } else {
                     return false;
                 }
             });
-            path.classed("hover-active-path", function (c) {
+            path.classed("hover-active-path", function(c) {
                 var _thisOpacity = c.v === hoveredNode || c.w === hoveredNode ? 1 : 0;
                 if (_thisOpacity) {
                     return true;
@@ -318,10 +324,10 @@ const LineageUtils = {
      * @param  {[type]} path [description]
      * @return {[type]}      [description]
      */
-    getBaseUrl: function (url = window.location.pathname) {
+    getBaseUrl: function(url = window.location.pathname) {
         return url.replace(/\/[\w-]+.(jsp|html)|\/+$/gi, "");
     },
-    getEntityIconPath: function ({ entityData, errorUrl, imgBasePath }) {
+    getEntityIconPath: function({ entityData, errorUrl, imgBasePath }) {
         var iconBasePath = this.getBaseUrl() + (imgBasePath || "/img/entity-icon/");
         if (entityData) {
             let { typeName, serviceType, status, isProcess } = entityData;
@@ -348,7 +354,7 @@ const LineageUtils = {
 
             if (errorUrl) {
                 // Check if the default img path has error, if yes then stop recursion.
-                if (errorUrl.indexOf("table.png") > -1 || errorUrl.indexOf("process.png") > -1) {
+                if (errorUrl.indexOf("table.png") > -1) { //removed condition for default process image
                     return null;
                 }
                 var isErrorInTypeName = errorUrl && errorUrl.match("entity-icon/" + typeName + ".png|disabled/" + typeName + ".png") ? true : false;
@@ -369,15 +375,15 @@ const LineageUtils = {
             }
         }
     },
-    base64Encode: function (file, callback) {
+    base64Encode: function(file, callback) {
         const reader = new FileReader();
         reader.addEventListener("load", () => callback(reader.result));
         reader.readAsDataURL(file);
     },
-    imgShapeRender: function (parent, bbox, node, { dagreD3, defsEl, imgBasePath, guid, isRankdirToBottom }) {
+    imgShapeRender: function(parent, bbox, node, { dagreD3, defsEl, imgBasePath, guid, isRankdirToBottom }) {
         var that = this,
             viewGuid = guid,
-            imageIconPath = this.getEntityIconPath({ entityData: node, imgBasePath }),
+            imageIconPath = node.btnType ? "/img/entity-icon/expandBtn.svg" : this.getEntityIconPath({ entityData: node, imgBasePath }),
             imgName = imageIconPath.split("/").pop();
         if (this.imageObject === undefined) {
             this.imageObject = {};
@@ -390,7 +396,7 @@ const LineageUtils = {
         }
         var shapeSvg = parent
             .append("circle")
-            .attr("fill", "url(#img_" + encodeURI(imgName) + ")")
+            .attr("fill", "url(#img_" + imgName + ")")
             .attr("r", isRankdirToBottom ? "30px" : "24px")
             .attr("data-stroke", node.id)
             .attr("stroke-width", "2px")
@@ -401,90 +407,112 @@ const LineageUtils = {
         if (node.isIncomplete === true) {
             parent.attr("class", "node isIncomplete show");
             parent
-                .insert("foreignObject")
-                .attr("x", "-25")
-                .attr("y", "-25")
-                .attr("width", "50")
-                .attr("height", "50")
-                .append("xhtml:div")
-                .insert("i")
-                .attr("class", "fa fa-hourglass-half");
+                .insert("rect")
+                .attr("x", "-5")
+                .attr("y", "-23")
+                .attr("width", "14")
+                .attr("height", "16")
+                .attr("fill", "url(#img_hourglass.svg)")
+                .attr("data-stroke", node.id)
+                .attr("stroke-width", "2px");
+
+            var patternConfigShellIcon = {
+                imgName: "hourglass.svg",
+                imageIconPath: "/img/entity-icon/hourglass.svg",
+                leftPosition: "0",
+                topPosition: "0",
+                width: "12",
+                height: "14"
+            };
+            svgPattern(patternConfigShellIcon);
         }
+        var patternConfigEntityIcon = {
+            imgName: imgName,
+            imageIconPath: imageIconPath,
+            leftPosition: isRankdirToBottom ? "11" : "4",
+            topPosition: isRankdirToBottom ? "20" : currentNode ? "3" : "4",
+            width: "40",
+            height: "40"
+        };
+        svgPattern(patternConfigEntityIcon);
 
-        if (defsEl.select('pattern[id="img_' + imgName + '"]').empty()) {
-            defsEl
-                .append("pattern")
-                .attr("x", "0%")
-                .attr("y", "0%")
-                .attr("patternUnits", "objectBoundingBox")
-                .attr("id", "img_" + imgName)
-                .attr("width", "100%")
-                .attr("height", "100%")
-                .append("image")
-                .attr("href", function (d) {
-                    var imgEl = this;
-                    if (node) {
-                        var getImageData = function (options) {
-                            var imagePath = options.imagePath,
-                                ajaxOptions = {
-                                    url: imagePath,
-                                    method: "GET",
-                                    cache: true
-                                };
+        function svgPattern(patternConfig) {
+            if (defsEl.select('pattern[id="img_' + patternConfig.imgName + '"]').empty()) {
+                defsEl
+                    .append("pattern")
+                    .attr("x", "0%")
+                    .attr("y", "0%")
+                    .attr("patternUnits", "objectBoundingBox")
+                    .attr("id", "img_" + patternConfig.imgName)
+                    .attr("width", "100%")
+                    .attr("height", "100%")
+                    .append("image")
+                    .attr("href", function(d) {
+                        var imgEl = this;
+                        if (node) {
+                            var getImageData = function(options) {
+                                var imagePath = options.imagePath,
+                                    ajaxOptions = {
+                                        url: imagePath,
+                                        method: "GET",
+                                        cache: true
+                                    };
 
-                            // if (platform.name !== "IE") {
-                            //     ajaxOptions["mimeType"] = "text/plain; charset=x-user-defined";
-                            // }
-                            shapeSvg.attr("data-iconpath", imagePath);
-                            var xhr = new XMLHttpRequest();
-                            xhr.onreadystatechange = function () {
-                                if (xhr.readyState === 4) {
-                                    if (xhr.status === 200) {
-                                        if (platform.name !== "IE") {
-                                            that.base64Encode(this.response, (url) => {
-                                                that.imageObject[imageIconPath] = url;
-                                                select(imgEl).attr("xlink:href", url);
-                                            });
-                                        } else {
-                                            that.imageObject[imageIconPath] = imagePath;
-                                        }
-                                        if (imageIconPath !== shapeSvg.attr("data-iconpath")) {
-                                            shapeSvg.attr("data-iconpathorigin", imageIconPath);
-                                        }
-                                    } else if (xhr.status === 404) {
-                                        const imgPath = that.getEntityIconPath({ entityData: node, errorUrl: imagePath });
-                                        if (imgPath === null) {
-                                            const patternEL = select(imgEl.parentElement);
-                                            patternEL.select("image").remove();
-                                            patternEL
-                                                .attr("patternContentUnits", "objectBoundingBox")
-                                                .append("circle")
-                                                .attr("r", "24px")
-                                                .attr("fill", "#e8e8e8");
-                                        } else {
-                                            getImageData({
-                                                imagePath: imgPath
-                                            });
+                                // if (platform.name !== "IE") {
+                                //     ajaxOptions["mimeType"] = "text/plain; charset=x-user-defined";
+                                // }
+                                shapeSvg.attr("data-iconpath", imagePath);
+                                var xhr = new XMLHttpRequest();
+                                xhr.onreadystatechange = function() {
+                                    if (xhr.readyState === 4) {
+                                        if (xhr.status === 200) {
+                                            if (platform.name !== "IE") {
+                                                that.base64Encode(this.response, (url) => {
+                                                    that.imageObject[patternConfig.imageIconPath] = url;
+                                                    select(imgEl).attr("xlink:href", url);
+                                                });
+                                            } else {
+                                                that.imageObject[patternConfig.imageIconPath] = imagePath;
+                                            }
+                                            if (patternConfig.imageIconPath !== shapeSvg.attr("data-iconpath")) {
+                                                shapeSvg.attr("data-iconpathorigin", patternConfig.imageIconPath);
+                                            }
+                                        } else if (xhr.status === 404) {
+                                            const imgPath = that.getEntityIconPath({ entityData: node, errorUrl: imagePath });
+                                            if (imgPath === null) {
+                                                const patternEL = select(imgEl.parentElement);
+                                                patternEL.select("image").remove();
+                                                patternEL
+                                                    .attr("patternContentUnits", "objectBoundingBox")
+                                                    .append("circle")
+                                                    .attr("r", "24px")
+                                                    .attr("fill", "#e8e8e8");
+                                            } else {
+                                                getImageData({
+                                                    imagePath: imgPath
+                                                });
+                                            }
                                         }
                                     }
-                                }
+                                };
+                                xhr.responseType = "blob";
+                                xhr.open(ajaxOptions.method, ajaxOptions.url, true);
+                                xhr.send(null);
                             };
-                            xhr.responseType = "blob";
-                            xhr.open(ajaxOptions.method, ajaxOptions.url, true);
-                            xhr.send(null);
-                        };
-                        getImageData({
-                            imagePath: imageIconPath
-                        });
-                    }
-                })
-                .attr("x", isRankdirToBottom ? "11" : "4")
-                .attr("y", isRankdirToBottom ? "20" : currentNode ? "3" : "4")
-                .attr("width", "40")
-                .attr("height", "40");
+                            getImageData({
+                                imagePath: patternConfig.imageIconPath
+                            });
+                        }
+                    })
+                    .attr("x", patternConfig.leftPosition)
+                    .attr("y", patternConfig.topPosition)
+                    .attr("width", patternConfig.width)
+                    .attr("height", patternConfig.height);
+            }
         }
 
-        node.intersect = function (point) {
+
+        node.intersect = function(point) {
             return dagreD3.intersect.circle(node, currentNode ? that.nodeArrowDistance + 3 : that.nodeArrowDistance, point);
         };
         return shapeSvg;
@@ -494,7 +522,7 @@ const LineageUtils = {
      * @param  {[type]} {parent, id,           edge, type, viewOptions [description]
      * @return {[type]}           [description]
      */
-    arrowPointRender: function (parent, id, edge, type, { dagreD3 }) {
+    arrowPointRender: function(parent, id, edge, type, { dagreD3 }) {
         var node = parent.node(),
             parentNode = node ? node.parentNode : parent;
         select(parentNode)
@@ -523,11 +551,11 @@ const LineageUtils = {
      * @param  {[type]} options.onExportLineage  [description]
      * @return {[type]}                          [description]
      */
-    saveSvg: function ({ svg, width, height, downloadFileName, onExportLineage }) {
+    saveSvg: function({ svg, width, height, downloadFileName, onExportLineage }) {
         var that = this,
             svgClone = svg.clone(true).node(),
             scaleFactor = 1;
-        setTimeout(function () {
+        setTimeout(function() {
             if (platform.name === "Firefox") {
                 svgClone.setAttribute("width", width);
                 svgClone.setAttribute("height", height);
@@ -570,15 +598,16 @@ const LineageUtils = {
             if (platform.name === "Safari") {
                 svgBlob = new Blob([data], { type: "image/svg+xml" });
             }
+            ctx.drawImage(img, 50, 50, canvas.width, canvas.height);
             var url = DOMURL.createObjectURL(svgBlob);
 
-            img.onload = function () {
+            img.onload = function() {
                 try {
                     var a = document.createElement("a");
                     a.download = downloadFileName;
                     document.body.appendChild(a);
                     ctx.drawImage(img, 50, 50, canvas.width, canvas.height);
-                    canvas.toBlob(function (blob) {
+                    canvas.toBlob(function(blob) {
                         if (!blob) {
                             onExportLineage({ status: "failed", message: "There was an error in downloading Lineage!" });
                             return;

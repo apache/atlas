@@ -45,6 +45,7 @@ export default class LineageHelper {
             zoom: (arg) => this.zoom(arg),
             fullScreen: (arg) => this.fullScreen(arg),
             searchNode: (arg) => this.searchNode(arg),
+            displayFullName: (arg) => this.displayFullName(arg),
             removeNodeSelection: (arg) => this.removeNodeSelection(arg),
             getGraphOptions: () => this.graphOptions,
             getNode: (guid, actual) => {
@@ -163,14 +164,36 @@ export default class LineageHelper {
     zoom(opt = {}) {
         LineageUtils.zoom({ ...this.graphOptions, ...opt });
     }
+
+    displayFullName(opt = {}) {
+        var that = this;
+        this.g.nodes().forEach(function(v) {
+            var selectedNodeEl = that.svg.selectAll("g.nodes>g[id='" + v + "']"),
+                label = that.g.node(v).toolTipLabel;
+            if (opt.bLabelFullText == true)
+                selectedNodeEl.select('tspan').text(label);
+            else
+                selectedNodeEl.select('tspan').text(label.trunc(18));
+        });
+        if (this.selectedNode) {
+            this.searchNode({ guid: this.selectedNode });
+        }
+    }
+
     /**
      * [refresh Allows user to rerender the lineage]
      * @return {[type]} [description]
      */
-    refresh() {
+    refresh(options) {
         this.clear();
         this._initializeGraph();
         this._initGraph({ refresh: true });
+        this.selectedNode = "";
+        if (options && options.compactLineageEnabled && options.filterObj) {
+            var isProcessHideCheck = options.filterObj.isProcessHideCheck,
+                isDeletedEntityHideCheck = options.filterObj.isDeletedEntityHideCheck;
+            this._AddFilterNotification(isProcessHideCheck, isDeletedEntityHideCheck);
+        }
     }
     /**
      * [removeNodeSelection description]
@@ -185,23 +208,32 @@ export default class LineageHelper {
      */
     searchNode({ guid, onSearchNode }) {
         this.svg.selectAll(".serach-rect").remove();
+        this.svg.selectAll(".label").attr("stroke", "none");
+        this.selectedNode = guid;
         this.centerAlign({
             guid: guid,
-            onCenterZoomed: function (opts) {
+            onCenterZoomed: function(opts) {
                 const { selectedNodeEl } = opts;
+                var oSelectedNode = selectedNodeEl.node().getBBox(),
+                    rectWidth = oSelectedNode.width + 10,
+                    rectXPos = oSelectedNode.x - 5;
                 selectedNodeEl.select(".label").attr("stroke", "#316132");
                 selectedNodeEl.select("circle").classed("wobble", true);
                 selectedNodeEl
                     .insert("rect", "circle")
                     .attr("class", "serach-rect")
-                    .attr("x", -50)
+                    .attr("stroke", "#37bb9b")
+                    .attr("stroke-width", "2.5px")
+                    .attr("fill", "none")
+                    .attr("x", rectXPos)
                     .attr("y", -27.5)
-                    .attr("width", 100)
-                    .attr("height", 55);
+                    .attr("width", rectWidth)
+                    .attr("height", 60);
                 if (onSearchNode && typeof onSearchNode === "function") {
                     onSearchNode(opts);
                 }
-            }
+            },
+            isSelected: true
         });
     }
 
@@ -287,8 +319,7 @@ export default class LineageHelper {
         // initlize the dagreD3 graphlib
         this.g = new dagreD3.graphlib.Graph()
             .setGraph(
-                Object.assign(
-                    {
+                Object.assign({
                         nodesep: 50,
                         ranksep: 90,
                         rankdir: "LR",
@@ -301,7 +332,7 @@ export default class LineageHelper {
                     this.options.dagreOptions
                 )
             )
-            .setDefaultEdgeLabel(function () {
+            .setDefaultEdgeLabel(function() {
                 return {};
             });
 
@@ -339,7 +370,7 @@ export default class LineageHelper {
 
         if (this.options.setDataManually === true) {
             return;
-        } else if (this.options.data === undefined || (this.options.data && this.options.data.relations.length === 0)) {
+        } else if (this.options.data === undefined || (this.options.data && this.options.data.relations.length === 0 && _.isEmpty(this.options.data.guidEntityMap))) {
             if (this.options.beforeRender) {
                 this.options.beforeRender();
             }
@@ -402,8 +433,7 @@ export default class LineageHelper {
      * @param  {[type]}  graphOptions    [description]
      * @return {[type]}                  [description]
      */
-    _createGraph(
-        {
+    _createGraph({
             data = {},
             imgBasePath,
             isShowTooltip,
@@ -416,12 +446,12 @@ export default class LineageHelper {
             getToolTipContent,
             toolTipTitle
         },
-        graphOptions,
-        { refresh }
+        graphOptions, { refresh }
     ) {
         if (this.options.beforeRender) {
             this.options.beforeRender();
         }
+        this.selectedNode = "";
         const that = this,
             { svg, g, width, height } = graphOptions,
             isRankdirToBottom = this.options.dagreOptions && this.options.dagreOptions.rankdir === "tb";
@@ -435,7 +465,7 @@ export default class LineageHelper {
             return;
         }
 
-        g.nodes().forEach(function (v) {
+        g.nodes().forEach(function(v) {
             var node = g.node(v);
             // Round the corners of the nodes
             if (node) {
@@ -452,11 +482,11 @@ export default class LineageHelper {
         // Create the renderer
         var render = new dagreD3.render();
         // Add our custom arrow (a hollow-point)
-        render.arrows().arrowPoint = function () {
+        render.arrows().arrowPoint = function() {
             return LineageUtils.arrowPointRender(...arguments, { ...graphOptions });
         };
         // Render custom img inside shape
-        render.shapes().img = function () {
+        render.shapes().img = function() {
             return LineageUtils.imgShapeRender(...arguments, {
                 ...graphOptions,
                 isRankdirToBottom: isRankdirToBottom,
@@ -506,17 +536,18 @@ export default class LineageHelper {
                 if (isRankdirToBottom) {
                     return "translate(2,-20)";
                 }
-                return "translate(2,-35)";
+                return "translate(2,-38)";
             })
-            .on("mouseenter", function (d) {
+            .attr("font-size", "10px")
+            .on("mouseenter", function(d) {
                 event.preventDefault();
                 select(this).classed("highlight", true);
             })
-            .on("mouseleave", function (d) {
+            .on("mouseleave", function(d) {
                 event.preventDefault();
                 select(this).classed("highlight", false);
             })
-            .on("click", function (d) {
+            .on("click", function(d) {
                 event.preventDefault();
                 if (onLabelClick && typeof onLabelClick === "function") {
                     onLabelClick({ clickedData: d });
@@ -526,12 +557,12 @@ export default class LineageHelper {
 
         svgGroupEl
             .selectAll("g.nodes g.node circle")
-            .on("mouseenter", function (d, index, element) {
+            .on("mouseenter", function(d, index, element) {
                 that.activeNode = true;
                 var matrix = this.getScreenCTM().translate(+this.getAttribute("cx"), +this.getAttribute("cy"));
                 that.svg.selectAll(".node").classed("active", false);
                 select(this).classed("active", true);
-                if (that._getValueFromUser(isShowTooltip)) {
+                if (that._getValueFromUser(isShowTooltip) && (d.indexOf("more") !== 0)) {
                     var direction = LineageUtils.getToolTipDirection({ el: this });
                     tooltip.direction(direction).show(d, this);
                 }
@@ -545,10 +576,10 @@ export default class LineageHelper {
                     ...graphOptions
                 });
             })
-            .on("mouseleave", function (d) {
+            .on("mouseleave", function(d) {
                 that.activeNode = false;
                 var nodeEL = this;
-                setTimeout(function (argument) {
+                setTimeout(function(argument) {
                     if (!(that.activeTip || that.activeNode)) {
                         select(nodeEL).classed("active", false);
                         if (that._getValueFromUser(isShowTooltip)) {
@@ -565,7 +596,7 @@ export default class LineageHelper {
                     ...graphOptions
                 });
             })
-            .on("click", function (d) {
+            .on("click", function(d) {
                 if (event.defaultPrevented) return; // ignore drag
                 event.preventDefault();
                 tooltip.hide(d);
@@ -578,9 +609,9 @@ export default class LineageHelper {
 
         // Bind event on edgePath
         var edgePathEl = svgGroupEl.selectAll("g.edgePath");
-        edgePathEl.selectAll("path.path").on("click", function (d) {
+        edgePathEl.selectAll("path.path").on("click", function(d) {
             if (onPathClick && typeof onPathClick === "function") {
-                var pathRelationObj = data.relations.find(function (obj) {
+                var pathRelationObj = data.relations.find(function(obj) {
                     if (obj.fromEntityId === d.v && obj.toEntityId === d.w) {
                         return true;
                     }
@@ -651,5 +682,16 @@ export default class LineageHelper {
         span = container.append("span").style("color", "#fb4200");
         span.append("i").classed("fa fa-long-arrow-right fa-fw", true);
         span.append("span").html("Impact");
+
+        span = container.append("span").classed("notification hide", true).style("color", "#686868");
+        span.append("i").classed("fa fa-exclamation fa-fw", true);
+        span.append("span").html("Filtering hides all Expand buttons.");
+    }
+    _AddFilterNotification(isProcessHideCheck, isDeletedEntityHideCheck) {
+        if ((isProcessHideCheck || isDeletedEntityHideCheck)) {
+            $(this.options.legendsEl).find('.notification').removeClass('hide');
+        } else {
+            $(this.options.legendsEl).find('.notification').addClass('hide');
+        }
     }
 }
