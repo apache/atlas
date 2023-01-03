@@ -26,17 +26,17 @@
 
     //transition: opacity 0.3s linear;
 
-    rect {
-        stroke: $color_mountain_mist_approx;
-        fill: $white;
-        stroke-width: 1.5px;
+    // rect {
+    //     stroke: $color_mountain_mist_approx;
+    //     fill: $white;
+    //     stroke-width: 1.5px;
 
-        &.serach-rect {
-            stroke: $color_keppel_approx;
-            fill: transparent;
-            stroke-width: 2.5px;
-        }
-    }
+    //     &.serach-rect {
+    //         stroke: $color_keppel_approx;
+    //         fill: transparent;
+    //         stroke-width: 2.5px;
+    //     }
+    // }
 
     .label {
         fill: $color_suva_gray_approx;
@@ -104,7 +104,7 @@
 }
 
 .legends {
-    > span {
+    >span {
         margin-right: 8px;
         font-family: $font_0;
     }
@@ -156,10 +156,12 @@ svg.hover {
     z-index: 999;
     max-width: 300px; //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
     border-radius: 2px;
+    word-break: break-all;
 
     .tip-inner-scroll {
         overflow: auto;
         max-height: 300px;
+
         h5 {
             margin: 7px 0px;
         }
@@ -211,7 +213,7 @@ svg.hover {
     }
 }
 
-g.type-TK > rect {
+g.type-TK>rect {
     fill: $color_bright_turquoise_approx;
 }
 

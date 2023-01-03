@@ -50,6 +50,10 @@ define(["require"], function(require) {
     Globals.isDebugMetricsEnabled = false;
     Globals.isTasksEnabled = false;
     Globals.idealTimeoutSeconds = 900;
+    Globals.isFullScreenView = false;
+    Globals.isLineageOnDemandEnabled = false;
+    Globals.lineageNodeCount = 3;
+    Globals.lineageDepth = 3;
 
     return Globals;
 });
