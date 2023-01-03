@@ -104,6 +104,7 @@ public abstract class BaseResourceIT {
     public static final String SEC_TAG            = "sec_Tag";
     public static final String FINANCE_TAG        = "finance_Tag";
     public static final String CLASSIFICATION     = "classification";
+    public static final String ATLAS_LINEAGE_ON_DEMAND_ENABLED = "atlas.lineage.on.demand.enabled";
 
     protected static final int MAX_WAIT_TIME = 60000;
 
@@ -111,6 +112,7 @@ public abstract class BaseResourceIT {
     protected AtlasClient   atlasClientV1;
     protected AtlasClientV2 atlasClientV2;
     protected String[]      atlasUrls;
+    protected boolean isLineageOnDemandEnabled;
 
 
     protected NotificationInterface notificationInterface = null;
@@ -125,6 +127,11 @@ public abstract class BaseResourceIT {
 
 
         Configuration configuration = ApplicationProperties.get();
+
+        isLineageOnDemandEnabled = configuration.getBoolean(ATLAS_LINEAGE_ON_DEMAND_ENABLED);
+        if (!isLineageOnDemandEnabled) {
+            ApplicationProperties.get().setProperty(ATLAS_LINEAGE_ON_DEMAND_ENABLED, true);
+        }
 
         atlasUrls = configuration.getStringArray(ATLAS_REST_ADDRESS);
 

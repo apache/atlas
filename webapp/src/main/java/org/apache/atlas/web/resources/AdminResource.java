@@ -185,6 +185,8 @@ public class AdminResource {
     private final  AtlasDebugMetricsSink    debugMetricsRESTSink;
     private final  boolean                  isDebugMetricsEnabled;
     private final  boolean                  isTasksEnabled;
+    private final  boolean                  isOnDemandLineageEnabled;
+    private final  int                      defaultLineageNodeCount;
 
     static {
         try {
@@ -224,12 +226,16 @@ public class AdminResource {
             this.uiDateFormat = atlasProperties.getString(UI_DATE_FORMAT, UI_DATE_DEFAULT_FORMAT);
             this.isDebugMetricsEnabled = AtlasConfiguration.DEBUG_METRICS_ENABLED.getBoolean();
             this.isTasksEnabled = AtlasConfiguration.TASKS_USE_ENABLED.getBoolean();
+            this.isOnDemandLineageEnabled = AtlasConfiguration.LINEAGE_ON_DEMAND_ENABLED.getBoolean();
+            this.defaultLineageNodeCount = AtlasConfiguration.LINEAGE_ON_DEMAND_DEFAULT_NODE_COUNT.getInt();
         } else {
             this.defaultUIVersion = UI_VERSION_V2;
             this.isTimezoneFormatEnabled = true;
             this.uiDateFormat = UI_DATE_DEFAULT_FORMAT;
             this.isDebugMetricsEnabled = false;
             this.isTasksEnabled = false;
+            this.isOnDemandLineageEnabled = false;
+            this.defaultLineageNodeCount = 3;
         }
     }
 
@@ -379,6 +385,8 @@ public class AdminResource {
         responseData.put(UI_DATE_FORMAT, uiDateFormat);
         responseData.put(AtlasConfiguration.DEBUG_METRICS_ENABLED.getPropertyName(), isDebugMetricsEnabled);
         responseData.put(AtlasConfiguration.TASKS_USE_ENABLED.getPropertyName(), isTasksEnabled);
+        responseData.put(AtlasConfiguration.LINEAGE_ON_DEMAND_ENABLED.getPropertyName(), isOnDemandLineageEnabled);
+        responseData.put(AtlasConfiguration.LINEAGE_ON_DEMAND_DEFAULT_NODE_COUNT.getPropertyName(), defaultLineageNodeCount);
 
         if (AtlasConfiguration.SESSION_TIMEOUT_SECS.getInt() != -1) {
             responseData.put(AtlasConfiguration.SESSION_TIMEOUT_SECS.getPropertyName(), AtlasConfiguration.SESSION_TIMEOUT_SECS.getInt());
