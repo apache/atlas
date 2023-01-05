@@ -30,9 +30,6 @@ import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 
-import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_ONLY_PROPAGATION_DELETE_ON_HARD_DELETE;
-import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_REFRESH_PROPAGATION;
-
 @Component
 @ConditionalOnAtlasProperty(property = "atlas.DeleteHandlerV1.impl")
 public class HardDeleteHandlerV1 extends DeleteHandlerV1 {
@@ -60,7 +57,7 @@ public class HardDeleteHandlerV1 extends DeleteHandlerV1 {
         authorizeRemoveRelation(edge);
 
         if (DEFERRED_ACTION_ENABLED) {
-            createAndQueueClassificationRefreshTask(edge);
+            createAndQueueClassificationDeleteOnlyPropagationTask(edge);
         } else {
             removeTagPropagation(edge);
         }

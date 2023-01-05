@@ -86,9 +86,11 @@ public class AtlasTaskService implements TaskService {
         Map<String, Object> dsl = getMap("from", from);
         dsl.put("size", size);
         Map<String, Map<String, Object>> boolCondition = Collections.singletonMap("bool", new HashMap<>());
+        Map<String, Object> shouldQuery = getMap("bool", getMap("should", shouldConditions));
+        mustConditions.add(shouldQuery);
         boolCondition.get("bool").put("must", mustConditions);
         boolCondition.get("bool").put("must_not", mustNotConditions);
-        boolCondition.get("bool").put("should", shouldConditions);
+
         dsl.put("query", boolCondition);
         TaskSearchParams taskSearchParams = new TaskSearchParams();
         taskSearchParams.setDsl(dsl);
