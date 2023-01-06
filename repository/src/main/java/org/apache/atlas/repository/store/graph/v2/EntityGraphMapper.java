@@ -2885,25 +2885,27 @@ public class EntityGraphMapper {
             toIndex = ((offset + CHUNK_SIZE > impactedVerticesSize) ? (int) impactedVerticesSize : (offset + CHUNK_SIZE));
             List<AtlasVertex> chunkedVerticesToPropagate = verticesToPropagate.subList(offset, toIndex);
 
-            AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("lockObjectsAfterTraverse");
-            List<String> impactedVerticesGuidsToLock = chunkedVerticesToPropagate.stream().map(x -> GraphHelper.getGuid(x)).collect(Collectors.toList());
+            AtlasPerfMetrics.MetricRecorder metricRecorder  = RequestContext.get().startMetricRecord("lockObjectsAfterTraverse");
+            List<String> impactedVerticesGuidsToLock        = chunkedVerticesToPropagate.stream().map(x -> GraphHelper.getGuid(x)).collect(Collectors.toList());
             GraphTransactionInterceptor.lockObjectAndReleasePostCommit(impactedVerticesGuidsToLock);
             RequestContext.get().endMetricRecord(metricRecorder);
 
             AtlasClassification classification       = entityRetriever.toAtlasClassification(classificationVertex);
             List<AtlasVertex>   entitiesPropagatedTo = deleteDelegate.getHandler().addTagPropagation(classificationVertex, chunkedVerticesToPropagate);
+
             if (CollectionUtils.isEmpty(entitiesPropagatedTo)) {
                 return null;
             }
 
-            List<AtlasEntity> propagatedEntitiesChunked = updateClassificationText(classification, entitiesPropagatedTo);
-
-            List<String> chunkedPropagatedEntitiesGuids = propagatedEntitiesChunked.stream().map(x -> x.getGuid()).collect(Collectors.toList());
+            List<AtlasEntity>   propagatedEntitiesChunked       = updateClassificationText(classification, entitiesPropagatedTo);
+            List<String>        chunkedPropagatedEntitiesGuids  = propagatedEntitiesChunked.stream().map(x -> x.getGuid()).collect(Collectors.toList());
             entityChangeNotifier.onClassificationsAddedToEntities(propagatedEntitiesChunked, Collections.singletonList(classification), false);
 
             propagatedEntitiesGuids.addAll(chunkedPropagatedEntitiesGuids);
 
             offset += CHUNK_SIZE;
+
+            transactionInterceptHelper.intercept();
 
         } while (offset < impactedVerticesSize);
 
@@ -3558,13 +3560,13 @@ public class EntityGraphMapper {
         }
 
         List<String> propagatedVerticesIds = GraphHelper.getPropagatedVerticesIds(currentClassificationVertex);
-        LOG.info("{} vertices connected with classification vertex with id {}", propagatedVerticesIds.size(), classificationId);
+        LOG.info("{} entity vertices have classification with id {} attached", propagatedVerticesIds.size(), classificationId);
 
         List<String> verticesIdsToAddClassification =  new ArrayList<>();
         List<String> propagatedVerticesIdWithoutEdge = entityRetriever.getImpactedVerticesIds(sourceEntityVertex , classificationId,
                 CLASSIFICATION_PROPAGATION_EXCLUSION_MAP.get(propagationMode), verticesIdsToAddClassification);
 
-        LOG.info("Will have to add classification to {} vertices for classificationId {}", verticesIdsToAddClassification.size(), classificationId);
+        LOG.info("To add classification with id {} to {} vertices for classificationId {}", classificationId, verticesIdsToAddClassification.size());
 
         List<String> verticesIdsToRemove = (List<String>)CollectionUtils.subtract(propagatedVerticesIds, propagatedVerticesIdWithoutEdge);
 
@@ -3578,23 +3580,17 @@ public class EntityGraphMapper {
                 .filter(vertex -> vertex != null)
                 .collect(Collectors.toList());
 
-        LOG.info("To delete classification from {} vertices of classification {}", verticesToRemove.size(), classificationId);
-
         //Remove classifications from unreachable vertices
-
         processPropagatedClassificationDeletionFromVertices(verticesToRemove, currentClassificationVertex, classification);
 
         //Add classification to the reachable vertices
-
         if (CollectionUtils.isEmpty(verticesToAddClassification)) {
             LOG.debug("propagateClassification(entityGuid={}, classificationVertexId={}): found no entities to propagate the classification", sourceEntityId, classificationId);
-
             return;
         }
-
         processClassificationPropagationAddition(verticesToAddClassification, currentClassificationVertex);
 
-        LOG.info("Completed refreshing propagation for classification vertex {} with classification name {} and source entity {}",classificationId,
+        LOG.info("Completed refreshing propagation for classification with vertex id {} with classification name {} and source entity {}",classificationId,
                 classification.getTypeName(), classification.getEntityGuid());
     }
 
@@ -3642,6 +3638,8 @@ public class EntityGraphMapper {
         int propagatedVerticesSize = VerticesToRemoveTag.size();
         int toIndex;
         int offset = 0;
+
+        LOG.info("To delete classification of vertex id {} to {} entity vertices", classificationVertex.getIdForDisplay(), propagatedVerticesSize);
 
         do {
             toIndex = ((offset + CHUNK_SIZE > propagatedVerticesSize) ? propagatedVerticesSize : (offset + CHUNK_SIZE));
