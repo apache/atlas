@@ -277,7 +277,7 @@ public final class Constants {
     public static final String TASK_END_TIME          = encodePropertyKey(TASK_PREFIX + "endTime");
     public static final String TASK_TIME_TAKEN_IN_SECONDS   = encodePropertyKey(TASK_PREFIX + "timeTakenInSeconds");
     public static final String TASK_CLASSIFICATION_ID       = encodePropertyKey(TASK_PREFIX + "classificationId");
-    public static final String TASK_ENTITY_ID               = encodePropertyKey(TASK_PREFIX + "entityId");
+    public static final String TASK_ENTITY_GUID             = encodePropertyKey(TASK_PREFIX + "entityGuid");
     public static final String ACTIVE_STATE_VALUE           = "ACTIVE";
 
     /**

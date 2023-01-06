@@ -85,13 +85,13 @@ public class AtlasTask {
     private String              errorMessage;
     private Status              status;
     private String              classificationId;
-    private String              entityId;
+    private String              entityGuid;
 
     public AtlasTask() {
     }
 
     public AtlasTask(String type, String createdBy, Map<String, Object> parameters, String classificationId,
-                     String entityId) {
+                     String entityGuid) {
         this.guid               = UUID.randomUUID().toString();
         this.type               = type;
         this.createdBy          = createdBy;
@@ -101,7 +101,7 @@ public class AtlasTask {
         this.status             = Status.PENDING;
         this.attemptCount       = 0;
         this.classificationId   = classificationId;
-        this.entityId           = entityId;
+        this.entityGuid           = entityGuid;
     }
 
     public String getGuid() {
@@ -222,12 +222,12 @@ public class AtlasTask {
         return classificationId;
     }
 
-    public void setEntityId(String entityId) {
-        this.entityId = entityId;
+    public void setEntityGuid(String entityGuid) {
+        this.entityGuid = entityGuid;
     }
 
-    public String getEntityId() {
-        return entityId;
+    public String getEntityGuid() {
+        return entityGuid;
     }
 
     @JsonIgnore

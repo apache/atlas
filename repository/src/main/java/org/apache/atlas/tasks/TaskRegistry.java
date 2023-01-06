@@ -35,7 +35,6 @@ import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
-import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -441,8 +440,8 @@ public class TaskRegistry {
         this.graph.commit();
     }
 
-    public AtlasTask createVertex(String taskType, String createdBy, Map<String, Object> parameters, String classificationId, String entityId) {
-        AtlasTask ret = new AtlasTask(taskType, createdBy, parameters, classificationId, entityId);
+    public AtlasTask createVertex(String taskType, String createdBy, Map<String, Object> parameters, String classificationId, String entityGuid) {
+        AtlasTask ret = new AtlasTask(taskType, createdBy, parameters, classificationId, entityGuid);
 
         createVertex(ret);
 
@@ -515,9 +514,9 @@ public class TaskRegistry {
             ret.setClassificationId(classificationId);
         }
 
-        String entityId = v.getProperty(Constants.TASK_ENTITY_ID, String.class);
-        if(entityId != null) {
-            ret.setEntityId(entityId);
+        String entityGuid = v.getProperty(Constants.TASK_ENTITY_GUID, String.class);
+        if(entityGuid != null) {
+            ret.setEntityGuid(entityGuid);
         }
 
         Integer attemptCount = v.getProperty(Constants.TASK_ATTEMPT_COUNT, Integer.class);
@@ -548,8 +547,8 @@ public class TaskRegistry {
             setEncodedProperty(ret, Constants.TASK_CLASSIFICATION_ID, task.getClassificationId());
         }
 
-        if(task.getEntityId() != null) {
-            setEncodedProperty(ret, Constants.TASK_ENTITY_ID, task.getEntityId());
+        if(task.getEntityGuid() != null) {
+            setEncodedProperty(ret, Constants.TASK_ENTITY_GUID, task.getEntityGuid());
         }
 
         if (task.getStartTime() != null) {

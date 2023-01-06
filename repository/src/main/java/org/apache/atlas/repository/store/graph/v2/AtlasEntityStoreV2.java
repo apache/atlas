@@ -877,7 +877,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         String taskType = isHardDelete ? UPDATE_ENTITY_MEANINGS_ON_TERM_HARD_DELETE : UPDATE_ENTITY_MEANINGS_ON_TERM_SOFT_DELETE;
         String currentUser = RequestContext.getCurrentUser();
         Map<String, Object> taskParams = MeaningsTask.toParameters(termName, termQName, termGuid);
-        AtlasTask task = taskManagement.createTask(taskType, currentUser, taskParams, termQName, termGuid);
+        AtlasTask task = taskManagement.createTask(taskType, currentUser, taskParams, null, null);
 
         if(!isHardDelete){
             AtlasVertex termVertex = AtlasGraphUtilsV2.findByGuid(termGuid);
