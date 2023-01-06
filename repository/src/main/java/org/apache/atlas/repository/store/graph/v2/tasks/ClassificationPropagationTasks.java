@@ -71,15 +71,11 @@ public class ClassificationPropagationTasks {
             if (parameters.get(PARAM_DELETED_EDGE_IDS) != null) {  // TODO: Will be deprecated
                 Set<String> deletedEdgeIds    =  AtlasType.fromJson((String) parameters.get(PARAM_DELETED_EDGE_IDS), Set.class);
                 entityGraphMapper.deleteClassificationOnlyPropagation(deletedEdgeIds);
-            } else if(parameters.get(PARAM_DELETED_EDGE_ID) != null) {// TODO: Will be deprecated
+            } else {
                 String deletedEdgeId          =  (String) parameters.get(PARAM_DELETED_EDGE_ID);
                 String classificationVertexId =  (String) parameters.get(PARAM_CLASSIFICATION_VERTEX_ID);
                 entityGraphMapper.deleteClassificationOnlyPropagation(deletedEdgeId, classificationVertexId);
-            } else {
-                String classificationVertexId =  (String) parameters.get(PARAM_CLASSIFICATION_VERTEX_ID);
-                entityGraphMapper.deleteClassificationOnlyPropagation(classificationVertexId);
             }
-
         }
     }
 
@@ -95,6 +91,19 @@ public class ClassificationPropagationTasks {
             boolean isTermEntityEdge = (boolean) parameters.get(PARAM_IS_TERM_ENTITY_EDGE);
 
             entityGraphMapper.deleteClassificationOnlyPropagation(classificationVertexId, referencedVertexId, isTermEntityEdge);
+        }
+    }
+
+    public static class RefreshPropagation extends ClassificationTask {
+        public RefreshPropagation(AtlasTask task, AtlasGraph graph, EntityGraphMapper entityGraphMapper, DeleteHandlerDelegate deleteDelegate, AtlasRelationshipStore relationshipStore) {
+            super(task, graph, entityGraphMapper, deleteDelegate, relationshipStore);
+        }
+
+        @Override
+        protected void run(Map<String, Object> parameters) throws AtlasBaseException {
+            String            classificationVertexId = (String) parameters.get(PARAM_CLASSIFICATION_VERTEX_ID);
+
+            entityGraphMapper.classificationRefreshPropagation(classificationVertexId);
         }
     }
 

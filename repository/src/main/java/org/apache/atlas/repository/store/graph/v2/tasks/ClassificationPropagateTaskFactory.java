@@ -48,9 +48,11 @@ public class ClassificationPropagateTaskFactory implements TaskFactory {
      */
     public static final String CLASSIFICATION_ONLY_PROPAGATION_DELETE         = "CLASSIFICATION_ONLY_PROPAGATION_DELETE";
 
-    public static final String CLASSIFICATION_PROPAGATION_RELATIONSHIP_UPDATE = "CLASSIFICATION_PROPAGATION_RELATIONSHIP_UPDATE";
-
     public static final String CLASSIFICATION_ONLY_PROPAGATION_DELETE_ON_HARD_DELETE =  "CLASSIFICATION_ONLY_PROPAGATION_DELETE_ON_HARD_DELETE";
+
+    public static final String CLASSIFICATION_REFRESH_PROPAGATION = "CLASSIFICATION_REFRESH_PROPAGATION";
+
+    public static final String CLASSIFICATION_PROPAGATION_RELATIONSHIP_UPDATE = "CLASSIFICATION_PROPAGATION_RELATIONSHIP_UPDATE";
 
 
 
@@ -58,8 +60,10 @@ public class ClassificationPropagateTaskFactory implements TaskFactory {
         add(CLASSIFICATION_PROPAGATION_ADD);
         add(CLASSIFICATION_PROPAGATION_DELETE);
         add(CLASSIFICATION_ONLY_PROPAGATION_DELETE);
-        add(CLASSIFICATION_PROPAGATION_RELATIONSHIP_UPDATE);
         add(CLASSIFICATION_ONLY_PROPAGATION_DELETE_ON_HARD_DELETE);
+        add(CLASSIFICATION_REFRESH_PROPAGATION);
+        add(CLASSIFICATION_PROPAGATION_RELATIONSHIP_UPDATE);
+
     }};
 
     private final AtlasGraph             graph;
@@ -91,6 +95,9 @@ public class ClassificationPropagateTaskFactory implements TaskFactory {
 
             case CLASSIFICATION_ONLY_PROPAGATION_DELETE_ON_HARD_DELETE:
                 return new ClassificationPropagationTasks.DeleteOnlyPropagationsOnHardDelete(task, graph, entityGraphMapper, deleteDelegate, relationshipStore);
+
+            case CLASSIFICATION_REFRESH_PROPAGATION:
+                return new ClassificationPropagationTasks.RefreshPropagation(task, graph, entityGraphMapper, deleteDelegate, relationshipStore);
 
             case CLASSIFICATION_PROPAGATION_RELATIONSHIP_UPDATE:
                 return new ClassificationPropagationTasks.UpdateRelationship(task, graph, entityGraphMapper, deleteDelegate, relationshipStore);
