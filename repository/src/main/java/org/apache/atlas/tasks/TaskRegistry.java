@@ -35,6 +35,7 @@ import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -440,8 +441,8 @@ public class TaskRegistry {
         this.graph.commit();
     }
 
-    public AtlasTask createVertex(String taskType, String createdBy, Map<String, Object> parameters, String uniqueParameter, String referenceId) {
-        AtlasTask ret = new AtlasTask(taskType, createdBy, parameters, uniqueParameter, referenceId);
+    public AtlasTask createVertex(String taskType, String createdBy, Map<String, Object> parameters, String classificationId, String entityId) {
+        AtlasTask ret = new AtlasTask(taskType, createdBy, parameters, classificationId, entityId);
 
         createVertex(ret);
 
@@ -509,14 +510,14 @@ public class TaskRegistry {
             ret.setParameters(AtlasType.fromJson(parametersJson, Map.class));
         }
 
-        String uniqueParameter = v.getProperty(Constants.TASK_UNIQUE_PARAMETER, String.class);
-        if (uniqueParameter != null) {
-            ret.setUniqueParameter(uniqueParameter);
+        String classificationId = v.getProperty(Constants.TASK_CLASSIFICATION_ID, String.class);
+        if (classificationId != null) {
+            ret.setClassificationId(classificationId);
         }
 
-        String referenceId = v.getProperty(Constants.TASK_REFERENCE_ID, String.class);
-        if(referenceId != null) {
-            ret.setReferenceId(referenceId);
+        String entityId = v.getProperty(Constants.TASK_ENTITY_ID, String.class);
+        if(entityId != null) {
+            ret.setEntityId(entityId);
         }
 
         Integer attemptCount = v.getProperty(Constants.TASK_ATTEMPT_COUNT, Integer.class);
@@ -543,9 +544,13 @@ public class TaskRegistry {
         setEncodedProperty(ret, Constants.TASK_CREATED_BY, task.getCreatedBy());
         setEncodedProperty(ret, Constants.TASK_CREATED_TIME, task.getCreatedTime());
         setEncodedProperty(ret, Constants.TASK_UPDATED_TIME, task.getUpdatedTime());
-        setEncodedProperty(ret, Constants.TASK_UNIQUE_PARAMETER, task.getUniqueParameter());
-        setEncodedProperty(ret, Constants.TASK_REFERENCE_ID, task.getReferenceId());
+        if (task.getClassificationId() != null) {
+            setEncodedProperty(ret, Constants.TASK_CLASSIFICATION_ID, task.getClassificationId());
+        }
 
+        if(task.getEntityId() != null) {
+            setEncodedProperty(ret, Constants.TASK_ENTITY_ID, task.getEntityId());
+        }
 
         if (task.getStartTime() != null) {
             setEncodedProperty(ret, Constants.TASK_START_TIME, task.getStartTime().getTime());

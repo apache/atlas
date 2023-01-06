@@ -3639,7 +3639,7 @@ public class EntityGraphMapper {
         int toIndex;
         int offset = 0;
 
-        LOG.info("To delete classification of vertex id {} to {} entity vertices", classificationVertex.getIdForDisplay(), propagatedVerticesSize);
+        LOG.info("To delete classification of vertex id {} from {} entity vertices", classificationVertex.getIdForDisplay(), propagatedVerticesSize);
 
         do {
             toIndex = ((offset + CHUNK_SIZE > propagatedVerticesSize) ? propagatedVerticesSize : (offset + CHUNK_SIZE));

@@ -38,23 +38,6 @@ public class AtlasTask {
     @JsonIgnore
     public static final int MAX_ATTEMPT_COUNT = 3;
 
-    public String getUniqueParameter() {
-        return uniqueParameter;
-    }
-
-    public void setUniqueParameter(String uniqueParameter) {
-        this.uniqueParameter = uniqueParameter;
-    }
-
-    public String getReferenceId() {
-        return referenceId;
-    }
-
-    public void setReferenceId(String referenceId) {
-        this.referenceId = referenceId;
-    }
-
-
     public enum Status {
         PENDING,
         IN_PROGRESS,
@@ -91,8 +74,6 @@ public class AtlasTask {
 
     private String              type;
     private String              guid;
-    private String              uniqueParameter;
-    private String              referenceId;
     private String              createdBy;
     private Date                createdTime;
     private Date                updatedTime;
@@ -103,22 +84,24 @@ public class AtlasTask {
     private int                 attemptCount;
     private String              errorMessage;
     private Status              status;
+    private String              classificationId;
+    private String              entityId;
 
     public AtlasTask() {
     }
 
-    public AtlasTask(String type, String createdBy, Map<String, Object> parameters, String uniqueParameter,
-                     String referenceId) {
-        this.guid         = UUID.randomUUID().toString();
-        this.type         = type;
-        this.createdBy    = createdBy;
-        this.createdTime  = new Date();
-        this.updatedTime  = this.createdTime;
-        this.parameters   = parameters;
-        this.status       = Status.PENDING;
-        this.attemptCount = 0;
-        this.uniqueParameter = uniqueParameter;
-        this.referenceId     = referenceId;
+    public AtlasTask(String type, String createdBy, Map<String, Object> parameters, String classificationId,
+                     String entityId) {
+        this.guid               = UUID.randomUUID().toString();
+        this.type               = type;
+        this.createdBy          = createdBy;
+        this.createdTime        = new Date();
+        this.updatedTime        = this.createdTime;
+        this.parameters         = parameters;
+        this.status             = Status.PENDING;
+        this.attemptCount       = 0;
+        this.classificationId   = classificationId;
+        this.entityId           = entityId;
     }
 
     public String getGuid() {
@@ -229,6 +212,22 @@ public class AtlasTask {
 
     public void setTimeTakenInSeconds(Long timeTakenInSeconds) {
         this.timeTakenInSeconds = timeTakenInSeconds;
+    }
+
+    public void setClassificationId(String classificationId) {
+        this.classificationId = classificationId;
+    }
+
+    public String getClassificationId() {
+        return classificationId;
+    }
+
+    public void setEntityId(String entityId) {
+        this.entityId = entityId;
+    }
+
+    public String getEntityId() {
+        return entityId;
     }
 
     @JsonIgnore
