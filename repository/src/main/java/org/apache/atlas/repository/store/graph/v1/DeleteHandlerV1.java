@@ -73,7 +73,9 @@ import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
 import static org.apache.atlas.repository.graph.GraphHelper.*;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getState;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.*;
-import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.*;
+import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_ADD;
+import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_DELETE;
+import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_REFRESH_PROPAGATION;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
 import static org.apache.atlas.type.Constants.HAS_LINEAGE;
 import static org.apache.atlas.type.Constants.PENDING_TASKS_PROPERTY_KEY;
@@ -1322,7 +1324,7 @@ public abstract class DeleteHandlerV1 {
         String              relationshipEdgeId = relationshipEdge.getIdForDisplay();
         Map<String, Object> taskParams         = ClassificationTask.toParameters(relationshipEdgeId, relationship);
 
-        AtlasTask           task               = taskManagement.createTask(taskType, currentUser, taskParams, relationshipEdgeId, relationship.getGuid());
+        AtlasTask           task               = taskManagement.createTask(taskType, currentUser, taskParams, null, null);
 
         AtlasGraphUtilsV2.addItemToListProperty(relationshipEdge, EDGE_PENDING_TASKS_PROPERTY_KEY, task.getGuid());
 
@@ -1381,7 +1383,7 @@ public abstract class DeleteHandlerV1 {
         2. CLASSIFICATION_REFRESH_PROPAGATION task scheduled already
         skip classification task creation
          */
-        TaskSearchResult taskSearchResult = taskUtil.findPendingTasks(0, 1, classificationId, new ArrayList<String>(){{
+        TaskSearchResult taskSearchResult = taskUtil.findPendingTasksByClassificationId(0, 1, classificationId, new ArrayList<String>(){{
             add(CLASSIFICATION_PROPAGATION_DELETE);
             add(CLASSIFICATION_REFRESH_PROPAGATION);
         }}, new ArrayList<>());
@@ -1392,7 +1394,7 @@ public abstract class DeleteHandlerV1 {
         // If the task is created but not committed then need to check that also
         List<AtlasTask> queuedTasks  = RequestContext.get().getQueuedTasks();
         for(AtlasTask queuedTask : queuedTasks) {
-            if(queuedTask.getUniqueParameter().equals(classificationId)) {
+            if(queuedTask.getClassificationId().equals(classificationId)) {
                 String queuedTaskType = queuedTask.getType();
                 if(queuedTaskType.equals(CLASSIFICATION_REFRESH_PROPAGATION)
                         || queuedTaskType.equals(CLASSIFICATION_PROPAGATION_DELETE)) {

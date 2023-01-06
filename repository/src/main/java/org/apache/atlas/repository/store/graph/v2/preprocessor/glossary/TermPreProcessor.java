@@ -219,7 +219,7 @@ public class TermPreProcessor implements PreProcessor {
         String termGuid = GraphHelper.getGuid(termVertex);
         String currentUser = RequestContext.getCurrentUser();
         Map<String, Object> taskParams = MeaningsTask.toParameters(currentTermName, updatedTermName, termQName, termGuid);
-        AtlasTask task = taskManagement.createTask(taskType, currentUser, taskParams, termQName, termGuid);
+        AtlasTask task = taskManagement.createTask(taskType, currentUser, taskParams, null, null);
 
         AtlasGraphUtilsV2.addEncodedProperty(termVertex, PENDING_TASKS_PROPERTY_KEY, task.getGuid());
 

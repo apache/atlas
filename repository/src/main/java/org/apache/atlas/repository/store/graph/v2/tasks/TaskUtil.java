@@ -25,13 +25,13 @@ public class TaskUtil {
         taskService = new AtlasTaskService(graph);
     }
 
-    public TaskSearchResult findPendingTasks(int from, int size, String uniqueParam, List<String> types, List<String> excludeTypes) throws AtlasBaseException {
+    public TaskSearchResult findPendingTasksByClassificationId(int from, int size, String classificationId, List<String> types, List<String> excludeTypes) throws AtlasBaseException {
         List<Map<String,Object>> mustConditions = new ArrayList<>();
         List<Map<String,Object>> shouldConditions = new ArrayList<>();
         List<Map<String,Object>> excludeConditions = new ArrayList<>();
 
-        if (StringUtils.isNotEmpty(uniqueParam))
-            mustConditions.add(getMap("term", getMap(TASK_UNIQUE_PARAMETER, uniqueParam)));
+        if (StringUtils.isNotEmpty(classificationId))
+            mustConditions.add(getMap("term", getMap(TASK_CLASSIFICATION_ID, classificationId)));
 
         if (CollectionUtils.isNotEmpty(types)) {
             List<Map<String, Object>> typeQueries = types.stream().map(type -> getMap("match", getMap(TASK_TYPE, type))).collect(Collectors.toList());
