@@ -840,6 +840,12 @@
     </modules>
 
     <repositories>
+	    <repository>  
+			<id>oracleReleases</id>
+			<name>Oracle Released Java Packages</name>
+			<url>http://download.oracle.com/maven</url>
+			<layout>default</layout>
+        </repository>
         <repository>
             <id>central</id>
             <url>https://repo1.maven.org/maven2</url>
