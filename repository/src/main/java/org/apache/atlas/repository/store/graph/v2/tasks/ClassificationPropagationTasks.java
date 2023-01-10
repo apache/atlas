@@ -61,6 +61,7 @@ public class ClassificationPropagationTasks {
         }
     }
 
+    // TODO: Will be deprecated
     public static class DeleteOnlyPropagations extends ClassificationTask {
         public DeleteOnlyPropagations(AtlasTask task, AtlasGraph graph, EntityGraphMapper entityGraphMapper, DeleteHandlerDelegate deleteDelegate, AtlasRelationshipStore relationshipStore) {
             super(task, graph, entityGraphMapper, deleteDelegate, relationshipStore);
@@ -68,7 +69,7 @@ public class ClassificationPropagationTasks {
 
         @Override
         protected void run(Map<String, Object> parameters) throws AtlasBaseException {
-            if (parameters.get(PARAM_DELETED_EDGE_IDS) != null) {  // TODO: Will be deprecated
+            if (parameters.get(PARAM_DELETED_EDGE_IDS) != null) {
                 Set<String> deletedEdgeIds    =  AtlasType.fromJson((String) parameters.get(PARAM_DELETED_EDGE_IDS), Set.class);
                 entityGraphMapper.deleteClassificationOnlyPropagation(deletedEdgeIds);
             } else {
@@ -79,6 +80,7 @@ public class ClassificationPropagationTasks {
         }
     }
 
+    // TODO: Will be deprecated
     public static class DeleteOnlyPropagationsOnHardDelete extends ClassificationTask {
         public DeleteOnlyPropagationsOnHardDelete(AtlasTask task, AtlasGraph graph, EntityGraphMapper entityGraphMapper, DeleteHandlerDelegate deleteDelegate, AtlasRelationshipStore relationshipStore) {
             super(task, graph, entityGraphMapper, deleteDelegate, relationshipStore);

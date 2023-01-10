@@ -390,26 +390,24 @@ public final class GraphHelper {
     }
 
     public static boolean isClassificationAttached(AtlasVertex entityVertex, AtlasVertex classificationVertex) {
-        boolean ret = false;
         Iterator<AtlasVertex> vertices = entityVertex.query()
                 .direction(AtlasEdgeDirection.OUT)
                 .label(CLASSIFICATION_LABEL)
-                .has(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, getTypeName(classificationVertex)).vertices().iterator();
+                .has(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, getTypeName(classificationVertex))
+                .vertices().iterator();
 
         if (vertices != null) {
             while (vertices.hasNext()) {
                 AtlasVertex vertex = vertices.next();
                 if (vertex != null) {
                     if (vertex.getIdForDisplay().equals(classificationVertex.getIdForDisplay())) {
-                        ret = true;
-                        break;
+                        return true;
                     }
-
                 }
             }
         }
-        return ret;
 
+        return false;
     }
 
     public static AtlasEdge getPropagatedClassificationEdge(AtlasVertex entityVertex, String classificationName, String associatedEntityGuid) {
