@@ -1369,7 +1369,7 @@ public abstract class DeleteHandlerV1 {
             }
 
             Map<String, Object> taskParams = ClassificationTask.toParameters(currentClassificationVertex.getIdForDisplay());
-            AtlasTask task  =  taskManagement.createTask(CLASSIFICATION_REFRESH_PROPAGATION, currentUser, taskParams, currentClassificationId, referenceVertex.getIdForDisplay());
+            AtlasTask task  =  taskManagement.createTask(CLASSIFICATION_REFRESH_PROPAGATION, currentUser, taskParams, currentClassificationId, GraphHelper.getGuid(referenceVertex));
 
             RequestContext.get().queueTask(task);
         }

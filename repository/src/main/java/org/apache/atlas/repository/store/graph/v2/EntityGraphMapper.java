@@ -2876,14 +2876,14 @@ public class EntityGraphMapper {
     public List<String> processClassificationPropagationAddition(List<AtlasVertex> verticesToPropagate, AtlasVertex classificationVertex) throws AtlasBaseException{
         AtlasPerfMetrics.MetricRecorder classificationPropagationMetricRecorder = RequestContext.get().startMetricRecord("processClassificationPropagationAddition");
         List<String> propagatedEntitiesGuids = new ArrayList<>();
-        long impactedVerticesSize = verticesToPropagate.size();
+        int impactedVerticesSize = verticesToPropagate.size();
         int offset = 0;
         int toIndex;
         LOG.info(String.format("Total number of vertices to propagate: %d", impactedVerticesSize));
 
         try {
             do {
-                toIndex = ((offset + CHUNK_SIZE > impactedVerticesSize) ? (int) impactedVerticesSize : (offset + CHUNK_SIZE));
+                toIndex = ((offset + CHUNK_SIZE > impactedVerticesSize) ? impactedVerticesSize : (offset + CHUNK_SIZE));
                 List<AtlasVertex> chunkedVerticesToPropagate = verticesToPropagate.subList(offset, toIndex);
 
                 AtlasPerfMetrics.MetricRecorder metricRecorder  = RequestContext.get().startMetricRecord("lockObjectsAfterTraverse");
@@ -3572,7 +3572,7 @@ public class EntityGraphMapper {
         List<String> propagatedVerticesIdWithoutEdge = entityRetriever.getImpactedVerticesIds(sourceEntityVertex , classificationId,
                 CLASSIFICATION_PROPAGATION_EXCLUSION_MAP.get(propagationMode), verticesIdsToAddClassification);
 
-        LOG.info("To add classification with id {} to {} vertices for classificationId {}", classificationId, verticesIdsToAddClassification.size());
+        LOG.info("To add classification with id {} to {} vertices", classificationId, verticesIdsToAddClassification.size());
 
         List<String> verticesIdsToRemove = (List<String>)CollectionUtils.subtract(propagatedVerticesIds, propagatedVerticesIdWithoutEdge);
 
@@ -3700,8 +3700,6 @@ public class EntityGraphMapper {
 
         return deletedPropagationsGuid;
     }
-
-
 
     @GraphTransaction
     public void updateTagPropagations(String relationshipEdgeId, AtlasRelationship relationship) throws AtlasBaseException {
