@@ -717,14 +717,15 @@ public class EntityGraphRetriever {
     }
 
     private void traverseImpactedVerticesByLevel(final AtlasVertex entityVertexStart, final String relationshipGuidToExclude,
-                                          final String classificationId, final List<String> result, List<String> edgeLabelsToExclude, List<String> excludeClassificationAttachedVertices) {
-        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("traverseImpactedVerticesByLevel");
-        Set<String>                 visitedVerticesIds        = new HashSet<>();
-        Set<String>                 verticesAtCurrentLevel    = new HashSet<>();
-        Set<String>                 traversedVerticesIds      = new HashSet<>();
-        Set<String>                 verticesWithOutClassification = new HashSet<>();
-        RequestContext              requestContext            = RequestContext.get();
-        AtlasVertex                 classificationVertex      = graph.getVertex(classificationId);
+                                          final String classificationId, final List<String> result, List<String> edgeLabelsToExclude, List<String> verticesWithoutClassification) {
+        AtlasPerfMetrics.MetricRecorder metricRecorder                          = RequestContext.get().startMetricRecord("traverseImpactedVerticesByLevel");
+        Set<String>                 visitedVerticesIds                          = new HashSet<>();
+        Set<String>                 verticesAtCurrentLevel                      = new HashSet<>();
+        Set<String>                 traversedVerticesIds                        = new HashSet<>();
+        Set<String>                 verticesWithOutClassification               = new HashSet<>();
+        RequestContext              requestContext                              = RequestContext.get();
+        AtlasVertex                 classificationVertex                        = graph.getVertex(classificationId);
+        boolean                     storeVerticesWithoutClassification          = verticesWithoutClassification == null ? false : true;
 
         final ThreadFactory threadFactory = new ThreadFactoryBuilder()
                 .setNameFormat("Tasks-BFS-%d")
@@ -753,14 +754,18 @@ public class EntityGraphRetriever {
         try {
             while (!verticesAtCurrentLevel.isEmpty()) {
                 Set<String> verticesToVisitNextLevel = new HashSet<>();
-
                 List<CompletableFuture<Set<String>>> futures = verticesAtCurrentLevel.stream()
                         .map(t -> {
                             AtlasVertex entityVertex = graph.getVertex(t);
                             visitedVerticesIds.add(entityVertex.getIdForDisplay());
-                            if(!GraphHelper.isClassificationAttached(entityVertex, classificationVertex)) {
+                            // If we want to store vertices without classification attached
+                            // Check if vertices has classification attached or not using function isClassificationAttached
+                            AtlasPerfMetrics.MetricRecorder classificationCheckMetricRecorder  = requestContext.startMetricRecord("checkClassificationAttached");
+                            if(storeVerticesWithoutClassification && !GraphHelper.isClassificationAttached(entityVertex, classificationVertex)) {
                                 verticesWithOutClassification.add(entityVertex.getIdForDisplay());
                             }
+                            requestContext.endMetricRecord(classificationCheckMetricRecorder);
+
                             return CompletableFuture.supplyAsync(() -> getAdjacentVerticesIds(entityVertex, classificationId,
                                     relationshipGuidToExclude, edgeLabelsToExclude, visitedVerticesIds), executorService);
                         }).collect(Collectors.toList());
@@ -777,11 +782,11 @@ public class EntityGraphRetriever {
             executorService.shutdown();
         }
         result.addAll(traversedVerticesIds);
-        if(excludeClassificationAttachedVertices != null)
-            excludeClassificationAttachedVertices.addAll(verticesWithOutClassification);
+
+        if(storeVerticesWithoutClassification)
+            verticesWithoutClassification.addAll(verticesWithOutClassification);
 
         requestContext.endMetricRecord(metricRecorder);
-
     }
 
     private Set<String> getAdjacentVerticesIds(AtlasVertex entityVertex,final String classificationId, final String relationshipGuidToExclude
