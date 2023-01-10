@@ -3572,7 +3572,7 @@ public class EntityGraphMapper {
         List<String> propagatedVerticesIdWithoutEdge = entityRetriever.getImpactedVerticesIds(sourceEntityVertex , classificationId,
                 CLASSIFICATION_PROPAGATION_EXCLUSION_MAP.get(propagationMode), verticesIdsToAddClassification);
 
-        LOG.info("To add classification with id {} to {} vertices for classificationId {}", classificationId, verticesIdsToAddClassification.size());
+        LOG.info("To add classification with id {} to {} vertices", classificationId, verticesIdsToAddClassification.size());
 
         List<String> verticesIdsToRemove = (List<String>)CollectionUtils.subtract(propagatedVerticesIds, propagatedVerticesIdWithoutEdge);
 

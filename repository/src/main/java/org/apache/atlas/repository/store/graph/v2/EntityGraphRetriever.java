@@ -855,6 +855,7 @@ public class EntityGraphRetriever {
 
         return ret;
     }
+
     private boolean isOutVertex(AtlasVertex vertex, AtlasEdge edge) {
         return StringUtils.equals(vertex.getIdForDisplay(), edge.getOutVertex().getIdForDisplay());
     }
