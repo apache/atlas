@@ -760,11 +760,10 @@ public class EntityGraphRetriever {
                             visitedVerticesIds.add(entityVertex.getIdForDisplay());
                             // If we want to store vertices without classification attached
                             // Check if vertices has classification attached or not using function isClassificationAttached
-                            AtlasPerfMetrics.MetricRecorder classificationCheckMetricRecorder  = requestContext.startMetricRecord("checkClassificationAttached");
+
                             if(storeVerticesWithoutClassification && !GraphHelper.isClassificationAttached(entityVertex, classificationVertex)) {
                                 verticesWithOutClassification.add(entityVertex.getIdForDisplay());
                             }
-                            requestContext.endMetricRecord(classificationCheckMetricRecorder);
 
                             return CompletableFuture.supplyAsync(() -> getAdjacentVerticesIds(entityVertex, classificationId,
                                     relationshipGuidToExclude, edgeLabelsToExclude, visitedVerticesIds), executorService);
@@ -778,7 +777,7 @@ public class EntityGraphRetriever {
                 verticesAtCurrentLevel.clear();
                 verticesAtCurrentLevel.addAll(verticesToVisitNextLevel);
             }
-        }finally {
+        } finally {
             executorService.shutdown();
         }
         result.addAll(traversedVerticesIds);

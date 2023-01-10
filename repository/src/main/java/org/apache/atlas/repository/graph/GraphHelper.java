@@ -391,6 +391,7 @@ public final class GraphHelper {
     }
 
     public static boolean isClassificationAttached(AtlasVertex entityVertex, AtlasVertex classificationVertex) {
+        AtlasPerfMetrics.MetricRecorder isClassificationAttachedMetricRecorder  = RequestContext.get().startMetricRecord("isClassificationAttached");
         Iterator<AtlasVertex> vertices = entityVertex.query()
                 .direction(AtlasEdgeDirection.OUT)
                 .label(CLASSIFICATION_LABEL)
@@ -407,6 +408,8 @@ public final class GraphHelper {
                 }
             }
         }
+
+        RequestContext.get().endMetricRecord(isClassificationAttachedMetricRecorder);
 
         return false;
     }
