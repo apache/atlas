@@ -1,13 +1,9 @@
-name: Build and Push Atlas Metastore docker image to ECR
+name: Build and Push Atlas Metastore docker image to ECR(deprecated as of Jan 11, 2023)
 
 on:
   push:
     branches:
-      - alpha
-      - beta
-      - development
-      - master
-      - lineageondemand
+      - xoxo/deprecating-ecr/xoxo
 
 permissions:
   id-token: write
