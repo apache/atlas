@@ -23,6 +23,9 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.tasks.TaskSearchParams;
 import org.apache.atlas.model.tasks.TaskSearchResult;
 
+import java.util.List;
+import java.util.Map;
+
 public interface TaskService {
 
     /**
@@ -33,6 +36,18 @@ public interface TaskService {
      */
     TaskSearchResult getTasks(TaskSearchParams searchParams) throws AtlasBaseException;
 
+    /**
+     *
+     * @param from
+     * @param size
+     * @param mustConditions
+     * @param shouldConditions
+     * @param mustNotConditions
+     * @return
+     * @throws AtlasBaseException
+     */
+    TaskSearchResult getTasksByCondition(int from, int size, List<Map<String,Object>> mustConditions, List<Map<String,Object>> shouldConditions,
+                                         List<Map<String,Object>> mustNotConditions) throws AtlasBaseException;
     /**
      * Retry the task by changing its status to PENDING and increment attempt count
      * @param taskGuid Guid of the task

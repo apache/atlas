@@ -41,7 +41,7 @@ public class TaskRegistryTest {
 
     @Test
     public void basic() throws AtlasException, AtlasBaseException {
-        AtlasTask task = new AtlasTask("abcd", "test", Collections.singletonMap("p1", "p1"));
+        AtlasTask task = new AtlasTask("abcd", "test", Collections.singletonMap("p1", "p1"), "testParam", "testRefId");
         Assert.assertNull(registry.getById(task.getGuid()));
 
         AtlasTask taskFromVertex = registry.save(task);
@@ -80,7 +80,7 @@ public class TaskRegistryTest {
         final String TASK_TYPE_FORMAT = "abcd:%d";
 
         for (int i = 0; i < MAX_TASKS; i++) {
-            AtlasTask task = new AtlasTask(String.format(TASK_TYPE_FORMAT, i), "test", Collections.singletonMap("p1", "p1"));
+            AtlasTask task = new AtlasTask(String.format(TASK_TYPE_FORMAT, i), "test", Collections.singletonMap("p1", "p1"), "testParam", "testRefId");
             registry.save(task);
         }
 

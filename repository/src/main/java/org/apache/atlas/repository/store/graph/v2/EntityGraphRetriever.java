@@ -581,7 +581,7 @@ public class EntityGraphRetriever {
     }
     public List<AtlasVertex> getIncludedImpactedVerticesV2(AtlasVertex entityVertex, String relationshipGuidToExclude, String classificationId, List<String> edgeLabelsToExclude) {
         List<String> vertexIds = new ArrayList<>();
-        traverseImpactedVerticesByLevel(entityVertex, relationshipGuidToExclude, classificationId, vertexIds, edgeLabelsToExclude);
+        traverseImpactedVerticesByLevel(entityVertex, relationshipGuidToExclude, classificationId, vertexIds, edgeLabelsToExclude, null);
 
         List<AtlasVertex> ret = vertexIds.stream().map(x -> graph.getVertex(x))
                 .filter(vertex -> vertex != null)
@@ -611,10 +611,20 @@ public class EntityGraphRetriever {
     public List<String> getImpactedVerticesIds(AtlasVertex entityVertex, String relationshipGuidToExclude, String classificationId, List<String> edgeLabelsToExclude) {
         List<String> ret = new ArrayList<>();
 
-        traverseImpactedVerticesByLevel(entityVertex, relationshipGuidToExclude, classificationId, ret, edgeLabelsToExclude);
+        traverseImpactedVerticesByLevel(entityVertex, relationshipGuidToExclude, classificationId, ret, edgeLabelsToExclude, null);
 
         return ret;
     }
+
+    public List<String> getImpactedVerticesIds(AtlasVertex entityVertex, String classificationId, List<String> edgeLabelsToExclude, List<String> verticesWithoutClassification) {
+        List<String> ret = new ArrayList<>();
+
+        traverseImpactedVerticesByLevel(entityVertex, null, classificationId, ret, edgeLabelsToExclude, verticesWithoutClassification);
+
+        return ret;
+    }
+
+
 
     private void traverseImpactedVertices(final AtlasVertex entityVertexStart, final String relationshipGuidToExclude,
                                           final String classificationId, final List<AtlasVertex> result, List<String> edgeLabelsToExclude) {
@@ -707,12 +717,15 @@ public class EntityGraphRetriever {
     }
 
     private void traverseImpactedVerticesByLevel(final AtlasVertex entityVertexStart, final String relationshipGuidToExclude,
-                                          final String classificationId, final List<String> result, List<String> edgeLabelsToExclude) {
-        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("traverseImpactedVerticesByLevel");
-        Set<String>                 visitedVerticesIds        = new HashSet<>();
-        Set<String>                 verticesAtCurrentLevel    = new HashSet<>();
-        Set<String>                 traversedVerticesIds      = new HashSet<>();
-        RequestContext              requestContext            = RequestContext.get();
+                                          final String classificationId, final List<String> result, List<String> edgeLabelsToExclude, List<String> verticesWithoutClassification) {
+        AtlasPerfMetrics.MetricRecorder metricRecorder                          = RequestContext.get().startMetricRecord("traverseImpactedVerticesByLevel");
+        Set<String>                 visitedVerticesIds                          = new HashSet<>();
+        Set<String>                 verticesAtCurrentLevel                      = new HashSet<>();
+        Set<String>                 traversedVerticesIds                        = new HashSet<>();
+        Set<String>                 verticesWithOutClassification               = new HashSet<>();
+        RequestContext              requestContext                              = RequestContext.get();
+        AtlasVertex                 classificationVertex                        = graph.getVertex(classificationId);
+        boolean                     storeVerticesWithoutClassification          = verticesWithoutClassification == null ? false : true;
 
         final ThreadFactory threadFactory = new ThreadFactoryBuilder()
                 .setNameFormat("Tasks-BFS-%d")
@@ -741,11 +754,17 @@ public class EntityGraphRetriever {
         try {
             while (!verticesAtCurrentLevel.isEmpty()) {
                 Set<String> verticesToVisitNextLevel = new HashSet<>();
-
                 List<CompletableFuture<Set<String>>> futures = verticesAtCurrentLevel.stream()
                         .map(t -> {
                             AtlasVertex entityVertex = graph.getVertex(t);
                             visitedVerticesIds.add(entityVertex.getIdForDisplay());
+                            // If we want to store vertices without classification attached
+                            // Check if vertices has classification attached or not using function isClassificationAttached
+
+                            if(storeVerticesWithoutClassification && !GraphHelper.isClassificationAttached(entityVertex, classificationVertex)) {
+                                verticesWithOutClassification.add(entityVertex.getIdForDisplay());
+                            }
+
                             return CompletableFuture.supplyAsync(() -> getAdjacentVerticesIds(entityVertex, classificationId,
                                     relationshipGuidToExclude, edgeLabelsToExclude, visitedVerticesIds), executorService);
                         }).collect(Collectors.toList());
@@ -758,13 +777,15 @@ public class EntityGraphRetriever {
                 verticesAtCurrentLevel.clear();
                 verticesAtCurrentLevel.addAll(verticesToVisitNextLevel);
             }
-        }finally {
+        } finally {
             executorService.shutdown();
         }
-
         result.addAll(traversedVerticesIds);
-        requestContext.endMetricRecord(metricRecorder);
 
+        if(storeVerticesWithoutClassification)
+            verticesWithoutClassification.addAll(verticesWithOutClassification);
+
+        requestContext.endMetricRecord(metricRecorder);
     }
 
     private Set<String> getAdjacentVerticesIds(AtlasVertex entityVertex,final String classificationId, final String relationshipGuidToExclude
@@ -833,6 +854,7 @@ public class EntityGraphRetriever {
 
         return ret;
     }
+
     private boolean isOutVertex(AtlasVertex vertex, AtlasEdge edge) {
         return StringUtils.equals(vertex.getIdForDisplay(), edge.getOutVertex().getIdForDisplay());
     }

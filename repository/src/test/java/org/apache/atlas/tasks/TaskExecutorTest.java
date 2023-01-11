@@ -68,7 +68,7 @@ public class TaskExecutorTest extends BaseTaskFixture {
         TaskManagement.Statistics statistics = new TaskManagement.Statistics();
         TaskExecutor taskExecutor = new TaskExecutor(taskRegistry, taskFactoryMap, statistics, null,defaultZkRoot,false);
 
-        taskManagement.createTask(SPYING_TASK_ADD, "test", Collections.emptyMap());
+        taskManagement.createTask(SPYING_TASK_ADD, "test", Collections.emptyMap(), "testId", "testGuid");
 
         Thread.sleep(pollingInterval + 5000);
         Assert.assertEquals(statistics.getTotal(), 0);
@@ -81,8 +81,8 @@ public class TaskExecutorTest extends BaseTaskFixture {
         Map<String, TaskFactory> taskFactoryMap = new HashMap<>();
         TaskManagement.createTaskTypeFactoryMap(taskFactoryMap, spyingFactory);
 
-        AtlasTask addTask = taskManagement.createTask("add", "test", Collections.emptyMap());
-        AtlasTask errorThrowingTask = taskManagement.createTask("errorThrowingTask", "test", Collections.emptyMap());
+        AtlasTask addTask = taskManagement.createTask("add", "test", Collections.emptyMap(),"testId", "testGuid");
+        AtlasTask errorThrowingTask = taskManagement.createTask("errorThrowingTask", "test", Collections.emptyMap(),"testId", "testGuid");
 
         TaskManagement.Statistics statistics = new TaskManagement.Statistics();
         graph.commit();
@@ -111,7 +111,7 @@ public class TaskExecutorTest extends BaseTaskFixture {
         Assert.assertEquals(errorTaskFromDB.getStatus(), AtlasTask.Status.PENDING);
 
         for (int i = errorTaskFromDB.getAttemptCount(); i <= AtlasTask.MAX_ATTEMPT_COUNT; i++) {
-            taskManagement.createTask(errorThrowingTask.getType(), errorThrowingTask.getCreatedBy(), errorThrowingTask.getParameters());
+            taskManagement.createTask(errorThrowingTask.getType(), errorThrowingTask.getCreatedBy(), errorThrowingTask.getParameters(), "testId", "testGuid");
         }
 
         Thread.sleep(pollingInterval + 5000);

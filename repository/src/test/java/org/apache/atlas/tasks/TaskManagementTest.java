@@ -82,12 +82,12 @@ public class TaskManagementTest extends BaseTaskFixture {
         for (int i = 0; i < MAX_THREADS; i++) {
             threads[i] = new Thread(() -> {
                 try {
-                    AtlasTask spyAdd = taskManagement.createTask(SPYING_TASK_ADD, "test", Collections.emptyMap());
-                    AtlasTask spyErr = taskManagement.createTask(SPYING_TASK_ERROR_THROWING, "test", Collections.emptyMap());
+                    AtlasTask spyAdd = taskManagement.createTask(SPYING_TASK_ADD, "test", Collections.emptyMap(), "testId", "testGuid");
+                    AtlasTask spyErr = taskManagement.createTask(SPYING_TASK_ERROR_THROWING, "test", Collections.emptyMap(), "testId", "testGuid");
 
                     Thread.sleep(10000);
                     for (int j = 0; j <= AtlasTask.MAX_ATTEMPT_COUNT; j++) {
-                        taskManagement.createTask(SPYING_TASK_ERROR_THROWING, "test", Collections.emptyMap());
+                        taskManagement.createTask(SPYING_TASK_ERROR_THROWING, "test", Collections.emptyMap(), "testId", "testGuid");
                     }
                 } catch (InterruptedException e) {
                     e.printStackTrace();
