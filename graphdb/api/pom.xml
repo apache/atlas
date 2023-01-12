@@ -54,7 +54,7 @@
         <dependency>
             <groupId>org.elasticsearch</groupId>
             <artifactId>elasticsearch</artifactId>
-            <version>7.6.2</version>
+            <version>7.14.0</version>
             <scope>compile</scope>
         </dependency>
     </dependencies>
