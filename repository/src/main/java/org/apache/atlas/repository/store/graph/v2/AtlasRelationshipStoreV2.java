@@ -237,6 +237,8 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
             }
         }
 
+        sendNotifications(ret, OperationType.RELATIONSHIP_CREATE);
+
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== createOrUpdate({}): {}", relationships, ret);
         }
