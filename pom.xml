@@ -757,6 +757,7 @@
         <skipSite>true</skipSite>
         <skipTests>false</skipTests>
         <skipUTs>false</skipUTs>
+        <skipOverlay>false</skipOverlay>
         <slf4j.version>1.7.30</slf4j.version>
         <solr-test-framework.version>8.6.3</solr-test-framework.version>
         <solr.version>8.6.3</solr.version>
