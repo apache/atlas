@@ -35,7 +35,7 @@ public enum AtlasConfiguration {
     QUERY_PARAM_MAX_LENGTH("atlas.query.param.max.length", 4*1024),
 
     REST_API_ENABLE_DELETE_TYPE_OVERRIDE("atlas.rest.enable.delete.type.override", false),
-    NOTIFICATION_RELATIONSHIPS_ENABLED("atlas.notification.relationships.enabled", false),
+    NOTIFICATION_RELATIONSHIPS_ENABLED("atlas.notification.relationships.enabled", true),
 
     NOTIFICATION_HOOK_TOPIC_NAME("atlas.notification.hook.topic.name", "ATLAS_HOOK"),
     NOTIFICATION_ENTITIES_TOPIC_NAME("atlas.notification.entities.topic.name", "ATLAS_ENTITIES"),
