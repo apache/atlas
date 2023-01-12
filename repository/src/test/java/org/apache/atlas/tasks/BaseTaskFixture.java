@@ -111,6 +111,6 @@ public class BaseTaskFixture {
     }
 
     protected AtlasTask createTask(TaskManagement taskManagement, String type) {
-        return taskManagement.createTask(type, "testUser", Collections.singletonMap("params", "params"));
+        return taskManagement.createTask(type, "testUser", Collections.singletonMap("params", "params"),"classificationId", "id-ref");
     }
 }

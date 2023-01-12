@@ -141,20 +141,19 @@ public class EntityLineageService implements AtlasLineageService {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, entity.getTypeName());
         }
 
-        boolean isDataSet = entityType.getTypeAndAllSuperTypes().contains(DATA_SET_SUPER_TYPE);
-
-        if (!isDataSet) {
-            boolean isProcess = entityType.getTypeAndAllSuperTypes().contains(PROCESS_SUPER_TYPE);
-
-            if (!isProcess) {
-                throw new AtlasBaseException(AtlasErrorCode.INVALID_LINEAGE_ENTITY_TYPE, guid, entity.getTypeName());
-            } else if (lineageRequest.isHideProcess()) {
+        boolean isProcess = entityType.getTypeAndAllSuperTypes().contains(PROCESS_SUPER_TYPE);
+        if (isProcess) {
+            if (lineageRequest.isHideProcess()) {
                 throw new AtlasBaseException(AtlasErrorCode.INVALID_LINEAGE_ENTITY_TYPE_HIDE_PROCESS, guid, entity.getTypeName());
             }
-            lineageRequestContext.setProcess(isProcess);
+            lineageRequestContext.setProcess(true);
+        }else {
+            boolean isDataSet = entityType.getTypeAndAllSuperTypes().contains(DATA_SET_SUPER_TYPE);
+            if (!isDataSet) {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_LINEAGE_ENTITY_TYPE, guid, entity.getTypeName());
+            }
+            lineageRequestContext.setDataset(true);
         }
-        lineageRequestContext.setDataset(isDataSet);
-
 
         if (LINEAGE_USING_GREMLIN) {
             ret = getLineageInfoV1(lineageRequestContext);
