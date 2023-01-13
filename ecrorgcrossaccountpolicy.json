@@ -1,4 +1,5 @@
 {
+    "__comment": "Policy is currently not in use by main-ecr.yaml, deprecated as of Jan 11, 2023",
     "Version": "2012-10-17",
     "Statement": [
       {
