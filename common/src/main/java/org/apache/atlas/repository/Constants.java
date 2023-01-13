@@ -25,6 +25,7 @@ import org.apache.commons.configuration.Configuration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.encodePropertyKey;
 
@@ -45,6 +46,7 @@ public final class Constants {
     public static final String HISTORICAL_GUID_PROPERTY_KEY     = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "historicalGuids");
     public static final String FREETEXT_REQUEST_HANDLER         = "/freetext";
     public static final String TERMS_REQUEST_HANDLER            = "/terms";
+    public static final String ES_API_ALIASES                   = "/_aliases";
 
     /**
      * Entity type name property key.
@@ -130,6 +132,24 @@ public final class Constants {
     public static final String QUERY_FOLDER_ENTITY_TYPE     = "QueryFolder";
     public static final String QUERY_COLLECTION_ENTITY_TYPE = "QueryCollection";
 
+    /*
+     * Purpose / Persona
+     */
+    public static final String ACCESS_CONTROL_ENTITY_TYPE = "AccessControl";
+    public static final String PERSONA_ENTITY_TYPE = "Persona";
+    public static final String PURPOSE_ENTITY_TYPE = "Purpose";
+    public static final String POLICY_ENTITY_TYPE  = "Policy";
+
+    public static final List<String> ACCESS_CONTROL_ENTITY_TYPES  = Arrays.asList(PERSONA_ENTITY_TYPE, PURPOSE_ENTITY_TYPE, POLICY_ENTITY_TYPE, ACCESS_CONTROL_ENTITY_TYPE);
+
+    public static final String ACCESS_CONTROL_RELATION_TYPE  = "access_control_policy_parent_children";
+
+    public static final String POLICY_TYPE_METADATA = "metadata";
+    public static final String POLICY_TYPE_GLOSSARY = "glossary";
+    public static final String POLICY_TYPE_DATA     = "data";
+
+    public static final String POLICY_CATEGORY_PERSONA = "persona";
+    public static final String POLICY_CATEGORY_PURPOSE = "purpose";
 
     /**
      * Lineage relations.
@@ -195,6 +215,8 @@ public final class Constants {
      * elasticsearch index prefix.
      */
     public static final String INDEX_PREFIX = "janusgraph_";
+
+    public static final String VERTEX_INDEX_NAME = INDEX_PREFIX + VERTEX_INDEX;
 
     public static final String NAME                                    = "name";
     public static final String QUALIFIED_NAME                          = "qualifiedName";

@@ -19,6 +19,7 @@ package org.apache.atlas.repository.graphdb.janus;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.discovery.SearchParams;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -85,9 +86,8 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         searchResponse = null;
     }
 
-    public AtlasElasticsearchQuery(String index, RestClient restClient) {
-        this.lowLevelRestClient = restClient;
-        this.index = index;
+    public AtlasElasticsearchQuery(AtlasJanusGraph graph, String index, RestClient restClient) {
+        this(graph, restClient, index, null);
     }
 
     private SearchRequest getSearchRequest(String index, SearchSourceBuilder sourceBuilder) {

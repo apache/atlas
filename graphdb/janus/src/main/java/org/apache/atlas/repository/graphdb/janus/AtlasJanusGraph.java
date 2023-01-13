@@ -24,6 +24,7 @@ import com.google.common.collect.Maps;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.ESAliasRequestBuilder;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.groovy.GroovyExpression;
 import org.apache.atlas.model.discovery.SearchParams;
@@ -45,6 +46,9 @@ import org.apache.atlas.repository.graphdb.janus.query.AtlasJanusGraphQuery;
 import org.apache.atlas.repository.graphdb.utils.IteratorToIterableAdapter;
 import org.apache.atlas.type.AtlasType;
 import org.apache.commons.configuration.Configuration;
+import org.apache.http.HttpEntity;
+import org.apache.http.entity.ContentType;
+import org.apache.http.nio.entity.NStringEntity;
 import org.apache.tinkerpop.gremlin.groovy.jsr223.GremlinGroovyScriptEngine;
 import org.apache.tinkerpop.gremlin.jsr223.DefaultImportCustomizer;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -58,6 +62,9 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.io.IoCore;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONMapper;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONWriter;
+import org.codehaus.jettison.json.JSONException;
+import org.elasticsearch.client.Request;
+import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -87,7 +94,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.apache.atlas.AtlasErrorCode.INDEX_SEARCH_FAILED;
 import static org.apache.atlas.AtlasErrorCode.RELATIONSHIP_CREATE_INVALID_PARAMS;
+import static org.apache.atlas.ESAliasRequestBuilder.ESAliasAction.REMOVE;
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchDatabase.getClient;
 import static org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchDatabase.getLowLevelClient;
@@ -307,19 +316,68 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
         return new AtlasElasticsearchQuery(this, elasticsearchClient, INDEX_PREFIX + indexName, sourceBuilder);
     }
 
-    public AtlasIndexQuery<AtlasJanusVertex, AtlasJanusEdge> elasticsearchQuery(String indexName, SearchParams searchParams) {
+    public AtlasIndexQuery<AtlasJanusVertex, AtlasJanusEdge> elasticsearchQuery(String indexName, SearchParams searchParams)throws AtlasBaseException {
         if (restClient == null) {
             LOG.error("restClient is not initiated, failed to run query on ES");
+            throw new AtlasBaseException(INDEX_SEARCH_FAILED, "restClient is not initiated");
         }
         return new AtlasElasticsearchQuery(this, restClient, INDEX_PREFIX + indexName, searchParams);
     }
 
     @Override
-    public AtlasElasticsearchQuery elasticsearchQuery(String indexName) {
+    public AtlasElasticsearchQuery elasticsearchQuery(String indexName) throws AtlasBaseException {
         if (restClient == null) {
             LOG.error("restClient is not initiated, failed to run query on ES");
+            throw new AtlasBaseException(INDEX_SEARCH_FAILED, "restClient is not initiated");
         }
-        return new AtlasElasticsearchQuery(indexName, restClient);
+        return new AtlasElasticsearchQuery(this, indexName, restClient);
+    }
+
+    @Override
+    public void createOrUpdateESAlias(ESAliasRequestBuilder builder) throws AtlasBaseException {
+        String aliasRequest = builder.build();
+
+        HttpEntity entity = new NStringEntity(aliasRequest, ContentType.APPLICATION_JSON);
+        Request request = new Request("POST", ES_API_ALIASES);
+        request.setEntity(entity);
+
+        Response response = null;
+        try {
+            response = restClient.performRequest(request);
+        } catch (IOException e) {
+            LOG.error("Failed to execute direct query on ES {}", e.getMessage());
+            throw new AtlasBaseException(AtlasErrorCode.INDEX_ALIAS_FAILED, "creating/updating", e.getMessage());
+        }
+
+        int statusCode = response.getStatusLine().getStatusCode();;
+        if (statusCode != 200) {
+            throw new AtlasBaseException(AtlasErrorCode.INDEX_ALIAS_FAILED, "creating/updating", "Status code " + statusCode);
+        }
+    }
+
+    @Override
+    public void deleteESAlias(String indexName, String aliasName) throws AtlasBaseException {
+        ESAliasRequestBuilder builder = new ESAliasRequestBuilder();
+        builder.addAction(REMOVE, new ESAliasRequestBuilder.AliasAction(indexName, aliasName));
+
+        String aliasRequest = builder.build();
+        HttpEntity entity = new NStringEntity(aliasRequest, ContentType.APPLICATION_JSON);
+
+        Request request = new Request("POST", ES_API_ALIASES);
+        request.setEntity(entity);
+
+        Response response = null;
+        try {
+            response = restClient.performRequest(request);
+        } catch (IOException e) {
+            LOG.error("Failed to execute direct query on ES {}", e.getMessage());
+            throw new AtlasBaseException(AtlasErrorCode.INDEX_ALIAS_FAILED, "deleting", e.getMessage());
+        }
+
+        int statusCode = response.getStatusLine().getStatusCode();;
+        if (statusCode != 200) {
+            throw new AtlasBaseException(AtlasErrorCode.INDEX_ALIAS_FAILED, "deleting", "Status code " + statusCode);
+        }
     }
 
     @Override

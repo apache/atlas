@@ -18,6 +18,8 @@ public class IndexSearchParams extends SearchParams {
     private static final Pattern pattern = Pattern.compile("(?<=\").+?(?=\")");
 
     private Map dsl;
+    private String purpose;
+    private String persona;
     private String queryString;
 
     /*
@@ -55,6 +57,19 @@ public class IndexSearchParams extends SearchParams {
         this.relationAttributes = relationAttributes;
     }
 
+    public String getPurpose() {
+        return purpose;
+    }
+    public void setPurpose(String purpose) {
+        this.purpose = purpose;
+    }
+    public String getPersona() {
+        return persona;
+    }
+    public void setPersona(String persona) {
+        this.persona = persona;
+    }
+
     @Override
     public String toString() {
         return "IndexSearchParams{" +
@@ -62,6 +77,8 @@ public class IndexSearchParams extends SearchParams {
                 ", queryString='" + queryString + '\'' +
                 ", attributes=" + attributes +
                 ", relationAttributes=" + relationAttributes +
+                ", purpose=" + purpose +
+                ", persona=" + persona +
                 '}';
     }
 }

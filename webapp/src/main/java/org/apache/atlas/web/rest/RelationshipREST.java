@@ -40,6 +40,8 @@ import javax.ws.rs.core.MediaType;
 import java.util.Collections;
 import java.util.List;
 
+import static org.apache.atlas.accesscontrol.AccessControlUtil.ensureNonAccessControlRelType;
+
 /**
  * REST interface for entity relationships.
  */
@@ -73,6 +75,8 @@ public class RelationshipREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "RelationshipREST.create(" + relationship + ")");
             }
 
+            ensureNonAccessControlRelType(relationship.getTypeName());
+
             AtlasRelationship atlasRelationship = relationshipStore.create(relationship);
             atlasRelationshipsService.createRelationships(Collections.singletonList(atlasRelationship), RequestContext.get().getRelationshipEndsToVertexIdMap());
             return atlasRelationship;
@@ -93,6 +97,11 @@ public class RelationshipREST {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "RelationshipREST.createOrUpdate(" + relationships + ")");
             }
+
+            for (AtlasRelationship relationship : relationships) {
+                ensureNonAccessControlRelType(relationship.getTypeName());
+            }
+
             List<AtlasRelationship> atlasRelationships = relationshipStore.createOrUpdate(relationships);
             atlasRelationshipsService.createRelationships(RequestContext.get().getCreatedRelationships(), RequestContext.get().getRelationshipEndsToVertexIdMap());
             return atlasRelationships;
@@ -113,6 +122,8 @@ public class RelationshipREST {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "RelationshipREST.update(" + relationship + ")");
             }
+
+            ensureNonAccessControlRelType(relationship.getTypeName());
 
             return relationshipStore.update(relationship);
 
