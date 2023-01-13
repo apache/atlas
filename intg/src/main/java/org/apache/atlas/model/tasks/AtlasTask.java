@@ -84,19 +84,24 @@ public class AtlasTask {
     private int                 attemptCount;
     private String              errorMessage;
     private Status              status;
+    private String              classificationId;
+    private String              entityGuid;
 
     public AtlasTask() {
     }
 
-    public AtlasTask(String type, String createdBy, Map<String, Object> parameters) {
-        this.guid         = UUID.randomUUID().toString();
-        this.type         = type;
-        this.createdBy    = createdBy;
-        this.createdTime  = new Date();
-        this.updatedTime  = this.createdTime;
-        this.parameters   = parameters;
-        this.status       = Status.PENDING;
-        this.attemptCount = 0;
+    public AtlasTask(String type, String createdBy, Map<String, Object> parameters, String classificationId,
+                     String entityGuid) {
+        this.guid               = UUID.randomUUID().toString();
+        this.type               = type;
+        this.createdBy          = createdBy;
+        this.createdTime        = new Date();
+        this.updatedTime        = this.createdTime;
+        this.parameters         = parameters;
+        this.status             = Status.PENDING;
+        this.attemptCount       = 0;
+        this.classificationId   = classificationId;
+        this.entityGuid           = entityGuid;
     }
 
     public String getGuid() {
@@ -207,6 +212,22 @@ public class AtlasTask {
 
     public void setTimeTakenInSeconds(Long timeTakenInSeconds) {
         this.timeTakenInSeconds = timeTakenInSeconds;
+    }
+
+    public void setClassificationId(String classificationId) {
+        this.classificationId = classificationId;
+    }
+
+    public String getClassificationId() {
+        return classificationId;
+    }
+
+    public void setEntityGuid(String entityGuid) {
+        this.entityGuid = entityGuid;
+    }
+
+    public String getEntityGuid() {
+        return entityGuid;
     }
 
     @JsonIgnore

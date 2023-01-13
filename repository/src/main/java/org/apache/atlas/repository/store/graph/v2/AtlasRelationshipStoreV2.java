@@ -315,10 +315,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
             Set<String> deletedEdgeIds = RequestContext.get().getDeletedEdgesIds();
             for (String deletedEdgeId : deletedEdgeIds) {
                 AtlasEdge deletedEdge = graph.getEdge(deletedEdgeId);
-                deleteDelegate.getHandler().createClassificationOnlyPropagationDeleteTasksAndQueue(
-                        GraphHelper.getPropagatableClassifications(deletedEdge),
-                        deletedEdgeId
-                );
+                deleteDelegate.getHandler().createAndQueueClassificationRefreshPropagationTask(deletedEdge);
             }
         }
         RequestContext.get().addToDeletedRelationships(deletedRelationships);
@@ -368,10 +365,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
             Set<String> deletedEdgeIds = RequestContext.get().getDeletedEdgesIds();
             for (String deletedEdgeId : deletedEdgeIds) {
                 AtlasEdge deletedEdge = graph.getEdge(deletedEdgeId);
-                deleteDelegate.getHandler().createClassificationOnlyPropagationDeleteTasksAndQueue(
-                        GraphHelper.getPropagatableClassifications(deletedEdge),
-                        deletedEdgeId
-                );
+                deleteDelegate.getHandler().createAndQueueClassificationRefreshPropagationTask(deletedEdge);
             }
         }
         addAtlasObjectIdToVertexIdMappingForEndVertices(edge);

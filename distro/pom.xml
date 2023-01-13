@@ -128,7 +128,7 @@ atlas.graph.storage.hbase.regions-per-server=1
                                         <!-- <descriptor>src/main/assemblies/atlas-falcon-hook-package.xml</descriptor> -->
                                         <!-- <descriptor>src/main/assemblies/atlas-sqoop-hook-package.xml</descriptor> -->
                                         <!-- <descriptor>src/main/assemblies/atlas-storm-hook-package.xml</descriptor> -->
-                                        <descriptor>src/main/assemblies/atlas-kafka-hook-package.xml</descriptor>
+                                        <!-- <descriptor>src/main/assemblies/atlas-kafka-hook-package.xml</descriptor> -->
                                         <descriptor>src/main/assemblies/atlas-server-package.xml</descriptor>
                                         <descriptor>src/main/assemblies/standalone-package.xml</descriptor>
                                         <descriptor>src/main/assemblies/src-package.xml</descriptor>

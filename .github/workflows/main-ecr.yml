@@ -1,12 +1,9 @@
-name: Build and Push Atlas Metastore docker image to ECR
+name: Build and Push Atlas Metastore docker image to ECR(deprecated as of Jan 11, 2023)
 
 on:
   push:
     branches:
-      - alpha
-      - beta
-      - development
-      - master
+      - xoxo/deprecating-ecr/xoxo
 
 permissions:
   id-token: write
@@ -43,7 +40,16 @@ jobs:
         restore-keys: ${{ runner.os }}-m2
 
     - name: Build with Maven
-      run: chmod +x ./build.sh && ./build.sh
+      run: |
+        branch_name=${{ steps.get_branch.outputs.branch }} 
+        if [[ $branch_name == 'main' || $branch_name == 'master' || $branch_name == 'lineageondemand' ]]
+        then
+            echo "build without dashboard"
+            chmod +x ./build.sh && ./build.sh build_without_dashboard
+        else
+            echo "build with dashboard"
+            chmod +x ./build.sh && ./build.sh
+        fi
 
     - name: Get IAM Role and Region to login into ECR
       id: get_ecr-details

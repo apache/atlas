@@ -130,6 +130,12 @@
         <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-notification</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.yammer.metrics</groupId>
+                    <artifactId>metrics-core</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -572,10 +578,12 @@
                         <overlay>
                             <groupId>org.apache.atlas</groupId>
                             <artifactId>atlas-dashboardv2</artifactId>
+                            <skip>${skipOverlay}</skip>
                         </overlay>
                         <overlay>
                             <groupId>org.apache.atlas</groupId>
                             <artifactId>atlas-dashboardv3</artifactId>
+                            <skip>${skipOverlay}</skip>
                         </overlay>
                         <overlay>
                             <!-- empty groupId/artifactId represents the current build -->
