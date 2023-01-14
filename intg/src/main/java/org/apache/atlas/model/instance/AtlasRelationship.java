@@ -262,6 +262,10 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
         this.customRelationshipInfo = customRelationshipInfo;
     }
 
+    public Map<String, Object> getCustomRelationshipInfo() {
+        return customRelationshipInfo;
+    }
+
     public String getGuid() {
         return guid;
     }

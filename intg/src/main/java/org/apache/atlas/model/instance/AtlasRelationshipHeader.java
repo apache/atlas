@@ -31,6 +31,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
 import java.io.Serializable;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
@@ -51,6 +52,8 @@ public class AtlasRelationshipHeader extends AtlasStruct implements Serializable
     private String                                  label               = null;
     private AtlasObjectId                           end1                = null;
     private AtlasObjectId                           end2                = null;
+    private Map<String, Object> customRelationshipInfo;
+
 
     public AtlasRelationshipHeader() {
 
@@ -61,15 +64,16 @@ public class AtlasRelationshipHeader extends AtlasStruct implements Serializable
         setGuid(guid);
     }
 
-    public AtlasRelationshipHeader(String typeName, String guid, AtlasObjectId end1, AtlasObjectId end2, AtlasRelationshipDef.PropagateTags propagateTags) {
+    public AtlasRelationshipHeader(String typeName, String guid, AtlasObjectId end1, AtlasObjectId end2, AtlasRelationshipDef.PropagateTags propagateTags, Map<String, Object> customRelationshipInfo) {
         this(typeName, guid);
         this.propagateTags = propagateTags;
         setEnd1(end1);
         setEnd2(end2);
+        setCustomRelationshipInfo(customRelationshipInfo);
     }
 
     public AtlasRelationshipHeader(AtlasRelationship relationship) {
-        this(relationship.getTypeName(), relationship.getGuid(), relationship.getEnd1(), relationship.getEnd2(), relationship.getPropagateTags());
+        this(relationship.getTypeName(), relationship.getGuid(), relationship.getEnd1(), relationship.getEnd2(), relationship.getPropagateTags(), relationship.getCustomRelationshipInfo());
 
         setLabel(relationship.getLabel());
         switch (relationship.getStatus()) {
@@ -132,6 +136,14 @@ public class AtlasRelationshipHeader extends AtlasStruct implements Serializable
         this.end2 = end2;
     }
 
+    public Map<String, Object> getCustomRelationshipInfo() {
+        return customRelationshipInfo;
+    }
+
+    public void setCustomRelationshipInfo(Map<String, Object> customRelationshipInfo) {
+        this.customRelationshipInfo = customRelationshipInfo;
+    }
+
     public StringBuilder toString(StringBuilder sb) {
         if (sb == null) {
             sb = new StringBuilder();
@@ -144,6 +156,7 @@ public class AtlasRelationshipHeader extends AtlasStruct implements Serializable
         sb.append(", propagateTags=").append(propagateTags);
         sb.append(", end1=").append(end1);
         sb.append(", end2=").append(end2);
+        sb.append(", customRelationshipInfo=").append(customRelationshipInfo);
         super.toString(sb);
         sb.append('}');
 

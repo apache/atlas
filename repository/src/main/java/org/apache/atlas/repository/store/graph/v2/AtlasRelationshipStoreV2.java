@@ -126,7 +126,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
 
         AtlasRelationship ret = edge != null ? entityRetriever.mapEdgeToAtlasRelationship(edge) : null;
 
-        setEdgeVertexIdsInContext(relationship, end1Vertex, end2Vertex);
+        setEdgeVertexIdsInContext(ret, end1Vertex, end2Vertex);
         sendNotifications(ret, OperationType.RELATIONSHIP_CREATE);
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== create({}): {}", relationship, ret);
@@ -207,7 +207,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         }
 
         AtlasRelationship ret = updateRelationship(edge, relationship);
-        setEdgeVertexIdsInContext(relationship, end1Vertex, end2Vertex);
+        setEdgeVertexIdsInContext(ret, end1Vertex, end2Vertex);
         sendNotifications(ret, OperationType.RELATIONSHIP_UPDATE);
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== update({}): {}", relationship, ret);
@@ -417,10 +417,10 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
 
         if (relationshipEdge != null){
             ret = entityRetriever.mapEdgeToAtlasRelationship(relationshipEdge);
+            setEdgeVertexIdsInContext(ret, end1Vertex, end2Vertex);
         }
 
         if (isCreated) {
-            setEdgeVertexIdsInContext(relationship, end1Vertex, end2Vertex);
             sendNotifications(ret, OperationType.RELATIONSHIP_CREATE);
         }
 
@@ -506,7 +506,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         }
 
         AtlasRelationship atlasRelationship = entityRetriever.mapEdgeToAtlasRelationship(ret);
-        setEdgeVertexIdsInContext(relationship, end1Vertex, end2Vertex);
+        setEdgeVertexIdsInContext(atlasRelationship, end1Vertex, end2Vertex);
         sendNotifications(atlasRelationship, OperationType.RELATIONSHIP_CREATE);
         return ret;
     }
@@ -886,25 +886,26 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         return (attribute != null) ? attribute.getRelationshipEdgeLabel() : null;
     }
 
-    private void sendNotifications(AtlasRelationship ret, OperationType relationshipUpdate) throws AtlasBaseException {
-        sendNotifications(Collections.singletonList(ret), relationshipUpdate);
+    private void sendNotifications(AtlasRelationship ret, OperationType operationType) throws AtlasBaseException {
+        sendNotifications(Collections.singletonList(ret), operationType);
     }
 
     private void sendNotifications(List<AtlasRelationship> ret, OperationType relationshipUpdate) throws AtlasBaseException {
         entityChangeNotifier.notifyPropagatedEntities();
 
-        this.addInfoForAsyncESUpdates(ret);
+        this.addMetaDataForDownstreamSystems(ret);
 
         if (notificationsEnabled){
             entityChangeNotifier.notifyRelationshipMutation(ret, relationshipUpdate);
         }
     }
 
-    private void addInfoForAsyncESUpdates(List<AtlasRelationship> relationships) {
+    private void addMetaDataForDownstreamSystems(List<AtlasRelationship> relationships) {
         for (AtlasRelationship r : relationships) {
             final Map<String, Object> customInfoMap = new HashMap<>();
-            setRelationshipDef(r, customInfoMap);
+            setRelationshipDefMap(r, customInfoMap);
             setEsDocIdMap(r, customInfoMap);
+            r.setCustomRelationshipInfo(customInfoMap);
         }
     }
 
@@ -923,7 +924,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         return esDocIdMapping;
     }
 
-    private void setRelationshipDef(AtlasRelationship relationship, Map<String, Object> customInfoMap) {
+    private void setRelationshipDefMap(AtlasRelationship relationship, Map<String, Object> customInfoMap) {
         final Map<String, Object> relationshipDefMap = buildRelationshipDefMap(relationship);
         customInfoMap.put(RELATIONSHIP_DEF_MAP_KEY, relationshipDefMap);
     }
