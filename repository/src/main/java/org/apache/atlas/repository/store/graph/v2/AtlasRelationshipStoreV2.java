@@ -125,9 +125,6 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         AtlasEdge edge = createRelationship(end1Vertex, end2Vertex, relationship);
 
         AtlasRelationship ret = edge != null ? entityRetriever.mapEdgeToAtlasRelationship(edge) : null;
-
-        setEdgeVertexIdsInContext(ret, end1Vertex, end2Vertex);
-        sendNotifications(ret, OperationType.RELATIONSHIP_CREATE);
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== create({}): {}", relationship, ret);
         }
