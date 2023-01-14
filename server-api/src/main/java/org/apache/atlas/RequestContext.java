@@ -62,10 +62,6 @@ public class RequestContext {
     private final List<AtlasTask> queuedTasks = new ArrayList<>();
     private final Set<String> relationAttrsForSearch = new HashSet<>();
 
-    private final List<AtlasRelationship> createdRelationships = new ArrayList<>(0);
-    private final List<AtlasRelationship> updatedRelationships = new ArrayList<>(0);
-    private final List<AtlasRelationship> deletedRelationships = new ArrayList<>(0);
-
     private static String USERNAME = "";
     private final Map<String, List<Object>> removedElementsMap = new HashMap<>();
     private final Map<String, List<Object>> newElementsCreatedMap = new HashMap<>();
@@ -87,8 +83,7 @@ public class RequestContext {
     private String      currentTypePatchAction = "";
     private AtlasTask   currentTask;
     private String traceId;
-
-    private Map<AtlasObjectId, Object> relationshipEndsToVertexIdMap = new HashMap<>();
+    private final Map<AtlasObjectId, Object> relationshipEndToVertexIdMap = new HashMap<>();
 
     private RequestContext() {
     }
@@ -142,10 +137,8 @@ public class RequestContext {
         this.removedElementsMap.clear();
         this.deletedEdgesIds.clear();
         this.requestContextHeaders.clear();
+        this.relationshipEndToVertexIdMap.clear();
         this.currentTask = null;
-        this.createdRelationships.clear();
-        this.updatedRelationships.clear();
-        this.deletedRelationships.clear();
         setTraceId(null);
 
         if (metrics != null && !metrics.isEmpty()) {
@@ -617,38 +610,12 @@ public class RequestContext {
         this.forwardedAddresses = forwardedAddresses;
     }
 
-    public void addToCreatedRelationships(AtlasRelationship relationship) {
-        createdRelationships.add(relationship);
-    }
-    public void addToUpdatedRelationships(AtlasRelationship relationship) {
-        updatedRelationships.add(relationship);
-    }
-    public void addToDeletedRelationships(AtlasRelationship relationship) {
-        deletedRelationships.add(relationship);
-    }
-
-    public void addToDeletedRelationships(List<AtlasRelationship> relationships) {
-        deletedRelationships.addAll(relationships);
-    }
-
-    public List<AtlasRelationship> getCreatedRelationships() {
-        return new ArrayList<>(createdRelationships);
-    }
-
-    public List<AtlasRelationship> getUpdatedRelationships() {
-        return new ArrayList<>(updatedRelationships);
-    }
-
-    public List<AtlasRelationship> getDeletedRelationships() {
-        return new ArrayList<>(deletedRelationships);
-    }
-
     public void addRelationshipEndToVertexIdMapping(AtlasObjectId atlasObjectId, Object vertexId) {
-        this.relationshipEndsToVertexIdMap.put(atlasObjectId, vertexId);
+        this.relationshipEndToVertexIdMap.put(atlasObjectId, vertexId);
     }
 
-    public Map<AtlasObjectId, Object> getRelationshipEndsToVertexIdMap() {
-        return this.relationshipEndsToVertexIdMap;
+    public Map<AtlasObjectId, Object> getRelationshipEndToVertexIdMap() {
+        return this.relationshipEndToVertexIdMap;
     }
 
 }
