@@ -66,6 +66,8 @@ public class RequestContext {
     private final Map<String, List<Object>> removedElementsMap = new HashMap<>();
     private final Map<String, List<Object>> newElementsCreatedMap = new HashMap<>();
 
+    private final Map<DeleteType, List<AtlasRelationship>> deletedRelationshipsMap = new HashMap<>();
+
     private String user;
     private Set<String> userGroups;
     private String clientIPAddress;
@@ -138,6 +140,7 @@ public class RequestContext {
         this.deletedEdgesIds.clear();
         this.requestContextHeaders.clear();
         this.relationshipEndToVertexIdMap.clear();
+        this.deletedRelationshipsMap.clear();
         this.currentTask = null;
         setTraceId(null);
 
@@ -618,4 +621,13 @@ public class RequestContext {
         return this.relationshipEndToVertexIdMap;
     }
 
+    public void addGuidToDeletedRelationships(DeleteType operation, AtlasRelationship relationship) {
+        List<AtlasRelationship> deletedRelationships = this.deletedRelationshipsMap.getOrDefault(operation, new ArrayList<>());
+        deletedRelationships.add(relationship);
+        this.deletedRelationshipsMap.put(operation, deletedRelationships);
+    }
+
+    public Map<DeleteType, List<AtlasRelationship>> getDeletedRelationshipsMap() {
+        return deletedRelationshipsMap;
+    }
 }
