@@ -42,7 +42,7 @@ jobs:
     - name: Build with Maven
       run: |
         branch_name=${{ steps.get_branch.outputs.branch }} 
-        if [[ $branch_name == 'main' || $branch_name == 'master' || $branch_name == 'lineageondemand' ]]
+        if [[ $branch_name == 'main' || $branch_name == 'master' ]]
         then
             echo "build without dashboard"
             chmod +x ./build.sh && ./build.sh build_without_dashboard
@@ -55,7 +55,7 @@ jobs:
       id: get_ecr-details
       run: |
         branch_name=${{ steps.get_branch.outputs.branch }} 
-        if [[ $branch_name == 'main' || $branch_name == 'staging' || $branch_name == 'master' || $branch_name == 'lineageondemand' ]]
+        if [[ $branch_name == 'main' || $branch_name == 'staging' || $branch_name == 'master' ]]
             then
               iamRole=${{ secrets.AWS_PROD_PLATFORM_ECR_ACCESS }}
               region='us-east-1'
