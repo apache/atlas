@@ -900,23 +900,22 @@ public class EntityLineageService implements AtlasLineageService {
 
     private void processLastLevel(AtlasVertex currentVertex, boolean isInput, AtlasLineageInfo ret, AtlasLineageContext lineageContext) {
         List<AtlasEdge> processEdges = vertexEdgeCache.getEdges(currentVertex, IN, isInput ? PROCESS_OUTPUTS_EDGE : PROCESS_INPUTS_EDGE);
-        processEdges = CollectionUtils.isNotEmpty(lineageContext.getIgnoredProcesses()) ? eliminateIgnoredProcesses(processEdges, isInput, lineageContext, currentVertex) : processEdges;
-        ret.setHasChildrenForDirection(getGuid(currentVertex), new LineageChildrenInfo(isInput ? INPUT : OUTPUT, hasMoreChildren(processEdges)));
-    }
 
-    private List<AtlasEdge> eliminateIgnoredProcesses(List<AtlasEdge> processEdges, boolean isInput, AtlasLineageContext lineageContext, AtlasVertex currentVertex) {
-        List<AtlasEdge> edges = new ArrayList<>();
-        for (AtlasEdge processEdge : processEdges) {
-            AtlasVertex processVertex;
-            processVertex = processEdge.getOutVertex();
-            if (processVertex != null) {
-                if (!childHasOnlySelfCycle(processVertex, currentVertex, isInput) &&
-                        !lineageContext.getIgnoredProcesses().contains(processVertex.getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY, String.class))) {
-                    edges.add(processEdge);
-                }
-            }
-        }
-        return edges;
+        // Filter lineages based on ignored process types
+        processEdges = CollectionUtils.isNotEmpty(lineageContext.getIgnoredProcesses()) ?
+                processEdges.stream()
+                        .filter(processEdge -> processEdge.getOutVertex() != null)
+                        .filter(processEdge -> !lineageContext.getIgnoredProcesses().contains(processEdge.getOutVertex().getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY, String.class)))
+                        .collect(Collectors.toList())
+                : processEdges;
+
+        // Filter lineages if child has only self-cyclic relation
+        processEdges = processEdges.stream()
+                .filter(processEdge -> processEdge.getOutVertex() != null)
+                .filter(processEdge -> !childHasOnlySelfCycle(processEdge.getOutVertex(), currentVertex, isInput))
+                .collect(Collectors.toList());
+
+        ret.setHasChildrenForDirection(getGuid(currentVertex), new LineageChildrenInfo(isInput ? INPUT : OUTPUT, hasMoreChildren(processEdges)));
     }
 
     private boolean childHasOnlySelfCycle(AtlasVertex processVertex, AtlasVertex currentVertex, boolean isInput) {
