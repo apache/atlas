@@ -174,6 +174,7 @@ public enum AtlasErrorCode {
     NOT_VALID_FILE(400, "ATLAS-400-00-09C", "Invalid {0} file"),
     ATTRIBUTE_NAME_ALREADY_EXISTS_IN_PARENT_TYPE(400, "ATLAS-400-00-09D", "Invalid attribute name: {0}.{1}. Attribute already exists in parent type: {2}"),
     UNAUTHORIZED_ACCESS(403, "ATLAS-403-00-001", "{0} is not authorized to perform {1}"),
+    UNAUTHORIZED_CONNECTION_ADMIN(403, "ATLAS-403-00-002", "{0} is not admin for connection {1}"),
     MISSING_CLASSIFICATION_DISPLAY_NAME(400, "ATLAS-400-00-09E", "Classification displayName is empty/null"),
     TYPEDEF_ATTR_DISPLAY_NAME_IS_REQUIRED(400, "ATLAS-400-00-09F", "displayName is required for typedef \"{0}\" attribute"),
     EMPTY_REQUEST(400, "ATLAS-400-00-100", "Empty Request or null, expects Map of List of RelatedObjects with term-id as key"),
@@ -209,6 +210,8 @@ public enum AtlasErrorCode {
     RELATIONSHIP_LABEL_NOT_FOUND(404, "ATLAS-404-00-016", "Given relationshipLabel {0} was invalid"),
     INVALID_LINEAGE_ENTITY_TYPE_HIDE_PROCESS(404, "ATLAS-404-00-017", "Given instance guid {0} with type {1} is not a valid lineage entity type with hideProcess as true."),
     TASK_NOT_FOUND(404, "ATLAS-404-00-018", "Given task guid {0} is invalid/not found"),
+    RANGER_ROLE_NOT_FOUND(404, "ATLAS-404-00-019", "Ranger role {0} not found: {1}"),
+    RANGER_USER_NOT_FOUND(404, "ATLAS-404-00-020", "Ranger user with {0}:{1} not found: {2}"),
 
     METHOD_NOT_ALLOWED(405, "ATLAS-405-00-001", "Error 405 - The request method {0} is inappropriate for the URL: {1}"),
     DELETE_TAG_PROPAGATION_NOT_ALLOWED(406, "ATLAS-406-00-001", "Classification delete is not allowed; Add/Update classification propagation is in queue for classification: {0} and entity: {1}. Please try again"),
@@ -228,6 +231,10 @@ public enum AtlasErrorCode {
     TYPE_WITH_DISPLAY_NAME_ALREADY_EXISTS(409, "ATLAS-409-00-012", "Given type {0} already exists"),
     TYPE_ATTR_WITH_DISPLAY_NAME_ALREADY_EXISTS(409, "ATLAS-409-00-013", "Given attributeDef {0} for type {1} already exists"),
     RELATIONSHIP_CREATE_INVALID_PARAMS(409, "ATLAS-409-00-014", "Relationship create between same vertex not allowed, vertex guid: {0}"),
+    OPERATION_NOT_SUPPORTED(409, "ATLAS-409-00-015", "Operation not supported: {0}"),
+    ACCESS_CONTROL_ALREADY_EXISTS(409, "ATLAS-409-00-016", "{0} with name {1} already exists"),
+    POLICY_ALREADY_EXISTS(409, "ATLAS-409-00-017", "Policy with name {0} already exists"),
+    RANGER_DUPLICATE_POLICY(409, "ATLAS-409-00-018", "Not allowed to create duplicate policy for same set of assets, duplicate policy: {0}:{1}"),
 
     CATEGORY_PARENT_FROM_OTHER_GLOSSARY(409, "ATLAS-400-00-0015", "Parent category from another Anchor(glossary) not supported"),
     CLASSIFICATION_TYPE_HAS_REFERENCES(409, "ATLAS-400-00-0016", "Given classification {0} [{1}] has references"),
@@ -256,7 +263,6 @@ public enum AtlasErrorCode {
     FAILED_TO_CREATE_GLOSSARY_TERM(500, "ATLAS-500-00-016", "Error occurred while creating glossary term: {0}"),
     FAILED_TO_UPDATE_GLOSSARY_TERM(500, "ATLAS-500-00-017", "Error occurred while updating glossary term: {0}"),
     REPAIR_INDEX_FAILED(500, "ATLAS-500-00-018", "Error occurred while repairing indices: {0}"),
-    INDEX_SEARCH_FAILED(400, "ATLAS-400-00-102", "Error occurred while running direct index query on ES: {0}"),
     DEPRECATED_API(400, "ATLAS-400-00-103", "Deprecated API. Use {0} instead"),
     DISABLED_API(400, "ATLAS-400-00-104", "API temporarily disabled. Reason: {0}"),
     HAS_LINEAGE_GET_EDGE_FAILED(500, "ATLAS-500-00-019", "Error occurred while getting edge between vertices for hasLineage migration: {0}"),
@@ -268,7 +274,14 @@ public enum AtlasErrorCode {
     CLASSIFICATION_CURRENTLY_BEING_PROPAGATED(400, "ATLAS-400-00-105", "Classification {0} is currently being propagated."),
     TASK_STATUS_NOT_APPROPRIATE(400, "ATLAS-400-00-106", "Unable to restart the task with guid {0} whose status is {1}. "),
     NO_LINEAGE_CONSTRAINTS_FOR_GUID(404, "ATLAS-404-00-016", "No lineage constraints found for requested entity with guid : {0}"),
-    LINEAGE_ON_DEMAND_NOT_ENABLED(400, "ATLAS-400-00-100", "Lineage on demand config: {0} is not enabled");
+    LINEAGE_ON_DEMAND_NOT_ENABLED(400, "ATLAS-400-00-100", "Lineage on demand config: {0} is not enabled"),
+
+    INDEX_SEARCH_FAILED(400, "ATLAS-400-00-107", "Error occurred while running direct index query on ES: {0}"),
+    INDEX_ALIAS_FAILED(400, "ATLAS-400-00-108", "Error occurred while {0} ES alias: {1}"),
+    JSON_ERROR(400, "ATLAS-400-00-109", "Error occurred putting object into JSONObject: {0}"),
+    RANGER_ROLE_MUTATION_FAILED(400, "ATLAS-400-00-110", "Failed to {0} Ranger role {1}: {2}"),
+    RANGER_POLICY_MUTATION_FAILED(400, "ATLAS-400-00-111", "Failed to {0} Ranger policy: {1}"),
+    RANGER_POLICY_FIND_FAILED(400, "ATLAS-400-00-112", "Failed to find Ranger policy by {0}: {1}");
 
     private String errorCode;
     private String errorMessage;

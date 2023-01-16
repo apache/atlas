@@ -82,9 +82,10 @@ import static org.apache.atlas.type.Constants.HAS_LINEAGE;
 import static org.apache.atlas.type.Constants.PENDING_TASKS_PROPERTY_KEY;
 
 public abstract class DeleteHandlerV1 {
-    public static final Logger LOG = LoggerFactory.getLogger(DeleteHandlerV1.class);
+    public static final Logger  LOG = LoggerFactory.getLogger(DeleteHandlerV1.class);
 
-    static final boolean DEFERRED_ACTION_ENABLED = AtlasConfiguration.TASKS_USE_ENABLED.getBoolean();
+    static final boolean        DEFERRED_ACTION_ENABLED        = AtlasConfiguration.TASKS_USE_ENABLED.getBoolean();
+    static final     int        PENDING_TASK_QUERY_SIZE_LIMIT  = 20;
 
     protected final GraphHelper          graphHelper;
     private   final AtlasTypeRegistry    typeRegistry;
@@ -93,7 +94,7 @@ public abstract class DeleteHandlerV1 {
     private   final boolean              softDelete;
     private   final TaskManagement       taskManagement;
     private   final AtlasGraph           graph;
-    private   final TaskUtil            taskUtil;
+    private   final TaskUtil             taskUtil;
 
 
     public DeleteHandlerV1(AtlasGraph graph, AtlasTypeRegistry typeRegistry, boolean shouldUpdateInverseReference, boolean softDelete, TaskManagement taskManagement) {
@@ -1376,34 +1377,37 @@ public abstract class DeleteHandlerV1 {
     }
 
     private boolean skipClassificationTaskCreation(String classificationId) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("skipClassificationTaskCreation");
         /*
         If any of,
         1. CLASSIFICATION_PROPAGATION_DELETE
         2. CLASSIFICATION_REFRESH_PROPAGATION task scheduled already
         skip classification task creation
          */
+        try {
 
-        List<AtlasTask> queuedTasks  = RequestContext.get().getQueuedTasks();
-        for(AtlasTask queuedTask : queuedTasks) {
-            if(queuedTask.getClassificationId().equals(classificationId)) {
-                String queuedTaskType = queuedTask.getType();
-                if(queuedTaskType.equals(CLASSIFICATION_REFRESH_PROPAGATION)
-                        || queuedTaskType.equals(CLASSIFICATION_PROPAGATION_DELETE)) {
-                    return true;
-                }
+            List<String> taskTypes = Arrays.asList(CLASSIFICATION_REFRESH_PROPAGATION, CLASSIFICATION_PROPAGATION_DELETE);
+            if (RequestContext.get().getQueuedTasks().stream().anyMatch(task -> task.getClassificationId().equals(classificationId)
+                    && taskTypes.contains(task.getType()))) {
+                return true;
             }
+
+            TaskSearchResult taskSearchResult = taskUtil.findPendingTasksByClassificationId(0, PENDING_TASK_QUERY_SIZE_LIMIT,
+                    classificationId, taskTypes , new ArrayList<>());
+
+            // if any task have status as PENDING, then skip task creation
+            if (taskSearchResult.getTasks().stream().anyMatch(task -> task.getClassificationId().equals(classificationId)
+                    && taskTypes.contains(task.getType()) && task.getStatus().equals(AtlasTask.Status.PENDING))) {
+                return true;
+            } else {
+                LOG.info("There is inconsistency in task queue, there are no pending tasks for classification id {} but there are tasks in queue", classificationId);
+            }
+        } catch (AtlasBaseException e) {
+            LOG.error("Error while checking if classification task creation is required for classification id {}", classificationId, e);
+            throw e;
+        } finally {
+            RequestContext.get().endMetricRecord(metric);
         }
-
-        //Search in ES to get the tasks
-        TaskSearchResult taskSearchResult = taskUtil.findPendingTasksByClassificationId(0, 1, classificationId, new ArrayList<String>(){{
-            add(CLASSIFICATION_PROPAGATION_DELETE);
-            add(CLASSIFICATION_REFRESH_PROPAGATION);
-        }}, new ArrayList<>());
-
-        if (!taskSearchResult.getTasks().isEmpty()) {
-            return true;
-        }
-
 
         return false;
     }

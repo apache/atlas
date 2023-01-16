@@ -910,7 +910,7 @@ public class EntityLineageService implements AtlasLineageService {
             AtlasVertex processVertex;
             processVertex = processEdge.getOutVertex();
             if (processVertex != null) {
-                if (!childHasSelfCycle(processVertex, currentVertex, isInput) &&
+                if (!childHasOnlySelfCycle(processVertex, currentVertex, isInput) &&
                         !lineageContext.getIgnoredProcesses().contains(processVertex.getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY, String.class))) {
                     edges.add(processEdge);
                 }
@@ -919,7 +919,7 @@ public class EntityLineageService implements AtlasLineageService {
         return edges;
     }
 
-    private boolean childHasSelfCycle(AtlasVertex processVertex, AtlasVertex currentVertex, boolean isInput) {
+    private boolean childHasOnlySelfCycle(AtlasVertex processVertex, AtlasVertex currentVertex, boolean isInput) {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("childHasSelfCycle");
         Iterator<AtlasEdge> processEdgeIterator;
         processEdgeIterator = processVertex.getEdges(OUT, isInput ? PROCESS_INPUTS_EDGE : PROCESS_OUTPUTS_EDGE).iterator();
@@ -928,9 +928,9 @@ public class EntityLineageService implements AtlasLineageService {
             processOutputEdges.add(processEdgeIterator.next());
         }
 
-        List<AtlasVertex> linkedVertices = processOutputEdges.stream().map(x -> x.getInVertex()).collect(Collectors.toList());
+        Set<AtlasVertex> linkedVertices = processOutputEdges.stream().map(x -> x.getInVertex()).collect(Collectors.toSet());
         RequestContext.get().endMetricRecord(metricRecorder);
-        return linkedVertices.contains(currentVertex);
+        return linkedVertices.size() == 1 && linkedVertices.contains(currentVertex);
     }
 
     private List<AtlasEdge> getEdgesOfProcess(boolean isInput, AtlasLineageContext lineageContext, AtlasVertex processVertex) {

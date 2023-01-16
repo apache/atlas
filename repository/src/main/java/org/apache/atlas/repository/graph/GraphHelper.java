@@ -392,25 +392,28 @@ public final class GraphHelper {
     public static boolean isClassificationAttached(AtlasVertex entityVertex, AtlasVertex classificationVertex) {
         AtlasPerfMetrics.MetricRecorder isClassificationAttachedMetricRecorder  = RequestContext.get().startMetricRecord("isClassificationAttached");
         String                          classificationId                        = classificationVertex.getIdForDisplay();
-        Iterator<AtlasVertex> vertices = entityVertex.query()
-                .direction(AtlasEdgeDirection.OUT)
-                .label(CLASSIFICATION_LABEL)
-                .has(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, getTypeName(classificationVertex))
-                .vertices().iterator();
+        try {
+            Iterator<AtlasVertex> vertices = entityVertex.query()
+                    .direction(AtlasEdgeDirection.OUT)
+                    .label(CLASSIFICATION_LABEL)
+                    .has(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, getTypeName(classificationVertex))
+                    .vertices().iterator();
 
-        if (vertices != null) {
-            while (vertices.hasNext()) {
-                AtlasVertex vertex = vertices.next();
-                if (vertex != null) {
-                    if (vertex.getIdForDisplay().equals(classificationId)) {
-                        return true;
+            if (vertices != null) {
+                while (vertices.hasNext()) {
+                    AtlasVertex vertex = vertices.next();
+                    if (vertex != null) {
+                        if (vertex.getIdForDisplay().equals(classificationId)) {
+                            return true;
+                        }
                     }
                 }
             }
+        } catch (Exception e) {
+            LOG.error("Error while checking if classification is attached to entity", e);
+        } finally {
+            RequestContext.get().endMetricRecord(isClassificationAttachedMetricRecorder);
         }
-
-        RequestContext.get().endMetricRecord(isClassificationAttachedMetricRecorder);
-
         return false;
     }
 
