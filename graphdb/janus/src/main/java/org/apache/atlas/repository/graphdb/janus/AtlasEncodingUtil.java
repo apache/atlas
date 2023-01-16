@@ -8,8 +8,6 @@ import java.util.Objects;
 
 public class AtlasEncodingUtil {
 
-    private static final Logger LOG = LoggerFactory.getLogger(AtlasEncodingUtil.class);
-
     public static String encodeJanusVertexIdToESDocId(Object vertex) {
         Objects.requireNonNull(vertex);
         return LongEncoding.encode(Long.parseLong(vertex.toString()));
