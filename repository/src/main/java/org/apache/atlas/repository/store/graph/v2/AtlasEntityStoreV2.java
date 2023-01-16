@@ -90,6 +90,7 @@ import static org.apache.atlas.AtlasConfiguration.STORE_DIFFERENTIAL_AUDITS;
 import static org.apache.atlas.accesscontrol.AccessControlUtil.ensureNonAccessControlEntityType;
 import static org.apache.atlas.bulkimport.BulkImportResponse.ImportStatus.FAILED;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
+import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.*;
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.GraphHelper.*;
@@ -1691,8 +1692,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             } else {
                 others.add(vertex);
             }
-            if (!req.getDeleteType().equals(DeleteType.SOFT))
-                this.recordRelationshipsToBeDeleted(vertex);
         }
         RequestContext.get().endMetricRecord(metric);
 
@@ -1724,31 +1723,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
 
         return response;
-    }
-
-    private void recordRelationshipsToBeDeleted(AtlasVertex instanceVertex) throws AtlasBaseException {
-        AtlasEntity entity = entityRetriever.toAtlasEntity(instanceVertex);
-        Map<String, Object> relationshipAttributes = entity.getRelationshipAttributes();
-        for (String r : relationshipAttributes.keySet()) {
-            Object atlasRelatedObject = relationshipAttributes.get(r);
-            if (atlasRelatedObject != null) {
-                if (atlasRelatedObject instanceof AtlasRelatedObjectId) {
-                    AtlasRelatedObjectId atlasRelatedObjectId = (AtlasRelatedObjectId) atlasRelatedObject;
-                    final String relationshipGuid = atlasRelatedObjectId.getRelationshipGuid();
-                    atlasRelationshipStoreV2.recordDeletedRelationshipContext(relationshipGuid, RequestContext.get().getDeleteType());
-                } else if (atlasRelatedObject instanceof ArrayList) {
-                    List<AtlasRelatedObjectId> relatedObjectIds = (List<AtlasRelatedObjectId>) atlasRelatedObject;
-                    relatedObjectIds.forEach(obj -> {
-                        final String relationshipGuid = obj.getRelationshipGuid();
-                        try {
-                            atlasRelationshipStoreV2.recordDeletedRelationshipContext(relationshipGuid, RequestContext.get().getDeleteType());
-                        } catch (AtlasBaseException e) {
-                            throw new RuntimeException(e);
-                        }
-                    });
-                }
-            }
-        }
     }
 
     private EntityMutationResponse restoreVertices(Collection<AtlasVertex> restoreCandidates) throws AtlasBaseException {
@@ -2312,6 +2286,38 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         }
         RequestContext.get().endMetricRecord(metricRecorder);
+    }
+
+    private void recordRelationshipsToBeDeleted(AtlasVertex instanceVertex) throws AtlasBaseException {
+        Iterable<AtlasEdge> incomingEdges = instanceVertex.getEdges(AtlasEdgeDirection.IN);
+        Iterable<AtlasEdge> outgoingEdges = instanceVertex.getEdges(AtlasEdgeDirection.IN);
+
+        recordInComingEdgesToBeDeleted(incomingEdges);
+        recordOutGoingEdgesToBeDeleted(outgoingEdges);
+    }
+
+    private void recordInComingEdgesToBeDeleted(Iterable<AtlasEdge> incomingEdges) throws AtlasBaseException {
+        for (AtlasEdge edge : incomingEdges) {
+            Status edgeStatus = getStatus(edge);
+            boolean            isProceed   = edgeStatus == (RequestContext.get().isPurgeRequested() ? DELETED : ACTIVE);
+            if (isProceed) {
+                if (isRelationshipEdge(edge))
+                    AtlasRelationshipStoreV2.saveRelationshipDeletionContext(RequestContext.get().getDeleteType(), null, edge, edge.getOutVertex(), edge.getInVertex(), entityRetriever);
+            }
+        }
+    }
+
+    private void recordOutGoingEdgesToBeDeleted(Iterable<AtlasEdge> outgoingEdges) throws AtlasBaseException {
+        if (!RequestContext.get().getDeleteType().equals(DeleteType.SOFT)) {
+            for (AtlasEdge edge : outgoingEdges) {
+                Status edgeStatus = getStatus(edge);
+                boolean            isProceed   = edgeStatus == (RequestContext.get().isPurgeRequested() ? DELETED : ACTIVE);
+                if (isProceed) {
+                    if (isRelationshipEdge(edge))
+                        AtlasRelationshipStoreV2.saveRelationshipDeletionContext(RequestContext.get().getDeleteType(), null, edge, edge.getOutVertex(), edge.getInVertex(), entityRetriever);
+                }
+            }
+        }
     }
 
 }

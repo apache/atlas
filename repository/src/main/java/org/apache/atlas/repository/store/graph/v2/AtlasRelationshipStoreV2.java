@@ -378,15 +378,6 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         }
     }
 
-    @GraphTransaction
-    public void recordDeletedRelationshipContext(String relationshipGuid, DeleteType deleteType) throws AtlasBaseException {
-        AtlasRelationship relationship = getById(relationshipGuid);
-        // TODO: filter for supported relationship types only
-        AtlasVertex       end1Vertex = getVertexFromEndPoint(relationship.getEnd1());
-        AtlasVertex       end2Vertex = getVertexFromEndPoint(relationship.getEnd2());
-        saveRelationshipDeletionContext(deleteType, relationship, null, end1Vertex, end2Vertex, entityRetriever);
-    }
-
     public static void saveRelationshipDeletionContext(DeleteType deleteType, AtlasRelationship relationship, AtlasEdge edge, AtlasVertex outgoingVertex, AtlasVertex incomingVertex, EntityGraphRetriever entityRetriever) throws AtlasBaseException {
         if (relationship == null && edge == null)
             throw new IllegalStateException("relationship and edge, both null");
