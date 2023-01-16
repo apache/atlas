@@ -410,8 +410,8 @@ public final class GraphHelper {
                     }
                 }
             }
-        } catch (Exception e) {
-            LOG.error("Error while checking if classification is attached to entity", e);
+        } catch (Exception err) {
+            throw err;
         } finally {
             RequestContext.get().endMetricRecord(isClassificationAttachedMetricRecorder);
         }

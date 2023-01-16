@@ -1387,20 +1387,43 @@ public abstract class DeleteHandlerV1 {
         try {
 
             List<String> taskTypes = Arrays.asList(CLASSIFICATION_REFRESH_PROPAGATION, CLASSIFICATION_PROPAGATION_DELETE);
-            if (RequestContext.get().getQueuedTasks().stream().anyMatch(task -> task.getClassificationId().equals(classificationId)
-                    && taskTypes.contains(task.getType()))) {
+            if (
+                    RequestContext.get().getQueuedTasks().stream()
+                    .filter(Objects::nonNull)
+                    .anyMatch(task -> task.getClassificationId().equals(classificationId)
+                            && taskTypes.contains(task.getType()) && task.getStatus().equals(AtlasTask.Status.PENDING))
+            ) {
                 return true;
             }
 
             TaskSearchResult taskSearchResult = taskUtil.findPendingTasksByClassificationId(0, PENDING_TASK_QUERY_SIZE_LIMIT,
                     classificationId, taskTypes , new ArrayList<>());
 
+            List<AtlasTask> pendingTasks = taskSearchResult.getTasks();
+            if(pendingTasks == null) {
+                return false;
+            }
+
+            List<AtlasTask> pendingRefreshPropagationTasks = pendingTasks.stream()
+                    .filter(task -> CLASSIFICATION_REFRESH_PROPAGATION.equals(task.getType()))
+                    .collect(Collectors.toList());
+
+            // Ideally there should be only refresh propagation task
+            if (pendingRefreshPropagationTasks.size() > 1) {
+                LOG.warn("More than one {} task found for classification id {}", CLASSIFICATION_REFRESH_PROPAGATION, classificationId);
+            }
+
             // if any task have status as PENDING, then skip task creation
-            if (taskSearchResult.getTasks().stream().anyMatch(task -> task.getClassificationId().equals(classificationId)
-                    && taskTypes.contains(task.getType()) && task.getStatus().equals(AtlasTask.Status.PENDING))) {
+            if (
+                    pendingTasks.stream()
+                    .filter(Objects::nonNull)
+                    .anyMatch(task -> task.getClassificationId().equals(classificationId)
+                            && taskTypes.contains(task.getType()) && task.getStatus().equals(AtlasTask.Status.PENDING))
+            ) {
                 return true;
             } else {
-                LOG.info("There is inconsistency in task queue, there are no pending tasks for classification id {} but there are tasks in queue", classificationId);
+                LOG.warn("There is inconsistency " +
+                        "in task queue, there are no pending tasks for classification id {} but there are tasks in queue", classificationId);
             }
         } catch (AtlasBaseException e) {
             LOG.error("Error while checking if classification task creation is required for classification id {}", classificationId, e);
