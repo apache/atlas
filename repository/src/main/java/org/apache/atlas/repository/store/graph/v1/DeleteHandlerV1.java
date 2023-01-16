@@ -1003,12 +1003,8 @@ public abstract class DeleteHandlerV1 {
 
         if (!RequestContext.get().getDeleteType().equals(DeleteType.SOFT)) {
             for (AtlasEdge edge : outgoingEdges) {
-                AtlasEntity.Status edgeStatus = getStatus(edge);
-                boolean            isProceed   = edgeStatus == (isPurgeRequested ? DELETED : ACTIVE);
-                if (isProceed) {
-                    if (isRelationshipEdge(edge))
-                        AtlasRelationshipStoreV2.saveRelationshipDeletionContext(RequestContext.get().getDeleteType(), null, edge, edge.getOutVertex(), edge.getInVertex(), entityRetriever);
-                }
+                if (isRelationshipEdge(edge))
+                    AtlasRelationshipStoreV2.saveRelationshipDeletionContext(RequestContext.get().getDeleteType(), null, edge, edge.getOutVertex(), edge.getInVertex(), entityRetriever);
             }
         }
 

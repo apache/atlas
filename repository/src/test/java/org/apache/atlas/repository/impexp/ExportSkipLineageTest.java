@@ -27,11 +27,10 @@ import org.apache.atlas.model.impexp.AtlasExportRequest;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.repository.AtlasTestBase;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.repository.store.graph.v1.RestoreHandlerV1;
-import org.apache.atlas.repository.store.graph.v2.AtlasEntityChangeNotifier;
-import org.apache.atlas.repository.store.graph.v2.AtlasEntityStoreV2;
-import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
+import org.apache.atlas.repository.store.graph.v2.*;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.TestResourceFileUtils;
@@ -69,6 +68,9 @@ public class ExportSkipLineageTest extends AtlasTestBase {
     ExportService exportService;
 
     @Inject
+    private AtlasRelationshipStore atlasRelationshipStore;
+
+    @Inject
     AtlasGraph atlasGraph;
 
     private DeleteHandlerDelegate deleteDelegate = mock(DeleteHandlerDelegate.class);
@@ -82,7 +84,7 @@ public class ExportSkipLineageTest extends AtlasTestBase {
         loadHiveModel(typeDefStore, typeRegistry);
         RequestContext.get().setImportInProgress(true);
 
-        entityStore = new AtlasEntityStoreV2(atlasGraph, deleteDelegate, restoreHandlerV1, typeRegistry, mockChangeNotifier, graphMapper, null, null);
+        entityStore = new AtlasEntityStoreV2(atlasGraph, deleteDelegate, restoreHandlerV1, typeRegistry, mockChangeNotifier, graphMapper, null, atlasRelationshipStore);
         createEntities(entityStore, ENTITIES_SUB_DIR, new String[]{"db", "table-columns", "table-view", "table-table-lineage"});
         final String[] entityGuids = {DB_GUID, TABLE_GUID, TABLE_TABLE_GUID, TABLE_VIEW_GUID};
         verifyCreatedEntities(entityStore, entityGuids, 4);

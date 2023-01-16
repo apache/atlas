@@ -48,6 +48,7 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.patches.PatchContext;
 import org.apache.atlas.repository.patches.ReIndexPatch;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
+import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscovery;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
@@ -126,11 +127,11 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     private final GraphHelper                graphHelper;
     private final TaskManagement             taskManagement;
     private EntityDiscoveryService discovery;
-    private final AtlasRelationshipStoreV2 atlasRelationshipStoreV2;
+    private final AtlasRelationshipStore atlasRelationshipStore;
 
     @Inject
     public AtlasEntityStoreV2(AtlasGraph graph, DeleteHandlerDelegate deleteDelegate, RestoreHandlerV1 restoreHandlerV1, AtlasTypeRegistry typeRegistry,
-                              IAtlasEntityChangeNotifier entityChangeNotifier, EntityGraphMapper entityGraphMapper, TaskManagement taskManagement, AtlasRelationshipStoreV2 atlasRelationshipStoreV2) {
+                              IAtlasEntityChangeNotifier entityChangeNotifier, EntityGraphMapper entityGraphMapper, TaskManagement taskManagement, AtlasRelationshipStore atlasRelationshipStore) {
         this.graph                = graph;
         this.deleteDelegate       = deleteDelegate;
         this.restoreHandlerV1     = restoreHandlerV1;
@@ -141,7 +142,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         this.storeDifferentialAudits = STORE_DIFFERENTIAL_AUDITS.getBoolean();
         this.graphHelper          = new GraphHelper(graph);
         this.taskManagement = taskManagement;
-        this.atlasRelationshipStoreV2 = atlasRelationshipStoreV2;
+        this.atlasRelationshipStore = atlasRelationshipStore;
         try {
             this.discovery = new EntityDiscoveryService(typeRegistry, graph, null, null, null, null);
         } catch (AtlasException e) {
@@ -583,7 +584,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         // Notify the change listeners
         entityChangeNotifier.onEntitiesMutated(ret, false);
-        atlasRelationshipStoreV2.sendNotifications(RequestContext.get().getDeletedRelationshipsMap());
+        atlasRelationshipStore.sendNotifications(RequestContext.get().getDeletedRelationshipsMap());
         return ret;
     }
 
@@ -627,7 +628,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         // Notify the change listeners
         entityChangeNotifier.onEntitiesMutated(ret, false);
-        atlasRelationshipStoreV2.sendNotifications(RequestContext.get().getDeletedRelationshipsMap());
+        atlasRelationshipStore.sendNotifications(RequestContext.get().getDeletedRelationshipsMap());
         return ret;
     }
 
@@ -692,7 +693,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
                 continue;
             }
-            this.recordRelationshipsToBeDeleted(vertex);
+            this.recordRelationshipsToBePurged(vertex);
             purgeCandidates.add(vertex);
         }
 
@@ -704,7 +705,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         // Notify the change listeners
         entityChangeNotifier.onEntitiesMutated(ret, false);
-        atlasRelationshipStoreV2.sendNotifications(RequestContext.get().getDeletedRelationshipsMap());
+        atlasRelationshipStore.sendNotifications(RequestContext.get().getDeletedRelationshipsMap());
         return ret;
     }
 
@@ -739,7 +740,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         // Notify the change listeners
         entityChangeNotifier.onEntitiesMutated(ret, false);
-        atlasRelationshipStoreV2.sendNotifications(RequestContext.get().getDeletedRelationshipsMap());
+        atlasRelationshipStore.sendNotifications(RequestContext.get().getDeletedRelationshipsMap());
         return ret;
     }
 
@@ -791,7 +792,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             processTermEntityDeletion(ret.getDeletedEntities());
         // Notify the change listeners
         entityChangeNotifier.onEntitiesMutated(ret, false);
-        atlasRelationshipStoreV2.sendNotifications(RequestContext.get().getDeletedRelationshipsMap());
+        atlasRelationshipStore.sendNotifications(RequestContext.get().getDeletedRelationshipsMap());
 
         return ret;
     }
@@ -2288,7 +2289,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
-    private void recordRelationshipsToBeDeleted(AtlasVertex instanceVertex) throws AtlasBaseException {
+    private void recordRelationshipsToBePurged(AtlasVertex instanceVertex) throws AtlasBaseException {
         Iterable<AtlasEdge> incomingEdges = instanceVertex.getEdges(AtlasEdgeDirection.IN);
         Iterable<AtlasEdge> outgoingEdges = instanceVertex.getEdges(AtlasEdgeDirection.IN);
 
@@ -2298,24 +2299,16 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     private void recordInComingEdgesToBeDeleted(Iterable<AtlasEdge> incomingEdges) throws AtlasBaseException {
         for (AtlasEdge edge : incomingEdges) {
-            Status edgeStatus = getStatus(edge);
-            boolean            isProceed   = edgeStatus == (RequestContext.get().isPurgeRequested() ? DELETED : ACTIVE);
-            if (isProceed) {
-                if (isRelationshipEdge(edge))
-                    AtlasRelationshipStoreV2.saveRelationshipDeletionContext(RequestContext.get().getDeleteType(), null, edge, edge.getOutVertex(), edge.getInVertex(), entityRetriever);
-            }
+            if (isRelationshipEdge(edge))
+                AtlasRelationshipStoreV2.saveRelationshipDeletionContext(RequestContext.get().getDeleteType(), null, edge, edge.getOutVertex(), edge.getInVertex(), entityRetriever);
         }
     }
 
     private void recordOutGoingEdgesToBeDeleted(Iterable<AtlasEdge> outgoingEdges) throws AtlasBaseException {
         if (!RequestContext.get().getDeleteType().equals(DeleteType.SOFT)) {
             for (AtlasEdge edge : outgoingEdges) {
-                Status edgeStatus = getStatus(edge);
-                boolean            isProceed   = edgeStatus == (RequestContext.get().isPurgeRequested() ? DELETED : ACTIVE);
-                if (isProceed) {
-                    if (isRelationshipEdge(edge))
-                        AtlasRelationshipStoreV2.saveRelationshipDeletionContext(RequestContext.get().getDeleteType(), null, edge, edge.getOutVertex(), edge.getInVertex(), entityRetriever);
-                }
+                if (isRelationshipEdge(edge))
+                    AtlasRelationshipStoreV2.saveRelationshipDeletionContext(RequestContext.get().getDeleteType(), null, edge, edge.getOutVertex(), edge.getInVertex(), entityRetriever);
             }
         }
     }

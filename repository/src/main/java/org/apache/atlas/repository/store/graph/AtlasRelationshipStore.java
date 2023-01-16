@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.repository.store.graph;
 
+import org.apache.atlas.DeleteType;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.instance.AtlasRelationship.AtlasRelationshipWithExtInfo;
@@ -24,6 +25,7 @@ import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 
 import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -97,4 +99,6 @@ public interface AtlasRelationshipStore {
      * @param forceDelete force delete the relationship edge
      */
     void deleteById(String guid, boolean forceDelete) throws AtlasBaseException;
+
+    void sendNotifications(Map<DeleteType, List<AtlasRelationship>> deletedRelationshipsMap) throws AtlasBaseException;
 }
