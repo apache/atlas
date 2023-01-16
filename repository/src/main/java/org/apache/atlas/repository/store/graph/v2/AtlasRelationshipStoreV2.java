@@ -380,14 +380,39 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
     public void recordDeletedRelationshipContext(String relationshipGuid, DeleteType deleteType) throws AtlasBaseException {
         AtlasRelationship relationship = getById(relationshipGuid);
         // TODO: filter for supported relationship types only
-
         AtlasVertex       end1Vertex = getVertexFromEndPoint(relationship.getEnd1());
         AtlasVertex       end2Vertex = getVertexFromEndPoint(relationship.getEnd2());
+        saveRelationshipDeletionContext(deleteType, relationship, null, end1Vertex, end2Vertex, entityRetriever);
+    }
+
+    public static void saveRelationshipDeletionContext(DeleteType deleteType, AtlasRelationship relationship, AtlasEdge edge, AtlasVertex outgoingVertex, AtlasVertex incomingVertex, EntityGraphRetriever entityRetriever) throws AtlasBaseException {
+        if (relationship == null && edge == null)
+            throw new IllegalStateException("relationship and edge, both null");
+
+        if (relationship == null)
+            relationship = entityRetriever.mapEdgeToAtlasRelationship(edge);
+
+        AtlasObjectId end1 = relationship.getEnd1();
+        AtlasObjectId end2 = relationship.getEnd2();
+
+        AtlasObjectId outgoing = entityRetriever.toAtlasObjectId(outgoingVertex);
+        AtlasObjectId incoming = entityRetriever.toAtlasObjectId(incomingVertex);
+
+        AtlasVertex end1Vertex = null;
+        AtlasVertex end2Vertex = null;
+
+        if (end1.getGuid().equals(outgoing.getGuid()) && end2.getGuid().equals(incoming.getGuid())) {
+            end1Vertex = outgoingVertex;
+            end2Vertex = incomingVertex;
+        } else if (end1.getGuid().equals(incoming.getGuid()) && end2.getGuid().equals(outgoing.getGuid())) {
+            end1Vertex = incomingVertex;
+            end2Vertex = outgoingVertex;
+        }
+
         AtlasRelationshipStoreV2.setEdgeVertexIdsInContext(relationship, end1Vertex, end2Vertex);
         relationship.setStatus(deleteType.equals(DeleteType.SOFT) ? AtlasRelationship.Status.DELETED : AtlasRelationship.Status.PURGE_DUE_TO_ENTITY);
         RequestContext.get().addGuidToDeletedRelationships(RequestContext.get().getDeleteType(), relationship);
     }
-
 
     @Override
     public AtlasEdge getOrCreate(AtlasVertex end1Vertex, AtlasVertex end2Vertex, AtlasRelationship relationship) throws AtlasBaseException {

@@ -42,6 +42,7 @@ import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
+import org.apache.atlas.repository.store.graph.v2.AtlasRelationshipStoreV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.DeleteType;
 import org.apache.atlas.repository.store.graph.v2.tasks.ClassificationTask;
@@ -187,10 +188,9 @@ public abstract class DeleteHandlerV1 {
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("Skipping deletion of edge={} as it is already deleted", getIdFromEdge(edge));
                 }
-
                 continue;
             }
-
+            AtlasRelationshipStoreV2.saveRelationshipDeletionContext(RequestContext.get().getDeleteType(), null, edge, edge.getOutVertex(), edge.getInVertex(), entityRetriever);
             deleteEdge(edge, isInternal || forceDelete);
         }
     }

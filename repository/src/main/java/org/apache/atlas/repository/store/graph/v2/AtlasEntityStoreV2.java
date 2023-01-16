@@ -1683,7 +1683,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             } else {
                 others.add(vertex);
             }
-            this.recordRelationshipsToBeDeleted(vertex);
+            if (!req.getDeleteType().equals(DeleteType.SOFT))
+                this.recordRelationshipsToBeDeleted(vertex);
         }
         RequestContext.get().endMetricRecord(metric);
 
