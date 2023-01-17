@@ -706,7 +706,7 @@
         <graph.index.backend>solr</graph.index.backend>
         <graph.storage.backend>berkeleyje</graph.storage.backend>
         <gson.version>2.5</gson.version>
-        <guava.version>25.1-jre</guava.version>
+        <guava.version>29.0-jre</guava.version>
         <guice.version>4.1.0</guice.version>
         <hadoop.hdfs-client.version>${hadoop.version}</hadoop.hdfs-client.version>
         <hadoop.version>3.3.0</hadoop.version>
