@@ -1387,9 +1387,10 @@ public abstract class DeleteHandlerV1 {
         try {
 
             List<String> taskTypes = Arrays.asList(CLASSIFICATION_REFRESH_PROPAGATION, CLASSIFICATION_PROPAGATION_DELETE);
+            List<AtlasTask> tasksInRequestContext = RequestContext.get().getQueuedTasks();
             if (
-                    RequestContext.get().getQueuedTasks().stream()
-                    .filter(Objects::nonNull)
+                    tasksInRequestContext != null &&
+                    tasksInRequestContext.stream().filter(Objects::nonNull)
                     .anyMatch(task -> task.getClassificationId().equals(classificationId)
                             && taskTypes.contains(task.getType()) && task.getStatus().equals(AtlasTask.Status.PENDING))
             ) {
