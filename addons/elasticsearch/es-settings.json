@@ -1,4 +1,9 @@
 {
+  "mapping" : {
+    "total_fields" : {
+    "limit" : "1500"
+    }
+  },
   "analysis": {
     "analyzer": {
       "atlan_text_analyzer": {
