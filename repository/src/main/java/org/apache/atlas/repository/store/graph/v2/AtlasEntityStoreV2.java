@@ -2291,7 +2291,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     private void recordRelationshipsToBePurged(AtlasVertex instanceVertex) throws AtlasBaseException {
         Iterable<AtlasEdge> incomingEdges = instanceVertex.getEdges(AtlasEdgeDirection.IN);
-        Iterable<AtlasEdge> outgoingEdges = instanceVertex.getEdges(AtlasEdgeDirection.IN);
+        Iterable<AtlasEdge> outgoingEdges = instanceVertex.getEdges(AtlasEdgeDirection.OUT);
 
         recordInComingEdgesToBeDeleted(incomingEdges);
         recordOutGoingEdgesToBeDeleted(outgoingEdges);
