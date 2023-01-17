@@ -3,7 +3,7 @@
 # Increment a version string using Semantic Versioning (SemVer) terminology.
 
 # Parse command line options.
-
+:'
 while getopts ":Mmp" Option
 do
   case $Option in
@@ -50,3 +50,4 @@ then
 fi
 
 echo "${a[0]}.${a[1]}.${a[2]}"
+'
