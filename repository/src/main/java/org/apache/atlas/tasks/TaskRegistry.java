@@ -440,8 +440,8 @@ public class TaskRegistry {
         this.graph.commit();
     }
 
-    public AtlasTask createVertex(String taskType, String createdBy, Map<String, Object> parameters) {
-        AtlasTask ret = new AtlasTask(taskType, createdBy, parameters);
+    public AtlasTask createVertex(String taskType, String createdBy, Map<String, Object> parameters, String classificationId, String entityGuid) {
+        AtlasTask ret = new AtlasTask(taskType, createdBy, parameters, classificationId, entityGuid);
 
         createVertex(ret);
 
@@ -509,6 +509,16 @@ public class TaskRegistry {
             ret.setParameters(AtlasType.fromJson(parametersJson, Map.class));
         }
 
+        String classificationId = v.getProperty(Constants.TASK_CLASSIFICATION_ID, String.class);
+        if (classificationId != null) {
+            ret.setClassificationId(classificationId);
+        }
+
+        String entityGuid = v.getProperty(Constants.TASK_ENTITY_GUID, String.class);
+        if(entityGuid != null) {
+            ret.setEntityGuid(entityGuid);
+        }
+
         Integer attemptCount = v.getProperty(Constants.TASK_ATTEMPT_COUNT, Integer.class);
         if (attemptCount != null) {
             ret.setAttemptCount(attemptCount);
@@ -518,6 +528,7 @@ public class TaskRegistry {
         if (errorMessage != null) {
             ret.setErrorMessage(errorMessage);
         }
+
 
         return ret;
     }
@@ -532,6 +543,13 @@ public class TaskRegistry {
         setEncodedProperty(ret, Constants.TASK_CREATED_BY, task.getCreatedBy());
         setEncodedProperty(ret, Constants.TASK_CREATED_TIME, task.getCreatedTime());
         setEncodedProperty(ret, Constants.TASK_UPDATED_TIME, task.getUpdatedTime());
+        if (task.getClassificationId() != null) {
+            setEncodedProperty(ret, Constants.TASK_CLASSIFICATION_ID, task.getClassificationId());
+        }
+
+        if(task.getEntityGuid() != null) {
+            setEncodedProperty(ret, Constants.TASK_ENTITY_GUID, task.getEntityGuid());
+        }
 
         if (task.getStartTime() != null) {
             setEncodedProperty(ret, Constants.TASK_START_TIME, task.getStartTime().getTime());
