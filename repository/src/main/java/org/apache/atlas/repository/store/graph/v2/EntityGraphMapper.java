@@ -3656,6 +3656,10 @@ public class EntityGraphMapper {
                 toIndex = ((offset + CHUNK_SIZE > propagatedVerticesSize) ? propagatedVerticesSize : (offset + CHUNK_SIZE));
                 List<AtlasVertex> updatedVertices = deleteDelegate.getHandler().removeTagPropagation(classificationVertex, VerticesToRemoveTag.subList(offset, toIndex));
                 List<AtlasEntity> updatedEntities = updateClassificationText(classification, updatedVertices);
+
+                List<String> impactedGuids = updatedEntities.stream().map(AtlasEntity::getGuid).collect(Collectors.toList());
+                GraphTransactionInterceptor.lockObjectAndReleasePostCommit(impactedGuids);
+
                 entityChangeNotifier.onClassificationsDeletedFromEntities(updatedEntities, Collections.singletonList(classification));
 
                 offset += CHUNK_SIZE;
