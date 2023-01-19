@@ -428,6 +428,9 @@ public class EntityLineageService implements AtlasLineageService {
         String                     outGuid                   = AtlasGraphUtilsV2.getIdFromVertex(outVertex);
         LineageOnDemandConstraints outGuidLineageConstraints = getAndValidateLineageConstraintsByGuid(outGuid, lineageConstraintsMap);
 
+        boolean outVisitedFlag = ret.getRelationsOnDemand().containsKey(outGuid);
+        boolean inVisitedFlag = ret.getRelationsOnDemand().containsKey(inGuid);
+
         LineageInfoOnDemand inLineageInfo = ret.getRelationsOnDemand().containsKey(inGuid) ? ret.getRelationsOnDemand().get(inGuid) : new LineageInfoOnDemand(inGuidLineageConstraints);
         LineageInfoOnDemand outLineageInfo = ret.getRelationsOnDemand().containsKey(outGuid) ? ret.getRelationsOnDemand().get(outGuid) : new LineageInfoOnDemand(outGuidLineageConstraints);
 
@@ -448,9 +451,9 @@ public class EntityLineageService implements AtlasLineageService {
         // Handle horizontal pagination
         if (checkForChildren) {
             if (isInput) {
-                outLineageInfo.setHasMoreInputChildren(outVertex.getEdges(IN, PROCESS_OUTPUTS_EDGE).iterator().hasNext());
+                outLineageInfo.setHasMoreInputChildren(outVertex.getEdges(IN, PROCESS_OUTPUTS_EDGE).iterator().hasNext() && ! outVisitedFlag);
             } else {
-                inLineageInfo.setHasMoreOutputChildren(inVertex.getEdges(IN, PROCESS_INPUTS_EDGE).iterator().hasNext());
+                inLineageInfo.setHasMoreOutputChildren(inVertex.getEdges(IN, PROCESS_INPUTS_EDGE).iterator().hasNext() && ! inVisitedFlag);
             }
         }
 
