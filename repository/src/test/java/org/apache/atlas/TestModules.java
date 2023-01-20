@@ -20,6 +20,7 @@ package org.apache.atlas;
 import com.google.inject.AbstractModule;
 import com.google.inject.Binder;
 import com.google.inject.Provider;
+import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.matcher.Matchers;
 import com.google.inject.multibindings.Multibinder;
@@ -78,6 +79,9 @@ import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.Test;
+
+import java.util.Arrays;
+import java.util.List;
 
 import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
 
@@ -141,11 +145,6 @@ public class TestModules {
             bind(EntityGraphMapper.class).asEagerSingleton();
             bind(ExportService.class).asEagerSingleton();
 
-            // New typesdef/instance change listener should also be bound to the corresponding implementation
-            Multibinder<TypeDefChangeListener> typeDefChangeListenerMultibinder =
-                    Multibinder.newSetBinder(binder(), TypeDefChangeListener.class);
-            typeDefChangeListenerMultibinder.addBinding().to(GraphBackedSearchIndexer.class).asEagerSingleton();
-
             bind(SearchTracker.class).asEagerSingleton();
 
             bind(AtlasEntityStore.class).to(AtlasEntityStoreV2.class);
@@ -194,6 +193,12 @@ public class TestModules {
             final GraphTransactionInterceptor graphTransactionInterceptor = new GraphTransactionInterceptor(new AtlasGraphProvider().get(), null);
             requestInjection(graphTransactionInterceptor);
             bindInterceptor(Matchers.any(), Matchers.annotatedWith(GraphTransaction.class), graphTransactionInterceptor);
+        }
+
+        @Singleton
+        @Provides
+        public List<TypeDefChangeListener> getTypeDefChangeListenerList(GraphBackedSearchIndexer indexer) {
+            return Arrays.asList(indexer);
         }
 
         protected void bindAuditRepository(Binder binder) {
