@@ -48,6 +48,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.LinkedHashSet;
 
 import static org.apache.atlas.model.discovery.SearchParameters.ALL_ENTITY_TYPES;
 import static org.apache.atlas.model.discovery.SearchParameters.ALL_CLASSIFICATION_TYPES;
@@ -67,9 +68,9 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
     private final int                        typeUpdateLockMaxWaitTimeSeconds;
 
     protected AtlasTypeDefGraphStore(AtlasTypeRegistry typeRegistry,
-                                     Set<TypeDefChangeListener> typeDefChangeListeners) {
+                                     List<TypeDefChangeListener> typeDefChangeListenersList) {
         this.typeRegistry                     = typeRegistry;
-        this.typeDefChangeListeners           = typeDefChangeListeners;
+        this.typeDefChangeListeners           = new LinkedHashSet<>(typeDefChangeListenersList);
         this.typeUpdateLockMaxWaitTimeSeconds = AtlasRepositoryConfiguration.getTypeUpdateLockMaxWaitTimeInSeconds();
     }
 
