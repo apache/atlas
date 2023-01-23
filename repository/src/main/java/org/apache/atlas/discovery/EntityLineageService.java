@@ -272,7 +272,7 @@ public class EntityLineageService implements AtlasLineageService {
     private void cleanupRelationsOnDemand(AtlasLineageInfo lineageInfo) {
         if (lineageInfo != null && MapUtils.isNotEmpty(lineageInfo.getRelationsOnDemand())) {
             lineageInfo.getRelationsOnDemand().entrySet().removeIf(x ->
-                    !(x.getValue().hasMoreInputs() || x.getValue().hasMoreOutputs() || x.getValue().hasMoreInputChildren() || x.getValue().hasMoreOutputChildren()));
+                    !(x.getValue().hasMoreInputs() || x.getValue().hasMoreOutputs()));
         }
     }
 
@@ -451,9 +451,9 @@ public class EntityLineageService implements AtlasLineageService {
         // Handle horizontal pagination
         if (checkForChildren) {
             if (isInput && ! outVisitedFlag) {
-                outLineageInfo.setHasMoreInputChildren(outVertex.getEdges(IN, PROCESS_OUTPUTS_EDGE).iterator().hasNext());
+                outLineageInfo.setHasMoreInputs(outVertex.getEdges(IN, PROCESS_OUTPUTS_EDGE).iterator().hasNext());
             } else if (! isInput && ! inVisitedFlag) {
-                inLineageInfo.setHasMoreOutputChildren(inVertex.getEdges(IN, PROCESS_INPUTS_EDGE).iterator().hasNext());
+                inLineageInfo.setHasMoreOutputs(inVertex.getEdges(IN, PROCESS_INPUTS_EDGE).iterator().hasNext());
             }
         }
 
