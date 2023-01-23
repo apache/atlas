@@ -312,7 +312,7 @@
         <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-graphdb-janus</artifactId>
-            <version>3.0.0-SNAPSHOT</version>
+            <version>${project.version}</version>
             <scope>compile</scope>
         </dependency>
 
