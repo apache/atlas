@@ -43,7 +43,7 @@ import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.repository.graphdb.janus.AtlasEncodingUtil;
+import org.apache.atlas.repository.graphdb.janus.JanusUtils;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.type.AtlasEntityType;
@@ -378,13 +378,10 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         }
     }
 
-    public static void saveRelationshipDeletionContext(DeleteType deleteType, AtlasRelationship relationship, AtlasEdge edge, AtlasVertex outgoingVertex, AtlasVertex incomingVertex, EntityGraphRetriever entityRetriever) throws AtlasBaseException {
-        if (relationship == null && edge == null)
-            throw new IllegalStateException("relationship and edge, both null");
-
-        if (relationship == null)
-            relationship = entityRetriever.mapEdgeToAtlasRelationship(edge);
-
+    public static void saveRelationshipDeletionContext(DeleteType deleteType, AtlasEdge edge, AtlasVertex outgoingVertex, AtlasVertex incomingVertex, EntityGraphRetriever entityRetriever) throws AtlasBaseException {
+        if (edge == null)
+            throw new IllegalStateException("edge cannot be null");
+        final AtlasRelationship relationship = entityRetriever.mapEdgeToAtlasRelationship(edge);
         AtlasObjectId end1 = relationship.getEnd1();
         AtlasObjectId end2 = relationship.getEnd2();
 
@@ -403,7 +400,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         }
 
         AtlasRelationshipStoreV2.setEdgeVertexIdsInContext(relationship, end1Vertex, end2Vertex);
-        relationship.setStatus(deleteType.equals(DeleteType.SOFT) ? AtlasRelationship.Status.DELETED : AtlasRelationship.Status.PURGE_DUE_TO_ENTITY);
+        relationship.setStatus(deleteType.equals(DeleteType.SOFT) ? AtlasRelationship.Status.DELETED : AtlasRelationship.Status.PURGE_DUE_TO_ENTITY_DELETION);
         RequestContext.get().addGuidToDeletedRelationships(RequestContext.get().getDeleteType(), relationship);
     }
 
@@ -960,8 +957,8 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
 
     private static Map<String, String> builsESDocIdMapping(AtlasRelationship r) {
         final Map<AtlasObjectId, Object> relationshipEndToVertexIdMap = RequestContext.get().getRelationshipEndToVertexIdMap();
-        final String end1DocId = AtlasEncodingUtil.encodeJanusVertexIdToESDocId(relationshipEndToVertexIdMap.get(r.getEnd1()));
-        final String end2DocId = AtlasEncodingUtil.encodeJanusVertexIdToESDocId(relationshipEndToVertexIdMap.get(r.getEnd2()));
+        final String end1DocId = JanusUtils.toLongEncoding(relationshipEndToVertexIdMap.get(r.getEnd1()));
+        final String end2DocId = JanusUtils.toLongEncoding(relationshipEndToVertexIdMap.get(r.getEnd2()));
         final Map<String, String> esDocIdMapping = new HashMap<>();
         esDocIdMapping.put(END_1_DOC_ID_KEY, end1DocId);
         esDocIdMapping.put(END_2_DOC_ID_KEY, end2DocId);

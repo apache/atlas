@@ -85,7 +85,7 @@ public class AtlasRelationshipHeader extends AtlasStruct implements Serializable
                 setStatus(AtlasEntity.Status.DELETED);
                 break;
 
-            case PURGE_DUE_TO_ENTITY:
+            case PURGE_DUE_TO_ENTITY_DELETION:
                 setStatus(AtlasEntity.Status.PURGED);
                 break;
         }

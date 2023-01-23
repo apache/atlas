@@ -2300,7 +2300,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     private void recordInComingEdgesToBeDeleted(Iterable<AtlasEdge> incomingEdges) throws AtlasBaseException {
         for (AtlasEdge edge : incomingEdges) {
             if (isRelationshipEdge(edge))
-                AtlasRelationshipStoreV2.saveRelationshipDeletionContext(RequestContext.get().getDeleteType(), null, edge, edge.getOutVertex(), edge.getInVertex(), entityRetriever);
+                AtlasRelationshipStoreV2.saveRelationshipDeletionContext(RequestContext.get().getDeleteType(), edge, edge.getOutVertex(), edge.getInVertex(), entityRetriever);
         }
     }
 
@@ -2308,7 +2308,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         if (!RequestContext.get().getDeleteType().equals(DeleteType.SOFT)) {
             for (AtlasEdge edge : outgoingEdges) {
                 if (isRelationshipEdge(edge))
-                    AtlasRelationshipStoreV2.saveRelationshipDeletionContext(RequestContext.get().getDeleteType(), null, edge, edge.getOutVertex(), edge.getInVertex(), entityRetriever);
+                    AtlasRelationshipStoreV2.saveRelationshipDeletionContext(RequestContext.get().getDeleteType(), edge, edge.getOutVertex(), edge.getInVertex(), entityRetriever);
             }
         }
     }
