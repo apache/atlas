@@ -71,7 +71,7 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
     private Date                            createTime          = null;
     private Date                            updateTime          = null;
     private String                          deleteHandler       = null;
-    private Map<String, AtlasSearchResult>  collapsedResults    = null;
+    private Map<String, AtlasSearchResult>  collapse    = null;
 
     public AtlasEntityHeader() {
         this(null, null);
@@ -252,12 +252,12 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
         this.deleteHandler = deleteHandler;
     }
 
-    public Map<String, AtlasSearchResult> getCollapsedResults() {
-        return collapsedResults;
+    public Map<String, AtlasSearchResult> getCollapse() {
+        return collapse;
     }
 
-    public void setCollapsedResults(Map<String, AtlasSearchResult> collapsedResults) {
-        this.collapsedResults = collapsedResults;
+    public void setCollapse(Map<String, AtlasSearchResult> collapse) {
+        this.collapse = collapse;
     }
 
     @Override

@@ -136,17 +136,17 @@ public class AtlasJanusIndexQuery implements AtlasIndexQuery<AtlasJanusVertex, A
         }
 
         @Override
-        public Set<String> getCollapsedResultKeys() {
+        public Set<String> getCollapseKeys() {
             return null;
         }
 
         @Override
-        public DirectIndexQueryResult<AtlasJanusVertex, AtlasJanusEdge> getCollapsedVertices(String key) {
+        public DirectIndexQueryResult<AtlasJanusVertex, AtlasJanusEdge> getCollapseVertices(String key) {
             return null;
         }
 
         @Override
-        public Integer getCollapsedVerticesCount(String key) {
+        public Integer getCollapseVerticesCount(String key) {
             return null;
         }
     }

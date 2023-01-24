@@ -986,7 +986,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
             DirectIndexQueryResult indexQueryResult = indexQuery.vertices(searchParams);
 
-            prepareSearchResult(ret, indexQueryResult);
+            prepareSearchResult(ret, indexQueryResult, resultAttributes, true);
 
             ret.setAggregations(indexQueryResult.getAggregationMap());
             ret.setApproximateCount(indexQuery.vertexTotals());
@@ -996,18 +996,11 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         return ret;
     }
 
-    private void prepareSearchResult(AtlasSearchResult ret, DirectIndexQueryResult indexQueryResult) throws AtlasBaseException {
+    private void prepareSearchResult(AtlasSearchResult ret, DirectIndexQueryResult indexQueryResult, Set<String> resultAttributes, boolean fetchCollapsedResults) throws AtlasBaseException {
         SearchParams searchParams = ret.getSearchParameters();
         try {
             Iterator<Result> iterator = indexQueryResult.getIterator();
             boolean showSearchScore = searchParams.getShowSearchScore();
-            boolean showCollapsedResults = searchParams.getShowCollapsedResults();
-            boolean showCollapsedResultsCount = searchParams.getShowCollapsedResultsCount();
-            boolean fetchCollapsedResults = showCollapsedResults || showCollapsedResultsCount;
-            Set<String> resultAttributes = new HashSet<>();
-            if (CollectionUtils.isNotEmpty(searchParams.getAttributes())) {
-                resultAttributes.addAll(searchParams.getAttributes());
-            }
 
             while (iterator.hasNext()) {
                 Result result = iterator.next();
@@ -1024,28 +1017,29 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                     ret.addEntityScore(header.getGuid(), result.getScore());
                 }
                 if (fetchCollapsedResults) {
-                    SearchParams collapsedSearchParams = new SearchParameters();
-                    collapsedSearchParams.setAttributes(ret.getSearchParameters().getAttributes());
-                    collapsedSearchParams.setSuppressLogs(ret.getSearchParameters().getSuppressLogs());
+                    Map<String, AtlasSearchResult> collapse = new HashMap<>();
 
-                    Map<String, AtlasSearchResult> collapsedResults = new HashMap<>();
+                    Set<String> collapseKeys = result.getCollapseKeys();
+                    for (String collapseKey : collapseKeys) {
+                        AtlasSearchResult collapseRet = new AtlasSearchResult();
+                        collapseRet.setSearchParameters(ret.getSearchParameters());
 
-                    Set<String> collapsedResultKeys = result.getCollapsedResultKeys();
-                    for (String collapsedResultKey : collapsedResultKeys) {
-                        AtlasSearchResult collapsedRet = new AtlasSearchResult();
-                        collapsedRet.setSearchParameters(collapsedSearchParams);
-
-                        if (showCollapsedResultsCount) {
-                            collapsedRet.setApproximateCount(result.getCollapsedVerticesCount(collapsedResultKey));
+                        Set<String> collapseResultAttributes = new HashSet<>();
+                        if (CollectionUtils.isNotEmpty(searchParams.getCollapseAttributes())) {
+                            collapseResultAttributes.addAll(searchParams.getCollapseAttributes());
+                        } else {
+                            collapseResultAttributes = resultAttributes;
                         }
-                        if (showCollapsedResults) {
-                            DirectIndexQueryResult indexQueryCollapsedResult = result.getCollapsedVertices(collapsedResultKey);
-                            prepareSearchResult(collapsedRet, indexQueryCollapsedResult);
-                        }
-                        collapsedRet.setSearchParameters(null);
-                        collapsedResults.put(collapsedResultKey, collapsedRet);
+
+                        collapseRet.setApproximateCount(result.getCollapseVerticesCount(collapseKey));
+
+                        DirectIndexQueryResult indexQueryCollapsedResult = result.getCollapseVertices(collapseKey);
+                        prepareSearchResult(collapseRet, indexQueryCollapsedResult, collapseResultAttributes, false);
+
+                        collapseRet.setSearchParameters(null);
+                        collapse.put(collapseKey, collapseRet);
                     }
-                    header.setCollapsedResults(collapsedResults);
+                    header.setCollapse(collapse);
                 }
 
                 ret.addEntity(header);

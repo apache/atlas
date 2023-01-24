@@ -89,11 +89,11 @@ public interface AtlasIndexQuery<V, E> {
          */
         double getScore();
 
-        Set<String> getCollapsedResultKeys();
+        Set<String> getCollapseKeys();
 
-        DirectIndexQueryResult<V, E> getCollapsedVertices(String key);
+        DirectIndexQueryResult<V, E> getCollapseVertices(String key);
 
-        Integer getCollapsedVerticesCount(String key);
+        Integer getCollapseVerticesCount(String key);
 
     }
 

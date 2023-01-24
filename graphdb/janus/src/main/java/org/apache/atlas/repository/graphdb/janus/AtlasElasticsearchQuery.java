@@ -213,17 +213,17 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         }
 
         @Override
-        public Set<String> getCollapsedResultKeys() {
+        public Set<String> getCollapseKeys() {
             return null;
         }
 
         @Override
-        public DirectIndexQueryResult<AtlasJanusVertex, AtlasJanusEdge> getCollapsedVertices(String key) {
+        public DirectIndexQueryResult<AtlasJanusVertex, AtlasJanusEdge> getCollapseVertices(String key) {
             return null;
         }
 
         @Override
-        public Integer getCollapsedVerticesCount(String key) {
+        public Integer getCollapseVerticesCount(String key) {
             return null;
         }
     }
@@ -243,17 +243,18 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         }
 
         @Override
-        public Set<String> getCollapsedResultKeys() {
+        public Set<String> getCollapseKeys() {
             DirectIndexQueryResult result = new DirectIndexQueryResult();
+            Set<String> collapseKeys = new HashSet<>();
             Map<String, LinkedHashMap> responseMap = AtlasType.fromJson(AtlasType.toJson(hit.get("inner_hits")), Map.class);
             if (responseMap != null) {
-                return responseMap.keySet();
+                collapseKeys = responseMap.keySet();
             }
-            return null;
+            return collapseKeys;
         }
 
         @Override
-        public DirectIndexQueryResult getCollapsedVertices(String key) {
+        public DirectIndexQueryResult getCollapseVertices(String key) {
             DirectIndexQueryResult result = new DirectIndexQueryResult();
             Map<String, LinkedHashMap> responseMap = AtlasType.fromJson(AtlasType.toJson(hit.get("inner_hits")), Map.class);
             if (responseMap != null) {
@@ -268,7 +269,7 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         }
 
         @Override
-        public Integer getCollapsedVerticesCount(String key) {
+        public Integer getCollapseVerticesCount(String key) {
             Map<String, LinkedHashMap> responseMap = AtlasType.fromJson(AtlasType.toJson(hit.get("inner_hits")), Map.class);
             if (responseMap != null) {
                 responseMap = AtlasType.fromJson(AtlasType.toJson(responseMap.get(key)), Map.class);
