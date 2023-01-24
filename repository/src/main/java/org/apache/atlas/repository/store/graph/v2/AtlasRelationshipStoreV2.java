@@ -400,7 +400,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         }
 
         AtlasRelationshipStoreV2.setEdgeVertexIdsInContext(relationship, end1Vertex, end2Vertex);
-        relationship.setStatus(deleteType.equals(DeleteType.SOFT) ? AtlasRelationship.Status.DELETED : AtlasRelationship.Status.PURGE_DUE_TO_ENTITY_DELETION);
+        relationship.setStatus(deleteType.equals(DeleteType.SOFT) || deleteType.equals(DeleteType.DEFAULT) ? AtlasRelationship.Status.DELETED : AtlasRelationship.Status.PERMANENT_DELETE);
         RequestContext.get().addGuidToDeletedRelationships(RequestContext.get().getDeleteType(), relationship);
     }
 
@@ -927,6 +927,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
 
     public void sendNotifications(Map<DeleteType, List<AtlasRelationship>> deletedRelationshipsMap) throws AtlasBaseException {
         final List<AtlasRelationship> softDeletedRelationships = deletedRelationshipsMap.getOrDefault(DeleteType.SOFT, new ArrayList<>());
+        softDeletedRelationships.addAll(deletedRelationshipsMap.getOrDefault(DeleteType.DEFAULT, new ArrayList<>()));
         final List<AtlasRelationship> hardDeletedRelationships = deletedRelationshipsMap.getOrDefault(DeleteType.HARD, new ArrayList<>());
         final List<AtlasRelationship> purgedRelationships = deletedRelationshipsMap.getOrDefault(DeleteType.PURGE, new ArrayList<>());
 

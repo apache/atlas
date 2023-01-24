@@ -88,7 +88,7 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
     private Date          updateTime     = null;
     private Long          version        = 0L;
 
-    public enum Status { ACTIVE, DELETED, PURGE_DUE_TO_ENTITY_DELETION}     // PURGE_DUE_TO_ENTITY used to denote Relationship deletion event when Entity is Hard deleted
+    public enum Status { ACTIVE, DELETED, PERMANENT_DELETE}
 
     private Set<AtlasClassification> propagatedClassifications;
     private Set<AtlasClassification> blockedPropagatedClassifications;

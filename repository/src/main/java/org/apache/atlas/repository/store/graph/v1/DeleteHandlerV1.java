@@ -382,7 +382,6 @@ public abstract class DeleteHandlerV1 {
             // only delete the reference relationship edge
             if (GraphHelper.isRelationshipEdge(edge)) {
                 deleteEdge(edge, isInternalType);
-
                 AtlasVertex referencedVertex = entityRetriever.getReferencedEntityVertex(edge, relationshipDirection, entityVertex);
 
                 if (referencedVertex != null) {
