@@ -986,10 +986,28 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
             DirectIndexQueryResult indexQueryResult = indexQuery.vertices(searchParams);
 
+            prepareSearchResult(ret, indexQueryResult);
+
+            ret.setAggregations(indexQueryResult.getAggregationMap());
+            ret.setApproximateCount(indexQuery.vertexTotals());
+        } catch (Exception e) {
+            throw e;
+        }
+        return ret;
+    }
+
+    private void prepareSearchResult(AtlasSearchResult ret, DirectIndexQueryResult indexQueryResult) throws AtlasBaseException {
+        SearchParams searchParams = ret.getSearchParameters();
+        try {
             Iterator<Result> iterator = indexQueryResult.getIterator();
             boolean showSearchScore = searchParams.getShowSearchScore();
             boolean showCollapsedResults = searchParams.getShowCollapsedResults();
             boolean showCollapsedResultsCount = searchParams.getShowCollapsedResultsCount();
+            boolean fetchCollapsedResults = showCollapsedResults || showCollapsedResultsCount;
+            Set<String> resultAttributes = new HashSet<>();
+            if (CollectionUtils.isNotEmpty(searchParams.getAttributes())) {
+                resultAttributes.addAll(searchParams.getAttributes());
+            }
 
             while (iterator.hasNext()) {
                 Result result = iterator.next();
@@ -1005,39 +1023,37 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 if (showSearchScore) {
                     ret.addEntityScore(header.getGuid(), result.getScore());
                 }
-                ret.addEntity(header);
-                if (showCollapsedResults) {
-                    DirectIndexQueryResult indexQueryCollapsedResult = result.getCollapsedVertices();
-                    if (indexQueryCollapsedResult != null) {
-                        Iterator<Result> collapsedVerticesIterator = indexQueryCollapsedResult.getIterator();
-                        while (collapsedVerticesIterator.hasNext()) {
-                            Result collapsedResult = collapsedVerticesIterator.next();
-                            AtlasVertex collapsedVertex = collapsedResult.getVertex();
+                if (fetchCollapsedResults) {
+                    SearchParams collapsedSearchParams = new SearchParameters();
+                    collapsedSearchParams.setAttributes(ret.getSearchParameters().getAttributes());
+                    collapsedSearchParams.setSuppressLogs(ret.getSearchParameters().getSuppressLogs());
 
-                            if (collapsedVertex == null) {
-                                LOG.warn("vertex in null");
-                                continue;
-                            }
+                    Map<String, AtlasSearchResult> collapsedResults = new HashMap<>();
 
-                            AtlasEntityHeader collapsedHeader = entityRetriever.toAtlasEntityHeader(collapsedVertex, resultAttributes);
-                            collapsedHeader.setClassifications(entityRetriever.getAllClassifications(collapsedVertex));
-                            ret.addCollapsedEntity(header.getGuid(), collapsedHeader);
+                    Set<String> collapsedResultKeys = result.getCollapsedResultKeys();
+                    for (String collapsedResultKey : collapsedResultKeys) {
+                        AtlasSearchResult collapsedRet = new AtlasSearchResult();
+                        collapsedRet.setSearchParameters(collapsedSearchParams);
+
+                        if (showCollapsedResultsCount) {
+                            collapsedRet.setApproximateCount(result.getCollapsedVerticesCount(collapsedResultKey));
                         }
+                        if (showCollapsedResults) {
+                            DirectIndexQueryResult indexQueryCollapsedResult = result.getCollapsedVertices(collapsedResultKey);
+                            prepareSearchResult(collapsedRet, indexQueryCollapsedResult);
+                        }
+                        collapsedRet.setSearchParameters(null);
+                        collapsedResults.put(collapsedResultKey, collapsedRet);
                     }
+                    header.setCollapsedResults(collapsedResults);
                 }
-                if (showCollapsedResultsCount) {
-                    ret.addCollapsedEntitiesCount(header.getGuid(), result.getCollapsedVerticesCount());
-                }
+
+                ret.addEntity(header);
             }
-
-            ret.setAggregations(indexQueryResult.getAggregationMap());
-            ret.setApproximateCount(indexQuery.vertexTotals());
         } catch (Exception e) {
-            throw e;
+                throw e;
         }
-
         scrubSearchResults(ret, searchParams.getSuppressLogs());
-        return ret;
     }
 
     private Map<String, Object> getMap(String key, Object value) {
