@@ -1020,7 +1020,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                             }
 
                             AtlasEntityHeader collapsedHeader = entityRetriever.toAtlasEntityHeader(collapsedVertex, resultAttributes);
-                            collapsedHeader.setClassifications(entityRetriever.getAllClassifications(vertex));
+                            collapsedHeader.setClassifications(entityRetriever.getAllClassifications(collapsedVertex));
                             ret.addCollapsedEntity(header.getGuid(), collapsedHeader);
                         }
                     }
