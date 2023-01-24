@@ -32,6 +32,7 @@ import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
+import org.apache.atlas.repository.store.graph.v2.AtlasRelationshipStoreV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.type.*;
 import org.apache.atlas.utils.AtlasEntityUtil;
@@ -387,6 +388,7 @@ public class RestoreHandlerV1 {
             if (isProceed) {
                 if (isRelationshipEdge(edge)) {
                     restoreRelationship(edge);
+                    AtlasRelationshipStoreV2.saveRelationshipRestorationContext(edge, edge.getOutVertex(), edge.getInVertex(), entityRetriever);
                 } else {
                     AtlasVertex outVertex = edge.getOutVertex();
                     AtlasVertex inVertex = edge.getInVertex();

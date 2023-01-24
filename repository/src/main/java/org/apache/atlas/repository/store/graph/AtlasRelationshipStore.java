@@ -100,5 +100,5 @@ public interface AtlasRelationshipStore {
      */
     void deleteById(String guid, boolean forceDelete) throws AtlasBaseException;
 
-    void sendNotifications(Map<DeleteType, List<AtlasRelationship>> deletedRelationshipsMap) throws AtlasBaseException;
+    void sendNotifications(Map<String, List<AtlasRelationship>> mutatedRelationshipsMap) throws AtlasBaseException;
 }

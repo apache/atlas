@@ -66,7 +66,7 @@ public class RequestContext {
     private final Map<String, List<Object>> removedElementsMap = new HashMap<>();
     private final Map<String, List<Object>> newElementsCreatedMap = new HashMap<>();
 
-    private final Map<DeleteType, List<AtlasRelationship>> deletedRelationshipsMap = new HashMap<>();
+    private final Map<String, List<AtlasRelationship>> relationshipMutationMap = new HashMap<>();
 
     private String user;
     private Set<String> userGroups;
@@ -140,7 +140,7 @@ public class RequestContext {
         this.deletedEdgesIds.clear();
         this.requestContextHeaders.clear();
         this.relationshipEndToVertexIdMap.clear();
-        this.deletedRelationshipsMap.clear();
+        this.relationshipMutationMap.clear();
         this.currentTask = null;
         setTraceId(null);
 
@@ -622,12 +622,18 @@ public class RequestContext {
     }
 
     public void addGuidToDeletedRelationships(DeleteType operation, AtlasRelationship relationship) {
-        List<AtlasRelationship> deletedRelationships = this.deletedRelationshipsMap.getOrDefault(operation, new ArrayList<>());
+        List<AtlasRelationship> deletedRelationships = this.relationshipMutationMap.getOrDefault(operation, new ArrayList<>());
         deletedRelationships.add(relationship);
-        this.deletedRelationshipsMap.put(operation, deletedRelationships);
+        this.relationshipMutationMap.put(operation.toString(), deletedRelationships);
     }
 
-    public Map<DeleteType, List<AtlasRelationship>> getDeletedRelationshipsMap() {
-        return deletedRelationshipsMap;
+    public void addGuidToRestoredRelationships(AtlasRelationship relationship) {
+        List<AtlasRelationship> restoredRelationships = this.relationshipMutationMap.getOrDefault(AtlasRelationship.Status.ACTIVE.toString(), new ArrayList<>());
+        restoredRelationships.add(relationship);
+        this.relationshipMutationMap.put(AtlasRelationship.Status.ACTIVE.toString(), restoredRelationships);
+    }
+
+    public Map<String, List<AtlasRelationship>> getRelationshipMutationMap() {
+        return relationshipMutationMap;
     }
 }

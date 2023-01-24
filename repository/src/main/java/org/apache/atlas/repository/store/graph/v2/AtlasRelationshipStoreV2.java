@@ -28,6 +28,7 @@ import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.authorize.AtlasRelationshipAccessRequest;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
@@ -402,6 +403,32 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         AtlasRelationshipStoreV2.setEdgeVertexIdsInContext(relationship, end1Vertex, end2Vertex);
         relationship.setStatus(deleteType.equals(DeleteType.SOFT) || deleteType.equals(DeleteType.DEFAULT) ? AtlasRelationship.Status.DELETED : AtlasRelationship.Status.PERMANENT_DELETE);
         RequestContext.get().addGuidToDeletedRelationships(RequestContext.get().getDeleteType(), relationship);
+    }
+
+    public static void saveRelationshipRestorationContext(AtlasEdge edge, AtlasVertex outgoingVertex, AtlasVertex incomingVertex, EntityGraphRetriever entityRetriever) throws AtlasBaseException {
+        if (edge == null)
+            throw new IllegalStateException("edge cannot be null");
+        final AtlasRelationship relationship = entityRetriever.mapEdgeToAtlasRelationship(edge);
+        AtlasObjectId end1 = relationship.getEnd1();
+        AtlasObjectId end2 = relationship.getEnd2();
+
+        AtlasObjectId outgoing = entityRetriever.toAtlasObjectId(outgoingVertex);
+        AtlasObjectId incoming = entityRetriever.toAtlasObjectId(incomingVertex);
+
+        AtlasVertex end1Vertex = null;
+        AtlasVertex end2Vertex = null;
+
+        if (end1.getGuid().equals(outgoing.getGuid()) && end2.getGuid().equals(incoming.getGuid())) {
+            end1Vertex = outgoingVertex;
+            end2Vertex = incomingVertex;
+        } else if (end1.getGuid().equals(incoming.getGuid()) && end2.getGuid().equals(outgoing.getGuid())) {
+            end1Vertex = incomingVertex;
+            end2Vertex = outgoingVertex;
+        }
+
+        AtlasRelationshipStoreV2.setEdgeVertexIdsInContext(relationship, end1Vertex, end2Vertex);
+        relationship.setStatus(AtlasRelationship.Status.ACTIVE);
+        RequestContext.get().addGuidToRestoredRelationships(relationship);
     }
 
     @Override
@@ -925,20 +952,23 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         }
     }
 
-    public void sendNotifications(Map<DeleteType, List<AtlasRelationship>> deletedRelationshipsMap) throws AtlasBaseException {
-        final List<AtlasRelationship> softDeletedRelationships = deletedRelationshipsMap.getOrDefault(DeleteType.SOFT, new ArrayList<>());
-        softDeletedRelationships.addAll(deletedRelationshipsMap.getOrDefault(DeleteType.DEFAULT, new ArrayList<>()));
-        final List<AtlasRelationship> hardDeletedRelationships = deletedRelationshipsMap.getOrDefault(DeleteType.HARD, new ArrayList<>());
-        final List<AtlasRelationship> purgedRelationships = deletedRelationshipsMap.getOrDefault(DeleteType.PURGE, new ArrayList<>());
+    public void sendNotifications(Map<String, List<AtlasRelationship>> mutatedRelationshipsMap) throws AtlasBaseException {
+        final List<AtlasRelationship> softDeletedRelationships = mutatedRelationshipsMap.getOrDefault(DeleteType.SOFT.toString(), new ArrayList<>());
+        softDeletedRelationships.addAll(mutatedRelationshipsMap.getOrDefault(DeleteType.DEFAULT.toString(), new ArrayList<>()));
+        final List<AtlasRelationship> hardDeletedRelationships = mutatedRelationshipsMap.getOrDefault(DeleteType.HARD.toString(), new ArrayList<>());
+        final List<AtlasRelationship> purgedRelationships = mutatedRelationshipsMap.getOrDefault(DeleteType.PURGE.toString(), new ArrayList<>());
+        final List<AtlasRelationship> restoredRelationships = mutatedRelationshipsMap.getOrDefault(AtlasEntity.Status.ACTIVE.toString(), new ArrayList<>());
 
         this.addRelationshipBasedCustomInfo(softDeletedRelationships);
         this.addRelationshipBasedCustomInfo(hardDeletedRelationships);
         this.addRelationshipBasedCustomInfo(purgedRelationships);
+        this.addRelationshipBasedCustomInfo(restoredRelationships);
 
         if (notificationsEnabled){
             entityChangeNotifier.notifyRelationshipMutation(softDeletedRelationships, OperationType.RELATIONSHIP_DELETE);
             entityChangeNotifier.notifyRelationshipMutation(hardDeletedRelationships, OperationType.RELATIONSHIP_DELETE);
             entityChangeNotifier.notifyRelationshipMutation(purgedRelationships, OperationType.RELATIONSHIP_DELETE);
+            entityChangeNotifier.notifyRelationshipMutation(restoredRelationships, OperationType.RELATIONSHIP_UPDATE);
         }
     }
 
