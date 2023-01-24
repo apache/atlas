@@ -1025,7 +1025,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                         collapseRet.setSearchParameters(ret.getSearchParameters());
 
                         Set<String> collapseResultAttributes = new HashSet<>();
-                        if (CollectionUtils.isNotEmpty(searchParams.getCollapseAttributes())) {
+                        if (searchParams.getCollapseAttributes() != null) {
                             collapseResultAttributes.addAll(searchParams.getCollapseAttributes());
                         } else {
                             collapseResultAttributes = resultAttributes;
