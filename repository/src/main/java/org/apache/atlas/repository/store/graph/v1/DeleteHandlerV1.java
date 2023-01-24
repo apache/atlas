@@ -32,6 +32,7 @@ import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.tasks.AtlasTask;
+import org.apache.atlas.model.tasks.TaskSearchResult;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
@@ -44,6 +45,7 @@ import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.DeleteType;
 import org.apache.atlas.repository.store.graph.v2.tasks.ClassificationTask;
+import org.apache.atlas.repository.store.graph.v2.tasks.TaskUtil;
 import org.apache.atlas.tasks.TaskManagement;
 import org.apache.atlas.type.*;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
@@ -73,15 +75,16 @@ import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getSt
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.*;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_ADD;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_DELETE;
-import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_ONLY_PROPAGATION_DELETE;
+import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_REFRESH_PROPAGATION;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
 import static org.apache.atlas.type.Constants.HAS_LINEAGE;
 import static org.apache.atlas.type.Constants.PENDING_TASKS_PROPERTY_KEY;
 
 public abstract class DeleteHandlerV1 {
-    public static final Logger LOG = LoggerFactory.getLogger(DeleteHandlerV1.class);
+    public static final Logger  LOG = LoggerFactory.getLogger(DeleteHandlerV1.class);
 
-    static final boolean DEFERRED_ACTION_ENABLED = AtlasConfiguration.TASKS_USE_ENABLED.getBoolean();
+    static final boolean        DEFERRED_ACTION_ENABLED        = AtlasConfiguration.TASKS_USE_ENABLED.getBoolean();
+    static final     int        PENDING_TASK_QUERY_SIZE_LIMIT  = 20;
 
     protected final GraphHelper          graphHelper;
     private   final AtlasTypeRegistry    typeRegistry;
@@ -90,6 +93,7 @@ public abstract class DeleteHandlerV1 {
     private   final boolean              softDelete;
     private   final TaskManagement       taskManagement;
     private   final AtlasGraph           graph;
+    private   final TaskUtil             taskUtil;
 
 
     public DeleteHandlerV1(AtlasGraph graph, AtlasTypeRegistry typeRegistry, boolean shouldUpdateInverseReference, boolean softDelete, TaskManagement taskManagement) {
@@ -100,6 +104,7 @@ public abstract class DeleteHandlerV1 {
         this.softDelete                    = softDelete;
         this.taskManagement                = taskManagement;
         this.graph                         = graph;
+        this.taskUtil                      = new TaskUtil(graph);
     }
 
     /**
@@ -113,18 +118,13 @@ public abstract class DeleteHandlerV1 {
     public void deleteEntities(Collection<AtlasVertex> instanceVertices) throws AtlasBaseException {
         final RequestContext   requestContext            = RequestContext.get();
         final Set<AtlasVertex> deletionCandidateVertices = new HashSet<>();
-        final boolean          isPurgeRequested          = requestContext.isPurgeRequested();
 
         for (AtlasVertex instanceVertex : instanceVertices) {
             final String             guid  = AtlasGraphUtilsV2.getIdFromVertex(instanceVertex);
 
             if (skipVertexForDelete(instanceVertex)) {
                 if (LOG.isDebugEnabled()) {
-                    if (isPurgeRequested) {
-                        LOG.debug("Skipping purging of entity={} as it is active or already purged", guid);
-                    } else {
                         LOG.debug("Skipping deletion of entity={} as it is already deleted", guid);
-                    }
                 }
                 continue;
             }
@@ -154,7 +154,7 @@ public abstract class DeleteHandlerV1 {
                 Set<String> deletedEdgeIds = RequestContext.get().getDeletedEdgesIds();
                 for (String deletedEdgeId : deletedEdgeIds) {
                     AtlasEdge edge = graph.getEdge(deletedEdgeId);
-                    createClassificationOnlyPropagationDeleteTasksAndQueue(GraphHelper.getPropagatableClassifications(edge), deletedEdgeId);
+                    createAndQueueClassificationRefreshPropagationTask(edge);
                 }
             }
         }
@@ -182,15 +182,11 @@ public abstract class DeleteHandlerV1 {
 
         for (AtlasEdge edge : edges) {
             boolean isInternal = isInternalType(edge.getInVertex()) && isInternalType(edge.getOutVertex());
-            boolean needToSkip = !isInternal && (getState(edge) == (isPurgeRequested ? ACTIVE : DELETED));
+            boolean needToSkip = !isInternal && (!isPurgeRequested && DELETED.equals(getState(edge)));
 
             if (needToSkip) {
                 if (LOG.isDebugEnabled()) {
-                    if(isPurgeRequested) {
-                        LOG.debug("Skipping purging of edge={} as it is active or already purged", getIdFromEdge(edge));
-                    } else{
-                        LOG.debug("Skipping deletion of edge={} as it is already deleted", getIdFromEdge(edge));
-                    }
+                    LOG.debug("Skipping deletion of edge={} as it is already deleted", getIdFromEdge(edge));
                 }
 
                 continue;
@@ -219,9 +215,8 @@ public abstract class DeleteHandlerV1 {
             AtlasVertex        vertex = vertices.pop();
             AtlasEntity.Status state  = getState(vertex);
 
-            //In case of purge If the reference vertex is active then skip it or else
-            //If the vertex marked for deletion, skip it
-            if (state == (isPurgeRequested ? ACTIVE : DELETED)) {
+            //If the vertex marked for deletion, if we are not purging, skip it
+            if (!isPurgeRequested && DELETED.equals(state)) {
                 continue;
             }
 
@@ -265,7 +260,7 @@ public abstract class DeleteHandlerV1 {
                     } else {
                         AtlasEdge edge = graphHelper.getEdgeForLabel(vertex, edgeLabel);
 
-                        if (edge == null || (getState(edge) == (isPurgeRequested ? ACTIVE : DELETED))) {
+                        if (edge == null || (!isPurgeRequested && DELETED.equals(getState(edge)))) {
                             continue;
                         }
 
@@ -323,7 +318,7 @@ public abstract class DeleteHandlerV1 {
 
                         if (CollectionUtils.isNotEmpty(edges)) {
                             for (AtlasEdge edge : edges) {
-                                if (edge == null || (getState(edge) == (isPurgeRequested ? ACTIVE : DELETED))) {
+                                if (edge == null || (!isPurgeRequested && DELETED.equals(getState(edge)))) {
                                     continue;
                                 }
 
@@ -652,6 +647,9 @@ public abstract class DeleteHandlerV1 {
             RequestContext      context            = RequestContext.get();
 
             for (AtlasVertex entityVertex : entityVertices) {
+                if(!entityVertex.exists()) {
+                    continue;
+                }
                 AtlasEdge propagatedEdge = getPropagatedClassificationEdge(entityVertex, classificationName, entityGuid);
 
                 if (propagatedEdge != null) {
@@ -1101,6 +1099,10 @@ public abstract class DeleteHandlerV1 {
      * @throws AtlasException
      */
     private void deleteAllClassifications(AtlasVertex instanceVertex) throws AtlasBaseException {
+        // If instance is deleted no need to operate classification deleted
+        if (!ACTIVE.equals(getState(instanceVertex)))
+            return;
+
         List<AtlasEdge> classificationEdges = getAllClassificationEdges(instanceVertex);
 
         for (AtlasEdge edge : classificationEdges) {
@@ -1131,7 +1133,7 @@ public abstract class DeleteHandlerV1 {
                 if(guid != null && !reqContext.isDeletedEntity(guid)) {
                     final AtlasEntity.Status vertexState = getState(vertex);
                     if (reqContext.isPurgeRequested()) {
-                        ret = vertexState == ACTIVE; // skip purging ACTIVE vertices
+                        ret = false; // Delete all ACTIVE or DELETED assets in PURGING
                     } else {
                         ret = vertexState == DELETED; // skip deleting DELETED vertices
                     }
@@ -1284,45 +1286,35 @@ public abstract class DeleteHandlerV1 {
         }
     }
 
-    public void createClassificationOnlyPropagationDeleteTasksAndQueue(List<AtlasVertex> classificationVertices, String deletedEdgeId) {
-        for (AtlasVertex classificationVertex : classificationVertices) {
-            String classificationVertexId = classificationVertex.getIdForDisplay();
-            createAndQueueTask(CLASSIFICATION_ONLY_PROPAGATION_DELETE, deletedEdgeId, classificationVertexId);
-        }
-    }
 
-    public void createAndQueueTask(String taskType, AtlasVertex entityVertex, String classificationVertexId, String relationshipGuid, Boolean currentRestrictPropagationThroughLineage) {
-        String              currentUser = RequestContext.getCurrentUser();
-        String              entityGuid  = GraphHelper.getGuid(entityVertex);
-        Map<String, Object> taskParams  = ClassificationTask.toParameters(entityGuid, classificationVertexId, relationshipGuid, currentRestrictPropagationThroughLineage);
-        AtlasTask           task        = taskManagement.createTask(taskType, currentUser, taskParams);
-
-        AtlasGraphUtilsV2.addEncodedProperty(entityVertex, PENDING_TASKS_PROPERTY_KEY, task.getGuid());
-
-        RequestContext.get().queueTask(task);
-    }
-
-    public void createAndQueueTask(String taskType, AtlasVertex entityVertex, String classificationVertexId, String relationshipGuid) {
-        String              currentUser = RequestContext.getCurrentUser();
-        String              entityGuid  = GraphHelper.getGuid(entityVertex);
-        Map<String, Object> taskParams  = ClassificationTask.toParameters(entityGuid, classificationVertexId, relationshipGuid);
-        AtlasTask           task        = taskManagement.createTask(taskType, currentUser, taskParams);
-
-        AtlasGraphUtilsV2.addEncodedProperty(entityVertex, PENDING_TASKS_PROPERTY_KEY, task.getGuid());
-
-        RequestContext.get().queueTask(task);
-    }
-
-
-    public void createAndQueueTask(String taskType, String deletedEdgeId, String classificationVertexId) {
-        String currentUser = RequestContext.getCurrentUser();
-
-        if (deletedEdgeId == null) {
+    public void createAndQueueTask(String taskType, AtlasVertex entityVertex, String classificationVertexId, String relationshipGuid, Boolean currentRestrictPropagationThroughLineage) throws AtlasBaseException {
+        if (!CLASSIFICATION_PROPAGATION_DELETE.equals(taskType) && skipClassificationTaskCreation(classificationVertexId)) {
+            LOG.info("Task is already scheduled for classification id {}, no need to schedule task for vertex {}", classificationVertexId, entityVertex.getIdForDisplay());
             return;
         }
 
-        Map<String, Object> taskParams  = ClassificationTask.toParameters(deletedEdgeId, classificationVertexId);
-        AtlasTask           task        = taskManagement.createTask(taskType, currentUser, taskParams);
+        String              currentUser = RequestContext.getCurrentUser();
+        String              entityGuid  = GraphHelper.getGuid(entityVertex);
+        Map<String, Object> taskParams  = ClassificationTask.toParameters(entityGuid, classificationVertexId, relationshipGuid, currentRestrictPropagationThroughLineage);
+        AtlasTask           task        = taskManagement.createTask(taskType, currentUser, taskParams, classificationVertexId, entityGuid);
+
+        AtlasGraphUtilsV2.addEncodedProperty(entityVertex, PENDING_TASKS_PROPERTY_KEY, task.getGuid());
+
+        RequestContext.get().queueTask(task);
+    }
+
+    public void createAndQueueTask(String taskType, AtlasVertex entityVertex, String classificationVertexId, String relationshipGuid) throws AtlasBaseException {
+        if (!CLASSIFICATION_PROPAGATION_DELETE.equals(taskType) && skipClassificationTaskCreation(classificationVertexId)) {
+            LOG.info("Task is already scheduled for classification id {}, no need to schedule task for vertex {}", classificationVertexId, entityVertex.getIdForDisplay());
+            return;
+        }
+
+        String              currentUser = RequestContext.getCurrentUser();
+        String              entityGuid  = GraphHelper.getGuid(entityVertex);
+        Map<String, Object> taskParams  = ClassificationTask.toParameters(entityGuid, classificationVertexId, relationshipGuid);
+        AtlasTask           task        = taskManagement.createTask(taskType, currentUser, taskParams, classificationVertexId, entityGuid);
+
+        AtlasGraphUtilsV2.addEncodedProperty(entityVertex, PENDING_TASKS_PROPERTY_KEY, task.getGuid());
 
         RequestContext.get().queueTask(task);
     }
@@ -1331,12 +1323,119 @@ public abstract class DeleteHandlerV1 {
         String              currentUser        = RequestContext.getCurrentUser();
         String              relationshipEdgeId = relationshipEdge.getIdForDisplay();
         Map<String, Object> taskParams         = ClassificationTask.toParameters(relationshipEdgeId, relationship);
+
         AtlasTask           task               = taskManagement.createTask(taskType, currentUser, taskParams);
 
         AtlasGraphUtilsV2.addItemToListProperty(relationshipEdge, EDGE_PENDING_TASKS_PROPERTY_KEY, task.getGuid());
 
         RequestContext.get().queueTask(task);
     }
+
+    public void createAndQueueClassificationRefreshPropagationTask(AtlasEdge edge) throws AtlasBaseException{
+
+        if (taskManagement==null) {
+            LOG.warn("Task management is null, can't schedule task now");
+            return;
+        }
+
+        String      currentUser         = RequestContext.getCurrentUser();
+        boolean     isRelationshipEdge  = isRelationshipEdge(edge);
+        boolean     isTermEntityEdge    = GraphHelper.isTermEntityEdge(edge);
+
+        if (edge == null || !isRelationshipEdge) {
+            LOG.warn("Edge is null or it is not relationship edge, can't schedule task now");
+            return;
+        }
+
+
+        AtlasVertex referenceVertex = GraphHelper.getPropagatingVertex(edge);
+        if(referenceVertex == null) {
+            return;
+        }
+
+        List<AtlasVertex> currentClassificationVertices = GraphHelper.getPropagatableClassifications(edge);
+        for (AtlasVertex currentClassificationVertex : currentClassificationVertices) {
+            String currentClassificationId = currentClassificationVertex.getIdForDisplay();
+            boolean removePropagationOnEntityDelete = GraphHelper.getRemovePropagations(currentClassificationVertex);
+
+            if (!(isTermEntityEdge || removePropagationOnEntityDelete)) {
+                LOG.debug("This edge is not term edge or remove propagation isn't enabled");
+                continue;
+            }
+
+            if(skipClassificationTaskCreation(currentClassificationId)) {
+                LOG.info("Task is already scheduled for classification id {}, no need to schedule task for edge {}", currentClassificationId, edge.getIdForDisplay());
+                continue;
+            }
+
+            Map<String, Object> taskParams = ClassificationTask.toParameters(currentClassificationVertex.getIdForDisplay());
+            AtlasTask task  =  taskManagement.createTask(CLASSIFICATION_REFRESH_PROPAGATION, currentUser, taskParams, currentClassificationId, GraphHelper.getGuid(referenceVertex));
+
+            RequestContext.get().queueTask(task);
+        }
+
+    }
+
+    private boolean skipClassificationTaskCreation(String classificationId) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("skipClassificationTaskCreation");
+        /*
+        If any of,
+        1. CLASSIFICATION_PROPAGATION_DELETE
+        2. CLASSIFICATION_REFRESH_PROPAGATION task scheduled already
+        skip classification task creation
+         */
+        try {
+
+            List<String> taskTypes = Arrays.asList(CLASSIFICATION_REFRESH_PROPAGATION, CLASSIFICATION_PROPAGATION_DELETE);
+            List<AtlasTask> tasksInRequestContext = RequestContext.get().getQueuedTasks();
+            if (
+                    tasksInRequestContext != null &&
+                    tasksInRequestContext.stream().filter(Objects::nonNull)
+                    .anyMatch(task -> task.getClassificationId().equals(classificationId)
+                            && taskTypes.contains(task.getType()) && task.getStatus().equals(AtlasTask.Status.PENDING))
+            ) {
+                return true;
+            }
+
+            TaskSearchResult taskSearchResult = taskUtil.findPendingTasksByClassificationId(0, PENDING_TASK_QUERY_SIZE_LIMIT,
+                    classificationId, taskTypes , new ArrayList<>());
+
+            List<AtlasTask> pendingTasks = taskSearchResult.getTasks();
+            if(pendingTasks == null) {
+                return false;
+            }
+
+            List<AtlasTask> pendingRefreshPropagationTasks = pendingTasks.stream()
+                    .filter(task -> CLASSIFICATION_REFRESH_PROPAGATION.equals(task.getType()))
+                    .collect(Collectors.toList());
+
+            // Ideally there should be only refresh propagation task
+            if (pendingRefreshPropagationTasks.size() > 1) {
+                LOG.warn("More than one {} task found for classification id {}", CLASSIFICATION_REFRESH_PROPAGATION, classificationId);
+            }
+
+            // if any task have status as PENDING, then skip task creation
+            if (
+                    pendingTasks.stream()
+                    .filter(Objects::nonNull)
+                    .anyMatch(task -> task.getClassificationId().equals(classificationId)
+                            && taskTypes.contains(task.getType()) && task.getStatus().equals(AtlasTask.Status.PENDING))
+            ) {
+                return true;
+            } else {
+                LOG.warn("There is inconsistency " +
+                        "in task queue, there are no pending tasks for classification id {} but there are tasks in queue", classificationId);
+            }
+        } catch (AtlasBaseException e) {
+            LOG.error("Error while checking if classification task creation is required for classification id {}", classificationId, e);
+            throw e;
+        } finally {
+            RequestContext.get().endMetricRecord(metric);
+        }
+
+        return false;
+    }
+
 
     public void removeHasLineageOnDelete(Collection<AtlasVertex> vertices) {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("removeHasLineageOnDelete");

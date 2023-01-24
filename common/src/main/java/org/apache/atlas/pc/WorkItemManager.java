@@ -115,7 +115,7 @@ public class WorkItemManager<T, U extends WorkItemConsumer> {
     }
 
     public void shutdown() throws InterruptedException {
-        int avgCommitTimeSeconds = getAvgCommitTimeSeconds() * 2;
+        long avgCommitTimeSeconds = getAvgCommitTimeSeconds() * 2;
 
         LOG.info("WorkItemManager: Shutdown started. Will wait for: {} minutes...", avgCommitTimeSeconds);
 
@@ -129,8 +129,8 @@ public class WorkItemManager<T, U extends WorkItemConsumer> {
         return this.resultsQueue;
     }
 
-    private int getAvgCommitTimeSeconds() {
-        int commitTimeSeconds = 0;
+    private long getAvgCommitTimeSeconds() {
+        long commitTimeSeconds = 0;
 
         for (U c : consumers) {
             commitTimeSeconds += c.getMaxCommitTimeInMs();

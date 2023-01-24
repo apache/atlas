@@ -1,4 +1,4 @@
-/**
+<!--
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -14,35 +14,11 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
-
-package org.apache.atlas;
-
-import org.apache.commons.lang.StringUtils;
-
-public enum DeleteType {
-    DEFAULT,
-    SOFT,
-    HARD,
-    PURGE;
-
-    public static DeleteType from(String s) {
-        if(StringUtils.isEmpty(s)) {
-            return DEFAULT;
-        }
-
-        switch (s.toLowerCase()) {
-            case "soft":
-                return SOFT;
-
-            case "hard":
-                return HARD;
-
-            case "purge":
-                return  PURGE;
-
-            default:
-                return DEFAULT;
-        }
-    }
-}
+ -->
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="#4a90e2">
+  <g>
+    <path d="M12,2A10,10,0,1,0,22,12,10.011,10.011,0,0,0,12,2Zm0,18a8,8,0,1,1,8-8A8.009,8.009,0,0,1,12,20Z"/>
+    <polygon points="12 10.586 8.707 7.293 7.293 8.707 12 13.414 16.707 8.707 15.293 7.293 12 10.586"/>
+    <polygon points="12 14.586 8.707 11.293 7.293 12.707 12 17.414 16.707 12.707 15.293 11.293 12 14.586"/>
+  </g>
+</svg>

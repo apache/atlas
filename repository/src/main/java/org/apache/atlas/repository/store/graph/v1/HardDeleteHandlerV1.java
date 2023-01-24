@@ -56,7 +56,11 @@ public class HardDeleteHandlerV1 extends DeleteHandlerV1 {
 
         authorizeRemoveRelation(edge);
 
-        removeTagPropagation(edge);
+        if (DEFERRED_ACTION_ENABLED) {
+            createAndQueueClassificationRefreshPropagationTask(edge);
+        } else {
+            removeTagPropagation(edge);
+        }
 
         graphHelper.removeEdge(edge);
     }

@@ -61,6 +61,7 @@ public class ClassificationPropagationTasks {
         }
     }
 
+    // TODO: Will be deprecated
     public static class DeleteOnlyPropagations extends ClassificationTask {
         public DeleteOnlyPropagations(AtlasTask task, AtlasGraph graph, EntityGraphMapper entityGraphMapper, DeleteHandlerDelegate deleteDelegate, AtlasRelationshipStore relationshipStore) {
             super(task, graph, entityGraphMapper, deleteDelegate, relationshipStore);
@@ -68,7 +69,7 @@ public class ClassificationPropagationTasks {
 
         @Override
         protected void run(Map<String, Object> parameters) throws AtlasBaseException {
-            if (parameters.get(PARAM_DELETED_EDGE_IDS) != null) {  // TODO: Will be deprecated
+            if (parameters.get(PARAM_DELETED_EDGE_IDS) != null) {
                 Set<String> deletedEdgeIds    =  AtlasType.fromJson((String) parameters.get(PARAM_DELETED_EDGE_IDS), Set.class);
                 entityGraphMapper.deleteClassificationOnlyPropagation(deletedEdgeIds);
             } else {
@@ -76,6 +77,35 @@ public class ClassificationPropagationTasks {
                 String classificationVertexId =  (String) parameters.get(PARAM_CLASSIFICATION_VERTEX_ID);
                 entityGraphMapper.deleteClassificationOnlyPropagation(deletedEdgeId, classificationVertexId);
             }
+        }
+    }
+
+    // TODO: Will be deprecated
+    public static class DeleteOnlyPropagationsOnHardDelete extends ClassificationTask {
+        public DeleteOnlyPropagationsOnHardDelete(AtlasTask task, AtlasGraph graph, EntityGraphMapper entityGraphMapper, DeleteHandlerDelegate deleteDelegate, AtlasRelationshipStore relationshipStore) {
+            super(task, graph, entityGraphMapper, deleteDelegate, relationshipStore);
+        }
+
+        @Override
+        protected void run(Map<String, Object> parameters) throws AtlasBaseException {
+            String classificationVertexId =  (String) parameters.get(PARAM_CLASSIFICATION_VERTEX_ID);
+            String referencedVertexId = (String) parameters.get(PARAM_REFERENCED_VERTEX_ID);
+            boolean isTermEntityEdge = (boolean) parameters.get(PARAM_IS_TERM_ENTITY_EDGE);
+
+            entityGraphMapper.deleteClassificationOnlyPropagation(classificationVertexId, referencedVertexId, isTermEntityEdge);
+        }
+    }
+
+    public static class RefreshPropagation extends ClassificationTask {
+        public RefreshPropagation(AtlasTask task, AtlasGraph graph, EntityGraphMapper entityGraphMapper, DeleteHandlerDelegate deleteDelegate, AtlasRelationshipStore relationshipStore) {
+            super(task, graph, entityGraphMapper, deleteDelegate, relationshipStore);
+        }
+
+        @Override
+        protected void run(Map<String, Object> parameters) throws AtlasBaseException {
+            String            classificationVertexId = (String) parameters.get(PARAM_CLASSIFICATION_VERTEX_ID);
+
+            entityGraphMapper.classificationRefreshPropagation(classificationVertexId);
         }
     }
 
