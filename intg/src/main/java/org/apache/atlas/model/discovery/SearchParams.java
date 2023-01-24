@@ -7,6 +7,8 @@ public abstract class SearchParams {
     Set<String> attributes;
     Set<String> relationAttributes;
     boolean showSearchScore;
+    boolean showCollapsedResults;
+    boolean showCollapsedResultsCount;
     boolean suppressLogs;
 
     public abstract String getQuery();
@@ -33,6 +35,18 @@ public abstract class SearchParams {
 
     public void setShowSearchScore(boolean showSearchScore) {
         this.showSearchScore = showSearchScore;
+    }
+
+    public boolean getShowCollapsedResults() {
+        return showCollapsedResults;
+    }
+
+    public void getShowCollapsedResults(boolean showCollapsedResults) {
+        this.showCollapsedResults = showCollapsedResults;
+    }
+
+    public boolean getShowCollapsedResultsCount() {
+        return showCollapsedResultsCount;
     }
 
     public boolean getSuppressLogs() {

@@ -57,6 +57,8 @@ public class AtlasSearchResult implements Serializable {
     private String                         nextMarker;
     private Map<String, Object>            aggregations;
     private Map<String,Double>             searchScore;
+    private Map<String, List<AtlasEntityHeader>> collapsedEntities;
+    private Map<String, Integer>           collapsedEntitiesCount;
 
     public AtlasSearchResult() {}
 
@@ -131,6 +133,14 @@ public class AtlasSearchResult implements Serializable {
         this.referredEntities = referredEntities;
     }
 
+    public Map<String, List<AtlasEntityHeader>> getCollapsedEntities() {
+        return collapsedEntities;
+    }
+
+    public void setCollapsedEntities(Map<String, List<AtlasEntityHeader>> collapsedEntities) {
+        this.collapsedEntities = collapsedEntities;
+    }
+
     public long getApproximateCount() { return approximateCount; }
 
     public void setApproximateCount(long approximateCount) { this.approximateCount = approximateCount; }
@@ -145,6 +155,14 @@ public class AtlasSearchResult implements Serializable {
 
     public void setSearchScore(HashMap<String, Double> searchScore) {
         this.searchScore = searchScore;
+    }
+
+    public Map<String, Integer> getCollapsedEntitiesCount() {
+        return collapsedEntitiesCount;
+    }
+
+    public void setCollapsedEntitiesCount(HashMap<String, Integer> collapsedEntitiesCount) {
+        this.collapsedEntitiesCount = collapsedEntitiesCount;
     }
 
     public String getNextMarker() { return nextMarker; }
@@ -184,6 +202,16 @@ public class AtlasSearchResult implements Serializable {
         }
     }
 
+    public void addCollapsedEntity(String guid, AtlasEntityHeader newEntity) {
+        if (collapsedEntities == null) {
+            collapsedEntities = new HashMap<String, List<AtlasEntityHeader>>();
+        }
+        if (collapsedEntities.get(guid) == null) {
+            collapsedEntities.put(guid, new ArrayList<AtlasEntityHeader>());
+        }
+        collapsedEntities.get(guid).add(newEntity);
+    }
+
     public void addEntityScore(String entityGuid, Double score) {
 
         if (searchScore == null) {
@@ -191,6 +219,15 @@ public class AtlasSearchResult implements Serializable {
         }
 
         searchScore.put(entityGuid,score);
+    }
+
+    public void addCollapsedEntitiesCount(String entityGuid, Integer count) {
+
+        if (collapsedEntitiesCount == null) {
+            collapsedEntitiesCount = new HashMap<String, Integer>();
+        }
+
+        collapsedEntitiesCount.put(entityGuid, count);
     }
 
     public void removeEntity(AtlasEntityHeader entity) {

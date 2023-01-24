@@ -133,5 +133,15 @@ public class AtlasJanusIndexQuery implements AtlasIndexQuery<AtlasJanusVertex, A
         public double getScore() {
             return source.getScore();
         }
+
+        @Override
+        public DirectIndexQueryResult<AtlasJanusVertex, AtlasJanusEdge> getCollapsedVertices() {
+            return null;
+        }
+
+        @Override
+        public Integer getCollapsedVerticesCount() {
+            return null;
+        }
     }
 }

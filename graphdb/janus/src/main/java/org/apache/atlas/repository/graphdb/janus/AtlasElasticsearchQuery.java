@@ -215,6 +215,16 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         public double getScore() {
             return hit.getScore();
         }
+
+        @Override
+        public DirectIndexQueryResult<AtlasJanusVertex, AtlasJanusEdge> getCollapsedVertices() {
+            return null;
+        }
+
+        @Override
+        public Integer getCollapsedVerticesCount() {
+            return null;
+        }
     }
 
 
@@ -229,6 +239,32 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         public AtlasVertex<AtlasJanusVertex, AtlasJanusEdge> getVertex() {
             long vertexId = LongEncoding.decode(String.valueOf(hit.get("_id")));
             return graph.getVertex(String.valueOf(vertexId));
+        }
+
+        @Override
+        public DirectIndexQueryResult getCollapsedVertices() {
+            DirectIndexQueryResult result = new DirectIndexQueryResult();
+            Map<String, LinkedHashMap> responseMap = AtlasType.fromJson(AtlasType.toJson(hit.get("inner_hits")), Map.class);
+            if (responseMap != null) {
+                responseMap = AtlasType.fromJson(AtlasType.toJson(responseMap.get("collapsed_results")), Map.class);
+                Map<String, LinkedHashMap> hits_0 = AtlasType.fromJson(AtlasType.toJson(responseMap.get("hits")), Map.class);
+                List<LinkedHashMap> hits_1 = AtlasType.fromJson(AtlasType.toJson(hits_0.get("hits")), List.class);
+                Stream<Result<AtlasJanusVertex, AtlasJanusEdge>> resultStream = hits_1.stream().map(ResultImplDirect::new);
+                result.setIterator(resultStream.iterator());
+                return result;
+            }
+            return null;
+        }
+
+        @Override
+        public Integer getCollapsedVerticesCount() {
+            Map<String, LinkedHashMap> responseMap = AtlasType.fromJson(AtlasType.toJson(hit.get("inner_hits")), Map.class);
+            if (responseMap != null) {
+                responseMap = AtlasType.fromJson(AtlasType.toJson(responseMap.get("collapsed_results")), Map.class);
+                Map<String, LinkedHashMap> hits_0 = AtlasType.fromJson(AtlasType.toJson(responseMap.get("hits")), Map.class);
+                return (Integer) hits_0.get("total").get("value");
+            }
+            return null;
         }
 
         @Override
