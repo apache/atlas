@@ -950,6 +950,8 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         final AtlasRelationship relationship = entityRetriever.mapEdgeToAtlasRelationship(edge);
         if (relationshipMutation.equals(RelationshipMutation.RELATIONSHIP_RESTORE))
             relationship.setStatus(AtlasRelationship.Status.ACTIVE);
+        if (relationshipMutation.equals(RelationshipMutation.RELATIONSHIP_HARD_DELETE))
+            relationship.setStatus(AtlasRelationship.Status.PERMANENT_DELETE);
         AtlasRelationshipStoreV2.setEdgeVertexIdsInContext(edge);
         RequestContext.get().saveRelationshipsMutationContext(relationshipMutation.name(), relationship);
     }
