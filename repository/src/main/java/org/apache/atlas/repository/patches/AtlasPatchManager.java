@@ -93,7 +93,7 @@ public class AtlasPatchManager {
         handlers.add(new FreeTextRequestHandlerPatch(context));
         handlers.add(new SuggestionsRequestHandlerPatch(context));
         handlers.add(new IndexConsistencyPatch(context));
-//        handlers.add(new ReIndexPatch(context));
+        handlers.add(new ReIndexPatch(context));
         handlers.add(new ProcessNamePatch(context));
         handlers.add(new UpdateCompositeIndexStatusPatch(context));
 
