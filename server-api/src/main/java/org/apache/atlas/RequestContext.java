@@ -66,7 +66,7 @@ public class RequestContext {
     private final Map<String, List<Object>> removedElementsMap = new HashMap<>();
     private final Map<String, List<Object>> newElementsCreatedMap = new HashMap<>();
 
-    private final Map<String, List<AtlasRelationship>> relationshipMutationMap = new HashMap<>();
+    private final Map<String, Set<AtlasRelationship>> relationshipMutationMap = new HashMap<>();
 
     private String user;
     private Set<String> userGroups;
@@ -621,19 +621,17 @@ public class RequestContext {
         return this.relationshipEndToVertexIdMap;
     }
 
-    public void addGuidToDeletedRelationships(DeleteType operation, AtlasRelationship relationship) {
-        List<AtlasRelationship> deletedRelationships = this.relationshipMutationMap.getOrDefault(operation, new ArrayList<>());
+    public void saveRelationshipsMutationContext(String event, AtlasRelationship relationship) {
+        Set<AtlasRelationship> deletedRelationships = this.relationshipMutationMap.getOrDefault(event, new HashSet<>());
         deletedRelationships.add(relationship);
-        this.relationshipMutationMap.put(operation.toString(), deletedRelationships);
+        this.relationshipMutationMap.put(event, deletedRelationships);
     }
 
-    public void addGuidToRestoredRelationships(AtlasRelationship relationship) {
-        List<AtlasRelationship> restoredRelationships = this.relationshipMutationMap.getOrDefault(AtlasRelationship.Status.ACTIVE.toString(), new ArrayList<>());
-        restoredRelationships.add(relationship);
-        this.relationshipMutationMap.put(AtlasRelationship.Status.ACTIVE.toString(), restoredRelationships);
+    public void clearMutationContext(String event) {
+        this.relationshipMutationMap.remove(event);
     }
 
-    public Map<String, List<AtlasRelationship>> getRelationshipMutationMap() {
+    public Map<String, Set<AtlasRelationship>> getRelationshipMutationMap() {
         return relationshipMutationMap;
     }
 }

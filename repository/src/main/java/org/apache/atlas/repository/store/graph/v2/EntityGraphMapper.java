@@ -356,7 +356,6 @@ public class EntityGraphMapper {
 
         if (CollectionUtils.isNotEmpty(context.getEntitiesToRestore())) {
             restoreHandlerV1.restoreEntities(context.getEntitiesToRestore());
-            atlasRelationshipStore.sendNotifications(reqContext.getRelationshipMutationMap());
         }
 
         Collection<AtlasEntity> createdEntities = context.getCreatedEntities();
@@ -1862,7 +1861,6 @@ public class EntityGraphMapper {
                 allArrayElements = unionCurrentAndNewElements(attribute, (List) currentElements, (List) newElementsCreated);
             } else {
                 removedElements = removeUnusedArrayEntries(attribute, (List) currentElements, (List) newElementsCreated, ctx);
-                atlasRelationshipStore.sendNotifications(RequestContext.get().getRelationshipMutationMap());
                 allArrayElements = unionCurrentAndNewElements(attribute, removedElements, (List) newElementsCreated);
             }
         } else {
@@ -2600,7 +2598,6 @@ public class EntityGraphMapper {
 
                         boolean deleted = deleteDelegate.getHandler().deleteEdgeReference(edge, entryType.getTypeCategory(), attribute.isOwnedRef(),
                                 true, attribute.getRelationshipEdgeDirection(), entityVertex);
-                        AtlasRelationshipStoreV2.saveRelationshipDeletionContext(RequestContext.get().getDeleteType(), edge, edge.getOutVertex(), edge.getInVertex(), entityRetriever);
                         if (!deleted) {
                             additionalElements.add(edge);
                         }

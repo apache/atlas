@@ -7,9 +7,9 @@ import java.util.Objects;
 
 public class JanusUtils {
 
-    public static String toLongEncoding(Object vertex) {
-        Objects.requireNonNull(vertex);
-        return LongEncoding.encode(Long.parseLong(vertex.toString()));
+    public static String toLongEncoding(Object vertexId) {
+        Objects.requireNonNull(vertexId);
+        return LongEncoding.encode(Long.parseLong(vertexId.toString()));
     }
 
 }

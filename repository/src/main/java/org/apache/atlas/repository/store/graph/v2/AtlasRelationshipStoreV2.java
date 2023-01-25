@@ -18,9 +18,9 @@
  */
 package org.apache.atlas.repository.store.graph.v2;
 
+import com.google.common.collect.ImmutableSet;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
-import org.apache.atlas.DeleteType;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
@@ -28,7 +28,6 @@ import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.authorize.AtlasRelationshipAccessRequest;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
-import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
@@ -47,6 +46,8 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.janus.JanusUtils;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
+import org.apache.atlas.repository.store.graph.v1.HardDeleteHandlerV1;
+import org.apache.atlas.repository.store.graph.v1.SoftDeleteHandlerV1;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasRelationshipType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
@@ -105,6 +106,14 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
     private static final String END_2_DOC_ID_KEY = "end2DocId";
     private static final String ES_DOC_ID_MAP_KEY = "esDocIdMap";
 
+    public enum RelationshipMutation {
+        RELATIONSHIP_CREATE,
+        RELATIONSHIP_UPDATE,
+        RELATIONSHIP_RESTORE,
+        RELATIONSHIP_SOFT_DELETE,
+        RELATIONSHIP_HARD_DELETE
+    }
+
     @Inject
     public AtlasRelationshipStoreV2(AtlasGraph graph, AtlasTypeRegistry typeRegistry, DeleteHandlerDelegate deleteDelegate, IAtlasEntityChangeNotifier entityChangeNotifier) {
         this.graph                = graph;
@@ -117,7 +126,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
 
     @Override
     @GraphTransaction
-    public AtlasRelationship create(AtlasRelationship relationship) throws AtlasBaseException {
+    public AtlasRelationship create(AtlasRelationship relationship, boolean notify) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> create({})", relationship);
         }
@@ -128,6 +137,8 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         AtlasEdge edge = createRelationship(end1Vertex, end2Vertex, relationship);
 
         AtlasRelationship ret = edge != null ? entityRetriever.mapEdgeToAtlasRelationship(edge) : null;
+        if (notify)
+            sendNotifications(ret, RelationshipMutation.RELATIONSHIP_CREATE);
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== create({}): {}", relationship, ret);
         }
@@ -136,7 +147,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
 
     @Override
     @GraphTransaction
-    public AtlasRelationship update(AtlasRelationship relationship) throws AtlasBaseException {
+    public AtlasRelationship update(AtlasRelationship relationship, boolean notify) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> update({})", relationship);
         }
@@ -207,8 +218,9 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         }
 
         AtlasRelationship ret = updateRelationship(edge, relationship);
-        setEdgeVertexIdsInContext(ret, end1Vertex, end2Vertex);
-        sendNotifications(ret, OperationType.RELATIONSHIP_UPDATE);
+        recordRelationshipMutation(RelationshipMutation.RELATIONSHIP_UPDATE, edge, entityRetriever);
+        if (notify)
+            sendNotifications(ret, RelationshipMutation.RELATIONSHIP_UPDATE);
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== update({}): {}", relationship, ret);
         }
@@ -217,7 +229,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
 
     @Override
     @GraphTransaction
-    public List<AtlasRelationship> createOrUpdate(List<AtlasRelationship> relationships) throws AtlasBaseException {
+    public List<AtlasRelationship> createOrUpdate(List<AtlasRelationship> relationships, boolean notify) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> createOrUpdate({})", relationships);
         }
@@ -242,9 +254,9 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
             AtlasEdge existingEdge = getRelationshipEdge(end1Vertex, end2Vertex, relationshipLabel);
 
             if (existingEdge == null) {
-                ret.add(create(relationship));
+                ret.add(create(relationship, notify));
             } else {
-                ret.add(update(relationship));
+                ret.add(update(relationship, notify));
             }
         }
 
@@ -292,12 +304,12 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
 
     @Override
     @GraphTransaction
-    public void deleteByIds(List<String> guids) throws AtlasBaseException {
+    public void deleteByIds(List<String> guids, boolean notify) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> deleteByIds({}})", guids.size());
         }
 
-        List<AtlasRelationship> deletedRelationships = new ArrayList<>();
+        Set<AtlasRelationship> deletedRelationships = new HashSet<>();
         List<AtlasEdge> edgesToDelete = new ArrayList<>();
 
         for (String guid : guids) {
@@ -314,7 +326,6 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
             edgesToDelete.add(edge);
             AtlasRelationship relationshipToDelete = entityRetriever.mapEdgeToAtlasRelationship(edge);
             deletedRelationships.add(relationshipToDelete);
-            setEdgeVertexIdsInContext(relationshipToDelete, edge.getOutVertex(), edge.getInVertex());
         }
 
         deleteDelegate.getHandler().resetHasLineageOnInputOutputDelete(edgesToDelete,null);
@@ -327,8 +338,8 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
                 deleteDelegate.getHandler().createAndQueueClassificationRefreshPropagationTask(deletedEdge);
             }
         }
-
-        sendNotifications(deletedRelationships, OperationType.RELATIONSHIP_DELETE);
+        if (notify)
+            sendNotifications(RequestContext.get().getRelationshipMutationMap());
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== deleteByIds({}):", guids.size());
@@ -337,13 +348,13 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
 
     @Override
     @GraphTransaction
-    public void deleteById(String guid) throws AtlasBaseException {
-        deleteById(guid, false);
+    public void deleteById(String guid, boolean notify) throws AtlasBaseException {
+        deleteById(guid, false, notify);
     }
 
     @Override
     @GraphTransaction
-    public void deleteById(String guid, boolean forceDelete) throws AtlasBaseException {
+    public void deleteById(String guid, boolean forceDelete, boolean notify) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> deleteById({}, {})", guid, forceDelete);
         }
@@ -356,6 +367,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         if (edge == null) {
             throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIP_GUID_NOT_FOUND, guid);
         }
+        final AtlasRelationship relationship = entityRetriever.mapEdgeToAtlasRelationship(edge);
 
         if (getState(edge) == DELETED) {
             throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIP_ALREADY_DELETED, guid);
@@ -371,64 +383,17 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
                 deleteDelegate.getHandler().createAndQueueClassificationRefreshPropagationTask(deletedEdge);
             }
         }
-        AtlasRelationship deletedRelationship = entityRetriever.mapEdgeToAtlasRelationship(edge);
-        setEdgeVertexIdsInContext(deletedRelationship, edge.getOutVertex(), edge.getInVertex());
-        sendNotifications(deletedRelationship, OperationType.RELATIONSHIP_DELETE);
+
+        if (notify) {
+            if (deleteDelegate.getHandler() instanceof SoftDeleteHandlerV1)
+                sendNotifications(relationship, RelationshipMutation.RELATIONSHIP_SOFT_DELETE);
+            else
+                sendNotifications(relationship, RelationshipMutation.RELATIONSHIP_HARD_DELETE);
+        }
+
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== deleteById({}): {}", guid);
         }
-    }
-
-    public static void saveRelationshipDeletionContext(DeleteType deleteType, AtlasEdge edge, AtlasVertex outgoingVertex, AtlasVertex incomingVertex, EntityGraphRetriever entityRetriever) throws AtlasBaseException {
-        if (edge == null)
-            throw new IllegalStateException("edge cannot be null");
-        final AtlasRelationship relationship = entityRetriever.mapEdgeToAtlasRelationship(edge);
-        AtlasObjectId end1 = relationship.getEnd1();
-        AtlasObjectId end2 = relationship.getEnd2();
-
-        AtlasObjectId outgoing = entityRetriever.toAtlasObjectId(outgoingVertex);
-        AtlasObjectId incoming = entityRetriever.toAtlasObjectId(incomingVertex);
-
-        AtlasVertex end1Vertex = null;
-        AtlasVertex end2Vertex = null;
-
-        if (end1.getGuid().equals(outgoing.getGuid()) && end2.getGuid().equals(incoming.getGuid())) {
-            end1Vertex = outgoingVertex;
-            end2Vertex = incomingVertex;
-        } else if (end1.getGuid().equals(incoming.getGuid()) && end2.getGuid().equals(outgoing.getGuid())) {
-            end1Vertex = incomingVertex;
-            end2Vertex = outgoingVertex;
-        }
-
-        AtlasRelationshipStoreV2.setEdgeVertexIdsInContext(relationship, end1Vertex, end2Vertex);
-        relationship.setStatus(deleteType.equals(DeleteType.SOFT) || deleteType.equals(DeleteType.DEFAULT) ? AtlasRelationship.Status.DELETED : AtlasRelationship.Status.PERMANENT_DELETE);
-        RequestContext.get().addGuidToDeletedRelationships(RequestContext.get().getDeleteType(), relationship);
-    }
-
-    public static void saveRelationshipRestorationContext(AtlasEdge edge, AtlasVertex outgoingVertex, AtlasVertex incomingVertex, EntityGraphRetriever entityRetriever) throws AtlasBaseException {
-        if (edge == null)
-            throw new IllegalStateException("edge cannot be null");
-        final AtlasRelationship relationship = entityRetriever.mapEdgeToAtlasRelationship(edge);
-        AtlasObjectId end1 = relationship.getEnd1();
-        AtlasObjectId end2 = relationship.getEnd2();
-
-        AtlasObjectId outgoing = entityRetriever.toAtlasObjectId(outgoingVertex);
-        AtlasObjectId incoming = entityRetriever.toAtlasObjectId(incomingVertex);
-
-        AtlasVertex end1Vertex = null;
-        AtlasVertex end2Vertex = null;
-
-        if (end1.getGuid().equals(outgoing.getGuid()) && end2.getGuid().equals(incoming.getGuid())) {
-            end1Vertex = outgoingVertex;
-            end2Vertex = incomingVertex;
-        } else if (end1.getGuid().equals(incoming.getGuid()) && end2.getGuid().equals(outgoing.getGuid())) {
-            end1Vertex = incomingVertex;
-            end2Vertex = outgoingVertex;
-        }
-
-        AtlasRelationshipStoreV2.setEdgeVertexIdsInContext(relationship, end1Vertex, end2Vertex);
-        relationship.setStatus(AtlasRelationship.Status.ACTIVE);
-        RequestContext.get().addGuidToRestoredRelationships(relationship);
     }
 
     @Override
@@ -437,20 +402,20 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
 
         if (ret == null) {
             ret = createRelationship(end1Vertex, end2Vertex, relationship, false);
+            recordRelationshipMutation(RelationshipMutation.RELATIONSHIP_CREATE, ret, entityRetriever);
         }
 
         return ret;
     }
 
-    @Override
-    public AtlasEdge getRelationship(AtlasVertex fromVertex, AtlasVertex toVertex, AtlasRelationship relationship) throws AtlasBaseException {
+    private AtlasEdge getRelationship(AtlasVertex fromVertex, AtlasVertex toVertex, AtlasRelationship relationship) throws AtlasBaseException {
         String relationshipLabel = getRelationshipEdgeLabel(fromVertex, toVertex, relationship.getTypeName());
 
         return getRelationshipEdge(fromVertex, toVertex, relationshipLabel);
     }
 
     @Override
-    public AtlasRelationship getOrCreate(AtlasRelationship relationship) throws AtlasBaseException {
+    public AtlasRelationship getOrCreate(AtlasRelationship relationship, boolean notify) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> getOrCreate({})", relationship);
         }
@@ -469,11 +434,12 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
 
         if (relationshipEdge != null){
             ret = entityRetriever.mapEdgeToAtlasRelationship(relationshipEdge);
-            setEdgeVertexIdsInContext(ret, end1Vertex, end2Vertex);
         }
 
         if (isCreated) {
-            sendNotifications(ret, OperationType.RELATIONSHIP_CREATE);
+            recordRelationshipMutation(RelationshipMutation.RELATIONSHIP_CREATE, relationshipEdge, entityRetriever);
+            if (notify)
+                sendNotifications(ret, RelationshipMutation.RELATIONSHIP_CREATE);
         }
 
         if (LOG.isDebugEnabled()) {
@@ -482,12 +448,11 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         return ret;
     }
 
-    @Override
-    public AtlasEdge createRelationship(AtlasVertex end1Vertex, AtlasVertex end2Vertex, AtlasRelationship relationship) throws AtlasBaseException {
+    private AtlasEdge createRelationship(AtlasVertex end1Vertex, AtlasVertex end2Vertex, AtlasRelationship relationship) throws AtlasBaseException {
         return createRelationship(end1Vertex, end2Vertex, relationship, true);
     }
 
-    public AtlasEdge createRelationship(AtlasVertex end1Vertex, AtlasVertex end2Vertex, AtlasRelationship relationship, boolean existingRelationshipCheck) throws AtlasBaseException {
+    private AtlasEdge createRelationship(AtlasVertex end1Vertex, AtlasVertex end2Vertex, AtlasRelationship relationship, boolean existingRelationshipCheck) throws AtlasBaseException {
         AtlasEdge ret;
 
         try {
@@ -556,10 +521,6 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         } catch (RepositoryException e) {
             throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, e);
         }
-
-        AtlasRelationship atlasRelationship = entityRetriever.mapEdgeToAtlasRelationship(ret);
-        setEdgeVertexIdsInContext(atlasRelationship, end1Vertex, end2Vertex);
-        sendNotifications(atlasRelationship, OperationType.RELATIONSHIP_CREATE);
         return ret;
     }
 
@@ -938,41 +899,62 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         return (attribute != null) ? attribute.getRelationshipEdgeLabel() : null;
     }
 
-    private void sendNotifications(AtlasRelationship ret, OperationType operationType) throws AtlasBaseException {
-        sendNotifications(Collections.singletonList(ret), operationType);
+    public void sendNotifications(AtlasRelationship relationship, RelationshipMutation relationshipMutation) throws AtlasBaseException {
+        entityChangeNotifier.notifyPropagatedEntities();
+        if (notificationsEnabled) {
+            Set<AtlasRelationship> relationships = ImmutableSet.of(relationship);
+            this.addRelationshipBasedCustomInfo(relationships);
+            switch (relationshipMutation) {
+                case RELATIONSHIP_CREATE:
+                    entityChangeNotifier.notifyRelationshipMutation(new ArrayList<>(relationships), OperationType.RELATIONSHIP_CREATE);
+                    break;
+                case RELATIONSHIP_UPDATE:
+                case RELATIONSHIP_RESTORE:
+                    entityChangeNotifier.notifyRelationshipMutation(new ArrayList<>(relationships), OperationType.RELATIONSHIP_UPDATE);
+                    break;
+                case RELATIONSHIP_SOFT_DELETE:
+                case RELATIONSHIP_HARD_DELETE:
+                    entityChangeNotifier.notifyRelationshipMutation(new ArrayList<>(relationships), OperationType.RELATIONSHIP_DELETE);
+                    break;
+            }
+        }
     }
 
-    public void sendNotifications(List<AtlasRelationship> ret, OperationType relationshipUpdate) throws AtlasBaseException {
+    public void sendNotifications(Map<String, Set<AtlasRelationship>> relationshipsMutationMap) throws AtlasBaseException {
         entityChangeNotifier.notifyPropagatedEntities();
 
-        this.addRelationshipBasedCustomInfo(ret);
+        final Set<AtlasRelationship> createdRelationships = relationshipsMutationMap.getOrDefault(RelationshipMutation.RELATIONSHIP_CREATE.name(), new HashSet<>());
+        final Set<AtlasRelationship> softDeletedRelationships = relationshipsMutationMap.getOrDefault(RelationshipMutation.RELATIONSHIP_SOFT_DELETE.name(), new HashSet<>());
+        final Set<AtlasRelationship> hardDeletedRelationships = relationshipsMutationMap.getOrDefault(RelationshipMutation.RELATIONSHIP_HARD_DELETE.name(), new HashSet<>());
+        final Set<AtlasRelationship> restoredRelationships = relationshipsMutationMap.getOrDefault(RelationshipMutation.RELATIONSHIP_RESTORE.name(), new HashSet<>());
+        final Set<AtlasRelationship> updatedRelationships = relationshipsMutationMap.getOrDefault(RelationshipMutation.RELATIONSHIP_UPDATE.name(), new HashSet<>());
 
-        if (notificationsEnabled){
-            entityChangeNotifier.notifyRelationshipMutation(ret, relationshipUpdate);
-        }
-    }
-
-    public void sendNotifications(Map<String, List<AtlasRelationship>> mutatedRelationshipsMap) throws AtlasBaseException {
-        final List<AtlasRelationship> softDeletedRelationships = mutatedRelationshipsMap.getOrDefault(DeleteType.SOFT.toString(), new ArrayList<>());
-        softDeletedRelationships.addAll(mutatedRelationshipsMap.getOrDefault(DeleteType.DEFAULT.toString(), new ArrayList<>()));
-        final List<AtlasRelationship> hardDeletedRelationships = mutatedRelationshipsMap.getOrDefault(DeleteType.HARD.toString(), new ArrayList<>());
-        final List<AtlasRelationship> purgedRelationships = mutatedRelationshipsMap.getOrDefault(DeleteType.PURGE.toString(), new ArrayList<>());
-        final List<AtlasRelationship> restoredRelationships = mutatedRelationshipsMap.getOrDefault(AtlasEntity.Status.ACTIVE.toString(), new ArrayList<>());
-
+        this.addRelationshipBasedCustomInfo(createdRelationships);
         this.addRelationshipBasedCustomInfo(softDeletedRelationships);
         this.addRelationshipBasedCustomInfo(hardDeletedRelationships);
-        this.addRelationshipBasedCustomInfo(purgedRelationships);
         this.addRelationshipBasedCustomInfo(restoredRelationships);
+        this.addRelationshipBasedCustomInfo(updatedRelationships);
 
         if (notificationsEnabled){
-            entityChangeNotifier.notifyRelationshipMutation(softDeletedRelationships, OperationType.RELATIONSHIP_DELETE);
-            entityChangeNotifier.notifyRelationshipMutation(hardDeletedRelationships, OperationType.RELATIONSHIP_DELETE);
-            entityChangeNotifier.notifyRelationshipMutation(purgedRelationships, OperationType.RELATIONSHIP_DELETE);
-            entityChangeNotifier.notifyRelationshipMutation(restoredRelationships, OperationType.RELATIONSHIP_UPDATE);
+            entityChangeNotifier.notifyRelationshipMutation(new ArrayList<>(createdRelationships), OperationType.RELATIONSHIP_CREATE);
+            entityChangeNotifier.notifyRelationshipMutation(new ArrayList<>(softDeletedRelationships), OperationType.RELATIONSHIP_DELETE);
+            entityChangeNotifier.notifyRelationshipMutation(new ArrayList<>(hardDeletedRelationships), OperationType.RELATIONSHIP_DELETE);
+            entityChangeNotifier.notifyRelationshipMutation(new ArrayList<>(restoredRelationships), OperationType.RELATIONSHIP_UPDATE);
+            entityChangeNotifier.notifyRelationshipMutation(new ArrayList<>(updatedRelationships), OperationType.RELATIONSHIP_UPDATE);
         }
     }
 
-    private void addRelationshipBasedCustomInfo(List<AtlasRelationship> relationships) {
+    public static void recordRelationshipMutation(RelationshipMutation relationshipMutation, AtlasEdge edge, EntityGraphRetriever entityRetriever) throws AtlasBaseException {
+        if (Objects.isNull(edge))
+            throw new IllegalStateException("edge cannot be null");
+        final AtlasRelationship relationship = entityRetriever.mapEdgeToAtlasRelationship(edge);
+        if (relationshipMutation.equals(RelationshipMutation.RELATIONSHIP_RESTORE))
+            relationship.setStatus(AtlasRelationship.Status.ACTIVE);
+        AtlasRelationshipStoreV2.setEdgeVertexIdsInContext(edge);
+        RequestContext.get().saveRelationshipsMutationContext(relationshipMutation.name(), relationship);
+    }
+
+    private void addRelationshipBasedCustomInfo(Set<AtlasRelationship> relationships) {
         for (AtlasRelationship r : relationships) {
             final Map<String, Object> customInfoMap = new HashMap<>();
             setRelationshipDefMap(r, customInfoMap);
@@ -988,8 +970,16 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
 
     private static Map<String, String> builsESDocIdMapping(AtlasRelationship r) {
         final Map<AtlasObjectId, Object> relationshipEndToVertexIdMap = RequestContext.get().getRelationshipEndToVertexIdMap();
-        final String end1DocId = JanusUtils.toLongEncoding(relationshipEndToVertexIdMap.get(r.getEnd1()));
-        final String end2DocId = JanusUtils.toLongEncoding(relationshipEndToVertexIdMap.get(r.getEnd2()));
+        String end1DocId = "";
+        String end2DocId = "";
+        for (AtlasObjectId atlasObjectId : relationshipEndToVertexIdMap.keySet()) {
+            final String docId = JanusUtils.toLongEncoding(relationshipEndToVertexIdMap.get(atlasObjectId));
+            if (atlasObjectId.getGuid().equals(r.getEnd1().getGuid())) {
+                end1DocId = docId;
+            } else if (atlasObjectId.getGuid().equals(r.getEnd2().getGuid())) {
+                end2DocId = docId;
+            }
+        }
         final Map<String, String> esDocIdMapping = new HashMap<>();
         esDocIdMapping.put(END_1_DOC_ID_KEY, end1DocId);
         esDocIdMapping.put(END_2_DOC_ID_KEY, end2DocId);
@@ -1018,8 +1008,8 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         deleteDelegate.getHandler().createAndQueueTask(taskType, relationshipEdge, relationship);
     }
 
-    public static void setEdgeVertexIdsInContext(AtlasRelationship relationship, AtlasVertex end1Vertex, AtlasVertex end2Vertex) {
-        RequestContext.get().addRelationshipEndToVertexIdMapping(relationship.getEnd1(), end1Vertex.getId());
-        RequestContext.get().addRelationshipEndToVertexIdMapping(relationship.getEnd2(), end2Vertex.getId());
+    private static void setEdgeVertexIdsInContext(AtlasEdge edge) {
+        RequestContext.get().addRelationshipEndToVertexIdMapping(GraphHelper.getAtlasObjectIdForOutVertex(edge), edge.getOutVertex().getId());
+        RequestContext.get().addRelationshipEndToVertexIdMapping(GraphHelper.getAtlasObjectIdForInVertex(edge), edge.getInVertex().getId());
     }
 }

@@ -24,7 +24,6 @@ import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
-import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
@@ -79,6 +78,9 @@ public class RestoreHandlerV1 {
             AtlasVertex classificationVertex = edge.getInVertex();
             AtlasGraphUtilsV2.setEncodedProperty(classificationVertex, CLASSIFICATION_ENTITY_STATUS, ACTIVE.name());
         }
+
+        if (isRelationshipEdge(edge))
+            AtlasRelationshipStoreV2.recordRelationshipMutation(AtlasRelationshipStoreV2.RelationshipMutation.RELATIONSHIP_RESTORE, edge, entityRetriever);
 
         if (AtlasGraphUtilsV2.getState(edge) == DELETED) {
             AtlasGraphUtilsV2.setEncodedProperty(edge, STATE_PROPERTY_KEY, ACTIVE.name());
@@ -388,7 +390,6 @@ public class RestoreHandlerV1 {
             if (isProceed) {
                 if (isRelationshipEdge(edge)) {
                     restoreRelationship(edge);
-                    AtlasRelationshipStoreV2.saveRelationshipRestorationContext(edge, edge.getOutVertex(), edge.getInVertex(), entityRetriever);
                 } else {
                     AtlasVertex outVertex = edge.getOutVertex();
                     AtlasVertex inVertex = edge.getInVertex();

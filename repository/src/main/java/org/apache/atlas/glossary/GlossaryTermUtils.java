@@ -444,7 +444,7 @@ public class GlossaryTermUtils extends GlossaryUtils {
                 }
                 AtlasRelationship relationship = relationshipStore.getById(categorizationHeader.getRelationGuid());
                 updateRelationshipAttributes(relationship, categorizationHeader);
-                relationshipStore.update(relationship);
+                relationshipStore.update(relationship, true);
             }
         }
     }
@@ -520,7 +520,7 @@ public class GlossaryTermUtils extends GlossaryUtils {
                 }
                 AtlasRelationship relationship = relationshipStore.getById(term.getRelationGuid());
                 updateRelationshipAttributes(relationship, term);
-                relationshipStore.update(relationship);
+                relationshipStore.update(relationship, true);
             }
         }
     }

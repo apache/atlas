@@ -34,6 +34,7 @@ import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
+import org.apache.atlas.repository.store.graph.v2.AtlasRelationshipStoreV2;
 import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasMapType;
 import org.apache.atlas.utils.AtlasPerfMetrics;

@@ -1508,7 +1508,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
             // Notify the change listeners
             entityChangeNotifier.onEntitiesMutated(ret, RequestContext.get().isImportInProgress());
-
+            atlasRelationshipStore.sendNotifications(RequestContext.get().getRelationshipMutationMap());
             if (LOG.isDebugEnabled()) {
                 LOG.debug("<== createOrUpdate()");
             }
@@ -2299,17 +2299,17 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     private void recordInComingEdgesToBeDeleted(Iterable<AtlasEdge> incomingEdges) throws AtlasBaseException {
         for (AtlasEdge edge : incomingEdges) {
             if (isRelationshipEdge(edge))
-                AtlasRelationshipStoreV2.saveRelationshipDeletionContext(RequestContext.get().getDeleteType(), edge, edge.getOutVertex(), edge.getInVertex(), entityRetriever);
+                AtlasRelationshipStoreV2.recordRelationshipMutation(AtlasRelationshipStoreV2.RelationshipMutation.RELATIONSHIP_HARD_DELETE, edge, entityRetriever);
         }
     }
 
     private void recordOutGoingEdgesToBeDeleted(Iterable<AtlasEdge> outgoingEdges) throws AtlasBaseException {
-        if (!RequestContext.get().getDeleteType().equals(DeleteType.SOFT)) {
-            for (AtlasEdge edge : outgoingEdges) {
-                if (isRelationshipEdge(edge))
-                    AtlasRelationshipStoreV2.saveRelationshipDeletionContext(RequestContext.get().getDeleteType(), edge, edge.getOutVertex(), edge.getInVertex(), entityRetriever);
-            }
+        for (AtlasEdge edge : outgoingEdges) {
+            if (isRelationshipEdge(edge))
+                AtlasRelationshipStoreV2.recordRelationshipMutation(AtlasRelationshipStoreV2.RelationshipMutation.RELATIONSHIP_HARD_DELETE, edge, entityRetriever);
         }
     }
 
 }
+
+

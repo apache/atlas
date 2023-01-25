@@ -90,7 +90,7 @@ public abstract class DeleteHandlerV1 {
 
     protected final GraphHelper          graphHelper;
     private   final AtlasTypeRegistry    typeRegistry;
-    private   final EntityGraphRetriever entityRetriever;
+    protected   final EntityGraphRetriever entityRetriever;
     private   final boolean              shouldUpdateInverseReferences;
     private   final boolean              softDelete;
     private   final TaskManagement       taskManagement;
@@ -1000,10 +1000,10 @@ public abstract class DeleteHandlerV1 {
         final Iterable<AtlasEdge> outgoingEdges    = instanceVertex.getEdges(AtlasEdgeDirection.OUT);
         final boolean             isPurgeRequested = RequestContext.get().isPurgeRequested();
 
-        if (!RequestContext.get().getDeleteType().equals(DeleteType.SOFT)) {
+        if (RequestContext.get().getDeleteType().equals(DeleteType.HARD) || RequestContext.get().getDeleteType().equals(DeleteType.PURGE)) {
             for (AtlasEdge edge : outgoingEdges) {
                 if (isRelationshipEdge(edge))
-                    AtlasRelationshipStoreV2.saveRelationshipDeletionContext(RequestContext.get().getDeleteType(), edge, edge.getOutVertex(), edge.getInVertex(), entityRetriever);
+                    AtlasRelationshipStoreV2.recordRelationshipMutation(AtlasRelationshipStoreV2.RelationshipMutation.RELATIONSHIP_HARD_DELETE, edge, entityRetriever);
             }
         }
 
@@ -1014,7 +1014,6 @@ public abstract class DeleteHandlerV1 {
             if (isProceed) {
                 if (isRelationshipEdge(edge)) {
                     deleteRelationship(edge);
-                    AtlasRelationshipStoreV2.saveRelationshipDeletionContext(RequestContext.get().getDeleteType(), edge, edge.getOutVertex(), edge.getInVertex(), entityRetriever);
                 } else {
                     AtlasVertex    outVertex = edge.getOutVertex();
 
