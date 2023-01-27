@@ -60,9 +60,9 @@ public class AtlasLineageOnDemandContext {
         this.relationAttributes = relationAttributes;
     }
 
-    protected Predicate constructInMemoryPredicate(AtlasTypeRegistry typeRegistry, List<SearchParameters.FilterCriteria> filterCriteriaList) {
+    protected Predicate constructInMemoryPredicate(AtlasTypeRegistry typeRegistry, SearchParameters.FilterCriteria filterCriteria) {
         LineageSearchProcessor lineageSearchProcessor = new LineageSearchProcessor();
-        return lineageSearchProcessor.constructInMemoryPredicate(typeRegistry, filterCriteriaList);
+        return lineageSearchProcessor.constructInMemoryPredicate(typeRegistry, filterCriteria);
     }
 
     protected boolean evaluate(AtlasVertex vertex) {

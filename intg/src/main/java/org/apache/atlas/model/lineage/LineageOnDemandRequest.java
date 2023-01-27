@@ -16,7 +16,7 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 public class LineageOnDemandRequest {
     private Map<String, LineageOnDemandConstraints> constraints;
-    private List<SearchParameters.FilterCriteria>   traversalFilters;
+    private SearchParameters.FilterCriteria         traversalFilters;
     private Set<String>                             attributes;
     private Set<String>                             relationAttributes;
 
@@ -31,7 +31,7 @@ public class LineageOnDemandRequest {
         this.relationAttributes = new HashSet<>();
     }
 
-    public LineageOnDemandRequest(Map<String, LineageOnDemandConstraints> constraints, List<SearchParameters.FilterCriteria> traversalFilters, Set<String> attributes, Set<String> relationAttributes) {
+    public LineageOnDemandRequest(Map<String, LineageOnDemandConstraints> constraints, SearchParameters.FilterCriteria traversalFilters, Set<String> attributes, Set<String> relationAttributes) {
         this.constraints        = constraints;
         this.traversalFilters   = traversalFilters;
         this.attributes         = attributes;
@@ -46,11 +46,11 @@ public class LineageOnDemandRequest {
         this.constraints = constraints;
     }
 
-    public List<SearchParameters.FilterCriteria> getTraversalFilters() {
+    public SearchParameters.FilterCriteria getTraversalFilters() {
         return traversalFilters;
     }
 
-    public void setTraversalFilters(List<SearchParameters.FilterCriteria> traversalFilters) {
+    public void setTraversalFilters(SearchParameters.FilterCriteria traversalFilters) {
         this.traversalFilters = traversalFilters;
     }
 

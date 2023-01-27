@@ -335,7 +335,7 @@ public class EntityLineageService implements AtlasLineageService {
         for (AtlasEdge processEdge : processEdges) {
             boolean isInputEdge  = processEdge.getLabel().equalsIgnoreCase(PROCESS_INPUTS_EDGE);
 
-            if (incrementAndCheckIfRelationsLimitReached(processEdge, isInputEdge, atlasLineageOnDemandContext.getConstraints(), ret, depth == 1)) {
+            if (incrementAndCheckIfRelationsLimitReached(processEdge, isInputEdge, atlasLineageOnDemandContext.getConstraints(), ret, depth)) {
                 break;
             } else {
                 addEdgeToResult(processEdge, ret);
@@ -375,7 +375,7 @@ public class EntityLineageService implements AtlasLineageService {
                     continue;
                 }
 
-                if (incrementAndCheckIfRelationsLimitReached(incomingEdge, !isInput, lineageConstraintsMap, ret, false)) {
+                if (incrementAndCheckIfRelationsLimitReached(incomingEdge, !isInput, lineageConstraintsMap, ret, depth)) {
                     break;
                 } else {
                     addEdgeToResult(incomingEdge, ret);
@@ -392,7 +392,7 @@ public class EntityLineageService implements AtlasLineageService {
                         continue;
                     }
 
-                    if (incrementAndCheckIfRelationsLimitReached(outgoingEdge, isInput, lineageConstraintsMap, ret, depth == 1)) {
+                    if (incrementAndCheckIfRelationsLimitReached(outgoingEdge, isInput, lineageConstraintsMap, ret, depth)) {
                         break;
                     } else {
                         addEdgeToResult(outgoingEdge, ret);
@@ -412,7 +412,7 @@ public class EntityLineageService implements AtlasLineageService {
         return vertex.getIdForDisplay();
     }
 
-    private boolean incrementAndCheckIfRelationsLimitReached(AtlasEdge atlasEdge, boolean isInput, Map<String, LineageOnDemandConstraints> lineageConstraintsMap, AtlasLineageInfo ret, boolean checkForChildren) {
+    private boolean incrementAndCheckIfRelationsLimitReached(AtlasEdge atlasEdge, boolean isInput, Map<String, LineageOnDemandConstraints> lineageConstraintsMap, AtlasLineageInfo ret, int depth) {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("incrementAndCheckIfRelationsLimitReached");
 
         if (lineageContainsEdgeV2(ret, atlasEdge)) {
@@ -429,8 +429,9 @@ public class EntityLineageService implements AtlasLineageService {
         String                     outGuid                   = AtlasGraphUtilsV2.getIdFromVertex(outVertex);
         LineageOnDemandConstraints outGuidLineageConstraints = getAndValidateLineageConstraintsByGuid(outGuid, lineageConstraintsMap);
 
-        boolean outVisitedFlag = ret.getRelationsOnDemand().containsKey(outGuid);
-        boolean inVisitedFlag = ret.getRelationsOnDemand().containsKey(inGuid);
+        // Keep track of already visited vertices for horizontal pagination to not process it again
+        boolean isOutVertexVisited = ret.getRelationsOnDemand().containsKey(outGuid);
+        boolean isInVertexVisited = ret.getRelationsOnDemand().containsKey(inGuid);
 
         LineageInfoOnDemand inLineageInfo = ret.getRelationsOnDemand().containsKey(inGuid) ? ret.getRelationsOnDemand().get(inGuid) : new LineageInfoOnDemand(inGuidLineageConstraints);
         LineageInfoOnDemand outLineageInfo = ret.getRelationsOnDemand().containsKey(outGuid) ? ret.getRelationsOnDemand().get(outGuid) : new LineageInfoOnDemand(outGuidLineageConstraints);
@@ -450,10 +451,10 @@ public class EntityLineageService implements AtlasLineageService {
         }
 
         // Handle horizontal pagination
-        if (checkForChildren) {
-            if (isInput && ! outVisitedFlag) {
+        if (depth == 1) { // is the vertex a leaf?
+            if (isInput && ! isOutVertexVisited) {
                 outLineageInfo.setHasUpstream(outVertex.getEdges(IN, PROCESS_OUTPUTS_EDGE).iterator().hasNext());
-            } else if (! isInput && ! inVisitedFlag) {
+            } else if (! isInput && ! isInVertexVisited) {
                 inLineageInfo.setHasDownstream(inVertex.getEdges(IN, PROCESS_INPUTS_EDGE).iterator().hasNext());
             }
         }
