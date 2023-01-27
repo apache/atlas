@@ -687,7 +687,7 @@ public class EntityLineageService implements AtlasLineageService {
 
 
     private void addEdgeToResult(AtlasEdge edge, AtlasLineageInfo lineageInfo) throws AtlasBaseException {
-        if (!lineageContainsEdge(lineageInfo, edge) && !lineageMaxNodeCountReached(lineageInfo.getRelations())) {
+        if (!lineageContainsEdgeV2(lineageInfo, edge) && !lineageMaxNodeCountReached(lineageInfo.getRelations())) {
             processEdge(edge, lineageInfo);
         }
     }
