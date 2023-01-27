@@ -42,7 +42,7 @@ under the License. -->
         <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
-            <version>7.7.1</version>
+            <version>6.9.4</version>
             <scope>test</scope>
         </dependency>
 
