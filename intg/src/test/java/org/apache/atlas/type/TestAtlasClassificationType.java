@@ -19,6 +19,7 @@ package org.apache.atlas.type;
 
 import java.util.*;
 
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.ModelTestUtil;
 import org.apache.atlas.model.TimeBoundary;
@@ -26,6 +27,7 @@ import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
+import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.type.AtlasTypeRegistry.AtlasTransientTypeRegistry;
 import org.testng.annotations.Test;
 
@@ -342,5 +344,171 @@ public class TestAtlasClassificationType {
         assertFalse(isValidTimeZone("GMT+24:00")); // hours is 0-23 only
         assertFalse(isValidTimeZone("GMT+13:60")); // minutes 00-59 only
 
+    }
+
+    @Test
+    public void testInvalidAttributeNameForSubtype() throws AtlasBaseException {
+        AtlasTypeRegistry registry = ModelTestUtil.getTypesRegistry();
+        AtlasTransientTypeRegistry ttr = registry.lockTypeRegistryForUpdate();
+
+        AtlasStructDef.AtlasAttributeDef attrDefForClassificationDefParent = new AtlasStructDef.AtlasAttributeDef("attributeP", "string");
+        AtlasClassificationDef classificationDefParent = new AtlasClassificationDef("classificationDefParent", "classificationDefParent desc", null, Collections.singletonList(attrDefForClassificationDefParent));
+        ttr.addType(classificationDefParent);
+
+        AtlasStructDef.AtlasAttributeDef attrDefForClassificationDefChild = new AtlasStructDef.AtlasAttributeDef("attributeP", "string");
+        AtlasClassificationDef classificationDefChild = new AtlasClassificationDef("classificationDefChild", "classificationDefChild desc", null, Collections.singletonList(attrDefForClassificationDefChild), Collections.singleton("classificationDefParent"));
+        try {
+            ttr.addType(classificationDefChild);
+            fail("Parent attribute name and Child attribute name should not be the same");
+        } catch (AtlasBaseException e) {
+            assertEquals(e.getAtlasErrorCode().getErrorCode(), AtlasErrorCode.ATTRIBUTE_NAME_ALREADY_EXISTS_IN_ANOTHER_PARENT_TYPE.getErrorCode());
+        } finally {
+            registry.releaseTypeRegistryForUpdate(ttr, false);
+        }
+    }
+
+    @Test
+    public void testInvalidAttributeNameForSubtypeUpdate() throws AtlasBaseException {
+        AtlasTypeRegistry registry = ModelTestUtil.getTypesRegistry();
+        AtlasTransientTypeRegistry ttr = registry.lockTypeRegistryForUpdate();
+
+        AtlasStructDef.AtlasAttributeDef attrDefForClassificationDefParent = new AtlasStructDef.AtlasAttributeDef("attributeP", "string");
+        AtlasClassificationDef classificationDefParent = new AtlasClassificationDef("classificationDefParent", "classificationDefParent desc", null, Collections.singletonList(attrDefForClassificationDefParent));
+        ttr.addType(classificationDefParent);
+
+        AtlasStructDef.AtlasAttributeDef attrDefForClassificationDefChild = new AtlasStructDef.AtlasAttributeDef("attributeP", "string");
+        AtlasClassificationDef classificationDefChild = new AtlasClassificationDef("classificationDefChild", "classificationDefChild desc", null, Collections.singletonList(attrDefForClassificationDefChild));
+        ttr.addType(classificationDefChild);
+
+        Set<String> superTypes = classificationDefChild.getSuperTypes();
+        assertEquals(superTypes.size(), 0);
+
+        superTypes.add(classificationDefParent.getName());
+        classificationDefChild.setSuperTypes(superTypes);
+
+        try {
+            ttr.updateType(classificationDefChild);
+            fail("Parent attribute name and Child attribute name should not be the same");
+        } catch (AtlasBaseException e) {
+            assertEquals(e.getAtlasErrorCode().getErrorCode(), AtlasErrorCode.ATTRIBUTE_NAME_ALREADY_EXISTS_IN_ANOTHER_PARENT_TYPE.getErrorCode());
+        } finally {
+            registry.releaseTypeRegistryForUpdate(ttr, false);
+        }
+    }
+
+    @Test
+    public void testInvalidAttributeNameForSubtypeForMultipleParents() throws AtlasBaseException {
+        AtlasTypeRegistry registry = ModelTestUtil.getTypesRegistry();
+        AtlasTransientTypeRegistry ttr = registry.lockTypeRegistryForUpdate();
+
+        AtlasStructDef.AtlasAttributeDef attrDefForClassificationDefParent = new AtlasStructDef.AtlasAttributeDef("attributeP", "string");
+        AtlasClassificationDef classificationDefParent = new AtlasClassificationDef("classificationDefParent", "classificationDefParent desc", null, Collections.singletonList(attrDefForClassificationDefParent));
+        ttr.addType(classificationDefParent);
+
+        AtlasStructDef.AtlasAttributeDef attrDefForClassificationDefParent2 = new AtlasStructDef.AtlasAttributeDef("attributeP", "string");
+        AtlasClassificationDef classificationDefParent2 = new AtlasClassificationDef("classificationDefParent2", "classificationDefParent2 desc", null, Collections.singletonList(attrDefForClassificationDefParent2));
+        ttr.addType(classificationDefParent2);
+
+        AtlasStructDef.AtlasAttributeDef attrDefForClassificationDefChild = new AtlasStructDef.AtlasAttributeDef("attributeC", "string");
+        Set<String> superTypes = new HashSet<>();
+        superTypes.add("classificationDefParent");
+        superTypes.add("classificationDefParent2");
+        AtlasClassificationDef classificationDefChild = new AtlasClassificationDef("classificationDefChild", "classificationDefChild desc", null, Collections.singletonList(attrDefForClassificationDefChild), superTypes);
+
+        try {
+            ttr.addType(classificationDefChild);
+            fail("Child type cannot have two Parent types having same attribute names");
+        } catch (AtlasBaseException e) {
+            assertEquals(e.getAtlasErrorCode().getErrorCode(), AtlasErrorCode.ATTRIBUTE_NAME_ALREADY_EXISTS_IN_ANOTHER_PARENT_TYPE.getErrorCode());
+        } finally {
+            registry.releaseTypeRegistryForUpdate(ttr, false);
+        }
+    }
+
+    @Test
+    public void testInvalidAttributeNameForSubtypeForMultipleParents_Update() throws AtlasBaseException {
+        AtlasTypeRegistry registry = ModelTestUtil.getTypesRegistry();
+        AtlasTransientTypeRegistry ttr = registry.lockTypeRegistryForUpdate();
+
+        AtlasStructDef.AtlasAttributeDef attrDefForClassificationDefParent = new AtlasStructDef.AtlasAttributeDef("attributeP", "string");
+        AtlasClassificationDef classificationDefParent = new AtlasClassificationDef("classificationDefParent", "classificationDefParent desc", null, Collections.singletonList(attrDefForClassificationDefParent));
+        ttr.addType(classificationDefParent);
+
+        AtlasStructDef.AtlasAttributeDef attrDefForClassificationDefParent2 = new AtlasStructDef.AtlasAttributeDef("attributeP", "string");
+        AtlasClassificationDef classificationDefParent2 = new AtlasClassificationDef("classificationDefParent2", "classificationDefParent2 desc", null, Collections.singletonList(attrDefForClassificationDefParent2));
+        ttr.addType(classificationDefParent2);
+
+        AtlasStructDef.AtlasAttributeDef attrDefForClassificationDefChild = new AtlasStructDef.AtlasAttributeDef("attributeC", "string");
+        AtlasClassificationDef classificationDefChild = new AtlasClassificationDef("classificationDefChild", "classificationDefChild desc", null, Collections.singletonList(attrDefForClassificationDefChild), Collections.singleton("classificationDefParent"));
+        ttr.addType(classificationDefChild);
+
+        Set<String> superTypes = classificationDefChild.getSuperTypes();
+        assertEquals(superTypes.size(), 1);
+
+        superTypes.add(classificationDefParent2.getName());
+        classificationDefChild.setSuperTypes(superTypes);
+        try {
+            ttr.updateType(classificationDefChild);
+            fail("Child type cannot have two Parent types having same attribute names");
+        } catch (AtlasBaseException e) {
+            assertEquals(e.getAtlasErrorCode().getErrorCode(), AtlasErrorCode.ATTRIBUTE_NAME_ALREADY_EXISTS_IN_ANOTHER_PARENT_TYPE.getErrorCode());
+        } finally {
+            registry.releaseTypeRegistryForUpdate(ttr, false);
+        }
+    }
+
+    @Test
+    public void testSkipInvalidAttributeNameForSubtype() throws AtlasBaseException {
+        AtlasTypeRegistry registry = ModelTestUtil.getTypesRegistry();
+        AtlasTransientTypeRegistry ttr = registry.lockTypeRegistryForUpdate();
+        AtlasStructType.skipCheckForParentChildAttributeName = true;
+
+        AtlasStructDef.AtlasAttributeDef attrDefForClassificationDefParent = new AtlasStructDef.AtlasAttributeDef("attributeP", "string");
+        AtlasClassificationDef classificationDefParent = new AtlasClassificationDef("classificationDefParent", "classificationDefParent desc", null, Collections.singletonList(attrDefForClassificationDefParent));
+        ttr.addType(classificationDefParent);
+
+        AtlasStructDef.AtlasAttributeDef attrDefForClassificationDefChild = new AtlasStructDef.AtlasAttributeDef("attributeP", "string");
+        AtlasClassificationDef classificationDefChild = new AtlasClassificationDef("classificationDefChild", "classificationDefChild desc", null, Collections.singletonList(attrDefForClassificationDefChild), Collections.singleton("classificationDefParent"));
+
+        try {
+            ttr.addType(classificationDefChild);
+        } catch (AtlasBaseException e) {
+            assertEquals(e.getAtlasErrorCode().getErrorCode(), AtlasErrorCode.ATTRIBUTE_NAME_ALREADY_EXISTS_IN_ANOTHER_PARENT_TYPE.getErrorCode());
+            fail("Parent attribute name and Child attribute name should be allowed to be the same when skip-check flag is true");
+        } finally {
+            AtlasStructType.skipCheckForParentChildAttributeName = false;
+            registry.releaseTypeRegistryForUpdate(ttr, false);
+        }
+    }
+
+    @Test
+    public void testSkipInvalidAttributeNameForSubtypeForMultipleParents() throws AtlasBaseException {
+        AtlasTypeRegistry registry = ModelTestUtil.getTypesRegistry();
+        AtlasTransientTypeRegistry ttr = registry.lockTypeRegistryForUpdate();
+        AtlasStructType.skipCheckForParentChildAttributeName = true;
+
+        AtlasStructDef.AtlasAttributeDef attrDefForClassificationDefParent = new AtlasStructDef.AtlasAttributeDef("attributeP", "string");
+        AtlasClassificationDef classificationDefParent = new AtlasClassificationDef("classificationDefParent", "classificationDefParent desc", null, Collections.singletonList(attrDefForClassificationDefParent));
+        ttr.addType(classificationDefParent);
+
+        AtlasStructDef.AtlasAttributeDef attrDefForClassificationDefParent2 = new AtlasStructDef.AtlasAttributeDef("attributeP", "string");
+        AtlasClassificationDef classificationDefParent2 = new AtlasClassificationDef("classificationDefParent2", "classificationDefParent2 desc", null, Collections.singletonList(attrDefForClassificationDefParent2));
+        ttr.addType(classificationDefParent2);
+
+        AtlasStructDef.AtlasAttributeDef attrDefForClassificationDefChild = new AtlasStructDef.AtlasAttributeDef("attributeC", "string");
+        Set<String> superTypes = new HashSet<>();
+        superTypes.add("classificationDefParent");
+        superTypes.add("classificationDefParent2");
+        AtlasClassificationDef classificationDefChild = new AtlasClassificationDef("classificationDefChild", "classificationDefChild desc", null, Collections.singletonList(attrDefForClassificationDefChild), superTypes);
+
+        try {
+            ttr.addType(classificationDefChild);
+        } catch (AtlasBaseException e) {
+            assertEquals(e.getAtlasErrorCode().getErrorCode(), AtlasErrorCode.ATTRIBUTE_NAME_ALREADY_EXISTS_IN_ANOTHER_PARENT_TYPE.getErrorCode());
+            fail("Parent attribute name and Child attribute name should be allowed to be same when skip-check flag is true");
+        } finally {
+            AtlasStructType.skipCheckForParentChildAttributeName = false;
+            registry.releaseTypeRegistryForUpdate(ttr, false);
+        }
     }
 }

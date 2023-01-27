@@ -213,7 +213,6 @@ public class AtlasEntityType extends AtlasStructType {
     @Override
     void resolveReferencesPhase2(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
         super.resolveReferencesPhase2(typeRegistry);
-        ensureNoAttributeOverride(superTypes);
 
         for (AtlasEntityType superType : superTypes) {
             superType.addSubType(this);
@@ -885,7 +884,11 @@ public class AtlasEntityType extends AtlasStructType {
                 String    attributeName = attributeDef.getName();
 
                 if (attributeToEntityNameMap.containsKey(attributeName) && !attributeToEntityNameMap.get(attributeName).equals(entityDef.getName())) {
-                    throw new AtlasBaseException(AtlasErrorCode.ATTRIBUTE_NAME_ALREADY_EXISTS_IN_ANOTHER_PARENT_TYPE, entityDef.getName(), attributeName, attributeToEntityNameMap.get(attributeName));
+                    if (skipCheckForParentChildAttributeName) {
+                        LOG.warn(AtlasErrorCode.ATTRIBUTE_NAME_ALREADY_EXISTS_IN_ANOTHER_PARENT_TYPE.getFormattedErrorMessage(entityDef.getName(), attributeName, attributeToEntityNameMap.get(attributeName)));
+                    } else {
+                        throw new AtlasBaseException(AtlasErrorCode.ATTRIBUTE_NAME_ALREADY_EXISTS_IN_ANOTHER_PARENT_TYPE, entityDef.getName(), attributeName, attributeToEntityNameMap.get(attributeName));
+                    }
                 }
 
                 allAttributes.put(attributeName, new AtlasAttribute(this, attributeDef, type));

@@ -17,18 +17,19 @@
  */
 package org.apache.atlas.type;
 
+import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasStruct;
-import org.apache.atlas.model.typedef.AtlasClassificationDef;
-import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinality;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
+import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,6 +52,19 @@ public class AtlasStructType extends AtlasType {
 
     protected Map<String, AtlasAttribute> allAttributes  = Collections.emptyMap();
     protected Map<String, AtlasAttribute> uniqAttributes = Collections.emptyMap();
+
+    protected static boolean skipCheckForParentChildAttributeName;
+    private static Configuration configuration;
+    private static String SKIP_CHECK_FOR_PARENT_CHILD_ATTRIBUTE_NAME = "atlas.skip.check.for.parent.child.attribute.name";
+
+    static {
+        try {
+            configuration = ApplicationProperties.get();
+        } catch (AtlasException e) {
+            throw new RuntimeException(e);
+        }
+        skipCheckForParentChildAttributeName = configuration.getBoolean(SKIP_CHECK_FOR_PARENT_CHILD_ATTRIBUTE_NAME, false);
+    }
 
     public AtlasStructType(AtlasStructDef structDef) {
         super(structDef);
@@ -718,16 +732,6 @@ public class AtlasStructType extends AtlasType {
         }
 
         return ret;
-    }
-
-    protected void ensureNoAttributeOverride(List<? extends AtlasStructType> superTypes) throws AtlasBaseException {
-        for (AtlasStructType superType : superTypes) {
-            for (AtlasAttributeDef attributeDef : this.structDef.getAttributeDefs()) {
-                if (superType.getAllAttributes().containsKey(attributeDef.getName())) {
-                    throw new AtlasBaseException(AtlasErrorCode.ATTRIBUTE_NAME_ALREADY_EXISTS_IN_PARENT_TYPE, getStructDef().getName(), attributeDef.getName(), superType.getStructDef().getName());
-                }
-            }
-        }
     }
 
     public static class AtlasAttribute {

@@ -31,6 +31,8 @@ import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.validator.routines.DateValidator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -38,6 +40,7 @@ import java.util.*;
  * class that implements behaviour of a classification-type.
  */
 public class AtlasClassificationType extends AtlasStructType {
+    private static final Logger LOG = LoggerFactory.getLogger(AtlasClassificationType.class);
 
     public  static final AtlasClassificationType CLASSIFICATION_ROOT      = initRootClassificationType();
     private static final String                  CLASSIFICATION_ROOT_NAME = "__CLASSIFICATION_ROOT";
@@ -130,7 +133,6 @@ public class AtlasClassificationType extends AtlasStructType {
     @Override
     void resolveReferencesPhase2(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
         super.resolveReferencesPhase2(typeRegistry);
-        ensureNoAttributeOverride(superTypes);
 
         for (AtlasClassificationType superType : superTypes) {
             superType.addSubType(this);
@@ -562,7 +564,11 @@ public class AtlasClassificationType extends AtlasStructType {
                 String attributeName    = attributeDef.getName();
 
                 if (attributeToClassificationNameMap.containsKey(attributeName) && !attributeToClassificationNameMap.get(attributeName).equals(classificationDef.getName())) {
-                    throw new AtlasBaseException(AtlasErrorCode.ATTRIBUTE_NAME_ALREADY_EXISTS_IN_ANOTHER_PARENT_TYPE, classificationDef.getName(), attributeName, attributeToClassificationNameMap.get(attributeName));
+                    if (skipCheckForParentChildAttributeName) {
+                        LOG.warn(AtlasErrorCode.ATTRIBUTE_NAME_ALREADY_EXISTS_IN_ANOTHER_PARENT_TYPE.getFormattedErrorMessage(classificationDef.getName(), attributeName, attributeToClassificationNameMap.get(attributeName)));
+                    } else {
+                        throw new AtlasBaseException(AtlasErrorCode.ATTRIBUTE_NAME_ALREADY_EXISTS_IN_ANOTHER_PARENT_TYPE, classificationDef.getName(), attributeName, attributeToClassificationNameMap.get(attributeName));
+                    }
                 }
 
                 allAttributes.put(attributeName, new AtlasAttribute(this, attributeDef, type));
