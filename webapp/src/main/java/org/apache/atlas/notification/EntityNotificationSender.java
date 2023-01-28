@@ -18,6 +18,7 @@
 package org.apache.atlas.notification;
 
 import org.apache.atlas.GraphTransactionInterceptor;
+import org.apache.atlas.model.notification.EntityNotification;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
@@ -27,6 +28,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.apache.atlas.notification.NotificationInterface.NotificationType.ENTITIES;
+import static org.apache.atlas.notification.NotificationInterface.NotificationType.RELATIONSHIPS;
 
 
 public class EntityNotificationSender<T> {
@@ -52,13 +54,13 @@ public class EntityNotificationSender<T> {
         }
     }
 
-    public void send(List<T> notifications) throws NotificationException {
-        this.notificationSender.send(notifications);
+    public void send(EntityNotification.EntityNotificationV2.OperationType operationType, List<T> notifications) throws NotificationException {
+        this.notificationSender.send(operationType, notifications);
     }
 
 
     private interface NotificationSender<T> {
-        void send(List<T> notifications) throws NotificationException;
+        void send(EntityNotification.EntityNotificationV2.OperationType operationType, List<T> notifications) throws NotificationException;
     }
 
     private class InlineNotificationSender<T> implements NotificationSender<T> {
@@ -69,8 +71,11 @@ public class EntityNotificationSender<T> {
         }
 
         @Override
-        public void send(List<T> notifications) throws NotificationException {
-            notificationInterface.send(ENTITIES, notifications);
+        public void send(EntityNotification.EntityNotificationV2.OperationType operationType, List<T> notifications) throws NotificationException {
+            if (isRelationshipEvent(operationType))
+                notificationInterface.send(RELATIONSHIPS, notifications);
+            else
+                notificationInterface.send(ENTITIES, notifications);
         }
     }
 
@@ -83,28 +88,40 @@ public class EntityNotificationSender<T> {
         }
 
         @Override
-        public void send(List<T> notifications) throws NotificationException {
+        public void send(EntityNotification.EntityNotificationV2.OperationType operationType, List<T> notifications) throws NotificationException {
             PostCommitNotificationHook notificationHook = postCommitNotificationHooks.get();
 
             if (notificationHook == null) {
-                notificationHook = new PostCommitNotificationHook(notifications);
-
+                notificationHook = new PostCommitNotificationHook(operationType, notifications);
                 postCommitNotificationHooks.set(notificationHook);
             } else {
-                notificationHook.addNotifications(notifications);
+                if (isRelationshipEvent(operationType))
+                    notificationHook.addRelationshipNotifications(notifications);
+                else
+                    notificationHook.addNotifications(notifications);
             }
         }
 
         class PostCommitNotificationHook<T> extends GraphTransactionInterceptor.PostTransactionHook {
             private final List<T> notifications = new ArrayList<>();
+            private final List<T> relationshipNotifications = new ArrayList<>();
 
-            public PostCommitNotificationHook(List<T> notifications) {
-                this.addNotifications(notifications);
+            public PostCommitNotificationHook(EntityNotification.EntityNotificationV2.OperationType operationType, List<T> notifications) {
+                if (isRelationshipEvent(operationType))
+                    this.addRelationshipNotifications(notifications);
+                else
+                    this.addNotifications(notifications);
             }
 
             public void addNotifications(List<T> notifications) {
                 if (notifications != null) {
                     this.notifications.addAll(notifications);
+                }
+            }
+
+            public void addRelationshipNotifications(List<T> notifications) {
+                if (notifications != null) {
+                    this.relationshipNotifications.addAll(notifications);
                 }
             }
 
@@ -116,6 +133,7 @@ public class EntityNotificationSender<T> {
                     if (isSuccess) {
                         try {
                             notificationInterface.send(ENTITIES, notifications);
+                            notificationInterface.send(RELATIONSHIPS, relationshipNotifications);
                         } catch (NotificationException excp) {
                             LOG.error("failed to send entity notifications", excp);
                         }
@@ -127,5 +145,9 @@ public class EntityNotificationSender<T> {
                 }
             }
         }
+    }
+
+    private static boolean isRelationshipEvent(EntityNotification.EntityNotificationV2.OperationType operationType) {
+        return EntityNotification.EntityNotificationV2.OperationType.RELATIONSHIP_CREATE.equals(operationType) || EntityNotification.EntityNotificationV2.OperationType.RELATIONSHIP_UPDATE.equals(operationType) || EntityNotification.EntityNotificationV2.OperationType.RELATIONSHIP_DELETE.equals(operationType);
     }
 }

@@ -47,7 +47,9 @@ public interface NotificationInterface {
         HOOK(new HookMessageDeserializer()),
 
         // Notifications to entity change consumers.
-        ENTITIES(new EntityMessageDeserializer());
+        ENTITIES(new EntityMessageDeserializer()),
+
+        RELATIONSHIPS(new EntityMessageDeserializer());
 
         private final AtlasNotificationMessageDeserializer deserializer;
 

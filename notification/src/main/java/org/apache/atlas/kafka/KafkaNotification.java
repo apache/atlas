@@ -60,10 +60,12 @@ public class KafkaNotification extends AbstractNotification implements Service {
     public    static final String PROPERTY_PREFIX            = "atlas.kafka";
     public    static final String ATLAS_HOOK_TOPIC           = AtlasConfiguration.NOTIFICATION_HOOK_TOPIC_NAME.getString();
     public    static final String ATLAS_ENTITIES_TOPIC       = AtlasConfiguration.NOTIFICATION_ENTITIES_TOPIC_NAME.getString();
+    public    static final String ATLAS_RELATIONSHIPS_TOPIC       = AtlasConfiguration.NOTIFICATION_RELATIONSHIPS_TOPIC_NAME.getString();
     protected static final String CONSUMER_GROUP_ID_PROPERTY = "group.id";
 
     private   static final String[] ATLAS_HOOK_CONSUMER_TOPICS     = AtlasConfiguration.NOTIFICATION_HOOK_CONSUMER_TOPIC_NAMES.getStringArray(ATLAS_HOOK_TOPIC);
     private   static final String[] ATLAS_ENTITIES_CONSUMER_TOPICS = AtlasConfiguration.NOTIFICATION_ENTITIES_CONSUMER_TOPIC_NAMES.getStringArray(ATLAS_ENTITIES_TOPIC);
+    private   static final String[] ATLAS_RELATIONSHIPS_CONSUMER_TOPICS = AtlasConfiguration.NOTIFICATION_RELATIONSHIPS_TOPIC_NAME.getStringArray(ATLAS_RELATIONSHIPS_TOPIC);
 
     private static final String DEFAULT_CONSUMER_CLOSED_ERROR_MESSAGE = "This consumer has already been closed.";
 
@@ -71,6 +73,7 @@ public class KafkaNotification extends AbstractNotification implements Service {
         {
             put(NotificationType.HOOK, ATLAS_HOOK_TOPIC);
             put(NotificationType.ENTITIES, ATLAS_ENTITIES_TOPIC);
+            put(NotificationType.RELATIONSHIPS, ATLAS_RELATIONSHIPS_TOPIC);
         }
     };
 
@@ -78,6 +81,7 @@ public class KafkaNotification extends AbstractNotification implements Service {
         {
             put(NotificationType.HOOK, trimAndPurge(ATLAS_HOOK_CONSUMER_TOPICS));
             put(NotificationType.ENTITIES, trimAndPurge(ATLAS_ENTITIES_CONSUMER_TOPICS));
+            put(NotificationType.RELATIONSHIPS, trimAndPurge(ATLAS_RELATIONSHIPS_CONSUMER_TOPICS));
         }
     };
 

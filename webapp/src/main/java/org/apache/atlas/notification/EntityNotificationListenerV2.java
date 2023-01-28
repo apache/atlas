@@ -239,10 +239,10 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
         if (!messages.isEmpty()) {
             try {
                 if (forceInline) {
-                    inlineNotificationSender.send(messages);
+                    inlineNotificationSender.send(operationType, messages);
                 }
                 else {
-                    notificationSender.send(messages);
+                    notificationSender.send(operationType, messages);
                 }
             } catch (NotificationException e) {
                 throw new AtlasBaseException(AtlasErrorCode.ENTITY_NOTIFICATION_FAILED, e, operationType.name());
