@@ -301,7 +301,7 @@ public class ClassificationPropagationTest extends AtlasTestBase {
         AtlasRelationship employees2_process_relationship = getRelationship(EMPLOYEES2_TABLE, EMPLOYEES_UNION_PROCESS);
         assertEquals(employees2_process_relationship.getPropagateTags(), TWO_TO_ONE);
         employees2_process_relationship.setPropagateTags(NONE);
-        relationshipStore.update(employees2_process_relationship);
+        relationshipStore.update(employees2_process_relationship, false);
 
         // validate tag1 propagated to employees_union through other path
         assertClassificationExistInEntity(EMPLOYEES_UNION_TABLE, tag1);
@@ -313,7 +313,7 @@ public class ClassificationPropagationTest extends AtlasTestBase {
         employees2_process_relationship = getRelationship(EMPLOYEES2_TABLE, EMPLOYEES_UNION_PROCESS);
         assertEquals(employees2_process_relationship.getPropagateTags(), NONE);
         employees2_process_relationship.setPropagateTags(TWO_TO_ONE);
-        relationshipStore.update(employees2_process_relationship);
+        relationshipStore.update(employees2_process_relationship, false);
 
         // validate tag2 is propagated to employees_union
         assertClassificationExistInEntity(EMPLOYEES_UNION_TABLE, tag2);
@@ -324,7 +324,7 @@ public class ClassificationPropagationTest extends AtlasTestBase {
         process3_employee_union_relationship.setPropagateTags(BOTH);
 
         try {
-            relationshipStore.update(process3_employee_union_relationship);
+            relationshipStore.update(process3_employee_union_relationship, false);
         } catch (AtlasBaseException ex) {
             assertEquals(ex.getAtlasErrorCode(), AtlasErrorCode.INVALID_PROPAGATION_TYPE);
         }
@@ -384,7 +384,7 @@ public class ClassificationPropagationTest extends AtlasTestBase {
         PII_tag3.setEntityGuid(employees2.getGuid());
 
         process3_employee_union_relationship.setBlockedPropagatedClassifications(new HashSet<>(Arrays.asList(PII_tag2, PII_tag3)));
-        relationshipStore.update(process3_employee_union_relationship);
+        relationshipStore.update(process3_employee_union_relationship, false);
 
         process3_employee_union_relationship = getRelationship(EMPLOYEES_UNION_PROCESS, EMPLOYEES_UNION_TABLE);
         propagatedClassifications            = process3_employee_union_relationship.getPropagatedClassifications();
@@ -438,7 +438,7 @@ public class ClassificationPropagationTest extends AtlasTestBase {
 
         // remove blocked propagated classification entry for PII (from employees2) - allow PII from employees2 to propagate to employee_union
         process3_employee_union_relationship.setBlockedPropagatedClassifications(new HashSet<>(Arrays.asList(PII_tag3)));
-        relationshipStore.update(process3_employee_union_relationship);
+        relationshipStore.update(process3_employee_union_relationship, false);
 
         process3_employee_union_relationship               = getRelationship(EMPLOYEES_UNION_PROCESS, EMPLOYEES_UNION_TABLE);
         Set<AtlasClassification> propagatedClassifications = process3_employee_union_relationship.getPropagatedClassifications();
@@ -450,7 +450,7 @@ public class ClassificationPropagationTest extends AtlasTestBase {
 
         // remove all blocked propagated classification entry
         process3_employee_union_relationship.setBlockedPropagatedClassifications(Collections.emptySet());
-        relationshipStore.update(process3_employee_union_relationship);
+        relationshipStore.update(process3_employee_union_relationship, false);
 
         process3_employee_union_relationship = getRelationship(EMPLOYEES_UNION_PROCESS, EMPLOYEES_UNION_TABLE);
         propagatedClassifications            = process3_employee_union_relationship.getPropagatedClassifications();
