@@ -18,7 +18,6 @@
 
 package org.apache.atlas.repository.graphdb;
 
-import com.sun.tools.javac.util.Pair;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.SearchParams;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
