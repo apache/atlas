@@ -294,6 +294,7 @@ public class AtlasLineageInfo implements Serializable {
             this.isOutputRelationsReachedLimit = false;
             this.hasUpstream                   = false;
             this.hasDownstream                 = false;
+            this.offsetCount                   = 0;
         }
 
         public boolean isInputRelationsReachedLimit() {

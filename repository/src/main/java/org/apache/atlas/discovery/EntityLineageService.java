@@ -388,9 +388,6 @@ public class EntityLineageService implements AtlasLineageService {
             // keep track of visited vertices to avoid circular loop
             visitedVertices.add(getId(datasetVertex));
 
-
-            Map<String, LineageOnDemandConstraints> lineageConstraintsMap = atlasLineageOnDemandContext.getConstraints();
-
             AtlasPerfMetrics.MetricRecorder traverseEdgesOnDemandGetEdgesIn = RequestContext.get().startMetricRecord("traverseEdgesOnDemandGetEdgesIn");
             Iterable<AtlasEdge> incomingEdges = datasetVertex.getEdges(IN, isInput ? PROCESS_OUTPUTS_EDGE : PROCESS_INPUTS_EDGE);
             RequestContext.get().endMetricRecord(traverseEdgesOnDemandGetEdgesIn);
