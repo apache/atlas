@@ -1,7 +1,12 @@
 {
   "mapping" : {
     "total_fields" : {
-    "limit" : "1500"
+      "limit" : "1500"
+    }
+  },
+  "similarity": {
+    "default": {
+      "type": "boolean"
     }
   },
   "analysis": {
