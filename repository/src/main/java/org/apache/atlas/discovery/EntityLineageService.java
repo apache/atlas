@@ -208,7 +208,8 @@ public class EntityLineageService implements AtlasLineageService {
                                 constraintEntry.getValue().getDirection(),
                                 lineageOnDemandRequest.getDefaultParams().getInputRelationsLimit(),
                                 constraintEntry.getValue().getOutputRelationsLimit(),
-                                constraintEntry.getValue().getDepth()
+                                constraintEntry.getValue().getDepth(),
+                                constraintEntry.getValue().getFrom()
                         )
                 );
             }
@@ -218,7 +219,8 @@ public class EntityLineageService implements AtlasLineageService {
                                 constraintEntry.getValue().getDirection(),
                                 constraintEntry.getValue().getInputRelationsLimit(),
                                 lineageOnDemandRequest.getDefaultParams().getOutputRelationsLimit(),
-                                constraintEntry.getValue().getDepth()
+                                constraintEntry.getValue().getDepth(),
+                                constraintEntry.getValue().getFrom()
                         )
                 );
             }

@@ -39,8 +39,6 @@ public class LineageOnDemandConstraints extends LineageOnDemandBaseParams implem
     private static final long serialVersionUID = 1L;
 
     private LineageDirection direction;
-    private int              inputRelationsLimit;
-    private int              outputRelationsLimit;
     private int              depth;
     private int              from;
 
@@ -78,22 +76,6 @@ public class LineageOnDemandConstraints extends LineageOnDemandBaseParams implem
 
     public void setDirection(LineageDirection direction) {
         this.direction = direction;
-    }
-
-    public int getInputRelationsLimit() {
-        return inputRelationsLimit;
-    }
-
-    public void setInputRelationsLimit(int inputRelationsLimit) {
-        this.inputRelationsLimit = inputRelationsLimit;
-    }
-
-    public int getOutputRelationsLimit() {
-        return outputRelationsLimit;
-    }
-
-    public void setOutputRelationsLimit(int outputRelationsLimit) {
-        this.outputRelationsLimit = outputRelationsLimit;
     }
 
     public int getDepth() {
