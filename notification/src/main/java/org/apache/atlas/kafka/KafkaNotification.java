@@ -65,7 +65,7 @@ public class KafkaNotification extends AbstractNotification implements Service {
 
     private   static final String[] ATLAS_HOOK_CONSUMER_TOPICS     = AtlasConfiguration.NOTIFICATION_HOOK_CONSUMER_TOPIC_NAMES.getStringArray(ATLAS_HOOK_TOPIC);
     private   static final String[] ATLAS_ENTITIES_CONSUMER_TOPICS = AtlasConfiguration.NOTIFICATION_ENTITIES_CONSUMER_TOPIC_NAMES.getStringArray(ATLAS_ENTITIES_TOPIC);
-    private   static final String[] ATLAS_RELATIONSHIPS_CONSUMER_TOPICS = AtlasConfiguration.NOTIFICATION_RELATIONSHIPS_TOPIC_NAME.getStringArray(ATLAS_RELATIONSHIPS_TOPIC);
+    private   static final String[] ATLAS_RELATIONSHIPS_CONSUMER_TOPICS = AtlasConfiguration.NOTIFICATION_RELATIONSHIPS_CONSUMER_TOPIC_NAMES.getStringArray(ATLAS_RELATIONSHIPS_TOPIC);
 
     private static final String DEFAULT_CONSUMER_CLOSED_ERROR_MESSAGE = "This consumer has already been closed.";
 

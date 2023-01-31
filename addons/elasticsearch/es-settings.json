@@ -1,4 +1,17 @@
 {
+  "mapping" : {
+    "total_fields" : {
+      "limit" : "1500"
+    },
+    "nested_objects" : {
+      "limit" : "100000"
+    }
+  },
+  "similarity": {
+    "default": {
+      "type": "boolean"
+    }
+  },
   "analysis": {
     "analyzer": {
       "atlan_text_analyzer": {
