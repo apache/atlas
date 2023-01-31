@@ -19,6 +19,7 @@ package org.apache.atlas.model.lineage;
 
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -278,6 +279,8 @@ public class AtlasLineageInfo implements Serializable {
         @JsonProperty
         boolean                    hasDownstream;
         LineageOnDemandConstraints onDemandConstraints;
+        @JsonIgnore
+        int                        offsetCount;
 
         public LineageInfoOnDemand() { }
 
@@ -339,6 +342,14 @@ public class AtlasLineageInfo implements Serializable {
 
         public void setHasDownstream(boolean hasDownstream) {
             this.hasDownstream = hasDownstream;
+        }
+
+        public int getOffsetCount() {
+            return offsetCount;
+        }
+
+        public void incrementOffsetCount() {
+            offsetCount++;
         }
 
         public int getInputRelationsCount() {
