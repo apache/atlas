@@ -96,7 +96,9 @@ public enum AtlasConfiguration {
     LINEAGE_MAX_NODE_COUNT("atlas.lineage.max.node.count", 9000),
     ENABLE_SEARCH_LOGGING("atlas.enable.search.logging", true),
     RANGER_ATLAS_SERVICE_TYPE("atlas.ranger.service.type.atlas", "atlas"),
-    RANGER_HEKA_SERVICE_TYPE("atlas.ranger.service.type.heka", "heka");
+    RANGER_HEKA_SERVICE_TYPE("atlas.ranger.service.type.heka", "heka"),
+
+    SUPPORTED_RELATIONSHIP_EVENTS("atlas.notification.relationships.filter", "asset_readme,asset_links,RelatedReadme,AtlasGlossarySemanticAssignment,AtlasGlossarySynonym,AtlasGlossaryAntonym");
 
 
     private static final Configuration APPLICATION_PROPERTIES;
