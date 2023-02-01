@@ -64,7 +64,6 @@ import javax.inject.Inject;
 import java.util.*;
 
 import static org.apache.atlas.AtlasConfiguration.NOTIFICATION_RELATIONSHIPS_ENABLED;
-import static org.apache.atlas.accesscontrol.AccessControlUtil.ensureNonAccessControlRelType;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
 import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.BOTH;
 import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.NONE;
@@ -322,7 +321,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
             if (getState(edge) == DELETED) {
                 throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIP_ALREADY_DELETED, guid);
             }
-            ensureNonAccessControlRelType(getTypeName(edge));
+
             edgesToDelete.add(edge);
             AtlasRelationship relationshipToDelete = entityRetriever.mapEdgeToAtlasRelationship(edge);
             deletedRelationships.add(relationshipToDelete);
@@ -372,7 +371,6 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         if (getState(edge) == DELETED) {
             throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIP_ALREADY_DELETED, guid);
         }
-        ensureNonAccessControlRelType(getTypeName(edge));
         deleteDelegate.getHandler().resetHasLineageOnInputOutputDelete(Collections.singleton(edge), null);
         deleteDelegate.getHandler().deleteRelationships(Collections.singleton(edge), forceDelete);
 

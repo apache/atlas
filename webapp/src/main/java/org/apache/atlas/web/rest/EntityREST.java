@@ -880,6 +880,7 @@ public class EntityREST {
                                                  @QueryParam("replaceBusinessAttributes") @DefaultValue("false") boolean replaceBusinessAttributes,
                                                  @QueryParam("overwriteBusinessAttributes") @DefaultValue("false") boolean isOverwriteBusinessAttributes) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
+
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.createOrUpdate(entityCount=" +

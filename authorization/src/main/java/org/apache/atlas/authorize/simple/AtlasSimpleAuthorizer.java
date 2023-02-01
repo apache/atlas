@@ -313,11 +313,6 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
     }
 
     @Override
-    public void scrubSearchResults(AtlasSearchResultScrubRequest request, boolean isScrubAuditEnabled) throws AtlasAuthorizationException {
-        scrubSearchResults(request);
-    }
-
-    @Override
     public void scrubSearchResults(AtlasSearchResultScrubRequest request) throws AtlasAuthorizationException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> SimpleAtlasAuthorizer.scrubSearchResults({})", request);

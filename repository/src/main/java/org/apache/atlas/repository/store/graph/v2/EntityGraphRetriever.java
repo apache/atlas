@@ -1970,7 +1970,7 @@ public class EntityGraphRetriever {
 
     private void mapAttributes(AtlasEdge edge, AtlasRelationshipWithExtInfo relationshipWithExtInfo) throws AtlasBaseException {
         AtlasRelationship relationship = relationshipWithExtInfo.getRelationship();
-        AtlasType objType = typeRegistry.getType(relationship.getTypeName());
+        AtlasType         objType      = typeRegistry.getType(relationship.getTypeName());
 
         if (!(objType instanceof AtlasRelationshipType)) {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, relationship.getTypeName());

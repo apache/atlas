@@ -26,8 +26,6 @@ import org.apache.atlas.model.discovery.AtlasSuggestionsResult;
 import org.apache.atlas.model.discovery.QuickSearchParameters;
 import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.discovery.SearchParams;
-import org.apache.atlas.model.discovery.searchlog.SearchLogSearchResult;
-import org.apache.atlas.model.discovery.searchlog.SearchLogSearchParams;
 import org.apache.atlas.model.profile.AtlasUserSavedSearch;
 
 import java.util.List;
@@ -157,14 +155,6 @@ public interface AtlasDiscoveryService {
      * @throws AtlasBaseException
      */
     AtlasSearchResult directIndexSearch(SearchParams searchParams) throws AtlasBaseException;
-
-    /**
-     * Search for direct ES query on search logs index
-     * @param searchParams Search criteria
-     * @return Matching search logs
-     * @throws AtlasBaseException
-     */
-    SearchLogSearchResult searchLogs(SearchLogSearchParams searchParams) throws AtlasBaseException;
 
     /**
      * Should return top 5 suggestion strings for the given prefix.

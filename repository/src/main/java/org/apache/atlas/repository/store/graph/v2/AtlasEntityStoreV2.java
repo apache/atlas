@@ -88,7 +88,6 @@ import java.util.stream.Collectors;
 
 import static java.lang.Boolean.FALSE;
 import static org.apache.atlas.AtlasConfiguration.STORE_DIFFERENTIAL_AUDITS;
-import static org.apache.atlas.accesscontrol.AccessControlUtil.ensureNonAccessControlEntityType;
 import static org.apache.atlas.bulkimport.BulkImportResponse.ImportStatus.FAILED;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.*;
@@ -653,7 +652,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             }
 
             AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(vertex);
-            ensureNonAccessControlEntityType(Collections.singletonList(entityHeader.getTypeName()));
 
             AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_DELETE, entityHeader), "delete entity: guid=", guid);
 
@@ -1681,12 +1679,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         MetricRecorder metric = RequestContext.get().startMetricRecord("filterCategoryVertices");
         for (AtlasVertex vertex : deletionCandidates) {
             String typeName = getTypeName(vertex);
-
-            PreProcessor preProcessor = entityGraphMapper.getPreProcessor(typeName);
-            if (preProcessor != null) {
-                preProcessor.processDelete(vertex);
-            }
-
             if (ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE.equals(typeName)) {
                 categories.add(vertex);
             } else {
@@ -1701,6 +1693,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
 
         if (CollectionUtils.isNotEmpty(others)) {
+
             deleteDelegate.getHandler().removeHasLineageOnDelete(others);
             deleteDelegate.getHandler().deleteEntities(others);
         }
