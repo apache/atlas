@@ -123,11 +123,12 @@ define(['require',
                 var that = this,
                     nodeCountArray = _.uniq([3, 6, Globals.lineageNodeCount]);
                 this.initialQueryObj = {};
+                this.initialQueryObj["constraints"] = {};
                 this.ui.searchToggler.prop("disabled", true);
                 this.$graphButtonsEl = this.$(".graph-button-group button, select[data-id='selectDepth']");
                 if (Globals.isLineageOnDemandEnabled) {
                     this.ui.resetLineage.attr("title", "Reset Lineage");
-                    this.initialQueryObj[this.guid] = {
+                    this.initialQueryObj["constraints"][this.guid] = {
                         "direction": "BOTH",
                         "inputRelationsLimit": Globals.lineageNodeCount,
                         "outputRelationsLimit": Globals.lineageNodeCount,
@@ -251,7 +252,7 @@ define(['require',
                 }
 
                 if (Globals.isLineageOnDemandEnabled) {
-                    this.initialQueryObj[this.guid].depth = Globals.lineageDepth;
+                    this.initialQueryObj["constraints"][this.guid].depth = Globals.lineageDepth;
                     this.fetchGraphData({ queryParam: this.initialQueryObj, 'legends': false })
                 }
             },
@@ -535,7 +536,9 @@ define(['require',
                     }
                     this.lineageOnDemandPayload[parentId] = { direction: "BOTH", inputRelationsLimit: inputLimit, outputRelationsLimit: outputLimit, depth: Globals.lineageDepth };
                 }
-                this.fetchGraphData({ queryParam: this.lineageOnDemandPayload, 'legends': false });
+                var queryParameter = {}
+                queryParameter["constraints"] = this.lineageOnDemandPayload;
+                this.fetchGraphData({ queryParam: queryParameter, 'legends': false });
             },
             validateInputOutputLimit: function(parentId, btnType) {
                 var inputRelationCount, outputRelationCount;

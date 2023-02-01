@@ -471,7 +471,7 @@ public class TypesREST {
     @Path("/typedefs")
     @Experimental
     @Timed
-    public AtlasTypesDef updateAtlasTypeDefs(final AtlasTypesDef typesDef) throws AtlasBaseException {
+    public AtlasTypesDef updateAtlasTypeDefs(final AtlasTypesDef typesDef, @QueryParam("patch") final boolean patch) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
         InterProcessMutex lock = null;
         RequestContext.get().setTraceId(UUID.randomUUID().toString());
@@ -503,6 +503,8 @@ public class TypesREST {
                 }
                 classificationDef.setRandomNameForNewAttributeDefs(existingClassificationDef);
             }
+            RequestContext.get().setInTypePatching(patch);
+            LOG.info("TypesRest.updateAtlasTypeDefs:: Typedef patch enabled:" + patch);
             AtlasTypesDef atlasTypesDef = typeDefStore.updateTypesDef(typesDef);
             typeCacheRefresher.refreshAllHostCache();
             return atlasTypesDef;
@@ -513,6 +515,7 @@ public class TypesREST {
             LOG.error("TypesREST.updateAtlasTypeDefs:: " + e.getMessage(), e);
             throw new AtlasBaseException("Error while updating a type definition");
         } finally {
+            RequestContext.clear();
             releaseLock(lock);
             AtlasPerfTracer.log(perf);
         }

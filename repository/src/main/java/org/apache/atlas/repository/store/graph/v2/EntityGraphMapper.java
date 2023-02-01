@@ -3662,7 +3662,14 @@ public class EntityGraphMapper {
         try {
             do {
                 toIndex = ((offset + CHUNK_SIZE > propagatedVerticesSize) ? propagatedVerticesSize : (offset + CHUNK_SIZE));
-                List<AtlasVertex> updatedVertices = deleteDelegate.getHandler().removeTagPropagation(classificationVertex, VerticesToRemoveTag.subList(offset, toIndex));
+                List<AtlasVertex> verticesChunkToRemoveTag = VerticesToRemoveTag.subList(offset, toIndex);
+
+                List<String> impactedGuids = verticesChunkToRemoveTag.stream()
+                        .map(entityVertex -> GraphHelper.getGuid(entityVertex))
+                        .collect(Collectors.toList());
+                GraphTransactionInterceptor.lockObjectAndReleasePostCommit(impactedGuids);
+
+                List<AtlasVertex> updatedVertices = deleteDelegate.getHandler().removeTagPropagation(classificationVertex, verticesChunkToRemoveTag);
                 List<AtlasEntity> updatedEntities = updateClassificationText(classification, updatedVertices);
                 entityChangeNotifier.onClassificationsDeletedFromEntities(updatedEntities, Collections.singletonList(classification));
 
@@ -3670,7 +3677,7 @@ public class EntityGraphMapper {
 
                 transactionInterceptHelper.intercept();
 
-            }while (offset < propagatedVerticesSize);
+            } while (offset < propagatedVerticesSize);
         } catch (AtlasBaseException exception) {
             LOG.error("Error while removing classification from vertices with classification vertex id {}", classificationVertex.getIdForDisplay());
             throw exception;
