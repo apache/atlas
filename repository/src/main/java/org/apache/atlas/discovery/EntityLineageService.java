@@ -175,6 +175,8 @@ public class EntityLineageService implements AtlasLineageService {
     public AtlasLineageInfo getAtlasLineageInfo(String guid, LineageOnDemandRequest lineageOnDemandRequest) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getAtlasLineageInfo");
 
+        RequestContext.get().setRelationAttrsForSearch(lineageOnDemandRequest.getRelationAttributes());
+
         AtlasLineageInfo ret;
 
         if (MapUtils.isEmpty(lineageOnDemandRequest.getConstraints())) {
