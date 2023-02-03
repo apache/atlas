@@ -115,7 +115,7 @@ public class GlossaryCategoryUtils extends GlossaryUtils {
                                   updatedCategory.getAnchor().getGlossaryGuid(),
                                   storeObject.getGuid());
                     }
-                    relationshipStore.deleteById(storeObject.getAnchor().getRelationGuid(), false);
+                    relationshipStore.deleteById(storeObject.getAnchor().getRelationGuid(), true);
 
                     // Derive the qualifiedName when anchor changes
                     String        anchorGlossaryGuid = updatedCategory.getAnchor().getGlossaryGuid();
@@ -137,7 +137,7 @@ public class GlossaryCategoryUtils extends GlossaryUtils {
                     if (DEBUG_ENABLED) {
                         LOG.debug("Deleting category anchor");
                     }
-                    relationshipStore.deleteById(storeObject.getAnchor().getRelationGuid(), false);
+                    relationshipStore.deleteById(storeObject.getAnchor().getRelationGuid(), true);
                 }
                 break;
         }
@@ -173,10 +173,10 @@ public class GlossaryCategoryUtils extends GlossaryUtils {
                     AtlasRelationship parentRelationship = relationshipStore.getById(existingParent.getRelationGuid());
                     if (existingParent.getCategoryGuid().equals(newParent.getCategoryGuid())) {
                         updateRelationshipAttributes(parentRelationship, newParent);
-                        relationshipStore.update(parentRelationship, false);
+                        relationshipStore.update(parentRelationship, true);
                     } else {
                         // Delete link to existing parent and link to new parent
-                        relationshipStore.deleteById(parentRelationship.getGuid(), false);
+                        relationshipStore.deleteById(parentRelationship.getGuid(), true);
                         updateQualifiedName(storeObject, newParent.getCategoryGuid());
                         createRelationship(defineCategoryHierarchyLink(newParent, storeObject.getGuid()));
                         addParentCatProp(storeObject, newParent.getCategoryGuid());
@@ -228,7 +228,7 @@ public class GlossaryCategoryUtils extends GlossaryUtils {
         if (DEBUG_ENABLED) {
             LOG.debug("Removing category parent, category = {}, parent = {}", storeObject.getGuid(), existingParent.getDisplayText());
         }
-        relationshipStore.deleteById(existingParent.getRelationGuid(), false);
+        relationshipStore.deleteById(existingParent.getRelationGuid(), true);
 
         // Parent deleted, qualifiedName needs recomputation
 
@@ -363,7 +363,7 @@ public class GlossaryCategoryUtils extends GlossaryUtils {
                 }
                 AtlasRelationship relationship = relationshipStore.getById(term.getRelationGuid());
                 updateRelationshipAttributes(relationship, term);
-                relationshipStore.update(relationship, false);
+                relationshipStore.update(relationship, true);
             }
         }
     }
@@ -376,7 +376,7 @@ public class GlossaryCategoryUtils extends GlossaryUtils {
                     LOG.debug("Creating term relation with category = {}, terms = {}", storeObject.getName(), term.getDisplayText());
                 }
                 deletedGuids.add(term.getTermGuid());
-                relationshipStore.deleteById(term.getRelationGuid(), false);
+                relationshipStore.deleteById(term.getRelationGuid(), true);
             }
 
             if (CollectionUtils.isNotEmpty(deletedGuids)) {
@@ -514,7 +514,7 @@ public class GlossaryCategoryUtils extends GlossaryUtils {
                 }
                 AtlasRelationship childRelationship = relationshipStore.getById(categoryHeader.getRelationGuid());
                 updateRelationshipAttributes(childRelationship, categoryHeader);
-                relationshipStore.update(childRelationship, false);
+                relationshipStore.update(childRelationship, true);
             }
         }
     }
@@ -525,7 +525,7 @@ public class GlossaryCategoryUtils extends GlossaryUtils {
                 if (DEBUG_ENABLED) {
                     LOG.debug("Deleting child, category = {}, child = {}", storeObject.getName(), child.getDisplayText());
                 }
-                relationshipStore.deleteById(child.getRelationGuid(), false);
+                relationshipStore.deleteById(child.getRelationGuid(), true);
             }
         }
     }
@@ -616,7 +616,7 @@ public class GlossaryCategoryUtils extends GlossaryUtils {
                     LOG.debug("Child anchor guid({}) doesn't match parent anchor guid({}). Updating child anchor", childAnchorGuid, parentAnchorGuid);
                 }
                 // Remove old glossary relation
-                relationshipStore.deleteById(child.getAnchor().getRelationGuid(), false);
+                relationshipStore.deleteById(child.getAnchor().getRelationGuid(), true);
 
                 // Link to new glossary
                 createRelationship(defineCategoryAnchorRelation(parentAnchorGuid, child.getGuid()));
