@@ -266,6 +266,12 @@ public final class Atlas {
             File elasticsearchSettingsFile  = new File(elasticsearchSettingsFilePath);
             String jsonString  = new String(Files.readAllBytes(elasticsearchSettingsFile.toPath()), StandardCharsets.UTF_8);
             request.settings(jsonString, XContentType.JSON);
+
+            String elasticsearchMappingsFilePath = (org.apache.commons.lang3.StringUtils.isEmpty(atlasHomeDir) ? "." : atlasHomeDir) + File.separator + "elasticsearch" + File.separator + "es-mappings.json";
+            File elasticsearchMappingsFile  = new File(elasticsearchMappingsFilePath);
+            String mappingsJsonString  = new String(Files.readAllBytes(elasticsearchMappingsFile.toPath()), StandardCharsets.UTF_8);
+            request.mapping(mappingsJsonString, XContentType.JSON);
+
             try {
                 AcknowledgedResponse putTemplateResponse = esClient.indices().putTemplate(request, RequestOptions.DEFAULT);
                 if (putTemplateResponse.isAcknowledged()) {
