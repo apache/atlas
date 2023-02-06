@@ -2302,7 +2302,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 AtlasRelationshipStoreV2.recordRelationshipMutation(AtlasRelationshipStoreV2.RelationshipMutation.RELATIONSHIP_HARD_DELETE, edge, entityRetriever);
         }
     }
-
 }
 
 

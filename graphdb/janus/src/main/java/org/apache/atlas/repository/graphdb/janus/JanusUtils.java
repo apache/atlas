@@ -5,7 +5,9 @@ import org.janusgraph.util.encoding.LongEncoding;
 import javax.annotation.Nonnull;
 import java.util.Objects;
 
-public class JanusUtils {
+public final class JanusUtils {
+
+    private JanusUtils(){}
 
     public static String toLongEncoding(Object vertexId) {
         Objects.requireNonNull(vertexId);
