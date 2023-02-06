@@ -1148,7 +1148,7 @@ public class EntityGraphMapper {
                     attrValue = attrType.createDefaultValue(attributeDef.getDefaultValue());
                 } else if (struct.getAttribute(SET_DEFAULT_VALUE) != null && struct.getAttribute(SET_DEFAULT_VALUE) == Boolean.TRUE && DATATYPE_INITIALIZE.contains(attribute.getTypeName())) {
                     if (!struct.getAttributes().keySet().stream().anyMatch(attributeName -> attributeName.equals(attribute.getName()))) {
-                        attrValue = attrType.createDefaultValueNull();
+                        attrValue = attrType.createDefaultValueNull(null);
                     }
                 }else {
                     if (attribute.getAttributeDef().getIsOptional()) {
