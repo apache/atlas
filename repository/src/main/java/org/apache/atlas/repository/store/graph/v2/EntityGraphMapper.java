@@ -150,7 +150,6 @@ import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getId
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.isReference;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_ADD;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_DELETE;
-import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_ONLY_PROPAGATION_DELETE;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
 import static org.apache.atlas.type.Constants.PENDING_TASKS_PROPERTY_KEY;
@@ -186,7 +185,14 @@ public class EntityGraphMapper {
     private static final String ATTR_MEANINGS = "meanings";
     private static final String ATTR_ANCHOR = "anchor";
     private static final String ATTR_CATEGORIES = "categories";
-    private static final String DEFAULT_VALUE = "setDefaultValueToNull";
+    private static final String SET_DEFAULT_VALUE = "setDefaultValueToNull";
+    private static final List<String> DATATYPE_INITIALIZE = new ArrayList() {
+        {
+            add("int");
+            add("long");
+            add("float");
+        }
+    };
 
     private static final boolean ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES = AtlasConfiguration.ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES.getBoolean();
     private static final boolean CLASSIFICATION_PROPAGATION_DEFAULT                  = AtlasConfiguration.CLASSIFICATION_PROPAGATION_DEFAULT.getBoolean();
@@ -1139,13 +1145,11 @@ public class EntityGraphMapper {
             if (attrType.getTypeCategory() == TypeCategory.PRIMITIVE) {
                 if (attributeDef.getDefaultValue() != null) {
                     attrValue = attrType.createDefaultValue(attributeDef.getDefaultValue());
-                } else if (struct.getAttribute(DEFAULT_VALUE) != null && struct.getAttribute(DEFAULT_VALUE) == Boolean.TRUE) {
-                    if (attribute.getTypeName().equals("long") || attribute.getTypeName() == "int" || attribute.getTypeName() == "float") {
-                        if (!struct.getAttributes().keySet().stream().anyMatch(k -> k.equals(attribute.getName()))) {
-                            attrValue = attrType.createDefaultValueToNull();
-                        }
+                } else if (struct.getAttribute(SET_DEFAULT_VALUE) != null && struct.getAttribute(SET_DEFAULT_VALUE) == Boolean.TRUE && DATATYPE_INITIALIZE.contains(attribute.getTypeName())) {
+                    if (!struct.getAttributes().keySet().stream().anyMatch(attributeName -> attributeName.equals(attribute.getName()))) {
+                        attrValue = attrType.createDefaultValueNull();
                     }
-                } else {
+                }else {
                     if (attribute.getAttributeDef().getIsOptional()) {
                         attrValue = attrType.createOptionalDefaultValue();
                     } else {

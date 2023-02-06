@@ -78,7 +78,7 @@ public abstract class AtlasType {
         return val == null ? createDefaultValue() : getNormalizedValue(val);
     }
 
-    public Object createDefaultValueToNull(){return null;}
+    public Object createDefaultValueNull(){return null;}
 
     public abstract boolean isValidValue(Object obj);
 
