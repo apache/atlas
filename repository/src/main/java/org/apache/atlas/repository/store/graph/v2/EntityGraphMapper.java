@@ -186,7 +186,7 @@ public class EntityGraphMapper {
     private static final String ATTR_MEANINGS = "meanings";
     private static final String ATTR_ANCHOR = "anchor";
     private static final String ATTR_CATEGORIES = "categories";
-
+    private static final String DEFAULT_VALUE = "setDefaultValueToNull";
 
     private static final boolean ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES = AtlasConfiguration.ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES.getBoolean();
     private static final boolean CLASSIFICATION_PROPAGATION_DEFAULT                  = AtlasConfiguration.CLASSIFICATION_PROPAGATION_DEFAULT.getBoolean();
@@ -994,7 +994,7 @@ public class EntityGraphMapper {
                         addValuesToAutoUpdateAttributesList(attribute, userAutoUpdateAttributes, timestampAutoUpdateAttributes);
                     }
 
-                    mapAttribute(attribute, attrValue, vertex, op, context);
+                    mapAttribute(struct, attribute, attrValue, vertex, op, context);
                 }
 
             } else if (op.equals(UPDATE) || op.equals(PARTIAL_UPDATE)) {
@@ -1123,6 +1123,37 @@ public class EntityGraphMapper {
             }
         }
 
+        if (attrType.getTypeCategory() == TypeCategory.PRIMITIVE || attrType.getTypeCategory() == TypeCategory.ENUM) {
+            mapPrimitiveValue(vertex, attribute, attrValue, isDeletedEntity);
+        } else {
+            AttributeMutationContext ctx = new AttributeMutationContext(op, vertex, attribute, attrValue);
+            mapToVertexByTypeCategory(ctx, context);
+        }
+    }
+
+    private void mapAttribute(AtlasStruct struct, AtlasAttribute attribute, Object attrValue, AtlasVertex vertex, EntityOperation op, EntityMutationContext context) throws AtlasBaseException {
+        boolean isDeletedEntity = context.isDeletedEntity(vertex);
+        AtlasType         attrType     = attribute.getAttributeType();
+        if (attrValue == null) {
+            AtlasAttributeDef attributeDef = attribute.getAttributeDef();
+            if (attrType.getTypeCategory() == TypeCategory.PRIMITIVE) {
+                if (attributeDef.getDefaultValue() != null) {
+                    attrValue = attrType.createDefaultValue(attributeDef.getDefaultValue());
+                } else if (struct.getAttribute(DEFAULT_VALUE) != null && struct.getAttribute(DEFAULT_VALUE) == Boolean.TRUE) {
+                    if (attribute.getTypeName().equals("long") || attribute.getTypeName() == "int" || attribute.getTypeName() == "float") {
+                        if (!struct.getAttributes().keySet().stream().anyMatch(k -> k.equals(attribute.getName()))) {
+                            attrValue = attrType.createDefaultValueToNull();
+                        }
+                    }
+                } else {
+                    if (attribute.getAttributeDef().getIsOptional()) {
+                        attrValue = attrType.createOptionalDefaultValue();
+                    } else {
+                        attrValue = attrType.createDefaultValue();
+                    }
+                }
+            }
+        }
         if (attrType.getTypeCategory() == TypeCategory.PRIMITIVE || attrType.getTypeCategory() == TypeCategory.ENUM) {
             mapPrimitiveValue(vertex, attribute, attrValue, isDeletedEntity);
         } else {
