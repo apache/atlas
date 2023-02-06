@@ -39,7 +39,7 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 
 @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
-@JsonIgnoreProperties(ignoreUnknown = true, value = {"visitedEdges"})
+@JsonIgnoreProperties(ignoreUnknown = true, value = {"visitedEdges", "skippedEdges"})
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class AtlasLineageInfo implements Serializable {
@@ -56,6 +56,7 @@ public class AtlasLineageInfo implements Serializable {
     private Set<LineageRelation> relations;
     private final Map<String, Map<LineageDirection, Boolean>> vertexChildrenInfo = new HashMap<>();
     private Set<String>                             visitedEdges;
+    private Set<String>                             skippedEdges;
     private Map<String, LineageInfoOnDemand>        relationsOnDemand;
     private Map<String, LineageOnDemandConstraints> lineageOnDemandPayload;
 
@@ -87,13 +88,15 @@ public class AtlasLineageInfo implements Serializable {
     }
 
     public AtlasLineageInfo(String baseEntityGuid, Map<String, AtlasEntityHeader> guidEntityMap,
-                            Set<LineageRelation> relations, Set<String> visitedEdges, Map<String, LineageInfoOnDemand> relationsOnDemand, LineageDirection lineageDirection, int lineageDepth) {
+                            Set<LineageRelation> relations, Set<String> visitedEdges, Set<String> skippedEdges,
+                            Map<String, LineageInfoOnDemand> relationsOnDemand, LineageDirection lineageDirection, int lineageDepth) {
         this.baseEntityGuid               = baseEntityGuid;
         this.lineageDirection             = lineageDirection;
         this.lineageDepth                 = lineageDepth;
         this.guidEntityMap                = guidEntityMap;
         this.relations                    = relations;
         this.visitedEdges                 = visitedEdges;
+        this.skippedEdges                 = skippedEdges;
         this.relationsOnDemand            = relationsOnDemand;
     }
 
@@ -215,6 +218,14 @@ public class AtlasLineageInfo implements Serializable {
         this.visitedEdges = visitedEdges;
     }
 
+    public Set<String> getSkippedEdges() {
+        return skippedEdges;
+    }
+
+    public void setSkippedEdges(Set<String> skippedEdges) {
+        this.skippedEdges = skippedEdges;
+    }
+
     public Map<String, LineageInfoOnDemand> getRelationsOnDemand() {
         return relationsOnDemand;
     }
@@ -280,7 +291,7 @@ public class AtlasLineageInfo implements Serializable {
         boolean                    hasDownstream;
         LineageOnDemandConstraints onDemandConstraints;
         @JsonIgnore
-        int                        offsetCount;
+        int                        fromCounter;  // Counter for relations to be skipped
 
         public LineageInfoOnDemand() { }
 
@@ -294,7 +305,7 @@ public class AtlasLineageInfo implements Serializable {
             this.isOutputRelationsReachedLimit = false;
             this.hasUpstream                   = false;
             this.hasDownstream                 = false;
-            this.offsetCount                   = 0;
+            this.fromCounter                   = 0;
         }
 
         public boolean isInputRelationsReachedLimit() {
@@ -345,12 +356,12 @@ public class AtlasLineageInfo implements Serializable {
             this.hasDownstream = hasDownstream;
         }
 
-        public int getOffsetCount() {
-            return offsetCount;
+        public int getFromCounter() {
+            return fromCounter;
         }
 
-        public void incrementOffsetCount() {
-            offsetCount++;
+        public void incrementFromCounter() {
+            fromCounter++;
         }
 
         public int getInputRelationsCount() {

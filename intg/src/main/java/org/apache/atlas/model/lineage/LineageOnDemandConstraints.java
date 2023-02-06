@@ -46,7 +46,7 @@ public class LineageOnDemandConstraints extends LineageOnDemandBaseParams implem
     private static final int LINEAGE_ON_DEMAND_DEFAULT_DEPTH      = 3;
 
     public LineageOnDemandConstraints() {
-        this(LineageDirection.BOTH, 0, 0, LINEAGE_ON_DEMAND_DEFAULT_DEPTH);
+        this(LineageDirection.BOTH, -1, -1, LINEAGE_ON_DEMAND_DEFAULT_DEPTH);
     }
 
     public LineageOnDemandConstraints(LineageOnDemandBaseParams baseParams) {

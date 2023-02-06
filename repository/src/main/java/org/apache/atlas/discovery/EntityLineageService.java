@@ -179,14 +179,6 @@ public class EntityLineageService implements AtlasLineageService {
 
         AtlasLineageInfo ret;
 
-        if (MapUtils.isEmpty(lineageOnDemandRequest.getConstraints())) {
-            Map<String, LineageOnDemandConstraints> lineageConstraintsMap = new HashMap<>();
-            lineageConstraintsMap.put(guid, getLineageConstraints(guid, lineageOnDemandRequest.getDefaultParams()));
-            lineageOnDemandRequest.setConstraints(lineageConstraintsMap);
-        } else {
-            handleDefaultParams(lineageOnDemandRequest);
-        }
-
         AtlasLineageOnDemandContext atlasLineageOnDemandContext = new AtlasLineageOnDemandContext(lineageOnDemandRequest, atlasTypeRegistry);
 
         boolean isDataSet = validateEntityTypeAndCheckIfDataSet(guid);
@@ -201,33 +193,6 @@ public class EntityLineageService implements AtlasLineageService {
         RequestContext.get().endMetricRecord(metricRecorder);
 
         return ret;
-    }
-
-    private void handleDefaultParams(LineageOnDemandRequest lineageOnDemandRequest) {
-        for (Map.Entry<String, LineageOnDemandConstraints> constraintEntry : lineageOnDemandRequest.getConstraints().entrySet()) {
-            if (constraintEntry.getValue().getInputRelationsLimit() == 0) {
-                constraintEntry.setValue(
-                        new LineageOnDemandConstraints(
-                                constraintEntry.getValue().getDirection(),
-                                lineageOnDemandRequest.getDefaultParams().getInputRelationsLimit(),
-                                constraintEntry.getValue().getOutputRelationsLimit(),
-                                constraintEntry.getValue().getDepth(),
-                                constraintEntry.getValue().getFrom()
-                        )
-                );
-            }
-            if (constraintEntry.getValue().getOutputRelationsLimit() == 0) {
-                constraintEntry.setValue(
-                        new LineageOnDemandConstraints(
-                                constraintEntry.getValue().getDirection(),
-                                constraintEntry.getValue().getInputRelationsLimit(),
-                                lineageOnDemandRequest.getDefaultParams().getOutputRelationsLimit(),
-                                constraintEntry.getValue().getDepth(),
-                                constraintEntry.getValue().getFrom()
-                        )
-                );
-            }
-        }
     }
 
     private boolean validateEntityTypeAndCheckIfDataSet(String guid) throws AtlasBaseException {
@@ -266,7 +231,7 @@ public class EntityLineageService implements AtlasLineageService {
             return getLineageConstraints(guid, defaultParams);
         }
 
-        LineageOnDemandConstraints lineageConstraintsByGuid = lineageConstraintsMap.get(guid);;
+        LineageOnDemandConstraints lineageConstraintsByGuid = lineageConstraintsMap.get(guid);
         if (lineageConstraintsByGuid == null) {
             return getLineageConstraints(guid, defaultParams);
         }
@@ -276,14 +241,26 @@ public class EntityLineageService implements AtlasLineageService {
             lineageConstraintsByGuid.setDirection(BOTH);
         }
 
-        if (lineageConstraintsByGuid.getInputRelationsLimit() == 0) {
-            LOG.info("No lineage on-demand inputRelationsLimit provided for guid: {}, configuring with default value {}", guid, LINEAGE_ON_DEMAND_DEFAULT_NODE_COUNT);
-            lineageConstraintsByGuid.setInputRelationsLimit(LINEAGE_ON_DEMAND_DEFAULT_NODE_COUNT);
+        if (lineageConstraintsByGuid.getInputRelationsLimit() == -1) {
+            if (context.getDefaultParams() != null) {
+                LOG.info("No lineage on-demand constraint inputRelationsLimit provided for guid: {}, configuring with default params value {}", guid, context.getDefaultParams().getInputRelationsLimit());
+                lineageConstraintsByGuid.setInputRelationsLimit(context.getDefaultParams().getInputRelationsLimit());
+            }
+            else {
+                LOG.info("No lineage on-demand constraint inputRelationsLimit provided for guid: {}, configuring with default value {}", guid, LINEAGE_ON_DEMAND_DEFAULT_NODE_COUNT);
+                lineageConstraintsByGuid.setInputRelationsLimit(LINEAGE_ON_DEMAND_DEFAULT_NODE_COUNT);
+            }
         }
 
-        if (lineageConstraintsByGuid.getOutputRelationsLimit() == 0) {
-            LOG.info("No lineage on-demand outputRelationsLimit provided for guid: {}, configuring with default value {}", guid, LINEAGE_ON_DEMAND_DEFAULT_NODE_COUNT);
-            lineageConstraintsByGuid.setOutputRelationsLimit(LINEAGE_ON_DEMAND_DEFAULT_NODE_COUNT);
+        if (lineageConstraintsByGuid.getOutputRelationsLimit() == -1) {
+            if (context.getDefaultParams() != null) {
+                LOG.info("No lineage on-demand constraint outputRelationsLimit provided for guid: {}, configuring with default params value {}", guid, context.getDefaultParams().getOutputRelationsLimit());
+                lineageConstraintsByGuid.setOutputRelationsLimit(context.getDefaultParams().getOutputRelationsLimit());
+            }
+            else {
+                LOG.info("No lineage on-demand constraint outputRelationsLimit provided for guid: {}, configuring with default value {}", guid, LINEAGE_ON_DEMAND_DEFAULT_NODE_COUNT);
+                lineageConstraintsByGuid.setOutputRelationsLimit(LINEAGE_ON_DEMAND_DEFAULT_NODE_COUNT);
+            }
         }
 
         if (lineageConstraintsByGuid.getDepth() == 0) {
@@ -448,10 +425,10 @@ public class EntityLineageService implements AtlasLineageService {
         LineageOnDemandConstraints entityConstraints = getAndValidateLineageConstraintsByGuid(entityGuid, atlasLineageOnDemandContext);
         LineageInfoOnDemand entityLineageInfo = ret.getRelationsOnDemand().containsKey(entityGuid) ? ret.getRelationsOnDemand().get(entityGuid) : new LineageInfoOnDemand(entityConstraints);
 
-        if (entityConstraints.getFrom() != 0 && entityLineageInfo.getOffsetCount() < entityConstraints.getFrom()) {
-            if (! lineageContainsEdgeV2(ret, atlasEdge, OFFSET)) {
-                addEdgeToVisitedEdges(ret, atlasEdge, OFFSET);
-                entityLineageInfo.incrementOffsetCount();
+        if (entityConstraints.getFrom() != 0 && entityLineageInfo.getFromCounter() < entityConstraints.getFrom()) {
+            if (! lineageContainsSkippedEdgeV2(ret, atlasEdge)) {
+                addEdgeToSkippedEdges(ret, atlasEdge);
+                entityLineageInfo.incrementFromCounter();
             }
             return true;
         }
@@ -465,7 +442,7 @@ public class EntityLineageService implements AtlasLineageService {
     private boolean incrementAndCheckIfRelationsLimitReached(AtlasEdge atlasEdge, boolean isInput, AtlasLineageOnDemandContext atlasLineageOnDemandContext, AtlasLineageInfo ret, int depth) {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("incrementAndCheckIfRelationsLimitReached");
 
-        if (lineageContainsEdgeV2(ret, atlasEdge, null)) {
+        if (lineageContainsVisitedEdgeV2(ret, atlasEdge)) {
             return false;
         }
 
@@ -738,7 +715,7 @@ public class EntityLineageService implements AtlasLineageService {
 
 
     private void addEdgeToResult(AtlasEdge edge, AtlasLineageInfo lineageInfo, AtlasLineageOnDemandContext atlasLineageOnDemandContext) throws AtlasBaseException {
-        if (!lineageContainsEdgeV2(lineageInfo, edge, null) && !lineageMaxNodeCountReached(lineageInfo.getRelations())) {
+        if (!lineageContainsVisitedEdgeV2(lineageInfo, edge) && !lineageMaxNodeCountReached(lineageInfo.getRelations())) {
             processEdge(edge, lineageInfo, atlasLineageOnDemandContext);
         }
     }
@@ -751,9 +728,16 @@ public class EntityLineageService implements AtlasLineageService {
         return CollectionUtils.isNotEmpty(relations) && relations.size() > getLineageMaxNodeAllowedCount();
     }
 
-    private String getVisitedEdgeLabel(String inGuid, String outGuid, String relationGuid) {
+    private String getEdgeLabel(AtlasEdge edge) {
+        AtlasVertex inVertex     = edge.getInVertex();
+        AtlasVertex outVertex    = edge.getOutVertex();
+        String      inGuid       = AtlasGraphUtilsV2.getIdFromVertex(inVertex);
+        String      outGuid      = AtlasGraphUtilsV2.getIdFromVertex(outVertex);
+        String      relationGuid = AtlasGraphUtilsV2.getEncodedProperty(edge, RELATIONSHIP_GUID_PROPERTY_KEY, String.class);
+        boolean     isInputEdge  = edge.getLabel().equalsIgnoreCase(PROCESS_INPUTS_EDGE);
+
         if (isLineageOnDemandEnabled()) {
-            return inGuid + SEPARATOR + outGuid;
+            return isInputEdge ? inGuid + SEPARATOR + outGuid : outGuid + SEPARATOR + inGuid;
         }
         return relationGuid;
     }
@@ -1076,38 +1060,41 @@ public class EntityLineageService implements AtlasLineageService {
         return ret;
     }
 
-    private boolean lineageContainsEdgeV2(AtlasLineageInfo lineageInfo, AtlasEdge edge, String prefix) {
+    private boolean lineageContainsVisitedEdgeV2(AtlasLineageInfo lineageInfo, AtlasEdge edge) {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("lineageContainsVisitedEdgeV2");
+
         boolean ret = false;
 
         if (edge != null && lineageInfo != null && CollectionUtils.isNotEmpty(lineageInfo.getVisitedEdges())) {
-            String  inGuid           = AtlasGraphUtilsV2.getIdFromVertex(edge.getInVertex());
-            String  outGuid          = AtlasGraphUtilsV2.getIdFromVertex(edge.getOutVertex());
-            String  relationGuid     = AtlasGraphUtilsV2.getEncodedProperty(edge, RELATIONSHIP_GUID_PROPERTY_KEY, String.class);
-            boolean isInputEdge      = edge.getLabel().equalsIgnoreCase(PROCESS_INPUTS_EDGE);
-
-            String visitedEdgeLabel = prefix != null ? prefix : "";
-            visitedEdgeLabel += isInputEdge ? getVisitedEdgeLabel(inGuid, outGuid, relationGuid) : getVisitedEdgeLabel(outGuid, inGuid, relationGuid);
-
-            if (lineageInfo.getVisitedEdges().contains(visitedEdgeLabel)) {
+            if (lineageInfo.getVisitedEdges().contains(getEdgeLabel(edge))) {
                 ret = true;
             }
         }
 
+        RequestContext.get().endMetricRecord(metric);
+
         return ret;
     }
 
-    private void addEdgeToVisitedEdges(AtlasLineageInfo lineageInfo, AtlasEdge edge, String prefix) {
-        AtlasVertex inVertex     = edge.getInVertex();
-        AtlasVertex outVertex    = edge.getOutVertex();
-        String      inGuid       = AtlasGraphUtilsV2.getIdFromVertex(inVertex);
-        String      outGuid      = AtlasGraphUtilsV2.getIdFromVertex(outVertex);
-        String      relationGuid = AtlasGraphUtilsV2.getEncodedProperty(edge, RELATIONSHIP_GUID_PROPERTY_KEY, String.class);
-        boolean     isInputEdge  = edge.getLabel().equalsIgnoreCase(PROCESS_INPUTS_EDGE);
+    private boolean lineageContainsSkippedEdgeV2(AtlasLineageInfo lineageInfo, AtlasEdge edge) {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("lineageContainsSkippedEdgeV2");
 
-        if (lineageInfo.getVisitedEdges() != null) {
-            String visitedEdgeLabel = prefix != null ? prefix : "";
-            visitedEdgeLabel += isInputEdge ? getVisitedEdgeLabel(inGuid, outGuid, relationGuid) : getVisitedEdgeLabel(outGuid, inGuid, relationGuid);
-            lineageInfo.getVisitedEdges().add(visitedEdgeLabel);
+        boolean ret = false;
+
+        if (edge != null && lineageInfo != null && CollectionUtils.isNotEmpty(lineageInfo.getSkippedEdges())) {
+            if (lineageInfo.getSkippedEdges().contains(getEdgeLabel(edge))) {
+                ret = true;
+            }
+        }
+
+        RequestContext.get().endMetricRecord(metric);
+
+        return ret;
+    }
+
+    private void addEdgeToSkippedEdges(AtlasLineageInfo lineageInfo, AtlasEdge edge) {
+        if (lineageInfo.getSkippedEdges() != null) {
+            lineageInfo.getSkippedEdges().add(getEdgeLabel(edge));
         }
     }
 
@@ -1116,7 +1103,7 @@ public class EntityLineageService implements AtlasLineageService {
     }
 
     private AtlasLineageInfo initializeLineageInfo(String guid, LineageDirection direction, int depth) {
-        return new AtlasLineageInfo(guid, new HashMap<>(), new HashSet<>(), new HashSet<>(), new HashMap<>(), direction, depth);
+        return new AtlasLineageInfo(guid, new HashMap<>(), new HashSet<>(), new HashSet<>(), new HashSet<>(), new HashMap<>(), direction, depth);
     }
 
     private List executeGremlinScript(Map<String, Object> bindings, String lineageQuery) throws AtlasBaseException {
@@ -1308,8 +1295,7 @@ public class EntityLineageService implements AtlasLineageService {
         }
 
         if (visitedEdges != null) {
-            String visitedEdgeLabel = isInputEdge ? getVisitedEdgeLabel(inGuid, outGuid, relationGuid) : getVisitedEdgeLabel(outGuid, inGuid, relationGuid);
-            visitedEdges.add(visitedEdgeLabel);
+            visitedEdges.add(getEdgeLabel(edge));
         }
 
         RequestContext.get().endMetricRecord(metricRecorder);
