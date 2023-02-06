@@ -2,6 +2,9 @@
   "mapping" : {
     "total_fields" : {
       "limit" : "1500"
+    },
+    "nested_objects" : {
+      "limit" : "100000"
     }
   },
   "similarity": {
