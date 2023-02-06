@@ -94,7 +94,7 @@ public enum AtlasConfiguration {
     LINEAGE_ON_DEMAND_ENABLED("atlas.lineage.on.demand.enabled", true),
     LINEAGE_ON_DEMAND_DEFAULT_NODE_COUNT("atlas.lineage.on.demand.default.node.count", 3),
     LINEAGE_MAX_NODE_COUNT("atlas.lineage.max.node.count", 9000),
-    SUPPORTED_RELATIONSHIP_EVENTS("atlas.notification.relationships.filter", "asset_readme,asset_links,RelatedReadme,AtlasGlossarySemanticAssignment,AtlasGlossarySynonym,AtlasGlossaryAntonym");
+    SUPPORTED_RELATIONSHIP_EVENTS("atlas.notification.relationships.filter", "asset_readme");
 
 
     private static final Configuration APPLICATION_PROPERTIES;

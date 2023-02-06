@@ -74,7 +74,7 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
     private final FullTextMapperV2            fullTextMapperV2;
     private final AtlasTypeRegistry           atlasTypeRegistry;
     private final boolean                     isV2EntityNotificationEnabled;
-    private final List<String> allowedRelationshipTypes = Arrays.asList(AtlasConfiguration.SUPPORTED_RELATIONSHIP_EVENTS.getStringArray());
+    private static final List<String> ALLOWED_RELATIONSHIP_TYPES = Arrays.asList(AtlasConfiguration.SUPPORTED_RELATIONSHIP_EVENTS.getStringArray());
 
 
     @Inject
@@ -125,7 +125,7 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
         if (CollectionUtils.isEmpty(entityChangeListeners)) {
             return;
         }
-        relationships = relationships.stream().filter(r -> allowedRelationshipTypes.contains(r.getTypeName())).collect(Collectors.toList());
+        relationships = relationships.stream().filter(r -> ALLOWED_RELATIONSHIP_TYPES.contains(r.getTypeName())).collect(Collectors.toList());
         if (CollectionUtils.isEmpty(relationships))
             return;
         switch (operationType) {
