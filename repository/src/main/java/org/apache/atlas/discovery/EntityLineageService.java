@@ -863,13 +863,29 @@ public class EntityLineageService implements AtlasLineageService {
     }
 
     private List<Pair<AtlasEdge, String>> getUnvisitedProcessEdgesWithOutputVertexIds(boolean isInput, AtlasLineageContext lineageContext, Set<Pair<String, String>> paginationCalculatedProcessOutputPair, AtlasVertex processVertex) {
-        return getEdgesOfProcess(isInput, lineageContext, processVertex)
-                .stream()
-                .map(processEdge -> Pair.of(processEdge, processEdge.getInVertex()))
-                .filter(pair -> pair.getRight() != null)
-                .map(pair -> Pair.of(pair.getLeft(), pair.getRight().getIdForDisplay()))
-                .filter(pair -> !paginationCalculatedProcessOutputPair.contains(Pair.of(getGuid(processVertex), pair.getRight())))
-                .collect(Collectors.toList());
+        if (lineageContext.getIgnoredProcesses() != null &&
+                lineageContext.getIgnoredProcesses().contains(processVertex.getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY, String.class))) {
+            return Collections.emptyList();
+        }
+
+        List<Pair<AtlasEdge, String>> unvisitedProcessEdgesWithOutputVertexIds = new ArrayList<>();
+
+        Iterable<AtlasEdge> outgoingEdges = vertexEdgeCache.getEdges(processVertex, OUT, isInput ? PROCESS_INPUTS_EDGE : PROCESS_OUTPUTS_EDGE);
+
+        for (AtlasEdge outgoingEdge : outgoingEdges) {
+            AtlasVertex outputVertex = outgoingEdge.getInVertex();
+            if (outputVertex != null &&
+                    shouldProcessEdge(lineageContext, outgoingEdge) &&
+                    vertexMatchesEvaluation(outputVertex, lineageContext) &&
+                    !paginationCalculatedProcessOutputPair.contains(Pair.of(getGuid(processVertex), outputVertex.getIdForDisplay()))) {
+                unvisitedProcessEdgesWithOutputVertexIds.add(Pair.of(outgoingEdge, outputVertex.getIdForDisplay()));
+                if (unvisitedProcessEdgesWithOutputVertexIds.size() == lineageContext.getLimit()) {
+                    break;
+                }
+            }
+        }
+
+        return unvisitedProcessEdgesWithOutputVertexIds;
     }
 
     @VisibleForTesting
