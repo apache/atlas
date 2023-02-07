@@ -273,6 +273,10 @@ public class AtlasLineageInfo implements Serializable {
         int                        outputRelationsCount;
         boolean                    isInputRelationsReachedLimit;
         boolean                    isOutputRelationsReachedLimit;
+        @JsonProperty
+        boolean                    hasUpstream;
+        @JsonProperty
+        boolean                    hasDownstream;
         LineageOnDemandConstraints onDemandConstraints;
 
         public LineageInfoOnDemand() { }
@@ -285,6 +289,8 @@ public class AtlasLineageInfo implements Serializable {
             this.outputRelationsCount          = 0;
             this.isInputRelationsReachedLimit  = false;
             this.isOutputRelationsReachedLimit = false;
+            this.hasUpstream                   = false;
+            this.hasDownstream                 = false;
         }
 
         public boolean isInputRelationsReachedLimit() {
@@ -317,6 +323,22 @@ public class AtlasLineageInfo implements Serializable {
 
         public void setHasMoreOutputs(boolean hasMoreOutputs) {
             this.hasMoreOutputs = hasMoreOutputs;
+        }
+
+        public boolean hasUpstream() {
+            return hasUpstream;
+        }
+
+        public void setHasUpstream(boolean hasUpstream) {
+            this.hasUpstream = hasUpstream;
+        }
+
+        public boolean hasDownstream() {
+            return hasDownstream;
+        }
+
+        public void setHasDownstream(boolean hasDownstream) {
+            this.hasDownstream = hasDownstream;
         }
 
         public int getInputRelationsCount() {
@@ -370,6 +392,8 @@ public class AtlasLineageInfo implements Serializable {
                     ", hasMoreOutputs='" + hasMoreOutputs + '\'' +
                     ", inputRelationsCount='" + inputRelationsCount + '\'' +
                     ", outputRelationsCount='" + outputRelationsCount + '\'' +
+                    ", hasUpstream='" + hasUpstream + '\'' +
+                    ", hasDownstream='" + hasDownstream + '\'' +
                     '}';
         }
 
