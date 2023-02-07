@@ -241,26 +241,14 @@ public class EntityLineageService implements AtlasLineageService {
             lineageConstraintsByGuid.setDirection(BOTH);
         }
 
-        if (lineageConstraintsByGuid.getInputRelationsLimit() == -1) {
-            if (context.getDefaultParams() != null) {
-                LOG.info("No lineage on-demand constraint inputRelationsLimit provided for guid: {}, configuring with default params value {}", guid, context.getDefaultParams().getInputRelationsLimit());
-                lineageConstraintsByGuid.setInputRelationsLimit(context.getDefaultParams().getInputRelationsLimit());
-            }
-            else {
-                LOG.info("No lineage on-demand constraint inputRelationsLimit provided for guid: {}, configuring with default value {}", guid, LINEAGE_ON_DEMAND_DEFAULT_NODE_COUNT);
-                lineageConstraintsByGuid.setInputRelationsLimit(LINEAGE_ON_DEMAND_DEFAULT_NODE_COUNT);
-            }
+        if (lineageConstraintsByGuid.getInputRelationsLimit() < 0) {
+            LOG.info("No lineage on-demand constraint inputRelationsLimit provided for guid: {}, configuring with default value {}", guid, context.getDefaultParams().getInputRelationsLimit());
+            lineageConstraintsByGuid.setInputRelationsLimit(context.getDefaultParams().getInputRelationsLimit());
         }
 
-        if (lineageConstraintsByGuid.getOutputRelationsLimit() == -1) {
-            if (context.getDefaultParams() != null) {
-                LOG.info("No lineage on-demand constraint outputRelationsLimit provided for guid: {}, configuring with default params value {}", guid, context.getDefaultParams().getOutputRelationsLimit());
-                lineageConstraintsByGuid.setOutputRelationsLimit(context.getDefaultParams().getOutputRelationsLimit());
-            }
-            else {
-                LOG.info("No lineage on-demand constraint outputRelationsLimit provided for guid: {}, configuring with default value {}", guid, LINEAGE_ON_DEMAND_DEFAULT_NODE_COUNT);
-                lineageConstraintsByGuid.setOutputRelationsLimit(LINEAGE_ON_DEMAND_DEFAULT_NODE_COUNT);
-            }
+        if (lineageConstraintsByGuid.getOutputRelationsLimit() < 0) {
+            LOG.info("No lineage on-demand constraint outputRelationsLimit provided for guid: {}, configuring with default value {}", guid, context.getDefaultParams().getOutputRelationsLimit());
+            lineageConstraintsByGuid.setOutputRelationsLimit(context.getDefaultParams().getOutputRelationsLimit());
         }
 
         if (lineageConstraintsByGuid.getDepth() == 0) {
