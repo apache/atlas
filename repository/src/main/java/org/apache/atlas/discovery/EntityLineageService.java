@@ -290,12 +290,13 @@ public class EntityLineageService implements AtlasLineageService {
             depth = -1;
         }
 
+        if (!ret.getRelationsOnDemand().containsKey(guid)) {
+            ret.getRelationsOnDemand().put(guid, new AtlasLineageInfo.LineageInfoOnDemand(lineageConstraintsByGuid));
+        }
+
         if (isDataSet) {
             AtlasVertex datasetVertex = AtlasGraphUtilsV2.findByGuid(this.graph, guid);
 
-            if (!ret.getRelationsOnDemand().containsKey(guid)) {
-                ret.getRelationsOnDemand().put(guid, new AtlasLineageInfo.LineageInfoOnDemand(lineageConstraintsByGuid));
-            }
 
             if (direction == INPUT || direction == BOTH) {
                 traverseEdgesOnDemand(datasetVertex, true, depth, new HashSet<>(), atlasLineageOnDemandContext, ret);
@@ -311,13 +312,13 @@ public class EntityLineageService implements AtlasLineageService {
             if (direction == INPUT || direction == BOTH) {
                 Iterable<AtlasEdge> processEdges = processVertex.getEdges(AtlasEdgeDirection.OUT, PROCESS_INPUTS_EDGE);
 
-                traverseEdgesOnDemand(processEdges, true, depth, atlasLineageOnDemandContext, ret);
+                traverseEdgesOnDemand(processEdges, true, depth, atlasLineageOnDemandContext, ret, processVertex);
             }
 
             if (direction == OUTPUT || direction == BOTH) {
                 Iterable<AtlasEdge> processEdges = processVertex.getEdges(AtlasEdgeDirection.OUT, PROCESS_OUTPUTS_EDGE);
 
-                traverseEdgesOnDemand(processEdges, false, depth, atlasLineageOnDemandContext, ret);
+                traverseEdgesOnDemand(processEdges, false, depth, atlasLineageOnDemandContext, ret, processVertex);
             }
 
         }
@@ -326,9 +327,13 @@ public class EntityLineageService implements AtlasLineageService {
         return ret;
     }
 
-    private void traverseEdgesOnDemand(Iterable<AtlasEdge> processEdges, boolean isInput, int depth, AtlasLineageOnDemandContext atlasLineageOnDemandContext, AtlasLineageInfo ret) throws AtlasBaseException {
+    private void traverseEdgesOnDemand(Iterable<AtlasEdge> processEdges, boolean isInput, int depth, AtlasLineageOnDemandContext atlasLineageOnDemandContext, AtlasLineageInfo ret, AtlasVertex processVertex) throws AtlasBaseException {
         for (AtlasEdge processEdge : processEdges) {
             boolean isInputEdge  = processEdge.getLabel().equalsIgnoreCase(PROCESS_INPUTS_EDGE);
+
+            if (checkForOffset(processEdge, processVertex, atlasLineageOnDemandContext, ret)) {
+                continue;
+            }
 
             if (incrementAndCheckIfRelationsLimitReached(processEdge, isInputEdge, atlasLineageOnDemandContext, ret, depth)) {
                 break;
