@@ -23,6 +23,7 @@ import org.apache.atlas.model.discovery.SearchParams;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 
 import java.util.Iterator;
+import java.util.Set;
 
 /**
  * A graph query that runs directly against a particular index.
@@ -87,6 +88,10 @@ public interface AtlasIndexQuery<V, E> {
          *
          */
         double getScore();
+
+        Set<String> getCollapseKeys();
+
+        DirectIndexQueryResult<V, E> getCollapseVertices(String key);
 
     }
 
