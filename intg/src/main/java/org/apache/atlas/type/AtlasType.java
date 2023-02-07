@@ -78,8 +78,6 @@ public abstract class AtlasType {
         return val == null ? createDefaultValue() : getNormalizedValue(val);
     }
 
-    public Object createDefaultValueNull(Object val){return getNormalizedValue(val);}
-
     public abstract boolean isValidValue(Object obj);
 
     public boolean areEqualValues(Object val1, Object val2, Map<String, String> guidAssignments) {

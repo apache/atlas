@@ -307,6 +307,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
         private List<AtlasConstraintDef> constraints;
         private Map<String, String>      options;
         private String                   displayName;
+        private boolean                  defaultValueNull;
         HashMap<String, Object> indexTypeESConfig;
         HashMap<String, HashMap<String, Object>> indexTypeESFields;
         HashMap<String, ArrayList> autoUpdateAttributes;
@@ -356,6 +357,14 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
         public AtlasAttributeDef(String name, String typeName, boolean isOptional, Cardinality cardinality,
                                  int valuesMinCount, int valuesMaxCount, boolean isUnique, boolean isIndexable, boolean includeInNotification, String defaultValue,
                                  List<AtlasConstraintDef> constraints, Map<String,String> options, String description, int searchWeight, IndexType indexType, boolean skipScrubbing) {
+
+            this(name, typeName, isOptional, cardinality, valuesMinCount, valuesMaxCount, isUnique, isIndexable, includeInNotification, defaultValue,
+                    constraints, options, description, searchWeight, indexType, skipScrubbing, true);
+        }
+
+        public AtlasAttributeDef(String name, String typeName, boolean isOptional, Cardinality cardinality,
+                                 int valuesMinCount, int valuesMaxCount, boolean isUnique, boolean isIndexable, boolean includeInNotification, String defaultValue,
+                                 List<AtlasConstraintDef> constraints, Map<String,String> options, String description, int searchWeight, IndexType indexType, boolean skipScrubbing, boolean defaultValueNull) {
             setName(name);
             setTypeName(typeName);
             setIsOptional(isOptional);
@@ -372,6 +381,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             setSearchWeight(searchWeight);
             setIndexType(indexType);
             setSkipScrubbing(skipScrubbing);
+            setDefaultValueNull(defaultValueNull);
         }
 
         public AtlasAttributeDef(AtlasAttributeDef other) {
@@ -396,6 +406,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
                 setIndexTypeESFields(other.getIndexTypeESFields());
                 setAutoUpdateAttributes(other.getAutoUpdateAttributes());
                 setSkipScrubbing(other.getSkipScrubbing());
+                setDefaultValueNull(other.getDefaultValueNull());
             }
         }
 
@@ -429,6 +440,14 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
 
         public void setName(String name) {
             this.name = name;
+        }
+
+        public boolean getDefaultValueNull() {
+            return defaultValueNull;
+        }
+
+        public void setDefaultValueNull(boolean DefaultValueNull) {
+            this.defaultValueNull = DefaultValueNull;
         }
 
         public String getTypeName() {
@@ -623,6 +642,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             sb.append(", indexTypeESFields='").append(indexTypeESFields).append('\'');
             sb.append(", autoUpdateAttributes='").append(autoUpdateAttributes).append('\'');
             sb.append(", skipScrubbing='").append(skipScrubbing).append('\'');
+            sb.append(", defaultValueNull='").append(defaultValueNull).append('\'');
             sb.append(", constraints=[");
             if (CollectionUtils.isNotEmpty(constraints)) {
                 int i = 0;
@@ -655,6 +675,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
                     Objects.equals(typeName, that.typeName) &&
                     cardinality == that.cardinality &&
                     Objects.equals(defaultValue, that.defaultValue) &&
+                    Objects.equals(defaultValueNull, that.defaultValueNull) &&
                     Objects.equals(description, that.description) &&
                     Objects.equals(constraints, that.constraints) &&
                     Objects.equals(options, that.options) &&
@@ -669,7 +690,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
 
         @Override
         public int hashCode() {
-            return Objects.hash(name, typeName, isOptional, cardinality, valuesMinCount, valuesMaxCount, isUnique, isIndexable, includeInNotification, defaultValue, constraints, options, description, searchWeight, indexType, displayName, indexTypeESConfig, indexTypeESFields, autoUpdateAttributes, skipScrubbing);
+            return Objects.hash(name, typeName, isOptional, cardinality, valuesMinCount, valuesMaxCount, isUnique, isIndexable, includeInNotification, defaultValue, constraints, options, description, searchWeight, indexType, displayName, indexTypeESConfig, indexTypeESFields, autoUpdateAttributes, skipScrubbing, defaultValueNull);
         }
 
         @Override

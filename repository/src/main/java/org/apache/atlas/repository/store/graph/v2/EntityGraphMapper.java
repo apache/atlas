@@ -1001,7 +1001,7 @@ public class EntityGraphMapper {
                         addValuesToAutoUpdateAttributesList(attribute, userAutoUpdateAttributes, timestampAutoUpdateAttributes);
                     }
 
-                    mapAttribute(struct, attribute, attrValue, vertex, op, context);
+                    mapAttribute(attribute, attrValue, vertex, op, context);
                 }
 
             } else if (op.equals(UPDATE) || op.equals(PARTIAL_UPDATE)) {
@@ -1120,6 +1120,8 @@ public class EntityGraphMapper {
             if (attrType.getTypeCategory() == TypeCategory.PRIMITIVE) {
                 if (attributeDef.getDefaultValue() != null) {
                     attrValue = attrType.createDefaultValue(attributeDef.getDefaultValue());
+                } else if (attributeDef.getDefaultValueNull() && DATATYPE_INITIALIZE.contains(attribute.getTypeName())) {
+                    attrValue = null;
                 } else {
                     if (attribute.getAttributeDef().getIsOptional()) {
                         attrValue = attrType.createOptionalDefaultValue();
@@ -1130,35 +1132,6 @@ public class EntityGraphMapper {
             }
         }
 
-        if (attrType.getTypeCategory() == TypeCategory.PRIMITIVE || attrType.getTypeCategory() == TypeCategory.ENUM) {
-            mapPrimitiveValue(vertex, attribute, attrValue, isDeletedEntity);
-        } else {
-            AttributeMutationContext ctx = new AttributeMutationContext(op, vertex, attribute, attrValue);
-            mapToVertexByTypeCategory(ctx, context);
-        }
-    }
-
-    private void mapAttribute(AtlasStruct struct, AtlasAttribute attribute, Object attrValue, AtlasVertex vertex, EntityOperation op, EntityMutationContext context) throws AtlasBaseException {
-        boolean isDeletedEntity = context.isDeletedEntity(vertex);
-        AtlasType         attrType     = attribute.getAttributeType();
-        if (attrValue == null) {
-            AtlasAttributeDef attributeDef = attribute.getAttributeDef();
-            if (attrType.getTypeCategory() == TypeCategory.PRIMITIVE) {
-                if (attributeDef.getDefaultValue() != null) {
-                    attrValue = attrType.createDefaultValue(attributeDef.getDefaultValue());
-                } else if (struct.getAttribute(SET_DEFAULT_VALUE) != null && struct.getAttribute(SET_DEFAULT_VALUE) == Boolean.TRUE && DATATYPE_INITIALIZE.contains(attribute.getTypeName())) {
-                    if (!struct.getAttributes().keySet().stream().anyMatch(attributeName -> attributeName.equals(attribute.getName()))) {
-                        attrValue = attrType.createDefaultValueNull(null);
-                    }
-                }else {
-                    if (attribute.getAttributeDef().getIsOptional()) {
-                        attrValue = attrType.createOptionalDefaultValue();
-                    } else {
-                        attrValue = attrType.createDefaultValue();
-                    }
-                }
-            }
-        }
         if (attrType.getTypeCategory() == TypeCategory.PRIMITIVE || attrType.getTypeCategory() == TypeCategory.ENUM) {
             mapPrimitiveValue(vertex, attribute, attrValue, isDeletedEntity);
         } else {
