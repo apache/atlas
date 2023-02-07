@@ -1032,6 +1032,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                         }
 
                         if (searchParams.getCollapseRelationAttributes() != null) {
+                            RequestContext.get().getRelationAttrsForSearch().clear();
                             RequestContext.get().setRelationAttrsForSearch(searchParams.getCollapseRelationAttributes());
                         }
 
