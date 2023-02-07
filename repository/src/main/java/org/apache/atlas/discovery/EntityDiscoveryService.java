@@ -1038,7 +1038,9 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                         collapseRet.setSearchParameters(null);
                         collapse.put(collapseKey, collapseRet);
                     }
-                    header.setCollapse(collapse);
+                    if (!collapse.isEmpty()) {
+                        header.setCollapse(collapse);
+                    }
                 }
 
                 ret.addEntity(header);
