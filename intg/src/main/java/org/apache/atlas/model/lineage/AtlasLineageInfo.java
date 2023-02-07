@@ -19,6 +19,7 @@ package org.apache.atlas.model.lineage;
 
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -38,7 +39,7 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 
 @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
-@JsonIgnoreProperties(ignoreUnknown = true, value = {"visitedEdges"})
+@JsonIgnoreProperties(ignoreUnknown = true, value = {"visitedEdges", "skippedEdges"})
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class AtlasLineageInfo implements Serializable {
@@ -55,6 +56,7 @@ public class AtlasLineageInfo implements Serializable {
     private Set<LineageRelation> relations;
     private final Map<String, Map<LineageDirection, Boolean>> vertexChildrenInfo = new HashMap<>();
     private Set<String>                             visitedEdges;
+    private Set<String>                             skippedEdges;
     private Map<String, LineageInfoOnDemand>        relationsOnDemand;
     private Map<String, LineageOnDemandConstraints> lineageOnDemandPayload;
 
@@ -86,13 +88,15 @@ public class AtlasLineageInfo implements Serializable {
     }
 
     public AtlasLineageInfo(String baseEntityGuid, Map<String, AtlasEntityHeader> guidEntityMap,
-                            Set<LineageRelation> relations, Set<String> visitedEdges, Map<String, LineageInfoOnDemand> relationsOnDemand, LineageDirection lineageDirection, int lineageDepth) {
+                            Set<LineageRelation> relations, Set<String> visitedEdges, Set<String> skippedEdges,
+                            Map<String, LineageInfoOnDemand> relationsOnDemand, LineageDirection lineageDirection, int lineageDepth) {
         this.baseEntityGuid               = baseEntityGuid;
         this.lineageDirection             = lineageDirection;
         this.lineageDepth                 = lineageDepth;
         this.guidEntityMap                = guidEntityMap;
         this.relations                    = relations;
         this.visitedEdges                 = visitedEdges;
+        this.skippedEdges                 = skippedEdges;
         this.relationsOnDemand            = relationsOnDemand;
     }
 
@@ -214,6 +218,14 @@ public class AtlasLineageInfo implements Serializable {
         this.visitedEdges = visitedEdges;
     }
 
+    public Set<String> getSkippedEdges() {
+        return skippedEdges;
+    }
+
+    public void setSkippedEdges(Set<String> skippedEdges) {
+        this.skippedEdges = skippedEdges;
+    }
+
     public Map<String, LineageInfoOnDemand> getRelationsOnDemand() {
         return relationsOnDemand;
     }
@@ -278,6 +290,8 @@ public class AtlasLineageInfo implements Serializable {
         @JsonProperty
         boolean                    hasDownstream;
         LineageOnDemandConstraints onDemandConstraints;
+        @JsonIgnore
+        int                        fromCounter;  // Counter for relations to be skipped
 
         public LineageInfoOnDemand() { }
 
@@ -291,6 +305,7 @@ public class AtlasLineageInfo implements Serializable {
             this.isOutputRelationsReachedLimit = false;
             this.hasUpstream                   = false;
             this.hasDownstream                 = false;
+            this.fromCounter                   = 0;
         }
 
         public boolean isInputRelationsReachedLimit() {
@@ -339,6 +354,14 @@ public class AtlasLineageInfo implements Serializable {
 
         public void setHasDownstream(boolean hasDownstream) {
             this.hasDownstream = hasDownstream;
+        }
+
+        public int getFromCounter() {
+            return fromCounter;
+        }
+
+        public void incrementFromCounter() {
+            fromCounter++;
         }
 
         public int getInputRelationsCount() {
