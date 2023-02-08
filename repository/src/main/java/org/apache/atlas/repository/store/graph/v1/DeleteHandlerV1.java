@@ -1544,6 +1544,8 @@ public abstract class DeleteHandlerV1 {
                 .anyMatch(edge -> getEntityHasLineage(edge.getOutVertex())))
                 .join();
 
+        forkJoinPool.shutdown();
+
         if (!hasLineageExists) {
             AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE, false);
         }
