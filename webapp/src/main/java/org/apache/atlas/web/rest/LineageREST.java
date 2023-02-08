@@ -27,6 +27,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.lineage.AtlasLineageInfo;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
+import org.apache.atlas.model.lineage.AtlasLineageOnDemandInfo;
 import org.apache.atlas.model.lineage.AtlasLineageRequest;
 import org.apache.atlas.model.lineage.LineageOnDemandRequest;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
@@ -90,8 +91,8 @@ public class LineageREST {
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
     @Timed
-    public AtlasLineageInfo getLineageGraph(@PathParam("guid") String guid,
-                                            LineageOnDemandRequest lineageOnDemandRequest) throws AtlasBaseException {
+    public AtlasLineageOnDemandInfo getLineageGraph(@PathParam("guid") String guid,
+                                                    LineageOnDemandRequest lineageOnDemandRequest) throws AtlasBaseException {
         if (!AtlasConfiguration.LINEAGE_ON_DEMAND_ENABLED.getBoolean()) {
             LOG.warn("LineageREST: "+ AtlasErrorCode.LINEAGE_ON_DEMAND_NOT_ENABLED.getFormattedErrorMessage(AtlasConfiguration.LINEAGE_ON_DEMAND_ENABLED.getPropertyName()));
 
