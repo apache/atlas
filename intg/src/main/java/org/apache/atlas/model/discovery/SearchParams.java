@@ -6,6 +6,8 @@ public abstract class SearchParams {
 
     Set<String> attributes;
     Set<String> relationAttributes;
+    Set<String> collapseAttributes;
+    Set<String> collapseRelationAttributes;
     boolean showSearchScore;
     boolean suppressLogs;
 
@@ -25,6 +27,22 @@ public abstract class SearchParams {
 
     public void setRelationAttributes(Set<String> relationAttributes) {
         this.relationAttributes = relationAttributes;
+    }
+
+    public Set<String> getCollapseAttributes() {
+        return collapseAttributes;
+    }
+
+    public void setCollapseAttributes(Set<String> collapseAttributes) {
+        this.collapseAttributes = collapseAttributes;
+    }
+
+    public Set<String> getCollapseRelationAttributes() {
+        return collapseRelationAttributes;
+    }
+
+    public void setCollapseRelationAttributes(Set<String> collapseRelationAttributes) {
+        this.collapseRelationAttributes = collapseRelationAttributes;
     }
 
     public boolean getShowSearchScore() {

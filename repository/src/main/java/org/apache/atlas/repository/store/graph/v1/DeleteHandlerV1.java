@@ -1401,7 +1401,7 @@ public abstract class DeleteHandlerV1 {
                     classificationId, taskTypes , new ArrayList<>());
 
             List<AtlasTask> pendingTasks = taskSearchResult.getTasks();
-            if(pendingTasks == null) {
+            if(CollectionUtils.isEmpty(pendingTasks)) {
                 return false;
             }
 

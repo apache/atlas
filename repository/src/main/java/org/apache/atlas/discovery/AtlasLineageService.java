@@ -24,6 +24,7 @@ import org.apache.atlas.model.lineage.AtlasLineageInfo;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
 import org.apache.atlas.model.lineage.AtlasLineageRequest;
 import org.apache.atlas.model.lineage.LineageOnDemandConstraints;
+import org.apache.atlas.model.lineage.LineageOnDemandRequest;
 import org.apache.atlas.v1.model.lineage.SchemaResponse.SchemaDetails;
 
 import java.util.Map;
@@ -71,9 +72,9 @@ public interface AtlasLineageService {
 
     /**
      * @param entityGuid unique ID of the entity
-     * @param lineageOnDemandConstraintsByGuid map of constraints to fetch lineage for each guid
+     * @param lineageOnDemandRequest lineage on demand request object
      * @return AtlasLineageInfo
      */
-    AtlasLineageInfo getAtlasLineageInfo(String entityGuid, Map<String, LineageOnDemandConstraints> lineageOnDemandConstraintsByGuid) throws AtlasBaseException;
+    AtlasLineageInfo getAtlasLineageInfo(String entityGuid, LineageOnDemandRequest lineageOnDemandRequest) throws AtlasBaseException;
 
 }
