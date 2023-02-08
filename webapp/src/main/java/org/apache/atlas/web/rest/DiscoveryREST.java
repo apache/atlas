@@ -38,6 +38,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
@@ -68,7 +69,7 @@ import java.util.Set;
 @Produces({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
 public class DiscoveryREST {
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.DiscoveryREST");
-
+    private static final Logger LOG = LoggerFactory.getLogger(DiscoveryREST.class);
     @Context
     private       HttpServletRequest httpServletRequest;
     private final int                maxFullTextQueryLength;
@@ -377,7 +378,9 @@ public class DiscoveryREST {
             if (StringUtils.isEmpty(parameters.getQuery())) {
                 throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Please provide query");
             }
-
+            if(LOG.isDebugEnabled()){
+                LOG.debug("Performing indexsearch for the params ({})", parameters);
+            }
             return discoveryService.directIndexSearch(parameters);
         } finally {
             AtlasPerfTracer.log(perf);
