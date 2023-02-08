@@ -556,7 +556,7 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
         attribInfo.put("indexTypeESFields", attributeDef.getIndexTypeESFields());
         attribInfo.put("autoUpdateAttributes", attributeDef.getAutoUpdateAttributes());
         attribInfo.put("skipScrubbing", attributeDef.getSkipScrubbing());
-
+        attribInfo.put("defaultValueNull", attributeDef.getDefaultValueNull());
         if(attributeDef.getOptions() != null) {
             attribInfo.put("options", AtlasType.toJson(attributeDef.getOptions()));
         }
@@ -603,7 +603,7 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
         ret.setIncludeInNotification((Boolean) attribInfo.get("includeInNotification"));
         ret.setDefaultValue((String) attribInfo.get("defaultValue"));
         ret.setDescription((String) attribInfo.get("description"));
-
+        if(attribInfo.get("defaultValueNull")!=null) ret.setDefaultValueNull((Boolean) attribInfo.get("defaultValueNull"));
         if(attribInfo.get("skipScrubbing")!=null) {
             ret.setSkipScrubbing((Boolean) attribInfo.get("skipScrubbing"));
         }

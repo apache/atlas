@@ -1003,7 +1003,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
                 AtlasStructDef createdDef = structDefStore.create(structDef, preCreateStructDefs.get(i));
 
                 ttr.updateGuid(createdDef.getName(), createdDef.getGuid());
-                createdDef.setAttributeDefs(structDef.getAttributeDefs());
+
                 ret.getStructDefs().add(createdDef);
                 i++;
             }
@@ -1015,7 +1015,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
                 AtlasClassificationDef createdDef = classifiDefStore.create(classifiDef, preCreateClassifiDefs.get(i));
 
                 ttr.updateGuid(createdDef.getName(), createdDef.getGuid());
-                createdDef.setAttributeDefs(classifiDef.getAttributeDefs());
+
                 ret.getClassificationDefs().add(createdDef);
                 i++;
             }
@@ -1027,7 +1027,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
                 AtlasEntityDef createdDef = entityDefStore.create(entityDef, preCreateEntityDefs.get(i));
 
                 ttr.updateGuid(createdDef.getName(), createdDef.getGuid());
-                createdDef.setAttributeDefs(entityDef.getAttributeDefs());
+
                 ret.getEntityDefs().add(createdDef);
                 i++;
             }
@@ -1038,7 +1038,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
                 AtlasRelationshipDef createdDef = relationshipDefStore.create(relationshipDef, preCreateRelationshipDefs.get(i));
 
                 ttr.updateGuid(createdDef.getName(), createdDef.getGuid());
-                createdDef.setAttributeDefs(relationshipDef.getAttributeDefs());
+
                 ret.getRelationshipDefs().add(createdDef);
                 i++;
             }
@@ -1050,7 +1050,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
                 AtlasBusinessMetadataDef createdDef = businessMetadataDefStore.create(businessMetadataDef, preCreateBusinessMetadataDefs.get(i));
 
                 ttr.updateGuid(createdDef.getName(), createdDef.getGuid());
-                createdDef.setAttributeDefs(businessMetadataDef.getAttributeDefs());
+
                 ret.getBusinessMetadataDefs().add(createdDef);
                 i++;
             }
