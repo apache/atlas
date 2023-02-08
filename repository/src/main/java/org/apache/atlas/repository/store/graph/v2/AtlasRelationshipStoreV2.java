@@ -943,7 +943,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         if (relationshipMutation.equals(RelationshipMutation.RELATIONSHIP_RESTORE))
             relationship.setStatus(AtlasRelationship.Status.ACTIVE);
         if (relationshipMutation.equals(RelationshipMutation.RELATIONSHIP_HARD_DELETE))
-            relationship.setStatus(AtlasRelationship.Status.HARD_DELETED);
+            relationship.setStatus(AtlasRelationship.Status.PURGED);
         AtlasRelationshipStoreV2.setEdgeVertexIdsInContext(edge);
         RequestContext.get().saveRelationshipsMutationContext(relationshipMutation.name(), relationship);
     }
