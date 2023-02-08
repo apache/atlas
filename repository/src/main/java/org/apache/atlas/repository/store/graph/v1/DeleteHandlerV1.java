@@ -59,10 +59,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import static org.apache.atlas.AtlasClient.DATA_SET_SUPER_TYPE;
 import static org.apache.atlas.AtlasClient.PROCESS_SUPER_TYPE;
+import static org.apache.atlas.AtlasConfiguration.GRAPH_TRAVERSAL_PARALLELISM;
 import static org.apache.atlas.model.TypeCategory.*;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
@@ -1523,21 +1527,24 @@ public abstract class DeleteHandlerV1 {
     private void updateAssetHasLineageStatus(AtlasVertex assetVertex, AtlasEdge currentEdge, Collection<AtlasEdge> removedEdges) {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("updateAssetHasLineageStatus");
 
-        Iterator<AtlasEdge> edgeIterator = assetVertex.getEdges(AtlasEdgeDirection.BOTH, PROCESS_EDGE_LABELS).iterator();
-        int processHasLineageCount = 0;
-        while (edgeIterator.hasNext()) {
-            AtlasEdge edge = edgeIterator.next();
-            if (getStatus(edge) == ACTIVE && !removedEdges.contains(edge) && !currentEdge.equals(edge)) {
-                AtlasVertex relatedProcessVertex = edge.getOutVertex();
-                boolean processHasLineage = getEntityHasLineage(relatedProcessVertex);
-                if (processHasLineage) {
-                    processHasLineageCount++;
-                    break;
-                }
-            }
-        }
+        Iterator<AtlasEdge> edgeIterator = assetVertex.query()
+                .direction(AtlasEdgeDirection.BOTH)
+                .label(PROCESS_EDGE_LABELS)
+                .has(STATE_PROPERTY_KEY, ACTIVE.name())
+                .edges()
+                .iterator();
 
-        if (processHasLineageCount == 0) {
+        ForkJoinPool forkJoinPool = new ForkJoinPool(GRAPH_TRAVERSAL_PARALLELISM.getInt());
+
+        Spliterator<AtlasEdge> atlasEdgeSpliterator = Spliterators.spliteratorUnknownSize(edgeIterator, Spliterator.ORDERED | Spliterator.IMMUTABLE | Spliterator.NONNULL);
+
+        boolean hasLineageExists = forkJoinPool.submit(() -> StreamSupport.stream(atlasEdgeSpliterator, false)
+                .parallel()
+                .filter(edge -> !removedEdges.contains(edge) && !edge.equals(currentEdge))
+                .anyMatch(edge -> getEntityHasLineage(edge.getOutVertex())))
+                .join();
+
+        if (!hasLineageExists) {
             AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE, false);
         }
         RequestContext.get().endMetricRecord(metricRecorder);
