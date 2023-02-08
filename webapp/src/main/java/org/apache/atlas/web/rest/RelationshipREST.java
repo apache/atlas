@@ -158,7 +158,7 @@ public class RelationshipREST {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG))
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "RelationshipREST.deleteById(" + guid + ")");
 
-            relationshipStore.deleteById(guid, true);
+            relationshipStore.deleteById(guid);
         } finally {
             AtlasPerfTracer.log(perf);
         }
