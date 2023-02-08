@@ -31,7 +31,7 @@ import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.instance.AtlasRelationship.AtlasRelationshipWithExtInfo;
-import org.apache.atlas.model.instance.RelationshipMutationResponse;
+import org.apache.atlas.model.instance.RelationshipMutationContext;
 import org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2.OperationType;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags;
@@ -136,7 +136,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
 
         AtlasRelationship ret = edge != null ? entityRetriever.mapEdgeToAtlasRelationship(edge) : null;
         recordRelationshipMutation(RelationshipMutation.RELATIONSHIP_CREATE, edge, entityRetriever);
-        sendRelationshipNotifications(RequestContext.get().getRelationshipMutationMap());
+        onRelationshipsMutated(RequestContext.get().getRelationshipMutationMap());
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== create({}): {}", relationship, ret);
         }
@@ -217,7 +217,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
 
         AtlasRelationship ret = updateRelationship(edge, relationship);
         recordRelationshipMutation(RelationshipMutation.RELATIONSHIP_UPDATE, edge, entityRetriever);
-        sendRelationshipNotifications(RequestContext.get().getRelationshipMutationMap());
+        onRelationshipsMutated(RequestContext.get().getRelationshipMutationMap());
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== update({}): {}", relationship, ret);
         }
@@ -336,7 +336,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
             }
         }
 
-        sendRelationshipNotifications(RequestContext.get().getRelationshipMutationMap());
+        onRelationshipsMutated(RequestContext.get().getRelationshipMutationMap());
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== deleteByIds({}):", guids.size());
@@ -381,9 +381,9 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         }
 
         if (deleteDelegate.getHandler() instanceof SoftDeleteHandlerV1)
-            sendRelationshipNotifications(RequestContext.get().getRelationshipMutationMap());
+            onRelationshipsMutated(RequestContext.get().getRelationshipMutationMap());
         else
-            sendRelationshipNotifications(RequestContext.get().getRelationshipMutationMap());
+            onRelationshipsMutated(RequestContext.get().getRelationshipMutationMap());
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== deleteById({}): {}", guid);
@@ -432,7 +432,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
 
         if (isRelationshipCreated) {
             recordRelationshipMutation(RelationshipMutation.RELATIONSHIP_CREATE, relationshipEdge, entityRetriever);
-            sendRelationshipNotifications(RequestContext.get().getRelationshipMutationMap());
+            onRelationshipsMutated(RequestContext.get().getRelationshipMutationMap());
         }
 
         if (LOG.isDebugEnabled()) {
@@ -892,9 +892,9 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         return (attribute != null) ? attribute.getRelationshipEdgeLabel() : null;
     }
 
-    public void sendRelationshipNotifications(Map<String, Set<AtlasRelationship>> relationshipsMutationMap) throws AtlasBaseException {
+    public void onRelationshipsMutated(Map<String, Set<AtlasRelationship>> relationshipsMutationMap) throws AtlasBaseException {
         entityChangeNotifier.notifyPropagatedEntities();
-        RelationshipMutationResponse relationshipMutationContext = getRelationshipMutationResponse(relationshipsMutationMap);
+        RelationshipMutationContext relationshipMutationContext = getRelationshipMutationResponse(relationshipsMutationMap);
         if (notificationsEnabled) {
             entityChangeNotifier.notifyRelationshipMutation(relationshipMutationContext.getCreatedRelationships(), OperationType.RELATIONSHIP_CREATE);
             entityChangeNotifier.notifyRelationshipMutation(relationshipMutationContext.getUpdatedRelationships(), OperationType.RELATIONSHIP_UPDATE);
@@ -902,7 +902,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         }
     }
 
-    private RelationshipMutationResponse getRelationshipMutationResponse(Map<String, Set<AtlasRelationship>> relationshipsMutationMap) {
+    private RelationshipMutationContext getRelationshipMutationResponse(Map<String, Set<AtlasRelationship>> relationshipsMutationMap) {
         final List<AtlasRelationship> createdRelationships = new ArrayList<>();
         final List<AtlasRelationship> deletedRelationships = new ArrayList<>();
         final List<AtlasRelationship> updatedRelationships = new ArrayList<>();
@@ -918,9 +918,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
                 updatedRelationships.addAll(relationships);
             }
         });
-
-        RelationshipMutationResponse relationshipMutationResponse = RelationshipMutationResponse.getInstance(createdRelationships, updatedRelationships, deletedRelationships);
-        return relationshipMutationResponse;
+        return RelationshipMutationContext.getInstance(createdRelationships, updatedRelationships, deletedRelationships);
     }
 
     public static void recordRelationshipMutation(RelationshipMutation relationshipMutation, AtlasEdge edge, EntityGraphRetriever entityRetriever) throws AtlasBaseException {

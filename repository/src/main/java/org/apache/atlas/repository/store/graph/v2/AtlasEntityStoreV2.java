@@ -582,7 +582,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         // Notify the change listeners
         entityChangeNotifier.onEntitiesMutated(ret, false);
-        atlasRelationshipStore.sendRelationshipNotifications(RequestContext.get().getRelationshipMutationMap());
+        atlasRelationshipStore.onRelationshipsMutated(RequestContext.get().getRelationshipMutationMap());
         return ret;
     }
 
@@ -626,7 +626,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         // Notify the change listeners
         entityChangeNotifier.onEntitiesMutated(ret, false);
-        atlasRelationshipStore.sendRelationshipNotifications(RequestContext.get().getRelationshipMutationMap());
+        atlasRelationshipStore.onRelationshipsMutated(RequestContext.get().getRelationshipMutationMap());
         return ret;
     }
 
@@ -666,7 +666,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         // Notify the change listeners
         entityChangeNotifier.onEntitiesMutated(ret, false);
-
+        atlasRelationshipStore.onRelationshipsMutated(RequestContext.get().getRelationshipMutationMap());
         return ret;
     }
 
@@ -702,7 +702,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         // Notify the change listeners
         entityChangeNotifier.onEntitiesMutated(ret, false);
-        atlasRelationshipStore.sendRelationshipNotifications(RequestContext.get().getRelationshipMutationMap());
+        atlasRelationshipStore.onRelationshipsMutated(RequestContext.get().getRelationshipMutationMap());
         return ret;
     }
 
@@ -737,7 +737,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         // Notify the change listeners
         entityChangeNotifier.onEntitiesMutated(ret, false);
-        atlasRelationshipStore.sendRelationshipNotifications(RequestContext.get().getRelationshipMutationMap());
+        atlasRelationshipStore.onRelationshipsMutated(RequestContext.get().getRelationshipMutationMap());
         return ret;
     }
 
@@ -789,7 +789,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             processTermEntityDeletion(ret.getDeletedEntities());
         // Notify the change listeners
         entityChangeNotifier.onEntitiesMutated(ret, false);
-        atlasRelationshipStore.sendRelationshipNotifications(RequestContext.get().getRelationshipMutationMap());
+        atlasRelationshipStore.onRelationshipsMutated(RequestContext.get().getRelationshipMutationMap());
 
         return ret;
     }
@@ -1506,7 +1506,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
             // Notify the change listeners
             entityChangeNotifier.onEntitiesMutated(ret, RequestContext.get().isImportInProgress());
-            atlasRelationshipStore.sendRelationshipNotifications(RequestContext.get().getRelationshipMutationMap());
+            atlasRelationshipStore.onRelationshipsMutated(RequestContext.get().getRelationshipMutationMap());
             if (LOG.isDebugEnabled()) {
                 LOG.debug("<== createOrUpdate()");
             }
