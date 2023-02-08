@@ -129,7 +129,7 @@ public class EntityNotificationSender<T> {
             public void onComplete(boolean isSuccess) {
                 postCommitNotificationHooks.remove();
 
-                if (CollectionUtils.isNotEmpty(notifications)) {
+                if (CollectionUtils.isNotEmpty(notifications) || CollectionUtils.isNotEmpty(relationshipNotifications)) {
                     if (isSuccess) {
                         try {
                             notificationInterface.send(ENTITIES, notifications);
@@ -143,6 +143,7 @@ public class EntityNotificationSender<T> {
                         }
                     }
                 }
+
             }
         }
     }

@@ -582,7 +582,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         // Notify the change listeners
         entityChangeNotifier.onEntitiesMutated(ret, false);
-        atlasRelationshipStore.sendNotifications(RequestContext.get().getRelationshipMutationMap());
+        atlasRelationshipStore.sendRelationshipNotifications(RequestContext.get().getRelationshipMutationMap());
         return ret;
     }
 
@@ -626,7 +626,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         // Notify the change listeners
         entityChangeNotifier.onEntitiesMutated(ret, false);
-        atlasRelationshipStore.sendNotifications(RequestContext.get().getRelationshipMutationMap());
+        atlasRelationshipStore.sendRelationshipNotifications(RequestContext.get().getRelationshipMutationMap());
         return ret;
     }
 
@@ -702,7 +702,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         // Notify the change listeners
         entityChangeNotifier.onEntitiesMutated(ret, false);
-        atlasRelationshipStore.sendNotifications(RequestContext.get().getRelationshipMutationMap());
+        atlasRelationshipStore.sendRelationshipNotifications(RequestContext.get().getRelationshipMutationMap());
         return ret;
     }
 
@@ -737,7 +737,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         // Notify the change listeners
         entityChangeNotifier.onEntitiesMutated(ret, false);
-        atlasRelationshipStore.sendNotifications(RequestContext.get().getRelationshipMutationMap());
+        atlasRelationshipStore.sendRelationshipNotifications(RequestContext.get().getRelationshipMutationMap());
         return ret;
     }
 
@@ -789,7 +789,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             processTermEntityDeletion(ret.getDeletedEntities());
         // Notify the change listeners
         entityChangeNotifier.onEntitiesMutated(ret, false);
-        atlasRelationshipStore.sendNotifications(RequestContext.get().getRelationshipMutationMap());
+        atlasRelationshipStore.sendRelationshipNotifications(RequestContext.get().getRelationshipMutationMap());
 
         return ret;
     }
@@ -1506,7 +1506,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
             // Notify the change listeners
             entityChangeNotifier.onEntitiesMutated(ret, RequestContext.get().isImportInProgress());
-            atlasRelationshipStore.sendNotifications(RequestContext.get().getRelationshipMutationMap());
+            atlasRelationshipStore.sendRelationshipNotifications(RequestContext.get().getRelationshipMutationMap());
             if (LOG.isDebugEnabled()) {
                 LOG.debug("<== createOrUpdate()");
             }
