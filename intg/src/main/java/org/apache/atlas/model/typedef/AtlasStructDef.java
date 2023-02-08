@@ -359,7 +359,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
                                  List<AtlasConstraintDef> constraints, Map<String,String> options, String description, int searchWeight, IndexType indexType, boolean skipScrubbing) {
 
             this(name, typeName, isOptional, cardinality, valuesMinCount, valuesMaxCount, isUnique, isIndexable, includeInNotification, defaultValue,
-                    constraints, options, description, searchWeight, indexType, skipScrubbing, true);
+                    constraints, options, description, searchWeight, indexType, skipScrubbing, false);
         }
 
         public AtlasAttributeDef(String name, String typeName, boolean isOptional, Cardinality cardinality,
