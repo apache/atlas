@@ -55,6 +55,9 @@ import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1523,23 +1526,19 @@ public abstract class DeleteHandlerV1 {
     private void updateAssetHasLineageStatus(AtlasVertex assetVertex, AtlasEdge currentEdge, Collection<AtlasEdge> removedEdges) {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("updateAssetHasLineageStatus");
 
-        Iterator<AtlasEdge> edgeIterator = assetVertex.getEdges(AtlasEdgeDirection.BOTH, PROCESS_EDGE_LABELS).iterator();
-        int processHasLineageCount = 0;
-        while (edgeIterator.hasNext()) {
-            AtlasEdge edge = edgeIterator.next();
-            if (getStatus(edge) == ACTIVE && !removedEdges.contains(edge) && !currentEdge.equals(edge)) {
-                AtlasVertex relatedProcessVertex = edge.getOutVertex();
-                boolean processHasLineage = getEntityHasLineage(relatedProcessVertex);
-                if (processHasLineage) {
-                    processHasLineageCount++;
-                    break;
-                }
-            }
-        }
+        removedEdges.add(currentEdge);
 
-        if (processHasLineageCount == 0) {
+        GraphTraversal activeEdgeIterator = graph.V(assetVertex.getId())
+                .bothE(PROCESS_EDGE_LABELS).has("__state","ACTIVE")
+                .where(__.not(__.hasId(P.within(removedEdges.stream().map(AtlasEdge::getId).collect(Collectors.toList())))))
+                .outV()
+                .has("__hasLineage", true)
+                .limit(1);
+
+        if(!activeEdgeIterator.hasNext()) {
             AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE, false);
         }
+
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
