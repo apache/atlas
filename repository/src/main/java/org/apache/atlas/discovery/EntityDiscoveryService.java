@@ -982,6 +982,10 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         }
 
         try {
+            if(LOG.isDebugEnabled()){
+                LOG.debug("Performing ES search for the params ({})", searchParams);
+            }
+
             indexQuery = graph.elasticsearchQuery(Constants.VERTEX_INDEX, searchParams);
 
             DirectIndexQueryResult indexQueryResult = indexQuery.vertices(searchParams);
@@ -991,6 +995,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             ret.setAggregations(indexQueryResult.getAggregationMap());
             ret.setApproximateCount(indexQuery.vertexTotals());
         } catch (Exception e) {
+            LOG.error("Error while performing direct search for the params ({}), {}", searchParams, e.getMessage());
             throw e;
         }
         return ret;
@@ -999,6 +1004,9 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     private void prepareSearchResult(AtlasSearchResult ret, DirectIndexQueryResult indexQueryResult, Set<String> resultAttributes, boolean fetchCollapsedResults) throws AtlasBaseException {
         SearchParams searchParams = ret.getSearchParameters();
         try {
+            if(LOG.isDebugEnabled()){
+                LOG.debug("Preparing search results for ({})", ret.getSearchParameters());
+            }
             Iterator<Result> iterator = indexQueryResult.getIterator();
             boolean showSearchScore = searchParams.getShowSearchScore();
 
