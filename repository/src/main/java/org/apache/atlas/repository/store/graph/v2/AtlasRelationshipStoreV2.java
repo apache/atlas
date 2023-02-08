@@ -46,7 +46,6 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.janus.JanusUtils;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
-import org.apache.atlas.repository.store.graph.v1.HardDeleteHandlerV1;
 import org.apache.atlas.repository.store.graph.v1.SoftDeleteHandlerV1;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasRelationshipType;
@@ -949,7 +948,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         if (relationshipMutation.equals(RelationshipMutation.RELATIONSHIP_RESTORE))
             relationship.setStatus(AtlasRelationship.Status.ACTIVE);
         if (relationshipMutation.equals(RelationshipMutation.RELATIONSHIP_HARD_DELETE))
-            relationship.setStatus(AtlasRelationship.Status.PERMANENT_DELETE);
+            relationship.setStatus(AtlasRelationship.Status.HARD_DELETED);
         AtlasRelationshipStoreV2.setEdgeVertexIdsInContext(edge);
         RequestContext.get().saveRelationshipsMutationContext(relationshipMutation.name(), relationship);
     }

@@ -88,7 +88,7 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
     private Date          updateTime     = null;
     private Long          version        = 0L;
 
-    public enum Status { ACTIVE, DELETED, PERMANENT_DELETE}
+    public enum Status { ACTIVE, DELETED, HARD_DELETED}
 
     private Set<AtlasClassification> propagatedClassifications;
     private Set<AtlasClassification> blockedPropagatedClassifications;
