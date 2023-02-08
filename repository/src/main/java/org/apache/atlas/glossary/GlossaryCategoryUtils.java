@@ -173,7 +173,7 @@ public class GlossaryCategoryUtils extends GlossaryUtils {
                     AtlasRelationship parentRelationship = relationshipStore.getById(existingParent.getRelationGuid());
                     if (existingParent.getCategoryGuid().equals(newParent.getCategoryGuid())) {
                         updateRelationshipAttributes(parentRelationship, newParent);
-                        relationshipStore.update(parentRelationship, true);
+                        relationshipStore.update(parentRelationship);
                     } else {
                         // Delete link to existing parent and link to new parent
                         relationshipStore.deleteById(parentRelationship.getGuid(), true);
@@ -363,7 +363,7 @@ public class GlossaryCategoryUtils extends GlossaryUtils {
                 }
                 AtlasRelationship relationship = relationshipStore.getById(term.getRelationGuid());
                 updateRelationshipAttributes(relationship, term);
-                relationshipStore.update(relationship, true);
+                relationshipStore.update(relationship);
             }
         }
     }
@@ -514,7 +514,7 @@ public class GlossaryCategoryUtils extends GlossaryUtils {
                 }
                 AtlasRelationship childRelationship = relationshipStore.getById(categoryHeader.getRelationGuid());
                 updateRelationshipAttributes(childRelationship, categoryHeader);
-                relationshipStore.update(childRelationship, true);
+                relationshipStore.update(childRelationship);
             }
         }
     }

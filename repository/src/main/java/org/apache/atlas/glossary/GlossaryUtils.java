@@ -106,7 +106,7 @@ public abstract class GlossaryUtils {
 
 
     protected void createRelationship(AtlasRelationship relationship) throws AtlasBaseException {
-        relationshipStore.getOrCreate(relationship, true);
+        relationshipStore.getOrCreate(relationship);
     }
 
     protected void updateRelationshipAttributes(AtlasRelationship relationship, AtlasRelatedTermHeader relatedTermHeader) {

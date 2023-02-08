@@ -37,21 +37,21 @@ public interface AtlasRelationshipStore {
      * @param relationship relationship instance definition
      * @return AtlasRelationship d
      */
-    AtlasRelationship create(AtlasRelationship relationship, boolean notify) throws AtlasBaseException;
+    AtlasRelationship create(AtlasRelationship relationship) throws AtlasBaseException;
 
     /**
      * Update an existing relationship instance.
      * @param relationship relationship instance definition
      * @return AtlasRelationship d
      */
-    AtlasRelationship update(AtlasRelationship relationship, boolean notify) throws AtlasBaseException;
+    AtlasRelationship update(AtlasRelationship relationship) throws AtlasBaseException;
 
     /**
      * Bulk createOrUpdate relationships
      * @param relationships list of relationship instance definition
      * @return AtlasRelationships list
      */
-    List<AtlasRelationship> createOrUpdate(List<AtlasRelationship> relationships, boolean notify) throws AtlasBaseException;
+    List<AtlasRelationship> createOrUpdate(List<AtlasRelationship> relationships) throws AtlasBaseException;
 
     /**
      * Retrieve a relationship instance using guid.
@@ -76,26 +76,26 @@ public interface AtlasRelationshipStore {
      * @param relationship relationship instance definition
      * @return AtlasRelationship
      */
-    AtlasRelationship getOrCreate(AtlasRelationship relationship, boolean notify) throws AtlasBaseException;
+    AtlasRelationship getOrCreate(AtlasRelationship relationship) throws AtlasBaseException;
 
     /**
      * Delete a relationship instance using guid.
      * @param guid relationship instance guid
      */
-    void deleteById(String guid, boolean notify) throws AtlasBaseException;
+    void deleteById(String guid) throws AtlasBaseException;
 
     /**
      * Delete relationships instance using guid.
      * @param guids relationship guids
      */
-    void deleteByIds(List<String> guids, boolean notify) throws AtlasBaseException;
+    void deleteByIds(List<String> guids) throws AtlasBaseException;
 
     /**
      * Delete a relationship instance using guid.
      * @param guid relationship instance guid
      * @param forceDelete force delete the relationship edge
      */
-    void deleteById(String guid, boolean forceDelete, boolean notify) throws AtlasBaseException;
+    void deleteById(String guid, boolean forceDelete) throws AtlasBaseException;
 
     void sendNotifications(Map<String, Set<AtlasRelationship>> relationshipsMutationMap) throws AtlasBaseException;
 }
