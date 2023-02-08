@@ -186,8 +186,7 @@ public class EntityGraphMapper {
     private static final String ATTR_MEANINGS = "meanings";
     private static final String ATTR_ANCHOR = "anchor";
     private static final String ATTR_CATEGORIES = "categories";
-    private static final String SET_DEFAULT_VALUE = "setDefaultValueToNull";
-    private static final List<String> DATATYPE_INITIALIZE = new ArrayList() {
+    private static final List<String> ALLOWED_DATATYPES_FOR_DEFAULT_NULL = new ArrayList() {
         {
             add("int");
             add("long");
@@ -1120,7 +1119,7 @@ public class EntityGraphMapper {
             if (attrType.getTypeCategory() == TypeCategory.PRIMITIVE) {
                 if (attributeDef.getDefaultValue() != null) {
                     attrValue = attrType.createDefaultValue(attributeDef.getDefaultValue());
-                } else if (attributeDef.getDefaultValueNull() && DATATYPE_INITIALIZE.contains(attribute.getTypeName())) {
+                } else if (attributeDef.getIsDefaultValueNull() && ALLOWED_DATATYPES_FOR_DEFAULT_NULL.contains(attribute.getTypeName())) {
                     attrValue = null;
                 } else {
                     if (attribute.getAttributeDef().getIsOptional()) {
