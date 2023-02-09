@@ -1529,8 +1529,6 @@ public abstract class DeleteHandlerV1 {
     private void updateAssetHasLineageStatus(AtlasVertex assetVertex, AtlasEdge currentEdge, Collection<AtlasEdge> removedEdges) {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("updateAssetHasLineageStatus");
 
-        Stopwatch stopwatch = Stopwatch.createStarted();
-
         Iterator<AtlasEdge> edgeIterator = assetVertex.query()
                 .direction(AtlasEdgeDirection.BOTH)
                 .label(PROCESS_EDGE_LABELS)
@@ -1555,9 +1553,6 @@ public abstract class DeleteHandlerV1 {
             AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE, false);
         }
 
-        stopwatch.stop();
-
-        LOG.info("updateAssetHasLineageStatus:  timeTaken={}", stopwatch.elapsed(TimeUnit.MILLISECONDS));
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
