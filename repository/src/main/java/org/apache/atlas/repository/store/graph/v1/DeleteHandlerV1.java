@@ -17,7 +17,6 @@
  */
 package org.apache.atlas.repository.store.graph.v1;
 
-import com.google.common.base.Stopwatch;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
@@ -60,15 +59,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import static org.apache.atlas.AtlasClient.DATA_SET_SUPER_TYPE;
 import static org.apache.atlas.AtlasClient.PROCESS_SUPER_TYPE;
-import static org.apache.atlas.AtlasConfiguration.GRAPH_TRAVERSAL_PARALLELISM;
 import static org.apache.atlas.model.TypeCategory.*;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
@@ -1539,7 +1533,7 @@ public abstract class DeleteHandlerV1 {
         int processHasLineageCount = 0;
         while (edgeIterator.hasNext()) {
             AtlasEdge edge = edgeIterator.next();
-            if (getStatus(edge) == ACTIVE && !removedEdges.contains(edge) && !currentEdge.equals(edge)) {
+            if (!removedEdges.contains(edge) && !currentEdge.equals(edge)) {
                 AtlasVertex relatedProcessVertex = edge.getOutVertex();
                 boolean processHasLineage = getEntityHasLineage(relatedProcessVertex);
                 if (processHasLineage) {
