@@ -18,6 +18,7 @@
 package org.apache.atlas.repository.store.graph.v2.preprocessor.sql;
 
 
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
@@ -36,6 +37,7 @@ import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasEntityUtil;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -98,17 +100,17 @@ public class QueryFolderPreProcessor implements PreProcessor {
         Object          currentParentAttr   = entityRetriever.getEntityAttribute(vertex, parentAttribute);
 
         if(!parentAttribute.getAttributeType().areEqualValues(currentParentAttr, newParentAttr, context.getGuidAssignments())) {
-            AtlasVertex newParentVertex     = entityRetriever.getEntityVertex((AtlasObjectId) newParentAttr);
             AtlasVertex currentParentVertex = entityRetriever.getEntityVertex((AtlasObjectId) currentParentAttr);
-            processCollectionDiff(entity, vertex, newParentVertex, currentParentVertex);
+            processParentCollectionUpdation(entity, vertex, currentParentVertex);
         }
     }
 
-    public void processCollectionDiff(AtlasEntity folderEntity, AtlasVertex folderVertex, AtlasVertex newParentCollectionVertex, AtlasVertex currentParentCollectionVertex) throws AtlasBaseException {
+    public void processParentCollectionUpdation(AtlasEntity folderEntity, AtlasVertex folderVertex, AtlasVertex currentParentCollectionVertex) {
 
-        String newCollectionQualifiedName = newParentCollectionVertex.getProperty(QUALIFIED_NAME, String.class);
-        String currentCollectionQualifiedName = currentParentCollectionVertex.getProperty(QUALIFIED_NAME, String.class);
-        updateRequiredAttributesOnUpdatingCollection(folderEntity, folderVertex, newCollectionQualifiedName, currentCollectionQualifiedName);
+        AtlasPerfMetrics.MetricRecorder queryProcessMetric = RequestContext.get().startMetricRecord("processParentCollectionUpdation");
+
+        String currentCollectionQualifiedName   = currentParentCollectionVertex.getProperty(QUALIFIED_NAME, String.class);
+        String newCollectionQualifiedName       = (String) folderEntity.getAttribute(COLLECTION_QUALIFIED_NAME);
 
         Iterator<AtlasVertex> childrenQueriesIterator = folderVertex.query()
                 .direction(AtlasEdgeDirection.OUT)
@@ -117,31 +119,24 @@ public class QueryFolderPreProcessor implements PreProcessor {
                 .vertices()
                 .iterator();
 
+        //Update all the children query attribute
         while (childrenQueriesIterator.hasNext()) {
             AtlasVertex queryVertex = childrenQueriesIterator.next();
             if(queryVertex != null) {
-                updateRequiredAttributesOnUpdatingCollection(queryVertex, newCollectionQualifiedName, currentCollectionQualifiedName);
+                updateQueryAttributesOnUpdatingCollection(queryVertex, currentCollectionQualifiedName,
+                        newCollectionQualifiedName, (String) folderEntity.getAttribute(QUALIFIED_NAME));
             }
         }
 
-    }
-    
-    public void updateRequiredAttributesOnUpdatingCollection(AtlasEntity currentFolderEntity, AtlasVertex childVertex, String newCollectionQualifiedName, String currentCollectionQualifiedName) {
-
-        for (String attrName : QUERY_COLLECTION_RELATED_STRING_ATTRIBUTES) {
-            String currentPropertyValue = childVertex.getProperty(attrName, String.class);
-            String updatedPropertyValue =  currentPropertyValue.replaceAll(currentCollectionQualifiedName, newCollectionQualifiedName);
-            currentFolderEntity.setAttribute(attrName, updatedPropertyValue);
-        }
+        RequestContext.get().endMetricRecord(queryProcessMetric);
     }
 
-    public void updateRequiredAttributesOnUpdatingCollection(AtlasVertex childVertex, String newCollectionQualifiedName, String currentCollectionQualifiedName) {
-
-        for (String attrName : QUERY_COLLECTION_RELATED_STRING_ATTRIBUTES) {
-            String currentPropertyValue = childVertex.getProperty(attrName, String.class);
-            String updatedPropertyValue =  currentPropertyValue.replaceAll(currentCollectionQualifiedName, newCollectionQualifiedName);
-            AtlasGraphUtilsV2.setEncodedProperty(childVertex, attrName, updatedPropertyValue);
-        }
+    public void updateQueryAttributesOnUpdatingCollection(AtlasVertex childVertex,  String currentCollectionQualifiedName, String newCollectionQualifiedName, String folderQualifiedName) {
+        String qualifiedName            =   childVertex.getProperty(QUALIFIED_NAME, String.class);
+        String updatedQualifiedName     =   qualifiedName.replaceAll(currentCollectionQualifiedName, newCollectionQualifiedName);
+        AtlasGraphUtilsV2.setEncodedProperty(childVertex, QUALIFIED_NAME, updatedQualifiedName);
+        AtlasGraphUtilsV2.setEncodedProperty(childVertex, COLLECTION_QUALIFIED_NAME, newCollectionQualifiedName);
+        AtlasGraphUtilsV2.setEncodedProperty(childVertex, PARENT_QUALIFIED_NAME, folderQualifiedName);
     }
 
 

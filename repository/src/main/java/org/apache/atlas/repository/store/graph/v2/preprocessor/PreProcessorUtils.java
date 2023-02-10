@@ -32,7 +32,6 @@ public class PreProcessorUtils {
     public static final List<String> QUERY_COLLECTION_RELATED_STRING_ATTRIBUTES = new ArrayList<String>(){{
         add(COLLECTION_QUALIFIED_NAME);
         add(PARENT_QUALIFIED_NAME);
-        add(QUALIFIED_NAME);
     }};
 
 
