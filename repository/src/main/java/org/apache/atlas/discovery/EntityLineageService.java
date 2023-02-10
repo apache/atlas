@@ -906,7 +906,7 @@ public class EntityLineageService implements AtlasLineageService {
                     vertexMatchesEvaluation(outputVertex, lineageContext) &&
                     !paginationCalculatedProcessOutputPair.contains(Pair.of(getGuid(processVertex), outputVertex.getIdForDisplay()))) {
                 unvisitedProcessEdgesWithOutputVertexIds.add(Pair.of(outgoingEdge, outputVertex.getIdForDisplay()));
-                if (unvisitedProcessEdgesWithOutputVertexIds.size() == lineageContext.getLimit() + currentOffset + 1) {
+                if (unvisitedProcessEdgesWithOutputVertexIds.size() == lineageContext.getLimit() + currentOffset + 1) { // +1 is required for downstream check while trying to terminate the loop before it ends
                     break;
                 }
             }
