@@ -18,24 +18,33 @@
 package org.apache.atlas.repository.store.graph.v2.preprocessor.sql;
 
 
+import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.instance.EntityMutations;
+import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
+import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.utils.AtlasEntityUtil;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
+import java.util.Iterator;
+
+import static org.apache.atlas.repository.Constants.*;
+import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.COLLECTION_QUALIFIED_NAME;
-import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.getUUID;
 
 public class QueryFolderPreProcessor implements PreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(QueryFolderPreProcessor.class);
@@ -65,7 +74,7 @@ public class QueryFolderPreProcessor implements PreProcessor {
                 processCreate(entity);
                 break;
             case UPDATE:
-                processUpdate(entity, vertex);
+                processUpdate(entity, vertex, context);
                 break;
         }
     }
@@ -80,11 +89,61 @@ public class QueryFolderPreProcessor implements PreProcessor {
         entity.setAttribute(QUALIFIED_NAME, createQualifiedName(collectionQualifiedName));
     }
 
-    private void processUpdate(AtlasStruct entity, AtlasVertex vertex) {
-        String vertexQnName = vertex.getProperty(QUALIFIED_NAME, String.class);
+    private void processUpdate(AtlasEntity entity, AtlasVertex vertex, EntityMutationContext context) throws AtlasBaseException {
 
-        entity.setAttribute(QUALIFIED_NAME, vertexQnName);
+        AtlasEntityType entityType          = typeRegistry.getEntityTypeByName(entity.getTypeName());
+        Object          newParentAttr       = entity.getRelationshipAttribute(PARENT_ATTRIBUTE_NAME);
+        String          relationshipType    = AtlasEntityUtil.getRelationshipType(newParentAttr);
+        AtlasAttribute  parentAttribute     = entityType.getRelationshipAttribute(PARENT_ATTRIBUTE_NAME, relationshipType);
+        Object          currentParentAttr   = entityRetriever.getEntityAttribute(vertex, parentAttribute);
+
+        if(!parentAttribute.getAttributeType().areEqualValues(currentParentAttr, newParentAttr, context.getGuidAssignments())) {
+            AtlasVertex newParentVertex     = entityRetriever.getEntityVertex((AtlasObjectId) newParentAttr);
+            AtlasVertex currentParentVertex = entityRetriever.getEntityVertex((AtlasObjectId) currentParentAttr);
+            processCollectionDiff(entity, vertex, newParentVertex, currentParentVertex);
+        }
     }
+
+    public void processCollectionDiff(AtlasEntity folderEntity, AtlasVertex folderVertex, AtlasVertex newParentCollectionVertex, AtlasVertex currentParentCollectionVertex) throws AtlasBaseException {
+
+        String newCollectionQualifiedName = newParentCollectionVertex.getProperty(QUALIFIED_NAME, String.class);
+        String currentCollectionQualifiedName = currentParentCollectionVertex.getProperty(QUALIFIED_NAME, String.class);
+        updateRequiredAttributesOnUpdatingCollection(folderEntity, folderVertex, newCollectionQualifiedName, currentCollectionQualifiedName);
+
+        Iterator<AtlasVertex> childrenQueriesIterator = folderVertex.query()
+                .direction(AtlasEdgeDirection.OUT)
+                .label(CHILDREN_QUERIES)
+                .has(STATE_PROPERTY_KEY, ACTIVE_STATE_VALUE)
+                .vertices()
+                .iterator();
+
+        while (childrenQueriesIterator.hasNext()) {
+            AtlasVertex queryVertex = childrenQueriesIterator.next();
+            if(queryVertex != null) {
+                updateRequiredAttributesOnUpdatingCollection(queryVertex, newCollectionQualifiedName, currentCollectionQualifiedName);
+            }
+        }
+
+    }
+    
+    public void updateRequiredAttributesOnUpdatingCollection(AtlasEntity currentFolderEntity, AtlasVertex childVertex, String newCollectionQualifiedName, String currentCollectionQualifiedName) {
+
+        for (String attrName : QUERY_COLLECTION_RELATED_STRING_ATTRIBUTES) {
+            String currentPropertyValue = childVertex.getProperty(attrName, String.class);
+            String updatedPropertyValue =  currentPropertyValue.replaceAll(currentCollectionQualifiedName, newCollectionQualifiedName);
+            currentFolderEntity.setAttribute(attrName, updatedPropertyValue);
+        }
+    }
+
+    public void updateRequiredAttributesOnUpdatingCollection(AtlasVertex childVertex, String newCollectionQualifiedName, String currentCollectionQualifiedName) {
+
+        for (String attrName : QUERY_COLLECTION_RELATED_STRING_ATTRIBUTES) {
+            String currentPropertyValue = childVertex.getProperty(attrName, String.class);
+            String updatedPropertyValue =  currentPropertyValue.replaceAll(currentCollectionQualifiedName, newCollectionQualifiedName);
+            AtlasGraphUtilsV2.setEncodedProperty(childVertex, attrName, updatedPropertyValue);
+        }
+    }
+
 
     public static String createQualifiedName(String collectionQualifiedName) {
         return String.format(qualifiedNameFormat, collectionQualifiedName, AtlasAuthorizationUtils.getCurrentUserName(), getUUID());

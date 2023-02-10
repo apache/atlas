@@ -866,7 +866,7 @@ public class EntityGraphRetriever {
         return StringUtils.equals(outVertex.getIdForDisplay(), vertex.getIdForDisplay()) ? inVertex : outVertex;
     }
 
-    private AtlasVertex getEntityVertex(AtlasObjectId objId) throws AtlasBaseException {
+    public AtlasVertex getEntityVertex(AtlasObjectId objId) throws AtlasBaseException {
         AtlasVertex ret = null;
 
         if (! AtlasTypeUtil.isValid(objId)) {
