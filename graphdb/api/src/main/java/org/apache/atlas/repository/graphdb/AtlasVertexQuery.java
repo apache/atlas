@@ -77,6 +77,14 @@ public interface AtlasVertexQuery<V, E> {
     AtlasVertexQuery<V, E> label(String label);
 
     /**
+     * Specifies the edge label that should be queried.
+     *
+     * @param labels
+     * @return
+     */
+    AtlasVertexQuery<V, E> label(String... labels);
+
+    /**
      * Returns edges that matches property key and value.
      *
      * @param key

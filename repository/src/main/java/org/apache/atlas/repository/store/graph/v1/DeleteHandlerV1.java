@@ -1530,11 +1530,17 @@ public abstract class DeleteHandlerV1 {
     private void updateAssetHasLineageStatus(AtlasVertex assetVertex, AtlasEdge currentEdge, Collection<AtlasEdge> removedEdges) {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("updateAssetHasLineageStatus");
 
-        Iterator<AtlasEdge> edgeIterator = assetVertex.getEdges(AtlasEdgeDirection.BOTH, PROCESS_EDGE_LABELS).iterator();
+        Iterator<AtlasEdge> edgeIterator = assetVertex.query()
+                .direction(AtlasEdgeDirection.BOTH)
+                .label(PROCESS_EDGE_LABELS)
+                .has(STATE_PROPERTY_KEY, ACTIVE.name())
+                .edges()
+                .iterator();
+
         int processHasLineageCount = 0;
         while (edgeIterator.hasNext()) {
             AtlasEdge edge = edgeIterator.next();
-            if (getStatus(edge) == ACTIVE && !removedEdges.contains(edge) && !currentEdge.equals(edge)) {
+            if (!removedEdges.contains(edge) && !currentEdge.equals(edge)) {
                 AtlasVertex relatedProcessVertex = edge.getOutVertex();
                 boolean processHasLineage = getEntityHasLineage(relatedProcessVertex);
                 if (processHasLineage) {
@@ -1547,6 +1553,7 @@ public abstract class DeleteHandlerV1 {
         if (processHasLineageCount == 0) {
             AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE, false);
         }
+
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
