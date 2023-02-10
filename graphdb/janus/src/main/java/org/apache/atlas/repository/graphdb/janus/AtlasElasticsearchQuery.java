@@ -46,11 +46,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Stream;
 
 
@@ -215,20 +211,62 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         public double getScore() {
             return hit.getScore();
         }
+
+        @Override
+        public Set<String> getCollapseKeys() {
+            return null;
+        }
+
+        @Override
+        public DirectIndexQueryResult<AtlasJanusVertex, AtlasJanusEdge> getCollapseVertices(String key) {
+            return null;
+        }
     }
 
 
     public final class ResultImplDirect implements AtlasIndexQuery.Result<AtlasJanusVertex, AtlasJanusEdge> {
         private LinkedHashMap<String, Object> hit;
+        Map<String, LinkedHashMap> innerHitsMap;
 
         public ResultImplDirect(LinkedHashMap<String, Object> hit) {
             this.hit = hit;
+            if (hit.get("inner_hits") != null) {
+                innerHitsMap = AtlasType.fromJson(AtlasType.toJson(hit.get("inner_hits")), Map.class);
+            }
         }
 
         @Override
         public AtlasVertex<AtlasJanusVertex, AtlasJanusEdge> getVertex() {
             long vertexId = LongEncoding.decode(String.valueOf(hit.get("_id")));
             return graph.getVertex(String.valueOf(vertexId));
+        }
+
+        @Override
+        public Set<String> getCollapseKeys() {
+            Set<String> collapseKeys = new HashSet<>();
+            if (innerHitsMap != null) {
+                collapseKeys = innerHitsMap.keySet();
+            }
+            return collapseKeys;
+        }
+
+        @Override
+        public DirectIndexQueryResult getCollapseVertices(String key) {
+            DirectIndexQueryResult result = new DirectIndexQueryResult();
+            if (innerHitsMap != null) {
+                Map<String, LinkedHashMap> responseMap = AtlasType.fromJson(AtlasType.toJson(innerHitsMap.get(key)), Map.class);
+                Map<String, LinkedHashMap> hits_0 = AtlasType.fromJson(AtlasType.toJson(responseMap.get("hits")), Map.class);
+
+                Integer approximateCount = (Integer) hits_0.get("total").get("value");
+                result.setApproximateCount(approximateCount);
+
+                List<LinkedHashMap> hits_1 = AtlasType.fromJson(AtlasType.toJson(hits_0.get("hits")), List.class);
+                Stream<Result<AtlasJanusVertex, AtlasJanusEdge>> resultStream = hits_1.stream().map(ResultImplDirect::new);
+                result.setIterator(resultStream.iterator());
+
+                return result;
+            }
+            return null;
         }
 
         @Override
