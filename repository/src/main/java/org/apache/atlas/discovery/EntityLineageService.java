@@ -827,7 +827,7 @@ public class EntityLineageService implements AtlasLineageService {
                 continue;
             }
 
-            List<AtlasEdge> edgesOfProcess = getEdgesOfProcess(isInput, lineageContext, paginationCalculatedProcessOutputPair, processVertex);
+            List<AtlasEdge> edgesOfProcess = getEdgesOfProcess(isInput, lineageContext, paginationCalculatedProcessOutputPair, processVertex, currentOffset);
 
             if (isFirstValidProcessReached)
                 currentOffset = 0;
@@ -842,8 +842,8 @@ public class EntityLineageService implements AtlasLineageService {
         }
     }
 
-    private List<AtlasEdge> getEdgesOfProcess(boolean isInput, AtlasLineageContext lineageContext, Set<Pair<String, String>> paginationCalculatedProcessOutputPair, AtlasVertex processVertex) {
-        List<Pair<AtlasEdge, String>> processEdgeOutputVertexIdPairs = getUnvisitedProcessEdgesWithOutputVertexIds(isInput, lineageContext, paginationCalculatedProcessOutputPair, processVertex);
+    private List<AtlasEdge> getEdgesOfProcess(boolean isInput, AtlasLineageContext lineageContext, Set<Pair<String, String>> paginationCalculatedProcessOutputPair, AtlasVertex processVertex, int currentOffset) {
+        List<Pair<AtlasEdge, String>> processEdgeOutputVertexIdPairs = getUnvisitedProcessEdgesWithOutputVertexIds(isInput, lineageContext, paginationCalculatedProcessOutputPair, processVertex, currentOffset);
         processEdgeOutputVertexIdPairs.forEach(pair -> paginationCalculatedProcessOutputPair.add(Pair.of(getGuid(processVertex), pair.getRight())));
         return processEdgeOutputVertexIdPairs
                 .stream()
@@ -889,7 +889,7 @@ public class EntityLineageService implements AtlasLineageService {
         return getStatus(vertex) == AtlasEntity.Status.ACTIVE;
     }
 
-    private List<Pair<AtlasEdge, String>> getUnvisitedProcessEdgesWithOutputVertexIds(boolean isInput, AtlasLineageContext lineageContext, Set<Pair<String, String>> paginationCalculatedProcessOutputPair, AtlasVertex processVertex) {
+    private List<Pair<AtlasEdge, String>> getUnvisitedProcessEdgesWithOutputVertexIds(boolean isInput, AtlasLineageContext lineageContext, Set<Pair<String, String>> paginationCalculatedProcessOutputPair, AtlasVertex processVertex, int currentOffset) {
         if (lineageContext.getIgnoredProcesses() != null &&
                 lineageContext.getIgnoredProcesses().contains(processVertex.getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY, String.class))) {
             return Collections.emptyList();
@@ -906,7 +906,7 @@ public class EntityLineageService implements AtlasLineageService {
                     vertexMatchesEvaluation(outputVertex, lineageContext) &&
                     !paginationCalculatedProcessOutputPair.contains(Pair.of(getGuid(processVertex), outputVertex.getIdForDisplay()))) {
                 unvisitedProcessEdgesWithOutputVertexIds.add(Pair.of(outgoingEdge, outputVertex.getIdForDisplay()));
-                if (unvisitedProcessEdgesWithOutputVertexIds.size() == lineageContext.getLimit()) {
+                if (unvisitedProcessEdgesWithOutputVertexIds.size() == lineageContext.getLimit() + currentOffset + 1) {
                     break;
                 }
             }
