@@ -3,23 +3,62 @@
     "relationshipList": {
       "type": "nested",
       "properties": {
-        "endGuid": {
+        "typeName": {
           "type": "keyword"
         },
-        "endTypeName": {
+        "guid": {
           "type": "keyword"
         },
-        "endName": {
+        "provenanceType": {
+          "type": "integer"
+        },
+        "end1Name": {
           "type": "keyword"
         },
-        "relationshipGuid": {
+        "end1Guid": {
           "type": "keyword"
         },
-        "relationshipTypeName": {
+        "end1TypeName": {
+          "type": "keyword"
+        },
+        "end1QualifiedName": {
+          "type": "keyword"
+        },
+        "end2Name": {
+          "type": "keyword"
+        },
+        "end2Guid": {
+          "type": "keyword"
+        },
+        "end2TypeName": {
+          "type": "keyword"
+        },
+        "end2QualifiedName": {
+          "type": "keyword"
+        },
+        "label": {
+          "type": "keyword"
+        },
+        "propagateTags": {
           "type": "keyword"
         },
         "status": {
           "type": "keyword"
+        },
+        "createdBy": {
+          "type": "keyword"
+        },
+        "updatedBy": {
+          "type": "keyword"
+        },
+        "createTime": {
+          "type": "long"
+        },
+        "updateTime": {
+          "type": "long"
+        },
+        "version": {
+          "type": "integer"
         }
       }
     }
