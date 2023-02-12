@@ -894,7 +894,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
 
     public void onRelationshipsMutated(Map<String, Set<AtlasRelationship>> relationshipsMutationMap) throws AtlasBaseException {
         entityChangeNotifier.notifyPropagatedEntities();
-        RelationshipMutationContext relationshipMutationContext = getRelationshipMutationResponse(relationshipsMutationMap);
+        RelationshipMutationContext relationshipMutationContext = getRelationshipMutationContext(relationshipsMutationMap);
         if (notificationsEnabled) {
             entityChangeNotifier.notifyRelationshipMutation(relationshipMutationContext.getCreatedRelationships(), OperationType.RELATIONSHIP_CREATE);
             entityChangeNotifier.notifyRelationshipMutation(relationshipMutationContext.getUpdatedRelationships(), OperationType.RELATIONSHIP_UPDATE);
@@ -902,14 +902,14 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         }
     }
 
-    private RelationshipMutationContext getRelationshipMutationResponse(Map<String, Set<AtlasRelationship>> relationshipsMutationMap) {
+    private RelationshipMutationContext getRelationshipMutationContext(Map<String, Set<AtlasRelationship>> relationshipsMutationMap) {
         final List<AtlasRelationship> createdRelationships = new ArrayList<>();
         final List<AtlasRelationship> deletedRelationships = new ArrayList<>();
         final List<AtlasRelationship> updatedRelationships = new ArrayList<>();
 
         relationshipsMutationMap.keySet().forEach((relationshipMutation) -> {
             final Set<AtlasRelationship> relationships = relationshipsMutationMap.getOrDefault(relationshipMutation, new HashSet<>());
-            this.addRelationshipBasedCustomInfo(relationships);
+            this.addRelationshipMetadataForNotificationEvent(relationships);
             if (RelationshipMutation.RELATIONSHIP_CREATE.name().equals(relationshipMutation)) {
                 createdRelationships.addAll(relationships);
             } else if (RelationshipMutation.RELATIONSHIP_SOFT_DELETE.name().equals(relationshipMutation) || RelationshipMutation.RELATIONSHIP_HARD_DELETE.name().equals(relationshipMutation)) {
@@ -933,18 +933,13 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         RequestContext.get().saveRelationshipsMutationContext(relationshipMutation.name(), relationship);
     }
 
-    private void addRelationshipBasedCustomInfo(Set<AtlasRelationship> relationships) {
+    private void addRelationshipMetadataForNotificationEvent(Set<AtlasRelationship> relationships) {
         for (AtlasRelationship r : relationships) {
-            final Map<String, Object> customInfoMap = new HashMap<>();
-            setRelationshipDefMap(r, customInfoMap);
-            setEsDocIdMap(r, customInfoMap);
-            r.setCustomRelationshipInfo(customInfoMap);
+            final Map<String, Object> relationshipDef = buildRelationshipDefMap(r);
+            r.setRelationshipDef(relationshipDef);
+            final Map<String, String> relationshipEndToESDocIdMap = builsESDocIdMapping(r);
+            r.setRelationshipEndToESDocIdMap(relationshipEndToESDocIdMap);
         }
-    }
-
-    private void setEsDocIdMap(AtlasRelationship r, Map<String, Object> customInfoMap) {
-        final Map<String, String> esDocIdMapping = builsESDocIdMapping(r);
-        customInfoMap.put(ES_DOC_ID_MAP_KEY, esDocIdMapping);
     }
 
     private static Map<String, String> builsESDocIdMapping(AtlasRelationship r) {
@@ -963,11 +958,6 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         esDocIdMapping.put(END_1_DOC_ID_KEY, end1DocId);
         esDocIdMapping.put(END_2_DOC_ID_KEY, end2DocId);
         return esDocIdMapping;
-    }
-
-    private void setRelationshipDefMap(AtlasRelationship relationship, Map<String, Object> customInfoMap) {
-        final Map<String, Object> relationshipDefMap = buildRelationshipDefMap(relationship);
-        customInfoMap.put(RELATIONSHIP_DEF_MAP_KEY, relationshipDefMap);
     }
 
     private Map<String, Object> buildRelationshipDefMap(AtlasRelationship relationship) {

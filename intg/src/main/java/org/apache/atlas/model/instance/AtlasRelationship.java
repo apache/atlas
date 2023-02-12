@@ -72,7 +72,9 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
     public static final String KEY_BLOCKED_PROPAGATED_CLASSIFICATIONS = "blockedPropagatedClassifications";
     public static final String KEY_PROPAGATED_CLASSIFICATIONS         = "propagatedClassifications";
 
-    public static final String CUSTOM_RELATIONSHIP_INFO               = "customRelationshipInfo";
+    // RELATIONSHIP_DEF and RELATIONSHIP_END_TO_ES_DOC_ID_MAP used for Kafka consumers to handle ES relationship sync
+    public static final String RELATIONSHIP_DEF = "relationshipDef";
+    public static final String RELATIONSHIP_END_TO_ES_DOC_ID_MAP = "relationshipEndToESDocIdMap";
 
     private String        guid           = null;
     private String        homeId         = null;
@@ -93,7 +95,8 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
     private Set<AtlasClassification> propagatedClassifications;
     private Set<AtlasClassification> blockedPropagatedClassifications;
 
-    private Map<String, Object> customRelationshipInfo;
+    private Map<String, Object> relationshipDef;
+    private Map<String, String> relationshipEndToESDocIdMap;
 
     @JsonIgnore
     private static AtomicLong s_nextId = new AtomicLong(System.nanoTime());
@@ -117,13 +120,13 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
     public AtlasRelationship(String typeName, AtlasObjectId end1, AtlasObjectId end2) {
         super(typeName);
 
-        init(nextInternalId(), null, 0, end1, end2, null, null, null, null, null, null, null, 0L, null, null, null);
+        init(nextInternalId(), null, 0, end1, end2, null, null, null, null, null, null, null, 0L, null, null);
     }
 
     public AtlasRelationship(String typeName, AtlasObjectId end1, AtlasObjectId end2, Map<String, Object> attributes) {
         super(typeName, attributes);
 
-        init(nextInternalId(), null, 0, end1, end2, null, null, null, null, null, null, null, 0L, null, null, null);
+        init(nextInternalId(), null, 0, end1, end2, null, null, null, null, null, null, null, 0L, null, null);
     }
 
     public AtlasRelationship(String typeName, String attrName, Object attrValue) {
@@ -156,7 +159,6 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
 
             Object propagatedClassifications        = map.get(KEY_PROPAGATED_CLASSIFICATIONS);
             Object blockedPropagatedClassifications = map.get(KEY_BLOCKED_PROPAGATED_CLASSIFICATIONS);
-            Object customRelationshipInfo = map.get(CUSTOM_RELATIONSHIP_INFO);
 
             if (oGuid != null) {
                 setGuid(oGuid.toString());
@@ -241,11 +243,6 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
                     }
                 }
             }
-
-            if (MapUtils.isNotEmpty((Map) customRelationshipInfo) ) {
-                this.customRelationshipInfo = new HashMap<>();
-                this.customRelationshipInfo.putAll((Map<? extends String, ?>) customRelationshipInfo);
-            }
         }
     }
 
@@ -254,16 +251,24 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
 
         if (other != null) {
             init(other.guid, other.homeId, other.provenanceType, other.end1, other.end2, other.label, other.propagateTags, other.status, other.createdBy, other.updatedBy,
-                 other.createTime, other.updateTime, other.version, other.propagatedClassifications, other.blockedPropagatedClassifications, other.customRelationshipInfo);
+                 other.createTime, other.updateTime, other.version, other.propagatedClassifications, other.blockedPropagatedClassifications);
         }
     }
 
-    public void setCustomRelationshipInfo(Map<String, Object> customRelationshipInfo) {
-        this.customRelationshipInfo = customRelationshipInfo;
+    public Map<String, Object> getRelationshipDef() {
+        return relationshipDef;
     }
 
-    public Map<String, Object> getCustomRelationshipInfo() {
-        return customRelationshipInfo;
+    public void setRelationshipDef(Map<String, Object> relationshipDef) {
+        this.relationshipDef = relationshipDef;
+    }
+
+    public Map<String, String> getRelationshipEndToESDocIdMap() {
+        return relationshipEndToESDocIdMap;
+    }
+
+    public void setRelationshipEndToESDocIdMap(Map<String, String> relationshipEndToESDocIdMap) {
+        this.relationshipEndToESDocIdMap = relationshipEndToESDocIdMap;
     }
 
     public String getGuid() {
@@ -373,12 +378,12 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
     }
 
     private void init() {
-        init(nextInternalId(), null, 0 ,null, null, null, null, null,  null, null, null, null, 0L, null, null, null);
+        init(nextInternalId(), null, 0 ,null, null, null, null, null,  null, null, null, null, 0L, null, null);
     }
 
     private void init(String guid, String homeId, Integer provenanceType, AtlasObjectId end1, AtlasObjectId end2, String label, PropagateTags propagateTags,
                       Status status, String createdBy, String updatedBy, Date createTime, Date updateTime, Long version,
-                      Set<AtlasClassification> propagatedClassifications, Set<AtlasClassification> blockedPropagatedClassifications, Map<String, Object> customRelationshipInfo) {
+                      Set<AtlasClassification> propagatedClassifications, Set<AtlasClassification> blockedPropagatedClassifications) {
         setGuid(guid);
         setHomeId(homeId);
         setProvenanceType(provenanceType);
@@ -394,7 +399,6 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
         setVersion(version);
         setPropagatedClassifications(propagatedClassifications);
         setBlockedPropagatedClassifications(blockedPropagatedClassifications);
-        setCustomRelationshipInfo(customRelationshipInfo);
     }
 
     @Override
@@ -424,8 +428,11 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
         sb.append(", blockedPropagatedClassifications=[");
         dumpObjects(blockedPropagatedClassifications, sb);
         sb.append("]");
-        sb.append(", customRelationshipInfo=[");
-        dumpObjects(customRelationshipInfo, sb);
+        sb.append(", relationshipDef=[");
+        dumpObjects(relationshipDef, sb);
+        sb.append("]");
+        sb.append(", relationshipEndToESDocIdMap=[");
+        dumpObjects(relationshipEndToESDocIdMap, sb);
         sb.append("]");
         sb.append('}');
 
