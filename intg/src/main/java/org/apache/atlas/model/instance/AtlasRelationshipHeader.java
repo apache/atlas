@@ -60,7 +60,7 @@ public class AtlasRelationshipHeader extends AtlasStruct implements Serializable
     private String                                  updatedBy           = null;
     private Date                                    createTime          = null;
     private Date                                    updateTime          = null;
-    private long                                    version             = 0;
+    private long                                    version             = 0L;
 
     public AtlasRelationshipHeader() {
 
