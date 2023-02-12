@@ -79,14 +79,14 @@ public class RestoreHandlerV1 {
             AtlasGraphUtilsV2.setEncodedProperty(classificationVertex, CLASSIFICATION_ENTITY_STATUS, ACTIVE.name());
         }
 
-        if (isRelationshipEdge(edge))
-            AtlasRelationshipStoreV2.recordRelationshipMutation(AtlasRelationshipStoreV2.RelationshipMutation.RELATIONSHIP_RESTORE, edge, entityRetriever);
-
         if (AtlasGraphUtilsV2.getState(edge) == DELETED) {
             AtlasGraphUtilsV2.setEncodedProperty(edge, STATE_PROPERTY_KEY, ACTIVE.name());
             AtlasGraphUtilsV2.setEncodedProperty(edge, MODIFICATION_TIMESTAMP_PROPERTY_KEY, RequestContext.get().getRequestTime());
             AtlasGraphUtilsV2.setEncodedProperty(edge, MODIFIED_BY_KEY, RequestContext.get().getUser());
         }
+
+        if (isRelationshipEdge(edge))
+            AtlasRelationshipStoreV2.recordRelationshipMutation(AtlasRelationshipStoreV2.RelationshipMutation.RELATIONSHIP_RESTORE, edge, entityRetriever);
     }
 
 

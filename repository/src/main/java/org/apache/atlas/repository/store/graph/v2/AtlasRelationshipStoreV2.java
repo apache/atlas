@@ -925,8 +925,6 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         if (Objects.isNull(edge))
             throw new IllegalStateException("edge cannot be null");
         final AtlasRelationship relationship = entityRetriever.mapEdgeToAtlasRelationship(edge);
-        if (relationshipMutation.equals(RelationshipMutation.RELATIONSHIP_RESTORE))
-            relationship.setStatus(AtlasRelationship.Status.ACTIVE);
         if (relationshipMutation.equals(RelationshipMutation.RELATIONSHIP_HARD_DELETE))
             relationship.setStatus(AtlasRelationship.Status.PURGED);
         AtlasRelationshipStoreV2.setEdgeVertexIdsInContext(edge);
