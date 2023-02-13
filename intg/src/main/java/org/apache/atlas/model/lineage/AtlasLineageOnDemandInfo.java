@@ -189,8 +189,8 @@ public class AtlasLineageOnDemandInfo implements Serializable {
             return isOutputRelationsReachedLimit;
         }
 
-        public void setOutputRelationsReachedLimit(boolean outputRelationsReachedLimit) {
-            isOutputRelationsReachedLimit = outputRelationsReachedLimit;
+        public void setOutputRelationsReachedLimit(boolean isOutputRelationsReachedLimit) {
+            this.isOutputRelationsReachedLimit = isOutputRelationsReachedLimit;
         }
 
         public boolean hasMoreInputs() {
