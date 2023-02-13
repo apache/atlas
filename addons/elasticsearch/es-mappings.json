@@ -12,28 +12,16 @@
         "provenanceType": {
           "type": "integer"
         },
-        "end1Name": {
+        "endName": {
           "type": "keyword"
         },
-        "end1Guid": {
+        "endGuid": {
           "type": "keyword"
         },
-        "end1TypeName": {
+        "endTypeName": {
           "type": "keyword"
         },
-        "end1QualifiedName": {
-          "type": "keyword"
-        },
-        "end2Name": {
-          "type": "keyword"
-        },
-        "end2Guid": {
-          "type": "keyword"
-        },
-        "end2TypeName": {
-          "type": "keyword"
-        },
-        "end2QualifiedName": {
+        "endQualifiedName": {
           "type": "keyword"
         },
         "label": {
