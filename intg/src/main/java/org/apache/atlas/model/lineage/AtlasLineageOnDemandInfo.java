@@ -143,6 +143,7 @@ public class AtlasLineageOnDemandInfo implements Serializable {
 
     @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown = true, value = {"inputRelationsReachedLimit", "outputRelationsReachedLimit"})
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.PROPERTY)
     public static class LineageInfoOnDemand {
