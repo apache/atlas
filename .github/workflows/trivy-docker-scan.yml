@@ -27,7 +27,7 @@ jobs:
           format: 'sarif'
           #output: ''
           output: 'trivy-results-docker.sarif'
-          exit-code: '0'
+          exit-code: '1'
           #ignore-unfixed: true
           severity: 'CRITICAL,HIGH,MEDIUM'
 
