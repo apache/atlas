@@ -364,7 +364,6 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         if (edge == null) {
             throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIP_GUID_NOT_FOUND, guid);
         }
-        final AtlasRelationship relationship = entityRetriever.mapEdgeToAtlasRelationship(edge);
 
         if (getState(edge) == DELETED) {
             throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIP_ALREADY_DELETED, guid);
@@ -380,11 +379,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
             }
         }
 
-        if (deleteDelegate.getHandler() instanceof SoftDeleteHandlerV1)
-            onRelationshipsMutated(RequestContext.get().getRelationshipMutationMap());
-        else
-            onRelationshipsMutated(RequestContext.get().getRelationshipMutationMap());
-
+        onRelationshipsMutated(RequestContext.get().getRelationshipMutationMap());
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== deleteById({}): {}", guid);
         }
