@@ -88,9 +88,7 @@ public class EntityLineageService implements AtlasLineageService {
     private static final boolean LINEAGE_USING_GREMLIN = AtlasConfiguration.LINEAGE_USING_GREMLIN.getBoolean();
     private static final Integer DEFAULT_LINEAGE_MAX_NODE_COUNT       = 9000;
     private static final int     LINEAGE_ON_DEMAND_DEFAULT_DEPTH      = 3;
-    private static final int     LINEAGE_ON_DEMAND_DEFAULT_NODE_COUNT = AtlasConfiguration.LINEAGE_ON_DEMAND_DEFAULT_NODE_COUNT.getInt();
     private static final String  SEPARATOR                            = "->";
-    private static final String  OFFSET                               = "offset-";
 
     private final AtlasGraph graph;
     private final AtlasGremlinQueryProvider gremlinQueryProvider;
@@ -185,7 +183,7 @@ public class EntityLineageService implements AtlasLineageService {
 
         ret = getLineageInfoOnDemand(guid, atlasLineageOnDemandContext, isDataSet);
 
-        appendLineageOnDemandPayload(ret, atlasLineageOnDemandContext.getConstraints());
+        appendLineageOnDemandPayload(ret, lineageOnDemandRequest);
 
         // filtering out on-demand relations which has input & output nodes within the limit
         cleanupRelationsOnDemand(ret);
@@ -260,11 +258,11 @@ public class EntityLineageService implements AtlasLineageService {
 
     }
 
-    private void appendLineageOnDemandPayload(AtlasLineageOnDemandInfo lineageInfo, Map<String, LineageOnDemandConstraints> lineageConstraintsMap) {
-        if (lineageInfo == null || MapUtils.isEmpty(lineageConstraintsMap)) {
+    private void appendLineageOnDemandPayload(AtlasLineageOnDemandInfo lineageInfo, LineageOnDemandRequest lineageOnDemandRequest) {
+        if (lineageInfo == null || MapUtils.isEmpty(lineageOnDemandRequest.getConstraints())) {
             return;
         }
-        lineageInfo.setLineageOnDemandPayload(lineageConstraintsMap);
+        lineageInfo.setLineageOnDemandPayload(lineageOnDemandRequest);
     }
 
     //Consider only relationsOnDemand which has either more inputs or more outputs than given limit
@@ -284,7 +282,7 @@ public class EntityLineageService implements AtlasLineageService {
         AtlasLineageOnDemandInfo.LineageDirection direction = lineageConstraintsByGuid.getDirection();
         int              depth     = lineageConstraintsByGuid.getDepth();
 
-        AtlasLineageOnDemandInfo ret = initializeLineageOnDemandInfo(guid, direction, depth);
+        AtlasLineageOnDemandInfo ret = initializeLineageOnDemandInfo(guid);
 
         if (depth == 0) {
             depth = -1;
@@ -1111,8 +1109,8 @@ public class EntityLineageService implements AtlasLineageService {
         return new AtlasLineageInfo(guid, new HashMap<>(), new HashSet<>(), direction, depth, limit, offset);
     }
 
-    private AtlasLineageOnDemandInfo initializeLineageOnDemandInfo(String guid, AtlasLineageOnDemandInfo.LineageDirection direction, int depth) {
-        return new AtlasLineageOnDemandInfo(guid, new HashMap<>(), new HashSet<>(), new HashSet<>(), new HashSet<>(), new HashMap<>(), direction, depth);
+    private AtlasLineageOnDemandInfo initializeLineageOnDemandInfo(String guid) {
+        return new AtlasLineageOnDemandInfo(guid, new HashMap<>(), new HashSet<>(), new HashSet<>(), new HashSet<>(), new HashMap<>());
     }
 
     private List executeGremlinScript(Map<String, Object> bindings, String lineageQuery) throws AtlasBaseException {
