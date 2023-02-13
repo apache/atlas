@@ -190,6 +190,8 @@ public class EntityLineageService implements AtlasLineageService {
         // filtering out on-demand relations which has input & output nodes within the limit
         cleanupRelationsOnDemand(ret);
 
+        scrubLineageEntities(ret.getGuidEntityMap().values());
+
         RequestContext.get().endMetricRecord(metricRecorder);
 
         return ret;
@@ -198,20 +200,19 @@ public class EntityLineageService implements AtlasLineageService {
     private boolean validateEntityTypeAndCheckIfDataSet(String guid) throws AtlasBaseException {
         AtlasEntityHeader entity = entityRetriever.toAtlasEntityHeaderWithClassifications(guid);
 
-        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(atlasTypeRegistry, AtlasPrivilege.ENTITY_READ, entity), "read entity lineage: guid=", guid);
         AtlasEntityType entityType = atlasTypeRegistry.getEntityTypeByName(entity.getTypeName());
         if (entityType == null) {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, entity.getTypeName());
         }
-        boolean isDataSet = entityType.getTypeAndAllSuperTypes().contains(DATA_SET_SUPER_TYPE);
-        if (!isDataSet) {
-            boolean isProcess = entityType.getTypeAndAllSuperTypes().contains(PROCESS_SUPER_TYPE);
-            if (!isProcess) {
+        boolean isProcess = entityType.getTypeAndAllSuperTypes().contains(PROCESS_SUPER_TYPE);
+        if (!isProcess) {
+            boolean isDataSet = entityType.getTypeAndAllSuperTypes().contains(DATA_SET_SUPER_TYPE);
+            if (!isDataSet) {
                 throw new AtlasBaseException(AtlasErrorCode.INVALID_LINEAGE_ENTITY_TYPE, guid, entity.getTypeName());
             }
         }
 
-        return isDataSet;
+        return !isProcess;
     }
 
     private LineageOnDemandConstraints getLineageConstraints(String guid, LineageOnDemandBaseParams defaultParams) {
