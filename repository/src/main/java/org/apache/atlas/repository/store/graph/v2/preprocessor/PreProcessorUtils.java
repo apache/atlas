@@ -28,6 +28,7 @@ public class PreProcessorUtils {
      */
 
     public static final String CHILDREN_QUERIES = "__Namespace.childrenQueries";
+    public static final String CHILDREN_FOLDERS = "__Namespace.childrenFolders";
 
     public static final List<String> QUERY_COLLECTION_RELATED_STRING_ATTRIBUTES = new ArrayList<String>(){{
         add(COLLECTION_QUALIFIED_NAME);
