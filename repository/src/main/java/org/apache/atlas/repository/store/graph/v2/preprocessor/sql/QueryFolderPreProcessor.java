@@ -197,11 +197,11 @@ public class QueryFolderPreProcessor implements PreProcessor {
         AtlasGraphUtilsV2.setEncodedProperty(childVertex, PARENT_QUALIFIED_NAME, folderQualifiedName);
         updatedAttributes.put(PARENT_QUALIFIED_NAME, folderQualifiedName);
 
-        recordAndStoreDiffEntity(childVertex, updatedAttributes);
+        recordUpdatedChildEntities(childVertex, updatedAttributes);
 
     }
 
-    private void recordAndStoreDiffEntity(AtlasVertex entityVertex, Map<String, Object> updatedAttributes) throws AtlasBaseException {
+    private void recordUpdatedChildEntities(AtlasVertex entityVertex, Map<String, Object> updatedAttributes) throws AtlasBaseException {
         RequestContext requestContext = RequestContext.get();
         AtlasEntity entity = new AtlasEntity();
         entity = entityRetriever.mapSystemAttributes(entityVertex, entity);
