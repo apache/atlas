@@ -19,6 +19,7 @@ public class PreProcessorUtils {
 
     //Query models constants
     public static final String PREFIX_QUERY_QN   = "/default/collection/";
+    public static final String TYPE_COLLECTION = "Collection";
     public static final String COLLECTION_QUALIFIED_NAME = "collectionQualifiedName";
     public static final String PARENT_QUALIFIED_NAME = "parentQualifiedName";
     public static final String PARENT_ATTRIBUTE_NAME    = "parent";

@@ -35,7 +35,6 @@ import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
 import org.apache.atlas.type.AtlasEntityType;
-import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasEntityUtil;
 import org.apache.atlas.utils.AtlasPerfMetrics;
@@ -43,13 +42,11 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
 import static org.apache.atlas.repository.Constants.*;
-import static org.apache.atlas.repository.graph.GraphHelper.isEntityIncomplete;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.COLLECTION_QUALIFIED_NAME;
 
@@ -101,20 +98,24 @@ public class QueryFolderPreProcessor implements PreProcessor {
     private void processUpdate(AtlasEntity entity, AtlasVertex vertex, EntityMutationContext context) throws AtlasBaseException {
 
         AtlasEntityType entityType          = typeRegistry.getEntityTypeByName(entity.getTypeName());
-        Object          newParentAttr       = entity.getRelationshipAttribute(PARENT_ATTRIBUTE_NAME);
+        AtlasObjectId   newParentAttr       = (AtlasObjectId) entity.getRelationshipAttribute(PARENT_ATTRIBUTE_NAME);
         String          relationshipType    = AtlasEntityUtil.getRelationshipType(newParentAttr);
         AtlasAttribute  parentAttribute     = entityType.getRelationshipAttribute(PARENT_ATTRIBUTE_NAME, relationshipType);
-        Object          currentParentAttr   = entityRetriever.getEntityAttribute(vertex, parentAttribute);
+        AtlasObjectId   currentParentAttr   = (AtlasObjectId) entityRetriever.getEntityAttribute(vertex, parentAttribute);
 
         if(!parentAttribute.getAttributeType().areEqualValues(currentParentAttr, newParentAttr, context.getGuidAssignments())) {
-            AtlasVertex currentParentVertex         = entityRetriever.getEntityVertex((AtlasObjectId) currentParentAttr);
-            String currentCollectionQualifiedName   = currentParentVertex.getProperty(COLLECTION_QUALIFIED_NAME, String.class);
-            String newCollectionQualifiedName       = (String) entity.getAttribute(COLLECTION_QUALIFIED_NAME);
+            AtlasVertex currentParentVertex             = entityRetriever.getEntityVertex(currentParentAttr);
+            AtlasVertex newParentVertex                 = entityRetriever.getEntityVertex(newParentAttr);
+            //In case of Collection type we need to extract the qName for extracting collection qName
+            String      collectionProperty              = TYPE_COLLECTION.equals(newParentVertex.getProperty(ENTITY_TYPE_PROPERTY_KEY, String.class)) ? QUALIFIED_NAME : COLLECTION_QUALIFIED_NAME;
+            String      currentCollectionQualifiedName  = currentParentVertex.getProperty(collectionProperty, String.class);
+            String      newCollectionQualifiedName      = (String) entity.getAttribute(COLLECTION_QUALIFIED_NAME);
+
             if(StringUtils.isEmpty(newCollectionQualifiedName) || StringUtils.isEmpty(currentCollectionQualifiedName)) {
                 LOG.warn("Collection qualified name in parent or current entity empty or null");
                 return;
             }
-            // Will update the children's property on updating parent
+            // Will update the children's property on updating parent collection
             processParentCollectionUpdation(vertex, currentCollectionQualifiedName, newCollectionQualifiedName);
         }
     }
@@ -141,9 +142,9 @@ public class QueryFolderPreProcessor implements PreProcessor {
                 updateChildAttributesOnUpdatingCollection(nestedFolderVertex, currentCollectionQualifiedName, newCollectionQualifiedName, updatedFolderQualifiedName);
                 /**
                  * Recursively find the child folders and move child queries to new collection
-                 * folder1 -> folder2 -> query1
+                 * folder1 -> folder2 -> query1, query2
                  * When we will move folder1 to new collection, recursively it will find folder2
-                 * Then it will move all the children of folder2 also to new collection
+                 * Then it will move all the children of folder2 i.e query1, query2 also to new collection
                  */
                 processParentCollectionUpdation(nestedFolderVertex, currentCollectionQualifiedName, newCollectionQualifiedName);
             }
@@ -180,17 +181,21 @@ public class QueryFolderPreProcessor implements PreProcessor {
 
     public void updateChildAttributesOnUpdatingCollection(AtlasVertex childVertex,  String currentCollectionQualifiedName, String newCollectionQualifiedName,
                                                           String folderQualifiedName) throws  AtlasBaseException{
+        Map<String, Object> updatedAttributes = new HashMap<>();
         String qualifiedName            =   childVertex.getProperty(QUALIFIED_NAME, String.class);
         String updatedQualifiedName     =   qualifiedName.replaceAll(currentCollectionQualifiedName, newCollectionQualifiedName);
-        AtlasGraphUtilsV2.setEncodedProperty(childVertex, QUALIFIED_NAME, updatedQualifiedName);
-        AtlasGraphUtilsV2.setEncodedProperty(childVertex, COLLECTION_QUALIFIED_NAME, newCollectionQualifiedName);
+        if (!qualifiedName.equals(updatedQualifiedName)) {
+            AtlasGraphUtilsV2.setEncodedProperty(childVertex, QUALIFIED_NAME, updatedQualifiedName);
+            updatedAttributes.put(QUALIFIED_NAME, updatedQualifiedName);
+        }
+
+        if(!currentCollectionQualifiedName.equals(newCollectionQualifiedName)) {
+            AtlasGraphUtilsV2.setEncodedProperty(childVertex, COLLECTION_QUALIFIED_NAME, newCollectionQualifiedName);
+            updatedAttributes.put(COLLECTION_QUALIFIED_NAME, newCollectionQualifiedName);
+        }
+
         AtlasGraphUtilsV2.setEncodedProperty(childVertex, PARENT_QUALIFIED_NAME, folderQualifiedName);
-
-        Map<String, Object> updatedAttributes = new HashMap<>();
-        updatedAttributes.put(QUALIFIED_NAME, updatedQualifiedName);
-        updatedAttributes.put(COLLECTION_QUALIFIED_NAME, newCollectionQualifiedName);
         updatedAttributes.put(PARENT_QUALIFIED_NAME, folderQualifiedName);
-
 
         recordAndStoreDiffEntity(childVertex, updatedAttributes);
 

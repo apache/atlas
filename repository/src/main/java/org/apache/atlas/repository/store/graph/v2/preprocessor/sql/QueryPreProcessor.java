@@ -81,9 +81,6 @@ public class QueryPreProcessor implements PreProcessor {
     }
 
     private void processUpdateQueryCollection(AtlasStruct entity, AtlasVertex vertex) {
-        String vertexQnName = vertex.getProperty(QUALIFIED_NAME, String.class);
-
-        entity.setAttribute(QUALIFIED_NAME, vertexQnName);
     }
 
     public static String createQualifiedName(String collectionQualifiedName) {
