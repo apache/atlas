@@ -41,7 +41,22 @@ import java.util.List;
  */
 class AtlasEnumDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEnumDef> {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasEnumDefStoreV2.class);
-
+    private static final List<String> KEYWORDS_INVALID_FOR_ENUM = new ArrayList() {
+        {
+            add("boolean");
+            add("byte");
+            add("short");
+            add("int");
+            add("long");
+            add("float");
+            add("double");
+            add("biginteger");
+            add("bigdecimal");
+            add("string");
+            add("date");
+            add("objectid");
+        }
+    };
     public AtlasEnumDefStoreV2(AtlasTypeDefGraphStoreV2 typeDefStore, AtlasTypeRegistry typeRegistry) {
         super(typeDefStore, typeRegistry);
     }
@@ -53,6 +68,10 @@ class AtlasEnumDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEnumDef> {
         }
 
         validateType(enumDef);
+
+        if(KEYWORDS_INVALID_FOR_ENUM.contains(enumDef.getName())){
+            throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_TYPENAME, enumDef.getName());
+        }
 
         AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_CREATE, enumDef), "create enum-def ", enumDef.getName());
 
