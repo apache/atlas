@@ -83,6 +83,12 @@ public class AtlasJanusVertexQuery implements AtlasVertexQuery<AtlasJanusVertex,
     }
 
     @Override
+    public AtlasVertexQuery<AtlasJanusVertex, AtlasJanusEdge> label(String... labels) {
+        query.labels(labels);
+        return this;
+    }
+
+    @Override
     public AtlasVertexQuery<AtlasJanusVertex, AtlasJanusEdge> has(String key, Object value) {
         query.has(key, value);
         return this;

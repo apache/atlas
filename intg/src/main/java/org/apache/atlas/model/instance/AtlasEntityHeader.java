@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.apache.atlas.model.PList;
 import org.apache.atlas.model.SearchFilter.SortType;
+import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.glossary.relations.AtlasTermAssignmentHeader;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
@@ -70,6 +71,7 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
     private Date                            createTime          = null;
     private Date                            updateTime          = null;
     private String                          deleteHandler       = null;
+    private Map<String, AtlasSearchResult>  collapse    = null;
 
     public AtlasEntityHeader() {
         this(null, null);
@@ -248,6 +250,14 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
 
     public void setDeleteHandler(String deleteHandler) {
         this.deleteHandler = deleteHandler;
+    }
+
+    public Map<String, AtlasSearchResult> getCollapse() {
+        return collapse;
+    }
+
+    public void setCollapse(Map<String, AtlasSearchResult> collapse) {
+        this.collapse = collapse;
     }
 
     @Override

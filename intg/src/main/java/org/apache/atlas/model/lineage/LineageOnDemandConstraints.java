@@ -22,7 +22,6 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.apache.atlas.AtlasConfiguration;
-import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
 
 import java.io.Serializable;
 
@@ -35,50 +34,47 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 /**
  * This is the root class representing the input for lineage search on-demand.
  */
-public class LineageOnDemandConstraints implements Serializable {
+public class LineageOnDemandConstraints extends LineageOnDemandBaseParams implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    private LineageDirection direction;
-    private int              inputRelationsLimit;
-    private int              outputRelationsLimit;
+    private AtlasLineageOnDemandInfo.LineageDirection direction;
     private int              depth;
+    private int              from;
 
     private static final int LINEAGE_ON_DEMAND_DEFAULT_NODE_COUNT = AtlasConfiguration.LINEAGE_ON_DEMAND_DEFAULT_NODE_COUNT.getInt();
     private static final int LINEAGE_ON_DEMAND_DEFAULT_DEPTH      = 3;
 
     public LineageOnDemandConstraints() {
-        this(LineageDirection.BOTH, LINEAGE_ON_DEMAND_DEFAULT_NODE_COUNT, LINEAGE_ON_DEMAND_DEFAULT_NODE_COUNT, LINEAGE_ON_DEMAND_DEFAULT_DEPTH);
+        this(AtlasLineageOnDemandInfo.LineageDirection.BOTH, -1, -1, LINEAGE_ON_DEMAND_DEFAULT_DEPTH);
     }
 
-    public LineageOnDemandConstraints(LineageDirection direction, int inputRelationsLimit, int outputRelationsLimit, int depth) {
+    public LineageOnDemandConstraints(LineageOnDemandBaseParams baseParams) {
+        this(AtlasLineageOnDemandInfo.LineageDirection.BOTH, baseParams.getInputRelationsLimit(), baseParams.getOutputRelationsLimit(), LINEAGE_ON_DEMAND_DEFAULT_DEPTH);
+    }
+
+    public LineageOnDemandConstraints(AtlasLineageOnDemandInfo.LineageDirection direction, LineageOnDemandBaseParams baseParams, int depth) {
+        this(direction, baseParams.getInputRelationsLimit(), baseParams.getOutputRelationsLimit(), depth);
+    }
+
+    public LineageOnDemandConstraints(AtlasLineageOnDemandInfo.LineageDirection direction, int inputRelationsLimit, int outputRelationsLimit, int depth) {
+        super(inputRelationsLimit, outputRelationsLimit);
         this.direction            = direction;
-        this.inputRelationsLimit  = inputRelationsLimit;
-        this.outputRelationsLimit = outputRelationsLimit;
         this.depth                = depth;
     }
 
-    public LineageDirection getDirection() {
+    public LineageOnDemandConstraints(AtlasLineageOnDemandInfo.LineageDirection direction, int inputRelationsLimit, int outputRelationsLimit, int depth, int from) {
+        super(inputRelationsLimit, outputRelationsLimit);
+        this.direction            = direction;
+        this.depth                = depth;
+        this.from                 = from;
+    }
+
+    public AtlasLineageOnDemandInfo.LineageDirection getDirection() {
         return direction;
     }
 
-    public void setDirection(LineageDirection direction) {
+    public void setDirection(AtlasLineageOnDemandInfo.LineageDirection direction) {
         this.direction = direction;
-    }
-
-    public int getInputRelationsLimit() {
-        return inputRelationsLimit;
-    }
-
-    public void setInputRelationsLimit(int inputRelationsLimit) {
-        this.inputRelationsLimit = inputRelationsLimit;
-    }
-
-    public int getOutputRelationsLimit() {
-        return outputRelationsLimit;
-    }
-
-    public void setOutputRelationsLimit(int outputRelationsLimit) {
-        this.outputRelationsLimit = outputRelationsLimit;
     }
 
     public int getDepth() {
@@ -89,4 +85,11 @@ public class LineageOnDemandConstraints implements Serializable {
         this.depth = depth;
     }
 
+    public int getFrom() {
+        return from;
+    }
+
+    public void setFrom(int from) {
+        this.from = from;
+    }
 }

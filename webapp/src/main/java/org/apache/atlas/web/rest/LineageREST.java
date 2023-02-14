@@ -27,8 +27,9 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.lineage.AtlasLineageInfo;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
+import org.apache.atlas.model.lineage.AtlasLineageOnDemandInfo;
 import org.apache.atlas.model.lineage.AtlasLineageRequest;
-import org.apache.atlas.model.lineage.LineageOnDemandConstraints;
+import org.apache.atlas.model.lineage.LineageOnDemandRequest;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -90,8 +91,8 @@ public class LineageREST {
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
     @Timed
-    public AtlasLineageInfo getLineageGraph(@PathParam("guid") String guid,
-                                            Map<String, LineageOnDemandConstraints> lineageConstraintsMapByGuid) throws AtlasBaseException {
+    public AtlasLineageOnDemandInfo getLineageGraph(@PathParam("guid") String guid,
+                                                    LineageOnDemandRequest lineageOnDemandRequest) throws AtlasBaseException {
         if (!AtlasConfiguration.LINEAGE_ON_DEMAND_ENABLED.getBoolean()) {
             LOG.warn("LineageREST: "+ AtlasErrorCode.LINEAGE_ON_DEMAND_NOT_ENABLED.getFormattedErrorMessage(AtlasConfiguration.LINEAGE_ON_DEMAND_ENABLED.getPropertyName()));
 
@@ -104,10 +105,10 @@ public class LineageREST {
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "LineageREST.getLineageGraph(" + guid + "," + lineageConstraintsMapByGuid + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "LineageREST.getOnDemandLineageGraph(" + guid + "," + lineageOnDemandRequest + ")");
             }
 
-            return atlasLineageService.getAtlasLineageInfo(guid, lineageConstraintsMapByGuid);
+            return atlasLineageService.getAtlasLineageInfo(guid, lineageOnDemandRequest);
         } finally {
             AtlasPerfTracer.log(perf);
         }
