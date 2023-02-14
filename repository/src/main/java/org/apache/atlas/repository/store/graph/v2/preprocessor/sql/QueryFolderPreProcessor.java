@@ -208,22 +208,6 @@ public class QueryFolderPreProcessor implements PreProcessor {
         entity.setAttributes(updatedAttributes);
         requestContext.cacheDifferentialEntity(entity);
 
-        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
-
-        if (entityType != null) {
-            for (AtlasAttribute attribute : entityType.getMinInfoAttributes().values()) {
-                if(updatedAttributes.containsKey(attribute.getName())) {
-                    continue;
-                }
-
-                Object attrValue = entityRetriever.getVertexAttribute(entityVertex, attribute);
-
-                if (attrValue != null) {
-                    entity.setAttribute(attribute.getName(), attrValue);
-                }
-            }
-        }
-
         entityRetriever.mapClassifications(entityVertex, entity);
         requestContext.recordEntityUpdate(new AtlasEntityHeader(entity));
     }
