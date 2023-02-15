@@ -24,6 +24,8 @@ import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 
 /**
@@ -68,9 +70,6 @@ public interface AtlasRelationshipStore {
 
     AtlasEdge getOrCreate(AtlasVertex end1Vertex, AtlasVertex end2Vertex, AtlasRelationship relationship) throws AtlasBaseException;
 
-    AtlasEdge getRelationship(AtlasVertex end1Vertex, AtlasVertex end2Vertex, AtlasRelationship relationship) throws AtlasBaseException;
-
-    AtlasEdge createRelationship(AtlasVertex end1Vertex, AtlasVertex end2Vertex, AtlasRelationship relationship) throws AtlasBaseException;
 
     /**
      * Retrieve a relationship if it exists or creates a new relationship instance.
@@ -97,4 +96,6 @@ public interface AtlasRelationshipStore {
      * @param forceDelete force delete the relationship edge
      */
     void deleteById(String guid, boolean forceDelete) throws AtlasBaseException;
+
+    void onRelationshipsMutated(Map<String, Set<AtlasRelationship>> relationshipsMutationMap) throws AtlasBaseException;
 }

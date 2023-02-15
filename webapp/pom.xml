@@ -590,12 +590,12 @@
                         </overlay>
                     </overlays>
 
-                    <webResources>
+                    <!--<webResources>
                         <resource>
                             <directory>${project.build.directory}/api/v2/apidocs/ui</directory>
                             <targetPath>apidocs</targetPath>
                         </resource>
-                    </webResources>
+                    </webResources>-->
 
                     <archive>
                         <manifest>

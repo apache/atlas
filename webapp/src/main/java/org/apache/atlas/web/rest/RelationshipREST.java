@@ -68,7 +68,6 @@ public class RelationshipREST {
             }
 
             return relationshipStore.create(relationship);
-
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -88,7 +87,6 @@ public class RelationshipREST {
             }
 
             return relationshipStore.createOrUpdate(relationships);
-
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -108,7 +106,6 @@ public class RelationshipREST {
             }
 
             return relationshipStore.update(relationship);
-
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -158,9 +155,8 @@ public class RelationshipREST {
         AtlasPerfTracer perf = null;
 
         try {
-            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG))
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "RelationshipREST.deleteById(" + guid + ")");
-            }
 
             relationshipStore.deleteById(guid);
         } finally {
@@ -190,7 +186,6 @@ public class RelationshipREST {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "RelationshipREST.deleteById(" + guids.size() + ")");
             }
-
             relationshipStore.deleteByIds(guids);
         } finally {
             AtlasPerfTracer.log(perf);
