@@ -82,7 +82,7 @@ class AtlasClassificationDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasClassif
         }
         ret = typeDefStore.findTypeVertexByDisplayName(
                 classificationDef.getDisplayName(), TypeCategory.TRAIT);
-        if (ret != null) {
+        if (ret != null && !classificationDef.getSkipDisplayNameUniquenessCheck()) {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_WITH_DISPLAY_NAME_ALREADY_EXISTS, classificationDef.getDisplayName());
         }
 
@@ -108,7 +108,7 @@ class AtlasClassificationDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasClassif
         updateVertexAddReferences(classificationDef, vertex);
 
         AtlasClassificationDef ret = toClassificationDef(vertex);
-
+        ret.setSkipDisplayNameUniquenessCheck(classificationDef.getSkipDisplayNameUniquenessCheck());
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== AtlasClassificationDefStoreV1.create({}, {}): {}", classificationDef, preCreateResult, ret);
         }
@@ -193,7 +193,8 @@ class AtlasClassificationDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasClassif
         AtlasVertex ret = typeDefStore.findTypeVertexByDisplayName(
                 classifiDef.getDisplayName(), DataTypes.TypeCategory.TRAIT);
         if (ret != null && (
-                classifiDef.getGuid() == null || !classifiDef.getGuid().equals(ret.getProperty(Constants.GUID_PROPERTY_KEY, String.class)))) {
+                classifiDef.getGuid() == null || !classifiDef.getGuid().equals(ret.getProperty(Constants.GUID_PROPERTY_KEY, String.class)))
+                 && (!classifiDef.getSkipDisplayNameUniquenessCheck())) {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_WITH_DISPLAY_NAME_ALREADY_EXISTS, classifiDef.getDisplayName());
         }
     }
@@ -212,6 +213,7 @@ class AtlasClassificationDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasClassif
         AtlasClassificationDef ret = StringUtils.isNotBlank(classifiDef.getGuid())
                   ? updateByGuid(classifiDef.getGuid(), classifiDef) : updateByName(classifiDef.getName(), classifiDef);
 
+        ret.setSkipDisplayNameUniquenessCheck(classifiDef.getSkipDisplayNameUniquenessCheck());
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== AtlasClassificationDefStoreV1.update({}): {}", classifiDef, ret);
         }
