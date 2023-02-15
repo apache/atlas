@@ -54,8 +54,7 @@ class AtlasEnumDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEnumDef> {
 
         validateType(enumDef);
 
-        AtlasTypeRegistry invalidKeywordsForTypeCreation = new AtlasTypeRegistry();
-        if(invalidKeywordsForTypeCreation.getAllTypeNames().contains(enumDef.getName())){
+        if(AtlasAbstractDefStoreV2.invalidKeywords.getAllTypeNames().contains(enumDef.getName())){
             throw new AtlasBaseException(AtlasErrorCode.FORBIDDEN_TYPENAME, enumDef.getName());
         }
 
