@@ -35,13 +35,15 @@ public enum AtlasConfiguration {
     QUERY_PARAM_MAX_LENGTH("atlas.query.param.max.length", 4*1024),
 
     REST_API_ENABLE_DELETE_TYPE_OVERRIDE("atlas.rest.enable.delete.type.override", false),
-    NOTIFICATION_RELATIONSHIPS_ENABLED("atlas.notification.relationships.enabled", false),
+    NOTIFICATION_RELATIONSHIPS_ENABLED("atlas.notification.relationships.enabled", true),
 
     NOTIFICATION_HOOK_TOPIC_NAME("atlas.notification.hook.topic.name", "ATLAS_HOOK"),
     NOTIFICATION_ENTITIES_TOPIC_NAME("atlas.notification.entities.topic.name", "ATLAS_ENTITIES"),
+    NOTIFICATION_RELATIONSHIPS_TOPIC_NAME("atlas.notification.relationships.topic.name", "ATLAS_RELATIONSHIPS"),
 
     NOTIFICATION_HOOK_CONSUMER_TOPIC_NAMES("atlas.notification.hook.consumer.topic.names", "ATLAS_HOOK"), //  a comma separated list of topic names
     NOTIFICATION_ENTITIES_CONSUMER_TOPIC_NAMES("atlas.notification.entities.consumer.topic.names", "ATLAS_ENTITIES"), //  a comma separated list of topic names
+    NOTIFICATION_RELATIONSHIPS_CONSUMER_TOPIC_NAMES("atlas.notification.relationships.consumer.topic.names", "ATLAS_RELATIONSHIPS"), //  a comma separated list of topic names
 
     NOTIFICATION_MESSAGE_MAX_LENGTH_BYTES("atlas.notification.message.max.length.bytes", (1000 * 1000)),
     NOTIFICATION_MESSAGE_COMPRESSION_ENABLED("atlas.notification.message.compression.enabled", true),
@@ -91,7 +93,8 @@ public enum AtlasConfiguration {
     GRAPH_TRAVERSAL_PARALLELISM("atlas.graph.traverse.bucket.size",10),
     LINEAGE_ON_DEMAND_ENABLED("atlas.lineage.on.demand.enabled", true),
     LINEAGE_ON_DEMAND_DEFAULT_NODE_COUNT("atlas.lineage.on.demand.default.node.count", 3),
-    LINEAGE_MAX_NODE_COUNT("atlas.lineage.max.node.count", 9000);
+    LINEAGE_MAX_NODE_COUNT("atlas.lineage.max.node.count", 9000),
+    SUPPORTED_RELATIONSHIP_EVENTS("atlas.notification.relationships.filter", "asset_readme");
 
 
     private static final Configuration APPLICATION_PROPERTIES;
