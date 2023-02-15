@@ -182,7 +182,13 @@ public class EntityGraphMapper {
     private static final String ATTR_MEANINGS = "meanings";
     private static final String ATTR_ANCHOR = "anchor";
     private static final String ATTR_CATEGORIES = "categories";
-
+    private static final List<String> ALLOWED_DATATYPES_FOR_DEFAULT_NULL = new ArrayList() {
+        {
+            add("int");
+            add("long");
+            add("float");
+        }
+    };
 
     private static final boolean ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES = AtlasConfiguration.ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES.getBoolean();
     private static final boolean CLASSIFICATION_PROPAGATION_DEFAULT                  = AtlasConfiguration.CLASSIFICATION_PROPAGATION_DEFAULT.getBoolean();
@@ -1109,6 +1115,8 @@ public class EntityGraphMapper {
             if (attrType.getTypeCategory() == TypeCategory.PRIMITIVE) {
                 if (attributeDef.getDefaultValue() != null) {
                     attrValue = attrType.createDefaultValue(attributeDef.getDefaultValue());
+                } else if (attributeDef.getIsDefaultValueNull() && ALLOWED_DATATYPES_FOR_DEFAULT_NULL.contains(attribute.getTypeName())) {
+                    attrValue = null;
                 } else {
                     if (attribute.getAttributeDef().getIsOptional()) {
                         attrValue = attrType.createOptionalDefaultValue();
