@@ -69,7 +69,7 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
 
         validateType(structDef);
 
-        if(AtlasAbstractDefStoreV2.invalidKeywords.getAllTypeNames().contains(structDef.getName())){
+        if(invalidKeywordsForTypeCreation.getAllTypeNames().contains(structDef.getName())){
             throw new AtlasBaseException(AtlasErrorCode.FORBIDDEN_TYPENAME, structDef.getName());
         }
 

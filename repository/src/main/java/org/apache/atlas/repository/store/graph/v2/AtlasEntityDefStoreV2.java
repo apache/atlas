@@ -57,7 +57,7 @@ public class AtlasEntityDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEntityDe
 
         validateType(entityDef);
 
-        if(AtlasAbstractDefStoreV2.invalidKeywords.getAllTypeNames().contains(entityDef.getName())){
+        if(invalidKeywordsForTypeCreation.getAllTypeNames().contains(entityDef.getName())){
             throw new AtlasBaseException(AtlasErrorCode.FORBIDDEN_TYPENAME, entityDef.getName());
         }
 

@@ -51,7 +51,7 @@ import java.util.regex.Pattern;
 
     protected final AtlasTypeDefGraphStoreV2 typeDefStore;
     protected final AtlasTypeRegistry        typeRegistry;
-    public static AtlasTypeRegistry invalidKeywords = new AtlasTypeRegistry();
+    public static AtlasTypeRegistry invalidKeywordsForTypeCreation = new AtlasTypeRegistry();
 
     private static final String  NAME_REGEX            = "[a-zA-Z][a-zA-Z0-9_ ]*";
     private static final String  INTERNAL_NAME_REGEX   = "__" + NAME_REGEX;
