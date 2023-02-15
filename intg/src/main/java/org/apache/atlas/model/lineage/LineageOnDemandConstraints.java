@@ -22,7 +22,6 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.apache.atlas.AtlasConfiguration;
-import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
 
 import java.io.Serializable;
 
@@ -38,7 +37,7 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 public class LineageOnDemandConstraints extends LineageOnDemandBaseParams implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    private LineageDirection direction;
+    private AtlasLineageOnDemandInfo.LineageDirection direction;
     private int              depth;
     private int              from;
 
@@ -46,35 +45,35 @@ public class LineageOnDemandConstraints extends LineageOnDemandBaseParams implem
     private static final int LINEAGE_ON_DEMAND_DEFAULT_DEPTH      = 3;
 
     public LineageOnDemandConstraints() {
-        this(LineageDirection.BOTH, -1, -1, LINEAGE_ON_DEMAND_DEFAULT_DEPTH);
+        this(AtlasLineageOnDemandInfo.LineageDirection.BOTH, -1, -1, LINEAGE_ON_DEMAND_DEFAULT_DEPTH);
     }
 
     public LineageOnDemandConstraints(LineageOnDemandBaseParams baseParams) {
-        this(LineageDirection.BOTH, baseParams.getInputRelationsLimit(), baseParams.getOutputRelationsLimit(), LINEAGE_ON_DEMAND_DEFAULT_DEPTH);
+        this(AtlasLineageOnDemandInfo.LineageDirection.BOTH, baseParams.getInputRelationsLimit(), baseParams.getOutputRelationsLimit(), LINEAGE_ON_DEMAND_DEFAULT_DEPTH);
     }
 
-    public LineageOnDemandConstraints(LineageDirection direction, LineageOnDemandBaseParams baseParams, int depth) {
+    public LineageOnDemandConstraints(AtlasLineageOnDemandInfo.LineageDirection direction, LineageOnDemandBaseParams baseParams, int depth) {
         this(direction, baseParams.getInputRelationsLimit(), baseParams.getOutputRelationsLimit(), depth);
     }
 
-    public LineageOnDemandConstraints(LineageDirection direction, int inputRelationsLimit, int outputRelationsLimit, int depth) {
+    public LineageOnDemandConstraints(AtlasLineageOnDemandInfo.LineageDirection direction, int inputRelationsLimit, int outputRelationsLimit, int depth) {
         super(inputRelationsLimit, outputRelationsLimit);
         this.direction            = direction;
         this.depth                = depth;
     }
 
-    public LineageOnDemandConstraints(LineageDirection direction, int inputRelationsLimit, int outputRelationsLimit, int depth, int from) {
+    public LineageOnDemandConstraints(AtlasLineageOnDemandInfo.LineageDirection direction, int inputRelationsLimit, int outputRelationsLimit, int depth, int from) {
         super(inputRelationsLimit, outputRelationsLimit);
         this.direction            = direction;
         this.depth                = depth;
         this.from                 = from;
     }
 
-    public LineageDirection getDirection() {
+    public AtlasLineageOnDemandInfo.LineageDirection getDirection() {
         return direction;
     }
 
-    public void setDirection(LineageDirection direction) {
+    public void setDirection(AtlasLineageOnDemandInfo.LineageDirection direction) {
         this.direction = direction;
     }
 
