@@ -25,6 +25,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -71,6 +72,10 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
     public static final String KEY_BLOCKED_PROPAGATED_CLASSIFICATIONS = "blockedPropagatedClassifications";
     public static final String KEY_PROPAGATED_CLASSIFICATIONS         = "propagatedClassifications";
 
+    // RELATIONSHIP_DEF and RELATIONSHIP_END_TO_ES_DOC_ID_MAP used for Kafka consumers to handle ES relationship sync
+    public static final String RELATIONSHIP_DEF = "relationshipDef";
+    public static final String RELATIONSHIP_END_TO_ES_DOC_ID_MAP = "relationshipEndToESDocIdMap";
+
     private String        guid           = null;
     private String        homeId         = null;
     private Integer       provenanceType = null;
@@ -85,10 +90,13 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
     private Date          updateTime     = null;
     private Long          version        = 0L;
 
-    public enum Status { ACTIVE, DELETED }
+    public enum Status { ACTIVE, DELETED, PURGED}
 
     private Set<AtlasClassification> propagatedClassifications;
     private Set<AtlasClassification> blockedPropagatedClassifications;
+
+    private Map<String, Object> relationshipDef;
+    private Map<String, String> relationshipEndToESDocIdMap;
 
     @JsonIgnore
     private static AtomicLong s_nextId = new AtomicLong(System.nanoTime());
@@ -247,6 +255,22 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
         }
     }
 
+    public Map<String, Object> getRelationshipDef() {
+        return relationshipDef;
+    }
+
+    public void setRelationshipDef(Map<String, Object> relationshipDef) {
+        this.relationshipDef = relationshipDef;
+    }
+
+    public Map<String, String> getRelationshipEndToESDocIdMap() {
+        return relationshipEndToESDocIdMap;
+    }
+
+    public void setRelationshipEndToESDocIdMap(Map<String, String> relationshipEndToESDocIdMap) {
+        this.relationshipEndToESDocIdMap = relationshipEndToESDocIdMap;
+    }
+
     public String getGuid() {
         return guid;
     }
@@ -403,6 +427,12 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
         sb.append("]");
         sb.append(", blockedPropagatedClassifications=[");
         dumpObjects(blockedPropagatedClassifications, sb);
+        sb.append("]");
+        sb.append(", relationshipDef=[");
+        dumpObjects(relationshipDef, sb);
+        sb.append("]");
+        sb.append(", relationshipEndToESDocIdMap=[");
+        dumpObjects(relationshipEndToESDocIdMap, sb);
         sb.append("]");
         sb.append('}');
 

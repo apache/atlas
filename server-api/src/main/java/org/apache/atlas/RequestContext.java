@@ -18,11 +18,8 @@
 
 package org.apache.atlas;
 
-import org.apache.atlas.model.instance.AtlasClassification;
-import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.*;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
-import org.apache.atlas.model.instance.AtlasEntityHeader;
-import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
@@ -69,6 +66,8 @@ public class RequestContext {
     private final Map<String, List<Object>> removedElementsMap = new HashMap<>();
     private final Map<String, List<Object>> newElementsCreatedMap = new HashMap<>();
 
+    private final Map<String, Set<AtlasRelationship>> relationshipMutationMap = new HashMap<>();
+
     private String user;
     private Set<String> userGroups;
     private String clientIPAddress;
@@ -86,6 +85,7 @@ public class RequestContext {
     private String      currentTypePatchAction = "";
     private AtlasTask   currentTask;
     private String traceId;
+    private final Map<AtlasObjectId, Object> relationshipEndToVertexIdMap = new HashMap<>();
 
     private RequestContext() {
     }
@@ -139,6 +139,8 @@ public class RequestContext {
         this.removedElementsMap.clear();
         this.deletedEdgesIds.clear();
         this.requestContextHeaders.clear();
+        this.relationshipEndToVertexIdMap.clear();
+        this.relationshipMutationMap.clear();
         this.currentTask = null;
         setTraceId(null);
 
@@ -609,5 +611,27 @@ public class RequestContext {
 
     public void setForwardedAddresses(List<String> forwardedAddresses) {
         this.forwardedAddresses = forwardedAddresses;
+    }
+
+    public void addRelationshipEndToVertexIdMapping(AtlasObjectId atlasObjectId, Object vertexId) {
+        this.relationshipEndToVertexIdMap.put(atlasObjectId, vertexId);
+    }
+
+    public Map<AtlasObjectId, Object> getRelationshipEndToVertexIdMap() {
+        return this.relationshipEndToVertexIdMap;
+    }
+
+    public void saveRelationshipsMutationContext(String event, AtlasRelationship relationship) {
+        Set<AtlasRelationship> deletedRelationships = this.relationshipMutationMap.getOrDefault(event, new HashSet<>());
+        deletedRelationships.add(relationship);
+        this.relationshipMutationMap.put(event, deletedRelationships);
+    }
+
+    public void clearMutationContext(String event) {
+        this.relationshipMutationMap.remove(event);
+    }
+
+    public Map<String, Set<AtlasRelationship>> getRelationshipMutationMap() {
+        return relationshipMutationMap;
     }
 }

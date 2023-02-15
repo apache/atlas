@@ -39,6 +39,7 @@ import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
+import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.repository.store.graph.v1.RestoreHandlerV1;
 import org.apache.atlas.runner.LocalSolrRunner;
@@ -90,6 +91,9 @@ public class AtlasEntityTestBase extends AtlasTestBase {
     @Inject
     protected AtlasGraph graph;
 
+    @Inject
+    protected AtlasRelationshipStore atlasRelationshipStore;
+
     AtlasEntityChangeNotifier mockChangeNotifier = mock(AtlasEntityChangeNotifier.class);
 
     @BeforeClass
@@ -111,7 +115,7 @@ public class AtlasEntityTestBase extends AtlasTestBase {
 
     @BeforeTest
     public void init() throws Exception {
-        entityStore = new AtlasEntityStoreV2(graph, deleteDelegate, restoreHandlerV1, typeRegistry, mockChangeNotifier, graphMapper, null);
+        entityStore = new AtlasEntityStoreV2(graph, deleteDelegate, restoreHandlerV1, typeRegistry, mockChangeNotifier, graphMapper, null, atlasRelationshipStore);
 
         RequestContext.clear();
         RequestContext.get().setUser(TestUtilsV2.TEST_USER, null);

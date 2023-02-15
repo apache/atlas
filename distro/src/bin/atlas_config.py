@@ -500,7 +500,7 @@ def get_topics_to_create(confdir):
     if topic_list is not None:
         topics = topic_list.split(",")
     else:
-        topics = [getConfigWithDefault("atlas.notification.hook.topic.name", "ATLAS_HOOK"), getConfigWithDefault("atlas.notification.entities.topic.name", "ATLAS_ENTITIES")]
+        topics = [getConfigWithDefault("atlas.notification.hook.topic.name", "ATLAS_HOOK"), getConfigWithDefault("atlas.notification.entities.topic.name", "ATLAS_ENTITIES"), getConfigWithDefault("atlas.notification.relationships.topic.name", "ATLAS_RELATIONSHIPS")]
     return topics
 
 def get_atlas_url_port(confdir):
