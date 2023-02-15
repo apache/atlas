@@ -41,7 +41,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.ArrayList;
 import java.util.regex.Pattern;
 
 /**
@@ -59,22 +58,6 @@ import java.util.regex.Pattern;
     private static final Pattern INTERNAL_NAME_PATTERN = Pattern.compile(INTERNAL_NAME_REGEX);
 
     public static final String ALLOW_RESERVED_KEYWORDS = "atlas.types.allowReservedKeywords";
-    public static final List<String> KEYWORDS_INVALID_FOR_TYPE_CREATION = new ArrayList() {
-        {
-            add("boolean");
-            add("byte");
-            add("short");
-            add("int");
-            add("long");
-            add("float");
-            add("double");
-            add("biginteger");
-            add("bigdecimal");
-            add("string");
-            add("date");
-            add("objectid");
-        }
-    };
 
     public AtlasAbstractDefStoreV2(AtlasTypeDefGraphStoreV2 typeDefStore, AtlasTypeRegistry typeRegistry) {
         this.typeDefStore = typeDefStore;

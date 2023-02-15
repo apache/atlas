@@ -69,8 +69,9 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
 
         validateType(structDef);
 
-        if(AtlasAbstractDefStoreV2.KEYWORDS_INVALID_FOR_TYPE_CREATION.contains(structDef.getName())){
-            throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_TYPENAME, structDef.getName());
+        AtlasTypeRegistry invalidKeywordsForTypeCreation = new AtlasTypeRegistry();
+        if(invalidKeywordsForTypeCreation.getAllTypeNames().contains(structDef.getName())){
+            throw new AtlasBaseException(AtlasErrorCode.FORBIDDEN_TYPENAME, structDef.getName());
         }
 
         AtlasType type = typeRegistry.getType(structDef.getName());

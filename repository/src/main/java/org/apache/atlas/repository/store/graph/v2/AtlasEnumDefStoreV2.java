@@ -54,8 +54,9 @@ class AtlasEnumDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEnumDef> {
 
         validateType(enumDef);
 
-        if(AtlasAbstractDefStoreV2.KEYWORDS_INVALID_FOR_TYPE_CREATION.contains(enumDef.getName())){
-            throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_TYPENAME, enumDef.getName());
+        AtlasTypeRegistry invalidKeywordsForTypeCreation = new AtlasTypeRegistry();
+        if(invalidKeywordsForTypeCreation.getAllTypeNames().contains(enumDef.getName())){
+            throw new AtlasBaseException(AtlasErrorCode.FORBIDDEN_TYPENAME, enumDef.getName());
         }
 
         AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_CREATE, enumDef), "create enum-def ", enumDef.getName());
