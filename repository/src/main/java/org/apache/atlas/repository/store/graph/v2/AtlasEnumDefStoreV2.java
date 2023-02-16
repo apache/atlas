@@ -19,6 +19,7 @@ package org.apache.atlas.repository.store.graph.v2;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef.AtlasEnumElementDef;
 import org.apache.atlas.repository.Constants;
@@ -26,6 +27,7 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.typesystem.types.DataTypes.TypeCategory;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +37,8 @@ import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+
+import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_BUILTIN_TYPES;
 
 /**
  * EnumDef store in v2 format.
@@ -54,7 +58,7 @@ class AtlasEnumDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEnumDef> {
 
         validateType(enumDef);
 
-        if(invalidKeywordsForTypeCreation.getAllTypeNames().contains(enumDef.getName())){
+        if(ArrayUtils.contains(ATLAS_BUILTIN_TYPES, enumDef.getName())) {
             throw new AtlasBaseException(AtlasErrorCode.FORBIDDEN_TYPENAME, enumDef.getName());
         }
 
