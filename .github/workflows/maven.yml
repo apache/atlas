@@ -87,11 +87,26 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
+          no-cache: true
+          sbom: true
+          provenance: true
           push: true
           tags: |
             ghcr.io/atlanhq/${{ github.event.repository.name }}-${{ steps.get_branch.outputs.branch }}:latest
             ghcr.io/atlanhq/${{ github.event.repository.name }}-${{ steps.get_branch.outputs.branch }}:${{ steps.get_version.outputs.version }}
 
+      - name: Scan Image
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'ubuntu:18.04'
+          vuln-type: 'os,library'
+          format: 'sarif'
+          output: 'trivy-image-results.sarif'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2.1.33
+        with:
+          sarif_file: 'trivy-image-results.sarif'
 
       - name: Check out into atlan repo
         uses: actions/checkout@v2
