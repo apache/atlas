@@ -19,6 +19,7 @@ package org.apache.atlas.type;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.typedef.*;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.commons.collections.CollectionUtils;
@@ -756,6 +757,11 @@ public class AtlasTypeRegistry {
 
         public List<AtlasBaseTypeDef> getDeleteedTypes() { return deletedTypes; }
 
+        void validateTypeCreation(AtlasBaseTypeDef typeDef) throws AtlasBaseException{
+            if(this.isRegisteredType(typeDef.getName()) && this.getType(typeDef.getName()).getTypeCategory().equals(TypeCategory.PRIMITIVE)){
+                throw new AtlasBaseException(AtlasErrorCode.FORBIDDEN_TYPENAME, typeDef.getName());
+            }
+        }
 
         private void addTypeWithNoRefResolve(AtlasBaseTypeDef typeDef) throws AtlasBaseException{
             if (LOG.isDebugEnabled()) {
@@ -763,6 +769,9 @@ public class AtlasTypeRegistry {
             }
 
             if (typeDef != null) {
+                if(typeDef.getClass().equals(AtlasEnumDef.class) || typeDef.getClass().equals(AtlasStructDef.class) || typeDef.getClass().equals(AtlasEntityDef.class))
+                    validateTypeCreation(typeDef);
+
                 if (typeDef.getClass().equals(AtlasEnumDef.class)) {
                     AtlasEnumDef enumDef = (AtlasEnumDef) typeDef;
 

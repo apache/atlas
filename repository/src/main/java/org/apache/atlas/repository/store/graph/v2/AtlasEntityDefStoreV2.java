@@ -30,7 +30,6 @@ import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.typesystem.types.DataTypes.TypeCategory;
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,8 +37,6 @@ import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-
-import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_BUILTIN_TYPES;
 
 /**
  * EntityDef store in v1 format.
@@ -59,9 +56,6 @@ public class AtlasEntityDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEntityDe
         }
 
         validateType(entityDef);
-        if(ArrayUtils.contains(ATLAS_BUILTIN_TYPES, entityDef.getName())) {
-            throw new AtlasBaseException(AtlasErrorCode.FORBIDDEN_TYPENAME, entityDef.getName());
-        }
 
         AtlasType type = typeRegistry.getType(entityDef.getName());
 
