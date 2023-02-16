@@ -18,12 +18,9 @@
 package org.apache.atlas.repository.store.graph.v2.preprocessor.sql;
 
 
-import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.model.instance.*;
-import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
-import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
@@ -57,12 +54,11 @@ public class QueryFolderPreProcessor implements PreProcessor {
 
     private final AtlasTypeRegistry typeRegistry;
     private final EntityGraphRetriever entityRetriever;
-    private final AtlasInstanceConverter instanceConverter;
 
-    public QueryFolderPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, AtlasInstanceConverter instanceConverter) {
+    public QueryFolderPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever) {
         this.entityRetriever = entityRetriever;
         this.typeRegistry = typeRegistry;
-        this.instanceConverter = instanceConverter;
+
     }
 
     @Override

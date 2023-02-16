@@ -4,9 +4,6 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.util.NanoIdUtils;
 import org.apache.commons.lang.StringUtils;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import static org.apache.atlas.repository.Constants.ENTITY_TYPE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 
@@ -32,12 +29,6 @@ public class PreProcessorUtils {
 
     public static final String CHILDREN_QUERIES = "__Namespace.childrenQueries";
     public static final String CHILDREN_FOLDERS = "__Namespace.childrenFolders";
-
-    public static final List<String> QUERY_COLLECTION_RELATED_STRING_ATTRIBUTES = new ArrayList<String>(){{
-        add(COLLECTION_QUALIFIED_NAME);
-        add(PARENT_QUALIFIED_NAME);
-    }};
-
 
     public static String getUUID(){
         return NanoIdUtils.randomNanoId();

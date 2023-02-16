@@ -573,7 +573,7 @@ public class EntityGraphMapper {
                 break;
 
             case QUERY_FOLDER_ENTITY_TYPE:
-                preProcessor = new QueryFolderPreProcessor(typeRegistry, entityRetriever, instanceConverter);
+                preProcessor = new QueryFolderPreProcessor(typeRegistry, entityRetriever);
                 break;
 
             case QUERY_COLLECTION_ENTITY_TYPE:
