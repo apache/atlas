@@ -607,7 +607,8 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
         StringBuilder sb = new StringBuilder();
 
         if (action == ENTITY_DELETE || action == ENTITY_IMPORT_DELETE || action == ENTITY_PURGE) {
-            Map<String, Object> attrValues = new HashMap<>(entity.getAttributes());
+
+            Map<String, Object> attrValues = new HashMap<>();
             entity.setAttributes(null);
             for (AtlasAttribute attribute : entityType.getUniqAttributes().values()) {
 

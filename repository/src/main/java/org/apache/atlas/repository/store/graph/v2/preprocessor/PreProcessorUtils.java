@@ -1,11 +1,13 @@
 package org.apache.atlas.repository.store.graph.v2.preprocessor;
 
+import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.util.NanoIdUtils;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.apache.atlas.repository.Constants.ENTITY_TYPE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 
 public class PreProcessorUtils {
@@ -47,5 +49,9 @@ public class PreProcessorUtils {
 
     public static boolean isNameInvalid(String name) {
         return StringUtils.containsAny(name, invalidNameChars);
+    }
+
+    public static String getCollectionPropertyName(AtlasVertex parentVertex) {
+        return TYPE_COLLECTION.equals(parentVertex.getProperty(ENTITY_TYPE_PROPERTY_KEY, String.class)) ? QUALIFIED_NAME : COLLECTION_QUALIFIED_NAME;
     }
 }
