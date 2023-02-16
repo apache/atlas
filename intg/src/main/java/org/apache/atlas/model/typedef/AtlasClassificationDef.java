@@ -52,7 +52,7 @@ public class AtlasClassificationDef extends AtlasStructDef implements AtlasNamed
     private Set<String> entityTypes;
 
     private String displayName;
-
+    private boolean skipDisplayNameUniquenessCheck;
     // subTypes field below is derived from 'superTypes' specified in all AtlasClassificationDef
     // this value is ignored during create & update operations
     private Set<String> subTypes;
@@ -99,9 +99,15 @@ public class AtlasClassificationDef extends AtlasStructDef implements AtlasNamed
     public AtlasClassificationDef(String name, String displayName, String description, String typeVersion,
                                   List<AtlasAttributeDef> attributeDefs, Set<String> superTypes,
                                   Set<String> entityTypes, Map<String, String> options) {
+        this(name, displayName, description, typeVersion, attributeDefs, superTypes, entityTypes, options, false);
+    }
+
+    public AtlasClassificationDef(String name, String displayName, String description, String typeVersion,
+                                  List<AtlasAttributeDef> attributeDefs, Set<String> superTypes,
+                                  Set<String> entityTypes, Map<String, String> options, boolean skipDisplayNameUniquenessCheck) {
         super(TypeCategory.CLASSIFICATION, name, description, typeVersion, attributeDefs, options);
         this.setDisplayName(displayName);
-
+        this.setSkipDisplayNameUniquenessCheck(skipDisplayNameUniquenessCheck);
         setSuperTypes(superTypes);
         setEntityTypes(entityTypes);
     }
@@ -113,6 +119,7 @@ public class AtlasClassificationDef extends AtlasStructDef implements AtlasNamed
             setDisplayName(other.getDisplayName());
             setEntityTypes(other.getEntityTypes());
             setSubTypes(other.getSubTypes());
+            setSkipDisplayNameUniquenessCheck(other.getSkipDisplayNameUniquenessCheck());
         }
     }
 
@@ -260,18 +267,20 @@ public class AtlasClassificationDef extends AtlasStructDef implements AtlasNamed
 
         return Objects.equals(superTypes, that.superTypes) &&
                 Objects.equals(displayName, that.displayName) &&
+                Objects.equals(skipDisplayNameUniquenessCheck, that.skipDisplayNameUniquenessCheck) &&
                 Objects.equals(entityTypes,that.entityTypes);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), superTypes, this.displayName);
+        return Objects.hash(super.hashCode(), superTypes, this.displayName, this.skipDisplayNameUniquenessCheck);
     }
 
     @Override
     protected void appendExtraBaseTypeDefToString(StringBuilder sb) {
         super.appendExtraBaseTypeDefToString(sb);
         sb.append(", displayName='").append(this.displayName).append('\'');
+        sb.append(", skipDisplayNameUniquenessCheck='").append(this.skipDisplayNameUniquenessCheck).append('\'');
     }
 
     @Override
@@ -287,6 +296,14 @@ public class AtlasClassificationDef extends AtlasStructDef implements AtlasNamed
     @Override
     public void setDisplayName(String displayName) {
         this.displayName = displayName;
+    }
+
+    public boolean getSkipDisplayNameUniquenessCheck() {
+        return skipDisplayNameUniquenessCheck;
+    }
+
+    public void setSkipDisplayNameUniquenessCheck(boolean skipDisplayNameUniquenessCheck) {
+        this.skipDisplayNameUniquenessCheck = skipDisplayNameUniquenessCheck;
     }
 
     @Override

@@ -1,0 +1,38 @@
+name: build
+on:
+  push:
+    branches:
+      - alpha
+      - beta
+      - development
+      - master
+      - lineageondemand
+  
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Run Trivy vulnerability scanner in IaC mode
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'config'
+          scan-ref: './Dockerfile'
+          hide-progress: false
+          template: '@/contrib/gitlab.tpl'
+          format: 'sarif'
+          #output: ''
+          output: 'trivy-results-docker.sarif'
+          exit-code: '1'
+          #ignore-unfixed: true
+          severity: 'CRITICAL,HIGH,MEDIUM'
+
+      - name: Upload Trivy Docker Scan Results To GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: 'trivy-results-docker.sarif'
+  
