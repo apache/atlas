@@ -21,6 +21,7 @@ package org.apache.atlas.repository.store.graph.v2.preprocessor.sql;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.model.instance.*;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
+import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
@@ -141,7 +142,7 @@ public class QueryFolderPreProcessor implements PreProcessor {
                  * When we will move folder1 to new collection, recursively it will find folder2
                  * Then it will move all the children of folder2 also to new collection
                  */
-                processParentCollectionUpdation(nestedFolderVertex, currentCollectionQualifiedName, newCollectionQualifiedName);
+                processParentCollectionUpdation(nestedFolderVertex, currentCollectionQualifiedName, newCollectionQualifiedName) ;
             }
         }
 
@@ -183,6 +184,7 @@ public class QueryFolderPreProcessor implements PreProcessor {
         Map<String, Object> updatedAttributes = new HashMap<>();
         String qualifiedName            =   childVertex.getProperty(QUALIFIED_NAME, String.class);
         String updatedQualifiedName     =   qualifiedName.replaceAll(currentCollectionQualifiedName, newCollectionQualifiedName);
+
         if (!qualifiedName.equals(updatedQualifiedName)) {
             AtlasGraphUtilsV2.setEncodedProperty(childVertex, QUALIFIED_NAME, updatedQualifiedName);
             updatedAttributes.put(QUALIFIED_NAME, updatedQualifiedName);
@@ -194,10 +196,14 @@ public class QueryFolderPreProcessor implements PreProcessor {
         }
 
         AtlasGraphUtilsV2.setEncodedProperty(childVertex, PARENT_QUALIFIED_NAME, folderQualifiedName);
+
+        //update system properties
+        GraphHelper.setModifiedByAsString(childVertex, RequestContext.get().getUser());
+        GraphHelper.setModifiedTime(childVertex, System.currentTimeMillis());
+
         updatedAttributes.put(PARENT_QUALIFIED_NAME, folderQualifiedName);
 
         recordUpdatedChildEntities(childVertex, updatedAttributes);
-
     }
 
     private void recordUpdatedChildEntities(AtlasVertex entityVertex, Map<String, Object> updatedAttributes) throws AtlasBaseException {
