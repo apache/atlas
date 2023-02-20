@@ -758,7 +758,7 @@ public class AtlasTypeRegistry {
         public List<AtlasBaseTypeDef> getDeleteedTypes() { return deletedTypes; }
 
         void validateTypeCreation(AtlasBaseTypeDef typeDef) throws AtlasBaseException{
-            if(this.isRegisteredType(typeDef.getName()) && this.getType(typeDef.getName()).getTypeCategory().equals(TypeCategory.PRIMITIVE)){
+            if(this.isRegisteredType(typeDef.getName()) && (this.getType(typeDef.getName()).getTypeCategory().equals(TypeCategory.PRIMITIVE)||(this.getType(typeDef.getName()).getTypeCategory().equals(TypeCategory.OBJECT_ID_TYPE)))){
                 throw new AtlasBaseException(AtlasErrorCode.FORBIDDEN_TYPENAME, typeDef.getName());
             }
         }
