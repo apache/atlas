@@ -97,32 +97,48 @@ public class QueryFolderPreProcessor implements PreProcessor {
         String relationshipType         = AtlasEntityUtil.getRelationshipType(newParentAttr);
         AtlasAttribute parentAttribute  = entityType.getRelationshipAttribute(PARENT_ATTRIBUTE_NAME, relationshipType);
         AtlasObjectId currentParentAttr = (AtlasObjectId) entityRetriever.getEntityAttribute(vertex, parentAttribute);
+        //Qualified name of the folder will not be updated if parent attribute is not changed
+        String folderQualifiedName      = vertex.getProperty(QUALIFIED_NAME, String.class);
+        entity.setAttribute(QUALIFIED_NAME, folderQualifiedName);
 
         //Check if parent attribute is changed
         if (parentAttribute.getAttributeType().areEqualValues(currentParentAttr, newParentAttr, context.getGuidAssignments())) {
             return;
         }
 
-        AtlasVertex currentParentVertex = entityRetriever.getEntityVertex(currentParentAttr);
-        AtlasVertex newParentVertex = entityRetriever.getEntityVertex(newParentAttr);
+        AtlasVertex currentParentVertex         = entityRetriever.getEntityVertex(currentParentAttr);
+        AtlasVertex newParentVertex             = entityRetriever.getEntityVertex(newParentAttr);
 
         if (currentParentVertex == null || newParentVertex == null) {
             LOG.warn("Current or new parent vertex is null");
             return;
         }
 
-        String currentCollectionQualifiedName = currentParentVertex.getProperty(getCollectionPropertyName(currentParentVertex), String.class);
-        String newCollectionQualifiedName     = newParentVertex.getProperty(getCollectionPropertyName(newParentVertex), String.class);
+        String currentCollectionQualifiedName   = currentParentVertex.getProperty(getCollectionPropertyName(currentParentVertex), String.class);
+        String newCollectionQualifiedName       = newParentVertex.getProperty(getCollectionPropertyName(newParentVertex), String.class);
+        String updatedParentQualifiedName       = newParentVertex.getProperty(QUALIFIED_NAME, String.class);
 
         if (StringUtils.isEmpty(newCollectionQualifiedName) || StringUtils.isEmpty(currentCollectionQualifiedName)) {
             LOG.warn("Collection qualified name in parent or current entity is empty or null");
             return;
         }
 
+        entity.setAttribute(PARENT_QUALIFIED_NAME, updatedParentQualifiedName);
+
+        if (!currentCollectionQualifiedName.equals(newCollectionQualifiedName)) {
+
+            String updatedFolderQualifiedName = folderQualifiedName.replaceAll(currentCollectionQualifiedName, newCollectionQualifiedName);
+            //Update this values into AtlasEntity
+            entity.setAttribute(QUALIFIED_NAME, updatedFolderQualifiedName);
+            entity.setAttribute(COLLECTION_QUALIFIED_NAME, newCollectionQualifiedName);
+
+        }
+
         processParentCollectionUpdation(vertex, currentCollectionQualifiedName, newCollectionQualifiedName);
 
         LOG.info("Moved folder {} from collection {} to collection {}", entity.getAttribute(QUALIFIED_NAME), currentCollectionQualifiedName, newCollectionQualifiedName);
     }
+
 
     private void processParentCollectionUpdation(AtlasVertex folderVertex, String currentCollectionQualifiedName, String newCollectionQualifiedName) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder folderProcessMetric = RequestContext.get().startMetricRecord("processParentCollectionUpdation");
