@@ -133,8 +133,8 @@ public class QueryFolderPreProcessor implements PreProcessor {
             entity.setAttribute(COLLECTION_QUALIFIED_NAME, newCollectionQualifiedName);
 
         }
-        
-        if(!currentCollectionQualifiedName.equals(newCollectionQualifiedName)) {
+
+        if(currentCollectionQualifiedName.equals(newCollectionQualifiedName)) {
             return;
         }
 
