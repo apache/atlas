@@ -6,7 +6,7 @@
   ~ regarding copyright ownership.  The ASF licenses this file
   ~ to you under the Apache License, Version 2.0 (the
   ~ "License"); you may not use this file except in compliance
-  ~ with the License.  You may obtain a copy of the License at
+  ~ with the License.  You may obtain a copy of the License at 
   ~
   ~     http://www.apache.org/licenses/LICENSE-2.0
   ~
@@ -861,6 +861,13 @@
             <id>typesafe</id>
             <name>Typesafe Repository</name>
             <url>https://repo.typesafe.com/typesafe/releases/</url>
+        </repository>
+        <repository>
+            <id>restlet</id>
+            <url>https://maven.restlet.talend.com/</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
         </repository>
     </repositories>
 
