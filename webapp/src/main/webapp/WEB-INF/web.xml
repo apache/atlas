@@ -60,6 +60,8 @@
     <servlet-mapping>
         <servlet-name>jersey-servlet</servlet-name>
         <url-pattern>/api/atlas/*</url-pattern>
+        <url-pattern>/api/atlas/v2/*</url-pattern>
+        <url-pattern>/api/meta/*</url-pattern>
     </servlet-mapping>
 
     <filter>

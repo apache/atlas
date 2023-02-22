@@ -54,7 +54,7 @@ import java.util.List;
 /**
  * Jersey Resource for metadata operations.
  */
-@Path("discovery")
+@Path("v1/discovery")
 @Singleton
 @Service
 @Deprecated

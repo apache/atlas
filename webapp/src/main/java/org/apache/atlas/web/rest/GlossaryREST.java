@@ -54,7 +54,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-@Path("v2/glossary")
+@Path("glossary")
 @Service
 @Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
 @Produces({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})

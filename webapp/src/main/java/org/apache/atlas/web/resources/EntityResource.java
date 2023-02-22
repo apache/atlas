@@ -83,7 +83,7 @@ import java.util.Map;
  * of the Type they correspond with.
  */
 @Singleton
-@Path("entities")
+@Path("v1/entities")
 @Service
 @Deprecated
 public class EntityResource {

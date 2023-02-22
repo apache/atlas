@@ -39,7 +39,7 @@ import java.util.List;
 /**
  * REST interface for entity relationships.
  */
-@Path("v2/relationship")
+@Path("relationship")
 @Singleton
 @Service
 @Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})

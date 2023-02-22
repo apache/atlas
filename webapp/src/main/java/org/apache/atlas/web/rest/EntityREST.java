@@ -79,7 +79,7 @@ import static org.apache.atlas.authorize.AtlasPrivilege.*;
 /**
  * REST for a single entity
  */
-@Path("v2/entity")
+@Path("entity")
 @Singleton
 @Service
 @Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})

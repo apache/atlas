@@ -56,7 +56,7 @@ import static org.apache.atlas.v1.model.lineage.SchemaResponse.SchemaDetails;
 /**
  * Jersey Resource for Hive Table Lineage.
  */
-@Path("lineage/hive")
+@Path("v1/lineage/hive")
 @Singleton
 @Service
 @Deprecated

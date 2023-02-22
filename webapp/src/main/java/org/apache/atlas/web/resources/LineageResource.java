@@ -42,7 +42,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 
-@Path("lineage")
+@Path("v1/lineage")
 @Singleton
 @Service
 @Deprecated

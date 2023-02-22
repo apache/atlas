@@ -64,7 +64,7 @@ import java.util.Map;
  *
  * You could represent any meta model representing any domain using these types.
  */
-@Path("types")
+@Path("v1/types")
 @Singleton
 @Service
 @Deprecated
