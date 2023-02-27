@@ -21,7 +21,6 @@ package org.apache.atlas.repository.store.graph.v2.preprocessor.sql;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.model.instance.*;
 import org.apache.atlas.repository.graph.GraphHelper;
-import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -33,7 +32,6 @@ import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
-import org.apache.atlas.utils.AtlasEntityUtil;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -44,8 +42,12 @@ import java.util.Iterator;
 import java.util.Map;
 
 import static org.apache.atlas.repository.Constants.*;
-import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
+import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.updateQueryResourceAttributes;
+import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.getUUID;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.COLLECTION_QUALIFIED_NAME;
+import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.CHILDREN_FOLDERS;
+import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.CHILDREN_QUERIES;
+import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.PARENT_QUALIFIED_NAME;
 
 public class QueryFolderPreProcessor implements PreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(QueryFolderPreProcessor.class);
@@ -92,55 +94,14 @@ public class QueryFolderPreProcessor implements PreProcessor {
     }
 
     private void processUpdate(AtlasEntity entity, AtlasVertex vertex, EntityMutationContext context) throws AtlasBaseException {
-        AtlasEntityType entityType      = typeRegistry.getEntityTypeByName(entity.getTypeName());
-        AtlasObjectId newParentAttr     = (AtlasObjectId) entity.getRelationshipAttribute(PARENT_ATTRIBUTE_NAME);
-        String relationshipType         = AtlasEntityUtil.getRelationshipType(newParentAttr);
-        AtlasAttribute parentAttribute  = entityType.getRelationshipAttribute(PARENT_ATTRIBUTE_NAME, relationshipType);
-        AtlasObjectId currentParentAttr = (AtlasObjectId) entityRetriever.getEntityAttribute(vertex, parentAttribute);
-        //Qualified name of the folder will not be updated if parent attribute is not changed
-        String folderQualifiedName      = vertex.getProperty(QUALIFIED_NAME, String.class);
-        entity.setAttribute(QUALIFIED_NAME, folderQualifiedName);
+        String currentCollectionQualifiedName = vertex.getProperty(COLLECTION_QUALIFIED_NAME, String.class);
+        String newCollectionQualifiedName     = updateQueryResourceAttributes(typeRegistry, entityRetriever, entity, vertex, context);
 
-        //Check if parent attribute is changed
-        if (parentAttribute.getAttributeType().areEqualValues(currentParentAttr, newParentAttr, context.getGuidAssignments())) {
-            return;
+        if(StringUtils.isNotEmpty(newCollectionQualifiedName) && !currentCollectionQualifiedName.equals(newCollectionQualifiedName)) {
+            processParentCollectionUpdation(vertex, currentCollectionQualifiedName, newCollectionQualifiedName);
+            LOG.debug("Moved folder {} from collection {} to collection {}", entity.getAttribute(QUALIFIED_NAME), currentCollectionQualifiedName, newCollectionQualifiedName);
         }
 
-        AtlasVertex currentParentVertex         = entityRetriever.getEntityVertex(currentParentAttr);
-        AtlasVertex newParentVertex             = entityRetriever.getEntityVertex(newParentAttr);
-
-        if (currentParentVertex == null || newParentVertex == null) {
-            LOG.warn("Current or new parent vertex is null");
-            return;
-        }
-
-        String currentCollectionQualifiedName   = currentParentVertex.getProperty(getCollectionPropertyName(currentParentVertex), String.class);
-        String newCollectionQualifiedName       = newParentVertex.getProperty(getCollectionPropertyName(newParentVertex), String.class);
-        String updatedParentQualifiedName       = newParentVertex.getProperty(QUALIFIED_NAME, String.class);
-
-        if (StringUtils.isEmpty(newCollectionQualifiedName) || StringUtils.isEmpty(currentCollectionQualifiedName)) {
-            LOG.warn("Collection qualified name in parent or current entity is empty or null");
-            return;
-        }
-
-        entity.setAttribute(PARENT_QUALIFIED_NAME, updatedParentQualifiedName);
-
-        if (!currentCollectionQualifiedName.equals(newCollectionQualifiedName)) {
-
-            String updatedFolderQualifiedName = folderQualifiedName.replaceAll(currentCollectionQualifiedName, newCollectionQualifiedName);
-            //Update this values into AtlasEntity
-            entity.setAttribute(QUALIFIED_NAME, updatedFolderQualifiedName);
-            entity.setAttribute(COLLECTION_QUALIFIED_NAME, newCollectionQualifiedName);
-
-        }
-
-        if(currentCollectionQualifiedName.equals(newCollectionQualifiedName)) {
-            return;
-        }
-
-        processParentCollectionUpdation(vertex, currentCollectionQualifiedName, newCollectionQualifiedName);
-
-        LOG.info("Moved folder {} from collection {} to collection {}", entity.getAttribute(QUALIFIED_NAME), currentCollectionQualifiedName, newCollectionQualifiedName);
     }
 
 
@@ -213,13 +174,23 @@ public class QueryFolderPreProcessor implements PreProcessor {
      * @param childrenEdgeLabel Edge label of children
      * @return Iterator of children vertices
      */
-    private Iterator<AtlasVertex> getActiveChildren(AtlasVertex folderVertex, String childrenEdgeLabel) {
-        return folderVertex.query()
-                .direction(AtlasEdgeDirection.OUT)
-                .label(childrenEdgeLabel)
-                .has(STATE_PROPERTY_KEY, ACTIVE_STATE_VALUE)
-                .vertices()
-                .iterator();
+    private Iterator<AtlasVertex> getActiveChildren(AtlasVertex folderVertex, String childrenEdgeLabel) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getActiveChildren");
+        try {
+            return folderVertex.query()
+                    .direction(AtlasEdgeDirection.OUT)
+                    .label(childrenEdgeLabel)
+                    .has(STATE_PROPERTY_KEY, ACTIVE_STATE_VALUE)
+                    .vertices()
+                    .iterator();
+        } catch (Exception e) {
+            LOG.error("Error while getting active children of folder", e);
+            throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, e);
+        }
+        finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
+        }
+
     }
 
     /**
