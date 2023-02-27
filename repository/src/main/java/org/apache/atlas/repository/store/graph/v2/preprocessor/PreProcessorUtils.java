@@ -87,8 +87,8 @@ public class PreProcessorUtils {
         String updatedParentQualifiedName       = newParentVertex.getProperty(QUALIFIED_NAME, String.class);
 
         if (StringUtils.isEmpty(newCollectionQualifiedName) || StringUtils.isEmpty(currentCollectionQualifiedName)) {
-            LOG.warn("Collection qualified name in parent or current entity is empty or null");
-            return null;
+            LOG.error("Collection qualified name in parent or current entity is empty or null");
+            throw new AtlasBaseException("Collection qualified name in parent or current entity is empty or null");
         }
 
         entity.setAttribute(PARENT_QUALIFIED_NAME, updatedParentQualifiedName);
