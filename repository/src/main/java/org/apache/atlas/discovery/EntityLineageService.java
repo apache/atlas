@@ -331,6 +331,10 @@ public class EntityLineageService implements AtlasLineageService {
         for (AtlasEdge processEdge : processEdges) {
             boolean isInputEdge  = processEdge.getLabel().equalsIgnoreCase(PROCESS_INPUTS_EDGE);
 
+            if (!edgeMatchesEvaluation(processEdge, atlasLineageOnDemandContext)) {
+                continue;
+            }
+
             if (checkForOffset(processEdge, processVertex, atlasLineageOnDemandContext, ret)) {
                 continue;
             }
@@ -370,7 +374,7 @@ public class EntityLineageService implements AtlasLineageService {
             for (AtlasEdge incomingEdge : incomingEdges) {
                 AtlasVertex processVertex = incomingEdge.getOutVertex();
 
-                if (!vertexMatchesEvaluation(processVertex, atlasLineageOnDemandContext) || getStatus(incomingEdge) == DELETED) {
+                if (!vertexMatchesEvaluation(processVertex, atlasLineageOnDemandContext) || !edgeMatchesEvaluation(incomingEdge, atlasLineageOnDemandContext)) {
                     continue;
                 }
 
@@ -391,7 +395,7 @@ public class EntityLineageService implements AtlasLineageService {
                 for (AtlasEdge outgoingEdge : outgoingEdges) {
                     AtlasVertex entityVertex = outgoingEdge.getInVertex();
 
-                    if (!vertexMatchesEvaluation(entityVertex, atlasLineageOnDemandContext) || getStatus(outgoingEdge) == DELETED) {
+                    if (!vertexMatchesEvaluation(entityVertex, atlasLineageOnDemandContext) || !edgeMatchesEvaluation(incomingEdge, atlasLineageOnDemandContext)) {
                         continue;
                     }
 
@@ -1040,6 +1044,10 @@ public class EntityLineageService implements AtlasLineageService {
 
     private boolean vertexMatchesEvaluation(AtlasVertex currentVertex, AtlasLineageOnDemandContext atlasLineageOnDemandContext) {
         return atlasLineageOnDemandContext.evaluate(currentVertex);
+    }
+
+    private boolean edgeMatchesEvaluation(AtlasEdge currentEdge, AtlasLineageOnDemandContext atlasLineageOnDemandContext) {
+        return atlasLineageOnDemandContext.evaluate(currentEdge);
     }
 
     private boolean shouldProcessEdge(AtlasLineageContext lineageContext, AtlasEdge edge) {

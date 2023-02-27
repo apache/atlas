@@ -16,7 +16,8 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 public class LineageOnDemandRequest {
     private Map<String, LineageOnDemandConstraints> constraints;
-    private SearchParameters.FilterCriteria         traversalFilters;
+    private SearchParameters.FilterCriteria         vertexTraversalFilters;
+    private SearchParameters.FilterCriteria         edgeTraversalFilters;
     private Set<String>                             attributes;
     private Set<String>                             relationAttributes;
     private LineageOnDemandBaseParams               defaultParams;
@@ -27,13 +28,15 @@ public class LineageOnDemandRequest {
         this.defaultParams = new LineageOnDemandBaseParams();
     }
 
-    public LineageOnDemandRequest(Map<String, LineageOnDemandConstraints> constraints, SearchParameters.FilterCriteria traversalFilters,
-                                  Set<String> attributes, Set<String> relationAttributes, LineageOnDemandBaseParams defaultParams) {
-        this.constraints        = constraints;
-        this.traversalFilters   = traversalFilters;
-        this.attributes         = attributes;
-        this.relationAttributes = relationAttributes;
-        this.defaultParams      = defaultParams;
+    public LineageOnDemandRequest(Map<String, LineageOnDemandConstraints> constraints, SearchParameters.FilterCriteria vertexTraversalFilters,
+                                  SearchParameters.FilterCriteria edgeTraversalFilters, Set<String> attributes,
+                                  Set<String> relationAttributes, LineageOnDemandBaseParams defaultParams) {
+        this.constraints            = constraints;
+        this.vertexTraversalFilters = vertexTraversalFilters;
+        this.edgeTraversalFilters   = edgeTraversalFilters;
+        this.attributes             = attributes;
+        this.relationAttributes     = relationAttributes;
+        this.defaultParams          = defaultParams;
     }
 
     public Map<String, LineageOnDemandConstraints> getConstraints() {
@@ -44,12 +47,20 @@ public class LineageOnDemandRequest {
         this.constraints = constraints;
     }
 
-    public SearchParameters.FilterCriteria getTraversalFilters() {
-        return traversalFilters;
+    public SearchParameters.FilterCriteria getVertexTraversalFilters() {
+        return vertexTraversalFilters;
     }
 
-    public void setTraversalFilters(SearchParameters.FilterCriteria traversalFilters) {
-        this.traversalFilters = traversalFilters;
+    public void setVertexTraversalFilters(SearchParameters.FilterCriteria vertexTraversalFilters) {
+        this.vertexTraversalFilters = vertexTraversalFilters;
+    }
+
+    public SearchParameters.FilterCriteria getEdgeTraversalFilters() {
+        return edgeTraversalFilters;
+    }
+
+    public void setEdgeTraversalFilters(SearchParameters.FilterCriteria edgeTraversalFilters) {
+        this.edgeTraversalFilters = edgeTraversalFilters;
     }
 
     public Set<String> getAttributes() {
