@@ -27,7 +27,7 @@ public class AtlasPerfMetrics {
     private final Map<String, Metric> metrics = new LinkedHashMap<>();
 
 
-    public MetricRecorder getMetricRecorder(String name) {
+    public static MetricRecorder getMetricRecorder(String name) {
         return new MetricRecorder(name);
     }
 
@@ -84,7 +84,7 @@ public class AtlasPerfMetrics {
         return sb.toString();
     }
 
-    public class MetricRecorder {
+    public static class MetricRecorder {
         private final String name;
         private final long startTimeMs = System.currentTimeMillis();
 

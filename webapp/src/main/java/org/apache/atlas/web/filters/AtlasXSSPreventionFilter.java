@@ -1,6 +1,8 @@
 package org.apache.atlas.web.filters;
 
 import org.apache.atlas.AtlasConfiguration;
+import org.apache.atlas.RequestContext;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.web.util.CachedBodyHttpServletRequest;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringEscapeUtils;
@@ -203,6 +205,7 @@ public class AtlasXSSPreventionFilter implements Filter {
 
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
+        AtlasPerfMetrics.MetricRecorder metric = AtlasPerfMetrics.getMetricRecorder("XSSFilter");
         HttpServletResponse response = (HttpServletResponse) servletResponse;
         HttpServletRequest request = (HttpServletRequest) servletRequest;
 
@@ -233,6 +236,7 @@ public class AtlasXSSPreventionFilter implements Filter {
         }
 
         filterChain.doFilter(cachedBodyHttpServletRequest, response);
+        RequestContext.get().endMetricRecord(metric);
     }
 
 
