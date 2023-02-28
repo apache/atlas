@@ -14,6 +14,16 @@
   },
   "analysis": {
     "analyzer": {
+      "atlan_glossary_analyzer": {
+        "type": "custom",
+        "tokenizer": "atlan_glossary_tokenizer",
+        "filter": [
+          "lowercase"
+        ],
+        "char_filter": [
+          "letter_number_filter"
+        ]
+      },
       "atlan_text_analyzer": {
         "type": "custom",
         "tokenizer": "atlan_tokenizer",
@@ -66,6 +76,14 @@
       }
     },
     "tokenizer": {
+      "atlan_glossary_tokenizer": {
+        "type": "char_group",
+        "tokenize_on_chars": [
+          "whitespace",
+          "punctuation",
+          "symbol"
+        ]
+      },
       "atlan_tokenizer": {
         "type": "pattern",
         "pattern": "( |_|-|'|/|@)"
@@ -76,6 +94,11 @@
       }
     },
     "char_filter":{
+      "letter_number_filter": {
+        "type": "pattern_replace",
+        "pattern": "\\d+",
+        "replacement": " $0 "
+      },
       "number_filter":{
         "type":"pattern_replace",
         "pattern":"\\d+",
