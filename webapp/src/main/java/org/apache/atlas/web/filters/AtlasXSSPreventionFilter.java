@@ -108,9 +108,10 @@ public class AtlasXSSPreventionFilter implements Filter {
             response.getWriter().write(getErrorMessages(ERROR_INVALID_CHARACTERS));
             return;
         }
-
-        filterChain.doFilter(cachedBodyHttpServletRequest, response);
+        
         RequestContext.get().endMetricRecord(metric);
+        filterChain.doFilter(cachedBodyHttpServletRequest, response);
+
     }
 
 
