@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
 
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.COLLECTION_QUALIFIED_NAME;
+import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.updateQueryResourceAttributes;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.getUUID;
 
 public class QueryPreProcessor implements PreProcessor {
@@ -65,7 +66,7 @@ public class QueryPreProcessor implements PreProcessor {
                 processCreateQueryCollection(entity);
                 break;
             case UPDATE:
-                processUpdateQueryCollection(entity, vertex);
+                processUpdateQueryCollection(entity, vertex, context);
                 break;
         }
     }
@@ -80,10 +81,8 @@ public class QueryPreProcessor implements PreProcessor {
         entity.setAttribute(QUALIFIED_NAME, createQualifiedName(collectionQualifiedName));
     }
 
-    private void processUpdateQueryCollection(AtlasStruct entity, AtlasVertex vertex) {
-        String vertexQnName = vertex.getProperty(QUALIFIED_NAME, String.class);
-
-        entity.setAttribute(QUALIFIED_NAME, vertexQnName);
+    private void processUpdateQueryCollection(AtlasEntity entity, AtlasVertex vertex, EntityMutationContext context) throws AtlasBaseException {
+        updateQueryResourceAttributes(typeRegistry, entityRetriever, entity, vertex, context);
     }
 
     public static String createQualifiedName(String collectionQualifiedName) {
