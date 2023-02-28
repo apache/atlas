@@ -333,10 +333,10 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             KEYWORD_MULTIFIELD.put("keyword", ES_KEYWORD_FIELD);
 
             HashMap<String, Object> ES_GLOSSARY_ANALYZER_TEXT_FIELD = new HashMap<>();
-            ES_KEYWORD_FIELD.put("type", "text");
-            ES_KEYWORD_FIELD.put("analyzer", "atlan_glossary_analyzer");
+            ES_GLOSSARY_ANALYZER_TEXT_FIELD.put("type", "text");
+            ES_GLOSSARY_ANALYZER_TEXT_FIELD.put("analyzer", "atlan_glossary_analyzer");
             HashMap<String, HashMap<String, Object>> ES_GLOSSARY_ANALYZER_MULTIFIELD = new HashMap<>();
-            KEYWORD_MULTIFIELD.put("text", ES_GLOSSARY_ANALYZER_TEXT_FIELD);
+            ES_GLOSSARY_ANALYZER_MULTIFIELD.put("text", ES_GLOSSARY_ANALYZER_TEXT_FIELD);
 
             HashMap<String, Object> ES_ATLAN_TEXT_ANALYZER_CONFIG = new HashMap<>();
             ES_ATLAN_TEXT_ANALYZER_CONFIG.put("analyzer", "atlan_text_analyzer");
