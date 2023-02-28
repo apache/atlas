@@ -1,11 +1,11 @@
 package org.apache.atlas.model.lineage;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.apache.atlas.model.discovery.SearchParameters;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -16,8 +16,9 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 public class LineageOnDemandRequest {
     private Map<String, LineageOnDemandConstraints> constraints;
-    private SearchParameters.FilterCriteria         vertexTraversalFilters;
-    private SearchParameters.FilterCriteria         edgeTraversalFilters;
+    @JsonAlias({"traversalFilters", "entityTraversalFilters"}) // TODO: Will be deprecated after FE changes.
+    private SearchParameters.FilterCriteria         entityTraversalFilters;
+    private SearchParameters.FilterCriteria         relationshipTraversalFilters;
     private Set<String>                             attributes;
     private Set<String>                             relationAttributes;
     private LineageOnDemandBaseParams               defaultParams;
@@ -28,15 +29,15 @@ public class LineageOnDemandRequest {
         this.defaultParams = new LineageOnDemandBaseParams();
     }
 
-    public LineageOnDemandRequest(Map<String, LineageOnDemandConstraints> constraints, SearchParameters.FilterCriteria vertexTraversalFilters,
-                                  SearchParameters.FilterCriteria edgeTraversalFilters, Set<String> attributes,
+    public LineageOnDemandRequest(Map<String, LineageOnDemandConstraints> constraints, SearchParameters.FilterCriteria entityTraversalFilters,
+                                  SearchParameters.FilterCriteria relationshipTraversalFilters, Set<String> attributes,
                                   Set<String> relationAttributes, LineageOnDemandBaseParams defaultParams) {
-        this.constraints            = constraints;
-        this.vertexTraversalFilters = vertexTraversalFilters;
-        this.edgeTraversalFilters   = edgeTraversalFilters;
-        this.attributes             = attributes;
-        this.relationAttributes     = relationAttributes;
-        this.defaultParams          = defaultParams;
+        this.constraints                  = constraints;
+        this.entityTraversalFilters       = entityTraversalFilters;
+        this.relationshipTraversalFilters = relationshipTraversalFilters;
+        this.attributes                   = attributes;
+        this.relationAttributes           = relationAttributes;
+        this.defaultParams                = defaultParams;
     }
 
     public Map<String, LineageOnDemandConstraints> getConstraints() {
@@ -47,20 +48,20 @@ public class LineageOnDemandRequest {
         this.constraints = constraints;
     }
 
-    public SearchParameters.FilterCriteria getVertexTraversalFilters() {
-        return vertexTraversalFilters;
+    public SearchParameters.FilterCriteria getEntityTraversalFilters() {
+        return entityTraversalFilters;
     }
 
-    public void setVertexTraversalFilters(SearchParameters.FilterCriteria vertexTraversalFilters) {
-        this.vertexTraversalFilters = vertexTraversalFilters;
+    public void setEntityTraversalFilters(SearchParameters.FilterCriteria entityTraversalFilters) {
+        this.entityTraversalFilters = entityTraversalFilters;
     }
 
-    public SearchParameters.FilterCriteria getEdgeTraversalFilters() {
-        return edgeTraversalFilters;
+    public SearchParameters.FilterCriteria getRelationshipTraversalFilters() {
+        return relationshipTraversalFilters;
     }
 
-    public void setEdgeTraversalFilters(SearchParameters.FilterCriteria edgeTraversalFilters) {
-        this.edgeTraversalFilters = edgeTraversalFilters;
+    public void setRelationshipTraversalFilters(SearchParameters.FilterCriteria relationshipTraversalFilters) {
+        this.relationshipTraversalFilters = relationshipTraversalFilters;
     }
 
     public Set<String> getAttributes() {

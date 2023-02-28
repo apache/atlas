@@ -29,8 +29,8 @@ public class AtlasLineageOnDemandContext {
         this.attributes         = lineageOnDemandRequest.getAttributes();
         this.relationAttributes = lineageOnDemandRequest.getRelationAttributes();
         this.defaultParams      = lineageOnDemandRequest.getDefaultParams();
-        this.vertexPredicate    = constructInMemoryPredicate(typeRegistry, lineageOnDemandRequest.getVertexTraversalFilters());
-        this.edgePredicate      = constructInMemoryPredicate(typeRegistry, lineageOnDemandRequest.getEdgeTraversalFilters());
+        this.vertexPredicate    = constructInMemoryPredicate(typeRegistry, lineageOnDemandRequest.getEntityTraversalFilters());
+        this.edgePredicate      = constructInMemoryPredicate(typeRegistry, lineageOnDemandRequest.getRelationshipTraversalFilters());
     }
 
     public Map<String, LineageOnDemandConstraints> getConstraints() {
