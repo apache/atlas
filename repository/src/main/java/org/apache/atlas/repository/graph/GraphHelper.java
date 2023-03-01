@@ -1145,12 +1145,20 @@ public final class GraphHelper {
         return element.getProperty(MODIFIED_BY_KEY, String.class);
     }
 
+    public static void setModifiedByAsString(AtlasElement element, String modifiedBy){
+         element.setProperty(MODIFIED_BY_KEY, modifiedBy);
+    }
+
     public static long getCreatedTime(AtlasElement element){
         return element.getProperty(TIMESTAMP_PROPERTY_KEY, Long.class);
     }
 
     public static long getModifiedTime(AtlasElement element){
         return element.getProperty(MODIFICATION_TIMESTAMP_PROPERTY_KEY, Long.class);
+    }
+
+    public static void setModifiedTime(AtlasElement element, Long modifiedTime) {
+        element.setProperty(MODIFICATION_TIMESTAMP_PROPERTY_KEY, modifiedTime);
     }
 
     public static boolean isActive(AtlasEntity entity) {

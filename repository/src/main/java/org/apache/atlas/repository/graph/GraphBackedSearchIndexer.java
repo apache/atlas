@@ -332,6 +332,12 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             HashMap<String, HashMap<String, Object>> KEYWORD_MULTIFIELD = new HashMap<>();
             KEYWORD_MULTIFIELD.put("keyword", ES_KEYWORD_FIELD);
 
+            HashMap<String, Object> ES_GLOSSARY_ANALYZER_TEXT_FIELD = new HashMap<>();
+            ES_GLOSSARY_ANALYZER_TEXT_FIELD.put("type", "text");
+            ES_GLOSSARY_ANALYZER_TEXT_FIELD.put("analyzer", "atlan_glossary_analyzer");
+            HashMap<String, HashMap<String, Object>> ES_GLOSSARY_ANALYZER_MULTIFIELD = new HashMap<>();
+            ES_GLOSSARY_ANALYZER_MULTIFIELD.put("text", ES_GLOSSARY_ANALYZER_TEXT_FIELD);
+
             HashMap<String, Object> ES_ATLAN_TEXT_ANALYZER_CONFIG = new HashMap<>();
             ES_ATLAN_TEXT_ANALYZER_CONFIG.put("analyzer", "atlan_text_analyzer");
 
@@ -372,7 +378,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             createCommonVertexIndex(management, PATCH_STATE_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
             createCommonVertexIndex(management, MEANINGS_PROPERTY_KEY, UniqueKind.NONE, String.class, SET, true, false, true);
             createCommonVertexIndex(management, MEANINGS_TEXT_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false, false, ES_ATLAN_TEXT_COMMA_ANALYZER_CONFIG, new HashMap<>());
-            createCommonVertexIndex(management, MEANING_NAMES_PROPERTY_KEY, UniqueKind.NONE, String.class, LIST, true, false, true);
+            createCommonVertexIndex(management, MEANING_NAMES_PROPERTY_KEY, UniqueKind.NONE, String.class, LIST, true, false, true, new HashMap<>(), ES_GLOSSARY_ANALYZER_MULTIFIELD);
             createCommonVertexIndex(management, GLOSSARY_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false, true);
             createCommonVertexIndex(management, CATEGORIES_PROPERTY_KEY, UniqueKind.NONE, String.class, SET, true, false, true);
             createCommonVertexIndex(management, CATEGORIES_PARENT_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false, true);

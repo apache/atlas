@@ -866,7 +866,7 @@ public class EntityGraphRetriever {
         return StringUtils.equals(outVertex.getIdForDisplay(), vertex.getIdForDisplay()) ? inVertex : outVertex;
     }
 
-    private AtlasVertex getEntityVertex(AtlasObjectId objId) throws AtlasBaseException {
+    public AtlasVertex getEntityVertex(AtlasObjectId objId) throws AtlasBaseException {
         AtlasVertex ret = null;
 
         if (! AtlasTypeUtil.isValid(objId)) {
@@ -1049,7 +1049,7 @@ public class EntityGraphRetriever {
         return ret;
     }
 
-    private AtlasEntity mapSystemAttributes(AtlasVertex entityVertex, AtlasEntity entity) {
+    public AtlasEntity mapSystemAttributes(AtlasVertex entityVertex, AtlasEntity entity) {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("mapSystemAttributes");
 
         if (LOG.isDebugEnabled()) {
@@ -1219,7 +1219,7 @@ public class EntityGraphRetriever {
         return ret;
     }
 
-    private void mapClassifications(AtlasVertex entityVertex, AtlasEntity entity) throws AtlasBaseException {
+    public void mapClassifications(AtlasVertex entityVertex, AtlasEntity entity) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("mapClassifications");
         List<AtlasEdge> edges = getAllClassificationEdges(entityVertex);
 
@@ -1626,7 +1626,7 @@ public class EntityGraphRetriever {
         return ret;
     }
 
-    private Object getVertexAttribute(AtlasVertex vertex, AtlasAttribute attribute) throws AtlasBaseException {
+    public Object getVertexAttribute(AtlasVertex vertex, AtlasAttribute attribute) throws AtlasBaseException {
         return vertex != null && attribute != null ? mapVertexToAttribute(vertex, attribute, null, false) : null;
     }
 
