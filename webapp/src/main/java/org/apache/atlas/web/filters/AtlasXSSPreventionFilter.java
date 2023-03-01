@@ -48,10 +48,8 @@ public class AtlasXSSPreventionFilter implements Filter {
 
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
-        AtlasPerfMetrics.MetricRecorder metric = AtlasPerfMetrics.getMetricRecorder("XSSFilter");
         HttpServletResponse response = (HttpServletResponse) servletResponse;
         HttpServletRequest request = (HttpServletRequest) servletRequest;
-
 
         response.setHeader("Content-Type", CONTENT_TYPE_JSON);
 
@@ -78,7 +76,6 @@ public class AtlasXSSPreventionFilter implements Filter {
             return;
         }
 
-        RequestContext.get().endMetricRecord(metric);
         filterChain.doFilter(cachedBodyHttpServletRequest, response);
 
     }
