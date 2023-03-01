@@ -68,7 +68,7 @@ public class AtlasXSSPreventionFilter implements Filter {
         CachedBodyHttpServletRequest cachedBodyHttpServletRequest = new CachedBodyHttpServletRequest(request);
         String body = IOUtils.toString(cachedBodyHttpServletRequest.getInputStream(), "UTF-8");
         String reqBodyStr = pattern.matcher(body).replaceAll(MASK_STRING);
-        Safelist safelist = Safelist.relaxed();
+        Safelist safelist = Safelist.basicWithImages();
 
         if(!Jsoup.isValid(reqBodyStr, safelist)) {
             response.setStatus(400);
