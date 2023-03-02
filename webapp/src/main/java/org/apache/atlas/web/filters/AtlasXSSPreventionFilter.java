@@ -81,7 +81,7 @@ public class AtlasXSSPreventionFilter implements Filter {
 
         CachedBodyHttpServletRequest cachedBodyHttpServletRequest = new CachedBodyHttpServletRequest(request);
         String body = IOUtils.toString(cachedBodyHttpServletRequest.getInputStream(), "UTF-8");
-        String reqBodyStr = StringEscapeUtils.unescapeJava(maskPattern.matcher(body).replaceAll(MASK_STRING));
+        String reqBodyStr = maskPattern.matcher(body).replaceAll(MASK_STRING);
         String sanitizedBody = policy.sanitize(reqBodyStr);
 
         if(!StringUtils.equals(reqBodyStr, StringEscapeUtils.unescapeHtml4(sanitizedBody))) {
