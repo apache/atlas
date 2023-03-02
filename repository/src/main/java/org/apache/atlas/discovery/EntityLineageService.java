@@ -329,19 +329,22 @@ public class EntityLineageService implements AtlasLineageService {
     private void traverseEdgesOnDemand(Iterable<AtlasEdge> processEdges, boolean isInput, int depth, AtlasLineageOnDemandContext atlasLineageOnDemandContext, AtlasLineageOnDemandInfo ret, AtlasVertex processVertex, String baseGuid) throws AtlasBaseException {
         AtlasLineageOnDemandInfo.LineageDirection direction = isInput ? AtlasLineageOnDemandInfo.LineageDirection.INPUT : AtlasLineageOnDemandInfo.LineageDirection.OUTPUT;
         for (AtlasEdge processEdge : processEdges) {
-            boolean isInputEdge  = processEdge.getLabel().equalsIgnoreCase(PROCESS_INPUTS_EDGE);
+            AtlasVertex datasetVertex = processEdge.getInVertex();
+
+            if (!vertexMatchesEvaluation(datasetVertex, atlasLineageOnDemandContext) || !edgeMatchesEvaluation(processEdge, atlasLineageOnDemandContext)) {
+                continue;
+            }
 
             if (checkForOffset(processEdge, processVertex, atlasLineageOnDemandContext, ret)) {
                 continue;
             }
 
+            boolean isInputEdge  = processEdge.getLabel().equalsIgnoreCase(PROCESS_INPUTS_EDGE);
             if (incrementAndCheckIfRelationsLimitReached(processEdge, isInputEdge, atlasLineageOnDemandContext, ret, depth, baseGuid, direction)) {
                 break;
             } else {
                 addEdgeToResult(processEdge, ret, atlasLineageOnDemandContext);
             }
-
-            AtlasVertex datasetVertex = processEdge.getInVertex();
 
             String inGuid = AtlasGraphUtilsV2.getIdFromVertex(datasetVertex);
             LineageOnDemandConstraints inGuidLineageConstrains = getAndValidateLineageConstraintsByGuid(inGuid, atlasLineageOnDemandContext);
@@ -370,11 +373,11 @@ public class EntityLineageService implements AtlasLineageService {
             for (AtlasEdge incomingEdge : incomingEdges) {
                 AtlasVertex processVertex = incomingEdge.getOutVertex();
 
-                if (checkForOffset(incomingEdge, datasetVertex, atlasLineageOnDemandContext, ret)) {
+                if (!vertexMatchesEvaluation(processVertex, atlasLineageOnDemandContext) || !edgeMatchesEvaluation(incomingEdge, atlasLineageOnDemandContext)) {
                     continue;
                 }
 
-                if (!vertexMatchesEvaluation(processVertex, atlasLineageOnDemandContext)) {
+                if (checkForOffset(incomingEdge, datasetVertex, atlasLineageOnDemandContext, ret)) {
                     continue;
                 }
 
@@ -391,11 +394,11 @@ public class EntityLineageService implements AtlasLineageService {
                 for (AtlasEdge outgoingEdge : outgoingEdges) {
                     AtlasVertex entityVertex = outgoingEdge.getInVertex();
 
-                    if (checkForOffset(outgoingEdge, processVertex, atlasLineageOnDemandContext, ret)) {
+                    if (!vertexMatchesEvaluation(entityVertex, atlasLineageOnDemandContext) || !edgeMatchesEvaluation(outgoingEdge, atlasLineageOnDemandContext)) {
                         continue;
                     }
 
-                    if (!vertexMatchesEvaluation(entityVertex, atlasLineageOnDemandContext)) {
+                    if (checkForOffset(outgoingEdge, processVertex, atlasLineageOnDemandContext, ret)) {
                         continue;
                     }
 
@@ -1040,6 +1043,10 @@ public class EntityLineageService implements AtlasLineageService {
 
     private boolean vertexMatchesEvaluation(AtlasVertex currentVertex, AtlasLineageOnDemandContext atlasLineageOnDemandContext) {
         return atlasLineageOnDemandContext.evaluate(currentVertex);
+    }
+
+    private boolean edgeMatchesEvaluation(AtlasEdge currentEdge, AtlasLineageOnDemandContext atlasLineageOnDemandContext) {
+        return atlasLineageOnDemandContext.evaluate(currentEdge);
     }
 
     private boolean shouldProcessEdge(AtlasLineageContext lineageContext, AtlasEdge edge) {
