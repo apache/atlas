@@ -440,10 +440,6 @@ public class EntityLineageService implements AtlasLineageService {
     private boolean incrementAndCheckIfRelationsLimitReached(AtlasEdge atlasEdge, boolean isInput, AtlasLineageOnDemandContext atlasLineageOnDemandContext, AtlasLineageOnDemandInfo ret, int depth, String baseGuid, AtlasLineageOnDemandInfo.LineageDirection direction) {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("incrementAndCheckIfRelationsLimitReached");
 
-        if (lineageContainsVisitedEdgeV2(ret, atlasEdge)) {
-            return false;
-        }
-
         boolean hasRelationsLimitReached = false;
 
         AtlasVertex                inVertex                 = isInput ? atlasEdge.getOutVertex() : atlasEdge.getInVertex();
@@ -475,6 +471,10 @@ public class EntityLineageService implements AtlasLineageService {
             if (! (direction.equals(AtlasLineageOnDemandInfo.LineageDirection.INPUT) && outGuid.equals(baseGuid))) {
                 outLineageInfo.incrementOutputRelationsCount();
             }
+        }
+
+        if (lineageContainsVisitedEdgeV2(ret, atlasEdge)) {
+            return false;
         }
 
         // Handle horizontal pagination
