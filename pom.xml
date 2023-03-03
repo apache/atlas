@@ -733,7 +733,7 @@
         <kafka.scala.binary.version>2.12</kafka.scala.binary.version>
         <kafka.version>2.8.1</kafka.version>
         <keycloak.version>15.0.2.1</keycloak.version>
-        <owasp-java-sanitizer.version>20211018.1</owasp-java-sanitizer.version>
+        <jsoup.version>1.15.4</jsoup.version>
         <reload4j.version>1.2.19</reload4j.version>
         <log4j2.version>2.17.1</log4j2.version>
         <lucene-solr.version>8.6.3</lucene-solr.version>
@@ -880,11 +880,13 @@
                 <version>${antlr4.version}</version>
             </dependency>
 
+            <!-- https://mvnrepository.com/artifact/org.jsoup/jsoup -->
             <dependency>
-                <groupId>com.googlecode.owasp-java-html-sanitizer</groupId>
-                <artifactId>owasp-java-html-sanitizer</artifactId>
-                <version>${owasp-java-sanitizer.version}</version>
+                <groupId>org.jsoup</groupId>
+                <artifactId>jsoup</artifactId>
+                <version>${jsoup.version}</version>
             </dependency>
+
 
             <dependency>
                 <groupId>com.google.guava</groupId>
