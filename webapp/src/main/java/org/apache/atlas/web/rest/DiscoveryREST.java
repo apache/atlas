@@ -62,7 +62,7 @@ import java.util.Set;
 /**
  * REST interface for data discovery using dsl or full text search
  */
-@Path("v2/search")
+@Path("search")
 @Singleton
 @Service
 @Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})

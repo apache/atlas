@@ -37,7 +37,7 @@ import javax.ws.rs.core.MediaType;
 /**
  * REST interface for CRUD operations on tasks
  */
-@Path("v2/task")
+@Path("task")
 @Singleton
 @Service
 @Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})

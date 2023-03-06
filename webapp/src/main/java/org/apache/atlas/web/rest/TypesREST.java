@@ -53,7 +53,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * REST interface for CRUD operations on type definitions
  */
-@Path("v2/types")
+@Path("types")
 @Singleton
 @Service
 @Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
