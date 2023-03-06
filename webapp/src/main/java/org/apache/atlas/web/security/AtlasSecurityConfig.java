@@ -244,7 +244,7 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
         }
 
         //XSS filter at first
-        if(launchDarklyConfig.evaluate("xss-protection-with-alb")) {
+        if(launchDarklyConfig.evaluate("xss-protection-and-route-alb")) {
             LOG.info("XSS filter is enabled");
             httpSecurity.addFilterBefore(atlasXSSPreventionFilter, BasicAuthenticationFilter.class);
         } else {
