@@ -733,7 +733,7 @@
         <kafka.scala.binary.version>2.12</kafka.scala.binary.version>
         <kafka.version>2.8.1</kafka.version>
         <keycloak.version>15.0.2.1</keycloak.version>
-        <jsoup.version>1.15.4</jsoup.version>
+        <owasp-html-sanitizer.version>20220608.1</owasp-html-sanitizer.version>
         <reload4j.version>1.2.19</reload4j.version>
         <log4j2.version>2.17.1</log4j2.version>
         <lucene-solr.version>8.6.3</lucene-solr.version>
@@ -880,24 +880,11 @@
                 <version>${antlr4.version}</version>
             </dependency>
 
-            <!-- https://mvnrepository.com/artifact/org.jsoup/jsoup -->
-            <dependency>
-                <groupId>org.jsoup</groupId>
-                <artifactId>jsoup</artifactId>
-                <version>${jsoup.version}</version>
-            </dependency>
-
             <!-- https://mvnrepository.com/artifact/com.googlecode.owasp-java-html-sanitizer/owasp-java-html-sanitizer -->
             <dependency>
                 <groupId>com.googlecode.owasp-java-html-sanitizer</groupId>
                 <artifactId>owasp-java-html-sanitizer</artifactId>
-                <version>20220608.1</version>
-            </dependency>
-            <!-- https://mvnrepository.com/artifact/org.owasp.encoder/encoder -->
-            <dependency>
-                <groupId>org.owasp.encoder</groupId>
-                <artifactId>encoder</artifactId>
-                <version>1.2.3</version>
+                <version>${owasp-html-sanitizer.version}</version>
             </dependency>
 
             <dependency>
