@@ -152,6 +152,13 @@ public class AtlasXSSPreventionFilter implements Filter {
         HttpServletResponse response = (HttpServletResponse) servletResponse;
         HttpServletRequest request = (HttpServletRequest) servletRequest;
 
+        String serverName = request.getServerName();
+        if (StringUtils.isNotEmpty(serverName) && serverName.contains(AtlasConfiguration.REST_API_XSS_FILTER_EXLUDE_SERVER_NAME.getString())) {
+            LOG.debug("AtlasXSSPreventionFilter: skipping filter for serverName: {}", serverName);
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         String method = request.getMethod();
         if(!method.equals("POST") && !method.equals("PUT")) {
             filterChain.doFilter(request, response);
@@ -165,9 +172,9 @@ public class AtlasXSSPreventionFilter implements Filter {
         }
 
         CachedBodyHttpServletRequest cachedBodyHttpServletRequest = new CachedBodyHttpServletRequest(request);
-        String body = IOUtils.toString(cachedBodyHttpServletRequest.getInputStream(), "UTF-8");
-        String reqBodyStr = pattern.matcher(body).replaceAll(MASK_STRING);
-        String sanitizedBody = policy.sanitize(StringEscapeUtils.unescapeJava(reqBodyStr));
+        String body             = IOUtils.toString(cachedBodyHttpServletRequest.getInputStream(), "UTF-8");
+        String reqBodyStr       = StringEscapeUtils.unescapeJava(pattern.matcher(body).replaceAll(MASK_STRING));
+        String sanitizedBody    = policy.sanitize(reqBodyStr);
 
         if(!StringUtils.equals(reqBodyStr, StringEscapeUtils.unescapeHtml4(sanitizedBody))) {
             response.setHeader("Content-Type", CONTENT_TYPE_JSON);
@@ -190,7 +197,7 @@ public class AtlasXSSPreventionFilter implements Filter {
 
     @Override
     public void destroy() {
-        LOG.info("AtlasXSSPreventionFilter destroyed");
+        LOG.debug("AtlasXSSPreventionFilter destroyed");
     }
 
 
