@@ -887,6 +887,13 @@
                 <version>${owasp-html-sanitizer.version}</version>
             </dependency>
 
+            <!-- https://mvnrepository.com/artifact/com.launchdarkly/launchdarkly-java-server-sdk -->
+            <dependency>
+                <groupId>com.launchdarkly</groupId>
+                <artifactId>launchdarkly-java-server-sdk</artifactId>
+                <version>6.0.5</version>
+            </dependency>
+
             <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
