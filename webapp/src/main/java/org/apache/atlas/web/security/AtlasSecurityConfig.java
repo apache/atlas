@@ -72,6 +72,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import static org.apache.atlas.AtlasConstants.ATLAS_MIGRATION_MODE_FILENAME;
 import static org.apache.atlas.web.filters.HeadersUtil.SERVER_KEY;
@@ -96,8 +97,8 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
     private final StaleTransactionCleanupFilter staleTransactionCleanupFilter;
     private final ActiveServerFilter activeServerFilter;
     private final LaunchDarklyConfig launchDarklyConfig;
-    private final static String LAUNCH_DARKLY_SDK_KEY       = System.getenv("USER_LAUNCH_DARKLY_SDK_KEY");
-    private final static String INSTANCE_DOMAIN_NAME        = System.getenv("DOMAIN_NAME");
+    private final static String LAUNCH_DARKLY_SDK_KEY       = Objects.toString(System.getenv("USER_LAUNCH_DARKLY_SDK_KEY"), "");
+    private final static String INSTANCE_DOMAIN_NAME        = Objects.toString(System.getenv("DOMAIN_NAME"), "");
     private final static String LAUNCH_DARKLY_CONTEXT       = "context-atlas";
     private final static String LAUNCH_DARKLY_CONTEXT_NAME  = "Atlas";
     private final static String LAUNCH_DARKLY_FEATURE_FLAG_ENABLE_XSS_KEY  = "instance";
@@ -138,8 +139,6 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
         this.launchDarklyConfig = new LaunchDarklyConfig(LAUNCH_DARKLY_SDK_KEY);
         this.launchDarklyConfig.initContext(LAUNCH_DARKLY_CONTEXT, LAUNCH_DARKLY_CONTEXT_NAME,
                 LAUNCH_DARKLY_FEATURE_FLAG_ENABLE_XSS_KEY, INSTANCE_DOMAIN_NAME );
-
-
         this.keycloakEnabled = configuration.getBoolean(AtlasAuthenticationProvider.KEYCLOAK_AUTH_METHOD, false);
     }
 
