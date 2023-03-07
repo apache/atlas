@@ -244,7 +244,6 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
         } else {
             LOG.info("Atlas is in HA or HS Mode, enabling ActiveServerFilter");
         }
-        LOG.error("Dekho dekho ");
 
         //XSS filter at first
         if(launchDarklyConfig.evaluate(LAUNCH_DARKLY_METASTORE_ENABLE_XSS_FILTER)) {
