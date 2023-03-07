@@ -132,7 +132,7 @@
         <dependency>
             <groupId>com.launchdarkly</groupId>
             <artifactId>launchdarkly-java-server-sdk</artifactId>
-            <version>6.0.5</version>
+            <version>${launch-darkly.version}</version>
         </dependency>
 
         <dependency>

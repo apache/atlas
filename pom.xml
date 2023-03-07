@@ -734,6 +734,7 @@
         <kafka.version>2.8.1</kafka.version>
         <keycloak.version>15.0.2.1</keycloak.version>
         <owasp-html-sanitizer.version>20220608.1</owasp-html-sanitizer.version>
+        <launch-darkly.version>6.0.5</launch-darkly.version>
         <reload4j.version>1.2.19</reload4j.version>
         <log4j2.version>2.17.1</log4j2.version>
         <lucene-solr.version>8.6.3</lucene-solr.version>
@@ -891,7 +892,7 @@
             <dependency>
                 <groupId>com.launchdarkly</groupId>
                 <artifactId>launchdarkly-java-server-sdk</artifactId>
-                <version>6.0.5</version>
+                <version>${launch-darkly.version}</version>
             </dependency>
 
             <dependency>

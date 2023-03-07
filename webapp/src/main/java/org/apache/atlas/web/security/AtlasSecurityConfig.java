@@ -133,9 +133,9 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
         this.staleTransactionCleanupFilter = staleTransactionCleanupFilter;
         this.activeServerFilter = activeServerFilter;
         this.launchDarklyConfig = launchDarklyConfig;
-        String serverURL = System.getenv("AUTH_SERVER_URL");
-        if(StringUtils.isNotEmpty(serverURL)) {
-            this.launchDarklyConfig.initContext("context-atlas", "Atlas","instance", serverURL);
+        String serverDomain = System.getenv("DOMAIN_NAME");
+        if(StringUtils.isNotEmpty(serverDomain)) {
+            this.launchDarklyConfig.initContext("context-atlas", "Atlas","instance", serverDomain);
         }
 
         this.keycloakEnabled = configuration.getBoolean(AtlasAuthenticationProvider.KEYCLOAK_AUTH_METHOD, false);
@@ -244,11 +244,11 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
         }
 
         //XSS filter at first
-        if(launchDarklyConfig.evaluate("xss-protection-and-route-alb")) {
-            LOG.info("XSS filter is enabled");
+        if(launchDarklyConfig.evaluate("metastore-enable-xss-protection")) {
             httpSecurity.addFilterBefore(atlasXSSPreventionFilter, BasicAuthenticationFilter.class);
+            LOG.info("XSS filter is enabled from Atlas");
         } else {
-            LOG.info("XSS filter is disabled");
+            LOG.info("XSS filter is disabled from Atlas");
         }
         httpSecurity.addFilterAfter(atlasXSSPreventionFilter, BasicAuthenticationFilter.class);
         //Enable activeServerFilter regardless of HA or HS
@@ -335,5 +335,9 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
         KeycloakAuthenticationProcessingFilter filter = new KeycloakAuthenticationProcessingFilter(authenticationManagerBean(), KEYCLOAK_REQUEST_MATCHER);
         filter.setSessionAuthenticationStrategy(sessionAuthenticationStrategy());
         return filter;
+    }
+
+    public boolean isProduction() {
+        return configuration.getBoolean("atlas.isproduction", false);
     }
 }
