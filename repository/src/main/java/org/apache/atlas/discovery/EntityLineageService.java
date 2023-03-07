@@ -450,6 +450,13 @@ public class EntityLineageService implements AtlasLineageService {
         String                     outGuid                   = AtlasGraphUtilsV2.getIdFromVertex(outVertex);
         LineageOnDemandConstraints outGuidLineageConstraints = getAndValidateLineageConstraintsByGuid(outGuid, atlasLineageOnDemandContext);
 
+        boolean selfCyclic = (direction.equals(AtlasLineageOnDemandInfo.LineageDirection.INPUT) && isInput && outGuid.equals(baseGuid)) ||
+                (direction.equals(AtlasLineageOnDemandInfo.LineageDirection.OUTPUT) && !isInput && inGuid.equals(baseGuid));
+
+        if (lineageContainsVisitedEdgeV2(ret, atlasEdge) && (direction.equals(AtlasLineageOnDemandInfo.LineageDirection.INPUT) && !selfCyclic)) {
+            return false;
+        }
+
         // Keep track of already visited vertices for horizontal pagination to not process it again
         boolean isOutVertexVisited = ret.getRelationsOnDemand().containsKey(outGuid);
         boolean isInVertexVisited = ret.getRelationsOnDemand().containsKey(inGuid);
@@ -468,13 +475,13 @@ public class EntityLineageService implements AtlasLineageService {
             outLineageInfo.setHasMoreOutputs(true);
             hasRelationsLimitReached = true;
         } else {
-            if (! (direction.equals(AtlasLineageOnDemandInfo.LineageDirection.INPUT) && outGuid.equals(baseGuid))) {
+            if (! (direction.equals(AtlasLineageOnDemandInfo.LineageDirection.INPUT) && selfCyclic)) {
                 outLineageInfo.incrementOutputRelationsCount();
             }
         }
 
-        if (lineageContainsVisitedEdgeV2(ret, atlasEdge)) {
-            return false;
+        if (lineageContainsVisitedEdgeV2(ret, atlasEdge) && selfCyclic) {
+            return hasRelationsLimitReached;
         }
 
         // Handle horizontal pagination
