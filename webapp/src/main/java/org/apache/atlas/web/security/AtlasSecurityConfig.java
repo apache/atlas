@@ -18,6 +18,7 @@
 package org.apache.atlas.web.security;
 
 import org.apache.atlas.web.filters.*;
+import org.apache.atlas.web.service.LaunchDarklyConfig;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.keycloak.adapters.AdapterDeploymentContext;
@@ -56,7 +57,6 @@ import org.springframework.security.web.authentication.DelegatingAuthenticationE
 import org.springframework.security.web.authentication.logout.LogoutFilter;
 import org.springframework.security.web.authentication.session.RegisterSessionAuthenticationStrategy;
 import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
-import org.springframework.security.web.authentication.www.BasicAuthenticationEntryPoint;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
@@ -72,6 +72,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import static org.apache.atlas.AtlasConstants.ATLAS_MIGRATION_MODE_FILENAME;
 import static org.apache.atlas.web.filters.HeadersUtil.SERVER_KEY;
@@ -89,11 +90,19 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
     private final AtlasAuthenticationFilter atlasAuthenticationFilter;
     private final AtlasCSRFPreventionFilter csrfPreventionFilter;
     private final AtlasAuthenticationEntryPoint atlasAuthenticationEntryPoint;
+    private final AtlasXSSPreventionFilter      atlasXSSPreventionFilter;
 
     // Our own Atlas filters need to be registered as well
     private final Configuration configuration;
     private final StaleTransactionCleanupFilter staleTransactionCleanupFilter;
     private final ActiveServerFilter activeServerFilter;
+    private final LaunchDarklyConfig launchDarklyConfig;
+    private final static String LAUNCH_DARKLY_SDK_KEY       = Objects.toString(System.getenv("USER_LAUNCH_DARKLY_SDK_KEY"), "");
+    private final static String INSTANCE_DOMAIN_NAME        = Objects.toString(System.getenv("DOMAIN_NAME"), "");
+    private final static String LAUNCH_DARKLY_CONTEXT       = "context-atlas";
+    private final static String LAUNCH_DARKLY_CONTEXT_NAME  = "Atlas";
+    private final static String LAUNCH_DARKLY_FEATURE_FLAG_ENABLE_XSS_KEY  = "instance";
+    private final static String LAUNCH_DARKLY_METASTORE_ENABLE_XSS_FILTER  =  "metastore-enable-xss-protection";
 
     public static final RequestMatcher KEYCLOAK_REQUEST_MATCHER = new OrRequestMatcher(new RequestMatcher[]{new AntPathRequestMatcher("/login.jsp"), new RequestHeaderRequestMatcher("Authorization"), new QueryParamPresenceRequestMatcher("access_token")});
 
@@ -112,6 +121,7 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
                                AtlasAuthenticationSuccessHandler successHandler,
                                AtlasAuthenticationFailureHandler failureHandler,
                                AtlasAuthenticationEntryPoint atlasAuthenticationEntryPoint,
+                               AtlasXSSPreventionFilter atlasXSSPreventionFilter,
                                Configuration configuration,
                                StaleTransactionCleanupFilter staleTransactionCleanupFilter,
                                ActiveServerFilter activeServerFilter) {
@@ -122,10 +132,13 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
         this.successHandler = successHandler;
         this.failureHandler = failureHandler;
         this.atlasAuthenticationEntryPoint = atlasAuthenticationEntryPoint;
+        this.atlasXSSPreventionFilter = atlasXSSPreventionFilter;
         this.configuration = configuration;
         this.staleTransactionCleanupFilter = staleTransactionCleanupFilter;
         this.activeServerFilter = activeServerFilter;
-
+        this.launchDarklyConfig = new LaunchDarklyConfig(LAUNCH_DARKLY_SDK_KEY);
+        this.launchDarklyConfig.initContext(LAUNCH_DARKLY_CONTEXT, LAUNCH_DARKLY_CONTEXT_NAME,
+                LAUNCH_DARKLY_FEATURE_FLAG_ENABLE_XSS_KEY, INSTANCE_DOMAIN_NAME );
         this.keycloakEnabled = configuration.getBoolean(AtlasAuthenticationProvider.KEYCLOAK_AUTH_METHOD, false);
     }
 
@@ -229,6 +242,14 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
             LOG.info("Atlas is in Migration Mode, enabling ActiveServerFilter");
         } else {
             LOG.info("Atlas is in HA or HS Mode, enabling ActiveServerFilter");
+        }
+
+        //XSS filter at first
+        if(launchDarklyConfig.evaluate(LAUNCH_DARKLY_METASTORE_ENABLE_XSS_FILTER)) {
+            httpSecurity.addFilterBefore(atlasXSSPreventionFilter, BasicAuthenticationFilter.class);
+            LOG.info("XSS filter is enabled from Atlas");
+        } else {
+            LOG.info("XSS filter is disabled from Atlas");
         }
         //Enable activeServerFilter regardless of HA or HS
         httpSecurity.addFilterAfter(activeServerFilter, BasicAuthenticationFilter.class);
