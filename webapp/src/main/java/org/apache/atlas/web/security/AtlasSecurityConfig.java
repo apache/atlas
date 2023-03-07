@@ -17,9 +17,6 @@
  */
 package org.apache.atlas.web.security;
 
-import com.launchdarkly.sdk.LDContext;
-import com.launchdarkly.sdk.server.LDClient;
-import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.web.filters.*;
 import org.apache.atlas.web.service.LaunchDarklyConfig;
 import org.apache.commons.configuration.Configuration;
