@@ -333,8 +333,4 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
         filter.setSessionAuthenticationStrategy(sessionAuthenticationStrategy());
         return filter;
     }
-
-    public boolean isProduction() {
-        return configuration.getBoolean("atlas.isproduction", false);
-    }
 }
