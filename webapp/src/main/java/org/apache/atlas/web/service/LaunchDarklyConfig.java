@@ -3,9 +3,11 @@ package org.apache.atlas.web.service;
 import com.launchdarkly.sdk.LDContext;
 import com.launchdarkly.sdk.server.LDClient;
 import org.apache.commons.lang.StringUtils;
-import org.apache.tinkerpop.shaded.minlog.Log;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class LaunchDarklyConfig {
+    private static final Logger LOG = LoggerFactory.getLogger(LaunchDarklyConfig.class);
     private String sdkKey;
     private LDContext ldContext;
     private LDClient client;
@@ -20,7 +22,7 @@ public class LaunchDarklyConfig {
             try {
                 client = new LDClient(sdkKey);
             } catch (Exception e) {
-                Log.error("Error while initializing LaunchDarkly client", e);
+                LOG.error("Error while initializing LaunchDarkly client", e);
             }
         }
     }
@@ -37,7 +39,7 @@ public class LaunchDarklyConfig {
                         .set(key, value)
                         .build();
             } catch (Exception e) {
-                Log.error("Error while initializing LaunchDarkly context", e);
+                LOG.error("Error while initializing LaunchDarkly context", e);
             }
         }
     }
