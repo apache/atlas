@@ -52,7 +52,7 @@ import java.util.Map;
 /**
  * REST interface for an entity's lineage information
  */
-@Path("v2/lineage")
+@Path("lineage")
 @Singleton
 @Service
 @Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
