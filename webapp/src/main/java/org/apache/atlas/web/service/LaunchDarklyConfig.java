@@ -47,9 +47,9 @@ public class LaunchDarklyConfig {
     public boolean evaluate(String featureKey) {
         boolean ret;
         try{
-            ret = client !=null ? client.boolVariation(featureKey, ldContext, false): false;
+            ret = client != null ? client.boolVariation(featureKey, ldContext, false) : false;
         } catch (Exception e) {
-           ret = false;
+           return false;
         }
         return ret;
     }
