@@ -251,7 +251,6 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
         } else {
             LOG.info("XSS filter is disabled from Atlas");
         }
-        httpSecurity.addFilterAfter(atlasXSSPreventionFilter, BasicAuthenticationFilter.class);
         //Enable activeServerFilter regardless of HA or HS
         httpSecurity.addFilterAfter(activeServerFilter, BasicAuthenticationFilter.class);
 
