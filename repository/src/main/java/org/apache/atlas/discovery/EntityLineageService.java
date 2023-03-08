@@ -450,7 +450,7 @@ public class EntityLineageService implements AtlasLineageService {
         String                     outGuid                   = AtlasGraphUtilsV2.getIdFromVertex(outVertex);
         LineageOnDemandConstraints outGuidLineageConstraints = getAndValidateLineageConstraintsByGuid(outGuid, atlasLineageOnDemandContext);
 
-        boolean selfCyclic = selfCyclicCheck(ret, inGuid, outGuid);
+        boolean selfCyclic = AtlasLineageOnDemandInfo.LineageDirection.OUTPUT.equals(direction) && baseGuid.equals(outGuid) && isSelfCyclic(ret, inGuid, outGuid);
 
         if (lineageContainsVisitedEdgeV2(ret, atlasEdge) && !selfCyclic) {
             return false;
@@ -474,7 +474,7 @@ public class EntityLineageService implements AtlasLineageService {
             outLineageInfo.setHasMoreOutputs(true);
             hasRelationsLimitReached = true;
         } else {
-            if (! (direction.equals(AtlasLineageOnDemandInfo.LineageDirection.INPUT) && baseGuid.equals(outGuid))) {
+            if (! (AtlasLineageOnDemandInfo.LineageDirection.INPUT.equals(direction) && baseGuid.equals(outGuid))) {
                 outLineageInfo.incrementOutputRelationsCount();
             }
         }
@@ -497,7 +497,7 @@ public class EntityLineageService implements AtlasLineageService {
         return hasRelationsLimitReached;
     }
 
-    private boolean selfCyclicCheck(AtlasLineageOnDemandInfo ret, String inGuid, String outGuid) {
+    private boolean isSelfCyclic(AtlasLineageOnDemandInfo ret, String inGuid, String outGuid) {
         return ret.getRelations().stream().anyMatch(r -> r.getFromEntityId().equals(inGuid)) &&
                 ret.getRelations().stream().anyMatch(r -> r.getToEntityId().equals(outGuid)) &&
                 ret.getRelations().stream().anyMatch(r -> r.getFromEntityId().equals(outGuid)) &&
