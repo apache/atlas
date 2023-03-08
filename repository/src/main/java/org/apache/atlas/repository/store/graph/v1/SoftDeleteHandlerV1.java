@@ -70,6 +70,7 @@ public class SoftDeleteHandlerV1 extends DeleteHandlerV1 {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> SoftDeleteHandlerV1.deleteEdge({}, {})",GraphHelper.string(edge), force);
         }
+        boolean isRelationshipEdge = isRelationshipEdge(edge);
 
         authorizeRemoveRelation(edge);
 
@@ -92,7 +93,7 @@ public class SoftDeleteHandlerV1 extends DeleteHandlerV1 {
                 AtlasGraphUtilsV2.setEncodedProperty(edge, MODIFIED_BY_KEY, RequestContext.get().getUser());
             }
         }
-        if (isRelationshipEdge(edge))
+        if (isRelationshipEdge)
             AtlasRelationshipStoreV2.recordRelationshipMutation(AtlasRelationshipStoreV2.RelationshipMutation.RELATIONSHIP_SOFT_DELETE, edge, entityRetriever);
     }
 }
