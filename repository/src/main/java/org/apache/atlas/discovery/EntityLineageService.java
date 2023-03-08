@@ -451,6 +451,7 @@ public class EntityLineageService implements AtlasLineageService {
         LineageOnDemandConstraints outGuidLineageConstraints = getAndValidateLineageConstraintsByGuid(outGuid, atlasLineageOnDemandContext);
 
         boolean selfCyclic = AtlasLineageOnDemandInfo.LineageDirection.OUTPUT.equals(direction) && baseGuid.equals(outGuid) && isSelfCyclic(ret, inGuid, outGuid);
+        boolean skipIncrement = AtlasLineageOnDemandInfo.LineageDirection.INPUT.equals(direction) && baseGuid.equals(outGuid);
 
         if (lineageContainsVisitedEdgeV2(ret, atlasEdge) && !selfCyclic) {
             return false;
@@ -473,10 +474,8 @@ public class EntityLineageService implements AtlasLineageService {
         if (outLineageInfo.isOutputRelationsReachedLimit()) {
             outLineageInfo.setHasMoreOutputs(true);
             hasRelationsLimitReached = true;
-        } else {
-            if (! (AtlasLineageOnDemandInfo.LineageDirection.INPUT.equals(direction) && baseGuid.equals(outGuid))) {
-                outLineageInfo.incrementOutputRelationsCount();
-            }
+        } else if (! skipIncrement) {
+            outLineageInfo.incrementOutputRelationsCount();
         }
 
         // Handle horizontal pagination
