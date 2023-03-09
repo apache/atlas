@@ -107,6 +107,8 @@ public interface AtlasTypeDefStore {
 
 
     /* Generic operation */
+    boolean validateTypeName(AtlasBaseTypeDef typeDef);
+
     AtlasBaseTypeDef getByName(String name) throws AtlasBaseException;
 
     AtlasBaseTypeDef getByGuid(String guid) throws AtlasBaseException;

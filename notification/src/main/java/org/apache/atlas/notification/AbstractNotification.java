@@ -96,7 +96,7 @@ public abstract class AbstractNotification implements NotificationInterface {
             createNotificationMessages(messages.get(index), strMessages, source);
         }
 
-        sendInternal(type, strMessages);
+//        sendInternal(type, strMessages);
     }
 
     @Override

@@ -31,6 +31,7 @@ import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.service.CuratorFactory;
 import org.apache.atlas.web.util.Servlets;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.apache.http.annotation.Experimental;
@@ -433,6 +434,7 @@ public class TypesREST {
     public AtlasTypesDef createAtlasTypeDefs(final AtlasTypesDef typesDef) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
         InterProcessMutex lock = null;
+        validateTypeCreateOrUpdate(typesDef);
         RequestContext.get().setTraceId(UUID.randomUUID().toString());
         try {
             typeCacheRefresher.verifyCacheRefresherHealth();
@@ -459,6 +461,24 @@ public class TypesREST {
         }
     }
 
+    private void validateTypeCreateOrUpdate(AtlasTypesDef typesDef) throws AtlasBaseException {
+
+        if (CollectionUtils.isNotEmpty(typesDef.getEnumDefs())) {
+            for (AtlasBaseTypeDef typeDef : typesDef.getEnumDefs())
+                if (typeDefStore.validateTypeName(typeDef))
+                    throw new AtlasBaseException(AtlasErrorCode.FORBIDDEN_TYPENAME, typeDef.getName());
+        }
+        if (CollectionUtils.isNotEmpty(typesDef.getEntityDefs())) {
+            for (AtlasBaseTypeDef typeDef : typesDef.getEntityDefs())
+                if (typeDefStore.validateTypeName(typeDef))
+                    throw new AtlasBaseException(AtlasErrorCode.FORBIDDEN_TYPENAME, typeDef.getName());
+        }
+        if (CollectionUtils.isNotEmpty(typesDef.getStructDefs())) {
+            for (AtlasBaseTypeDef typeDef : typesDef.getStructDefs())
+                if (typeDefStore.validateTypeName(typeDef))
+                    throw new AtlasBaseException(AtlasErrorCode.FORBIDDEN_TYPENAME, typeDef.getName());
+        }
+    }
     /**
      * Bulk update API for all types, changes detected in the type definitions would be persisted
      * @param typesDef A composite object that captures all type definition changes
@@ -474,6 +494,7 @@ public class TypesREST {
     public AtlasTypesDef updateAtlasTypeDefs(final AtlasTypesDef typesDef, @QueryParam("patch") final boolean patch) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
         InterProcessMutex lock = null;
+        validateTypeCreateOrUpdate(typesDef);
         RequestContext.get().setTraceId(UUID.randomUUID().toString());
         try {
             typeCacheRefresher.verifyCacheRefresherHealth();

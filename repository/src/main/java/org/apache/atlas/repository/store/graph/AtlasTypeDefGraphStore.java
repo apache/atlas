@@ -43,14 +43,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static org.apache.atlas.model.discovery.SearchParameters.ALL_ENTITY_TYPES;
 import static org.apache.atlas.model.discovery.SearchParameters.ALL_CLASSIFICATION_TYPES;
+import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_BUILTIN_TYPES;
 import static org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer.getTypesToCreate;
 import static org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer.getTypesToUpdate;
 
@@ -482,6 +479,11 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
         }
 
         return ret;
+    }
+
+    @Override
+    public boolean validateTypeName(AtlasBaseTypeDef typeDef){
+        return Arrays.stream(ATLAS_BUILTIN_TYPES).anyMatch(builtinInName -> builtinInName.equals(typeDef.getName()));
     }
 
     @Override
