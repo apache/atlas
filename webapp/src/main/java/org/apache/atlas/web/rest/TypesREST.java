@@ -465,17 +465,17 @@ public class TypesREST {
 
         if (CollectionUtils.isNotEmpty(typesDef.getEnumDefs())) {
             for (AtlasBaseTypeDef typeDef : typesDef.getEnumDefs())
-                if (typeDefStore.validateTypeName(typeDef))
+                if (typeDefStore.hasBuiltInTypeName(typeDef))
                     throw new AtlasBaseException(AtlasErrorCode.FORBIDDEN_TYPENAME, typeDef.getName());
         }
         if (CollectionUtils.isNotEmpty(typesDef.getEntityDefs())) {
             for (AtlasBaseTypeDef typeDef : typesDef.getEntityDefs())
-                if (typeDefStore.validateTypeName(typeDef))
+                if (typeDefStore.hasBuiltInTypeName(typeDef))
                     throw new AtlasBaseException(AtlasErrorCode.FORBIDDEN_TYPENAME, typeDef.getName());
         }
         if (CollectionUtils.isNotEmpty(typesDef.getStructDefs())) {
             for (AtlasBaseTypeDef typeDef : typesDef.getStructDefs())
-                if (typeDefStore.validateTypeName(typeDef))
+                if (typeDefStore.hasBuiltInTypeName(typeDef))
                     throw new AtlasBaseException(AtlasErrorCode.FORBIDDEN_TYPENAME, typeDef.getName());
         }
     }

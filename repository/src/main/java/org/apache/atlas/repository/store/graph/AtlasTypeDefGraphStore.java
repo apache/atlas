@@ -487,7 +487,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
     }
 
     @Override
-    public boolean validateTypeName(AtlasBaseTypeDef typeDef){
+    public boolean hasBuiltInTypeName(AtlasBaseTypeDef typeDef){
         return Arrays.stream(ATLAS_BUILTIN_TYPES).anyMatch(builtinInName -> builtinInName.equals(typeDef.getName()));
     }
 
