@@ -370,8 +370,8 @@ public class DiscoveryREST {
     @Timed
     public AtlasSearchResult indexSearch(IndexSearchParams parameters) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
-        RequestContext.get().setIncludeMeanings(parameters.isIncludeMeanings());
-        RequestContext.get().setIncludeClassifications(parameters.isIncludeClassifications());
+        RequestContext.get().setIncludeMeanings(!parameters.isExcludeMeanings());
+        RequestContext.get().setIncludeClassifications(!parameters.isExcludeClassificationAttributes());
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.indexSearch(" + parameters + ")");
@@ -415,7 +415,7 @@ public class DiscoveryREST {
                                                    @QueryParam("sortOrder")                       SortOrder   sortOrder,
                                                    @QueryParam("excludeDeletedEntities")          boolean     excludeDeletedEntities,
                                                    @QueryParam("includeClassificationAttributes") boolean     includeClassificationAttributes,
-                                                   @QueryParam("includeMeaningsAttributes")       boolean     includeMeaningsAttributes,
+                                                   @QueryParam("excludeMeaningsAttributes")       boolean     excludeMeaningsAttributes,
                                                    @QueryParam("getApproximateCount")             boolean     getApproximateCount,
                                                    @QueryParam("limit")                           int         limit,
                                                    @QueryParam("offset")                          int         offset) throws AtlasBaseException {
@@ -438,10 +438,10 @@ public class DiscoveryREST {
             parameters.setExcludeDeletedEntities(excludeDeletedEntities);
             parameters.setLimit(limit);
             parameters.setOffset(offset);
-            parameters.setIncludeClassifications(includeClassificationAttributes);
-            parameters.setIncludeMeanings(includeMeaningsAttributes);
+            parameters.setExcludeClassificationAttributes(!includeClassificationAttributes);
+            parameters.setExcludeMeanings(excludeMeaningsAttributes);
             RequestContext.get().setIncludeClassifications(includeClassificationAttributes);
-            RequestContext.get().setIncludeMeanings(includeMeaningsAttributes);
+            RequestContext.get().setIncludeMeanings(!excludeMeaningsAttributes);
             return discoveryService.searchRelatedEntities(guid, relation, getApproximateCount, parameters);
 
         } finally {

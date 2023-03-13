@@ -82,8 +82,8 @@ public class RequestContext {
     private boolean     createShellEntityForNonExistingReference = false;
     private boolean     skipFailedEntities = false;
     private boolean     allowDeletedRelationsIndexsearch = false;
-    private boolean     includeMeanings = false;
-    private boolean     includeClassifications = false;
+    private boolean     includeMeanings = true;
+    private boolean     includeClassifications = true;
     private String      currentTypePatchAction = "";
     private AtlasTask   currentTask;
     private String traceId;
