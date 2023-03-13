@@ -70,9 +70,10 @@ public class CreateHiveProcess extends BaseHiveEvent {
         AtlasEntitiesWithExtInfo ret = null;
 
         if (!skipProcess()) {
-            List<AtlasEntity> inputs         = new ArrayList<>();
-            List<AtlasEntity> outputs        = new ArrayList<>();
-            Set<String>       processedNames = new HashSet<>();
+            List<AtlasEntity> inputs              = new ArrayList<>();
+            List<AtlasEntity> outputs             = new ArrayList<>();
+            Set<String>       processedInputNames = new HashSet<>();
+            Set<String>       processedOutputNames = new HashSet<>();
 
             ret = new AtlasEntitiesWithExtInfo();
 
@@ -80,7 +81,7 @@ public class CreateHiveProcess extends BaseHiveEvent {
                 for (ReadEntity input : getInputs()) {
                     String qualifiedName = getQualifiedName(input);
 
-                    if (qualifiedName == null || !processedNames.add(qualifiedName)) {
+                    if (qualifiedName == null || !processedInputNames.add(qualifiedName)) {
                         continue;
                     }
 
@@ -100,7 +101,7 @@ public class CreateHiveProcess extends BaseHiveEvent {
                 for (WriteEntity output : getOutputs()) {
                     String qualifiedName = getQualifiedName(output);
 
-                    if (qualifiedName == null || !processedNames.add(qualifiedName)) {
+                    if (qualifiedName == null || !processedOutputNames.add(qualifiedName)) {
                         continue;
                     }
 
