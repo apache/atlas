@@ -104,9 +104,8 @@ public interface AtlasTypeDefStore {
     void deleteTypesDef(AtlasTypesDef typesDef) throws AtlasBaseException;
 
     AtlasTypesDef searchTypesDef(SearchFilter searchFilter) throws AtlasBaseException;
+    boolean hasBuiltInTypeName(AtlasBaseTypeDef typeDef);
 
-
-    /* Generic operation */
     AtlasBaseTypeDef getByName(String name) throws AtlasBaseException;
 
     AtlasBaseTypeDef getByGuid(String guid) throws AtlasBaseException;
