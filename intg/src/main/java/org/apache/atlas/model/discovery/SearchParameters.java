@@ -48,7 +48,6 @@ public class SearchParameters extends SearchParams implements Serializable {
     private String  termName;
     private String  sortBy;
     private boolean excludeDeletedEntities;
-    private boolean includeClassificationAttributes;
     private boolean includeSubTypes                 = true;
     private boolean includeSubClassifications       = true;
     private int     limit;
@@ -156,21 +155,6 @@ public class SearchParameters extends SearchParams implements Serializable {
      */
     public void setExcludeDeletedEntities(boolean excludeDeletedEntities) {
         this.excludeDeletedEntities = excludeDeletedEntities;
-    }
-
-    /**
-     * @return True if classification attributes are included in search result.
-     */
-    public boolean getIncludeClassificationAttributes() {
-        return includeClassificationAttributes;
-    }
-
-    /**
-     * Include classificatio attributes in search result.
-     * @param includeClassificationAttributes boolean flag
-     */
-    public void setIncludeClassificationAttributes(boolean includeClassificationAttributes) {
-        this.includeClassificationAttributes = includeClassificationAttributes;
     }
 
     /**
@@ -307,7 +291,6 @@ public class SearchParameters extends SearchParams implements Serializable {
         if (o == null || getClass() != o.getClass()) return false;
         SearchParameters that = (SearchParameters) o;
         return excludeDeletedEntities == that.excludeDeletedEntities &&
-                includeClassificationAttributes == that.includeClassificationAttributes &&
                 includeSubTypes == that.includeSubTypes &&
                 includeSubClassifications == that.includeSubClassifications &&
                 limit == that.limit &&
@@ -327,7 +310,7 @@ public class SearchParameters extends SearchParams implements Serializable {
     @Override
     public int hashCode() {
         return Objects.hash(query, queryFields, typeName, classification, termName, includeSubTypes, includeSubClassifications,
-                            excludeDeletedEntities, includeClassificationAttributes, limit, offset, entityFilters,
+                            excludeDeletedEntities, limit, offset, entityFilters,
                             tagFilters, attributes, sortBy, sortOrder);
     }
 
@@ -345,7 +328,6 @@ public class SearchParameters extends SearchParams implements Serializable {
         sb.append(", includeSubTypes='").append(includeSubTypes).append('\'');
         sb.append(", includeSubClassifications='").append(includeSubClassifications).append('\'');
         sb.append(", excludeDeletedEntities=").append(excludeDeletedEntities);
-        sb.append(", includeClassificationAttributes=").append(includeClassificationAttributes);
         sb.append(", limit=").append(limit);
         sb.append(", offset=").append(offset);
         sb.append(", entityFilters=").append(entityFilters);

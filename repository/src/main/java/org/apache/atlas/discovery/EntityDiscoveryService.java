@@ -489,7 +489,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             for (AtlasVertex atlasVertex : resultList) {
                 AtlasEntityHeader entity = entityRetriever.toAtlasEntityHeader(atlasVertex, resultAttributes);
 
-                if(searchParameters.getIncludeClassificationAttributes()) {
+                if(RequestContext.get().includeClassifications()) {
                     entity.setClassifications(entityRetriever.getAllClassifications(atlasVertex));
                 }
 
@@ -645,7 +645,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 AtlasVertex vertex       = entityRetriever.getEntityVertex(endVertexGuid);
                 AtlasEntityHeader entity = entityRetriever.toAtlasEntityHeader(vertex, searchParameters.getAttributes());
 
-                if (searchParameters.getIncludeClassificationAttributes()) {
+                if (RequestContext.get().includeClassifications()) {
                     entity.setClassifications(entityRetriever.getAllClassifications(vertex));
                 }
                 resultList.add(entity);
@@ -1020,7 +1020,9 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 }
 
                 AtlasEntityHeader header = entityRetriever.toAtlasEntityHeader(vertex, resultAttributes);
-                header.setClassifications(entityRetriever.getAllClassifications(vertex));
+                if(RequestContext.get().includeClassifications()){
+                    header.setClassifications(entityRetriever.getAllClassifications(vertex));
+                }
                 if (showSearchScore) {
                     ret.addEntityScore(header.getGuid(), result.getScore());
                 }

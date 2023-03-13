@@ -19,6 +19,7 @@ package org.apache.atlas.web.rest;
 
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.SortOrder;
 import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
@@ -367,9 +368,12 @@ public class DiscoveryREST {
     @Path("indexsearch")
     @POST
     @Timed
-    public AtlasSearchResult indexSearch(IndexSearchParams parameters) throws AtlasBaseException {
+    public AtlasSearchResult indexSearch(IndexSearchParams parameters,
+        @QueryParam("includeClassificationAttributes") boolean includeClassificationAttributes,
+        @QueryParam("includeMeaningsAttributes") boolean includeMeaningsAttributes) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
-
+        RequestContext.get().setIncludeMeanings(includeMeaningsAttributes);
+        RequestContext.get().setIncludeClassifications(includeClassificationAttributes);
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.indexSearch(" + parameters + ")");
@@ -413,6 +417,7 @@ public class DiscoveryREST {
                                                    @QueryParam("sortOrder")                       SortOrder   sortOrder,
                                                    @QueryParam("excludeDeletedEntities")          boolean     excludeDeletedEntities,
                                                    @QueryParam("includeClassificationAttributes") boolean     includeClassificationAttributes,
+                                                   @QueryParam("includeMeaningsAttributes")       boolean     includeMeaningsAttributes,
                                                    @QueryParam("getApproximateCount")             boolean     getApproximateCount,
                                                    @QueryParam("limit")                           int         limit,
                                                    @QueryParam("offset")                          int         offset) throws AtlasBaseException {
@@ -435,7 +440,8 @@ public class DiscoveryREST {
             parameters.setExcludeDeletedEntities(excludeDeletedEntities);
             parameters.setLimit(limit);
             parameters.setOffset(offset);
-            parameters.setIncludeClassificationAttributes(includeClassificationAttributes);
+            RequestContext.get().setIncludeClassifications(includeClassificationAttributes);
+            RequestContext.get().setIncludeMeanings(includeMeaningsAttributes);
             return discoveryService.searchRelatedEntities(guid, relation, getApproximateCount, parameters);
 
         } finally {

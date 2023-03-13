@@ -82,6 +82,8 @@ public class RequestContext {
     private boolean     createShellEntityForNonExistingReference = false;
     private boolean     skipFailedEntities = false;
     private boolean     allowDeletedRelationsIndexsearch = false;
+    private boolean     includeMeanings = false;
+    private boolean     includeClassifications = false;
     private String      currentTypePatchAction = "";
     private AtlasTask   currentTask;
     private String traceId;
@@ -573,6 +575,22 @@ public class RequestContext {
 
     public void setTraceId(String traceId) {
         this.traceId = traceId;
+    }
+
+    public void setIncludeMeanings(boolean includeMeanings) {
+        this.includeMeanings = includeMeanings;
+    }
+
+    public boolean includeMeanings() {
+        return this.includeMeanings;
+    }
+
+    public void setIncludeClassifications(boolean includeClassifications) {
+        this.includeClassifications = includeClassifications;
+    }
+
+    public boolean includeClassifications() {
+        return this.includeClassifications;
     }
 
     public class EntityGuidPair {
