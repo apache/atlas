@@ -88,6 +88,7 @@ public class RequestContext {
     private AtlasTask   currentTask;
     private String traceId;
     private final Map<AtlasObjectId, Object> relationshipEndToVertexIdMap = new HashMap<>();
+    private boolean     allowDuplicateDisplayName;
 
     private RequestContext() {
     }
@@ -295,6 +296,13 @@ public class RequestContext {
 
     public void setAllowDeletedRelationsIndexsearch(boolean allowDeletedRelationsIndexsearch) {
         this.allowDeletedRelationsIndexsearch = allowDeletedRelationsIndexsearch;
+    }
+
+    public void setAllowDuplicateDisplayName(boolean allowDuplicateDisplayName){
+        this.allowDuplicateDisplayName = allowDuplicateDisplayName;
+    }
+    public boolean getAllowDuplicateDisplayName(){
+        return allowDuplicateDisplayName;
     }
 
     public String getCurrentTypePatchAction() {
