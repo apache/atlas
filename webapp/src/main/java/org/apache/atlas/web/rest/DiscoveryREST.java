@@ -371,7 +371,7 @@ public class DiscoveryREST {
     public AtlasSearchResult indexSearch(IndexSearchParams parameters) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
         RequestContext.get().setIncludeMeanings(!parameters.isExcludeMeanings());
-        RequestContext.get().setIncludeClassifications(!parameters.isExcludeClassificationAttributes());
+        RequestContext.get().setIncludeClassifications(!parameters.isExcludeClassification());
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.indexSearch(" + parameters + ")");
@@ -438,7 +438,8 @@ public class DiscoveryREST {
             parameters.setExcludeDeletedEntities(excludeDeletedEntities);
             parameters.setLimit(limit);
             parameters.setOffset(offset);
-            parameters.setExcludeClassificationAttributes(!includeClassificationAttributes);
+            parameters.setIncludeClassificationAttributes(includeClassificationAttributes);
+            parameters.setExcludeClassification(!includeClassificationAttributes);
             parameters.setExcludeMeanings(excludeMeaningsAttributes);
             RequestContext.get().setIncludeClassifications(includeClassificationAttributes);
             RequestContext.get().setIncludeMeanings(!excludeMeaningsAttributes);
