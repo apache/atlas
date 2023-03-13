@@ -801,6 +801,8 @@
         <module>addons/falcon-bridge</module>
         <module>addons/sqoop-bridge-shim</module>
         <module>addons/sqoop-bridge</module>
+        <module>addons/storm-bridge-shim</module>
+        <module>addons/storm-bridge</module>
         <module>addons/hbase-bridge-shim</module>
         <module>addons/hbase-bridge</module>
         <module>addons/hbase-testing-util</module>
