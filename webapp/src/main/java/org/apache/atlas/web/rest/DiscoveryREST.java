@@ -368,12 +368,10 @@ public class DiscoveryREST {
     @Path("indexsearch")
     @POST
     @Timed
-    public AtlasSearchResult indexSearch(IndexSearchParams parameters,
-        @QueryParam("includeClassificationAttributes") boolean includeClassificationAttributes,
-        @QueryParam("includeMeaningsAttributes") boolean includeMeaningsAttributes) throws AtlasBaseException {
+    public AtlasSearchResult indexSearch(IndexSearchParams parameters) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
-        RequestContext.get().setIncludeMeanings(includeMeaningsAttributes);
-        RequestContext.get().setIncludeClassifications(includeClassificationAttributes);
+        RequestContext.get().setIncludeMeanings(parameters.isIncludeMeanings());
+        RequestContext.get().setIncludeClassifications(parameters.isIncludeClassifications());
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.indexSearch(" + parameters + ")");
@@ -440,6 +438,8 @@ public class DiscoveryREST {
             parameters.setExcludeDeletedEntities(excludeDeletedEntities);
             parameters.setLimit(limit);
             parameters.setOffset(offset);
+            parameters.setIncludeClassifications(includeClassificationAttributes);
+            parameters.setIncludeMeanings(includeMeaningsAttributes);
             RequestContext.get().setIncludeClassifications(includeClassificationAttributes);
             RequestContext.get().setIncludeMeanings(includeMeaningsAttributes);
             return discoveryService.searchRelatedEntities(guid, relation, getApproximateCount, parameters);
