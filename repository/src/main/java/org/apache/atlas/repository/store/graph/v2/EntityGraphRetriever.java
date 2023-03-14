@@ -978,7 +978,9 @@ public class EntityGraphRetriever {
         ret.setTypeName(typeName);
         ret.setGuid(guid);
         ret.setStatus(GraphHelper.getStatus(entityVertex));
-        ret.setClassificationNames(getAllTraitNames(entityVertex));
+        if(RequestContext.get().includeClassifications()){
+            ret.setClassificationNames(getAllTraitNames(entityVertex));
+        }
         ret.setIsIncomplete(isIncomplete);
         ret.setLabels(getLabels(entityVertex));
 
@@ -987,10 +989,13 @@ public class EntityGraphRetriever {
         ret.setCreateTime(new Date(GraphHelper.getCreatedTime(entityVertex)));
         ret.setUpdateTime(new Date(GraphHelper.getModifiedTime(entityVertex)));
 
-        List<AtlasTermAssignmentHeader> termAssignmentHeaders = mapAssignedTerms(entityVertex);
-        ret.setMeanings(termAssignmentHeaders);
-        ret.setMeaningNames(termAssignmentHeaders.stream().map(AtlasTermAssignmentHeader::getDisplayText).collect(Collectors.toList()));
-
+        if(RequestContext.get().includeMeanings()) {
+            List<AtlasTermAssignmentHeader> termAssignmentHeaders = mapAssignedTerms(entityVertex);
+            ret.setMeanings(termAssignmentHeaders);
+            ret.setMeaningNames(
+                termAssignmentHeaders.stream().map(AtlasTermAssignmentHeader::getDisplayText)
+                    .collect(Collectors.toList()));
+        }
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
 
         if (entityType != null) {
