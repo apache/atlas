@@ -11,7 +11,7 @@ public abstract class SearchParams {
     boolean showSearchScore;
     boolean suppressLogs;
     boolean excludeMeanings;
-    boolean excludeClassification;
+    boolean excludeClassifications;
 
     public abstract String getQuery();
 
@@ -63,12 +63,12 @@ public abstract class SearchParams {
         this.suppressLogs = suppressLogs;
     }
 
-    public boolean isExcludeClassification() {
-        return excludeClassification;
+    public boolean isExcludeClassifications() {
+        return excludeClassifications;
     }
 
-    public void setExcludeClassification(boolean excludeClassification) {
-        this.excludeClassification = excludeClassification;
+    public void setExcludeClassifications(boolean excludeClassifications) {
+        this.excludeClassifications = excludeClassifications;
     }
 
     public boolean isExcludeMeanings() {

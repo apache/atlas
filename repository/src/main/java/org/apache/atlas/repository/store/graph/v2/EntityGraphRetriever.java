@@ -978,7 +978,9 @@ public class EntityGraphRetriever {
         ret.setTypeName(typeName);
         ret.setGuid(guid);
         ret.setStatus(GraphHelper.getStatus(entityVertex));
-        ret.setClassificationNames(getAllTraitNames(entityVertex));
+        if(RequestContext.get().includeClassifications()){
+            ret.setClassificationNames(getAllTraitNames(entityVertex));
+        }
         ret.setIsIncomplete(isIncomplete);
         ret.setLabels(getLabels(entityVertex));
 
