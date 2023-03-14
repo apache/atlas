@@ -30,6 +30,7 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.stereotype.Component;
 
 import javax.servlet.Filter;
@@ -55,6 +56,7 @@ import static org.apache.atlas.AtlasConfiguration.*;
 public class AuditFilter implements Filter {
     private static final Logger LOG       = LoggerFactory.getLogger(AuditFilter.class);
     private static final Logger AUDIT_LOG = LoggerFactory.getLogger("AUDIT");
+    public static final String TRACE_ID   = "trace_id";
 
     private boolean deleteTypeOverrideEnabled                = false;
     private boolean createShellEntityForNonExistingReference = false;
@@ -89,12 +91,13 @@ public class AuditFilter implements Filter {
 
             RequestContext.clear();
             RequestContext requestContext = RequestContext.get();
+            requestContext.setTraceId(UUID.randomUUID().toString());
             requestContext.setUser(user, userGroups);
             requestContext.setClientIPAddress(AtlasAuthorizationUtils.getRequestIpAddress(httpRequest));
             requestContext.setCreateShellEntityForNonExistingReference(createShellEntityForNonExistingReference);
             requestContext.setForwardedAddresses(AtlasAuthorizationUtils.getForwardedAddressesFromRequest(httpRequest));
             requestContext.setSkipFailedEntities(skipFailedEntities);
-
+            MDC.put(TRACE_ID, requestContext.getTraceId());
             if (StringUtils.isNotEmpty(deleteType)) {
                 if (deleteTypeOverrideEnabled) {
                     if(DeleteType.PURGE.name().equals(deleteType)) {
@@ -117,6 +120,7 @@ public class AuditFilter implements Filter {
             // put the request id into the response so users can trace logs for this request
             httpResponse.setHeader(AtlasClient.REQUEST_ID, requestId);
             currentThread.setName(oldName);
+            MDC.clear();
             RequestContext.clear();
         }
     }
