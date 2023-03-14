@@ -18,7 +18,6 @@
 package org.apache.atlas.web.security;
 
 import org.apache.atlas.web.filters.*;
-import org.apache.atlas.web.service.LaunchDarklyConfig;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.keycloak.adapters.AdapterDeploymentContext;
@@ -96,13 +95,8 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
     private final Configuration configuration;
     private final StaleTransactionCleanupFilter staleTransactionCleanupFilter;
     private final ActiveServerFilter activeServerFilter;
-    private final LaunchDarklyConfig launchDarklyConfig;
-    private final static String LAUNCH_DARKLY_SDK_KEY       = Objects.toString(System.getenv("USER_LAUNCH_DARKLY_SDK_KEY"), "");
-    private final static String INSTANCE_DOMAIN_NAME        = Objects.toString(System.getenv("DOMAIN_NAME"), "");
-    private final static String LAUNCH_DARKLY_CONTEXT       = "context-atlas";
-    private final static String LAUNCH_DARKLY_CONTEXT_NAME  = "Atlas";
-    private final static String LAUNCH_DARKLY_FEATURE_FLAG_ENABLE_XSS_KEY  = "instance";
-    private final static String LAUNCH_DARKLY_METASTORE_ENABLE_XSS_FILTER  =  "metastore-enable-xss-protection";
+    private final boolean isAlbEnabled = Boolean.valueOf(System.getenv("ALB_ENABLED")).booleanValue();
+
 
     public static final RequestMatcher KEYCLOAK_REQUEST_MATCHER = new OrRequestMatcher(new RequestMatcher[]{new AntPathRequestMatcher("/login.jsp"), new RequestHeaderRequestMatcher("Authorization"), new QueryParamPresenceRequestMatcher("access_token")});
 
@@ -136,9 +130,7 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
         this.configuration = configuration;
         this.staleTransactionCleanupFilter = staleTransactionCleanupFilter;
         this.activeServerFilter = activeServerFilter;
-        this.launchDarklyConfig = new LaunchDarklyConfig(LAUNCH_DARKLY_SDK_KEY);
-        this.launchDarklyConfig.initContext(LAUNCH_DARKLY_CONTEXT, LAUNCH_DARKLY_CONTEXT_NAME,
-                LAUNCH_DARKLY_FEATURE_FLAG_ENABLE_XSS_KEY, INSTANCE_DOMAIN_NAME );
+
         this.keycloakEnabled = configuration.getBoolean(AtlasAuthenticationProvider.KEYCLOAK_AUTH_METHOD, false);
     }
 
@@ -245,7 +237,7 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
         }
 
         //XSS filter at first
-        if(launchDarklyConfig.evaluate(LAUNCH_DARKLY_METASTORE_ENABLE_XSS_FILTER)) {
+        if(isAlbEnabled) {
             httpSecurity.addFilterBefore(atlasXSSPreventionFilter, BasicAuthenticationFilter.class);
             LOG.info("XSS filter is enabled from Atlas");
         } else {
