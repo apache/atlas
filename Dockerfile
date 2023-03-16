@@ -17,7 +17,7 @@
 #
 
 FROM scratch
-FROM ubuntu:18.04
+FROM ubuntu:22.04
 LABEL maintainer="engineering@atlan.com"
 ARG VERSION=3.0.0-SNAPSHOT
 
@@ -28,7 +28,7 @@ RUN apt-get update \
     && apt-get -y install apt-utils \
     && apt-get -y install \
         wget \
-        python \
+        python2 \
         openjdk-8-jdk-headless \
         patch \
         netcat \
@@ -49,6 +49,8 @@ RUN cd / \
     && mkdir /opt/apache-atlas/libext \
     && mv /atlas-index-repair-tool-${VERSION}.jar /opt/apache-atlas/libext/ \
     && rm -rf /atlas-index-repair-tool-${VERSION}.tar.gz
+
+RUN ln -s /usr/bin/python2 /usr/bin/python
 
 COPY atlas-hub/repair_index.py /opt/apache-atlas/bin/
 
