@@ -545,10 +545,4 @@ atlas.graph.storage.conf-file=${sys:atlas.home}/conf/cassandra.yml
     </build>
 
     <!--Add a dependency here to ensure this module is the final one built-->
-    <dependencies>
-        <dependency>
-            <groupId>org.apache.atlas</groupId>
-            <artifactId>storm-bridge</artifactId>
-        </dependency>
-    </dependencies>
 </project>
