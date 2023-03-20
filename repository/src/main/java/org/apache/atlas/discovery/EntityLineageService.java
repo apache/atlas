@@ -543,6 +543,8 @@ public class EntityLineageService implements AtlasLineageService {
                 Iterable<AtlasEdge> outgoingEdges = processVertex.getEdges(OUT, isInput ? PROCESS_INPUTS_EDGE : PROCESS_OUTPUTS_EDGE);
                 RequestContext.get().endMetricRecord(traverseEdgesOnDemandGetEdgesOut);
 
+                ret.incrementBy(processVertex.getEdgesCount(OUT, isInput ? PROCESS_INPUTS_EDGE : PROCESS_OUTPUTS_EDGE));
+
                 for (AtlasEdge outgoingEdge : outgoingEdges) {
                     AtlasVertex entityVertex = outgoingEdge.getInVertex();
 
@@ -1388,7 +1390,7 @@ public class EntityLineageService implements AtlasLineageService {
     }
 
     private AtlasLineageListInfo initializeLineageListInfo() {
-        return new AtlasLineageListInfo(new HashSet<>(), new HashMap<>(), new HashSet<>(), new HashSet<>());
+        return new AtlasLineageListInfo(new HashSet<>(), new HashMap<>(), new HashSet<>(), new HashSet<>(), 0);
     }
 
     private List executeGremlinScript(Map<String, Object> bindings, String lineageQuery) throws AtlasBaseException {
