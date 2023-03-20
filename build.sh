@@ -24,9 +24,9 @@ unzip -o keycloak-15.0.2.1.zip -d ~/.m2/repository/org
 echo "Maven Building"
 
 if [ "$1" == "build_without_dashboard" ]; then
-  mvn -T 100 -pl '!addons/hdfs-model,!addons/hive-bridge,!addons/hive-bridge-shim,!addons/falcon-bridge-shim,!addons/falcon-bridge,!addons/sqoop-bridge,!addons/sqoop-bridge-shim,!addons/hbase-bridge,!addons/hbase-bridge-shim,!addons/hbase-testing-util,!addons/kafka-bridge,!addons/impala-hook-api,!addons/impala-bridge-shim,!addons/impala-bridge,!dashboardv2,!dashboardv3' -Dmaven.test.skip -DskipTests -Drat.skip=true -DskipOverlay -DskipEnunciate=true package -Pdist
+  mvn  -pl '!addons/hdfs-model,!addons/hive-bridge,!addons/hive-bridge-shim,!addons/falcon-bridge-shim,!addons/falcon-bridge,!addons/sqoop-bridge,!addons/sqoop-bridge-shim,!addons/hbase-bridge,!addons/hbase-bridge-shim,!addons/hbase-testing-util,!addons/kafka-bridge,!addons/impala-hook-api,!addons/impala-bridge-shim,!addons/impala-bridge,!dashboardv2,!dashboardv3' -Dmaven.test.skip -DskipTests -Drat.skip=true -DskipOverlay -DskipEnunciate=true package -Pdist
 else
-  mvn -T 100 -pl '!addons/hdfs-model,!addons/hive-bridge,!addons/hive-bridge-shim,!addons/falcon-bridge-shim,!addons/falcon-bridge,!addons/sqoop-bridge,!addons/sqoop-bridge-shim,!addons/hbase-bridge,!addons/hbase-bridge-shim,!addons/hbase-testing-util,!addons/kafka-bridge,!addons/impala-hook-api,!addons/impala-bridge-shim,!addons/impala-bridge' -Dmaven.test.skip -DskipTests -Drat.skip=true -DskipEnunciate=true package -Pdist
+  mvn  -pl '!addons/hdfs-model,!addons/hive-bridge,!addons/hive-bridge-shim,!addons/falcon-bridge-shim,!addons/falcon-bridge,!addons/sqoop-bridge,!addons/sqoop-bridge-shim,!addons/hbase-bridge,!addons/hbase-bridge-shim,!addons/hbase-testing-util,!addons/kafka-bridge,!addons/impala-hook-api,!addons/impala-bridge-shim,!addons/impala-bridge' -Dmaven.test.skip -DskipTests -Drat.skip=true -DskipEnunciate=true package -Pdist
 fi
 
 echo "[DEBUG listing distro/target"
