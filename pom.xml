@@ -790,6 +790,12 @@
         <module>authorization</module>
         <module>dashboardv2</module>
         <module>dashboardv3</module>
+
+        <module>auth-agents-cred</module>
+        <module>auth-agents-common</module>
+        <module>auth-audits</module>
+        <module>auth-plugin-atlas</module>
+
         <module>webapp</module>
         <module>docs</module>
 
