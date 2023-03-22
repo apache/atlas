@@ -21,6 +21,7 @@ package org.apache.atlas.plugin.util;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import org.apache.atlas.authz.admin.client.AtlasAuthAdminClient;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -44,7 +45,8 @@ public class RangerRolesProvider {
 
 	private final String            serviceType;
 	private final String            serviceName;
-	private final RangerAdminClient rangerAdmin;
+	private final AtlasAuthAdminClient atlasAuthAdminClient;
+	private final KeycloakUserStore keycloakUserStore;
 
 	private final String            cacheFileName;
 	private final String			cacheFileNamePrefix;
@@ -52,19 +54,21 @@ public class RangerRolesProvider {
 	private final Gson              gson;
 	private final boolean           disableCacheIfServiceNotFound;
 
+	private long	lastUpdatedTimeInMillis = -1;
 	private long	lastActivationTimeInMillis;
 	private long    lastKnownRoleVersion = -1L;
 	private boolean rangerUserGroupRolesSetInPlugin;
 	private boolean serviceDefSetInPlugin;
 
-	public RangerRolesProvider(String serviceType, String appId, String serviceName, RangerAdminClient rangerAdmin, String cacheDir, Configuration config) {
+	public RangerRolesProvider(String serviceType, String appId, String serviceName, AtlasAuthAdminClient atlasAuthAdminClient, String cacheDir, Configuration config) {
 		if (LOG.isDebugEnabled()) {
 			LOG.debug("==> RangerRolesProvider(serviceName=" + serviceName + ").RangerRolesProvider()");
 		}
 
 		this.serviceType = serviceType;
 		this.serviceName = serviceName;
-		this.rangerAdmin = rangerAdmin;
+		this.atlasAuthAdminClient = atlasAuthAdminClient;
+		this.keycloakUserStore = new KeycloakUserStore(serviceType);
 
 
 		if (StringUtils.isEmpty(appId)) {
@@ -93,6 +97,14 @@ public class RangerRolesProvider {
 		if (LOG.isDebugEnabled()) {
 			LOG.debug("<== RangerRolesProvider(serviceName=" + serviceName + ").RangerRolesProvider()");
 		}
+	}
+
+	public long getLastUpdatedTimeInMillis() {
+		return lastUpdatedTimeInMillis;
+	}
+
+	public void setLastUpdatedTimeInMillis(long lastUpdatedTimeInMillis) {
+		this.lastUpdatedTimeInMillis = lastUpdatedTimeInMillis;
 	}
 
 	public long getLastActivationTimeInMillis() {
@@ -139,7 +151,8 @@ public class RangerRolesProvider {
 				plugIn.setRoles(roles);
 				rangerUserGroupRolesSetInPlugin = true;
 				setLastActivationTimeInMillis(System.currentTimeMillis());
-				lastKnownRoleVersion = roles.getRoleVersion();
+				lastKnownRoleVersion = roles.getRoleVersion() == null ? -1 : roles.getRoleVersion();
+				lastUpdatedTimeInMillis = roles.getRoleUpdateTime() == null ? -1 : roles.getRoleUpdateTime().getTime();
 			} else {
 				if (!rangerUserGroupRolesSetInPlugin && !serviceDefSetInPlugin) {
 					plugIn.setRoles(null);
@@ -152,6 +165,7 @@ public class RangerRolesProvider {
 				plugIn.setRoles(null);
 				setLastActivationTimeInMillis(System.currentTimeMillis());
 				lastKnownRoleVersion = -1L;
+				lastUpdatedTimeInMillis = -1L;
 				serviceDefSetInPlugin = true;
 			}
 		} catch (Exception excp) {
@@ -171,7 +185,7 @@ public class RangerRolesProvider {
 			LOG.debug("==> RangerRolesProvider(serviceName=" + serviceName + ").loadUserGroupRolesFromAdmin()");
 		}
 
-		RangerRoles roles;
+		RangerRoles roles = null;
 
 		RangerPerfTracer perf = null;
 
@@ -180,7 +194,12 @@ public class RangerRolesProvider {
 		}
 
 		try {
-			roles = rangerAdmin.getRolesIfUpdated(lastKnownRoleVersion, lastActivationTimeInMillis);
+			if ("atlas".equals(serviceName)) {
+				LOG.info("RangerRolesProvider: fetching using keycloak directly for atlas service");
+				roles = keycloakUserStore.loadRolesIfUpdated(lastUpdatedTimeInMillis);
+			} else {
+				roles = atlasAuthAdminClient.getRolesIfUpdated(lastUpdatedTimeInMillis);
+			}
 
 			boolean isUpdated = roles != null;
 
@@ -193,9 +212,6 @@ public class RangerRolesProvider {
 					LOG.debug("RangerRolesProvider(serviceName=" + serviceName + ").run(): no update found. lastKnownRoleVersion=" + lastKnownRoleVersion );
 				}
 			}
-		} catch (RangerServiceNotFoundException snfe) {
-			LOG.error("RangerRolesProvider(serviceName=" + serviceName + "): failed to find service. Will clean up local cache of roles (" + lastKnownRoleVersion + ")", snfe);
-			throw snfe;
 		} catch (Exception excp) {
 			LOG.error("RangerRolesProvider(serviceName=" + serviceName + "): failed to refresh roles. Will continue to use last known version of roles (" + "lastKnowRoleVersion= " + lastKnownRoleVersion, excp);
 			roles = null;
@@ -205,9 +221,9 @@ public class RangerRolesProvider {
 
 		if(LOG.isDebugEnabled()) {
 			LOG.debug("<== RangerRolesProvider(serviceName=" + serviceName + " serviceType= " + serviceType + " ).loadUserGroupRolesFromAdmin()");
-		 }
+		}
 
-		 return roles;
+		return roles;
 	}
 
 	private RangerRoles loadUserGroupRolesFromCache() {
@@ -242,6 +258,7 @@ public class RangerRolesProvider {
 					}
 
 					lastKnownRoleVersion = roles.getRoleVersion() == null ? -1 : roles.getRoleVersion().longValue();
+					lastUpdatedTimeInMillis = roles.getRoleUpdateTime() == null ? -1 : roles.getRoleUpdateTime().getTime();
 				}
 			} catch (Exception excp) {
 				LOG.error("failed to load userGroupRoles from cache file " + cacheFile.getAbsolutePath(), excp);
@@ -260,7 +277,7 @@ public class RangerRolesProvider {
 			roles = new RangerRoles();
 			roles.setServiceName(serviceName);
 			roles.setRoleVersion(-1L);
-			roles.setRoleUpdateTime(new Date());
+			roles.setRoleUpdateTime(null);
 			roles.setRangerRoles(new HashSet<>());
 			saveToCache(roles);
 		}
@@ -307,10 +324,10 @@ public class RangerRolesProvider {
 				try {
 					writer = new FileWriter(cacheFile);
 
-			        gson.toJson(roles, writer);
-		        } catch (Exception excp) {
+					gson.toJson(roles, writer);
+				} catch (Exception excp) {
 					LOG.error("failed to save roles to cache file '" + cacheFile.getAbsolutePath() + "'", excp);
-		        } finally {
+				} finally {
 					if(writer != null) {
 						try {
 							writer.close();

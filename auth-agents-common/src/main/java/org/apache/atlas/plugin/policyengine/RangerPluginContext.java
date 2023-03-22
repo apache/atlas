@@ -19,6 +19,8 @@
 
 package org.apache.atlas.plugin.policyengine;
 
+import org.apache.atlas.authz.admin.client.AtlasAuthAdminClient;
+import org.apache.atlas.authz.admin.client.AtlasAuthRESTClient;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -34,7 +36,7 @@ public class RangerPluginContext {
 	private final RangerPluginConfig        config;
 	private       RangerAuthContext         authContext;
 	private       RangerAuthContextListener authContextListener;
-	private 	  RangerAdminClient         adminClient;
+	private 	  AtlasAuthAdminClient 		atlasAdminClient;
 
 
 	public RangerPluginContext(RangerPluginConfig config) {
@@ -65,20 +67,20 @@ public class RangerPluginContext {
 		}
 	}
 
-	public RangerAdminClient getAdminClient() {
-		return adminClient;
+	public AtlasAuthAdminClient getAtlasAuthAdminClient() {
+		return atlasAdminClient;
 	}
 
-	public void setAdminClient(RangerAdminClient adminClient) {
-		this.adminClient = adminClient;
+	public void setAtlasAuthAdminClient(AtlasAuthAdminClient atlasAdminClient) {
+		this.atlasAdminClient = atlasAdminClient;
 	}
 
-	public RangerAdminClient createAdminClient(RangerPluginConfig pluginConfig) {
+	public AtlasAuthAdminClient createAtlasAuthAdminClient(RangerPluginConfig pluginConfig) {
 		if(LOG.isDebugEnabled()) {
 			LOG.debug("==> RangerBasePlugin.createAdminClient(" + pluginConfig.getServiceName() + ", " + pluginConfig.getAppId() + ", " + pluginConfig.getPropertyPrefix() + ")");
 		}
 
-		RangerAdminClient ret              = null;
+		AtlasAuthAdminClient ret              = null;
 		String            propertyName     = pluginConfig.getPropertyPrefix() + ".policy.source.impl";
 		String            policySourceImpl = pluginConfig.get(propertyName);
 
@@ -93,7 +95,7 @@ public class RangerPluginContext {
 
 			try {
 				@SuppressWarnings("unchecked")
-				Class<RangerAdminClient> adminClass = (Class<RangerAdminClient>)Class.forName(policySourceImpl);
+				Class<AtlasAuthAdminClient> adminClass = (Class<AtlasAuthAdminClient>)Class.forName(policySourceImpl);
 
 				ret = adminClass.newInstance();
 			} catch (Exception excp) {
@@ -102,7 +104,7 @@ public class RangerPluginContext {
 		}
 
 		if(ret == null) {
-			ret = new RangerAdminRESTClient();
+			ret = new AtlasAuthRESTClient();
 		}
 
 		ret.init(pluginConfig.getServiceName(), pluginConfig.getAppId(), pluginConfig.getPropertyPrefix(), pluginConfig);
@@ -111,7 +113,7 @@ public class RangerPluginContext {
 			LOG.debug("<== RangerBasePlugin.createAdminClient(" + pluginConfig.getServiceName() + ", " + pluginConfig.getAppId() + ", " + pluginConfig.getPropertyPrefix() + "): policySourceImpl=" + policySourceImpl + ", client=" + ret);
 		}
 
-		setAdminClient(ret);
+		setAtlasAuthAdminClient(ret);
 
 		return ret;
 	}

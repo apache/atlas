@@ -19,6 +19,7 @@
 
 package org.apache.atlas.plugin.contextenricher;
 
+import org.apache.atlas.authz.admin.client.AtlasAuthAdminClient;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -33,7 +34,7 @@ import java.util.Map;
 public class RangerAdminTagRetriever extends RangerTagRetriever {
 	private static final Log LOG = LogFactory.getLog(RangerAdminTagRetriever.class);
 
-	private RangerAdminClient adminClient;
+	private AtlasAuthAdminClient atlasAuthAdminClient;
 
 	@Override
 	public void init(Map<String, String> options) {
@@ -46,8 +47,8 @@ public class RangerAdminTagRetriever extends RangerTagRetriever {
 			}
 
 			RangerPluginContext pluginContext = getPluginContext();
-			RangerAdminClient	rangerAdmin   = pluginContext.getAdminClient();
-			this.adminClient                  = (rangerAdmin != null) ? rangerAdmin : pluginContext.createAdminClient(pluginConfig);
+			AtlasAuthAdminClient adminClient = pluginContext.getAtlasAuthAdminClient();
+			this.atlasAuthAdminClient          = (adminClient != null) ? adminClient : pluginContext.createAtlasAuthAdminClient(pluginConfig);
 
 		} else {
 			LOG.error("FATAL: Cannot find service/serviceDef to use for retrieving tags. Will NOT be able to retrieve tags.");
@@ -59,7 +60,7 @@ public class RangerAdminTagRetriever extends RangerTagRetriever {
 
 		ServiceTags serviceTags = null;
 
-		if (adminClient != null) {
+		/*if (adminClient != null) {
 			try {
 				serviceTags = adminClient.getServiceTagsIfUpdated(lastKnownVersion, lastActivationTimeInMillis);
 			} catch (ClosedByInterruptException closedByInterruptException) {
@@ -69,7 +70,7 @@ public class RangerAdminTagRetriever extends RangerTagRetriever {
 				LOG.error("Tag-retriever encounterd exception, exception=", e);
 				LOG.error("Returning null service tags");
 			}
-		}
+		}*/
 		return serviceTags;
 	}
 

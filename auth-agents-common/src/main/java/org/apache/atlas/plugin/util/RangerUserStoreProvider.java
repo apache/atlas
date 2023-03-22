@@ -21,6 +21,7 @@ package org.apache.atlas.plugin.util;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import org.apache.atlas.authz.admin.client.AtlasAuthAdminClient;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -45,7 +46,8 @@ public class RangerUserStoreProvider {
 
 	private final String            serviceType;
 	private final String            serviceName;
-	private final RangerAdminClient rangerAdmin;
+	private final AtlasAuthAdminClient atlasAuthAdminClient;
+	private final KeycloakUserStore keycloakUserStore;
 
 	private final String            cacheFileName;
 	private final String			cacheFileNamePrefix;
@@ -54,19 +56,21 @@ public class RangerUserStoreProvider {
 	private final boolean           disableCacheIfServiceNotFound;
 
 	private long	lastActivationTimeInMillis;
+	private long	lastUpdateTimeInMillis = -1L;
 	private long    lastKnownUserStoreVersion = -1L;
 	private boolean rangerUserStoreSetInPlugin;
 	private boolean serviceDefSetInPlugin;
 
-	public RangerUserStoreProvider(String serviceType, String appId, String serviceName, RangerAdminClient rangerAdmin, String cacheDir, Configuration config) {
+	public RangerUserStoreProvider(String serviceType, String appId, String serviceName, AtlasAuthAdminClient atlasAuthAdminClient, String cacheDir, Configuration config) {
 		if (LOG.isDebugEnabled()) {
 			LOG.debug("==> RangerUserStoreProvider(serviceName=" + serviceName + ").RangerUserStoreProvider()");
 		}
 
 		this.serviceType = serviceType;
 		this.serviceName = serviceName;
-		this.rangerAdmin = rangerAdmin;
+		this.atlasAuthAdminClient = atlasAuthAdminClient;
 
+		this.keycloakUserStore = new KeycloakUserStore(serviceType);
 
 		if (StringUtils.isEmpty(appId)) {
 			appId = serviceType;
@@ -102,6 +106,14 @@ public class RangerUserStoreProvider {
 
 	public void setLastActivationTimeInMillis(long lastActivationTimeInMillis) {
 		this.lastActivationTimeInMillis = lastActivationTimeInMillis;
+	}
+
+	public boolean isRangerUserStoreSetInPlugin() {
+		return rangerUserStoreSetInPlugin;
+	}
+
+	public void setRangerUserStoreSetInPlugin(boolean rangerUserStoreSetInPlugin) {
+		this.rangerUserStoreSetInPlugin = rangerUserStoreSetInPlugin;
 	}
 
 	public void loadUserStore(RangerBasePlugin plugIn) {
@@ -140,7 +152,8 @@ public class RangerUserStoreProvider {
 				plugIn.setUserStore(userStore);
 				rangerUserStoreSetInPlugin = true;
 				setLastActivationTimeInMillis(System.currentTimeMillis());
-				lastKnownUserStoreVersion = userStore.getUserStoreVersion();
+				lastKnownUserStoreVersion = userStore.getUserStoreVersion() == null ? -1 : userStore.getUserStoreVersion();
+				lastUpdateTimeInMillis = userStore.getUserStoreUpdateTime() == null ? -1 : userStore.getUserStoreUpdateTime().getTime();
 			} else {
 				if (!rangerUserStoreSetInPlugin && !serviceDefSetInPlugin) {
 					plugIn.setUserStore(userStore);
@@ -153,6 +166,7 @@ public class RangerUserStoreProvider {
 				plugIn.setUserStore(null);
 				setLastActivationTimeInMillis(System.currentTimeMillis());
 				lastKnownUserStoreVersion = -1L;
+				lastUpdateTimeInMillis = -1L;
 				serviceDefSetInPlugin = true;
 			}
 		} catch (Exception excp) {
@@ -172,7 +186,7 @@ public class RangerUserStoreProvider {
 			LOG.debug("==> RangerUserStoreProvider(serviceName=" + serviceName + ").loadUserStoreFromAdmin()");
 		}
 
-		RangerUserStore userStore;
+		RangerUserStore userStore = null;
 
 		RangerPerfTracer perf = null;
 
@@ -181,11 +195,17 @@ public class RangerUserStoreProvider {
 		}
 
 		try {
-			userStore = rangerAdmin.getUserStoreIfUpdated(lastKnownUserStoreVersion, lastActivationTimeInMillis);
+			if ("atlas".equals(serviceName)) {
+				LOG.info("RangerUserStoreProvider: fetching using keycloak directly for atlas service");
+				userStore = keycloakUserStore.loadUserStoreIfUpdated(lastUpdateTimeInMillis);
+			} else {
+				userStore = atlasAuthAdminClient.getUserStoreIfUpdated(lastUpdateTimeInMillis);
+			}
 
 			boolean isUpdated = userStore != null;
 
 			if(isUpdated) {
+
 				long newVersion = userStore.getUserStoreVersion() == null ? -1 : userStore.getUserStoreVersion().longValue();
 				saveToCache(userStore);
 				LOG.info("RangerUserStoreProvider(serviceName=" + serviceName + "): found updated version. lastKnownUserStoreVersion=" + lastKnownUserStoreVersion + "; newVersion=" + newVersion );
@@ -194,9 +214,6 @@ public class RangerUserStoreProvider {
 					LOG.debug("RangerUserStoreProvider(serviceName=" + serviceName + ").run(): no update found. lastKnownUserStoreVersion=" + lastKnownUserStoreVersion );
 				}
 			}
-		} catch (RangerServiceNotFoundException snfe) {
-			LOG.error("RangerUserStoreProvider(serviceName=" + serviceName + "): failed to find service. Will clean up local cache of userStore (" + lastKnownUserStoreVersion + ")", snfe);
-			throw snfe;
 		} catch (Exception excp) {
 			LOG.error("RangerUserStoreProvider(serviceName=" + serviceName + "): failed to refresh userStore. Will continue to use last known version of userStore (" + "lastKnowRoleVersion= " + lastKnownUserStoreVersion, excp);
 			userStore = null;
@@ -206,9 +223,9 @@ public class RangerUserStoreProvider {
 
 		if(LOG.isDebugEnabled()) {
 			LOG.debug("<== RangerUserStoreProvider(serviceName=" + serviceName + " serviceType= " + serviceType + " ).loadUserStoreFromAdmin()");
-		 }
+		}
 
-		 return userStore;
+		return userStore;
 	}
 
 	private RangerUserStore loadUserStoreFromCache() {
@@ -243,6 +260,7 @@ public class RangerUserStoreProvider {
 					}
 
 					lastKnownUserStoreVersion = userStore.getUserStoreVersion() == null ? -1 : userStore.getUserStoreVersion().longValue();
+					lastUpdateTimeInMillis = userStore.getUserStoreUpdateTime() == null ? -1 : userStore.getUserStoreUpdateTime().getTime();
 				}
 			} catch (Exception excp) {
 				LOG.error("failed to load userStore from cache file " + cacheFile.getAbsolutePath(), excp);
@@ -261,7 +279,7 @@ public class RangerUserStoreProvider {
 			userStore = new RangerUserStore();
 			userStore.setServiceName(serviceName);
 			userStore.setUserStoreVersion(-1L);
-			userStore.setUserStoreUpdateTime(new Date());
+			userStore.setUserStoreUpdateTime(null);
 			userStore.setUserGroupMapping(new HashMap<String, Set<String>>());
 			saveToCache(userStore);
 		}
@@ -308,10 +326,10 @@ public class RangerUserStoreProvider {
 				try {
 					writer = new FileWriter(cacheFile);
 
-			        gson.toJson(userStore, writer);
-		        } catch (Exception excp) {
+					gson.toJson(userStore, writer);
+				} catch (Exception excp) {
 					LOG.error("failed to save userStore to cache file '" + cacheFile.getAbsolutePath() + "'", excp);
-		        } finally {
+				} finally {
 					if(writer != null) {
 						try {
 							writer.close();

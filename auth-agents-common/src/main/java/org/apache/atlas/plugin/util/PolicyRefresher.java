@@ -21,6 +21,7 @@ package org.apache.atlas.plugin.util;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import org.apache.atlas.authz.admin.client.AtlasAuthAdminClient;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -48,6 +49,7 @@ public class PolicyRefresher extends Thread {
 	private final String                         serviceType;
 	private final String                         serviceName;
 	private final RangerAdminClient              rangerAdmin;
+	private final AtlasAuthAdminClient			 atlasAuthAdminClient;
 	private final RangerRolesProvider            rolesProvider;
 	private final RangerUserStoreProvider		 userStoreProvider;
 	private final long                           pollingIntervalMs;
@@ -57,6 +59,7 @@ public class PolicyRefresher extends Thread {
 	private final BlockingQueue<DownloadTrigger> policyDownloadQueue = new LinkedBlockingQueue<>();
 	private       Timer                          policyDownloadTimer;
 	private       long                           lastKnownVersion    = -1L;
+	private       long                           lastUpdatedTiemInMillis    = -1L;
 	private       long                           lastActivationTimeInMillis;
 	private       boolean                        policiesSetInPlugin;
 	private       boolean                        serviceDefSetInPlugin;
@@ -66,6 +69,7 @@ public class PolicyRefresher extends Thread {
 		if(LOG.isDebugEnabled()) {
 			LOG.debug("==> PolicyRefresher(serviceName=" + plugIn.getServiceName() + ").PolicyRefresher()");
 		}
+		LOG.info("==> PolicyRefresher(serviceName=" + plugIn.getServiceName() + ").PolicyRefresher()");
 
 		RangerPluginConfig pluginConfig   = plugIn.getConfig();
 		String             propertyPrefix = pluginConfig.getPropertyPrefix();
@@ -82,6 +86,8 @@ public class PolicyRefresher extends Thread {
 		cacheFilename = cacheFilename.replace(File.pathSeparatorChar,  '_');
 
 		this.cacheFileName = cacheFilename;
+		//TODO: Remove this
+		rangerAdmin = getRangerAdminClient();
 
 		Gson gson = null;
 		try {
@@ -91,11 +97,11 @@ public class PolicyRefresher extends Thread {
 		}
 
 		RangerPluginContext pluginContext  = plugIn.getPluginContext();
-		RangerAdminClient   adminClient    = pluginContext.getAdminClient();
-		this.rangerAdmin                   = (adminClient != null) ? adminClient : pluginContext.createAdminClient(pluginConfig);
+		AtlasAuthAdminClient   adminClient = pluginContext.getAtlasAuthAdminClient();
+		this.atlasAuthAdminClient          = (adminClient != null) ? adminClient : pluginContext.createAtlasAuthAdminClient(pluginConfig);
 		this.gson                          = gson;
-		this.rolesProvider                 = new RangerRolesProvider(getServiceType(), appId, getServiceName(), rangerAdmin,  cacheDir, pluginConfig);
-		this.userStoreProvider             = new RangerUserStoreProvider(getServiceType(), appId, getServiceName(), rangerAdmin,  cacheDir, pluginConfig);
+		this.rolesProvider                 = new RangerRolesProvider(getServiceType(), appId, getServiceName(), atlasAuthAdminClient, cacheDir, pluginConfig);
+		this.userStoreProvider             = new RangerUserStoreProvider(getServiceType(), appId, getServiceName(), atlasAuthAdminClient,  cacheDir, pluginConfig);
 		this.pollingIntervalMs             = pluginConfig.getLong(propertyPrefix + ".policy.pollIntervalMs", 30 * 1000);
 
 		setName("PolicyRefresher(serviceName=" + serviceName + ")-" + getId());
@@ -152,9 +158,8 @@ public class PolicyRefresher extends Thread {
 		try {
 			policyDownloadTimer.schedule(new DownloaderTask(policyDownloadQueue), pollingIntervalMs, pollingIntervalMs);
 
-			if (LOG.isDebugEnabled()) {
-				LOG.debug("Scheduled policyDownloadRefresher to download policies every " + pollingIntervalMs + " milliseconds");
-			}
+			LOG.info("Scheduled policyDownloadRefresher to download policies every " + pollingIntervalMs + " milliseconds");
+
 		} catch (IllegalStateException exception) {
 			LOG.error("Error scheduling policyDownloadTimer:", exception);
 			LOG.error("*** Policies will NOT be downloaded every " + pollingIntervalMs + " milliseconds ***");
@@ -206,6 +211,7 @@ public class PolicyRefresher extends Thread {
 			DownloadTrigger trigger = null;
 			try {
 				trigger = policyDownloadQueue.take();
+
 				loadRoles();
 				loadPolicy();
 				loadUserStore();
@@ -267,6 +273,7 @@ public class PolicyRefresher extends Thread {
 				serviceDefSetInPlugin = false;
 				setLastActivationTimeInMillis(System.currentTimeMillis());
 				lastKnownVersion = svcPolicies.getPolicyVersion() != null ? svcPolicies.getPolicyVersion() : -1L;
+				lastUpdatedTiemInMillis = svcPolicies.getPolicyUpdateTime() != null ? svcPolicies.getPolicyUpdateTime().getTime() : -1L;
 			} else {
 				if (!policiesSetInPlugin && !serviceDefSetInPlugin) {
 					plugIn.setPolicies(null);
@@ -280,6 +287,7 @@ public class PolicyRefresher extends Thread {
 				serviceDefSetInPlugin = true;
 				setLastActivationTimeInMillis(System.currentTimeMillis());
 				lastKnownVersion = -1;
+				lastUpdatedTiemInMillis = -1;
 			}
 		} catch (Exception excp) {
 			LOG.error("Encountered unexpected exception, ignoring..", excp);
@@ -327,9 +335,6 @@ public class PolicyRefresher extends Thread {
 					LOG.debug("PolicyRefresher(serviceName=" + serviceName + ").run(): no update found. lastKnownVersion=" + lastKnownVersion);
 				}
 			}
-		} catch (RangerServiceNotFoundException snfe) {
-			LOG.error("PolicyRefresher(serviceName=" + serviceName + "): failed to find service. Will clean up local cache of policies (" + lastKnownVersion + ")", snfe);
-			throw snfe;
 		} catch (Exception excp) {
 			LOG.error("PolicyRefresher(serviceName=" + serviceName + "): failed to refresh policies. Will continue to use last known version of policies (" + lastKnownVersion + ")", excp);
 			svcPolicies = null;
@@ -339,9 +344,9 @@ public class PolicyRefresher extends Thread {
 
 		if(LOG.isDebugEnabled()) {
 			LOG.debug("<== PolicyRefresher(serviceName=" + serviceName + ").loadPolicyfromPolicyAdmin()");
-		 }
+		}
 
-		 return svcPolicies;
+		return svcPolicies;
 	}
 	private ServicePolicies loadFromCache() {
 
@@ -353,42 +358,43 @@ public class PolicyRefresher extends Thread {
 
 		File cacheFile = cacheDir == null ? null : new File(cacheDir + File.separator + cacheFileName);
 
-    	if(cacheFile != null && cacheFile.isFile() && cacheFile.canRead()) {
-    		Reader reader = null;
+		if(cacheFile != null && cacheFile.isFile() && cacheFile.canRead()) {
+			Reader reader = null;
 
-    		RangerPerfTracer perf = null;
+			RangerPerfTracer perf = null;
 
-    		if(RangerPerfTracer.isPerfTraceEnabled(PERF_POLICYENGINE_INIT_LOG)) {
-    			perf = RangerPerfTracer.getPerfTracer(PERF_POLICYENGINE_INIT_LOG, "PolicyRefresher.loadFromCache(serviceName=" + serviceName + ")");
-    		}
+			if(RangerPerfTracer.isPerfTraceEnabled(PERF_POLICYENGINE_INIT_LOG)) {
+				perf = RangerPerfTracer.getPerfTracer(PERF_POLICYENGINE_INIT_LOG, "PolicyRefresher.loadFromCache(serviceName=" + serviceName + ")");
+			}
 
-    		try {
-	        	reader = new FileReader(cacheFile);
+			try {
+				reader = new FileReader(cacheFile);
 
-		        policies = gson.fromJson(reader, ServicePolicies.class);
+				policies = gson.fromJson(reader, ServicePolicies.class);
 
-		        if(policies != null) {
-		        	if(!StringUtils.equals(serviceName, policies.getServiceName())) {
-		        		LOG.warn("ignoring unexpected serviceName '" + policies.getServiceName() + "' in cache file '" + cacheFile.getAbsolutePath() + "'");
+				if(policies != null) {
+					if(!StringUtils.equals(serviceName, policies.getServiceName())) {
+						LOG.warn("ignoring unexpected serviceName '" + policies.getServiceName() + "' in cache file '" + cacheFile.getAbsolutePath() + "'");
 
-		        		policies.setServiceName(serviceName);
-		        	}
+						policies.setServiceName(serviceName);
+					}
 
-		        	lastKnownVersion = policies.getPolicyVersion() == null ? -1 : policies.getPolicyVersion().longValue();
-		         }
-	        } catch (Exception excp) {
-	        	LOG.error("failed to load policies from cache file " + cacheFile.getAbsolutePath(), excp);
-	        } finally {
-	        	RangerPerfTracer.log(perf);
+					lastKnownVersion = policies.getPolicyVersion() == null ? -1 : policies.getPolicyVersion().longValue();
+					lastUpdatedTiemInMillis = policies.getPolicyUpdateTime() == null ? -1 : policies.getPolicyUpdateTime().getTime();
+				}
+			} catch (Exception excp) {
+				LOG.error("failed to load policies from cache file " + cacheFile.getAbsolutePath(), excp);
+			} finally {
+				RangerPerfTracer.log(perf);
 
-	        	if(reader != null) {
-	        		try {
-	        			reader.close();
-	        		} catch(Exception excp) {
-	        			LOG.error("error while closing opened cache file " + cacheFile.getAbsolutePath(), excp);
-	        		}
-	        	}
-	        }
+				if(reader != null) {
+					try {
+						reader.close();
+					} catch(Exception excp) {
+						LOG.error("error while closing opened cache file " + cacheFile.getAbsolutePath(), excp);
+					}
+				}
+			}
 		} else {
 			LOG.warn("cache file does not exist or not readable '" + (cacheFile == null ? null : cacheFile.getAbsolutePath()) + "'");
 		}
@@ -420,8 +426,8 @@ public class PolicyRefresher extends Thread {
 					}
 				}
 			}
-			
-	    	if(cacheFile != null) {
+
+			if(cacheFile != null) {
 
 				RangerPerfTracer perf = null;
 
@@ -430,26 +436,26 @@ public class PolicyRefresher extends Thread {
 				}
 
 				Writer writer = null;
-	
+
 				try {
 					writer = new FileWriter(cacheFile);
-	
-			        gson.toJson(policies, writer);
-		        } catch (Exception excp) {
-		        	LOG.error("failed to save policies to cache file '" + cacheFile.getAbsolutePath() + "'", excp);
-		        } finally {
-		        	if(writer != null) {
-		        		try {
-		        			writer.close();
-		        		} catch(Exception excp) {
-		        			LOG.error("error while closing opened cache file '" + cacheFile.getAbsolutePath() + "'", excp);
-		        		}
-		        	}
-		        }
+
+					gson.toJson(policies, writer);
+				} catch (Exception excp) {
+					LOG.error("failed to save policies to cache file '" + cacheFile.getAbsolutePath() + "'", excp);
+				} finally {
+					if(writer != null) {
+						try {
+							writer.close();
+						} catch(Exception excp) {
+							LOG.error("error while closing opened cache file '" + cacheFile.getAbsolutePath() + "'", excp);
+						}
+					}
+				}
 
 				RangerPerfTracer.log(perf);
 
-	    	}
+			}
 		} else {
 			LOG.info("policies is null. Nothing to save in cache");
 		}
