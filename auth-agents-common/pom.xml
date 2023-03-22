@@ -96,4 +96,52 @@
         </dependency>
     </dependencies>
 
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.2.4</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <minimizeJar>true</minimizeJar>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>**/*.md</exclude>
+                                        <exclude>**/*.txt</exclude>
+                                        <exclude>**/*.yml</exclude>
+                                        <exclude>**/*.properties</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                            <artifactSet>
+                                <excludes>
+                                    <exclude>org.slf4j:*</exclude>
+                                    <exclude>com.google.api.grpc:*</exclude>
+                                    <exclude>org.janusgraph:*</exclude>
+                                    <exclude>com.google.protobuf:*</exclude>
+                                    <exclude>com.squareup.okhttp:*</exclude>
+                                    <exclude>org.apache.lucene:*</exclude>
+                                    <exclude>org.apache.hbase:*</exclude>
+                                    <exclude>com.datastax.oss:*</exclude>
+                                    <exclude>org.apache.tinkerpop</exclude>
+                                    <exclude>org.keycloak:*</exclude>
+                                </excludes>
+                            </artifactSet>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
 </project>

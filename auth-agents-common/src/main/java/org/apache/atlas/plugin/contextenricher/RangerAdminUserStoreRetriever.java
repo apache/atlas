@@ -23,7 +23,6 @@ import org.apache.atlas.authz.admin.client.AtlasAuthAdminClient;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.atlas.admin.client.RangerAdminClient;
 import org.apache.atlas.authorization.hadoop.config.RangerPluginConfig;
 import org.apache.atlas.plugin.policyengine.RangerPluginContext;
 import org.apache.atlas.plugin.util.RangerUserStore;
@@ -47,8 +46,7 @@ public class RangerAdminUserStoreRetriever extends RangerUserStoreRetriever {
             }
 
             RangerPluginContext pluginContext = getPluginContext();
-            AtlasAuthAdminClient   adminClient = pluginContext.getAtlasAuthAdminClient();
-            this.atlasAuthAdminClient          = (adminClient != null) ? adminClient : pluginContext.createAtlasAuthAdminClient(pluginConfig);
+            this.atlasAuthAdminClient         = pluginContext.getAtlasAuthAdminClient();
 
         } else {
             LOG.error("FATAL: Cannot find service/serviceDef to use for retrieving userstore. Will NOT be able to retrieve userstore.");

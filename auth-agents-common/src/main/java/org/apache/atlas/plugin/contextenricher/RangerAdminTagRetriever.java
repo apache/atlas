@@ -23,12 +23,10 @@ import org.apache.atlas.authz.admin.client.AtlasAuthAdminClient;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.atlas.admin.client.RangerAdminClient;
 import org.apache.atlas.authorization.hadoop.config.RangerPluginConfig;
 import org.apache.atlas.plugin.policyengine.RangerPluginContext;
 import org.apache.atlas.plugin.util.ServiceTags;
 
-import java.nio.channels.ClosedByInterruptException;
 import java.util.Map;
 
 public class RangerAdminTagRetriever extends RangerTagRetriever {
@@ -46,9 +44,8 @@ public class RangerAdminTagRetriever extends RangerTagRetriever {
 				pluginConfig = new RangerPluginConfig(serviceDef.getName(), serviceName, appId, null, null, null);
 			}
 
-			RangerPluginContext pluginContext = getPluginContext();
-			AtlasAuthAdminClient adminClient = pluginContext.getAtlasAuthAdminClient();
-			this.atlasAuthAdminClient          = (adminClient != null) ? adminClient : pluginContext.createAtlasAuthAdminClient(pluginConfig);
+			RangerPluginContext pluginContext  = getPluginContext();
+			this.atlasAuthAdminClient = pluginContext.getAtlasAuthAdminClient();
 
 		} else {
 			LOG.error("FATAL: Cannot find service/serviceDef to use for retrieving tags. Will NOT be able to retrieve tags.");

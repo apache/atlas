@@ -24,7 +24,6 @@ import org.apache.atlas.authz.admin.client.AtlasAuthRESTClient;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.atlas.admin.client.RangerAdminClient;
 import org.apache.atlas.admin.client.RangerAdminRESTClient;
 import org.apache.atlas.authorization.hadoop.config.RangerPluginConfig;
 import org.apache.atlas.plugin.service.RangerAuthContext;
@@ -68,21 +67,21 @@ public class RangerPluginContext {
 	}
 
 	public AtlasAuthAdminClient getAtlasAuthAdminClient() {
+		if (atlasAdminClient == null) {
+			atlasAdminClient = initAtlasAuthAdminClient();
+		}
+
 		return atlasAdminClient;
 	}
 
-	public void setAtlasAuthAdminClient(AtlasAuthAdminClient atlasAdminClient) {
-		this.atlasAdminClient = atlasAdminClient;
-	}
-
-	public AtlasAuthAdminClient createAtlasAuthAdminClient(RangerPluginConfig pluginConfig) {
+	private AtlasAuthAdminClient initAtlasAuthAdminClient() {
 		if(LOG.isDebugEnabled()) {
-			LOG.debug("==> RangerBasePlugin.createAdminClient(" + pluginConfig.getServiceName() + ", " + pluginConfig.getAppId() + ", " + pluginConfig.getPropertyPrefix() + ")");
+			LOG.debug("==> RangerBasePlugin.createAdminClient(" + config.getServiceName() + ", " + config.getAppId() + ", " + config.getPropertyPrefix() + ")");
 		}
 
-		AtlasAuthAdminClient ret              = null;
-		String            propertyName     = pluginConfig.getPropertyPrefix() + ".policy.source.impl";
-		String            policySourceImpl = pluginConfig.get(propertyName);
+		AtlasAuthAdminClient ret           = null;
+		String            propertyName     = config.getPropertyPrefix() + ".policy.source.impl";
+		String            policySourceImpl = config.get(propertyName);
 
 		if(StringUtils.isEmpty(policySourceImpl)) {
 			if (LOG.isDebugEnabled()) {
@@ -107,13 +106,11 @@ public class RangerPluginContext {
 			ret = new AtlasAuthRESTClient();
 		}
 
-		ret.init(pluginConfig.getServiceName(), pluginConfig.getAppId(), pluginConfig.getPropertyPrefix(), pluginConfig);
+		ret.init(config);
 
 		if(LOG.isDebugEnabled()) {
-			LOG.debug("<== RangerBasePlugin.createAdminClient(" + pluginConfig.getServiceName() + ", " + pluginConfig.getAppId() + ", " + pluginConfig.getPropertyPrefix() + "): policySourceImpl=" + policySourceImpl + ", client=" + ret);
+			LOG.debug("<== RangerBasePlugin.createAdminClient(" + config.getServiceName() + ", " + config.getAppId() + ", " + config.getPropertyPrefix() + "): policySourceImpl=" + policySourceImpl + ", client=" + ret);
 		}
-
-		setAtlasAuthAdminClient(ret);
 
 		return ret;
 	}

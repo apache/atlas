@@ -1,17 +1,17 @@
 package org.apache.atlas.authz.admin.client;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+import org.apache.atlas.authorization.hadoop.config.RangerPluginConfig;
 import org.apache.atlas.authorization.utils.StringUtil;
 import org.apache.atlas.plugin.util.RangerRoles;
 import org.apache.atlas.plugin.util.RangerUserStore;
 import org.apache.atlas.plugin.util.ServicePolicies;
+import org.apache.atlas.type.AtlasType;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.http.client.utils.URIBuilder;
 
 import javax.servlet.http.HttpServletResponse;
@@ -30,22 +30,16 @@ public class AtlasAuthRESTClient implements AtlasAuthAdminClient {
     private OkHttpClient httpClient;
     private String adminUrl;
 
+    private static final String PARAM_LAST_UPDATED_TIME = "lastUpdatedTime";
+    private static final String PARAM_PLUGIN_ID         = "pluginId";
 
     @Override
-    public void init(String serviceName, String appId, String configPropertyPrefix, Configuration config) {
-        this.serviceName = serviceName;
-        this.pluginId = getPluginId(serviceName, appId);
-        String url = "";
-        String tmpUrl = config.get(configPropertyPrefix + ".authz.rest.url");
-        if (!StringUtil.isEmpty(tmpUrl)) {
-            url = tmpUrl.trim();
-        }
-        if (url.endsWith("/")) {
-            url = url.substring(0, url.length() - 1);
-        }
-        adminUrl = url;
-        long tmpReadTimeout = config.getLong(configPropertyPrefix + ".policy.rest.client.read.timeoutMs", 20000);
-        init(serviceName, tmpReadTimeout);
+    public void init(RangerPluginConfig config) {
+        this.serviceName = config.getServiceName();
+        this.pluginId = getPluginId(serviceName, config.getAppId());
+        adminUrl = getAdminUrl(config);
+
+        initClient(config);
     }
 
     public String getPluginId(String serviceName, String appId) {
@@ -60,7 +54,7 @@ public class AtlasAuthRESTClient implements AtlasAuthAdminClient {
 
         String ret  = hostName + "-" + serviceName;
 
-        if(! StringUtils.isEmpty(appId)) {
+        if(StringUtils.isNotEmpty(appId)) {
             ret = appId + "@" + ret;
         }
 
@@ -70,13 +64,6 @@ public class AtlasAuthRESTClient implements AtlasAuthAdminClient {
 
         return ret ;
     }
-
-    private void init(String serviceName, long readTimeout) {
-        this.serviceName = serviceName;
-        this.httpClient = new OkHttpClient();
-        this.httpClient.newBuilder().readTimeout(readTimeout, TimeUnit.MILLISECONDS);
-    }
-
 
     @Override
     public ServicePolicies getServicePoliciesIfUpdated(long lastUpdatedTimeInMillis) throws Exception {
@@ -96,6 +83,13 @@ public class AtlasAuthRESTClient implements AtlasAuthAdminClient {
         return sendRequestAndGetResponse(uri, RangerUserStore.class);
     }
 
+    private void initClient(RangerPluginConfig config) {
+        this.httpClient = new OkHttpClient();
+
+        long timeout = config.getLong(config.getPropertyPrefix() + ".policy.rest.client.read.timeoutMs", 20000);
+        this.httpClient.newBuilder().readTimeout(timeout, TimeUnit.MILLISECONDS);
+    }
+
     private <T> T sendRequestAndGetResponse(URI uri, Class<T> responseClass) throws Exception {
         Request request = new Request.Builder().url(uri.toURL()).build();
         Response response = httpClient.newCall(request).execute();
@@ -108,8 +102,7 @@ public class AtlasAuthRESTClient implements AtlasAuthAdminClient {
         } else if (response.code() == HttpServletResponse.SC_OK) {
             String responseBody = response.body().string();
             if (StringUtils.isNotEmpty(responseBody)) {
-                ObjectMapper mapper = new ObjectMapper();
-                return mapper.readValue(responseBody, responseClass);
+                AtlasType.fromJson(responseBody, responseClass);
             } else {
                 LOG.warn("AtlasAuthRESTClient.sendRequestAndGetResponse(): Empty response from Atlas Auth");
             }
@@ -124,8 +117,23 @@ public class AtlasAuthRESTClient implements AtlasAuthAdminClient {
                 .setScheme(SCHEME)
                 .setHost(adminUrl)
                 .setPath(path)
-                .setParameter("lastUpdatedTime", String.valueOf(lastUpdatedTimeInMillis))
-                .setParameter("pluginId", pluginId)
+                .setParameter(PARAM_LAST_UPDATED_TIME, String.valueOf(lastUpdatedTimeInMillis))
+                .setParameter(PARAM_PLUGIN_ID, pluginId)
                 .build();
+    }
+
+    private String getAdminUrl(RangerPluginConfig config) {
+        String url = "";
+        String tmpUrl = config.get(config.getPropertyPrefix() + ".authz.rest.url");
+
+        if (!StringUtil.isEmpty(tmpUrl)) {
+            url = tmpUrl.trim();
+        }
+
+        if (url.endsWith("/")) {
+            url = url.substring(0, url.length() - 1);
+        }
+
+        return url;
     }
 }

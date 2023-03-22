@@ -1,12 +1,12 @@
 package org.apache.atlas.authz.admin.client;
 
+import org.apache.atlas.authorization.hadoop.config.RangerPluginConfig;
 import org.apache.atlas.plugin.util.RangerRoles;
 import org.apache.atlas.plugin.util.RangerUserStore;
 import org.apache.atlas.plugin.util.ServicePolicies;
-import org.apache.hadoop.conf.Configuration;
 
 public interface AtlasAuthAdminClient {
-    void init(String serviceName, String appId, String configPropertyPrefix, Configuration config);
+    void init(RangerPluginConfig config);
 
     ServicePolicies getServicePoliciesIfUpdated(long lastUpdatedTimeInMillis) throws Exception;
 

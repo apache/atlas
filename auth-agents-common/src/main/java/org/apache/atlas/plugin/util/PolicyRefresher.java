@@ -97,8 +97,7 @@ public class PolicyRefresher extends Thread {
 		}
 
 		RangerPluginContext pluginContext  = plugIn.getPluginContext();
-		AtlasAuthAdminClient   adminClient = pluginContext.getAtlasAuthAdminClient();
-		this.atlasAuthAdminClient          = (adminClient != null) ? adminClient : pluginContext.createAtlasAuthAdminClient(pluginConfig);
+		this.atlasAuthAdminClient 		   = pluginContext.getAtlasAuthAdminClient();
 		this.gson                          = gson;
 		this.rolesProvider                 = new RangerRolesProvider(getServiceType(), appId, getServiceName(), atlasAuthAdminClient, cacheDir, pluginConfig);
 		this.userStoreProvider             = new RangerUserStoreProvider(getServiceType(), appId, getServiceName(), atlasAuthAdminClient,  cacheDir, pluginConfig);
