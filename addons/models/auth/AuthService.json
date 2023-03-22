@@ -1,0 +1,125 @@
+{
+    "entityDefs": [
+        {
+            "name": "AuthService",
+            "superTypes": [],
+            "description": "Model to store auth service in Atlas",
+            "serviceType": "atlan",
+            "typeVersion": "1.0",
+            "attributeDefs": [
+                {
+                    "name": "qualifiedName",
+                    "typeName": "string",
+                    "indexType": "STRING",
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": false,
+                    "isUnique": true,
+                    "skipScrubbing": true,
+                    "includeInNotification": true,
+                    "indexTypeESFields": {
+                        "text": {
+                            "type": "text",
+                            "analyzer": "atlan_text_analyzer"
+                        }
+                    }
+                },
+                {
+                    "name": "name",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": false,
+                    "isUnique": false,
+                    "searchWeight": 10,
+                    "skipScrubbing": true,
+                    "indexTypeESConfig": {
+                        "analyzer": "atlan_text_analyzer"
+                    },
+                    "indexTypeESFields": {
+                        "keyword": {
+                            "type": "keyword",
+                            "normalizer": "atlan_normalizer"
+                        },
+                        "stemmed": {
+                            "type": "text",
+                            "analyzer": "atlan_text_stemmer"
+                        }
+                    }
+                },
+                {
+                    "name": "description",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "searchWeight": 9,
+                    "skipScrubbing": true,
+                    "includeInNotification": true,
+                    "indexTypeESConfig": {
+                        "analyzer": "atlan_text_analyzer"
+                    },
+                    "indexTypeESFields": {
+                        "keyword": {
+                            "type": "keyword",
+                            "normalizer": "atlan_normalizer"
+                        }
+                    }
+                },
+                {
+                    "name": "tenantId",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "skipScrubbing": true
+                },
+                {
+                    "name": "authServiceType",
+                    "typeName": "string",
+                    "indexType": "STRING",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "skipScrubbing": true,
+                    "includeInNotification": true
+                },
+                {
+                    "name": "tagService",
+                    "typeName": "string",
+                    "indexType": "STRING",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "skipScrubbing": true,
+                    "includeInNotification": true
+                },
+                {
+                    "name": "authServiceIsEnabled",
+                    "typeName": "boolean",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "defaultValue": true,
+                    "skipScrubbing": true,
+                    "includeInNotification": true
+                },
+                {
+                    "name": "authServiceConfig",
+                    "typeName": "map<string,string>",
+                    "isOptional": true,
+                    "cardinality": "SINGLE",
+                    "isUnique": false,
+                    "skipScrubbing": true,
+                    "isIndexable": true,
+                    "includeInNotification": false
+                }
+            ]
+        }
+    ]
+}
