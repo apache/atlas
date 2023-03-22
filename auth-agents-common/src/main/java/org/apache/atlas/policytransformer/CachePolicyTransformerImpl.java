@@ -264,7 +264,6 @@ public class CachePolicyTransformerImpl {
         actions.forEach(action -> accesses.add(new RangerPolicyItemAccess(action)));
 
 
-        //TODO: set accesses
         if ("allow".equals(policyType)) {
             RangerPolicyItem item = new RangerPolicyItem();
             item.setUsers(users);
@@ -332,8 +331,11 @@ public class CachePolicyTransformerImpl {
     private List<RangerPolicyItemCondition> getPolicyConditions(AtlasEntityHeader atlasPolicy) {
         List<RangerPolicyItemCondition> ret = new ArrayList<>();
 
-        List<HashMap<String, Object>> conditions = (List<HashMap<String, Object>>) atlasPolicy.getAttribute("policyConditions");
+        if (!atlasPolicy.hasAttribute("policyConditions")) {
+            return null;
+        }
 
+        List<HashMap<String, Object>> conditions = (List<HashMap<String, Object>>) atlasPolicy.getAttribute("policyConditions");
 
         for (HashMap<String, Object> condition : conditions) {
             RangerPolicyItemCondition rangerCondition = new RangerPolicyItemCondition();
@@ -348,6 +350,10 @@ public class CachePolicyTransformerImpl {
 
     private List<RangerValiditySchedule> getPolicyValiditySchedule(AtlasEntityHeader atlasPolicy) {
         List<RangerValiditySchedule> ret = new ArrayList<>();
+
+        if (!atlasPolicy.hasAttribute("policyValiditySchedule")) {
+            return null;
+        }
 
         List<HashMap<String, String>> validitySchedules = (List<HashMap<String, String>>) atlasPolicy.getAttribute("policyValiditySchedule");
 
@@ -453,7 +459,6 @@ public class CachePolicyTransformerImpl {
     private RangerPolicy getRangerPolicy(AtlasEntityHeader atlasPolicy, String serviceType) {
         RangerPolicy policy = new RangerPolicy();
 
-        //policy.setId(atlasPolicy.getGuid());
         policy.setName((String) atlasPolicy.getAttribute("qualifiedName"));
         policy.setService((String) atlasPolicy.getAttribute("policyServiceName"));
         policy.setServiceType(serviceType);
@@ -461,8 +466,8 @@ public class CachePolicyTransformerImpl {
         policy.setCreatedBy(atlasPolicy.getCreatedBy());
         policy.setCreateTime(atlasPolicy.getCreateTime());
 
-        //policy.setConditions(getPolicyConditions(atlasPolicy));
-        //policy.setValiditySchedules(getPolicyValiditySchedule(atlasPolicy));
+        policy.setConditions(getPolicyConditions(atlasPolicy));
+        policy.setValiditySchedules(getPolicyValiditySchedule(atlasPolicy));
 
         return policy;
     }

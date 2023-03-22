@@ -30,7 +30,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static org.apache.atlas.policytransformer.CachePolicyTransformerImpl.ATTR_NAME;
 import static org.apache.atlas.policytransformer.CachePolicyTransformerImpl.ATTR_POLICY_RESOURCES;
@@ -67,7 +66,7 @@ public class PersonaCachePolicyTransformer extends AbstractCachePolicyTransforme
             List<PolicyTransformerTemplate.TemplatePolicy> currentTemplates = templates.getTemplate(atlasAction);
 
             if (CollectionUtils.isEmpty(currentTemplates)) {
-                LOG.warn("PolicyTransformerImpl: Skipping unknown action {} while transforming policy {}", atlasAction, atlasPolicy.getGuid());
+                LOG.warn("PersonaCachePolicyTransformer: Skipping unknown action {} while transforming policy {}", atlasAction, atlasPolicy.getGuid());
                 continue;
             }
 

@@ -48,8 +48,6 @@ public class CacheTransformerTemplateHelper {
         } catch (IOException e) {
             LOG.error("Failed to load template for policies: {}", RESOURCE_POLICY_TRANSFORMER);
         }
-        //jsonTemplate =  jsonTemplate.replaceAll("\n", "");
-        //jsonTemplate =  jsonTemplate.replaceAll("\\s", "");
         templates = new PolicyTransformerTemplate();
         templates.fromJsonString(jsonTemplate);
     }
