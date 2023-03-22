@@ -48,7 +48,7 @@ public class ServicePolicies implements java.io.Serializable {
 	private static final Log LOG = LogFactory.getLog(ServicePolicies.class);
 
 	private String             serviceName;
-	private Long               serviceId;
+	private String             serviceId;
 	private Long               policyVersion;
 	private Date               policyUpdateTime;
 	private List<RangerPolicy> policies;
@@ -74,13 +74,13 @@ public class ServicePolicies implements java.io.Serializable {
 	/**
 	 * @return the serviceId
 	 */
-	public Long getServiceId() {
+	public String getServiceId() {
 		return serviceId;
 	}
 	/**
 	 * @param serviceId the serviceId to set
 	 */
-	public void setServiceId(Long serviceId) {
+	public void setServiceId(String serviceId) {
 		this.serviceId = serviceId;
 	}
 	/**
@@ -191,7 +191,7 @@ public class ServicePolicies implements java.io.Serializable {
 		private static final long serialVersionUID = 1L;
 
 		private String             serviceName;
-		private Long               serviceId;
+		private String             serviceId;
 		private Long               policyVersion;
 		private Date               policyUpdateTime;
 		private List<RangerPolicy> policies;
@@ -214,13 +214,13 @@ public class ServicePolicies implements java.io.Serializable {
 		/**
 		 * @return the serviceId
 		 */
-		public Long getServiceId() {
+		public String getServiceId() {
 			return serviceId;
 		}
 		/**
 		 * @param serviceId the serviceId to set
 		 */
-		public void setServiceId(Long serviceId) {
+		public void setServiceId(String serviceId) {
 			this.serviceId = serviceId;
 		}
 		/**

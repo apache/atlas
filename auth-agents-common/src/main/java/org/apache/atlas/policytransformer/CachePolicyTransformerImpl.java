@@ -126,8 +126,7 @@ public class CachePolicyTransformerImpl {
                 List<RangerPolicy> policies = getServicePolicies(service);
                 servicePolicies.setServiceName(serviceName);
                 servicePolicies.setPolicies(policies);
-                //TODO: uncomment
-                //servicePolicies.setServiceId(service.getGuid());
+                servicePolicies.setServiceId(service.getGuid());
 
                 String serviceDefName = String.format(RESOURCE_SERVICE_DEF_PATTERN, serviceName);
                 servicePolicies.setServiceDef(getResourceAsObject(serviceDefName, RangerServiceDef.class));
@@ -145,8 +144,7 @@ public class CachePolicyTransformerImpl {
                         tagPolicies.setServiceName(tagServiceName);
                         tagPolicies.setPolicies(policies);
                         tagPolicies.setPolicyUpdateTime(new Date());
-                        //TODO
-                        //tagPolicies.setServiceId(tagService.getGuid());
+                        tagPolicies.setServiceId(tagService.getGuid());
 
                         String tagServiceDefName =  String.format(RESOURCE_SERVICE_DEF_PATTERN, tagService.getAttribute(NAME));
                         tagPolicies.setServiceDef(getResourceAsObject(tagServiceDefName, RangerServiceDef.class));
