@@ -20,7 +20,7 @@
 package org.apache.atlas.plugin.util;
 
 
-import com.kstruct.gethostname4j.Hostname;
+//import com.kstruct.gethostname4j.Hostname;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -91,7 +91,8 @@ public class RangerRESTUtils {
 
 	static {
 		try {
-			hostname = Hostname.getHostname();
+			//hostname = Hostname.getHostname();
+			hostname = InetAddress.getLocalHost().getHostName();
 		}
 		catch(Exception e) {
 			LOG.error("ERROR: Unable to find hostname for the agent ", e);
