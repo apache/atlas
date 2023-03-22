@@ -69,7 +69,7 @@ public class ElasticSearchAuditDestination extends AuditDestination {
     public static final String CONFIG_PROTOCOL = "protocol";
     public static final String CONFIG_INDEX = "index";
     public static final String CONFIG_PREFIX = "ranger.audit.elasticsearch";
-    public static final String DEFAULT_INDEX = "ranger_audits";
+    public static final String DEFAULT_INDEX = "ranger-audit";
 
     private String index = "index";
     private volatile RestHighLevelClient client = null;
@@ -305,12 +305,13 @@ public class ElasticSearchAuditDestination extends AuditDestination {
         doc.put("repo", auditEvent.getRepositoryName());
         doc.put("sess", auditEvent.getSessionId());
         doc.put("reqUser", auditEvent.getUser());
+        doc.put("reqEntityGuid", auditEvent.getEntityGuid());
         doc.put("reqData", auditEvent.getRequestData());
         doc.put("resource", auditEvent.getResourcePath());
         doc.put("cliIP", auditEvent.getClientIP());
         doc.put("logType", auditEvent.getLogType());
         doc.put("result", auditEvent.getAccessResult());
-        doc.put("policy", auditEvent.getPolicyId());
+        doc.put("policyId", auditEvent.getPolicyId());
         doc.put("repoType", auditEvent.getRepositoryType());
         doc.put("resType", auditEvent.getResourceType());
         doc.put("reason", auditEvent.getResultReason());

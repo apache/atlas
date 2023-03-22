@@ -955,7 +955,7 @@ public class RangerBasePlugin {
 				accessResult.setIsAllowed(isSuccess);
 
 				if(! isSuccess) {
-					accessResult.setPolicyId(-1);
+					accessResult.setPolicyId("-1");
 				}
 
 				resultProcessor.processResult(accessResult);

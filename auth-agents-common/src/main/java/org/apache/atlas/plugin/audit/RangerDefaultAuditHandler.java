@@ -74,7 +74,7 @@ public class RangerDefaultAuditHandler implements RangerAccessResultProcessor {
 	@Override
 	public void processResult(RangerAccessResult result) {
 		if(LOG.isDebugEnabled()) {
-			LOG.debug("==> RangerDefaultAuditHandler.processResult(" + result + ")");
+			LOG.debug("==> AtlasDefaultAccessAuditHandler.processResult(" + result + ")");
 		}
 
 		AuthzAuditEvent event = getAuthzEvents(result);
@@ -82,14 +82,14 @@ public class RangerDefaultAuditHandler implements RangerAccessResultProcessor {
 		logAuthzAudit(event);
 
 		if(LOG.isDebugEnabled()) {
-			LOG.debug("<== RangerDefaultAuditHandler.processResult(" + result + ")");
+			LOG.debug("<== AtlasDefaultAccessAuditHandler.processResult(" + result + ")");
 		}
 	}
 
 	@Override
 	public void processResults(Collection<RangerAccessResult> results) {
 		if(LOG.isDebugEnabled()) {
-			LOG.debug("==> RangerDefaultAuditHandler.processResults(" + results + ")");
+			LOG.debug("==> AtlasDefaultAccessAuditHandler.processResults(" + results + ")");
 		}
 
 		Collection<AuthzAuditEvent> events = getAuthzEvents(results);
@@ -99,14 +99,13 @@ public class RangerDefaultAuditHandler implements RangerAccessResultProcessor {
 		}
 
 		if(LOG.isDebugEnabled()) {
-			LOG.debug("<== RangerDefaultAuditHandler.processResults(" + results + ")");
+			LOG.debug("<== AtlasDefaultAccessAuditHandler.processResults(" + results + ")");
 		}
 	}
 
-
 	public AuthzAuditEvent getAuthzEvents(RangerAccessResult result) {
 		if(LOG.isDebugEnabled()) {
-			LOG.debug("==> RangerDefaultAuditHandler.getAuthzEvents(" + result + ")");
+			LOG.debug("==> AtlasDefaultAccessAuditHandler.getAuthzEvents(" + result + ")");
 		}
 
 		AuthzAuditEvent ret = null;
@@ -152,7 +151,7 @@ public class RangerDefaultAuditHandler implements RangerAccessResultProcessor {
 		}
 
 		if(LOG.isDebugEnabled()) {
-			LOG.debug("<== RangerDefaultAuditHandler.getAuthzEvents(" + result + "): " + ret);
+			LOG.debug("<== AtlasDefaultAccessAuditHandler.getAuthzEvents(" + result + "): " + ret);
 		}
 
 		return ret;
@@ -160,7 +159,7 @@ public class RangerDefaultAuditHandler implements RangerAccessResultProcessor {
 
 	public Collection<AuthzAuditEvent> getAuthzEvents(Collection<RangerAccessResult> results) {
 		if(LOG.isDebugEnabled()) {
-			LOG.debug("==> RangerDefaultAuditHandler.getAuthzEvents(" + results + ")");
+			LOG.debug("==> AtlasDefaultAccessAuditHandler.getAuthzEvents(" + results + ")");
 		}
 
 		List<AuthzAuditEvent> ret = null;
@@ -183,7 +182,7 @@ public class RangerDefaultAuditHandler implements RangerAccessResultProcessor {
 		}
 
 		if(LOG.isDebugEnabled()) {
-			LOG.debug("<== RangerDefaultAuditHandler.getAuthzEvents(" + results + "): " + ret);
+			LOG.debug("<== AtlasDefaultAccessAuditHandler.getAuthzEvents(" + results + "): " + ret);
 		}
 
 		return ret;
@@ -191,7 +190,7 @@ public class RangerDefaultAuditHandler implements RangerAccessResultProcessor {
 
 	public void logAuthzAudit(AuthzAuditEvent auditEvent) {
 		if(LOG.isDebugEnabled()) {
-			LOG.debug("==> RangerDefaultAuditHandler.logAuthzAudit(" + auditEvent + ")");
+			LOG.debug("==> AtlasDefaultAccessAuditHandler.logAuthzAudit(" + auditEvent + ")");
 		}
 
 		if(auditEvent != null) {
@@ -204,13 +203,13 @@ public class RangerDefaultAuditHandler implements RangerAccessResultProcessor {
 		}
 
 		if(LOG.isDebugEnabled()) {
-			LOG.debug("<== RangerDefaultAuditHandler.logAuthzAudit(" + auditEvent + ")");
+			LOG.debug("<== AtlasDefaultAccessAuditHandler.logAuthzAudit(" + auditEvent + ")");
 		}
 	}
 
 	private void populateDefaults(AuthzAuditEvent auditEvent) {
 		if( auditEvent.getAclEnforcer() == null || auditEvent.getAclEnforcer().isEmpty()) {
-			auditEvent.setAclEnforcer("ranger-acl"); // TODO: review
+			auditEvent.setAclEnforcer("ranger-acl");
 		}
 
 		if (auditEvent.getAgentHostname() == null || auditEvent.getAgentHostname().isEmpty()) {
@@ -218,7 +217,7 @@ public class RangerDefaultAuditHandler implements RangerAccessResultProcessor {
 		}
 
 		if (auditEvent.getLogType() == null || auditEvent.getLogType().isEmpty()) {
-			auditEvent.setLogType("RangerAudit");
+			auditEvent.setLogType("AtlasAuthZAudit");
 		}
 
 		if (auditEvent.getEventId() == null || auditEvent.getEventId().isEmpty()) {
@@ -234,7 +233,7 @@ public class RangerDefaultAuditHandler implements RangerAccessResultProcessor {
 
 	public void logAuthzAudits(Collection<AuthzAuditEvent> auditEvents) {
 		if(LOG.isDebugEnabled()) {
-			LOG.debug("==> RangerDefaultAuditHandler.logAuthzAudits(" + auditEvents + ")");
+			LOG.debug("==> AtlasDefaultAccessAuditHandler.logAuthzAudits(" + auditEvents + ")");
 		}
 
 		if(auditEvents != null) {
@@ -244,7 +243,7 @@ public class RangerDefaultAuditHandler implements RangerAccessResultProcessor {
 		}
 
 		if(LOG.isDebugEnabled()) {
-			LOG.debug("<== RangerDefaultAuditHandler.logAuthzAudits(" + auditEvents + ")");
+			LOG.debug("<== AtlasDefaultAccessAuditHandler.logAuthzAudits(" + auditEvents + ")");
 		}
 	}
 
@@ -300,7 +299,7 @@ public class RangerDefaultAuditHandler implements RangerAccessResultProcessor {
 		}
 
 		return ret;
-	 }
+	}
 
 	private String writeObjectAsString(Serializable obj) {
 		String jsonStr = StringUtils.EMPTY;

@@ -1336,11 +1336,11 @@ public class RangerPolicyRepository {
 
         List<RangerPolicyEvaluator> evaluators = null;
 
-        if (policyType.equals(RangerPolicy.POLICY_TYPE_ACCESS)) {
+        if (RangerPolicy.POLICY_TYPE_ACCESS.equals(policyType)) {
             evaluators = this.policyEvaluators;
-        } else if (policyType.equals(RangerPolicy.POLICY_TYPE_DATAMASK)) {
+        } else if (RangerPolicy.POLICY_TYPE_DATAMASK.equals(policyType)) {
             evaluators = this.dataMaskPolicyEvaluators;
-        } else if (policyType.equals(RangerPolicy.POLICY_TYPE_ROWFILTER)) {
+        } else if (RangerPolicy.POLICY_TYPE_ROWFILTER.equals(policyType)) {
             evaluators = this.rowFilterPolicyEvaluators;
         } else {
             LOG.error("Unknown policyType:[" + policyType +"]");
@@ -1437,13 +1437,13 @@ public class RangerPolicyRepository {
 
     static private final class AuditInfo {
         final boolean isAudited;
-        final long    auditPolicyId;
+        final String    auditPolicyId;
 
-        AuditInfo(boolean isAudited, long auditPolicyId) {
+        AuditInfo(boolean isAudited, String auditPolicyId) {
             this.isAudited     = isAudited;
             this.auditPolicyId = auditPolicyId;
         }
-        long getAuditPolicyId() {
+        String getAuditPolicyId() {
             return this.auditPolicyId;
         }
         boolean getIsAudited() {

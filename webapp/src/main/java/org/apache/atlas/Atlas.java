@@ -20,6 +20,7 @@ package org.apache.atlas;
 
 import org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchDatabase;
 import org.apache.atlas.security.SecurityProperties;
+import org.apache.atlas.util.AccessAuditLogsIndexCreator;
 import org.apache.atlas.web.service.EmbeddedServer;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.GnuParser;
@@ -143,6 +144,10 @@ public final class Atlas {
             initElasticsearch();
         }
 
+        if (configuration.getString("atlas.authorizer.impl").equalsIgnoreCase("atlas")) {
+            initAccessAuditElasticSearch(configuration);
+        }
+
         server = EmbeddedServer.newServer(appHost, appPort, appPath, enableTLS);
         installLogBridge();
 
@@ -241,6 +246,11 @@ public final class Atlas {
         // add SLF4JBridgeHandler to j.u.l's root logger, should be done once during
         // the initialization phase of your application
         SLF4JBridgeHandler.install();
+    }
+
+    private static void initAccessAuditElasticSearch(Configuration configuration) throws IOException {
+        AccessAuditLogsIndexCreator indexCreator = new AccessAuditLogsIndexCreator(configuration);
+        indexCreator.init();
     }
 
     private static void initElasticsearch() throws IOException {

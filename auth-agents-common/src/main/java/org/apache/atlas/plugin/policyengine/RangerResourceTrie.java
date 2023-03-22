@@ -687,7 +687,7 @@ public class RangerResourceTrie<T extends RangerPolicyResourceEvaluator> {
         }
 
         Set<T>       ret           = null;
-        Map<Long, T> evaluatorsMap = null;
+        Map<String, T> evaluatorsMap = null;
 
         for (String resource : resources) {
             Set<T> resourceEvaluators = getEvaluatorsForResource(resource, scope);
@@ -703,7 +703,7 @@ public class RangerResourceTrie<T extends RangerPolicyResourceEvaluator> {
                     evaluatorsMap = new HashMap<>();
 
                     for (T evaluator : ret) {
-                        evaluatorsMap.put(evaluator.getId(), evaluator);
+                        evaluatorsMap.put(evaluator.getGuid(), evaluator);
                     }
 
                     ret = null;
@@ -712,7 +712,7 @@ public class RangerResourceTrie<T extends RangerPolicyResourceEvaluator> {
 
             if (evaluatorsMap != null) {
                 for (T evaluator : resourceEvaluators) {
-                    evaluatorsMap.put(evaluator.getId(), evaluator);
+                    evaluatorsMap.put(evaluator.getGuid(), evaluator);
                 }
             }
         }

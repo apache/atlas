@@ -88,6 +88,11 @@ public class RangerZoneResourceMatcher implements RangerPolicyResourceEvaluator 
     }
 
     @Override
+    public String getGuid() {
+        return null;
+    }
+
+    @Override
     public RangerPolicyResourceMatcher getPolicyResourceMatcher() { return policyResourceMatcher; }
 
     @Override

@@ -274,7 +274,7 @@ public class RangerDefaultPolicyEvaluator extends RangerAbstractPolicyEvaluator 
 						if (!result.getIsAuditedDetermined()) {
 							if (isAuditEnabled()) {
 								result.setIsAudited(true);
-								result.setAuditPolicyId(getPolicy().getId());
+								result.setAuditPolicyId(getPolicy().getGuid());
 							}
 						}
 						if (!result.getIsAccessDetermined() || request.isAccessorsRequested()) {
@@ -513,7 +513,7 @@ public class RangerDefaultPolicyEvaluator extends RangerAbstractPolicyEvaluator 
 			if (resource != null && MapUtils.isNotEmpty(resource.getAsMap())) {
 				result.setIsAllowed(false);
 				result.setPolicyPriority(getPolicyPriority());
-				result.setPolicyId(getId());
+				result.setPolicyId(getGuid());
 				result.setReason(reason);
 				result.setPolicyVersion(getPolicy().getVersion());
 			}
@@ -522,7 +522,7 @@ public class RangerDefaultPolicyEvaluator extends RangerAbstractPolicyEvaluator 
 				if (matchType != RangerPolicyResourceMatcher.MatchType.ANCESTOR) {
 					result.setIsAllowed(true);
 					result.setPolicyPriority(getPolicyPriority());
-					result.setPolicyId(getId());
+					result.setPolicyId(getGuid());
 					result.setReason(reason);
 					result.setPolicyVersion(getPolicy().getVersion());
 				}

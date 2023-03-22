@@ -29,6 +29,8 @@ import java.util.Map;
 public interface RangerPolicyResourceEvaluator {
     long getId();
 
+    String getGuid();
+
     RangerPolicyResourceMatcher getPolicyResourceMatcher();
 
     Map<String, RangerPolicy.RangerPolicyResource> getPolicyResource();

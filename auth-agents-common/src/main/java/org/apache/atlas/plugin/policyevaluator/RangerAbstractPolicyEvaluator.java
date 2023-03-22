@@ -69,6 +69,11 @@ public abstract class RangerAbstractPolicyEvaluator implements RangerPolicyEvalu
 	}
 
 	@Override
+	public String getGuid() {
+		return policy != null ? policy.getGuid() : "-1";
+	}
+
+	@Override
 	public Map<String, RangerPolicy.RangerPolicyResource> getPolicyResource() {
 		return policy !=null ? policy.getResources() : null;
 	}

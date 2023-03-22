@@ -53,6 +53,11 @@ public class RangerServiceResourceMatcher implements RangerPolicyResourceEvaluat
 	}
 
 	@Override
+	public String getGuid() {
+		return serviceResource != null ? serviceResource.getGuid() : "-1";
+	}
+
+	@Override
 	public RangerPolicyResourceMatcher getPolicyResourceMatcher() { return policyResourceMatcher; }
 
 	@Override

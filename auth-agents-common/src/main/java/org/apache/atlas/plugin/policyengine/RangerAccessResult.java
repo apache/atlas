@@ -46,9 +46,9 @@ public class RangerAccessResult {
 	private boolean  isAllowed;
 	private boolean isAuditedDetermined;
 	private boolean  isAudited;
-	private long     auditPolicyId  = -1;
+	private String     auditPolicyId  = "-1";
 	private String   auditLogId;
-	private long     policyId  = -1;
+	private String     policyId  = "-1";
 	private int      policyPriority;
 	private String   zoneName;
 	private Long   policyVersion;
@@ -66,8 +66,8 @@ public class RangerAccessResult {
 		this.isAllowed   = false;
 		this.isAuditedDetermined = false;
 		this.isAudited   = false;
-		this.auditPolicyId = -1;
-		this.policyId    = -1;
+		this.auditPolicyId = "-1";
+		this.policyId    = "-1";
 		this.zoneName    = null;
 		this.policyVersion = null;
 		this.policyPriority = RangerPolicy.POLICY_PRIORITY_NORMAL;
@@ -161,7 +161,7 @@ public class RangerAccessResult {
 	public boolean getIsAuditedDetermined() { return isAuditedDetermined; }
 
 	public void setIsAuditedDetermined(boolean value) { isAuditedDetermined = value; }
-	
+
 	/**
 	 * @return the isAudited
 	 */
@@ -189,14 +189,14 @@ public class RangerAccessResult {
 	/**
 	 * @return the policyId
 	 */
-	public long getPolicyId() {
+	public String getPolicyId() {
 		return policyId;
 	}
 
 	/**
 	 * @return the auditPolicyId
 	 */
-	public long getAuditPolicyId() {
+	public String getAuditPolicyId() {
 		return auditPolicyId;
 	}
 
@@ -204,7 +204,7 @@ public class RangerAccessResult {
 	/**
 	 * @param policyId the policyId to set
 	 */
-	public void setPolicyId(long policyId) {
+	public void setPolicyId(String policyId) {
 		this.policyId = policyId;
 	}
 
@@ -220,7 +220,7 @@ public class RangerAccessResult {
 	/**
 	 * @param policyId the auditPolicyId to set
 	 */
-	public void setAuditPolicyId(long policyId) {
+	public void setAuditPolicyId(String policyId) {
 		this.auditPolicyId = policyId;
 	}
 
@@ -355,7 +355,7 @@ public class RangerAccessResult {
 	public StringBuilder toString(StringBuilder sb) {
 		sb.append("RangerAccessResult={");
 
-        sb.append("isAccessDetermined={").append(isAccessDetermined).append("} ");
+		sb.append("isAccessDetermined={").append(isAccessDetermined).append("} ");
 		sb.append("isAllowed={").append(isAllowed).append("} ");
 		sb.append("isAuditedDetermined={").append(isAuditedDetermined).append("} ");
 		sb.append("isAudited={").append(isAudited).append("} ");

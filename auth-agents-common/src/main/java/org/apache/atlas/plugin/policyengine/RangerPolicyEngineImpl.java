@@ -278,6 +278,7 @@ public class RangerPolicyEngineImpl implements RangerPolicyEngine {
 
 			String[] policyTypes = StringUtils.isEmpty(requestedPolicyType) ? RangerPolicy.POLICY_TYPES : new String[] { requestedPolicyType };
 
+
 			for (String policyType : policyTypes) {
 				List<RangerPolicyEvaluator> allEvaluators           = new ArrayList<>();
 				Map<Long, MatchType>        tagMatchTypeMap         = new HashMap<>();
@@ -299,7 +300,7 @@ public class RangerPolicyEngineImpl implements RangerPolicyEngine {
 					}
 
 					if (policyPriority != evaluator.getPolicyPriority()) {
-						if (StringUtils.isEmpty(policyType)) {
+						if (RangerPolicy.POLICY_TYPE_ACCESS.equals(policyType)) {
 							ret.finalizeAcls();
 						}
 
@@ -598,7 +599,7 @@ public class RangerPolicyEngineImpl implements RangerPolicyEngine {
 		RangerAccessResult     ret                 = null;
 		RangerPolicyRepository policyRepository    = policyEngine.getPolicyRepository();
 		RangerPolicyRepository tagPolicyRepository = policyEngine.getTagPolicyRepository();
-		Set<String>            zoneNames           = policyEngine.getMatchedZonesForResourceAndChildren(request.getResource()); // Evaluate zone-name from request
+		Set<String>            zoneNames            = policyEngine.getMatchedZonesForResourceAndChildren(request.getResource()); // Evaluate zone-name from request
 
 		if (LOG.isDebugEnabled()) {
 			LOG.debug("zoneNames:[" + zoneNames + "]");
@@ -728,7 +729,7 @@ public class RangerPolicyEngineImpl implements RangerPolicyEngine {
 		if (isSuperUser || StringUtils.equals(request.getAccessType(), RangerPolicyEngine.SUPER_USER_ACCESS)) {
 			ret.setIsAllowed(isSuperUser);
 			ret.setIsAccessDetermined(true);
-			ret.setPolicyId(-1);
+			ret.setPolicyId("-1");
 			ret.setPolicyPriority(Integer.MAX_VALUE);
 			ret.setReason("superuser");
 		}
@@ -1264,10 +1265,10 @@ public class RangerPolicyEngineImpl implements RangerPolicyEngine {
 
 	private DataMaskResult copyDataMask(DataMaskResult dataMask) {
 		DataMaskResult ret = new DataMaskResult(copyStrings(dataMask.getUsers()),
-												copyStrings(dataMask.getGroups()),
-												copyStrings(dataMask.getRoles()),
-												copyStrings(dataMask.getAccessTypes()),
-												new RangerPolicyItemDataMaskInfo(dataMask.getMaskInfo()));
+				copyStrings(dataMask.getGroups()),
+				copyStrings(dataMask.getRoles()),
+				copyStrings(dataMask.getAccessTypes()),
+				new RangerPolicyItemDataMaskInfo(dataMask.getMaskInfo()));
 
 		ret.setIsConditional(dataMask.getIsConditional());
 
@@ -1276,10 +1277,10 @@ public class RangerPolicyEngineImpl implements RangerPolicyEngine {
 
 	private RowFilterResult copyRowFilter(RowFilterResult rowFilter) {
 		RowFilterResult ret = new RowFilterResult(copyStrings(rowFilter.getUsers()),
-												  copyStrings(rowFilter.getGroups()),
-												  copyStrings(rowFilter.getRoles()),
-												  copyStrings(rowFilter.getAccessTypes()),
-												  new RangerPolicyItemRowFilterInfo(rowFilter.getFilterInfo()));
+				copyStrings(rowFilter.getGroups()),
+				copyStrings(rowFilter.getRoles()),
+				copyStrings(rowFilter.getAccessTypes()),
+				new RangerPolicyItemRowFilterInfo(rowFilter.getFilterInfo()));
 
 		ret.setIsConditional(rowFilter.getIsConditional());
 
