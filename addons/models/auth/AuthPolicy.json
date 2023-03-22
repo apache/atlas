@@ -37,6 +37,28 @@
     },
     {
       "category": "ENUM",
+      "name": "AuthPolicyCategory",
+      "description": "Policy category",
+      "serviceType": "atlas_core",
+      "typeVersion": "1.0",
+      "elementDefs":
+      [
+        {
+          "value": "bootstrap",
+          "ordinal": 0
+        },
+        {
+          "value": "persona",
+          "ordinal": 1
+        },
+        {
+          "value": "purpose",
+          "ordinal": 2
+        }
+      ]
+    },
+    {
+      "category": "ENUM",
       "name": "AuthPolicyResourceCategory",
       "description": "Policy resource category",
       "serviceType": "atlas_core",
