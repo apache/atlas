@@ -569,7 +569,7 @@ public class RangerSecurityZoneValidator extends RangerValidator {
                             RangerServiceDefHelper serviceDefHelper = new RangerServiceDefHelper(serviceDef);
                             boolean isValidHierarchy = false;
 
-                            for (int policyType : RangerPolicy.POLICY_TYPES) {
+                            for (String policyType : RangerPolicy.POLICY_TYPES) {
                                 Set<List<RangerServiceDef.RangerResourceDef>> resourceHierarchies = serviceDefHelper.getResourceHierarchies(policyType, resourceDefNames);
 
                                 if (LOG.isDebugEnabled()) {

@@ -53,7 +53,7 @@ public class RangerZoneResourceMatcher implements RangerPolicyResourceEvaluator 
 
         boolean found = false;
 
-        for (int policyType : RangerPolicy.POLICY_TYPES) {
+        for (String policyType : RangerPolicy.POLICY_TYPES) {
             for (List<RangerServiceDef.RangerResourceDef> hierarchy : serviceDefHelper.getResourceHierarchies(policyType)) {
                 if (serviceDefHelper.hierarchyHasAllResources(hierarchy, resourceKeys)) {
                     if (LOG.isDebugEnabled()) {

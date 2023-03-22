@@ -583,7 +583,7 @@ public class RangerBasePlugin {
 		return getResourceACLs(request, null);
 	}
 
-	public RangerResourceACLs getResourceACLs(RangerAccessRequest request, Integer policyType) {
+	public RangerResourceACLs getResourceACLs(RangerAccessRequest request, String policyType) {
 		RangerResourceACLs ret          = null;
 		RangerPolicyEngine policyEngine = this.policyEngine;
 

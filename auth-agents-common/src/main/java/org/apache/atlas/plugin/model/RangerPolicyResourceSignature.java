@@ -27,7 +27,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.atlas.authorization.hadoop.config.RangerAdminConfig;
 import org.apache.atlas.plugin.model.RangerPolicy.RangerPolicyItemCondition;
 import org.apache.atlas.plugin.model.RangerPolicy.RangerPolicyResource;
-import org.apache.solr.common.StringUtils;
+import org.apache.commons.lang.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -138,8 +138,8 @@ public class RangerPolicyResourceSignature {
 			if (!isPolicyValidForResourceSignatureComputation()) {
 				return "";
 			}
-			int type = RangerPolicy.POLICY_TYPE_ACCESS;
-			if (_policy.getPolicyType() != null) {
+			String type = RangerPolicy.POLICY_TYPE_ACCESS;
+			if (StringUtils.isEmpty(_policy.getPolicyType())) {
 				type = _policy.getPolicyType();
 			}
 			Map<String, ResourceSerializer> resources = new TreeMap<>();

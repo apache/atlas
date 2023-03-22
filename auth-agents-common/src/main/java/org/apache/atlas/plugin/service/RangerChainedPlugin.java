@@ -62,7 +62,7 @@ public abstract class RangerChainedPlugin {
 
     public abstract RangerResourceACLs getResourceACLs(RangerAccessRequest request);
 
-    public abstract RangerResourceACLs getResourceACLs(RangerAccessRequest request, Integer policyType);
+    public abstract RangerResourceACLs getResourceACLs(RangerAccessRequest request, String policyType);
 
     public boolean  isAuthorizeOnlyWithChainedPlugin() { return false; }
 

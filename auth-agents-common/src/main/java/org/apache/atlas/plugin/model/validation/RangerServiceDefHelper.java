@@ -182,11 +182,11 @@ public class RangerServiceDefHelper {
 	 *
 	 * @return
 	 */
-	public Set<List<RangerResourceDef>> getResourceHierarchies(Integer policyType) {
+	public Set<List<RangerResourceDef>> getResourceHierarchies(String policyType) {
 		return _delegate.getResourceHierarchies(policyType);
 	}
 
-	public Set<List<RangerResourceDef>> filterHierarchies_containsOnlyMandatoryResources(Integer policyType) {
+	public Set<List<RangerResourceDef>> filterHierarchies_containsOnlyMandatoryResources(String policyType) {
 		Set<List<RangerResourceDef>> hierarchies = getResourceHierarchies(policyType);
 		Set<List<RangerResourceDef>> result = new HashSet<List<RangerResourceDef>>(hierarchies.size());
 		for (List<RangerResourceDef> aHierarchy : hierarchies) {
@@ -198,14 +198,14 @@ public class RangerServiceDefHelper {
 		return result;
 	}
 
-	public Set<List<RangerResourceDef>> getResourceHierarchies(Integer policyType, Collection<String> keys) {
+	public Set<List<RangerResourceDef>> getResourceHierarchies(String policyType, Collection<String> keys) {
 		if (LOG.isDebugEnabled()) {
 			LOG.debug("==> getResourceHierarchies(policyType=" + policyType + ", keys=" + StringUtils.join(keys, ",") + ")");
 		}
 
 		Set<List<RangerResourceDef>> ret = new HashSet<List<RangerResourceDef>>();
 
-		if (policyType == RangerPolicy.POLICY_TYPE_AUDIT) {
+		if (StringUtils.isEmpty(policyType)) {
 			policyType = RangerPolicy.POLICY_TYPE_ACCESS;
 		}
 
@@ -311,7 +311,7 @@ public class RangerServiceDefHelper {
 	 */
 	static class Delegate {
 		final RangerServiceDef _serviceDef;
-		final Map<Integer, Set<List<RangerResourceDef>>> _hierarchies = new HashMap<>();
+		final Map<String, Set<List<RangerResourceDef>>> _hierarchies = new HashMap<>();
 		final Date _serviceDefFreshnessDate;
 		final String _serviceName;
 		final boolean _checkForCycles;
@@ -328,7 +328,7 @@ public class RangerServiceDefHelper {
 			_checkForCycles = checkForCycles;
 
 			boolean isValid = true;
-			for(Integer policyType : RangerPolicy.POLICY_TYPES) {
+			for(String policyType : RangerPolicy.POLICY_TYPES) {
 				List<RangerResourceDef> resources = getResourceDefs(serviceDef, policyType);
 				DirectedGraph graph = createGraph(resources);
 
@@ -361,7 +361,7 @@ public class RangerServiceDefHelper {
 		}
 
 		public void patchServiceDefWithDefaultValues() {
-			for(int policyType : RangerPolicy.POLICY_TYPES) {
+			for(String policyType : RangerPolicy.POLICY_TYPES) {
 				Set<List<RangerResourceDef>> resourceHierarchies = getResourceHierarchies(policyType);
 				for (List<RangerResourceDef> resourceHierarchy : resourceHierarchies) {
 					for (int index = 0; index < resourceHierarchy.size(); index++) {
@@ -374,8 +374,8 @@ public class RangerServiceDefHelper {
 			}
 		}
 
-		public Set<List<RangerResourceDef>> getResourceHierarchies(Integer policyType) {
-			if(policyType == null) {
+		public Set<List<RangerResourceDef>> getResourceHierarchies(String policyType) {
+			if(StringUtils.isEmpty(policyType)) {
 				policyType = RangerPolicy.POLICY_TYPE_ACCESS;
 			}
 
@@ -428,18 +428,18 @@ public class RangerServiceDefHelper {
 			return graph;
 		}
 
-		List<RangerResourceDef> getResourceDefs(RangerServiceDef serviceDef, Integer policyType) {
+		List<RangerResourceDef> getResourceDefs(RangerServiceDef serviceDef, String policyType) {
 			final List<RangerResourceDef> resourceDefs;
 
-			if(policyType == null || policyType == RangerPolicy.POLICY_TYPE_ACCESS) {
+			if(StringUtils.isEmpty(policyType) || RangerPolicy.POLICY_TYPE_ACCESS.equals(policyType)) {
 				resourceDefs = serviceDef.getResources();
-			} else if(policyType == RangerPolicy.POLICY_TYPE_DATAMASK) {
+			} else if(RangerPolicy.POLICY_TYPE_DATAMASK.equals(policyType)) {
 				if(serviceDef.getDataMaskDef() != null) {
 					resourceDefs = serviceDef.getDataMaskDef().getResources();
 				} else {
 					resourceDefs = null;
 				}
-			} else if(policyType == RangerPolicy.POLICY_TYPE_ROWFILTER) {
+			} else if(RangerPolicy.POLICY_TYPE_ROWFILTER.equals(policyType)) {
 				if(serviceDef.getRowFilterDef() != null) {
 					resourceDefs = serviceDef.getRowFilterDef().getResources();
 				} else {

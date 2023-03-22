@@ -264,7 +264,7 @@ public class RangerTagEnricher extends RangerAbstractContextEnricher {
 		private final Map<Collection<String>, Boolean> dataMaskHierarchies  = new HashMap<>();
 		private final Map<Collection<String>, Boolean> rowFilterHierarchies = new HashMap<>();
 
-		Boolean isValidHierarchy(int policyType, Collection<String> resourceKeys) {
+		Boolean isValidHierarchy(String policyType, Collection<String> resourceKeys) {
 			switch (policyType) {
 				case RangerPolicy.POLICY_TYPE_ACCESS:
 					return accessHierarchies.get(resourceKeys);
@@ -277,7 +277,7 @@ public class RangerTagEnricher extends RangerAbstractContextEnricher {
 			}
 		}
 
-		void addHierarchy(int policyType, Collection<String> resourceKeys, Boolean isValid) {
+		void addHierarchy(String policyType, Collection<String> resourceKeys, Boolean isValid) {
 			switch (policyType) {
 				case RangerPolicy.POLICY_TYPE_ACCESS:
 					accessHierarchies.put(resourceKeys, isValid);
@@ -614,7 +614,7 @@ public class RangerTagEnricher extends RangerAbstractContextEnricher {
 
 		final Collection<String> resourceKeys = serviceResource.getResourceElements().keySet();
 
-		for (int policyType : RangerPolicy.POLICY_TYPES) {
+		for (String policyType : RangerPolicy.POLICY_TYPES) {
 			Boolean isValidHierarchy = hierarchies.isValidHierarchy(policyType, resourceKeys);
 			if (isValidHierarchy == null) { // hierarchy not yet validated
 				isValidHierarchy = Boolean.FALSE;

@@ -68,7 +68,7 @@ public class RangerPolicyDelta implements java.io.Serializable {
     public String getServiceType() { return policy != null ? policy.getServiceType() : null; }
 
     @JsonIgnore
-    public Integer getPolicyType() { return policy != null ? policy.getPolicyType() : null; }
+    public String getPolicyType() { return policy != null ? policy.getPolicyType() : null; }
 
     @JsonIgnore
     public Long getPolicyId() { return policy != null ? policy.getId() : null; }

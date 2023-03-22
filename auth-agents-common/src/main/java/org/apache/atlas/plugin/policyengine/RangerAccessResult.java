@@ -41,7 +41,7 @@ public class RangerAccessResult {
 	private final RangerServiceDef    serviceDef;
 	private final RangerAccessRequest request;
 
-	private final int policyType;  // Really, policy-type for audit purpose
+	private final String policyType;  // Really, policy-type for audit purpose
 	private boolean isAccessDetermined;
 	private boolean  isAllowed;
 	private boolean isAuditedDetermined;
@@ -57,7 +57,7 @@ public class RangerAccessResult {
 	private Map<String, Object> additionalInfo;
 	private List<RangerPolicyItemEvaluator> matchedItemEvaluators = new ArrayList<>();
 
-	public RangerAccessResult(final int policyType, final String serviceName, final RangerServiceDef serviceDef, final RangerAccessRequest request) {
+	public RangerAccessResult(final String policyType, final String serviceName, final RangerServiceDef serviceDef, final RangerAccessRequest request) {
 		this.serviceName = serviceName;
 		this.serviceDef  = serviceDef;
 		this.request     = request;
@@ -116,7 +116,7 @@ public class RangerAccessResult {
 		return request;
 	}
 
-	public int getPolicyType() { return policyType; }
+	public String getPolicyType() { return policyType; }
 
 	public boolean getIsAccessDetermined() { return isAccessDetermined; }
 

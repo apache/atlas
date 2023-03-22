@@ -546,7 +546,7 @@ public class RangerPolicyRepository {
 
     List<RangerContextEnricher> getContextEnrichers() { return contextEnrichers; }
 
-    List<RangerPolicyEvaluator> getPolicyEvaluators(int policyType) {
+    List<RangerPolicyEvaluator> getPolicyEvaluators(String policyType) {
         switch (policyType) {
             case RangerPolicy.POLICY_TYPE_ACCESS:
                 return getPolicyEvaluators();
@@ -579,7 +579,7 @@ public class RangerPolicyRepository {
 
     RangerPolicyEngineOptions getOptions() { return options; }
 
-    List<PolicyEvaluatorForTag> getLikelyMatchPolicyEvaluators(RangerAccessRequest request, Set<RangerTagForEval> tags, int policyType, Date accessTime) {
+    List<PolicyEvaluatorForTag> getLikelyMatchPolicyEvaluators(RangerAccessRequest request, Set<RangerTagForEval> tags, String policyType, Date accessTime) {
         List<PolicyEvaluatorForTag> ret = Collections.EMPTY_LIST;
 
         if (CollectionUtils.isNotEmpty(tags) && getServiceDef() != null) {
@@ -629,7 +629,7 @@ public class RangerPolicyRepository {
     public List<RangerPolicyEvaluator> getLikelyMatchPolicyEvaluators(RangerAccessRequest request) {
         List<RangerPolicyEvaluator> ret = new ArrayList<>();
 
-        for (int policyType : RangerPolicy.POLICY_TYPES) {
+        for (String policyType : RangerPolicy.POLICY_TYPES) {
             List<RangerPolicyEvaluator> evaluators = getLikelyMatchPolicyEvaluators(request, policyType);
             if (CollectionUtils.isNotEmpty(evaluators)) {
                 ret.addAll(evaluators);
@@ -638,7 +638,7 @@ public class RangerPolicyRepository {
         return ret;
     }
 
-    public List<RangerPolicyEvaluator> getLikelyMatchPolicyEvaluators(RangerAccessRequest request, int policyType) {
+    public List<RangerPolicyEvaluator> getLikelyMatchPolicyEvaluators(RangerAccessRequest request, String policyType) {
         switch (policyType) {
             case RangerPolicy.POLICY_TYPE_ACCESS:
                 return getLikelyMatchAccessPolicyEvaluators(request);
@@ -936,11 +936,11 @@ public class RangerPolicyRepository {
             RangerPolicyEvaluator evaluator = buildPolicyEvaluator(policy, serviceDef, options);
 
             if (evaluator != null) {
-                if(policy.getPolicyType() == null || policy.getPolicyType() == RangerPolicy.POLICY_TYPE_ACCESS) {
+                if(StringUtils.isEmpty(policy.getPolicyType()) || RangerPolicy.POLICY_TYPE_ACCESS.equals(policy.getPolicyType())) {
                     policyEvaluators.add(evaluator);
-                } else if(policy.getPolicyType() == RangerPolicy.POLICY_TYPE_DATAMASK) {
+                } else if(RangerPolicy.POLICY_TYPE_DATAMASK.equals(policy.getPolicyType())) {
                     dataMaskPolicyEvaluators.add(evaluator);
-                } else if(policy.getPolicyType() == RangerPolicy.POLICY_TYPE_ROWFILTER) {
+                } else if(RangerPolicy.POLICY_TYPE_ROWFILTER.equals(policy.getPolicyType())) {
                     rowFilterPolicyEvaluators.add(evaluator);
                 } else {
                     LOG.warn("RangerPolicyEngine: ignoring policy id=" + policy.getId() + " - invalid policyType '" + policy.getPolicyType() + "'");
@@ -1283,17 +1283,17 @@ public class RangerPolicyRepository {
                 ret = buildPolicyEvaluator(policy, serviceDef, options);
 
                 if (ret != null) {
-                    if (policy.getPolicyType() == null || policy.getPolicyType() == RangerPolicy.POLICY_TYPE_ACCESS) {
+                    if (StringUtils.isEmpty(policy.getPolicyType()) || RangerPolicy.POLICY_TYPE_ACCESS.equals(policy.getPolicyType())) {
                         policyEvaluators.add(ret);
-                    } else if (policy.getPolicyType() == RangerPolicy.POLICY_TYPE_DATAMASK) {
+                    } else if (RangerPolicy.POLICY_TYPE_DATAMASK.equals(policy.getPolicyType())) {
                         dataMaskPolicyEvaluators.add(ret);
-                    } else if (policy.getPolicyType() == RangerPolicy.POLICY_TYPE_ROWFILTER) {
+                    } else if (RangerPolicy.POLICY_TYPE_ROWFILTER.equals(policy.getPolicyType())) {
                         rowFilterPolicyEvaluators.add(ret);
                     } else {
                         LOG.warn("RangerPolicyEngine: ignoring policy id=" + policy.getId() + " - invalid policyType '" + policy.getPolicyType() + "'");
                     }
 
-                    if (policy.getPolicyType() != RangerPolicy.POLICY_TYPE_AUDIT) {
+                    if (!RangerPolicy.POLICY_TYPE_AUDIT.equals(policy.getPolicyType())) {
                         policyEvaluatorsMap.put(policy.getId(), ret);
                     }
                 }
@@ -1329,18 +1329,18 @@ public class RangerPolicyRepository {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> RangerPolicyRepository.deletePolicyEvaluator(" + evaluator.getPolicy() + ")");
         }
-        Integer policyType = evaluator.getPolicy().getPolicyType();
-        if (policyType == null) {
+        String policyType = evaluator.getPolicy().getPolicyType();
+        if (StringUtils.isEmpty(policyType)) {
             policyType = RangerPolicy.POLICY_TYPE_ACCESS;
         }
 
         List<RangerPolicyEvaluator> evaluators = null;
 
-        if (policyType == RangerPolicy.POLICY_TYPE_ACCESS) {
+        if (policyType.equals(RangerPolicy.POLICY_TYPE_ACCESS)) {
             evaluators = this.policyEvaluators;
-        } else if (policyType == RangerPolicy.POLICY_TYPE_DATAMASK) {
+        } else if (policyType.equals(RangerPolicy.POLICY_TYPE_DATAMASK)) {
             evaluators = this.dataMaskPolicyEvaluators;
-        } else if (policyType == RangerPolicy.POLICY_TYPE_ROWFILTER) {
+        } else if (policyType.equals(RangerPolicy.POLICY_TYPE_ROWFILTER)) {
             evaluators = this.rowFilterPolicyEvaluators;
         } else {
             LOG.error("Unknown policyType:[" + policyType +"]");
@@ -1360,7 +1360,7 @@ public class RangerPolicyRepository {
             LOG.debug("==> RangerPolicyRepository.update(delta=" + delta + ", currentEvaluator=" + (currentEvaluator == null ? null : currentEvaluator.getPolicy()) + ")");
         }
         Integer changeType = delta.getChangeType();
-        Integer policyType = delta.getPolicyType();
+        String policyType  = delta.getPolicyType();
         Long    policyId   = delta.getPolicyId();
 
         RangerPolicy policy = delta.getPolicy();
@@ -1414,7 +1414,7 @@ public class RangerPolicyRepository {
         return ret;
     }
 
-    Map<String, RangerResourceTrie> getTrie(final int policyType) {
+    Map<String, RangerResourceTrie> getTrie(final String policyType) {
         final Map<String, RangerResourceTrie> ret;
         switch (policyType) {
             case RangerPolicy.POLICY_TYPE_ACCESS:
@@ -1467,13 +1467,13 @@ public class RangerPolicyRepository {
 
     private void updateResourceTrie(List<RangerPolicyDelta> deltas) {
 
-        boolean[] flags = new boolean[RangerPolicy.POLICY_TYPES.length];
+        Set<String> flags = new HashSet<>();
 
         for (RangerPolicyDelta delta : deltas) {
             final Integer changeType  = delta.getChangeType();
             final String  serviceType = delta.getServiceType();
             final Long    policyId    = delta.getPolicyId();
-            final Integer policyType  = delta.getPolicyType();
+            final String  policyType  = delta.getPolicyType();
 
             if (!serviceType.equals(this.serviceDef.getName())) {
                 continue;
@@ -1534,18 +1534,16 @@ public class RangerPolicyRepository {
                         break;
                 }
 
-                flags[policyType] = true;
+                flags.add(policyType);
             }
         }
 
-        for (int policyType = 0; policyType < flags.length; policyType++) {
-            if (flags[policyType]) {
-                Map<String, RangerResourceTrie> trie = getTrie(policyType);
+        for (String policyType : flags) {
+            Map<String, RangerResourceTrie> trie = getTrie(policyType);
 
-                if (trie != null) {
-                    for (Map.Entry<String, RangerResourceTrie> entry : trie.entrySet()) {
-                        entry.getValue().wrapUpUpdate();
-                    }
+            if (trie != null) {
+                for (Map.Entry<String, RangerResourceTrie> entry : trie.entrySet()) {
+                    entry.getValue().wrapUpUpdate();
                 }
             }
         }

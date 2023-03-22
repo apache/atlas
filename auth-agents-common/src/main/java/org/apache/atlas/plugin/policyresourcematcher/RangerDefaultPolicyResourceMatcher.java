@@ -48,7 +48,7 @@ public class RangerDefaultPolicyResourceMatcher implements RangerPolicyResourceM
     private static final Log PERF_POLICY_RESOURCE_MATCHER_MATCH_LOG = RangerPerfTracer.getPerfLogger("policyresourcematcher.match");
 
     protected RangerServiceDef                  serviceDef;
-    protected int                               policyType;
+    protected String                            policyType;
     protected Map<String, RangerPolicyResource> policyResources;
 
     private Map<String, RangerResourceMatcher>  allMatchers;
@@ -75,7 +75,7 @@ public class RangerDefaultPolicyResourceMatcher implements RangerPolicyResourceM
         if (policy == null) {
             setPolicyResources(null, RangerPolicy.POLICY_TYPE_ACCESS);
         } else {
-            setPolicyResources(policy.getResources(), policy.getPolicyType() == null ? RangerPolicy.POLICY_TYPE_ACCESS : policy.getPolicyType());
+            setPolicyResources(policy.getResources(), StringUtils.isEmpty(policy.getPolicyType()) ? RangerPolicy.POLICY_TYPE_ACCESS : policy.getPolicyType());
         }
     }
 
@@ -89,7 +89,7 @@ public class RangerDefaultPolicyResourceMatcher implements RangerPolicyResourceM
     }
 
     @Override
-    public void setPolicyResources(Map<String, RangerPolicyResource> policyResources, int policyType) {
+    public void setPolicyResources(Map<String, RangerPolicyResource> policyResources, String policyType) {
         this.policyResources = policyResources;
         this.policyType = policyType;
     }
@@ -370,7 +370,7 @@ public class RangerDefaultPolicyResourceMatcher implements RangerPolicyResourceM
 
         Map<String, RangerPolicyResource> resources = policy.getResources();
 
-        if (policy.getPolicyType() == policyType && MapUtils.isNotEmpty(resources)) {
+        if (policy.getPolicyType().equals(policyType) && MapUtils.isNotEmpty(resources)) {
             List<RangerResourceDef> hierarchy = getMatchingHierarchy(resources.keySet());
 
             if (CollectionUtils.isNotEmpty(hierarchy)) {

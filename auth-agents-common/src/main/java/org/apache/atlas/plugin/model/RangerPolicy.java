@@ -36,12 +36,12 @@ import java.util.Map;
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.FIELD)
 public class RangerPolicy extends RangerBaseModelObject implements java.io.Serializable {
-	public static final int POLICY_TYPE_ACCESS    = 0;
-	public static final int POLICY_TYPE_DATAMASK  = 1;
-	public static final int POLICY_TYPE_ROWFILTER = 2;
-	public static final int POLICY_TYPE_AUDIT     = 3;
+	public static final String POLICY_TYPE_ACCESS    = "ACCESS";
+	public static final String POLICY_TYPE_DATAMASK  = "DATA_MASK";
+	public static final String POLICY_TYPE_ROWFILTER = "ROW_FILTER";
+	public static final String POLICY_TYPE_AUDIT     = "AUDIT";
 
-	public static final int[] POLICY_TYPES = new int[] {
+	public static final String[] POLICY_TYPES = new String[] {
 			POLICY_TYPE_ACCESS,
 			POLICY_TYPE_DATAMASK,
 			POLICY_TYPE_ROWFILTER
@@ -64,7 +64,7 @@ public class RangerPolicy extends RangerBaseModelObject implements java.io.Seria
 
 	private String                            service;
 	private String                            name;
-	private Integer                           policyType;
+	private String                           policyType;
 	private Integer                           policyPriority;
 	private String                            description;
 	private String							  resourceSignature;
@@ -89,15 +89,15 @@ public class RangerPolicy extends RangerBaseModelObject implements java.io.Seria
 		this(null, null, null, null, null, null, null, null, null, null, null);
 	}
 
-	public RangerPolicy(String service, String name, Integer policyType, Integer policyPriority, String description, Map<String, RangerPolicyResource> resources, List<RangerPolicyItem> policyItems, String resourceSignature, Map<String, Object> options, List<RangerValiditySchedule> validitySchedules, List<String> policyLables) {
+	public RangerPolicy(String service, String name, String policyType, Integer policyPriority, String description, Map<String, RangerPolicyResource> resources, List<RangerPolicyItem> policyItems, String resourceSignature, Map<String, Object> options, List<RangerValiditySchedule> validitySchedules, List<String> policyLables) {
 		this(service, name, policyType, policyPriority, description, resources, policyItems, resourceSignature, options, validitySchedules, policyLables, null);
 	}
 
-	public RangerPolicy(String service, String name, Integer policyType, Integer policyPriority, String description, Map<String, RangerPolicyResource> resources, List<RangerPolicyItem> policyItems, String resourceSignature, Map<String, Object> options, List<RangerValiditySchedule> validitySchedules, List<String> policyLables, String zoneName) {
+	public RangerPolicy(String service, String name, String policyType, Integer policyPriority, String description, Map<String, RangerPolicyResource> resources, List<RangerPolicyItem> policyItems, String resourceSignature, Map<String, Object> options, List<RangerValiditySchedule> validitySchedules, List<String> policyLables, String zoneName) {
 		this(service, name, policyType, policyPriority, description, resources, policyItems, resourceSignature, options, validitySchedules, policyLables, zoneName, null);
 	}
 
-	public RangerPolicy(String service, String name, Integer policyType, Integer policyPriority, String description, Map<String, RangerPolicyResource> resources, List<RangerPolicyItem> policyItems, String resourceSignature, Map<String, Object> options, List<RangerValiditySchedule> validitySchedules, List<String> policyLables, String zoneName, List<RangerPolicyItemCondition> conditions) {
+	public RangerPolicy(String service, String name, String policyType, Integer policyPriority, String description, Map<String, RangerPolicyResource> resources, List<RangerPolicyItem> policyItems, String resourceSignature, Map<String, Object> options, List<RangerValiditySchedule> validitySchedules, List<String> policyLables, String zoneName, List<RangerPolicyItemCondition> conditions) {
 		this(service, name, policyType, policyPriority, description, resources, policyItems, resourceSignature, options, validitySchedules, policyLables, zoneName, conditions, null);
 	}
 
@@ -110,7 +110,7 @@ public class RangerPolicy extends RangerBaseModelObject implements java.io.Seria
 	 * @param policyItems
 	 * @param resourceSignature TODO
 	 */
-	public RangerPolicy(String service, String name, Integer policyType, Integer policyPriority, String description, Map<String, RangerPolicyResource> resources, List<RangerPolicyItem> policyItems, String resourceSignature, Map<String, Object> options, List<RangerValiditySchedule> validitySchedules, List<String> policyLables, String zoneName, List<RangerPolicyItemCondition> conditions, Boolean isDenyAllElse) {
+	public RangerPolicy(String service, String name, String policyType, Integer policyPriority, String description, Map<String, RangerPolicyResource> resources, List<RangerPolicyItem> policyItems, String resourceSignature, Map<String, Object> options, List<RangerValiditySchedule> validitySchedules, List<String> policyLables, String zoneName, List<RangerPolicyItemCondition> conditions, Boolean isDenyAllElse) {
 		super();
 
 		setService(service);
@@ -204,14 +204,14 @@ public class RangerPolicy extends RangerBaseModelObject implements java.io.Seria
 	/**
 	 * @return the policyType
 	 */
-	public Integer getPolicyType() {
+	public String getPolicyType() {
 		return policyType;
 	}
 
 	/**
 	 * @param policyType the policyType to set
 	 */
-	public void setPolicyType(Integer policyType) {
+	public void setPolicyType(String policyType) {
 		this.policyType = policyType;
 	}
 

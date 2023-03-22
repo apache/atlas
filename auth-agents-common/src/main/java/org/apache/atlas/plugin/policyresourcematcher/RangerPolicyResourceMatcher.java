@@ -38,7 +38,7 @@ public interface RangerPolicyResourceMatcher {
 
 	void setPolicyResources(Map<String, RangerPolicyResource> policyResources);
 
-	void setPolicyResources(Map<String, RangerPolicyResource> policyResources, int policyType);
+	void setPolicyResources(Map<String, RangerPolicyResource> policyResources, String policyType);
 
 	void setServiceDefHelper(RangerServiceDefHelper serviceDefHelper);
 

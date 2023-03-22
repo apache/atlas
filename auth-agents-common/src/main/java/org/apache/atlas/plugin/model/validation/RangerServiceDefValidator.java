@@ -622,7 +622,7 @@ public class RangerServiceDefValidator extends RangerValidator {
 			valid = false;
 		}
 		// resource level should be unique within a hierarchy
-		for(int policyType : RangerPolicy.POLICY_TYPES) {
+		for(String policyType : RangerPolicy.POLICY_TYPES) {
 			Set<List<RangerResourceDef>> hierarchies = defHelper.getResourceHierarchies(policyType);
 			for (List<RangerResourceDef> aHierarchy : hierarchies) {
 				Set<Integer> levels = new HashSet<Integer>(aHierarchy.size());
@@ -658,7 +658,7 @@ public class RangerServiceDefValidator extends RangerValidator {
 			resourceNames.add(resourceDef.getName());
 		}
 		for (String resourceName : resourceNames) {
-			for (int policyType : RangerPolicy.POLICY_TYPES) {
+			for (String policyType : RangerPolicy.POLICY_TYPES) {
 				Set<List<RangerResourceDef>> hierarchies = defHelper.getResourceHierarchies(policyType);
 				for (List<RangerResourceDef> aHierarchy : hierarchies) {
 					boolean foundOptionalResource = false;

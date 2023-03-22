@@ -112,7 +112,7 @@ public class RangerPolicyEngineImpl implements RangerPolicyEngine {
 	}
 
 	@Override
-	public RangerAccessResult evaluatePolicies(RangerAccessRequest request, int policyType, RangerAccessResultProcessor resultProcessor) {
+	public RangerAccessResult evaluatePolicies(RangerAccessRequest request, String policyType, RangerAccessResultProcessor resultProcessor) {
 		if (LOG.isDebugEnabled()) {
 			LOG.debug("==> RangerPolicyEngineImpl.evaluatePolicies(" + request + ", policyType=" + policyType + ")");
 		}
@@ -165,7 +165,7 @@ public class RangerPolicyEngineImpl implements RangerPolicyEngine {
 	}
 
 	@Override
-	public Collection<RangerAccessResult> evaluatePolicies(Collection<RangerAccessRequest> requests, int policyType, RangerAccessResultProcessor resultProcessor) {
+	public Collection<RangerAccessResult> evaluatePolicies(Collection<RangerAccessRequest> requests, String policyType, RangerAccessResultProcessor resultProcessor) {
 		if (LOG.isDebugEnabled()) {
 			LOG.debug("==> RangerPolicyEngineImpl.evaluatePolicies(" + requests + ", policyType=" + policyType + ")");
 		}
@@ -249,7 +249,7 @@ public class RangerPolicyEngineImpl implements RangerPolicyEngine {
 	}
 
 	@Override
-	public RangerResourceACLs getResourceACLs(RangerAccessRequest request, Integer requestedPolicyType) {
+	public RangerResourceACLs getResourceACLs(RangerAccessRequest request, String requestedPolicyType) {
 		if (LOG.isDebugEnabled()) {
 			LOG.debug("==> RangerPolicyEngineImpl.getResourceACLs(request=" + request + ", policyType=" + requestedPolicyType + ")");
 		}
@@ -276,10 +276,9 @@ public class RangerPolicyEngineImpl implements RangerPolicyEngine {
 				LOG.debug("zoneName:[" + zoneName + "]");
 			}
 
-			int[] policyTypes = requestedPolicyType == null ? RangerPolicy.POLICY_TYPES : new int[] { requestedPolicyType };
+			String[] policyTypes = StringUtils.isEmpty(requestedPolicyType) ? RangerPolicy.POLICY_TYPES : new String[] { requestedPolicyType };
 
-
-			for (int policyType : policyTypes) {
+			for (String policyType : policyTypes) {
 				List<RangerPolicyEvaluator> allEvaluators           = new ArrayList<>();
 				Map<Long, MatchType>        tagMatchTypeMap         = new HashMap<>();
 				Set<Long>                   policyIdForTemporalTags = new HashSet<>();
@@ -300,7 +299,7 @@ public class RangerPolicyEngineImpl implements RangerPolicyEngine {
 					}
 
 					if (policyPriority != evaluator.getPolicyPriority()) {
-						if (policyType == RangerPolicy.POLICY_TYPE_ACCESS) {
+						if (StringUtils.isEmpty(policyType)) {
 							ret.finalizeAcls();
 						}
 
@@ -325,11 +324,11 @@ public class RangerPolicyEngineImpl implements RangerPolicyEngine {
 						continue;
 					}
 
-					if (policyType == RangerPolicy.POLICY_TYPE_ACCESS) {
+					if (RangerPolicy.POLICY_TYPE_ACCESS.equals(policyType)) {
 						updateFromPolicyACLs(evaluator, policyIdForTemporalTags, ret);
-					} else if (policyType == RangerPolicy.POLICY_TYPE_ROWFILTER) {
+					} else if (RangerPolicy.POLICY_TYPE_ROWFILTER.equals(policyType)) {
 						updateRowFiltersFromPolicy(evaluator, policyIdForTemporalTags, ret);
-					} else if (policyType == RangerPolicy.POLICY_TYPE_DATAMASK) {
+					} else if (RangerPolicy.POLICY_TYPE_DATAMASK.equals(policyType)) {
 						updateDataMasksFromPolicy(evaluator, policyIdForTemporalTags, ret);
 					}
 				}
@@ -591,7 +590,7 @@ public class RangerPolicyEngineImpl implements RangerPolicyEngine {
 		this.serviceConfig    = new ServiceConfig(other.serviceConfig);
 	}
 
-	private RangerAccessResult zoneAwareAccessEvaluationWithNoAudit(RangerAccessRequest request, int policyType) {
+	private RangerAccessResult zoneAwareAccessEvaluationWithNoAudit(RangerAccessRequest request, String policyType) {
 		if (LOG.isDebugEnabled()) {
 			LOG.debug("==> RangerPolicyEngineImpl.zoneAwareAccessEvaluationWithNoAudit(" + request + ", policyType =" + policyType + ")");
 		}
@@ -599,7 +598,7 @@ public class RangerPolicyEngineImpl implements RangerPolicyEngine {
 		RangerAccessResult     ret                 = null;
 		RangerPolicyRepository policyRepository    = policyEngine.getPolicyRepository();
 		RangerPolicyRepository tagPolicyRepository = policyEngine.getTagPolicyRepository();
-		Set<String>            zoneNames            = policyEngine.getMatchedZonesForResourceAndChildren(request.getResource()); // Evaluate zone-name from request
+		Set<String>            zoneNames           = policyEngine.getMatchedZonesForResourceAndChildren(request.getResource()); // Evaluate zone-name from request
 
 		if (LOG.isDebugEnabled()) {
 			LOG.debug("zoneNames:[" + zoneNames + "]");
@@ -666,7 +665,7 @@ public class RangerPolicyEngineImpl implements RangerPolicyEngine {
 		return ret;
 	}
 
-	private RangerAccessResult evaluatePoliciesNoAudit(RangerAccessRequest request, int policyType, String zoneName, RangerPolicyRepository policyRepository, RangerPolicyRepository tagPolicyRepository) {
+	private RangerAccessResult evaluatePoliciesNoAudit(RangerAccessRequest request, String policyType, String zoneName, RangerPolicyRepository policyRepository, RangerPolicyRepository tagPolicyRepository) {
 		if (LOG.isDebugEnabled()) {
 			LOG.debug("==> RangerPolicyEngineImpl.evaluatePoliciesNoAudit(" + request + ", policyType =" + policyType + ", zoneName=" + zoneName + ")");
 		}
@@ -717,7 +716,7 @@ public class RangerPolicyEngineImpl implements RangerPolicyEngine {
 		return ret;
 	}
 
-	private RangerAccessResult evaluatePoliciesForOneAccessTypeNoAudit(RangerAccessRequest request, int policyType, String zoneName, RangerPolicyRepository policyRepository, RangerPolicyRepository tagPolicyRepository) {
+	private RangerAccessResult evaluatePoliciesForOneAccessTypeNoAudit(RangerAccessRequest request, String policyType, String zoneName, RangerPolicyRepository policyRepository, RangerPolicyRepository tagPolicyRepository) {
 		if (LOG.isDebugEnabled()) {
 			LOG.debug("==> RangerPolicyEngineImpl.evaluatePoliciesForOneAccessTypeNoAudit(" + request + ", policyType =" + policyType + ", zoneName=" + zoneName + ")");
 		}
@@ -815,7 +814,7 @@ public class RangerPolicyEngineImpl implements RangerPolicyEngine {
 		return ret;
 	}
 
-	private void evaluateTagPolicies(final RangerAccessRequest request, int policyType, String zoneName, RangerPolicyRepository tagPolicyRepository, RangerAccessResult result) {
+	private void evaluateTagPolicies(final RangerAccessRequest request, String policyType, String zoneName, RangerPolicyRepository tagPolicyRepository, RangerAccessResult result) {
 		if (LOG.isDebugEnabled()) {
 			LOG.debug("==> RangerPolicyEngineImpl.evaluateTagPolicies(" + request + ", policyType =" + policyType + ", zoneName=" + zoneName + ", " + result + ")");
 		}
@@ -899,7 +898,7 @@ public class RangerPolicyEngineImpl implements RangerPolicyEngine {
 		}
 	}
 
-	private RangerAccessResult createAccessResult(RangerAccessRequest request, int policyType) {
+	private RangerAccessResult createAccessResult(RangerAccessRequest request, String policyType) {
 		RangerPolicyRepository repository = policyEngine.getPolicyRepository();
 		RangerAccessResult     ret        = new RangerAccessResult(policyType, repository.getServiceName(), repository.getServiceDef(), request);
 
@@ -963,7 +962,7 @@ public class RangerPolicyEngineImpl implements RangerPolicyEngine {
 		return ret;
 	}
 
-	private void getResourceACLEvaluatorsForZone(RangerAccessRequest request, String zoneName, int policyType, List<RangerPolicyEvaluator> allEvaluators, Map<Long, MatchType> tagMatchTypeMap, Set<Long> policyIdForTemporalTags) {
+	private void getResourceACLEvaluatorsForZone(RangerAccessRequest request, String zoneName, String policyType, List<RangerPolicyEvaluator> allEvaluators, Map<Long, MatchType> tagMatchTypeMap, Set<Long> policyIdForTemporalTags) {
 		final RangerPolicyRepository matchedRepository = policyEngine.getRepositoryForZone(zoneName);
 
 		if (matchedRepository == null) {

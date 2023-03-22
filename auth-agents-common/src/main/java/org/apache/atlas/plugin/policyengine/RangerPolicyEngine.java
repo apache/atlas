@@ -62,15 +62,15 @@ public interface RangerPolicyEngine {
 
 	void setRoles(RangerRoles roles);
 
-	RangerAccessResult evaluatePolicies(RangerAccessRequest request, int policyType, RangerAccessResultProcessor resultProcessor);
+	RangerAccessResult evaluatePolicies(RangerAccessRequest request, String policyType, RangerAccessResultProcessor resultProcessor);
 
-	Collection<RangerAccessResult> evaluatePolicies(Collection<RangerAccessRequest> requests, int policyType, RangerAccessResultProcessor resultProcessor);
+	Collection<RangerAccessResult> evaluatePolicies(Collection<RangerAccessRequest> requests, String policyType, RangerAccessResultProcessor resultProcessor);
 
 	void evaluateAuditPolicies(RangerAccessResult result);
 
 	RangerResourceACLs getResourceACLs(RangerAccessRequest request);
 
-	RangerResourceACLs getResourceACLs(RangerAccessRequest request, Integer requestedPolicyType);
+	RangerResourceACLs getResourceACLs(RangerAccessRequest request, String requestedPolicyType);
 
 	Set<String> getRolesFromUserAndGroups(String user, Set<String> groups);
 
