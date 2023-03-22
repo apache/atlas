@@ -60,17 +60,20 @@ public class KeycloakClient {
     private KeycloakClient() {
     }
 
-    public static KeycloakClient getKeycloakClient() {
+    public static KeycloakClient getKeycloakClient() throws AtlasBaseException {
         if (keycloakClient == null) {
             LOG.info("Initializing Keycloak client..");
             try {
                 initConf();
             } catch (IOException e) {
                 LOG.error("Failed to fetch Keycloak conf {}", e.getMessage());
+                throw new AtlasBaseException(e);
             } catch (JSONException e) {
                 LOG.error("Failed to parsing Keycloak conf {}", e.getMessage());
+                throw new AtlasBaseException(e);
             } catch (Exception e) {
                 LOG.error("Failed to connect to Keycloak {}", e.getMessage());
+                throw new AtlasBaseException(e);
             }
             init();
             LOG.info("Initialized Keycloak client..");
