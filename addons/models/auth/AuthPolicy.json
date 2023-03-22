@@ -324,17 +324,6 @@
           "includeInNotification": true
         },
         {
-          "name": "policyResourceCategory",
-          "typeName": "string",
-          "indexType": "STRING",
-          "cardinality": "SINGLE",
-          "isIndexable": false,
-          "isOptional": true,
-          "isUnique": false,
-          "skipScrubbing": true,
-          "includeInNotification": true
-        },
-        {
           "name": "isPolicyEnabled",
           "typeName": "boolean",
           "cardinality": "SINGLE",
