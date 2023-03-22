@@ -151,6 +151,11 @@
             <directory>../addons/elasticsearch</directory>
             <outputDirectory>elasticsearch</outputDirectory>
         </fileSet>
+
+        <fileSet>
+            <directory>../addons/static</directory>
+            <outputDirectory>static</outputDirectory>
+        </fileSet>
     </fileSets>
 
     <files>

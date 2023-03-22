@@ -22,6 +22,7 @@ package org.apache.atlas.plugin.util;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.apache.atlas.authz.admin.client.AtlasAuthAdminClient;
+import org.apache.atlas.policytransformer.CachePolicyTransformerImpl;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -86,7 +87,7 @@ public class PolicyRefresher extends Thread {
 		cacheFilename = cacheFilename.replace(File.pathSeparatorChar,  '_');
 
 		this.cacheFileName = cacheFilename;
-		//TODO: Remove this
+
 		rangerAdmin = getRangerAdminClient();
 
 		Gson gson = null;
@@ -314,7 +315,17 @@ public class PolicyRefresher extends Thread {
 		}
 
 		try {
-			svcPolicies = rangerAdmin.getServicePoliciesIfUpdated(lastKnownVersion, lastActivationTimeInMillis);
+
+			if (serviceName.equals("atlas") && plugIn.getTypeRegistry() != null) {
+				RangerRESTUtils restUtils = new RangerRESTUtils();
+				CachePolicyTransformerImpl transformer = new CachePolicyTransformerImpl(plugIn.getTypeRegistry());
+
+				svcPolicies = transformer.getPolicies(serviceName,
+						restUtils.getPluginId(serviceName, plugIn.getAppId()),
+						lastUpdatedTiemInMillis);
+			} else {
+				svcPolicies = atlasAuthAdminClient.getServicePoliciesIfUpdated(lastUpdatedTiemInMillis);
+			}
 
 			boolean isUpdated = svcPolicies != null;
 
@@ -347,6 +358,7 @@ public class PolicyRefresher extends Thread {
 
 		return svcPolicies;
 	}
+
 	private ServicePolicies loadFromCache() {
 
 		ServicePolicies policies = null;

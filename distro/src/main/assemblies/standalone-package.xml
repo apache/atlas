@@ -131,6 +131,11 @@
             <outputDirectory>elasticsearch</outputDirectory>
         </fileSet>
 
+        <fileSet>
+            <directory>../addons/static</directory>
+            <outputDirectory>static</outputDirectory>
+        </fileSet>
+
         <!-- addons/hive -->
         <fileSet>
             <directory>../addons/hive-bridge/src/bin</directory>

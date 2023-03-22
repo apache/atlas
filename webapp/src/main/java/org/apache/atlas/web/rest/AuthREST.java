@@ -23,6 +23,7 @@ import org.apache.atlas.plugin.util.KeycloakUserStore;
 import org.apache.atlas.plugin.util.RangerRoles;
 import org.apache.atlas.plugin.util.RangerUserStore;
 import org.apache.atlas.plugin.util.ServicePolicies;
+import org.apache.atlas.policytransformer.CachePolicyTransformerImpl;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
 import org.slf4j.Logger;
@@ -54,14 +55,12 @@ public class AuthREST {
     private static final Logger LOG      = LoggerFactory.getLogger(AuthREST.class);
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.AuthREST");
 
-    //private CachePolicyTransformerImpl policyTransformer;
+    private CachePolicyTransformerImpl policyTransformer;
 
     @Inject
-    public AuthREST() {
-    }
-   /* public AuthREST(CachePolicyTransformerImpl policyTransformer) {
+    public AuthREST(CachePolicyTransformerImpl policyTransformer) {
         this.policyTransformer = policyTransformer;
-    }*/
+    }
 
     @GET
     @Path("download/roles/{serviceName}")
@@ -130,7 +129,7 @@ public class AuthREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AuthREST.downloadPolicies");
             }
 
-            //ServicePolicies ret = policyTransformer.getPolicies(serviceName, pluginId, lastUpdatedTime);
+            ServicePolicies ret = policyTransformer.getPolicies(serviceName, pluginId, lastUpdatedTime);
 
             return null;
         } finally {

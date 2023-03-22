@@ -21,6 +21,7 @@ package org.apache.atlas.authorize;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.authorize.simple.AtlasSimpleAuthorizer;
+import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -40,7 +41,7 @@ public class AtlasAuthorizerFactory {
     public static String CURRENT_AUTHORIZER_IMPL;
     public static final String ATLAS_AUTHORIZER_IMPL = "atlas";
 
-    public static AtlasAuthorizer getAtlasAuthorizer() throws AtlasAuthorizationException {
+    public static AtlasAuthorizer getAtlasAuthorizer(AtlasTypeRegistry typeRegistry) throws AtlasAuthorizationException {
         AtlasAuthorizer ret = INSTANCE;
 
         if (ret == null) {
@@ -79,7 +80,11 @@ public class AtlasAuthorizerFactory {
                         if (authorizerMetaObject != null) {
                             INSTANCE = (AtlasAuthorizer) authorizerMetaObject.newInstance();
 
-                            INSTANCE.init();
+                            if (StringUtils.equalsIgnoreCase(CURRENT_AUTHORIZER_IMPL, ATLAS_AUTHORIZER_IMPL)) {
+                                INSTANCE.init(typeRegistry);
+                            } else {
+                                INSTANCE.init();
+                            }
                         }
                     } catch (Exception e) {
                         LOG.error("Error while creating authorizer of type {}", authorizerClass, e);
@@ -93,5 +98,9 @@ public class AtlasAuthorizerFactory {
         }
 
         return ret;
+    }
+
+    public static AtlasAuthorizer getAtlasAuthorizer() throws AtlasAuthorizationException {
+        return INSTANCE;
     }
 }

@@ -35,6 +35,7 @@ import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
@@ -92,7 +93,6 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
 
                 if (plugin == null) {
                     plugin = new RangerAtlasPlugin();
-
                     plugin.init();
 
                     plugin.setResultProcessor(new RangerDefaultAuditHandler(plugin.getConfig()));
@@ -104,6 +104,35 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
         }
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== RangerAtlasPlugin.init()");
+        }
+    }
+
+    @Override
+    public void init(AtlasTypeRegistry typeRegistry) {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> RangerAtlasPlugin.init(typeRegistry)");
+        }
+
+        RangerBasePlugin plugin = atlasPlugin;
+
+        if (plugin == null) {
+            synchronized (RangerAtlasPlugin.class) {
+                plugin = atlasPlugin;
+
+                if (plugin == null) {
+                    plugin = new RangerAtlasPlugin(typeRegistry);
+
+                    plugin.init();
+
+                    plugin.setResultProcessor(new RangerDefaultAuditHandler(plugin.getConfig()));
+
+                    atlasPlugin = plugin;
+                    groupUtil = new RangerGroupUtil(atlasPlugin.getUserStore());
+                }
+            }
+        }
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== RangerAtlasPlugin.init(typeRegistry)");
         }
     }
 
@@ -830,6 +859,10 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
     class RangerAtlasPlugin extends RangerBasePlugin {
         RangerAtlasPlugin() {
             super("atlas", "atlas");
+        }
+
+        RangerAtlasPlugin(AtlasTypeRegistry typeRegistry) {
+            super("atlas", "atlas", typeRegistry);
         }
     }
 

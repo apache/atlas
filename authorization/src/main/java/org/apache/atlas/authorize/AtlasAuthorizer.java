@@ -145,4 +145,9 @@ public interface AtlasAuthorizer {
     default
     void filterTypesDef(AtlasTypesDefFilterRequest request) throws AtlasAuthorizationException {
     }
+
+    default
+    public void init(AtlasTypeRegistry typeRegistry) {
+
+    }
 }

@@ -26,6 +26,8 @@ import org.apache.atlas.utils.AtlasJson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -143,9 +145,14 @@ public abstract class AtlasType {
         return AtlasJson.fromJson(jsonStr, type);
     }
 
+    public static <T> T fromJson(InputStream reader, Class<T> type) throws IOException {
+        return AtlasJson.fromJson(reader, type);
+    }
+
     public static <T> T fromLinkedHashMap(Object obj, Class<T> type) {
         return AtlasJson.fromLinkedHashMap(obj, type);
     }
+
     public static String toV1Json(Object obj) {
         return AtlasJson.toV1Json(obj);
     }
