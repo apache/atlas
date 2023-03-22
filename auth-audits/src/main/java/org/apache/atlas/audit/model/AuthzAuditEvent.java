@@ -545,8 +545,6 @@ public class AuthzAuditEvent extends AuditEventBase {
 		sb.append("repositoryType=").append(repositoryType)
 				.append(FIELD_SEPARATOR).append("repositoryName=")
 				.append(repositoryName).append(FIELD_SEPARATOR).append("user=")
-				.append(user).append(FIELD_SEPARATOR).append("entityGuid=")
-				.append(entityGuid).append(FIELD_SEPARATOR).append("eventTime=")
 				.append(user).append(FIELD_SEPARATOR).append("eventTime=")
 				.append(eventTime).append(FIELD_SEPARATOR)
 				.append("accessType=").append(accessType)
