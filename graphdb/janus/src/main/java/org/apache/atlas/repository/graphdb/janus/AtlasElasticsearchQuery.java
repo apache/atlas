@@ -80,6 +80,10 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         searchResponse = null;
     }
 
+    public AtlasElasticsearchQuery(AtlasJanusGraph graph, String index, RestClient restClient) {
+        this(graph, restClient, index, null);
+    }
+
     private SearchRequest getSearchRequest(String index, SearchSourceBuilder sourceBuilder) {
         SearchRequest searchRequest = new SearchRequest(index);
         searchRequest.source(sourceBuilder);

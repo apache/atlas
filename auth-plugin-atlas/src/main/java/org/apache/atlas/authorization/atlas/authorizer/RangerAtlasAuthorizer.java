@@ -63,6 +63,8 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.apache.atlas.authorization.atlas.authorizer.RangerAtlasAuthorizerUtil.*;
+import static org.apache.atlas.authorize.AtlasAuthorizationUtils.getCurrentUserGroups;
+import static org.apache.atlas.authorize.AtlasAuthorizationUtils.getCurrentUserName;
 import static org.apache.atlas.services.atlas.RangerServiceAtlas.*;
 
 
@@ -521,6 +523,18 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== getAccessors(" + request + "): " + ret);
         }
+        return ret;
+    }
+
+    @Override
+    public Set<String> getRolesForCurrentUser() {
+        Set<String> ret = new HashSet<>();
+
+        RangerBasePlugin plugin = atlasPlugin;
+        String userName = getCurrentUserName();
+
+        ret = plugin.getRolesFromUserAndGroups(userName, getCurrentUserGroups());
+
         return ret;
     }
 

@@ -24,6 +24,8 @@ import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 
+import java.util.Set;
+
 public interface AtlasAuthorizer {
     /**
      * initialization of authorizer implementation
@@ -64,6 +66,10 @@ public interface AtlasAuthorizer {
     AtlasAccessorResponse getAccessors(AtlasRelationshipAccessRequest request);
 
     AtlasAccessorResponse getAccessors(AtlasTypeAccessRequest request);
+
+    default Set<String> getRolesForCurrentUser() {
+        return null;
+    }
 
     /**
      * authorize relationship type

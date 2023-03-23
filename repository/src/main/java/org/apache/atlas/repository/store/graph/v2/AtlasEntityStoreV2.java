@@ -54,7 +54,16 @@ import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityComparator.AtlasEntityDiffResult;
 import org.apache.atlas.repository.store.graph.v1.RestoreHandlerV1;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.AuthPolicyPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.accesscontrol.PersonaPreProcessor;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.accesscontrol.PurposePreProcessor;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.CategoryPreProcessor;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.GlossaryPreProcessor;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.TermPreProcessor;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.sql.QueryCollectionPreProcessor;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.sql.QueryFolderPreProcessor;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.sql.QueryPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTask;
 import org.apache.atlas.tasks.TaskManagement;
 import org.apache.atlas.type.AtlasArrayType;
@@ -88,6 +97,8 @@ import java.util.stream.Collectors;
 
 import static java.lang.Boolean.FALSE;
 import static org.apache.atlas.AtlasConfiguration.STORE_DIFFERENTIAL_AUDITS;
+import static org.apache.atlas.authorize.AtlasAuthorizerFactory.ATLAS_AUTHORIZER_IMPL;
+import static org.apache.atlas.authorize.AtlasAuthorizerFactory.CURRENT_AUTHORIZER_IMPL;
 import static org.apache.atlas.bulkimport.BulkImportResponse.ImportStatus.FAILED;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.*;
@@ -1542,6 +1553,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 compactAttributes(entity, entityType);
 
                 AtlasVertex vertex = getResolvedEntityVertex(discoveryContext, entity);
+                PreProcessor preProcessor = getPreProcessor(entityType.getTypeName());
 
                 try {
                     if (vertex != null) {
@@ -1567,6 +1579,10 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                         }
 
                         context.addUpdated(guid, entity, entityType, vertex);
+
+                        if (preProcessor != null) {
+                            preProcessor.processAttributes(entity, context, UPDATE);
+                        }
                     } else {
                         graphDiscoverer.validateAndNormalize(entity);
 
@@ -1588,6 +1604,10 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                         requestContext.recordEntityGuidUpdate(entity, guid);
 
                         context.addCreated(guid, entity, entityType, vertex);
+
+                        if (preProcessor != null) {
+                            preProcessor.processAttributes(entity, context, CREATE);
+                        }
                     }
 
                 } catch (AtlasBaseException exception) {
@@ -1638,6 +1658,50 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         return context;
     }
 
+    public PreProcessor getPreProcessor(String typeName) throws AtlasBaseException {
+        PreProcessor preProcessor = null;
+
+        switch (typeName) {
+            case ATLAS_GLOSSARY_ENTITY_TYPE:
+                preProcessor = new GlossaryPreProcessor(typeRegistry, entityRetriever);
+                break;
+
+            case ATLAS_GLOSSARY_TERM_ENTITY_TYPE:
+                preProcessor = new TermPreProcessor(typeRegistry, entityRetriever, graph, taskManagement);
+                break;
+
+            case ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE:
+                preProcessor = new CategoryPreProcessor(typeRegistry, entityRetriever);
+                break;
+
+            case QUERY_ENTITY_TYPE:
+                preProcessor = new QueryPreProcessor(typeRegistry, entityRetriever);
+                break;
+
+            case QUERY_FOLDER_ENTITY_TYPE:
+                preProcessor = new QueryFolderPreProcessor(typeRegistry, entityRetriever);
+                break;
+
+            case QUERY_COLLECTION_ENTITY_TYPE:
+                preProcessor = new QueryCollectionPreProcessor(typeRegistry, entityRetriever);
+                break;
+
+            case PERSONA_ENTITY_TYPE:
+                preProcessor = new PersonaPreProcessor(graph, typeRegistry, entityRetriever, this);
+                break;
+
+            case PURPOSE_ENTITY_TYPE:
+                preProcessor = new PurposePreProcessor(graph, typeRegistry, entityRetriever, this);
+                break;
+
+            case POLICY_ENTITY_TYPE:
+                preProcessor = new AuthPolicyPreProcessor(graph, typeRegistry, entityRetriever);
+                break;
+        }
+
+        return preProcessor;
+    }
+
     private AtlasVertex getResolvedEntityVertex(EntityGraphDiscoveryContext context, AtlasEntity entity) throws AtlasBaseException {
         AtlasObjectId objectId = getAtlasObjectId(entity);
         AtlasVertex   ret      = context.getResolvedEntityVertex(entity.getGuid());
@@ -1679,6 +1743,12 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         MetricRecorder metric = RequestContext.get().startMetricRecord("filterCategoryVertices");
         for (AtlasVertex vertex : deletionCandidates) {
             String typeName = getTypeName(vertex);
+
+            PreProcessor preProcessor = getPreProcessor(typeName);
+            if (preProcessor != null) {
+                preProcessor.processDelete(vertex);
+            }
+
             if (ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE.equals(typeName)) {
                 categories.add(vertex);
             } else {

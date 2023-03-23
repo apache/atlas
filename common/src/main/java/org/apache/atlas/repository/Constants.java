@@ -55,6 +55,7 @@ public final class Constants {
     public static final String HISTORICAL_GUID_PROPERTY_KEY     = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "historicalGuids");
     public static final String FREETEXT_REQUEST_HANDLER         = "/freetext";
     public static final String TERMS_REQUEST_HANDLER            = "/terms";
+    public static final String ES_API_ALIASES                   = "/_aliases";
 
     /**
      * Entity type name property key.
@@ -140,6 +141,13 @@ public final class Constants {
     public static final String QUERY_FOLDER_ENTITY_TYPE     = "Folder";
     public static final String QUERY_COLLECTION_ENTITY_TYPE = "Collection";
 
+    /*
+     * Purpose / Persona
+     */
+    public static final String ACCESS_CONTROL_ENTITY_TYPE = "AccessControl";
+    public static final String PERSONA_ENTITY_TYPE        = "Persona";
+    public static final String PURPOSE_ENTITY_TYPE        = "Purpose";
+    public static final String POLICY_ENTITY_TYPE         = "AuthPolicy";
 
     /**
      * Lineage relations.
@@ -205,6 +213,8 @@ public final class Constants {
      * elasticsearch index prefix.
      */
     public static final String INDEX_PREFIX = "janusgraph_";
+
+    public static final String VERTEX_INDEX_NAME = INDEX_PREFIX + VERTEX_INDEX;
 
     public static final String NAME                                    = "name";
     public static final String QUALIFIED_NAME                          = "qualifiedName";

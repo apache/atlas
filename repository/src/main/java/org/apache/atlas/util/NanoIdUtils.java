@@ -77,6 +77,10 @@ public final class NanoIdUtils {
         return randomNanoId(DEFAULT_NUMBER_GENERATOR, DEFAULT_ALPHABET, DEFAULT_SIZE);
     }
 
+    public static String randomNanoId(int size) {
+        return randomNanoId(DEFAULT_NUMBER_GENERATOR, DEFAULT_ALPHABET, size);
+    }
+
     /**
      * Static factory to retrieve a NanoId String.
      *

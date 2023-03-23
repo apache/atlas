@@ -253,6 +253,23 @@ public class AtlasAuthorizationUtils {
         return ret;
     }
 
+    public static Set<String> getRolesForCurrentUser() throws AtlasBaseException {
+        Set<String> ret = new HashSet<>();
+
+        try {
+            AtlasAuthorizer authorizer = AtlasAuthorizerFactory.getAtlasAuthorizer();
+            if (authorizer == null ) {
+                throw new AtlasAuthorizationException("Authorizer is null");
+            }
+
+            ret = authorizer.getRolesForCurrentUser();
+        } catch (AtlasAuthorizationException e) {
+            LOG.error("Unable to obtain AtlasAuthorizer", e);
+        }
+
+        return ret;
+    }
+
     public static void filterTypesDef(AtlasTypesDefFilterRequest request) {
         MetricRecorder metric  = RequestContext.get().startMetricRecord("filterTypesDef");
         String        userName = getCurrentUserName();

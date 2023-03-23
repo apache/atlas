@@ -72,6 +72,7 @@ import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
 import static org.apache.atlas.repository.Constants.ASSET_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.OWNER_ATTRIBUTE;
+import static org.apache.atlas.repository.Constants.VERTEX_INDEX_NAME;
 import static org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery.BASIC_SEARCH_STATE_FILTER;
 import static org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery.TO_RANGE_LIST;
 
@@ -118,7 +119,6 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         this.dslQueryExecutor         = AtlasConfiguration.DSL_EXECUTOR_TRAVERSAL.getBoolean()
                                             ? new TraversalBasedExecutor(typeRegistry, graph, entityRetriever)
                                             : new ScriptEngineBasedExecutor(typeRegistry, graph, entityRetriever);
-        LOG.info("DSL Executor: {}", this.dslQueryExecutor.getClass().getSimpleName());
     }
 
     @Override
@@ -986,7 +986,10 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 LOG.debug("Performing ES search for the params ({})", searchParams);
             }
 
-            indexQuery = graph.elasticsearchQuery(Constants.VERTEX_INDEX, searchParams);
+            String indexName = getIndexName(params);
+            LOG.info("directIndexSearch.indexName {}", indexName);
+
+            indexQuery = graph.elasticsearchQuery(indexName);
 
             DirectIndexQueryResult indexQueryResult = indexQuery.vertices(searchParams);
 
@@ -1086,5 +1089,27 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         searchResult = directIndexSearch(indexSearchParams);
         List<AtlasEntityHeader> entityHeaders = searchResult.getEntities();
         return  entityHeaders;
+    }
+
+    private String getIndexName(IndexSearchParams params) throws AtlasBaseException {
+        if (StringUtils.isEmpty(params.getPersona()) && StringUtils.isEmpty(params.getPurpose())) {
+            return VERTEX_INDEX_NAME;
+        }
+
+        String qualifiedName = "";
+        if (StringUtils.isNotEmpty(params.getPersona())) {
+            qualifiedName = params.getPersona();
+        } else {
+            qualifiedName = params.getPurpose();
+        }
+
+        String[] parts = qualifiedName.split("/");
+        String aliasName = parts[parts.length - 1];
+
+        if (StringUtils.isNotEmpty(aliasName)) {
+            return aliasName;
+        } else {
+            throw new AtlasBaseException("ES alias not found for purpose/persona " + params.getPurpose());
+        }
     }
 }

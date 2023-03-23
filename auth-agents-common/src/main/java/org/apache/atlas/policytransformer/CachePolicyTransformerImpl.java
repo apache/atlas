@@ -155,7 +155,9 @@ public class CachePolicyTransformerImpl {
                     }
                 }
 
-                LOG.info("Found {} policies", servicePolicies.getPolicies().size());
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Found {} policies", servicePolicies.getPolicies().size());
+                }
             }
 
         } catch (Exception e) {
