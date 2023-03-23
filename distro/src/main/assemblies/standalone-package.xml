@@ -136,6 +136,11 @@
             <outputDirectory>static</outputDirectory>
         </fileSet>
 
+        <fileSet>
+            <directory>../addons/policies</directory>
+            <outputDirectory>policies</outputDirectory>
+        </fileSet>
+
         <!-- addons/hive -->
         <fileSet>
             <directory>../addons/hive-bridge/src/bin</directory>

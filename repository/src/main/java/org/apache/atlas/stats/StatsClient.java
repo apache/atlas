@@ -26,12 +26,14 @@ import org.apache.atlas.service.Service;
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Singleton;
 
 @Singleton
 @Component
+@Order(7)
 public class StatsClient implements Service {
     private static final Logger LOG = LoggerFactory.getLogger(StatsClient.class);
 

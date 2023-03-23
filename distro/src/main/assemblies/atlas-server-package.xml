@@ -156,6 +156,11 @@
             <directory>../addons/static</directory>
             <outputDirectory>static</outputDirectory>
         </fileSet>
+
+        <fileSet>
+            <directory>../addons/policies</directory>
+            <outputDirectory>policies</outputDirectory>
+        </fileSet>
     </fileSets>
 
     <files>

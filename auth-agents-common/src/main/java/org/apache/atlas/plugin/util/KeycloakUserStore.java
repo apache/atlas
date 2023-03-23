@@ -82,26 +82,17 @@ public class KeycloakUserStore {
         return service;
     }
 
-    public long getKeycloakSubjectsStoreUpdatedTime() {
+    public long getKeycloakSubjectsStoreUpdatedTime() throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getKeycloakSubjectsStoreUpdatedTime");
-        LOG.info("Fetching getKeycloakSubjectsStoreUpdatedTime");
         KeycloakClient keycloakClient = KeycloakClient.getKeycloakClient();
         long latestEventTime = -1L;
-        int count = 0;
 
         try {
-            /*List<AdminEventRepresentation> adminEvents = KeycloakClient.getKeycloakClient().getRealm().getAdminEvents(operationTypes,
-                null, null, null, null, null,
-                resourceTypes,
-                null, null,
-                0,1);*/
-
             int from = 0;
             int size = 100;
 
 
             while (latestEventTime == -1L) {
-                count = count+1;
                 List<AdminEventRepresentation> adminEvents = keycloakClient.getRealm().getAdminEvents(OPERATION_TYPES,
                         null, null, null, null, null, null, null,
                         from, size);
@@ -111,11 +102,7 @@ public class KeycloakUserStore {
                 }
                 from += size;
             }
-            count = 0;
-            LOG.info("Number of retries - {}", count);
-            LOG.info("getKeycloakSubjectsStoreUpdatedTime - {}", latestEventTime);
         } catch (Exception e) {
-            LOG.info("Number of retries - {}", count);
             LOG.error("Error while fetching latest event time", e);
         } finally {
             keycloakClient.getRealm().getClientSessionStats();
@@ -323,7 +310,7 @@ public class KeycloakUserStore {
             try {
                 RoleResource roleResource = KeycloakClient.getKeycloakClient().getRealm().roles().get(kRole.getName());
 
-                LOG.info("RoleSubjectsFetcher: Processing {}", kRole.getName());
+                //LOG.info("RoleSubjectsFetcher: Processing {}", kRole.getName());
 
                 //get all groups for Roles
                 Thread groupsFetcher = new Thread(() -> {
@@ -376,7 +363,7 @@ public class KeycloakUserStore {
                     e.printStackTrace();
                 }
 
-                LOG.info("RoleSubjectsFetcher: Processed {}, {}", kRole.getName(), roleSet.size());
+                //LOG.info("RoleSubjectsFetcher: Processed {}, {}", kRole.getName(), roleSet.size());
 
                 RequestContext.get().endMetricRecord(recorder);
                 roleSet.add(rangerRole);
@@ -404,14 +391,15 @@ public class KeycloakUserStore {
             AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("userGroupsFetcher");
 
             try {
-                LOG.info("UserGroupsFetcher: Processing {}", kUser.getUsername());
+                //LOG.info("UserGroupsFetcher: Processing {}", kUser.getUsername());
 
                 List<GroupRepresentation> kGroups = KeycloakClient.getKeycloakClient().getRealm().users().get(kUser.getId()).groups();
                 userGroupMapping.put(kUser.getUsername(),
                         kGroups.stream()
                                 .map(GroupRepresentation::getName)
                                 .collect(Collectors.toSet()));
-                LOG.info("UserGroupsFetcher: Processed {}, {}", kUser.getUsername(), userGroupMapping.size());
+
+                //LOG.info("UserGroupsFetcher: Processed {}, {}", kUser.getUsername(), userGroupMapping.size());
 
             } catch (Exception e) {
                 LOG.error("UserGroupsFetcher: Failed to process user {}: {}", kUser.getUsername(), e.getMessage());

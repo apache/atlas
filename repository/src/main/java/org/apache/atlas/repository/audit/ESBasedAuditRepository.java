@@ -44,6 +44,7 @@ import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
@@ -65,6 +66,7 @@ import static org.springframework.util.StreamUtils.copyToString;
  */
 @Singleton
 @Component
+@Order(8)
 @ConditionalOnAtlasProperty(property = "atlas.EntityAuditRepositorySearch.impl")
 public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository {
     private static final Logger LOG = LoggerFactory.getLogger(ESBasedAuditRepository.class);

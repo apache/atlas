@@ -121,6 +121,7 @@ public class CachePolicyTransformerImpl {
             servicePolicies.setServiceName(serviceName);
 
             AtlasEntityHeader service = getServiceEntity(serviceName);
+            servicePolicies.setPolicyVersion(-1L);
 
             if (service != null) {
                 List<RangerPolicy> policies = getServicePolicies(service);
@@ -145,6 +146,7 @@ public class CachePolicyTransformerImpl {
                         tagPolicies.setPolicies(policies);
                         tagPolicies.setPolicyUpdateTime(new Date());
                         tagPolicies.setServiceId(tagService.getGuid());
+                        tagPolicies.setPolicyVersion(-1L);
 
                         String tagServiceDefName =  String.format(RESOURCE_SERVICE_DEF_PATTERN, tagService.getAttribute(NAME));
                         tagPolicies.setServiceDef(getResourceAsObject(tagServiceDefName, RangerServiceDef.class));
