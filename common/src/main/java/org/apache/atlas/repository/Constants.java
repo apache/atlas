@@ -395,12 +395,11 @@ public final class Constants {
     public static String getStaticFileAsString(String fileName) throws IOException {
         String atlasHomeDir  = System.getProperty("atlas.home");
         atlasHomeDir = StringUtils.isEmpty(atlasHomeDir) ? "." : atlasHomeDir;
-
-        String elasticsearchFilePath = atlasHomeDir + File.separator + "static" + File.separator + fileName;
-        Path es_schema_path = Paths.get(elasticsearchFilePath);
+        
+        Path path = Paths.get(atlasHomeDir, "static", fileName);
         String resourceAsString = null;
         try {
-            resourceAsString = new String(Files.readAllBytes(es_schema_path), StandardCharsets.UTF_8);
+            resourceAsString = new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
         } catch (IOException e) {
             LOG.error("Failed to get static file as string: {}", fileName);
             throw e;
