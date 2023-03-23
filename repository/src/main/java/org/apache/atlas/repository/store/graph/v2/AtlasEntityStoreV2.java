@@ -55,6 +55,7 @@ import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityComparator.AtlasEntityDiffResult;
 import org.apache.atlas.repository.store.graph.v1.RestoreHandlerV1;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.AuthPolicyPreProcessor;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.ConnectionPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.accesscontrol.PersonaPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.accesscontrol.PurposePreProcessor;
@@ -1683,7 +1684,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 break;
 
             case QUERY_COLLECTION_ENTITY_TYPE:
-                preProcessor = new QueryCollectionPreProcessor(typeRegistry, entityRetriever);
+                preProcessor = new QueryCollectionPreProcessor(typeRegistry, discovery, entityRetriever, this);
                 break;
 
             case PERSONA_ENTITY_TYPE:
@@ -1696,6 +1697,12 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
             case POLICY_ENTITY_TYPE:
                 preProcessor = new AuthPolicyPreProcessor(graph, typeRegistry, entityRetriever);
+                break;
+
+            case CONNECTION_ENTITY_TYPE:
+                if (ATLAS_AUTHORIZER_IMPL.equalsIgnoreCase(CURRENT_AUTHORIZER_IMPL)) {
+                    preProcessor = new ConnectionPreProcessor(graph, discovery, entityRetriever, this);
+                }
                 break;
         }
 

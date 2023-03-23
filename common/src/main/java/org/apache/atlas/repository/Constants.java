@@ -367,6 +367,12 @@ public final class Constants {
         put(CLASSIFICATION_PROPAGATION_MODE_DEFAULT, null);
     }};
 
+    public static final String ATTR_ADMIN_USERS = "adminUsers";
+    public static final String ATTR_ADMIN_GROUPS = "adminGroups";
+    public static final String ATTR_ADMIN_ROLES = "adminRoles";
+    public static final String ATTR_VIEWER_USERS = "viewerUsers";
+    public static final String ATTR_VIEWER_GROUPS = "viewerGroups";
+
     private Constants() {
     }
 

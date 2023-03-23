@@ -172,6 +172,11 @@ public class AccessControlUtils {
         return getStringAttribute(policyEntity, ATTR_POLICY_TYPE);
     }
 
+    public static List<String> getPolicyRoles(AtlasEntity policyEntity) {
+        return getListAttribute(policyEntity, ATTR_POLICY_ROLES);
+    }
+
+
     public static boolean getIsAllowPolicy(AtlasEntity policyEntity) throws AtlasBaseException {
         String policyType = (String) policyEntity.getAttribute(ATTR_POLICY_TYPE);
 
