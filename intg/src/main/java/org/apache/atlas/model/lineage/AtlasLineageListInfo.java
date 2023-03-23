@@ -29,7 +29,6 @@ public class AtlasLineageListInfo implements Serializable {
     private LineageListRequest                      searchParameters;
     private Set<String>                             visitedEdges;
     private Set<String>                             skippedEdges;
-    private long                                    count;
 
     public AtlasLineageListInfo() {
     }
@@ -52,12 +51,11 @@ public class AtlasLineageListInfo implements Serializable {
      * @param entityInfoMap    map of entity guid to AtlasEntityHeader (minimal entity info)
      */
     public AtlasLineageListInfo(HashSet<AtlasEntityHeader> entities, Map<String, LineageListEntityInfo> entityInfoMap,
-                                Set<String> visitedEdges, Set<String> skippedEdges, long count) {
+                                Set<String> visitedEdges, Set<String> skippedEdges) {
         this.entities                     = entities;
         this.entityInfoMap                = entityInfoMap;
         this.visitedEdges                 = visitedEdges;
         this.skippedEdges                 = skippedEdges;
-        this.count                        = count;
     }
 
     public HashSet<AtlasEntityHeader> getEntities() {
@@ -98,18 +96,6 @@ public class AtlasLineageListInfo implements Serializable {
 
     public void setSkippedEdges(Set<String> skippedEdges) {
         this.skippedEdges = skippedEdges;
-    }
-
-    public long getCount() {
-        return count;
-    }
-
-    public void setCount(long count) {
-        this.count = count;
-    }
-
-    public void incrementBy(long count) {
-        this.count += count;
     }
 
     @Override

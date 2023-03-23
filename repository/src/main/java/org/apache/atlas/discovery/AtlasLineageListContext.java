@@ -19,6 +19,7 @@ public class AtlasLineageListContext {
     private Predicate                           edgePredicate;
     private Set<String>                         attributes;
     private Set<String>                         relationAttributes;
+    private boolean                             fetchProcesses;
 
     public AtlasLineageListContext(LineageListRequest lineageListRequest, AtlasTypeRegistry typeRegistry) {
         this.guid = lineageListRequest.getGuid();
@@ -26,10 +27,11 @@ public class AtlasLineageListContext {
         this.from = lineageListRequest.getFrom();
         this.depth = lineageListRequest.getDepth();
         this.direction = lineageListRequest.getDirection();
-        this.vertexPredicate    = constructInMemoryPredicate(typeRegistry, lineageListRequest.getEntityFilters());
-        this.edgePredicate      = constructInMemoryPredicate(typeRegistry, lineageListRequest.getEdgeFilters());
+        this.vertexPredicate = constructInMemoryPredicate(typeRegistry, lineageListRequest.getEntityTraversalFilters());
+        this.edgePredicate = constructInMemoryPredicate(typeRegistry, lineageListRequest.getRelationshipTraversalFilters());
         this.attributes = lineageListRequest.getAttributes();
         this.relationAttributes = lineageListRequest.getRelationAttributes();
+        this.fetchProcesses = lineageListRequest.isFetchProcesses();
     }
 
     public String getGuid() {
@@ -102,6 +104,14 @@ public class AtlasLineageListContext {
 
     public void setRelationAttributes(Set<String> relationAttributes) {
         this.relationAttributes = relationAttributes;
+    }
+
+    public boolean isFetchProcesses() {
+        return fetchProcesses;
+    }
+
+    public void setFetchProcesses(boolean fetchProcesses) {
+        this.fetchProcesses = fetchProcesses;
     }
 
     protected Predicate constructInMemoryPredicate(AtlasTypeRegistry typeRegistry, SearchParameters.FilterCriteria filterCriteria) {
