@@ -290,7 +290,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             if (defEntity && defEntity.typeName) {
                 var defEntityType = defEntity.typeName.toLocaleLowerCase();
                 if (defEntityType === 'date') {
-                    keyValue = keyValue > 0 ? Utils.formatDate({ date: keyValue }) : null;
+                    keyValue = moment(keyValue)._isValid ? Utils.formatDate({ date: keyValue }) : null;
                 } else if (_.isObject(keyValue)) {
                     keyValue = extractObject({ "keyValue": keyValue, "key": key, 'defEntity': defEntity });
                 }
