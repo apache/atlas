@@ -47,11 +47,12 @@ import static org.apache.atlas.type.Constants.PENDING_TASKS_PROPERTY_KEY;
 public abstract class ClassificationTask extends AbstractTask {
     private static final Logger LOG = LoggerFactory.getLogger(ClassificationTask.class);
 
-    protected static final String PARAM_ENTITY_GUID              = "entityGuid";
-    protected static final String PARAM_CLASSIFICATION_VERTEX_ID = "classificationVertexId";
-    protected static final String PARAM_RELATIONSHIP_GUID        = "relationshipGuid";
-    protected static final String PARAM_RELATIONSHIP_OBJECT      = "relationshipObject";
-    protected static final String PARAM_RELATIONSHIP_EDGE_ID     = "relationshipEdgeId";
+    public static final String PARAM_ENTITY_GUID              = "entityGuid";
+    public static final String PARAM_CLASSIFICATION_VERTEX_ID = "classificationVertexId";
+    public static final String PARAM_CLASSIFICATION_NAME      = "classificationName";
+    public static final String PARAM_RELATIONSHIP_GUID        = "relationshipGuid";
+    public static final String PARAM_RELATIONSHIP_OBJECT      = "relationshipObject";
+    public static final String PARAM_RELATIONSHIP_EDGE_ID     = "relationshipEdgeId";
 
     protected final AtlasGraph             graph;
     protected final EntityGraphMapper      entityGraphMapper;
@@ -73,6 +74,7 @@ public abstract class ClassificationTask extends AbstractTask {
 
     @Override
     public AtlasTask.Status perform() throws Exception {
+        RequestContext.clear();
         Map<String, Object> params = getTaskDef().getParameters();
 
         if (MapUtils.isEmpty(params)) {
@@ -103,19 +105,20 @@ public abstract class ClassificationTask extends AbstractTask {
             throw e;
         } finally {
             graph.commit();
+            RequestContext.clear();
         }
 
         return getStatus();
     }
 
-    public static Map<String, Object> toParameters(String entityGuid, String classificationVertexId, String relationshipGuid) {
+    public static Map<String, Object> toParameters(String entityGuid, String classificationVertexId, String relationshipGuid, String classificationName) {
         return new HashMap<String, Object>() {{
             put(PARAM_ENTITY_GUID, entityGuid);
             put(PARAM_CLASSIFICATION_VERTEX_ID, classificationVertexId);
+            put(PARAM_CLASSIFICATION_NAME, classificationName);
             put(PARAM_RELATIONSHIP_GUID, relationshipGuid);
         }};
     }
-
     public static Map<String, Object> toParameters(String relationshipEdgeId, AtlasRelationship relationship) {
         return new HashMap<String, Object>() {{
             put(PARAM_RELATIONSHIP_EDGE_ID, relationshipEdgeId);

@@ -26,15 +26,14 @@ class AtlasServiceException(Exception):
     """
 
     def __init__(self, api, response):
-        msg = ""
+        body = ""
 
-        if api:
-            msg = "Metadata service API {method} : {path} failed".format(**{'method': api.method, 'path': api.path})
+        if response.content:
+            try:
+                body = response.json()
+            except Exception:
+                body = response.content
 
-        if response.content is not None:
-            status = response.status_code if response.status_code is not None else -1
-            msg = "Metadata service API with url {url} and method {method} : failed with status {status} and " \
-                  "Response Body is :{response}". \
-                format(**{'url': response.url, 'method': api.method, 'status': status, 'response': response.json()})
+        msg = "Metadata service API {method} {path} failed with status {status}. Response body is: {body}".format(**{'method': api.method, 'path': api.path, 'status': response.status_code, 'body': body})
 
         Exception.__init__(self, msg)

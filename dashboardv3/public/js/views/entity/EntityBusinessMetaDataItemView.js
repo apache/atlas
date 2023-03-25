@@ -100,6 +100,32 @@ define(['require',
                         }
                     }
                 });
+                this.listenTo(this.searchVent, 'BusinessMetaAttribute:Edit', function() {
+                    _.each(that.model.attributes, function(obj) {
+                        if (obj.key) {
+                            if (obj.typeName === "string") {
+                                obj.value = Utils.sanitizeHtmlContent({ data: obj.value });
+                            }
+                            Utils.addCustomTextEditor({
+                                small: true,
+                                selector: "#" + obj.key,
+                                initialHide: false,
+                                callback: function(e) {
+                                    var key = $(e.target).data("key"),
+                                        businessMetadata = $(e.target).data("businessMetadata"),
+                                        typeName = $(e.target).data("typename"),
+                                        updateObj = that.model.toJSON();
+                                    if (_.isUndefinedNull(updateObj[key])) {
+                                        updateObj[key] = { value: null, typeName: typeName };
+                                    }
+                                    updateObj[key].value = Utils.sanitizeHtmlContent({ selector: "#" + obj.key });
+                                    that.model.set(updateObj);
+                                }
+                            });
+                            $("#" + obj.key).trumbowyg('html', obj.value);
+                        }
+                    });
+                });
                 this.$el.off("change", ".custom-col-1[data-id='value']>[data-key]").on("change", ".custom-col-1[data-id='value']>[data-key]", function(e) {
                     var key = $(this).data("key"),
                         businessMetadata = $(this).data("businessMetadata"),
@@ -177,8 +203,14 @@ define(['require',
                     }
                 }
                 if (typeName === "string" || typeName === "array<string>") {
-                    returnEL = '<' + elType + ' type="text" data-key="' + key + '" data-businessMetadata="' + businessMetadata + '" data-typename="' + typeName + '" data-multi="' + isMultiValued + '" data-tags="true"  placeholder="Enter String" class="form-control" ' + (isMultiValued === false && !_.isUndefinedNull(val) ? 'value="' + val + '"' : "") + '></' + elType + '>';
-                } else if (typeName === "boolean" || typeName === "array<boolean>") {
+                    if (typeName === "string") {
+                        elType = "textarea";
+                        returnEL = '<' + elType + ' type="text" data-key="' + key + '" data-businessMetadata="' + businessMetadata + '" data-typename="' + typeName + '" data-multi="' + isMultiValued + '" data-tags="true"  placeholder="Enter String" class="form-control" ' + (isMultiValued === false && !_.isUndefinedNull(val) ? 'value="' + val + '"' : "") + "id =" + businessMetadata.replace(/ /g, "_") + "_" + key.replace(/ /g, "_") + '></' + elType + '>';
+                    } else {
+                        returnEL = '<' + elType + ' type="text" data-key="' + key + '" data-businessMetadata="' + businessMetadata + '" data-typename="' + typeName + '" data-multi="' + isMultiValued + '" data-tags="true"  placeholder="Enter String" class="form-control" ' + (isMultiValued === false && !_.isUndefinedNull(val) ? 'value="' + val + '"' : "") +
+                            '></' + elType + '>';
+                    }
+                }  else if (typeName === "boolean" || typeName === "array<boolean>") {
                     returnEL = '<select data-key="' + key + '" data-businessMetadata="' + businessMetadata + '" data-typename="' + typeName + '" data-multi="' + isMultiValued + '" class="form-control">' + (isMultiValued ? "" : '<option value="">--Select Value--</option>') + '<option value="true" ' + (!_.isUndefinedNull(val) && val == "true" ? "selected" : "") + '>true</option><option value="false" ' + (!_.isUndefinedNull(val) && val == "false" ? "selected" : "") + '>false</option></select>';
                 } else if (typeName === "date" || typeName === "array<date>") {
                     returnEL = '<' + (isMultiValued ? "textarea" : "input") + ' type="text" data-key="' + key + '" data-businessMetadata="' + businessMetadata + '" data-typename="' + typeName + '"data-multi="' + isMultiValued + '" data-type="date" class="form-control" ' + (isMultiValued === false && !_.isUndefinedNull(val) ? 'value="' + val + '"' : "") + '>' + (isMultiValued === true && !_.isUndefinedNull(val) ? val : "") + (isMultiValued ? "</textarea>" : "");
@@ -268,6 +300,30 @@ define(['require',
                     this.model.clear({ silent: true }).set(tempObj)
                 }
                 valEl.html(this.getAttrElement({ businessMetadata: key[0], key: key[1], val: hasModalData ? hasModalData : { typeName: key[2] } }));
+                if (key[2] === "string") {
+                    var that = this,
+                        selector = '#' +  key[0].replace(/ /g, "_") + "_" + key[1].replace(/ /g, "_");
+                    Utils.addCustomTextEditor({
+                        small: true,
+                        selector: selector,
+                        initialHide: false,
+                        callback: function(e) {
+                            var $parent = $(e.target),
+                                key = $parent.data("key"),
+                                businessMetadata = $parent.data("businessMetadata"),
+                                typeName = $parent.data("typename"),
+                                updateObj = that.model.toJSON();
+                            if (_.isUndefinedNull(updateObj[key])) {
+                                updateObj[key] = { value: null, typeName: typeName };
+                            }
+                            updateObj[key].value = Utils.sanitizeHtmlContent({ selector: selector });
+                            that.model.set(updateObj);
+                        }
+                    });
+                    if(hasModalData && hasModalData.value){
+                        $(selector).trumbowyg('html', hasModalData.value);
+                    }
+                }
                 if (manual === undefined) {
                     this.model.collection.trigger("selected:attr", e.currentTarget.value, this.model);
                 }
@@ -333,7 +389,7 @@ define(['require',
                 trs = "";
             _.each(this.model.attributes, function(val, key) {
                 if (key !== "__internal_UI_businessMetadataName" && key !== "isNew") {
-                    var td = '<td class="custom-col-1" data-key=' + key + '>' + key + ' (' + _.escape(val.typeName) + ')</td><td class="custom-col-0">:</td><td class="custom-col-1" data-id="value">' + that.getAttrElement({ businessMetadata: that.model.get("__internal_UI_businessMetadataName"), key: key, val: val }) + '</td>';
+                    var td = '<td class="custom-col-1" data-key="' + key + '">' + key + ' (' + _.escape(val.typeName) + ')</td><td class="custom-col-0">:</td><td class="custom-col-1" data-id="value">' + that.getAttrElement({ businessMetadata: that.model.get("__internal_UI_businessMetadataName"), key: key, val: val }) + '</td>';
 
                     td += '<td class="custom-col-2 btn-group">' +
                         '<button class="btn btn-default btn-sm" data-key="' + key + '" data-id="deleteItem">' +

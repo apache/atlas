@@ -56,9 +56,12 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'attrObj', 'value', 'typeHeaders', 'entityDefCollection', 'enumDefCollection', 'classificationDefCollection', 'businessMetadataDefCollection', 'tag', 'type', 'searchTableFilters', 'systemAttrArr', 'adminAttrFilters'));
+                _.extend(this, _.pick(options, 'attrObj', 'value', 'typeHeaders', 'entityDefCollection', 'enumDefCollection', 'classificationDefCollection', 'businessMetadataDefCollection', 'tag', 'type', 'searchTableFilters', 'systemAttrArr', 'adminAttrFilters', 'relationship'));
                 this.attrObj = _.sortBy(this.attrObj, 'name');
                 this.filterType = this.tag ? 'tagFilters' : 'entityFilters';
+                if(this.relationship){
+                    this.filterType = 'relationshipFilters';
+                }
                 this.defaultRange = "Last 7 Days";
                 this.dateRangesMap = {
                     'Today': [moment(), moment()],
@@ -403,10 +406,13 @@ define(['require',
                     rules_widgets = CommonViewFunction.attributeFilter.extractUrl({ "value": this.searchTableFilters ? this.searchTableFilters["adminAttrFilters"] : null, "formatDate": true });;
                 } else {
                     if (this.value) {
-                        rules_widgets = CommonViewFunction.attributeFilter.extractUrl({ "value": this.searchTableFilters[this.filterType][(this.tag ? this.value.tag : this.value.type)], "formatDate": true });
+                        rules_widgets = CommonViewFunction.attributeFilter.extractUrl({ "value": this.searchTableFilters[this.filterType][(this.tag ? this.value.tag : this.value.type) || this.value.relationshipName], "formatDate": true });
                     }
                     _.each(this.attrObj, function(obj) {
                         var type = that.tag ? that.value.tag : that.value.type;
+                        if (that.value.relationshipName) {
+                            type = that.value.relationshipName;
+                        }
                         var returnObj = that.getObjDef(obj, rules_widgets, isGroupView, (type + ' Attribute'));
                         if (returnObj) {
                             filters.push(returnObj);

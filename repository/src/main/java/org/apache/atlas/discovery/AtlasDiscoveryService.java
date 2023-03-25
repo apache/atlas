@@ -80,6 +80,14 @@ public interface AtlasDiscoveryService {
     AtlasSearchResult searchWithParameters(SearchParameters searchParameters) throws AtlasBaseException;
 
     /**
+     * Search for relations (edges) matching the search criteria
+     * @param searchParameters Search criteria
+     * @return Matching Edge Entities
+     * @throws AtlasBaseException
+     */
+    AtlasSearchResult searchRelationsWithParameters(RelationshipSearchParameters searchParameters) throws  AtlasBaseException;
+
+    /**
      *
      * @param guid unique ID of the entity.
      * @param relation relation name.

@@ -87,6 +87,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             showListCount = options.showListCount || true,
             highlightString = options.highlightString,
             formatStringVal = options.formatStringVal,
+            isRelationshipAttr = options.isRelationshipAttribute, //For relationshipDetailpage
             numberFormat = options.numberFormat || _.numberFormatWithComma;
 
         var table = "",
@@ -197,7 +198,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                                 valueOfArray.push('<span class="json-string">' + tmpVal + '</span>');
                             }
                         }
-                    } else if (_.isObject(inputOutputField) && !id) {
+                    } else if ((_.isObject(inputOutputField) && (!id || isRelationshipAttr))) {
                         var attributesList = inputOutputField;
                         if (scope.typeHeaders && inputOutputField.typeName) {
                             var typeNameCategory = scope.typeHeaders.fullCollection.findWhere({ name: inputOutputField.typeName });
@@ -228,7 +229,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                             valueOfArray.push(Utils.JSONPrettyPrint(attributesList, getValue));
                         }
                     }
-                    if (id && inputOutputField) {
+                    if (id && inputOutputField && !isRelationshipAttr) {
                         var name = Utils.getName(inputOutputField);
                         if ((name === "-" || name === id) && !inputOutputField.attributes) {
                             var fetch = true;
@@ -289,7 +290,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             if (defEntity && defEntity.typeName) {
                 var defEntityType = defEntity.typeName.toLocaleLowerCase();
                 if (defEntityType === 'date') {
-                    keyValue = keyValue > 0 ? Utils.formatDate({ date: keyValue }) : null;
+                    keyValue = moment(keyValue)._isValid ? Utils.formatDate({ date: keyValue }) : null;
                 } else if (_.isObject(keyValue)) {
                     keyValue = extractObject({ "keyValue": keyValue, "key": key, 'defEntity': defEntity });
                 }
@@ -305,10 +306,17 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 if (options.guidHyperLink === false) {
                     val = getValue(keyValue, key);
                 } else {
-                    val = '<a title="' + key + '" href="#!/detailPage/' + _.escape(keyValue) + '">' + getValue(keyValue, key) + '</a>';
+                    if (isRelationshipAttr) {
+                        val = '<a title="' + key + '" href="#!/detailPage/' + _.escape(keyValue) + '?from=relationshipSearch">' + getValue(keyValue, key) + '</a>';
+                    } else {
+                        val = '<a title="' + key + '" href="#!/detailPage/' + _.escape(keyValue) + '">' + getValue(keyValue, key) + '</a>';
+                    }
                 }
             } else {
                 val = getValue(keyValue, key);
+                if (isRelationshipAttr && (key === "createTime" || key === "updateTime")) {
+                    val = Utils.formatDate({ date: keyValue });
+                }
             }
             if (isTable) {
                 var value = val,
@@ -356,7 +364,13 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 } else {
                     className += " propagte-classification";
                 }
-                var tagString = '<a class="' + className + '" data-id="tagClick"><span title="' + tag.typeName + '">' + tag.typeName + '</span>' + deleteIcon + '</a>';
+                var tagObj = classificationDefCollection.fullCollection.find({ "name": tag.typeName }),
+                    tagParents = tagObj ? tagObj.get('superTypes') : null,
+                    parentName = tag.typeName;
+                if (tagParents && tagParents.length) {
+                    parentName += (tagParents.length > 1) ? ("@(" + tagParents.join() + ")") : ("@" + tagParents.join());
+                }
+                var tagString = '<a class="' + className + '" data-id="tagClick"><span title="' + parentName + '">' + parentName + '</span>' + deleteIcon + '</a>';
                 if (count >= 1) {
                     popTag += tagString;
                 } else {
@@ -386,10 +400,11 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             entityName = Utils.getName(obj);
         if (terms) {
             terms.map(function(term) {
-                var displayText = _.escape(term.displayText);
-                var className = "btn btn-action btn-sm btn-blue btn-icon",
+                var displayText = _.escape(term.displayText),
+                    gloassaryName = _.escape(term.qualifiedName) || displayText,
+                    className = "btn btn-action btn-sm btn-blue btn-icon",
                     deleteIcon = '<i class="fa fa-times" data-id="delete"  data-assetname="' + entityName + '" data-name="' + displayText + '" data-type="term" data-guid="' + obj.guid + '" data-termGuid="' + term.termGuid + '" ></i>',
-                    termString = '<a class="' + className + '" data-id="termClick"><span title="' + displayText + '">' + displayText + '</span>' + deleteIcon + '</a>';
+                    termString = '<a class="' + className + '" data-id="termClick"><span title="' + gloassaryName + '">' + gloassaryName + '</span>' + deleteIcon + '</a>';
                 if (count >= 1) {
                     popTerm += termString;
                 } else {
@@ -414,6 +429,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
         value = Utils.getUrlState.getQueryParams();
         var entityFilters = CommonViewFunction.attributeFilter.extractUrl({ "value": value.entityFilters, "formatDate": true }),
             tagFilters = CommonViewFunction.attributeFilter.extractUrl({ "value": value.tagFilters, "formatDate": true }),
+            relationshipFilters = CommonViewFunction.attributeFilter.extractUrl({ "value": value.relationshipFilters, "formatDate": true }),
             queryArray = [];
 
         function objToString(filterObj, type) {
@@ -452,6 +468,14 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 tagKeyValue += '<span class="operator">' + conditionFortag + '</span><div class="sub-group"><span>(</span><span class="operator">' + tagFilters.condition + '</span><span>(</span>' + objToString(tagFilters, "tagFilters").join("") + '<span>)</span><span>)</span></div>';
             }
             queryArray.push('<div class="group">' + tagKeyValue + '</div>');
+        }
+        if (value.relationshipName) {
+            var relationshipKeyValue = isCapsuleView ? '<div class="capsuleView"><span class="key">Relationship:</span><span class="value">' + _.escape(value.relationshipName) + '</span><div class="fa fa-close clear-attr" data-type="relationshipName"></div></div>' : '<span class="key">Relationship:</span><span class="value">' + _.escape(value.relationshipName) + '</span>';
+            if (relationshipFilters) {
+                var conditionForRealtionship = (relationshipFilters.rules && relationshipFilters.rules.length == 1) ? '' : 'AND';
+                relationshipKeyValue += '<span class="operator">' + conditionForRealtionship + '</span><div class="sub-group"><span>(</span><span class="operator">' + relationshipFilters.condition + '</span><span>(</span>' + objToString(relationshipFilters, "relationshipFilters").join("") + '<span>)</span><span>)</span></div>';
+            }
+            queryArray.push('<div class="group">' + relationshipKeyValue + '</div>');
         }
         if (value.term) {
             var termKeyValue = isCapsuleView ? '<div class="capsuleView"><span class="key">Term:</span><span class="value">' + _.escape(value.term) + '</span><div class="fa fa-close clear-attr" data-type="term"></div></div>' : '<span class="key">Term:</span><span class="value">' + _.escape(value.term) + '</span>';
@@ -498,7 +522,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                         if (!_.isUndefinedNull(val)) {
                             if (k == "attributes") {
                                 val = val.split(',');
-                            } else if (_.contains(["tagFilters", "entityFilters"], k)) {
+                            } else if (_.contains(["tagFilters", "entityFilters", "relationshipFilters"], k)) {
                                 val = CommonViewFunction.attributeFilter.generateAPIObj(val);
                             } else if (_.contains(["includeDE", "excludeST", "excludeSC"], k)) {
                                 val = val ? false : true;
@@ -523,6 +547,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
         var value = options.value,
             classificationDefCollection = options.classificationDefCollection,
             entityDefCollection = options.entityDefCollection,
+            relationshipDefCollection = options.relationshipDefCollection,
             obj = {};
         if (value) {
             _.each(Enums.extractFromUrlForSearch, function(svalue, skey) {
@@ -567,6 +592,22 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                                     }
                                     if (Globals._ALL_ENTITY_TYPES && Globals._ALL_ENTITY_TYPES.attributeDefs) {
                                         attributeDefs = attributeDefs.concat(Globals._ALL_ENTITY_TYPES.attributeDefs);
+                                    }
+                                }
+                                val = CommonViewFunction.attributeFilter.generateUrl({ "value": val, "attributeDefs": attributeDefs });
+                            } else if (k == "relationshipFilters") {
+                                if (relationshipDefCollection) {
+                                    var relationshipDef = relationshipDefCollection.fullCollection.findWhere({ 'name': value[skey].relationshipName }),
+                                        attributeDefs = [];
+                                    if (relationshipDef) {
+                                        attributeDefs = Utils.getNestedSuperTypeObj({
+                                            collection: relationshipDefCollection,
+                                            attrMerge: true,
+                                            data: relationshipDef.toJSON()
+                                        });
+                                    }
+                                    if (Globals[value[skey].relationshipName]) {
+                                        attributeDefs = Globals[value[skey].relationshipName].attributeDefs;
                                     }
                                 }
                                 val = CommonViewFunction.attributeFilter.generateUrl({ "value": val, "attributeDefs": attributeDefs });
@@ -618,7 +659,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                             } else {
                                 url[2] = Enums.queryBuilderDateRangeUIValueToAPI[_.trim(value)] || value;
                             }
-                        } else if (value.length && type === 'date' && formatedDateToLong) {
+                        } else if (value && value.length && type === 'date' && formatedDateToLong) {
                             url[2] = Date.parse(value);
                         }
                         if (type) {
@@ -715,12 +756,13 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             //Below condition is added for sanitizing the longDescription text against XSS attack.
             if (model) {
                 var longDescriptionContent = isGlossaryView ? model.get('longDescription') : model.longDescription,
-                    sanitizeLongDescriptionContent;
+                    sanitizeLongDescriptionContent = "";
                 if (longDescriptionContent) {
-                    sanitizeLongDescriptionContent = Utils.sanitizeHtmlContent(longDescriptionContent)
+                    sanitizeLongDescriptionContent = Utils.sanitizeHtmlContent({ data: longDescriptionContent });
                     isGlossaryView ? model.set("longDescription", sanitizeLongDescriptionContent) : model.longDescription = sanitizeLongDescriptionContent;
                 }
             }
+            //End
         }
         require([
             'views/glossary/CreateEditCategoryTermLayoutView',
@@ -745,38 +787,22 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 "okCloses": false,
                 "okText": model ? "Update" : "Create",
                 "allowCancel": true,
-                "width": "765px"
+                "width": "640px"
             }).open();
             modal.$el.find('input[data-id=shortDescription]').on('input keydown', function(e) {
                 $(this).val($(this).val().replace(/\s+/g, ' '));
             });
             modal.$el.find('button.ok').attr("disabled", "true");
             var longDescriptionEditor = modal.$el.find('textarea[data-id=longDescription]'),
-                okBtn = modal.$el.find('button.ok');
-            longDescriptionEditor.trumbowyg({
-                btns: [
-                    ['formatting'],
-                    ['strong', 'em', 'underline', 'del'],
-                    ['link'],
-                    ['justifyLeft', 'justifyCenter', 'justifyRight', 'justifyFull'],
-                    ['unorderedList', 'orderedList'],
-                    ['viewHTML']
-                ],
-                removeformatPasted: true,
-                urlProtocol: true,
-                defaultLinkTarget: '_blank'
-            }).on('tbwchange', function() {
-                okBtn.removeAttr("disabled");
-            });
+                okBtn = modal.$el.find('button.ok'),
+                modalOkBtn = function() {
+                    okBtn.removeAttr("disabled");
+                };
+            Utils.addCustomTextEditor({ selector: longDescriptionEditor, callback: modalOkBtn, initialHide: false });
             modal.on('ok', function() {
                 modal.$el.find('button.ok').showButtonLoader();
                 //Below condition is added for sanitizing the longDescription text against XSS attack.
-                var editorContent, cleanContent;
-                editorContent = longDescriptionEditor.trumbowyg('html');
-                if (editorContent !== "") {
-                    cleanContent = Utils.sanitizeHtmlContent(editorContent);
-                    longDescriptionEditor.trumbowyg('html', cleanContent);
-                }
+                longDescriptionEditor.trumbowyg('html', Utils.sanitizeHtmlContent({ selector: longDescriptionEditor }));
                 //End
                 CommonViewFunction.createEditGlossaryCategoryTermSubmit(_.extend({ "ref": view, "modal": modal }, options));
             });
@@ -785,6 +811,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 if (options.onModalClose) {
                     options.onModalClose()
                 }
+                longDescriptionEditor.trumbowyg('closeModal');
             });
         });
     }

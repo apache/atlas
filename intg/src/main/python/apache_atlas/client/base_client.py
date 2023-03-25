@@ -18,9 +18,9 @@
 import copy
 import json
 import logging
-import os
 
 from requests import Session
+from urllib.parse import urljoin
 
 from apache_atlas.client.admin import AdminClient
 from apache_atlas.client.discovery import DiscoveryClient
@@ -34,7 +34,7 @@ from apache_atlas.utils import HTTPMethod
 from apache_atlas.utils import HTTPStatus
 from apache_atlas.utils import type_coerce
 
-LOG = logging.getLogger('apache_atlas')
+log = logging.getLogger('apache_atlas')
 
 
 class AtlasClient:
@@ -42,7 +42,7 @@ class AtlasClient:
         session = Session()
         session.auth = auth
 
-        self.host = host
+        self.host = host.rstrip('/')
         self.session = session
         self.request_params = {'headers': {}}
         self.typedef = TypeDefClient(self)
@@ -57,7 +57,7 @@ class AtlasClient:
 
     def call_api(self, api, response_type=None, query_params=None, request_obj=None):
         params = copy.deepcopy(self.request_params)
-        path = os.path.join(self.host, api.path)
+        path = urljoin(self.host, api.path.lstrip('/'))
 
         params['headers']['Accept'] = api.consumes
         params['headers']['Content-type'] = api.produces
@@ -68,18 +68,14 @@ class AtlasClient:
         if request_obj is not None:
             params['data'] = json.dumps(request_obj)
 
-        LOG.debug("------------------------------------------------------")
-        LOG.debug("Call         : %s %s", api.method, path)
-        LOG.debug("Content-type : %s", api.consumes)
-        LOG.debug("Accept       : %s", api.produces)
+        log.debug("------------------------------------------------------")
+        log.debug("Call         : %s %s", api.method, path)
+        log.debug("Content-type : %s", api.consumes)
+        log.debug("Accept       : %s", api.produces)
 
         method = HTTPMethod(api.method)
         response = self.session.request(method.value, path, **params)
-
-        if response is None:
-            return None
-
-        LOG.debug("HTTP Status: %s", response.status_code)
+        log.debug("HTTP Status: %s", response.status_code)
 
         if response.status_code == api.expected_status:
             if response_type is None:
@@ -88,22 +84,20 @@ class AtlasClient:
             if response.content is None:
                 return None
 
-            LOG.debug("<== __call_api(%s,%s,%s), result = %s", vars(api), params, request_obj, response)
+            log.debug("<== __call_api(%s,%s,%s), result = %s", vars(api), params, request_obj, response)
             try:
-                LOG.debug(response.json())
+                log.debug(response.json())
 
                 if response_type == str:
                     return json.dumps(response.json())
 
                 return type_coerce(response.json(), response_type)
             except Exception as e:
-                LOG.exception("Exception occurred while parsing response")
-
+                log.exception("Exception occurred while parsing response")
                 raise AtlasServiceException(api, response) from e
 
         if response.status_code == HTTPStatus.SERVICE_UNAVAILABLE:
-            LOG.error("Atlas Service unavailable. HTTP Status: %s", HTTPStatus.SERVICE_UNAVAILABLE)
-
+            log.error("Atlas Service unavailable. HTTP Status: %s", HTTPStatus.SERVICE_UNAVAILABLE)
             return None
 
         raise AtlasServiceException(api, response)

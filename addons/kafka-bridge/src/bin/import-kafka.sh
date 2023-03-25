@@ -99,25 +99,12 @@ fi
 
 KAFKA_CP="${KAFKA_CONF}"
 
-for i in "${KAFKA_HOME}/libs/"*.jar; do
+for i in "${KAFKA_HOME}/libs/kafka-clients"*.jar "${KAFKA_HOME}/libs/slf4j-"*.jar  "${KAFKA_HOME}/libs/log4j-"*.jar "${KAFKA_HOME}/libs/commons-"*.jar "${KAFKA_HOME}/libs/jackson-module-jaxb-annotations"*.jar; do
     KAFKA_CP="${KAFKA_CP}:$i"
 done
 
 
-#Add hadoop conf in classpath
-if [ ! -z "$HADOOP_CLASSPATH" ]; then
-    HADOOP_CP=$HADOOP_CLASSPATH
-elif [ ! -z "$HADOOP_HOME" ]; then
-    HADOOP_CP=`$HADOOP_HOME/bin/hadoop classpath`
-elif [ $(command -v hadoop) ]; then
-    HADOOP_CP=`hadoop classpath`
-   #echo $HADOOP_CP
-else
-    echo "Environment variable HADOOP_CLASSPATH or HADOOP_HOME need to be set"
-    exit 1
-fi
-
-CP="${ATLASCPPATH}:${HADOOP_CP}:${KAFKA_CP}"
+CP="${ATLASCPPATH}:${KAFKA_CP}"
 
 # If running in cygwin, convert pathnames and classpath to Windows format.
 if [ "${CYGWIN}" == "true" ]
@@ -125,7 +112,6 @@ then
    ATLAS_LOG_DIR=`cygpath -w ${ATLAS_LOG_DIR}`
    LOGFILE=`cygpath -w ${LOGFILE}`
    KAFKA_CP=`cygpath -w ${KAFKA_CP}`
-   HADOOP_CP=`cygpath -w ${HADOOP_CP}`
    CP=`cygpath -w -p ${CP}`
 fi
 

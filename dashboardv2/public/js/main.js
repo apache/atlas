@@ -208,13 +208,14 @@ require(['App',
     'utils/UrlLinks',
     'collection/VEntityList',
     'collection/VTagList',
+    'collection/VRelationshipSearchList',
     'utils/Enums',
     'utils/Utils',
     'utils/Overrides',
     'bootstrap',
     'd3',
     'select2'
-], function(App, Router, Helper, CommonViewFunction, Globals, UrlLinks, VEntityList, VTagList, Enums, Utils) {
+], function(App, Router, Helper, CommonViewFunction, Globals, UrlLinks, VEntityList, VTagList, VRelationshipSearchList, Enums, Utils) {
     var that = this;
     this.asyncFetchCounter = 5 + (Enums.addOnEntities.length + 1);
     // entity
@@ -238,6 +239,11 @@ require(['App',
     this.businessMetadataDefCollection = new VEntityList();
     this.businessMetadataDefCollection.url = UrlLinks.businessMetadataDefApiUrl();
     this.businessMetadataDefCollection.modelAttrName = "businessMetadataDefs";
+    //relationship
+    this.relationshipDefCollection = new VRelationshipSearchList();
+    this.relationshipDefCollection.url = UrlLinks.relationshipDefApiUrl();
+    this.relationshipDefCollection.modelAttrName = "relationshipDefs";
+    this.relationshipEventAgg = new Backbone.Wreqr.EventAggregator();
 
     App.appRouter = new Router({
         entityDefCollection: this.entityDefCollection,
@@ -246,7 +252,9 @@ require(['App',
         classificationDefCollection: this.classificationDefCollection,
         metricCollection: this.metricCollection,
         classificationAndMetricEvent: this.classificationAndMetricEvent,
-        businessMetadataDefCollection: this.businessMetadataDefCollection
+        businessMetadataDefCollection: this.businessMetadataDefCollection,
+        relationshipDefCollection: this.relationshipDefCollection,
+        relationshipEventAgg: this.relationshipEventAgg
     });
 
     var startApp = function() {
@@ -298,6 +306,12 @@ require(['App',
                     Globals.isTasksEnabled = response['atlas.tasks.enabled'];
                 }
                 if (response['atlas.session.timeout.secs']) { Globals.idealTimeoutSeconds = response['atlas.session.timeout.secs']; }
+                if(response['atlas.lineage.on.demand.enabled'] !== undefined){
+                    Globals.isLineageOnDemandEnabled = response['atlas.lineage.on.demand.enabled'];
+                }
+                if(response['atlas.lineage.on.demand.default.node.count'] !== undefined){
+                    Globals.lineageNodeCount = response['atlas.lineage.on.demand.default.node.count'];
+                }
                 /*  Atlas idealTimeout 
        redirectUrl: url to redirect after timeout
        idealTimeLimit: timeout in seconds
@@ -379,6 +393,16 @@ require(['App',
             that.businessMetadataDefCollection.fullCollection.sort({ silent: true });
             --that.asyncFetchCounter;
             startApp();
+        }
+    });
+    this.relationshipDefCollection.fetch({
+        async: true,
+        complete: function() {
+            that.relationshipDefCollection.fullCollection.comparator = function(model) {
+                return model.get('name').toLowerCase();
+            };
+            that.relationshipDefCollection.fullCollection.sort({ silent: true });
+            that.relationshipEventAgg.trigger("Relationship:Update");
         }
     });
     CommonViewFunction.fetchRootEntityAttributes({

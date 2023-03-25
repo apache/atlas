@@ -32,10 +32,14 @@ import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
+import org.apache.atlas.type.AtlasArrayType;
+import org.apache.atlas.type.AtlasBuiltInTypes;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.type.AtlasRelationshipType;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.AtlasRepositoryConfiguration;
 import org.apache.commons.collections.CollectionUtils;
@@ -75,9 +79,12 @@ public class SearchContext {
     private final AtlasGraph              graph;
     private final Set<AtlasEntityType>    entityTypes;
     private final Set<String>             indexedKeys;
+    private       Set<String>             edgeIndexKeys;
     private final Set<String>             entityAttributes;
+    private final Set<String>             relationAttributes;
     private final SearchParameters        searchParameters;
     private final Set<AtlasClassificationType> classificationTypes;
+    private final Set<AtlasRelationshipType>   relationshipTypes;
     private final Set<String>                  classificationNames;
     private final Set<String>             typeAndSubTypes;
     private final Set<String>             classificationTypeAndSubTypes;
@@ -86,6 +93,7 @@ public class SearchContext {
     private boolean                       terminateSearch = false;
     private SearchProcessor               searchProcessor;
     private Integer                       marker;
+    private boolean                       hasRelationshipAttributes = false;
 
     public final static AtlasClassificationType MATCH_ALL_WILDCARD_CLASSIFICATION = new AtlasClassificationType(new AtlasClassificationDef(WILDCARD_CLASSIFICATIONS));
     public final static AtlasClassificationType MATCH_ALL_CLASSIFIED              = new AtlasClassificationType(new AtlasClassificationDef(ALL_CLASSIFICATIONS));
@@ -101,9 +109,11 @@ public class SearchContext {
         this.graph              = graph;
         this.indexedKeys        = indexedKeys;
         this.entityAttributes   = new HashSet<>();
+        this.relationAttributes = new HashSet<>();
         this.entityTypes        = getEntityTypes(searchParameters.getTypeName());
         this.classificationNames = getClassificationNames(searchParameters.getClassification());
         this.classificationTypes = getClassificationTypes(this.classificationNames);
+        this.relationshipTypes   = getRelationshipTypes(searchParameters.getRelationshipName());
 
         AtlasVertex glossaryTermVertex = getGlossaryTermVertex(searchParameters.getTermName());
 
@@ -139,12 +149,22 @@ public class SearchContext {
             }
         }
 
+        // Invalid relationship attributes will raise an exception with 400 error code
+        if (CollectionUtils.isNotEmpty(relationshipTypes)) {
+            for (AtlasRelationshipType relationshipType : relationshipTypes) {
+                validateAttributes(relationshipType, searchParameters.getRelationshipFilters());
+            }
+        }
+
         if (StringUtils.isNotEmpty(searchParameters.getMarker())) {
             marker = MarkerUtil.decodeMarker(searchParameters);
         }
 
         //remove other types if builtin type is present
         filterStructTypes();
+
+        //validate 'attributes' field
+        validateAttributes();
 
         //gather all classifications and its corresponding subtypes
         Set<String> classificationTypeAndSubTypes  = new HashSet<>();
@@ -232,7 +252,15 @@ public class SearchContext {
 
     public Set<String> getIndexedKeys() { return indexedKeys; }
 
+    public void setEdgeIndexKeys(Set<String> edgeIndexKeys) {
+        this.edgeIndexKeys = edgeIndexKeys;
+    }
+
+    public Set<String> getEdgeIndexKeys() { return edgeIndexKeys; }
+
     public Set<String> getEntityAttributes() { return entityAttributes; }
+
+    public Set<String> getRelationAttributes() { return relationAttributes; }
 
     public Set<AtlasClassificationType> getClassificationTypes() { return classificationTypes; }
 
@@ -251,6 +279,8 @@ public class SearchContext {
     public Set<String> getClassificationNames() {return classificationNames;}
 
     public Integer getMarker() { return marker; }
+
+    public Set<AtlasRelationshipType> getRelationshipTypes() { return relationshipTypes; }
 
     public boolean includeEntityType(String entityType) {
         return typeAndSubTypes.isEmpty() || typeAndSubTypes.contains(entityType);
@@ -295,6 +325,10 @@ public class SearchContext {
 
     boolean needFullTextProcessor() {
         return StringUtils.isNotEmpty(searchParameters.getQuery());
+    }
+
+    boolean needRelationshipProcessor() {
+        return CollectionUtils.isNotEmpty(relationshipTypes);
     }
 
     boolean needClassificationProcessor() {
@@ -343,6 +377,37 @@ public class SearchContext {
                 throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_ATTRIBUTE, attributeName, name);
             }
         }
+    }
+
+    private void validateAttributes() throws AtlasBaseException {
+        Set<String> attributes = searchParameters.getAttributes();
+        if (CollectionUtils.isNotEmpty(attributes) && CollectionUtils.isNotEmpty(entityTypes)) {
+
+            AtlasEntityType entityType = entityTypes.iterator().next();
+            for (String attr : attributes) {
+                AtlasAttribute attribute = entityType.getAttribute(attr);
+
+                if (attribute == null) {
+                    attribute = entityType.getRelationshipAttribute(attr, null);
+                    hasRelationshipAttributes = attribute != null;
+                }
+
+                if (attribute == null) {
+                    throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_ATTRIBUTE, attr, entityType.getTypeName());
+                }
+            }
+        }
+    }
+
+    public boolean excludeHeaderAttributes() {
+        if (CollectionUtils.isNotEmpty(entityTypes) &&
+                searchParameters.getExcludeHeaderAttributes() &&
+                CollectionUtils.isNotEmpty(searchParameters.getAttributes()) &&
+                !hasRelationshipAttributes){
+            return true;
+        }
+
+        return false;
     }
 
     public boolean hasAttributeFilter(FilterCriteria filterCriteria) {
@@ -521,6 +586,35 @@ public class SearchContext {
 
     private AtlasEntityType getTermEntityType() {
         return typeRegistry.getEntityTypeByName(TermSearchProcessor.ATLAS_GLOSSARY_TERM_ENTITY_TYPE);
+    }
+
+    private Set<AtlasRelationshipType> getRelationshipTypes(String relationship) throws AtlasBaseException {
+        Set<AtlasRelationshipType> relationshipTypes = null;
+        //split multiple typeNames by comma
+        if (StringUtils.isNotEmpty(relationship)) {
+
+            String[] types        = relationship.split(TYPENAME_DELIMITER);
+            Set<String> typeNames = new HashSet<>(Arrays.asList(types));
+            relationshipTypes     = typeNames.stream().map(n ->
+                    typeRegistry.getRelationshipTypeByName(n)).filter(Objects::nonNull).collect(Collectors.toSet());
+
+            // Validate if the type name is incorrect
+            if (CollectionUtils.isEmpty(relationshipTypes)) {
+                throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_TYPENAME,relationship);
+
+            } else if (relationshipTypes.size() != typeNames.size()) {
+                Set<String> validEntityTypes = new HashSet<>();
+                for (AtlasRelationshipType entityType : relationshipTypes) {
+                    validEntityTypes.add(entityType.getTypeName());
+                }
+
+                typeNames.removeAll(validEntityTypes);
+
+                LOG.info("Could not search for {} , invalid typeNames", String.join(TYPENAME_DELIMITER, typeNames));
+            }
+        }
+
+        return relationshipTypes;
     }
 
     public static class MarkerUtil {

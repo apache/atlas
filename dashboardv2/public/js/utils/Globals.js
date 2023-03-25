@@ -33,7 +33,8 @@ define(["require", "underscore"], function(require, _) {
             searchUrl: "#!/search",
             glossaryUrl: "#!/glossary",
             administratorUrl: "#!/administrator",
-            debugMetricsUrl: "#!/debugMetrics"
+            debugMetricsUrl: "#!/debugMetrics",
+            relationUrl: '#!/relationship'
         },
         detailPageState: {}
     };
@@ -53,6 +54,11 @@ define(["require", "underscore"], function(require, _) {
     Globals.isDebugMetricsEnabled = false;
     Globals.isTasksEnabled = false;
     Globals.idealTimeoutSeconds = 900;
+    Globals.isFullScreenView = false;
+    Globals.isLineageOnDemandEnabled = false;
+    Globals.lineageNodeCount = 3;
+    Globals.lineageDepth = 3;
+    Globals.fromRelationshipSearch = false;
 
     return Globals;
 });

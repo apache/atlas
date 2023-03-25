@@ -26,7 +26,9 @@ import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraphDatabase;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
+import org.apache.atlas.security.SecurityProperties;
 import org.apache.atlas.utils.AuthenticationUtil;
+import org.apache.atlas.utils.SSLUtil;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Options;
@@ -98,6 +100,9 @@ public class RepairIndex {
 
     private static void process(String guid) throws Exception {
         RepairIndex repairIndex = new RepairIndex();
+
+        SSLUtil sslUtil = new SSLUtil();
+        sslUtil.setSSLContext();
 
         setupGraph();
 

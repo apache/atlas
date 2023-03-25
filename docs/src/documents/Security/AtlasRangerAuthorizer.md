@@ -79,7 +79,7 @@ Following authorization policy allows user 'admin' to perform export/import admi
 
 ###  Apache Ranger access audit for Apache Atlas authorizations
 Apache Ranger authorization plugin generates audit logs with details of the access authorized by the plugin. The details
-include the object accessed (eg. hive_table with ID cost_savings.claim_savings@cl1), type of access performed (eg.
+include the object accessed (e.g. hive_table with ID cost_savings.claim_savings@cl1), type of access performed (e.g.
 entity-add-classification, entity-remove-classification), name of the user, time of access and the IP address the access
 request came from - as shown in the following image.
 

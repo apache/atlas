@@ -54,7 +54,7 @@ The current implementation has 2 options. Both are optional:
 
 * _fetchType_ This option configures the approach used for fetching entities. It has the following values:
     * _FULL_: This fetches all the entities that are connected directly and indirectly to the starting entity. E.g. If a starting entity specified is a table, then this option will fetch the table, database and all the other tables within the database.
-    * _CONNECTED_: This fetches all the etnties that are connected directly to the starting entity. E.g. If a starting entity specified is a table, then this option will fetch the table and the database entity only.
+    * _CONNECTED_: This fetches all the entities that are connected directly to the starting entity. E.g. If a starting entity specified is a table, then this option will fetch the table and the database entity only.
     *  _INCREMENTAL_: See [here](#/IncrementalExport) for details.
 
 
@@ -104,7 +104,7 @@ The _AtlasExportRequest_ below specifies the _fetchType_ as _FULL_. The _matchTy
 }`}
 </SyntaxHighlighter>
 
-The _AtlasExportRequest_ below specifies the _guid_ instead of _uniqueAttribues_ to fetch _accounts@cl1_.
+The _AtlasExportRequest_ below specifies the _guid_ instead of _uniqueAttributes_ to fetch _accounts@cl1_.
 
 <SyntaxHighlighter wrapLines={true} language="json" style={theme.dark}>
 {`{
@@ -117,7 +117,7 @@ The _AtlasExportRequest_ below specifies the _guid_ instead of _uniqueAttribues_
 }`}
 </SyntaxHighlighter>
 
-The _AtlasExportRequest_ below specifies the _fetchType_ as _connected_. The _matchType_ option will fetch _accountsReceivable_, _accountsPayable_, etc present in the database.
+The _AtlasExportRequest_ below specifies the _fetchType_ as _connected_. The _matchType_ option will fetch _accountsReceivable_, _accountsPayable_, etc. present in the database.
 
 <SyntaxHighlighter wrapLines={true} language="json" style={theme.dark}>
 {`{

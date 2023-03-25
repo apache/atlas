@@ -18,7 +18,11 @@
     <div class="panel panel-default custom-panel expand_collapse_panel-icon" data-id="entity">
         <div class="panel-heading" data-toggle="collapse" href="#collapse1" aria-expanded="true" style="width: 58%">
             <h4 class="panel-title">
+                {{#ifCond isRelationshipDetailPage "!==" true}}
                 <a>Technical properties </a>
+                {{else}}
+                <a>Relationship properties </a>
+                {{/ifCond}}
             </h4>
             <div class="btn-group pull-left">
                 <button type="button" title="Collapse"><i class="ec-icon fa"></i></button>
@@ -27,9 +31,11 @@
         <div class="panel-actions">
             <div class="pretty p-switch p-fill" style="margin-right: 20px">
                 <input type="checkbox" data-id="noValueToggle" title="Show empty values" />
+                {{#ifCond isRelationshipDetailPage "!==" true}}
                 <div class="state p-primary">
                     <label></label>
                 </div>
+                {{/ifCond}}
             </div>
             {{#ifCond editEntity "===" true}}
             <button data-id="editButton" title="Edit Entity" class="btn btn-action btn-sm pull-right">Edit</button>

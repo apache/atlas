@@ -18,9 +18,21 @@
     <div class="fontLoader">
         <i class="fa fa-refresh fa-spin-custom"></i>
     </div>
-    <div class="tagDetail clearfix form-horizontal col-sm-12">
+    <div class="tagDetail clearfix col-sm-12">
         <h1 class="title"><span data-id="title"></span></h1>
-        <p class="form-group col-sm-12" data-id="description"></p>
+        <div class="long-description-container form-group clearfix">
+            <span class="pull-left text-muted">Description:&nbsp;</span>
+            <div class="isTextTypeBtn-wrapper pull-right">
+                <span class="text-muted pull-left">Formatted</span>
+                <label class="switch pull-left">
+                    <input type="checkbox" class="switch-input" name="textType" value="text">
+                    <span class="switch-slider"></span>
+                </label>
+                <span class="text-muted">Plain</span>
+            </div>
+            <div class="longdescription-wrapper form-control col-sm-12">
+                <div class="long-description" name="longDescription" data-id="description" disabled></div>
+            </div>
+        </div>
     </div>
-</div>
 </div>

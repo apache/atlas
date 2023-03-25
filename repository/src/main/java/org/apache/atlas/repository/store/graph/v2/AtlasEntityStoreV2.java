@@ -399,7 +399,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_TYPENAME, objectId.getTypeName());
             }
 
-            guid = AtlasGraphUtilsV2.getGuidByUniqueAttributes(graph, typeRegistry.getEntityTypeByName(objectId.getTypeName()), objectId.getUniqueAttributes());
+            guid = AtlasGraphUtilsV2.getGuidByUniqueAttributes(graph, entityType, objectId.getUniqueAttributes());
         }
 
         AtlasEntity entity = updatedEntityInfo.getEntity();

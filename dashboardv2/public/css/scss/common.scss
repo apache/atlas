@@ -63,6 +63,13 @@
                 display: none;
             }
         }
+        &.btn[data-id="termClick"] {
+            i.fa-close[data-id="deleteTag"],
+            i.fa-times[data-id="deleteTag"],
+            i.fa-times[data-id="delete"] {
+                display: none;
+            }
+        }
     }
 }
 
@@ -81,6 +88,27 @@
 }
 
 .detail-page {
+
+    .entityDetail {
+
+        .tagBox,
+        .termBox,
+        .propagatedTagBox {
+            span {
+                >span {
+                    @include ellipsis();
+                    float: left;
+                    max-width: 200px;
+                }
+            }
+
+            i {
+                float: right;
+                line-height: 21px;
+            }
+        }
+    }
+
     .details-backbutton {
         display: table-cell !important;
     }
@@ -93,6 +121,10 @@
             background-color: transparent;
             font-weight: bold;
         }
+    }
+
+    .relationship-detailpage-panel {
+        width: 58% !important;
     }
 }
 
@@ -122,6 +154,7 @@ pre {
 
         position: relative;
         overflow: hidden;
+        word-break: break-word;
 
         &.shrink {
             height: 112px;
@@ -345,4 +378,12 @@ pre {
     overflow-wrap: break-word;
     cursor: default !important;
     background-color: transparent !important;
+}
+
+.tagBox {
+    z-index: 2;
+}
+
+.termBox {
+    z-index: 1;
 }

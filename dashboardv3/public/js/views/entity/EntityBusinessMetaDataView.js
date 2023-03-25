@@ -41,7 +41,8 @@ define([
                 editMode: this.editMode,
                 entity: this.entity,
                 businessMetadataCollection: this.businessMetadataCollection,
-                enumDefCollection: this.enumDefCollection
+                enumDefCollection: this.enumDefCollection,
+                searchVent: this.searchVent
             };
         },
         templateHelpers: function() {
@@ -69,13 +70,14 @@ define([
         },
         initialize: function(options) {
             var that = this;
-            _.extend(this, _.pick(options, "entity", "businessMetadataCollection", "enumDefCollection", "guid", "fetchCollection"));
+            _.extend(this, _.pick(options, "entity", "businessMetadataCollection", "enumDefCollection", "guid", "fetchCollection", "searchVent"));
             this.editMode = false;
             this.readOnlyEntity = Enums.entityStateReadOnly[this.entity.status];
             this.$("editBox").hide();
             this.actualCollection = new Backbone.Collection(
                 _.map(this.entity.businessAttributes, function(val, key) {
-                    var foundBusinessMetadata = that.businessMetadataCollection[key];
+                    var foundBusinessMetadata = that.businessMetadataCollection[key],
+                        businessMetadata = key;
                     if (foundBusinessMetadata) {
                         _.each(val, function(aVal, aKey) {
                             var foundAttr = _.find(foundBusinessMetadata, function(o) {
@@ -84,7 +86,10 @@ define([
                             if (foundAttr) {
                                 val[aKey] = { value: aVal, typeName: foundAttr.typeName };
                             }
-                        })
+                            if (foundAttr && foundAttr.typeName === "string") {
+                                val[aKey].key = businessMetadata.replace(/ /g, "_") + "_" + aKey.replace(/ /g, "_");
+                            }
+                        });
                     }
                     return _.extend({}, val, { __internal_UI_businessMetadataName: key });
                 }));
@@ -124,6 +129,7 @@ define([
                 this.createNameElement();
             } else {
                 this.collection.trigger("reset");
+                this.searchVent.trigger("BusinessMetaAttribute:Edit");
             }
             this.panelOpenClose();
         },
@@ -154,6 +160,9 @@ define([
             this.$el.find('.custom-col-1[data-id="value"] [data-key]').each(function(el) {
                 var val = $(this).val(),
                     elIsSelect2 = $(this).hasClass("select2-hidden-accessible");
+                if (val) {
+                    val = Utils.sanitizeHtmlContent({ data: val });
+                }
                 if (_.isString(val)) {
                     val = val.trim();
                 }
@@ -165,6 +174,9 @@ define([
                         $(this).siblings(".select2").find(".select2-selection").attr("style", "border-color : red !important");
                     } else {
                         $(this).css("borderColor", "red");
+                        if($(this).parent().hasClass("small-texteditor")){
+                            $(this).parent().css("borderColor", "red");
+                        }
                     }
                 } else {
                     if (elIsSelect2) {
@@ -261,9 +273,8 @@ define([
                             if (val.typeName === "date") {
                                 newVal = Utils.formatDate({ date: newVal, zone: false, dateFormat: Globals.dateFormat });
                             }
-
                         }
-                        attrLi += "<tr><td class='business-metadata-detail-attr-key'>" + _.escape(key) + " (" + _.escape(val.typeName) + ")</td><td>" + _.escape(newVal) + "</td></tr>";
+                        attrLi += "<tr><td class='business-metadata-detail-attr-key'>" + _.escape(key) + " (" + _.escape(val.typeName) + ")</td><td>" + ((val.typeName === "string") ? Utils.sanitizeHtmlContent({ data: newVal }) : _.escape(newVal)) + "</td></tr>";
                     }
                 });
                 li += that.associateAttributePanel(obj, attrLi);

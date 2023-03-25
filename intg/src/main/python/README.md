@@ -16,7 +16,7 @@ Verify if apache-atlas client is installed:
 
 Package      Version
 ------------ ---------
-apache-atlas 0.0.11
+apache-atlas 0.0.12
 ```
 
 ## Usage

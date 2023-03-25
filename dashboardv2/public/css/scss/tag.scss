@@ -169,7 +169,7 @@
     border-color: $color_bali_hai_approx;
 }
 
-.entityLink {
+.entityLink, .relationLink {
     font-size: 16px;
 }
 
@@ -207,4 +207,11 @@
 .addtag-propagte-box {
     border: 1px solid #ddd;
     border-radius: 7px;
+}
+
+.attributePlusData .toggle {
+    font-size: 20px;
+    /* cursor: pointer; */
+    padding: 0px;
+    margin-top: 5px;
 }

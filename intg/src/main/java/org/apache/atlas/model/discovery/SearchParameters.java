@@ -44,18 +44,22 @@ public class SearchParameters implements Serializable {
     private String  query;
     private String  typeName;
     private String  classification;
+    private String  relationshipName;
     private String  termName;
     private String  sortBy;
     private boolean excludeDeletedEntities;
     private boolean includeClassificationAttributes;
     private boolean includeSubTypes                 = true;
     private boolean includeSubClassifications       = true;
+    private boolean excludeHeaderAttributes         = false;
+
     private int     limit;
     private int     offset;
     private String  marker;
 
     private FilterCriteria entityFilters;
     private FilterCriteria tagFilters;
+    private FilterCriteria relationshipFilters;
     private Set<String>    attributes;
     private SortOrder      sortOrder;
 
@@ -125,6 +129,14 @@ public class SearchParameters implements Serializable {
      */
     public void setClassification(String classification) {
         this.classification = classification;
+    }
+
+    public String getRelationshipName() {
+        return relationshipName;
+    }
+
+    public void setRelationshipName(String relationshipName) {
+        this.relationshipName = relationshipName;
     }
 
     /**
@@ -259,6 +271,27 @@ public class SearchParameters implements Serializable {
     }
 
     /**
+     * Relationship attribute filters for the relationship
+     * @return
+     */
+    public FilterCriteria getRelationshipFilters() { return relationshipFilters; }
+
+    /**
+     * Filter the relationship on this criteria
+     * @param relationshipFilters
+     */
+    public void setRelationshipFilters(FilterCriteria relationshipFilters) { this.relationshipFilters = relationshipFilters; }
+
+
+    public boolean getExcludeHeaderAttributes() {
+        return excludeHeaderAttributes;
+    }
+
+    public void setExcludeHeaderAttributes(boolean excludeHeaderAttributes) {
+        this.excludeHeaderAttributes = excludeHeaderAttributes;
+    }
+
+    /**
      * Attribute values included in the results
      * @return
      */
@@ -307,6 +340,7 @@ public class SearchParameters implements Serializable {
                 includeClassificationAttributes == that.includeClassificationAttributes &&
                 includeSubTypes == that.includeSubTypes &&
                 includeSubClassifications == that.includeSubClassifications &&
+                excludeHeaderAttributes == that.excludeHeaderAttributes &&
                 limit == that.limit &&
                 offset == that.offset &&
                 Objects.equals(query, that.query) &&
@@ -323,7 +357,7 @@ public class SearchParameters implements Serializable {
     @Override
     public int hashCode() {
         return Objects.hash(query, typeName, classification, termName, includeSubTypes, includeSubClassifications,
-                            excludeDeletedEntities, includeClassificationAttributes, limit, offset, entityFilters,
+                            excludeDeletedEntities, includeClassificationAttributes, excludeHeaderAttributes, limit, offset, entityFilters,
                             tagFilters, attributes, sortBy, sortOrder);
     }
 
@@ -341,6 +375,7 @@ public class SearchParameters implements Serializable {
         sb.append(", includeSubClassifications='").append(includeSubClassifications).append('\'');
         sb.append(", excludeDeletedEntities=").append(excludeDeletedEntities);
         sb.append(", includeClassificationAttributes=").append(includeClassificationAttributes);
+        sb.append(", excludeHeaderAttributes=").append(excludeHeaderAttributes);
         sb.append(", limit=").append(limit);
         sb.append(", offset=").append(offset);
         sb.append(", entityFilters=").append(entityFilters);

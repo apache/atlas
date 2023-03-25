@@ -26,7 +26,7 @@
         </div>
     </div>
     <div class="col-sm-12 attributeResultContainer form-group">
-        <button title="Refresh Search Result" class="btn-action btn-sm" data-id="refreshSearchResult" data-original-title="Refresh Search Result"><i class="fa fa-refresh"></i></button>
+        <button title="Refresh Search Result" class="btn btn-action btn-sm" data-id="refreshSearchResult" data-original-title="Refresh Search Result"><i class="fa fa-refresh"></i></button>
         <button class="btn-action btn-sm  attribute-filter-text" data-id='attrFilter'> <i class="fa fa-angle-right"></i> Filters</button>
         <button class='btn-action btn-sm' data-id='clearQuerySearch'>Clear</button>
         <div class="attribute-filter-container hide">
@@ -99,6 +99,23 @@
                 <div id="collapseClassification" class="panel-collapse collapse in">
                     <div class="panel-body">
                         <div id='r_attributeQueryBuilderClassification' class='attribute-querybuilder'>
+                            <div class='fontLoader-relative show'><i class='fa fa-refresh fa-spin-custom'></i></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="panel panel-default expand_collapse_panel-icon" data-id="relationshipRegion">
+                <div class="panel-heading" data-toggle="collapse" href="#collapseRelationship" aria-expanded="true">
+                    <h4 class="panel-title">
+                        <a>Relationship: <span class="relationshipName"></span></a>
+                    </h4>
+                    <div class="btn-group pull-right">
+                        <button type="button" title="Collapse"><i class="ec-icon fa"></i></button>
+                    </div>
+                </div>
+                <div id="collapseRelationship" class="panel-collapse collapse in">
+                    <div class="panel-body">
+                        <div id='r_attributeQueryBuilderRelationship' class='attribute-querybuilder'>
                             <div class='fontLoader-relative show'><i class='fa fa-refresh fa-spin-custom'></i></div>
                         </div>
                     </div>

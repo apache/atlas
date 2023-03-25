@@ -23,6 +23,7 @@ import org.apache.atlas.SortOrder;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.SearchParameters;
+import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
@@ -42,6 +43,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
+import java.util.stream.Collectors;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -602,4 +605,33 @@ public class EntitySearchProcessorTest extends BasicTestSetup {
         SearchParameters.FilterCriteria ret = processor.processDateRange(filterCriteria);
         return ret;
     }
+
+    @Test
+    public void ALLEntityTypeForPagination() throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+        params.setTypeName(SearchParameters.ALL_ENTITY_TYPES);
+        params.setLimit(10);
+
+        SearchContext context = new SearchContext(params, typeRegistry, graph, Collections.<String>emptySet());
+
+        EntitySearchProcessor processor = new EntitySearchProcessor(context);
+        List<AtlasVertex> v = processor.execute();
+        List a =v.stream().map(v1 -> v1.getProperty(Constants.GUID_PROPERTY_KEY, String.class)).collect(Collectors.toList());
+
+        SearchParameters params2 = new SearchParameters();
+        params2.setTypeName(SearchParameters.ALL_ENTITY_TYPES);
+        params2.setLimit(10);
+        params2.setOffset(10);
+        SearchContext context2 = new SearchContext(params2, typeRegistry, graph, Collections.<String>emptySet());
+
+        EntitySearchProcessor processor2 = new EntitySearchProcessor(context2);
+
+        List<AtlasVertex> v2 = processor2.execute();
+        List b =v2.stream().map(v3 -> v3.getProperty(Constants.GUID_PROPERTY_KEY, String.class)).collect(Collectors.toList());
+
+        assertTrue(!a.stream().anyMatch(element -> b.contains(element)));
+
+
+    }
+
 }

@@ -34,8 +34,14 @@ import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
+
+import static org.apache.atlas.impala.hook.events.BaseImpalaEvent.ATTRIBUTE_START_TIME;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
+
+import static org.apache.atlas.impala.hook.events.BaseImpalaEvent.ATTRIBUTE_END_TIME;
+import static org.apache.atlas.impala.hook.events.BaseImpalaEvent.ATTRIBUTE_NAME;
+
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -149,6 +155,11 @@ public class ImpalaLineageHookIT extends ImpalaLineageITBase {
                 BaseImpalaEvent.ATTRIBUTE_PROCESS));
             Assert.assertEquals(process1.getGuid(), processEntity1.getGuid());
             Assert.assertEquals(numberOfProcessExecutions(processEntity1), 1);
+            String processExecutionQFName = processQFName + AtlasImpalaHookContext.QNAME_SEP_PROCESS + processExecutionEntity1.getAttribute(ATTRIBUTE_START_TIME).toString() +
+                    AtlasImpalaHookContext.QNAME_SEP_PROCESS + processExecutionEntity1.getAttribute(ATTRIBUTE_END_TIME).toString();
+
+            assertEquals(processQFName, processEntity1.getAttribute(ATTRIBUTE_NAME).toString());
+            assertEquals(processExecutionQFName, processExecutionEntity1.getAttribute(ATTRIBUTE_NAME).toString());
 
             // check DDL entity
             String viewId = assertTableIsRegistered(viewName);

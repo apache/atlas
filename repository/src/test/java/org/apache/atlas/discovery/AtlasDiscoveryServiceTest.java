@@ -26,11 +26,13 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasQuickSearchResult;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.QuickSearchParameters;
+import org.apache.atlas.model.discovery.RelationshipSearchParameters;
 import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.discovery.AtlasAggregationEntry;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
@@ -42,6 +44,7 @@ import org.testng.annotations.*;
 import javax.inject.Inject;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -65,6 +68,7 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
         setupTestData();
         createDimensionalTaggedEntity("sales");
         createSpecialCharTestEntities();
+        setupRelationshipTestData();
     }
 
     /*  TermSearchProcessor(TSP),
@@ -906,9 +910,9 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
         List<AtlasEntityHeader> list = relResult.getEntities();
 
         Assert.assertTrue(CollectionUtils.isNotEmpty(list));
-        Assert.assertTrue(list.size() == 4);
+        Assert.assertTrue(list.size() == 6);
         Assert.assertTrue(list.get(0).getDisplayText().equalsIgnoreCase("customer_id"));
-        Assert.assertTrue(list.get(3).getDisplayText().equalsIgnoreCase("time_id"));
+        Assert.assertTrue(list.get(5).getDisplayText().equalsIgnoreCase("time_id"));
 
     }
 
@@ -924,9 +928,123 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
         List<AtlasEntityHeader> list = relResult.getEntities();
 
         Assert.assertTrue(CollectionUtils.isNotEmpty(list));
-        Assert.assertTrue(list.size() == 4);
-        Assert.assertTrue(list.get(3).getDisplayText().equalsIgnoreCase("customer_id"));
+        Assert.assertTrue(list.size() == 6);
+        Assert.assertTrue(list.get(5).getDisplayText().equalsIgnoreCase("customer_id"));
         Assert.assertTrue(list.get(0).getDisplayText().equalsIgnoreCase("time_id"));
+    }
+
+    //test excludeHeaderAttributes
+    @Test
+    public void excludeHeaderAttributesStringAttr() throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+        params.setTypeName(HIVE_TABLE_TYPE);
+        params.setExcludeHeaderAttributes(true);
+        SearchParameters.FilterCriteria filterCriteria = getSingleFilterCondition("tableType", Operator.EQ, "Managed");
+        params.setEntityFilters(filterCriteria);
+        params.setSortBy("name");
+        params.setAttributes(new HashSet<String>() {{ add("name");}});
+        params.setLimit(1);
+
+        AtlasSearchResult searchResult = discoveryService.searchWithParameters(params);
+        AtlasSearchResult.AttributeSearchResult expected = new AtlasSearchResult.AttributeSearchResult();
+        expected.setName(Arrays.asList("name"));
+        expected.setValues(Arrays.asList(Arrays.asList("log_fact_daily_mv")));
+        assertSearchResult(searchResult,expected);
+    }
+
+    @Test
+    public void excludeHeaderAttributesRelationAttr() throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+        params.setTypeName(HIVE_TABLE_TYPE);
+        params.setExcludeHeaderAttributes(true);
+        SearchParameters.FilterCriteria filterCriteria = getSingleFilterCondition("name", Operator.EQ, "time_dim");
+        params.setEntityFilters(filterCriteria);
+        params.setAttributes(new HashSet<String>() {{ add("name"); add("db");}});
+        params.setLimit(1);
+
+        AtlasSearchResult searchResult = discoveryService.searchWithParameters(params);
+
+        assertNotNull(searchResult);
+        assertNotNull(searchResult.getEntities());
+        assertNotNull(searchResult.getReferredEntities());
+    }
+
+    @Test
+    public void excludeHeaderAttributesSystemAttr() throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+        params.setTypeName(HIVE_TABLE_TYPE);
+        params.setExcludeHeaderAttributes(true);
+        params.setAttributes(new HashSet<String>() {{ add("name"); add("__state");}});
+        params.setLimit(1);
+        SearchParameters.FilterCriteria filterCriteria = getSingleFilterCondition("tableType", Operator.EQ, "Managed");
+        params.setEntityFilters(filterCriteria);
+        params.setSortBy("name");
+
+        AtlasSearchResult searchResult = discoveryService.searchWithParameters(params);
+        AtlasSearchResult.AttributeSearchResult expected = new AtlasSearchResult.AttributeSearchResult();
+        expected.setName(Arrays.asList("name","__state"));
+        expected.setValues(Arrays.asList(Arrays.asList("log_fact_daily_mv","ACTIVE")));
+        assertSearchResult(searchResult,expected);
+    }
+
+    @Test
+    public void excludeHeaderAttributesAllEntityTypeSysAttr() throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+        params.setTypeName(HIVE_TABLE_TYPE+","+ALL_ENTITY_TYPES);
+        params.setExcludeHeaderAttributes(true);
+        params.setAttributes(new HashSet<String>() {{ add("__state");}});
+        params.setLimit(2);
+
+        AtlasSearchResult searchResult = discoveryService.searchWithParameters(params);
+        AtlasSearchResult.AttributeSearchResult expected = new AtlasSearchResult.AttributeSearchResult();
+        expected.setName(Arrays.asList("__state"));
+        expected.setValues(Arrays.asList(Arrays.asList("ACTIVE"), Arrays.asList("ACTIVE")));
+        assertSearchResult(searchResult,expected);
+    }
+    @Test
+    public void excludeHeaderAttributesAllEntityTypeSysAttrs() throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+        params.setTypeName(HIVE_TABLE_TYPE+","+ALL_ENTITY_TYPES);
+        params.setExcludeHeaderAttributes(true);
+        params.setAttributes(new HashSet<String>() {{ add("__state"); add("__guid");}});
+        params.setLimit(2);
+
+        AtlasSearchResult searchResult = discoveryService.searchWithParameters(params);
+        assertEquals(searchResult.getAttributes().getValues().size(), 2);
+    }
+
+    @Test(expectedExceptions = AtlasBaseException.class, expectedExceptionsMessageRegExp = "Attribute name not found for type __ENTITY_ROOT")
+    public void excludeHeaderAttributesAllEntityType() throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+        params.setTypeName(HIVE_TABLE_TYPE+","+ALL_ENTITY_TYPES);
+        params.setExcludeHeaderAttributes(true);
+        params.setAttributes(new HashSet<String>() {{ add("name");}});
+        params.setLimit(1);
+
+        discoveryService.searchWithParameters(params);
+    }
+
+    @Test(expectedExceptions = AtlasBaseException.class, expectedExceptionsMessageRegExp = "Attribute name1 not found for type hive_table")
+    public void excludeHeaderAttributesInvalidAttr() throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+        params.setTypeName(HIVE_TABLE_TYPE);
+        params.setExcludeHeaderAttributes(true);
+        params.setAttributes(new HashSet<String>() {{ add("name1");}});
+        params.setLimit(1);
+
+        discoveryService.searchWithParameters(params);
+    }
+
+    @Test
+    public void searchRelations() throws AtlasBaseException {
+        RelationshipSearchParameters sp = new RelationshipSearchParameters();
+        sp.setRelationshipName("highlight_post");
+        sp.setMarker("*");
+        sp.setLimit(10);
+        sp.setRelationshipFilters(getSingleFilterCondition("highlight_name", Operator.EQ, "year2021@Ajay"));
+
+        AtlasSearchResult sr = discoveryService.searchRelationsWithParameters(sp);
+        assertEquals(sr.getRelations().size(), 4);
     }
 
     private String gethiveTableSalesFactGuid() throws AtlasBaseException {
@@ -955,6 +1073,18 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
             assertNotNull(searchResult.getAttributes());
             assertNotNull(searchResult.getAttributes().getValues());
             assertEquals(searchResult.getAttributes().getValues().size(), expected, query);
+        }
+    }
+
+    private void assertSearchResult(AtlasSearchResult searchResult, AtlasSearchResult.AttributeSearchResult expected) {
+        assertNotNull(searchResult);
+        AtlasSearchResult.AttributeSearchResult result = searchResult.getAttributes();
+        assertNotNull(result);
+        assertTrue(result.getName().containsAll(expected.getName()));
+        int i = 0;
+        for (List<Object> value : result.getValues()) {
+            assertTrue(value.containsAll(expected.getValues().get(i)));
+            i++;
         }
     }
 

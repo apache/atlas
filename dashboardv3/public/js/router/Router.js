@@ -36,6 +36,10 @@ define([
             "!/search/searchResult": function() {
                 this.renderDefaultSearchLayoutView({ fromSearchResultView: true });
             },
+            //Relationship
+            "!/relationship/relationshipSearchResult": function() {
+                this.renderDefaultSearchLayoutView({ fromSearchResultView: true, isRelationshipSearch: true });
+            },
             // Tag
             "!/tag": "renderTagLayoutView",
             "!/tag/tagAttribute/(*name)": "renderTagLayoutView",
@@ -44,6 +48,8 @@ define([
             "!/glossary/:id": "renderGlossaryLayoutView",
             // Details
             "!/detailPage/:id": "detailPage",
+            //Relationship Detail Page
+            "!/relationshipDetailPage/:id": "relationshipDetailPage",
             //Audit table
             '!/administrator': 'administrator',
             '!/administrator/businessMetadata/:id': 'businessMetadataDetailPage',
@@ -55,7 +61,7 @@ define([
         initialize: function(options) {
             _.extend(
                 this,
-                _.pick(options, "entityDefCollection", "typeHeaders", "enumDefCollection", "classificationDefCollection", "metricCollection", "classificationAndMetricEvent", "businessMetadataDefCollection")
+                _.pick(options, "entityDefCollection", "typeHeaders", "enumDefCollection", "classificationDefCollection", "metricCollection", "classificationAndMetricEvent", "businessMetadataDefCollection", "relationshipDefCollection")
             );
             this.showRegions();
             this.bindCommonEvents();
@@ -75,7 +81,8 @@ define([
                 glossaryCollection: this.glossaryCollection,
                 metricCollection: this.metricCollection,
                 classificationAndMetricEvent: this.classificationAndMetricEvent,
-                businessMetadataDefCollection: this.businessMetadataDefCollection
+                businessMetadataDefCollection: this.businessMetadataDefCollection,
+                relationshipDefCollection: this.relationshipDefCollection
             };
             this.ventObj = {
                 searchVent: this.searchVent,
@@ -88,7 +95,8 @@ define([
                 },
                 searchTableFilters: {
                     tagFilters: {},
-                    entityFilters: {}
+                    entityFilters: {},
+                    relationshipFilters: {}
                 }
             };
         },
@@ -208,10 +216,46 @@ define([
                 });
             }
         },
+        relationshipDetailPage: function(id) {
+            var that = this;
+            if (id) {
+                require(["views/site/Header", "views/detail_page/RelationshipDetailPageLayoutView", "views/site/SideNavLayoutView"], function(Header, RelationshipDetailPageLayoutView, SideNavLayoutView) {
+                    var paramObj = Utils.getUrlState.getQueryParams(),
+                        options = _.extend({}, that.preFetchedCollectionLists, that.sharedObj, that.ventObj);
+                    that.renderViewIfNotExists(that.getHeaderOptions(Header));
+                    that.renderViewIfNotExists({
+                        view: App.rSideNav,
+                        manualRender: function() {
+                            this.view.currentView.manualRender(options);
+                        },
+                        render: function() {
+                            return new SideNavLayoutView(options);
+                        }
+                    });
+
+                    var dOptions = _.extend({ id: id, value: paramObj }, options);
+                    that.renderViewIfNotExists({
+                        view: App.rContent,
+                        viewName: "RelationshipDetailPageLayoutView",
+                        manualRender: function() {
+                            this.view.currentView.manualRender(dOptions);
+                        },
+                        render: function() {
+                            return new RelationshipDetailPageLayoutView(dOptions);
+                        }
+                    });
+                });
+            }
+        },
         renderTagLayoutView: function(tagName) {
             var that = this;
             require(["views/site/Header", "views/tag/TagContainerLayoutView", "views/site/SideNavLayoutView"], function(Header, TagContainerLayoutView, SideNavLayoutView) {
                 var paramObj = Utils.getUrlState.getQueryParams();
+                //Below if condition is added  to handle "when Classification tab does not have any classification and selected in Old UI and switched to New UI is show continous loading
+                if ((paramObj === undefined && !tagName) || tagName === "viewType=tree" || tagName === "viewType=flat") {
+                    that.defaultAction();
+                    return;
+                }
                 that.renderViewIfNotExists(that.getHeaderOptions(Header));
                 var options = _.extend({
                         tag: tagName,
@@ -238,7 +282,7 @@ define([
             require(["views/site/Header", "views/glossary/GlossaryContainerLayoutView", "views/search/SearchDefaultLayoutView", "views/site/SideNavLayoutView"], function(Header, GlossaryContainerLayoutView, SearchDefaultLayoutView, SideNavLayoutView) {
                 var paramObj = Utils.getUrlState.getQueryParams();
                 //Below if condition is added  to handle "when Glossary tab does not have any glossary and selected in Old UI and switched to New UI is show continous loading
-                if (paramObj === undefined) {
+                if ((paramObj === undefined && !id) || id === "viewType=category" || id === "viewType=term") {
                     that.defaultAction();
                     return;
                 }
@@ -291,7 +335,16 @@ define([
             require(["views/site/Header", "views/search/SearchDefaultLayoutView", "views/site/SideNavLayoutView", "collection/VTagList"], function(Header, SearchDefaultLayoutView, SideNavLayoutView, VTagList) {
                 var paramObj = Utils.getUrlState.getQueryParams();
                 tag = new VTagList();
-                if (paramObj && (paramObj.type || paramObj.tag || paramObj.term || paramObj.query || paramObj.udKeys || paramObj.udLabels) === undefined) {
+                if (opt && opt.isRelationshipSearch) {
+                    paramObj = _.pick(paramObj, ["relationshipName", "searchType", "isCF", "relationshipFilters", "attributes", "uiParameters", "pageLimit", "pageOffset"]);
+                } else {
+                    if (paramObj && paramObj.relationshipName) {
+                        paramObj = _.omit(paramObj, ["relationshipName", "relationshipFilters", "attributes"]);
+                    } else {
+                        paramObj = _.omit(paramObj, ["relationshipName"]);
+                    }
+                }
+                if (paramObj && (paramObj.type || paramObj.tag || paramObj.term || paramObj.query || paramObj.udKeys || paramObj.udLabels || paramObj.relationshipName) === undefined) {
                     Utils.setUrl({
                         url: "#!/search",
                         mergeBrowserUrl: false,
@@ -299,7 +352,7 @@ define([
                         updateTabState: true
                     });
                 }
-                if (Utils.getUrlState.getQueryUrl().lastValue !== "search" && Utils.getUrlState.isAdministratorTab() === false) {
+                if (Utils.getUrlState.getQueryUrl().lastValue !== "search" && Utils.getUrlState.isAdministratorTab() === false && Utils.getUrlState.isRelationTab() === false) {
                     paramObj = _.omit(paramObj, ["tabActive", "ns", "nsa"]);
                     Utils.setUrl({
                         url: "#!/search/searchResult",
@@ -309,10 +362,25 @@ define([
                         updateTabState: true
                     });
                 }
+                if (Utils.getUrlState.getQueryUrl().lastValue !== "relationship" && Utils.getUrlState.isRelationTab() === true) {
+                    Utils.setUrl({
+                        url: "#!/relationship/relationshipSearchResult",
+                        urlParams: paramObj,
+                        mergeBrowserUrl: false,
+                        trigger: false,
+                        updateTabState: true
+                    });
+                }
+
                 if (paramObj) {
                     if (!paramObj.type) {
                         if (paramObj.entityFilters) {
                             paramObj.entityFilters = null;
+                        }
+                    }
+                    if (!paramObj.relationshipName) {
+                        if (paramObj.relationshipFilters) {
+                            paramObj.relationshipFilters = null;
                         }
                     }
                     if (!paramObj.tag) {
@@ -371,7 +439,7 @@ define([
                         isinitialView =
                             (
                                 paramObj.type ||
-                                (paramObj.dslChecked == "true" ? "" : paramObj.tag || paramObj.term) ||
+                                (paramObj.dslChecked == "true" ? "" : paramObj.tag || paramObj.term || paramObj.relationshipName) ||
                                 (paramObj.query ? paramObj.query.trim() : "")
                             ).length === 0;
                     }

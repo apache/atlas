@@ -50,6 +50,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.List;
 
 import static org.apache.atlas.repository.Constants.TYPE_CATEGORY_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.VERTEX_TYPE_PROPERTY_KEY;
@@ -70,7 +71,7 @@ public class AtlasTypeDefGraphStoreV2 extends AtlasTypeDefGraphStore {
 
     @Inject
     public AtlasTypeDefGraphStoreV2(AtlasTypeRegistry typeRegistry,
-                                    Set<TypeDefChangeListener> typeDefChangeListeners,
+                                    List<TypeDefChangeListener> typeDefChangeListeners,
                                     AtlasGraph atlasGraph,
                                     EntityDiscoveryService entityDiscoveryService) {
         super(typeRegistry, typeDefChangeListeners);

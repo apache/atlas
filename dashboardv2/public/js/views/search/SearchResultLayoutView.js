@@ -70,7 +70,9 @@ define(['require',
                 showPage: "[data-id='showPage']",
                 gotoPage: "[data-id='gotoPage']",
                 gotoPagebtn: "[data-id='gotoPagebtn']",
-                activePage: "[data-id='activePage']"
+                activePage: "[data-id='activePage']",
+                excludeSubtypes: ".exclude-subtypes",
+                excludeSubClassifications: ".exclude-subclassifications"
             },
             templateHelpers: function() {
                 return {
@@ -91,7 +93,7 @@ define(['require',
                         this.onClickTagCross(e);
                     } else {
                         this.triggerUrl({
-                            url: '#!/tag/tagAttribute/' + scope.text(),
+                            url: '#!/tag/tagAttribute/' + scope.text().split('@')[0],
                             urlParams: null,
                             mergeBrowserUrl: false,
                             trigger: true,
@@ -212,8 +214,14 @@ define(['require',
                 });
                 this.listenTo(this.searchCollection, "error", function(model, response) {
                     this.hideLoader({ type: 'error' });
+                    if (response.readyState === 0) {
+                        Utils.notifyError({
+                            content: "Request aborted"
+                        });
+                        return;
+                    }
                     var responseJSON = response && response.responseJSON ? response.responseJSON : null,
-                        errorText = (responseJSON && (responseJSON.errorMessage || responseJSON.message || responseJSON.error)) || 'Invalid Expression';
+                        errorText = (responseJSON && (responseJSON.errorMessage || responseJSON.message || responseJSON.error || responseJSON.msgDesc)) || 'Something went wrong';
                     if (errorText) {
                         Utils.notifyError({
                             content: errorText
@@ -242,6 +250,7 @@ define(['require',
                     }
                 }, this);
                 this.listenTo(this.searchVent, "search:refresh", function(model, response) {
+                    this.updateColumnList();
                     this.fetchCollection();
                 }, this);
                 this.listenTo(this.searchCollection, "backgrid:sorted", function(model, response) {
@@ -365,11 +374,11 @@ define(['require',
                     });
                     listOfColumns = _.sortBy(listOfColumns);
                     this.value.attributes = listOfColumns.length ? listOfColumns.join(",") : null;
-                    if (this.value && this.value.type && this.searchTableColumns) {
-                        this.searchTableColumns[this.value.type] = listOfColumns.length ? listOfColumns : null;
+                    if (this.value && (this.value.type || this.value.tag) && this.searchTableColumns) {
+                        this.searchTableColumns[this.value.type || this.value.tag] = listOfColumns.length ? listOfColumns : null;
                     }
-                } else if (this.value && this.value.type && this.searchTableColumns && this.value.attributes) {
-                    this.searchTableColumns[this.value.type] = this.value.attributes.split(",");
+                } else if (this.value && (this.value.type || this.value.tag) && this.searchTableColumns && this.value.attributes) {
+                    this.searchTableColumns[this.value.type || this.value.tag] = this.value.attributes.split(",");
                 }
             },
             fetchCollection: function(value, options) {
@@ -386,7 +395,7 @@ define(['require',
                 }
 
                 if (isPostMethod && isSearchTab) {
-                    var excludeDefaultColumn = this.value.type && this.searchTableColumns ? _.difference(this.searchTableColumns[this.value.type], this.defaultColumns) : null,
+                    var excludeDefaultColumn = ((this.value.type || this.value.tag) && this.searchTableColumns) ? _.difference(this.searchTableColumns[this.value.type || this.value.tag], this.defaultColumns) : null,
                         filterObj = {
                             'entityFilters': entityFilters,
                             'tagFilters': tagFilters,
@@ -615,6 +624,15 @@ define(['require',
                     that.REntityTableLayoutView.$el.find('.colSort thead tr th:not(.select-all-header-cell)').addClass('dragHandler');
                     tableDragger(document.querySelector(".colSort"), { dragHandler: ".dragHandler" }).on('drop', tableDropFunction);
                 }
+                if (Utils.getUrlState.isGlossaryTab()) {
+                    this.ui.excludeSubtypes.hide();
+                    this.ui.excludeSubClassifications.hide();
+                } else if (this.fromView !== "classification") {
+                    this.ui.excludeSubtypes.show();
+                    this.ui.excludeSubClassifications.show();
+                } else {
+                    this.ui.excludeSubtypes.hide();
+                }
             },
             renderTableLayoutView: function(col) {
                 var that = this;
@@ -660,8 +678,8 @@ define(['require',
                     columnToShow = null,
                     col = {};
                 this.value = this.fromView === "glossary" ? this.value : Utils.getUrlState.getQueryParams() || this.value;
-                if (this.value && this.value.searchType === "basic" && this.searchTableColumns && (this.searchTableColumns[this.value.type] !== undefined)) {
-                    columnToShow = this.searchTableColumns[this.value.type] == null ? [] : this.searchTableColumns[this.value.type];
+                if (this.value && this.value.searchType === "basic" && this.searchTableColumns && (this.searchTableColumns[this.value.type || this.value.tag] !== undefined)) {
+                    columnToShow = this.searchTableColumns[this.value.type || this.value.tag] == null ? [] : this.searchTableColumns[this.value.type || this.value.tag];
                 }
                 col['Check'] = {
                     name: "selected",
@@ -1022,9 +1040,9 @@ define(['require',
                                     return
                                 }
                                 if (obj.status && Enums.entityStateReadOnly[obj.status]) {
-                                    return '<div class="readOnly">' + CommonViewFunction.tagForTable(obj); + '</div>';
+                                    return '<div class="readOnly">' + CommonViewFunction.tagForTable(obj, that.classificationDefCollection); + '</div>';
                                 } else {
-                                    return CommonViewFunction.tagForTable(obj);
+                                    return CommonViewFunction.tagForTable(obj, that.classificationDefCollection);
                                 }
 
                             }
@@ -1277,7 +1295,7 @@ define(['require',
                 }
                 if (this.value) {
                     this.value[val] = flag;
-                    this.triggerUrl();
+                    this.triggerUrl({ mergeBrowserUrl: true });
                 }
                 _.extend(this.searchCollection.queryParams, { limit: this.limit, offset: this.offset });
                 this.fetchCollection();

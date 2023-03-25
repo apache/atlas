@@ -30,6 +30,8 @@ import java.security.PrivilegedAction;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * AtlasPluginClassLoader to use plugin classpath first, before component classpath.
@@ -37,39 +39,43 @@ import java.util.Enumeration;
 public final class AtlasPluginClassLoader extends URLClassLoader {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasPluginClassLoader.class);
 
-    private static volatile AtlasPluginClassLoader me = null;
+    private static final Map<String, AtlasPluginClassLoader> pluginClassLoaders = new HashMap<>();
 
     private final ThreadLocal<ClassLoader> preActivateClassLoader = new ThreadLocal<>();
-
-    private final MyClassLoader componentClassLoader;
+    private final MyClassLoader            componentClassLoader;
 
     private AtlasPluginClassLoader(String pluginType, Class<?> pluginClass) throws URISyntaxException {
-        this(AtlasPluginClassLoaderUtil.getPluginImplLibPath(pluginType, pluginClass));
+        this(AtlasPluginClassLoaderUtil.getPluginImplLibPath(pluginType, pluginClass), pluginClass);
     }
 
     //visible for testing
-    AtlasPluginClassLoader(String libraryPath) {
-        super(AtlasPluginClassLoaderUtil.getFilesInDirectories(new String[]{libraryPath}), null);
+    AtlasPluginClassLoader(String[] libraryPath, Class<?> pluginShimClass) {
+        super(AtlasPluginClassLoaderUtil.getFilesInDirectories(libraryPath), null);
 
         componentClassLoader = AccessController.doPrivileged(new PrivilegedAction<MyClassLoader>() {
             public MyClassLoader run() {
-                return new MyClassLoader(Thread.currentThread().getContextClassLoader());
+                return new MyClassLoader(pluginShimClass);
             }
         });
     }
 
     public static AtlasPluginClassLoader getInstance(final String pluginType, final Class<?> pluginClass) throws PrivilegedActionException {
-        AtlasPluginClassLoader ret = me;
+        AtlasPluginClassLoader ret = pluginClassLoaders.get(pluginType);
+
         if (ret == null) {
             synchronized (AtlasPluginClassLoader.class) {
-                ret = me;
+                ret = pluginClassLoaders.get(pluginType);
+
                 if (ret == null) {
-					me = AccessController.doPrivileged(new PrivilegedExceptionAction<AtlasPluginClassLoader>() {
+					ret = AccessController.doPrivileged(new PrivilegedExceptionAction<AtlasPluginClassLoader>() {
 					    public AtlasPluginClassLoader run() throws URISyntaxException {
 					        return new AtlasPluginClassLoader(pluginType, pluginClass);
 					    }
 					});
-                    ret = me;
+
+                    if (ret != null) {
+                        pluginClassLoaders.put(pluginType, ret);
+                    }
                 }
             }
         }
@@ -332,13 +338,17 @@ public final class AtlasPluginClassLoader extends URLClassLoader {
     }
 
     static class MyClassLoader extends ClassLoader {
-        public MyClassLoader(ClassLoader realClassLoader) {
-            super(realClassLoader);
+        public MyClassLoader(Class<?> pluginShimClass) {
+            super(getParentClassLoaderToUse(pluginShimClass));
         }
 
         @Override
         public Class<?> findClass(String name) throws ClassNotFoundException { //NOPMD
             return super.findClass(name);
+        }
+
+        private static ClassLoader getParentClassLoaderToUse(Class<?> pluginShimClass) {
+            return pluginShimClass != null ? pluginShimClass.getClassLoader() : Thread.currentThread().getContextClassLoader();
         }
     }
 }

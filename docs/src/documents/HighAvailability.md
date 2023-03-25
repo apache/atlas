@@ -37,7 +37,7 @@ becomes unavailable either because it is deliberately stopped, or due to unexpec
 instances will automatically be elected as an 'active' instance and start to service user requests.
 
 An 'active' instance is the only instance that can respond to user requests correctly. It can create, delete, modify
-or respond to queries on metadata objects. A 'passive' instance will accept user requests, but will redirect them
+or respond to the queries on metadata objects. A 'passive' instance will accept user requests, but will redirect them
 using HTTP redirect to the currently known 'active' instance. Specifically, a passive instance will not itself
 respond to any queries on metadata objects. However, all instances (both active and passive), will respond to admin
 requests that return information about that instance.

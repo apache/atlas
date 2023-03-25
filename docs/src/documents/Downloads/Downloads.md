@@ -18,10 +18,11 @@ artifacts can be found in our published [KEYS file](https://www.apache.org/dist/
 
 | **Version** | **Release Date** | **Tarball** | **GPG** | **Hash** |
 | : ------------- : | : ------------- : | : ------------- : | : ------------- : |: ------------- :|
-| 2.2.0 | 2021-08-17 | [source](https://www.apache.org/dyn/closer.cgi/atlas/2.2.0/apache-atlas-2.2.0-sources.tar.gz) | [signature](https://www.apache.org/dist/atlas/2.2.0/apache-atlas-2.2.0-sources.tar.gz.asc) | [SHA512](https://www.apache.org/dist/atlas/2.2.0/apache-atlas-2.2.0-sources.tar.gz.sha512) |
-| 2.1.0 | 2020-07-15 | [source](https://www.apache.org/dyn/closer.cgi/atlas/2.1.0/apache-atlas-2.1.0-sources.tar.gz) | [signature](https://www.apache.org/dist/atlas/2.1.0/apache-atlas-2.1.0-sources.tar.gz.asc) | [SHA512](https://www.apache.org/dist/atlas/2.1.0/apache-atlas-2.1.0-sources.tar.gz.sha512) |
-| 0.8.4 | 2019-06-21 | [source](https://www.apache.org/dyn/closer.cgi/atlas/0.8.4/apache-atlas-0.8.4-sources.tar.gz) | [signature](https://www.apache.org/dist/atlas/0.8.4/apache-atlas-0.8.4-sources.tar.gz.asc) | [SHA512](https://www.apache.org/dist/atlas/0.8.4/apache-atlas-0.8.4-sources.tar.gz.sha512) |
-| 1.2.0 | 2019-06-07 | [source](https://www.apache.org/dyn/closer.cgi/atlas/1.2.0/apache-atlas-1.2.0-sources.tar.gz) | [signature](https://www.apache.org/dist/atlas/1.2.0/apache-atlas-1.2.0-sources.tar.gz.asc) | [SHA512](https://www.apache.org/dist/atlas/1.2.0/apache-atlas-1.2.0-sources.tar.gz.sha512) |
+| 2.3.0 | 2022-12-06 | [source](https://www.apache.org/dyn/closer.cgi/atlas/2.3.0/apache-atlas-2.3.0-sources.tar.gz) | [signature](https://www.apache.org/dist/atlas/2.3.0/apache-atlas-2.3.0-sources.tar.gz.asc) | [SHA512](https://www.apache.org/dist/atlas/2.3.0/apache-atlas-2.3.0-sources.tar.gz.sha512) |
+| 2.2.0 | 2021-08-17 | [source](https://archive.apache.org/dist/atlas/2.2.0/apache-atlas-2.2.0-sources.tar.gz) | [signature](https://archive.apache.org/dist/atlas/2.2.0/apache-atlas-2.2.0-sources.tar.gz.asc) | [SHA512](https://archive.apache.org/dist/atlas/2.2.0/apache-atlas-2.2.0-sources.tar.gz.sha512) |
+| 2.1.0 | 2020-07-15 | [source](https://archive.apache.org/dist/atlas/2.1.0/apache-atlas-2.1.0-sources.tar.gz) | [signature](https://archive.apache.org/dist/atlas/2.1.0/apache-atlas-2.1.0-sources.tar.gz.asc) | [SHA512](https://archive.apache.org/dist/atlas/2.1.0/apache-atlas-2.1.0-sources.tar.gz.sha512) |
+| 0.8.4 | 2019-06-21 | [source](https://archive.apache.org/dist/atlas/0.8.4/apache-atlas-0.8.4-sources.tar.gz) | [signature](https://archive.apache.org/dist/atlas/0.8.4/apache-atlas-0.8.4-sources.tar.gz.asc) | [SHA512](https://archive.apache.org/dist/atlas/0.8.4/apache-atlas-0.8.4-sources.tar.gz.sha512) |
+| 1.2.0 | 2019-06-07 | [source](https://archive.apache.org/dist/atlas/1.2.0/apache-atlas-1.2.0-sources.tar.gz) | [signature](https://archive.apache.org/dist/atlas/1.2.0/apache-atlas-1.2.0-sources.tar.gz.asc) | [SHA512](https://archive.apache.org/dist/atlas/1.2.0/apache-atlas-1.2.0-sources.tar.gz.sha512) |
 | 2.0.0 | 2019-05-13 | [source](https://archive.apache.org/dist/atlas/2.0.0/apache-atlas-2.0.0-sources.tar.gz) | [signature](https://archive.apache.org/dist/atlas/2.0.0/apache-atlas-2.0.0-sources.tar.gz.asc) | [SHA512](https://archive.apache.org/dist/atlas/2.0.0/apache-atlas-2.0.0-sources.tar.gz.sha512) |
 | 0.8.3 | 2018-10-31 | [source](https://archive.apache.org/dist/atlas/0.8.3/apache-atlas-0.8.3-sources.tar.gz) | [signature](https://archive.apache.org/dist/atlas/0.8.3/apache-atlas-0.8.3-sources.tar.gz.asc) | [SHA512](https://archive.apache.org/dist/atlas/0.8.3/apache-atlas-0.8.3-sources.tar.gz.sha512) |
 | 1.1.0 | 2018-09-14 | [source](https://archive.apache.org/dist/atlas/1.1.0/apache-atlas-1.1.0-sources.tar.gz) | [signature](https://archive.apache.org/dist/atlas/1.1.0/apache-atlas-1.1.0-sources.tar.gz.asc) | [SHA512](https://archive.apache.org/dist/atlas/1.1.0/apache-atlas-1.1.0-sources.tar.gz.sha512) |
@@ -66,6 +67,22 @@ pgp downloaded_file.asc`}
 </SyntaxHighlighter>
 
 ## Release Notes
+**[Atlas 2.3.0](../2.3.0/index) (Released on 2022/12/06)**
+   * (new) Relationship search: API and UI to search relationships based on type and properties
+   * Resiliency: improvements in handling of index update failures
+   * Glossary: performance improvements in dealing with large glossaries and bulk creation of glossary terms
+   * Observability: UI improvements to view metrics & stats, persistence of metrics to enable historic data
+   * Lineage: performance improvements in lineage API and UI
+   * Notification: updated notifications to include hook version and message source
+   * Hive integration: multiple fixes and improvements in Hive hook and import-hive utility
+   * Impala integration: performance improvements
+   * Audits: support for authentication enabled Cassandra as audit store
+   * Python: released Apache Atlas Python client 0.0.12
+   * Dependencies Upgrade: JanusGraph, Elasticsearch, Kafka, Storm, TinkerPop, Gson, Spring Framework, Log4j
+   * UI: fixes and improvements in multiple areas like search, lineage, business metadata
+   * Docker image: improvements to Docker support
+   * [List of JIRAs resolved in Apache Atlas 2.3.0 release](https://issues.apache.org/jira/issues/?jql=project%20%3D%20ATLAS%20AND%20status%20%3D%20Resolved%20AND%20fixVersion%20%3D%202.3.0%20ORDER%20BY%20key%20DESC)
+
 **[Atlas 2.2.0](../2.2.0/index) (Released on 2021/08/17)**
    * (new) Deferred Action: classification propagation will be handled as a background task (AtlasTask)
    * Re-indexing: added Re-indexing as part of JAVA_PATCH
@@ -104,9 +121,9 @@ pgp downloaded_file.asc`}
    * Entity Purge: added REST APIs to purge deleted entities
    * Search: ability to find entities by more than one classification
    * Performance: improvements in lineage retrieval and classification-propagation
-   * Notification: ability to process notificaitons from multiple Kafka topics
+   * Notification: ability to process notifications from multiple Kafka topics
    * Hive Hook: tracks process-executions via hive_process_execution entities
-   * Hive Hook: catures DDL operations via hive_db_ddl and hive_table_ddl entities
+   * Hive Hook: captures DDL operations via hive_db_ddl and hive_table_ddl entities
    * Notification: introduced shell entities to record references to non-existing entities in notifications
    * Spark: added model to capture Spark entities, processes and relationships
    * AWS S3: introduced updated model to capture AWS S3 entities and relationships
@@ -133,7 +150,7 @@ pgp downloaded_file.asc`}
       * Notification processing to support batch-commits
       * New option in notification processing to ignore potentially incorrect hive_column_lineage
       * Updated Hive hook to avoid duplicate column-lineage entities; also updated Atlas server to skip duplicate column-lineage entities
-      * Improved batch processing in notificaiton handler to avoid processing of an entity multiple times
+      * Improved batch processing in notification handler to avoid processing of an entity multiple times
       * Add option to ignore/prune metadata for temporary/staging hive tables
       * Avoid unnecessary lookup when creating new relationships
    * UI Improvements:
@@ -159,7 +176,7 @@ pgp downloaded_file.asc`}
    * Support for JanusGraph graph database
    * New DSL implementation, using ANTLR instead of Scala
    * Removal of older type system implementation in atlas-typesystem library
-   * Metadata security - fine grained authorization
+   * Metadata security - fine-grained authorization
    * Notification enhancements to support V2 style data structures
    * Jackson library update from 1.9.13 to 2.9.2
    * Classification propagation via entity relationships

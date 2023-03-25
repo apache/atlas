@@ -33,13 +33,18 @@ define(['require',
             ui: {
                 title: '[data-id="title"]',
                 description: '[data-id="description"]',
-                backButton: '[data-id="backButton"]'
+                backButton: '[data-id="backButton"]',
+                textType: '[name="textType"]'
             },
             /** ui events hash */
             events: function() {
                 var events = {};
                 events["click " + this.ui.backButton] = function() {
                     Utils.backButtonClick();
+                };
+                events["change " + this.ui.textType] = function(e) {
+                    this.isTextTypeChecked = !this.isTextTypeChecked;
+                    this.renderDetail();
                 };
                 return events;
             },
@@ -49,6 +54,7 @@ define(['require',
              */
             initialize: function(options) {
                 _.extend(this, _.pick(options, 'model'));
+                this.isTextTypeChecked = false;
             },
             onRender: function() {
                 this.renderDetail();
@@ -56,7 +62,7 @@ define(['require',
             renderDetail: function() {
                 this.ui.title.html('<span>' + this.model.get('name') + '</span>');
                 if (this.model.get('description')) {
-                    this.ui.description.text(this.model.get('description'));
+                    this.isTextTypeChecked ? this.ui.description.text(this.model.get('description')) : this.ui.description.html(this.model.get('description'));
                 }
             }
         });

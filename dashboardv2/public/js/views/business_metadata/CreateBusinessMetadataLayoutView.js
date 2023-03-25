@@ -223,7 +223,7 @@ define(['require',
                 };
                 this.loaderStatus(true);
                 var name = this.ui.name.val(),
-                    description = this.ui.description.val();
+                    description = Utils.sanitizeHtmlContent({ data: this.ui.description.val() });
                 var attributeObj = this.collection.toJSON();
                 if (this.collection.length === 1 && this.collection.first().get("name") === "") {
                     attributeObj = [];
@@ -240,7 +240,7 @@ define(['require',
                         "version": 1,
                         "typeVersion": "1.1",
                         "name": name.trim(),
-                        "description": description.trim(),
+                        "description": description ? description.trim() : "",
                         "attributeDefs": attributeObj
                     }]
                 };

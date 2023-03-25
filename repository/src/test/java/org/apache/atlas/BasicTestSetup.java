@@ -28,9 +28,11 @@ import org.apache.atlas.model.instance.*;
 import org.apache.atlas.model.typedef.*;
 import org.apache.atlas.repository.AtlasTestBase;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
+import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.utils.TestLoadModelUtils;
 import org.apache.commons.lang.StringUtils;
 
 import javax.inject.Inject;
@@ -78,6 +80,8 @@ public abstract class BasicTestSetup extends AtlasTestBase {
     @Inject
     protected AtlasEntityStore entityStore;
     @Inject
+    protected AtlasRelationshipStore relationshipStore;
+    @Inject
     protected GlossaryService glossaryService;
 
     private boolean baseLoaded = false;
@@ -92,6 +96,26 @@ public abstract class BasicTestSetup extends AtlasTestBase {
         loadHiveDataset();
         loadEmployeeDataset();
         assignGlossary();
+    }
+
+    protected void setupRelationshipTestData() {
+        if(!baseLoaded) {
+            loadBaseModels();
+        }
+
+        try {
+            TestLoadModelUtils.loadModelFromResourcesJson("relationship_search_def.json", typeDefStore, typeRegistry);
+        } catch (IOException e) {
+            fail("Failed to load relationship_search_def.json");
+        } catch (AtlasBaseException e) {
+           fail("Failed to load relationship_search_def.json to atlas model");
+        }
+
+        try {
+            createTestDataForRelationship();
+        } catch (AtlasBaseException e) {
+            fail("Failed to load data for relationship_search_def.json");
+        }
     }
 
     private void loadBaseModels() {
@@ -165,7 +189,11 @@ public abstract class BasicTestSetup extends AtlasTestBase {
                 .of(column("time_id", "int", "time id"),
                         column("product_id", "int", "product id"),
                         column("customer_id", "int", "customer id", PII_CLASSIFICATION),
-                        column("sales", "double", "product id", METRIC_CLASSIFICATION));
+                        column("sales", "double", "product id", METRIC_CLASSIFICATION),
+                        column("test", "int", "test 1"),
+                        column("test_limit", "int", "test limit 1")
+                );
+
         entities.addAll(salesFactColumns);
 
         AtlasEntity salesFact = table("sales_fact", "sales fact table", salesDB, sd, "Joe", "Managed", salesFactColumns, FACT_CLASSIFICATION);
@@ -176,7 +204,10 @@ public abstract class BasicTestSetup extends AtlasTestBase {
                     .of(column("time_id", "int", "time id"),
                         column("app_id", "int", "app id"),
                         column("machine_id", "int", "machine id"),
-                        column("log", "string", "log data", LOGDATA_CLASSIFICATION));
+                        column("log", "string", "log data", LOGDATA_CLASSIFICATION),
+                        column("test", "int", "test 2"),
+                        column("test_limit", "int", "test limit 2")
+                    );
         entities.addAll(logFactColumns);
 
         List<AtlasEntity> timeDimColumns = ImmutableList
@@ -493,13 +524,14 @@ public abstract class BasicTestSetup extends AtlasTestBase {
     public SearchParameters.FilterCriteria getSingleFilterCondition(String attName, SearchParameters.Operator op, String attrValue) {
         SearchParameters.FilterCriteria filterCriteria = new SearchParameters.FilterCriteria();
         filterCriteria.setCondition(SearchParameters.FilterCriteria.Condition.AND);
+
         List<SearchParameters.FilterCriteria> criteria = new ArrayList<>();
         SearchParameters.FilterCriteria f1 = new SearchParameters.FilterCriteria();
         f1.setAttributeName(attName);
         f1.setOperator(op);
-        String time = String.valueOf(System.currentTimeMillis());
         f1.setAttributeValue(attrValue);
         criteria.add(f1);
+
         filterCriteria.setCriterion(criteria);
         return filterCriteria;
     }
@@ -567,4 +599,164 @@ public abstract class BasicTestSetup extends AtlasTestBase {
 
     }
 
+    public static final String USER_TYPE           = "user";
+    public static final String POST_TYPE           = "post";
+    public static final String HIGHLIGHT_TYPE      = "highlight";
+    public static final String USER_POST_TYPE      = "user_post";
+    public static final String HIGHLIGHT_POST_TYPE = "highlight_post";
+
+    private void createTestDataForRelationship() throws AtlasBaseException {
+
+        List<AtlasEntity> entities = new ArrayList<>();
+
+        //users
+        AtlasEntity ajayUser    = createUser("Ajay Mishra", new Date(1985,10,9), "Male", "Content Writer");
+        entities.add(ajayUser);
+        AtlasEntity maryUser    = createUser("Mary Williams", new Date(1998,2,19), "Female", "Architecture");
+        entities.add(maryUser);
+        AtlasEntity divyaUser   = createUser("Divya Deshmukh", new Date(1980,12,10), "Female", "Designer");
+        entities.add(divyaUser);
+
+        //posts
+        AtlasEntity indAugPost  = createPost("ind-post@Ajay", "Image", new Date(2021, 8, 15), "Independence Day Celebration");
+        entities.add(indAugPost);
+        AtlasEntity onamAugPost = createPost("onam-post@Ajay", "Image", new Date(2021, 8, 8), "Onam with Family");
+        entities.add(onamAugPost);
+        AtlasEntity diwaliPost  = createPost("diwali-post@Ajay", "Reel", new Date(2020, 11, 14), "Diwali get together");
+        entities.add(diwaliPost);
+        AtlasEntity tripPost    = createPost("trip-post@Ajay", "Video", new Date(2021, 3, 10), "Kashmir a serene");
+        entities.add(tripPost);
+        AtlasEntity officeParty = createPost("officeparty-post@Ajay", "Video", new Date(2021, 4, 4), "office party");
+        entities.add(officeParty);
+
+        AtlasEntity indPost     = createPost("ind-post@Mary", "Video", new Date(2021, 8, 15), "Independence Day Celebration");
+        entities.add(indPost);
+        AtlasEntity christPost  = createPost("christmas-post@Mary", "Image", new Date(2020, 12, 25), "Christmas Day");
+        entities.add(christPost);
+        AtlasEntity sraPost     = createPost("elevationSRA@Mary", "Image", new Date(2020, 12, 25), "Elevation");
+        entities.add(sraPost);
+
+        AtlasEntity ganeshPost  = createPost("ganeshchaturthi-post@Divya", "Reel", new Date(2020, 12, 25), "Ganesh chaturthi");
+        entities.add(ganeshPost);
+
+        //highlights
+        AtlasEntity year2021    = createHighlight("year2021@Ajay", "Journey of 2021", new Date(2021, 9, 25));
+        entities.add(year2021);
+        AtlasEntity festival    = createHighlight("festives@Ajay", "Festive Celebration", new Date(2021, 9, 25));
+        entities.add(festival);
+
+        AtlasEntity projectSRA  = createHighlight("projectSRA@Mary", "Project SRA", new Date(2021, 9, 25));
+        entities.add(projectSRA);
+
+
+        // create entity types
+        EntityMutationResponse response = entityStore.createOrUpdate(new AtlasEntityStream(entities), false);
+        List<AtlasEntityHeader> headers = response.getCreatedEntities();
+        setGuidInHeaders(entities, headers);
+
+        // create relationship types
+        createUserPostRelationship(ajayUser, indAugPost,  "create");
+        createUserPostRelationship(ajayUser, onamAugPost, "create");
+        createUserPostRelationship(ajayUser, diwaliPost,  "create");
+        createUserPostRelationship(ajayUser, tripPost,    "create");
+        createUserPostRelationship(ajayUser, officeParty, "create");
+        createUserPostRelationship(ajayUser, christPost,  "like");
+        createUserPostRelationship(ajayUser, ganeshPost,  "wow");
+
+        createUserPostRelationship(maryUser, indPost,     "create");
+        createUserPostRelationship(maryUser, christPost,  "create");
+        createUserPostRelationship(maryUser, sraPost,     "create");
+        createUserPostRelationship(maryUser, onamAugPost, "wow");
+
+        createUserPostRelationship(divyaUser, ganeshPost, "create");
+        createUserPostRelationship(divyaUser, indAugPost, "like");
+        createUserPostRelationship(divyaUser, indPost,    "like");
+        createUserPostRelationship(divyaUser, onamAugPost,"love");
+        createUserPostRelationship(divyaUser, diwaliPost, "love");
+        createUserPostRelationship(divyaUser, christPost, "like");
+
+        createHighlightPostRelationship(year2021, indAugPost);
+        createHighlightPostRelationship(year2021, onamAugPost);
+        createHighlightPostRelationship(year2021, tripPost);
+        createHighlightPostRelationship(year2021, officeParty);
+
+        createHighlightPostRelationship(festival, indAugPost);
+        createHighlightPostRelationship(festival, onamAugPost);
+        createHighlightPostRelationship(festival, diwaliPost);
+
+        createHighlightPostRelationship(projectSRA, sraPost);
+    }
+
+    private AtlasEntity createUser(String id, Date birthDate, String gender, String bio) {
+        AtlasEntity user = new AtlasEntity(USER_TYPE);
+        user.setAttribute("id", id);
+        user.setAttribute("birthDate", birthDate);
+        user.setAttribute("gender", gender);
+        user.setAttribute("bio", bio);
+
+        return user;
+    }
+
+    private AtlasEntity createPost(String id, String type, Date postDate, String caption) {
+        AtlasEntity post = new AtlasEntity(POST_TYPE);
+        post.setAttribute("type", type);
+        post.setAttribute("post_date", postDate);
+        post.setAttribute("caption", caption);
+        post.setAttribute("id", id);
+
+        return post;
+    }
+
+    private AtlasEntity createHighlight(String id, String title, Date createdOn) {
+        AtlasEntity highlight = new AtlasEntity(HIGHLIGHT_TYPE);
+        highlight.setAttribute("created_on", createdOn);
+        highlight.setAttribute("title", title);
+        highlight.setAttribute("id", id);
+
+        return highlight;
+    }
+
+    private void createUserPostRelationship(AtlasEntity user, AtlasEntity post, String reaction) {
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put("user_name", user.getAttribute("id"));
+        attributes.put("post_name", post.getAttribute("id"));
+        attributes.put("reaction", reaction);
+        try {
+            AtlasRelationship relationship = new AtlasRelationship(USER_POST_TYPE, getAtlasObjectId(user), getAtlasObjectId(post), attributes);
+            relationshipStore.create(relationship);
+        } catch (AtlasBaseException e) {
+            fail("Failed to create Relationship between , " + user.getTypeName() + ", " + post.getTypeName());
+        }
+    }
+
+    private void createHighlightPostRelationship(AtlasEntity highlight, AtlasEntity post) {
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put("highlight_name", highlight.getAttribute("id"));
+        attributes.put("post_name", post.getAttribute("id"));
+        try {
+            AtlasRelationship relationship = new AtlasRelationship(HIGHLIGHT_POST_TYPE, getAtlasObjectId(highlight), getAtlasObjectId(post), attributes);
+            relationshipStore.create(relationship);
+        } catch (AtlasBaseException e) {
+            fail("Failed to create Relationship between , " + highlight.getTypeName() + ", " + post.getTypeName());
+        }
+    }
+
+    private List<AtlasEntity> setGuidInHeaders(List<AtlasEntity> entities, List<AtlasEntityHeader> createdEntities) {
+        List<String> assignedGuids = new ArrayList<>();
+
+        for (AtlasEntityHeader header : createdEntities) {
+            String id = header.getAttribute("id").toString();
+
+            for (AtlasEntity entity : entities) {
+                if (id.equalsIgnoreCase(entity.getAttribute("id").toString())) {
+                    String guid = header.getGuid();
+                    entity.setGuid(guid);
+                    assignedGuids.add(guid);
+
+                    break;
+                }
+            }
+        }
+        return entities;
+    }
 }

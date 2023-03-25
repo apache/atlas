@@ -20,6 +20,7 @@ package org.apache.atlas.kafka;
 
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.model.notification.HookNotification;
+import org.apache.atlas.model.notification.MessageSource;
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.v1.model.instance.Struct;
 import org.apache.atlas.notification.IncompatibleVersionException;
@@ -60,6 +61,9 @@ public class KafkaConsumerTest {
 
     @Mock
     private KafkaConsumer kafkaConsumer;
+
+    @Mock
+    private MessageSource messageSource;
 
     @BeforeMethod
     public void setup() {
@@ -169,5 +173,29 @@ public class KafkaConsumerTest {
         assertEquals(deserializedEntity.getTypeName(), entity.getTypeName());
         assertEquals(deserializedEntity.getTraits(), entity.getTraits());
         assertEquals(deserializedEntity.getTrait(TRAIT_NAME), entity.getTrait(TRAIT_NAME));
+    }
+
+    @Test
+    public void checkCrossCombatMessageVersionTest() throws Exception {
+        Referenceable                        entity  = getEntity(TRAIT_NAME);
+        EntityUpdateRequest                  message = new EntityUpdateRequest("user1", entity);
+        when(messageSource.getVersion()).thenReturn("9.9.9");
+        String                               json    = AtlasType.toV1Json(new AtlasNotificationMessage<>(new MessageVersion("2.0.0"), message,"","",false,messageSource));
+        TopicPartition                       tp      = new TopicPartition(ATLAS_HOOK_TOPIC,0);
+        List<ConsumerRecord<String, String>> klist   = Collections.singletonList(new ConsumerRecord<>(ATLAS_HOOK_TOPIC, 0, 0L, "mykey", json));
+        Map                                  mp      = Collections.singletonMap(tp,klist);
+        ConsumerRecords                      records = new ConsumerRecords(mp);
+
+        kafkaConsumer.assign(Collections.singletonList(tp));
+
+        when(kafkaConsumer.poll(100L)).thenReturn(records);
+
+        AtlasKafkaConsumer consumer =new AtlasKafkaConsumer(NotificationType.HOOK, kafkaConsumer ,false, 100L);
+
+        try {
+            List<AtlasKafkaMessage<HookNotification>> messageList = consumer.receive();
+        } catch (IncompatibleVersionException e) {
+            e.printStackTrace();
+        }
     }
 }

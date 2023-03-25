@@ -13,7 +13,7 @@ import SyntaxHighlighter from 'react-syntax-highlighter';
 # Business Metadata
 ## Overview
 Atlas typesystem allows users to define a model and create entities for the metadata objects they want to manage.
-Typically the model captures technical attributes - like name, description, create time, number of replicas, etc; and
+Typically, the model captures technical attributes - like name, description, create time, number of replicas, etc.; and
  metadata objects are created and updated by processes that monitor the real objects. It is often necessary to
 augment technical attributes with additional attributes to capture business details that can help organize, search and
 manage metadata entities. For example, a steward from marketing department can define set of attributes for a campaign,

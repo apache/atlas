@@ -84,7 +84,8 @@ define(['require',
             },
             bindEvents: function() {},
             onRender: function() {
-                var that = this;
+                var that = this,
+                    modalOkBtn;
                 this.$('.fontLoader').show();
                 if (this.create) {
                     this.tagCollectionList();
@@ -94,6 +95,19 @@ define(['require',
                 if (!('placeholder' in HTMLInputElement.prototype)) {
                     this.ui.createTagForm.find('input,textarea').placeholder();
                 }
+                modalOkBtn = function() {
+                    var editorContent = $(that.ui.description).trumbowyg('html'),
+                        okBtn = $('.modal').find('button.ok');
+                    okBtn.removeAttr("disabled");
+                    if (editorContent === "") {
+                        okBtn.prop('disabled', true);
+                    }
+                    if (that.description === editorContent) {
+                        okBtn.prop('disabled', true);
+                    }
+                };
+                Utils.addCustomTextEditor({ selector: this.ui.description, callback: modalOkBtn, small: false });
+                $(this.ui.description).trumbowyg('html', Utils.sanitizeHtmlContent({ data: this.description }));
                 that.hideLoader();
             },
             tagCollectionList: function() {

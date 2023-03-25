@@ -38,7 +38,8 @@ define(['require',
             /** Layout sub regions */
             regions: {
                 RSaveSearchBasic: "[data-id='r_saveSearchBasic']",
-                RSaveSearchAdvance: "[data-id='r_saveSearchAdvance']"
+                RSaveSearchAdvance: "[data-id='r_saveSearchAdvance']",
+                RRelationSearch: "[data-id='r_relationshipSearch']"
             },
 
             /** ui selector cache */
@@ -53,7 +54,8 @@ define(['require',
                 refreshBtn: '[data-id="refreshBtn"]',
                 advancedInfoBtn: '[data-id="advancedInfo"]',
                 typeAttrFilter: '[data-id="typeAttrFilter"]',
-                tagAttrFilter: '[data-id="tagAttrFilter"]'
+                tagAttrFilter: '[data-id="tagAttrFilter"]',
+                tablist: '[data-id="tab-searchlist"] li'
             },
 
             /** ui events hash */
@@ -77,6 +79,20 @@ define(['require',
                 events["change " + this.ui.termLov] = 'checkForButtonVisiblity';
                 events["click " + this.ui.refreshBtn] = 'onRefreshButton';
                 events["click " + this.ui.advancedInfoBtn] = 'advancedInfo';
+                events["click " + this.ui.tablist] = function(e) {
+                    var tabValue = $(e.currentTarget).attr('role'),
+                        redirectionUrl = '#!/search';
+                    this.isRelationSearch = (tabValue === "relationship-search") ? true : false;
+                    if (this.isRelationSearch) {
+                        redirectionUrl = '#!/relationship';
+                    }
+                    Utils.setUrl({
+                        url: redirectionUrl,
+                        mergeBrowserUrl: false,
+                        trigger: true,
+                        updateTabState: true
+                    });
+                };
                 events["click " + this.ui.typeAttrFilter] = function() {
                     this.openAttrFilter('type');
                 };
@@ -137,6 +153,8 @@ define(['require',
                 this.tagEntityCheck = false;
                 this.typeEntityCheck = false;
                 this.bindEvents();
+                this.isRelationSearch = false;
+                this.renderRelationshipSearchView();
             },
             renderSaveSearch: function() {
                 var that = this;
@@ -207,6 +225,12 @@ define(['require',
                     fetchSaveSearchCollection();
                 });
             },
+            renderRelationshipSearchView: function() {
+                var that = this;
+                require(['views/search/RelationSearchLayoutView'], function(RelationSearchLayoutView) {
+                    that.RRelationSearch.show(new RelationSearchLayoutView(that.options));
+                });
+            },
             bindEvents: function(param) {
                 var that = this;
                 this.listenTo(this.typeHeaders, "reset", function(value) {
@@ -231,6 +255,13 @@ define(['require',
                 if (this.setInitialEntityVal) {
                     this.setInitialEntityVal = false;
                 }
+            },
+            disableRefreshButton: function() {
+                var that = this;
+                this.ui.refreshBtn.attr('disabled', true);
+                setTimeout(function() {
+                    that.ui.refreshBtn.attr('disabled', false);
+                }, 1000);
             },
             makeFilterButtonActive: function(filtertypeParam) {
                 var filtertype = ['entityFilters', 'tagFilters'],
@@ -360,6 +391,14 @@ define(['require',
             onRender: function() {
                 // array of tags which is coming from url
                 this.initializeValues();
+                this.updateTabState();
+            },
+            updateTabState: function() {
+                if ((Utils.getUrlState.isRelationTab() || Utils.getUrlState.isRelationshipDetailPage()) && !this.isRelationSearch) {
+                    var tabActive = (Utils.getUrlState.isRelationTab() || Utils.getUrlState.isRelationshipDetailPage()) ? "relationship-search" : "basic-search";
+                    this.$('.nav.nav-tabs').find('[role="' + tabActive + '"]').addClass('active').siblings().removeClass('active');
+                    this.$('.tab-content').find('[role="' + tabActive + '"]').addClass('active').siblings().removeClass('active');
+                }
             },
             updateQueryObject: function(param) {
                 if (param && param.searchType) {
@@ -385,6 +424,7 @@ define(['require',
                     }), param);
             },
             onRefreshButton: function() {
+                this.disableRefreshButton();
                 var that = this,
                     apiCount = 2,
                     updateSearchList = function() {
@@ -746,6 +786,7 @@ define(['require',
             },
             findSearchResult: function() {
                 this.triggerSearch(this.ui.searchInput.val());
+                Globals.fromRelationshipSearch = false;
             },
             //This below function returns the searched Term Guid.
             getSearchedTermGuid: function() {
@@ -788,9 +829,7 @@ define(['require',
                             params['entityFilters'] = entityFilterObj[this.value.type]
                         }
                         var columnList = this.value.type && this.searchTableColumns ? this.searchTableColumns[this.value.type] : null;
-                        if (columnList) {
-                            params['attributes'] = columnList.join(',');
-                        }
+                        params['attributes'] = columnList ? columnList.join(',') : null;
                         params['includeDE'] = _.isUndefinedNull(this.value.includeDE) ? false : this.value.includeDE;
                         params['excludeST'] = _.isUndefinedNull(this.value.excludeST) ? false : this.value.excludeST;
                         params['excludeSC'] = _.isUndefinedNull(this.value.excludeSC) ? false : this.value.excludeSC;

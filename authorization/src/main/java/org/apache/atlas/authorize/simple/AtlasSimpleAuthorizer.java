@@ -64,6 +64,7 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
 
     private AtlasSimpleAuthzPolicy authzPolicy;
 
+    private final static String REGEX_MATCHALL = ".*";
 
     public AtlasSimpleAuthorizer() {
     }
@@ -466,7 +467,7 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
         if (value == null) {
             ret = true;
         } else {
-            ret = StringUtils.equalsIgnoreCase(value, pattern) || value.matches(pattern);
+            ret = pattern.equals(REGEX_MATCHALL) || StringUtils.equalsIgnoreCase(value, pattern) || value.matches(pattern);
         }
 
         return ret;

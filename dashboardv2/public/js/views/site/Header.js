@@ -110,7 +110,7 @@ define(['require',
         },
         setSearchBoxWidth: function(options) {
             var atlasHeaderWidth = this.$el.find(".atlas-header").width(),
-                minusWidth = (Utils.getUrlState.isDetailPage() || Utils.getUrlState.isBSDetail()) ? 360 : 210;
+                minusWidth = (Utils.getUrlState.isDetailPage() || Utils.getUrlState.isRelationshipDetailPage() || Utils.getUrlState.isBSDetail()) ? 360 : 210;
             if (options && options.updateWidth) {
                 atlasHeaderWidth = options.updateWidth(atlasHeaderWidth);
             }

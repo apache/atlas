@@ -18,7 +18,6 @@
 package org.apache.atlas.glossary;
 
 import org.apache.atlas.AtlasErrorCode;
-import org.apache.atlas.RequestContext;
 import org.apache.atlas.SortOrder;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.bulkimport.BulkImportResponse;
@@ -30,18 +29,19 @@ import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
 import org.apache.atlas.model.glossary.relations.AtlasRelatedCategoryHeader;
 import org.apache.atlas.model.glossary.relations.AtlasRelatedTermHeader;
 import org.apache.atlas.model.glossary.relations.AtlasTermCategorizationHeader;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.ogm.DataAccess;
+import org.apache.atlas.repository.ogm.glossary.AtlasGlossaryDTO;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityChangeNotifier;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.FileUtils;
 import org.apache.atlas.utils.AtlasJson;
-import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -77,6 +77,7 @@ public class GlossaryService {
     private static final String  GLOSSARY_QUALIFIED_NAME_PROPERTY = "AtlasGlossary." + QUALIFIED_NAME_ATTR;
     private static final String  GLOSSARY_CATEGORY_NAME_PROPERTY  = "AtlasGlossaryCategory.name";
     private static final String  GLOSSARY_TERM_NAME_PROPERTY      = ATLAS_GLOSSARY_TERM + "." + NAME_ATTR;
+    private static final String  GLOSSARY_TERM_QUALIFIED_NAME_PROPERTY = ATLAS_GLOSSARY_TERM + "." + QUALIFIED_NAME_ATTR;
     private static final String  TERM_UNIQUE_QUALIFIED_NAME_PROPERTY = ATLAS_GLOSSARY_TERM + ".__u_" + QUALIFIED_NAME_ATTR;
     private static final String  GLOSSARY_TERM_ANCHOR_EDGE_LABEL  = "r:AtlasGlossaryTermAnchor";
 
@@ -85,6 +86,7 @@ public class GlossaryService {
     private final GlossaryCategoryUtils     glossaryCategoryUtils;
     private final AtlasTypeRegistry         atlasTypeRegistry;
     private final AtlasEntityChangeNotifier entityChangeNotifier;
+    private final AtlasGlossaryDTO          glossaryDTO;
 
     private static final char[] invalidNameChars = { '@', '.' };
 
@@ -93,12 +95,13 @@ public class GlossaryService {
 
     @Inject
     public GlossaryService(DataAccess dataAccess, final AtlasRelationshipStore relationshipStore,
-                           final AtlasTypeRegistry typeRegistry, AtlasEntityChangeNotifier entityChangeNotifier) {
+                           final AtlasTypeRegistry typeRegistry, AtlasEntityChangeNotifier entityChangeNotifier, final AtlasGlossaryDTO glossaryDTO) {
         this.dataAccess           = dataAccess;
         atlasTypeRegistry         = typeRegistry;
         glossaryTermUtils         = new GlossaryTermUtils(relationshipStore, typeRegistry, dataAccess);
         glossaryCategoryUtils     = new GlossaryCategoryUtils(relationshipStore, typeRegistry, dataAccess);
         this.entityChangeNotifier = entityChangeNotifier;
+        this.glossaryDTO          = glossaryDTO;
     }
 
     /**
@@ -116,19 +119,18 @@ public class GlossaryService {
             LOG.debug("==> GlossaryService.getGlossaries({}, {}, {})", limit, offset, sortOrder);
         }
 
-        List<String>     glossaryGuids    = AtlasGraphUtilsV2.findEntityGUIDsByType(GlossaryUtils.ATLAS_GLOSSARY_TYPENAME, sortOrder);
+        List<String> glossaryGuids = AtlasGraphUtilsV2.findEntityGUIDsByType(GlossaryUtils.ATLAS_GLOSSARY_TYPENAME, sortOrder);
         PaginationHelper paginationHelper = new PaginationHelper<>(glossaryGuids, offset, limit);
 
         List<AtlasGlossary> ret;
-        List<String>        guidsToLoad = paginationHelper.getPaginatedList();
-        if (CollectionUtils.isNotEmpty(guidsToLoad)) {
-            ret = guidsToLoad.stream().map(GlossaryUtils::getGlossarySkeleton).collect(Collectors.toList());
-            Iterable<AtlasGlossary> glossaries = dataAccess.load(ret);
-            ret.clear();
+        List<String> guidsToLoad = paginationHelper.getPaginatedList();
+        AtlasEntity.AtlasEntitiesWithExtInfo glossaryEntities;
 
-            // Set the displayText for all relations
-            for (AtlasGlossary glossary : glossaries) {
-                setInfoForRelations(glossary);
+        if (CollectionUtils.isNotEmpty(guidsToLoad)) {
+            glossaryEntities = dataAccess.getAtlasEntityStore().getByIds(guidsToLoad, true, false);
+            ret = new ArrayList<>();
+            for (AtlasEntity glossaryEntity : glossaryEntities.getEntities()) {
+                AtlasGlossary glossary = glossaryDTO.from(glossaryEntity);
                 ret.add(glossary);
             }
         } else {
@@ -1071,6 +1073,7 @@ public class GlossaryService {
         if (Objects.nonNull(glossaryTerm.getRelatedTerms())) {
             for (Map.Entry<AtlasGlossaryTerm.Relation, Set<AtlasRelatedTermHeader>> entry : glossaryTerm.getRelatedTerms().entrySet()) {
                 setDisplayNameForTerms(entry.getValue());
+                setQualifiedNameForTerms(entry.getValue());
             }
         }
     }
@@ -1121,9 +1124,20 @@ public class GlossaryService {
             String      termGuid        = termHeader.getTermGuid();
             AtlasVertex termVertex      = AtlasGraphUtilsV2.findByGuid(termGuid);
             String      termDisplayText = termVertex.getProperty(GLOSSARY_TERM_NAME_PROPERTY, String.class);
-
             if (StringUtils.isNotEmpty(termDisplayText)) {
                 termHeader.setDisplayText(termDisplayText);
+            }
+        }
+    }
+
+    private void setQualifiedNameForTerms(final Collection<AtlasRelatedTermHeader> termHeaders) throws AtlasBaseException {
+
+        for (AtlasRelatedTermHeader termHeader : termHeaders) {
+            String      termGuid        = termHeader.getTermGuid();
+            AtlasVertex termVertex      = AtlasGraphUtilsV2.findByGuid(termGuid);
+            String      termQualifiedName = termVertex.getProperty(GLOSSARY_TERM_QUALIFIED_NAME_PROPERTY, String.class);
+            if (StringUtils.isNotEmpty(termQualifiedName)) {
+                termHeader.setQualifiedName(termQualifiedName);
             }
         }
     }

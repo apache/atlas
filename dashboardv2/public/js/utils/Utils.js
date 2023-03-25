@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 'moment', 'store', 'modules/Modal', 'DOMPurify', 'moment-timezone', 'pnotify.buttons', 'pnotify.confirm'], function(require, Globals, pnotify, Messages, Enums, moment, store, Modal, DOMPurify) {
+define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 'moment', 'store', 'modules/Modal', 'DOMPurify', 'moment-timezone', 'pnotify.buttons', 'pnotify.confirm', 'trumbowyg'], function(require, Globals, pnotify, Messages, Enums, moment, store, Modal, DOMPurify) {
     'use strict';
 
     var Utils = {};
@@ -343,6 +343,8 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
                     urlUpdate['administratorUrl'] = options.url;
                 } else if (Utils.getUrlState.isDebugMetricsTab(options.url)) {
                     urlUpdate['debugMetricsUrl'] = options.url;
+                } else if (Utils.getUrlState.isRelationTab(options.url)) {
+                    urlUpdate['relationUrl'] = options.url;
                 }
                 $.extend(Globals.saveApplicationState.tabState, urlUpdate);
             }
@@ -388,6 +390,12 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
                 matchString: "search"
             });
         },
+        isRelationTab: function(url) {
+            return this.checkTabUrl({
+                url: url,
+                matchString: "relationship"
+            });
+        },
         isAdministratorTab: function(url) {
             return this.checkTabUrl({
                 url: url,
@@ -410,6 +418,12 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
             return this.checkTabUrl({
                 url: url,
                 matchString: "detailPage"
+            });
+        },
+        isRelationshipDetailPage: function(url) {
+            return this.checkTabUrl({
+                url: url,
+                matchString: "relationshipDetailPage"
             });
         },
         getLastValue: function() {
@@ -571,6 +585,9 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
             } else if (queryParams.from == "bm") {
                 urlPath = "administratorUrl";
             }
+        }
+        if (Globals.fromRelationshipSearch) {
+            urlPath = 'relationUrl';
         }
         Utils.setUrl({
             url: Globals.saveApplicationState.tabState[urlPath],
@@ -952,14 +969,7 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
         }
         return dateValue;
     }
-    //-----------------------------------------DOMPurify--------------------------------------
-    //This below function expects string that needs to be sanitize against XSS attack.
-    Utils.sanitizeHtmlContent = function(string) {
-        if (string) {
-            return DOMPurify.sanitize(string, { FORBID_TAGS: ['img', 'script', 'iframe', 'embed', 'svg', 'meta'], ALLOWED_ATTR: ['target', 'href'] });
-        }
-    }
-    //----------------------------------------------------------------------------------------
+
     //------------------------------------------------idleTimeout-----------------------------
     $.fn.idleTimeout = function(userRuntimeConfig) {
 
@@ -1227,7 +1237,81 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
 
         });
     };
-
     //------------------------------------------------
+
+    //--------------------------------------Custom Text Editor-----------------------------------//
+    Utils.addCustomTextEditor = function(options) {
+        var selector = options.selector ? options.selector : ".customTextEditor",
+            defaultBtns = [
+                ['formatting'],
+                ['strong', 'em', 'underline', 'del'],
+                ['link'],
+                ['unorderedList', 'orderedList'],
+                ['viewHTML']
+            ],
+            smallTextEditorBtn = [
+                ['strong', 'em', 'underline', 'del'],
+                ['link'],
+                ['unorderedList', 'orderedList'],
+            ],
+            customBtnDefs = {
+                formatting: {
+                    dropdown: ['p', 'h1', 'h2', 'h3', 'h4'],
+                    ico: 'p'
+                }
+            },
+            $btnPane, $parent;
+        $(selector).trumbowyg({
+            btns: options.small ? smallTextEditorBtn : defaultBtns,
+            autogrow: true,
+            removeformatPasted: true,
+            urlProtocol: true,
+            defaultLinkTarget: '_blank',
+            btnsDef: options.small ? {} : customBtnDefs
+        }).on('tbwinit', function() {
+            $btnPane = $(this).parent().find('.trumbowyg-button-pane');
+            $parent = $(this).parent();
+            if (options.small) {
+                $parent.addClass('small-texteditor');
+            }
+            if (!options.initialHide) {
+                $btnPane.addClass('trumbowyg-button-pane-hidden');
+                $parent.css('border', '1px solid #e8e9ee');
+            }
+        }).on('tbwblur', function(e) {
+            $btnPane.addClass('trumbowyg-button-pane-hidden');
+            $parent.css('border', '1px solid #e8e9ee');
+        }).on('tbwfocus', function(e) {
+            $btnPane.removeClass('trumbowyg-button-pane-hidden');
+            $parent.css('border', '1px solid #8fa5b1');
+        }).on('tbwchange', function(e) {
+            options.callback ? options.callback(e) : null;
+        }).on('tbwmodalopen', function(e) {
+            $('input[name="title"], input[name="target"]').parent().css('display', 'none');
+        });
+    }
+
+    Utils.sanitizeHtmlContent = function(options) {
+        var editorContent, cleanedContent;
+        editorContent = options.selector ? $(options.selector).trumbowyg('html') : options.data;
+        if (options && editorContent) {
+            cleanedContent = DOMPurify.sanitize(editorContent, { FORBID_TAGS: ['img', 'script', 'iframe', 'embed', 'svg', 'meta'], ALLOWED_ATTR: ['target', 'href'] });
+        }
+        return cleanedContent;
+    }
+    //-----------------------------------------END---------------------//
+
+    Utils.updateInternalTabState = function() {
+        var tabActive = "",
+            paramObj = Utils.getUrlState.getQueryParams();
+        if (Utils.getUrlState.isSearchTab()) {
+            tabActive = "basic-search";
+        }
+        if (Utils.getUrlState.isDetailPage() && paramObj && paramObj.from === "relationshipSearch") {
+            tabActive = "relationship-search";
+        }
+        $('.nav.nav-tabs').find('[role="' + tabActive + '"]').addClass('active').siblings().removeClass('active');
+        $('.tab-content').find('[role="' + tabActive + '"]').addClass('active').siblings().removeClass('active');
+    }
     return Utils;
 });

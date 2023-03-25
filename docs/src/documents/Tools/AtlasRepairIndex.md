@@ -34,7 +34,7 @@ atlas-index-repair/repair_index.py
 This will result in vertex_index, edge_index and fulltext_index to be re-built completely. It is recommended that existing contents of these indexes be deleted before executing this restore.
 
 ###### Caveats
-Note that the full index repair is a time consuming process. Depending on the size of data the process may take days to complete. During the restore process the Basic Search functionality will not be available. Be sure to allocate sufficient time for this activity.
+Note that the full index repair is a time-consuming process. Depending on the size of data the process may take days to complete. During the restore process the Basic Search functionality will not be available. Be sure to allocate sufficient time for this activity.
 
 ##### Selective Restore
 
@@ -69,7 +69,19 @@ Example:
 </SyntaxHighlighter>
 
 For Atlas installation that uses kerberos as authentication mode,
-use: kinit -kt /etc/security/keytabs/atlas.service.keytab atlas/fqdn@DOMAIN
+use: 
+  - Add below to DEFAULT_JVM_OPTS in repair_index.py
+	<SyntaxHighlighter wrapLines={true} language="powershell" style={theme.dark}>
+	{`-Djavax.security.auth.useSubjectCredsOnly=false -Djava.security.auth.login.config=atlas_jaas.conf`}
+	</SyntaxHighlighter>
+	  
+  - kinit -kt /etc/security/keytabs/atlas.service.keytab atlas/fqdn@DOMAIN
+
+
+For Atlas installation that uses SSL, we need to make sure to add Solr cert or RootCA certificate, use below atlas-application properties:
+- keystore.file {path to keystore jks file}
+- truststore.file {path to truststore jks file}
+- cert.stores.credential.provider.path {path to jceks file}
 
 Example:
 <SyntaxHighlighter wrapLines={true} language="powershell" style={theme.dark}>

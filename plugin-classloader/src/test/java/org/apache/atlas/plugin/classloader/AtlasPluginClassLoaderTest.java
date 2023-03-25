@@ -34,7 +34,7 @@ public class AtlasPluginClassLoaderTest {
             //expected
         }
 
-        AtlasPluginClassLoader classLoader = new AtlasPluginClassLoader("../common/target");
+        AtlasPluginClassLoader classLoader = new AtlasPluginClassLoader(new String[]{ "../common/target" }, this.getClass());
 
         classLoader.activate();
 

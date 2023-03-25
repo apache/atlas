@@ -214,6 +214,7 @@ module.exports = function(grunt) {
             build: {
                 files: {
                     [distPath + '/css/style.css']: modulesPath + 'css/scss/style.scss',
+                    [distPath + '/css/migration-style.css']: modulesPath + 'css/scss/migration-style.scss',
                     [distPath + '/css/login.css']: modulesPath + 'css/scss/login.scss'
                 }
             }
@@ -292,7 +293,8 @@ module.exports = function(grunt) {
                     }
                 },
                 files: {
-                    [distPath + '/index.html']: [modulesPath + 'index.html.tpl']
+                    [distPath + '/index.html']: [modulesPath + 'index.html.tpl'],
+                    [distPath + '/migration-status.html']: [modulesPath + 'migration-status.html.tpl']
                 }
             }
         }

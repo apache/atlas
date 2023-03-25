@@ -69,6 +69,8 @@ public class CassandraBasedAuditRepository extends AbstractStorageBasedAuditRepo
   public static final String CASSANDRA_PORT_PROPERTY = "atlas.graph.storage.port";
   public static final String CASSANDRA_REPLICATION_FACTOR_PROPERTY = "atlas.EntityAuditRepository.replicationFactor";
   public static final String CASSANDRA_AUDIT_KEYSPACE_PROPERTY = "atlas.EntityAuditRepository.keyspace";
+  public static final String CASSANDRA_USERNAME_PROPERTY = "atlas.graph.storage.username";
+  public static final String CASSANDRA_PASSWORD_PROPERTY = "atlas.graph.storage.password";
 
   private static final String  AUDIT_TABLE_SCHEMA =
       "CREATE TABLE audit(entityid text, "
@@ -97,6 +99,8 @@ public class CassandraBasedAuditRepository extends AbstractStorageBasedAuditRepo
   private Session cassSession;
   private String clusterName;
   private int port;
+  private String username;
+  private String password;
 
   private Map<String, List<String>> auditExcludedAttributesCache = new HashMap<>();
   private PreparedStatement insertStatement;
@@ -211,6 +215,8 @@ public class CassandraBasedAuditRepository extends AbstractStorageBasedAuditRepo
     replicationFactor = APPLICATION_PROPERTIES.getInt(CASSANDRA_REPLICATION_FACTOR_PROPERTY, DEFAULT_REPLICATION_FACTOR);
     clusterName = APPLICATION_PROPERTIES.getString(CASSANDRA_CLUSTERNAME_PROPERTY, DEFAULT_CLUSTER_NAME);
     port = APPLICATION_PROPERTIES.getInt(CASSANDRA_PORT_PROPERTY, DEFAULT_PORT);
+    username = APPLICATION_PROPERTIES.getString(CASSANDRA_USERNAME_PROPERTY, "");
+    password = APPLICATION_PROPERTIES.getString(CASSANDRA_PASSWORD_PROPERTY, "");
   }
 
   @VisibleForTesting
@@ -222,7 +228,7 @@ public class CassandraBasedAuditRepository extends AbstractStorageBasedAuditRepo
     Cluster.Builder cassandraClusterBuilder = Cluster.builder();
 
     String hostname = APPLICATION_PROPERTIES.getString(CASSANDRA_HOSTNAME_PROPERTY, "localhost");
-    Cluster cluster = cassandraClusterBuilder.addContactPoint(hostname).withClusterName(clusterName).withPort(port).build();
+    Cluster cluster = cassandraClusterBuilder.addContactPoint(hostname).withClusterName(clusterName).withPort(port).withCredentials(username.trim(), password.trim()).build();
     try {
       cassSession = cluster.connect();
       if (cluster.getMetadata().getKeyspace(keyspace) == null) {

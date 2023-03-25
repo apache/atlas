@@ -34,7 +34,8 @@ define(['require',
 
             templateHelpers: function() {
                 return {
-                    editEntity: this.editEntity
+                    editEntity: this.editEntity,
+                    isRelationshipDetailPage: this.isRelationshipDetailPage
                 };
             },
 
@@ -66,7 +67,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'entity', 'typeHeaders', 'attributeDefs', 'attributes', 'editEntity', 'guid', 'entityDefCollection', 'searchVent', 'fetchCollection'));
+                _.extend(this, _.pick(options, 'entity', 'typeHeaders', 'attributeDefs', 'attributes', 'editEntity', 'guid', 'entityDefCollection', 'searchVent', 'fetchCollection', 'isRelationshipDetailPage'));
                 this.entityModel = new VEntity({});
                 this.showAllProperties = false;
             },

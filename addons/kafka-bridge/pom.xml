@@ -83,6 +83,14 @@
                     <groupId>javax.servlet</groupId>
                     <artifactId>servlet-api</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>org.apache.commons</groupId>
+                    <artifactId>commons-configuration2</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.commons</groupId>
+                    <artifactId>commons-text</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
 
@@ -117,7 +125,7 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>12.0.1</version>
+            <version>${guava.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.hadoop</groupId>
@@ -128,6 +136,14 @@
                 <exclusion>
                     <groupId>javax.servlet</groupId>
                     <artifactId>servlet-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.commons</groupId>
+                    <artifactId>commons-configuration2</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.commons</groupId>
+                    <artifactId>commons-text</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -208,6 +224,21 @@
                                             <version>${project.version}</version>
                                         </artifactItem>
                                         <artifactItem>
+                                            <groupId>commons-collections</groupId>
+                                            <artifactId>commons-collections</artifactId>
+                                            <version>${commons-collections.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>commons-logging</groupId>
+                                            <artifactId>commons-logging</artifactId>
+                                            <version>${commons-logging.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>commons-lang</groupId>
+                                            <artifactId>commons-lang</artifactId>
+                                            <version>${commons-lang.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
                                             <groupId>org.apache.kafka</groupId>
                                             <artifactId>kafka-clients</artifactId>
                                             <version>${kafka.version}</version>
@@ -218,9 +249,64 @@
                                             <version>${jersey.version}</version>
                                         </artifactItem>
                                         <artifactItem>
+                                          <groupId>com.fasterxml.jackson.core</groupId>
+                                          <artifactId>jackson-databind</artifactId>
+                                          <version>${jackson.databind.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                          <groupId>com.fasterxml.jackson.core</groupId>
+                                          <artifactId>jackson-core</artifactId>
+                                          <version>${jackson.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                          <groupId>com.fasterxml.jackson.core</groupId>
+                                          <artifactId>jackson-annotations</artifactId>
+                                          <version>${jackson.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                          <groupId>com.fasterxml.jackson.jaxrs</groupId>
+                                          <artifactId>jackson-jaxrs-json-provider</artifactId>
+                                          <version>${jackson.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                          <groupId>com.fasterxml.jackson.jaxrs</groupId>
+                                          <artifactId>jackson-jaxrs-base</artifactId>
+                                          <version>${jackson.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>com.sun.jersey</groupId>
+                                            <artifactId>jersey-bundle</artifactId>
+                                            <version>${jersey.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>org.apache.hadoop</groupId>
+                                            <artifactId>hadoop-auth</artifactId>
+                                            <version>${hadoop.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>com.google.guava</groupId>
+                                            <artifactId>guava</artifactId>
+                                            <version>${guava.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>org.apache.httpcomponents</groupId>
+                                            <artifactId>httpclient</artifactId>
+                                            <version>${httpcomponents-httpclient.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>org.apache.httpcomponents</groupId>
+                                            <artifactId>httpcore</artifactId>
+                                            <version>${httpcomponents-httpcore.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
                                             <groupId>commons-configuration</groupId>
                                             <artifactId>commons-configuration</artifactId>
                                             <version>${commons-conf.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>com.googlecode.json-simple</groupId>
+                                            <artifactId>json-simple</artifactId>
+                                            <version>${json-simple.version}</version>
                                         </artifactItem>
                                     </artifactItems>
                                 </configuration>

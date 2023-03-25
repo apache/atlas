@@ -13,7 +13,7 @@ import SyntaxHighlighter from 'react-syntax-highlighter';
 
 ### Building Apache Atlas
 Download Apache Atlas 1.0.0 release sources, apache-atlas-1.0.0-sources.tar.gz, from the [downloads](#/Downloads) page.
-Then follow the instructions below to to build Apache Atlas.
+Then follow the instructions below to build Apache Atlas.
 
 
 
@@ -34,7 +34,7 @@ mvn clean -DskipTests package -Pdist
 
    * NOTES:
       * Remove option '-DskipTests' to run unit and integration tests
-      * To build a distribution without minified js,css file, build with _skipMinify_ profile. By default js and css files are minified.
+      * To build a distribution without minified js,css file, build with _skipMinify_ profile. By default, js and css files are minified.
 
 
 Above will build Apache Atlas for an environment having functional HBase and Solr instances. Apache Atlas needs to be setup with the following to run in this environment:

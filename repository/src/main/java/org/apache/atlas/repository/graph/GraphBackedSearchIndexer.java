@@ -94,8 +94,10 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
     //allows injection of a dummy graph for testing
     private IAtlasGraphProvider provider;
 
-    private boolean     recomputeIndexedKeys = true;
-    private Set<String> vertexIndexKeys      = new HashSet<>();
+    private boolean     recomputeIndexedKeys     = true;
+    private boolean     recomputeEdgeIndexedKeys = true;
+    private Set<String> vertexIndexKeys          = new HashSet<>();
+    private Set<String> edgeIndexKeys            = new HashSet<>();
 
     public static boolean isValidSearchWeight(int searchWeight) {
         if (searchWeight != -1 ) {
@@ -280,6 +282,46 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         return vertexIndexKeys;
     }
 
+    public Set<String> getEdgeIndexKeys() {
+        if (recomputeEdgeIndexedKeys) {
+            AtlasGraphManagement management = null;
+
+            try {
+                management = provider.get().getManagementSystem();
+
+                if (management != null) {
+                    AtlasGraphIndex edgeIndex = management.getGraphIndex(EDGE_INDEX);
+
+                    if (edgeIndex != null) {
+                        recomputeEdgeIndexedKeys = false;
+
+                        Set<String> indexKeys = new HashSet<>();
+
+                        for (AtlasPropertyKey fieldKey : edgeIndex.getFieldKeys()) {
+                            indexKeys.add(fieldKey.getName());
+                        }
+
+                        edgeIndexKeys = indexKeys;
+                    }
+
+                    management.commit();
+                }
+            } catch (Exception excp) {
+                LOG.error("getEdgeIndexKeys(): failed to get indexedKeys from graph", excp);
+
+                if (management != null) {
+                    try {
+                        management.rollback();
+                    } catch (Exception e) {
+                        LOG.error("getEdgeIndexKeys(): rollback failed", e);
+                    }
+                }
+            }
+        }
+
+        return edgeIndexKeys;
+    }
+
     /**
      * Initializes the indices for the graph - create indices for Global AtlasVertex Keys
      */
@@ -371,6 +413,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             // create edge indexes
             createEdgeIndex(management, RELATIONSHIP_GUID_PROPERTY_KEY, String.class, SINGLE, true);
             createEdgeIndex(management, EDGE_ID_IN_IMPORT_KEY, String.class, SINGLE, true);
+            createEdgeIndex(management, RELATIONSHIP_TYPE_PROPERTY_KEY, String.class, SINGLE, true);
 
             // create fulltext indexes
             createFullTextIndex(management, ENTITY_TEXT_PROPERTY_KEY, String.class, SINGLE);
@@ -582,7 +625,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
 
             } else if (isBuiltInType) {
                 if (isRelationshipType(atlasType)) {
-                    createEdgeIndex(management, propertyName, getPrimitiveClass(attribTypeName), cardinality, false);
+                    createEdgeIndex(management, propertyName, getPrimitiveClass(attribTypeName), cardinality, isIndexable);
                 } else {
                     Class primitiveClassType = getPrimitiveClass(attribTypeName);
                     boolean isStringField = false;
@@ -836,7 +879,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
     }
 
 
-    private void createEdgeIndex(AtlasGraphManagement management, String propertyName, Class propertyClass,
+    public void createEdgeIndex(AtlasGraphManagement management, String propertyName, Class propertyClass,
                                  AtlasCardinality cardinality, boolean createCompositeIndex) {
         if (propertyName != null) {
             AtlasPropertyKey propertyKey = management.getPropertyKey(propertyName);

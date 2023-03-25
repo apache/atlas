@@ -21,6 +21,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TimeBoundary;
+import org.apache.atlas.model.glossary.AtlasGlossaryCategory;
 import org.apache.atlas.model.glossary.enums.AtlasTermAssignmentStatus;
 import org.apache.atlas.model.glossary.relations.AtlasTermAssignmentHeader;
 import org.apache.atlas.model.instance.AtlasClassification;
@@ -33,6 +34,7 @@ import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.instance.AtlasRelationship.AtlasRelationshipWithExtInfo;
+import org.apache.atlas.model.instance.AtlasRelationshipHeader;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags;
@@ -125,6 +127,7 @@ public class EntityGraphRetriever {
     private static final Logger LOG = LoggerFactory.getLogger(EntityGraphRetriever.class);
 
     private static final String GLOSSARY_TERM_DISPLAY_NAME_ATTR = "AtlasGlossaryTerm.name";
+    private static final String GLOSSARY_TERM_QUALIFIED_NAME_ATTR = "AtlasGlossaryTerm.qualifiedName";
     public  static final String TERM_RELATION_NAME              = "AtlasGlossarySemanticAssignment";
 
     public static final String NAME           = "name";
@@ -133,6 +136,10 @@ public class EntityGraphRetriever {
     public static final String OWNER          = "owner";
     public static final String CREATE_TIME    = "createTime";
     public static final String QUALIFIED_NAME = "qualifiedName";
+
+    private static final String GLOSSARY_CATEGORY_HIERARCHY_EDGE_LABEL = "r:AtlasGlossaryCategoryHierarchyLink";
+    private static final String GLOSSARY_CATEGORY_TYPE_NAME = AtlasGlossaryCategory.class.getSimpleName();
+    private static final String PARENT_GLOSSARY_CATEGORY_GUID = "parentCategoryGuid";
 
     private static final TypeReference<List<TimeBoundary>> TIME_BOUNDARIES_LIST_TYPE = new TypeReference<List<TimeBoundary>>() {};
     private final GraphHelper graphHelper;
@@ -715,6 +722,16 @@ public class EntityGraphRetriever {
         return mapVertexToAtlasEntityHeader(entityVertex, Collections.<String>emptySet());
     }
 
+    public AtlasRelationshipHeader mapEdgeToAtlasRelationshipHeader(AtlasEdge edge) throws AtlasBaseException {
+
+        AtlasRelationshipWithExtInfo withExtInfo = new AtlasRelationshipWithExtInfo();
+
+        mapSystemAttributes(edge, withExtInfo, false);
+        mapAttributes(edge, withExtInfo);
+
+        return new AtlasRelationshipHeader(withExtInfo.getRelationship(), true);
+    }
+
     private AtlasEntityHeader mapVertexToAtlasEntityHeader(AtlasVertex entityVertex, Set<String> attributes) throws AtlasBaseException {
         AtlasEntityHeader ret = new AtlasEntityHeader();
 
@@ -741,6 +758,8 @@ public class EntityGraphRetriever {
 
                 if (attrValue != null) {
                     ret.setAttribute(headerAttribute.getName(), attrValue);
+                } else {
+                    ret.setAttribute(headerAttribute.getName(), StringUtils.EMPTY);
                 }
             }
 
@@ -882,7 +901,7 @@ public class EntityGraphRetriever {
 
         if (edges != null) {
             for (final AtlasEdge edge : (Iterable<AtlasEdge>) edges) {
-                if (edge != null && GraphHelper.getStatus(edge) != AtlasEntity.Status.DELETED) {
+                if (edge != null) {
                     ret.add(toTermAssignmentHeader(edge));
                 }
             }
@@ -909,6 +928,11 @@ public class EntityGraphRetriever {
         Object displayName = AtlasGraphUtilsV2.getEncodedProperty(termVertex, GLOSSARY_TERM_DISPLAY_NAME_ATTR, Object.class);
         if (displayName instanceof String) {
             ret.setDisplayText((String) displayName);
+        }
+
+        Object qualifiedName = AtlasGraphUtilsV2.getEncodedProperty(termVertex, GLOSSARY_TERM_QUALIFIED_NAME_ATTR, Object.class);
+        if (qualifiedName instanceof String) {
+            ret.setQualifiedName((String) qualifiedName);
         }
 
         String description = edge.getProperty(TERM_ASSIGNMENT_ATTR_DESCRIPTION, String.class);
@@ -1512,6 +1536,10 @@ public class EntityGraphRetriever {
             }
 
             if (referenceVertex != null) {
+                if (CollectionUtils.isEmpty(referenceVertex.getPropertyKeys())) {
+                    LOG.warn("Reference vertex found empty with vertexId: {} . Returning AtlasRelatedObjectId object as null", referenceVertex.getId());
+                    return null;
+                }
                 String             entityTypeName = getTypeName(referenceVertex);
                 String             entityGuid     = getGuid(referenceVertex);
                 AtlasEntity.Status entityStatus   = GraphHelper.getStatus(referenceVertex);
@@ -1527,6 +1555,11 @@ public class EntityGraphRetriever {
                     ret.setDisplayText(displayText.toString());
                 }
 
+                Object qualifiedName = getQualifiedName(referenceVertex, entityTypeName);
+                if (qualifiedName != null) {
+                    ret.setQualifiedName(qualifiedName.toString());
+                }
+
                 if (isOwnedRef && entityExtInfo != null) {
                     if (isMinExtInfo) {
                         mapVertexToAtlasEntityMin(referenceVertex, entityExtInfo);
@@ -1535,10 +1568,24 @@ public class EntityGraphRetriever {
                     }
                 }
 
+                populateGlossaryAttributesIfApplicable(ret, referenceVertex, entityTypeName);
             }
         }
 
         return ret;
+    }
+
+    private void populateGlossaryAttributesIfApplicable(AtlasRelatedObjectId ret, AtlasVertex referenceVertex, String entityTypeName) {
+        if (!StringUtils.equals(entityTypeName, GLOSSARY_CATEGORY_TYPE_NAME)) {
+            return;
+        }
+        Iterator<AtlasEdge> edgeIterator = GraphHelper.getIncomingEdgesByLabel(referenceVertex, GLOSSARY_CATEGORY_HIERARCHY_EDGE_LABEL);
+        while (edgeIterator.hasNext()) {
+            AtlasEdge atlasEdge = edgeIterator.next();
+            AtlasVertex parentCategoryVertex = atlasEdge.getOutVertex();
+            String parentCategoryGuid = GraphHelper.getGuid(parentCategoryVertex);
+            ret.getRelationshipAttributes().setAttribute(PARENT_GLOSSARY_CATEGORY_GUID, parentCategoryGuid);
+        }
     }
 
     private Object getDisplayText(AtlasVertex entityVertex, String entityTypeName) throws AtlasBaseException {
@@ -1568,6 +1615,18 @@ public class EntityGraphRetriever {
             }
         }
 
+        return ret;
+    }
+
+    private Object getQualifiedName(AtlasVertex entityVertex, String entityTypeName) throws AtlasBaseException {
+        return getQualifiedName(entityVertex, typeRegistry.getEntityTypeByName(entityTypeName));
+    }
+
+    private Object getQualifiedName(AtlasVertex entityVertex, AtlasEntityType entityType) throws AtlasBaseException {
+        Object ret = null;
+        if (entityType != null) {
+            ret = getVertexAttribute(entityVertex, entityType.getAttribute(QUALIFIED_NAME));
+        }
         return ret;
     }
 

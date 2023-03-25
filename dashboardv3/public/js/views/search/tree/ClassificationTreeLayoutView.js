@@ -314,6 +314,7 @@ define([
                 this.ui.classificationSearchTree.jstree(true).deselect_all();
                 this.tagId = null;
             } else {
+                if (that.options.value.attributes) { that.options.value.attributes = null; }
                 if ((that.options.value.tag === "_ALL_CLASSIFICATION_TYPES" && this.tagId !== "_ALL_CLASSIFICATION_TYPES") || (that.options.value.tag === "_NOT_CLASSIFIED" && this.tagId !== "_NOT_CLASSIFIED") || (that.options.value.tag === "_CLASSIFIED" && this.tagId !== "_CLASSIFIED")) {
                     this.fromManualRender = true;
                     if (this.tagId) {
@@ -343,6 +344,7 @@ define([
             }
         },
         onNodeSelect: function(options) {
+            Globals.fromRelationshipSearch = false;
             if (this.classificationTreeUpdate) {
                 this.classificationTreeUpdate = false;
                 return;
@@ -687,7 +689,7 @@ define([
                     }).open();
                 modal.$el.find("button.ok").attr("disabled", "true");
                 view.ui.tagName.on('keyup input', function(e) {
-                    view.ui.description.val($(this).val().replace(/\s+/g, ' '));
+                    $(view.ui.description).trumbowyg('html', _.escape($(this).val()).replace(/\s+/g, ' '));
                 });
                 view.ui.description.on('input keydown', function(e) {
                     $(this).val($(this).val().replace(/\s+/g, ' '));
@@ -732,7 +734,7 @@ define([
             }
 
             var name = ref.ui.tagName.val(),
-                description = ref.ui.description.val(),
+                description = Utils.sanitizeHtmlContent({ data: ref.ui.description.val() }),
                 superTypes = [],
                 parentTagVal = ref.ui.parentTag.val();
             if (parentTagVal && parentTagVal.length) {
@@ -889,7 +891,7 @@ define([
                             }
                             // if deleted tag is prviously searched then remove that tag url from save state of tab.
                             var searchUrl = Globals.saveApplicationState.tabState.searchUrl,
-                                urlObj = Utils.getUrlState.getQueryParams(searchUrl);
+                                urlObj = Utils.getUrlState.getQueryParams(searchUrl) ? Utils.getUrlState.getQueryParams(searchUrl) : Utils.getUrlState.getQueryParams();
                             that.classificationDefCollection.fullCollection.remove(deleteTagData);
                             // to update tag list of search tab fetch typeHeaders.
                             //that.typeHeaders.fetch({ reset: true });

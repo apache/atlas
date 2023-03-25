@@ -68,7 +68,7 @@ To stop Apache Atlas, run following command:
 
 
 ### Configuring Apache Atlas
-By default config directory used by Apache Atlas is _{package dir}/conf_. To override this set environment variable ATLAS_CONF to the path of the conf dir.
+By default, config directory used by Apache Atlas is _{package dir}/conf_. To override this set environment variable ATLAS_CONF to the path of the conf dir.
 
 Environment variables needed to run Apache Atlas can be set in _atlas-env.sh_ file in the conf directory. This file will be sourced by Apache Atlas scripts before any commands are executed. The following environment variables are available to set.
 
@@ -82,25 +82,25 @@ Environment variables needed to run Apache Atlas can be set in _atlas-env.sh_ fi
 # any additional java opts that you want to set for client only
 #export ATLAS_CLIENT_OPTS=
 
-# java heap size we want to set for the client. Default is 1024MB
+# java heap size we want to set for the client. Default is 1024 MB
 #export ATLAS_CLIENT_HEAP=
 
 # any additional opts you want to set for atlas service.
 #export ATLAS_SERVER_OPTS=
 
-# java heap size we want to set for the atlas server. Default is 1024MB
+# java heap size we want to set for the atlas server. Default is 1024 MB
 #export ATLAS_SERVER_HEAP=
 
-# What is is considered as atlas home dir. Default is the base location of the installed software
+# What is considered as atlas home dir. Default is the base location of the installed software
 #export ATLAS_HOME_DIR=
 
-# Where log files are stored. Defatult is logs directory under the base install location
+# Where log files are stored. Default is logs directory under the base install location
 #export ATLAS_LOG_DIR=
 
-# Where pid files are stored. Defatult is logs directory under the base install location
+# Where pid files are stored. Default is logs directory under the base install location
 #export ATLAS_PID_DIR=
 
-# Where do you want to expand the war file. By Default it is in /server/webapp dir under the base install dir.
+# Where do you want to expand the war file. By Default, it is in /server/webapp dir under the base install dir.
 #export ATLAS_EXPANDED_WEBAPP_DIR=`}
 </SyntaxHighlighter>
 
@@ -122,8 +122,8 @@ The following values are recommended for JDK 8:
 export ATLAS_SERVER_HEAP="-Xms15360m -Xmx15360m -XX:MaxNewSize=5120m -XX:MetaspaceSize=100M -XX:MaxMetaspaceSize=512m"
 </SyntaxHighlighter>
 
-*NOTE for Mac OS users*
-If you are using a Mac OS, you will need to configure the ATLAS_SERVER_OPTS (explained above).
+*NOTE for macOS users*
+If you are using a macOS, you will need to configure the ATLAS_SERVER_OPTS (explained above).
 
 In _{package dir}/conf/atlas-env.sh_ uncomment the following line
 <SyntaxHighlighter wrapLines={true} language="powershell" style={theme.dark}>
@@ -169,7 +169,7 @@ SolrCloud mode uses a ZooKeeper Service as a highly available, central location 
   </SyntaxHighlighter>
 
 
-   * Run the following commands from SOLR_BIN (e.g. $SOLR_HOME/bin) directory to create collections in Apache Solr corresponding to the indexes that Apache Atlas uses. In the case that the Apache Atlas and Apache Solr instances are on 2 different hosts, first copy the required configuration files from ATLAS_HOME/conf/solr on the Apache Atlas instance host to Apache Solr instance host. SOLR_CONF in the below mentioned commands refer to the directory where Apache Solr configuration files have been copied to on Apache Solr host:
+   * Run the following commands from SOLR_BIN (e.g. $SOLR_HOME/bin) directory to create collections in Apache Solr corresponding to the indexes that Apache Atlas uses. In the case that the Apache Atlas and Apache Solr instances are on 2 different hosts, first copy the required configuration files from ATLAS_HOME/conf/solr on the Apache Atlas instance host to Apache Solr instance host. SOLR_CONF in the below-mentioned commands refer to the directory where Apache Solr configuration files have been copied to on Apache Solr host:
 
 <SyntaxHighlighter wrapLines={true} language="powershell" style={theme.dark}>
   {`$SOLR_BIN/solr create -c vertex_index -d SOLR_CONF -shards #numShards -replicationFactor #replicationFactor
@@ -178,7 +178,7 @@ $SOLR_BIN/solr create -c fulltext_index -d SOLR_CONF -shards #numShards -replica
 </SyntaxHighlighter>
 
   Note: If numShards and replicationFactor are not specified, they default to 1 which suffices if you are trying out solr with ATLAS on a single node instance.
-  Otherwise specify numShards according to the number of hosts that are in the Solr cluster and the maxShardsPerNode configuration.
+  Otherwise, specify numShards according to the number of hosts that are in the Solr cluster and the maxShardsPerNode configuration.
   The number of shards cannot exceed the total number of Solr nodes in your SolrCloud cluster.
 
   The number of replicas (replicationFactor) can be set according to the redundancy required.
@@ -200,7 +200,7 @@ For more information on JanusGraph solr configuration , please refer http://docs
 
 Pre-requisites for running Apache Solr in cloud mode
   * Memory - Apache Solr is both memory and CPU intensive. Make sure the server running Apache Solr has adequate memory, CPU and disk.
-    Apache Solr works well with 32GB RAM. Plan to provide as much memory as possible to Apache Solr process
+    Apache Solr works well with 32 GB RAM. Plan to provide as much memory as possible to Apache Solr process
   * Disk - If the number of entities that need to be stored are large, plan to have at least 500 GB free space in the volume where Apache Solr is going to store the index data
   * SolrCloud has support for replication and sharding. It is highly recommended to use SolrCloud with at least two Apache Solr nodes running on different servers with replication enabled.
     If using SolrCloud, then you also need ZooKeeper installed and configured with 3 or 5 ZooKeeper nodes
@@ -208,7 +208,7 @@ Pre-requisites for running Apache Solr in cloud mode
   * Start Apache Solr in http mode - alternative setup to Solr in cloud mode.
 
   Solr Standalone is used for a single instance, and it keeps configuration information on the file system. It does not require zookeeper and provides high performance for medium size index.
-  Can be consider as a good option for fast prototyping as well as valid configuration for development environments. In some cases it demonstrates a better performance than solr cloud mode in production grade setup of Atlas.
+  Can be considered as a good option for fast prototyping as well as valid configuration for development environments. In some cases it demonstrates a better performance than solr cloud mode in production grade setup of Atlas.
 
    * Change ATLAS configuration to point to Standalone Apache Solr instance setup. Please make sure the following configurations are set to the below values in ATLAS_HOME/conf/atlas-application.properties
 

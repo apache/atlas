@@ -36,6 +36,7 @@ import org.apache.atlas.repository.store.graph.v2.bulkimport.RegularImport;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.Constants;
+import org.apache.atlas.utils.AtlasStringUtil;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,8 +67,7 @@ public class BulkImporterImpl implements BulkImporter {
     public EntityMutationResponse bulkImport(EntityImportStream entityStream, AtlasImportResult importResult) throws AtlasBaseException {
         ImportStrategy importStrategy = null;
 
-        if (importResult.getRequest().getOptions() != null &&
-                importResult.getRequest().getOptions().containsKey(AtlasImportRequest.OPTION_KEY_MIGRATION)) {
+        if (AtlasStringUtil.hasOption(importResult.getRequest().getOptions(), AtlasImportRequest.OPTION_KEY_MIGRATION)) {
             importStrategy = new MigrationImport(this.atlasGraph, new AtlasGraphProvider(), this.typeRegistry);
         } else {
             importStrategy = new RegularImport(this.atlasGraph, this.entityStore, this.typeRegistry);

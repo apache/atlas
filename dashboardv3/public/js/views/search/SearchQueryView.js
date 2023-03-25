@@ -51,7 +51,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'value', 'entityDefCollection', 'typeHeaders', 'searchVent', 'enumDefCollection', 'classificationDefCollection', 'tag', 'searchTableFilters'));
+                _.extend(this, _.pick(options, 'value', 'entityDefCollection', 'typeHeaders', 'searchVent', 'enumDefCollection', 'classificationDefCollection', 'tag', 'searchTableFilters', 'relationshipDefCollection', 'relationship'));
                 this.bindEvents();
                 var that = this;
                 this.modal = new Modal({
@@ -103,6 +103,16 @@ define(['require',
                     }
                     if (Globals[this.value.tag]) {
                         obj['attrObj'] = Globals[this.value.tag].attributeDefs;
+                    }
+                } else if (this.relationship) {
+                    obj['relationship'] = true;
+                    obj['attrObj'] = this.relationshipDefCollection.fullCollection.find({ name: this.value.relationshipName });
+                    if(obj.attrObj){
+                        obj.attrObj = Utils.getNestedSuperTypeObj({
+                            data: obj.attrObj.toJSON(),
+                            collection: this.relationshipDefCollection,
+                            attrMerge: true,
+                        });
                     }
                 } else {
                     obj['type'] = true;

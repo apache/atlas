@@ -129,7 +129,7 @@ Roles defined above can be assigned (granted) to users as shown below:
 </SyntaxHighlighter>
 
 
-Roles can be assigned (granted) to user-groups as shown below. An user can belong to multiple groups; roles assigned to
+Roles can be assigned (granted) to user-groups as shown below. A user can belong to multiple groups; roles assigned to
 all groups the user belongs to will be used to authorize the access.
 
 <SyntaxHighlighter wrapLines={true} language="shell" style={theme.dark}>

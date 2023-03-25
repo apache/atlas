@@ -71,6 +71,9 @@ public enum AtlasConfiguration {
     IMPORT_TEMP_DIRECTORY("atlas.import.temp.directory", ""),
     MIGRATION_IMPORT_START_POSITION("atlas.migration.import.start.position", 0),
     LINEAGE_USING_GREMLIN("atlas.lineage.query.use.gremlin", false),
+    LINEAGE_ON_DEMAND_ENABLED("atlas.lineage.on.demand.enabled", false),
+    LINEAGE_ON_DEMAND_DEFAULT_NODE_COUNT("atlas.lineage.on.demand.default.node.count", 3),
+    LINEAGE_MAX_NODE_COUNT("atlas.lineage.max.node.count", 9000),
 
     HTTP_HEADER_SERVER_VALUE("atlas.http.header.server.value","Apache Atlas"),
     STORAGE_CONSISTENCY_LOCK_ENABLED("atlas.graph.storage.consistency-lock.enabled", true),

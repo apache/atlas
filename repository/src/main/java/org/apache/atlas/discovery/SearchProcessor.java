@@ -29,6 +29,7 @@ import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.GraphHelper;
+import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -37,7 +38,6 @@ import org.apache.atlas.type.*;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.util.AtlasGremlinQueryProvider;
 import org.apache.atlas.util.SearchPredicateUtil;
-import org.apache.atlas.util.SearchPredicateUtil.*;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.collections.Predicate;
@@ -208,6 +208,26 @@ public abstract class SearchProcessor {
             return marker == null ? resultIdx : lastOffset;
     }
 
+    protected int collectResultEdges(final List<AtlasEdge> ret, final int startIdx, final int limit, int resultIdx, final Map<Integer, AtlasEdge> offsetEdgeMap, Integer marker) {
+        int lastOffset = resultIdx;
+
+        for (Map.Entry<Integer, AtlasEdge> offsetToEdge : offsetEdgeMap.entrySet()) {
+            resultIdx++;
+
+            if (resultIdx <= startIdx) {
+                continue;
+            }
+
+            lastOffset = offsetToEdge.getKey();
+            ret.add(offsetToEdge.getValue());
+
+            if (ret.size() == limit) {
+                break;
+            }
+        }
+        return marker == null ? resultIdx : lastOffset;
+    }
+
     public LinkedHashMap<Integer, AtlasVertex> filter(LinkedHashMap<Integer, AtlasVertex> offsetEntityVertexMap) {
         if (nextProcessor != null && MapUtils.isNotEmpty(offsetEntityVertexMap)) {
             return nextProcessor.filter(offsetEntityVertexMap);
@@ -322,6 +342,10 @@ public abstract class SearchProcessor {
                     if (structType instanceof AtlasEntityType && !isSystemAttribute(attributeName)) {
                         // Capture the entity attributes
                         context.getEntityAttributes().add(attributeName);
+                    }
+
+                    if (structType instanceof AtlasRelationshipType) {
+                        context.getRelationAttributes().add(attributeName);
                     }
 
                     allAttributes.add(qualifiedName);
@@ -490,7 +514,8 @@ public abstract class SearchProcessor {
         String      typeName       = attributeType.getTypeName();
         String      qualifiedName  = structType.getVertexPropertyName(attributeName);
         Set<String> indexedKeys    = context.getIndexedKeys();
-        boolean     ret            = indexedKeys != null && indexedKeys.contains(qualifiedName);
+        Set<String> edgeIndexedKeys = context.getEdgeIndexKeys();
+        boolean     ret            = (indexedKeys != null && (indexedKeys.contains(qualifiedName)) || (edgeIndexedKeys != null && edgeIndexedKeys.contains(qualifiedName)));
 
         SearchParameters.Operator                  operator  = filterCriteria.getOperator();
         AtlasStructDef.AtlasAttributeDef.IndexType indexType = structType.getAttributeDef(attributeName).getIndexType();
@@ -1238,6 +1263,18 @@ public abstract class SearchProcessor {
         return offsetEntityVertexMap;
     }
 
+    protected LinkedHashMap<Integer, AtlasEdge> getEdgesFromIndexQueryResult(Iterator<AtlasIndexQuery.Result> idxQueryResult, LinkedHashMap<Integer, AtlasEdge> offsetEdgeMap, int qryOffset) {
+        if (idxQueryResult != null) {
+            while (idxQueryResult.hasNext()) {
+                AtlasEdge edge = idxQueryResult.next().getEdge();
+
+                offsetEdgeMap.put(qryOffset++, edge);
+            }
+        }
+
+        return offsetEdgeMap;
+    }
+
     protected Collection<AtlasVertex> getVertices(Iterator<AtlasVertex> iterator, Collection<AtlasVertex> vertices) {
         if (iterator != null) {
             while (iterator.hasNext()) {
@@ -1260,6 +1297,18 @@ public abstract class SearchProcessor {
         }
 
         return offsetEntityVertexMap;
+    }
+
+    protected LinkedHashMap<Integer, AtlasEdge> getEdges(Iterator<AtlasEdge> iterator, LinkedHashMap<Integer, AtlasEdge> offsetEdgeMap, int qryOffset) {
+        if (iterator != null) {
+            while (iterator.hasNext()) {
+                AtlasEdge edge = iterator.next();
+
+                offsetEdgeMap.put(qryOffset++, edge);
+            }
+        }
+
+        return offsetEdgeMap;
     }
 
     protected Set<String> getGuids(List<AtlasVertex> vertices) {
@@ -1314,5 +1363,16 @@ public abstract class SearchProcessor {
             return indexQuery.vertices(qryOffset, limit, sortBy, sortOrder);
         }
         return indexQuery.vertices(qryOffset, limit);
+    }
+
+    protected static Iterator<AtlasIndexQuery.Result> executeIndexQueryForEdge(SearchContext context, AtlasIndexQuery indexQuery, int qryOffset, int limit) {
+        final AtlasRelationshipType relationshipType   = context.getRelationshipTypes().iterator().next();
+        AtlasStructType.AtlasAttribute sortByAttribute = relationshipType.getAttribute(context.getSearchParameters().getSortBy());
+
+        if (sortByAttribute != null && StringUtils.isNotEmpty(sortByAttribute.getVertexPropertyName())) {
+            Order sortOrder = getSortOrderAttribute(context);
+            return indexQuery.edges(qryOffset, limit, sortByAttribute.getVertexPropertyName(), sortOrder);
+        }
+        return indexQuery.edges(qryOffset, limit);
     }
 }

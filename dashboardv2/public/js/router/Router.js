@@ -35,6 +35,9 @@ define([
             // Search
             "!/search": "commonAction",
             "!/search/searchResult": "searchResult",
+            //Relation
+            "!/relationship": "relationshipSearch",
+            "!/relationship/relationshipSearchResult": "relationshipSearch",
             // Tag
             "!/tag": "commonAction",
             "!/tag/tagAttribute/(*name)": "tagAttributePageLoad",
@@ -43,6 +46,8 @@ define([
             "!/glossary/:id": "glossaryDetailPage",
             // Details
             "!/detailPage/:id": "detailPage",
+            //Relationship Detail Page
+            "!/relationshipDetailPage/:id": "relationshipDetailPage",
             //Administrator page
             '!/administrator': 'administrator',
             '!/administrator/businessMetadata/:id': 'businessMetadataDetailPage',
@@ -52,7 +57,7 @@ define([
             '*actions': 'defaultAction'
         },
         initialize: function(options) {
-            _.extend(this, _.pick(options, 'entityDefCollection', 'typeHeaders', 'enumDefCollection', 'classificationDefCollection', 'metricCollection', 'classificationAndMetricEvent', 'businessMetadataDefCollection'));
+            _.extend(this, _.pick(options, 'entityDefCollection', 'typeHeaders', 'enumDefCollection', 'classificationDefCollection', 'metricCollection', 'classificationAndMetricEvent', 'businessMetadataDefCollection', 'relationshipDefCollection', 'relationshipEventAgg'));
             this.showRegions();
             this.bindCommonEvents();
             this.listenTo(this, 'route', this.postRouteExecute, this);
@@ -71,7 +76,9 @@ define([
                 'glossaryCollection': this.glossaryCollection,
                 'metricCollection': this.metricCollection,
                 'classificationAndMetricEvent': this.classificationAndMetricEvent,
-                'businessMetadataDefCollection': this.businessMetadataDefCollection
+                'businessMetadataDefCollection': this.businessMetadataDefCollection,
+                'relationshipDefCollection': this.relationshipDefCollection,
+                'relationshipEventAgg': this.relationshipEventAgg
             }
             this.ventObj = {
                 searchVent: this.searchVent,
@@ -84,7 +91,8 @@ define([
                 },
                 searchTableFilters: {
                     tagFilters: {},
-                    entityFilters: {}
+                    entityFilters: {},
+                    relationshipFilters: {}
                 }
             }
         },
@@ -187,6 +195,37 @@ define([
                 });
             }
         },
+        relationshipDetailPage: function(id) {
+            var that = this;
+            if (id) {
+                require(["views/site/Header", "views/detail_page/RelationshipDetailPageLayoutView", "views/site/SideNavLayoutView"], function(Header, RelationshipDetailPageLayoutView, SideNavLayoutView) {
+                    var paramObj = Utils.getUrlState.getQueryParams(),
+                        options = _.extend({}, that.preFetchedCollectionLists, that.sharedObj, that.ventObj);
+                    that.renderViewIfNotExists(that.getHeaderOptions(Header));
+                    that.renderViewIfNotExists({
+                        view: App.rSideNav,
+                        manualRender: function() {
+                            this.view.currentView.selectTab();
+                        },
+                        render: function() {
+                            return new SideNavLayoutView(options);
+                        }
+                    });
+
+                    var dOptions = _.extend({ id: id, value: paramObj }, options);
+                    that.renderViewIfNotExists({
+                        view: App.rNContent,
+                        viewName: "RelationshipDetailPageLayoutView",
+                        manualRender: function() {
+                            this.view.currentView.manualRender(dOptions);
+                        },
+                        render: function() {
+                            return new RelationshipDetailPageLayoutView(dOptions);
+                        }
+                    });
+                });
+            }
+        },
         tagAttributePageLoad: function(tagName) {
             var that = this;
             require([
@@ -265,6 +304,8 @@ define([
                 'views/search/SearchDetailLayoutView',
                 'collection/VTagList'
             ], function(Header, SideNavLayoutView, SearchDetailLayoutView, VTagList) {
+                //This below method is added to reset the internal tab to Entities
+                Utils.updateInternalTabState();
                 var paramObj = Utils.getUrlState.getQueryParams(),
                     options = _.extend({}, that.preFetchedCollectionLists, that.sharedObj, that.ventObj),
                     tag = new VTagList();
@@ -410,6 +451,8 @@ define([
                 'views/site/SideNavLayoutView',
                 'views/search/SearchDetailLayoutView',
             ], function(Header, SideNavLayoutView, SearchDetailLayoutView) {
+                //This below method is added to reset the internal tab to Entities
+                Utils.updateInternalTabState();
                 var paramObj = Utils.getUrlState.getQueryParams(),
                     options = _.extend({}, that.preFetchedCollectionLists, that.sharedObj, that.ventObj);
                 that.renderViewIfNotExists(that.getHeaderOptions(Header));
@@ -430,6 +473,35 @@ define([
 
                 if (Utils.getUrlState.isSearchTab()) {
                     App.rNContent.show(new SearchDetailLayoutView(_.extend({ 'value': paramObj, 'initialView': true }, options)));
+                } else {
+                    if (App.rNContent.currentView) {
+                        App.rNContent.currentView.destroy();
+                    } else {
+                        App.rNContent.$el.empty();
+                    }
+                }
+            });
+        },
+        relationshipSearch: function() {
+            var that = this;
+            require([
+                'views/site/Header',
+                'views/site/SideNavLayoutView',
+                'views/search/RelationSearchDetailLayoutView',
+            ], function(Header, SideNavLayoutView, RelationSearchDetailLayoutView) {
+                var paramObj = Utils.getUrlState.getQueryParams(),
+                    options = _.extend({}, that.preFetchedCollectionLists, that.sharedObj, that.ventObj);
+                that.renderViewIfNotExists(that.getHeaderOptions(Header));
+                that.renderViewIfNotExists({
+                    view: App.rSideNav,
+                    manualRender: function() {},
+                    render: function() {
+                        return new SideNavLayoutView(_.extend({ 'value' : paramObj } ,options));
+                    }
+                });
+
+                if (Utils.getUrlState.isRelationTab()) {
+                    App.rNContent.show(new RelationSearchDetailLayoutView(_.extend({ 'value': paramObj, 'initialView': (paramObj ? false : true) }, options)));
                 } else {
                     if (App.rNContent.currentView) {
                         App.rNContent.currentView.destroy();

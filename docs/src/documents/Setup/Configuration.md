@@ -55,7 +55,7 @@ Elasticsearch is a prerequisite for Apache Atlas use. Set the following properti
 
 <SyntaxHighlighter wrapLines={true} language="bash" style={theme.dark}>
 {`atlas.graph.index.search.backend=elasticsearch
-atlas.graph.index.search.hostname=<hostname(s) of the Elasticsearch master nodes comma separated>
+atlas.graph.index.search.hostname=<hostname(s) of the Elasticsearch master nodes, comma separated>
 atlas.graph.index.search.elasticsearch.client-only=true`}
 </SyntaxHighlighter>
 
@@ -131,7 +131,7 @@ atlas.server.ha.zookeeper.connect=zk1.company.com:2181,zk2.company.com:2181,zk3.
 atlas.server.ha.zookeeper.num.retries=3
 # Specify how much time should the server wait before attempting connections to Zookeeper, in case of any connection issues.
 atlas.server.ha.zookeeper.retry.sleeptime.ms=1000
-# Specify how long a session to Zookeeper should last without inactiviy to be deemed as unreachable.
+# Specify how long a session to Zookeeper should last without inactivity to be deemed as unreachable.
 atlas.server.ha.zookeeper.session.timeout.ms=20000
 # Specify the scheme and the identity to be used for setting up ACLs on nodes created in Zookeeper for HA.
 # The format of these options is <scheme:identity>.

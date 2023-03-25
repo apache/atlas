@@ -39,7 +39,7 @@ This is used to add entities in Atlas using the model detailed above.
 
 Follow the instructions below to setup Atlas hook in Hive:
 
-Add the following properties to  to enable Atlas hook in Sqoop:
+Add the following properties to enable Atlas hook in Sqoop:
    * Set-up Atlas hook in `<sqoop-conf>`/sqoop-site.xml by adding the following:
 
 <SyntaxHighlighter wrapLines={true} language="shell" style={theme.dark}>
@@ -53,7 +53,7 @@ Add the following properties to  to enable Atlas hook in Sqoop:
    * untar apache-atlas-${project.version}-sqoop-hook.tar.gz
    * cd apache-atlas-sqoop-hook-${project.version}
    * Copy entire contents of folder apache-atlas-sqoop-hook-${project.version}/hook/sqoop to `<atlas package>`/hook/sqoop
-   * Copy `<atlas-conf>`/atlas-application.properties to to the sqoop conf directory `<sqoop-conf>`/
+   * Copy `<atlas-conf>`/atlas-application.properties to the sqoop conf directory `<sqoop-conf>`/
    * Link `<atlas package>`/hook/sqoop/*.jar in sqoop lib
 
 
@@ -61,7 +61,7 @@ Add the following properties to  to enable Atlas hook in Sqoop:
 The following properties in atlas-application.properties control the thread pool and notification details:
 
 <SyntaxHighlighter wrapLines={true} language="shell" style={theme.dark}>
-{`atlas.hook.sqoop.synchronous=false # whether to run the hook synchronously. false recommended to avoid delays in Sqoop operation completion. Default: false
+{`atlas.hook.sqoop.synchronous=false # whether to run the hook synchronously. false is recommended to avoid delays in Sqoop operation completion. Default: false
 atlas.hook.sqoop.numRetries=3      # number of retries for notification failure. Default: 3
 atlas.hook.sqoop.queueSize=10000   # queue size for the threadpool. Default: 10000
 atlas.cluster.name=primary # clusterName to use in qualifiedName of entities. Default: primary

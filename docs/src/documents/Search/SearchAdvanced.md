@@ -23,9 +23,9 @@ Benefits of DSL:
    * Use of classifications is accounted for in the syntax.
    * Provides way to group and aggregate results.
 
-We will be using the quick start dataset in the examples that follow. This dataset is comprehensive enough to be used to to demonstrate the various features of the language.
+We will be using the quick start dataset in the examples that follow. This dataset is comprehensive enough to be used to demonstrate the various features of the language.
 
-For details on the grammar, please refer to Atlas DSL Grammer on [Github](https://github.com/apache/atlas/blob/master/repository/src/main/java/org/apache/atlas/query/antlr4/AtlasDSLParser.g4) (Antlr G4 format).
+For details on the grammar, please refer to Atlas DSL Grammar on [GitHub](https://github.com/apache/atlas/blob/master/repository/src/main/java/org/apache/atlas/query/antlr4/AtlasDSLParser.g4) (Antlr G4 format).
 
 ## Using Advanced Search
 
@@ -56,7 +56,7 @@ In the absence of _where_ for filtering on the source, the dataset fetched by th
 
 The _where_ clause allows for filtering over the dataset. This achieved by using conditions within the where clause.
 
-A conditions is identifier followed by an operator followed by a literal. Literal must be enclosed in single or double quotes. Example, _name = "Sales"_. An identifier can be name of the property of the type specified in the _from_ clause or an alias.
+A condition is an identifier followed by an operator followed by a literal. Literal must be enclosed in single or double quotes. Example, _name = "Sales"_. An identifier can be the name of the property of the type specified in the _from_ clause or an alias.
 
 Example: To retrieve entity of type _Table_ with a specific name say time_dim:
 
@@ -125,7 +125,7 @@ Dates in this format follow this notation:
    * _yyyy-MM-ddTHH:mm:ss.SSSZ_. Which means, year-month-day followed by time in hour-minutes-seconds-milli-seconds. Date and time need to be separated by 'T'. It should end with 'Z'.
    * _yyyy-MM-dd_. Which means, year-month-day.
 
-Example: Date represents December 11, 2017 at 2:35 AM.
+Example: Date represents December 11, 2017, at 2:35 AM.
 
 <SyntaxHighlighter wrapLines={true} language="sql" style={theme.dark}>
 {`2017-12-11T02:35:0.0Z`}
@@ -140,7 +140,7 @@ Example: To retrieve entity of type _Table_ created within 2017 and 2018.
 #### Using Boolean Literals
 Properties of entities of type boolean can be used within queries.
 
-Eample: To retrieve entity of type hdfs_path whose attribute _isFile_ is set to _true_ and whose name is _Invoice_.
+Example: To retrieve entity of type hdfs_path whose attribute _isFile_ is set to _true_ and whose name is _Invoice_.
 
 <SyntaxHighlighter wrapLines={true} language="sql" style={theme.dark}>
 {`from hdfs_path where isFile = true or name = "Invoice"`}
@@ -151,7 +151,7 @@ Valid values for boolean literals are 'true' and 'false'.
 ### Existence of a Property
 The has keyword can be used with or without the where clause. It is used to check existence of a property in an entity.
 
-Example: To retreive entity of type Table with a property locationUri.
+Example: To retrieve entity of type Table with a property locationUri.
 
 <SyntaxHighlighter wrapLines={true} language="html" style={theme.dark}>
 {`Table has locationUri
@@ -240,7 +240,7 @@ Example: To retrieve all the entities that are tagged with _Dimension_ classific
 {`Dimension where Dimension.priority = "high"`}
 </SyntaxHighlighter>
 
-###Non Primitive attribute Filtering
+###Non-Primitive attribute Filtering
 In the discussion so far we looked at where clauses with primitive types. This section will look at using properties that are non-primitive types.
 
 #### Relationship-based filtering
@@ -432,7 +432,7 @@ Example: To know the number of entities owned by each owner.
 </SyntaxHighlighter>
 
 ### Using System Attributes
-Each type defined within Atlas gets few attributes by default. These attributes help with internal book keeping of the entities. All the system attributes are prefixed with '__' (double underscore). This helps in identifying them from other attributes.
+Each type defined within Atlas gets few attributes by default. These attributes help with internal bookkeeping of the entities. All the system attributes are prefixed with '__' (double underscore). This helps in identifying them from other attributes.
 Following are the system attributes:
    * __guid Each entity within Atlas is assigned a globally unique identifier (GUID for short).
    * __modifiedBy Name of the user who last modified the entity.
@@ -518,4 +518,4 @@ The following clauses are no longer supported:
 ## Resources
    * Antlr [Book](https://pragprog.com/book/tpantlr2/the-definitive-antlr-4-reference).
    * Antlr [Quick Start](https://github.com/antlr/antlr4/blob/master/doc/getting-started.md).
-   * Atlas DSL Grammar on [Github](https://github.com/apache/atlas/blob/master/repository/src/main/java/org/apache/atlas/query/antlr4/AtlasDSLParser.g4) (Antlr G4 format).
+   * Atlas DSL Grammar on [GitHub](https://github.com/apache/atlas/blob/master/repository/src/main/java/org/apache/atlas/query/antlr4/AtlasDSLParser.g4) (Antlr G4 format).

@@ -5,6 +5,7 @@ services:
       context: .
       dockerfile: Dockerfile.atlas-base
     image: atlas-base
+    container_name: atlas-base
     networks:
       - atlas
     environment:
@@ -12,3 +13,4 @@ services:
 
 networks:
   atlas:
+    name: atlasnw

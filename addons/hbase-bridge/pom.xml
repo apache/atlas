@@ -111,7 +111,33 @@
                     <groupId>javax.servlet</groupId>
                     <artifactId>servlet-api</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>org.apache.commons</groupId>
+                    <artifactId>commons-text</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.commons</groupId>
+                    <artifactId>commons-configuration2</artifactId>
+                </exclusion>
             </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-configuration2</artifactId>
+            <version>${commons-conf2.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.commons</groupId>
+                    <artifactId>commons-text</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-text</artifactId>
+            <version>${commons-text.version}</version>
         </dependency>
 
         <dependency>
@@ -165,7 +191,7 @@
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <scope>test</scope>
-            <version>4.12</version>
+            <version>${junit.version}</version>
         </dependency>
 
         <dependency>
@@ -211,6 +237,14 @@
                 <exclusion>
                     <groupId>javax.servlet</groupId>
                     <artifactId>servlet-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.commons</groupId>
+                    <artifactId>commons-configuration2</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.commons</groupId>
+                    <artifactId>commons-text</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -311,6 +345,16 @@
                                             <version>${kafka.version}</version>
                                         </artifactItem>
                                         <artifactItem>
+                                            <groupId>commons-collections</groupId>
+                                            <artifactId>commons-collections</artifactId>
+                                            <version>${commons-collections.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>commons-logging</groupId>
+                                            <artifactId>commons-logging</artifactId>
+                                            <version>${commons-logging.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
                                             <groupId>com.sun.jersey.contribs</groupId>
                                             <artifactId>jersey-multipart</artifactId>
                                             <version>${jersey.version}</version>
@@ -331,6 +375,16 @@
                                             <version>${jackson.version}</version>
                                         </artifactItem>
                                         <artifactItem>
+                                          <groupId>com.fasterxml.jackson.jaxrs</groupId>
+                                          <artifactId>jackson-jaxrs-json-provider</artifactId>
+                                          <version>${jackson.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                          <groupId>com.fasterxml.jackson.jaxrs</groupId>
+                                          <artifactId>jackson-jaxrs-base</artifactId>
+                                          <version>${jackson.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
                                             <groupId>commons-configuration</groupId>
                                             <artifactId>commons-configuration</artifactId>
                                             <version>${commons-conf.version}</version>
@@ -338,6 +392,11 @@
                                         <artifactItem>
                                             <groupId>com.sun.jersey</groupId>
                                             <artifactId>jersey-json</artifactId>
+                                            <version>${jersey.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>com.sun.jersey</groupId>
+                                            <artifactId>jersey-bundle</artifactId>
                                             <version>${jersey.version}</version>
                                         </artifactItem>
                                         <artifactItem>

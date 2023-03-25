@@ -159,5 +159,5 @@ Apache Atlas 1.0 introduces number of new features. For data that is migrated, t
 
 #### Handling of Entity Definitions that use Classifications as Types
 
-This features is no longer supported. Classifications that are used as types in _attribute definitions_ (_AttributeDefs_) are converted in to new types whose name has _legacy_ prefix. These are then handled like any other type.
+This feature is no longer supported. Classifications that are used as types in _attribute definitions_ (_AttributeDefs_) are converted in to new types whose name has _legacy_ prefix. These are then handled like any other type.
 Creation of such types was prevented in an earlier release, hence only type definitions have potential to exist. Care has been taken to handle entities of this type as well.

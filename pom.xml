@@ -384,6 +384,16 @@
             <!--<organizationUrl>https://www.privacera.com</organizationUrl>-->
         </developer>
         <developer>
+            <id>mandarambawane</id>
+            <name>Mandar Ambawane</name>
+            <email>mandarambawane@apache.org</email>
+            <timezone>Asia/Kolkata</timezone>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <organization>Freestone Infotech</organization>
+        </developer>
+        <developer>
             <id>mandy</id>
             <name>Mandy Chessell</name>
             <email>mandy@apache.org</email>
@@ -448,6 +458,27 @@
                 <role>committer</role>
             </roles>
             <organization>Freestone Infotech</organization>
+        </developer>
+        <developer>
+            <id>ppawar</id>
+            <name>Prasad Pawar</name>
+            <email>ppawar@apache.org</email>
+            <timezone>Asia/Kolkata</timezone>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <organization>Freestone Infotech</organization>
+        </developer>
+        <developer>
+            <id>radhikakundam</id>
+            <name>Radhika Kundam</name>
+            <email>radhikakundam@apache.org</email>
+            <timezone>America/Los_Angeles</timezone>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <organization>Cloudera Inc.</organization>
+            <!--<organizationUrl>https://www.cloudera.com</organizationUrl>-->
         </developer>
         <developer>
             <id>rmani</id>
@@ -689,12 +720,13 @@
         <commons-collections.version>3.2.2</commons-collections.version>
         <commons-collections4.version>4.4</commons-collections4.version>
         <commons-conf.version>1.10</commons-conf.version>
-        <commons-conf2.version>2.2</commons-conf2.version>
+        <commons-conf2.version>2.8.0</commons-conf2.version>
         <commons-el.version>1.0</commons-el.version>
         <commons-io.version>2.11.0</commons-io.version>
         <commons-lang.version>2.6</commons-lang.version>
         <commons-logging.version>1.1.3</commons-logging.version>
         <commons-validator.version>1.6</commons-validator.version>
+        <commons-text.version>1.10.0</commons-text.version>
         <curator.version>4.3.0</curator.version>
         <doxia.version>1.8</doxia.version>
         <dropwizard-metrics>3.2.2</dropwizard-metrics>
@@ -706,32 +738,32 @@
         <fastutil.version>6.5.16</fastutil.version>
         <graph.index.backend>solr</graph.index.backend>
         <graph.storage.backend>berkeleyje</graph.storage.backend>
-        <gson.version>2.5</gson.version>
+        <gson.version>2.9.0</gson.version>
         <guava.version>25.1-jre</guava.version>
         <guice.version>4.1.0</guice.version>
         <hadoop.hdfs-client.version>${hadoop.version}</hadoop.hdfs-client.version>
         <hadoop.version>3.3.0</hadoop.version>
         <hbase.version>2.3.3</hbase.version>
-        <hive.version>3.1.0</hive.version>
+        <hive.version>3.1.2</hive.version>
         <hppc.version>0.8.1</hppc.version>
         <httpcomponents-httpclient.version>4.5.13</httpcomponents-httpclient.version>
         <httpcomponents-httpcore.version>4.4.13</httpcomponents-httpcore.version>
         <jackson.databind.version>2.11.3</jackson.databind.version>
         <jackson.version>2.11.3</jackson.version>
-        <janusgraph.version>0.6.0</janusgraph.version>
+        <janusgraph.version>0.6.1</janusgraph.version>
         <janusgraph.cassandra.version>0.5.3</janusgraph.cassandra.version>
         <javax-inject.version>1</javax-inject.version>
         <javax.servlet.version>3.1.0</javax.servlet.version>
         <jersey-spring.version>1.19.4</jersey-spring.version>
         <jersey.version>1.19</jersey.version>
-        <jettison.version>1.3.7</jettison.version>
+        <jettison.version>1.5.2</jettison.version>
         <jetty-maven-plugin.stopWait>10</jetty-maven-plugin.stopWait>
         <jetty.version>9.4.31.v20200723</jetty.version>
         <joda-time.version>2.10.6</joda-time.version>
         <json.version>3.2.11</json.version>
         <json-simple.version>1.1.1</json-simple.version>
         <jsr.version>1.1</jsr.version>
-        <junit.version>4.13.1</junit.version>
+        <junit.version>4.13.2</junit.version>
         <kafka.scala.binary.version>2.12</kafka.scala.binary.version>
         <kafka.version>2.8.1</kafka.version>
         <keycloak.version>6.0.1</keycloak.version>
@@ -740,14 +772,14 @@
         <lucene-solr.version>8.6.3</lucene-solr.version>
         <maven-site-plugin.version>3.7</maven-site-plugin.version>
         <MaxPermGen>512m</MaxPermGen>
-        <netty.version>4.1.69.Final</netty.version>
+        <netty.version>4.1.86.Final</netty.version>
         <node-for-v2.version>v12.16.0</node-for-v2.version>
         <npm-for-v2.version>6.13.7</npm-for-v2.version>
         <opencsv.version>5.0</opencsv.version>
         <paranamer.version>2.7</paranamer.version>
         <PermGen>64m</PermGen>
-        <poi-ooxml.version>4.1.1</poi-ooxml.version>
-        <poi.version>4.1.1</poi.version>
+        <poi-ooxml.version>5.2.2</poi-ooxml.version>
+        <poi.version>5.2.2</poi.version>
         <project.build.dashboardv2.gruntBuild>build-minify</project.build.dashboardv2.gruntBuild>
         <project.build.dashboardv3.gruntBuild>build-minify</project.build.dashboardv3.gruntBuild>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -764,14 +796,14 @@
         <solr-test-framework.version>8.6.3</solr-test-framework.version>
         <solr.version>8.6.3</solr.version>
         <spray.version>1.3.1</spray.version>
-        <spring.security.version>5.5.1</spring.security.version>
-        <spring.version>5.3.13</spring.version>
+        <spring.security.version>5.7.5</spring.security.version>
+        <spring.version>5.3.21</spring.version>
         <sqoop.version>1.4.6.2.3.99.0-195</sqoop.version>
         <storm.version>2.3.0</storm.version>
         <surefire.forkCount>2C</surefire.forkCount>
         <surefire.version>3.0.0-M5</surefire.version>
         <testng.version>7.0.0</testng.version>
-        <tinkerpop.version>3.5.1</tinkerpop.version>
+        <tinkerpop.version>3.5.4</tinkerpop.version>
         <woodstox-core.version>5.0.3</woodstox-core.version>
         <zookeeper.version>3.5.7</zookeeper.version>
     </properties>
@@ -863,6 +895,11 @@
             <id>typesafe</id>
             <name>Typesafe Repository</name>
             <url>https://repo.typesafe.com/typesafe/releases/</url>
+        </repository>
+        <repository>
+            <id>maven-restlet</id>
+            <name>Public online Restlet repository</name>
+            <url>https://maven.restlet.talend.com/</url>
         </repository>
     </repositories>
 
@@ -975,6 +1012,14 @@
                     <exclusion>
                         <groupId>junit</groupId>
                         <artifactId>junit</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.commons</groupId>
+                        <artifactId>commons-configuration2</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.commons</groupId>
+                        <artifactId>commons-text</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
@@ -1655,7 +1700,7 @@
             <dependency>
                 <groupId>org.yaml</groupId>
                 <artifactId>snakeyaml</artifactId>
-                <version>1.26</version>
+                <version>1.33</version>
             </dependency>
 
         </dependencies>

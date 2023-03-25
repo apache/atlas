@@ -10,7 +10,7 @@
       "offset": 0,
       "entityFilters": null,
       "tagFilters": null,
-      "attributes": [""]
+      "attributes": []
     },
     "expectedCount": 1
   },
@@ -25,7 +25,7 @@
       "offset": 0,
       "entityFilters": null,
       "tagFilters": null,
-      "attributes": [""]
+      "attributes": []
     },
     "expectedCount": 0
   },
@@ -129,7 +129,7 @@
         ]
       },
       "tagFilters": null,
-      "attributes": [""]
+      "attributes": []
     },
     "expectedCount": 1
   },
@@ -144,7 +144,7 @@
       "offset": 0,
       "entityFilters": null,
       "tagFilters": null,
-      "attributes": [""]
+      "attributes": []
     },
     "expectedCount": 1
   },
@@ -159,7 +159,7 @@
       "offset": 0,
       "entityFilters": null,
       "tagFilters": null,
-      "attributes": [""]
+      "attributes": []
     },
     "expectedCount": 3
   },
@@ -178,7 +178,7 @@
         "attributeValue" : "+"
       },
       "tagFilters": null,
-      "attributes": [""]
+      "attributes": []
     },
     "expectedCount": 1
   }

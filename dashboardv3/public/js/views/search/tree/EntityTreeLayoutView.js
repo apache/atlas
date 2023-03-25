@@ -204,6 +204,7 @@ define([
                 this.ui.entitySearchTree.jstree(true).deselect_all();
                 this.typeId = null;
             } else {
+                if (that.options.value.attributes) { that.options.value.attributes = null; }
                 if (that.options.value.type === "_ALL_ENTITY_TYPES" && this.typeId !== "_ALL_ENTITY_TYPES") {
                     this.fromManualRender = true;
                     if (this.typeId) {
