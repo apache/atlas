@@ -17,6 +17,7 @@
           "isIndexable": false,
           "isOptional": true,
           "isUnique": false,
+          "skipScrubbing": true,
           "includeInNotification": false
         },
         {
@@ -27,6 +28,7 @@
           "isIndexable": false,
           "isOptional": true,
           "isUnique": false,
+          "skipScrubbing": true,
           "includeInNotification": false
         },
         {
