@@ -146,27 +146,34 @@ public class ConnectionPreProcessor implements PreProcessor {
         String vertexQName = vertex.getProperty(QUALIFIED_NAME, String.class);
         entity.setAttribute(QUALIFIED_NAME, vertexQName);
 
-        List<String> newAdminUsers = (List<String>) connection.getAttribute(ATTR_ADMIN_USERS);
-        List<String> newAdminGroups = (List<String>) connection.getAttribute(ATTR_ADMIN_GROUPS);
-        List<String> newAdminRoles = (List<String>) connection.getAttribute(ATTR_ADMIN_ROLES);
-
-        List<String> currentAdminUsers = (List<String>) existingConnEntity.getAttribute(ATTR_ADMIN_USERS);
-        List<String> currentAdminGroups =(List<String>)  existingConnEntity.getAttribute(ATTR_ADMIN_GROUPS);
-        List<String> currentAdminRoles = (List<String>) existingConnEntity.getAttribute(ATTR_ADMIN_ROLES);
-
         RoleResource rolesResource = KeycloakClient.getKeycloakClient().getRealm().roles().get(roleName);
         RoleRepresentation representation = rolesResource.toRepresentation();
 
-        if (CollectionUtils.isNotEmpty(newAdminUsers) || CollectionUtils.isNotEmpty(currentAdminUsers)) {
-            keycloakStore.updateRoleUsers(roleName, currentAdminUsers, newAdminUsers, representation);
+        if (connection.hasAttribute(ATTR_ADMIN_USERS)) {
+            List<String> newAdminUsers = (List<String>) connection.getAttribute(ATTR_ADMIN_USERS);
+            List<String> currentAdminUsers = (List<String>) existingConnEntity.getAttribute(ATTR_ADMIN_USERS);
+
+            if (CollectionUtils.isNotEmpty(newAdminUsers) || CollectionUtils.isNotEmpty(currentAdminUsers)) {
+                keycloakStore.updateRoleUsers(roleName, currentAdminUsers, newAdminUsers, representation);
+            }
         }
 
-        if (CollectionUtils.isNotEmpty(newAdminGroups) || CollectionUtils.isNotEmpty(currentAdminGroups)) {
-            keycloakStore.updateRoleGroups(roleName, currentAdminGroups, newAdminGroups, representation);
+        if (connection.hasAttribute(ATTR_ADMIN_GROUPS)) {
+            List<String> newAdminGroups = (List<String>) connection.getAttribute(ATTR_ADMIN_GROUPS);
+            List<String> currentAdminGroups =(List<String>)  existingConnEntity.getAttribute(ATTR_ADMIN_GROUPS);
+
+            if (CollectionUtils.isNotEmpty(newAdminGroups) || CollectionUtils.isNotEmpty(currentAdminGroups)) {
+                keycloakStore.updateRoleGroups(roleName, currentAdminGroups, newAdminGroups, representation);
+            }
         }
 
-        if (CollectionUtils.isNotEmpty(newAdminRoles) || CollectionUtils.isNotEmpty(currentAdminRoles)) {
-            keycloakStore.updateRoleRoles(roleName, currentAdminRoles, newAdminRoles, rolesResource, representation);
+        if (connection.hasAttribute(ATTR_ADMIN_ROLES)) {
+            List<String> newAdminRoles = (List<String>) connection.getAttribute(ATTR_ADMIN_ROLES);
+            List<String> currentAdminRoles = (List<String>) existingConnEntity.getAttribute(ATTR_ADMIN_ROLES);
+
+            if (CollectionUtils.isNotEmpty(newAdminRoles) || CollectionUtils.isNotEmpty(currentAdminRoles)) {
+                keycloakStore.updateRoleRoles(roleName, currentAdminRoles, newAdminRoles, rolesResource, representation);
+            }
         }
 
         RequestContext.get().endMetricRecord(metricRecorder);

@@ -213,48 +213,59 @@ public class QueryCollectionPreProcessor implements PreProcessor {
     private void updateCollectionAdminRole(AtlasEntity collection, AtlasEntity existingCollEntity) throws AtlasBaseException {
         String adminRoleName = String.format(COLL_ADMIN_ROLE_PATTERN, collection.getGuid());
 
-        List<String> newAdminUsers = (List<String>) collection.getAttribute(ATTR_ADMIN_USERS);
-        List<String> newAdminGroups = (List<String>) collection.getAttribute(ATTR_ADMIN_GROUPS);
-        List<String> newAdminRoles = (List<String>) collection.getAttribute(ATTR_ADMIN_ROLES);
-
-        List<String> currentAdminUsers = (List<String>) existingCollEntity.getAttribute(ATTR_ADMIN_USERS);
-        List<String> currentAdminGroups =(List<String>)  existingCollEntity.getAttribute(ATTR_ADMIN_GROUPS);
-        List<String> currentAdminRoles = (List<String>) existingCollEntity.getAttribute(ATTR_ADMIN_ROLES);
-
         RoleResource rolesResource = KeycloakClient.getKeycloakClient().getRealm().roles().get(adminRoleName);
         RoleRepresentation representation = rolesResource.toRepresentation();
 
-        if (CollectionUtils.isNotEmpty(newAdminUsers) || CollectionUtils.isNotEmpty(currentAdminUsers)) {
-            keycloakStore.updateRoleUsers(adminRoleName, currentAdminUsers, newAdminUsers, representation);
+        if (collection.hasAttribute(ATTR_ADMIN_USERS)) {
+            List<String> newAdminUsers = (List<String>) collection.getAttribute(ATTR_ADMIN_USERS);
+            List<String> currentAdminUsers = (List<String>) existingCollEntity.getAttribute(ATTR_ADMIN_USERS);
+
+            if (CollectionUtils.isNotEmpty(newAdminUsers) || CollectionUtils.isNotEmpty(currentAdminUsers)) {
+                keycloakStore.updateRoleUsers(adminRoleName, currentAdminUsers, newAdminUsers, representation);
+            }
         }
 
-        if (CollectionUtils.isNotEmpty(newAdminGroups) || CollectionUtils.isNotEmpty(currentAdminGroups)) {
-            keycloakStore.updateRoleGroups(adminRoleName, currentAdminGroups, newAdminGroups, representation);
+        if (collection.hasAttribute(ATTR_ADMIN_GROUPS)) {
+            List<String> newAdminGroups = (List<String>) collection.getAttribute(ATTR_ADMIN_GROUPS);
+            List<String> currentAdminGroups =(List<String>)  existingCollEntity.getAttribute(ATTR_ADMIN_GROUPS);
+
+            if (CollectionUtils.isNotEmpty(newAdminGroups) || CollectionUtils.isNotEmpty(currentAdminGroups)) {
+                keycloakStore.updateRoleGroups(adminRoleName, currentAdminGroups, newAdminGroups, representation);
+            }
         }
 
-        if (CollectionUtils.isNotEmpty(newAdminRoles) || CollectionUtils.isNotEmpty(currentAdminRoles)) {
-            keycloakStore.updateRoleRoles(adminRoleName, currentAdminRoles, newAdminRoles, rolesResource, representation);
+        if (collection.hasAttribute(ATTR_ADMIN_ROLES)) {
+            List<String> newAdminRoles = (List<String>) collection.getAttribute(ATTR_ADMIN_ROLES);
+            List<String> currentAdminRoles = (List<String>) existingCollEntity.getAttribute(ATTR_ADMIN_ROLES);
+
+            if (CollectionUtils.isNotEmpty(newAdminRoles) || CollectionUtils.isNotEmpty(currentAdminRoles)) {
+                keycloakStore.updateRoleRoles(adminRoleName, currentAdminRoles, newAdminRoles, rolesResource, representation);
+            }
         }
     }
 
     private void updateCollectionViewerRole(AtlasEntity collection, AtlasEntity existingCollEntity) throws AtlasBaseException {
         String viewerRoleName = String.format(COLL_VIEWER_ROLE_PATTERN, collection.getGuid());
 
-        List<String> newViewerUsers = (List<String>) collection.getAttribute(ATTR_VIEWER_USERS);
-        List<String> newViewerGroups = (List<String>) collection.getAttribute(ATTR_VIEWER_GROUPS);
-
-        List<String> currentViewerUsers = (List<String>) existingCollEntity.getAttribute(ATTR_VIEWER_USERS);
-        List<String> currentViewerGroups =(List<String>)  existingCollEntity.getAttribute(ATTR_VIEWER_GROUPS);
-
         RoleResource rolesResource = KeycloakClient.getKeycloakClient().getRealm().roles().get(viewerRoleName);
         RoleRepresentation representation = rolesResource.toRepresentation();
 
-        if (CollectionUtils.isNotEmpty(newViewerUsers) || CollectionUtils.isNotEmpty(currentViewerUsers)) {
-            keycloakStore.updateRoleUsers(viewerRoleName, currentViewerUsers, newViewerUsers, representation);
+        if (collection.hasAttribute(ATTR_VIEWER_USERS)) {
+            List<String> newViewerUsers = (List<String>) collection.getAttribute(ATTR_VIEWER_USERS);
+            List<String> currentViewerUsers = (List<String>) existingCollEntity.getAttribute(ATTR_VIEWER_USERS);
+
+            if (CollectionUtils.isNotEmpty(newViewerUsers) || CollectionUtils.isNotEmpty(currentViewerUsers)) {
+                keycloakStore.updateRoleUsers(viewerRoleName, currentViewerUsers, newViewerUsers, representation);
+            }
         }
 
-        if (CollectionUtils.isNotEmpty(newViewerGroups) || CollectionUtils.isNotEmpty(currentViewerGroups)) {
-            keycloakStore.updateRoleGroups(viewerRoleName, currentViewerGroups, newViewerGroups, representation);
+        if (collection.hasAttribute(ATTR_VIEWER_GROUPS)) {
+            List<String> newViewerGroups = (List<String>) collection.getAttribute(ATTR_VIEWER_GROUPS);
+            List<String> currentViewerGroups =(List<String>)  existingCollEntity.getAttribute(ATTR_VIEWER_GROUPS);
+
+            if (CollectionUtils.isNotEmpty(newViewerGroups) || CollectionUtils.isNotEmpty(currentViewerGroups)) {
+                keycloakStore.updateRoleGroups(viewerRoleName, currentViewerGroups, newViewerGroups, representation);
+            }
         }
     }
 

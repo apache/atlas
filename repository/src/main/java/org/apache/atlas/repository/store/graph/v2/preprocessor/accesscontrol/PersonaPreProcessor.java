@@ -52,7 +52,9 @@ import static org.apache.atlas.AtlasErrorCode.OPERATION_NOT_SUPPORTED;
 import static org.apache.atlas.repository.Constants.POLICY_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_ACCESS_CONTROL_ENABLED;
+import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_PERSONA_GROUPS;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_PERSONA_ROLE_ID;
+import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_PERSONA_USERS;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_IS_ENABLED;
 import static org.apache.atlas.repository.util.AccessControlUtils.REL_ATTR_POLICIES;
 import static org.apache.atlas.repository.util.AccessControlUtils.getESAliasName;
@@ -225,28 +227,38 @@ public class PersonaPreProcessor implements PreProcessor {
         String roleId = getPersonaRoleId(existingPersona);
         String roleName = getPersonaRoleName(existingPersona);
 
-        List<String> newUsers       = getPersonaUsers(newPersona);
-        List<String> newGroups      = getPersonaGroups(newPersona);
-        List<String> existingUsers  = getPersonaUsers(existingPersona);
-        List<String> existingGroups = getPersonaGroups(existingPersona);
-
         RoleByIdResource rolesResource = KeycloakClient.getKeycloakClient().getRealm().rolesById();
         RoleRepresentation roleRepresentation = rolesResource.getRole(roleId);
 
-        keycloakStore.updateRoleUsers(roleName, existingUsers, newUsers, roleRepresentation);
+        boolean isUpdated = false;
+        if (newPersona.hasAttribute(ATTR_PERSONA_USERS)) {
+            List<String> newUsers       = getPersonaUsers(newPersona);
+            List<String> existingUsers  = getPersonaUsers(existingPersona);
 
-        keycloakStore.updateRoleGroups(roleName, existingGroups, newGroups, roleRepresentation);
+            keycloakStore.updateRoleUsers(roleName, existingUsers, newUsers, roleRepresentation);
+            isUpdated = true;
+        }
 
+        if (newPersona.hasAttribute(ATTR_PERSONA_GROUPS)) {
+            List<String> newGroups = getPersonaGroups(newPersona);
+            List<String> existingGroups = getPersonaGroups(existingPersona);
 
-        Map<String, List<String>> attributes = new HashMap<>();
-        attributes.put("updatedAt", Collections.singletonList(String.valueOf(System.currentTimeMillis())));
-        attributes.put("updatedBy", Collections.singletonList(RequestContext.get().getUser()));
-        attributes.put("enabled", Collections.singletonList(String.valueOf(true)));
-        attributes.put("displayName", Collections.singletonList(getEntityName(newPersona)));
+            keycloakStore.updateRoleGroups(roleName, existingGroups, newGroups, roleRepresentation);
+            isUpdated = true;
+        }
 
-        roleRepresentation.setAttributes(attributes);
+        if (isUpdated) {
+            Map<String, List<String>> attributes = new HashMap<>();
+            attributes.put("updatedAt", Collections.singletonList(String.valueOf(System.currentTimeMillis())));
+            attributes.put("updatedBy", Collections.singletonList(RequestContext.get().getUser()));
+            attributes.put("enabled", Collections.singletonList(String.valueOf(true)));
+            attributes.put("displayName", Collections.singletonList(getEntityName(newPersona)));
 
-        rolesResource.updateRole(roleId, roleRepresentation);
-        LOG.info("Updated keycloak role with name {}", roleName);
+            roleRepresentation.setAttributes(attributes);
+
+            rolesResource.updateRole(roleId, roleRepresentation);
+
+            LOG.info("Updated keycloak role with name {}", roleName);
+        }
     }
 }
