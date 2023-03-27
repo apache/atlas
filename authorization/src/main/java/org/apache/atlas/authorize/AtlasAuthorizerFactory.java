@@ -37,7 +37,6 @@ public class AtlasAuthorizerFactory {
     private static final String ATLAS_AUTHORIZER = "org.apache.atlas.authorization.atlas.authorizer.RangerAtlasAuthorizer";
 
     private static volatile AtlasAuthorizer INSTANCE = null;
-    public static final String ATLAS_AUTHORIZER_IMPL = "atlas";
 
     public static String CURRENT_AUTHORIZER_IMPL;
     public static final String ATLAS_AUTHORIZER_IMPL = "atlas";

@@ -20,6 +20,7 @@ package org.apache.atlas;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.type.AtlasType;
+import org.apache.commons.collections.MapUtils;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
@@ -60,22 +61,21 @@ public class ESAliasRequestBuilder {
             switch (eSAliasAction) {
                 case ADD:
                     type = ADD.getType();
-                    object.put("index", action.getIndex());
-                    object.put("alias", action.getAlias());
-                    if (action.getFilter() != null) {
+                    if (MapUtils.isNotEmpty(action.getFilter())) {
                         object.put("filter", new JSONObject(AtlasType.toJson(action.getFilter())));
                     }
                     break;
 
                 case REMOVE:
                     type = REMOVE.getType();
-                    object.put("index", action.getIndex());
-                    object.put("alias", action.getAlias());
                     break;
 
                 default:
                     throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, String.format("Action %s is not supported by ENUM ESAliasAction", eSAliasAction));
             }
+
+            object.put("index", action.getIndex());
+            object.put("alias", action.getAlias());
 
             JSONObject j_1 = new JSONObject();
             j_1.put(type, object);
