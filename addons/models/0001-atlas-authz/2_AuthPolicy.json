@@ -41,8 +41,7 @@
       "description": "Policy category",
       "serviceType": "atlas_core",
       "typeVersion": "1.0",
-      "elementDefs":
-      [
+      "elementDefs": [
         {
           "value": "bootstrap",
           "ordinal": 0
@@ -160,81 +159,14 @@
   [
     {
       "name": "AuthPolicy",
-      "superTypes": [],
       "description": "Model to store an accesscontrol policy in Atlas",
+      "superTypes": [
+        "Asset"
+      ],
       "serviceType": "atlan",
       "typeVersion": "1.0",
       "attributeDefs":
       [
-        {
-          "name": "qualifiedName",
-          "typeName": "string",
-          "indexType": "STRING",
-          "cardinality": "SINGLE",
-          "isIndexable": true,
-          "isOptional": false,
-          "isUnique": true,
-          "skipScrubbing": true,
-          "includeInNotification": true,
-          "indexTypeESFields": {
-            "text": {
-              "type": "text",
-              "analyzer": "atlan_text_analyzer"
-            }
-          }
-        },
-        {
-          "name": "name",
-          "typeName": "string",
-          "cardinality": "SINGLE",
-          "isIndexable": true,
-          "isOptional": false,
-          "isUnique": false,
-          "searchWeight": 10,
-          "skipScrubbing": true,
-          "indexTypeESConfig": {
-            "analyzer": "atlan_text_analyzer"
-          },
-          "indexTypeESFields": {
-            "keyword": {
-              "type": "keyword",
-              "normalizer": "atlan_normalizer"
-            },
-            "stemmed": {
-              "type": "text",
-              "analyzer": "atlan_text_stemmer"
-            }
-          }
-        },
-        {
-          "name": "description",
-          "typeName": "string",
-          "cardinality": "SINGLE",
-          "isIndexable": false,
-          "isOptional": true,
-          "isUnique": false,
-          "searchWeight": 9,
-          "skipScrubbing": true,
-          "includeInNotification": true,
-          "indexTypeESConfig": {
-            "analyzer": "atlan_text_analyzer"
-          },
-          "indexTypeESFields": {
-            "keyword": {
-              "type": "keyword",
-              "normalizer": "atlan_normalizer"
-            }
-          }
-        },
-        {
-          "name": "tenantId",
-          "typeName": "string",
-          "cardinality": "SINGLE",
-          "isIndexable": true,
-          "isOptional": true,
-          "isUnique": false,
-          "skipScrubbing": true
-        },
         {
           "name": "policyType",
           "typeName": "AuthPolicyType",
@@ -271,17 +203,6 @@
         {
           "name": "policySubCategory",
           "typeName": "string",
-          "indexType": "STRING",
-          "cardinality": "SINGLE",
-          "isIndexable": false,
-          "isOptional": true,
-          "isUnique": false,
-          "skipScrubbing": true,
-          "includeInNotification": true
-        },
-        {
-          "name": "policyResourceCategory",
-          "typeName": "AuthPolicyResourceCategory",
           "indexType": "STRING",
           "cardinality": "SINGLE",
           "isIndexable": false,
@@ -346,6 +267,17 @@
           "includeInNotification": true
         },
         {
+          "name": "policyResourceCategory",
+          "typeName": "string",
+          "indexType": "STRING",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": true
+        },
+        {
           "name": "isPolicyEnabled",
           "typeName": "boolean",
           "cardinality": "SINGLE",
@@ -388,6 +320,17 @@
           "isUnique": false,
           "skipScrubbing": true,
           "includeInNotification": false
+        },
+        {
+          "name": "policyDelegateAdmin",
+          "typeName": "boolean",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "defaultValue": false,
+          "skipScrubbing": true,
+          "includeInNotification": true
         },
         {
           "name": "policyConditions",

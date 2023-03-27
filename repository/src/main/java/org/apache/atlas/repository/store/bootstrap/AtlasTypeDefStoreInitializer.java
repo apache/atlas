@@ -21,6 +21,7 @@ package org.apache.atlas.repository.store.bootstrap;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
@@ -77,6 +78,7 @@ import java.util.*;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
+import static org.apache.atlas.authorize.AtlasAuthorizerFactory.ATLAS_AUTHORIZER_IMPL;
 import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.APPLIED;
 import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.FAILED;
 import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.SKIPPED;
@@ -94,6 +96,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
     public static final String RELATIONSHIP_CATEGORY  = "relationshipCategory";
     public static final String RELATIONSHIP_SWAP_ENDS = "swapEnds";
     public static final String TYPEDEF_PATCH_TYPE     = "TYPEDEF_PATCH";
+    public static final String ATLAS_AUTHZ_TYPES_DIR  = "0001-atlas-authz";
 
     private final AtlasTypeDefStore typeDefStore;
     private final AtlasTypeRegistry typeRegistry;
@@ -101,14 +104,23 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
     private final AtlasGraph        graph;
     private final AtlasPatchManager patchManager;
 
+    private boolean isAtlasAuthzEnabled = false;
+
     @Inject
     public AtlasTypeDefStoreInitializer(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry,
-                                        AtlasGraph graph, Configuration conf, AtlasPatchManager patchManager) {
+                                        AtlasGraph graph, Configuration conf, AtlasPatchManager patchManager) throws AtlasBaseException {
         this.typeDefStore  = typeDefStore;
         this.typeRegistry  = typeRegistry;
         this.conf          = conf;
         this.graph         = graph;
         this.patchManager  = patchManager;
+
+        try {
+            String auth = ApplicationProperties.get().getString("atlas.authorizer.impl");
+            isAtlasAuthzEnabled = auth.equals(ATLAS_AUTHORIZER_IMPL);
+        } catch (AtlasException e) {
+            throw new AtlasBaseException("Failed to fetch current authorizer", e);
+        }
     }
 
     @PostConstruct
@@ -174,6 +186,10 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
         LOG.info("==> AtlasTypeDefStoreInitializer({})", typesDir);
 
         String typesDirName = typesDir.getName();
+        if (!isValidTypesDir(typesDirName)) {
+            return;
+        }
+
         File[] typeDefFiles = typesDir.exists() ? typesDir.listFiles() : null;
 
         if (typeDefFiles == null || typeDefFiles.length == 0) {
@@ -214,6 +230,15 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
             applyTypePatches(typesDir.getPath(), patchRegistry);
         }
         LOG.info("<== AtlasTypeDefStoreInitializer({})", typesDir);
+    }
+
+    private boolean isValidTypesDir(String typesDirName) {
+        if (!isAtlasAuthzEnabled && ATLAS_AUTHZ_TYPES_DIR.equals(typesDirName)) {
+            LOG.info("Skipping file {} as Atlas Authz is not enabled", ATLAS_AUTHZ_TYPES_DIR);
+            return false;
+        }
+
+        return true;
     }
 
     public static AtlasTypesDef getTypesToCreate(AtlasTypesDef typesDef, AtlasTypeRegistry typeRegistry) {
