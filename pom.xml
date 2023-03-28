@@ -164,14 +164,14 @@
         <developer>
             <id>bstortz</id>
             <name>Barbara Stortz</name>
-            <email>bstortz@sap.com</email>
+            <email>barbara.stortz@gmail.com</email>
             <timezone>America/Los_Angeles</timezone>
             <roles>
                 <role>committer</role>
                 <role>PMC</role>
             </roles>
-            <organization>SAP Inc.</organization>
-            <!--<organizationUrl>https://www.sap.com</organizationUrl>-->
+            <organization>Microsoft</organization>
+            <!--<organizationUrl>https://www.microsoft.com</organizationUrl>-->
         </developer>
         <developer>
             <id>chyzer</id>
