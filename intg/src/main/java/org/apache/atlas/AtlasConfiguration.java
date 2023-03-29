@@ -94,8 +94,10 @@ public enum AtlasConfiguration {
     LINEAGE_ON_DEMAND_ENABLED("atlas.lineage.on.demand.enabled", true),
     LINEAGE_ON_DEMAND_DEFAULT_NODE_COUNT("atlas.lineage.on.demand.default.node.count", 3),
     LINEAGE_MAX_NODE_COUNT("atlas.lineage.max.node.count", 9000),
+
     SUPPORTED_RELATIONSHIP_EVENTS("atlas.notification.relationships.filter", "asset_readme,asset_links"),
     SUPPORTED_LINEAGE_RELATIONSHIP_EVENTS_VIA_FEATURE_FLAG("atlas.notification.lineage.events.feature.flag.enabled.filter", "catalog_process_inputs,process_catalog_outputs,column_lineage"),
+
     REST_API_XSS_FILTER_MASK_STRING("atlas.rest.xss.filter.mask.string", "map<[a-zA-Z _,:<>0-9\\x60]*>|struct<[a-zA-Z _,:<>0-9\\x60]*>|array<[a-zA-Z _,:<>0-9\\x60]*>|\\{\\{[a-zA-Z _,-:0-9\\x60\\{\\}]*\\}\\}"),
     REST_API_XSS_FILTER_EXLUDE_SERVER_NAME("atlas.rest.xss.filter.exclude.server.name", "atlas-service-atlas.atlas.svc.cluster.local"),
 
