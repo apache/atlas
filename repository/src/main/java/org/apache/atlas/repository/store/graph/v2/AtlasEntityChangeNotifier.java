@@ -23,6 +23,7 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.featureflag.FeatureFlagStore;
 import org.apache.atlas.listener.EntityChangeListener;
 import org.apache.atlas.listener.EntityChangeListenerV2;
 import org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2;
@@ -59,6 +60,7 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import static org.apache.atlas.featureflag.AtlasFeatureFlagConfig.*;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.PROPAGATED_CLASSIFICATION_ADD;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.PROPAGATED_CLASSIFICATION_DELETE;
 import static org.apache.atlas.repository.Constants.ENTITY_TEXT_PROPERTY_KEY;
@@ -74,20 +76,22 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
     private final FullTextMapperV2            fullTextMapperV2;
     private final AtlasTypeRegistry           atlasTypeRegistry;
     private final boolean                     isV2EntityNotificationEnabled;
+    private final FeatureFlagStore            featureFlagStore;
     private static final List<String> ALLOWED_RELATIONSHIP_TYPES = Arrays.asList(AtlasConfiguration.SUPPORTED_RELATIONSHIP_EVENTS.getStringArray());
-
-
+    private static final List<String> ALLOWED_LINEAGE_RELATIONSHIP_TYPES_VIA_FEATURE_FLAG = Arrays.asList(AtlasConfiguration.SUPPORTED_LINEAGE_RELATIONSHIP_EVENTS_VIA_FEATURE_FLAG.getStringArray());
+    private final static String LINEAGE_EVENTS_FEATURE_FLAG_KEY =  "metastore-enable-lineage-events-for-pipeline";
     @Inject
     public AtlasEntityChangeNotifier(Set<EntityChangeListener> entityChangeListeners,
                                      Set<EntityChangeListenerV2> entityChangeListenersV2,
                                      AtlasInstanceConverter instanceConverter,
                                      FullTextMapperV2 fullTextMapperV2,
-                                     AtlasTypeRegistry atlasTypeRegistry) {
+                                     AtlasTypeRegistry atlasTypeRegistry, FeatureFlagStore featureFlagStore) {
         this.entityChangeListeners         = entityChangeListeners;
         this.entityChangeListenersV2       = entityChangeListenersV2;
         this.instanceConverter             = instanceConverter;
         this.fullTextMapperV2              = fullTextMapperV2;
         this.atlasTypeRegistry             = atlasTypeRegistry;
+        this.featureFlagStore              = featureFlagStore;
         this.isV2EntityNotificationEnabled = AtlasRepositoryConfiguration.isV2EntityNotificationEnabled();
     }
 
@@ -122,10 +126,16 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
 
     @Override
     public void notifyRelationshipMutation(List<AtlasRelationship> relationships, EntityNotification.EntityNotificationV2.OperationType operationType) throws AtlasBaseException {
-        if (CollectionUtils.isEmpty(entityChangeListeners)) {
+        if (CollectionUtils.isEmpty(entityChangeListeners) || CollectionUtils.isEmpty(relationships)) {
             return;
         }
+
+        List<AtlasRelationship> featureFlagBasedEvents = new ArrayList<>();
+        if (isLineageBasedEventsEnabled())
+            featureFlagBasedEvents.addAll(relationships.stream().filter(r -> ALLOWED_LINEAGE_RELATIONSHIP_TYPES_VIA_FEATURE_FLAG.contains(r.getTypeName())).collect(Collectors.toList()));
+
         relationships = relationships.stream().filter(r -> ALLOWED_RELATIONSHIP_TYPES.contains(r.getTypeName())).collect(Collectors.toList());
+        relationships.addAll(featureFlagBasedEvents);
         if (CollectionUtils.isEmpty(relationships))
             return;
         switch (operationType) {
@@ -139,6 +149,10 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
                 notifyRelationshipListeners(relationships, EntityOperation.DELETE, false);
                 break;
         }
+    }
+
+    private boolean isLineageBasedEventsEnabled() {
+        return featureFlagStore.evaluate(LINEAGE_EVENTS_FEATURE_FLAG_KEY, INSTANCE_DOMAIN_NAME);
     }
 
     @Override

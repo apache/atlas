@@ -112,6 +112,13 @@
             <version>${guava.version}</version>
             <scope>test</scope>
         </dependency>
+
+        <!-- https://mvnrepository.com/artifact/com.launchdarkly/launchdarkly-java-server-sdk -->
+        <dependency>
+            <groupId>com.launchdarkly</groupId>
+            <artifactId>launchdarkly-java-server-sdk</artifactId>
+            <version>${launch-darkly.version}</version>
+        </dependency>
     </dependencies>
 
     <build>
