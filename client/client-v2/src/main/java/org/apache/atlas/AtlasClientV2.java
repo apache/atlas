@@ -83,6 +83,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -137,6 +138,8 @@ public class AtlasClientV2 extends AtlasBaseClient {
     //Notification APIs
     private static final String NOTIFICATION_URI         = BASE_URI + "v2/notification";
 
+    //IndexRecovery APIs
+    private static final String INDEX_RECOVERY_URI = BASE_URI + "v2/indexrecovery";
 
     public AtlasClientV2(String[] baseUrl, String[] basicAuthUserNamePassword) {
         super(baseUrl, basicAuthUserNamePassword);
@@ -1031,6 +1034,18 @@ public class AtlasClientV2 extends AtlasBaseClient {
         callAPI(formatPathParameters(API_V2.POST_NOTIFICATIONS_TO_TOPIC, topic), (Class<?>) null, messages);
     }
 
+    public Map<String, String> getIndexRecoveryData() throws AtlasServiceException {
+        return callAPI(API_V2.GET_INDEX_RECOVERY_DATA, Map.class, null);
+    }
+
+    public void startIndexRecovery(Instant startTime) throws AtlasServiceException {
+        MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
+
+        queryParams.add("startTime", startTime != null ? String.valueOf(startTime) : null);
+
+        callAPI(API_V2.START_INDEX_RECOVERY, (Class<?>) null, queryParams);
+    }
+
     @VisibleForTesting
     public API formatPathWithParameter(API api, String... params) {
         return formatPathParameters(api, params);
@@ -1211,6 +1226,9 @@ public class AtlasClientV2 extends AtlasBaseClient {
         public static final API_V2 IMPORT_BUSINESS_METADATA          = new API_V2(ENTITY_API + "businessmetadata/import", HttpMethod.POST, Response.Status.OK, MediaType.MULTIPART_FORM_DATA, MediaType.APPLICATION_JSON);
 
         public static final API_V2 POST_NOTIFICATIONS_TO_TOPIC     = new API_V2(NOTIFICATION_URI + "/topic/%s", HttpMethod.POST, Response.Status.NO_CONTENT);
+
+        public static final API_V2 GET_INDEX_RECOVERY_DATA = new API_V2(INDEX_RECOVERY_URI , HttpMethod.GET, Response.Status.OK);
+        public static final API_V2 START_INDEX_RECOVERY    = new API_V2(INDEX_RECOVERY_URI + "/start", HttpMethod.POST, Response.Status.NO_CONTENT);
 
         // labels APIs
         public static final API_V2 ADD_LABELS                        = new API_V2(ENTITY_API + "guid/%s/labels", HttpMethod.PUT, Response.Status.NO_CONTENT);

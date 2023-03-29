@@ -21,6 +21,7 @@ package org.apache.atlas.repository.graphdb.janus;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.GraphDatabase;
@@ -77,9 +78,7 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
     public static final String INDEX_BACKEND_ES           = "elasticsearch";
     public static final String GRAPH_TX_LOG_CONF          = "tx.log-tx";
     public static final String GRAPH_TX_LOG_VERBOSE_CONF  = "tx.recovery.verbose";
-    public static final String SOLR_INDEX_TX_LOG_TTL_CONF = "write.ahead.log.ttl.in.hours";
     public static final String GRAPH_TX_LOG_TTL_CONF      = "log.tx.ttl";
-    public static final long   DEFAULT_GRAPH_TX_LOG_TTL   = 72; //Hrs
 
     private static volatile AtlasJanusGraph atlasGraphInstance = null;
     private static volatile JanusGraph graphInstance;
@@ -233,7 +232,7 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
     public static void configureTxLogBasedIndexRecovery() {
         try {
             boolean  recoveryEnabled = ApplicationProperties.get().getBoolean(INDEX_RECOVERY_CONF, DEFAULT_INDEX_RECOVERY);
-            long     ttl             = ApplicationProperties.get().getLong(SOLR_INDEX_TX_LOG_TTL_CONF, DEFAULT_GRAPH_TX_LOG_TTL);
+            long     ttl             = AtlasConfiguration.SOLR_INDEX_TX_LOG_TTL_CONF.getLong();
             Duration txLogTtlSecs    = Duration.ofSeconds(Duration.ofHours(ttl).getSeconds());
 
             Map<String, Object> properties = new HashMap<String, Object>() {{

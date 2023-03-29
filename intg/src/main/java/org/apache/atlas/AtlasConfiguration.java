@@ -92,7 +92,8 @@ public enum AtlasConfiguration {
     TASKS_USE_ENABLED("atlas.tasks.enabled", true),
     SESSION_TIMEOUT_SECS("atlas.session.timeout.secs", -1),
     UPDATE_COMPOSITE_INDEX_STATUS("atlas.update.composite.index.status", true),
-    METRICS_TIME_TO_LIVE_HOURS( "atlas.metrics.ttl.hours", 336); // 14 days default
+    METRICS_TIME_TO_LIVE_HOURS( "atlas.metrics.ttl.hours", 336), // 14 days default
+	SOLR_INDEX_TX_LOG_TTL_CONF("write.ahead.log.ttl.in.hours", 240); //10 days default
 
     private static final Configuration APPLICATION_PROPERTIES;
 
