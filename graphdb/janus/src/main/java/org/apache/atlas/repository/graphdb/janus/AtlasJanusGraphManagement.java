@@ -434,7 +434,7 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
                 TransactionRecovery txRecovery = (TransactionRecovery) txRecoveryObject;
                 StandardJanusGraph  janusGraph = (StandardJanusGraph) this.graph.getGraph();
 
-                LOG.info("stopIndexRecovery: Index Client is unhealthy. Index recovery: Paused!");
+                LOG.info("stopIndexRecovery: Index recovery: Paused!");
 
                 janusGraph.getBackend().getSystemTxLog().close();
 
