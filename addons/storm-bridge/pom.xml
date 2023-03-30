@@ -97,6 +97,10 @@
             <version>${storm.version}</version>
             <exclusions>
                 <exclusion>
+                    <groupId>org.apache.storm</groupId>
+                    <artifactId>storm-clojure</artifactId>
+                </exclusion>
+                <exclusion>
                     <groupId>org.slf4j</groupId>
                     <artifactId>log4j-over-slf4j</artifactId>
                 </exclusion>
