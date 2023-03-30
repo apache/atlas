@@ -68,6 +68,7 @@ define([
             this.listenTo(this, "route", this.postRouteExecute, this);
             this.searchVent = new Backbone.Wreqr.EventAggregator();
             this.categoryEvent = new Backbone.Wreqr.EventAggregator();
+            this.exportVent = new Backbone.Wreqr.EventAggregator();
             this.glossaryCollection = new VGlossaryList([], {
                 comparator: function(item) {
                     return item.get("name");
@@ -86,7 +87,8 @@ define([
             };
             this.ventObj = {
                 searchVent: this.searchVent,
-                categoryEvent: this.categoryEvent
+                categoryEvent: this.categoryEvent,
+                exportVent: this.exportVent
             }
             this.sharedObj = {
                 searchTableColumns: {},

@@ -21,15 +21,17 @@ define(['require',
     'utils/CommonViewFunction',
     'utils/Globals',
     'utils/Utils',
-    'utils/UrlLinks'
-], function(require, tmpl, CommonViewFunction, Globals, Utils, UrlLinks) {
+    'utils/UrlLinks',
+    'collection/VDownloadList',
+], function(require, tmpl, CommonViewFunction, Globals, Utils, UrlLinks, VDownloadList) {
     'use strict';
 
     var Header = Marionette.LayoutView.extend({
         template: tmpl,
         regions: {
             RGlobalSearchLayoutView: "#r_globalSearchLayoutView",
-            RFilterBrowserLayoutView: "#r_filterBrowserLayoutView"
+            RFilterBrowserLayoutView: "#r_filterBrowserLayoutView",
+            RDownloadSearchResult: "[data-id='r_DownloadSearchResult']"
         },
         templateHelpers: function() {
             return {
@@ -43,7 +45,8 @@ define(['require',
             administrator: "[data-id='administrator']",
             showDebug: "[data-id='showDebug']",
             signOut: "[data-id='signOut']",
-            uiSwitch: "[data-id='uiSwitch']"
+            uiSwitch: "[data-id='uiSwitch']",
+            showDownloads: "[data-id='showDownloads']"
         },
         events: function() {
             var events = {};
@@ -69,6 +72,9 @@ define(['require',
                     updateTabState: true
                 });
             };
+            events['click ' + this.ui.showDownloads] = function(e) {
+                this.exportVent.trigger("downloads:showDownloads");
+            };
             events['click ' + this.ui.showDebug] = function() {
                 Utils.setUrl({
                     url: "#!/debugMetrics",
@@ -90,6 +96,7 @@ define(['require',
 
         },
         initialize: function(options) {
+            _.extend(this, _.pick(options, 'exportVent'));
             this.bindEvent();
             this.options = options;
         },
@@ -121,6 +128,7 @@ define(['require',
             if (this.options.fromDefaultSearch !== true) {
                 this.renderGlobalSearch();
             }
+            this.renderDownloadSearchResultview();
         },
         onShow: function() {
             this.setSearchBoxWidth();
@@ -152,6 +160,12 @@ define(['require',
                 that.RFilterBrowserLayoutView.show(new SearchFilterBrowseLayoutView(_.extend({ toggleLayoutClass: that.toggleLayoutClass }, that.options)));
             });
         },
+        renderDownloadSearchResultview: function() {
+            var that = this;
+            require(['views/site/DownloadSearchResultLayoutView'], function(DownloadSearchResultLayoutView) {
+                that.RDownloadSearchResult.show(new DownloadSearchResultLayoutView(that.options));
+            });
+        }
     });
     return Header;
 });

@@ -1313,5 +1313,13 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
         $('.nav.nav-tabs').find('[role="' + tabActive + '"]').addClass('active').siblings().removeClass('active');
         $('.tab-content').find('[role="' + tabActive + '"]').addClass('active').siblings().removeClass('active');
     }
+
+    Utils.disableRefreshButton = function(el, that) {
+        var that = that;
+        el.attr('disabled', true);
+        setTimeout(function() {
+            el.attr('disabled', false);
+        }, 1000);
+    }
     return Utils;
 });

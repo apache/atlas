@@ -77,7 +77,7 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
                     if (Utils.getUrlState.isRelationTab()) {
                         this.options.searchVent.trigger('relationSearch:refresh');
                     }
-                    this.disableRefreshButton();
+                    Utils.disableRefreshButton(this.ui.refreshSearchQuery, this);
                 };
 
                 events["click " + this.ui.attrApply] = function(e) {
@@ -188,13 +188,6 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
                         this.options.searchTableFilters["entityFilters"][that.options.value.type] = "";
                     }
                 }
-            },
-            disableRefreshButton: function() {
-                var that = this;
-                this.ui.refreshSearchQuery.attr('disabled', true);
-                setTimeout(function() {
-                    that.ui.refreshSearchQuery.attr('disabled', false);
-                }, 1000);
             },
             onCheckExcludeIncludeResult: function(e) {
 

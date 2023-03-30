@@ -256,13 +256,6 @@ define(['require',
                     this.setInitialEntityVal = false;
                 }
             },
-            disableRefreshButton: function() {
-                var that = this;
-                this.ui.refreshBtn.attr('disabled', true);
-                setTimeout(function() {
-                    that.ui.refreshBtn.attr('disabled', false);
-                }, 1000);
-            },
             makeFilterButtonActive: function(filtertypeParam) {
                 var filtertype = ['entityFilters', 'tagFilters'],
                     that = this;
@@ -424,7 +417,7 @@ define(['require',
                     }), param);
             },
             onRefreshButton: function() {
-                this.disableRefreshButton();
+                Utils.disableRefreshButton(this.ui.refreshBtn, this);
                 var that = this,
                     apiCount = 2,
                     updateSearchList = function() {
