@@ -754,6 +754,9 @@
         <janusgraph.cassandra.version>0.5.3</janusgraph.cassandra.version>
         <javax-inject.version>1</javax-inject.version>
         <javax.servlet.version>3.1.0</javax.servlet.version>
+        <java.version.required>1.8</java.version.required>
+        <javac.source.version>1.8</javac.source.version>
+        <javac.target.version>1.8</javac.target.version>
         <jersey-spring.version>1.19.4</jersey-spring.version>
         <jersey.version>1.19</jersey.version>
         <jettison.version>1.5.2</jettison.version>
