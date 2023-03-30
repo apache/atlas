@@ -799,7 +799,7 @@
         <spring.security.version>5.7.5</spring.security.version>
         <spring.version>5.3.21</spring.version>
         <sqoop.version>1.4.6.2.3.99.0-195</sqoop.version>
-        <storm.version>2.3.0</storm.version>
+        <storm.version>2.4.0</storm.version>
         <surefire.forkCount>2C</surefire.forkCount>
         <surefire.version>3.0.0-M5</surefire.version>
         <testng.version>7.0.0</testng.version>
