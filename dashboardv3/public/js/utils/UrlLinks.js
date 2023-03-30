@@ -55,7 +55,7 @@ define(['require', 'utils/Enums', 'utils/Utils', 'underscore'], function(require
         metricsCollectionTimeApiUrl: function() {
             return this.baseUrl + '/admin/metricsstat/'
         },
-        metricsGraphUrl:function(){
+        metricsGraphUrl: function() {
             return this.baseUrl + '/admin/metricsstats/charts'
         },
         pendingTaskApiUrl: function() {
@@ -281,6 +281,18 @@ define(['require', 'utils/Enums', 'utils/Utils', 'underscore'], function(require
         },
         adminApiUrl: function() {
             return this.baseUrl + '/admin/audits';
+        },
+        downloadBasicSearchResultsCSV: function() {
+            return this.baseUrlV2 + '/search/basic/download/create_file';
+        },
+        downloadAdvanceSearchResultsCSV: function() {
+            return this.baseUrlV2 + '/search/dsl/download/create_file';
+        },
+        getDownloadsList: function() {
+            return this.baseUrlV2 + '/search/download/status';
+        },
+        downloadSearchResultsFileUrl: function(fileName) {
+            return this.baseUrlV2 + '/search/download/' + fileName;
         }
     });
 

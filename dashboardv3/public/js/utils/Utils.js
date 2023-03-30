@@ -1316,5 +1316,13 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
     }
     //-----------------------------------------END---------------------//
 
+    Utils.disableRefreshButton = function(el, that) {
+        var that = that;
+        el.attr('disabled', true);
+        setTimeout(function() {
+            el.attr('disabled', false);
+        }, 1000);
+    }
+
     return Utils;
 });

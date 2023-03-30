@@ -1,4 +1,4 @@
-/*
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,27 +16,30 @@
  * limitations under the License.
  */
 
-@import "__mixin.scss";
-@import "__variable.scss";
-@import "common.scss";
-@import "table.scss";
-@import "tab.scss";
-@import "form.scss";
-@import "nav.scss";
-@import "panel.scss";
-@import "loader.scss";
-@import "graph.scss";
-@import "relationship.scss";
-@import "old-style.scss";
-@import "theme.scss";
-@import "tag.scss";
-@import "search.scss";
-@import "profile-table.scss";
-@import "glossary.scss";
-@import "wizard.scss";
-@import "business-metadata.scss";
-@import "stats.scss";
-@import "override.scss";
-@import "trumbowyg.scss";
-@import "texteditor.scss";
-@import "downloads.scss";
+define(['require',
+    'utils/Globals',
+    'models/BaseModel',
+    'utils/UrlLinks'
+], function(require, Globals, vBaseModel, UrlLinks) {
+    'use strict';
+    var VDownload = vBaseModel.extend({
+        urlRoot: UrlLinks.downloadBasicSearchResultsCSV(),
+
+        defaults: {},
+
+        serverSchema: {},
+
+        idAttribute: 'id',
+
+        initialize: function() {
+            this.modelName = 'VDownload';
+        },
+        toString: function() {
+            return this.get('name');
+        },
+        /*************************
+         * Non - CRUD operations
+         *************************/
+    }, {});
+    return VDownload;
+});
