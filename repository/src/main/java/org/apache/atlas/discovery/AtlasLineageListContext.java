@@ -6,6 +6,7 @@ import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.Predicate;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.LinkedList;
 import java.util.Set;
@@ -21,7 +22,7 @@ public class AtlasLineageListContext {
     private Set<String>                         attributes;
     private Set<String>                         relationAttributes;
     private boolean                             fetchProcesses;
-    private LinkedList<String>                  traversalQueue;
+    private LinkedList<Pair<String, Integer>>   traversalQueue;
 
     public AtlasLineageListContext(LineageListRequest lineageListRequest, AtlasTypeRegistry typeRegistry) {
         this.guid = lineageListRequest.getGuid();
@@ -117,19 +118,19 @@ public class AtlasLineageListContext {
         this.fetchProcesses = fetchProcesses;
     }
 
-    public LinkedList<String> getTraversalQueue() {
+    public LinkedList<Pair<String, Integer>> getTraversalQueue() {
         return traversalQueue;
     }
 
-    public void setTraversalQueue(LinkedList<String> traversalQueue) {
+    public void setTraversalQueue(LinkedList<Pair<String, Integer>> traversalQueue) {
         this.traversalQueue = traversalQueue;
     }
 
-    public void addToTraversalQueue(String guid) {
-        traversalQueue.add(guid);
+    public void addToTraversalQueue(Pair<String, Integer> entity) {
+        traversalQueue.add(entity);
     }
 
-    public String popFromTraversalQueue() {
+    public Pair<String, Integer> popFromTraversalQueue() {
         return traversalQueue.pop();
     }
 
