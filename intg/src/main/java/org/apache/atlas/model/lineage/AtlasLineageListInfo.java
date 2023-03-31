@@ -10,17 +10,14 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.io.Serializable;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
-@JsonIgnoreProperties(ignoreUnknown = true, value = {"visitedEdges", "skippedEdges"})
+@JsonIgnoreProperties(ignoreUnknown = true, value = {"visitedEdges", "skippedEdges", "traversalQueue"})
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class AtlasLineageListInfo implements Serializable {
@@ -121,59 +118,44 @@ public class AtlasLineageListInfo implements Serializable {
     @XmlAccessorType(XmlAccessType.PROPERTY)
     public static class LineageListEntityInfo {
         @JsonProperty
-        boolean                    hasMoreInputs;
-        @JsonProperty
-        boolean                    hasMoreOutputs;
-        int                        inputRelationsCount;
-        int                        outputRelationsCount;
-        boolean                    isInputRelationsReachedLimit;
-        boolean                    isOutputRelationsReachedLimit;
+        boolean                    hasMore;
+        int                        relationsCount;
+        boolean                    isRelationsReachedLimit;
         int                        fromCounter;  // Counter for relations to be skipped
         int                        size;
 
         public LineageListEntityInfo() {}
 
         public LineageListEntityInfo(int size) {
-            this.hasMoreInputs                 = false;
-            this.hasMoreOutputs                = false;
-            this.inputRelationsCount           = 0;
-            this.outputRelationsCount          = 0;
-            this.isInputRelationsReachedLimit  = false;
-            this.isOutputRelationsReachedLimit = false;
+            this.hasMore                       = false;
+            this.relationsCount                = 0;
+            this.isRelationsReachedLimit       = false;
             this.fromCounter                   = 0;
             this.size                          = size;
         }
 
-        public boolean isInputRelationsReachedLimit() {
-            return isInputRelationsReachedLimit;
+        public boolean isHasMore() {
+            return hasMore;
         }
 
-        public void setInputRelationsReachedLimit(boolean isInputRelationsReachedLimit) {
-            this.isInputRelationsReachedLimit = isInputRelationsReachedLimit;
+        public void setHasMore(boolean hasMore) {
+            this.hasMore = hasMore;
         }
 
-        public boolean isOutputRelationsReachedLimit() {
-            return isOutputRelationsReachedLimit;
+        public int getRelationsCount() {
+            return relationsCount;
         }
 
-        public void setOutputRelationsReachedLimit(boolean isOutputRelationsReachedLimit) {
-            this.isOutputRelationsReachedLimit = isOutputRelationsReachedLimit;
+        public void setRelationsCount(int relationsCount) {
+            this.relationsCount = relationsCount;
         }
 
-        public boolean hasMoreInputs() {
-            return hasMoreInputs;
+        public boolean isRelationsReachedLimit() {
+            return isRelationsReachedLimit;
         }
 
-        public void setHasMoreInputs(boolean hasMoreInputs) {
-            this.hasMoreInputs = hasMoreInputs;
-        }
-
-        public boolean hasMoreOutputs() {
-            return hasMoreOutputs;
-        }
-
-        public void setHasMoreOutputs(boolean hasMoreOutputs) {
-            this.hasMoreOutputs = hasMoreOutputs;
+        public void setRelationsReachedLimit(boolean relationsReachedLimit) {
+            isRelationsReachedLimit = relationsReachedLimit;
         }
 
         public int getFromCounter() {
@@ -184,57 +166,38 @@ public class AtlasLineageListInfo implements Serializable {
             fromCounter++;
         }
 
-        public int getInputRelationsCount() {
-            return inputRelationsCount;
+
+        public int getSize() {
+            return size;
+        }
+
+        public void setSize(int size) {
+            this.size = size;
         }
 
         public void incrementInputRelationsCount() {
-            if (hasMoreInputs) {
+            if (hasMore) {
                 return;
             }
 
-            if (isInputRelationsReachedLimit) {
-                setHasMoreInputs(true);
+            if (isRelationsReachedLimit) {
+                setHasMore(true);
                 return;
             }
 
-            this.inputRelationsCount++;
+            this.relationsCount++;
 
-            if (inputRelationsCount == size) {
-                this.setInputRelationsReachedLimit(true);
-                return;
-            }
-        }
-
-        public int getOutputRelationsCount() {
-            return outputRelationsCount;
-        }
-
-        public void incrementOutputRelationsCount() {
-            if (hasMoreOutputs) {
-                return;
-            }
-
-            if (isOutputRelationsReachedLimit) {
-                setHasMoreOutputs(true);
-                return;
-            }
-
-            this.outputRelationsCount++;
-
-            if (outputRelationsCount == size) {
-                this.setOutputRelationsReachedLimit(true);
+            if (relationsCount == size) {
+                this.setRelationsReachedLimit(true);
                 return;
             }
         }
 
         @Override
         public String toString() {
-            return "LineageInfoOnDemand{" +
-                    "hasMoreInputs='" + hasMoreInputs + '\'' +
-                    ", hasMoreOutputs='" + hasMoreOutputs + '\'' +
-                    ", inputRelationsCount='" + inputRelationsCount + '\'' +
-                    ", outputRelationsCount='" + outputRelationsCount + '\'' +
+            return "LineageListEntityInfo{" +
+                    "hasMore='" + hasMore + '\'' +
+                    ", relationsCount='" + relationsCount + '\'' +
                     '}';
         }
 
@@ -242,7 +205,7 @@ public class AtlasLineageListInfo implements Serializable {
 
     @Override
     public String toString() {
-        return "AtlasLineageInfo{" +
+        return "AtlasLineageListInfo{" +
                 "entities=" + entities +
                 ", entityInfoMap=" + entityInfoMap +
                 '}';
