@@ -120,8 +120,10 @@ public final class KeycloakClient {
                 LOG.info("Keycloak conf: REALM_ID:{}, AUTH_SERVER_URL:{}",
                         REALM_ID, AUTH_SERVER_URL);
             } else {
-                throw new AtlasBaseException("Keycloak configuration file not found in location " + confLocation);
+                throw new AtlasBaseException(AtlasErrorCode.KEYCLOAK_INIT_FAILED, "Keycloak configuration file not found in location " + confLocation);
             }
+        } else {
+            throw new AtlasBaseException(AtlasErrorCode.KEYCLOAK_INIT_FAILED, "Configuration location not found " + confLocation);
         }
     }
 
