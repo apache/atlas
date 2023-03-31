@@ -18,6 +18,7 @@
 
 package org.apache.atlas.keycloak.client;
 
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
@@ -33,6 +34,7 @@ import org.keycloak.representations.idm.UserRepresentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.PreDestroy;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -42,13 +44,19 @@ import java.util.List;
 
 import static org.apache.atlas.ApplicationProperties.ATLAS_CONFIGURATION_DIRECTORY_PROPERTY;
 
-public class KeycloakClient {
+public final class KeycloakClient {
     public static final Logger LOG = LoggerFactory.getLogger(KeycloakClient.class);
 
-    private static KeycloakClient keycloakClient = null;
-    public static Keycloak keycloak = null;
+    private static KeycloakClient KEYCLOAK_CLIENT = null;
+    public static Keycloak KEYCLOAK = null;
 
-    public static final String KEYCLOAK_PROPERTIES = "keycloak.json";
+    private static final String KEYCLOAK_PROPERTIES = "keycloak.json";
+    private static String DEDAULT_GRANT_TYPE        = "client_credentials";
+    private static String KEY_REALM_ID              = "realm";
+    private static String KEY_AUTH_SERVER_URL       = "auth-server-url";
+    private static String KEY_CLIENT_ID             = "resource";
+    private static String KEY_CREDENTIALS           = "credentials";
+    private static String KEY_SECRET                = "secret";
 
     private static String REALM_ID;
     private static String AUTH_SERVER_URL;
@@ -56,35 +64,39 @@ public class KeycloakClient {
     private static String CLIENT_SECRET;
     private static String GRANT_TYPE;
 
-
     private KeycloakClient() {
     }
 
     public static KeycloakClient getKeycloakClient() throws AtlasBaseException {
-        if (keycloakClient == null) {
+        if (KEYCLOAK_CLIENT == null) {
             LOG.info("Initializing Keycloak client..");
             try {
                 initConf();
             } catch (IOException e) {
                 LOG.error("Failed to fetch Keycloak conf {}", e.getMessage());
-                throw new AtlasBaseException(e);
+                throw new AtlasBaseException(AtlasErrorCode.KEYCLOAK_INIT_FAILED, e.getMessage());
             } catch (JSONException e) {
-                LOG.error("Failed to parsing Keycloak conf {}", e.getMessage());
-                throw new AtlasBaseException(e);
+                LOG.error("Failed to parse Keycloak conf {}", e.getMessage());
+                throw new AtlasBaseException(AtlasErrorCode.KEYCLOAK_INIT_FAILED, e.getMessage());
             } catch (Exception e) {
                 LOG.error("Failed to connect to Keycloak {}", e.getMessage());
-                throw new AtlasBaseException(e);
+                throw new AtlasBaseException(AtlasErrorCode.KEYCLOAK_INIT_FAILED, e.getMessage());
             }
             init();
             LOG.info("Initialized Keycloak client..");
         }
 
-        if (keycloak.isClosed()) {
+        if (KEYCLOAK.isClosed()) {
             LOG.info("Re-initializing keycloak client");
             init();
         }
 
-        return keycloakClient;
+        return KEYCLOAK_CLIENT;
+    }
+
+    @PreDestroy
+    public void preDestroy() {
+        KEYCLOAK.close();
     }
 
     private static void initConf() throws Exception {
@@ -99,12 +111,12 @@ public class KeycloakClient {
 
                 JSONObject object = new JSONObject(keyConf);
 
-                REALM_ID = object.getString("realm");
-                AUTH_SERVER_URL = object.getString("auth-server-url");
-                CLIENT_ID = object.getString("resource");
-                GRANT_TYPE = "client_credentials";
-                CLIENT_SECRET = object.getJSONObject("credentials").getString("secret");
-
+                REALM_ID = object.getString(KEY_REALM_ID);
+                AUTH_SERVER_URL = object.getString(KEY_AUTH_SERVER_URL);
+                CLIENT_ID = object.getString(KEY_CLIENT_ID);
+                GRANT_TYPE = DEDAULT_GRANT_TYPE;
+                CLIENT_SECRET = object.getJSONObject(KEY_CREDENTIALS).getString(KEY_SECRET);
+                
                 LOG.info("Keycloak conf: REALM_ID:{}, AUTH_SERVER_URL:{}",
                         REALM_ID, AUTH_SERVER_URL);
             } else {
@@ -115,31 +127,30 @@ public class KeycloakClient {
 
     private static void init() {
         synchronized (KeycloakClient.class) {
-            if (keycloakClient == null) {
-                keycloak = KeycloakBuilder.builder()
+            if (KEYCLOAK_CLIENT == null) {
+                KEYCLOAK = KeycloakBuilder.builder()
                         .serverUrl(AUTH_SERVER_URL)
                         .realm(REALM_ID)
                         .clientId(CLIENT_ID)
                         .clientSecret(CLIENT_SECRET)
                         .grantType(GRANT_TYPE)
                         .resteasyClient(new ResteasyClientBuilder().build())
-                        //.resteasyClient(ClientBuilder.newBuilder().build())
                         .build();
 
-                keycloakClient = new KeycloakClient();
+                KEYCLOAK_CLIENT = new KeycloakClient();
             }
         }
     }
 
     public RealmResource getRealm() {
-        return keycloak.realm(REALM_ID);
+        return KEYCLOAK.realm(REALM_ID);
     }
 
     public List<UserRepresentation> getAllUsers() {
         int start = 0;
         int size = 100;
 
-        List<UserRepresentation> ret = new ArrayList<>();
+        List<UserRepresentation> ret = new ArrayList<>(0);
 
         do {
             List<UserRepresentation> userRepresentations = getRealm().users().list(start, size);
@@ -156,7 +167,7 @@ public class KeycloakClient {
         int start = 0;
         int size = 100;
 
-        List<GroupRepresentation> ret = new ArrayList<>();
+        List<GroupRepresentation> ret = new ArrayList<>(0);
 
         do {
             List<GroupRepresentation> groupRepresentations = getRealm().groups().groups(start, size);
@@ -172,7 +183,7 @@ public class KeycloakClient {
         int start = 0;
         int size = 100;
 
-        List<RoleRepresentation> ret = new ArrayList<>();
+        List<RoleRepresentation> ret = new ArrayList<>(0);
 
         do {
             List<RoleRepresentation> roleRepresentations = getRealm().roles().list(start, size);
