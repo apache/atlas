@@ -59,7 +59,7 @@ public class KeycloakUserStore {
     private static int NUM_THREADS = 5;
 
     List<String> OPERATION_TYPES = Arrays.asList("CREATE", "UPDATE", "DELETE");
-    List<String> RESOURCE_TYPES = Arrays.asList("USER", "GROUP", "REALM_ROLE", "REALM_ROLE_MAPPING", "GROUP_MEMBERSHIP");
+    List<String> RESOURCE_TYPES = Arrays.asList("USER", "GROUP", "REALM_ROLE", "CLIENT", "REALM_ROLE_MAPPING", "GROUP_MEMBERSHIP", "CLIENT_ROLE_MAPPING");
 
     private final String serviceName;
 
@@ -315,7 +315,7 @@ public class KeycloakUserStore {
                 //get all groups for Roles
                 Thread groupsFetcher = new Thread(() -> {
                     int start = 0;
-                    int size = 100;
+                    int size = 500;
                     Set<GroupRepresentation> ret = new HashSet<>();
 
                     do {
@@ -332,7 +332,7 @@ public class KeycloakUserStore {
                 //get all users for Roles
                 Thread usersFetcher = new Thread(() -> {
                     int start = 0;
-                    int size = 100;
+                    int size = 500;
                     Set<UserRepresentation> ret = new HashSet<>();
 
                     do {
