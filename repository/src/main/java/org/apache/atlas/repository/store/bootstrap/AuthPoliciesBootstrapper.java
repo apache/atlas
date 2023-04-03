@@ -146,7 +146,7 @@ public class AuthPoliciesBootstrapper implements ActiveStateChangeHandler, Servi
     }
 
     @Override
-    public void instanceIsPassive() throws AtlasException {
+    public void instanceIsPassive() {
 
     }
 
@@ -155,12 +155,12 @@ public class AuthPoliciesBootstrapper implements ActiveStateChangeHandler, Servi
         return HandlerOrder.AUTH_POLICIES_INITIALIZER.getOrder();
     }
 
-    //@Override
+    @Override
     public void start() throws AtlasException {
         startInternal();
     }
 
-    //@Override
+    @Override
     public void stop() throws AtlasException {
 
     }

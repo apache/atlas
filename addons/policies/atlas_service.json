@@ -2,7 +2,6 @@
   "entities": [
     {
       "typeName": "AuthService",
-      "guid": -1,
       "attributes":
       {
         "qualifiedName": "auth_service_atlas_tag",
@@ -15,7 +14,6 @@
     },
     {
       "typeName": "AuthService",
-      "guid": -2,
       "attributes":
       {
         "qualifiedName": "auth_service_atlas",
@@ -29,7 +27,6 @@
     },
     {
       "typeName": "AuthService",
-      "guid": -3,
       "attributes":
       {
         "qualifiedName": "auth_service_heka",
