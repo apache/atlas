@@ -16,6 +16,7 @@
  */
 package org.apache.atlas.util;
 
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.authorization.credutils.CredentialsProviderUtil;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration.Configuration;
@@ -176,8 +177,8 @@ public class AccessAuditLogsIndexCreator {
         try {
             RestClientBuilder builder = RestClient.builder(hosts.get(0));
             builder.setRequestConfigCallback(requestConfigBuilder -> requestConfigBuilder
-                    .setConnectTimeout(900000)
-                    .setSocketTimeout(900000));
+                    .setConnectTimeout(AtlasConfiguration.INDEX_CLIENT_CONNECTION_TIMEOUT.getInt())
+                    .setSocketTimeout(AtlasConfiguration.INDEX_CLIENT_SOCKET_TIMEOUT.getInt()));
 
             client = builder.build();
         } catch (Throwable t) {

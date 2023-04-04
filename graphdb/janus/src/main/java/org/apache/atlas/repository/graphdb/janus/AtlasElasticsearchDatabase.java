@@ -18,6 +18,7 @@
 package org.apache.atlas.repository.graphdb.janus;
 
 import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasException;
 import org.apache.commons.configuration.Configuration;
 import org.apache.http.HttpHost;
@@ -64,8 +65,9 @@ public class AtlasElasticsearchDatabase {
                         List<HttpHost> httpHosts = getHttpHosts();
 
                         RestClientBuilder restClientBuilder = RestClient.builder(httpHosts.toArray(new HttpHost[0]))
-                                .setRequestConfigCallback(requestConfigBuilder -> requestConfigBuilder.setConnectTimeout(900000)
-                                        .setSocketTimeout(900000));
+                                .setRequestConfigCallback(requestConfigBuilder -> requestConfigBuilder
+                                        .setConnectTimeout(AtlasConfiguration.INDEX_CLIENT_CONNECTION_TIMEOUT.getInt())
+                                        .setSocketTimeout(AtlasConfiguration.INDEX_CLIENT_SOCKET_TIMEOUT.getInt()));
                         searchClient =
                                 new RestHighLevelClient(restClientBuilder);
                     } catch (AtlasException e) {
@@ -87,8 +89,8 @@ public class AtlasElasticsearchDatabase {
                         RestClientBuilder builder = RestClient.builder(httpHosts.get(0));
                         builder.setHttpClientConfigCallback(httpAsyncClientBuilder -> httpAsyncClientBuilder.setKeepAliveStrategy(((httpResponse, httpContext) -> 3600000)));
                         builder.setRequestConfigCallback(requestConfigBuilder -> requestConfigBuilder
-                                .setConnectTimeout(900000)
-                                .setSocketTimeout(900000));
+                                .setConnectTimeout(AtlasConfiguration.INDEX_CLIENT_CONNECTION_TIMEOUT.getInt())
+                                .setSocketTimeout(AtlasConfiguration.INDEX_CLIENT_SOCKET_TIMEOUT.getInt()));
 
                         lowLevelClient = builder.build();
                     } catch (AtlasException e) {

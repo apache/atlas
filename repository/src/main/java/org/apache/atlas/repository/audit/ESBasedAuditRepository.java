@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.RequestContext;
@@ -428,8 +429,8 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
 
                 RestClientBuilder builder = RestClient.builder(httpHosts.get(0));
                 builder.setRequestConfigCallback(requestConfigBuilder -> requestConfigBuilder
-                        .setConnectTimeout(900000)
-                        .setSocketTimeout(900000));
+                        .setConnectTimeout(AtlasConfiguration.INDEX_CLIENT_CONNECTION_TIMEOUT.getInt())
+                        .setSocketTimeout(AtlasConfiguration.INDEX_CLIENT_SOCKET_TIMEOUT.getInt()));
 
                 lowLevelClient = builder.build();
             } catch (AtlasException e) {
