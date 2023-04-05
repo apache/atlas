@@ -939,6 +939,16 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
         $(this).removeClass('button-loader').removeAttr("disabled");
         $(this).siblings("button.cancel").prop("disabled", false);
     }
+    Utils.convertToValidDate = function(dateValue) {
+        var value = dateValue.split(" "),
+            dateSplit = (value[0].indexOf("-") == -1) ? value[0].split("/") : value[0].split("-");
+        if (value.length > 1) {
+            var time = value[1].split(":");
+            return new Date(dateSplit[2], (new Number(dateSplit[1]) - 1), dateSplit[0], time[0], time[1], time[2]);
+        } else {
+            return new Date(dateSplit[2], (new Number(dateSplit[1]) - 1), dateSplit[0]);
+        }
+    }
     Utils.formatDate = function(options) {
         var dateValue = null,
             dateFormat = Globals.dateTimeFormat,

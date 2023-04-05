@@ -654,14 +654,14 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                             url = [(obj.id || obj.attributeName), mapApiOperatorToUI(obj.operator), value];
                         if (obj.operator === "TIME_RANGE") {
                             if (value.indexOf("-") > -1) {
-                                url[2] = value.split('-').map(function(udKey) {
-                                    return Date.parse(udKey.trim()).toString()
+                                url[2] = value.split(' - ').map(function(udKey) {
+                                    return Globals.needToValidateDate ? Date.parse(Utils.convertToValidDate(udKey.trim())).toString() : Date.parse(udKey.trim()).toString();
                                 }).join(",")
                             } else {
                                 url[2] = Enums.queryBuilderDateRangeUIValueToAPI[_.trim(value)] || value;
                             }
                         } else if (value && value.length && type === 'date' && formatedDateToLong) {
-                            url[2] = Date.parse(value);
+                            url[2] = Globals.needToValidateDate ? Date.parse(Utils.convertToValidDate(value)) : Date.parse(value);
                         }
                         if (type) {
                             url.push(type);

@@ -313,6 +313,7 @@ require(['App',
                 }
                 if (response['atlas.ui.date.format'] !== undefined) {
                     Globals.dateTimeFormat = response['atlas.ui.date.format'];
+                    if (Globals.dateTimeFormat.toLocaleLowerCase().indexOf("dd") == 0) Globals.needToValidateDate = true;
                     var dateFormatSeperated = Globals.dateTimeFormat.split(' ');
                     if (dateFormatSeperated[0]) {
                         Globals.dateFormat = dateFormatSeperated[0]; //date
@@ -328,10 +329,10 @@ require(['App',
                     Globals.isTasksEnabled = response['atlas.tasks.enabled'];
                 }
                 if (response['atlas.session.timeout.secs']) { Globals.idealTimeoutSeconds = response['atlas.session.timeout.secs']; }
-                if(response['atlas.lineage.on.demand.enabled'] !== undefined){
+                if (response['atlas.lineage.on.demand.enabled'] !== undefined) {
                     Globals.isLineageOnDemandEnabled = response['atlas.lineage.on.demand.enabled'];
                 }
-                if(response['atlas.lineage.on.demand.default.node.count'] !== undefined){
+                if (response['atlas.lineage.on.demand.default.node.count'] !== undefined) {
                     Globals.lineageNodeCount = response['atlas.lineage.on.demand.default.node.count'];
                 }
                 /*  Atlas idealTimeout 
@@ -420,7 +421,7 @@ require(['App',
         }
     });
     this.relationshipDefCollection.fetch({
-        async:true,
+        async: true,
         complete: function() {
             that.relationshipDefCollection.fullCollection.comparator = function(model) {
                 return model.get('name').toLowerCase();
