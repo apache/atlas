@@ -80,4 +80,6 @@ public interface AtlasLineageService {
      * @return AtlasLineageListInfo
      */
     AtlasLineageListInfo getAtlasLineageListInfo(String entityGuid, LineageListRequest lineageListRequest) throws AtlasBaseException;
+
+    AtlasLineageSizeInfo getAtlasLineageSize(LineageSizeRequest lineageSizeRequest) throws AtlasBaseException;
 }
