@@ -33,6 +33,7 @@ import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.collections.MapUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -139,6 +140,28 @@ public class LineageREST {
             }
 
             return atlasLineageService.getAtlasLineageListInfo(guid, lineageListRequest);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    @POST
+    @Path("/size")
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Timed
+    public AtlasLineageSizeInfo getLineageSize(LineageSizeRequest lineageSizeRequest) throws AtlasBaseException {
+        if (StringUtils.isEmpty(lineageSizeRequest.getGuid()))
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_LINEAGE_REQUEST);
+
+        Servlets.validateQueryParamLength("guid", lineageSizeRequest.getGuid());
+
+        AtlasPerfTracer  perf = null;
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG))
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "LineageREST.getLineageSize(" + lineageSizeRequest.getGuid() + "," + lineageSizeRequest + ")");
+
+            return atlasLineageService.getAtlasLineageSize(lineageSizeRequest);
         } finally {
             AtlasPerfTracer.log(perf);
         }
