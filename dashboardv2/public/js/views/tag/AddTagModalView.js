@@ -164,7 +164,8 @@ define(['require',
                         $valueElement = $(item);
                     $valueElement.removeClass('errorValidate');
                     if (datatypeSelection === "date") {
-                        tagAttributes[selection] = Date.parse($valueElement.val()) || null;
+                        var convertedDate = Globals.needToValidateDate ? Utils.convertToValidDate($valueElement.val()) : $valueElement.val();
+                        tagAttributes[selection] = Date.parse(convertedDate) || null;
                     } else {
                         if (isRequired) {
                             if ($valueElement.val().length) {

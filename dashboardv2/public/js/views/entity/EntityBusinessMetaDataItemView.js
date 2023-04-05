@@ -148,12 +148,14 @@ define(['require',
                                 dateStr = [];
                             if (dateValues.length) {
                                 _.each(dateValues, function(selectedDate) {
-                                    dateStr.push(new Date(selectedDate.trim()).getTime());
+                                    var convertedDate = Globals.needToValidateDate ? Utils.convertToValidDate(selectedDate.trim()).getTime() : new Date(selectedDate.trim()).getTime();
+                                    dateStr.push(convertedDate);
                                 });
                                 updateObj[key].value = dateStr;
                             }
                         } else {
-                            updateObj[key].value = new Date(updateObj[key].value).getTime()
+                            var convertedDate = Globals.needToValidateDate ? Utils.convertToValidDate(updateObj[key].value) : updateObj[key].value;
+                            updateObj[key].value = new Date(convertedDate).getTime();
                         }
                     }
                     that.model.set(updateObj);

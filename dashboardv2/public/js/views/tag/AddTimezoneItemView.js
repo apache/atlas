@@ -136,7 +136,8 @@ define(['require',
                     if (Globals.dateTimeFormat.indexOf("HH") > -1) {
                         option = option.slice(0, -3); // remove AM/PM from 24hr format
                     }
-                    return moment(Date.parse(option)).format('YYYY/MM/DD HH:mm:ss');
+                    var convertedDate = Globals.needToValidateDate ? Utils.convertToValidDate(option) : option;
+                    return moment(Date.parse(convertedDate)).format('YYYY/MM/DD HH:mm:ss');
                 }
                 return "";
             },
