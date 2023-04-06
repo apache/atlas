@@ -17,14 +17,25 @@ public final class AtlasLineageSizeContext {
     private final Predicate                           edgePredicate;
     private final Set<String>                         visited;
 
-    private final Integer                             depth;
-    private final Integer                             upperLimit;
+    private final int                                 depth;
+    private final int                                 upperLimit;
+
+    private static final int MAX_DEFAULT_DEPTH = 21;
+    private static final int MAX_DEFAULT_UPPER_LIMIT = 1000;
 
     public AtlasLineageSizeContext(LineageSizeRequest lineageSizeRequest, AtlasTypeRegistry typeRegistry) {
         this.guid = lineageSizeRequest.getGuid();
         this.direction = lineageSizeRequest.getDirection();
-        this.depth = lineageSizeRequest.getDepth();
-        this.upperLimit = lineageSizeRequest.getUpperLimit();
+
+        if (lineageSizeRequest.getDepth() == null || lineageSizeRequest.getDepth() < 0)
+            this.depth = MAX_DEFAULT_DEPTH;
+        else
+            this.depth = lineageSizeRequest.getDepth();
+        if (lineageSizeRequest.getUpperLimit() == null || lineageSizeRequest.getUpperLimit() < 0)
+            this.upperLimit = MAX_DEFAULT_UPPER_LIMIT;
+        else
+            this.upperLimit = lineageSizeRequest.getUpperLimit();
+
         this.vertexPredicate = constructInMemoryPredicate(typeRegistry, lineageSizeRequest.getEntityTraversalFilters());
         this.edgePredicate = constructInMemoryPredicate(typeRegistry, lineageSizeRequest.getRelationshipTraversalFilters());
         visited = new HashSet<>();
@@ -50,11 +61,11 @@ public final class AtlasLineageSizeContext {
         return edgePredicate;
     }
 
-    public Integer getDepth() {
+    public int getDepth() {
         return depth;
     }
 
-    public Integer getUpperLimit() {
+    public int getUpperLimit() {
         return upperLimit;
     }
 
