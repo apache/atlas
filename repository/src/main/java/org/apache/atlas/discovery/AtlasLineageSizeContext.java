@@ -10,6 +10,9 @@ import org.apache.commons.collections.Predicate;
 import java.util.HashSet;
 import java.util.Set;
 
+import static org.apache.atlas.discovery.EntityLineageService.MAX_DEFAULT_DEPTH;
+import static org.apache.atlas.discovery.EntityLineageService.MAX_DEFAULT_UPPER_LIMIT;
+
 public final class AtlasLineageSizeContext {
     private final String                              guid;
     private final LineageSizeRequest.LineageDirection direction;
@@ -18,10 +21,6 @@ public final class AtlasLineageSizeContext {
     private final Set<String>                         visited;
 
     private final int                                 depth;
-    private final int                                 upperLimit;
-
-    private static final int MAX_DEFAULT_DEPTH = 21;
-    private static final int MAX_DEFAULT_UPPER_LIMIT = 1000;
 
     public AtlasLineageSizeContext(LineageSizeRequest lineageSizeRequest, AtlasTypeRegistry typeRegistry) {
         this.guid = lineageSizeRequest.getGuid();
@@ -31,10 +30,6 @@ public final class AtlasLineageSizeContext {
             this.depth = MAX_DEFAULT_DEPTH;
         else
             this.depth = lineageSizeRequest.getDepth();
-        if (lineageSizeRequest.getUpperLimit() == null || lineageSizeRequest.getUpperLimit() < 0)
-            this.upperLimit = MAX_DEFAULT_UPPER_LIMIT;
-        else
-            this.upperLimit = lineageSizeRequest.getUpperLimit();
 
         this.vertexPredicate = constructInMemoryPredicate(typeRegistry, lineageSizeRequest.getEntityTraversalFilters());
         this.edgePredicate = constructInMemoryPredicate(typeRegistry, lineageSizeRequest.getRelationshipTraversalFilters());
@@ -63,10 +58,6 @@ public final class AtlasLineageSizeContext {
 
     public int getDepth() {
         return depth;
-    }
-
-    public int getUpperLimit() {
-        return upperLimit;
     }
 
     protected Predicate constructInMemoryPredicate(AtlasTypeRegistry typeRegistry, SearchParameters.FilterCriteria filterCriteria) {

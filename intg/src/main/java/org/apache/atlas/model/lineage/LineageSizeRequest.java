@@ -12,18 +12,16 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 public class LineageSizeRequest {
     private String                          guid;
     private Integer                         depth;
-    private Integer                         upperLimit;
     private LineageDirection                direction;
     private SearchParameters.FilterCriteria entityTraversalFilters;
     private SearchParameters.FilterCriteria relationshipTraversalFilters;
 
     public enum LineageDirection {INPUT, OUTPUT}
 
-    public LineageSizeRequest(String guid, Integer depth, Integer upperLimit, LineageDirection direction,
+    public LineageSizeRequest(String guid, Integer depth, LineageDirection direction,
                               SearchParameters.FilterCriteria entityTraversalFilters, SearchParameters.FilterCriteria relationshipTraversalFilters) {
         this.guid = guid;
         this.depth = depth;
-        this.upperLimit = upperLimit;
         this.direction = direction;
         this.entityTraversalFilters = entityTraversalFilters;
         this.relationshipTraversalFilters = relationshipTraversalFilters;
@@ -71,20 +69,11 @@ public class LineageSizeRequest {
         this.relationshipTraversalFilters = relationshipTraversalFilters;
     }
 
-    public Integer getUpperLimit() {
-        return upperLimit;
-    }
-
-    public void setUpperLimit(Integer upperLimit) {
-        this.upperLimit = upperLimit;
-    }
-
     @Override
     public String toString() {
         return "LineageSizeRequest{" +
                 "guid='" + guid + '\'' +
                 ", depth=" + depth +
-                ", upperLimit=" + upperLimit +
                 ", direction=" + direction +
                 ", entityTraversalFilters=" + entityTraversalFilters +
                 ", relationshipTraversalFilters=" + relationshipTraversalFilters +
