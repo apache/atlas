@@ -56,7 +56,6 @@
     <link rel="stylesheet" href="js/external_lib/backgrid-columnmanager/css/Backgrid.ColumnManager.css?bust=<%- bust %>">
     <link rel="stylesheet" href="js/libs/select2/css/select2.min.css?bust=<%- bust %>">
     <link rel="stylesheet" href="js/libs/bootstrap/css/bootstrap.min.css?bust=<%- bust %>">
-    <link rel="stylesheet" href="js/libs/jquery-asBreadcrumbs/css/asBreadcrumbs.min.css?bust=<%- bust %>">
     <link rel="stylesheet" href="css/googlefonts.css?bust=<%- bust %>" type='text/css'>
     <link rel="stylesheet" type="text/css" href="js/external_lib/jquery-ui/jquery-ui.min.css?bust=<%- bust %>">
     <link rel="stylesheet" href="css/nv.d3.min.css?bust=<%- bust %>" >
