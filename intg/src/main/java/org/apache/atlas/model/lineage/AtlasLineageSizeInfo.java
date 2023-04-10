@@ -45,7 +45,7 @@ public class AtlasLineageSizeInfo implements Serializable {
     }
 
     public static AtlasLineageSizeInfo getInstance(int size, boolean isLimitReached) {
-        if (size < 0)
+        if (size <= 0)
             throw new IllegalArgumentException("Invalid size for AtlasLineageSizeInfo");
         AtlasLineageSizeInfo atlasLineageSizeInfo = new AtlasLineageSizeInfo();
         atlasLineageSizeInfo.setSize(size);

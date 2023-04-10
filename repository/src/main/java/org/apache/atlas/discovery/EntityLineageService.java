@@ -208,13 +208,11 @@ public class EntityLineageService implements AtlasLineageService {
 
         RequestContext.get().setRelationAttrsForSearch(lineageListRequest.getRelationAttributes());
 
-        AtlasLineageListInfo ret;
-
         AtlasLineageListContext atlasLineageOnDemandContext = new AtlasLineageListContext(lineageListRequest, atlasTypeRegistry);
 
         boolean isDataSet = validateEntityTypeAndCheckIfDataSet(guid);
 
-        ret = getLineageListInfoOnDemand(guid, atlasLineageOnDemandContext, isDataSet);
+        AtlasLineageListInfo ret = getLineageListInfoOnDemand(guid, atlasLineageOnDemandContext, isDataSet);
 
         ret.setSearchParameters(lineageListRequest);
 
@@ -229,9 +227,9 @@ public class EntityLineageService implements AtlasLineageService {
     @GraphTransaction
     public AtlasLineageSizeInfo getAtlasLineageSize(LineageSizeRequest lineageSizeRequest) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getAtlasLineageSize");
-        final String guid = lineageSizeRequest.getGuid();
+        String guid = lineageSizeRequest.getGuid();
         boolean isDataSet = validateEntityTypeAndCheckIfDataSet(guid);
-        final AtlasLineageSizeInfo ret = getLineageSizeForDirection(isDataSet, new AtlasLineageSizeContext(lineageSizeRequest, atlasTypeRegistry));
+        AtlasLineageSizeInfo ret = getLineageSizeForDirection(isDataSet, new AtlasLineageSizeContext(lineageSizeRequest, atlasTypeRegistry));
         ret.setSearchParameters(lineageSizeRequest);
         RequestContext.get().endMetricRecord(metricRecorder);
         return ret;

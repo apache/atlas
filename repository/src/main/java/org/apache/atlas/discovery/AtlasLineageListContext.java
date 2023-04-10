@@ -11,7 +11,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import java.util.LinkedList;
 import java.util.Set;
 
-public class AtlasLineageListContext {
+public final class AtlasLineageListContext {
     private String                              guid;
     private Integer                             size;
     private Integer                             from;
