@@ -52,10 +52,6 @@ require.config({
         'jquery-ui': {
             'deps': ['jquery']
         },
-        'asBreadcrumbs': {
-            'deps': ['jquery'],
-            'exports': 'asBreadcrumbs'
-        },
         'bootstrap': {
             'deps': ['jquery'],
             'exports': 'jquery'
@@ -157,7 +153,6 @@ require.config({
         'backgrid-paginator': 'libs/backgrid-paginator/js/backgrid-paginator.min',
         'backgrid-sizeable': 'libs/backgrid-sizeable-columns/js/backgrid-sizeable-columns',
         'backgrid-columnmanager': 'external_lib/backgrid-columnmanager/js/Backgrid.ColumnManager',
-        'asBreadcrumbs': 'libs/jquery-asBreadcrumbs/js/jquery-asBreadcrumbs.min',
         'd3': 'libs/d3/d3.min',
         'd3-tip': 'libs/d3/index',
         'LineageHelper': 'external_lib/atlas-lineage/dist/index',

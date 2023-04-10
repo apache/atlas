@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-define(['require', 'utils/Utils', 'lossless-json', 'marionette', 'backgrid', 'asBreadcrumbs', 'jquery-placeholder'], function(require, Utils, LosslessJSON) {
+define(['require', 'utils/Utils', 'lossless-json', 'marionette', 'backgrid', 'jquery-placeholder'], function(require, Utils, LosslessJSON) {
     'use strict';
 
     Backbone.$.ajaxSetup({
