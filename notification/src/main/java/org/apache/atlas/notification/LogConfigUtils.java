@@ -18,11 +18,13 @@
 package org.apache.atlas.notification;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.logging.log4j.core.Appender;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.util.Enumeration;
+import java.util.Iterator;
+import java.util.Map;
 
 public class LogConfigUtils {
     private static final Logger LOG = LoggerFactory.getLogger(LogConfigUtils.class);
@@ -104,11 +106,10 @@ public class LogConfigUtils {
         String ret = StringUtils.EMPTY;
 
         try {
-            org.apache.log4j.Logger rootLogger   = org.apache.log4j.Logger.getRootLogger();
-            Enumeration             allAppenders = rootLogger.getAllAppenders();
+            org.apache.logging.log4j.Logger rootLogger   = org.apache.logging.log4j.LogManager.getRootLogger();
+            Map<String, Appender> allAppenders = ((org.apache.logging.log4j.core.Logger) rootLogger).getAppenders();
 
             if (allAppenders != null) {
-                String drfaFilename = null;
                 String rfaFilename  = null;
                 String faFilename   = null;
 
@@ -116,33 +117,26 @@ public class LogConfigUtils {
                 //   1. first DailyRollingFileAppender
                 //   2. first RollingFileAppender, if no DailyRollingFileAppender is found
                 //   3. first FileAppender, if no RollingFileAppender is found
-                while (allAppenders.hasMoreElements()) {
-                    Object appender = allAppenders.nextElement();
+                Iterator<Map.Entry<String, Appender>> iterator = allAppenders.entrySet().iterator();
+                while (iterator.hasNext()) {
+                    Object appender = iterator.next().getValue();
 
-                    if (drfaFilename == null && appender instanceof org.apache.log4j.DailyRollingFileAppender) {
-                        org.apache.log4j.DailyRollingFileAppender fileAppender = (org.apache.log4j.DailyRollingFileAppender) appender;
+                    if (rfaFilename == null && appender instanceof org.apache.logging.log4j.core.appender.RollingFileAppender) {
+                        org.apache.logging.log4j.core.appender.RollingFileAppender fileAppender = (org.apache.logging.log4j.core.appender.RollingFileAppender) appender;
 
-                        drfaFilename = fileAppender.getFile();
+                        rfaFilename = fileAppender.getFileName();
 
-                        LOG.debug("DailyRollingFileAppender(name={}, file={})", fileAppender.getName(), fileAppender.getFile());
-                    } else if (rfaFilename == null && appender instanceof org.apache.log4j.RollingFileAppender) {
-                        org.apache.log4j.RollingFileAppender fileAppender = (org.apache.log4j.RollingFileAppender) appender;
+                        LOG.debug("RollingFileAppender(name={}, file={}, append={})", fileAppender.getName(), fileAppender.getFileName());
+                    } else if (faFilename == null && appender instanceof org.apache.logging.log4j.core.appender.FileAppender) {
+                        org.apache.logging.log4j.core.appender.FileAppender fileAppender = (org.apache.logging.log4j.core.appender.FileAppender) appender;
 
-                        rfaFilename = fileAppender.getFile();
+                        faFilename = fileAppender.getFileName();
 
-                        LOG.debug("RollingFileAppender(name={}, file={}, append={})", fileAppender.getName(), fileAppender.getFile());
-                    } else if (faFilename == null && appender instanceof org.apache.log4j.FileAppender) {
-                        org.apache.log4j.FileAppender fileAppender = (org.apache.log4j.FileAppender) appender;
-
-                        faFilename = fileAppender.getFile();
-
-                        LOG.debug("FileAppender(name={}, file={}, append={})", fileAppender.getName(), fileAppender.getFile());
+                        LOG.debug("FileAppender(name={}, file={}, append={})", fileAppender.getName(), fileAppender.getFileName());
                     }
                 }
 
-                if (drfaFilename != null) {
-                    ret = drfaFilename;
-                } else if (rfaFilename != null) {
+                if (rfaFilename != null) {
                     ret = rfaFilename;
                 } else if (faFilename != null) {
                     ret = faFilename;
@@ -151,7 +145,7 @@ public class LogConfigUtils {
 
             LOG.info("getFileAppenderPathApproach2(): ret={}", ret);
         } catch (Throwable t) {
-            LOG.error("getFileAppenderPathApproach2(): failed to get log path from org.apache.log4j.", t);
+            LOG.error("getFileAppenderPathApproach2(): failed to get log path from org.apache.logging.log4j.", t);
         }
 
         return ret;

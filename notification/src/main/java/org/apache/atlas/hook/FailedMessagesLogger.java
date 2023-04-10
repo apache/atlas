@@ -20,13 +20,18 @@ package org.apache.atlas.hook;
 
 
 import org.apache.atlas.notification.LogConfigUtils;
-import org.apache.log4j.DailyRollingFileAppender;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
-import org.apache.log4j.PatternLayout;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.appender.RollingFileAppender;
+import org.apache.logging.log4j.core.appender.rolling.TimeBasedTriggeringPolicy;
+import org.apache.logging.log4j.core.config.AppenderRef;
+import org.apache.logging.log4j.core.config.Configuration;
+import org.apache.logging.log4j.core.config.LoggerConfig;
+import org.apache.logging.log4j.core.layout.PatternLayout;
 
 import java.io.File;
-import java.io.IOException;
 
 /**
  * A logger wrapper that can be used to write messages that failed to be sent to a log file.
@@ -35,9 +40,13 @@ public class FailedMessagesLogger {
 
     public static final String PATTERN_SPEC_TIMESTAMP_MESSAGE_NEWLINE = "%d{ISO8601} %m%n";
     public static final String DATE_PATTERN = ".yyyy-MM-dd";
+    private PatternLayout PATTERN_LAYOUT = PatternLayout.newBuilder().withPattern(PATTERN_SPEC_TIMESTAMP_MESSAGE_NEWLINE).build();
 
-    private final Logger logger = Logger.getLogger("org.apache.atlas.hook.FailedMessagesLogger");
     private String failedMessageFile;
+    private String loggerName = "org.apache.atlas.hook.FailedMessagesLogger";
+    private final Logger logger = LogManager.getLogger(loggerName);
+    private static final LoggerContext ctx = (LoggerContext)LogManager.getContext(false);
+    private static final Configuration config = ctx.getConfiguration();
 
     public FailedMessagesLogger(String failedMessageFile) {
         this.failedMessageFile = failedMessageFile;
@@ -49,15 +58,23 @@ public class FailedMessagesLogger {
             return;
         }
         String absolutePath = new File(rootLoggerDirectory, failedMessageFile).getAbsolutePath();
-        try {
-            DailyRollingFileAppender failedLogFilesAppender = new DailyRollingFileAppender(
-                    new PatternLayout(PATTERN_SPEC_TIMESTAMP_MESSAGE_NEWLINE), absolutePath, DATE_PATTERN);
-            logger.addAppender(failedLogFilesAppender);
-            logger.setLevel(Level.ERROR);
-            logger.setAdditivity(false);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+
+        RollingFileAppender.Builder builder = RollingFileAppender.newBuilder()
+                .setName("RollingFileAppender")
+                .withFileName(absolutePath)
+                .withFilePattern(absolutePath+"-%d{yyyy-MM-dd}-%i")
+                .setLayout(PATTERN_LAYOUT).withPolicy(TimeBasedTriggeringPolicy.createPolicy("1", "true"));
+        RollingFileAppender rollingFileAppender = builder.build();
+        rollingFileAppender.start();
+        config.addAppender(rollingFileAppender);
+
+        AppenderRef ref = AppenderRef.createAppenderRef(loggerName, Level.ERROR,null);
+        AppenderRef[] refs = new AppenderRef[] {ref};
+        LoggerConfig loggerConfig =
+                LoggerConfig.createLogger(false, Level.ERROR, loggerName, "true", refs, null, config, null);
+        loggerConfig.addAppender(rollingFileAppender, null, null);
+        config.addLogger(loggerName, loggerConfig);
+        ctx.updateLoggers();
     }
 
     public void log(String message) {
