@@ -610,10 +610,11 @@ public class EntityLineageService implements AtlasLineageService {
             boolean limitReached = false;
 
             AtlasPerfMetrics.MetricRecorder traverseEdgesOnDemandGetEdgesIn = RequestContext.get().startMetricRecord("traverseEdgesOnDemandGetEdgesIn");
-            Iterable<AtlasEdge> incomingEdges = datasetVertex.getEdges(IN, isInput ? PROCESS_OUTPUTS_EDGE : PROCESS_INPUTS_EDGE);
+            Iterator<AtlasEdge> incomingEdges = datasetVertex.getEdges(IN, isInput ? PROCESS_OUTPUTS_EDGE : PROCESS_INPUTS_EDGE).iterator();
             RequestContext.get().endMetricRecord(traverseEdgesOnDemandGetEdgesIn);
 
-            for (AtlasEdge incomingEdge : incomingEdges) {
+            while (incomingEdges.hasNext()) {
+                AtlasEdge incomingEdge = incomingEdges.next();
                 AtlasVertex processVertex = incomingEdge.getOutVertex();
 
                 if (!vertexMatchesEvaluation(processVertex, lineageListContext) || !edgeMatchesEvaluation(incomingEdge, lineageListContext)) {
@@ -625,10 +626,11 @@ public class EntityLineageService implements AtlasLineageService {
                 }
 
                 AtlasPerfMetrics.MetricRecorder traverseEdgesOnDemandGetEdgesOut = RequestContext.get().startMetricRecord("traverseEdgesOnDemandGetEdgesOut");
-                Iterable<AtlasEdge> outgoingEdges = processVertex.getEdges(OUT, isInput ? PROCESS_INPUTS_EDGE : PROCESS_OUTPUTS_EDGE);
+                Iterator<AtlasEdge> outgoingEdges = processVertex.getEdges(OUT, isInput ? PROCESS_INPUTS_EDGE : PROCESS_OUTPUTS_EDGE).iterator();
                 RequestContext.get().endMetricRecord(traverseEdgesOnDemandGetEdgesOut);
 
-                for (AtlasEdge outgoingEdge : outgoingEdges) {
+                while (outgoingEdges.hasNext()) {
+                    AtlasEdge outgoingEdge = outgoingEdges.next();
                     AtlasVertex entityVertex = outgoingEdge.getInVertex();
 
                     if (vertexMatchesEvaluation(entityVertex, lineageListContext) && edgeMatchesEvaluation(outgoingEdge, lineageListContext)) {
@@ -764,7 +766,7 @@ public class EntityLineageService implements AtlasLineageService {
 
         boolean hasRelationsLimitReached = false;
 
-        AtlasVertex entityVertex  = isInput ? atlasEdge.getOutVertex() : atlasEdge.getInVertex();
+        AtlasVertex entityVertex  = atlasEdge.getInVertex();
         String      entityGuid       = AtlasGraphUtilsV2.getIdFromVertex(entityVertex);
 
         boolean hasMoreHorizontal = isInput ? entityVertex.getEdges(IN, PROCESS_OUTPUTS_EDGE).iterator().hasNext() :
