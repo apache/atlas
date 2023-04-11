@@ -936,18 +936,42 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
     }
 
     private static Map<String, String> builsESDocIdMapping(AtlasRelationship r) {
+
+        final Map<String, String> esDocIdMapping = new HashMap<>();
+
+        if(r == null || r.getEnd1() == null || r.getEnd2() == null) {
+            LOG.warn(" AtlasRelationship is null {} " , r);
+            return esDocIdMapping;
+        }
+
         final Map<AtlasObjectId, Object> relationshipEndToVertexIdMap = RequestContext.get().getRelationshipEndToVertexIdMap();
         String end1DocId = "";
         String end2DocId = "";
-        for (AtlasObjectId atlasObjectId : relationshipEndToVertexIdMap.keySet()) {
-            final String docId = JanusUtils.toLongEncoding(relationshipEndToVertexIdMap.get(atlasObjectId));
-            if (atlasObjectId.getGuid().equals(r.getEnd1().getGuid())) {
-                end1DocId = docId;
-            } else if (atlasObjectId.getGuid().equals(r.getEnd2().getGuid())) {
-                end2DocId = docId;
+
+            for (AtlasObjectId atlasObjectId : relationshipEndToVertexIdMap.keySet()) {
+                    if(atlasObjectId == null) {
+                        LOG.warn(" atlasObjectId is null.");
+                        return esDocIdMapping;
+                    }
+
+                    final String docId = JanusUtils.toLongEncoding(relationshipEndToVertexIdMap.get(atlasObjectId));
+                    String guid = atlasObjectId.getGuid();
+                    AtlasObjectId end1 = r.getEnd1();
+                    AtlasObjectId end2 = r.getEnd2();
+
+                    if(guid == null) {
+                        LOG.warn(" atlasObjectId.getGuid() is null. atlasObjectId {}" , atlasObjectId);
+                        return esDocIdMapping;
+                    }
+
+                    if (guid.equals(end1.getGuid())) {
+                        end1DocId = docId;
+                    } else if (guid.equals(end2.getGuid())) {
+                        end2DocId = docId;
+                    }
+
             }
-        }
-        final Map<String, String> esDocIdMapping = new HashMap<>();
+
         esDocIdMapping.put(END_1_DOC_ID_KEY, end1DocId);
         esDocIdMapping.put(END_2_DOC_ID_KEY, end2DocId);
         return esDocIdMapping;
