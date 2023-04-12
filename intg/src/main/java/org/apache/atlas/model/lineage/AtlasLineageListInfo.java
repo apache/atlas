@@ -187,10 +187,8 @@ public class AtlasLineageListInfo implements Serializable {
 
             this.relationsCount++;
 
-            if (relationsCount == size) {
+            if (relationsCount == size)
                 this.setRelationsReachedLimit(true);
-                return;
-            }
         }
 
         @Override
