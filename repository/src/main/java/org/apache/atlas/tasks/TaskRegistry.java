@@ -85,6 +85,31 @@ public class TaskRegistry {
     }
 
     @GraphTransaction
+    public List<AtlasTask> getPendingTasksByType(String type) {
+        List<AtlasTask> ret = new ArrayList<>();
+
+        try {
+            AtlasGraphQuery query = graph.query()
+                    .has(Constants.TASK_TYPE_PROPERTY_KEY, Constants.TASK_TYPE_NAME)
+                    .has(Constants.TASK_STATUS, AtlasTask.Status.PENDING)
+                    .has(Constants.TASK_TYPE, type)
+                    .orderBy(Constants.TASK_CREATED_TIME, AtlasGraphQuery.SortOrder.ASC);
+
+            Iterator<AtlasVertex> results = query.vertices().iterator();
+
+            while (results.hasNext()) {
+                AtlasVertex vertex = results.next();
+
+                ret.add(toAtlasTask(vertex));
+            }
+        } catch (Exception exception) {
+            LOG.error("Error fetching pending tasks by type!", exception);
+        }
+
+        return ret;
+    }
+
+    @GraphTransaction
     public void updateStatus(AtlasVertex taskVertex, AtlasTask task) {
         if (taskVertex == null) {
             return;

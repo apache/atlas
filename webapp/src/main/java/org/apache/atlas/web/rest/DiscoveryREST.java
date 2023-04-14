@@ -19,6 +19,7 @@ package org.apache.atlas.web.rest;
 
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.SortOrder;
 import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
@@ -29,9 +30,11 @@ import org.apache.atlas.model.discovery.*;
 import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria;
 import org.apache.atlas.model.profile.AtlasUserSavedSearch;
 import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.store.graph.v2.tasks.searchdownload.SearchResultDownloadTask;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.collections.CollectionUtils;
@@ -54,9 +57,20 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import java.io.File;
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+
+import static org.apache.atlas.model.discovery.AtlasSearchResult.AtlasQueryType.BASIC;
+import static org.apache.atlas.model.discovery.AtlasSearchResult.AtlasQueryType.DSL;
+import static org.apache.atlas.repository.store.graph.v2.tasks.searchdownload.SearchResultDownloadTask.*;
 
 /**
  * REST interface for data discovery using dsl or full text search
@@ -107,18 +121,10 @@ public class DiscoveryREST {
                                             @QueryParam("classification") String classification,
                                             @QueryParam("limit")          int    limit,
                                             @QueryParam("offset")         int    offset) throws AtlasBaseException {
-        Servlets.validateQueryParamLength("typeName", typeName);
-        Servlets.validateQueryParamLength("classification", classification);
 
-        if (StringUtils.isNotEmpty(query)) {
-            if (query.length() > maxDslQueryLength) {
-                throw new AtlasBaseException(AtlasErrorCode.INVALID_QUERY_LENGTH, Constants.MAX_DSL_QUERY_STR_LENGTH);
-            }
-            query = Servlets.decodeQueryString(query);
-        }
+        validateDSLSearchParameters(query, typeName, classification);
 
         AtlasPerfTracer perf = null;
-
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.searchUsingDSL(" + query + "," + typeName
@@ -134,6 +140,23 @@ public class DiscoveryREST {
     }
 
 
+    /**
+     *
+     * @param parameterMap
+     * @throws AtlasBaseException
+     */
+    @POST
+    @Timed
+    @Path("dsl/download/create_file")
+    public void dslSearchCreateFile(Map<String, Object> parameterMap) throws AtlasBaseException {
+        SearchParameters parameters     = AtlasJson.fromLinkedHashMap(parameterMap.get("searchParameters"), SearchParameters.class);
+
+        validateDSLSearchParameters(parameters.getQuery(), parameters.getTypeName(), parameters.getClassification());
+
+        Map<String, Object> taskParams  = populateTaskParams(parameters.getQuery(), parameters.getTypeName(), parameters.getClassification(), parameters.getLimit(), parameters.getOffset());
+
+        discoveryService.createAndQueueSearchResultDownloadTask(taskParams);
+    }
 
     /**
      * Retrieve data for the specified fulltext query
@@ -330,29 +353,73 @@ public class DiscoveryREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.searchWithParameters(" + parameters + ")");
             }
 
-            if (parameters.getLimit() < 0 || parameters.getOffset() < 0) {
-                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Limit/offset should be non-negative");
-            }
-
-            if (StringUtils.isEmpty(parameters.getTypeName()) && !isEmpty(parameters.getEntityFilters())) {
-                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "EntityFilters specified without Type name");
-            }
-
-            if (StringUtils.isEmpty(parameters.getClassification()) && !isEmpty(parameters.getTagFilters())) {
-                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "TagFilters specified without tag name");
-            }
-
-            if (StringUtils.isEmpty(parameters.getTypeName()) && StringUtils.isEmpty(parameters.getClassification()) &&
-                StringUtils.isEmpty(parameters.getQuery()) && StringUtils.isEmpty(parameters.getTermName())) {
-                throw new AtlasBaseException(AtlasErrorCode.INVALID_SEARCH_PARAMS);
-            }
-
-            validateSearchParameters(parameters);
+            validateBasicSearchParameters(parameters);
 
             return discoveryService.searchWithParameters(parameters);
         } finally {
             AtlasPerfTracer.log(perf);
         }
+    }
+
+    /**
+     *
+     * @param parameterMap
+     * @throws AtlasBaseException
+     */
+    @POST
+    @Timed
+    @Path("basic/download/create_file")
+    public void basicSearchCreateFile(Map<String, Object> parameterMap) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.basicSearchCreateFile(" + parameterMap + ")");
+            }
+
+            Map<String, String> attributeLabelMap   = (Map<String, String>) parameterMap.get("attributeLabelMap");
+            SearchParameters parameters             = AtlasJson.fromLinkedHashMap(parameterMap.get("searchParameters"), SearchParameters.class);
+
+            validateBasicSearchParameters(parameters);
+
+            Map<String, Object> taskParams          = populateTaskParams(parameters, attributeLabelMap);
+
+            discoveryService.createAndQueueSearchResultDownloadTask(taskParams);
+
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    @GET
+    @Timed
+    @Path("download/status")
+    public AtlasSearchResultDownloadStatus getSearchResultDownloadStatus() throws IOException {
+        return discoveryService.getSearchResultDownloadStatus();
+    }
+
+    /**
+     *
+     * @param fileName
+     * @return
+     */
+    @GET
+    @Timed
+    @Path("download/{filename}")
+    @Produces(MediaType.APPLICATION_OCTET_STREAM)
+    public Response downloadSearchResultFile(@PathParam("filename") String fileName) {
+
+        File dir        = new File(SearchResultDownloadTask.DOWNLOAD_DIR_PATH, RequestContext.getCurrentUser());
+        File csvFile    = new File(dir, fileName);
+
+        if (!csvFile.exists()) {
+            return Response.noContent().build();
+        }
+
+        Response.ResponseBuilder response = Response.ok(csvFile);
+        response.header("Content-Disposition", "attachment; filename=\"" + fileName + "\"");
+
+        return response.build();
     }
 
     /**
@@ -826,5 +893,79 @@ public class DiscoveryREST {
         if (parameters != null) {
             validateSearchParameters(EntityDiscoveryService.createSearchParameters(parameters));
         }
+    }
+
+    private void validateBasicSearchParameters(SearchParameters parameters) throws AtlasBaseException {
+
+        if (parameters.getLimit() < 0 || parameters.getOffset() < 0) {
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Limit/offset should be non-negative");
+        }
+
+        if (StringUtils.isEmpty(parameters.getTypeName()) && !isEmpty(parameters.getEntityFilters())) {
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "EntityFilters specified without Type name");
+        }
+
+        if (StringUtils.isEmpty(parameters.getClassification()) && !isEmpty(parameters.getTagFilters())) {
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "TagFilters specified without tag name");
+        }
+
+        if (StringUtils.isEmpty(parameters.getTypeName()) && StringUtils.isEmpty(parameters.getClassification()) &&
+                StringUtils.isEmpty(parameters.getQuery()) && StringUtils.isEmpty(parameters.getTermName())) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_SEARCH_PARAMS);
+        }
+
+        validateSearchParameters(parameters);
+    }
+
+    private void validateDSLSearchParameters(String query, String typeName, String classification) throws AtlasBaseException {
+
+        Servlets.validateQueryParamLength("typeName", typeName);
+        Servlets.validateQueryParamLength("classification", classification);
+
+        if (StringUtils.isNotEmpty(query)) {
+            if (query.length() > maxDslQueryLength) {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_QUERY_LENGTH, Constants.MAX_DSL_QUERY_STR_LENGTH);
+            }
+            Servlets.decodeQueryString(query);
+        }
+    }
+
+    private Map<String, Object> populateTaskParams(SearchParameters parameters, Map<String, String> attributeLabelMap) {
+
+        String searchParametersJson     = AtlasJson.toJson(parameters);
+        String attrLabelMapJson         = AtlasJson.toJson(attributeLabelMap);
+
+        Map<String, Object> taskParams  = new HashMap<>();
+        taskParams.put(SEARCH_TYPE_KEY, BASIC);
+        taskParams.put(SEARCH_PARAMETERS_JSON_KEY, searchParametersJson);
+        taskParams.put(ATTRIBUTE_LABEL_MAP_KEY, attrLabelMapJson);
+
+        String csvFileName              = RequestContext.getCurrentUser() + "_" + BASIC + "_" + getDateTimeString() + CSV_FILE_EXTENSION;
+        taskParams.put(CSV_FILE_NAME_KEY, csvFileName);
+
+        return taskParams;
+    }
+
+    private Map<String, Object> populateTaskParams(String query, String typeName, String classification, int limit, int offset) {
+
+        Map<String, Object> taskParams = new HashMap<>();
+        taskParams.put(SEARCH_TYPE_KEY, DSL);
+        taskParams.put(QUERY_KEY, query);
+        taskParams.put(TYPE_NAME_KEY, typeName);
+        taskParams.put(CLASSIFICATION_KEY, classification);
+        taskParams.put(LIMIT_KEY, limit);
+        taskParams.put(OFFSET_KEY, offset);
+
+        String csvFileName = RequestContext.getCurrentUser() + "_" + DSL + "_" + getDateTimeString() + CSV_FILE_EXTENSION;
+        taskParams.put(CSV_FILE_NAME_KEY, csvFileName);
+
+        return taskParams;
+    }
+
+    private String getDateTimeString() {
+        LocalDateTime localDateTime = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss.SSS");
+
+        return formatter.format(localDateTime);
     }
 }
