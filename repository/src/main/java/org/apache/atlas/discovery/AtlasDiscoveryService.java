@@ -19,13 +19,13 @@
 package org.apache.atlas.discovery;
 
 
-import org.apache.atlas.SortOrder;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.*;
 import org.apache.atlas.model.profile.AtlasUserSavedSearch;
 
+import java.io.IOException;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 
 public interface AtlasDiscoveryService {
     /**
@@ -160,4 +160,17 @@ public interface AtlasDiscoveryService {
      * @return top 5 suggestion strings for the given prefix.
      */
     AtlasSuggestionsResult getSuggestions(String prefixString, String fieldName);
+
+    /**
+     * Creates task to search and download the results of Basic and DSL search
+     * @param taskParams parameters of AtlasTask
+     */
+    void createAndQueueSearchResultDownloadTask(Map<String, Object> taskParams) throws AtlasBaseException;
+
+    /**
+     *
+     * @return AtlasSearchResultDownloadStatus
+     * @throws IOException
+     */
+    AtlasSearchResultDownloadStatus getSearchResultDownloadStatus() throws IOException;
 }
