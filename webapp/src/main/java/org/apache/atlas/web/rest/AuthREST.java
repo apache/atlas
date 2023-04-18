@@ -131,7 +131,7 @@ public class AuthREST {
 
             ServicePolicies ret = policyTransformer.getPolicies(serviceName, pluginId, lastUpdatedTime);
 
-            return null;
+            return ret;
         } finally {
             AtlasPerfTracer.log(perf);
         }

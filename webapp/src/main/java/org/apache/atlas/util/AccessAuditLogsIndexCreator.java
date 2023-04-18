@@ -146,9 +146,11 @@ public class AccessAuditLogsIndexCreator {
                     logErrorMessageAndWait("Error while validating elasticsearch index ", ex);
                 } finally {
                     try {
-                        client.close();
+                        if (client != null) {
+                            client.close();
+                        }
                     } catch (IOException e) {
-                        LOG.warn("AccessAuditLogsIndexCreator: Failed to close ES client");
+                        LOG.warn("AccessAuditLogsIndexCreator: Failed to close ES client", e);
                     }
                 }
             }

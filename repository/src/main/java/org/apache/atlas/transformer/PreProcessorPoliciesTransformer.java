@@ -44,7 +44,7 @@ import static org.apache.atlas.repository.util.AtlasEntityUtils.getListAttribute
 import static org.apache.atlas.repository.util.AtlasEntityUtils.getName;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.getQualifiedName;
 
-public class PreProcessorPoliciesTransformer {
+final public class PreProcessorPoliciesTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(ConnectionPreProcessor.class);
 
     static final String PLACEHOLDER_ENTITY = "{entity}";

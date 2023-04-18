@@ -53,7 +53,7 @@ import static org.apache.atlas.repository.util.AtlasEntityUtils.getQualifiedName
 import static org.apache.atlas.repository.util.AtlasEntityUtils.getStringAttribute;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 
-public class AccessControlUtils {
+final public class AccessControlUtils {
     private static final Logger LOG = LoggerFactory.getLogger(AccessControlUtils.class);
 
     public static final String ATTR_ACCESS_CONTROL_ENABLED = "isAccessControlEnabled";
@@ -102,6 +102,7 @@ public class AccessControlUtils {
     private static final String CONNECTION_QN = "%s/%s/%s";
     public static final String CONN_NAME_PATTERN = "connection_admins_%s";
 
+    private AccessControlUtils() {}
 
     public static String getEntityName(AtlasEntity entity) {
         return (String) entity.getAttribute(NAME);

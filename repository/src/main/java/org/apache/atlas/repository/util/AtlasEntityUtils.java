@@ -32,9 +32,11 @@ import java.util.Map;
 import static org.apache.atlas.repository.Constants.NAME;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 
-public class AtlasEntityUtils {
+final public class AtlasEntityUtils {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasEntityUtils.class);
 
+    private AtlasEntityUtils() {
+    }
 
     public static String getQualifiedName(AtlasEntity entity) {
         return getStringAttribute(entity, QUALIFIED_NAME);
