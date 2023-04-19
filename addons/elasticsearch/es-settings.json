@@ -41,6 +41,13 @@
           "lowercase"
         ]
       },
+      "atlan_space_analyzer": {
+        "type": "custom",
+        "tokenizer": "whitespace",
+        "filter": [
+          "apostrophe", "lowercase"
+        ]
+      },
       "atlan_text_stemmer": {
         "type": "custom",
         "tokenizer": "atlan_tokenizer",
