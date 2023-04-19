@@ -176,53 +176,12 @@ public class KeycloakUserStore {
         return userStore;
     }
 
-    private static void loadUserStore(RangerBasePlugin plugin,
-                                      List<UserRepresentation> userNamesList,
-                                      RangerUserStoreProvider userStoreProvider) throws AtlasBaseException {
-
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("loadUserStore");
-
-        Map<String, Set<String>> userGroupMapping = new HashMap<>();
-
-        Set<String> distUsers = new HashSet<>();
-        List<Callable<Object>> callables = new ArrayList<>();
-        for (UserRepresentation kUser : userNamesList) {
-            if (!distUsers.contains(kUser.getUsername())) {
-                distUsers.add(kUser.getUsername());
-                callables.add(new UserGroupsFetcher(kUser, userGroupMapping));
-            }
-        }
-
-        submitCallablesAndWaitToFinish("RoleSubjectsFetcher", callables);
-
-        RangerUserStore userStore = new RangerUserStore();
-        userStore.setUserGroupMapping(userGroupMapping);
-
-        plugin.setUserStore(userStore);
-        userStoreProvider.setRangerUserStoreSetInPlugin(true);
-
-        Date current = new Date();
-        userStore.setUserStoreUpdateTime(current);
-        userStoreProvider.setLastActivationTimeInMillis(current.getTime());
-        userStoreProvider.saveToCache(userStore);
-
-        RequestContext.get().endMetricRecord(recorder);
-    }
-
-
     private static RangerRole keycloakRoleToRangerRole(RoleRepresentation kRole) {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("keycloakRolesToRangerRoles");
 
         RangerRole rangerRole = new RangerRole();
-        //rangerRole.setId(kRole.getId());
         rangerRole.setName(kRole.getName());
         rangerRole.setDescription(kRole.getDescription() + " " + kRole.getId());
-        //TODO: following properties
-        //rangerRole.setOptions(kRole.getAttributes());
-        //createdBy, updatedBy
-        //createTime, updateTime
-        //isEnabled
-        //version
 
         RequestContext.get().endMetricRecord(recorder);
         return rangerRole;
@@ -277,7 +236,7 @@ public class KeycloakUserStore {
             LOG.info("Shutting down executor: {}", threadName);
             service.shutdown();
             LOG.info("Shut down executor: {}", threadName);
-            //boolean terminated = service.awaitTermination(60, TimeUnit.SECONDS);//TODO: implement  countdown lotch for undefinite wait
+
             boolean terminated = service.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
             LOG.info("awaitTermination done: {}", threadName);
 
@@ -397,15 +356,11 @@ public class KeycloakUserStore {
             AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("userGroupsFetcher");
 
             try {
-                //LOG.info("UserGroupsFetcher: Processing {}", kUser.getUsername());
-
                 List<GroupRepresentation> kGroups = KeycloakClient.getKeycloakClient().getRealm().users().get(kUser.getId()).groups();
                 userGroupMapping.put(kUser.getUsername(),
                         kGroups.stream()
                                 .map(GroupRepresentation::getName)
                                 .collect(Collectors.toSet()));
-
-                //LOG.info("UserGroupsFetcher: Processed {}, {}", kUser.getUsername(), userGroupMapping.size());
 
             } catch (Exception e) {
                 LOG.error("UserGroupsFetcher: Failed to process user {}: {}", kUser.getUsername(), e.getMessage());

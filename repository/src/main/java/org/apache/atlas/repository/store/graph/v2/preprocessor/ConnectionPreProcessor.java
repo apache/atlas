@@ -41,6 +41,7 @@ import org.apache.atlas.repository.store.users.KeycloakStore;
 import org.apache.atlas.transformer.PreProcessorPoliciesTransformer;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 import org.keycloak.admin.client.resource.RoleResource;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.slf4j.Logger;
@@ -55,6 +56,7 @@ import java.util.stream.Collectors;
 import static org.apache.atlas.repository.Constants.ATTR_ADMIN_GROUPS;
 import static org.apache.atlas.repository.Constants.ATTR_ADMIN_ROLES;
 import static org.apache.atlas.repository.Constants.ATTR_ADMIN_USERS;
+import static org.apache.atlas.repository.Constants.CREATED_BY_KEY;
 import static org.apache.atlas.repository.Constants.POLICY_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
@@ -115,6 +117,16 @@ public class ConnectionPreProcessor implements PreProcessor {
         List<String> adminGroups = (List<String>) connection.getAttribute(ATTR_ADMIN_GROUPS);
         List<String> adminRoles = (List<String>) connection.getAttribute(ATTR_ADMIN_ROLES);
 
+        if (adminUsers == null) {
+            adminUsers = new ArrayList<>();
+        }
+
+        String creatorUser = RequestContext.get().getUser();
+        if(StringUtils.isNotEmpty(creatorUser) && !adminUsers.contains(creatorUser)) {
+            adminUsers.add(creatorUser);
+        }
+        connection.setAttribute(ATTR_ADMIN_USERS, adminUsers);
+
         RoleRepresentation role = keycloakStore.createRoleForConnection(roleName, true, adminUsers, adminGroups, adminRoles);
 
         //create connection bootstrap policies
@@ -148,11 +160,16 @@ public class ConnectionPreProcessor implements PreProcessor {
 
         RoleResource rolesResource = KeycloakClient.getKeycloakClient().getRealm().roles().get(roleName);
         RoleRepresentation representation = rolesResource.toRepresentation();
+        String creatorUser = vertex.getProperty(CREATED_BY_KEY, String.class);
 
         if (connection.hasAttribute(ATTR_ADMIN_USERS)) {
             List<String> newAdminUsers = (List<String>) connection.getAttribute(ATTR_ADMIN_USERS);
             List<String> currentAdminUsers = (List<String>) existingConnEntity.getAttribute(ATTR_ADMIN_USERS);
+            if (StringUtils.isNotEmpty(creatorUser) && !newAdminUsers.contains(creatorUser)) {
+                newAdminUsers.add(creatorUser);
+            }
 
+            connection.setAttribute(ATTR_ADMIN_USERS, newAdminUsers);
             if (CollectionUtils.isNotEmpty(newAdminUsers) || CollectionUtils.isNotEmpty(currentAdminUsers)) {
                 keycloakStore.updateRoleUsers(roleName, currentAdminUsers, newAdminUsers, representation);
             }

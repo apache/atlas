@@ -16,7 +16,8 @@
                 [],
                 "policyRoles":
                 [
-                    "$admin"
+                    "$admin",
+                    "$api-token-default-access"
                 ],
                 "policyResourceCategory": "TYPEDEFS",
                 "policyResources":
@@ -46,7 +47,8 @@
                 "policyRoles":
                 [
                     "$admin",
-                    "$member"
+                    "$member",
+                    "$api-token-default-access"
                 ],
                 "policyResourceCategory": "TYPEDEFS",
                 "policyResources":
@@ -75,7 +77,8 @@
                 [],
                 "policyRoles":
                 [
-                    "$admin"
+                    "$admin",
+                    "$api-token-default-access"
                 ],
                 "policyResourceCategory": "TYPEDEFS",
                 "policyResources":
@@ -104,7 +107,8 @@
                 [],
                 "policyRoles":
                 [
-                    "$admin"
+                    "$admin",
+                    "$api-token-default-access"
                 ],
                 "policyResourceCategory": "TYPEDEFS",
                 "policyResources":
@@ -133,7 +137,8 @@
                 [],
                 "policyRoles":
                 [
-                    "$admin"
+                    "$admin",
+                    "$api-token-default-access"
                 ],
                 "policyResourceCategory": "TYPEDEFS",
                 "policyResources":
@@ -163,7 +168,8 @@
                 "policyRoles":
                 [
                     "$admin",
-                    "$member"
+                    "$member",
+                    "$api-token-default-access"
                 ],
                 "policyResourceCategory": "TYPEDEFS",
                 "policyResources":
@@ -192,7 +198,8 @@
                 [],
                 "policyRoles":
                 [
-                    "$admin"
+                    "$admin",
+                    "$api-token-default-access"
                 ],
                 "policyResourceCategory": "TYPEDEFS",
                 "policyResources":
@@ -221,7 +228,8 @@
                 [],
                 "policyRoles":
                 [
-                    "$admin"
+                    "$admin",
+                    "$api-token-default-access"
                 ],
                 "policyResourceCategory": "TYPEDEFS",
                 "policyResources":
@@ -250,7 +258,8 @@
                 [],
                 "policyRoles":
                 [
-                    "$admin"
+                    "$admin",
+                    "$api-token-default-access"
                 ],
                 "policyResourceCategory": "TYPEDEFS",
                 "policyResources":
@@ -280,7 +289,8 @@
                 "policyRoles":
                 [
                     "$admin",
-                    "$member"
+                    "$member",
+                    "$api-token-default-access"
                 ],
                 "policyResourceCategory": "TYPEDEFS",
                 "policyResources":
@@ -309,7 +319,8 @@
                 [],
                 "policyRoles":
                 [
-                    "$admin"
+                    "$admin",
+                    "$api-token-default-access"
                 ],
                 "policyResourceCategory": "TYPEDEFS",
                 "policyResources":
@@ -338,7 +349,8 @@
                 [],
                 "policyRoles":
                 [
-                    "$admin"
+                    "$admin",
+                    "$api-token-default-access"
                 ],
                 "policyResourceCategory": "TYPEDEFS",
                 "policyResources":
@@ -401,7 +413,8 @@
                 [
                     "$admin",
                     "$guest",
-                    "$member"
+                    "$member",
+                    "$api-token-default-access"
                 ],
                 "policyResourceCategory": "TYPEDEFS",
                 "policyResources":
@@ -502,6 +515,37 @@
                 [
                     "type-create",
                     "type-read",
+                    "type-update",
+                    "type-delete"
+                ]
+            }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "attributes":
+            {
+                "name": "CUD_TYPEDEF_DENY_GUEST",
+                "qualifiedName": "CUD_TYPEDEF_DENY_GUEST",
+                "policyCategory": "bootstrap",
+                "policyServiceName": "atlas",
+                "policyType": "deny",
+                "policyUsers":
+                [],
+                "policyGroups":
+                [],
+                "policyRoles":
+                [
+                    "$guest"
+                ],
+                "policyResourceCategory": "TYPEDEFS",
+                "policyResources":
+                [
+                    "type-category:*",
+                    "type:*"
+                ],
+                "policyActions":
+                [
+                    "type-create",
                     "type-update",
                     "type-delete"
                 ]
