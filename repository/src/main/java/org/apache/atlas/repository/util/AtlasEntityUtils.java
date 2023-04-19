@@ -32,7 +32,7 @@ import java.util.Map;
 import static org.apache.atlas.repository.Constants.NAME;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 
-final public class AtlasEntityUtils {
+public final class AtlasEntityUtils {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasEntityUtils.class);
 
     private AtlasEntityUtils() {

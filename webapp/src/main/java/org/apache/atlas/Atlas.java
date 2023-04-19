@@ -250,7 +250,7 @@ public final class Atlas {
 
     private static void initAccessAuditElasticSearch(Configuration configuration) throws IOException {
         AccessAuditLogsIndexCreator indexCreator = new AccessAuditLogsIndexCreator(configuration);
-        indexCreator.init();
+        indexCreator.start();
     }
 
     private static void initElasticsearch() throws IOException {
