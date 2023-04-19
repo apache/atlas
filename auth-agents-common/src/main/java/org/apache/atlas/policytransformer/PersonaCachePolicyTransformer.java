@@ -17,7 +17,6 @@
  */
 package org.apache.atlas.policytransformer;
 
-import joptsimple.internal.Strings;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;

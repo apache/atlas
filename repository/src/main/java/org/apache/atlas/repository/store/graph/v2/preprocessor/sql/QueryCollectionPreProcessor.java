@@ -161,20 +161,22 @@ public class QueryCollectionPreProcessor implements PreProcessor {
             AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = entityRetriever.toAtlasEntityWithExtInfo(vertex);
             AtlasEntity collection = entityWithExtInfo.getEntity();
 
-            String adminRoleName = String.format(COLL_ADMIN_ROLE_PATTERN, collection.getGuid());
-            String viewerRoleName = String.format(COLL_VIEWER_ROLE_PATTERN, collection.getGuid());
-
             if (!AtlasEntity.Status.ACTIVE.equals(collection.getStatus())) {
                 throw new AtlasBaseException("Collection is already deleted/purged");
             }
 
-            //delete connection policies
-            List<AtlasEntityHeader> policies = getCollectionPolicies(collection.getGuid());
-            EntityMutationResponse response = entityStore.deleteByIds(policies.stream().map(x -> x.getGuid()).collect(Collectors.toList()));
+            if (ATLAS_AUTHORIZER_IMPL.equalsIgnoreCase(CURRENT_AUTHORIZER_IMPL)) {
+                //delete collection policies
+                List<AtlasEntityHeader> policies = getCollectionPolicies(collection.getGuid());
+                EntityMutationResponse response = entityStore.deleteByIds(policies.stream().map(x -> x.getGuid()).collect(Collectors.toList()));
 
-            //delete connection role
-            keycloakStore.removeRoleByName(adminRoleName);
-            keycloakStore.removeRoleByName(viewerRoleName);
+                //delete collection role
+                String adminRoleName = String.format(COLL_ADMIN_ROLE_PATTERN, collection.getGuid());
+                String viewerRoleName = String.format(COLL_VIEWER_ROLE_PATTERN, collection.getGuid());
+
+                keycloakStore.removeRoleByName(adminRoleName);
+                keycloakStore.removeRoleByName(viewerRoleName);
+            }
         } finally {
             RequestContext.get().endMetricRecord(metricRecorder);
         }

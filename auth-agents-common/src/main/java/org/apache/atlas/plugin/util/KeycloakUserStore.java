@@ -310,20 +310,23 @@ public class KeycloakUserStore {
             try {
                 RoleResource roleResource = KeycloakClient.getKeycloakClient().getRealm().roles().get(kRole.getName());
 
-                //LOG.info("RoleSubjectsFetcher: Processing {}", kRole.getName());
-
                 //get all groups for Roles
                 Thread groupsFetcher = new Thread(() -> {
                     int start = 0;
                     int size = 500;
+                    boolean found = true;
                     Set<GroupRepresentation> ret = new HashSet<>();
 
                     do {
                         Set<GroupRepresentation> kGroups = roleResource.getRoleGroupMembers(start, size);
-                        ret.addAll(kGroups);
-                        start += size;
+                        if (CollectionUtils.isNotEmpty(kGroups)) {
+                            ret.addAll(kGroups);
+                            start += size;
+                        } else {
+                            found = false;
+                        }
 
-                    } while (CollectionUtils.isNotEmpty(ret) && ret.size() % size == 0);
+                    } while (found && ret.size() % size == 0);
 
                     rangerRole.setGroups(keycloakGroupsToRangerRoleMember(ret));
                 });
@@ -333,14 +336,19 @@ public class KeycloakUserStore {
                 Thread usersFetcher = new Thread(() -> {
                     int start = 0;
                     int size = 500;
+                    boolean found = true;
                     Set<UserRepresentation> ret = new HashSet<>();
 
                     do {
                         Set<UserRepresentation> userRepresentations = roleResource.getRoleUserMembers(start, size);
-                        ret.addAll(userRepresentations);
-                        start += size;
+                        if (CollectionUtils.isNotEmpty(userRepresentations)) {
+                            ret.addAll(userRepresentations);
+                            start += size;
+                        } else {
+                            found = false;
+                        }
 
-                    } while (CollectionUtils.isNotEmpty(ret) && ret.size() % size == 0);
+                    } while (found && ret.size() % size == 0);
 
                     rangerRole.setUsers(keycloakUsersToRangerRoleMember(ret));
                     userNamesList.addAll(ret);
@@ -362,8 +370,6 @@ public class KeycloakUserStore {
                     LOG.error("Failed to wait for threads to complete: {}", kRole.getName());
                     e.printStackTrace();
                 }
-
-                //LOG.info("RoleSubjectsFetcher: Processed {}, {}", kRole.getName(), roleSet.size());
 
                 RequestContext.get().endMetricRecord(recorder);
                 roleSet.add(rangerRole);

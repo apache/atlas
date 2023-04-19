@@ -405,6 +405,7 @@ public class CachePolicyTransformerImpl {
 
         int from = 0;
         int size = 100;
+        boolean found = true;
 
         do {
             dsl.put("from", from);
@@ -414,11 +415,13 @@ public class CachePolicyTransformerImpl {
             List<AtlasEntityHeader> headers = discoveryService.directIndexSearch(indexSearchParams).getEntities();
             if (headers != null) {
                 ret.addAll(headers);
+            } else {
+                found = false;
             }
 
             from += size;
 
-        } while (ret.size() > 0 && ret.size() % size == 0);
+        } while (found && ret.size() % size == 0);
 
         return ret;
     }

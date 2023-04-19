@@ -18,8 +18,8 @@
 
 package org.apache.atlas.repository.store.users;
 
-import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.keycloak.client.KeycloakClient;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.type.AtlasType;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
@@ -54,7 +54,9 @@ public class KeycloakStore {
     private boolean saveUsersToAttributes = false;
     private boolean saveGroupsToAttributes = false;
 
-    public KeycloakStore() {}
+    public KeycloakStore() {
+
+    }
 
     public KeycloakStore(boolean saveUsersToAttributes, boolean saveGroupsToAttributes) {
         this.saveUsersToAttributes  = saveUsersToAttributes;
@@ -71,7 +73,7 @@ public class KeycloakStore {
     }
 
     public RoleRepresentation createRoleForConnection(String name, boolean isComposite,
-                                         List<String> users, List<String> groups, List<String> roles) throws AtlasBaseException {
+                                                      List<String> users, List<String> groups, List<String> roles) throws AtlasBaseException {
 
         List<UserRepresentation> roleUsers = new ArrayList<>();
         UsersResource usersResource = null;
@@ -292,6 +294,19 @@ public class KeycloakStore {
                 .toRepresentation();
     }
 
+    public RoleRepresentation getRole(String roleName) throws AtlasBaseException {
+        RoleRepresentation roleRepresentation = null;
+        try{
+            roleRepresentation =  KeycloakClient.getKeycloakClient().getRealm()
+                    .roles()
+                    .get(roleName)
+                    .toRepresentation();
+        } catch (NotFoundException e) {
+            return null;
+        }
+        return roleRepresentation;
+    }
+
     public void updateRoleUsers(String roleName,
                                 List<String> existingUsers, List<String> newUsers,
                                 RoleRepresentation roleRepresentation) throws AtlasBaseException {
@@ -345,8 +360,8 @@ public class KeycloakStore {
     }
 
     public void updateRoleGroups(String roleName,
-                                List<String> existingGroups, List<String> newGroups,
-                                RoleRepresentation roleRepresentation) throws AtlasBaseException {
+                                 List<String> existingGroups, List<String> newGroups,
+                                 RoleRepresentation roleRepresentation) throws AtlasBaseException {
 
         if (roleRepresentation == null) {
             throw new AtlasBaseException("Failed to updateRoleGroups as roleRepresentation is null");
@@ -445,7 +460,6 @@ public class KeycloakStore {
             LOG.info("Removed keycloak role with id {}", roleId);
         }
     }
-
     public void removeRoleByName(String roleName) throws AtlasBaseException {
         if (StringUtils.isNotEmpty(roleName)) {
             RoleResource rolesResource = KeycloakClient.getKeycloakClient().getRealm().roles().get(roleName);
