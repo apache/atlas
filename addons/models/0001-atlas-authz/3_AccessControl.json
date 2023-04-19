@@ -42,6 +42,16 @@
           "isUnique": false,
           "skipScrubbing": true,
           "includeInNotification": false
+        },
+        {
+          "name": "channelLink",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": false
         }
       ]
     }

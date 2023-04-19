@@ -56,7 +56,7 @@ public class AtlasAuthorizerFactory {
                     }
 
                     CURRENT_AUTHORIZER_IMPL = configuration != null ? configuration.getString("atlas.authorizer.impl") : "SIMPLE";
-                    String authorizerClass = ATLAS_AUTHORIZER;
+                    String authorizerClass = RANGER_AUTHORIZER;
 
                     if (StringUtils.isNotEmpty(CURRENT_AUTHORIZER_IMPL)) {
                         if (StringUtils.equalsIgnoreCase(CURRENT_AUTHORIZER_IMPL, "SIMPLE")) {
