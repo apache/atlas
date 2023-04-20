@@ -22,6 +22,7 @@ import org.apache.atlas.ICuratorFactory;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.service.redis.RedisService;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.slf4j.Logger;
@@ -29,8 +30,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 
 public class TaskExecutor {
@@ -51,9 +52,10 @@ public class TaskExecutor {
 
     private TaskQueueWatcher watcher;
     private Thread watcherThread;
+    private RedisService redisService;
 
     public TaskExecutor(TaskRegistry registry, Map<String, TaskFactory> taskTypeFactoryMap, TaskManagement.Statistics statistics,
-                        ICuratorFactory curatorFactory,final String zkRoot, boolean isActiveActiveHAEnabled) {
+                        ICuratorFactory curatorFactory, RedisService redisService, final String zkRoot, boolean isActiveActiveHAEnabled) {
         this.taskExecutorService = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder()
                                                                     .setDaemon(true)
                                                                     .setNameFormat(TASK_NAME_FORMAT + Thread.currentThread().getName())
@@ -63,13 +65,14 @@ public class TaskExecutor {
         this.statistics = statistics;
         this.taskTypeFactoryMap = taskTypeFactoryMap;
         this.curatorFactory = curatorFactory;
+        this.redisService = redisService;
         this.isActiveActiveHAEnabled = isActiveActiveHAEnabled;
         this.zkRoot = zkRoot;
     }
 
     public Thread startWatcherThread() {
 
-        watcher = new TaskQueueWatcher(taskExecutorService, registry, taskTypeFactoryMap, statistics, curatorFactory, zkRoot, isActiveActiveHAEnabled);
+        watcher = new TaskQueueWatcher(taskExecutorService, registry, taskTypeFactoryMap, statistics, curatorFactory, redisService, zkRoot, isActiveActiveHAEnabled);
         watcherThread = new Thread(watcher);
         watcherThread.start();
         return watcherThread;

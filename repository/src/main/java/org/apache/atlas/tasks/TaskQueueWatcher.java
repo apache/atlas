@@ -20,8 +20,8 @@ package org.apache.atlas.tasks;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.ICuratorFactory;
 import org.apache.atlas.model.tasks.AtlasTask;
+import org.apache.atlas.service.redis.RedisService;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,21 +43,24 @@ public class TaskQueueWatcher implements Runnable {
     private final Map<String, TaskFactory> taskTypeFactoryMap;
     private final TaskManagement.Statistics statistics;
     private final ICuratorFactory curatorFactory;
+    private final RedisService redisService;
 
     private static long pollInterval = AtlasConfiguration.TASKS_REQUEUE_POLL_INTERVAL.getLong();
     private static final String TASK_LOCK = "/task-lock";
+    private static final String ATLAS_TASK_LOCK = "atlas:task:lock";
 
     private final AtomicBoolean shouldRun = new AtomicBoolean(false);
 
     public TaskQueueWatcher(ExecutorService executorService, TaskRegistry registry,
                             Map<String, TaskFactory> taskTypeFactoryMap, TaskManagement.Statistics statistics,
-                            ICuratorFactory curatorFactory, final String zkRoot, boolean isActiveActiveHAEnabled) {
+                            ICuratorFactory curatorFactory, RedisService redisService, final String zkRoot, boolean isActiveActiveHAEnabled) {
 
         this.registry = registry;
         this.executorService = executorService;
         this.taskTypeFactoryMap = taskTypeFactoryMap;
         this.statistics = statistics;
         this.curatorFactory = curatorFactory;
+        this.redisService = redisService;
         this.zkRoot = zkRoot;
         this.isActiveActiveHAEnabled = isActiveActiveHAEnabled;
     }
@@ -74,11 +77,11 @@ public class TaskQueueWatcher implements Runnable {
         if (LOG.isDebugEnabled()) {
             LOG.debug("TaskQueueWatcher: running {}:{}", Thread.currentThread().getName(), Thread.currentThread().getId());
         }
-        InterProcessMutex lock = null;
-
         while (shouldRun.get()) {
             try {
-                lock = acquireDistributedLock();
+                if(!redisService.acquireDistributedLock(ATLAS_TASK_LOCK)){
+                    return;
+                }
 
                 TasksFetcher fetcher = new TasksFetcher(registry);
 
@@ -93,30 +96,18 @@ public class TaskQueueWatcher implements Runnable {
                     waitForTasksToComplete(latch);
                 } else {
                     LOG.info("No tasks to queue, sleeping for {} ms", pollInterval);
-                    releaseLock(lock);
+                    redisService.releaseDistributedLock(ATLAS_TASK_LOCK);
                 }
                 Thread.sleep(pollInterval);
             } catch (InterruptedException interruptedException) {
                 LOG.error("TaskQueueWatcher: Interrupted: thread is terminated, new tasks will not be loaded into the queue until next restart");
                 break;
-            } catch (Exception e){
-                LOG.error("TaskQueueWatcher: Exception occurred " +e.getMessage(),e);
-            }
-            finally {
-                releaseLock(lock);
+            } catch (Exception e) {
+                LOG.error("TaskQueueWatcher: Exception occurred " + e.getMessage(), e);
+            } finally {
+                redisService.releaseDistributedLock(ATLAS_TASK_LOCK);
             }
         }
-    }
-
-    private InterProcessMutex acquireDistributedLock() throws Exception {
-        if (!isActiveActiveHAEnabled)
-            return null;
-
-        final InterProcessMutex lockForTask = curatorFactory.lockInstance(zkRoot, TASK_LOCK);
-        LOG.info("Attempting to acquire a lock on task");
-        lockForTask.acquire();
-        LOG.info("Acquired a lock on task");
-        return lockForTask;
     }
 
     private void waitForTasksToComplete(final CountDownLatch latch) throws InterruptedException {
@@ -127,20 +118,6 @@ public class TaskQueueWatcher implements Runnable {
         }
     }
 
-    private void releaseLock(InterProcessMutex lock) {
-        if (lock == null)
-            return;
-        try {
-            if (lock.isOwnedByCurrentThread()) {
-                LOG.info("About to release task lock");
-                lock.release();
-                LOG.info("successfully released task lock");
-            }
-        } catch (Exception e) {
-            LOG.error("Error while releasing a lock of Task " + e.getMessage(), e);
-            //Not throwing exception here as it will terminate continuous while-loop
-        }
-    }
     private void submitAll(List<AtlasTask> tasks, CountDownLatch latch) {
         if (CollectionUtils.isNotEmpty(tasks)) {
 

@@ -26,14 +26,13 @@ import org.apache.atlas.model.SearchFilter;
 import org.apache.atlas.model.typedef.*;
 import org.apache.atlas.repository.graph.TypeCacheRefresher;
 import org.apache.atlas.repository.util.FilterUtil;
+import org.apache.atlas.service.redis.RedisService;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.utils.AtlasPerfTracer;
-import org.apache.atlas.web.service.CuratorFactory;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration.Configuration;
-import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.apache.http.annotation.Experimental;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +48,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 /**
  * REST interface for CRUD operations on type definitions
@@ -62,21 +60,19 @@ import java.util.concurrent.TimeUnit;
 public class TypesREST {
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.TypesREST");
     private static final Logger LOG = LoggerFactory.getLogger(TypesREST.class);
-    private static final String TYPE_DEF_LOCK = "/type-def-lock";
-    private final String zkRoot;
+    private static final String ATLAS_TYPEDEF_LOCK = "atlas:type-def:lock";
 
 
     private final AtlasTypeDefStore typeDefStore;
-    private final CuratorFactory curatorFactory;
+    private final RedisService redisService;
     private final TypeCacheRefresher typeCacheRefresher;
     private final boolean isActiveActiveHAEnabled;
 
     @Inject
-    public TypesREST(AtlasTypeDefStore typeDefStore, CuratorFactory curatorFactory, Configuration configuration, TypeCacheRefresher typeCacheRefresher) {
+    public TypesREST(AtlasTypeDefStore typeDefStore, RedisService redisService, Configuration configuration, TypeCacheRefresher typeCacheRefresher) {
         this.typeDefStore = typeDefStore;
-        this.curatorFactory = curatorFactory;
+        this.redisService = redisService;
         this.typeCacheRefresher = typeCacheRefresher;
-        this.zkRoot = HAConfiguration.getZookeeperProperties(configuration).getZkRoot();
         this.isActiveActiveHAEnabled = HAConfiguration.isActiveActiveHAEnabled(configuration);
     }
 
@@ -380,14 +376,13 @@ public class TypesREST {
         return ret;
     }
 
-    private InterProcessMutex attemptAcquiringLock() throws AtlasBaseException {
+    private void attemptAcquiringLock() throws AtlasBaseException {
         if (!isActiveActiveHAEnabled)
-            return null;
+            return;
 
         final String traceId = RequestContext.get().getTraceId();
-        final InterProcessMutex lock = curatorFactory.lockInstance(zkRoot, TYPE_DEF_LOCK);
         try {
-            if (!lock.acquire(15, TimeUnit.SECONDS)) {
+            if (!redisService.acquireDistributedLock(ATLAS_TYPEDEF_LOCK)) {
                 LOG.info("Lock is already acquired. Returning now :: traceId {}", traceId);
                 throw new AtlasBaseException(AtlasErrorCode.FAILED_TO_OBTAIN_TYPE_UPDATE_LOCK);
             }
@@ -397,22 +392,6 @@ public class TypesREST {
         } catch (Exception e) {
             LOG.error("Error while acquiring lock on type-defs :: traceId " + traceId + " ." + e.getMessage(), e);
             throw new AtlasBaseException("Error while acquiring a lock on type-defs");
-        }
-        return lock;
-    }
-
-    private void releaseLock(InterProcessMutex lock) throws AtlasBaseException {
-        if (lock == null)
-            return;
-        try {
-            if(lock.isOwnedByCurrentThread()) {
-                final String traceId = RequestContext.get().getTraceId();
-                LOG.info("About to release type-def lock :: traceId {}", traceId);
-                lock.release();
-                LOG.info("successfully released type-def lock :: traceId {}", traceId);
-            }
-        } catch (Exception e) {
-          throw new AtlasBaseException(e.getMessage(),e);
         }
     }
 
@@ -434,7 +413,6 @@ public class TypesREST {
     @Timed
     public AtlasTypesDef createAtlasTypeDefs(final AtlasTypesDef typesDef, @QueryParam("allowDuplicateDisplayName") @DefaultValue("false") boolean allowDuplicateDisplayName) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
-        InterProcessMutex lock = null;
         validateTypeCreateOrUpdate(typesDef);
         RequestContext.get().setTraceId(UUID.randomUUID().toString());
         try {
@@ -443,7 +421,7 @@ public class TypesREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.createAtlasTypeDefs(" +
                                                                AtlasTypeUtil.toDebugString(typesDef) + ")");
             }
-            lock = attemptAcquiringLock();
+            attemptAcquiringLock();
             RequestContext.get().setAllowDuplicateDisplayName(allowDuplicateDisplayName);
             typesDef.getBusinessMetadataDefs().forEach(AtlasBusinessMetadataDef::setRandomNameForEntityAndAttributeDefs);
             typesDef.getClassificationDefs().forEach(AtlasClassificationDef::setRandomNameForEntityAndAttributeDefs);
@@ -458,7 +436,7 @@ public class TypesREST {
             throw new AtlasBaseException("Error while creating a type definition");
         }
         finally {
-            releaseLock(lock);
+            redisService.releaseDistributedLock(ATLAS_TYPEDEF_LOCK);
             AtlasPerfTracer.log(perf);
         }
     }
@@ -496,7 +474,6 @@ public class TypesREST {
     public AtlasTypesDef updateAtlasTypeDefs(final AtlasTypesDef typesDef, @QueryParam("patch") final boolean patch,
                                              @QueryParam("allowDuplicateDisplayName") @DefaultValue("false") boolean allowDuplicateDisplayName) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
-        InterProcessMutex lock = null;
         validateTypeCreateOrUpdate(typesDef);
         RequestContext.get().setTraceId(UUID.randomUUID().toString());
         try {
@@ -505,7 +482,7 @@ public class TypesREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.updateAtlasTypeDefs(" +
                                                                AtlasTypeUtil.toDebugString(typesDef) + ")");
             }
-            lock = attemptAcquiringLock();
+            attemptAcquiringLock();
 
             for (AtlasBusinessMetadataDef mb : typesDef.getBusinessMetadataDefs()) {
                 AtlasBusinessMetadataDef existingMB;
@@ -541,7 +518,7 @@ public class TypesREST {
             throw new AtlasBaseException("Error while updating a type definition");
         } finally {
             RequestContext.clear();
-            releaseLock(lock);
+            redisService.releaseDistributedLock(ATLAS_TYPEDEF_LOCK);
             AtlasPerfTracer.log(perf);
         }
     }
@@ -559,7 +536,6 @@ public class TypesREST {
     @Timed
     public void deleteAtlasTypeDefs(final AtlasTypesDef typesDef) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
-        InterProcessMutex lock = null;
         RequestContext.get().setTraceId(UUID.randomUUID().toString());
         try {
             typeCacheRefresher.verifyCacheRefresherHealth();
@@ -567,7 +543,7 @@ public class TypesREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.deleteAtlasTypeDefs(" +
                                                                AtlasTypeUtil.toDebugString(typesDef) + ")");
             }
-            lock = attemptAcquiringLock();
+            attemptAcquiringLock();
             typeDefStore.deleteTypesDef(typesDef);
             typeCacheRefresher.refreshAllHostCache();
         } catch (AtlasBaseException atlasBaseException) {
@@ -577,7 +553,7 @@ public class TypesREST {
             LOG.error("TypesREST.deleteAtlasTypeDefs:: " + e.getMessage(), e);
             throw new AtlasBaseException("Error while deleting a type definition");
         } finally {
-            releaseLock(lock);
+            redisService.releaseDistributedLock(ATLAS_TYPEDEF_LOCK);
             AtlasPerfTracer.log(perf);
         }
     }
@@ -594,14 +570,13 @@ public class TypesREST {
     @Timed
     public void deleteAtlasTypeByName(@PathParam("typeName") final String typeName) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
-        InterProcessMutex lock = null;
         RequestContext.get().setTraceId(UUID.randomUUID().toString());
         try {
             typeCacheRefresher.verifyCacheRefresherHealth();
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.deleteAtlasTypeByName(" + typeName + ")");
             }
-            lock = attemptAcquiringLock();
+            attemptAcquiringLock();
             typeDefStore.deleteTypeByName(typeName);
             typeCacheRefresher.refreshAllHostCache();
         } catch (AtlasBaseException atlasBaseException) {
@@ -611,7 +586,7 @@ public class TypesREST {
             LOG.error("TypesREST.deleteAtlasTypeByName:: " + e.getMessage(), e);
             throw new AtlasBaseException("Error while deleting a type definition");
         } finally {
-            releaseLock(lock);
+            redisService.releaseDistributedLock(ATLAS_TYPEDEF_LOCK);
             AtlasPerfTracer.log(perf);
         }
     }

@@ -128,6 +128,12 @@
             <version>${kafka.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.redisson</groupId>
+            <artifactId>redisson</artifactId>
+            <version>${redis.client.version}</version>
+        </dependency>
+
     </dependencies>
 
     <build>
