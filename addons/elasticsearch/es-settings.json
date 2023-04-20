@@ -43,10 +43,7 @@
       },
       "atlan_space_analyzer": {
         "type": "custom",
-        "tokenizer": "whitespace",
-        "filter": [
-          "apostrophe", "lowercase"
-        ]
+        "tokenizer": "whitespace"
       },
       "atlan_text_stemmer": {
         "type": "custom",
