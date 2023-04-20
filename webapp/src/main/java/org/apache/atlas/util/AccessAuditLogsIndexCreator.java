@@ -64,7 +64,7 @@ public class AccessAuditLogsIndexCreator extends Thread {
     private static final String ES_BOOTSTRAP_MAX_RETRY = "atlas.audit.elasticsearch.max.retry";
 
     private static final String DEFAULT_INDEX_NAME = "ranger-audit";
-    private static final String ES_RANGER_AUDIT_SCHEMA_FILE = "atlas_auth_es_schema.json";
+    private static final String ES_RANGER_AUDIT_SCHEMA_FILE = "atlas-auth-es-schema.json";
 
     private static final long DEFAULT_ES_TIME_INTERVAL_MS = 30000L;
     private static final int TRY_UNTIL_SUCCESS = -1;

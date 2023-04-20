@@ -28,7 +28,7 @@ import static org.apache.atlas.repository.Constants.getStaticFileAsString;
 public class CacheTransformerTemplateHelper {
     private static final Logger LOG = LoggerFactory.getLogger(CacheTransformerTemplateHelper.class);
 
-    private static final String RESOURCE_POLICY_TRANSFORMER = "templates/PolicyCacheTransformer.json";
+    static final String RESOURCE_POLICY_TRANSFORMER = "templates/policy_cache_transformer.json";
 
     private static PolicyTransformerTemplate templates;
 

@@ -21,6 +21,8 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.atlas.policytransformer.CacheTransformerTemplateHelper.RESOURCE_POLICY_TRANSFORMER;
+
 public abstract class AbstractCachePolicyTransformer implements CachePolicyTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(AbstractCachePolicyTransformer.class);
@@ -28,7 +30,6 @@ public abstract class AbstractCachePolicyTransformer implements CachePolicyTrans
     public static final String PLACEHOLDER_ENTITY      = "{entity}";
     public static final String PLACEHOLDER_ENTITY_TYPE = "{entity-type}";
 
-    private static final String RESOURCE_POLICY_TRANSFORMER = "templates/PolicyCacheTransformer.json";
     public PolicyTransformerTemplate templates;
 
     public AbstractCachePolicyTransformer() throws AtlasBaseException {
