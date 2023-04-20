@@ -122,6 +122,7 @@ public class CachePolicyTransformerImpl {
 
             AtlasEntityHeader service = getServiceEntity(serviceName);
             servicePolicies.setPolicyVersion(-1L);
+            servicePolicies.setPolicyUpdateTime(new Date());
 
             if (service != null) {
                 List<RangerPolicy> policies = getServicePolicies(service);

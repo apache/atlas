@@ -35,7 +35,7 @@
 
 	<property>
 		<name>atlas.plugin.atlas.authz.rest.url</name>
-		<value>http://policymanagerhost:port</value>
+		<value>localhost:21000/api/atlas/v2/auth</value>
 		<description>
 			URL to Ranger Admin
 		</description>
