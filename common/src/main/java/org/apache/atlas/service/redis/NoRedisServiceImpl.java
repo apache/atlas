@@ -15,7 +15,7 @@ public class NoRedisServiceImpl extends AbstractRedisService {
 
     @PostConstruct
     public void init() {
-        LOG.info("Enabled local redis implementation.");
+        LOG.info("Enabled no redis implementation.");
     }
 
     @Override

@@ -69,9 +69,7 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
         long healthCheckFrequencyMillis  = config.getLong(SOLR_STATUS_CHECK_RETRY_INTERVAL, SOLR_STATUS_RETRY_DEFAULT_MS);
         this.recoveryInfoManagement      = new RecoveryInfoManagement(graph);
 
-        final String zkRoot = HAConfiguration.getZookeeperProperties(configuration).getZkRoot();
-        final boolean isActiveActiveHAEnabled = HAConfiguration.isActiveActiveHAEnabled(configuration);
-        this.recoveryThread = new RecoveryThread(recoveryInfoManagement, graph, recoveryStartTimeFromConfig, healthCheckFrequencyMillis, redisService, zkRoot, isActiveActiveHAEnabled);
+        this.recoveryThread = new RecoveryThread(recoveryInfoManagement, graph, recoveryStartTimeFromConfig, healthCheckFrequencyMillis, redisService);
         this.indexHealthMonitor = new Thread(recoveryThread, INDEX_HEALTH_MONITOR_THREAD_NAME);
     }
 
@@ -155,19 +153,15 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
         private       long                   indexStatusCheckRetryMillis;
         private       Object                 txRecoveryObject;
         private final RedisService redisService;
-        private final String zkRoot;
-        private final boolean isActiveActiveHAEnabled;
 
         private final AtomicBoolean          shouldRun = new AtomicBoolean(false);
 
         private RecoveryThread(RecoveryInfoManagement recoveryInfoManagement, AtlasGraph graph, long startTimeFromConfig, long healthCheckFrequencyMillis,
-                               RedisService redisService, String zkRoot, boolean isActiveActiveHAEnabled) {
+                               RedisService redisService) {
             this.graph                       = graph;
             this.recoveryInfoManagement      = recoveryInfoManagement;
             this.indexStatusCheckRetryMillis = healthCheckFrequencyMillis;
             this.redisService = redisService;
-            this.zkRoot = zkRoot;
-            this.isActiveActiveHAEnabled = isActiveActiveHAEnabled;
 
             if (startTimeFromConfig > 0) {
                 this.recoveryInfoManagement.updateStartTime(startTimeFromConfig);

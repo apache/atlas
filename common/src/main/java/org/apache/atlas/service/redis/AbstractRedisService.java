@@ -87,7 +87,7 @@ public abstract class AbstractRedisService implements RedisService {
         initAtlasConfig();
         Config config = new Config();
         config.useSingleServer()
-                .setAddress(formatSentinelUrls(atlasConfig.getStringArray(ATLAS_REDIS_URL))[0])
+                .setAddress(formatUrls(atlasConfig.getStringArray(ATLAS_REDIS_URL))[0])
                 .setUsername(atlasConfig.getString(ATLAS_REDIS_USERNAME))
                 .setPassword(atlasConfig.getString(ATLAS_REDIS_PASSWORD));
         return config;
@@ -100,13 +100,13 @@ public abstract class AbstractRedisService implements RedisService {
                 .setReadMode(ReadMode.MASTER_SLAVE)
                 .setCheckSentinelsList(false)
                 .setMasterName(atlasConfig.getString(ATLAS_REDIS_MASTER_NAME))
-                .addSentinelAddress(formatSentinelUrls(atlasConfig.getStringArray(ATLAS_REDIS_SENTINEL_URLS)))
+                .addSentinelAddress(formatUrls(atlasConfig.getStringArray(ATLAS_REDIS_SENTINEL_URLS)))
                 .setUsername(atlasConfig.getString(ATLAS_REDIS_USERNAME))
                 .setPassword(atlasConfig.getString(ATLAS_REDIS_PASSWORD));
         return config;
     }
 
-    private String[] formatSentinelUrls(String[] urls) throws IllegalArgumentException {
+    private String[] formatUrls(String[] urls) throws IllegalArgumentException {
         if (ArrayUtils.isEmpty(urls)) {
             getLogger().error("Invalid redis cluster urls");
             throw new IllegalArgumentException("Invalid redis cluster urls");
