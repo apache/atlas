@@ -44,12 +44,12 @@ public abstract class AbstractRedisService implements RedisService {
             isLockAcquired = lock.tryLock(waitTimeInMS, leaseTimeInMS, TimeUnit.MILLISECONDS);
             if (isLockAcquired) {
                 keyLockMap.put(key, lock);
-                getLogger().info("Acquired distributed lock on task for {}, host:{}", key, getHostAddress());
+                getLogger().info("Acquired distributed lock for {}, host:{}", key, getHostAddress());
             } else {
                 getLogger().info("Attempt failed as lock {} is already acquired, host: {}.", key, getHostAddress());
             }
         } catch (InterruptedException e) {
-            getLogger().error("Failed to acquire distributed lock, host: {}", getHostAddress(), e);
+            getLogger().error("Failed to acquire distributed lock for {}, host: {}", key, getHostAddress(), e);
             throw new AtlasException(e);
         }
         return isLockAcquired;
