@@ -21,7 +21,6 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.model.SearchFilter;
 import org.apache.atlas.model.typedef.*;
 import org.apache.atlas.repository.graph.TypeCacheRefresher;
@@ -66,14 +65,12 @@ public class TypesREST {
     private final AtlasTypeDefStore typeDefStore;
     private final RedisService redisService;
     private final TypeCacheRefresher typeCacheRefresher;
-    private final boolean isActiveActiveHAEnabled;
 
     @Inject
     public TypesREST(AtlasTypeDefStore typeDefStore, RedisService redisService, Configuration configuration, TypeCacheRefresher typeCacheRefresher) {
         this.typeDefStore = typeDefStore;
         this.redisService = redisService;
         this.typeCacheRefresher = typeCacheRefresher;
-        this.isActiveActiveHAEnabled = HAConfiguration.isActiveActiveHAEnabled(configuration);
     }
 
     /**
@@ -377,9 +374,6 @@ public class TypesREST {
     }
 
     private void attemptAcquiringLock() throws AtlasBaseException {
-        if (!isActiveActiveHAEnabled)
-            return;
-
         final String traceId = RequestContext.get().getTraceId();
         try {
             if (!redisService.acquireDistributedLock(ATLAS_TYPEDEF_LOCK)) {
