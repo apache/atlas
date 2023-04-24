@@ -25,16 +25,19 @@ import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.PreDestroy;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class TaskQueueWatcher implements Runnable {
     private static final Logger LOG = LoggerFactory.getLogger(TaskQueueWatcher.class);
-    private static final TaskExecutor.TaskLogger TASK_LOG         = TaskExecutor.TaskLogger.getLogger();
+    private static final TaskExecutor.TaskLogger TASK_LOG = TaskExecutor.TaskLogger.getLogger();
     private final String zkRoot;
     private final boolean isActiveActiveHAEnabled;
 
@@ -79,7 +82,7 @@ public class TaskQueueWatcher implements Runnable {
         }
         while (shouldRun.get()) {
             try {
-                if(!redisService.acquireDistributedLock(ATLAS_TASK_LOCK)){
+                if (!redisService.acquireDistributedLock(ATLAS_TASK_LOCK)) {
                     return;
                 }
 
@@ -145,7 +148,7 @@ public class TaskQueueWatcher implements Runnable {
 
         @Override
         public void run() {
-            if (LOG.isDebugEnabled()){
+            if (LOG.isDebugEnabled()) {
                 LOG.debug("TasksFetcher: Fetching tasks for queuing");
             }
             LOG.info("TasksFetcher: Fetching tasks for queuing");
@@ -155,6 +158,19 @@ public class TaskQueueWatcher implements Runnable {
 
         public List<AtlasTask> getTasks() {
             return tasks;
+        }
+    }
+
+    @PreDestroy
+    public void cleanUp() {
+        if (!Objects.isNull(this.executorService)) {
+            this.redisService.releaseDistributedLock(ATLAS_TASK_LOCK);
+            this.executorService.shutdownNow();
+            try {
+                this.executorService.awaitTermination(1, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
         }
     }
 }

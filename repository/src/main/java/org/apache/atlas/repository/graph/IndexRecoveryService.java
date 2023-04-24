@@ -105,7 +105,6 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
     public void stop() throws AtlasException {
         try {
             recoveryThread.shutdown();
-
             indexHealthMonitor.join();
         } catch (InterruptedException e) {
             LOG.error("indexHealthMonitor: Interrupted", e);
@@ -209,6 +208,7 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
                 }
 
                 shouldRun.set(false);
+                this.redisService.releaseDistributedLock(ATLAS_INDEX_RECOVERY_LOCK);
             } finally {
                 LOG.info("Index Health Monitor: Shutdown: Done!");
             }

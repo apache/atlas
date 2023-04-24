@@ -37,6 +37,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
@@ -613,5 +614,10 @@ public class TypesREST {
         }
 
         return ret;
+    }
+
+    @PreDestroy
+    public void cleanUp() {
+        this.redisService.releaseDistributedLock(ATLAS_TYPEDEF_LOCK);
     }
 }

@@ -9,6 +9,7 @@ import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
 import org.redisson.config.ReadMode;
 
+import javax.annotation.PreDestroy;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
@@ -119,4 +120,8 @@ public abstract class AbstractRedisService implements RedisService {
         }).toArray(String[]::new);
     }
 
+    @PreDestroy
+    public void flushLocks(){
+        keyLockMap.keySet().stream().forEach(k->keyLockMap.get(k).unlock());
+    }
 }
