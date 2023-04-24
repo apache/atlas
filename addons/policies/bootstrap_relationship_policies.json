@@ -8,6 +8,7 @@
                 "name": "LINK_GLOSSARY_TERM",
                 "qualifiedName": "LINK_GLOSSARY_TERM",
                 "policyCategory": "bootstrap",
+                "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
                 "policyUsers":
@@ -45,6 +46,7 @@
                 "name": "LINK_GLOSSARY_TERM_CATEGORY",
                 "qualifiedName": "LINK_GLOSSARY_TERM_CATEGORY",
                 "policyCategory": "bootstrap",
+                "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
                 "policyUsers":
@@ -82,6 +84,7 @@
                 "name": "LINK_GLOSSARY_CATEGORY",
                 "qualifiedName": "LINK_GLOSSARY_CATEGORY",
                 "policyCategory": "bootstrap",
+                "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
                 "policyUsers":
@@ -119,6 +122,7 @@
                 "name": "LINK_FOLDERS_USER",
                 "qualifiedName": "LINK_FOLDERS_USER",
                 "policyCategory": "bootstrap",
+                "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
                 "policyUsers":
@@ -162,6 +166,7 @@
                 "name": "LINK_CATEGORY_GLOSSARY",
                 "qualifiedName": "LINK_CATEGORY_GLOSSARY",
                 "policyCategory": "bootstrap",
+                "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
                 "policyUsers":
@@ -199,6 +204,7 @@
                 "name": "LINK_FOLDERS",
                 "qualifiedName": "LINK_FOLDERS",
                 "policyCategory": "bootstrap",
+                "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
                 "policyUsers":
@@ -244,6 +250,7 @@
                 "name": "LINK_GLOSSARY_ASSET",
                 "qualifiedName": "LINK_GLOSSARY_ASSET",
                 "policyCategory": "bootstrap",
+                "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
                 "policyUsers":
@@ -281,6 +288,7 @@
                 "name": "LINK_TERM_ASSET",
                 "qualifiedName": "LINK_TERM_ASSET",
                 "policyCategory": "bootstrap",
+                "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
                 "policyUsers":
@@ -318,6 +326,7 @@
                 "name": "LINK_CATEGORY_ASSET",
                 "qualifiedName": "LINK_CATEGORY_ASSET",
                 "policyCategory": "bootstrap",
+                "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
                 "policyUsers":
@@ -355,6 +364,7 @@
                 "name": "LINK_PROCESS_ASSET",
                 "qualifiedName": "LINK_PROCESS_ASSET",
                 "policyCategory": "bootstrap",
+                "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
                 "policyUsers":
@@ -392,6 +402,7 @@
                 "name": "LINK_PROCESSES",
                 "qualifiedName": "LINK_PROCESSES",
                 "policyCategory": "bootstrap",
+                "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
                 "policyUsers":
@@ -429,6 +440,7 @@
                 "name": "RELATIONSHIP_CRUD",
                 "qualifiedName": "RELATIONSHIP_CRUD",
                 "policyCategory": "bootstrap",
+                "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
                 "policyUsers":
@@ -467,6 +479,7 @@
                 "name": "LINK_COLLECTION_ASSET",
                 "qualifiedName": "LINK_COLLECTION_ASSET",
                 "policyCategory": "bootstrap",
+                "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
                 "policyUsers":
@@ -511,6 +524,7 @@
                 "name": "LINK_ACCESS_CONTROL_POLICY",
                 "qualifiedName": "LINK_ACCESS_CONTROL_POLICY",
                 "policyCategory": "bootstrap",
+                "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
                 "policyUsers":
@@ -548,6 +562,7 @@
                 "name": "LINK_ACCESS_CONTROL_RESOURCE",
                 "qualifiedName": "LINK_ACCESS_CONTROL_RESOURCE",
                 "policyCategory": "bootstrap",
+                "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
                 "policyUsers":
@@ -586,6 +601,7 @@
                 "name": "CUD_RELATIONSHIP_DENY_GUEST",
                 "qualifiedName": "CUD_RELATIONSHIP_DENY_GUEST",
                 "policyCategory": "bootstrap",
+                "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "deny",
                 "policyUsers":

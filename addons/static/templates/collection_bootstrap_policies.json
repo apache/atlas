@@ -6,6 +6,7 @@
             "qualifiedName": "{guid}/collection-link-assets",
             "name": "{name}-collection-link-assets",
             "policyCategory": "bootstrap",
+            "policySubCategory": "collection",
             "policyType": "allow",
             "policyServiceName": "atlas",
             "policyRoles": [
@@ -25,7 +26,7 @@
                 "end-two-entity-classification:*",
                 "end-two-entity:*",
                 "end-two-entity-type:Catalog",
-                "end-two-entity-type:Connection",
+                "end-two-entity-type:collection",
                 "end-two-entity-type:Process",
                 "end-two-entity-type:ProcessExecution",
                 "end-two-entity-type:Namespace",
@@ -42,6 +43,7 @@
             "qualifiedName": "{guid}/collection-add-terms",
             "name": "{name}-collection-add-terms",
             "policyCategory": "bootstrap",
+            "policySubCategory": "collection",
             "policyType": "allow",
             "policyServiceName": "atlas",
             "policyRoles": [
@@ -73,6 +75,7 @@
             "qualifiedName": "{guid}/collection-CRUD-admin",
             "name": "{name}-collection-CRUD-admin",
             "policyCategory": "bootstrap",
+            "policySubCategory": "collection",
             "policyType": "allow",
             "policyServiceName": "atlas",
             "policyRoles": [
@@ -100,6 +103,7 @@
             "qualifiedName": "{guid}/collection-CRUD-viewer",
             "name": "{name}-collection-CRUD-viewer",
             "policyCategory": "bootstrap",
+            "policySubCategory": "collection",
             "policyType": "allow",
             "policyServiceName": "atlas",
             "policyRoles": [
@@ -125,6 +129,7 @@
             "qualifiedName": "{guid}/collection-entity-business-metadata",
             "name": "{name}-collection-entity-business-metadata",
             "policyCategory": "bootstrap",
+            "policySubCategory": "collection",
             "policyType": "allow",
             "policyServiceName": "atlas",
             "policyRoles": [
@@ -150,6 +155,7 @@
             "qualifiedName": "{guid}/collection-classification",
             "name": "{name}-collection-classification",
             "policyCategory": "bootstrap",
+            "policySubCategory": "collection",
             "policyType": "allow",
             "policyServiceName": "atlas",
             "policyRoles": [
@@ -177,6 +183,7 @@
             "qualifiedName": "{guid}/collection-entity-label",
             "name": "{name}-collection-entity-label",
             "policyCategory": "bootstrap",
+            "policySubCategory": "collection",
             "policyType": "allow",
             "policyServiceName": "atlas",
             "policyRoles": [
@@ -203,6 +210,7 @@
             "qualifiedName": "{guid}/collection-unlink-queries",
             "name": "{name}-collection-unlink-queries",
             "policyCategory": "bootstrap",
+            "policySubCategory": "collection",
             "policyType": "allow",
             "policyServiceName": "atlas",
             "policyRoles": [
@@ -234,6 +242,7 @@
             "qualifiedName": "{guid}/dataPolicy-collection",
             "name": "{name}-dataPolicy-collection",
             "policyCategory": "bootstrap",
+            "policySubCategory": "collection",
             "policyType": "allow",
             "policyServiceName": "heka",
             "policyRoles": [

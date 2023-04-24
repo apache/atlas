@@ -6,6 +6,7 @@
             "qualifiedName": "{guid}/connection-link-assets",
             "name": "{name}-connection-link-assets",
             "policyCategory": "bootstrap",
+            "policySubCategory": "connection",
             "policyType": "allow",
             "policyServiceName": "atlas",
             "policyRoles": [
@@ -42,6 +43,7 @@
             "qualifiedName": "{guid}/connection-add-terms",
             "name": "{name}-connection-add-terms",
             "policyCategory": "bootstrap",
+            "policySubCategory": "connection",
             "policyType": "allow",
             "policyServiceName": "atlas",
             "policyRoles": [
@@ -73,6 +75,7 @@
             "qualifiedName": "{guid}/connection-CRUD",
             "name": "{name}-connection-CRUD",
             "policyCategory": "bootstrap",
+            "policySubCategory": "connection",
             "policyType": "allow",
             "policyServiceName": "atlas",
             "policyRoles": [
@@ -101,6 +104,7 @@
             "qualifiedName": "{guid}/connection-entity-business-metadata",
             "name": "{name}-connection-entity-business-metadata",
             "policyCategory": "bootstrap",
+            "policySubCategory": "connection",
             "policyType": "allow",
             "policyServiceName": "atlas",
             "policyRoles": [
@@ -126,6 +130,7 @@
             "qualifiedName": "{guid}/connection-classification",
             "name": "{name}-connection-classification",
             "policyCategory": "bootstrap",
+            "policySubCategory": "connection",
             "policyType": "allow",
             "policyServiceName": "atlas",
             "policyRoles": [
@@ -153,6 +158,7 @@
             "qualifiedName": "{guid}/connection-entity-label",
             "name": "{name}-connection-entity-label",
             "policyCategory": "bootstrap",
+            "policySubCategory": "connection",
             "policyType": "allow",
             "policyServiceName": "atlas",
             "policyRoles": [
@@ -179,6 +185,7 @@
             "qualifiedName": "{guid}/dataPolicy-connection",
             "name": "{name}-dataPolicy-connection",
             "policyCategory": "bootstrap",
+            "policySubCategory": "connection",
             "policyType": "allow",
             "policyServiceName": "heka",
             "policyRoles": [
