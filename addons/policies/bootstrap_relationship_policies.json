@@ -482,8 +482,10 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "description": "Policy for link assets to collection",
                 "policyUsers":
                 [
+                    "{USER}",
                     "admin",
                     "service-account-atlan-argo",
                     "service-account-atlan-backend"
