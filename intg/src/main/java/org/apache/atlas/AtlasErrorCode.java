@@ -212,6 +212,7 @@ public enum AtlasErrorCode {
     INVALID_LINEAGE_ENTITY_TYPE_HIDE_PROCESS(404, "ATLAS-404-00-017", "Given instance guid {0} with type {1} is not a valid lineage entity type with hideProcess as true."),
     TASK_NOT_FOUND(404, "ATLAS-404-00-018", "Given task guid {0} is invalid/not found"),
     RESOURCE_NOT_FOUND(404, "ATLAS-404-00-019", "{0} not found"),
+    INDEX_NOT_FOUND(404, "ATLAS-404-00-020", "ES index {0} not found"),
 
     METHOD_NOT_ALLOWED(405, "ATLAS-405-00-001", "Error 405 - The request method {0} is inappropriate for the URL: {1}"),
     DELETE_TAG_PROPAGATION_NOT_ALLOWED(406, "ATLAS-406-00-001", "Classification delete is not allowed; Add/Update classification propagation is in queue for classification: {0} and entity: {1}. Please try again"),

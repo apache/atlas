@@ -35,6 +35,7 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.HttpAsyncResponseConsumerFactory;
 import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.ResponseException;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.Response;
@@ -48,6 +49,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Stream;
+
+import static org.apache.atlas.AtlasErrorCode.INDEX_NOT_FOUND;
 
 
 public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex, AtlasJanusEdge> {
@@ -131,7 +134,7 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         return result;
     }
 
-    private String performDirectIndexQuery(String query) throws IOException {
+    private String performDirectIndexQuery(String query) throws AtlasBaseException, IOException {
         HttpEntity entity = new NStringEntity(query, ContentType.APPLICATION_JSON);
 
         String endPoint = index + "/_search?_source=false";
@@ -139,7 +142,17 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         Request request = new Request("GET", endPoint);
         request.setEntity(entity);
 
-        Response response = lowLevelRestClient.performRequest(request);
+        Response response;
+        try {
+            response = lowLevelRestClient.performRequest(request);
+        } catch (ResponseException rex) {
+            if (rex.getResponse().getStatusLine().getStatusCode() == 404) {
+                LOG.warn(String.format("ES index with name %s not found", index));
+                throw new AtlasBaseException(INDEX_NOT_FOUND, index);
+            } else {
+                throw new AtlasBaseException(rex);
+            }
+        }
 
         return EntityUtils.toString(response.getEntity());
     }
