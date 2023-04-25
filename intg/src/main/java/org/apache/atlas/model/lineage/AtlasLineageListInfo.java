@@ -175,18 +175,8 @@ public class AtlasLineageListInfo implements Serializable {
             this.size = size;
         }
 
-        public void incrementInputRelationsCount() {
-            if (hasMore) {
-                return;
-            }
-
-            if (isRelationsReachedLimit) {
-                setHasMore(true);
-                return;
-            }
-
+        public void incrementRelationsCount() {
             this.relationsCount++;
-
             if (relationsCount == size)
                 this.setRelationsReachedLimit(true);
         }
@@ -194,11 +184,13 @@ public class AtlasLineageListInfo implements Serializable {
         @Override
         public String toString() {
             return "LineageListEntityInfo{" +
-                    "hasMore='" + hasMore + '\'' +
-                    ", relationsCount='" + relationsCount + '\'' +
+                    "hasMore=" + hasMore +
+                    ", relationsCount=" + relationsCount +
+                    ", isRelationsReachedLimit=" + isRelationsReachedLimit +
+                    ", fromCounter=" + fromCounter +
+                    ", size=" + size +
                     '}';
         }
-
     }
 
     @Override

@@ -205,21 +205,11 @@ public class EntityLineageService implements AtlasLineageService {
     @GraphTransaction
     public AtlasLineageListInfo getAtlasLineageListInfo(String guid, LineageListRequest lineageListRequest) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getAtlasListInfo");
-
-        RequestContext.get().setRelationAttrsForSearch(lineageListRequest.getRelationAttributes());
-
         AtlasLineageListContext atlasLineageOnDemandContext = new AtlasLineageListContext(lineageListRequest, atlasTypeRegistry);
-
-        boolean isDataSet = validateEntityTypeAndCheckIfDataSet(guid);
-
-        AtlasLineageListInfo ret = getLineageListInfoOnDemand(guid, atlasLineageOnDemandContext, isDataSet);
-
+        AtlasLineageListInfo ret = getLineageListInfoOnDemand(guid, atlasLineageOnDemandContext);
         ret.setSearchParameters(lineageListRequest);
-
         scrubLineageEntities(ret.getEntities());
-
         RequestContext.get().endMetricRecord(metricRecorder);
-
         return ret;
     }
 
@@ -262,19 +252,15 @@ public class EntityLineageService implements AtlasLineageService {
 
     private boolean validateEntityTypeAndCheckIfDataSet(String guid) throws AtlasBaseException {
         AtlasEntityHeader entity = entityRetriever.toAtlasEntityHeaderWithClassifications(guid);
-
         AtlasEntityType entityType = atlasTypeRegistry.getEntityTypeByName(entity.getTypeName());
-        if (entityType == null) {
+        if (entityType == null)
             throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, entity.getTypeName());
-        }
         boolean isProcess = entityType.getTypeAndAllSuperTypes().contains(PROCESS_SUPER_TYPE);
         if (!isProcess) {
             boolean isDataSet = entityType.getTypeAndAllSuperTypes().contains(DATA_SET_SUPER_TYPE);
-            if (!isDataSet) {
+            if (!isDataSet)
                 throw new AtlasBaseException(AtlasErrorCode.INVALID_LINEAGE_ENTITY_TYPE, guid, entity.getTypeName());
-            }
         }
-
         return !isProcess;
     }
 
@@ -391,48 +377,32 @@ public class EntityLineageService implements AtlasLineageService {
         return ret;
     }
 
-    private AtlasLineageListInfo getLineageListInfoOnDemand(String guid, AtlasLineageListContext lineageListContext, boolean isDataSet) throws AtlasBaseException {
+    private AtlasLineageListInfo getLineageListInfoOnDemand(String guid, AtlasLineageListContext lineageListContext) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getLineageListInfoOnDemand");
-
         LineageListRequest.LineageDirection direction = lineageListContext.getDirection();
 
-        AtlasLineageListInfo ret = initializeLineageListInfo();
-
-        if (!ret.getEntityInfoMap().containsKey(guid)) {
-            ret.getEntityInfoMap().put(guid, new AtlasLineageListInfo.LineageListEntityInfo(lineageListContext.getSize()));
-        }
-
+        AtlasLineageListInfo ret = initializeLineageListInfo(guid, new LineageListEntityInfo(lineageListContext.getSize()));
+        boolean isDataSet = validateEntityTypeAndCheckIfDataSet(guid);
         if (isDataSet) {
             AtlasVertex datasetVertex = AtlasGraphUtilsV2.findByGuid(this.graph, guid);
-
-            if (direction == LineageListRequest.LineageDirection.INPUT) {
-                traverseEdgesOnDemand(datasetVertex, true, lineageListContext.getDepth(), new HashSet<>(), lineageListContext, ret);
-            }
-            else if (direction == LineageListRequest.LineageDirection.OUTPUT) {
-                traverseEdgesOnDemand(datasetVertex, false, lineageListContext.getDepth(), new HashSet<>(), lineageListContext, ret);
-            }
+            traverseEdgesOnDemand(datasetVertex, lineageListContext, ret);
         } else  {
-            AtlasVertex processVertex = AtlasGraphUtilsV2.findByGuid(this.graph, guid);
-
+            // TODO: Handle Base as process case
+            /*AtlasVertex processVertex = AtlasGraphUtilsV2.findByGuid(this.graph, guid);
             // make one hop to the next dataset vertices from process vertex and traverse with 'depth = depth - 1'
             if (direction == LineageListRequest.LineageDirection.INPUT) {
                 Iterable<AtlasEdge> processEdges = processVertex.getEdges(AtlasEdgeDirection.OUT, PROCESS_INPUTS_EDGE);
-
                 traverseEdgesOnDemand(processEdges, true, lineageListContext.getDepth(), lineageListContext, ret, processVertex);
             }
             else if (direction == LineageListRequest.LineageDirection.OUTPUT) {
                 Iterable<AtlasEdge> processEdges = processVertex.getEdges(AtlasEdgeDirection.OUT, PROCESS_OUTPUTS_EDGE);
-
                 traverseEdgesOnDemand(processEdges, false, lineageListContext.getDepth(), lineageListContext, ret, processVertex);
-            }
-
-        }
-        if (!lineageListContext.isTraversalQueueEmpty()) {
-            ret.getEntityInfoMap().get(guid).setHasMore(true);
+            }*/
         }
         RequestContext.get().endMetricRecord(metricRecorder);
         return ret;
     }
+
 
     private void traverseEdgesOnDemand(Iterable<AtlasEdge> processEdges, boolean isInput, int depth, AtlasLineageOnDemandContext atlasLineageOnDemandContext, AtlasLineageOnDemandInfo ret, AtlasVertex processVertex, String baseGuid) throws AtlasBaseException {
         AtlasLineageOnDemandInfo.LineageDirection direction = isInput ? AtlasLineageOnDemandInfo.LineageDirection.INPUT : AtlasLineageOnDemandInfo.LineageDirection.OUTPUT;
@@ -477,7 +447,7 @@ public class EntityLineageService implements AtlasLineageService {
         return false;
     }
 
-    private void traverseEdgesOnDemand(Iterable<AtlasEdge> processEdges, boolean isInput, int depth, AtlasLineageListContext lineageListContext, AtlasLineageListInfo ret, AtlasVertex processVertex) throws AtlasBaseException {
+    /*private void traverseEdgesOnDemand(Iterable<AtlasEdge> processEdges, boolean isInput, int depth, AtlasLineageListContext lineageListContext, AtlasLineageListInfo ret, AtlasVertex processVertex) throws AtlasBaseException {
         for (AtlasEdge processEdge : processEdges) {
             AtlasVertex datasetVertex = processEdge.getInVertex();
 
@@ -502,7 +472,7 @@ public class EntityLineageService implements AtlasLineageService {
 
             traverseEdgesOnDemand(datasetVertex, isInput, depth - 1, new HashSet<>(), lineageListContext, ret);
         }
-    }
+    }*/
 
     private void traverseEdgesOnDemand(AtlasVertex datasetVertex, boolean isInput, int depth, Set<String> visitedVertices, AtlasLineageOnDemandContext atlasLineageOnDemandContext, AtlasLineageOnDemandInfo ret, String baseGuid) throws AtlasBaseException {
         if (depth != 0) { // base condition of recursion for depth
@@ -602,74 +572,95 @@ public class EntityLineageService implements AtlasLineageService {
         return false;
     }
 
-    private void traverseEdgesOnDemand(AtlasVertex datasetVertex, boolean isInput, int depth, Set<String> visitedVertices, AtlasLineageListContext lineageListContext, AtlasLineageListInfo ret) throws AtlasBaseException {
-        if (depth > 0) { // base condition of recursion for depth
-            AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("traverseEdgesOnDemand");
+    private void traverseEdgesOnDemand(AtlasVertex baseVertex, AtlasLineageListContext lineageListContext, AtlasLineageListInfo ret) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("traverseEdgesOnDemand");
 
-            // keep track of visited vertices to avoid circular loop
-            visitedVertices.add(getId(datasetVertex));
+        Set<String> visitedVertices = new HashSet<>();  // keep track of visited vertices to avoid circular loop
+        Queue<String> entityGUIDQueue = new LinkedList<>();
 
-            boolean limitReached = false;
+        String baseGuid = getGuid(baseVertex);
+        visitedVertices.add(getId(baseVertex));
 
-            AtlasPerfMetrics.MetricRecorder traverseEdgesOnDemandGetEdgesIn = RequestContext.get().startMetricRecord("traverseEdgesOnDemandGetEdgesIn");
-            Iterator<AtlasEdge> incomingEdges = datasetVertex.getEdges(IN, isInput ? PROCESS_OUTPUTS_EDGE : PROCESS_INPUTS_EDGE).iterator();
-            RequestContext.get().endMetricRecord(traverseEdgesOnDemandGetEdgesIn);
+        boolean isInputDirection = isInputDirection(lineageListContext);
+        boolean isLimitReached = false;
 
-            while (incomingEdges.hasNext()) {
-                AtlasEdge incomingEdge = incomingEdges.next();
-                AtlasVertex processVertex = incomingEdge.getOutVertex();
+        addNeighborVerticesToQueue(baseVertex, lineageListContext, isInputDirection, entityGUIDQueue);
 
-                if (!vertexMatchesEvaluation(processVertex, lineageListContext) || !edgeMatchesEvaluation(incomingEdge, lineageListContext)) {
+        int currentLevel = 1;
+        while (!entityGUIDQueue.isEmpty() && currentLevel <= lineageListContext.getDepth()) {
+            int entitiesInLevel = entityGUIDQueue.size();
+
+            for (int i = 0; i < entitiesInLevel; i++) {
+                String guid = entityGUIDQueue.poll();
+                AtlasVertex currentVertex = AtlasGraphUtilsV2.findByGuid(this.graph, guid);
+                if (!vertexMatchesEvaluation(currentVertex, lineageListContext))
+                    continue;
+
+                if (skipEntitiesBeforeOffset(lineageListContext, ret)) {
+                    if (hasMoreHorizontalNeighbors(isInputDirection, currentVertex))
+                        addNeighborVerticesToQueue(currentVertex, lineageListContext, isInputDirection, entityGUIDQueue);
                     continue;
                 }
 
-                if (lineageListContext.isFetchProcesses()) {
-                    addEdgeToResult(incomingEdge, ret, lineageListContext);
-                }
-
-                AtlasPerfMetrics.MetricRecorder traverseEdgesOnDemandGetEdgesOut = RequestContext.get().startMetricRecord("traverseEdgesOnDemandGetEdgesOut");
-                Iterator<AtlasEdge> outgoingEdges = processVertex.getEdges(OUT, isInput ? PROCESS_INPUTS_EDGE : PROCESS_OUTPUTS_EDGE).iterator();
-                RequestContext.get().endMetricRecord(traverseEdgesOnDemandGetEdgesOut);
-
-                while (outgoingEdges.hasNext()) {
-                    AtlasEdge outgoingEdge = outgoingEdges.next();
-                    AtlasVertex entityVertex = outgoingEdge.getInVertex();
-
-                    if (vertexMatchesEvaluation(entityVertex, lineageListContext) && edgeMatchesEvaluation(outgoingEdge, lineageListContext)) {
-                        if (checkForOffset(datasetVertex, entityVertex, lineageListContext, ret, isInput)) {
-                            boolean hasMoreHorizontal = isInput ? entityVertex.getEdges(IN, PROCESS_OUTPUTS_EDGE).iterator().hasNext() :
-                                    entityVertex.getEdges(IN, PROCESS_INPUTS_EDGE).iterator().hasNext();
-                            if (hasMoreHorizontal) {
-                                String entityGuid = AtlasGraphUtilsV2.getIdFromVertex(entityVertex);
-                                lineageListContext.addToTraversalQueue(Pair.of(entityGuid, depth));
-                            }
-                            continue;
-                        }
-
-                        if (incrementAndCheckIfListRelationsLimitReached(outgoingEdge, isInput, lineageListContext, ret, depth)) {
-                            limitReached = true;
-                            break;
-                        } else {
-                            addEdgeToResult(outgoingEdge, ret, lineageListContext);
-                        }
-                    }
-                }
-
-                if (limitReached) {
+                isLimitReached = getLineageListEntityInfo(ret).isRelationsReachedLimit();
+                if (isLimitReached)
                     break;
-                }
-            }
 
-            limitReached = ret.getEntityInfoMap().get(lineageListContext.getGuid()).isRelationsReachedLimit();
-            if (!lineageListContext.isTraversalQueueEmpty() && !limitReached) {
-                Pair<String, Integer> entityInfo = lineageListContext.popFromTraversalQueue();
-                AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(this.graph, entityInfo.getLeft());
-                if (entityVertex != null && !visitedVertices.contains(getId(entityVertex))) {
-                    traverseEdgesOnDemand(entityVertex, isInput, entityInfo.getRight() - 1, visitedVertices, lineageListContext, ret); // execute inner depth
-                }
+                exploreVertex(currentVertex, lineageListContext, ret, isInputDirection, entityGUIDQueue, baseGuid);
             }
-            RequestContext.get().endMetricRecord(metricRecorder);
+            if (isLimitReached)
+                break;
+
+            currentLevel++;
         }
+        if (!entityGUIDQueue.isEmpty())
+            getLineageListEntityInfo(ret).setHasMore(true);
+        RequestContext.get().endMetricRecord(metricRecorder);
+    }
+
+    private void exploreVertex(AtlasVertex currentVertex, AtlasLineageListContext lineageListContext, AtlasLineageListInfo ret, boolean isInputDirection, Queue<String> entityGUIDQueue, String baseGuid) throws AtlasBaseException {
+        LineageListEntityInfo lineageListEntityInfo = getLineageListEntityInfo(ret);
+        lineageListEntityInfo.incrementRelationsCount();
+        ret.getEntities().add(entityRetriever.toAtlasEntityHeaderWithClassifications(currentVertex, lineageListContext.getAttributes()));
+        addNeighborVerticesToQueue(currentVertex, lineageListContext, isInputDirection, entityGUIDQueue);
+    }
+
+    private void addNeighborVerticesToQueue(AtlasVertex currentVertex, AtlasLineageListContext lineageListContext, boolean isInputDirection, Queue<String> entityGUIDQueue) {
+        AtlasPerfMetrics.MetricRecorder traverseEdgesOnDemandGetEdgesIn = RequestContext.get().startMetricRecord("traverseEdgesOnDemandGetEdgesIn");
+        Iterator<AtlasEdge> incomingEdges = currentVertex.getEdges(IN, isInputDirection ? PROCESS_OUTPUTS_EDGE : PROCESS_INPUTS_EDGE).iterator();
+        RequestContext.get().endMetricRecord(traverseEdgesOnDemandGetEdgesIn);
+
+        while (incomingEdges.hasNext()) {
+            AtlasEdge incomingEdge = incomingEdges.next();
+            AtlasVertex processVertex = incomingEdge.getOutVertex();
+
+            if (!vertexMatchesEvaluation(processVertex, lineageListContext) || !edgeMatchesEvaluation(incomingEdge, lineageListContext))
+                continue;
+
+            AtlasPerfMetrics.MetricRecorder traverseEdgesOnDemandGetEdgesOut = RequestContext.get().startMetricRecord("traverseEdgesOnDemandGetEdgesOut");
+            Iterator<AtlasEdge> outgoingEdges = processVertex.getEdges(OUT, isInputDirection ? PROCESS_INPUTS_EDGE : PROCESS_OUTPUTS_EDGE).iterator();
+            RequestContext.get().endMetricRecord(traverseEdgesOnDemandGetEdgesOut);
+
+            while (outgoingEdges.hasNext()) {
+                AtlasEdge outgoingEdge = outgoingEdges.next();
+                AtlasVertex entityVertex = outgoingEdge.getInVertex();
+                if (vertexMatchesEvaluation(entityVertex, lineageListContext) && edgeMatchesEvaluation(outgoingEdge, lineageListContext))
+                    entityGUIDQueue.add(getGuid(entityVertex));
+            }
+        }
+    }
+
+    private static LineageListEntityInfo getLineageListEntityInfo(AtlasLineageListInfo ret) {
+        return ret.getEntityInfoMap().values().stream().findFirst().get();
+    }
+
+    private static boolean hasMoreHorizontalNeighbors(boolean isInputDirection, AtlasVertex currentVertex) {
+        return isInputDirection ? currentVertex.getEdges(IN, PROCESS_OUTPUTS_EDGE).iterator().hasNext() :
+                currentVertex.getEdges(IN, PROCESS_INPUTS_EDGE).iterator().hasNext();
+    }
+
+    private static boolean isInputDirection(AtlasLineageListContext lineageListContext) {
+        return INPUT.equals(lineageListContext.getDirection());
     }
 
     private boolean checkForOffset(AtlasEdge atlasEdge, AtlasVertex entityVertex, AtlasLineageOnDemandContext atlasLineageOnDemandContext, AtlasLineageOnDemandInfo ret) {
@@ -687,16 +678,10 @@ public class EntityLineageService implements AtlasLineageService {
         return false;
     }
 
-    private boolean checkForOffset(AtlasVertex datasetVertex, AtlasVertex entityVertex, AtlasLineageListContext atlasLineageListContext, AtlasLineageListInfo ret, boolean isInput) {
-        String datasetVertexGuid = getGuid(datasetVertex);
-        String entityVertexGuid = getGuid(entityVertex);
-        LineageListEntityInfo entityLineageInfo = ret.getEntityInfoMap().get(ret.getEntityInfoMap().keySet().stream().findFirst().get());
-
+    private boolean skipEntitiesBeforeOffset(AtlasLineageListContext atlasLineageListContext, AtlasLineageListInfo ret) {
+        LineageListEntityInfo entityLineageInfo = getLineageListEntityInfo(ret);
         if (atlasLineageListContext.getFrom() != 0 && entityLineageInfo.getFromCounter() < atlasLineageListContext.getFrom()) {
-            if (!lineageContainsSkippedEdgeV2(ret, datasetVertexGuid, entityVertexGuid, isInput)) {
-                addEdgeToSkippedEdges(ret, datasetVertexGuid, entityVertexGuid, isInput);
-                entityLineageInfo.incrementFromCounter();
-            }
+            entityLineageInfo.incrementFromCounter();
             return true;
         }
         return false;
@@ -759,42 +744,6 @@ public class EntityLineageService implements AtlasLineageService {
         if (!hasRelationsLimitReached) {
             ret.getRelationsOnDemand().put(inGuid, inLineageInfo);
             ret.getRelationsOnDemand().put(outGuid, outLineageInfo);
-        }
-        RequestContext.get().endMetricRecord(metricRecorder);
-
-        return hasRelationsLimitReached;
-    }
-
-    private boolean incrementAndCheckIfListRelationsLimitReached(AtlasEdge atlasEdge, boolean isInput, AtlasLineageListContext atlasLineageListContext, AtlasLineageListInfo ret, int depth) {
-        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("incrementAndCheckIfListRelationsLimitReached");
-
-        if (lineageContainsVisitedEdgeV2(ret, atlasEdge)) {
-            return false;
-        }
-
-        boolean hasRelationsLimitReached = false;
-
-        AtlasVertex entityVertex  = atlasEdge.getInVertex();
-        String      entityGuid       = AtlasGraphUtilsV2.getIdFromVertex(entityVertex);
-
-        boolean hasMoreHorizontal = isInput ? entityVertex.getEdges(IN, PROCESS_OUTPUTS_EDGE).iterator().hasNext() :
-                entityVertex.getEdges(IN, PROCESS_INPUTS_EDGE).iterator().hasNext();
-        if (hasMoreHorizontal) {
-            atlasLineageListContext.addToTraversalQueue(Pair.of(entityGuid, depth));
-        }
-
-        LineageListEntityInfo datasetLineageInfo = ret.getEntityInfoMap().containsKey(atlasLineageListContext.getGuid()) ?
-                ret.getEntityInfoMap().get(atlasLineageListContext.getGuid()) : new LineageListEntityInfo(atlasLineageListContext.getSize());
-
-        if (datasetLineageInfo.isRelationsReachedLimit()) {
-            datasetLineageInfo.setHasMore(true);
-            hasRelationsLimitReached = true;
-        } else {
-            datasetLineageInfo.incrementInputRelationsCount();
-        }
-
-        if (!hasRelationsLimitReached) {
-            ret.getEntityInfoMap().put(atlasLineageListContext.getGuid(), datasetLineageInfo);
         }
         RequestContext.get().endMetricRecord(metricRecorder);
 
@@ -1508,8 +1457,10 @@ public class EntityLineageService implements AtlasLineageService {
         return new AtlasLineageOnDemandInfo(guid, new HashMap<>(), new HashSet<>(), new HashSet<>(), new HashSet<>(), new HashMap<>());
     }
 
-    private AtlasLineageListInfo initializeLineageListInfo() {
-        return new AtlasLineageListInfo(new HashSet<>(), new HashMap<>(), new HashSet<>(), new HashSet<>());
+    private AtlasLineageListInfo initializeLineageListInfo(String baseGuid, LineageListEntityInfo lineageListEntityInfo) {
+        AtlasLineageListInfo atlasLineageListInfo = new AtlasLineageListInfo(new HashSet<>(), new HashMap<>(), new HashSet<>(), new HashSet<>());
+        atlasLineageListInfo.getEntityInfoMap().put(baseGuid, lineageListEntityInfo); // Limit set for pagination check
+        return atlasLineageListInfo;
     }
 
     private List executeGremlinScript(Map<String, Object> bindings, String lineageQuery) throws AtlasBaseException {
