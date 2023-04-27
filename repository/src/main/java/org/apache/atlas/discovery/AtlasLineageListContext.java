@@ -34,7 +34,6 @@ public final class AtlasLineageListContext {
         this.vertexPredicate = constructInMemoryPredicate(typeRegistry, lineageListRequest.getEntityTraversalFilters());
         this.edgePredicate = constructInMemoryPredicate(typeRegistry, lineageListRequest.getRelationshipTraversalFilters());
         this.attributes = lineageListRequest.getAttributes();
-        this.relationAttributes = lineageListRequest.getRelationAttributes();
         this.fetchProcesses = lineageListRequest.isFetchProcesses();
     }
 
