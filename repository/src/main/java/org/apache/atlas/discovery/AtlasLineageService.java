@@ -24,23 +24,19 @@ import org.apache.atlas.model.lineage.*;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
 import org.apache.atlas.v1.model.lineage.SchemaResponse.SchemaDetails;
 
-import java.util.Map;
 
 public interface AtlasLineageService {
     /**
      * @param entityGuid unique ID of the entity
      * @param direction direction of lineage - INPUT, OUTPUT or BOTH
      * @param depth number of hops in lineage
-     * @return AtlasLineageInfo
+     * @return AtlasLineageInf\]
      */
     AtlasLineageInfo getAtlasLineageInfo(String entityGuid, LineageDirection direction, int depth) throws AtlasBaseException;
 
     /**
-     * @param entityGuid    unique ID of the entity
      * @param direction     direction of lineage - INPUT, OUTPUT or BOTH
      * @param depth         number of hops in lineage
-     * @param page
-     * @param recordPerPage
      * @return AtlasLineageInfo
      */
     AtlasLineageInfo getAtlasLineageInfo(String guid, LineageDirection direction, int depth, boolean hideProcess, int offset, int limit, boolean calculateRemainingVertexCounts) throws AtlasBaseException;
@@ -81,5 +77,4 @@ public interface AtlasLineageService {
      */
     AtlasLineageListInfo getAtlasLineageListInfo(String entityGuid, LineageListRequest lineageListRequest) throws AtlasBaseException;
 
-    AtlasLineageSizeInfo getAtlasLineageSize(LineageSizeRequest lineageSizeRequest) throws AtlasBaseException;
 }

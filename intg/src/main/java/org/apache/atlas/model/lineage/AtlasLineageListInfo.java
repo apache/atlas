@@ -21,14 +21,11 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class AtlasLineageListInfo implements Serializable {
-    private HashSet<AtlasEntityHeader>              entities;
+    private Set<AtlasEntityHeader>                 entities;
     private Map<String, LineageListEntityInfo>      entityInfoMap;
     private LineageListRequest                      searchParameters;
-    private Set<String>                             visitedEdges;
-    private Set<String>                             skippedEdges;
 
-    public AtlasLineageListInfo() {
-    }
+    public AtlasLineageListInfo() {}
 
     /**
      * Captures lineage list information for an entity instance like hive_table
@@ -36,30 +33,16 @@ public class AtlasLineageListInfo implements Serializable {
      * @param entities   list of entities
      * @param entityInfoMap    map of entity guid to AtlasEntityHeader (minimal entity info)
      */
-    public AtlasLineageListInfo(HashSet<AtlasEntityHeader> entities, Map<String, LineageListEntityInfo> entityInfoMap) {
+    public AtlasLineageListInfo(Set<AtlasEntityHeader> entities, Map<String, LineageListEntityInfo> entityInfoMap) {
         this.entities         = entities;
         this.entityInfoMap    = entityInfoMap;
     }
 
-    /**
-     * Captures lineage list information for an entity instance like hive_table
-     *
-     * @param entities   list of entities
-     * @param entityInfoMap    map of entity guid to AtlasEntityHeader (minimal entity info)
-     */
-    public AtlasLineageListInfo(HashSet<AtlasEntityHeader> entities, Map<String, LineageListEntityInfo> entityInfoMap,
-                                Set<String> visitedEdges, Set<String> skippedEdges) {
-        this.entities                     = entities;
-        this.entityInfoMap                = entityInfoMap;
-        this.visitedEdges                 = visitedEdges;
-        this.skippedEdges                 = skippedEdges;
-    }
-
-    public HashSet<AtlasEntityHeader> getEntities() {
+    public Set<AtlasEntityHeader> getEntities() {
         return entities;
     }
 
-    public void setEntities(HashSet<AtlasEntityHeader> entities) {
+    public void setEntities(Set<AtlasEntityHeader> entities) {
         this.entities = entities;
     }
 
@@ -77,22 +60,6 @@ public class AtlasLineageListInfo implements Serializable {
 
     public void setSearchParameters(LineageListRequest searchParameters) {
         this.searchParameters = searchParameters;
-    }
-
-    public Set<String> getVisitedEdges() {
-        return visitedEdges;
-    }
-
-    public void setVisitedEdges(Set<String> visitedEdges) {
-        this.visitedEdges = visitedEdges;
-    }
-
-    public Set<String> getSkippedEdges() {
-        return skippedEdges;
-    }
-
-    public void setSkippedEdges(Set<String> skippedEdges) {
-        this.skippedEdges = skippedEdges;
     }
 
     @Override
