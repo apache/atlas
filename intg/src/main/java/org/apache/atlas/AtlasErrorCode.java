@@ -267,8 +267,7 @@ public enum AtlasErrorCode {
     CLASSIFICATION_CURRENTLY_BEING_PROPAGATED(400, "ATLAS-400-00-105", "Classification {0} is currently being propagated."),
     TASK_STATUS_NOT_APPROPRIATE(400, "ATLAS-400-00-106", "Unable to restart the task with guid {0} whose status is {1}. "),
     NO_LINEAGE_CONSTRAINTS_FOR_GUID(404, "ATLAS-404-00-016", "No lineage constraints found for requested entity with guid : {0}"),
-    LINEAGE_ON_DEMAND_NOT_ENABLED(400, "ATLAS-400-00-100", "Lineage on demand config: {0} is not enabled"),
-    INVALID_LINEAGE_REQUEST(400, "ATLAS-400-00-108", "Invalid Lineage get request.");
+    LINEAGE_ON_DEMAND_NOT_ENABLED(400, "ATLAS-400-00-100", "Lineage on demand config: {0} is not enabled");
 
     private String errorCode;
     private String errorMessage;

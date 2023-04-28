@@ -33,7 +33,6 @@ import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.collections.MapUtils;
-import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -126,7 +125,7 @@ public class LineageREST {
     @Timed
     public AtlasLineageListInfo getLineageList(LineageListRequest lineageListRequest) throws AtlasBaseException {
         if (lineageListRequest.getGuid() == null)
-            throw new AtlasBaseException(AtlasErrorCode.INVALID_LINEAGE_REQUEST);
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Base guid cannot be null");
 
         String guid = lineageListRequest.getGuid();
         Servlets.validateQueryParamLength("guid", guid);
@@ -141,7 +140,7 @@ public class LineageREST {
             AtlasPerfTracer.log(perf);
         }
     }
-    
+
 
     /**
      * Returns lineage info about entity.

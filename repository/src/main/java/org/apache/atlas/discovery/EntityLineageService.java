@@ -69,8 +69,6 @@ import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasClient.DATA_SET_SUPER_TYPE;
 import static org.apache.atlas.AtlasClient.PROCESS_SUPER_TYPE;
-import static org.apache.atlas.AtlasConfiguration.LINEAGE_DEFAULT_MAX_COUNT;
-import static org.apache.atlas.AtlasConfiguration.LINEAGE_DEFAULT_MAX_DEPTH;
 import static org.apache.atlas.AtlasErrorCode.INSTANCE_LINEAGE_QUERY_FAILED;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
 import static org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection.*;
@@ -97,9 +95,6 @@ public class EntityLineageService implements AtlasLineageService {
     private final EntityGraphRetriever entityRetriever;
     private final AtlasTypeRegistry atlasTypeRegistry;
     private final VertexEdgeCache vertexEdgeCache;
-
-    public static final int MAX_DEFAULT_DEPTH = LINEAGE_DEFAULT_MAX_DEPTH.getInt();
-    public static final int MAX_DEFAULT_UPPER_LIMIT = LINEAGE_DEFAULT_MAX_COUNT.getInt();
 
     @Inject
     EntityLineageService(AtlasTypeRegistry typeRegistry, AtlasGraph atlasGraph, VertexEdgeCache vertexEdgeCache) {
