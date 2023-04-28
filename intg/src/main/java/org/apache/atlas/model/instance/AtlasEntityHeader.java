@@ -297,6 +297,7 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
                        Objects.equals(displayText, that.displayText) &&
                        Objects.equals(classificationNames, that.classificationNames) &&
                        Objects.equals(meaningNames, that.classificationNames) &&
+                       Objects.equals(classifications, that.classifications) &&
                        Objects.equals(labels, that.labels) &&
                        Objects.equals(isIncomplete, that.isIncomplete) &&
                        Objects.equals(meanings, that.meanings);
