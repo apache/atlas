@@ -34,12 +34,7 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.Date;
+import java.util.*;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
@@ -53,7 +48,7 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 @JsonIgnoreProperties(ignoreUnknown = true)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
-public class AtlasEntityHeader extends AtlasStruct implements Serializable {
+public class AtlasEntityHeaderLineageReponse extends AtlasStruct implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private String                          guid                = null;
@@ -73,19 +68,19 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
     private String                          deleteHandler       = null;
     private Map<String, AtlasSearchResult>  collapse    = null;
 
-    public AtlasEntityHeader() {
+    public AtlasEntityHeaderLineageReponse() {
         this(null, null);
     }
 
-    public AtlasEntityHeader(String typeName) {
+    public AtlasEntityHeaderLineageReponse(String typeName) {
         this(typeName, null);
     }
 
-    public AtlasEntityHeader(AtlasEntityDef entityDef) {
+    public AtlasEntityHeaderLineageReponse(AtlasEntityDef entityDef) {
         this(entityDef != null ? entityDef.getName() : null, null);
     }
 
-    public AtlasEntityHeader(String typeName, Map<String, Object> attributes) {
+    public AtlasEntityHeaderLineageReponse(String typeName, Map<String, Object> attributes) {
         super(typeName, attributes);
 
         setClassificationNames(null);
@@ -94,7 +89,7 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
     }
 
 
-    public AtlasEntityHeader(String typeName, String guid, Map<String, Object> attributes) {
+    public AtlasEntityHeaderLineageReponse(String typeName, String guid, Map<String, Object> attributes) {
         super(typeName, attributes);
         setGuid(guid);
         setClassificationNames(null);
@@ -103,7 +98,7 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
     }
 
 
-    public AtlasEntityHeader(AtlasEntityHeader other) {
+    public AtlasEntityHeaderLineageReponse(AtlasEntityHeaderLineageReponse other) {
         super(other);
 
         if (other != null) {
@@ -122,7 +117,30 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
         }
     }
 
-    public AtlasEntityHeader(AtlasEntity entity) {
+    public AtlasEntityHeaderLineageReponse(AtlasEntityHeader other) {
+        super(other);
+
+        if (other != null) {
+            setGuid(other.getGuid());
+            setStatus(other.getStatus());
+            setDisplayText(other.getDisplayText());
+            setClassificationNames(other.getClassificationNames());
+            setClassifications(other.getClassifications());
+            setMeaningNames(other.getMeaningNames());
+            setMeanings(other.getMeanings());
+            setIsIncomplete(other.getIsIncomplete());
+            setLabels(other.getLabels());
+            setScrubbed(other.getScrubbed());
+            setCreateTime(other.getCreateTime());
+            setCreatedBy(other.getCreatedBy());
+            setUpdateTime(other.getUpdateTime());
+            setUpdatedBy(other.getUpdatedBy());
+            setDeleteHandler(other.getDeleteHandler());
+            setCollapse(other.getCollapse());
+        }
+    }
+
+    public AtlasEntityHeaderLineageReponse(AtlasEntity entity) {
         super(entity.getTypeName(), entity.getAttributes());
         setGuid(entity.getGuid());
         setStatus(entity.getStatus());
@@ -291,20 +309,13 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
-        AtlasEntityHeader that = (AtlasEntityHeader) o;
-        return Objects.equals(guid, that.guid) &&
-                       status == that.status &&
-                       Objects.equals(displayText, that.displayText) &&
-                       Objects.equals(classificationNames, that.classificationNames) &&
-                       Objects.equals(meaningNames, that.classificationNames) &&
-                       Objects.equals(labels, that.labels) &&
-                       Objects.equals(isIncomplete, that.isIncomplete) &&
-                       Objects.equals(meanings, that.meanings);
+        AtlasEntityHeaderLineageReponse that = (AtlasEntityHeaderLineageReponse) o;
+        return Objects.equals(guid, that.guid);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), guid, status, displayText, classificationNames, classifications, meaningNames, meanings, isIncomplete, labels);
+        return Objects.hash(super.hashCode(), guid);
     }
 
     @Override
@@ -337,19 +348,19 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.PROPERTY)
     @XmlSeeAlso(AtlasEntity.class)
-    public static class AtlasEntityHeaders extends PList<AtlasEntityHeader> {
+    public static class AtlasEntityHeadersLineageResponses extends PList<AtlasEntityHeaderLineageReponse> {
         private static final long serialVersionUID = 1L;
 
-        public AtlasEntityHeaders() {
+        public AtlasEntityHeadersLineageResponses() {
             super();
         }
 
-        public AtlasEntityHeaders(List<AtlasEntityHeader> list) {
+        public AtlasEntityHeadersLineageResponses(List<AtlasEntityHeaderLineageReponse> list) {
             super(list);
         }
 
-        public AtlasEntityHeaders(List list, long startIndex, int pageSize, long totalCount,
-                                  SortType sortType, String sortBy) {
+        public AtlasEntityHeadersLineageResponses(List list, long startIndex, int pageSize, long totalCount,
+                                                  SortType sortType, String sortBy) {
             super(list, startIndex, pageSize, totalCount, sortType, sortBy);
         }
     }

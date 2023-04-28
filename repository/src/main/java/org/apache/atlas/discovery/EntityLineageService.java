@@ -34,6 +34,7 @@ import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.model.instance.AtlasEntityHeaderLineageReponse;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.lineage.*;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
@@ -204,7 +205,6 @@ public class EntityLineageService implements AtlasLineageService {
         AtlasLineageListContext atlasLineageOnDemandContext = new AtlasLineageListContext(lineageListRequest, atlasTypeRegistry);
         AtlasLineageListInfo ret = getLineageListInfoOnDemand(guid, atlasLineageOnDemandContext);
         ret.setSearchParameters(lineageListRequest);
-        scrubLineageEntities(ret.getEntities());
 
         RequestContext.get().endMetricRecord(metricRecorder);
         return ret;
@@ -552,16 +552,16 @@ public class EntityLineageService implements AtlasLineageService {
 
     private void addEntitiesToResult(AtlasVertex processVertex, AtlasVertex currentVertex, AtlasLineageListContext lineageListContext, AtlasLineageListInfo ret) throws AtlasBaseException {
         appendProcessToResult(processVertex, lineageListContext, ret);
-        appendDatasetEntityToResult(currentVertex, lineageListContext, ret);
+        appendEntityHeaderToResult(currentVertex, lineageListContext, ret);
     }
 
-    private void appendDatasetEntityToResult(AtlasVertex currentVertex, AtlasLineageListContext lineageListContext, AtlasLineageListInfo ret) throws AtlasBaseException {
-        ret.getEntities().add(entityRetriever.toAtlasEntityHeaderWithClassifications(currentVertex, lineageListContext.getAttributes()));
+    private void appendEntityHeaderToResult(AtlasVertex currentVertex, AtlasLineageListContext lineageListContext, AtlasLineageListInfo ret) throws AtlasBaseException {
+        ret.getEntities().add(new AtlasEntityHeaderLineageReponse(entityRetriever.toAtlasEntityHeaderWithClassifications(currentVertex, lineageListContext.getAttributes())));
     }
 
     private void appendProcessToResult(AtlasVertex processVertex, AtlasLineageListContext lineageListContext, AtlasLineageListInfo ret) throws AtlasBaseException {
         if (lineageListContext.isFetchProcesses())
-            appendDatasetEntityToResult(processVertex, lineageListContext, ret);
+            appendEntityHeaderToResult(processVertex, lineageListContext, ret);
     }
 
     private static void addEntitiesToCache(boolean addProcess, AtlasVertex processVertex, AtlasVertex entityVertex) {

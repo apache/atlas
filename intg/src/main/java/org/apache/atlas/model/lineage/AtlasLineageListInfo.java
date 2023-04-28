@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.model.instance.AtlasEntityHeaderLineageReponse;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -21,7 +22,7 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class AtlasLineageListInfo implements Serializable {
-    private Set<AtlasEntityHeader>                 entities;
+    private Set<AtlasEntityHeaderLineageReponse>    entities;
     private Map<String, LineageListEntityInfo>      entityInfoMap;
     private LineageListRequest                      searchParameters;
 
@@ -33,16 +34,16 @@ public class AtlasLineageListInfo implements Serializable {
      * @param entities   list of entities
      * @param entityInfoMap    map of entity guid to AtlasEntityHeader (minimal entity info)
      */
-    public AtlasLineageListInfo(Set<AtlasEntityHeader> entities, Map<String, LineageListEntityInfo> entityInfoMap) {
+    public AtlasLineageListInfo(Set<AtlasEntityHeaderLineageReponse> entities, Map<String, LineageListEntityInfo> entityInfoMap) {
         this.entities         = entities;
         this.entityInfoMap    = entityInfoMap;
     }
 
-    public Set<AtlasEntityHeader> getEntities() {
+    public Set<AtlasEntityHeaderLineageReponse> getEntities() {
         return entities;
     }
 
-    public void setEntities(Set<AtlasEntityHeader> entities) {
+    public void setEntities(Set<AtlasEntityHeaderLineageReponse> entities) {
         this.entities = entities;
     }
 
