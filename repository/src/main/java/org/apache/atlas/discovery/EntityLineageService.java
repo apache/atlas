@@ -452,6 +452,7 @@ public class EntityLineageService implements AtlasLineageService {
         Set<String> visitedVertices = new HashSet<>();
         visitedVertices.add(getGuid(baseVertex));
         Set<String> visitedEdges = new HashSet<>();
+        Set<String> skippedVertices = new HashSet<>();
         Queue<LineageCurrentTraversalContext> traversalQueue = new LinkedList<>();
         addNeighborVerticesToQueue(baseVertex, lineageListContext, traversalQueue, visitedEdges);
 
@@ -467,12 +468,17 @@ public class EntityLineageService implements AtlasLineageService {
                 AtlasVertex processVertex = AtlasGraphUtilsV2.findByGuid(this.graph, currentContext.getProcessGUID());
                 AtlasVertex currentVertex = AtlasGraphUtilsV2.findByGuid(this.graph, currentContext.getVertexGUID());
 
+                if (skippedVertices.contains(getGuid(currentVertex))) {
+                    continue;
+                }
+
                 if (visitedVertices.contains(currentContext.getVertexGUID())) {
                     appendProcessToResult(processVertex, lineageListContext, ret);
                     continue;
                 }
 
                 if (skipEntitiesBeforeOffset(lineageListContext, ret)) {
+                    skippedVertices.add(getGuid(currentVertex));
                     if (hasMoreHorizontalNeighbors(isInputDirection(lineageListContext), currentVertex))
                         addNeighborVerticesToQueue(currentVertex, lineageListContext, traversalQueue, visitedEdges);
                     continue;
