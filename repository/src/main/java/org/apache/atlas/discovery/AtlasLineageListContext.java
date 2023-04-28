@@ -22,7 +22,6 @@ public final class AtlasLineageListContext {
     private Predicate                           vertexPredicate;
     private Predicate                           edgePredicate;
     private Set<String>                         attributes;
-    private Set<String>                         relationAttributes;
     private boolean                             fetchProcesses;
 
     public AtlasLineageListContext(LineageListRequest lineageListRequest, AtlasTypeRegistry typeRegistry) {
@@ -99,14 +98,6 @@ public final class AtlasLineageListContext {
 
     public void setAttributes(Set<String> attributes) {
         this.attributes = attributes;
-    }
-
-    public Set<String> getRelationAttributes() {
-        return relationAttributes;
-    }
-
-    public void setRelationAttributes(Set<String> relationAttributes) {
-        this.relationAttributes = relationAttributes;
     }
 
     public boolean isFetchProcesses() {

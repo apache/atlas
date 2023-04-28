@@ -29,17 +29,9 @@ public class LineageListRequest {
         this.attributes = new HashSet<>();
     }
 
-    public LineageListRequest(String guid, Integer size, Integer from, Integer depth, LineageDirection direction) {
-        this.guid      = guid;
-        this.size      = size;
-        this.from      = from;
-        this.depth     = depth;
-        this.direction = direction;
-    }
-
     public LineageListRequest(String guid, Integer size, Integer from, Integer depth, LineageDirection direction,
                               SearchParameters.FilterCriteria entityTraversalFilters, SearchParameters.FilterCriteria relationshipTraversalFilters,
-                              Set<String> attributes, Set<String> relationAttributes, boolean fetchProcesses) {
+                              Set<String> attributes, boolean fetchProcesses) {
         this.guid = guid;
         this.size = size;
         this.from = from;

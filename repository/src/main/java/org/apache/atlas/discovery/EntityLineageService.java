@@ -90,6 +90,7 @@ public class EntityLineageService implements AtlasLineageService {
     private static final Integer DEFAULT_LINEAGE_MAX_NODE_COUNT       = 9000;
     private static final int     LINEAGE_ON_DEMAND_DEFAULT_DEPTH      = 3;
     private static final String  SEPARATOR                            = "->";
+
     private final AtlasGraph graph;
     private final AtlasGremlinQueryProvider gremlinQueryProvider;
     private final EntityGraphRetriever entityRetriever;
@@ -491,7 +492,13 @@ public class EntityLineageService implements AtlasLineageService {
         }
         if (!traversalQueue.isEmpty())
             getLineageListEntityInfo(ret).setHasMore(true);
+        cleanUpResult(ret);
         RequestContext.get().endMetricRecord(metricRecorder);
+    }
+
+    private void cleanUpResult(AtlasLineageListInfo ret) {
+        if (ret.getEntityInfoMap().values().stream().findFirst().get().getRelationsCount() == 0)
+            ret.getEntities().clear();
     }
 
     private void exploreVertex(AtlasVertex processVertex, AtlasVertex currentVertex, AtlasLineageListContext lineageListContext, AtlasLineageListInfo ret, Queue<LineageCurrentTraversalContext> queue, Set<String> visitedEdges) throws AtlasBaseException {
