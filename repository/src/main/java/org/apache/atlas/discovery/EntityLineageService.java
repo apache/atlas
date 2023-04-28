@@ -470,11 +470,11 @@ public class EntityLineageService implements AtlasLineageService {
                 AtlasVertex processVertex = AtlasGraphUtilsV2.findByGuid(this.graph, currentContext.getProcessGUID());
                 AtlasVertex currentVertex = AtlasGraphUtilsV2.findByGuid(this.graph, currentContext.getVertexGUID());
 
-                if (skippedVertices.contains(getGuid(currentVertex)))   // Skipped vertices due to offset should not be processed if visited again via cyclic route
+                if (skippedVertices.contains(getGuid(currentVertex)))   // Skipped vertices due to offset should not be processed if visited again via any cyclic path
                     continue;
 
                 if (visitedVertices.contains(currentContext.getVertexGUID())) {
-                    appendProcessToResult(processVertex, lineageListContext, ret);  // If a visited entity is reached again, but via different path then we include the new Process in response
+                    appendProcessToResult(processVertex, lineageListContext, ret);  // If a visited entity is reached again, but via different path we only include the new Process in response and don't visit it again
                     continue;
                 }
 
