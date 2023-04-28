@@ -521,6 +521,9 @@
         },
         {
             "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 121
+            },
             "attributes":
             {
                 "name": "LINK_ACCESS_CONTROL_POLICY",
@@ -529,6 +532,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -559,6 +563,9 @@
         },
         {
             "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 122
+            },
             "attributes":
             {
                 "name": "LINK_ACCESS_CONTROL_RESOURCE",
@@ -567,6 +574,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -606,6 +614,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "deny",
+                "policyPriority": 0,
                 "policyUsers":
                 [],
                 "policyGroups":

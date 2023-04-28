@@ -712,29 +712,6 @@ addOrUpdatePropertyToFile(){
 	fi
 }
 
-if [ "${HCOMPONENT_NAME}" = "atlas" ]
-then
-	if [ "${action}" = "enable" ]
-	then
-		authName="org.apache.ranger.authorization.atlas.authorizer.RangerAtlasAuthorizer"
-	else
-		authName="org.apache.atlas.authorize.SimpleAtlasAuthorizer"
-	fi
-
-	dt=`date '+%Y%m%d%H%M%S'`
-	fn=`ls ${HCOMPONENT_CONF_DIR}/atlas-application.properties 2> /dev/null`
-    if [ -f "${fn}" ]
-    then
-        dn=`dirname ${fn}`
-        bn=`basename ${fn}`
-        bf=${dn}/.${bn}.${dt}
-        echo "backup of ${fn} to ${bf} ..."
-        cp ${fn} ${bf}
-        echo "Updating properties file: [${fn}] ... "
-        updatePropertyToFile atlas.authorizer.impl $authName ${fn}
-    fi
-fi
-
 if [ "${HCOMPONENT_NAME}" = "sqoop" ]
 then
 	if [ "${action}" = "enable" ]

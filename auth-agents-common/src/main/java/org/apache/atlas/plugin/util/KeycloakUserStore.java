@@ -51,6 +51,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import static org.apache.atlas.repository.Constants.KEYCLOAK_ROLE_ADMIN;
+import static org.apache.atlas.repository.Constants.KEYCLOAK_ROLE_DEFAULT;
+import static org.apache.atlas.repository.Constants.KEYCLOAK_ROLE_GUEST;
+import static org.apache.atlas.repository.Constants.KEYCLOAK_ROLE_MEMBER;
+
 
 public class KeycloakUserStore {
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("KeycloakUserStore");
@@ -132,6 +137,8 @@ public class KeycloakUserStore {
                         .map(x -> new RoleSubjectsFetcher(x, roleSet, userNamesList))
                         .collect(Collectors.toList()));
 
+        processDefaultRole(roleSet);
+
         rangerRoles.setRangerRoles(roleSet);
         rangerRoles.setServiceName(serviceName);
 
@@ -143,6 +150,41 @@ public class KeycloakUserStore {
         RequestContext.get().endMetricRecord(recorder);
 
         return rangerRoles;
+    }
+
+    private void processDefaultRole(Set<RangerRole> roleSet) {
+        Optional<RangerRole> defaultRole = roleSet.stream().filter(x -> KEYCLOAK_ROLE_DEFAULT.equals(x.getName())).findFirst();
+
+        if (defaultRole.isPresent()){
+            List<String> realmDefaultRoles = defaultRole.get().getRoles().stream().map(x -> x.getName()).collect(Collectors.toList());
+            String tenantDefaultRealmUserRole = "";
+
+            if (realmDefaultRoles.contains(KEYCLOAK_ROLE_ADMIN)) {
+                tenantDefaultRealmUserRole = KEYCLOAK_ROLE_ADMIN;
+            } else if (realmDefaultRoles.contains(KEYCLOAK_ROLE_MEMBER)) {
+                tenantDefaultRealmUserRole = KEYCLOAK_ROLE_MEMBER;
+            } else if (realmDefaultRoles.contains(KEYCLOAK_ROLE_GUEST)) {
+                tenantDefaultRealmUserRole = KEYCLOAK_ROLE_GUEST;
+            }
+
+            String finalTenantDefaultRealmUserRole = tenantDefaultRealmUserRole;
+            Optional<RangerRole> targetRole = roleSet.stream().filter(x -> finalTenantDefaultRealmUserRole.equals(x.getName())).findFirst();
+
+            if (targetRole.isPresent()) {
+                List<RangerRole.RoleMember> defaultUsers = new ArrayList<>(defaultRole.get().getUsers());
+                List<RangerRole.RoleMember> nonGuestUsers = new ArrayList<>(0);
+
+                Optional<RangerRole> adminRole = roleSet.stream().filter(x -> KEYCLOAK_ROLE_ADMIN.equals(x.getName())).findFirst();
+                adminRole.ifPresent(rangerRole -> nonGuestUsers.addAll(rangerRole.getUsers()));
+
+                Optional<RangerRole> memberRole = roleSet.stream().filter(x -> KEYCLOAK_ROLE_MEMBER.equals(x.getName())).findFirst();
+                memberRole.ifPresent(rangerRole -> nonGuestUsers.addAll(rangerRole.getUsers()));
+
+                defaultUsers.removeAll(nonGuestUsers);
+
+                targetRole.get().getUsers().addAll(defaultUsers);
+            }
+        }
     }
 
     public RangerUserStore loadUserStoreIfUpdated(long lastUpdatedTime) throws AtlasBaseException {
@@ -233,9 +275,7 @@ public class KeycloakUserStore {
             LOG.info("Submitting callables: {}", threadName);
             callables.forEach(service::submit);
 
-            LOG.info("Shutting down executor: {}", threadName);
             service.shutdown();
-            LOG.info("Shut down executor: {}", threadName);
 
             boolean terminated = service.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
             LOG.info("awaitTermination done: {}", threadName);

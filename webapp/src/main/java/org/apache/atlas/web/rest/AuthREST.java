@@ -22,12 +22,15 @@ import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.audit.AuditSearchParams;
 import org.apache.atlas.model.audit.EntityAuditSearchResult;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.plugin.util.KeycloakUserStore;
 import org.apache.atlas.plugin.util.RangerRoles;
 import org.apache.atlas.plugin.util.RangerUserStore;
 import org.apache.atlas.plugin.util.ServicePolicies;
 import org.apache.atlas.policytransformer.CachePolicyTransformerImpl;
 import org.apache.atlas.repository.audit.ESBasedAuditRepository;
+import org.apache.atlas.repository.store.graph.AtlasEntityStore;
+import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
@@ -53,6 +56,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.apache.atlas.policytransformer.CachePolicyTransformerImpl.ATTR_SERVICE_LAST_SYNC;
 import static org.apache.atlas.repository.Constants.POLICY_ENTITY_TYPE;
 
 /**
@@ -69,9 +73,12 @@ public class AuthREST {
 
     private CachePolicyTransformerImpl policyTransformer;
     private ESBasedAuditRepository auditRepository;
+    private AtlasEntityStore entityStore;
 
     @Inject
-    public AuthREST(CachePolicyTransformerImpl policyTransformer, ESBasedAuditRepository auditRepository) {
+    public AuthREST(CachePolicyTransformerImpl policyTransformer,
+                    ESBasedAuditRepository auditRepository, AtlasEntityStore entityStore) {
+        this.entityStore = entityStore;
         this.auditRepository = auditRepository;
         this.policyTransformer = policyTransformer;
     }
@@ -134,8 +141,8 @@ public class AuthREST {
     @Path("download/policies/{serviceName}")
     @Timed
     public ServicePolicies downloadPolicies(@PathParam("serviceName") final String serviceName,
-                                            @QueryParam("pluginId") String pluginId,
-                                            @DefaultValue("0") @QueryParam("lastUpdatedTime") Long lastUpdatedTime) {
+                                     @QueryParam("pluginId") String pluginId,
+                                     @DefaultValue("0") @QueryParam("lastUpdatedTime") Long lastUpdatedTime) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
         try {
@@ -143,7 +150,13 @@ public class AuthREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AuthREST.downloadPolicies(serviceName="+serviceName+", pluginId="+pluginId+", lastUpdatedTime="+lastUpdatedTime+")");
             }
 
+            if (!isPolicyUpdated(serviceName, lastUpdatedTime)) {
+                return null;
+            }
+
             ServicePolicies ret = policyTransformer.getPolicies(serviceName, pluginId, lastUpdatedTime);
+
+            updateLastSync(serviceName);
 
             return ret;
         } finally {
@@ -151,8 +164,26 @@ public class AuthREST {
         }
     }
 
+    private void updateLastSync(String serviceName) {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("AuthRest.updateLastSync." + serviceName);
+
+        try {
+            if (policyTransformer.getService() != null) {
+                AtlasEntity serviceEntity = new AtlasEntity(policyTransformer.getService());
+                serviceEntity.setAttribute(ATTR_SERVICE_LAST_SYNC, System.currentTimeMillis());
+                try {
+                    entityStore.createOrUpdate(new AtlasEntityStream(serviceEntity), false);
+                } catch (AtlasBaseException e) {
+                    LOG.error("Failed to update authServicePolicyLastSync time: {}", e.getMessage());
+                }
+            }
+        } finally {
+            RequestContext.get().endMetricRecord(recorder);
+        }
+    }
+
     private boolean isPolicyUpdated(String serviceName, long lastUpdatedTime) {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("CachePolicyTransformerImpl.isPolicyUpdated" + serviceName);
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("AuthRest.isPolicyUpdated." + serviceName);
 
         AuditSearchParams parameters = new AuditSearchParams();
         Map<String, Object> dsl = getMap("size", 1);

@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.repository.util;
 
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -77,6 +78,7 @@ public final class AccessControlUtils {
     public static final String ATTR_POLICY_IS_ENABLED  = "isPolicyEnabled";
     public static final String ATTR_POLICY_RESOURCES_CATEGORY  = "policyResourceCategory";
     public static final String ATTR_POLICY_SERVICE_NAME  = "policyServiceName";
+    public static final String ATTR_POLICY_PRIORITY  = "policyPriority";
 
     public static final String REL_ATTR_ACCESS_CONTROL = "accessControl";
     public static final String REL_ATTR_POLICIES       = "policies";

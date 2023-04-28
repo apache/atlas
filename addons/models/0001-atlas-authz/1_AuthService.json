@@ -51,6 +51,17 @@
                     "skipScrubbing": true,
                     "isIndexable": true,
                     "includeInNotification": true
+                },
+                {
+                    "name": "authServicePolicyLastSync",
+                    "typeName": "long",
+                    "isOptional": true,
+                    "defaultValue": 0,
+                    "cardinality": "SINGLE",
+                    "isUnique": false,
+                    "skipScrubbing": true,
+                    "isIndexable": true,
+                    "includeInNotification": true
                 }
             ]
         }

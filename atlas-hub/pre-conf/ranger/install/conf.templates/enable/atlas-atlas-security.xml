@@ -75,7 +75,7 @@
 
 	<property>
 		<name>atlas.plugin.atlas.policy.rest.client.read.timeoutMs</name>
-		<value>30000</value>
+		<value>120000</value>
 		<description>
 			AtlasAuth read Timeout in Milli Seconds
 		</description>

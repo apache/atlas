@@ -148,6 +148,7 @@ public final class Constants {
     public static final String PERSONA_ENTITY_TYPE        = "Persona";
     public static final String PURPOSE_ENTITY_TYPE        = "Purpose";
     public static final String POLICY_ENTITY_TYPE         = "AuthPolicy";
+    public static final String SERVICE_ENTITY_TYPE        = "AuthService";
 
     /**
      * Lineage relations.
@@ -372,6 +373,11 @@ public final class Constants {
     public static final String ATTR_ADMIN_ROLES = "adminRoles";
     public static final String ATTR_VIEWER_USERS = "viewerUsers";
     public static final String ATTR_VIEWER_GROUPS = "viewerGroups";
+
+    public static final String KEYCLOAK_ROLE_ADMIN   = "$admin";
+    public static final String KEYCLOAK_ROLE_MEMBER  = "$member";
+    public static final String KEYCLOAK_ROLE_GUEST   = "$guest";
+    public static final String KEYCLOAK_ROLE_DEFAULT = "default-roles-default";
 
     private Constants() {
     }

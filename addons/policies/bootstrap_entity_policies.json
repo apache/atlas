@@ -3,6 +3,9 @@
     [
         {
             "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 27
+            },
             "attributes":
             {
                 "name": "CREATE_SAVEDFILTER",
@@ -11,6 +14,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -37,6 +41,9 @@
         },
         {
             "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 27
+            },
             "attributes":
             {
                 "name": "READ_SAVEDFILTER",
@@ -45,6 +52,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -69,6 +77,9 @@
         },
         {
             "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 27
+            },
             "attributes":
             {
                 "name": "UPDATE_SAVEDFILTER",
@@ -77,6 +88,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -101,6 +113,9 @@
         },
         {
             "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 27
+            },
             "attributes":
             {
                 "name": "DELETE_SAVEDFILTER",
@@ -109,6 +124,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -133,6 +149,9 @@
         },
         {
             "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 26
+            },
             "attributes":
             {
                 "name": "LIST_SAVEDFILTER_SELF",
@@ -141,6 +160,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -166,6 +186,9 @@
         },
         {
             "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 26
+            },
             "attributes":
             {
                 "name": "UPDATE_SAVEDFILTER_SELF",
@@ -174,6 +197,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -201,6 +225,9 @@
         },
         {
             "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 26
+            },
             "attributes":
             {
                 "name": "DELETE_SAVEDFILTER_SELF",
@@ -209,6 +236,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -236,6 +264,9 @@
         },
         {
             "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 28
+            },
             "attributes":
             {
                 "name": "CREATE_GLOSSARY",
@@ -244,6 +275,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -268,6 +300,9 @@
         },
         {
             "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 28
+            },
             "attributes":
             {
                 "name": "READ_GLOSSARY",
@@ -276,6 +311,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -302,6 +338,9 @@
         },
         {
             "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 28
+            },
             "attributes":
             {
                 "name": "UPDATE_GLOSSARY",
@@ -310,6 +349,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -334,6 +374,9 @@
         },
         {
             "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 28
+            },
             "attributes":
             {
                 "name": "DELETE_GLOSSARY",
@@ -342,6 +385,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -366,6 +410,9 @@
         },
         {
             "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 29
+            },
             "attributes":
             {
                 "name": "CREATE_TERM",
@@ -374,6 +421,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -398,6 +446,9 @@
         },
         {
             "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 29
+            },
             "attributes":
             {
                 "name": "READ_TERM",
@@ -406,6 +457,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -432,6 +484,9 @@
         },
         {
             "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 29
+            },
             "attributes":
             {
                 "name": "UPDATE_TERM",
@@ -440,6 +495,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -464,6 +520,9 @@
         },
         {
             "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 29
+            },
             "attributes":
             {
                 "name": "DELETE_TERM",
@@ -472,6 +531,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -496,6 +556,9 @@
         },
         {
             "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 30
+            },
             "attributes":
             {
                 "name": "CREATE_CATEGORY",
@@ -504,6 +567,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -528,6 +592,9 @@
         },
         {
             "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 30
+            },
             "attributes":
             {
                 "name": "READ_CATEGORY",
@@ -536,6 +603,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -562,6 +630,9 @@
         },
         {
             "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 30
+            },
             "attributes":
             {
                 "name": "UPDATE_CATEGORY",
@@ -570,6 +641,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -594,6 +666,9 @@
         },
         {
             "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 30
+            },
             "attributes":
             {
                 "name": "DELETE_CATEGORY",
@@ -602,6 +677,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -626,6 +702,9 @@
         },
         {
             "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 34
+            },
             "attributes":
             {
                 "name": "CREATE_README",
@@ -634,6 +713,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -659,6 +739,9 @@
         },
         {
             "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 34
+            },
             "attributes":
             {
                 "name": "READ_README",
@@ -667,6 +750,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -692,6 +776,9 @@
         },
         {
             "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 34
+            },
             "attributes":
             {
                 "name": "UPDATE_README",
@@ -700,6 +787,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -725,6 +813,9 @@
         },
         {
             "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 34
+            },
             "attributes":
             {
                 "name": "DELETE_README",
@@ -733,6 +824,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -758,6 +850,9 @@
         },
         {
             "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 123
+            },
             "attributes":
             {
                 "name": "CREATE_BADGE",
@@ -766,6 +861,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -790,6 +886,9 @@
         },
         {
             "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 123
+            },
             "attributes":
             {
                 "name": "READ_BADGE",
@@ -798,6 +897,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -824,6 +924,9 @@
         },
         {
             "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 123
+            },
             "attributes":
             {
                 "name": "UPDATE_BADGE",
@@ -832,6 +935,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -856,6 +960,9 @@
         },
         {
             "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 123
+            },
             "attributes":
             {
                 "name": "DELETE_BADGE",
@@ -864,6 +971,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -888,6 +996,9 @@
         },
         {
             "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 35
+            },
             "attributes":
             {
                 "name": "CREATE_BOOKMARK",
@@ -896,6 +1007,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -923,6 +1035,9 @@
         },
         {
             "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 35
+            },
             "attributes":
             {
                 "name": "READ_BOOKMARK_SELF",
@@ -931,6 +1046,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -958,6 +1074,9 @@
         },
         {
             "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 35
+            },
             "attributes":
             {
                 "name": "UPDATE_BOOKMARK_SELF",
@@ -966,6 +1085,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -993,6 +1113,9 @@
         },
         {
             "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 35
+            },
             "attributes":
             {
                 "name": "DELETE_BOOKMARK_SELF",
@@ -1001,6 +1124,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -1102,6 +1226,9 @@
         },
         {
             "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 103
+            },
             "attributes":
             {
                 "name": "CREATE_LINK",
@@ -1110,6 +1237,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -1135,6 +1263,9 @@
         },
         {
             "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 103
+            },
             "attributes":
             {
                 "name": "READ_LINK",
@@ -1143,6 +1274,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -1168,6 +1300,9 @@
         },
         {
             "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 103
+            },
             "attributes":
             {
                 "name": "UPDATE_LINK",
@@ -1176,6 +1311,7 @@
                 "policyCategory": "bootstrap",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -1201,6 +1337,9 @@
         },
         {
             "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 103
+            },
             "attributes":
             {
                 "name": "DELETE_LINK",
@@ -1209,6 +1348,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -1366,6 +1506,9 @@
         },
         {
             "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 107
+            },
             "attributes":
             {
                 "name": "CREATE_CONNECTION",
@@ -1374,6 +1517,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -1398,6 +1542,9 @@
         },
         {
             "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 108
+            },
             "attributes":
             {
                 "name": "CREATE_COLLECTION",
@@ -1406,6 +1553,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -1432,6 +1580,9 @@
         },
         {
             "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 109
+            },
             "attributes":
             {
                 "name": "BM_UPDATE_GLOSSARY",
@@ -1440,6 +1591,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -1465,6 +1617,9 @@
         },
         {
             "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 110
+            },
             "attributes":
             {
                 "name": "BM_UPDATE_TERM",
@@ -1473,6 +1628,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -1498,6 +1654,9 @@
         },
         {
             "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 114
+            },
             "attributes":
             {
                 "name": "BM_UPDATE_CATEGORY",
@@ -1506,6 +1665,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -1659,6 +1819,9 @@
         },
         {
             "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 117
+            },
             "attributes":
             {
                 "name": "CREATE_README_TEMPLATE",
@@ -1667,6 +1830,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -1691,6 +1855,9 @@
         },
         {
             "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 117
+            },
             "attributes":
             {
                 "name": "READ_README_TEMPLATE",
@@ -1699,6 +1866,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -1724,6 +1892,9 @@
         },
         {
             "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 117
+            },
             "attributes":
             {
                 "name": "UPDATE_README_TEMPLATE",
@@ -1732,6 +1903,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -1756,6 +1928,9 @@
         },
         {
             "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 117
+            },
             "attributes":
             {
                 "name": "DELETE_README_TEMPLATE",
@@ -1764,6 +1939,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -1788,6 +1964,9 @@
         },
         {
             "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 119
+            },
             "attributes":
             {
                 "name": "CREATE_AUDITENTRY",
@@ -1796,6 +1975,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -1820,6 +2000,9 @@
         },
         {
             "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 119
+            },
             "attributes":
             {
                 "name": "READ_AUDITENTRY",
@@ -1828,6 +2011,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -1852,6 +2036,9 @@
         },
         {
             "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 119
+            },
             "attributes":
             {
                 "name": "UPDATE_AUDITENTRY",
@@ -1860,6 +2047,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -1884,6 +2072,9 @@
         },
         {
             "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 119
+            },
             "attributes":
             {
                 "name": "DELETE_AUDITENTRY",
@@ -1892,6 +2083,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -2197,6 +2389,9 @@
         },
         {
             "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 120
+            },
             "attributes":
             {
                 "name": "CREATE_ACCESS_CONTROL_ENTITIES",
@@ -2205,6 +2400,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -2230,6 +2426,9 @@
         },
         {
             "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 120
+            },
             "attributes":
             {
                 "name": "READ_ACCESS_CONTROL_ENTITIES",
@@ -2238,6 +2437,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [
                     "service-account-atlan-argo",
@@ -2266,6 +2466,9 @@
         },
         {
             "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 120
+            },
             "attributes":
             {
                 "name": "UPDATE_ACCESS_CONTROL_ENTITIES",
@@ -2274,6 +2477,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -2299,6 +2503,9 @@
         },
         {
             "typeName": "AuthPolicy",
+            "customAttributes": {
+                "internalId": 120
+            },
             "attributes":
             {
                 "name": "DELETE_ACCESS_CONTROL_ENTITIES",
@@ -2307,6 +2514,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -2376,6 +2584,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [
                     "service-account-atlan-argo",
@@ -2482,6 +2691,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "deny",
+                "policyPriority": 0,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -2522,6 +2732,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "deny",
+                "policyPriority": 0,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -2554,6 +2765,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "deny",
+                "policyPriority": 0,
                 "policyUsers":
                 [],
                 "policyGroups":

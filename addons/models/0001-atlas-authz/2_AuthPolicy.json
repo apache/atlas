@@ -278,6 +278,17 @@
           "includeInNotification": true
         },
         {
+          "name": "policyPriority",
+          "typeName": "int",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "defaultValue": 0,
+          "skipScrubbing": true,
+          "includeInNotification": true
+        },
+        {
           "name": "isPolicyEnabled",
           "typeName": "boolean",
           "cardinality": "SINGLE",
