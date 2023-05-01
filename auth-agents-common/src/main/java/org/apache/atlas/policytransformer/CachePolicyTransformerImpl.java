@@ -66,11 +66,13 @@ import static org.apache.atlas.repository.Constants.NAME;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.Constants.SERVICE_ENTITY_TYPE;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_CATEGORY;
+import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_IS_ENABLED;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_PRIORITY;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_SERVICE_NAME;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_SUB_CATEGORY;
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGORY_PERSONA;
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGORY_PURPOSE;
+import static org.apache.atlas.repository.util.AccessControlUtils.getIsPolicyEnabled;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyCategory;
 
 @Component
@@ -418,6 +420,7 @@ public class CachePolicyTransformerImpl {
             attributes.add(ATTR_POLICY_PRIORITY);
             attributes.add(ATTR_POLICY_VALIDITY);
             attributes.add(ATTR_POLICY_CONDITIONS);
+            attributes.add(ATTR_POLICY_IS_ENABLED);
 
             Map<String, Object> dsl = getMap("size", 0);
 
@@ -507,6 +510,7 @@ public class CachePolicyTransformerImpl {
         policy.setGuid(atlasPolicy.getGuid());
         policy.setCreatedBy(atlasPolicy.getCreatedBy());
         policy.setCreateTime(atlasPolicy.getCreateTime());
+        policy.setIsEnabled(getIsPolicyEnabled(atlasPolicy));
 
         policy.setConditions(getPolicyConditions(atlasPolicy));
         policy.setValiditySchedules(getPolicyValiditySchedule(atlasPolicy));

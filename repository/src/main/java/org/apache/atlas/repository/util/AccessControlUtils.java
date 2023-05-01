@@ -272,6 +272,13 @@ public final class AccessControlUtils {
         return (boolean) entity.getAttribute(ATTR_ACCESS_CONTROL_ENABLED);
     }
 
+    public static boolean getIsPolicyEnabled(AtlasEntityHeader entity)  {
+        if (entity.hasAttribute(ATTR_POLICY_IS_ENABLED)) {
+            return (boolean) entity.getAttribute(ATTR_POLICY_IS_ENABLED);
+        }
+        return true;
+    }
+
     public static List<String> getPersonaUsers(AtlasStruct entity) {
         return getListAttribute(entity, ATTR_PERSONA_USERS);
     }

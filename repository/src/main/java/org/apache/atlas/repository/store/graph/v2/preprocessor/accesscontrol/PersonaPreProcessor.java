@@ -195,9 +195,8 @@ public class PersonaPreProcessor implements PreProcessor {
             for (AtlasObjectId policy : policies) {
                 AtlasVertex policyVertex = entityRetriever.getEntityVertex(policy.getGuid());
 
-                policyVertex.setProperty(ATTR_POLICY_IS_ENABLED, enable);
-
                 AtlasEntity policyToBeUpdated = entityRetriever.toAtlasEntity(policyVertex);
+                policyToBeUpdated.setAttribute(ATTR_POLICY_IS_ENABLED, enable);
 
                 context.addUpdated(policyToBeUpdated.getGuid(), policyToBeUpdated, entityType, policyVertex);
             }

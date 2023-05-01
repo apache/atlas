@@ -897,7 +897,7 @@ public class EntityREST {
         }
     }
 
-    private void validateAttributeLength(final List<AtlasEntity> entities) throws AtlasBaseException {
+    public static void validateAttributeLength(final List<AtlasEntity> entities) throws AtlasBaseException {
         //Predicate to check attribute value exceeding length
         Predicate<Map.Entry<String, Object>> predicateOfAttributeLengthExceedingLimit = attribute ->
                 attribute.getValue() instanceof String && ((String) attribute.getValue()).length() > HUNDRED_THOUSAND;

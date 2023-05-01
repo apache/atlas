@@ -33,10 +33,12 @@ import java.util.List;
 import static org.apache.atlas.policytransformer.CachePolicyTransformerImpl.ATTR_NAME;
 import static org.apache.atlas.policytransformer.CachePolicyTransformerImpl.ATTR_POLICY_RESOURCES;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_ACTIONS;
+import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_IS_ENABLED;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_RESOURCES_CATEGORY;
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_SUB_CATEGORY_DATA;
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_SUB_CATEGORY_METADATA;
 import static org.apache.atlas.repository.util.AccessControlUtils.getConnectionEntity;
+import static org.apache.atlas.repository.util.AccessControlUtils.getIsPolicyEnabled;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyActions;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyAssets;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyResources;
@@ -65,7 +67,7 @@ public class PersonaCachePolicyTransformer extends AbstractCachePolicyTransforme
             List<PolicyTransformerTemplate.TemplatePolicy> currentTemplates = templates.getTemplate(atlasAction);
 
             if (CollectionUtils.isEmpty(currentTemplates)) {
-                LOG.warn("PersonaCachePolicyTransformer: Skipping unknown action {} while transforming policy {}", atlasAction, atlasPolicy.getGuid());
+                LOG.warn("PolicyTransformerImpl: Skipping unknown action {} while transforming policy {}", atlasAction, atlasPolicy.getGuid());
                 continue;
             }
 
@@ -76,6 +78,7 @@ public class PersonaCachePolicyTransformer extends AbstractCachePolicyTransforme
 
                 header.setAttribute(ATTR_POLICY_ACTIONS, templatePolicy.getActions());
                 header.setAttribute(ATTR_POLICY_RESOURCES_CATEGORY, templatePolicy.getPolicyResourceCategory());
+                header.setAttribute(ATTR_POLICY_IS_ENABLED, getIsPolicyEnabled(atlasPolicy));
 
                 String subCategory = getPolicySubCategory(atlasPolicy);
 

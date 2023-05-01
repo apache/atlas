@@ -261,6 +261,10 @@ public class AuthPolicyPreProcessor implements PreProcessor {
     }
 
     private void validateConnectionAdmin(AtlasEntity policy) throws AtlasBaseException {
+        if (RequestContext.get().isAccessControlMigrationInProgress()) {
+            LOG.info("Skipping connection admin check as access control migration is in progress");
+            return;
+        }
 
         String subCategory = getPolicySubCategory(policy);
         if ("metadata".equals(subCategory) || "data".equals(subCategory)) {

@@ -174,8 +174,7 @@
       "policyType": "ACCESS",
       "policyResourceCategory": "ENTITY",
       "resources": [
-        "entity:{entity}",
-        "entity:{entity}/*",
+        "entity:*{entity}",
         "entity-type:AtlasGlossary",
         "entity-type:AtlasGlossaryTerm",
         "entity-type:AtlasGlossaryCategory",
@@ -193,15 +192,13 @@
         "end-one-entity-type:AtlasGlossaryTerm",
         "end-one-entity-type:AtlasGlossaryCategory",
         "end-one-entity-classification:*",
-        "end-one-entity:{entity}",
-        "end-one-entity:{entity}/*",
+        "end-one-entity:*{entity}",
 
         "end-two-entity-type:AtlasGlossary",
         "end-two-entity-type:AtlasGlossaryTerm",
         "end-two-entity-type:AtlasGlossaryCategory",
         "end-two-entity-classification:*",
-        "end-two-entity:{entity}",
-        "end-two-entity:{entity}/*"
+        "end-two-entity:*{entity}"
       ],
       "actions": ["add-relationship", "update-relationship", "remove-relationship"]
     }
@@ -211,8 +208,7 @@
       "policyType": "ACCESS",
       "policyResourceCategory": "ENTITY",
       "resources": [
-        "entity:{entity}",
-        "entity:{entity}/*",
+        "entity:*{entity}",
         "entity-type:AtlasGlossary",
         "entity-type:AtlasGlossaryTerm",
         "entity-type:AtlasGlossaryCategory",
@@ -230,8 +226,7 @@
         "end-one-entity-type:AtlasGlossaryTerm",
         "end-one-entity-type:AtlasGlossaryCategory",
         "end-one-entity-classification:*",
-        "end-one-entity:{entity}",
-        "end-one-entity:{entity}/*",
+        "end-one-entity:*{entity}",
 
         "end-two-entity-type:*",
         "end-two-entity-classification:*",
@@ -251,8 +246,7 @@
 
         "end-two-entity-type:*",
         "end-two-entity-classification:*",
-        "end-two-entity:{entity}",
-        "end-two-entity:{entity}/*"
+        "end-two-entity:*{entity}"
       ],
       "actions": ["add-relationship", "update-relationship", "remove-relationship"]
     }
@@ -262,8 +256,7 @@
       "policyType": "ACCESS",
       "policyResourceCategory": "ENTITY",
       "resources": [
-        "entity:{entity}",
-        "entity:{entity}/*",
+        "entity:*{entity}",
         "entity-type:AtlasGlossary",
         "entity-type:AtlasGlossaryTerm",
         "entity-type:AtlasGlossaryCategory",
@@ -277,8 +270,7 @@
       "policyType": "ACCESS",
       "policyResourceCategory": "ENTITY",
       "resources": [
-        "entity:{entity}",
-        "entity:{entity}/*",
+        "entity:*{entity}",
         "entity-type:AtlasGlossary",
         "entity-type:AtlasGlossaryTerm",
         "entity-type:AtlasGlossaryCategory",
@@ -292,8 +284,7 @@
       "policyType": "ACCESS",
       "policyResourceCategory": "ENTITY",
       "resources": [
-        "entity:{entity}",
-        "entity:{entity}/*",
+        "entity:*{entity}",
         "entity-type:AtlasGlossary",
         "entity-type:AtlasGlossaryTerm",
         "entity-type:AtlasGlossaryCategory",
@@ -308,8 +299,7 @@
       "policyType": "ACCESS",
       "policyResourceCategory": "ENTITY",
       "resources": [
-        "entity:{entity}",
-        "entity:{entity}/*",
+        "entity:*{entity}",
         "entity-type:AtlasGlossary",
         "entity-type:AtlasGlossaryTerm",
         "entity-type:AtlasGlossaryCategory",
@@ -324,8 +314,7 @@
       "policyType": "ACCESS",
       "policyResourceCategory": "ENTITY",
       "resources": [
-        "entity:{entity}",
-        "entity:{entity}/*",
+        "entity:*{entity}",
         "entity-type:AtlasGlossary",
         "entity-type:AtlasGlossaryTerm",
         "entity-type:AtlasGlossaryCategory",
@@ -340,8 +329,7 @@
       "policyType": "ACCESS",
       "policyResourceCategory": "ENTITY",
       "resources": [
-        "entity:{entity}",
-        "entity:{entity}/*",
+        "entity:*{entity}",
         "entity-type:AtlasGlossary",
         "entity-type:AtlasGlossaryTerm",
         "entity-type:AtlasGlossaryCategory",
