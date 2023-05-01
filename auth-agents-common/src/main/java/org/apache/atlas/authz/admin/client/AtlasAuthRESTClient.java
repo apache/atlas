@@ -103,7 +103,7 @@ public class AtlasAuthRESTClient implements AtlasAuthAdminClient {
             } else if (response.code() == HttpServletResponse.SC_OK) {
                 String responseBody = response.body().string();
                 if (StringUtils.isNotEmpty(responseBody)) {
-                    AtlasType.fromJson(responseBody, responseClass);
+                    return AtlasType.fromJson(responseBody, responseClass);
                 } else {
                     LOG.warn("AtlasAuthRESTClient.sendRequestAndGetResponse(): Empty response from Atlas Auth");
                 }
