@@ -95,12 +95,7 @@ public class AtlasAuthRESTClient implements AtlasAuthAdminClient {
         Request request = new Request.Builder().url(uri.toURL()).build();
 
         try (Response response = httpClient.newCall(request).execute()) {
-            if (response.code() == HttpServletResponse.SC_NO_CONTENT) {
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("<== AtlasAuthRESTClient.sendRequestAndGetResponse(): Not Modified");
-                }
-                return null;
-            } else if (response.code() == HttpServletResponse.SC_OK) {
+            if (response.code() == HttpServletResponse.SC_OK) {
                 String responseBody = response.body().string();
                 if (StringUtils.isNotEmpty(responseBody)) {
                     return AtlasType.fromJson(responseBody, responseClass);
