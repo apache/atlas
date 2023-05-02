@@ -26,15 +26,15 @@ public abstract class AbstractRedisService implements RedisService {
     private static final String ATLAS_REDIS_PASSWORD = "atlas.redis.password";
     private static final String ATLAS_REDIS_MASTER_NAME = "atlas.redis.master_name";
     private static final String ATLAS_REDIS_LOCK_WAIT_TIME_MS = "atlas.redis.lock.wait_time.ms";
-    private static final String ATLAS_REDIS_LEASE_TIME_MS = "atlas.redis.lock.lease_time.ms";
-    private static final int DEFAULT_REDIS_WAIT_TIME_MS = 15000;
-    private static final int DEFAULT_REDIS_LEASE_TIME_MS = 60000;
+    private static final String ATLAS_REDIS_LOCK_WATCHDOG_TIMEOUT_MS = "atlas.redis.lock.watchdog_timeout.ms";
+    private static final int DEFAULT_REDIS_WAIT_TIME_MS = 15_000;
+    private static final int DEFAULT_REDIS_LOCK_WATCHDOG_TIMEOUT_MS = 600_000;
 
     RedissonClient redisClient;
     Map<String, RLock> keyLockMap;
     Configuration atlasConfig;
     long waitTimeInMS;
-    long leaseTimeInMS;
+    long watchdogTimeoutInMS;
 
     @Override
     public boolean acquireDistributedLock(String key) throws Exception {
@@ -42,10 +42,10 @@ public abstract class AbstractRedisService implements RedisService {
         boolean isLockAcquired;
         try {
             RLock lock = redisClient.getFairLock(key);
-            isLockAcquired = lock.tryLock(waitTimeInMS, leaseTimeInMS, TimeUnit.MILLISECONDS);
+            isLockAcquired = lock.tryLock(waitTimeInMS, TimeUnit.MILLISECONDS);
             if (isLockAcquired) {
                 keyLockMap.put(key, lock);
-                getLogger().info("Acquired distributed lock for {}, host:{}", key, getHostAddress());
+                getLogger().info("Successfully acquired distributed lock for {}, host:{}", key, getHostAddress());
             } else {
                 getLogger().info("Attempt failed as lock {} is already acquired, host: {}.", key, getHostAddress());
             }
@@ -66,7 +66,7 @@ public abstract class AbstractRedisService implements RedisService {
             if (lock.isHeldByCurrentThread()) {
                 getLogger().info("Attempt to release distributed lock for {}, host: {}", key, getHostAddress());
                 lock.unlock();
-                getLogger().info("successfully released distributed lock for {}, host: {}", key, getHostAddress());
+                getLogger().info("Successfully released distributed lock for {}, host: {}", key, getHostAddress());
             }
         } catch (Exception e) {
             getLogger().error("Failed to release distributed lock for {}", key, e);
@@ -77,16 +77,18 @@ public abstract class AbstractRedisService implements RedisService {
         return InetAddress.getLocalHost().getHostAddress();
     }
 
-    private void initAtlasConfig() throws AtlasException {
+    private Config initAtlasConfig() throws AtlasException {
         keyLockMap = new ConcurrentHashMap<>();
         atlasConfig = ApplicationProperties.get();
         waitTimeInMS = atlasConfig.getLong(ATLAS_REDIS_LOCK_WAIT_TIME_MS, DEFAULT_REDIS_WAIT_TIME_MS);
-        leaseTimeInMS = atlasConfig.getLong(ATLAS_REDIS_LEASE_TIME_MS, DEFAULT_REDIS_LEASE_TIME_MS);
+        watchdogTimeoutInMS = atlasConfig.getLong(ATLAS_REDIS_LOCK_WATCHDOG_TIMEOUT_MS, DEFAULT_REDIS_LOCK_WATCHDOG_TIMEOUT_MS);
+        Config redisConfig = new Config();
+        redisConfig.setLockWatchdogTimeout(watchdogTimeoutInMS);
+        return redisConfig;
     }
 
     Config getLocalConfig() throws AtlasException {
-        initAtlasConfig();
-        Config config = new Config();
+        Config config = initAtlasConfig();
         config.useSingleServer()
                 .setAddress(formatUrls(atlasConfig.getStringArray(ATLAS_REDIS_URL))[0])
                 .setUsername(atlasConfig.getString(ATLAS_REDIS_USERNAME))
@@ -95,8 +97,7 @@ public abstract class AbstractRedisService implements RedisService {
     }
 
     Config getProdConfig() throws AtlasException {
-        initAtlasConfig();
-        Config config = new Config();
+        Config config = initAtlasConfig();
         config.useSentinelServers()
                 .setReadMode(ReadMode.MASTER_SLAVE)
                 .setCheckSentinelsList(false)
