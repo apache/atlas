@@ -41,10 +41,6 @@
           "lowercase"
         ]
       },
-      "atlan_space_analyzer": {
-        "type": "custom",
-        "tokenizer": "whitespace"
-      },
       "atlan_text_stemmer": {
         "type": "custom",
         "tokenizer": "atlan_tokenizer",

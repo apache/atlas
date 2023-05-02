@@ -49,18 +49,6 @@
           "type": "long"
         }
       }
-    },
-    "__classificationsText": {
-      "type": "text",
-      "fields": {
-        "text": {
-          "type": "text",
-          "analyzer": "atlan_space_analyzer"
-        }
-      },
-      "copy_to" : [
-        "all"
-      ]
     }
   }
 }
