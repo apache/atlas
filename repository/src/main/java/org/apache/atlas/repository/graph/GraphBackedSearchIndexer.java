@@ -338,6 +338,12 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             HashMap<String, HashMap<String, Object>> ES_GLOSSARY_ANALYZER_MULTIFIELD = new HashMap<>();
             ES_GLOSSARY_ANALYZER_MULTIFIELD.put("text", ES_GLOSSARY_ANALYZER_TEXT_FIELD);
 
+            HashMap<String, Object> ES_SPACE_ANALYZER_TEXT_FIELD = new HashMap<>();
+            ES_SPACE_ANALYZER_TEXT_FIELD.put("type", "text");
+            ES_SPACE_ANALYZER_TEXT_FIELD.put("analyzer", "whitespace");
+            HashMap<String, HashMap<String, Object>> ES_SPACE_ANALYZER_MULTIFIELD = new HashMap<>();
+            ES_SPACE_ANALYZER_MULTIFIELD.put("text", ES_SPACE_ANALYZER_TEXT_FIELD);
+
             HashMap<String, Object> ES_ATLAN_TEXT_ANALYZER_CONFIG = new HashMap<>();
             ES_ATLAN_TEXT_ANALYZER_CONFIG.put("analyzer", "atlan_text_analyzer");
 
@@ -359,7 +365,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             createCommonVertexIndex(management, MODIFICATION_TIMESTAMP_PROPERTY_KEY, UniqueKind.NONE, Long.class, SINGLE, false, false, false, new HashMap<>(), TIMESTAMP_MULTIFIELDS);
             createCommonVertexIndex(management, STATE_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, false, false, true);
             createCommonVertexIndex(management, CREATED_BY_KEY, UniqueKind.NONE, String.class, SINGLE, false, false, true);
-            createCommonVertexIndex(management, CLASSIFICATION_TEXT_KEY, UniqueKind.NONE, String.class, SINGLE, false, false);
+            createCommonVertexIndex(management, CLASSIFICATION_TEXT_KEY, UniqueKind.NONE, String.class, SINGLE, false, false, false, new HashMap<>(), ES_SPACE_ANALYZER_MULTIFIELD);
             createCommonVertexIndex(management, MODIFIED_BY_KEY, UniqueKind.NONE, String.class, SINGLE, false, false, true);
             createCommonVertexIndex(management, CLASSIFICATION_NAMES_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
             createCommonVertexIndex(management, PROPAGATED_CLASSIFICATION_NAMES_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
