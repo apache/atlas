@@ -78,7 +78,6 @@ public class RequestContext {
     private int attemptCount = 1;
     private boolean isImportInProgress = false;
     private boolean isPoliciesBootstrappingInProgress = false;
-    private boolean isAccessControlMigrationInProgress = false;
     private boolean     isInNotificationProcessing = false;
     private boolean     isInTypePatching           = false;
     private boolean     createShellEntityForNonExistingReference = false;
@@ -150,7 +149,6 @@ public class RequestContext {
         setTraceId(null);
 
         this.isPoliciesBootstrappingInProgress = false;
-        this.isAccessControlMigrationInProgress = false;
 
         if (metrics != null && !metrics.isEmpty()) {
             METRICS.debug(metrics.toString());
@@ -403,14 +401,6 @@ public class RequestContext {
 
     public void setPoliciesBootstrappingInProgress(boolean policiesBootstrappingInProgress) {
         isPoliciesBootstrappingInProgress = policiesBootstrappingInProgress;
-    }
-
-    public boolean isAccessControlMigrationInProgress() {
-        return isAccessControlMigrationInProgress;
-    }
-
-    public void setAccessControlMigrationInProgress(boolean accessControlMigrationInProgress) {
-        isAccessControlMigrationInProgress = accessControlMigrationInProgress;
     }
 
     public static long earliestActiveRequestTime() {

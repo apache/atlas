@@ -215,34 +215,6 @@ public class MigrationREST {
         }
     }
 
-    @POST
-    @Path("/bulk")
-    @Timed
-    public EntityMutationResponse createOrUpdate(AtlasEntity.AtlasEntitiesWithExtInfo entities,
-                                                 @QueryParam("replaceClassifications") @DefaultValue("false") boolean replaceClassifications,
-                                                 @QueryParam("replaceBusinessAttributes") @DefaultValue("false") boolean replaceBusinessAttributes,
-                                                 @QueryParam("overwriteBusinessAttributes") @DefaultValue("false") boolean isOverwriteBusinessAttributes) throws AtlasBaseException {
-        AtlasPerfTracer perf = null;
-
-        try {
-            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MigrationREST.createOrUpdate(entityCount=" +
-                        (CollectionUtils.isEmpty(entities.getEntities()) ? 0 : entities.getEntities().size()) + ")");
-            }
-
-            validateAttributeLength(entities.getEntities());
-
-            EntityStream entityStream = new AtlasEntityStream(entities);
-
-            RequestContext.get().setAccessControlMigrationInProgress(true);
-
-            return entityStore.createOrUpdate(entityStream, replaceClassifications, replaceBusinessAttributes, isOverwriteBusinessAttributes);
-        } finally {
-            RequestContext.get().setAccessControlMigrationInProgress(false);
-            AtlasPerfTracer.log(perf);
-        }
-    }
-
     private List<AtlasEntity> getEntitiesByIndexSearch(IndexSearchParams indexSearchParams, Boolean minExtInfo, boolean ignoreRelationships) throws AtlasBaseException{
         List<AtlasEntity> entities = new ArrayList<>();
         String indexName = "janusgraph_vertex_index";
