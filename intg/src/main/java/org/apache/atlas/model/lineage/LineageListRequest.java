@@ -18,6 +18,7 @@ public class LineageListRequest {
     private Integer                         from;
     private Integer                         depth;
     private LineageDirection                direction;
+    private SearchParameters.FilterCriteria entityFilters;
     private SearchParameters.FilterCriteria entityTraversalFilters;
     private SearchParameters.FilterCriteria relationshipTraversalFilters;
     private Set<String>                     attributes;
@@ -29,7 +30,7 @@ public class LineageListRequest {
         this.attributes = new HashSet<>();
     }
 
-    public LineageListRequest(String guid, Integer size, Integer from, Integer depth, LineageDirection direction,
+    public LineageListRequest(String guid, Integer size, Integer from, Integer depth, LineageDirection direction, SearchParameters.FilterCriteria entityFilters,
                               SearchParameters.FilterCriteria entityTraversalFilters, SearchParameters.FilterCriteria relationshipTraversalFilters,
                               Set<String> attributes, boolean fetchProcesses) {
         this.guid = guid;
@@ -37,6 +38,7 @@ public class LineageListRequest {
         this.from = from;
         this.depth = depth;
         this.direction = direction;
+        this.entityFilters = entityFilters;
         this.entityTraversalFilters = entityTraversalFilters;
         this.relationshipTraversalFilters = relationshipTraversalFilters;
         this.attributes = attributes;
@@ -81,6 +83,14 @@ public class LineageListRequest {
 
     public void setDirection(LineageDirection direction) {
         this.direction = direction;
+    }
+
+    public SearchParameters.FilterCriteria getEntityFilters() {
+        return entityFilters;
+    }
+
+    public void setEntityFilters(SearchParameters.FilterCriteria entityFilters) {
+        this.entityFilters = entityFilters;
     }
 
     public SearchParameters.FilterCriteria getEntityTraversalFilters() {

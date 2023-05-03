@@ -6,11 +6,6 @@ import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.Predicate;
-import org.apache.commons.lang3.tuple.Pair;
-
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Queue;
 import java.util.Set;
 
 public final class AtlasLineageListContext {
@@ -19,10 +14,10 @@ public final class AtlasLineageListContext {
     private Integer                             from;
     private Integer                             depth;
     private LineageListRequest.LineageDirection direction;
-    private Predicate                           vertexPredicate;
-    private Predicate                           edgePredicate;
+    private Predicate vertexPredicate;
+    private Predicate vertexTraversalPredicate;
+    private Predicate edgeTraversalPredicate;
     private Set<String>                         attributes;
-    private boolean                             fetchProcesses;
 
     public AtlasLineageListContext(LineageListRequest lineageListRequest, AtlasTypeRegistry typeRegistry) {
         this.guid = lineageListRequest.getGuid();
@@ -30,10 +25,10 @@ public final class AtlasLineageListContext {
         this.from = lineageListRequest.getFrom();
         this.depth = lineageListRequest.getDepth();
         this.direction = lineageListRequest.getDirection();
-        this.vertexPredicate = constructInMemoryPredicate(typeRegistry, lineageListRequest.getEntityTraversalFilters());
-        this.edgePredicate = constructInMemoryPredicate(typeRegistry, lineageListRequest.getRelationshipTraversalFilters());
+        this.vertexPredicate = constructInMemoryPredicate(typeRegistry, lineageListRequest.getEntityFilters());
+        this.vertexTraversalPredicate = constructInMemoryPredicate(typeRegistry, lineageListRequest.getEntityTraversalFilters());
+        this.edgeTraversalPredicate = constructInMemoryPredicate(typeRegistry, lineageListRequest.getRelationshipTraversalFilters());
         this.attributes = lineageListRequest.getAttributes();
-        this.fetchProcesses = lineageListRequest.isFetchProcesses();
     }
 
     public String getGuid() {
@@ -84,12 +79,20 @@ public final class AtlasLineageListContext {
         this.vertexPredicate = vertexPredicate;
     }
 
-    public Predicate getEdgePredicate() {
-        return edgePredicate;
+    public Predicate getVertexTraversalPredicate() {
+        return vertexTraversalPredicate;
     }
 
-    public void setEdgePredicate(Predicate edgePredicate) {
-        this.edgePredicate = edgePredicate;
+    public void setVertexTraversalPredicate(Predicate vertexTraversalPredicate) {
+        this.vertexTraversalPredicate = vertexTraversalPredicate;
+    }
+
+    public Predicate getEdgeTraversalPredicate() {
+        return edgeTraversalPredicate;
+    }
+
+    public void setEdgeTraversalPredicate(Predicate edgeTraversalPredicate) {
+        this.edgeTraversalPredicate = edgeTraversalPredicate;
     }
 
     public Set<String> getAttributes() {
@@ -100,29 +103,28 @@ public final class AtlasLineageListContext {
         this.attributes = attributes;
     }
 
-    public boolean isFetchProcesses() {
-        return fetchProcesses;
-    }
-
-    public void setFetchProcesses(boolean fetchProcesses) {
-        this.fetchProcesses = fetchProcesses;
-    }
-
     protected Predicate constructInMemoryPredicate(AtlasTypeRegistry typeRegistry, SearchParameters.FilterCriteria filterCriteria) {
         LineageSearchProcessor lineageSearchProcessor = new LineageSearchProcessor();
         return lineageSearchProcessor.constructInMemoryPredicate(typeRegistry, filterCriteria);
     }
 
-    protected boolean evaluate(AtlasVertex vertex) {
+    protected boolean evaluateVertexFilter(AtlasVertex vertex) {
         if (vertexPredicate != null) {
             return vertexPredicate.evaluate(vertex);
         }
         return true;
     }
 
-    protected boolean evaluate(AtlasEdge edge) {
-        if (edgePredicate != null) {
-            return edgePredicate.evaluate(edge);
+    protected boolean evaluateTraversalFilter(AtlasVertex vertex) {
+        if (vertexTraversalPredicate != null) {
+            return vertexTraversalPredicate.evaluate(vertex);
+        }
+        return true;
+    }
+
+    protected boolean evaluateTraversalFilter(AtlasEdge edge) {
+        if (edgeTraversalPredicate != null) {
+            return edgeTraversalPredicate.evaluate(edge);
         }
         return true;
     }
