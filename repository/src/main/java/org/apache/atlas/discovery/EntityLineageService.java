@@ -1542,10 +1542,6 @@ public class EntityLineageService implements AtlasLineageService {
             return vertexGUID;
         }
 
-        public void setVertexGUID(String vertexGUID) {
-            this.vertexGUID = vertexGUID;
-        }
-
     }
 
 }
