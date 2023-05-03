@@ -14,9 +14,9 @@ public final class AtlasLineageListContext {
     private Integer                             from;
     private Integer                             depth;
     private LineageListRequest.LineageDirection direction;
-    private Predicate vertexPredicate;
-    private Predicate vertexTraversalPredicate;
-    private Predicate edgeTraversalPredicate;
+    private Predicate                           vertexPredicate;
+    private Predicate                           vertexTraversalPredicate;
+    private Predicate                           edgeTraversalPredicate;
     private Set<String>                         attributes;
 
     public AtlasLineageListContext(LineageListRequest lineageListRequest, AtlasTypeRegistry typeRegistry) {
