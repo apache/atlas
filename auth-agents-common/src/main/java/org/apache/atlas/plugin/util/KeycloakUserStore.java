@@ -28,8 +28,10 @@ import org.apache.atlas.plugin.service.RangerBasePlugin;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.keycloak.admin.client.resource.RoleResource;
 import org.keycloak.representations.idm.AdminEventRepresentation;
+import org.keycloak.representations.idm.EventRepresentation;
 import org.keycloak.representations.idm.GroupRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
@@ -52,6 +54,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.repository.Constants.KEYCLOAK_ROLE_ADMIN;
+import static org.apache.atlas.repository.Constants.KEYCLOAK_ROLE_API_TOKEN;
 import static org.apache.atlas.repository.Constants.KEYCLOAK_ROLE_DEFAULT;
 import static org.apache.atlas.repository.Constants.KEYCLOAK_ROLE_GUEST;
 import static org.apache.atlas.repository.Constants.KEYCLOAK_ROLE_MEMBER;
@@ -63,8 +66,12 @@ public class KeycloakUserStore {
 
     private static int NUM_THREADS = 5;
 
-    List<String> OPERATION_TYPES = Arrays.asList("CREATE", "UPDATE", "DELETE");
-    List<String> RESOURCE_TYPES = Arrays.asList("USER", "GROUP", "REALM_ROLE", "CLIENT", "REALM_ROLE_MAPPING", "GROUP_MEMBERSHIP", "CLIENT_ROLE_MAPPING");
+    private static String LOGIN_EVENT_DETAIL_KEY = "custom_required_action";
+    private static String LOGIN_EVENT_DETAIL_VALUE = "UPDATE_PROFILE";
+
+    private static List<String> EVENT_TYPES = Arrays.asList("LOGIN");
+    private static List<String> OPERATION_TYPES = Arrays.asList("CREATE", "UPDATE", "DELETE");
+    private static List<String> RESOURCE_TYPES = Arrays.asList("USER", "GROUP", "REALM_ROLE", "CLIENT", "REALM_ROLE_MAPPING", "GROUP_MEMBERSHIP", "CLIENT_ROLE_MAPPING");
 
     private final String serviceName;
 
@@ -87,40 +94,78 @@ public class KeycloakUserStore {
         return service;
     }
 
-    public long getKeycloakSubjectsStoreUpdatedTime() throws AtlasBaseException {
+    public boolean isKeycloakSubjectsStoreUpdated(long cacheLastUpdatedTime) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getKeycloakSubjectsStoreUpdatedTime");
+        if (cacheLastUpdatedTime == -1) {
+            return true;
+        }
+
         KeycloakClient keycloakClient = KeycloakClient.getKeycloakClient();
-        long latestEventTime = -1L;
+        long latestKeycloakEventTime = -1L;
 
         try {
-            int from = 0;
-            int size = 100;
+            int size = 1;
 
+            for (int from = 0; ; from += size) {
 
-            while (latestEventTime == -1L) {
                 List<AdminEventRepresentation> adminEvents = keycloakClient.getRealm().getAdminEvents(OPERATION_TYPES,
                         null, null, null, null, null, null, null,
                         from, size);
                 Optional<AdminEventRepresentation> event = adminEvents.stream().filter(x -> RESOURCE_TYPES.contains(x.getResourceType())).findFirst();
+
                 if (event.isPresent()) {
-                    latestEventTime = event.get().getTime();
+                    latestKeycloakEventTime = event.get().getTime();
+                    break;
+                } else if (cacheLastUpdatedTime > adminEvents.get(adminEvents.size() - 1).getTime()) {
+                    break;
                 }
-                from += size;
             }
+
+            if (latestKeycloakEventTime > cacheLastUpdatedTime) {
+                return true;
+            }
+
+            //check Events for user registration event via OKTA
+            for (int from = 0; ; from += size) {
+
+                List<EventRepresentation> events = keycloakClient.getRealm().getEvents(EVENT_TYPES,
+                        null, null, null, null, null, from, size);
+
+                Optional<EventRepresentation> event = events.stream().filter(this::isUpdateProfileEvent).findFirst();
+
+                if (event.isPresent()) {
+                    latestKeycloakEventTime = event.get().getTime();
+                    break;
+                } else if (cacheLastUpdatedTime > events.get(events.size() - 1).getTime()) {
+                    break;
+                }
+            }
+
+            if (latestKeycloakEventTime > cacheLastUpdatedTime) {
+                return true;
+            }
+
         } catch (Exception e) {
             LOG.error("Error while fetching latest event time", e);
         } finally {
             keycloakClient.getRealm().getClientSessionStats();
             RequestContext.get().endMetricRecord(metricRecorder);
         }
-        return latestEventTime;
+
+        return false;
+    }
+
+    private boolean isUpdateProfileEvent(EventRepresentation event) {
+        return MapUtils.isNotEmpty(event.getDetails()) &&
+                event.getDetails().containsKey(LOGIN_EVENT_DETAIL_KEY) &&
+                event.getDetails().get(LOGIN_EVENT_DETAIL_KEY).equals(LOGIN_EVENT_DETAIL_VALUE);
     }
 
     public RangerRoles loadRolesIfUpdated(long lastUpdatedTime) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("loadRolesIfUpdated");
 
-        long keycloakUpdateTime = getKeycloakSubjectsStoreUpdatedTime();
-        if (keycloakUpdateTime <= lastUpdatedTime) {
+        boolean isKeycloakUpdated = isKeycloakSubjectsStoreUpdated(lastUpdatedTime);
+        if (!isKeycloakUpdated) {
             LOG.info("loadRolesIfUpdated: Skipping as no update found");
             return null;
         }
@@ -180,6 +225,9 @@ public class KeycloakUserStore {
                 Optional<RangerRole> memberRole = roleSet.stream().filter(x -> KEYCLOAK_ROLE_MEMBER.equals(x.getName())).findFirst();
                 memberRole.ifPresent(rangerRole -> nonGuestUsers.addAll(rangerRole.getUsers()));
 
+                Optional<RangerRole> apiTokenDefaultAccessRole = roleSet.stream().filter(x -> KEYCLOAK_ROLE_API_TOKEN.equals(x.getName())).findFirst();
+                apiTokenDefaultAccessRole.ifPresent(rangerRole -> nonGuestUsers.addAll(rangerRole.getUsers()));
+
                 defaultUsers.removeAll(nonGuestUsers);
 
                 targetRole.get().getUsers().addAll(defaultUsers);
@@ -190,8 +238,8 @@ public class KeycloakUserStore {
     public RangerUserStore loadUserStoreIfUpdated(long lastUpdatedTime) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("loadUserStoreIfUpdated");
 
-        long keycloakUpdateTime = getKeycloakSubjectsStoreUpdatedTime();
-        if (keycloakUpdateTime <= lastUpdatedTime) {
+        boolean isKeycloakUpdated = isKeycloakSubjectsStoreUpdated(lastUpdatedTime);
+        if (!isKeycloakUpdated) {
             LOG.info("loadUserStoreIfUpdated: Skipping as no update found");
             return null;
         }

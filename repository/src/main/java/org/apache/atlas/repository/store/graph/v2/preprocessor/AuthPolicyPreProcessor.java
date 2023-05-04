@@ -57,35 +57,7 @@ import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.UP
 import static org.apache.atlas.repository.Constants.PERSONA_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.PURPOSE_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
-import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_ACCESS_CONTROL_ENABLED;
-import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_ACTIONS;
-import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_CATEGORY;
-import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_GROUPS;
-import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_RESOURCES;
-import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_RESOURCES_CATEGORY;
-import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_ROLES;
-import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_SERVICE_NAME;
-import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_SUB_CATEGORY;
-import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_TYPE;
-import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_USERS;
-import static org.apache.atlas.repository.util.AccessControlUtils.CONN_NAME_PATTERN;
-import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGORY_PERSONA;
-import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGORY_PURPOSE;
-import static org.apache.atlas.repository.util.AccessControlUtils.REL_ATTR_ACCESS_CONTROL;
-import static org.apache.atlas.repository.util.AccessControlUtils.REL_ATTR_POLICIES;
-import static org.apache.atlas.repository.util.AccessControlUtils.getConnectionForPolicy;
-import static org.apache.atlas.repository.util.AccessControlUtils.getEntityQualifiedName;
-import static org.apache.atlas.repository.util.AccessControlUtils.getIsAccessControlEnabled;
-import static org.apache.atlas.repository.util.AccessControlUtils.getPersonaRoleName;
-import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyActions;
-import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyCategory;
-import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyResourceCategory;
-import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyResources;
-import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyServiceName;
-import static org.apache.atlas.repository.util.AccessControlUtils.getPolicySubCategory;
-import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyType;
-import static org.apache.atlas.repository.util.AccessControlUtils.getPurposeTags;
-import static org.apache.atlas.repository.util.AccessControlUtils.getUUID;
+import static org.apache.atlas.repository.util.AccessControlUtils.*;
 
 public class AuthPolicyPreProcessor implements PreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(AuthPolicyPreProcessor.class);
@@ -132,6 +104,8 @@ public class AuthPolicyPreProcessor implements PreProcessor {
 
         String policyCategory = getPolicyCategory(policy);
 
+        entity.setAttribute(ATTR_POLICY_IS_ENABLED, entity.getAttributes().getOrDefault(ATTR_POLICY_IS_ENABLED, true));
+
         if (POLICY_CATEGORY_PERSONA.equals(policyCategory)) {
             AtlasEntityWithExtInfo parent = getAccessControlEntity(policy);
             AtlasEntity parentEntity = parent.getEntity();
@@ -140,7 +114,7 @@ public class AuthPolicyPreProcessor implements PreProcessor {
             validateConnectionAdmin(policy);
 
             policy.setAttribute(QUALIFIED_NAME, String.format("%s/%s", getEntityQualifiedName(parentEntity), getUUID()));
-            entity.setAttribute(ATTR_ACCESS_CONTROL_ENABLED, true);
+
 
             //extract role
             String roleName = getPersonaRoleName(parentEntity);
@@ -159,7 +133,6 @@ public class AuthPolicyPreProcessor implements PreProcessor {
             AtlasEntity parentEntity = parent.getEntity();
 
             policy.setAttribute(QUALIFIED_NAME, String.format("%s/%s", getEntityQualifiedName(parentEntity), getUUID()));
-            entity.setAttribute(ATTR_ACCESS_CONTROL_ENABLED, true);
 
             validatePurposePolicyRequest(policy, null, parentEntity, CREATE);
             //extract tags

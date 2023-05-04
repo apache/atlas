@@ -83,7 +83,7 @@
         "entity-classification:*",
         "entity-business-metadata:*"
       ],
-      "actions": ["entity-business-update-metadata"]
+      "actions": ["entity-update-business-metadata"]
     }
   ],
   "persona-entity-add-classification": [

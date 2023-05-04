@@ -378,6 +378,7 @@ public final class Constants {
     public static final String KEYCLOAK_ROLE_MEMBER  = "$member";
     public static final String KEYCLOAK_ROLE_GUEST   = "$guest";
     public static final String KEYCLOAK_ROLE_DEFAULT = "default-roles-default";
+    public static final String KEYCLOAK_ROLE_API_TOKEN = "$api-token-default-access";
 
     private Constants() {
     }
