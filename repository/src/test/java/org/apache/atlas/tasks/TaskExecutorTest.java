@@ -54,7 +54,7 @@ public class TaskExecutorTest extends BaseTaskFixture {
         TaskManagement.createTaskTypeFactoryMap(new HashMap<>(), spyingFactory);
 
         TaskManagement.Statistics statistics = new TaskManagement.Statistics();
-        new TaskExecutor(taskRegistry, taskFactoryMap, statistics, null, defaultZkRoot, false);
+        new TaskExecutor(taskRegistry, taskFactoryMap, statistics, null, null, defaultZkRoot, false);
 
         Assert.assertEquals(statistics.getTotal(), 0);
     }
@@ -66,7 +66,7 @@ public class TaskExecutorTest extends BaseTaskFixture {
         TaskManagement.createTaskTypeFactoryMap(taskFactoryMap, spyingFactory);
 
         TaskManagement.Statistics statistics = new TaskManagement.Statistics();
-        TaskExecutor taskExecutor = new TaskExecutor(taskRegistry, taskFactoryMap, statistics, null,defaultZkRoot,false);
+        TaskExecutor taskExecutor = new TaskExecutor(taskRegistry, taskFactoryMap, statistics, null, null, defaultZkRoot,false);
 
         taskManagement.createTask(SPYING_TASK_ADD, "test", Collections.emptyMap(), "testId", "testGuid");
 
@@ -87,7 +87,7 @@ public class TaskExecutorTest extends BaseTaskFixture {
         TaskManagement.Statistics statistics = new TaskManagement.Statistics();
         graph.commit();
 
-        TaskExecutor taskExecutor = new TaskExecutor(taskRegistry, taskFactoryMap, statistics, null,defaultZkRoot,false);
+        TaskExecutor taskExecutor = new TaskExecutor(taskRegistry, taskFactoryMap, statistics, null, null, defaultZkRoot,false);
 
         Thread.sleep(pollingInterval + 5000);
         Assert.assertEquals(statistics.getTotal(), 2);

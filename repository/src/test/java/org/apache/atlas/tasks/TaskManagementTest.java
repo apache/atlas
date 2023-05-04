@@ -26,7 +26,6 @@ import org.testng.Assert;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -49,14 +48,14 @@ public class TaskManagementTest extends BaseTaskFixture {
 
     @Test
     public void factoryReturningNullIsHandled() throws AtlasException {
-        TaskManagement taskManagement = new TaskManagement(null, taskRegistry, new NullFactory(),null);
+        TaskManagement taskManagement = new TaskManagement(null, taskRegistry, new NullFactory(),null, null);
         taskManagement.start();
     }
 
     @Test
     public void taskSucceedsTaskVertexRemoved() throws AtlasException, InterruptedException, AtlasBaseException {
         SpyingFactory spyingFactory = new SpyingFactory();
-        TaskManagement taskManagement = new TaskManagement(null, taskRegistry, spyingFactory,null);
+        TaskManagement taskManagement = new TaskManagement(null, taskRegistry, spyingFactory,null, null);
         taskManagement.start();
 
         AtlasTask spyTask = createTask(taskManagement, SPYING_TASK_ADD);
