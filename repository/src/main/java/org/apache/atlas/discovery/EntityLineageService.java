@@ -39,7 +39,6 @@ import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.lineage.*;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageRelation;
-import org.apache.atlas.model.lineage.AtlasLineageListInfo.LineageListEntityInfo;
 import org.apache.atlas.model.lineage.AtlasLineageOnDemandInfo.LineageInfoOnDemand;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
@@ -344,7 +343,7 @@ public class EntityLineageService implements AtlasLineageService {
     private AtlasLineageListInfo getLineageListInfoOnDemand(String guid, AtlasLineageListContext lineageListContext) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getLineageListInfoOnDemand");
 
-        AtlasLineageListInfo ret = initializeLineageListInfo(guid, new LineageListEntityInfo(lineageListContext.getSize()));
+        AtlasLineageListInfo ret = new AtlasLineageListInfo(new LinkedHashSet<>());
         AtlasVertex datasetVertex = AtlasGraphUtilsV2.findByGuid(this.graph, guid);
         traverseEdgesOnDemand(datasetVertex, lineageListContext, ret);
 
@@ -472,18 +471,18 @@ public class EntityLineageService implements AtlasLineageService {
                     enqueueNeighbours(currentVertex, isDataset, lineageListContext, traversalQueue, visitedVertices);
                     continue;
                 }
-                if (skippedVertices.contains(currentContext.getVertexGUID()))   // Already skipped pages due to offset should not be visited again via any cyclic path
+                if (skippedVertices.contains(currentContext.getVertexGUID()))   // Already skipped vertices due to offset check should not be visited again via any cyclic path
                     continue;
                 if (checkOffsetAndSkipEntity(lineageListContext, ret)) {
                     skippedVertices.add(currentContext.getVertexGUID());
                     enqueueNeighbours(currentVertex, isDataset, lineageListContext, traversalQueue, visitedVertices);
                     continue;
                 }
-                if (isPageLimitReached(ret)) {
-                    getLineageListEntityInfo(ret).setHasMore(true);
+                if (lineageListContext.isRelationsReachedLimit()) {
+                    ret.setHasMore(true);
                     break;
                 }
-                incrementTraversedEntityCounter(ret);
+                lineageListContext.incrementEntityCount();
 
                 appendToResult(currentVertex, isDataset, lineageListContext, ret);
                 enqueueNeighbours(currentVertex, isDataset, lineageListContext, traversalQueue, visitedVertices);
@@ -491,8 +490,7 @@ public class EntityLineageService implements AtlasLineageService {
             }
             currentDepth++;
         }
-        if (!traversalQueue.isEmpty())
-            getLineageListEntityInfo(ret).setHasMore(true);
+        setPageMetadata(lineageListContext, ret, traversalQueue);
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
@@ -528,24 +526,18 @@ public class EntityLineageService implements AtlasLineageService {
         }
     }
 
-    private static void incrementTraversedEntityCounter(AtlasLineageListInfo ret) {
-        getLineageListEntityInfo(ret).incrementRelationsCount();
-    }
-
     private void appendToResult(AtlasVertex currentVertex, boolean isDataset, AtlasLineageListContext lineageListContext, AtlasLineageListInfo ret) throws AtlasBaseException {
         ret.getEntities().add(new AtlasEntityHeaderLineageReponse(entityRetriever.toAtlasEntityHeaderWithClassifications(currentVertex, lineageListContext.getAttributes())));
-    }
-
-    private static boolean isPageLimitReached(AtlasLineageListInfo ret) {
-        return getLineageListEntityInfo(ret).isRelationsReachedLimit();
     }
 
     private static void addEntitiesToCache(AtlasVertex vertex) {
         GraphTransactionInterceptor.addToVertexCache(getGuid(vertex), vertex);
     }
 
-    private static LineageListEntityInfo getLineageListEntityInfo(AtlasLineageListInfo ret) {
-        return ret.getEntityInfoMap().values().stream().findFirst().get();
+    private static void setPageMetadata(AtlasLineageListContext lineageListContext, AtlasLineageListInfo ret, Queue<LineageTraversalContext> traversalQueue) {
+        if (!traversalQueue.isEmpty())
+            ret.setHasMore(true);
+        ret.setEntityCount(lineageListContext.getCurrentEntityCounter());
     }
 
     private static boolean isInputDirection(AtlasLineageListContext lineageListContext) {
@@ -568,9 +560,8 @@ public class EntityLineageService implements AtlasLineageService {
     }
 
     private boolean checkOffsetAndSkipEntity(AtlasLineageListContext atlasLineageListContext, AtlasLineageListInfo ret) {
-        LineageListEntityInfo entityLineageInfo = getLineageListEntityInfo(ret);
-        if (atlasLineageListContext.getFrom() != 0 && entityLineageInfo.getFromCounter() < atlasLineageListContext.getFrom()) {
-            entityLineageInfo.incrementFromCounter();
+        if (atlasLineageListContext.getFrom() != 0 && atlasLineageListContext.getCurrentFromCounter() < atlasLineageListContext.getFrom()) {
+            atlasLineageListContext.incrementCurrentFromCounter();
             return true;
         }
         return false;
@@ -1282,12 +1273,6 @@ public class EntityLineageService implements AtlasLineageService {
 
     private AtlasLineageOnDemandInfo initializeLineageOnDemandInfo(String guid) {
         return new AtlasLineageOnDemandInfo(guid, new HashMap<>(), new HashSet<>(), new HashSet<>(), new HashSet<>(), new HashMap<>());
-    }
-
-    private AtlasLineageListInfo initializeLineageListInfo(String baseGuid, LineageListEntityInfo lineageListEntityInfo) {
-        AtlasLineageListInfo atlasLineageListInfo = new AtlasLineageListInfo(new LinkedHashSet<>(), new HashMap<>());
-        atlasLineageListInfo.getEntityInfoMap().put(baseGuid, lineageListEntityInfo); // Limit set for pagination check
-        return atlasLineageListInfo;
     }
 
     private List executeGremlinScript(Map<String, Object> bindings, String lineageQuery) throws AtlasBaseException {

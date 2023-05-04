@@ -18,6 +18,8 @@ public final class AtlasLineageListContext {
     private Predicate                           vertexTraversalPredicate;
     private Predicate                           edgeTraversalPredicate;
     private Set<String>                         attributes;
+    private int                                 currentFromCounter;
+    private int                                 currentEntityCounter;
 
     public AtlasLineageListContext(LineageListRequest lineageListRequest, AtlasTypeRegistry typeRegistry) {
         this.guid = lineageListRequest.getGuid();
@@ -103,6 +105,22 @@ public final class AtlasLineageListContext {
         this.attributes = attributes;
     }
 
+    public int getCurrentFromCounter() {
+        return currentFromCounter;
+    }
+
+    public void setCurrentFromCounter(int currentFromCounter) {
+        this.currentFromCounter = currentFromCounter;
+    }
+
+    public int getCurrentEntityCounter() {
+        return currentEntityCounter;
+    }
+
+    public void setCurrentEntityCounter(int currentEntityCounter) {
+        this.currentEntityCounter = currentEntityCounter;
+    }
+
     protected Predicate constructInMemoryPredicate(AtlasTypeRegistry typeRegistry, SearchParameters.FilterCriteria filterCriteria) {
         LineageSearchProcessor lineageSearchProcessor = new LineageSearchProcessor();
         return lineageSearchProcessor.constructInMemoryPredicate(typeRegistry, filterCriteria);
@@ -127,5 +145,17 @@ public final class AtlasLineageListContext {
             return edgeTraversalPredicate.evaluate(edge);
         }
         return true;
+    }
+
+    public void incrementCurrentFromCounter() {
+        this.currentFromCounter++;
+    }
+
+    public boolean isRelationsReachedLimit() {
+        return this.currentEntityCounter == this.size;
+    }
+
+    public void incrementEntityCount() {
+        this.currentEntityCounter++;
     }
 }
