@@ -67,7 +67,7 @@ public interface AtlasAuthorizer {
 
     AtlasAccessorResponse getAccessors(AtlasTypeAccessRequest request);
 
-    default Set<String> getRolesForCurrentUser() {
+    default Set<String> getRolesForCurrentUser(String userName, Set<String> groups) {
         return null;
     }
 

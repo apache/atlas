@@ -262,7 +262,7 @@ public class AtlasAuthorizationUtils {
                 throw new AtlasAuthorizationException("Authorizer is null");
             }
 
-            ret = authorizer.getRolesForCurrentUser();
+            ret = authorizer.getRolesForCurrentUser(getCurrentUserName(), getCurrentUserGroups());
         } catch (AtlasAuthorizationException e) {
             LOG.error("Unable to obtain AtlasAuthorizer", e);
         }

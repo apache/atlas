@@ -527,13 +527,12 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
     }
 
     @Override
-    public Set<String> getRolesForCurrentUser() {
+    public Set<String> getRolesForCurrentUser(String userName, Set<String> groups) {
         Set<String> ret = new HashSet<>();
 
         RangerBasePlugin plugin = atlasPlugin;
-        String userName = getCurrentUserName();
 
-        ret = plugin.getRolesFromUserAndGroups(userName, getCurrentUserGroups());
+        ret = plugin.getRolesFromUserAndGroups(userName, groups);
 
         return ret;
     }
