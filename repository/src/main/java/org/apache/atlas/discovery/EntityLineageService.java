@@ -482,7 +482,7 @@ public class EntityLineageService implements AtlasLineageService {
                 }
                 lineageListContext.incrementEntityCount();
 
-                appendToResult(currentVertex, isDataset, lineageListContext, ret);
+                appendToResult(currentVertex, lineageListContext, ret);
                 enqueueNeighbours(currentVertex, isDataset, lineageListContext, traversalQueue, visitedVertices);
             }
             currentDepth++;
@@ -522,7 +522,7 @@ public class EntityLineageService implements AtlasLineageService {
         }
     }
 
-    private void appendToResult(AtlasVertex currentVertex, boolean isDataset, AtlasLineageListContext lineageListContext, AtlasLineageListInfo ret) throws AtlasBaseException {
+    private void appendToResult(AtlasVertex currentVertex, AtlasLineageListContext lineageListContext, AtlasLineageListInfo ret) throws AtlasBaseException {
         ret.getEntities().add(new AtlasEntityHeaderLineageReponse(entityRetriever.toAtlasEntityHeaderWithClassifications(currentVertex, lineageListContext.getAttributes())));
     }
 
