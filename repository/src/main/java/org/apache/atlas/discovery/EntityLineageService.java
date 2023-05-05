@@ -454,10 +454,8 @@ public class EntityLineageService implements AtlasLineageService {
 
         enqueueNeighbours(baseVertex, validateEntityTypeAndCheckIfDataSet(getGuid(baseVertex)), lineageListContext, traversalQueue, visitedVertices);
 
-        boolean isLimitReached = false;
         int currentDepth = 1;
-
-        while (!traversalQueue.isEmpty() && currentDepth <= lineageListContext.getDepth() && !isLimitReached) {
+        while (!traversalQueue.isEmpty() && currentDepth <= lineageListContext.getDepth()) {
             int entitiesInCurrentDepth = traversalQueue.size();
 
             for (int i = 0; i < entitiesInCurrentDepth; i++) {
