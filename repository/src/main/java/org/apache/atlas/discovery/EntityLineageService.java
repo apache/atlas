@@ -476,7 +476,7 @@ public class EntityLineageService implements AtlasLineageService {
                     enqueueNeighbours(currentVertex, isDataset, lineageListContext, traversalQueue, visitedVertices);
                     continue;
                 }
-                if (lineageListContext.isRelationsReachedLimit()) {
+                if (lineageListContext.isEntityLimitReached()) {
                     ret.setHasMore(true);
                     break;
                 }

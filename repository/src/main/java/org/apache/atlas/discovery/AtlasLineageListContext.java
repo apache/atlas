@@ -151,7 +151,7 @@ public final class AtlasLineageListContext {
         this.currentFromCounter++;
     }
 
-    public boolean isRelationsReachedLimit() {
+    public boolean isEntityLimitReached() {
         return this.currentEntityCounter == this.size;
     }
 
