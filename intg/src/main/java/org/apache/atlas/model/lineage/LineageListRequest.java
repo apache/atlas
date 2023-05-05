@@ -22,7 +22,6 @@ public class LineageListRequest {
     private SearchParameters.FilterCriteria entityTraversalFilters;
     private SearchParameters.FilterCriteria relationshipTraversalFilters;
     private Set<String>                     attributes;
-    private boolean                         fetchProcesses;
 
     public enum LineageDirection {INPUT, OUTPUT}
 
@@ -32,7 +31,7 @@ public class LineageListRequest {
 
     public LineageListRequest(String guid, Integer size, Integer from, Integer depth, LineageDirection direction, SearchParameters.FilterCriteria entityFilters,
                               SearchParameters.FilterCriteria entityTraversalFilters, SearchParameters.FilterCriteria relationshipTraversalFilters,
-                              Set<String> attributes, boolean fetchProcesses) {
+                              Set<String> attributes) {
         this.guid = guid;
         this.size = size;
         this.from = from;
@@ -42,7 +41,6 @@ public class LineageListRequest {
         this.entityTraversalFilters = entityTraversalFilters;
         this.relationshipTraversalFilters = relationshipTraversalFilters;
         this.attributes = attributes;
-        this.fetchProcesses = fetchProcesses;
     }
 
     public String getGuid() {
@@ -117,11 +115,4 @@ public class LineageListRequest {
         this.attributes = attributes;
     }
 
-    public boolean isFetchProcesses() {
-        return fetchProcesses;
-    }
-
-    public void setFetchProcesses(boolean fetchProcesses) {
-        this.fetchProcesses = fetchProcesses;
-    }
 }
