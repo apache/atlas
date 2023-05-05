@@ -135,7 +135,7 @@ public class LineageREST {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG))
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "LineageREST.getLineageList(" + guid + "," + lineageListRequest + ")");
 
-            return atlasLineageService.getAtlasLineageListInfo(guid, lineageListRequest);
+            return atlasLineageService.getLineageListInfo(guid, lineageListRequest);
         } finally {
             AtlasPerfTracer.log(perf);
         }

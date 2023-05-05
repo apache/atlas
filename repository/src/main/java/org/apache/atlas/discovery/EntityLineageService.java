@@ -198,12 +198,12 @@ public class EntityLineageService implements AtlasLineageService {
 
     @Override
     @GraphTransaction
-    public AtlasLineageListInfo getAtlasLineageListInfo(String guid, LineageListRequest lineageListRequest) throws AtlasBaseException {
+    public AtlasLineageListInfo getLineageListInfo(String guid, LineageListRequest lineageListRequest) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getAtlasListInfo");
 
         AtlasLineageListInfo ret = new AtlasLineageListInfo(new ArrayList<>());
-        AtlasVertex datasetVertex = AtlasGraphUtilsV2.findByGuid(this.graph, guid);
-        traverseEdgesOnDemand(datasetVertex, new AtlasLineageListContext(lineageListRequest, atlasTypeRegistry), ret);
+        AtlasVertex baseVertex = AtlasGraphUtilsV2.findByGuid(this.graph, guid);
+        traverseEdgesOnDemand(baseVertex, new AtlasLineageListContext(lineageListRequest, atlasTypeRegistry), ret);
         ret.setSearchParameters(lineageListRequest);
 
         RequestContext.get().endMetricRecord(metricRecorder);
