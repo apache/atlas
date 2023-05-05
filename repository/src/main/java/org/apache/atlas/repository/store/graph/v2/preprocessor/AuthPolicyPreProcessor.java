@@ -243,8 +243,12 @@ public class AuthPolicyPreProcessor implements PreProcessor {
             String connectionRoleName = String.format(CONN_NAME_PATTERN, connection.getGuid());
 
             Set<String> userRoles = AtlasAuthorizationUtils.getRolesForCurrentUser();
+            List<String> connRoles = (List<String>) connection.getAttribute("adminRoles");
 
-            if (!userRoles.contains(connectionRoleName) || !userRoles.contains("$admin")) {
+
+            if (userRoles.contains(connectionRoleName) || (userRoles.contains("$admin") && connRoles.contains("$admin"))) {
+                //valid connection admin
+            } else {
                 throw new AtlasBaseException(UNAUTHORIZED_CONNECTION_ADMIN, getCurrentUserName(), connection.getGuid());
             }
         }
