@@ -337,7 +337,7 @@ public class AuthPolicyPreProcessor implements PreProcessor {
 
         boolean isParentEnabled = getIsAccessControlEnabled(purpose);
         if (!isParentEnabled) {
-            throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Policy parent (accesscontrol) is disabled");
+            policy.setAttribute(ATTR_POLICY_IS_ENABLED, false);
         }
 
         if (operation == CREATE) {
@@ -369,7 +369,7 @@ public class AuthPolicyPreProcessor implements PreProcessor {
     private static void validatePersonaPolicyRequest(AtlasEntity policy, AtlasEntity existingPolicy, AtlasEntity persona, EntityOperation operation) throws AtlasBaseException {
         boolean isParentEnabled = getIsAccessControlEnabled(persona);
         if (!isParentEnabled) {
-            throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Policy parent (accesscontrol) is disabled");
+            policy.setAttribute(ATTR_POLICY_IS_ENABLED, false);
         }
 
         if (operation == CREATE) {
