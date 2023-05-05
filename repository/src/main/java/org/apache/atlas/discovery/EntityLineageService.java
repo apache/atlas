@@ -34,7 +34,6 @@ import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
-import org.apache.atlas.model.instance.AtlasEntityHeaderLineageReponse;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.lineage.*;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
@@ -203,7 +202,7 @@ public class EntityLineageService implements AtlasLineageService {
 
         AtlasLineageListInfo ret = new AtlasLineageListInfo(new ArrayList<>());
         AtlasVertex baseVertex = AtlasGraphUtilsV2.findByGuid(this.graph, guid);
-        traverseEdgesOnDemand(baseVertex, new AtlasLineageListContext(lineageListRequest, atlasTypeRegistry), ret);
+        traverseLineageUsingBFS(baseVertex, new AtlasLineageListContext(lineageListRequest, atlasTypeRegistry), ret);
         ret.setSearchParameters(lineageListRequest);
 
         RequestContext.get().endMetricRecord(metricRecorder);
@@ -313,11 +312,11 @@ public class EntityLineageService implements AtlasLineageService {
 
 
             if (direction == AtlasLineageOnDemandInfo.LineageDirection.INPUT || direction == AtlasLineageOnDemandInfo.LineageDirection.BOTH) {
-                traverseEdgesOnDemand(datasetVertex, true, depth, new HashSet<>(), atlasLineageOnDemandContext, ret, guid);
+                traverseLineageUsingBFS(datasetVertex, true, depth, new HashSet<>(), atlasLineageOnDemandContext, ret, guid);
             }
 
             if (direction == AtlasLineageOnDemandInfo.LineageDirection.OUTPUT || direction == AtlasLineageOnDemandInfo.LineageDirection.BOTH) {
-                traverseEdgesOnDemand(datasetVertex, false, depth, new HashSet<>(), atlasLineageOnDemandContext, ret, guid);
+                traverseLineageUsingBFS(datasetVertex, false, depth, new HashSet<>(), atlasLineageOnDemandContext, ret, guid);
             }
         } else  {
             AtlasVertex processVertex = AtlasGraphUtilsV2.findByGuid(this.graph, guid);
@@ -326,13 +325,13 @@ public class EntityLineageService implements AtlasLineageService {
             if (direction == AtlasLineageOnDemandInfo.LineageDirection.INPUT || direction == AtlasLineageOnDemandInfo.LineageDirection.BOTH) {
                 Iterable<AtlasEdge> processEdges = processVertex.getEdges(AtlasEdgeDirection.OUT, PROCESS_INPUTS_EDGE);
 
-                traverseEdgesOnDemand(processEdges, true, depth, atlasLineageOnDemandContext, ret, processVertex, guid);
+                traverseLineageUsingBFS(processEdges, true, depth, atlasLineageOnDemandContext, ret, processVertex, guid);
             }
 
             if (direction == AtlasLineageOnDemandInfo.LineageDirection.OUTPUT || direction == AtlasLineageOnDemandInfo.LineageDirection.BOTH) {
                 Iterable<AtlasEdge> processEdges = processVertex.getEdges(AtlasEdgeDirection.OUT, PROCESS_OUTPUTS_EDGE);
 
-                traverseEdgesOnDemand(processEdges, false, depth, atlasLineageOnDemandContext, ret, processVertex, guid);
+                traverseLineageUsingBFS(processEdges, false, depth, atlasLineageOnDemandContext, ret, processVertex, guid);
             }
 
         }
@@ -342,7 +341,7 @@ public class EntityLineageService implements AtlasLineageService {
     }
 
 
-    private void traverseEdgesOnDemand(Iterable<AtlasEdge> processEdges, boolean isInput, int depth, AtlasLineageOnDemandContext atlasLineageOnDemandContext, AtlasLineageOnDemandInfo ret, AtlasVertex processVertex, String baseGuid) throws AtlasBaseException {
+    private void traverseLineageUsingBFS(Iterable<AtlasEdge> processEdges, boolean isInput, int depth, AtlasLineageOnDemandContext atlasLineageOnDemandContext, AtlasLineageOnDemandInfo ret, AtlasVertex processVertex, String baseGuid) throws AtlasBaseException {
         AtlasLineageOnDemandInfo.LineageDirection direction = isInput ? AtlasLineageOnDemandInfo.LineageDirection.INPUT : AtlasLineageOnDemandInfo.LineageDirection.OUTPUT;
         for (AtlasEdge processEdge : processEdges) {
             AtlasVertex datasetVertex = processEdge.getInVertex();
@@ -369,11 +368,11 @@ public class EntityLineageService implements AtlasLineageService {
                 ret.getRelationsOnDemand().put(inGuid, new LineageInfoOnDemand(inGuidLineageConstrains));
             }
 
-            traverseEdgesOnDemand(datasetVertex, isInput, depth - 1, new HashSet<>(), atlasLineageOnDemandContext, ret, baseGuid);
+            traverseLineageUsingBFS(datasetVertex, isInput, depth - 1, new HashSet<>(), atlasLineageOnDemandContext, ret, baseGuid);
         }
     }
 
-    private void traverseEdgesOnDemand(AtlasVertex datasetVertex, boolean isInput, int depth, Set<String> visitedVertices, AtlasLineageOnDemandContext atlasLineageOnDemandContext, AtlasLineageOnDemandInfo ret, String baseGuid) throws AtlasBaseException {
+    private void traverseLineageUsingBFS(AtlasVertex datasetVertex, boolean isInput, int depth, Set<String> visitedVertices, AtlasLineageOnDemandContext atlasLineageOnDemandContext, AtlasLineageOnDemandInfo ret, String baseGuid) throws AtlasBaseException {
         if (depth != 0) { // base condition of recursion for depth
             AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("traverseEdgesOnDemand");
 
@@ -425,7 +424,7 @@ public class EntityLineageService implements AtlasLineageService {
                     }
 
                     if (entityVertex != null && !visitedVertices.contains(getId(entityVertex))) {
-                        traverseEdgesOnDemand(entityVertex, isInput, depth - 1, visitedVertices, atlasLineageOnDemandContext, ret, baseGuid); // execute inner depth
+                        traverseLineageUsingBFS(entityVertex, isInput, depth - 1, visitedVertices, atlasLineageOnDemandContext, ret, baseGuid); // execute inner depth
                     }
                 }
             }
@@ -434,7 +433,7 @@ public class EntityLineageService implements AtlasLineageService {
         }
     }
 
-    private void traverseEdgesOnDemand(AtlasVertex baseVertex, AtlasLineageListContext lineageListContext, AtlasLineageListInfo ret) throws AtlasBaseException {
+    private void traverseLineageUsingBFS(AtlasVertex baseVertex, AtlasLineageListContext lineageListContext, AtlasLineageListInfo ret) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("traverseEdgesOnDemand");
 
         Set<String> visitedVertices = new HashSet<>();
@@ -513,7 +512,7 @@ public class EntityLineageService implements AtlasLineageService {
     }
 
     private void appendToResult(AtlasVertex currentVertex, AtlasLineageListContext lineageListContext, AtlasLineageListInfo ret) throws AtlasBaseException {
-        ret.getEntities().add(new AtlasEntityHeaderLineageReponse(entityRetriever.toAtlasEntityHeaderWithClassifications(currentVertex, lineageListContext.getAttributes())));
+        ret.getEntities().add(entityRetriever.toAtlasEntityHeaderWithClassifications(currentVertex, lineageListContext.getAttributes()));
     }
 
     private static void addEntitiesToCache(AtlasVertex vertex) {

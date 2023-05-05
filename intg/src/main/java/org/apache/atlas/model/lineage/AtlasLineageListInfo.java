@@ -3,7 +3,7 @@ package org.apache.atlas.model.lineage;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import org.apache.atlas.model.instance.AtlasEntityHeaderLineageReponse;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -20,7 +20,7 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class AtlasLineageListInfo implements Serializable {
-    private List<AtlasEntityHeaderLineageReponse>   entities;
+    private List<AtlasEntityHeader>                 entities;
     private boolean                                 hasMore;
     private int                                     entityCount;
     private LineageListRequest                      searchParameters;
@@ -32,15 +32,15 @@ public class AtlasLineageListInfo implements Serializable {
      *
      * @param entities   list of entities
      */
-    public AtlasLineageListInfo(List<AtlasEntityHeaderLineageReponse> entities) {
+    public AtlasLineageListInfo(List<AtlasEntityHeader> entities) {
         this.entities         = entities;
     }
 
-    public List<AtlasEntityHeaderLineageReponse> getEntities() {
+    public List<AtlasEntityHeader> getEntities() {
         return entities;
     }
 
-    public void setEntities(List<AtlasEntityHeaderLineageReponse> entities) {
+    public void setEntities(List<AtlasEntityHeader> entities) {
         this.entities = entities;
     }
 
