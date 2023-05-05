@@ -54,6 +54,7 @@ import static org.apache.atlas.AtlasErrorCode.UNAUTHORIZED_CONNECTION_ADMIN;
 import static org.apache.atlas.authorize.AtlasAuthorizationUtils.getCurrentUserName;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.CREATE;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.UPDATE;
+import static org.apache.atlas.repository.Constants.KEYCLOAK_ROLE_ADMIN;
 import static org.apache.atlas.repository.Constants.PERSONA_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.PURPOSE_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
@@ -243,10 +244,14 @@ public class AuthPolicyPreProcessor implements PreProcessor {
             String connectionRoleName = String.format(CONN_NAME_PATTERN, connection.getGuid());
 
             Set<String> userRoles = AtlasAuthorizationUtils.getRolesForCurrentUser();
-            List<String> connRoles = (List<String>) connection.getAttribute("adminRoles");
+
+            List<String> connRoles = new ArrayList<>(0);
+            if (connection.hasAttribute("adminRoles")) {
+                connRoles = (List<String>) connection.getAttribute("adminRoles");
+            }
 
 
-            if (userRoles.contains(connectionRoleName) || (userRoles.contains("$admin") && connRoles.contains("$admin"))) {
+            if (userRoles.contains(connectionRoleName) || (userRoles.contains(KEYCLOAK_ROLE_ADMIN) && connRoles.contains(KEYCLOAK_ROLE_ADMIN))) {
                 //valid connection admin
             } else {
                 throw new AtlasBaseException(UNAUTHORIZED_CONNECTION_ADMIN, getCurrentUserName(), connection.getGuid());
