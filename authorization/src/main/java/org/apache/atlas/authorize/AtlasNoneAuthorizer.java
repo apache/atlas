@@ -21,6 +21,8 @@ package org.apache.atlas.authorize;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Set;
+
 
 public class AtlasNoneAuthorizer implements AtlasAuthorizer {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasNoneAuthorizer.class);
@@ -57,6 +59,11 @@ public class AtlasNoneAuthorizer implements AtlasAuthorizer {
 
     @Override
     public AtlasAccessorResponse getAccessors(AtlasTypeAccessRequest request) {
+        return null;
+    }
+
+    @Override
+    public Set<String> getRolesForCurrentUser(String userName, Set<String> groups) {
         return null;
     }
 
