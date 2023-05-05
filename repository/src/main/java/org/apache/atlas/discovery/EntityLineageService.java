@@ -198,7 +198,7 @@ public class EntityLineageService implements AtlasLineageService {
 
     @Override
     @GraphTransaction
-    public AtlasLineageListInfo getLineageListInfo(String guid, LineageListRequest lineageListRequest) throws AtlasBaseException {
+    public AtlasLineageListInfo getLineageListInfoOnDemand(String guid, LineageListRequest lineageListRequest) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getAtlasListInfo");
 
         AtlasLineageListInfo ret = new AtlasLineageListInfo(new ArrayList<>());

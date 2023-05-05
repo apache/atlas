@@ -78,6 +78,6 @@ public interface AtlasLineageService {
      * @param lineageListRequest lineage list request object
      * @return AtlasLineageListInfo
      */
-    AtlasLineageListInfo getLineageListInfo(String entityGuid, LineageListRequest lineageListRequest) throws AtlasBaseException;
+    AtlasLineageListInfo getLineageListInfoOnDemand(String entityGuid, LineageListRequest lineageListRequest) throws AtlasBaseException;
 
 }
