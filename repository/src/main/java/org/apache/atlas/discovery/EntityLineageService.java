@@ -201,8 +201,9 @@ public class EntityLineageService implements AtlasLineageService {
     public AtlasLineageListInfo getAtlasLineageListInfo(String guid, LineageListRequest lineageListRequest) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getAtlasListInfo");
 
-        AtlasLineageListContext atlasLineageOnDemandContext = new AtlasLineageListContext(lineageListRequest, atlasTypeRegistry);
-        AtlasLineageListInfo ret = getLineageListInfoOnDemand(guid, atlasLineageOnDemandContext);
+        AtlasLineageListInfo ret = new AtlasLineageListInfo(new ArrayList<>());
+        AtlasVertex datasetVertex = AtlasGraphUtilsV2.findByGuid(this.graph, guid);
+        traverseEdgesOnDemand(datasetVertex, new AtlasLineageListContext(lineageListRequest, atlasTypeRegistry), ret);
         ret.setSearchParameters(lineageListRequest);
 
         RequestContext.get().endMetricRecord(metricRecorder);
@@ -340,17 +341,6 @@ public class EntityLineageService implements AtlasLineageService {
         return ret;
     }
 
-    private AtlasLineageListInfo getLineageListInfoOnDemand(String guid, AtlasLineageListContext lineageListContext) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getLineageListInfoOnDemand");
-
-        AtlasLineageListInfo ret = new AtlasLineageListInfo(new LinkedHashSet<>());
-        AtlasVertex datasetVertex = AtlasGraphUtilsV2.findByGuid(this.graph, guid);
-        traverseEdgesOnDemand(datasetVertex, lineageListContext, ret);
-
-        RequestContext.get().endMetricRecord(metricRecorder);
-        return ret;
-    }
-
 
     private void traverseEdgesOnDemand(Iterable<AtlasEdge> processEdges, boolean isInput, int depth, AtlasLineageOnDemandContext atlasLineageOnDemandContext, AtlasLineageOnDemandInfo ret, AtlasVertex processVertex, String baseGuid) throws AtlasBaseException {
         AtlasLineageOnDemandInfo.LineageDirection direction = isInput ? AtlasLineageOnDemandInfo.LineageDirection.INPUT : AtlasLineageOnDemandInfo.LineageDirection.OUTPUT;
@@ -453,8 +443,8 @@ public class EntityLineageService implements AtlasLineageService {
         Queue<String> traversalQueue = new LinkedList<>();
 
         enqueueNeighbours(baseVertex, validateEntityTypeAndCheckIfDataSet(getGuid(baseVertex)), lineageListContext, traversalQueue, visitedVertices);
-
         int currentDepth = 1;
+
         while (!traversalQueue.isEmpty() && currentDepth <= lineageListContext.getDepth()) {
             int entitiesInCurrentDepth = traversalQueue.size();
 

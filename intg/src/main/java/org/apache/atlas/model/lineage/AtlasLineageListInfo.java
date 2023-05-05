@@ -20,7 +20,7 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class AtlasLineageListInfo implements Serializable {
-    private Set<AtlasEntityHeaderLineageReponse>    entities;
+    private List<AtlasEntityHeaderLineageReponse>   entities;
     private boolean                                 hasMore;
     private int                                     entityCount;
     private LineageListRequest                      searchParameters;
@@ -32,15 +32,15 @@ public class AtlasLineageListInfo implements Serializable {
      *
      * @param entities   list of entities
      */
-    public AtlasLineageListInfo(Set<AtlasEntityHeaderLineageReponse> entities) {
+    public AtlasLineageListInfo(List<AtlasEntityHeaderLineageReponse> entities) {
         this.entities         = entities;
     }
 
-    public Set<AtlasEntityHeaderLineageReponse> getEntities() {
+    public List<AtlasEntityHeaderLineageReponse> getEntities() {
         return entities;
     }
 
-    public void setEntities(Set<AtlasEntityHeaderLineageReponse> entities) {
+    public void setEntities(List<AtlasEntityHeaderLineageReponse> entities) {
         this.entities = entities;
     }
 
