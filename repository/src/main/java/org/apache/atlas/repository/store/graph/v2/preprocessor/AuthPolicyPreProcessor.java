@@ -335,11 +335,6 @@ public class AuthPolicyPreProcessor implements PreProcessor {
 
     private static void validatePurposePolicyRequest(AtlasEntity policy, AtlasEntity existingPolicy, AtlasEntity purpose, EntityOperation operation) throws AtlasBaseException {
 
-        boolean isParentEnabled = getIsAccessControlEnabled(purpose);
-        if (!isParentEnabled) {
-            policy.setAttribute(ATTR_POLICY_IS_ENABLED, false);
-        }
-
         if (operation == CREATE) {
             if (!AtlasEntity.Status.ACTIVE.equals(purpose.getStatus())) {
                 throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Purpose is not Active");
@@ -367,11 +362,6 @@ public class AuthPolicyPreProcessor implements PreProcessor {
     }
 
     private static void validatePersonaPolicyRequest(AtlasEntity policy, AtlasEntity existingPolicy, AtlasEntity persona, EntityOperation operation) throws AtlasBaseException {
-        boolean isParentEnabled = getIsAccessControlEnabled(persona);
-        if (!isParentEnabled) {
-            policy.setAttribute(ATTR_POLICY_IS_ENABLED, false);
-        }
-
         if (operation == CREATE) {
             if (!AtlasEntity.Status.ACTIVE.equals(persona.getStatus())) {
                 throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Persona is not Active");
