@@ -492,7 +492,7 @@ public class EntityLineageService implements AtlasLineageService {
 
         while (edges.hasNext()) {
             AtlasEdge currentEdge = edges.next();
-            if (!edgeMatchesEvaluation(currentEdge, lineageListContext))
+            if (!lineageListContext.evaluateTraversalFilter(currentEdge))
                 continue;
             AtlasVertex neighbourVertex;
             if (isDataset)
@@ -1177,10 +1177,6 @@ public class EntityLineageService implements AtlasLineageService {
 
     private boolean edgeMatchesEvaluation(AtlasEdge currentEdge, AtlasLineageOnDemandContext atlasLineageOnDemandContext) {
         return atlasLineageOnDemandContext.evaluate(currentEdge);
-    }
-
-    private boolean edgeMatchesEvaluation(AtlasEdge currentEdge, AtlasLineageListContext atlasLineageListContext) {
-        return atlasLineageListContext.evaluateTraversalFilter(currentEdge);
     }
 
     private boolean shouldProcessEdge(AtlasLineageContext lineageContext, AtlasEdge edge) {
