@@ -22,6 +22,7 @@ import org.apache.atlas.RequestContext;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.featureflag.FeatureFlagStore;
 import org.apache.atlas.keycloak.client.KeycloakClient;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.IndexSearchParams;
@@ -66,6 +67,8 @@ import static org.apache.atlas.repository.Constants.POLICY_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.PREFIX_QUERY_QN;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.getUUID;
+import static org.apache.atlas.repository.util.AccessControlUtils.checkAccessControlFeatureStatus;
+import static org.apache.atlas.repository.util.AccessControlUtils.checkAccessControlFeatureStatusForUpdate;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 
 public class QueryCollectionPreProcessor implements PreProcessor {
@@ -80,15 +83,18 @@ public class QueryCollectionPreProcessor implements PreProcessor {
     private AtlasEntityStore entityStore;
     private EntityDiscoveryService discovery;
     private PreProcessorPoliciesTransformer transformer;
+    private FeatureFlagStore featureFlagStore;
     private KeycloakStore keycloakStore;
 
     public QueryCollectionPreProcessor(AtlasTypeRegistry typeRegistry,
                                        EntityDiscoveryService discovery,
                                        EntityGraphRetriever entityRetriever,
+                                       FeatureFlagStore featureFlagStore,
                                        AtlasEntityStore entityStore) {
         this.entityRetriever = entityRetriever;
         this.typeRegistry = typeRegistry;
         this.entityStore = entityStore;
+        this.featureFlagStore = featureFlagStore;
         this.discovery = discovery;
 
         transformer = new PreProcessorPoliciesTransformer();
@@ -116,6 +122,10 @@ public class QueryCollectionPreProcessor implements PreProcessor {
     }
 
     private void processCreate(AtlasStruct entity) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processCreateCollection");
+
+        checkAccessControlFeatureStatus(featureFlagStore);
+
         entity.setAttribute(QUALIFIED_NAME, createQualifiedName());
 
         AtlasEntity collection = (AtlasEntity) entity;
@@ -137,10 +147,14 @@ public class QueryCollectionPreProcessor implements PreProcessor {
                 RequestContext.get().setPoliciesBootstrappingInProgress(false);
             }
         }
+
+        RequestContext.get().endMetricRecord(metricRecorder);
     }
 
     private void processUpdate(AtlasStruct entity, AtlasVertex vertex) throws AtlasBaseException {
         String vertexQnName = vertex.getProperty(QUALIFIED_NAME, String.class);
+
+        checkAccessControlFeatureStatusForUpdate(featureFlagStore, entity, vertex);
 
         if (ATLAS_AUTHORIZER_IMPL.equalsIgnoreCase(CURRENT_AUTHORIZER_IMPL)) {
             AtlasEntity collection = (AtlasEntity) entity;
@@ -157,6 +171,7 @@ public class QueryCollectionPreProcessor implements PreProcessor {
     @Override
     public void processDelete(AtlasVertex vertex) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processDeleteCollection");
+        checkAccessControlFeatureStatus(featureFlagStore);
 
         try {
             AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = entityRetriever.toAtlasEntityWithExtInfo(vertex);

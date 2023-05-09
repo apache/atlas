@@ -32,6 +32,7 @@ import org.apache.atlas.authorize.AtlasEntityAccessRequest.AtlasEntityAccessRequ
 import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.featureflag.FeatureFlagStore;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.*;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
@@ -138,10 +139,12 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     private final TaskManagement             taskManagement;
     private EntityDiscoveryService discovery;
     private final AtlasRelationshipStore atlasRelationshipStore;
+    private final FeatureFlagStore featureFlagStore;
 
     @Inject
     public AtlasEntityStoreV2(AtlasGraph graph, DeleteHandlerDelegate deleteDelegate, RestoreHandlerV1 restoreHandlerV1, AtlasTypeRegistry typeRegistry,
-                              IAtlasEntityChangeNotifier entityChangeNotifier, EntityGraphMapper entityGraphMapper, TaskManagement taskManagement, AtlasRelationshipStore atlasRelationshipStore) {
+                              IAtlasEntityChangeNotifier entityChangeNotifier, EntityGraphMapper entityGraphMapper, TaskManagement taskManagement,
+                              AtlasRelationshipStore atlasRelationshipStore, FeatureFlagStore featureFlagStore) {
         this.graph                = graph;
         this.deleteDelegate       = deleteDelegate;
         this.restoreHandlerV1     = restoreHandlerV1;
@@ -153,6 +156,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         this.graphHelper          = new GraphHelper(graph);
         this.taskManagement = taskManagement;
         this.atlasRelationshipStore = atlasRelationshipStore;
+        this.featureFlagStore = featureFlagStore;
+
         try {
             this.discovery = new EntityDiscoveryService(typeRegistry, graph, null, null, null, null);
         } catch (AtlasException e) {
@@ -1684,7 +1689,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 break;
 
             case QUERY_COLLECTION_ENTITY_TYPE:
-                preProcessor = new QueryCollectionPreProcessor(typeRegistry, discovery, entityRetriever, this);
+                preProcessor = new QueryCollectionPreProcessor(typeRegistry, discovery, entityRetriever, featureFlagStore, this);
                 break;
 
             case PERSONA_ENTITY_TYPE:
@@ -1700,9 +1705,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 break;
 
             case CONNECTION_ENTITY_TYPE:
-                if (ATLAS_AUTHORIZER_IMPL.equalsIgnoreCase(CURRENT_AUTHORIZER_IMPL)) {
-                    preProcessor = new ConnectionPreProcessor(graph, discovery, entityRetriever, this);
-                }
+                preProcessor = new ConnectionPreProcessor(graph, discovery, entityRetriever, featureFlagStore, this);
                 break;
         }
 

@@ -279,7 +279,7 @@ public enum AtlasErrorCode {
 
     INDEX_ALIAS_FAILED(400, "ATLAS-400-00-108", "Error occurred while {0} ES alias: {1}"),
     JSON_ERROR(400, "ATLAS-400-00-109", "Error occurred putting object into JSONObject: {0}"),
-    RANGER_ROLE_MUTATION_FAILED(400, "ATLAS-400-00-110", "Failed to {0} Ranger role {1}: {2}");
+    DISABLED_OPERATION(400, "ATLAS-400-00-110", "This operation is temporarily disabled as it is under maintenance.");
 
 
     private String errorCode;

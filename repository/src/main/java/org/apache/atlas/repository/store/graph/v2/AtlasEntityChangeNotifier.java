@@ -60,7 +60,8 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static org.apache.atlas.featureflag.AtlasFeatureFlagConfig.*;
+import static org.apache.atlas.featureflag.AtlasFeatureFlagClient.INSTANCE_DOMAIN_NAME;
+import static org.apache.atlas.featureflag.FeatureFlagStore.FeatureFlag.ENABLE_LINEAGE_EVENTS;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.PROPAGATED_CLASSIFICATION_ADD;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.PROPAGATED_CLASSIFICATION_DELETE;
 import static org.apache.atlas.repository.Constants.ENTITY_TEXT_PROPERTY_KEY;
@@ -79,7 +80,7 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
     private final FeatureFlagStore            featureFlagStore;
     private static final List<String> ALLOWED_RELATIONSHIP_TYPES = Arrays.asList(AtlasConfiguration.SUPPORTED_RELATIONSHIP_EVENTS.getStringArray());
     private static final List<String> ALLOWED_LINEAGE_RELATIONSHIP_TYPES_VIA_FEATURE_FLAG = Arrays.asList(AtlasConfiguration.SUPPORTED_LINEAGE_RELATIONSHIP_EVENTS_VIA_FEATURE_FLAG.getStringArray());
-    private final static String LINEAGE_EVENTS_FEATURE_FLAG_KEY =  "metastore-enable-lineage-events-for-pipeline";
+
     @Inject
     public AtlasEntityChangeNotifier(Set<EntityChangeListener> entityChangeListeners,
                                      Set<EntityChangeListenerV2> entityChangeListenersV2,
@@ -152,7 +153,7 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
     }
 
     private boolean isLineageBasedEventsEnabled() {
-        return featureFlagStore.evaluate(LINEAGE_EVENTS_FEATURE_FLAG_KEY, INSTANCE_DOMAIN_NAME);
+        return featureFlagStore.evaluate(ENABLE_LINEAGE_EVENTS, ENABLE_LINEAGE_EVENTS.getKey(), INSTANCE_DOMAIN_NAME);
     }
 
     @Override
