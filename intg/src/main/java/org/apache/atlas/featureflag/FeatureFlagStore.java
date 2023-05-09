@@ -31,9 +31,9 @@ public interface FeatureFlagStore {
         ENABLE_LINEAGE_EVENTS(LINEAGE_EVENTS_FEATURE_FLAG_KEY, false);
 
         private final String key;
-        private final Object defaultValue;
+        private final boolean defaultValue;
 
-        FeatureFlag(String key, Object defaultValue) {
+        FeatureFlag(String key, boolean defaultValue) {
             this.key = key;
             this.defaultValue = defaultValue;
         }
@@ -42,7 +42,7 @@ public interface FeatureFlagStore {
             return key;
         }
 
-        public Object getDefaultValue() {
+        public boolean getDefaultValue() {
             return defaultValue;
         }
     }

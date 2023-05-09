@@ -423,9 +423,7 @@ public final class AccessControlUtils {
     }
 
     public static void checkAccessControlFeatureStatus(FeatureFlagStore featureFlagStore) throws AtlasBaseException {
-        boolean isDisabled = getAccessControlFeatureFlag(featureFlagStore);
-
-        if (isDisabled) {
+        if (getAccessControlFeatureFlag(featureFlagStore)) {
             throw new AtlasBaseException(DISABLED_OPERATION);
         }
     }

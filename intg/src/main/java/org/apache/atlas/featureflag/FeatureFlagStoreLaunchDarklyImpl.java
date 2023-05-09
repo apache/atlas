@@ -19,24 +19,26 @@ package org.apache.atlas.featureflag;
 
 import com.launchdarkly.sdk.LDContext;
 import com.launchdarkly.sdk.server.LDClient;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
-@Service
+import javax.inject.Inject;
+
+@Component
 public class FeatureFlagStoreLaunchDarklyImpl implements FeatureFlagStore {
 
     private final LDClient client;
 
-    public FeatureFlagStoreLaunchDarklyImpl() {
-        this.client = AtlasFeatureFlagClient.getClient();
+    @Inject
+    public FeatureFlagStoreLaunchDarklyImpl(AtlasFeatureFlagClient client) {
+        this.client = client.getClient();
     }
 
     @Override
     public boolean evaluate(FeatureFlag flag, String key, boolean value) {
         boolean ret;
         try {
-            boolean defaultValue = (Boolean) flag.getDefaultValue();
-
-            ret = client.boolVariation(flag.getKey(), getContext(key, value), defaultValue);
+            ret = client.boolVariation(flag.getKey(), getContext(key, value), flag.getDefaultValue());
         } catch (Exception e) {
             return false;
         }
@@ -48,9 +50,7 @@ public class FeatureFlagStoreLaunchDarklyImpl implements FeatureFlagStore {
     public boolean evaluate(FeatureFlag flag, String key, String value) {
         boolean ret;
         try {
-            boolean defaultValue = (Boolean) flag.getDefaultValue();
-
-            ret = client.boolVariation(flag.getKey(), getContext(key, value), defaultValue);
+            ret = client.boolVariation(flag.getKey(), getContext(key, value), flag.getDefaultValue());
         } catch (Exception e) {
             return false;
         }

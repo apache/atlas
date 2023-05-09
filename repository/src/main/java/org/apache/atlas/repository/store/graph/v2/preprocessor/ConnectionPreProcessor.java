@@ -147,7 +147,7 @@ public class ConnectionPreProcessor implements PreProcessor {
                 RequestContext.get().setPoliciesBootstrappingInProgress(true);
                 EntityStream entityStream = new AtlasEntityStream(policies);
                 entityStore.createOrUpdate(entityStream, false);
-                LOG.info("Created bootstrap policies for connection");
+                LOG.info("Created bootstrap policies for connection {}", connection.getAttribute(QUALIFIED_NAME));
             } finally {
                 RequestContext.get().setPoliciesBootstrappingInProgress(false);
             }

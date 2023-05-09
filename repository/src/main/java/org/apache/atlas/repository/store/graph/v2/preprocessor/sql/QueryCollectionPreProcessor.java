@@ -124,31 +124,34 @@ public class QueryCollectionPreProcessor implements PreProcessor {
     private void processCreate(AtlasStruct entity) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processCreateCollection");
 
-        checkAccessControlFeatureStatus(featureFlagStore);
+        try {
+            checkAccessControlFeatureStatus(featureFlagStore);
 
-        entity.setAttribute(QUALIFIED_NAME, createQualifiedName());
 
-        AtlasEntity collection = (AtlasEntity) entity;
+            entity.setAttribute(QUALIFIED_NAME, createQualifiedName());
 
-        if (ATLAS_AUTHORIZER_IMPL.equalsIgnoreCase(CURRENT_AUTHORIZER_IMPL)) {
+            AtlasEntity collection = (AtlasEntity) entity;
 
-            createCollectionAdminRole(collection);
-            createCollectionViewerRole(collection);
+            if (ATLAS_AUTHORIZER_IMPL.equalsIgnoreCase(CURRENT_AUTHORIZER_IMPL)) {
 
-            //create bootstrap policies
-            AtlasEntity.AtlasEntitiesWithExtInfo policies = transformer.transform(collection);
+                createCollectionAdminRole(collection);
+                createCollectionViewerRole(collection);
 
-            try {
-                RequestContext.get().setPoliciesBootstrappingInProgress(true);
-                EntityStream entityStream = new AtlasEntityStream(policies);
-                entityStore.createOrUpdate(entityStream, false);
-                LOG.info("Created bootstrap policies for connection");
-            } finally {
-                RequestContext.get().setPoliciesBootstrappingInProgress(false);
+                //create bootstrap policies
+                AtlasEntity.AtlasEntitiesWithExtInfo policies = transformer.transform(collection);
+
+                try {
+                    RequestContext.get().setPoliciesBootstrappingInProgress(true);
+                    EntityStream entityStream = new AtlasEntityStream(policies);
+                    entityStore.createOrUpdate(entityStream, false);
+                    LOG.info("Created bootstrap policies for collection {}", entity.getAttribute(QUALIFIED_NAME));
+                } finally {
+                    RequestContext.get().setPoliciesBootstrappingInProgress(false);
+                }
             }
+        } finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
         }
-
-        RequestContext.get().endMetricRecord(metricRecorder);
     }
 
     private void processUpdate(AtlasStruct entity, AtlasVertex vertex) throws AtlasBaseException {
