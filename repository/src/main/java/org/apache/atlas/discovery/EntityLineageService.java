@@ -510,7 +510,7 @@ public class EntityLineageService implements AtlasLineageService {
     }
 
     private void appendToResult(AtlasVertex currentVertex, AtlasLineageListContext lineageListContext, AtlasLineageListInfo ret) throws AtlasBaseException {
-        ret.getEntities().add(entityRetriever.toAtlasEntityHeaderWithClassifications(currentVertex, lineageListContext.getAttributes()));
+        ret.getEntities().add(entityRetriever.toAtlasEntityHeader(currentVertex, lineageListContext.getAttributes()));
     }
 
     private static void addEntitiesToCache(AtlasVertex vertex) {

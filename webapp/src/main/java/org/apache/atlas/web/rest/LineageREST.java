@@ -21,6 +21,7 @@ package org.apache.atlas.web.rest;
 
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.discovery.AtlasLineageService;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -130,6 +131,9 @@ public class LineageREST {
         String guid = lineageListRequest.getGuid();
         Servlets.validateQueryParamLength("guid", guid);
         AtlasPerfTracer  perf = null;
+
+        RequestContext.get().setIncludeMeanings(!lineageListRequest.isExcludeMeanings());
+        RequestContext.get().setIncludeClassifications(!lineageListRequest.isExcludeClassifications());
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG))
