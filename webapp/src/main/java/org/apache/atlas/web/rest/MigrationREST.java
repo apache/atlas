@@ -435,6 +435,8 @@ public class MigrationREST {
                 Optional<UserRepresentation> keyUserOptional = matchedUsers.stream().filter(x -> user.equals(x.getUsername())).findFirst();
                 if (keyUserOptional.isPresent()) {
                     return keyUserOptional.get();
+                } else {
+                    LOG.warn("User {} not found in keycloak", user);
                 }
                 return null;
             }).filter(Objects::nonNull).collect(Collectors.toList());
@@ -446,6 +448,8 @@ public class MigrationREST {
                 Optional<GroupRepresentation> keyGroupOptional = matchedGroups.stream().filter(x -> group.equals(x.getName())).findFirst();
                 if (keyGroupOptional.isPresent()) {
                     return keyGroupOptional.get();
+                } else {
+                    LOG.warn("Group {} not found in keycloak", group);
                 }
                 return null;
             }).filter(Objects::nonNull).collect(Collectors.toList());
@@ -457,6 +461,8 @@ public class MigrationREST {
                 Optional<RoleRepresentation> keyRoleOptional = matchedRoles.stream().filter(x -> role.equals(x.getId())).findFirst();
                 if (keyRoleOptional.isPresent()) {
                     return keyRoleOptional.get();
+                } else  {
+                    LOG.warn("Role {} not found in keycloak", role);    
                 }
                 return null;
             }).filter(Objects::nonNull).collect(Collectors.toList());
