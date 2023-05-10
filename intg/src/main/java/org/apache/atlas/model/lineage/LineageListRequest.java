@@ -33,7 +33,7 @@ public class LineageListRequest {
 
     public LineageListRequest(String guid, Integer size, Integer from, Integer depth, LineageDirection direction, SearchParameters.FilterCriteria entityFilters,
                               SearchParameters.FilterCriteria entityTraversalFilters, SearchParameters.FilterCriteria relationshipTraversalFilters,
-                              Set<String> attributes) {
+                              Set<String> attributes, boolean excludeMeanings, boolean excludeClassifications) {
         this.guid = guid;
         this.size = size;
         this.from = from;
@@ -43,6 +43,8 @@ public class LineageListRequest {
         this.entityTraversalFilters = entityTraversalFilters;
         this.relationshipTraversalFilters = relationshipTraversalFilters;
         this.attributes = attributes;
+        this.excludeMeanings = excludeMeanings;
+        this.excludeClassifications = excludeClassifications;
     }
 
     public String getGuid() {
