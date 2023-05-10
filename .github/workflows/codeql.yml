@@ -35,6 +35,11 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
+    - name: Use Java version
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'adopt' # See 'Supported distributions' for available options
+        java-version: '8'
 
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
