@@ -442,10 +442,12 @@ public class EntityLineageService implements AtlasLineageService {
         enqueueNeighbours(baseVertex, validateEntityTypeAndCheckIfDataSet(baseGuid), lineageListContext, traversalQueue, visitedVertices, skippedVertices);
         int currentDepth = 1;
 
-        while (!traversalQueue.isEmpty() && currentDepth <= lineageListContext.getDepth() && !lineageListContext.isEntityLimitReached()) {
+        while (!traversalQueue.isEmpty() && currentDepth <= lineageListContext.getDepth()) {
             int entitiesInCurrentDepth = traversalQueue.size();
-
             for (int i = 0; i < entitiesInCurrentDepth; i++) {
+                if (lineageListContext.isEntityLimitReached())
+                    break;
+
                 String currentGUID = traversalQueue.poll();
                 AtlasVertex currentVertex = AtlasGraphUtilsV2.findByGuid(this.graph, currentGUID);
                 if (Objects.isNull(currentVertex))
@@ -461,19 +463,22 @@ public class EntityLineageService implements AtlasLineageService {
                     enqueueNeighbours(currentVertex, isDataset, lineageListContext, traversalQueue, visitedVertices, skippedVertices);
                     continue;
                 }
-                if (lineageListContext.isEntityLimitReached()) {
-                    ret.setHasMore(true);
-                    break;
-                }
-                lineageListContext.incrementEntityCount();
 
+                lineageListContext.incrementEntityCount();
                 appendToResult(currentVertex, lineageListContext, ret);
                 enqueueNeighbours(currentVertex, isDataset, lineageListContext, traversalQueue, visitedVertices, skippedVertices);
+                if (isLastEntityInLastDepth(lineageListContext.getDepth(), currentDepth, entitiesInCurrentDepth, i)) {
+                    ret.setHasMore(false);
+                    lineageListContext.setHasMoreUpdated(true);
+                }
             }
+            if (lineageListContext.isEntityLimitReached())
+                break;
             currentDepth++;
         }
         if (currentDepth > lineageListContext.getDepth())
             lineageListContext.setDepthLimitReached(true);
+
         setPageMetadata(lineageListContext, ret, traversalQueue);
         RequestContext.get().endMetricRecord(metricRecorder);
     }
@@ -518,11 +523,20 @@ public class EntityLineageService implements AtlasLineageService {
     }
 
     private static void setPageMetadata(AtlasLineageListContext lineageListContext, AtlasLineageListInfo ret, Queue<String> traversalQueue) {
+        if (!lineageListContext.isHasMoreUpdated())
+            updateHasMore(lineageListContext, ret, traversalQueue);
+        ret.setEntityCount(lineageListContext.getCurrentEntityCounter());
+    }
+
+    private static void updateHasMore(AtlasLineageListContext lineageListContext, AtlasLineageListInfo ret, Queue<String> traversalQueue) {
         if (!traversalQueue.isEmpty())
             ret.setHasMore(true);
         if (lineageListContext.isDepthLimitReached())
             ret.setHasMore(false);
-        ret.setEntityCount(lineageListContext.getCurrentEntityCounter());
+    }
+
+    private static boolean isLastEntityInLastDepth(int lastDepth, int currentDepth, int entitiesInCurrentDepth, int i) {
+        return i == entitiesInCurrentDepth - 1 && currentDepth == lastDepth;
     }
 
     private static boolean isInputDirection(AtlasLineageListContext lineageListContext) {
