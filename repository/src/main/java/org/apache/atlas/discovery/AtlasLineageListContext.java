@@ -20,6 +20,7 @@ public final class AtlasLineageListContext {
     private Set<String>                         attributes;
     private int                                 currentFromCounter;
     private int                                 currentEntityCounter;
+    private boolean                             depthLimitReached;
 
     public AtlasLineageListContext(LineageListRequest lineageListRequest, AtlasTypeRegistry typeRegistry) {
         this.guid = lineageListRequest.getGuid();
@@ -31,6 +32,7 @@ public final class AtlasLineageListContext {
         this.vertexTraversalPredicate = constructInMemoryPredicate(typeRegistry, lineageListRequest.getEntityTraversalFilters());
         this.edgeTraversalPredicate = constructInMemoryPredicate(typeRegistry, lineageListRequest.getRelationshipTraversalFilters());
         this.attributes = lineageListRequest.getAttributes();
+        this.depthLimitReached = false;
     }
 
     public String getGuid() {
@@ -157,5 +159,13 @@ public final class AtlasLineageListContext {
 
     public void incrementEntityCount() {
         this.currentEntityCounter++;
+    }
+
+    public boolean isDepthLimitReached() {
+        return depthLimitReached;
+    }
+
+    public void setDepthLimitReached(boolean depthLimitReached) {
+        this.depthLimitReached = depthLimitReached;
     }
 }
