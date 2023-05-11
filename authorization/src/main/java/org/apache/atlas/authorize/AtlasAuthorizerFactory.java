@@ -21,6 +21,7 @@ package org.apache.atlas.authorize;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.authorize.simple.AtlasSimpleAuthorizer;
+import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -33,10 +34,14 @@ public class AtlasAuthorizerFactory {
     private static final String NONE_AUTHORIZER   = AtlasNoneAuthorizer.class.getName();
     private static final String SIMPLE_AUTHORIZER = AtlasSimpleAuthorizer.class.getName();
     private static final String RANGER_AUTHORIZER = "org.apache.ranger.authorization.atlas.authorizer.RangerAtlasAuthorizer";
+    private static final String ATLAS_AUTHORIZER = "org.apache.atlas.authorization.atlas.authorizer.RangerAtlasAuthorizer";
 
     private static volatile AtlasAuthorizer INSTANCE = null;
 
-    public static AtlasAuthorizer getAtlasAuthorizer() throws AtlasAuthorizationException {
+    public static String CURRENT_AUTHORIZER_IMPL;
+    public static final String ATLAS_AUTHORIZER_IMPL = "atlas";
+
+    public static AtlasAuthorizer getAtlasAuthorizer(AtlasTypeRegistry typeRegistry) throws AtlasAuthorizationException {
         AtlasAuthorizer ret = INSTANCE;
 
         if (ret == null) {
@@ -50,14 +55,17 @@ public class AtlasAuthorizerFactory {
                         LOG.error("Exception while fetching configuration", e);
                     }
 
-                    String authorizerClass = configuration != null ? configuration.getString("atlas.authorizer.impl") : "SIMPLE";
+                    CURRENT_AUTHORIZER_IMPL = configuration != null ? configuration.getString("atlas.authorizer.impl") : "SIMPLE";
+                    String authorizerClass = RANGER_AUTHORIZER;
 
-                    if (StringUtils.isNotEmpty(authorizerClass)) {
-                        if (StringUtils.equalsIgnoreCase(authorizerClass, "SIMPLE")) {
+                    if (StringUtils.isNotEmpty(CURRENT_AUTHORIZER_IMPL)) {
+                        if (StringUtils.equalsIgnoreCase(CURRENT_AUTHORIZER_IMPL, "SIMPLE")) {
                             authorizerClass = SIMPLE_AUTHORIZER;
-                        } else if (StringUtils.equalsIgnoreCase(authorizerClass, "RANGER")) {
+                        } else if (StringUtils.equalsIgnoreCase(CURRENT_AUTHORIZER_IMPL, "RANGER")) {
                             authorizerClass = RANGER_AUTHORIZER;
-                        } else if (StringUtils.equalsIgnoreCase(authorizerClass, "NONE")) {
+                        } else if (StringUtils.equalsIgnoreCase(CURRENT_AUTHORIZER_IMPL, ATLAS_AUTHORIZER_IMPL)) {
+                            authorizerClass = ATLAS_AUTHORIZER;
+                        } else if (StringUtils.equalsIgnoreCase(CURRENT_AUTHORIZER_IMPL, "NONE")) {
                             authorizerClass = NONE_AUTHORIZER;
                         }
                     } else {
@@ -72,7 +80,11 @@ public class AtlasAuthorizerFactory {
                         if (authorizerMetaObject != null) {
                             INSTANCE = (AtlasAuthorizer) authorizerMetaObject.newInstance();
 
-                            INSTANCE.init();
+                            if (StringUtils.equalsIgnoreCase(CURRENT_AUTHORIZER_IMPL, ATLAS_AUTHORIZER_IMPL)) {
+                                INSTANCE.init(typeRegistry);
+                            } else {
+                                INSTANCE.init();
+                            }
                         }
                     } catch (Exception e) {
                         LOG.error("Error while creating authorizer of type {}", authorizerClass, e);
@@ -86,5 +98,9 @@ public class AtlasAuthorizerFactory {
         }
 
         return ret;
+    }
+
+    public static AtlasAuthorizer getAtlasAuthorizer() throws AtlasAuthorizationException {
+        return INSTANCE;
     }
 }

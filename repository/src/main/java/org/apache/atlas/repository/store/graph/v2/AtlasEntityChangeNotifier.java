@@ -76,7 +76,6 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
     private final boolean                     isV2EntityNotificationEnabled;
     private static final List<String> ALLOWED_RELATIONSHIP_TYPES = Arrays.asList(AtlasConfiguration.SUPPORTED_RELATIONSHIP_EVENTS.getStringArray());
 
-
     @Inject
     public AtlasEntityChangeNotifier(Set<EntityChangeListener> entityChangeListeners,
                                      Set<EntityChangeListenerV2> entityChangeListenersV2,
@@ -125,6 +124,7 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
         if (CollectionUtils.isEmpty(entityChangeListeners)) {
             return;
         }
+
         relationships = relationships.stream().filter(r -> ALLOWED_RELATIONSHIP_TYPES.contains(r.getTypeName())).collect(Collectors.toList());
         if (CollectionUtils.isEmpty(relationships))
             return;

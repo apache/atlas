@@ -26,6 +26,7 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.repository.Constants;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
@@ -35,6 +36,7 @@ import java.util.Set;
 
 @Component
 @EnableConditional(property = "atlas.enable.entity.stats")
+@Order(8)
 public class EntityStatsListenerV2 implements EntityChangeListenerV2 {
 
     private final StatsClient statsClient;

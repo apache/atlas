@@ -7,25 +7,21 @@ import org.apache.atlas.type.AtlasType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
-
+@JsonIgnoreProperties(ignoreUnknown=true)
 public class IndexSearchParams extends SearchParams {
     private static final Logger LOG = LoggerFactory.getLogger(IndexSearchParams.class);
 
-    private static final Pattern pattern = Pattern.compile("(?<=\").+?(?=\")");
-
     private Map dsl;
+    private String purpose;
+    private String persona;
     private String queryString;
 
     /*
@@ -55,6 +51,22 @@ public class IndexSearchParams extends SearchParams {
         this.allowDeletedRelations = allowDeletedRelations;
     }
 
+    public String getPurpose() {
+        return purpose;
+    }
+
+    public void setPurpose(String purpose) {
+        this.purpose = purpose;
+    }
+
+    public String getPersona() {
+        return persona;
+    }
+
+    public void setPersona(String persona) {
+        this.persona = persona;
+    }
+
     public void setRelationAttributes(Set<String> relationAttributes) {
         this.relationAttributes = relationAttributes;
     }
@@ -62,10 +74,11 @@ public class IndexSearchParams extends SearchParams {
     @Override
     public String toString() {
         return "IndexSearchParams{" +
-                "dsl='" + dsl + '\'' +
+                "dsl=" + dsl +
+                ", purpose='" + purpose + '\'' +
+                ", persona='" + persona + '\'' +
                 ", queryString='" + queryString + '\'' +
-                ", attributes=" + attributes +
-                ", relationAttributes=" + relationAttributes +
+                ", allowDeletedRelations=" + allowDeletedRelations +
                 '}';
     }
 }

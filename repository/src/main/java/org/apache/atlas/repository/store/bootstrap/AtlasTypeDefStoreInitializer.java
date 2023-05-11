@@ -103,7 +103,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
 
     @Inject
     public AtlasTypeDefStoreInitializer(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry,
-                                        AtlasGraph graph, Configuration conf, AtlasPatchManager patchManager) {
+                                        AtlasGraph graph, Configuration conf, AtlasPatchManager patchManager) throws AtlasBaseException {
         this.typeDefStore  = typeDefStore;
         this.typeRegistry  = typeRegistry;
         this.conf          = conf;
@@ -383,7 +383,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
             loadBootstrapTypeDefs();
             typeDefStore.notifyLoadCompletion();
             try {
-                AtlasAuthorizerFactory.getAtlasAuthorizer();
+                AtlasAuthorizerFactory.getAtlasAuthorizer(typeRegistry);
             } catch (Throwable t) {
                 LOG.error("AtlasTypeDefStoreInitializer.instanceIsActive(): Unable to obtain AtlasAuthorizer", t);
             }

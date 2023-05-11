@@ -152,6 +152,12 @@
 
         <dependency>
             <groupId>org.apache.atlas</groupId>
+            <artifactId>auth-plugin-atlas</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-janusgraph-hbase2</artifactId>
             <version>${project.version}</version>
             <exclusions>

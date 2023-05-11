@@ -197,6 +197,11 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
     }
 
     @Override
+    public Set<String> getRolesForCurrentUser(String userName, Set<String> groups) {
+        return null;
+    }
+
+    @Override
     public boolean isAccessAllowed(AtlasRelationshipAccessRequest request) throws AtlasAuthorizationException {
         final Set<String> roles                       = getRoles(request.getUser(), request.getUserGroups());
         final String      relationShipType            = request.getRelationshipType();

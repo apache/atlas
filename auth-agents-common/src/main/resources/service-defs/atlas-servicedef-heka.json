@@ -1,0 +1,244 @@
+{
+  "name": "heka",
+  "displayName": "heka",
+  "implClass": "com.heka.ranger.service.RangerServiceHeka",
+  "label": "Heka",
+  "description": "Heka",
+  "id": 204,
+  "guid": "379a9fe5-1b6e-4091-a584-4890e245e6c2",
+  "isEnabled": true,
+  "createdBy": "Admin",
+  "updatedBy": "Admin",
+  "version": 1,
+  "options": { "enableDenyAndExceptionsInPolicies": "true" },
+  "configs": [
+    {
+      "itemId": 1,
+      "name": "service_url",
+      "type": "string",
+      "mandatory": true,
+      "validationRegEx": "",
+      "validationMessage": "",
+      "uiHint": "",
+      "label": "Service Url"
+    }
+  ],
+  "resources": [
+    {
+      "itemId": 1,
+      "name": "entity-type",
+      "type": "string",
+      "level": 10,
+      "mandatory": true,
+      "lookupSupported": false,
+      "recursiveSupported": false,
+      "excludesSupported": true,
+      "matcher": "org.apache.atlas.plugin.resourcematcher.RangerDefaultResourceMatcher",
+      "matcherOptions": { "wildCard": "true", "ignoreCase": "false" },
+      "validationRegEx": "",
+      "validationMessage": "",
+      "uiHint": "",
+      "label": "Entity Type",
+      "description": "Entity Type",
+      "accessTypeRestrictions": [],
+      "isValidLeaf": true
+    },
+    {
+      "itemId": 2,
+      "name": "entity",
+      "type": "string",
+      "level": 20,
+      "parent": "entity-type",
+      "mandatory": true,
+      "lookupSupported": false,
+      "recursiveSupported": false,
+      "excludesSupported": true,
+      "matcher": "org.apache.atlas.plugin.resourcematcher.RangerDefaultResourceMatcher",
+      "matcherOptions": { "wildCard": "true", "ignoreCase": "true" },
+      "validationRegEx": "",
+      "validationMessage": "",
+      "uiHint": "",
+      "label": "Entity ID",
+      "description": "Entity ID",
+      "accessTypeRestrictions": [],
+      "isValidLeaf": true
+    }
+  ],
+  "accessTypes": [
+    { "itemId": 1, "name": "select", "label": "Select", "impliedGrants": [] },
+    {
+      "itemId": 12,
+      "name": "all",
+      "label": "All",
+      "impliedGrants": ["select"]
+    }
+  ],
+  "policyConditions": [],
+  "contextEnrichers": [],
+  "enums": [],
+  "dataMaskDef": {
+    "maskTypes": [
+      {
+        "itemId": 1,
+        "name": "MASK_REDACT",
+        "label": "Redact",
+        "description": "Replace lowercase with \u0027x\u0027, uppercase with \u0027X\u0027, digits with \u00270\u0027",
+        "transformer": "cast(regexp_replace(regexp_replace(regexp_replace({col},\u0027([A-Z])\u0027, \u0027X\u0027),\u0027([a-z])\u0027,\u0027x\u0027),\u0027([0-9])\u0027,\u00270\u0027) as {type})",
+        "dataMaskOptions": {}
+      },
+      {
+        "itemId": 2,
+        "name": "MASK_SHOW_LAST_4",
+        "label": "Partial mask: show last 4",
+        "description": "Show last 4 characters; replace rest with \u0027X\u0027",
+        "transformer": "cast(concat(regexp_replace(RIGHT({col}, -4), \u0027.\u0027, \u0027X\u0027)), regexp_replace({col}, \u0027(.*)(.{4}$)\u0027, \u0027\\2\u0027)) as {type})",
+        "dataMaskOptions": {}
+      },
+      {
+        "itemId": 3,
+        "name": "MASK_SHOW_FIRST_4",
+        "label": "Partial mask: show first 4",
+        "description": "Show first 4 characters; replace rest with \u0027x\u0027",
+        "transformer": "cast(regexp_replace({col}, \u0027(^.{4})(.*)\u0027, \u0027\\1XXXX\u0027) as {type})",
+        "dataMaskOptions": {}
+      },
+      {
+        "itemId": 4,
+        "name": "MASK_HASH",
+        "label": "Hash",
+        "description": "Hash the value of a varchar with sha256",
+        "transformer": "cast(md5({col}) as {type})",
+        "dataMaskOptions": {}
+      },
+      {
+        "itemId": 5,
+        "name": "MASK_NULL",
+        "label": "Nullify",
+        "description": "Replace with NULL",
+        "dataMaskOptions": {}
+      },
+      {
+        "itemId": 6,
+        "name": "MASK_NONE",
+        "label": "Unmasked (retain original value)",
+        "description": "No masking",
+        "dataMaskOptions": {}
+      },
+      {
+        "itemId": 12,
+        "name": "MASK_DATE_SHOW_YEAR",
+        "label": "Date: show only year",
+        "description": "Date: show only year",
+        "transformer": "YEAR({col})",
+        "dataMaskOptions": {}
+      },
+      {
+        "itemId": 13,
+        "name": "CUSTOM",
+        "label": "Custom",
+        "description": "Custom",
+        "dataMaskOptions": {}
+      }
+    ],
+    "accessTypes": [
+      {
+        "itemId": 1,
+        "name": "select",
+        "label": "Select",
+        "impliedGrants": []
+      }
+    ],
+    "resources": [
+      {
+        "itemId": 1,
+        "name": "entity-type",
+        "type": "string",
+        "level": 10,
+        "mandatory": true,
+        "lookupSupported": false,
+        "recursiveSupported": false,
+        "excludesSupported": true,
+        "matcher": "org.apache.atlas.plugin.resourcematcher.RangerDefaultResourceMatcher",
+        "matcherOptions": { "wildCard": "true", "ignoreCase": "false" },
+        "validationRegEx": "",
+        "validationMessage": "",
+        "uiHint": "",
+        "label": "Entity Type",
+        "description": "Entity Type",
+        "accessTypeRestrictions": [],
+        "isValidLeaf": true
+      },
+      {
+        "itemId": 2,
+        "name": "entity",
+        "type": "string",
+        "level": 20,
+        "parent": "entity-type",
+        "mandatory": true,
+        "lookupSupported": false,
+        "recursiveSupported": false,
+        "excludesSupported": true,
+        "matcher": "org.apache.atlas.plugin.resourcematcher.RangerDefaultResourceMatcher",
+        "matcherOptions": { "wildCard": "true", "ignoreCase": "true" },
+        "validationRegEx": "",
+        "validationMessage": "",
+        "uiHint": "",
+        "label": "Entity ID",
+        "description": "Entity ID",
+        "accessTypeRestrictions": [],
+        "isValidLeaf": true
+      }
+    ]
+  },
+  "rowFilterDef": {
+    "accessTypes": [
+      {
+        "itemId": 1,
+        "name": "select",
+        "label": "Select",
+        "impliedGrants": []
+      }
+    ],
+    "resources": [
+      {
+        "itemId": 1,
+        "name": "entity-type",
+        "type": "string",
+        "level": 10,
+        "mandatory": true,
+        "lookupSupported": false,
+        "recursiveSupported": false,
+        "excludesSupported": false,
+        "matcher": "org.apache.atlas.plugin.resourcematcher.RangerDefaultResourceMatcher",
+        "matcherOptions": { "wildCard": "true", "ignoreCase": "false" },
+        "validationRegEx": "",
+        "validationMessage": "",
+        "uiHint": "{ \"singleValue\":true }",
+        "label": "Entity Type",
+        "description": "Entity Type",
+        "accessTypeRestrictions": [],
+        "isValidLeaf": false
+      },
+      {
+        "itemId": 2,
+        "name": "entity",
+        "type": "string",
+        "level": 20,
+        "parent": "entity-type",
+        "mandatory": true,
+        "lookupSupported": false,
+        "recursiveSupported": false,
+        "excludesSupported": false,
+        "matcher": "org.apache.atlas.plugin.resourcematcher.RangerDefaultResourceMatcher",
+        "matcherOptions": { "wildCard": "true", "ignoreCase": "true" },
+        "validationRegEx": "",
+        "validationMessage": "",
+        "uiHint": "{ \"singleValue\":true }",
+        "label": "Entity ID",
+        "description": "Entity ID",
+        "accessTypeRestrictions": [],
+        "isValidLeaf": true
+      }
+    ]
+  }
+}

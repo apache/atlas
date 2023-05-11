@@ -1,0 +1,94 @@
+{
+  "id":100,
+  "name": "tag",
+  "displayName": "tag",
+  "implClass": "org.apache.atlas.services.tag.RangerServiceTag",
+  "label": "TAG",
+  "description": "TAG Service Definition",
+  "guid": "0d047248-baff-4cf9-8e9e-d5d377284b2e",
+  "options":
+  {
+    "ui.pages":"tag-based-policies"
+  },
+  "resources":
+  [
+    {
+      "itemId":1,
+      "name": "tag",
+      "type": "string",
+      "level": 1,
+      "parent": "",
+      "mandatory": true,
+      "lookupSupported": true,
+      "recursiveSupported": false,
+      "excludesSupported": false,
+      "matcher": "org.apache.atlas.plugin.resourcematcher.RangerDefaultResourceMatcher",
+      "matcherOptions": { "wildCard":false, "ignoreCase":false },
+      "validationRegEx":"",
+      "validationMessage": "",
+      "uiHint":"{ \"singleValue\":true }",
+      "label": "TAG",
+      "description": "TAG"
+    }
+  ],
+
+  "accessTypes":
+  [
+
+  ],
+
+  "configs":
+  [
+    {
+      "itemId":1,
+      "name": "ranger.plugin.audit.filters",
+      "type": "string",
+      "subType": "",
+      "mandatory": false,
+      "validationRegEx":"",
+      "validationMessage": "",
+      "uiHint":"",
+      "label": "Ranger Default Audit Filters",
+      "defaultValue": "[ {'accessResult': 'DENIED', 'isAudited': true} ]"
+    }
+  ],
+
+  "enums":
+  [
+
+  ],
+
+  "contextEnrichers":
+  [
+    {
+      "itemId": 1,
+      "name" : "TagEnricher",
+      "enricher" : "org.apache.atlas.plugin.contextenricher.RangerTagEnricher",
+      "enricherOptions" : {
+        "tagRetrieverClassName": "org.apache.atlas.plugin.contextenricher.RangerAdminTagRetriever",
+        "tagRefresherPollingInterval": 60000
+      }
+    }
+  ],
+
+  "policyConditions":
+  [
+    {
+      "itemId":1,
+      "name":"accessed-after-expiry",
+      "evaluator": "org.apache.atlas.plugin.conditionevaluator.RangerScriptTemplateConditionEvaluator",
+      "evaluatorOptions" : { "scriptTemplate":"ctx.isAccessedAfter('expiry_date');" },
+      "uiHint": "{ \"singleValue\":true }",
+      "label":"Accessed after expiry_date (yes/no)?",
+      "description": "Accessed after expiry_date? (yes/no)"
+    },
+    {
+      "itemId":2,
+      "name":"expression",
+      "evaluator": "org.apache.atlas.plugin.conditionevaluator.RangerScriptConditionEvaluator",
+      "evaluatorOptions" : {"engineName":"JavaScript", "ui.isMultiline":"true"},
+      "label":"Enter boolean expression",
+      "description": "Boolean expression"
+    }
+  ]
+}

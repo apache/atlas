@@ -372,11 +372,6 @@ public class EntityGraphMapper {
                     AtlasVertex vertex = context.getVertex(guid);
                     AtlasEntityType entityType = context.getType(guid);
 
-                    PreProcessor preProcessor = getPreProcessor(entityType.getTypeName());
-                    if (preProcessor != null) {
-                        preProcessor.processAttributes(createdEntity, context, CREATE);
-                    }
-
                     mapAttributes(createdEntity, entityType, vertex, CREATE, context);
                     mapRelationshipAttributes(createdEntity, entityType, vertex, CREATE, context);
 
@@ -431,11 +426,6 @@ public class EntityGraphMapper {
                     String          guid       = updatedEntity.getGuid();
                     AtlasVertex     vertex     = context.getVertex(guid);
                     AtlasEntityType entityType = context.getType(guid);
-
-                    PreProcessor preProcessor = getPreProcessor(entityType.getTypeName());
-                    if (preProcessor != null) {
-                        preProcessor.processAttributes(updatedEntity, context, UPDATE);
-                    }
 
                     mapAttributes(updatedEntity, entityType, vertex, updateType, context);
                     mapRelationshipAttributes(updatedEntity, entityType, vertex, UPDATE, context);
@@ -550,39 +540,6 @@ public class EntityGraphMapper {
         }
 
         exception.setEntityGuid(guid);
-    }
-
-    public PreProcessor getPreProcessor(String typeName) throws AtlasBaseException {
-        PreProcessor preProcessor = null;
-
-        switch (typeName) {
-            case ATLAS_GLOSSARY_ENTITY_TYPE:
-                preProcessor = new GlossaryPreProcessor(typeRegistry, entityRetriever);
-                break;
-
-            case ATLAS_GLOSSARY_TERM_ENTITY_TYPE:
-                preProcessor = new TermPreProcessor(typeRegistry, entityRetriever, graph, taskManagement);
-                break;
-
-            case ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE:
-                preProcessor = new CategoryPreProcessor(typeRegistry, entityRetriever);
-                break;
-
-            case QUERY_ENTITY_TYPE:
-                preProcessor = new QueryPreProcessor(typeRegistry, entityRetriever);
-                break;
-
-            case QUERY_FOLDER_ENTITY_TYPE:
-                preProcessor = new QueryFolderPreProcessor(typeRegistry, entityRetriever);
-                break;
-
-            case QUERY_COLLECTION_ENTITY_TYPE:
-                preProcessor = new QueryCollectionPreProcessor(typeRegistry, entityRetriever);
-                break;
-
-        }
-
-        return preProcessor;
     }
 
     public void setCustomAttributes(AtlasVertex vertex, AtlasEntity entity) {
