@@ -441,7 +441,6 @@ public class EntityLineageService implements AtlasLineageService {
         AtlasVertex baseVertex = AtlasGraphUtilsV2.findByGuid(this.graph, baseGuid);
         enqueueNeighbours(baseVertex, validateEntityTypeAndCheckIfDataSet(baseGuid), lineageListContext, traversalQueue, visitedVertices, skippedVertices);
         int currentDepth = 1;
-        boolean depthLimitReached = false;
 
         while (!traversalQueue.isEmpty() && currentDepth <= lineageListContext.getDepth() && !lineageListContext.isEntityLimitReached()) {
             int entitiesInCurrentDepth = traversalQueue.size();
