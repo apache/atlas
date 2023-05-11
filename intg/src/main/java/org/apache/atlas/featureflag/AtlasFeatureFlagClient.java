@@ -18,7 +18,6 @@
 package org.apache.atlas.featureflag;
 
 import com.launchdarkly.sdk.server.*;
-import org.apache.atlas.exception.AtlasBaseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
