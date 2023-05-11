@@ -32,7 +32,6 @@ public final class AtlasLineageListContext {
         this.vertexTraversalPredicate = constructInMemoryPredicate(typeRegistry, lineageListRequest.getEntityTraversalFilters());
         this.edgeTraversalPredicate = constructInMemoryPredicate(typeRegistry, lineageListRequest.getRelationshipTraversalFilters());
         this.attributes = lineageListRequest.getAttributes();
-        this.depthLimitReached = false;
     }
 
     public String getGuid() {
