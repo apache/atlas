@@ -380,6 +380,9 @@ public final class Constants {
     public static final String KEYCLOAK_ROLE_DEFAULT = "default-roles-default";
     public static final String KEYCLOAK_ROLE_API_TOKEN = "$api-token-default-access";
 
+    public static final String REQUEST_HEADER_USER_AGENT = "User-Agent";
+    public static final String REQUEST_HEADER_HOST       = "Host";
+
     private Constants() {
     }
 

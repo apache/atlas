@@ -351,6 +351,11 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
     }
 
     @Override
+    public void scrubSearchResults(AtlasSearchResultScrubRequest request, boolean isScrubAuditEnabled) throws AtlasAuthorizationException {
+        scrubSearchResults(request);
+    }
+
+    @Override
     public void filterTypesDef(AtlasTypesDefFilterRequest request) throws AtlasAuthorizationException {
         AtlasTypesDef typesDef = request.getTypesDef();
 

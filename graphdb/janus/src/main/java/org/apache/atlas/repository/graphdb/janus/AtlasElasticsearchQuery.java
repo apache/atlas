@@ -87,6 +87,11 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         this(graph, restClient, index, null);
     }
 
+    public AtlasElasticsearchQuery(String index, RestClient restClient) {
+        this.lowLevelRestClient = restClient;
+        this.index = index;
+    }
+
     private SearchRequest getSearchRequest(String index, SearchSourceBuilder sourceBuilder) {
         SearchRequest searchRequest = new SearchRequest(index);
         searchRequest.source(sourceBuilder);
@@ -119,7 +124,7 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
 
         try {
 
-            String responseString =  performDirectIndexQuery(searchParams.getQuery());
+            String responseString =  performDirectIndexQuery(searchParams.getQuery(), false);
             if (LOG.isDebugEnabled()) {
                 LOG.debug("runQueryWithLowLevelClient.response : {}", responseString);
             }
@@ -134,10 +139,42 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         return result;
     }
 
-    private String performDirectIndexQuery(String query) throws AtlasBaseException, IOException {
-        HttpEntity entity = new NStringEntity(query, ContentType.APPLICATION_JSON);
+    private Map<String, Object> runQueryWithLowLevelClient(String query) throws AtlasBaseException {
+        Map<String, Object> ret = new HashMap<>();
+        try {
+            String responseString = performDirectIndexQuery(query, true);
 
-        String endPoint = index + "/_search?_source=false";
+            Map<String, LinkedHashMap> responseMap = AtlasType.fromJson(responseString, Map.class);
+            Map<String, LinkedHashMap> hits_0 = AtlasType.fromJson(AtlasType.toJson(responseMap.get("hits")), Map.class);
+
+            ret.put("total", hits_0.get("total").get("value"));
+
+            List<LinkedHashMap> hits_1 = AtlasType.fromJson(AtlasType.toJson(hits_0.get("hits")), List.class);
+            ret.put("data", hits_1);
+
+            Map<String, Object> aggregationsMap = (Map<String, Object>) responseMap.get("aggregations");
+
+            if (MapUtils.isNotEmpty(aggregationsMap)) {
+                ret.put("aggregations", aggregationsMap);
+            }
+
+            return ret;
+
+        } catch (IOException e) {
+            LOG.error("Failed to execute direct query on ES {}", e.getMessage());
+            throw new AtlasBaseException(AtlasErrorCode.INDEX_SEARCH_FAILED, e.getMessage());
+        }
+    }
+
+    private String performDirectIndexQuery(String query, boolean source) throws AtlasBaseException, IOException {
+        HttpEntity entity = new NStringEntity(query, ContentType.APPLICATION_JSON);
+        String endPoint;
+
+        if (source) {
+            endPoint = index + "/_search";
+        } else {
+            endPoint = index + "/_search?_source=false";
+        }
 
         Request request = new Request("GET", endPoint);
         request.setEntity(entity);
@@ -182,6 +219,11 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
     @Override
     public DirectIndexQueryResult<AtlasJanusVertex, AtlasJanusEdge> vertices(SearchParams searchParams) throws AtlasBaseException {
         return runQueryWithLowLevelClient(searchParams);
+    }
+
+    @Override
+    public Map<String, Object> directIndexQuery(String query) throws AtlasBaseException {
+        return runQueryWithLowLevelClient(query);
     }
 
     @Override
