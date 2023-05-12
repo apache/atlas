@@ -60,7 +60,7 @@ public final class AtlasLineageListContext {
     }
 
     public Integer getDepth() {
-        return depth;
+        return 2*depth;
     }
 
     public void setDepth(Integer depth) {

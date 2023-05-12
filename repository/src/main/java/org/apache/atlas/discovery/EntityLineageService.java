@@ -535,8 +535,8 @@ public class EntityLineageService implements AtlasLineageService {
             ret.setHasMore(false);
     }
 
-    private static boolean isLastEntityInLastDepth(int lastDepth, int currentDepth, int entitiesInCurrentDepth, int i) {
-        return i == entitiesInCurrentDepth - 1 && currentDepth == lastDepth;
+    private static boolean isLastEntityInLastDepth(int lastDepth, int currentDepth, int entitiesInCurrentDepth, int entityIndexInCurrentDepth) {
+        return entityIndexInCurrentDepth == entitiesInCurrentDepth - 1 && currentDepth == lastDepth;
     }
 
     private static boolean isInputDirection(AtlasLineageListContext lineageListContext) {
