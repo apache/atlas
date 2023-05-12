@@ -60,7 +60,7 @@ public final class AtlasLineageListContext {
     }
 
     public Integer getDepth() {
-        return 2*depth;
+        return 2*depth; // Clients assume depth limit at node level
     }
 
     public void setDepth(Integer depth) {
