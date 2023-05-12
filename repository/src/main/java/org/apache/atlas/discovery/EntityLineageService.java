@@ -440,9 +440,10 @@ public class EntityLineageService implements AtlasLineageService {
 
         AtlasVertex baseVertex = AtlasGraphUtilsV2.findByGuid(this.graph, baseGuid);
         enqueueNeighbours(baseVertex, validateEntityTypeAndCheckIfDataSet(baseGuid), lineageListContext, traversalQueue, visitedVertices, skippedVertices);
-        int currentDepth = 1;
+        int currentDepth = 0;
 
-        while (!traversalQueue.isEmpty() && currentDepth <= lineageListContext.getDepth()) {
+        while (!traversalQueue.isEmpty() && !lineageListContext.isEntityLimitReached() && currentDepth < lineageListContext.getDepth()) {
+            currentDepth++;
             int entitiesInCurrentDepth = traversalQueue.size();
             for (int i = 0; i < entitiesInCurrentDepth; i++) {
                 if (lineageListContext.isEntityLimitReached())
@@ -472,9 +473,6 @@ public class EntityLineageService implements AtlasLineageService {
                     lineageListContext.setHasMoreUpdated(true);
                 }
             }
-            if (lineageListContext.isEntityLimitReached())
-                break;
-            currentDepth++;
         }
         if (currentDepth > lineageListContext.getDepth())
             lineageListContext.setDepthLimitReached(true);
