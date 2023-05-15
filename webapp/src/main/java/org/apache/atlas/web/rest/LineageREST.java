@@ -21,15 +21,13 @@ package org.apache.atlas.web.rest;
 
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.discovery.AtlasLineageService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
-import org.apache.atlas.model.lineage.AtlasLineageInfo;
+import org.apache.atlas.model.lineage.*;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
-import org.apache.atlas.model.lineage.AtlasLineageOnDemandInfo;
-import org.apache.atlas.model.lineage.AtlasLineageRequest;
-import org.apache.atlas.model.lineage.LineageOnDemandRequest;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -113,6 +111,40 @@ public class LineageREST {
             AtlasPerfTracer.log(perf);
         }
     }
+
+    /**
+     * Returns lineage list info about entity.
+     * @return AtlasLineageListInfo
+     * @throws AtlasBaseException
+     * @HTTP 200 If Lineage exists for the given entity
+     * @HTTP 400 Bad query parameters
+     */
+    @POST
+    @Path("/list")
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Timed
+    public AtlasLineageListInfo getLineageList(LineageListRequest lineageListRequest) throws AtlasBaseException {
+        if (lineageListRequest.getGuid() == null)
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Base guid cannot be null");
+
+        String guid = lineageListRequest.getGuid();
+        Servlets.validateQueryParamLength("guid", guid);
+        AtlasPerfTracer  perf = null;
+
+        RequestContext.get().setIncludeMeanings(!lineageListRequest.isExcludeMeanings());
+        RequestContext.get().setIncludeClassifications(!lineageListRequest.isExcludeClassifications());
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG))
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "LineageREST.getLineageList(" + guid + "," + lineageListRequest + ")");
+
+            return atlasLineageService.getLineageListInfoOnDemand(guid, lineageListRequest);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
 
     /**
      * Returns lineage info about entity.
