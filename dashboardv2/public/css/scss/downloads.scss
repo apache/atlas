@@ -16,9 +16,10 @@
 
 .downloads-panel {
     width: 25%;
+    max-width: 450px;
     position: fixed;
     top: 65px;
-    right: -400px;
+    right: -700px;
     color: #686868;
     font-size: 16px;
     z-index: 999;
