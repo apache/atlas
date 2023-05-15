@@ -140,15 +140,13 @@ define(['require',
                 this.ui.downloadsPanel.css("right", "20px");
             },
             onHideDownloads: function() {
-                this.ui.downloadsPanel.css("right", "-400px")
+                this.ui.downloadsPanel.css("right", "-700px")
             },
             showLoader: function() {
                 this.$('.downloadListLoader').show();
-                this.$('.downloadListOverlay').show();
             },
             hideLoader: function(options) {
                 this.$('.downloadListLoader').hide();
-                this.$('.downloadListOverlay').hide();
             }
         });
     return DownloadSearchResultLayoutView;
