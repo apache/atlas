@@ -41,6 +41,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -72,28 +73,21 @@ public class CreateHiveProcess extends BaseHiveEvent {
         if (!skipProcess()) {
             List<AtlasEntity> inputs              = new ArrayList<>();
             List<AtlasEntity> outputs             = new ArrayList<>();
-            Set<String>       processedInputNames = new HashSet<>();
-            Set<String>       processedOutputNames = new HashSet<>();
+            Set<String>       processedNames      = new HashSet<>();
 
             ret = new AtlasEntitiesWithExtInfo();
+
+            Map<String, Entity> inputByQualifiedName = new HashMap<>();
+            Map<String, Entity> outputByQualifiedName = new HashMap<>();
 
             if (getInputs() != null) {
                 for (ReadEntity input : getInputs()) {
                     String qualifiedName = getQualifiedName(input);
 
-                    if (qualifiedName == null || !processedInputNames.add(qualifiedName)) {
+                    if (qualifiedName == null) {
                         continue;
                     }
-
-                    AtlasEntity entity = getInputOutputEntity(input, ret, skipTempTables);
-
-                    if (!input.isDirect()) {
-                        continue;
-                    }
-
-                    if (entity != null) {
-                        inputs.add(entity);
-                    }
+                    inputByQualifiedName.put(qualifiedName, input);
                 }
             }
 
@@ -101,24 +95,50 @@ public class CreateHiveProcess extends BaseHiveEvent {
                 for (WriteEntity output : getOutputs()) {
                     String qualifiedName = getQualifiedName(output);
 
-                    if (qualifiedName == null || !processedOutputNames.add(qualifiedName)) {
+                    if (qualifiedName == null) {
                         continue;
                     }
+                    outputByQualifiedName.put(qualifiedName, output);
+                }
+            }
 
-                    AtlasEntity entity = getInputOutputEntity(output, ret, skipTempTables);
+            for (String outputQualifiedName : outputByQualifiedName.keySet()) {
+                WriteEntity output = (WriteEntity) outputByQualifiedName.get(outputQualifiedName);
+                AtlasEntity entity = getInputOutputEntity(output, ret, skipTempTables);
 
-                    if (entity != null) {
-                        outputs.add(entity);
+                if (checkIfOnlySelfLineagePossible(outputQualifiedName, inputByQualifiedName) || !processedNames.add(outputQualifiedName)) {
+                    continue;
+                }
+
+                if (entity != null) {
+                    outputs.add(entity);
+                }
+
+                if (isDdlOperation(entity)) {
+
+                    AtlasEntity ddlEntity = createHiveDDLEntity(entity);
+
+                    if (ddlEntity != null) {
+                        ret.addEntity(ddlEntity);
                     }
+                }
+            }
 
-                    if (isDdlOperation(entity)) {
+            for (String inputQualifiedName : inputByQualifiedName.keySet()) {
+                ReadEntity input   = (ReadEntity) inputByQualifiedName.get(inputQualifiedName);
 
-                        AtlasEntity ddlEntity = createHiveDDLEntity(entity);
+                if (!processedNames.add(inputQualifiedName)) {
+                    continue;
+                }
 
-                        if (ddlEntity != null) {
-                            ret.addEntity(ddlEntity);
-                        }
-                    }
+                AtlasEntity entity = getInputOutputEntity(input, ret, skipTempTables);
+
+                if (!input.isDirect()) {
+                    continue;
+                }
+
+                if (entity != null) {
+                    inputs.add(entity);
                 }
             }
 
@@ -149,6 +169,10 @@ public class CreateHiveProcess extends BaseHiveEvent {
         }
 
         return ret;
+    }
+
+    private boolean checkIfOnlySelfLineagePossible(String outputQualifiedName, Map<String, Entity> inputByQualifiedName) {
+        return inputByQualifiedName.size() == 1 && inputByQualifiedName.containsKey(outputQualifiedName);
     }
 
     private void processColumnLineage(AtlasEntity hiveProcess, AtlasEntitiesWithExtInfo entities) {
