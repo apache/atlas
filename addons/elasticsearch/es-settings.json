@@ -1,7 +1,7 @@
 {
   "mapping" : {
     "total_fields" : {
-      "limit" : "1500"
+      "limit" : "2000"
     },
     "nested_objects" : {
       "limit" : "100000"
