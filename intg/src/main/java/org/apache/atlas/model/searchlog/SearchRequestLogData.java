@@ -54,14 +54,14 @@ public class SearchRequestLogData {
     private long created;
     private long timestamp;
 
-    public SearchRequestLogData(Map<String, Object> dsl, Set<String> attributes, Set<String> relationAttributes,
+    public SearchRequestLogData(Set<String> attributes, Set<String> relationAttributes,
                                 String userAgent, String host, String ipAddress, String userName,
                                 String errorDetails, String errorCode,
                                 Set<String> entityGuidsAll, Set<String> entityQFNamesAll, Set<String> entityGuidsAllowed,
                                 Set<String> entityQFNamesAllowed, Set<String> entityGuidsDenied,
                                 Set<String> entityQFNamesDenied, Set<String> utmTags, boolean hasResult, boolean isFailed,
                                 long resultsCount, long responseTime, long timestamp) {
-        this.dsl = dsl;
+        //this.dsl = dsl;
         this.attributes = attributes;
         this.relationAttributes = relationAttributes;
         this.userAgent = userAgent;
@@ -84,10 +84,11 @@ public class SearchRequestLogData {
         this.timestamp = timestamp;
     }
 
-    @JsonProperty("request.dsl")
+    //ES mapping type : nested
+    /*@JsonProperty("request.dsl")
     public Map<String, Object> getDsl() {
         return dsl;
-    }
+    }*/
 
     @JsonProperty("request.attributes")
     public Set<String> getAttributes() {
@@ -181,7 +182,7 @@ public class SearchRequestLogData {
 
 
     public static class SearchRequestLogDataBuilder {
-        private Map<String, Object> dsl;
+        //private Map<String, Object> dsl;
         private Set<String> attributes;
         private Set<String> relationAttributes;
 
@@ -209,10 +210,10 @@ public class SearchRequestLogData {
 
         public SearchRequestLogDataBuilder(){}
 
-        public SearchRequestLogDataBuilder setDsl(Map<String, Object> dsl) {
+        /*public SearchRequestLogDataBuilder setDsl(Map<String, Object> dsl) {
             this.dsl = dsl;
             return this;
-        }
+        }*/
 
         public SearchRequestLogDataBuilder setAttributes(Set<String> attributes) {
             this.attributes = attributes;
@@ -315,7 +316,7 @@ public class SearchRequestLogData {
         }
 
         public SearchRequestLogData build() {
-            return new SearchRequestLogData(dsl, attributes, relationAttributes, userAgent, host, ipAddress, userName,
+            return new SearchRequestLogData(attributes, relationAttributes, userAgent, host, ipAddress, userName,
                     errorDetails, errorCode, entityGuidsAll, entityQFNamesAll, entityGuidsAllowed,
                     entityQFNamesAllowed, entityGuidsDenied, entityQFNamesDenied, utmTags,
                     hasResult, isFailed, resultsCount, responseTime, timestamp);

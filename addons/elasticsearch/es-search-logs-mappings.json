@@ -1,9 +1,6 @@
 {
   "mappings": {
     "properties": {
-      "request.dsl": {
-        "type": "nested"
-      },
       "request.attributes": {
         "type": "keyword"
       },

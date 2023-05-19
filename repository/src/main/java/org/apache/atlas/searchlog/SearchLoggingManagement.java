@@ -48,8 +48,6 @@ public class SearchLoggingManagement {
                     .setNameFormat("atlas-search-logger-" + Thread.currentThread().getName())
                     .build()
         );
-
-        LOG.info("esSearchLoggers {}", AtlasType.toJson(esSearchLoggers));
     }
 
     public void log(SearchRequestLogData searchRequestLogData) {

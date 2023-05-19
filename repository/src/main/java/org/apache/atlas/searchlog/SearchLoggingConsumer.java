@@ -19,7 +19,6 @@ public class SearchLoggingConsumer implements Runnable {
 
     @Override
     public void run() {
-        LOG.info("SearchLoggerConsumer: run() {}", Thread.currentThread().getId());
         for (SearchLogger esSearchLogger : esSearchLoggers) {
             esSearchLogger.log(searchRequestLogData);
         }
