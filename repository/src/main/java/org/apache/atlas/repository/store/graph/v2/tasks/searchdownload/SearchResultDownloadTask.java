@@ -70,7 +70,7 @@ public class SearchResultDownloadTask extends AbstractTask {
     public static String DOWNLOAD_DIR_PATH;
     private static final String EMPTY_STRING                = "";
     private static final String DOWNLOAD_DIR_PATH_KEY       = "atlas.download.search.dir.path";
-    private static final String DOWNLOAD_DIR_PATH_DEFAULT   = StringUtils.isEmpty(System.getProperty("atlas.home")) ? System.getProperty("user.dir") : System.getProperty("atlas.home");
+    private static final String DOWNLOAD_DIR_PATH_DEFAULT   = System.getProperty("user.dir");
     private static final String CSV_DOWNLOAD_DIR            = "search_result_downloads";
 
     private static Configuration configuration;
