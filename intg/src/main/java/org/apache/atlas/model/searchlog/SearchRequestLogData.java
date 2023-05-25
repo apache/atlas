@@ -21,15 +21,17 @@ package org.apache.atlas.model.searchlog;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.util.Map;
 import java.util.Set;
 
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class SearchRequestLogData {
 
-    private Map<String, Object> dsl;
+    //private Map<String, Object> dsl;
     private Set<String> attributes;
     private Set<String> relationAttributes;
+
+    private String persona;
+    private String purpose;
 
     private String userAgent;
     private String host;
@@ -45,16 +47,18 @@ public class SearchRequestLogData {
     private Set<String> entityGuidsDenied;
     private Set<String> entityQFNamesDenied;
     private Set<String> utmTags;
+    private String searchInput;
 
     private boolean hasResult;
     private boolean isFailed;
 
     private long resultsCount;
     private long responseTime;
-    private long created;
+    private long createdAt;
     private long timestamp;
 
     public SearchRequestLogData(Set<String> attributes, Set<String> relationAttributes,
+                                String searchInput, String persona, String purpose,
                                 String userAgent, String host, String ipAddress, String userName,
                                 String errorDetails, String errorCode,
                                 Set<String> entityGuidsAll, Set<String> entityQFNamesAll, Set<String> entityGuidsAllowed,
@@ -64,6 +68,8 @@ public class SearchRequestLogData {
         //this.dsl = dsl;
         this.attributes = attributes;
         this.relationAttributes = relationAttributes;
+        this.persona = persona;
+        this.purpose = purpose;
         this.userAgent = userAgent;
         this.host = host;
         this.ipAddress = ipAddress;
@@ -77,6 +83,7 @@ public class SearchRequestLogData {
         this.entityGuidsDenied = entityGuidsDenied;
         this.entityQFNamesDenied = entityQFNamesDenied;
         this.utmTags = utmTags;
+        this.searchInput = searchInput;
         this.hasResult = hasResult;
         this.isFailed = isFailed;
         this.resultsCount = resultsCount;
@@ -98,6 +105,14 @@ public class SearchRequestLogData {
     @JsonProperty("request.relationAttributes")
     public Set<String> getRelationAttributes() {
         return relationAttributes;
+    }
+
+    public String getPersona() {
+        return persona;
+    }
+
+    public String getPurpose() {
+        return purpose;
     }
 
     public String getUserAgent() {
@@ -172,19 +187,25 @@ public class SearchRequestLogData {
         return timestamp;
     }
 
-    public long getCreated() {
-        return created;
+    public long getCreatedAt() {
+        return createdAt;
     }
 
-    public void setCreated(long created) {
-        this.created = created;
+    public void setCreatedAt(long createdAt) {
+        this.createdAt = createdAt;
     }
 
+    public String getSearchInput() {
+        return searchInput;
+    }
 
     public static class SearchRequestLogDataBuilder {
         //private Map<String, Object> dsl;
         private Set<String> attributes;
         private Set<String> relationAttributes;
+
+        private String persona;
+        private String purpose;
 
         private String userAgent;
         private String host;
@@ -200,6 +221,7 @@ public class SearchRequestLogData {
         private Set<String> entityGuidsDenied;
         private Set<String> entityQFNamesDenied;
         private Set<String> utmTags;
+        private String searchInput;
 
         private boolean hasResult;
         private boolean isFailed;
@@ -214,6 +236,21 @@ public class SearchRequestLogData {
             this.dsl = dsl;
             return this;
         }*/
+
+        public SearchRequestLogDataBuilder setSearchInput(String searchInput) {
+            this.searchInput = searchInput;
+            return this;
+        }
+
+        public SearchRequestLogDataBuilder setPersona(String persona) {
+            this.persona = persona;
+            return this;
+        }
+
+        public SearchRequestLogDataBuilder setPurpose(String purpose) {
+            this.purpose = purpose;
+            return this;
+        }
 
         public SearchRequestLogDataBuilder setAttributes(Set<String> attributes) {
             this.attributes = attributes;
@@ -316,7 +353,8 @@ public class SearchRequestLogData {
         }
 
         public SearchRequestLogData build() {
-            return new SearchRequestLogData(attributes, relationAttributes, userAgent, host, ipAddress, userName,
+            return new SearchRequestLogData(attributes, relationAttributes, searchInput, persona, purpose,
+                    userAgent, host, ipAddress, userName,
                     errorDetails, errorCode, entityGuidsAll, entityQFNamesAll, entityGuidsAllowed,
                     entityQFNamesAllowed, entityGuidsDenied, entityQFNamesDenied, utmTags,
                     hasResult, isFailed, resultsCount, responseTime, timestamp);

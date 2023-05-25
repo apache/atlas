@@ -45,7 +45,7 @@ public class SearchLoggingManagement {
         this.executorService = Executors.newFixedThreadPool(AtlasConfiguration.SEARCH_LOGGER_MAX_THREADS.getInt(),
                 new ThreadFactoryBuilder()
                     .setDaemon(true)
-                    .setNameFormat("atlas-search-logger-" + Thread.currentThread().getName())
+                    .setNameFormat("atlas-search-logger-%d")
                     .build()
         );
     }

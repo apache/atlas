@@ -44,8 +44,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static org.apache.atlas.AtlasConfiguration.INDEX_CLIENT_CONNECTION_TIMEOUT;
-import static org.apache.atlas.AtlasConfiguration.INDEX_CLIENT_SOCKET_TIMEOUT;
 import static org.apache.atlas.repository.audit.ESBasedAuditRepository.getHttpHosts;
 
 @Component
@@ -61,7 +59,7 @@ public class ESSearchLogger implements SearchLogger, Service {
     @Override
     public void log(SearchRequestLogData searchRequestLogData) {
         try {
-            searchRequestLogData.setCreated(System.currentTimeMillis());
+            searchRequestLogData.setCreatedAt(System.currentTimeMillis());
 
             HttpEntity entity = new NStringEntity(AtlasType.toJson(searchRequestLogData), ContentType.APPLICATION_JSON);
 

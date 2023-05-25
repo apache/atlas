@@ -1018,7 +1018,8 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             indexQuery = graph.elasticsearchQuery(ESSearchLogger.INDEX_NAME);
             Map<String, Object> result = indexQuery.directIndexQuery(searchParams.getQueryString());
 
-            ret.setApproximateCount( ((Integer) result.get("total")).longValue());
+            if (result.get("total") != null)
+                ret.setApproximateCount( ((Integer) result.get("total")).longValue());
 
             List<LinkedHashMap> hits = (List<LinkedHashMap>) result.get("data");
 
