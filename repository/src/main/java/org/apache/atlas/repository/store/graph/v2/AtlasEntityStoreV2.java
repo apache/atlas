@@ -1701,7 +1701,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 break;
 
             case POLICY_ENTITY_TYPE:
-                preProcessor = new AuthPolicyPreProcessor(graph, typeRegistry, entityRetriever);
+                preProcessor = new AuthPolicyPreProcessor(graph, typeRegistry, entityRetriever, featureFlagStore);
                 break;
 
             case CONNECTION_ENTITY_TYPE:
