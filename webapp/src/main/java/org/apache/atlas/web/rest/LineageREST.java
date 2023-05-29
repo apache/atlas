@@ -32,6 +32,8 @@ import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfTracer;
+import org.apache.atlas.web.rest.validator.LineageListRequestValidator;
+import org.apache.atlas.web.rest.validator.RequestValidator;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.collections.MapUtils;
 import org.slf4j.Logger;
@@ -62,6 +64,7 @@ public class LineageREST {
 
     private final AtlasTypeRegistry typeRegistry;
     private final AtlasLineageService atlasLineageService;
+    private final RequestValidator lineageListRequestValidator;
     private static final String DEFAULT_DIRECTION = "BOTH";
     private static final String DEFAULT_DEPTH = "3";
     private static final String DEFAULT_PAGE = "-1";
@@ -71,9 +74,10 @@ public class LineageREST {
     private HttpServletRequest httpServletRequest;
 
     @Inject
-    public LineageREST(AtlasTypeRegistry typeRegistry, AtlasLineageService atlasLineageService) {
+    public LineageREST(AtlasTypeRegistry typeRegistry, AtlasLineageService atlasLineageService, LineageListRequestValidator lineageListRequestValidator) {
         this.typeRegistry = typeRegistry;
         this.atlasLineageService = atlasLineageService;
+        this.lineageListRequestValidator = lineageListRequestValidator;
     }
 
     /**
@@ -125,8 +129,7 @@ public class LineageREST {
     @Produces(Servlets.JSON_MEDIA_TYPE)
     @Timed
     public AtlasLineageListInfo getLineageList(LineageListRequest lineageListRequest) throws AtlasBaseException {
-        if (lineageListRequest.getGuid() == null)
-            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Base guid cannot be null");
+        lineageListRequestValidator.validate(lineageListRequest);
 
         String guid = lineageListRequest.getGuid();
         Servlets.validateQueryParamLength("guid", guid);
@@ -144,7 +147,6 @@ public class LineageREST {
             AtlasPerfTracer.log(perf);
         }
     }
-
 
     /**
      * Returns lineage info about entity.
@@ -285,4 +287,5 @@ public class LineageREST {
 
         return ret;
     }
+
 }
