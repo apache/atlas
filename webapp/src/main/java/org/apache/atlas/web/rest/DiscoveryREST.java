@@ -18,6 +18,7 @@
 package org.apache.atlas.web.rest;
 
 import org.apache.atlas.AtlasClient;
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.SortOrder;
@@ -29,7 +30,12 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.*;
 import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria;
 import org.apache.atlas.model.profile.AtlasUserSavedSearch;
+import org.apache.atlas.model.searchlog.SearchLogSearchParams;
+import org.apache.atlas.model.searchlog.SearchLogSearchResult;
+import org.apache.atlas.model.searchlog.SearchRequestLogData;
+import org.apache.atlas.model.searchlog.SearchRequestLogData.SearchRequestLogDataBuilder;
 import org.apache.atlas.repository.Constants;
+import org.apache.atlas.searchlog.SearchLoggingManagement;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -57,8 +63,13 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
+import static org.apache.atlas.repository.Constants.REQUEST_HEADER_HOST;
+import static org.apache.atlas.repository.Constants.REQUEST_HEADER_USER_AGENT;
 
 /**
  * REST interface for data discovery using dsl or full text search
@@ -75,16 +86,21 @@ public class DiscoveryREST {
     private       HttpServletRequest httpServletRequest;
     private final int                maxFullTextQueryLength;
     private final int                maxDslQueryLength;
+    private final boolean            enableSearchLogging;
 
     private final AtlasTypeRegistry     typeRegistry;
     private final AtlasDiscoveryService discoveryService;
+    private final SearchLoggingManagement loggerManagement;
 
     @Inject
-    public DiscoveryREST(AtlasTypeRegistry typeRegistry, AtlasDiscoveryService discoveryService, Configuration configuration) {
+    public DiscoveryREST(AtlasTypeRegistry typeRegistry, AtlasDiscoveryService discoveryService,
+                         SearchLoggingManagement loggerManagement, Configuration configuration) {
         this.typeRegistry           = typeRegistry;
         this.discoveryService       = discoveryService;
+        this.loggerManagement       = loggerManagement;
         this.maxFullTextQueryLength = configuration.getInt(Constants.MAX_FULLTEXT_QUERY_STR_LENGTH, 4096);
         this.maxDslQueryLength      = configuration.getInt(Constants.MAX_DSL_QUERY_STR_LENGTH, 4096);
+        this.enableSearchLogging    = AtlasConfiguration.ENABLE_SEARCH_LOGGER.getBoolean();
     }
 
     /**
@@ -368,8 +384,10 @@ public class DiscoveryREST {
     @Path("indexsearch")
     @POST
     @Timed
-    public AtlasSearchResult indexSearch(IndexSearchParams parameters) throws AtlasBaseException {
+    public AtlasSearchResult indexSearch(@Context HttpServletRequest servletRequest, IndexSearchParams parameters) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
+        long startTime = System.currentTimeMillis();
+
         RequestContext.get().setIncludeMeanings(!parameters.isExcludeMeanings());
         RequestContext.get().setIncludeClassifications(!parameters.isExcludeClassifications());
         try {
@@ -378,16 +396,69 @@ public class DiscoveryREST {
             }
 
             if (StringUtils.isEmpty(parameters.getQuery())) {
-                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Please provide query");
+                AtlasBaseException abe = new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid search query");
+                if (enableSearchLogging && parameters.isSaveSearchLog()) {
+                    logSearchLog(parameters, servletRequest, abe, System.currentTimeMillis() - startTime);
+                }
+                throw abe;
             }
+
             if(LOG.isDebugEnabled()){
                 LOG.debug("Performing indexsearch for the params ({})", parameters);
             }
-            return discoveryService.directIndexSearch(parameters);
+            AtlasSearchResult result = discoveryService.directIndexSearch(parameters);
+            long endTime = System.currentTimeMillis();
+
+            if (enableSearchLogging && parameters.isSaveSearchLog()) {
+                logSearchLog(parameters, result, servletRequest, endTime - startTime);
+            }
+
+            return result;
+        } catch (AtlasBaseException abe) {
+            if (enableSearchLogging && parameters.isSaveSearchLog()) {
+                logSearchLog(parameters, servletRequest, abe, System.currentTimeMillis() - startTime);
+            }
+            throw abe;
+        } catch (Exception e) {
+            AtlasBaseException abe = new AtlasBaseException(e.getMessage(), e.getCause());
+            if (enableSearchLogging && parameters.isSaveSearchLog()) {
+                logSearchLog(parameters, servletRequest, abe, System.currentTimeMillis() - startTime);
+            }
+            throw abe;
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    /**
+     * Index based search for query direct on ES search-logs index
+     *
+     * @param parameters Index Search parameters @SearchLogSearchParams.java
+     * @return search log search result
+     * @throws AtlasBaseException
+     * @HTTP 200 On successful search
+     */
+    @Path("searchlog")
+    @POST
+    @Timed
+    public SearchLogSearchResult searchLogs(SearchLogSearchParams parameters) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+        SearchLogSearchResult result;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.searchLogs(" + parameters + ")");
+            }
+
+            result = discoveryService.searchLogs(parameters);
+
+        } catch (Exception e) {
+            throw e;
         } finally {
             AtlasPerfTracer.log(perf);
         }
 
+        return result;
     }
 
     /**
@@ -790,5 +861,101 @@ public class DiscoveryREST {
         if (parameters != null) {
             validateSearchParameters(EntityDiscoveryService.createSearchParameters(parameters));
         }
+    }
+
+    private void logSearchLog(IndexSearchParams parameters, AtlasSearchResult result,
+                              HttpServletRequest servletRequest, long requestTime) {
+        SearchRequestLogDataBuilder builder = new SearchRequestLogDataBuilder();
+        builder.setHasResult(false);
+
+        if (CollectionUtils.isNotEmpty(result.getEntities())) {
+            builder.setHasResult(true);
+            builder.setResultsCount(result.getApproximateCount());
+
+            Set<String> entityGuidsAll = new HashSet<>();
+            Set<String> entityQFNamesAll = new HashSet<>();
+            Set<String> entityGuidsAllowed = new HashSet<>();
+            Set<String> entityQFNamesAllowed = new HashSet<>();
+            Set<String> entityGuidsDenied = new HashSet<>();
+            Set<String> entityQFNamesDenied = new HashSet<>();
+
+            result.getEntities().forEach(x -> {
+                boolean allowed = x.getScrubbed() == null;
+
+                String guid = x.getGuid();
+
+                if (guid != null) {
+                    entityGuidsAll.add(guid);
+                    if (allowed) {
+                        entityGuidsAllowed.add(guid);
+                    } else {
+                        entityGuidsDenied.add(guid);
+                    }
+                }
+
+                try {
+                    String qualifiedName = (String) x.getAttribute(QUALIFIED_NAME);
+
+                    if (qualifiedName != null) {
+
+                        entityQFNamesAll.add(qualifiedName);
+                        if (allowed) {
+                            entityQFNamesAllowed.add(qualifiedName);
+                        } else {
+                            entityQFNamesDenied.add(qualifiedName);
+                        }
+                    }
+                } catch (NullPointerException npe) {
+                    //no attributes for entity
+                }
+            });
+
+            builder.setEntityGuidsAll(entityGuidsAll)
+                    .setEntityQFNamesAll(entityQFNamesAll)
+                    .setEntityGuidsAllowed(entityGuidsAllowed)
+                    .setEntityQFNamesAllowed(entityQFNamesAllowed)
+                    .setEntityGuidsDenied(entityGuidsDenied)
+                    .setEntityQFNamesDenied(entityQFNamesDenied);
+
+        }
+
+        logSearchLog(parameters, servletRequest, builder, requestTime);
+    }
+
+    private void logSearchLog(IndexSearchParams parameters, HttpServletRequest servletRequest,
+                              AtlasBaseException e, long requestTime) {
+        SearchRequestLogDataBuilder builder = new SearchRequestLogDataBuilder();
+
+        builder.setErrorDetails(e.getMessage())
+                .setErrorCode(e.getAtlasErrorCode().getErrorCode())
+                .setFailed(true);
+
+
+        logSearchLog(parameters, servletRequest, builder, requestTime);
+    }
+
+    private void logSearchLog(IndexSearchParams parameters, HttpServletRequest servletRequest,
+                              SearchRequestLogDataBuilder builder, long requestTime) {
+
+        if (StringUtils.isNotEmpty(parameters.getPersona())) {
+            builder.setPersona(parameters.getPersona());
+        } else {
+            builder.setPurpose(parameters.getPurpose());
+        }
+
+        builder.setSearchInput(parameters.getSearchInput())
+                .setUtmTags(parameters.getUtmTags())
+                .setRelationAttributes(parameters.getRelationAttributes())
+
+                .setUserAgent(servletRequest.getHeader(REQUEST_HEADER_USER_AGENT))
+                .setHost(servletRequest.getHeader(REQUEST_HEADER_HOST))
+
+                .setIpAddress(AtlasAuthorizationUtils.getRequestIpAddress(servletRequest))
+                .setUserName(AtlasAuthorizationUtils.getCurrentUserName())
+
+                .setTimestamp(RequestContext.get().getRequestTime())
+                .setResponseTime(requestTime);
+
+        loggerManagement.log(builder.build());
     }
 }

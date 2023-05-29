@@ -1,8 +1,14 @@
 package org.apache.atlas.model.discovery;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import java.util.Set;
 
-public abstract class SearchParams {
+
+@JsonInclude(JsonInclude.Include.NON_EMPTY)
+@JsonIgnoreProperties(ignoreUnknown=true)
+public class SearchParams {
 
     Set<String> attributes;
     Set<String> relationAttributes;
@@ -13,7 +19,11 @@ public abstract class SearchParams {
     boolean excludeMeanings;
     boolean excludeClassifications;
 
-    public abstract String getQuery();
+    RequestMetadata requestMetadata = new RequestMetadata();
+
+    public String getQuery() {
+        return getQuery();
+    }
 
     public Set<String> getAttributes() {
         return attributes;
@@ -47,6 +57,14 @@ public abstract class SearchParams {
         this.collapseRelationAttributes = collapseRelationAttributes;
     }
 
+    public Set<String> getUtmTags() {
+        return requestMetadata.utmTags;
+    }
+
+    public void setUtmTags(Set<String> utmTags) {
+        this.requestMetadata.utmTags = utmTags;
+    }
+
     public boolean getShowSearchScore() {
         return showSearchScore;
     }
@@ -77,5 +95,55 @@ public abstract class SearchParams {
 
     public void setExcludeMeanings(boolean excludeMeanings) {
         this.excludeMeanings = excludeMeanings;
+    }
+
+    public boolean isSaveSearchLog() {
+        return requestMetadata.saveSearchLog;
+    }
+
+    public void setSaveSearchLog(boolean saveSearchLog) {
+        this.requestMetadata.saveSearchLog = saveSearchLog;
+    }
+
+    public RequestMetadata getRequestMetadata() {
+        return requestMetadata;
+    }
+
+    public void setRequestMetadata(RequestMetadata requestMetadata) {
+        this.requestMetadata = requestMetadata;
+    }
+
+    public String getSearchInput() {
+        return this.requestMetadata.getSearchInput();
+    }
+
+    static class RequestMetadata {
+        private String searchInput;
+        private Set<String> utmTags;
+        private boolean saveSearchLog;
+
+        public String getSearchInput() {
+            return searchInput;
+        }
+
+        public Set<String> getUtmTags() {
+            return utmTags;
+        }
+
+        public boolean isSaveSearchLog() {
+            return saveSearchLog;
+        }
+
+        public void setSearchInput(String searchInput) {
+            this.searchInput = searchInput;
+        }
+
+        public void setUtmTags(Set<String> utmTags) {
+            this.utmTags = utmTags;
+        }
+
+        public void setSaveSearchLog(boolean saveSearchLog) {
+            this.saveSearchLog = saveSearchLog;
+        }
     }
 }
