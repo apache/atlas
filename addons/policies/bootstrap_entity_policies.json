@@ -2796,7 +2796,7 @@
             "attributes":
             {
                 "name": "FILE_CRUD_ALLOW_USERS",
-                "qualifiedName": "FILE_CRUD",
+                "qualifiedName": "FILE_CRUD_ALLOW_USERS",
                 "description": "Allows user to perform crud operation on file asset",
                 "policyCategory": "bootstrap",
                 "policySubCategory": "default",
