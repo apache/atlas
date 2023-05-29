@@ -151,10 +151,10 @@ public class ESSearchLogger implements SearchLogger, Service {
         Response response = lowLevelClient.performRequest(request);
         int statusCode = response.getStatusLine().getStatusCode();
         if (statusCode == 200) {
-            LOG.info("ESSearchLogger: Entity audits index exists!");
+            LOG.info("ESSearchLogger: {} index exists!", INDEX_NAME);
             return true;
         }
-        LOG.info("ESSearchLogger: Entity audits index does not exist!");
+        LOG.info("ESSearchLogger: {} index does not exist!", INDEX_NAME);
         return false;
     }
 
