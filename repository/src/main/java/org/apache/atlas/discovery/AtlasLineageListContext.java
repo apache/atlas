@@ -10,9 +10,9 @@ import java.util.Set;
 
 public final class AtlasLineageListContext {
     private String                              guid;
-    private Integer                             size;
-    private Integer                             from;
-    private Integer                             depth;
+    private int                                 size;
+    private int                                 from;
+    private int                                 depth;
     private LineageListRequest.LineageDirection direction;
     private Predicate                           vertexPredicate;
     private Predicate                           vertexTraversalPredicate;
@@ -43,19 +43,19 @@ public final class AtlasLineageListContext {
         this.guid = guid;
     }
 
-    public Integer getSize() {
+    public int getSize() {
         return size;
     }
 
-    public void setSize(Integer size) {
+    public void setSize(int size) {
         this.size = size;
     }
 
-    public Integer getFrom() {
+    public int getFrom() {
         return from;
     }
 
-    public void setFrom(Integer from) {
+    public void setFrom(int from) {
         this.from = from;
     }
 
@@ -63,11 +63,11 @@ public final class AtlasLineageListContext {
     * Clients assume depth limit at node level
     *  eg. Atlas depth 1 would return processes (BFS algo) and depth 2 would return processes + nodes, whereas client needs processes + nodes for depth 1
     */
-    public Integer getDepth() {
+    public int getDepth() {
         return 2*depth;
     }
 
-    public void setDepth(Integer depth) {
+    public void setDepth(int depth) {
         this.depth = depth;
     }
 

@@ -22,8 +22,8 @@ public class LineageListRequest {
     private SearchParameters.FilterCriteria entityTraversalFilters;
     private SearchParameters.FilterCriteria relationshipTraversalFilters;
     private Set<String>                     attributes;
-    private boolean                         excludeMeanings;
-    private boolean                         excludeClassifications;
+    private Boolean                         excludeMeanings;
+    private Boolean                         excludeClassifications;
 
     public enum LineageDirection {INPUT, OUTPUT}
 
@@ -119,19 +119,19 @@ public class LineageListRequest {
         this.attributes = attributes;
     }
 
-    public boolean isExcludeMeanings() {
+    public Boolean isExcludeMeanings() {
         return excludeMeanings;
     }
 
-    public void setExcludeMeanings(boolean excludeMeanings) {
+    public void setExcludeMeanings(Boolean excludeMeanings) {
         this.excludeMeanings = excludeMeanings;
     }
 
-    public boolean isExcludeClassifications() {
+    public Boolean isExcludeClassifications() {
         return excludeClassifications;
     }
 
-    public void setExcludeClassifications(boolean excludeClassifications) {
+    public void setExcludeClassifications(Boolean excludeClassifications) {
         this.excludeClassifications = excludeClassifications;
     }
 }
