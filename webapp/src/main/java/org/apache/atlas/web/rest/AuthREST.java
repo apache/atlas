@@ -57,7 +57,9 @@ import java.util.List;
 import java.util.Map;
 
 import static org.apache.atlas.policytransformer.CachePolicyTransformerImpl.ATTR_SERVICE_LAST_SYNC;
+import static org.apache.atlas.repository.Constants.PERSONA_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.POLICY_ENTITY_TYPE;
+import static org.apache.atlas.repository.Constants.PURPOSE_ENTITY_TYPE;
 
 /**
  * REST interface for CRUD operations on tasks
@@ -185,11 +187,16 @@ public class AuthREST {
     private boolean isPolicyUpdated(String serviceName, long lastUpdatedTime) {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("AuthRest.isPolicyUpdated." + serviceName);
 
+        List<String> entityUpdateToWatch = new ArrayList<>();
+        entityUpdateToWatch.add(POLICY_ENTITY_TYPE);
+        entityUpdateToWatch.add(PERSONA_ENTITY_TYPE);
+        entityUpdateToWatch.add(PURPOSE_ENTITY_TYPE);
+
         AuditSearchParams parameters = new AuditSearchParams();
         Map<String, Object> dsl = getMap("size", 1);
 
         List<Map<String, Object>> mustClauseList = new ArrayList<>();
-        mustClauseList.add(getMap("term", getMap("typeName", POLICY_ENTITY_TYPE)));
+        mustClauseList.add(getMap("terms", getMap("typeName", entityUpdateToWatch)));
 
         lastUpdatedTime = lastUpdatedTime == -1 ? 0 : lastUpdatedTime;
         mustClauseList.add(getMap("range", getMap("timestamp", getMap("gte", lastUpdatedTime))));
