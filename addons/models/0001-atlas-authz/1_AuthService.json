@@ -1,0 +1,69 @@
+{
+    "entityDefs": [
+        {
+            "name": "AuthService",
+            "superTypes": [
+                "Asset"
+            ],
+            "description": "Model to store auth service in Atlas",
+            "serviceType": "atlan",
+            "typeVersion": "1.0",
+            "attributeDefs": [
+                {
+                    "name": "authServiceType",
+                    "typeName": "string",
+                    "indexType": "STRING",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "skipScrubbing": true,
+                    "includeInNotification": true
+                },
+                {
+                    "name": "tagService",
+                    "typeName": "string",
+                    "indexType": "STRING",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "skipScrubbing": true,
+                    "includeInNotification": true
+                },
+                {
+                    "name": "authServiceIsEnabled",
+                    "typeName": "boolean",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "defaultValue": true,
+                    "skipScrubbing": true,
+                    "includeInNotification": true
+                },
+                {
+                    "name": "authServiceConfig",
+                    "typeName": "map<string,string>",
+                    "isOptional": true,
+                    "cardinality": "SINGLE",
+                    "isUnique": false,
+                    "skipScrubbing": true,
+                    "isIndexable": true,
+                    "includeInNotification": true
+                },
+                {
+                    "name": "authServicePolicyLastSync",
+                    "typeName": "long",
+                    "isOptional": true,
+                    "defaultValue": 0,
+                    "cardinality": "SINGLE",
+                    "isUnique": false,
+                    "skipScrubbing": true,
+                    "isIndexable": true,
+                    "includeInNotification": true
+                }
+            ]
+        }
+    ]
+}

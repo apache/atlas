@@ -1,0 +1,359 @@
+{
+  "enumDefs":
+  [
+    {
+      "category": "ENUM",
+      "name": "AuthPolicyType",
+      "description": "Policy Item type",
+      "serviceType": "atlas_core",
+      "typeVersion": "1.0",
+      "elementDefs":
+      [
+        {
+          "value": "allow",
+          "ordinal": 0
+        },
+        {
+          "value": "deny",
+          "ordinal": 1
+        },
+        {
+          "value": "allowExceptions",
+          "ordinal": 2
+        },
+        {
+          "value": "denyExceptions",
+          "ordinal": 3
+        },
+        {
+          "value": "dataMask",
+          "ordinal": 4
+        },
+        {
+          "value": "rowFilter",
+          "ordinal": 5
+        }
+      ]
+    },
+    {
+      "category": "ENUM",
+      "name": "AuthPolicyCategory",
+      "description": "Policy category",
+      "serviceType": "atlas_core",
+      "typeVersion": "1.0",
+      "elementDefs": [
+        {
+          "value": "bootstrap",
+          "ordinal": 0
+        },
+        {
+          "value": "persona",
+          "ordinal": 1
+        },
+        {
+          "value": "purpose",
+          "ordinal": 2
+        }
+      ]
+    },
+    {
+      "category": "ENUM",
+      "name": "AuthPolicyResourceCategory",
+      "description": "Policy resource category",
+      "serviceType": "atlas_core",
+      "typeVersion": "1.0",
+      "elementDefs":
+      [
+        {
+          "value": "ENTITY",
+          "ordinal": 0
+        },
+        {
+          "value": "RELATIONSHIP",
+          "ordinal": 1
+        },
+        {
+          "value": "TAG",
+          "ordinal": 2
+        },
+        {
+          "value": "CUSTOM",
+          "ordinal": 3
+        },
+        {
+          "value": "TYPEDEFS",
+          "ordinal": 4
+        },
+        {
+          "value": "ADMIN",
+          "ordinal": 5
+        }
+      ]
+    }
+  ],
+  "structDefs":
+  [
+    {
+      "name": "AuthPolicyValiditySchedule",
+      "description": "Validity schedule struct for policy",
+      "serviceType": "atlan",
+      "typeVersion": "1.0",
+      "attributeDefs":
+      [
+        {
+          "name": "policyValidityScheduleStartTime",
+          "typeName": "string",
+          "indexType": "STRING",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": false,
+          "isUnique": false
+        },
+        {
+          "name": "policyValidityScheduleEndTime",
+          "typeName": "string",
+          "indexType": "STRING",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": false,
+          "isUnique": false
+        },
+        {
+          "name": "policyValidityScheduleTimezone",
+          "typeName": "string",
+          "indexType": "STRING",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": false,
+          "isUnique": false
+        }
+      ]
+    },
+    {
+      "name": "AuthPolicyCondition",
+      "description": "Policy condition schedule struct",
+      "serviceType": "atlan",
+      "typeVersion": "1.0",
+      "attributeDefs":
+      [
+        {
+          "name": "policyConditionType",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": false,
+          "isUnique": false
+        },
+        {
+          "name": "policyConditionValues",
+          "typeName": "array<string>",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": false,
+          "isUnique": false
+        }
+      ]
+    }
+  ],
+  "entityDefs":
+  [
+    {
+      "name": "AuthPolicy",
+      "description": "Model to store an accesscontrol policy in Atlas",
+      "superTypes": [
+        "Asset"
+      ],
+      "serviceType": "atlan",
+      "typeVersion": "1.0",
+      "attributeDefs":
+      [
+        {
+          "name": "policyType",
+          "typeName": "AuthPolicyType",
+          "indexType": "STRING",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": true
+        },
+        {
+          "name": "policyServiceName",
+          "typeName": "string",
+          "indexType": "STRING",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": true
+        },
+        {
+          "name": "policyCategory",
+          "typeName": "string",
+          "indexType": "STRING",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": true
+        },
+        {
+          "name": "policySubCategory",
+          "typeName": "string",
+          "indexType": "STRING",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": true
+        },
+        {
+          "name": "policyUsers",
+          "typeName": "array<string>",
+          "indexType": "STRING",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": true
+        },
+        {
+          "name": "policyGroups",
+          "typeName": "array<string>",
+          "indexType": "STRING",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": true
+        },
+        {
+          "name": "policyRoles",
+          "typeName": "array<string>",
+          "indexType": "STRING",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": true
+        },
+        {
+          "name": "policyActions",
+          "typeName": "array<string>",
+          "indexType": "STRING",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": true
+        },
+        {
+          "name": "policyResources",
+          "typeName": "array<string>",
+          "indexType": "STRING",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": true
+        },
+        {
+          "name": "policyResourceCategory",
+          "typeName": "string",
+          "indexType": "STRING",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": true
+        },
+        {
+          "name": "policyPriority",
+          "typeName": "int",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "defaultValue": 0,
+          "skipScrubbing": true,
+          "includeInNotification": true
+        },
+        {
+          "name": "isPolicyEnabled",
+          "typeName": "boolean",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "defaultValue": true,
+          "skipScrubbing": true,
+          "includeInNotification": true
+        },
+        {
+          "name": "policyMaskType",
+          "typeName": "string",
+          "indexType": "STRING",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": true
+        },
+        {
+          "name": "policyValiditySchedule",
+          "typeName": "array<AuthPolicyValiditySchedule>",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "defaultValue": true,
+          "skipScrubbing": true,
+          "includeInNotification": false
+        },
+        {
+          "name": "policyResourceSignature",
+          "typeName": "string",
+          "indexType": "STRING",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": false
+        },
+        {
+          "name": "policyDelegateAdmin",
+          "typeName": "boolean",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "defaultValue": false,
+          "skipScrubbing": true,
+          "includeInNotification": true
+        },
+        {
+          "name": "policyConditions",
+          "typeName": "array<AuthPolicyCondition>",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": false
+        }
+      ]
+    }
+  ]
+}

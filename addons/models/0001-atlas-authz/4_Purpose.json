@@ -1,0 +1,25 @@
+{
+  "entityDefs": [
+    {
+      "name": "Purpose",
+      "superTypes": [
+        "AccessControl"
+      ],
+      "description": "Atlan Type representing a Purpose model",
+      "serviceType": "atlan",
+      "typeVersion": "1.0",
+      "attributeDefs": [
+        {
+          "name": "purposeClassifications",
+          "typeName": "array<string>",
+          "indexType": "STRING",
+          "cardinality": "SET",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": true,
+          "includeInNotification": false
+        }
+      ]
+    }
+  ]
+}
