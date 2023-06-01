@@ -945,6 +945,7 @@ public class DiscoveryREST {
 
         builder.setSearchInput(parameters.getSearchInput())
                 .setUtmTags(parameters.getUtmTags())
+                .setAttributes(parameters.getAttributes())
                 .setRelationAttributes(parameters.getRelationAttributes())
 
                 .setUserAgent(servletRequest.getHeader(REQUEST_HEADER_USER_AGENT))
