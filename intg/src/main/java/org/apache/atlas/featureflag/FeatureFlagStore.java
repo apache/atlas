@@ -20,6 +20,7 @@ package org.apache.atlas.featureflag;
 public interface FeatureFlagStore {
 
     static final String DISABLE_ACCESS_CONTROL_FEATURE_FLAG_KEY = "disable-access-control-ops";
+    static final String IS_INSTANCE_MIGRATED_FEATURE_FLAG_KEY = "users_groups_list_api_migrated_response";
     static final String LINEAGE_EVENTS_FEATURE_FLAG_KEY =  "metastore-enable-lineage-events-for-pipeline";
 
     boolean evaluate(FeatureFlag flag, String key, boolean value);
@@ -28,6 +29,7 @@ public interface FeatureFlagStore {
 
     enum FeatureFlag {
         DISABLE_ACCESS_CONTROL(DISABLE_ACCESS_CONTROL_FEATURE_FLAG_KEY, false),
+        IS_INSTANCE_MIGRATED(IS_INSTANCE_MIGRATED_FEATURE_FLAG_KEY, false),
         ENABLE_LINEAGE_EVENTS(LINEAGE_EVENTS_FEATURE_FLAG_KEY, false);
 
         private final String key;

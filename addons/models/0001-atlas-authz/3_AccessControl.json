@@ -1,0 +1,84 @@
+{
+  "entityDefs":
+  [
+    {
+      "name": "AccessControl",
+      "superTypes": [
+        "Asset"
+      ],
+      "description": "Atlan Type representing parent model for Persona, Purpose",
+      "serviceType": "atlan",
+      "typeVersion": "1.0",
+      "attributeDefs": [
+        {
+          "name": "isAccessControlEnabled",
+          "typeName": "boolean",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "defaultValue": true,
+          "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": false
+        },
+        {
+          "name": "denyCustomMetadataGuids",
+          "typeName": "array<string>",
+          "indexType": "STRING",
+          "cardinality": "SET",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": false
+        },
+        {
+          "name": "denyAssetTabs",
+          "typeName": "array<string>",
+          "indexType": "STRING",
+          "cardinality": "SET",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": false
+        },
+        {
+          "name": "channelLink",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": false
+        }
+      ]
+    }
+  ],
+  "relationshipDefs":
+  [
+    {
+      "name": "access_control_policies",
+      "typeVersion": "1.0",
+      "relationshipCategory": "AGGREGATION",
+      "relationshipLabel": "__AccessControl.policies",
+      "serviceType": "atlan",
+      "endDef1":
+      {
+        "type": "AccessControl",
+        "name": "policies",
+        "isContainer": true,
+        "cardinality": "SET"
+      },
+      "endDef2":
+      {
+        "type": "AuthPolicy",
+        "name": "accessControl",
+        "isContainer": false,
+        "cardinality": "SINGLE"
+      },
+      "propagateTags": "ONE_TO_TWO"
+    }
+  ]
+}

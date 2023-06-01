@@ -112,7 +112,7 @@ public final class AccessControlUtils {
     public static final String CONN_NAME_PATTERN = "connection_admins_%s";
     public static final String ARGO_SERVICE_USER_NAME = "service-account-atlan-argo";
 
-    private static final String INSTANCE_DOMAIN_KEY = "instance";
+    public static final String INSTANCE_DOMAIN_KEY = "instance";
 
     private AccessControlUtils() {}
 
