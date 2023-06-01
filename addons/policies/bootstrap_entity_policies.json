@@ -2710,6 +2710,7 @@
                     "entity-type:Process",
                     "entity-type:Connection",
                     "entity-type:ProcessExecution",
+                    "entity-type:File",
                     "entity-classification:*",
                     "entity:*"
                 ],
@@ -2787,6 +2788,76 @@
                     "entity-add-classification",
                     "entity-update-classification",
                     "entity-remove-classification"
+                ]
+            }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "attributes":
+            {
+                "name": "FILE_CRUD_ALLOW_USERS",
+                "qualifiedName": "FILE_CRUD_ALLOW_USERS",
+                "description": "Allows user to perform crud operation on file asset",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyPriority": 1,
+                "policyUsers":
+                [],
+                "policyGroups":
+                [],
+                "policyRoles":
+                [
+                    "$admin",
+                    "$api-token-default-access"
+                ],
+                "policyResourceCategory": "ENTITY",
+                "policyResources":
+                [
+                    "entity-type:File",
+                    "entity-classification:*",
+                    "entity:*"
+                ],
+                "policyActions":
+                [
+                    "entity-create",
+                    "entity-read",
+                    "entity-update",
+                    "entity-delete"
+                ]
+            }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "attributes":
+            {
+                "name": "CONNECTION_UPDATE_DENY_MEMBER",
+                "qualifiedName": "CONNECTION_UPDATE_DENY_MEMBER",
+                "description": "Policy for connection update deny for members",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "deny",
+                "policyPriority": 0,
+                "policyUsers":
+                [],
+                "policyGroups":
+                [],
+                "policyRoles":
+                [
+                    "$member"
+                ],
+                "policyResourceCategory": "ENTITY",
+                "policyResources":
+                [
+                    "entity-type:Connection",
+                    "entity-classification:*",
+                    "entity:*"
+                ],
+                "policyActions":
+                [
+                    "entity-update"
                 ]
             }
         }

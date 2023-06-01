@@ -22,6 +22,7 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.featureflag.FeatureFlagStore;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasObjectId;
@@ -33,6 +34,7 @@ import org.apache.atlas.repository.store.aliasstore.ESAliasStore;
 import org.apache.atlas.repository.store.aliasstore.IndexAliasStore;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
+import org.apache.atlas.repository.util.AccessControlUtils;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
@@ -66,14 +68,17 @@ public class AuthPolicyPreProcessor implements PreProcessor {
     private final AtlasGraph graph;
     private final AtlasTypeRegistry typeRegistry;
     private final EntityGraphRetriever entityRetriever;
+    private final FeatureFlagStore featureFlagStore ;
     private IndexAliasStore aliasStore;
 
     public AuthPolicyPreProcessor(AtlasGraph graph,
                                   AtlasTypeRegistry typeRegistry,
-                                  EntityGraphRetriever entityRetriever) {
+                                  EntityGraphRetriever entityRetriever,
+                                  FeatureFlagStore featureFlagStore) {
         this.graph = graph;
         this.typeRegistry = typeRegistry;
         this.entityRetriever = entityRetriever;
+        this.featureFlagStore = featureFlagStore;
 
         aliasStore = new ESAliasStore(graph, entityRetriever);
     }
@@ -253,6 +258,9 @@ public class AuthPolicyPreProcessor implements PreProcessor {
 
             if (userRoles.contains(connectionRoleName) || (userRoles.contains(KEYCLOAK_ROLE_ADMIN) && connRoles.contains(KEYCLOAK_ROLE_ADMIN))) {
                 //valid connection admin
+            } else if (ARGO_SERVICE_USER_NAME.equals(RequestContext.getCurrentUser()) && AccessControlUtils.getAccessControlFeatureFlag(featureFlagStore)) {
+                // Argo service user Valid Service user for connection admin while access control is disabled
+                //TODO: Remove this once we complete migration to Atlas AuthZ based access control
             } else {
                 throw new AtlasBaseException(UNAUTHORIZED_CONNECTION_ADMIN, getCurrentUserName(), connection.getGuid());
             }

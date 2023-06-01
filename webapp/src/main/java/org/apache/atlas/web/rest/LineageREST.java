@@ -21,19 +21,19 @@ package org.apache.atlas.web.rest;
 
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.discovery.AtlasLineageService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
-import org.apache.atlas.model.lineage.AtlasLineageInfo;
+import org.apache.atlas.model.lineage.*;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
-import org.apache.atlas.model.lineage.AtlasLineageOnDemandInfo;
-import org.apache.atlas.model.lineage.AtlasLineageRequest;
-import org.apache.atlas.model.lineage.LineageOnDemandRequest;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfTracer;
+import org.apache.atlas.web.rest.validator.LineageListRequestValidator;
+import org.apache.atlas.web.rest.validator.RequestValidator;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.collections.MapUtils;
 import org.slf4j.Logger;
@@ -64,6 +64,7 @@ public class LineageREST {
 
     private final AtlasTypeRegistry typeRegistry;
     private final AtlasLineageService atlasLineageService;
+    private final RequestValidator lineageListRequestValidator;
     private static final String DEFAULT_DIRECTION = "BOTH";
     private static final String DEFAULT_DEPTH = "3";
     private static final String DEFAULT_PAGE = "-1";
@@ -73,9 +74,10 @@ public class LineageREST {
     private HttpServletRequest httpServletRequest;
 
     @Inject
-    public LineageREST(AtlasTypeRegistry typeRegistry, AtlasLineageService atlasLineageService) {
+    public LineageREST(AtlasTypeRegistry typeRegistry, AtlasLineageService atlasLineageService, LineageListRequestValidator lineageListRequestValidator) {
         this.typeRegistry = typeRegistry;
         this.atlasLineageService = atlasLineageService;
+        this.lineageListRequestValidator = lineageListRequestValidator;
     }
 
     /**
@@ -109,6 +111,38 @@ public class LineageREST {
             }
 
             return atlasLineageService.getAtlasLineageInfo(guid, lineageOnDemandRequest);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    /**
+     * Returns lineage list info about entity.
+     * @return AtlasLineageListInfo
+     * @throws AtlasBaseException
+     * @HTTP 200 If Lineage exists for the given entity
+     * @HTTP 400 Bad query parameters
+     */
+    @POST
+    @Path("/list")
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Timed
+    public AtlasLineageListInfo getLineageList(LineageListRequest lineageListRequest) throws AtlasBaseException {
+        lineageListRequestValidator.validate(lineageListRequest);
+
+        String guid = lineageListRequest.getGuid();
+        Servlets.validateQueryParamLength("guid", guid);
+        AtlasPerfTracer  perf = null;
+
+        RequestContext.get().setIncludeMeanings(!lineageListRequest.isExcludeMeanings());
+        RequestContext.get().setIncludeClassifications(!lineageListRequest.isExcludeClassifications());
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG))
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "LineageREST.getLineageList(" + guid + "," + lineageListRequest + ")");
+
+            return atlasLineageService.getLineageListInfoOnDemand(guid, lineageListRequest);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -253,4 +287,5 @@ public class LineageREST {
 
         return ret;
     }
+
 }

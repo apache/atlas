@@ -24,7 +24,6 @@ import org.apache.atlas.model.lineage.*;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
 import org.apache.atlas.v1.model.lineage.SchemaResponse.SchemaDetails;
 
-import java.util.Map;
 
 public interface AtlasLineageService {
     /**
@@ -73,5 +72,12 @@ public interface AtlasLineageService {
      * @return AtlasLineageInfo
      */
     AtlasLineageOnDemandInfo getAtlasLineageInfo(String entityGuid, LineageOnDemandRequest lineageOnDemandRequest) throws AtlasBaseException;
+
+    /**
+     * @param entityGuid unique ID of the entity
+     * @param lineageListRequest lineage list request object
+     * @return AtlasLineageListInfo
+     */
+    AtlasLineageListInfo getLineageListInfoOnDemand(String entityGuid, LineageListRequest lineageListRequest) throws AtlasBaseException;
 
 }
