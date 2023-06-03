@@ -943,7 +943,8 @@ public class DiscoveryREST {
             builder.setPurpose(parameters.getPurpose());
         }
 
-        builder.setSearchInput(parameters.getSearchInput())
+        builder.setDsl(parameters.getDsl())
+                .setSearchInput(parameters.getSearchInput())
                 .setUtmTags(parameters.getUtmTags())
                 .setAttributes(parameters.getAttributes())
                 .setRelationAttributes(parameters.getRelationAttributes())
