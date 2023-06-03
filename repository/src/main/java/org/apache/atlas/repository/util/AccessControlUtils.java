@@ -327,11 +327,11 @@ public final class AccessControlUtils {
         }
     }
 
-    public static AtlasEntity getConnectionForPolicy(EntityGraphRetriever entityRetriever, List<String> resources) throws AtlasBaseException {
+    public static AtlasEntity getConnectionForPolicy(EntityGraphRetriever entityRetriever, List<String> entityResources) throws AtlasBaseException {
         AtlasEntity ret = null;
-        if (CollectionUtils.isNotEmpty(resources)) {
+        if (CollectionUtils.isNotEmpty(entityResources)) {
 
-            String entityId = resources.get(0).split(RESOURCES_SPLITTER)[1];
+            String entityId = entityResources.get(0);
 
             ret = extractConnectionFromResource(entityRetriever, entityId);
         }
