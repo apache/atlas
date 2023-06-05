@@ -18,8 +18,6 @@
 import copy
 import json
 import logging
-
-from requests import Session
 from urllib.parse import urljoin
 
 from apache_atlas.client.admin import AdminClient
@@ -30,9 +28,8 @@ from apache_atlas.client.lineage import LineageClient
 from apache_atlas.client.relationship import RelationshipClient
 from apache_atlas.client.typedef import TypeDefClient
 from apache_atlas.exceptions import AtlasServiceException
-from apache_atlas.utils import HTTPMethod
-from apache_atlas.utils import HTTPStatus
-from apache_atlas.utils import type_coerce
+from apache_atlas.utils import HTTPStatus, type_coerce
+from requests import Session
 
 log = logging.getLogger('apache_atlas')
 
@@ -73,8 +70,7 @@ class AtlasClient:
         log.debug("Content-type : %s", api.consumes)
         log.debug("Accept       : %s", api.produces)
 
-        method = HTTPMethod(api.method)
-        response = self.session.request(method.value, path, **params)
+        response = self.session.request(api.method.value, path, **params)
         log.debug("HTTP Status: %s", response.status_code)
 
         if response.status_code == api.expected_status:
