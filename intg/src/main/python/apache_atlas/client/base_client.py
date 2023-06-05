@@ -100,6 +100,4 @@ class AtlasClient:
         elif response.status_code == HTTPStatus.SERVICE_UNAVAILABLE:
             log.error("Atlas Service unavailable. HTTP Status: %s", HTTPStatus.SERVICE_UNAVAILABLE)
 
-            return None
-
         raise AtlasServiceException(api, response)
