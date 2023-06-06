@@ -52,6 +52,7 @@ import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
 import static org.apache.atlas.AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND;
 import static org.apache.atlas.AtlasErrorCode.INSTANCE_GUID_NOT_FOUND;
 import static org.apache.atlas.AtlasErrorCode.OPERATION_NOT_SUPPORTED;
+import static org.apache.atlas.AtlasErrorCode.RESOURCE_NOT_FOUND;
 import static org.apache.atlas.AtlasErrorCode.UNAUTHORIZED_CONNECTION_ADMIN;
 import static org.apache.atlas.authorize.AtlasAuthorizationUtils.getCurrentUserName;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.CREATE;
@@ -244,8 +245,13 @@ public class AuthPolicyPreProcessor implements PreProcessor {
         if ("metadata".equals(subCategory) || "data".equals(subCategory)) {
             //connectionAdmins check
 
-            List<String> resources = (List<String>) policy.getAttribute(ATTR_POLICY_RESOURCES);
-            AtlasEntity connection = getConnectionForPolicy(entityRetriever, resources);
+            List<String> atlasResources = getPolicyResources(policy);
+            List<String> entityResources = getPolicyAssets(atlasResources);
+
+            AtlasEntity connection = getConnectionForPolicy(entityRetriever, entityResources);
+            if (connection == null) {
+                throw new AtlasBaseException(RESOURCE_NOT_FOUND, "Connection entity for policy");
+            }
             String connectionRoleName = String.format(CONN_NAME_PATTERN, connection.getGuid());
 
             Set<String> userRoles = AtlasAuthorizationUtils.getRolesForCurrentUser();
