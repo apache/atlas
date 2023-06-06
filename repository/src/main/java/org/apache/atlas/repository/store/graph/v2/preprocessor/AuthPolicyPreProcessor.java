@@ -246,7 +246,7 @@ public class AuthPolicyPreProcessor implements PreProcessor {
             //connectionAdmins check
 
             List<String> atlasResources = getPolicyResources(policy);
-            List<String> entityResources = getPolicyAssets(atlasResources);
+            List<String> entityResources = getFilteredPolicyResources(atlasResources, RESOURCES_ENTITY);
 
             AtlasEntity connection = getConnectionForPolicy(entityRetriever, entityResources);
             if (connection == null) {

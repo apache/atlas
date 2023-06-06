@@ -30,7 +30,7 @@
       "resources": [
         "relationship-type:*",
 
-        "end-one-entity-type:*",
+        "end-one-entity-type:{entity-type}",
         "end-one-entity-classification:*",
         "end-one-entity:{entity}",
         "end-one-entity:{entity}/*",
@@ -139,7 +139,7 @@
         "end-one-entity-classification:*",
         "end-one-entity:*",
 
-        "end-two-entity-type:*",
+        "end-two-entity-type:{entity-type}",
         "end-two-entity-classification:*",
         "end-two-entity:{entity}",
         "end-two-entity:{entity}/*"
@@ -158,7 +158,7 @@
         "end-one-entity-classification:*",
         "end-one-entity:*",
 
-        "end-two-entity-type:*",
+        "end-two-entity-type:{entity-type}",
         "end-two-entity-classification:*",
         "end-two-entity:{entity}",
         "end-two-entity:{entity}/*"
@@ -346,7 +346,7 @@
       "resources": [
         "entity:{entity}",
         "entity:{entity}/*",
-        "entity-type:*"
+        "entity-type:{entity-type}"
       ],
       "actions": ["select"]
     }

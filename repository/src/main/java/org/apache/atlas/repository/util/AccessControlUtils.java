@@ -106,6 +106,7 @@ public final class AccessControlUtils {
     public static final String POLICY_SUB_CATEGORY_DATA  = "data";
 
     public static final String RESOURCES_ENTITY = "entity:";
+    public static final String RESOURCES_ENTITY_TYPE = "entity-type:";
     public static final String RESOURCES_SPLITTER = ":";
 
     private static final String CONNECTION_QN = "%s/%s/%s";
@@ -127,12 +128,12 @@ public final class AccessControlUtils {
     public static List<String> getPolicyAssets(AtlasEntity policyEntity) throws AtlasBaseException {
         List<String> resources = getPolicyResources(policyEntity);
 
-        return getPolicyAssets(resources);
+        return getFilteredPolicyResources(resources, RESOURCES_ENTITY);
     }
 
-    public static List<String> getPolicyAssets(List<String> resources) {
+    public static List<String> getFilteredPolicyResources(List<String> resources, String resourcePrefix) {
         return resources.stream()
-                .filter(x -> x.startsWith(RESOURCES_ENTITY))
+                .filter(x -> x.startsWith(resourcePrefix))
                 .map(x -> x.split(RESOURCES_SPLITTER)[1])
                 .collect(Collectors.toList());
     }
