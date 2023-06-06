@@ -49,6 +49,9 @@ public class SearchRequestLogData {
     private Set<String> entityQFNamesAllowed;
     private Set<String> entityGuidsDenied;
     private Set<String> entityQFNamesDenied;
+    private Set<String> entityTypeNamesAll;
+    private Set<String> entityTypeNamesAllowed;
+    private Set<String> entityTypeNamesDenied;
     private Set<String> utmTags;
     private String searchInput;
 
@@ -65,8 +68,9 @@ public class SearchRequestLogData {
                                 String userAgent, String host, String ipAddress, String userName,
                                 String errorDetails, String errorCode,
                                 Set<String> entityGuidsAll, Set<String> entityQFNamesAll, Set<String> entityGuidsAllowed,
-                                Set<String> entityQFNamesAllowed, Set<String> entityGuidsDenied,
-                                Set<String> entityQFNamesDenied, Set<String> utmTags, boolean hasResult, boolean isFailed,
+                                Set<String> entityQFNamesAllowed, Set<String> entityGuidsDenied, Set<String> entityQFNamesDenied,
+                                Set<String> entityTypeNamesAll, Set<String> entityTypeNamesAllowed, Set<String> entityTypeNamesDenied,
+                                Set<String> utmTags, boolean hasResult, boolean isFailed,
                                 long resultsCount, long responseTime, long timestamp) {
         this.dsl = dsl;
         this.dslText = AtlasType.toJson(dsl);
@@ -86,6 +90,9 @@ public class SearchRequestLogData {
         this.entityQFNamesAllowed = entityQFNamesAllowed;
         this.entityGuidsDenied = entityGuidsDenied;
         this.entityQFNamesDenied = entityQFNamesDenied;
+        this.entityTypeNamesAll = entityTypeNamesAll;
+        this.entityTypeNamesAllowed = entityTypeNamesAllowed;
+        this.entityTypeNamesDenied = entityTypeNamesDenied;
         this.utmTags = utmTags;
         this.searchInput = searchInput;
         this.hasResult = hasResult;
@@ -172,6 +179,18 @@ public class SearchRequestLogData {
         return entityQFNamesDenied;
     }
 
+    public Set<String> getEntityTypeNamesAll() {
+        return entityTypeNamesAll;
+    }
+
+    public Set<String> getEntityTypeNamesAllowed() {
+        return entityTypeNamesAllowed;
+    }
+
+    public Set<String> getEntityTypeNamesDenied() {
+        return entityTypeNamesDenied;
+    }
+
     public Set<String> getUtmTags() {
         return utmTags;
     }
@@ -229,6 +248,9 @@ public class SearchRequestLogData {
         private Set<String> entityQFNamesAllowed;
         private Set<String> entityGuidsDenied;
         private Set<String> entityQFNamesDenied;
+        private Set<String> entityTypeNamesAll;
+        private Set<String> entityTypeNamesAllowed;
+        private Set<String> entityTypeNamesDenied;
         private Set<String> utmTags;
         private String searchInput;
 
@@ -331,6 +353,21 @@ public class SearchRequestLogData {
             return this;
         }
 
+        public SearchRequestLogDataBuilder setEntityTypeNamesAll(Set<String> entityTypeNamesAll) {
+            this.entityTypeNamesAll = entityTypeNamesAll;
+            return this;
+        }
+
+        public SearchRequestLogDataBuilder setEntityTypeNamesAllowed(Set<String> entityTypeNamesAllowed) {
+            this.entityTypeNamesAllowed = entityTypeNamesAllowed;
+            return this;
+        }
+
+        public SearchRequestLogDataBuilder setEntityTypeNamesDenied(Set<String> entityTypeNamesDenied) {
+            this.entityTypeNamesDenied = entityTypeNamesDenied;
+            return this;
+        }
+
         public SearchRequestLogDataBuilder setUtmTags(Set<String> utmTags) {
             this.utmTags = utmTags;
             return this;
@@ -365,7 +402,8 @@ public class SearchRequestLogData {
             return new SearchRequestLogData(dsl, attributes, relationAttributes, searchInput, persona, purpose,
                     userAgent, host, ipAddress, userName,
                     errorDetails, errorCode, entityGuidsAll, entityQFNamesAll, entityGuidsAllowed,
-                    entityQFNamesAllowed, entityGuidsDenied, entityQFNamesDenied, utmTags,
+                    entityQFNamesAllowed, entityGuidsDenied, entityQFNamesDenied,
+                    entityTypeNamesAll, entityTypeNamesAllowed, entityTypeNamesDenied, utmTags,
                     hasResult, isFailed, resultsCount, responseTime, timestamp);
         }
     }

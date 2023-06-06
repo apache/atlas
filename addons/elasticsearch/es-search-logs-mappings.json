@@ -10,9 +10,9 @@
       "request.dsl": {
         "type": "flattened"
       },
-      "request.dsl.text": {
+      "request.dslText": {
         "type": "text",
-        "analyzer": "atlan_text_analyzer"
+        "analyzer": "atlan_json_analyzer"
       },
 
 
@@ -79,6 +79,17 @@
       "entityQFNamesDenied": {
         "type": "keyword"
       },
+
+      "entityTypeNamesAll": {
+        "type": "keyword"
+      },
+      "entityTypeNamesAllowed": {
+        "type": "keyword"
+      },
+      "entityTypeNamesDenied": {
+        "type": "keyword"
+      },
+
       "utmTags": {
         "type": "keyword"
       },
@@ -122,6 +133,10 @@
             "number_filter"
           ]
         },
+        "atlan_json_analyzer": {
+          "type": "custom",
+          "tokenizer": "atlan_json_tokenizer"
+        },
         "atlan_text_stemmer": {
           "type": "custom",
           "tokenizer": "atlan_tokenizer",
@@ -152,6 +167,10 @@
         "atlan_tokenizer": {
           "type": "pattern",
           "pattern": "( |_|-|'|/|@)"
+        },
+        "atlan_json_tokenizer": {
+          "type": "pattern",
+          "pattern": "(\"|\\{|\\}|:|\\[|\\]|\\,)"
         }
       },
       "char_filter": {
