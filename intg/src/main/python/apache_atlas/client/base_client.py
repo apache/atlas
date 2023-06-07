@@ -76,7 +76,7 @@ class AtlasClient:
         if response.status_code == api.expected_status:
             if response_type is None:
                 return None
-                
+
             if response.content is None:
                 return None
 
