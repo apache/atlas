@@ -43,6 +43,11 @@
                     {{#if entityCreate}}
                     <div class="inline"><button class="btn btn-action btn-sm" data-id="createEntity"><i class="fa fa-plus"></i>&nbsp;Create Entity</button></div>
                     {{/if}}
+                    {{#if isSearchTab}}
+                    <button type="button" data-id="downloadSearchResult" class="btn btn-action btn-sm" title="Download Search Results">
+                        <i class="fa fa-download" aria-hidden="true"></i>&nbsp;&nbsp;Download
+                    </button>
+                    {{/if}}
                     <div class="inline"><button title="Save as custom filter" class="btn btn-action btn-sm" data-id="saveFilter"><i class="fa fa-save"></i>&nbsp;Save Filter</button></div>
                     {{/if}}
                     <div class="inline">

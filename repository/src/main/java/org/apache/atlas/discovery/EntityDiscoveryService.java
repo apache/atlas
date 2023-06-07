@@ -22,6 +22,7 @@ import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.SortOrder;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
@@ -32,6 +33,8 @@ import org.apache.atlas.model.discovery.AtlasQuickSearchResult;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.AtlasSearchResult.AtlasFullTextResult;
 import org.apache.atlas.model.discovery.AtlasSearchResult.AtlasQueryType;
+import org.apache.atlas.model.discovery.AtlasSearchResultDownloadStatus;
+import org.apache.atlas.model.discovery.AtlasSearchResultDownloadStatus.AtlasSearchDownloadRecord;
 import org.apache.atlas.model.discovery.AtlasSuggestionsResult;
 import org.apache.atlas.model.discovery.QuickSearchParameters;
 import org.apache.atlas.model.discovery.RelationshipSearchParameters;
@@ -41,6 +44,7 @@ import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelationshipHeader;
 import org.apache.atlas.model.profile.AtlasUserSavedSearch;
+import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.query.QueryParams;
 import org.apache.atlas.query.executors.DSLQueryExecutor;
 import org.apache.atlas.query.executors.ScriptEngineBasedExecutor;
@@ -56,7 +60,10 @@ import org.apache.atlas.repository.graphdb.AtlasIndexQuery.Result;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
+import org.apache.atlas.repository.store.graph.v2.tasks.searchdownload.SearchResultDownloadTask;
+import org.apache.atlas.repository.store.graph.v2.tasks.searchdownload.SearchResultDownloadTaskFactory;
 import org.apache.atlas.repository.userprofile.UserProfileService;
+import org.apache.atlas.tasks.TaskManagement;
 import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasBuiltInTypes.AtlasObjectIdType;
 import org.apache.atlas.type.AtlasClassificationType;
@@ -83,15 +90,21 @@ import org.springframework.stereotype.Component;
 import javax.inject.Inject;
 import javax.script.ScriptEngine;
 import javax.script.ScriptException;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasErrorCode.*;
 import static org.apache.atlas.SortOrder.ASCENDING;
@@ -120,13 +133,15 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     private final UserProfileService              userProfileService;
     private final SuggestionsProvider             suggestionsProvider;
     private final DSLQueryExecutor                dslQueryExecutor;
+    private final TaskManagement                  taskManagement;
 
     @Inject
     EntityDiscoveryService(AtlasTypeRegistry typeRegistry,
                            AtlasGraph graph,
                            GraphBackedSearchIndexer indexer,
                            SearchTracker searchTracker,
-                           UserProfileService userProfileService) throws AtlasException {
+                           UserProfileService userProfileService,
+                           TaskManagement taskManagement) throws AtlasException {
         this.graph                    = graph;
         this.entityRetriever          = new EntityGraphRetriever(this.graph, typeRegistry);
         this.indexer                  = indexer;
@@ -142,6 +157,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         this.dslQueryExecutor         = AtlasConfiguration.DSL_EXECUTOR_TRAVERSAL.getBoolean()
                                             ? new TraversalBasedExecutor(typeRegistry, graph, entityRetriever)
                                             : new ScriptEngineBasedExecutor(typeRegistry, graph, entityRetriever);
+        this.taskManagement           = taskManagement;
         LOG.info("DSL Executor: {}", this.dslQueryExecutor.getClass().getSimpleName());
     }
 
@@ -449,6 +465,48 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     @GraphTransaction
     public AtlasSearchResult searchWithParameters(SearchParameters searchParameters) throws AtlasBaseException {
         return searchWithSearchContext(new SearchContext(searchParameters, typeRegistry, graph, indexer.getVertexIndexKeys()));
+    }
+
+    @Override
+    @GraphTransaction
+    public void createAndQueueSearchResultDownloadTask(Map<String, Object> taskParams) throws AtlasBaseException {
+
+        List<AtlasTask> pendingTasks = taskManagement.getPendingTasksByType(SearchResultDownloadTaskFactory.SEARCH_RESULT_DOWNLOAD);
+        if (CollectionUtils.isNotEmpty(pendingTasks) && pendingTasks.size() > SearchResultDownloadTaskFactory.MAX_PENDING_TASKS_ALLOWED) {
+            throw new AtlasBaseException(PENDING_TASKS_ALREADY_IN_PROGRESS, String.valueOf(pendingTasks.size()));
+        }
+        AtlasTask task = taskManagement.createTask(SearchResultDownloadTaskFactory.SEARCH_RESULT_DOWNLOAD, RequestContext.getCurrentUser(), taskParams);
+        RequestContext.get().queueTask(task);
+    }
+
+    @Override
+    public AtlasSearchResultDownloadStatus getSearchResultDownloadStatus() throws IOException {
+        List<AtlasTask> pendingTasks = taskManagement.getPendingTasksByType(SearchResultDownloadTaskFactory.SEARCH_RESULT_DOWNLOAD);
+        List<AtlasTask> currentUserPendingTasks = pendingTasks.stream().filter(task -> task.getCreatedBy()
+                .equals(RequestContext.getCurrentUser())).collect(Collectors.toList());
+
+        List<AtlasSearchDownloadRecord> searchDownloadRecords = new ArrayList<>();
+        for (AtlasTask pendingTask : currentUserPendingTasks) {
+            String fileName = (String) pendingTask.getParameters().get(SearchResultDownloadTask.CSV_FILE_NAME_KEY);
+            AtlasSearchDownloadRecord searchDownloadRecord = new AtlasSearchDownloadRecord(pendingTask.getStatus(), fileName, pendingTask.getCreatedBy(), pendingTask.getCreatedTime(), pendingTask.getStartTime());
+            searchDownloadRecords.add(searchDownloadRecord);
+        }
+
+        File fileDir = new File(SearchResultDownloadTask.DOWNLOAD_DIR_PATH, RequestContext.getCurrentUser());
+        if (fileDir.exists()) {
+            File[] currentUserFiles = fileDir.listFiles();
+            if (currentUserFiles != null) {
+                for (File file : currentUserFiles) {
+                    BasicFileAttributes attr = Files.readAttributes(file.toPath(), BasicFileAttributes.class);
+                    Date createdTime = new Date(attr.creationTime().toMillis());
+                    AtlasSearchDownloadRecord searchDownloadRecord = new AtlasSearchDownloadRecord(AtlasTask.Status.COMPLETE, file.getName(), RequestContext.getCurrentUser(), createdTime);
+                    searchDownloadRecords.add(searchDownloadRecord);
+                }
+            }
+        }
+        AtlasSearchResultDownloadStatus result = new AtlasSearchResultDownloadStatus();
+        result.setSearchDownloadRecords(searchDownloadRecords);
+        return result;
     }
 
     @Override

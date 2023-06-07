@@ -164,14 +164,14 @@
         <developer>
             <id>bstortz</id>
             <name>Barbara Stortz</name>
-            <email>bstortz@sap.com</email>
+            <email>barbara.stortz@gmail.com</email>
             <timezone>America/Los_Angeles</timezone>
             <roles>
                 <role>committer</role>
                 <role>PMC</role>
             </roles>
-            <organization>SAP Inc.</organization>
-            <!--<organizationUrl>https://www.sap.com</organizationUrl>-->
+            <organization>Microsoft</organization>
+            <!--<organizationUrl>https://www.microsoft.com</organizationUrl>-->
         </developer>
         <developer>
             <id>chyzer</id>
@@ -750,10 +750,13 @@
         <httpcomponents-httpcore.version>4.4.13</httpcomponents-httpcore.version>
         <jackson.databind.version>2.11.3</jackson.databind.version>
         <jackson.version>2.11.3</jackson.version>
-        <janusgraph.version>0.6.1</janusgraph.version>
+        <janusgraph.version>0.6.3</janusgraph.version>
         <janusgraph.cassandra.version>0.5.3</janusgraph.cassandra.version>
         <javax-inject.version>1</javax-inject.version>
         <javax.servlet.version>3.1.0</javax.servlet.version>
+        <java.version.required>1.8</java.version.required>
+        <javac.source.version>1.8</javac.source.version>
+        <javac.target.version>1.8</javac.target.version>
         <jersey-spring.version>1.19.4</jersey-spring.version>
         <jersey.version>1.19</jersey.version>
         <jettison.version>1.5.2</jettison.version>
@@ -799,11 +802,11 @@
         <spring.security.version>5.7.5</spring.security.version>
         <spring.version>5.3.21</spring.version>
         <sqoop.version>1.4.6.2.3.99.0-195</sqoop.version>
-        <storm.version>2.3.0</storm.version>
+        <storm.version>2.4.0</storm.version>
         <surefire.forkCount>2C</surefire.forkCount>
         <surefire.version>3.0.0-M5</surefire.version>
         <testng.version>7.0.0</testng.version>
-        <tinkerpop.version>3.5.4</tinkerpop.version>
+        <tinkerpop.version>3.5.5</tinkerpop.version>
         <woodstox-core.version>5.0.3</woodstox-core.version>
         <zookeeper.version>3.5.7</zookeeper.version>
     </properties>

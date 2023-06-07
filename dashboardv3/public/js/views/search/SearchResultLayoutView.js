@@ -31,8 +31,9 @@ define(['require',
     'utils/Enums',
     'utils/UrlLinks',
     'moment',
-    'platform'
-], function(require, Backbone, tableDragger, SearchResultLayoutViewTmpl, Modal, VEntity, Utils, Globals, VSearchList, VCommon, CommonViewFunction, Messages, Enums, UrlLinks, moment, platform) {
+    'platform',
+    'collection/VDownloadList'
+], function(require, Backbone, tableDragger, SearchResultLayoutViewTmpl, Modal, VEntity, Utils, Globals, VSearchList, VCommon, CommonViewFunction, Messages, Enums, UrlLinks, moment, platform, VDownloadList) {
     'use strict';
 
     var SearchResultLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -73,7 +74,8 @@ define(['require',
                 activePage: "[data-id='activePage']",
                 saveFilter: "[data-id='saveFilter']",
                 excludeSubtypes: ".exclude-subtypes",
-                excludeSubClassifications: ".exclude-subclassifications"
+                excludeSubClassifications: ".exclude-subclassifications",
+                downloadResults: "[data-id='downloadSearchResult']"
             },
             templateHelpers: function() {
                 return {
@@ -148,6 +150,7 @@ define(['require',
                         this.searchVent.trigger("Save:Filter");
                     }
                 };
+                events["click " + this.ui.downloadResults] = 'onDownloadSearchResults'
                 return events;
             },
             /**
@@ -155,9 +158,10 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'value', 'guid', 'initialView', 'isTypeTagNotExists', 'classificationDefCollection', 'entityDefCollection', 'typeHeaders', 'searchVent', 'categoryEvent', 'enumDefCollection', 'tagCollection', 'searchTableColumns', 'isTableDropDisable', 'fromView', 'glossaryCollection', 'termName', 'businessMetadataDefCollection', 'profileDBView'));
+                _.extend(this, _.pick(options, 'value', 'guid', 'initialView', 'isTypeTagNotExists', 'classificationDefCollection', 'entityDefCollection', 'typeHeaders', 'searchVent', 'categoryEvent', 'enumDefCollection', 'tagCollection', 'searchTableColumns', 'isTableDropDisable', 'fromView', 'glossaryCollection', 'termName', 'businessMetadataDefCollection', 'profileDBView', 'exportVent'));
                 this.entityModel = new VEntity();
                 this.searchCollection = new VSearchList();
+                this.downloadSearchResults = new VDownloadList();
                 this.limit = 25;
                 this.asyncFetchCounter = 0;
                 this.offset = 0;
@@ -165,6 +169,11 @@ define(['require',
                 this.multiSelectEntity = [];
                 this.activeEntityCountSelected = 0;
                 this.searchType = 'Basic Search';
+                this.tableColumnsLabelMap = {};
+                this.downloadSearchResultsParams = {
+                    searchParameters: {},
+                    attributeLabelMap: {}
+                };
                 this.columnOrder = null;
                 this.defaultColumns = ["selected", "name", "description", "typeName", "owner", "tag", "term"];
                 if (this.value) {
@@ -248,6 +257,8 @@ define(['require',
                                 this.ui.columnEmptyInfo.hide();
                             }
                         }
+                        this.downloadSearchResultsParams.searchParameters.attributes = excludeDefaultColumn;
+                        this.validateAttributeLabelMap();
                         this.columnOrder = this.getColumnOrder(this.REntityTableLayoutView.$el.find('.colSort th.renderable'));
                         this.triggerUrl();
                         var attributes = this.searchCollection.filterObj.attributes;
@@ -529,6 +540,11 @@ define(['require',
                             }
                             that.$('.searchResult').html(searchString);
                         }
+                        if (dataOrCollection.approximateCount || dataOrCollection.length) {
+                            that.ui.downloadResults.show();
+                        } else {
+                            that.ui.downloadResults.hide();
+                        }
                     },
                     silent: true,
                     reset: true
@@ -579,6 +595,7 @@ define(['require',
                         Globals.searchApiCallRef = this.searchCollection.fetch(apiObj);
                     }
                 }
+                this.downloadSearchResultsParams.searchParameters = apiObj.data;
             },
             tableRender: function(options) {
                 var that = this,
@@ -659,6 +676,34 @@ define(['require',
                     that.tableRender({ "order": savedColumnOrder, "table": TableLayout });
                     that.checkTableFetch();
                 });
+            },
+            generateAttributeLabelMap: function() {
+                var that = this,
+                    params = this.downloadSearchResultsParams;
+                if (params.searchParameters.attributes) {
+                    _.map(params.searchParameters.attributes, function(attr) {
+                        for (var label in that.tableColumnsLabelMap) {
+                            if (attr === that.tableColumnsLabelMap[label]) {
+                                params.attributeLabelMap[label] = that.tableColumnsLabelMap[label];
+                            }
+                        }
+                    });
+                }
+            },
+            validateAttributeLabelMap: function() {
+                var that = this,
+                    params = this.downloadSearchResultsParams;
+                if (params.searchParameters.attributes.length !== 0) {
+                    _.map(params.searchParameters.attributes, function(attr) {
+                        for (var key in params.attributeLabelMap) {
+                            if (params.attributeLabelMap[key] !== attr) {
+                                delete params.attributeLabelMap[key];
+                            }
+                        }
+                    });
+                } else {
+                    params.attributeLabelMap = {};
+                }
             },
             getColumnOrder: function(arr) {
                 var obj = {};
@@ -895,7 +940,8 @@ define(['require',
                             _.each(attrObj, function(obj, key) {
                                 var key = obj.name,
                                     isRenderable = _.contains(columnToShow, key),
-                                    isSortable = obj.typeName.search(/(array|map)/i) == -1;
+                                    isSortable = obj.typeName.search(/(array|map)/i) == -1,
+                                    columnLabel;
                                 if (key == "name" || key == "description" || key == "owner") {
                                     if (columnToShow) {
                                         col[key].renderable = isRenderable;
@@ -905,8 +951,10 @@ define(['require',
                                 if (key == "__historicalGuids" || key == "__classificationsText" || key == "__classificationNames" || key == "__propagatedClassificationNames") {
                                     return;
                                 }
+                                columnLabel = Enums.systemAttributes[obj.name] ? Enums.systemAttributes[obj.name] : (_.escape(obj.isBusinessAttributes ? obj.name : obj.name.capitalize()));
+                                that.tableColumnsLabelMap[columnLabel] = obj.name;
                                 col[obj.name] = {
-                                    label: Enums.systemAttributes[obj.name] ? Enums.systemAttributes[obj.name] : (_.escape(obj.isBusinessAttributes ? obj.name : obj.name.capitalize())),
+                                    label: columnLabel,
                                     cell: "Html",
                                     headerCell: Backgrid.HeaderHTMLDecodeCell,
                                     editable: false,
@@ -1317,6 +1365,32 @@ define(['require',
                 _.extend(this.searchCollection.queryParams, { limit: this.limit, offset: this.offset });
                 this.fetchCollection();
 
+            },
+            onDownloadSearchResults: function() {
+                this.generateAttributeLabelMap();
+                Utils.disableRefreshButton(this.ui.downloadResults, this);
+                if (this.value.searchType !== "basic") {
+                    this.downloadSearchResultsParams.searchParameters = {
+                        "limit": this.limit,
+                        "offset": this.offset,
+                        "query": this.value.query || null,
+                        "typeName": this.value.type || null
+                    };
+                    delete this.downloadSearchResultsParams.attributeLabelMap;
+                }
+                var apiObj = {
+                    sort: false,
+                    data: this.downloadSearchResultsParams,
+                    success: function(model, response) {
+                        Utils.notifySuccess({
+                            content: "The current search results have been enqueued for download. You can access the csv file by clicking the large arrow icon at the top of the page."
+                        });
+                    },
+                    reset: true,
+                    complete: function() {},
+                    error: function(error) {}
+                }
+                this.downloadSearchResults.startDownloading(apiObj);
             },
             changePageLimit: function(e, obj) {
                 if (!obj || (obj && !obj.skipViewChange)) {

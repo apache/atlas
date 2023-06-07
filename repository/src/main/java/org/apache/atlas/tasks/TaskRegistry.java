@@ -28,6 +28,7 @@ import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.utils.AtlasJson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
@@ -40,6 +41,7 @@ import java.util.Map;
 import static org.apache.atlas.repository.Constants.TASK_GUID;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.setEncodedProperty;
 
+@Lazy
 @Component
 public class TaskRegistry {
     private static final Logger LOG = LoggerFactory.getLogger(TaskRegistry.class);
@@ -79,6 +81,31 @@ public class TaskRegistry {
             LOG.error("Error fetching pending tasks!", exception);
         } finally {
             graph.commit();
+        }
+
+        return ret;
+    }
+
+    @GraphTransaction
+    public List<AtlasTask> getPendingTasksByType(String type) {
+        List<AtlasTask> ret = new ArrayList<>();
+
+        try {
+            AtlasGraphQuery query = graph.query()
+                    .has(Constants.TASK_TYPE_PROPERTY_KEY, Constants.TASK_TYPE_NAME)
+                    .has(Constants.TASK_STATUS, AtlasTask.Status.PENDING)
+                    .has(Constants.TASK_TYPE, type)
+                    .orderBy(Constants.TASK_CREATED_TIME, AtlasGraphQuery.SortOrder.ASC);
+
+            Iterator<AtlasVertex> results = query.vertices().iterator();
+
+            while (results.hasNext()) {
+                AtlasVertex vertex = results.next();
+
+                ret.add(toAtlasTask(vertex));
+            }
+        } catch (Exception exception) {
+            LOG.error("Error fetching pending tasks by type!", exception);
         }
 
         return ret;

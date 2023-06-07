@@ -22,13 +22,16 @@ define(['require',
     'utils/Globals',
     'utils/Utils',
     'utils/UrlLinks',
+    'collection/VDownloadList',
     'jquery-ui'
-], function(require, tmpl, CommonViewFunction, Globals, Utils, UrlLinks) {
+], function(require, tmpl, CommonViewFunction, Globals, Utils, UrlLinks, VDownloadList) {
     'use strict';
 
     var Header = Marionette.LayoutView.extend({
         template: tmpl,
-        regions: {},
+        regions: {
+            RDownloadSearchResult: "[data-id='r_DownloadSearchResult']"
+        },
         templateHelpers: function() {
             return {
                 glossaryImportTempUrl: UrlLinks.glossaryImportTempUrl(),
@@ -47,7 +50,8 @@ define(['require',
             showDebug: "[data-id='showDebug']",
             uiSwitch: "[data-id='uiSwitch']",
             glossaryImport: "[data-id='glossaryImport']",
-            businessMetadataImport: "[data-id='businessMetadataImport']"
+            businessMetadataImport: "[data-id='businessMetadataImport']",
+            showDownloads: "[data-id='showDownloads']"
         },
         events: function() {
             var events = {};
@@ -101,10 +105,13 @@ define(['require',
                     updateTabState: true
                 });
             };
-
+            events['click ' + this.ui.showDownloads] = function(e) {
+                this.exportVent.trigger("downloads:showDownloads");
+            };
             return events;
         },
         initialize: function(options) {
+            _.extend(this, _.pick(options, 'exportVent'));
             this.bindEvent();
             this.options = options;
         },
@@ -130,6 +137,7 @@ define(['require',
                 that.$('.userName').html(Globals.userLogedIn.response.userName);
             }
             this.initializeGlobalSearch();
+            this.renderDownloadSearchResultview();
         },
         onShow: function() {
             this.setSearchBoxWidth();
@@ -326,6 +334,12 @@ define(['require',
                     },
                     isGlossary: isGlossary
                 });
+            });
+        },
+        renderDownloadSearchResultview: function() {
+            var that = this;
+            require(['views/site/DownloadSearchResultLayoutView'], function(DownloadSearchResultLayoutView) {
+                that.RDownloadSearchResult.show(new DownloadSearchResultLayoutView(that.options));
             });
         }
     });
