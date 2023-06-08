@@ -161,6 +161,41 @@ public class ActiveServerFilterTest {
 
     }
 
+    @Test
+    public void testOriginalRequestShouldNotEncodeQueryParametersAgain() throws IOException, ServletException {
+        when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.PASSIVE);
+
+        ActiveServerFilter activeServerFilter = new ActiveServerFilter(activeInstanceState, serviceState);
+
+        when(activeInstanceState.getActiveServerAddress()).thenReturn(ACTIVE_SERVER_ADDRESS);
+        when(servletRequest.getMethod()).thenReturn(HttpMethod.GET);
+        when(servletRequest.getRequestURI()).thenReturn("api/atlas/v2/search/basic");
+        when(servletRequest.getQueryString()).thenReturn("limit=25&excludeDeletedEntities=true&spaceParam=firstpart%20secondpart&_=1500969656054&listParam=value1,value2");
+
+        activeServerFilter.doFilter(servletRequest, servletResponse, filterChain);
+
+        verify(servletResponse).sendRedirect(ACTIVE_SERVER_ADDRESS +
+                "api/atlas/v2/search/basic?limit=25&excludeDeletedEntities=true&spaceParam=firstpart%20secondpart&_=1500969656054&listParam=value1,value2");
+
+    }
+    
+    @Test
+    public void testOriginalRequestShouldNotEncodePartiallyEncodedQueryParameters() throws IOException, ServletException {
+        when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.PASSIVE);
+
+        ActiveServerFilter activeServerFilter = new ActiveServerFilter(activeInstanceState, serviceState);
+
+        when(activeInstanceState.getActiveServerAddress()).thenReturn(ACTIVE_SERVER_ADDRESS);
+        when(servletRequest.getMethod()).thenReturn(HttpMethod.GET);
+        when(servletRequest.getRequestURI()).thenReturn("api/atlas/v2/search/basic");
+        when(servletRequest.getQueryString()).thenReturn("limit=25&excludeDeletedEntities=true&query=where name%3D%22ABC%22&_=1500969656054&listParam=value1,value2");
+
+        activeServerFilter.doFilter(servletRequest, servletResponse, filterChain);
+
+        verify(servletResponse).sendRedirect(ACTIVE_SERVER_ADDRESS +
+                "api/atlas/v2/search/basic?limit=25&excludeDeletedEntities=true&query=where%20name=%22ABC%22&_=1500969656054&listParam=value1,value2");
+
+    }
 
     @Test
     public void testShouldRedirectPOSTRequest() throws IOException, ServletException {
