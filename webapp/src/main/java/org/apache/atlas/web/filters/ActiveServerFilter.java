@@ -160,7 +160,9 @@ public class ActiveServerFilter implements Filter {
         String queryString = servletRequest.getQueryString();
 
         if (queryString != null && (!queryString.isEmpty())) {
-            queryString = UriUtils.encodeQuery(queryString, "UTF-8");
+            //Decoding the queryString from UI to avoid partial encoding issue and re-encoding.
+            String decodedQueryString = UriUtils.decode(queryString, "UTF-8");
+            queryString               = UriUtils.encodeQuery(decodedQueryString, "UTF-8");
         }
 
         if ((queryString != null) && (!queryString.isEmpty())) {
