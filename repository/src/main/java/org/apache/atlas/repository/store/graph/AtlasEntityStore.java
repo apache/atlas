@@ -358,4 +358,7 @@ public interface AtlasEntityStore {
     void repairIndex() throws AtlasBaseException;
 
     void repairHasLineage(AtlasHasLineageRequests requests) throws AtlasBaseException;
+
+    void repairMeaningAttributeForTerms(List<String> termGuids) throws AtlasBaseException;
+
 }

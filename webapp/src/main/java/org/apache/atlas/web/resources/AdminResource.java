@@ -829,6 +829,25 @@ public class AdminResource {
         }
     }
 
+    @POST
+    @Path("repairmeanings")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    public void repairmeanings(List<String> termGuid) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "repairmeanings(" + termGuid + ")");
+            }
+
+            entityStore.repairMeaningAttributeForTerms(termGuid);
+
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
     @GET
     @Path("patches")
     @Produces(Servlets.JSON_MEDIA_TYPE)
