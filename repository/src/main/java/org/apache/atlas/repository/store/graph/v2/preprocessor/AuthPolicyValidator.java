@@ -186,7 +186,7 @@ public class AuthPolicyValidator {
 
                     validateParam (!POLICY_RESOURCE_CATEGORY_PURPOSE.equals(getPolicyResourceCategory(policy)), "Invalid resource category for Purpose");
 
-                    validateParam (CollectionUtils.isNotEmpty(getPolicyResources(policy)), "Provided unexpected attribute " + ATTR_POLICY_RESOURCES);
+                    //validateParam (CollectionUtils.isNotEmpty(getPolicyResources(policy)), "Provided unexpected attribute " + ATTR_POLICY_RESOURCES);
 
                     //validate purpose policy actions
                     Set<String> validActions = PURPOSE_POLICY_VALID_ACTIONS.get(policySubCategory);
@@ -243,8 +243,8 @@ public class AuthPolicyValidator {
                 }
 
                 if (POLICY_CATEGORY_PURPOSE.equals(policyCategory)) {
-                    validateParam (policy.hasAttribute(ATTR_POLICY_RESOURCES) && CollectionUtils.isNotEmpty(getPolicyResources(policy)),
-                            "Provided unexpected attribute " + ATTR_POLICY_RESOURCES);
+                    //validateParam (policy.hasAttribute(ATTR_POLICY_RESOURCES) && CollectionUtils.isNotEmpty(getPolicyResources(policy)),
+                    //        "Provided unexpected attribute " + ATTR_POLICY_RESOURCES);
 
                     //validate purpose policy actions
                     Set<String> validActions = PURPOSE_POLICY_VALID_ACTIONS.get(policySubCategory);
