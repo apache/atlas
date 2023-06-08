@@ -70,7 +70,7 @@ public class AuthPolicyValidator {
         add(POLICY_SUB_CATEGORY_DATA);
     }};
 
-    private static final Set<String> PERSONA_METADATA_ACTIONS = new HashSet<String>(){{
+    private static final Set<String> PERSONA_METADATA_POLICY_ACTIONS = new HashSet<String>(){{
         add("persona-asset-read");
         add("persona-asset-update");
         add("persona-api-create");
@@ -83,11 +83,11 @@ public class AuthPolicyValidator {
         add("persona-remove-terms");
     }};
 
-    private static final Set<String> DATA_ACTIONS = new HashSet<String>(){{
+    private static final Set<String> DATA_POLICY_ACTIONS = new HashSet<String>(){{
         add("select");
     }};
 
-    private static final Set<String> PERSONA_GLOSSARY_ACTIONS = new HashSet<String>(){{
+    private static final Set<String> PERSONA_GLOSSARY_POLICY_ACTIONS = new HashSet<String>(){{
         add("persona-glossary-read");
         add("persona-glossary-update");
         add("persona-glossary-create");
@@ -99,12 +99,12 @@ public class AuthPolicyValidator {
     }};
 
     private static final Map<String, Set<String>> PERSONA_POLICY_VALID_ACTIONS = new HashMap<String, Set<String>>(){{
-        put(POLICY_SUB_CATEGORY_METADATA, PERSONA_METADATA_ACTIONS);
-        put(POLICY_SUB_CATEGORY_DATA, DATA_ACTIONS);
-        put(POLICY_SUB_CATEGORY_GLOSSARY, PERSONA_GLOSSARY_ACTIONS);
+        put(POLICY_SUB_CATEGORY_METADATA, PERSONA_METADATA_POLICY_ACTIONS);
+        put(POLICY_SUB_CATEGORY_DATA, DATA_POLICY_ACTIONS);
+        put(POLICY_SUB_CATEGORY_GLOSSARY, PERSONA_GLOSSARY_POLICY_ACTIONS);
     }};
 
-    private static final Set<String> PURPOSE_METADATA_ACTIONS = new HashSet<String>(){{
+    private static final Set<String> PURPOSE_METADATA_POLICY_ACTIONS = new HashSet<String>(){{
         add(ENTITY_READ.getType());
         add(ENTITY_CREATE.getType());
         add(ENTITY_UPDATE.getType());
@@ -117,17 +117,13 @@ public class AuthPolicyValidator {
     }};
 
     private static final Map<String, Set<String>> PURPOSE_POLICY_VALID_ACTIONS = new HashMap<String, Set<String>>(){{
-        put(POLICY_SUB_CATEGORY_METADATA, PURPOSE_METADATA_ACTIONS);
-        put(POLICY_SUB_CATEGORY_DATA, DATA_ACTIONS);
+        put(POLICY_SUB_CATEGORY_METADATA, PURPOSE_METADATA_POLICY_ACTIONS);
+        put(POLICY_SUB_CATEGORY_DATA, DATA_POLICY_ACTIONS);
     }};
 
     private static final Set<String> PERSONA_POLICY_VALID_RESOURCE_KEYS = new HashSet<String>() {{
         add("entity");
         add("entity-type");
-    }};
-
-    private static final Set<String> PURPOSE_POLICY_VALID_RESOURCE_KEYS = new HashSet<String>() {{
-        add("tag");
     }};
 
     public void validate(AtlasEntity policy, AtlasEntity existingPolicy,
@@ -157,7 +153,8 @@ public class AuthPolicyValidator {
                 if (POLICY_CATEGORY_PERSONA.equals(policyCategory)) {
                     validateParam (!PERSONA_ENTITY_TYPE.equals(accessControl.getTypeName()),  "Please provide Persona as accesscontrol");
 
-                    validateParam (!PERSONA_POLICY_VALID_SUB_CATEGORIES.contains(policySubCategory), "Please provide valid value for attribute " + ATTR_POLICY_SUB_CATEGORY);
+                    validateParam (!PERSONA_POLICY_VALID_SUB_CATEGORIES.contains(policySubCategory),
+                            "Please provide valid value for attribute " + ATTR_POLICY_SUB_CATEGORY + ":"+ PERSONA_POLICY_VALID_SUB_CATEGORIES);
 
                     if (POLICY_SUB_CATEGORY_DATA.equals(policySubCategory)) {
                         validateParam (!POLICY_RESOURCE_CATEGORY_PERSONA_ENTITY.equals(getPolicyResourceCategory(policy)), "Invalid resource category for Persona");
@@ -171,19 +168,21 @@ public class AuthPolicyValidator {
                     Set<String> validActions = PERSONA_POLICY_VALID_ACTIONS.get(policySubCategory);
                     List<String> copyOfActions = new ArrayList<>(policyActions);
                     copyOfActions.removeAll(validActions);
-                    validateParam (CollectionUtils.isNotEmpty(copyOfActions), "Please provide valid values for attribute " + ATTR_POLICY_ACTIONS);
+                    validateParam (CollectionUtils.isNotEmpty(copyOfActions),
+                            "Please provide valid values for attribute " + ATTR_POLICY_ACTIONS + ": Invalid actions "+ copyOfActions);
 
                     //validate persona policy resources keys
                     Set<String> policyResourceKeys = getPolicyResources(policy).stream().map(x -> x.split(RESOURCES_SPLITTER)[0]).collect(Collectors.toSet());
                     policyResourceKeys.removeAll(PERSONA_POLICY_VALID_RESOURCE_KEYS);
-                    validateParam(CollectionUtils.isNotEmpty(policyResourceKeys), "Please provide valid policy resources");
+                    validateParam(CollectionUtils.isNotEmpty(policyResourceKeys),
+                            "Please provide valid policy resources: " + PERSONA_POLICY_VALID_RESOURCE_KEYS);
                 }
 
                 if (POLICY_CATEGORY_PURPOSE.equals(policyCategory)) {
                     validateParam (!PURPOSE_ENTITY_TYPE.equals(accessControl.getTypeName()),  "Please provide Purpose as accesscontrol");
 
                     validateParam (!PURPOSE_POLICY_VALID_SUB_CATEGORIES.contains(policySubCategory),
-                            "Please provide valid value for attribute " + ATTR_POLICY_SUB_CATEGORY);
+                            "Please provide valid value for attribute " + ATTR_POLICY_SUB_CATEGORY + ":"+ PURPOSE_POLICY_VALID_SUB_CATEGORIES);
 
                     validateParam (!POLICY_RESOURCE_CATEGORY_PURPOSE.equals(getPolicyResourceCategory(policy)), "Invalid resource category for Purpose");
 
@@ -193,7 +192,8 @@ public class AuthPolicyValidator {
                     Set<String> validActions = PURPOSE_POLICY_VALID_ACTIONS.get(policySubCategory);
                     List<String> copyOfActions = new ArrayList<>(policyActions);
                     copyOfActions.removeAll(validActions);
-                    validateParam (CollectionUtils.isNotEmpty(copyOfActions), "Please provide valid values for attribute " + ATTR_POLICY_ACTIONS);
+                    validateParam (CollectionUtils.isNotEmpty(copyOfActions),
+                            "Please provide valid values for attribute " + ATTR_POLICY_ACTIONS + ": Invalid actions "+ copyOfActions);
                 }
 
             } else {
@@ -230,12 +230,14 @@ public class AuthPolicyValidator {
                     Set<String> validActions = PERSONA_POLICY_VALID_ACTIONS.get(policySubCategory);
                     List<String> copyOfActions = new ArrayList<>(policyActions);
                     copyOfActions.removeAll(validActions);
-                    validateParam (CollectionUtils.isNotEmpty(copyOfActions), "Please provide valid values for attribute " + ATTR_POLICY_ACTIONS);
+                    validateParam (CollectionUtils.isNotEmpty(copyOfActions),
+                            "Please provide valid values for attribute " + ATTR_POLICY_ACTIONS + ": Invalid actions "+ copyOfActions);
 
                     //validate persona policy resources keys
                     Set<String> policyResourceKeys = getPolicyResources(policy).stream().map(x -> x.split(RESOURCES_SPLITTER)[0]).collect(Collectors.toSet());
                     policyResourceKeys.removeAll(PERSONA_POLICY_VALID_RESOURCE_KEYS);
-                    validateParam(CollectionUtils.isNotEmpty(policyResourceKeys), "Please provide valid policy resources");
+                    validateParam(CollectionUtils.isNotEmpty(policyResourceKeys),
+                            "Please provide valid policy resources" + PERSONA_POLICY_VALID_RESOURCE_KEYS);
 
                     validateParentUpdate(policy, existingPolicy);
                 }
@@ -248,7 +250,8 @@ public class AuthPolicyValidator {
                     Set<String> validActions = PURPOSE_POLICY_VALID_ACTIONS.get(policySubCategory);
                     List<String> copyOfActions = new ArrayList<>(policyActions);
                     copyOfActions.removeAll(validActions);
-                    validateParam (CollectionUtils.isNotEmpty(copyOfActions), "Please provide valid values for attribute " + ATTR_POLICY_ACTIONS);
+                    validateParam (CollectionUtils.isNotEmpty(copyOfActions),
+                            "Please provide valid values for attribute " + ATTR_POLICY_ACTIONS + ": Invalid actions "+ copyOfActions);
 
                     validateParentUpdate(policy, existingPolicy);
                 }
@@ -256,9 +259,11 @@ public class AuthPolicyValidator {
 
         } else {
             //only allow argo & backend
-            String userName = RequestContext.getCurrentUser();
-            validateOperation (!ARGO_SERVICE_USER_NAME.equals(userName) && !BACKEND_SERVICE_USER_NAME.equals(userName),
-                    "Create/Update AuthPolicy with policyCategory other than persona & purpose");
+            if (!RequestContext.get().isPoliciesBootstrappingInProgress()) {
+                String userName = RequestContext.getCurrentUser();
+                validateOperation (!ARGO_SERVICE_USER_NAME.equals(userName) && !BACKEND_SERVICE_USER_NAME.equals(userName),
+                        "Create/Update AuthPolicy with policyCategory other than persona & purpose");
+            }
         }
     }
 
