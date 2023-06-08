@@ -48,9 +48,7 @@ public enum AtlasPrivilege {
 
      ADMIN_AUDITS("admin-audits"),
 
-     ADMIN_ENTITY_AUDITS("admin-entity-audits"),
-
-     SELECT("select");
+     ADMIN_ENTITY_AUDITS("admin-entity-audits");
 
      private final String type;
 
