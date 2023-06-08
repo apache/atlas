@@ -18,6 +18,7 @@
 package org.apache.atlas.repository.util;
 
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.featureflag.FeatureFlagStore;
 import org.apache.atlas.model.discovery.IndexSearchParams;
@@ -36,6 +37,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -113,6 +117,53 @@ public final class AccessControlUtils {
     public static final String ARGO_SERVICE_USER_NAME = "service-account-atlan-argo";
 
     public static final String INSTANCE_DOMAIN_KEY = "instance";
+
+    public static final Set<String> PERSONA_POLICY_VALID_SUB_CATEGORIES = new HashSet<String>(){{
+        add(POLICY_SUB_CATEGORY_METADATA);
+        add(POLICY_SUB_CATEGORY_DATA);
+        add(POLICY_SUB_CATEGORY_GLOSSARY);
+    }};
+
+    public static final Set<String> PURPOSE_POLICY_VALID_SUB_CATEGORIES = new HashSet<String>(){{
+        add(POLICY_SUB_CATEGORY_METADATA);
+        add(POLICY_SUB_CATEGORY_DATA);
+    }};
+
+    public static final Set<String> POLICY_VALID_ACTIONS = Arrays.stream(AtlasPrivilege.values()).map(x -> x.getType()).collect(Collectors.toSet());
+
+    private static final Set<String> PERSONA_METADATA_ACTIONS = new HashSet<String>(){{
+        add("persona-asset-read");
+        add("persona-asset-update");
+        add("persona-api-create");
+        add("persona-api-delete");
+        add("persona-business-update-metadata");
+        add("persona-entity-add-classification");
+        add("persona-entity-update-classification");
+        add("persona-entity-remove-classification");
+        add("persona-add-terms");
+        add("persona-remove-terms");
+    }};
+
+    private static final Set<String> PERSONA_DATA_ACTIONS = new HashSet<String>(){{
+        add("select");
+    }};
+
+    private static final Set<String> PERSONA_GLOSSARY_ACTIONS = new HashSet<String>(){{
+        add("persona-glossary-read");
+        add("persona-glossary-update");
+        add("persona-glossary-create");
+        add("persona-glossary-delete");
+        add("persona-glossary-update-custom-metadata");
+        add("persona-glossary-add-classifications");
+        add("persona-glossary-update-classifications");
+        add("persona-glossary-delete-classifications");
+    }};
+
+    public static final Map<String, Set<String>> PERSONA_POLICY_VALID_ACTIONS = new HashMap<String, Set<String>>(){{
+        put(POLICY_SUB_CATEGORY_METADATA, PERSONA_METADATA_ACTIONS);
+        put(POLICY_SUB_CATEGORY_DATA, PERSONA_DATA_ACTIONS);
+        put(POLICY_SUB_CATEGORY_GLOSSARY, PERSONA_GLOSSARY_ACTIONS);
+    }};
 
     private AccessControlUtils() {}
 

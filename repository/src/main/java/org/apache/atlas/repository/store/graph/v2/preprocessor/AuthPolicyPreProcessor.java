@@ -21,6 +21,7 @@ package org.apache.atlas.repository.store.graph.v2.preprocessor;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
+import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.featureflag.FeatureFlagStore;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -61,6 +62,7 @@ import static org.apache.atlas.repository.Constants.PERSONA_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.PURPOSE_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.util.AccessControlUtils.*;
+import static org.apache.atlas.repository.util.AccessControlUtils.getPolicySubCategory;
 
 public class AuthPolicyPreProcessor implements PreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(AuthPolicyPreProcessor.class);
@@ -166,8 +168,8 @@ public class AuthPolicyPreProcessor implements PreProcessor {
         AtlasEntity existingPolicy = entityRetriever.toAtlasEntityWithExtInfo(vertex).getEntity();
 
         validatePolicyRequest(policy, existingPolicy, UPDATE);
-
-        String policyCategory = getPolicyCategory(policy);
+        
+        String policyCategory = policy.hasAttribute(ATTR_POLICY_CATEGORY) ? getPolicyCategory(policy) : getPolicyCategory(existingPolicy);
 
         if (POLICY_CATEGORY_PERSONA.equals(policyCategory)) {
             AtlasEntityWithExtInfo parent = getAccessControlEntity(policy);
@@ -303,6 +305,7 @@ public class AuthPolicyPreProcessor implements PreProcessor {
                 throw new AtlasBaseException(BAD_REQUEST, "Please provide attribute " + ATTR_POLICY_SERVICE_NAME);
             }
 
+            String policyCategory = getPolicyCategory(policy);
             if (StringUtils.isEmpty(getPolicyCategory(policy))) {
                 throw new AtlasBaseException(BAD_REQUEST, "Please provide attribute " + ATTR_POLICY_CATEGORY);
             }
@@ -315,9 +318,12 @@ public class AuthPolicyPreProcessor implements PreProcessor {
                 throw new AtlasBaseException(BAD_REQUEST, "Please provide attribute " + ATTR_POLICY_RESOURCES_CATEGORY);
             }
 
-            if (CollectionUtils.isEmpty(getPolicyActions(policy))) {
+            List<String> policyActions = getPolicyActions(policy);
+            if (CollectionUtils.isEmpty(policyActions)) {
                 throw new AtlasBaseException(BAD_REQUEST, "Please provide attribute " + ATTR_POLICY_ACTIONS);
             }
+
+            validatePolicyActions(operation, policyActions, policyCategory, getPolicySubCategory(policy));
         } else {
 
             if (policy.hasAttribute(ATTR_POLICY_ACTIONS) && CollectionUtils.isEmpty(getPolicyActions(policy))) {
@@ -338,6 +344,31 @@ public class AuthPolicyPreProcessor implements PreProcessor {
             if (StringUtils.isNotEmpty(newResourceCategory) && !newResourceCategory.equals(getPolicyResourceCategory(existingPolicy))) {
                 throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, ATTR_POLICY_RESOURCES_CATEGORY + " change not Allowed");
             }
+
+            List<String> actions = policy.hasAttribute(ATTR_POLICY_ACTIONS) ? getPolicyActions(policy) : getPolicyActions(existingPolicy);
+            String category = policy.hasAttribute(ATTR_POLICY_CATEGORY) ? getPolicyCategory(policy) : getPolicyCategory(existingPolicy);
+            String subCategory = policy.hasAttribute(ATTR_POLICY_SUB_CATEGORY) ? getPolicySubCategory(policy) : getPolicySubCategory(existingPolicy);
+            validatePolicyActions(operation, actions, category, subCategory);
+        }
+    }
+
+    private static void validatePolicyActions(EntityOperation operation, List<String> policyActions,
+                                              String policyCategory, String policySubCategory) throws AtlasBaseException {
+        Set<String> validActions = POLICY_VALID_ACTIONS;
+
+        if (POLICY_CATEGORY_PERSONA.equals(policyCategory)) {
+            if (!PERSONA_POLICY_VALID_SUB_CATEGORIES.contains(policySubCategory)) {
+                throw new AtlasBaseException(BAD_REQUEST, "Please provide valid value for attribute " + ATTR_POLICY_SUB_CATEGORY);
+            }
+
+            validActions = PERSONA_POLICY_VALID_ACTIONS.get(policySubCategory);
+        }
+
+        List<String> copyOfActions = new ArrayList<>(policyActions);
+        copyOfActions.removeAll(validActions);
+
+        if (CollectionUtils.isNotEmpty(copyOfActions)) {
+            throw new AtlasBaseException(BAD_REQUEST, "Please provide valid values for attribute " + ATTR_POLICY_ACTIONS);
         }
     }
 
@@ -348,8 +379,8 @@ public class AuthPolicyPreProcessor implements PreProcessor {
                 throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Purpose is not Active");
             }
 
-            if (StringUtils.isEmpty(getPolicySubCategory(policy))) {
-                throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Please provide attribute " + ATTR_POLICY_SUB_CATEGORY);
+            if (!PURPOSE_POLICY_VALID_SUB_CATEGORIES.contains(getPolicySubCategory(policy))) {
+                throw new AtlasBaseException(BAD_REQUEST, "Please provide valid value for attribute " + ATTR_POLICY_SUB_CATEGORY);
             }
 
             if (!PURPOSE_ENTITY_TYPE.equals(purpose.getTypeName())) {
@@ -360,9 +391,11 @@ public class AuthPolicyPreProcessor implements PreProcessor {
                 throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Policy is not Active");
             }
 
-            String newSubCategory = getPolicySubCategory(policy);
-            if (StringUtils.isNotEmpty(newSubCategory) && !newSubCategory.equals(getPolicySubCategory(existingPolicy))) {
-                throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Policy sub category change not Allowed");
+            if (policy.hasAttribute(ATTR_POLICY_SUB_CATEGORY)) {
+                String newSubCategory = getPolicySubCategory(policy);
+                if (!getPolicySubCategory(existingPolicy).equals(newSubCategory)) {
+                    throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Policy sub category change not Allowed");
+                }
             }
 
             validateParentUpdate(policy, existingPolicy);
@@ -375,8 +408,8 @@ public class AuthPolicyPreProcessor implements PreProcessor {
                 throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Persona is not Active");
             }
 
-            if (StringUtils.isEmpty(getPolicySubCategory(policy))) {
-                throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Please provide attribute " + ATTR_POLICY_SUB_CATEGORY);
+            if (!PERSONA_POLICY_VALID_SUB_CATEGORIES.contains(getPolicySubCategory(policy))) {
+                throw new AtlasBaseException(BAD_REQUEST, "Please provide valid value for attribute " + ATTR_POLICY_SUB_CATEGORY);
             }
 
             if (!PERSONA_ENTITY_TYPE.equals(persona.getTypeName())) {
@@ -396,9 +429,11 @@ public class AuthPolicyPreProcessor implements PreProcessor {
                 throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Policy is not Active");
             }
 
-            String newSubCategory = getPolicySubCategory(policy);
-            if (StringUtils.isNotEmpty(newSubCategory) && !newSubCategory.equals(getPolicySubCategory(existingPolicy))) {
-                throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Policy sub category change not Allowed");
+            if (policy.hasAttribute(ATTR_POLICY_SUB_CATEGORY)) {
+                String newSubCategory = getPolicySubCategory(policy);
+                if (!getPolicySubCategory(existingPolicy).equals(newSubCategory)) {
+                    throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Policy sub category change not Allowed");
+                }
             }
 
             validateParentUpdate(policy, existingPolicy);
