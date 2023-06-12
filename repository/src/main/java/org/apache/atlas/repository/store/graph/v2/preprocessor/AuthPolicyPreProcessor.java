@@ -37,7 +37,6 @@ import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
 import org.apache.atlas.repository.util.AccessControlUtils;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,16 +50,14 @@ import java.util.stream.Collectors;
 import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
 import static org.apache.atlas.AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND;
 import static org.apache.atlas.AtlasErrorCode.INSTANCE_GUID_NOT_FOUND;
-import static org.apache.atlas.AtlasErrorCode.OPERATION_NOT_SUPPORTED;
 import static org.apache.atlas.AtlasErrorCode.UNAUTHORIZED_CONNECTION_ADMIN;
 import static org.apache.atlas.authorize.AtlasAuthorizationUtils.getCurrentUserName;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.CREATE;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.UPDATE;
 import static org.apache.atlas.repository.Constants.KEYCLOAK_ROLE_ADMIN;
-import static org.apache.atlas.repository.Constants.PERSONA_ENTITY_TYPE;
-import static org.apache.atlas.repository.Constants.PURPOSE_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.util.AccessControlUtils.*;
+import static org.apache.atlas.repository.util.AccessControlUtils.getPolicySubCategory;
 
 public class AuthPolicyPreProcessor implements PreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(AuthPolicyPreProcessor.class);
@@ -106,21 +103,22 @@ public class AuthPolicyPreProcessor implements PreProcessor {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processCreatePolicy");
         AtlasEntity policy = (AtlasEntity) entity;
 
-        validatePolicyRequest(policy, null, CREATE);
-
         String policyCategory = getPolicyCategory(policy);
+        if (StringUtils.isEmpty(policyCategory)) {
+            throw new AtlasBaseException(BAD_REQUEST, "Please provide attribute " + ATTR_POLICY_CATEGORY);
+        }
 
         entity.setAttribute(ATTR_POLICY_IS_ENABLED, entity.getAttributes().getOrDefault(ATTR_POLICY_IS_ENABLED, true));
 
+        AuthPolicyValidator validator = new AuthPolicyValidator();
         if (POLICY_CATEGORY_PERSONA.equals(policyCategory)) {
             AtlasEntityWithExtInfo parent = getAccessControlEntity(policy);
             AtlasEntity parentEntity = parent.getEntity();
 
-            validatePersonaPolicyRequest(policy, null, parentEntity, CREATE);
+            validator.validate(policy, null, parentEntity, CREATE);
             validateConnectionAdmin(policy);
 
             policy.setAttribute(QUALIFIED_NAME, String.format("%s/%s", getEntityQualifiedName(parentEntity), getUUID()));
-
 
             //extract role
             String roleName = getPersonaRoleName(parentEntity);
@@ -140,7 +138,8 @@ public class AuthPolicyPreProcessor implements PreProcessor {
 
             policy.setAttribute(QUALIFIED_NAME, String.format("%s/%s", getEntityQualifiedName(parentEntity), getUUID()));
 
-            validatePurposePolicyRequest(policy, null, parentEntity, CREATE);
+            validator.validate(policy, null, parentEntity, CREATE);
+
             //extract tags
             List<String> purposeTags = getPurposeTags(parentEntity);
 
@@ -152,9 +151,7 @@ public class AuthPolicyPreProcessor implements PreProcessor {
             aliasStore.updateAlias(parent, policy);
 
         } else {
-            if (CollectionUtils.isEmpty(getPolicyResources(policy))) {
-                throw new AtlasBaseException(BAD_REQUEST, "Please provide attribute " + ATTR_POLICY_RESOURCES);
-            }
+            validator.validate(policy, null, null, CREATE);
         }
 
         RequestContext.get().endMetricRecord(metricRecorder);
@@ -165,15 +162,14 @@ public class AuthPolicyPreProcessor implements PreProcessor {
         AtlasEntity policy = (AtlasEntity) entity;
         AtlasEntity existingPolicy = entityRetriever.toAtlasEntityWithExtInfo(vertex).getEntity();
 
-        validatePolicyRequest(policy, existingPolicy, UPDATE);
+        String policyCategory = policy.hasAttribute(ATTR_POLICY_CATEGORY) ? getPolicyCategory(policy) : getPolicyCategory(existingPolicy);
 
-        String policyCategory = getPolicyCategory(policy);
-
+        AuthPolicyValidator validator = new AuthPolicyValidator();
         if (POLICY_CATEGORY_PERSONA.equals(policyCategory)) {
             AtlasEntityWithExtInfo parent = getAccessControlEntity(policy);
             AtlasEntity parentEntity = parent.getEntity();
 
-            validatePersonaPolicyRequest(policy, existingPolicy, parentEntity, UPDATE);
+            validator.validate(policy, existingPolicy, parentEntity, UPDATE);
             validateConnectionAdmin(policy);
 
             String qName = getEntityQualifiedName(existingPolicy);
@@ -198,7 +194,7 @@ public class AuthPolicyPreProcessor implements PreProcessor {
             AtlasEntityWithExtInfo parent = getAccessControlEntity(policy);
             AtlasEntity parentEntity = parent.getEntity();
 
-            validatePurposePolicyRequest(policy, existingPolicy, parentEntity, UPDATE);
+            validator.validate(policy, existingPolicy, parentEntity, UPDATE);
 
             String qName = getEntityQualifiedName(existingPolicy);
             policy.setAttribute(QUALIFIED_NAME, qName);
@@ -212,6 +208,8 @@ public class AuthPolicyPreProcessor implements PreProcessor {
 
             //create ES alias
             parent.addReferredEntity(policy);
+        } else {
+            validator.validate(policy, null, null, UPDATE);
         }
 
         RequestContext.get().endMetricRecord(metricRecorder);
@@ -294,132 +292,5 @@ public class AuthPolicyPreProcessor implements PreProcessor {
 
         RequestContext.get().endMetricRecord(metricRecorder);
         return ret;
-    }
-
-    private static void validatePolicyRequest(AtlasEntity policy, AtlasEntity existingPolicy, EntityOperation operation) throws AtlasBaseException {
-        if (operation == CREATE) {
-
-            if (StringUtils.isEmpty(getPolicyServiceName(policy))) {
-                throw new AtlasBaseException(BAD_REQUEST, "Please provide attribute " + ATTR_POLICY_SERVICE_NAME);
-            }
-
-            if (StringUtils.isEmpty(getPolicyCategory(policy))) {
-                throw new AtlasBaseException(BAD_REQUEST, "Please provide attribute " + ATTR_POLICY_CATEGORY);
-            }
-
-            if (StringUtils.isEmpty(getPolicyType(policy))) {
-                throw new AtlasBaseException(BAD_REQUEST, "Please provide attribute " + ATTR_POLICY_TYPE);
-            }
-
-            if (StringUtils.isEmpty(getPolicyResourceCategory(policy))) {
-                throw new AtlasBaseException(BAD_REQUEST, "Please provide attribute " + ATTR_POLICY_RESOURCES_CATEGORY);
-            }
-
-            if (CollectionUtils.isEmpty(getPolicyActions(policy))) {
-                throw new AtlasBaseException(BAD_REQUEST, "Please provide attribute " + ATTR_POLICY_ACTIONS);
-            }
-        } else {
-
-            if (policy.hasAttribute(ATTR_POLICY_ACTIONS) && CollectionUtils.isEmpty(getPolicyActions(policy))) {
-                throw new AtlasBaseException(BAD_REQUEST, "Please provide attribute " + ATTR_POLICY_ACTIONS);
-            }
-
-            String newCategory = getPolicyCategory(policy);
-            if (StringUtils.isNotEmpty(newCategory) && !newCategory.equals(getPolicyCategory(existingPolicy))) {
-                throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, ATTR_POLICY_CATEGORY + " change not Allowed");
-            }
-
-            String newServiceName = getPolicyServiceName(policy);
-            if (StringUtils.isNotEmpty(newServiceName) && !newServiceName.equals(getPolicyServiceName(existingPolicy))) {
-                throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, ATTR_POLICY_SERVICE_NAME + " change not Allowed");
-            }
-
-            String newResourceCategory = getPolicyResourceCategory(policy);
-            if (StringUtils.isNotEmpty(newResourceCategory) && !newResourceCategory.equals(getPolicyResourceCategory(existingPolicy))) {
-                throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, ATTR_POLICY_RESOURCES_CATEGORY + " change not Allowed");
-            }
-        }
-    }
-
-    private static void validatePurposePolicyRequest(AtlasEntity policy, AtlasEntity existingPolicy, AtlasEntity purpose, EntityOperation operation) throws AtlasBaseException {
-
-        if (operation == CREATE) {
-            if (!AtlasEntity.Status.ACTIVE.equals(purpose.getStatus())) {
-                throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Purpose is not Active");
-            }
-
-            if (StringUtils.isEmpty(getPolicySubCategory(policy))) {
-                throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Please provide attribute " + ATTR_POLICY_SUB_CATEGORY);
-            }
-
-            if (!PURPOSE_ENTITY_TYPE.equals(purpose.getTypeName())) {
-                throw new AtlasBaseException(BAD_REQUEST, "Please provide Purpose as accesscontrol");
-            }
-        } else {
-            if (!AtlasEntity.Status.ACTIVE.equals(existingPolicy.getStatus())) {
-                throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Policy is not Active");
-            }
-
-            String newSubCategory = getPolicySubCategory(policy);
-            if (StringUtils.isNotEmpty(newSubCategory) && !newSubCategory.equals(getPolicySubCategory(existingPolicy))) {
-                throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Policy sub category change not Allowed");
-            }
-
-            validateParentUpdate(policy, existingPolicy);
-        }
-    }
-
-    private static void validatePersonaPolicyRequest(AtlasEntity policy, AtlasEntity existingPolicy, AtlasEntity persona, EntityOperation operation) throws AtlasBaseException {
-        if (operation == CREATE) {
-            if (!AtlasEntity.Status.ACTIVE.equals(persona.getStatus())) {
-                throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Persona is not Active");
-            }
-
-            if (StringUtils.isEmpty(getPolicySubCategory(policy))) {
-                throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Please provide attribute " + ATTR_POLICY_SUB_CATEGORY);
-            }
-
-            if (!PERSONA_ENTITY_TYPE.equals(persona.getTypeName())) {
-                throw new AtlasBaseException(BAD_REQUEST, "Please provide Persona as accesscontrol");
-            }
-
-            if (CollectionUtils.isEmpty(getPolicyResources(policy))) {
-                throw new AtlasBaseException(BAD_REQUEST, "Please provide attribute " + ATTR_POLICY_RESOURCES);
-            }
-        } else {
-
-            if (policy.hasAttribute(ATTR_POLICY_RESOURCES) && CollectionUtils.isEmpty(getPolicyResources(policy))) {
-                throw new AtlasBaseException(BAD_REQUEST, "Please provide attribute " + ATTR_POLICY_RESOURCES);
-            }
-
-            if (!AtlasEntity.Status.ACTIVE.equals(existingPolicy.getStatus())) {
-                throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Policy is not Active");
-            }
-
-            String newSubCategory = getPolicySubCategory(policy);
-            if (StringUtils.isNotEmpty(newSubCategory) && !newSubCategory.equals(getPolicySubCategory(existingPolicy))) {
-                throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Policy sub category change not Allowed");
-            }
-
-            validateParentUpdate(policy, existingPolicy);
-        }
-    }
-
-    private static void validateParentUpdate(AtlasEntity policy, AtlasEntity existingPolicy) throws AtlasBaseException {
-
-        Object object = policy.getRelationshipAttribute(REL_ATTR_ACCESS_CONTROL);
-        if (object != null) {
-            AtlasObjectId atlasObjectId = (AtlasObjectId) object;
-            String newParentGuid = atlasObjectId.getGuid();
-
-            object = existingPolicy.getRelationshipAttribute(REL_ATTR_ACCESS_CONTROL);
-            if (object != null) {
-                atlasObjectId = (AtlasObjectId) object;
-                String existingParentGuid = atlasObjectId.getGuid();
-                if (!newParentGuid.equals(existingParentGuid)) {
-                    throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Policy parent (accesscontrol) change is not Allowed");
-                }
-            }
-        }
     }
 }

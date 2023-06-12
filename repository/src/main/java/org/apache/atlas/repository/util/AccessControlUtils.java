@@ -17,7 +17,6 @@
  */
 package org.apache.atlas.repository.util;
 
-import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.featureflag.FeatureFlagStore;
 import org.apache.atlas.model.discovery.IndexSearchParams;
@@ -101,6 +100,10 @@ public final class AccessControlUtils {
     public static final String POLICY_CATEGORY_PURPOSE  = "purpose";
     public static final String POLICY_CATEGORY_BOOTSTRAP  = "bootstrap";
 
+    public static final String POLICY_RESOURCE_CATEGORY_PERSONA_CUSTOM  = "CUSTOM";
+    public static final String POLICY_RESOURCE_CATEGORY_PERSONA_ENTITY  = "ENTITY";
+    public static final String POLICY_RESOURCE_CATEGORY_PURPOSE  = "TAG";
+
     public static final String POLICY_SUB_CATEGORY_METADATA  = "metadata";
     public static final String POLICY_SUB_CATEGORY_GLOSSARY  = "glossary";
     public static final String POLICY_SUB_CATEGORY_DATA  = "data";
@@ -111,6 +114,7 @@ public final class AccessControlUtils {
     private static final String CONNECTION_QN = "%s/%s/%s";
     public static final String CONN_NAME_PATTERN = "connection_admins_%s";
     public static final String ARGO_SERVICE_USER_NAME = "service-account-atlan-argo";
+    public static final String BACKEND_SERVICE_USER_NAME = "service-account-atlan-backend";
 
     public static final String INSTANCE_DOMAIN_KEY = "instance";
 
