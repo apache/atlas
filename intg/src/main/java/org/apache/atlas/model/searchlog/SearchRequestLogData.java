@@ -102,7 +102,6 @@ public class SearchRequestLogData {
         this.timestamp = timestamp;
     }
 
-    //ES mapping type : nested
     @JsonProperty("request.dsl")
     public Map<String, Object> getDsl() {
         return dsl;
