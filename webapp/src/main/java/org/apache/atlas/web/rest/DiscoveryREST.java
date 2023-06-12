@@ -32,7 +32,6 @@ import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria;
 import org.apache.atlas.model.profile.AtlasUserSavedSearch;
 import org.apache.atlas.model.searchlog.SearchLogSearchParams;
 import org.apache.atlas.model.searchlog.SearchLogSearchResult;
-import org.apache.atlas.model.searchlog.SearchRequestLogData;
 import org.apache.atlas.model.searchlog.SearchRequestLogData.SearchRequestLogDataBuilder;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.searchlog.SearchLoggingManagement;
@@ -878,6 +877,9 @@ public class DiscoveryREST {
             Set<String> entityQFNamesAllowed = new HashSet<>();
             Set<String> entityGuidsDenied = new HashSet<>();
             Set<String> entityQFNamesDenied = new HashSet<>();
+            Set<String> entityTypesAll = new HashSet<>();
+            Set<String> entityTypesAllowed = new HashSet<>();
+            Set<String> entityTypesDenied = new HashSet<>();
 
             result.getEntities().forEach(x -> {
                 boolean allowed = x.getScrubbed() == null;
@@ -886,10 +888,14 @@ public class DiscoveryREST {
 
                 if (guid != null) {
                     entityGuidsAll.add(guid);
+                    entityTypesAll.add(x.getTypeName());
+
                     if (allowed) {
                         entityGuidsAllowed.add(guid);
+                        entityTypesAllowed.add(x.getTypeName());
                     } else {
                         entityGuidsDenied.add(guid);
+                        entityTypesDenied.add(x.getTypeName());
                     }
                 }
 
@@ -915,7 +921,10 @@ public class DiscoveryREST {
                     .setEntityGuidsAllowed(entityGuidsAllowed)
                     .setEntityQFNamesAllowed(entityQFNamesAllowed)
                     .setEntityGuidsDenied(entityGuidsDenied)
-                    .setEntityQFNamesDenied(entityQFNamesDenied);
+                    .setEntityQFNamesDenied(entityQFNamesDenied)
+                    .setEntityTypeNamesAll(entityTypesAll)
+                    .setEntityTypeNamesAllowed(entityTypesAllowed)
+                    .setEntityTypeNamesDenied(entityTypesDenied);
 
         }
 
@@ -943,7 +952,8 @@ public class DiscoveryREST {
             builder.setPurpose(parameters.getPurpose());
         }
 
-        builder.setSearchInput(parameters.getSearchInput())
+        builder.setDsl(parameters.getDsl())
+                .setSearchInput(parameters.getSearchInput())
                 .setUtmTags(parameters.getUtmTags())
                 .setAttributes(parameters.getAttributes())
                 .setRelationAttributes(parameters.getRelationAttributes())

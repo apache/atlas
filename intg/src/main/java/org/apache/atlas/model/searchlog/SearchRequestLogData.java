@@ -20,13 +20,16 @@ package org.apache.atlas.model.searchlog;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.apache.atlas.type.AtlasType;
 
+import java.util.Map;
 import java.util.Set;
 
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class SearchRequestLogData {
 
-    //private Map<String, Object> dsl;
+    private Map<String, Object> dsl;
+    private String dslText;
     private Set<String> attributes;
     private Set<String> relationAttributes;
 
@@ -46,6 +49,9 @@ public class SearchRequestLogData {
     private Set<String> entityQFNamesAllowed;
     private Set<String> entityGuidsDenied;
     private Set<String> entityQFNamesDenied;
+    private Set<String> entityTypeNamesAll;
+    private Set<String> entityTypeNamesAllowed;
+    private Set<String> entityTypeNamesDenied;
     private Set<String> utmTags;
     private String searchInput;
 
@@ -57,15 +63,17 @@ public class SearchRequestLogData {
     private long createdAt;
     private long timestamp;
 
-    public SearchRequestLogData(Set<String> attributes, Set<String> relationAttributes,
+    public SearchRequestLogData(Map<String, Object> dsl, Set<String> attributes, Set<String> relationAttributes,
                                 String searchInput, String persona, String purpose,
                                 String userAgent, String host, String ipAddress, String userName,
                                 String errorDetails, String errorCode,
                                 Set<String> entityGuidsAll, Set<String> entityQFNamesAll, Set<String> entityGuidsAllowed,
-                                Set<String> entityQFNamesAllowed, Set<String> entityGuidsDenied,
-                                Set<String> entityQFNamesDenied, Set<String> utmTags, boolean hasResult, boolean isFailed,
+                                Set<String> entityQFNamesAllowed, Set<String> entityGuidsDenied, Set<String> entityQFNamesDenied,
+                                Set<String> entityTypeNamesAll, Set<String> entityTypeNamesAllowed, Set<String> entityTypeNamesDenied,
+                                Set<String> utmTags, boolean hasResult, boolean isFailed,
                                 long resultsCount, long responseTime, long timestamp) {
-        //this.dsl = dsl;
+        this.dsl = dsl;
+        this.dslText = AtlasType.toJson(dsl);
         this.attributes = attributes;
         this.relationAttributes = relationAttributes;
         this.persona = persona;
@@ -82,6 +90,9 @@ public class SearchRequestLogData {
         this.entityQFNamesAllowed = entityQFNamesAllowed;
         this.entityGuidsDenied = entityGuidsDenied;
         this.entityQFNamesDenied = entityQFNamesDenied;
+        this.entityTypeNamesAll = entityTypeNamesAll;
+        this.entityTypeNamesAllowed = entityTypeNamesAllowed;
+        this.entityTypeNamesDenied = entityTypeNamesDenied;
         this.utmTags = utmTags;
         this.searchInput = searchInput;
         this.hasResult = hasResult;
@@ -91,11 +102,15 @@ public class SearchRequestLogData {
         this.timestamp = timestamp;
     }
 
-    //ES mapping type : nested
-    /*@JsonProperty("request.dsl")
+    @JsonProperty("request.dsl")
     public Map<String, Object> getDsl() {
         return dsl;
-    }*/
+    }
+
+    @JsonProperty("request.dslText")
+    public String getDslText() {
+        return dslText;
+    }
 
     @JsonProperty("request.attributes")
     public Set<String> getAttributes() {
@@ -163,6 +178,18 @@ public class SearchRequestLogData {
         return entityQFNamesDenied;
     }
 
+    public Set<String> getEntityTypeNamesAll() {
+        return entityTypeNamesAll;
+    }
+
+    public Set<String> getEntityTypeNamesAllowed() {
+        return entityTypeNamesAllowed;
+    }
+
+    public Set<String> getEntityTypeNamesDenied() {
+        return entityTypeNamesDenied;
+    }
+
     public Set<String> getUtmTags() {
         return utmTags;
     }
@@ -200,7 +227,7 @@ public class SearchRequestLogData {
     }
 
     public static class SearchRequestLogDataBuilder {
-        //private Map<String, Object> dsl;
+        private Map<String, Object> dsl;
         private Set<String> attributes;
         private Set<String> relationAttributes;
 
@@ -220,6 +247,9 @@ public class SearchRequestLogData {
         private Set<String> entityQFNamesAllowed;
         private Set<String> entityGuidsDenied;
         private Set<String> entityQFNamesDenied;
+        private Set<String> entityTypeNamesAll;
+        private Set<String> entityTypeNamesAllowed;
+        private Set<String> entityTypeNamesDenied;
         private Set<String> utmTags;
         private String searchInput;
 
@@ -232,10 +262,10 @@ public class SearchRequestLogData {
 
         public SearchRequestLogDataBuilder(){}
 
-        /*public SearchRequestLogDataBuilder setDsl(Map<String, Object> dsl) {
+        public SearchRequestLogDataBuilder setDsl(Map<String, Object> dsl) {
             this.dsl = dsl;
             return this;
-        }*/
+        }
 
         public SearchRequestLogDataBuilder setSearchInput(String searchInput) {
             this.searchInput = searchInput;
@@ -322,6 +352,21 @@ public class SearchRequestLogData {
             return this;
         }
 
+        public SearchRequestLogDataBuilder setEntityTypeNamesAll(Set<String> entityTypeNamesAll) {
+            this.entityTypeNamesAll = entityTypeNamesAll;
+            return this;
+        }
+
+        public SearchRequestLogDataBuilder setEntityTypeNamesAllowed(Set<String> entityTypeNamesAllowed) {
+            this.entityTypeNamesAllowed = entityTypeNamesAllowed;
+            return this;
+        }
+
+        public SearchRequestLogDataBuilder setEntityTypeNamesDenied(Set<String> entityTypeNamesDenied) {
+            this.entityTypeNamesDenied = entityTypeNamesDenied;
+            return this;
+        }
+
         public SearchRequestLogDataBuilder setUtmTags(Set<String> utmTags) {
             this.utmTags = utmTags;
             return this;
@@ -353,10 +398,11 @@ public class SearchRequestLogData {
         }
 
         public SearchRequestLogData build() {
-            return new SearchRequestLogData(attributes, relationAttributes, searchInput, persona, purpose,
+            return new SearchRequestLogData(dsl, attributes, relationAttributes, searchInput, persona, purpose,
                     userAgent, host, ipAddress, userName,
                     errorDetails, errorCode, entityGuidsAll, entityQFNamesAll, entityGuidsAllowed,
-                    entityQFNamesAllowed, entityGuidsDenied, entityQFNamesDenied, utmTags,
+                    entityQFNamesAllowed, entityGuidsDenied, entityQFNamesDenied,
+                    entityTypeNamesAll, entityTypeNamesAllowed, entityTypeNamesDenied, utmTags,
                     hasResult, isFailed, resultsCount, responseTime, timestamp);
         }
     }
