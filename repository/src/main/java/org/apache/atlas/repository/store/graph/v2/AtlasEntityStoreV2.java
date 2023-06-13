@@ -2424,7 +2424,9 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                         if (GraphHelper.getStatus(edge) == AtlasEntity.Status.ACTIVE) {
                             AtlasVertex entityVertex = edge.getInVertex();
                             if (entityVertex != null & getStatus(entityVertex) == AtlasEntity.Status.ACTIVE) {
-                                repairMeanings(entityVertex);
+                                if(!RequestContext.get().getProcessGuidIds().contains(getGuid(entityVertex))) {
+                                    repairMeanings(entityVertex);
+                                }
                             }
                         }
                     }
@@ -2470,6 +2472,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             if (CollectionUtils.isNotEmpty(termNameList)) {
                 termNameList.forEach(q -> AtlasGraphUtilsV2.addListProperty(assetVertex, MEANING_NAMES_PROPERTY_KEY, q, true));
             }
+
+            RequestContext.get().addProcessGuidIds(getGuid(assetVertex));
 
             LOG.info("Updated asset {}  with term {} ",  getGuid(assetVertex) ,  StringUtils.join(termNameList, ","));
         }
