@@ -103,7 +103,11 @@ public class AtlasAuthRESTClient implements AtlasAuthAdminClient {
                     LOG.warn("AtlasAuthRESTClient.sendRequestAndGetResponse(): Empty response from Atlas Auth");
                 }
             } else {
-                LOG.error("AtlasAuthRESTClient.sendRequestAndGetResponse(): HTTP error: " + response.code());
+                if (response.code() != HttpServletResponse.SC_NO_CONTENT && response.code() != HttpServletResponse.SC_NOT_MODIFIED) {
+                    LOG.info("AtlasAuthRESTClient.sendRequestAndGetResponse(): " + response.code());
+                } else {
+                    LOG.error("AtlasAuthRESTClient.sendRequestAndGetResponse(): HTTP error: " + response.code());
+                }
             }
         }
 
