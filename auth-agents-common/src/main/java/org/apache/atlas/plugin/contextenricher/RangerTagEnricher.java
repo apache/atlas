@@ -171,7 +171,7 @@ public class RangerTagEnricher extends RangerAbstractContextEnricher {
 				}
 			}
 		} else {
-			LOG.error("No value specified for " + TAG_RETRIEVER_CLASSNAME_OPTION + " in the RangerTagEnricher options");
+			LOG.warn("No value specified for " + TAG_RETRIEVER_CLASSNAME_OPTION + " in the RangerTagEnricher options");
 		}
 
 		if (LOG.isDebugEnabled()) {

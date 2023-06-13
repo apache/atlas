@@ -63,7 +63,7 @@ public class RangerConfiguration extends Configuration {
 				}
 			}
 		} else {
-			LOG.error("addResourceIfReadable(" + aResourceName + "): couldn't find resource file location");
+			LOG.warn("addResourceIfReadable(" + aResourceName + "): couldn't find resource file location");
 		}
 
 		if(LOG.isDebugEnabled()) {
