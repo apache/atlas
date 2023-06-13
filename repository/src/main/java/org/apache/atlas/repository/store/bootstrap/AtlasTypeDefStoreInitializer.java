@@ -186,10 +186,6 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
         if (typeDefFiles == null || typeDefFiles.length == 0) {
             LOG.info("Types directory {} does not exist or not readable or has no typedef files", typesDirName );
         } else {
-            if ("0001-atlas-authz".equals(typesDir.getName()) && !featureFlagStore.evaluate(IS_INSTANCE_MIGRATED, INSTANCE_DOMAIN_KEY, INSTANCE_DOMAIN_NAME)) {
-                return;
-            }
-
             // sort the files by filename
             Arrays.sort(typeDefFiles);
 
