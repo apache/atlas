@@ -54,6 +54,8 @@ public class RequestContext {
     private final Map<String, List<AtlasClassification>> removedPropagations  = new HashMap<>();
     private final Map<String, String>                    requestContextHeaders= new HashMap<>();
     private final Set<String>                            deletedEdgesIds      = new HashSet<>();
+    private final Set<String>                            processGuidIds      = new HashSet<>();
+
     private final AtlasPerfMetrics metrics = isMetricsEnabled ? new AtlasPerfMetrics() : null;
     private List<EntityGuidPair> entityGuidInRequest = null;
     private final Set<String> entitiesToSkipUpdate = new HashSet<>();
@@ -142,6 +144,7 @@ public class RequestContext {
         this.newElementsCreatedMap.clear();
         this.removedElementsMap.clear();
         this.deletedEdgesIds.clear();
+        this.processGuidIds.clear();
         this.requestContextHeaders.clear();
         this.relationshipEndToVertexIdMap.clear();
         this.relationshipMutationMap.clear();
@@ -382,6 +385,15 @@ public class RequestContext {
     public Set<String> getDeletedEdgesIds() {
         return deletedEdgesIds;
     }
+
+    public Set<String> getProcessGuidIds() {
+        return processGuidIds;
+    }
+
+    public void addProcessGuidIds(String guid) {
+        processGuidIds.add(guid);
+    }
+
 
     public AtlasTask getCurrentTask() {
         return currentTask;

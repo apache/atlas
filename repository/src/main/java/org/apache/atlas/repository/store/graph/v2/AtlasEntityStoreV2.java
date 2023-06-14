@@ -40,6 +40,7 @@ import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.Status;
 import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
@@ -2402,6 +2403,81 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             if (isRelationshipEdge(edge))
                 AtlasRelationshipStoreV2.recordRelationshipMutation(AtlasRelationshipStoreV2.RelationshipMutation.RELATIONSHIP_HARD_DELETE, edge, entityRetriever);
         }
+    }
+
+    @Override
+    @GraphTransaction
+    public void repairMeaningAttributeForTerms(List<String> termGuid) {
+
+        for (String guid : termGuid) {
+            LOG.info(" term guid " + guid);
+
+            AtlasVertex termVertex = AtlasGraphUtilsV2.findByGuid(this.graph, guid);
+
+            if(termVertex!= null && ATLAS_GLOSSARY_TERM_ENTITY_TYPE.equals(getTypeName(termVertex)) &&
+                    GraphHelper.getStatus(termVertex) == AtlasEntity.Status.ACTIVE) {
+                Iterable<AtlasEdge> edges = termVertex.getEdges(AtlasEdgeDirection.OUT, Constants.TERM_ASSIGNMENT_LABEL);
+                // Get entity to tagged with term.
+                if (edges != null) {
+                    for (Iterator<AtlasEdge> iter = edges.iterator(); iter.hasNext(); ) {
+                        AtlasEdge edge = iter.next();
+                        if (GraphHelper.getStatus(edge) == AtlasEntity.Status.ACTIVE) {
+                            AtlasVertex entityVertex = edge.getInVertex();
+                            if (entityVertex != null & getStatus(entityVertex) == AtlasEntity.Status.ACTIVE) {
+                                if(!RequestContext.get().getProcessGuidIds().contains(getGuid(entityVertex))) {
+                                    repairMeanings(entityVertex);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private void repairMeanings(AtlasVertex assetVertex) {
+
+        Iterable<AtlasEdge> edges = assetVertex.getEdges(AtlasEdgeDirection.IN, Constants.TERM_ASSIGNMENT_LABEL);
+        List<String> termQNList = new ArrayList<>();
+        List<String> termNameList = new ArrayList<>();
+        if (edges != null) {
+            for (Iterator<AtlasEdge> iter = edges.iterator(); iter.hasNext(); ) {
+                AtlasEdge edge = iter.next();
+                if (GraphHelper.getStatus(edge) == AtlasEntity.Status.ACTIVE) {
+                    AtlasVertex termVertex = edge.getOutVertex();
+                    if (termVertex != null & getStatus(termVertex) == AtlasEntity.Status.ACTIVE) {
+                        String termQN = termVertex.getProperty(QUALIFIED_NAME, String.class);
+                        String termName = termVertex.getProperty(NAME, String.class);
+                        termQNList.add(termQN);
+                        termNameList.add(termName);
+                    }
+                }
+            }
+        }
+
+        if (termQNList.size() > 0) {
+
+            assetVertex.removeProperty(MEANINGS_PROPERTY_KEY);
+            assetVertex.removeProperty(MEANINGS_TEXT_PROPERTY_KEY);
+            assetVertex.removeProperty(MEANING_NAMES_PROPERTY_KEY);
+
+            if (CollectionUtils.isNotEmpty(termQNList)) {
+                termQNList.forEach(q -> AtlasGraphUtilsV2.addEncodedProperty(assetVertex, MEANINGS_PROPERTY_KEY, q));
+            }
+
+            if (CollectionUtils.isNotEmpty(termNameList)) {
+                AtlasGraphUtilsV2.setEncodedProperty(assetVertex, MEANINGS_TEXT_PROPERTY_KEY, StringUtils.join(termNameList, ","));
+            }
+
+            if (CollectionUtils.isNotEmpty(termNameList)) {
+                termNameList.forEach(q -> AtlasGraphUtilsV2.addListProperty(assetVertex, MEANING_NAMES_PROPERTY_KEY, q, true));
+            }
+
+            RequestContext.get().addProcessGuidIds(getGuid(assetVertex));
+
+            LOG.info("Updated asset {}  with term {} ",  getGuid(assetVertex) ,  StringUtils.join(termNameList, ","));
+        }
+
     }
 }
 
