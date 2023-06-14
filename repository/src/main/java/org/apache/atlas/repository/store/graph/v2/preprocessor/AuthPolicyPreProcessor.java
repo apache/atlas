@@ -262,7 +262,7 @@ public class AuthPolicyPreProcessor implements PreProcessor {
 
             if (userRoles.contains(connectionRoleName) || (userRoles.contains(KEYCLOAK_ROLE_ADMIN) && connRoles.contains(KEYCLOAK_ROLE_ADMIN))) {
                 //valid connection admin
-            } else if (ARGO_SERVICE_USER_NAME.equals(RequestContext.getCurrentUser()) && AccessControlUtils.getAccessControlFeatureFlag(featureFlagStore)) {
+            } else if (ARGO_SERVICE_USER_NAME.equals(RequestContext.getCurrentUser())) {
                 // Argo service user Valid Service user for connection admin while access control is disabled
                 //TODO: Remove this once we complete migration to Atlas AuthZ based access control
             } else {
