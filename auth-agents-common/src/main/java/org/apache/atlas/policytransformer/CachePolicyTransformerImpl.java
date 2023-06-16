@@ -182,7 +182,7 @@ public class CachePolicyTransformerImpl {
             }
 
         } catch (Exception e) {
-            LOG.error("ERROR in getPolicies {}: ", e.getMessage());
+            LOG.error("ERROR in getPolicies {}: ", e);
             return null;
         }
 
