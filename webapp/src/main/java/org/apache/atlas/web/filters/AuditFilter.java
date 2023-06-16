@@ -43,8 +43,9 @@ import java.util.Date;
 import java.util.Set;
 import java.util.UUID;
 
+import static java.util.Optional.ofNullable;
 import static org.apache.atlas.AtlasConfiguration.*;
-
+import static org.apache.commons.lang.StringUtils.EMPTY;
 /**
  * This records audit information as part of the filter after processing the request
  * and also introduces a UUID into request and response for tracing requests in logs.
@@ -95,7 +96,7 @@ public class AuditFilter implements Filter {
             requestContext.setForwardedAddresses(AtlasAuthorizationUtils.getForwardedAddressesFromRequest(httpRequest));
             requestContext.setSkipFailedEntities(skipFailedEntities);
             MDC.put(TRACE_ID, internalRequestId);
-            MDC.put(X_ATLAN_REQUEST_ID, httpRequest.getHeader(X_ATLAN_REQUEST_ID));
+            MDC.put(X_ATLAN_REQUEST_ID, ofNullable(httpRequest.getHeader(X_ATLAN_REQUEST_ID)).orElse(EMPTY));
             if (StringUtils.isNotEmpty(deleteType)) {
                 if (deleteTypeOverrideEnabled) {
                     if(DeleteType.PURGE.name().equals(deleteType)) {
