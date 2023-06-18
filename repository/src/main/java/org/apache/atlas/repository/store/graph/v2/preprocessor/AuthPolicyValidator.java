@@ -5,6 +5,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.EntityMutations;
+import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 
@@ -28,36 +29,17 @@ import static org.apache.atlas.authorize.AtlasPrivilege.ENTITY_UPDATE;
 import static org.apache.atlas.authorize.AtlasPrivilege.ENTITY_UPDATE_BUSINESS_METADATA;
 import static org.apache.atlas.authorize.AtlasPrivilege.ENTITY_UPDATE_CLASSIFICATION;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.CREATE;
+import static org.apache.atlas.repository.Constants.CONNECTION_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.PERSONA_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.PURPOSE_ENTITY_TYPE;
-import static org.apache.atlas.repository.util.AccessControlUtils.ARGO_SERVICE_USER_NAME;
-import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_ACTIONS;
-import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_CATEGORY;
-import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_RESOURCES;
-import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_RESOURCES_CATEGORY;
-import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_SERVICE_NAME;
-import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_SUB_CATEGORY;
-import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_TYPE;
-import static org.apache.atlas.repository.util.AccessControlUtils.BACKEND_SERVICE_USER_NAME;
-import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGORY_PERSONA;
-import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGORY_PURPOSE;
-import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_RESOURCE_CATEGORY_PERSONA_CUSTOM;
-import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_RESOURCE_CATEGORY_PERSONA_ENTITY;
-import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_RESOURCE_CATEGORY_PURPOSE;
-import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_SUB_CATEGORY_DATA;
-import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_SUB_CATEGORY_GLOSSARY;
-import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_SUB_CATEGORY_METADATA;
-import static org.apache.atlas.repository.util.AccessControlUtils.REL_ATTR_ACCESS_CONTROL;
-import static org.apache.atlas.repository.util.AccessControlUtils.RESOURCES_SPLITTER;
-import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyActions;
-import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyCategory;
-import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyResourceCategory;
-import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyResources;
-import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyServiceName;
-import static org.apache.atlas.repository.util.AccessControlUtils.getPolicySubCategory;
-import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyType;
+import static org.apache.atlas.repository.util.AccessControlUtils.*;
 
 public class AuthPolicyValidator {
+    private final EntityGraphRetriever entityRetriever;
+    
+    AuthPolicyValidator(EntityGraphRetriever entityRetriever) {
+        this.entityRetriever = entityRetriever;
+    }
 
     private static final Set<String> PERSONA_POLICY_VALID_SUB_CATEGORIES = new HashSet<String>(){{
         add(POLICY_SUB_CATEGORY_METADATA);
@@ -156,13 +138,29 @@ public class AuthPolicyValidator {
                     validateParam (!PERSONA_POLICY_VALID_SUB_CATEGORIES.contains(policySubCategory),
                             "Please provide valid value for attribute " + ATTR_POLICY_SUB_CATEGORY + ":"+ PERSONA_POLICY_VALID_SUB_CATEGORIES);
 
+
+                    List<String> resources = getPolicyResources(policy);
+                    validateParam (CollectionUtils.isEmpty(resources), "Please provide attribute " + ATTR_POLICY_RESOURCES);
+
+                    //validate persona policy resources keys
+                    Set<String> policyResourceKeys = resources.stream().map(x -> x.split(RESOURCES_SPLITTER)[0]).collect(Collectors.toSet());
+                    policyResourceKeys.removeAll(PERSONA_POLICY_VALID_RESOURCE_KEYS);
+                    validateParam(CollectionUtils.isNotEmpty(policyResourceKeys),
+                            "Please provide valid type of policy resources: " + PERSONA_POLICY_VALID_RESOURCE_KEYS);
+
+
                     if (POLICY_SUB_CATEGORY_DATA.equals(policySubCategory)) {
                         validateParam (!POLICY_RESOURCE_CATEGORY_PERSONA_ENTITY.equals(getPolicyResourceCategory(policy)), "Invalid resource category for Persona");
-                    } else {
+                        validateConnection(getPolicyConnectionQN(policy), resources);
+
+                    } else if (POLICY_SUB_CATEGORY_METADATA.equals(policySubCategory)) {
+                        validateParam(!POLICY_RESOURCE_CATEGORY_PERSONA_CUSTOM.equals(getPolicyResourceCategory(policy)), "Invalid resource category for Persona");
+                        validateConnection(getPolicyConnectionQN(policy), resources);
+
+                    } else if (POLICY_SUB_CATEGORY_GLOSSARY.equals(policySubCategory)) {
+
                         validateParam(!POLICY_RESOURCE_CATEGORY_PERSONA_CUSTOM.equals(getPolicyResourceCategory(policy)), "Invalid resource category for Persona");
                     }
-
-                    validateParam (CollectionUtils.isEmpty(getPolicyResources(policy)), "Please provide attribute " + ATTR_POLICY_RESOURCES);
 
                     //validate persona policy actions
                     Set<String> validActions = PERSONA_POLICY_VALID_ACTIONS.get(policySubCategory);
@@ -170,12 +168,6 @@ public class AuthPolicyValidator {
                     copyOfActions.removeAll(validActions);
                     validateParam (CollectionUtils.isNotEmpty(copyOfActions),
                             "Please provide valid values for attribute " + ATTR_POLICY_ACTIONS + ": Invalid actions "+ copyOfActions);
-
-                    //validate persona policy resources keys
-                    Set<String> policyResourceKeys = getPolicyResources(policy).stream().map(x -> x.split(RESOURCES_SPLITTER)[0]).collect(Collectors.toSet());
-                    policyResourceKeys.removeAll(PERSONA_POLICY_VALID_RESOURCE_KEYS);
-                    validateParam(CollectionUtils.isNotEmpty(policyResourceKeys),
-                            "Please provide valid policy resources: " + PERSONA_POLICY_VALID_RESOURCE_KEYS);
                 }
 
                 if (POLICY_CATEGORY_PURPOSE.equals(policyCategory)) {
@@ -223,8 +215,23 @@ public class AuthPolicyValidator {
                 String policySubCategory = policy.hasAttribute(ATTR_POLICY_SUB_CATEGORY) ? getPolicySubCategory(policy) : getPolicySubCategory(existingPolicy);
 
                 if (POLICY_CATEGORY_PERSONA.equals(policyCategory)) {
-                    validateParam (policy.hasAttribute(ATTR_POLICY_RESOURCES) && CollectionUtils.isEmpty(getPolicyResources(policy)),
+                    List<String> resources = getPolicyResources(policy);
+                    validateParam (policy.hasAttribute(ATTR_POLICY_RESOURCES) && CollectionUtils.isEmpty(resources),
                             "Please provide attribute " + ATTR_POLICY_RESOURCES);
+
+                    //validate persona policy resources keys
+                    Set<String> policyResourceKeys = resources.stream().map(x -> x.split(RESOURCES_SPLITTER)[0]).collect(Collectors.toSet());
+                    policyResourceKeys.removeAll(PERSONA_POLICY_VALID_RESOURCE_KEYS);
+                    validateParam(CollectionUtils.isNotEmpty(policyResourceKeys),
+                            "Please provide valid policy resources" + PERSONA_POLICY_VALID_RESOURCE_KEYS);
+
+
+                    String newConnectionQn = getPolicyConnectionQN(policy);
+                    validateParam(StringUtils.isEmpty(newConnectionQn), "Please provide attribute " + ATTR_POLICY_CONNECTION_QN);
+
+                    validateOperation (!newConnectionQn.equals(getPolicyConnectionQN(existingPolicy)), ATTR_POLICY_CONNECTION_QN + " change not Allowed");
+
+                    validateEntityResources(getPolicyConnectionQN(existingPolicy), resources);
 
                     //validate persona policy actions
                     Set<String> validActions = PERSONA_POLICY_VALID_ACTIONS.get(policySubCategory);
@@ -232,12 +239,6 @@ public class AuthPolicyValidator {
                     copyOfActions.removeAll(validActions);
                     validateParam (CollectionUtils.isNotEmpty(copyOfActions),
                             "Please provide valid values for attribute " + ATTR_POLICY_ACTIONS + ": Invalid actions "+ copyOfActions);
-
-                    //validate persona policy resources keys
-                    Set<String> policyResourceKeys = getPolicyResources(policy).stream().map(x -> x.split(RESOURCES_SPLITTER)[0]).collect(Collectors.toSet());
-                    policyResourceKeys.removeAll(PERSONA_POLICY_VALID_RESOURCE_KEYS);
-                    validateParam(CollectionUtils.isNotEmpty(policyResourceKeys),
-                            "Please provide valid policy resources" + PERSONA_POLICY_VALID_RESOURCE_KEYS);
 
                     validateParentUpdate(policy, existingPolicy);
                 }
@@ -267,7 +268,27 @@ public class AuthPolicyValidator {
         }
     }
 
-    private static void validateParentUpdate(AtlasEntity policy, AtlasEntity existingPolicy) throws AtlasBaseException {
+    private void validateEntityResources(String connQn, List<String> resources) throws AtlasBaseException {
+        List<String> entityResources = getFilteredPolicyResources(resources, RESOURCES_ENTITY);
+
+        for (String entity : entityResources) {
+            if (!entity.startsWith(connQn)) {
+                throw new AtlasBaseException(BAD_REQUEST, entity + " does not belong to connection" + connQn);
+            }
+        }
+    }
+
+    private void validateConnection(String connQn, List<String> resources) throws AtlasBaseException {
+        validateParam(StringUtils.isEmpty(connQn), "Please provide attribute " + ATTR_POLICY_CONNECTION_QN);
+
+        validateEntityResources(connQn, resources);
+
+        AtlasEntity connection = getEntityByQualifiedName(entityRetriever, connQn);
+
+        validateParam(!CONNECTION_ENTITY_TYPE.equals(connection.getTypeName()), "Please provide valid connectionQualifiedName");
+    }
+
+    private void validateParentUpdate(AtlasEntity policy, AtlasEntity existingPolicy) throws AtlasBaseException {
 
         Object object = policy.getRelationshipAttribute(REL_ATTR_ACCESS_CONTROL);
         if (object != null) {

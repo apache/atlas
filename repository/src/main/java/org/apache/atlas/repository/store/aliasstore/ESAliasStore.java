@@ -42,13 +42,12 @@ import static org.apache.atlas.repository.Constants.TRAIT_NAMES_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.VERTEX_INDEX_NAME;
 import static org.apache.atlas.repository.util.AccessControlUtils.ACCESS_READ_PERSONA_METADATA;
 import static org.apache.atlas.repository.util.AccessControlUtils.ACCESS_READ_PURPOSE_GLOSSARY;
-import static org.apache.atlas.repository.util.AccessControlUtils.ACCESS_READ_PURPOSE_METADATA;
-import static org.apache.atlas.repository.util.AccessControlUtils.getConnectionQualifiedNameFromPolicyAssets;
 import static org.apache.atlas.repository.util.AccessControlUtils.getESAliasName;
 import static org.apache.atlas.repository.util.AccessControlUtils.getIsAllowPolicy;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicies;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyActions;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyAssets;
+import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyConnectionQN;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPurposeTags;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 
@@ -142,7 +141,7 @@ public class ESAliasStore implements IndexAliasStore {
 
                 if (getIsAllowPolicy(policy)) {
                     if (getPolicyActions(policy).contains(ACCESS_READ_PERSONA_METADATA)) {
-                        String connectionQName = getConnectionQualifiedNameFromPolicyAssets(entityRetriever, assets);
+                        String connectionQName = getPolicyConnectionQN(policy);
 
                         for (String asset : assets) {
                             addPersonaMetadataFilterClauses(asset, allowClauseList);

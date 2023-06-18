@@ -66,6 +66,7 @@ import static org.apache.atlas.repository.Constants.NAME;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.Constants.SERVICE_ENTITY_TYPE;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_CATEGORY;
+import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_CONNECTION_QN;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_IS_ENABLED;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_PRIORITY;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_SERVICE_NAME;
@@ -425,6 +426,7 @@ public class CachePolicyTransformerImpl {
             attributes.add(ATTR_POLICY_VALIDITY);
             attributes.add(ATTR_POLICY_CONDITIONS);
             attributes.add(ATTR_POLICY_IS_ENABLED);
+            attributes.add(ATTR_POLICY_CONNECTION_QN);
 
             Map<String, Object> dsl = getMap("size", 0);
 
