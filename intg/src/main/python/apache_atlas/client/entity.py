@@ -244,7 +244,7 @@ class EntityClient:
     def remove_classification(self, entity_guid, classification_name, associated_entity_guid):
         query = {'guid': entity_guid, 'classification_name': classification_name}
 
-        self.client.call_api(EntityClient.DELETE_CLASSIFICATION.formart_path(query), None, None, associated_entity_guid)
+        self.client.call_api(EntityClient.DELETE_CLASSIFICATION.format_path(query), None, None, associated_entity_guid)
 
     def remove_classification_by_name(self, type_name, uniq_attributes, classification_name):
         query_params = attributes_to_params(uniq_attributes)
