@@ -19,10 +19,12 @@ package org.apache.atlas.policytransformer;
 
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -130,7 +132,19 @@ public class PersonaCachePolicyTransformer extends AbstractCachePolicyTransforme
     private boolean isConnectionPolicy(List<String> assets, AtlasEntityHeader atlasPolicy) {
 
         if (assets.size() == 1) {
-            return getPolicyConnectionQN(atlasPolicy).equals(assets.get(0));
+            String connQNAttr = getPolicyConnectionQN(atlasPolicy);
+
+            if (StringUtils.isNotEmpty(connQNAttr)) {
+                return getPolicyConnectionQN(atlasPolicy).equals(assets.get(0));
+            } else {
+                AtlasEntity connection;
+                try {
+                    connection = getEntityByQualifiedName(entityRetriever, assets.get(0));
+                } catch (AtlasBaseException abe) {
+                    return false;
+                }
+                return connection != null;
+            }
         }
 
         return false;

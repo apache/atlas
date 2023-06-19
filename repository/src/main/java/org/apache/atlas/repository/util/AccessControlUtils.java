@@ -113,6 +113,7 @@ public final class AccessControlUtils {
     public static final String RESOURCES_ENTITY_TYPE = "entity-type:";
     public static final String RESOURCES_SPLITTER = ":";
 
+    private static final String CONNECTION_QN = "%s/%s/%s";
     public static final String CONN_NAME_PATTERN = "connection_admins_%s";
     public static final String ARGO_SERVICE_USER_NAME = "service-account-atlan-argo";
     public static final String BACKEND_SERVICE_USER_NAME = "service-account-atlan-backend";
@@ -221,6 +222,33 @@ public final class AccessControlUtils {
         AtlasEntity entity = entityRetriever.toAtlasEntity(objectId);
 
         return entity;
+    }
+
+    public static String getConnectionQualifiedNameFromPolicyAssets(EntityGraphRetriever entityRetriever, List<String> assets) throws AtlasBaseException {
+        if (CollectionUtils.isEmpty(assets)) {
+            throw new AtlasBaseException("Policy assets could not be null");
+        }
+
+        AtlasEntity connection = extractConnectionFromResource(entityRetriever, assets.get(0));
+
+        return getQualifiedName(connection);
+    }
+
+    public static AtlasEntity extractConnectionFromResource(EntityGraphRetriever entityRetriever, String assetQName) throws AtlasBaseException {
+        AtlasEntity connection = null;
+
+        String[] splitted = assetQName.split("/");
+        String connectionQName;
+        try {
+            connectionQName = String.format(CONNECTION_QN, splitted[0], splitted[1], splitted[2]);
+        } catch (ArrayIndexOutOfBoundsException aib) {
+            LOG.error("Failed to extract qualifiedName of the connection: " + assetQName);
+            return null;
+        }
+
+        connection = getEntityByQualifiedName(entityRetriever, connectionQName);
+
+        return connection;
     }
 
     public static String getPersonaRoleName(AtlasEntity persona) {
