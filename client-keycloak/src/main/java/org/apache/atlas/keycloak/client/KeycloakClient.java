@@ -148,6 +148,21 @@ public final class KeycloakClient {
         return KEYCLOAK.realm(REALM_ID);
     }
 
+    // Reinitialize Keycloak client
+    public void reInit() {
+        KEYCLOAK.close();
+        synchronized (KeycloakClient.class) {
+            KEYCLOAK = KeycloakBuilder.builder()
+                    .serverUrl(AUTH_SERVER_URL)
+                    .realm(REALM_ID)
+                    .clientId(CLIENT_ID)
+                    .clientSecret(CLIENT_SECRET)
+                    .grantType(GRANT_TYPE)
+                    .resteasyClient(new ResteasyClientBuilder().build())
+                    .build();
+        }
+    }
+
     public List<UserRepresentation> getAllUsers() {
         int start = 0;
         int size = 500;
