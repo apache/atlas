@@ -38,6 +38,7 @@ import org.keycloak.representations.idm.UserRepresentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.ws.rs.ForbiddenException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -149,7 +150,11 @@ public class KeycloakUserStore {
                 return true;
             }
 
-        } catch (Exception e) {
+        } catch (ForbiddenException fbde) {
+            LOG.error("ForbiddenException while fetching latest event time, Reinitializing Keycloak Client to refresh", fbde);
+            keycloakClient.reInit();
+        }
+        catch (Exception e) {
             LOG.error("Error while fetching latest event time", e);
         } finally {
             RequestContext.get().endMetricRecord(metricRecorder);
