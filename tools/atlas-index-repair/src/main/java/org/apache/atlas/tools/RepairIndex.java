@@ -119,7 +119,7 @@ public class RepairIndex {
         return new DefaultParser().parse(options, args);
     }
 
-    private static void setupGraph() {
+    public static void setupGraph() {
         display("Initializing graph: ");
         graph = AtlasJanusGraphDatabase.getGraphInstance();
         displayCrlf("Graph Initialized!");
@@ -246,5 +246,47 @@ public class RepairIndex {
             atlasClientV2 = new AtlasClientV2(atlasEndpoint);
         }
         return atlasClientV2;
+    }
+
+    private static Set<String> getEntityAndReferenceGuids(String guid, Map<String, AtlasEntity> referredEntities) throws Exception {
+        Set<String> set = new HashSet<>();
+        set.add(guid);
+        if (referredEntities == null || referredEntities.isEmpty()) {
+            return set;
+        }
+        set.addAll(referredEntities.keySet());
+        return set;
+    }
+
+    public void restoreSelective(String guid, Map<String, AtlasEntity> referredEntities) throws Exception {
+        Set<String> referencedGUIDs = new HashSet<>(getEntityAndReferenceGuids(guid, referredEntities));
+        displayCrlf("processing referencedGuids => " + referencedGUIDs);
+
+        StandardJanusGraph janusGraph = (StandardJanusGraph) graph;
+        IndexSerializer indexSerializer = janusGraph.getIndexSerializer();
+
+        for (String indexName : getIndexes()) {
+            displayCrlf("Restoring: " + indexName);
+            long startTime = System.currentTimeMillis();
+            reindexVertex(indexName, indexSerializer, referencedGUIDs);
+
+            display(": Time taken: " + (System.currentTimeMillis() - startTime) + " ms");
+            displayCrlf(": Done!");
+        }
+    }
+
+    public void restoreByIds(Set<String> guids) throws Exception {
+
+        StandardJanusGraph janusGraph = (StandardJanusGraph) graph;
+        IndexSerializer indexSerializer = janusGraph.getIndexSerializer();
+
+        for (String indexName : getIndexes()) {
+//            displayCrlf("Restoring: " + indexName);
+            long startTime = System.currentTimeMillis();
+            reindexVertex(indexName, indexSerializer, guids);
+
+//            display(": Time taken: " + (System.currentTimeMillis() - startTime) + " ms");
+//            displayCrlf(": Done!");
+        }
     }
 }

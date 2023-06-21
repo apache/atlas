@@ -55,6 +55,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.apache.atlas.tools.RepairIndex;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -1790,6 +1791,98 @@ public class EntityREST {
 
         if (StringUtils.isEmpty(guid) && StringUtils.isEmpty(qualifiedName)) {
             throw new AtlasBaseException(BAD_REQUEST, "Requires either qualifiedName or GUID of the asset");
+        }
+    }
+
+    /**
+     * Repair index for the entity GUID.
+     * @param guid GUID for the entity
+     * @return AtlasEntity
+     * @throws AtlasBaseException
+     */
+    @POST
+    @Path("/guid/{guid}/repairindex")
+    public void repairEntityIndex(@PathParam("guid") String guid) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("guid", guid);
+
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.repairEntityIndex(" + guid + ")");
+            }
+
+            AtlasEntityWithExtInfo entity = entitiesStore.getById(guid);
+            Map<String, AtlasEntity> referredEntities = entity.getReferredEntities();
+            RepairIndex repairIndex = new RepairIndex();
+            repairIndex.setupGraph();
+
+           repairIndex.restoreSelective(guid, referredEntities);
+        } catch (Exception e) {
+            System.out.println(e);
+            throw new AtlasBaseException(e);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+
+    @POST
+    @Path("/repairindex/{typename}")
+    public void repairIndexByTypeName(@PathParam("typename") String typename, @QueryParam("delay") @DefaultValue("0") int delay, @QueryParam("limit") @DefaultValue("1000") int limit, @QueryParam("offset") @DefaultValue("0") int offset, @QueryParam("batchSize") @DefaultValue("1000") int batchSize) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("typename", typename);
+
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.repairAllEntitiesIndex");
+            }
+
+            RepairIndex repairIndex = new RepairIndex();
+            repairIndex.setupGraph();
+
+            LOG.info("Repairing index for entities in " + typename);
+
+            long startTime = System.currentTimeMillis();
+
+            List<String> entityGUIDs = entitiesStore.getEntityGUIDS(typename);
+
+            LOG.info("Entities to repair in " + typename + " " + entityGUIDs.size());
+
+            if (entityGUIDs.size() > offset + limit) {
+                entityGUIDs = entityGUIDs.subList(offset, offset + limit);
+                LOG.info("Updated - Entities to repair in " + typename + " " + entityGUIDs.size());
+            } else if (entityGUIDs.size() > offset) {
+                entityGUIDs = entityGUIDs.subList(offset, entityGUIDs.size());
+                LOG.info("Updated - Entities to repair in " + typename + " " + entityGUIDs.size());
+            } else {
+                LOG.info("No entities to repair");
+                return;
+            }
+
+            List<List<String>> entityGUIDsChunked = Lists.partition(entityGUIDs, batchSize);
+            for (List<String> guids : entityGUIDsChunked) {
+                Set<String> guidsToReIndex = new HashSet<>(guids);
+                repairIndex.restoreByIds(guidsToReIndex);
+                if (guids.size() >= batchSize && delay > 0) {
+                    try {
+                        LOG.info("Sleep for " + delay + " ms");
+                        Thread.sleep(delay);
+                    } catch(InterruptedException ex) {
+                        Thread.currentThread().interrupt();
+                        LOG.info("Thread interrupted at " + typename);
+                    }
+                }
+                LOG.info("Repaired index for " + guids.size() + " entities of type" + typename);
+            }
+            LOG.info("Repaired index for entities for typeName " + typename + " in " + (System.currentTimeMillis() - startTime) + " ms");
+
+        } catch (Exception e) {
+            System.out.println(e);
+            throw new AtlasBaseException(e);
+        } finally {
+            AtlasPerfTracer.log(perf);
         }
     }
 }
