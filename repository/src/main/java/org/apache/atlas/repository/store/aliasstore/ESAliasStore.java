@@ -145,7 +145,7 @@ public class ESAliasStore implements IndexAliasStore {
                     if (getPolicyActions(policy).contains(ACCESS_READ_PERSONA_METADATA)) {
                         String connectionQName = getPolicyConnectionQN(policy);
                         if (StringUtils.isEmpty(connectionQName)) {
-                            getConnectionQualifiedNameFromPolicyAssets(entityRetriever, assets);
+                            connectionQName = getConnectionQualifiedNameFromPolicyAssets(entityRetriever, assets);
                         }
 
                         for (String asset : assets) {
