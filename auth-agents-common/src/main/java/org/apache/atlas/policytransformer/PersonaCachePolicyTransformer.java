@@ -135,7 +135,7 @@ public class PersonaCachePolicyTransformer extends AbstractCachePolicyTransforme
             String connQNAttr = getPolicyConnectionQN(atlasPolicy);
 
             if (StringUtils.isNotEmpty(connQNAttr)) {
-                return getPolicyConnectionQN(atlasPolicy).equals(assets.get(0));
+                return connQNAttr.equals(assets.get(0));
             } else {
                 AtlasEntity connection;
                 try {
