@@ -508,7 +508,7 @@
       "name": "Referenceable",
       "superTypes": [],
       "serviceType": "atlas_core",
-      "typeVersion": "1.0",
+      "typeVersion": "1.01",
       "attributeDefs": [
         {
           "name": "qualifiedName",
@@ -535,7 +535,7 @@
         "Referenceable"
       ],
       "serviceType": "atlas_core",
-      "typeVersion": "1.0",
+      "typeVersion": "1.01",
       "attributeDefs": [
         {
           "name": "name",
