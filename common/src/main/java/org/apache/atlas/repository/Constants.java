@@ -151,6 +151,11 @@ public final class Constants {
     public static final String SERVICE_ENTITY_TYPE        = "AuthService";
 
     /**
+     * Resource
+     */
+    public static final String LINK_ENTITY_TYPE = "Link";
+
+    /**
      * Lineage relations.
      */
     public static final String PROCESS_OUTPUTS = "__Process.outputs";
@@ -237,6 +242,7 @@ public final class Constants {
     public static final String ATTRIBUTE_NAME_SUPERTYPENAMES = "superTypeNames";
     public static final String ATTRIBUTE_NAME_STATE          = "state";
     public static final String ATTRIBUTE_NAME_VERSION        = "version";
+    public static final String ATTRIBUTE_LINK                = "link";
     public static final String TEMP_STRUCT_NAME_PREFIX       = "__tempQueryResultStruct";
 
     public static final String CLASSIFICATION_ENTITY_GUID                     = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "entityGuid");
