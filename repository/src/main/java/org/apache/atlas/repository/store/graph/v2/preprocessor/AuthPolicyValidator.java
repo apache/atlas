@@ -226,10 +226,12 @@ public class AuthPolicyValidator {
                             "Please provide valid policy resources" + PERSONA_POLICY_VALID_RESOURCE_KEYS);
 
 
-                    String newConnectionQn = getPolicyConnectionQN(policy);
-                    validateParam(StringUtils.isEmpty(newConnectionQn), "Please provide attribute " + ATTR_POLICY_CONNECTION_QN);
+                    if (POLICY_SUB_CATEGORY_METADATA.equals(policySubCategory) || POLICY_SUB_CATEGORY_DATA.equals(policySubCategory)) {
+                        String newConnectionQn = getPolicyConnectionQN(policy);
+                        validateParam(StringUtils.isEmpty(newConnectionQn), "Please provide attribute " + ATTR_POLICY_CONNECTION_QN);
 
-                    validateOperation (!newConnectionQn.equals(getPolicyConnectionQN(existingPolicy)), ATTR_POLICY_CONNECTION_QN + " change not Allowed");
+                        validateOperation(!newConnectionQn.equals(getPolicyConnectionQN(existingPolicy)), ATTR_POLICY_CONNECTION_QN + " change not Allowed");
+                    }
 
                     validateEntityResources(getPolicyConnectionQN(existingPolicy), resources);
 
