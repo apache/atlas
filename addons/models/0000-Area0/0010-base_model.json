@@ -47,9 +47,160 @@
           "value": "SERVER_STATE_ACTIVE"
         }
       ]
+    },
+    {
+      "category": "ENUM",
+      "name": "AuthPolicyType",
+      "description": "Policy Item type",
+      "serviceType": "atlas_core",
+      "typeVersion": "1.1",
+      "elementDefs":
+      [
+        {
+          "value": "allow",
+          "ordinal": 0
+        },
+        {
+          "value": "deny",
+          "ordinal": 1
+        },
+        {
+          "value": "allowExceptions",
+          "ordinal": 2
+        },
+        {
+          "value": "denyExceptions",
+          "ordinal": 3
+        },
+        {
+          "value": "dataMask",
+          "ordinal": 4
+        },
+        {
+          "value": "rowFilter",
+          "ordinal": 5
+        }
+      ]
+    },
+    {
+      "category": "ENUM",
+      "name": "AuthPolicyCategory",
+      "description": "Policy category",
+      "serviceType": "atlas_core",
+      "typeVersion": "1.1",
+      "elementDefs": [
+        {
+          "value": "bootstrap",
+          "ordinal": 0
+        },
+        {
+          "value": "persona",
+          "ordinal": 1
+        },
+        {
+          "value": "purpose",
+          "ordinal": 2
+        }
+      ]
+    },
+    {
+      "category": "ENUM",
+      "name": "AuthPolicyResourceCategory",
+      "description": "Policy resource category",
+      "serviceType": "atlas_core",
+      "typeVersion": "1.1",
+      "elementDefs":
+      [
+        {
+          "value": "ENTITY",
+          "ordinal": 0
+        },
+        {
+          "value": "RELATIONSHIP",
+          "ordinal": 1
+        },
+        {
+          "value": "TAG",
+          "ordinal": 2
+        },
+        {
+          "value": "CUSTOM",
+          "ordinal": 3
+        },
+        {
+          "value": "TYPEDEFS",
+          "ordinal": 4
+        },
+        {
+          "value": "ADMIN",
+          "ordinal": 5
+        }
+      ]
     }
   ],
-  "structDefs": [],
+  "structDefs": [
+    {
+      "name": "AuthPolicyValiditySchedule",
+      "description": "Validity schedule struct for policy",
+      "serviceType": "atlan",
+      "typeVersion": "1.1",
+      "attributeDefs":
+      [
+        {
+          "name": "policyValidityScheduleStartTime",
+          "typeName": "string",
+          "indexType": "STRING",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": false,
+          "isUnique": false
+        },
+        {
+          "name": "policyValidityScheduleEndTime",
+          "typeName": "string",
+          "indexType": "STRING",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": false,
+          "isUnique": false
+        },
+        {
+          "name": "policyValidityScheduleTimezone",
+          "typeName": "string",
+          "indexType": "STRING",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": false,
+          "isUnique": false
+        }
+      ]
+    },
+    {
+      "name": "AuthPolicyCondition",
+      "description": "Policy condition schedule struct",
+      "serviceType": "atlan",
+      "typeVersion": "1.1",
+      "attributeDefs":
+      [
+        {
+          "name": "policyConditionType",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": false,
+          "isUnique": false
+        },
+        {
+          "name": "policyConditionValues",
+          "typeName": "array<string>",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": false,
+          "isUnique": false
+        }
+      ]
+    }
+  ],
   "classificationDefs": [],
   "entityDefs": [
     {
@@ -352,6 +503,492 @@
           "isUnique": false
         }
       ]
+    },
+    {
+      "name": "Referenceable",
+      "superTypes": [],
+      "serviceType": "atlas_core",
+      "typeVersion": "1.01",
+      "attributeDefs": [
+        {
+          "name": "qualifiedName",
+          "typeName": "string",
+          "indexType": "STRING",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": false,
+          "isUnique": true,
+          "skipScrubbing": true,
+          "includeInNotification": true,
+          "indexTypeESFields": {
+            "text": {
+              "type": "text",
+              "analyzer": "atlan_text_analyzer"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Asset",
+      "superTypes": [
+        "Referenceable"
+      ],
+      "serviceType": "atlas_core",
+      "typeVersion": "1.01",
+      "attributeDefs": [
+        {
+          "name": "name",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": false,
+          "isUnique": false,
+          "searchWeight": 10,
+          "skipScrubbing": true,
+          "indexTypeESConfig": {
+            "analyzer": "atlan_text_analyzer"
+          },
+          "indexTypeESFields": {
+            "keyword": {
+              "type": "keyword",
+              "normalizer": "atlan_normalizer"
+            },
+            "stemmed": {
+              "type": "text",
+              "analyzer": "atlan_text_stemmer"
+            }
+          }
+        },
+        {
+          "name": "displayName",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false,
+          "searchWeight": 10,
+          "skipScrubbing": true,
+          "indexTypeESConfig": {
+            "analyzer": "atlan_text_analyzer"
+          },
+          "indexTypeESFields": {
+            "keyword": {
+              "type": "keyword"
+            }
+          }
+        },
+        {
+          "name": "description",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "searchWeight": 9,
+          "skipScrubbing": true,
+          "includeInNotification": true,
+          "indexTypeESConfig": {
+            "analyzer": "atlan_text_analyzer"
+          },
+          "indexTypeESFields": {
+            "keyword": {
+              "type": "keyword",
+              "normalizer": "atlan_normalizer"
+            }
+          }
+        },
+        {
+          "name": "tenantId",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false,
+          "skipScrubbing": true
+        }
+      ]
+    },
+    {
+      "name": "AuthService",
+      "superTypes": [
+        "Asset"
+      ],
+      "description": "Model to store auth service in Atlas",
+      "serviceType": "atlan",
+      "typeVersion": "1.1",
+      "attributeDefs": [
+        {
+          "name": "authServiceType",
+          "typeName": "string",
+          "indexType": "STRING",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": true
+        },
+        {
+          "name": "tagService",
+          "typeName": "string",
+          "indexType": "STRING",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": true
+        },
+        {
+          "name": "authServiceIsEnabled",
+          "typeName": "boolean",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "defaultValue": true,
+          "skipScrubbing": true,
+          "includeInNotification": true
+        },
+        {
+          "name": "authServiceConfig",
+          "typeName": "map<string,string>",
+          "isOptional": true,
+          "cardinality": "SINGLE",
+          "isUnique": false,
+          "skipScrubbing": true,
+          "isIndexable": true,
+          "includeInNotification": true
+        },
+        {
+          "name": "authServicePolicyLastSync",
+          "typeName": "long",
+          "isOptional": true,
+          "defaultValue": 0,
+          "cardinality": "SINGLE",
+          "isUnique": false,
+          "skipScrubbing": true,
+          "isIndexable": true,
+          "includeInNotification": true
+        }
+      ]
+    },
+    {
+      "name": "AuthPolicy",
+      "description": "Model to store an accesscontrol policy in Atlas",
+      "superTypes": [
+        "Asset"
+      ],
+      "serviceType": "atlan",
+      "typeVersion": "1.1",
+      "attributeDefs":
+      [
+        {
+          "name": "policyType",
+          "typeName": "AuthPolicyType",
+          "indexType": "STRING",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": true
+        },
+        {
+          "name": "policyServiceName",
+          "typeName": "string",
+          "indexType": "STRING",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": true
+        },
+        {
+          "name": "policyCategory",
+          "typeName": "string",
+          "indexType": "STRING",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": true
+        },
+        {
+          "name": "policySubCategory",
+          "typeName": "string",
+          "indexType": "STRING",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": true
+        },
+        {
+          "name": "policyUsers",
+          "typeName": "array<string>",
+          "indexType": "STRING",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": true
+        },
+        {
+          "name": "policyGroups",
+          "typeName": "array<string>",
+          "indexType": "STRING",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": true
+        },
+        {
+          "name": "policyRoles",
+          "typeName": "array<string>",
+          "indexType": "STRING",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": true
+        },
+        {
+          "name": "policyActions",
+          "typeName": "array<string>",
+          "indexType": "STRING",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": true
+        },
+        {
+          "name": "policyResources",
+          "typeName": "array<string>",
+          "indexType": "STRING",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": true
+        },
+        {
+          "name": "policyResourceCategory",
+          "typeName": "string",
+          "indexType": "STRING",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": true
+        },
+        {
+          "name": "policyPriority",
+          "typeName": "int",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "defaultValue": 0,
+          "skipScrubbing": true,
+          "includeInNotification": true
+        },
+        {
+          "name": "isPolicyEnabled",
+          "typeName": "boolean",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "defaultValue": true,
+          "skipScrubbing": true,
+          "includeInNotification": true
+        },
+        {
+          "name": "policyMaskType",
+          "typeName": "string",
+          "indexType": "STRING",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": true
+        },
+        {
+          "name": "policyValiditySchedule",
+          "typeName": "array<AuthPolicyValiditySchedule>",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "defaultValue": true,
+          "skipScrubbing": true,
+          "includeInNotification": false
+        },
+        {
+          "name": "policyResourceSignature",
+          "typeName": "string",
+          "indexType": "STRING",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": false
+        },
+        {
+          "name": "policyDelegateAdmin",
+          "typeName": "boolean",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "defaultValue": false,
+          "skipScrubbing": true,
+          "includeInNotification": true
+        },
+        {
+          "name": "policyConditions",
+          "typeName": "array<AuthPolicyCondition>",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": false
+        }
+      ]
+    },
+    {
+      "name": "AccessControl",
+      "superTypes": [
+        "Asset"
+      ],
+      "description": "Atlan Type representing parent model for Persona, Purpose",
+      "serviceType": "atlan",
+      "typeVersion": "1.1",
+      "attributeDefs": [
+        {
+          "name": "isAccessControlEnabled",
+          "typeName": "boolean",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "defaultValue": true,
+          "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": false
+        },
+        {
+          "name": "denyCustomMetadataGuids",
+          "typeName": "array<string>",
+          "indexType": "STRING",
+          "cardinality": "SET",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": false
+        },
+        {
+          "name": "denyAssetTabs",
+          "typeName": "array<string>",
+          "indexType": "STRING",
+          "cardinality": "SET",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": false
+        },
+        {
+          "name": "channelLink",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": false
+        }
+      ]
+    },
+    {
+      "name": "Persona",
+      "superTypes": [
+        "AccessControl"
+      ],
+      "description": "Atlan Type representing a Persona model",
+      "serviceType": "atlan",
+      "typeVersion": "1.1",
+      "attributeDefs": [
+        {
+          "name": "personaGroups",
+          "typeName": "array<string>",
+          "indexType": "STRING",
+          "cardinality": "SET",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": false
+        },
+        {
+          "name": "personaUsers",
+          "typeName": "array<string>",
+          "indexType": "STRING",
+          "cardinality": "SET",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": false
+        },
+        {
+          "name": "roleId",
+          "typeName": "string",
+          "indexType": "STRING",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "includeInNotification": false
+        }
+      ]
+    },
+    {
+      "name": "Purpose",
+      "superTypes": [
+        "AccessControl"
+      ],
+      "description": "Atlan Type representing a Purpose model",
+      "serviceType": "atlan",
+      "typeVersion": "1.1",
+      "attributeDefs": [
+        {
+          "name": "purposeClassifications",
+          "typeName": "array<string>",
+          "indexType": "STRING",
+          "cardinality": "SET",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "includeInNotification": false
+        }
+      ]
     }
   ],
   "relationshipDefs": [
@@ -374,6 +1011,28 @@
         "cardinality": "SINGLE"
       },
       "propagateTags": "NONE"
+    },
+    {
+      "name": "access_control_policies",
+      "typeVersion": "1.1",
+      "relationshipCategory": "AGGREGATION",
+      "relationshipLabel": "__AccessControl.policies",
+      "serviceType": "atlan",
+      "endDef1":
+      {
+        "type": "AccessControl",
+        "name": "policies",
+        "isContainer": true,
+        "cardinality": "SET"
+      },
+      "endDef2":
+      {
+        "type": "AuthPolicy",
+        "name": "accessControl",
+        "isContainer": false,
+        "cardinality": "SINGLE"
+      },
+      "propagateTags": "ONE_TO_TWO"
     }
   ]
 }
