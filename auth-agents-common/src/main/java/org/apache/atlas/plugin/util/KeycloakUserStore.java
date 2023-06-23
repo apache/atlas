@@ -27,7 +27,6 @@ import org.apache.atlas.featureflag.FeatureFlagStore;
 import org.apache.atlas.featureflag.FeatureFlagStoreLaunchDarklyImpl;
 import org.apache.atlas.keycloak.client.KeycloakClient;
 import org.apache.atlas.plugin.model.RangerRole;
-import org.apache.atlas.plugin.service.RangerBasePlugin;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.collections.CollectionUtils;
@@ -40,10 +39,8 @@ import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.stringtemplate.v4.ST;
 
 import javax.ws.rs.ForbiddenException;
-import java.lang.reflect.Array;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
