@@ -209,7 +209,8 @@ public class QueryCollectionPreProcessor implements PreProcessor {
         //create Admin role
         List<String> adminUsers = (List<String>) collection.getAttribute(ATTR_ADMIN_USERS);
         List<String> adminGroups = (List<String>) collection.getAttribute(ATTR_ADMIN_GROUPS);
-        List<String> adminRoles = (List<String>) collection.getAttribute(ATTR_ADMIN_ROLES);
+        //List<String> adminRoles = (List<String>) collection.getAttribute(ATTR_ADMIN_ROLES);
+        List<String> adminRoles = new ArrayList<>(0);
 
         if (adminUsers == null) {
             adminUsers = new ArrayList<>();
@@ -262,14 +263,14 @@ public class QueryCollectionPreProcessor implements PreProcessor {
             }
         }
 
-        if (collection.hasAttribute(ATTR_ADMIN_ROLES)) {
+        /*if (collection.hasAttribute(ATTR_ADMIN_ROLES)) {
             List<String> newAdminRoles = (List<String>) collection.getAttribute(ATTR_ADMIN_ROLES);
             List<String> currentAdminRoles = (List<String>) existingCollEntity.getAttribute(ATTR_ADMIN_ROLES);
 
             if (CollectionUtils.isNotEmpty(newAdminRoles) || CollectionUtils.isNotEmpty(currentAdminRoles)) {
                 keycloakStore.updateRoleRoles(adminRoleName, currentAdminRoles, newAdminRoles, rolesResource, representation);
             }
-        }
+        }*/
     }
 
     private void updateCollectionViewerRole(AtlasEntity collection, AtlasEntity existingCollEntity) throws AtlasBaseException {

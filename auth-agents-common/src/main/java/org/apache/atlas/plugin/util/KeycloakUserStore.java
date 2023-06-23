@@ -22,6 +22,9 @@ package org.apache.atlas.plugin.util;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.featureflag.AtlasFeatureFlagClient;
+import org.apache.atlas.featureflag.FeatureFlagStore;
+import org.apache.atlas.featureflag.FeatureFlagStoreLaunchDarklyImpl;
 import org.apache.atlas.keycloak.client.KeycloakClient;
 import org.apache.atlas.plugin.model.RangerRole;
 import org.apache.atlas.plugin.service.RangerBasePlugin;
@@ -40,6 +43,7 @@ import org.slf4j.LoggerFactory;
 import org.stringtemplate.v4.ST;
 
 import javax.ws.rs.ForbiddenException;
+import java.lang.reflect.Array;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -47,11 +51,14 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import static org.apache.atlas.featureflag.AtlasFeatureFlagClient.INSTANCE_DOMAIN_NAME;
+import static org.apache.atlas.featureflag.FeatureFlagStore.FeatureFlag.ADD_CONNECTION_ROLE_IN_ADMIN_ROLE;
 import static org.apache.atlas.repository.Constants.KEYCLOAK_ROLE_ADMIN;
 import static org.apache.atlas.repository.Constants.KEYCLOAK_ROLE_API_TOKEN;
 import static org.apache.atlas.repository.Constants.KEYCLOAK_ROLE_DEFAULT;
 import static org.apache.atlas.repository.Constants.KEYCLOAK_ROLE_GUEST;
 import static org.apache.atlas.repository.Constants.KEYCLOAK_ROLE_MEMBER;
+import static org.apache.atlas.repository.util.AccessControlUtils.INSTANCE_DOMAIN_KEY;
 
 
 public class KeycloakUserStore {
@@ -68,6 +75,7 @@ public class KeycloakUserStore {
     private static List<String> RESOURCE_TYPES = Arrays.asList("USER", "GROUP", "REALM_ROLE", "CLIENT", "REALM_ROLE_MAPPING", "GROUP_MEMBERSHIP", "CLIENT_ROLE_MAPPING");
 
     private final String serviceName;
+    private final FeatureFlagStore featureFlagStore;
 
     public KeycloakUserStore(String serviceName) {
         if (LOG.isDebugEnabled()) {
@@ -75,6 +83,8 @@ public class KeycloakUserStore {
         }
 
         this.serviceName = serviceName;
+        AtlasFeatureFlagClient client = new AtlasFeatureFlagClient();
+        this.featureFlagStore = new FeatureFlagStoreLaunchDarklyImpl(client);
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== RangerRolesProvider(serviceName=" + serviceName + ").RangerRolesProvider()");
@@ -177,15 +187,17 @@ public class KeycloakUserStore {
         Set<RangerRole> roleSet = new HashSet<>();
         RangerRoles rangerRoles = new RangerRoles();
         List<UserRepresentation> userNamesList = new ArrayList<>();
-        Map<String, RangerRole> roleMap = new HashMap<>();
 
         submitCallablesAndWaitToFinish("RoleSubjectsFetcher",
                 kRoles.stream()
-                        .map(x -> new RoleSubjectsFetcher(x, roleSet, userNamesList, roleMap))
+                        .map(x -> new RoleSubjectsFetcher(x, roleSet, userNamesList))
                         .collect(Collectors.toList()));
 
         processDefaultRole(roleSet);
-        invertRoles(roleSet);
+
+        if (featureFlagStore.evaluate(ADD_CONNECTION_ROLE_IN_ADMIN_ROLE, INSTANCE_DOMAIN_KEY, INSTANCE_DOMAIN_NAME)) {
+            invertRoles(roleSet);
+        }
 
         rangerRoles.setRangerRoles(roleSet);
         rangerRoles.setServiceName(serviceName);
@@ -217,6 +229,9 @@ public class KeycloakUserStore {
 
             List<RangerRole.RoleMember> roles = role.getRoles();
             for (RangerRole.RoleMember roleMember : roles) {
+                if (role.getName().equals("default-roles-default") && roleMember.getName().equals("$guest")) {
+                    continue;
+                }
                 RangerRole existingRoleMember = roleMap.get(roleMember.getName());
                 if (existingRoleMember != null) {
                     List<RangerRole.RoleMember> existingRoleMemberRoles = existingRoleMember.getRoles();
@@ -380,16 +395,13 @@ public class KeycloakUserStore {
         private Set<RangerRole> roleSet;
         private RoleRepresentation kRole;
         List<UserRepresentation> userNamesList;
-        Map<String, RangerRole> roleMapping;
 
         public RoleSubjectsFetcher(RoleRepresentation kRole,
                                    Set<RangerRole> roleSet,
-                                   List<UserRepresentation> userNamesList,
-                                   Map<String, RangerRole> roleMapping) {
+                                   List<UserRepresentation> userNamesList) {
             this.kRole = kRole;
             this.roleSet = roleSet;
             this.userNamesList = userNamesList;
-            this.roleMapping = roleMapping;
         }
 
         @Override

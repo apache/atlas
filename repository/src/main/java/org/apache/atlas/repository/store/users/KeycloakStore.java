@@ -18,6 +18,9 @@
 
 package org.apache.atlas.repository.store.users;
 
+import org.apache.atlas.featureflag.AtlasFeatureFlagClient;
+import org.apache.atlas.featureflag.FeatureFlagStore;
+import org.apache.atlas.featureflag.FeatureFlagStoreLaunchDarklyImpl;
 import org.apache.atlas.keycloak.client.KeycloakClient;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.type.AtlasType;
@@ -47,6 +50,9 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasErrorCode.RESOURCE_NOT_FOUND;
+import static org.apache.atlas.featureflag.AtlasFeatureFlagClient.INSTANCE_DOMAIN_NAME;
+import static org.apache.atlas.featureflag.FeatureFlagStore.FeatureFlag.ADD_CONNECTION_ROLE_IN_ADMIN_ROLE;
+import static org.apache.atlas.repository.util.AccessControlUtils.INSTANCE_DOMAIN_KEY;
 
 public class KeycloakStore {
     private static final Logger LOG = LoggerFactory.getLogger(KeycloakStore.class);
@@ -54,8 +60,11 @@ public class KeycloakStore {
     private boolean saveUsersToAttributes = false;
     private boolean saveGroupsToAttributes = false;
 
-    public KeycloakStore() {
+    private FeatureFlagStore featureFlagStore;
 
+    public KeycloakStore() {
+        AtlasFeatureFlagClient client = new AtlasFeatureFlagClient();
+        this.featureFlagStore = new FeatureFlagStoreLaunchDarklyImpl(client);
     }
 
     public KeycloakStore(boolean saveUsersToAttributes, boolean saveGroupsToAttributes) {
@@ -158,8 +167,14 @@ public class KeycloakStore {
 
             for (RoleRepresentation kRole : roleRoles) {
                 RoleResource roleResource = rolesResource.get(kRole.getName());
-                roleResource.addComposites(Collections.singletonList(connectionRoleResource.toRepresentation()));
-                roleResource.update(roleResource.toRepresentation());
+
+                if (featureFlagStore.evaluate(ADD_CONNECTION_ROLE_IN_ADMIN_ROLE, INSTANCE_DOMAIN_KEY, INSTANCE_DOMAIN_NAME)) {
+                    roleResource.addComposites(Collections.singletonList(connectionRoleResource.toRepresentation()));
+                    roleResource.update(roleResource.toRepresentation());
+                } else {
+                    connectionRoleResource.addComposites(Collections.singletonList(roleResource.toRepresentation()));
+                    connectionRoleResource.update(connectionRoleResource.toRepresentation());
+                }
             }
         }
 
@@ -435,20 +450,29 @@ public class KeycloakStore {
         for (String subRoleId : rolesToAdd) {
             LOG.info("Adding role {} to role {}", roleName, subRoleId);
             RoleRepresentation keyRole = getRoleById(rolesIdResource, subRoleId);
-            RoleResource parentRoleResource = rolesResource.get(keyRole.getName());
+            RoleResource subrRoleResource = rolesResource.get(keyRole.getName());
 
-            parentRoleResource.addComposites(Collections.singletonList(roleRepresentation));
-            parentRoleResource.update(parentRoleResource.toRepresentation());
+            if (featureFlagStore.evaluate(ADD_CONNECTION_ROLE_IN_ADMIN_ROLE, INSTANCE_DOMAIN_KEY, INSTANCE_DOMAIN_NAME)) {
+                subrRoleResource.addComposites(Collections.singletonList(roleRepresentation));
+                subrRoleResource.update(subrRoleResource.toRepresentation());
+            } else {
+                connRoleResource.addComposites(Collections.singletonList(subrRoleResource.toRepresentation()));
+                connRoleResource.update(connRoleResource.toRepresentation());
+            }
         }
 
         for (String subRoleId : rolesToRemove) {
             LOG.info("removing role {} from role {}", roleName, subRoleId);
             RoleRepresentation keyRole = getRoleById(rolesIdResource, subRoleId);
-            RoleResource parentRoleResource = rolesResource.get(keyRole.getName());
+            RoleResource subrRoleResource = rolesResource.get(keyRole.getName());
 
-            parentRoleResource.deleteComposites(Collections.singletonList(roleRepresentation));
-            parentRoleResource.update(parentRoleResource.toRepresentation());
-
+            if (featureFlagStore.evaluate(ADD_CONNECTION_ROLE_IN_ADMIN_ROLE, INSTANCE_DOMAIN_KEY, INSTANCE_DOMAIN_NAME)) {
+                subrRoleResource.deleteComposites(Collections.singletonList(roleRepresentation));
+                subrRoleResource.update(subrRoleResource.toRepresentation());
+            } else {
+                connRoleResource.deleteComposites(Collections.singletonList(subrRoleResource.toRepresentation()));
+                connRoleResource.update(connRoleResource.toRepresentation());
+            }
         }
     }
 

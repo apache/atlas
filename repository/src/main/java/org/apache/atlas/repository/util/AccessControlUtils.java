@@ -28,6 +28,7 @@ import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.DirectIndexQueryResult;
+import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.util.NanoIdUtils;
 import org.apache.commons.collections.CollectionUtils;
@@ -45,6 +46,8 @@ import static org.apache.atlas.AtlasErrorCode.ACCESS_CONTROL_ALREADY_EXISTS;
 import static org.apache.atlas.AtlasErrorCode.DISABLED_OPERATION;
 import static org.apache.atlas.AtlasErrorCode.OPERATION_NOT_SUPPORTED;
 import static org.apache.atlas.featureflag.AtlasFeatureFlagClient.INSTANCE_DOMAIN_NAME;
+import static org.apache.atlas.featureflag.FeatureFlagStore.FeatureFlag.ADD_CONNECTION_ROLE_IN_ADMIN_ROLE;
+import static org.apache.atlas.featureflag.FeatureFlagStore.FeatureFlag.ALLOW_CONNECTION_ADMIN_OPS;
 import static org.apache.atlas.featureflag.FeatureFlagStore.FeatureFlag.DISABLE_ACCESS_CONTROL;
 import static org.apache.atlas.repository.Constants.ATTR_ADMIN_GROUPS;
 import static org.apache.atlas.repository.Constants.ATTR_ADMIN_ROLES;
@@ -441,6 +444,24 @@ public final class AccessControlUtils {
         if (isDisabled) {
             validateAttributeUpdateForFeatureFlag(ATTR_ADMIN_USERS, entity, vertex);
             validateAttributeUpdateForFeatureFlag(ATTR_ADMIN_GROUPS, entity, vertex);
+            validateAttributeUpdateForFeatureFlag(ATTR_ADMIN_ROLES, entity, vertex);
+        }
+    }
+
+    public static void checkAllowConnectionAdminUpdateFeatureStatus(FeatureFlagStore featureFlagStore, AtlasStruct struct) throws AtlasBaseException {
+        if (!featureFlagStore.evaluate(ALLOW_CONNECTION_ADMIN_OPS, INSTANCE_DOMAIN_KEY, INSTANCE_DOMAIN_NAME)) {
+            AtlasEntity entity = (AtlasEntity) struct;
+            if (entity.hasAttribute(ATTR_ADMIN_ROLES)) {
+                throw new AtlasBaseException(DISABLED_OPERATION);
+            }
+        }
+    }
+
+    public static void checkAllowConnectionAdminUpdateForUpdate(FeatureFlagStore featureFlagStore, AtlasStruct entity,
+                                                                AtlasVertex vertex) throws AtlasBaseException {
+        boolean isDisabled = !featureFlagStore.evaluate(ALLOW_CONNECTION_ADMIN_OPS, INSTANCE_DOMAIN_KEY, INSTANCE_DOMAIN_NAME);
+
+        if (isDisabled) {
             validateAttributeUpdateForFeatureFlag(ATTR_ADMIN_ROLES, entity, vertex);
         }
     }
