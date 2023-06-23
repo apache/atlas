@@ -37,17 +37,10 @@ import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.stringtemplate.v4.ST;
 
 import javax.ws.rs.ForbiddenException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -184,13 +177,15 @@ public class KeycloakUserStore {
         Set<RangerRole> roleSet = new HashSet<>();
         RangerRoles rangerRoles = new RangerRoles();
         List<UserRepresentation> userNamesList = new ArrayList<>();
+        Map<String, RangerRole> roleMap = new HashMap<>();
 
         submitCallablesAndWaitToFinish("RoleSubjectsFetcher",
                 kRoles.stream()
-                        .map(x -> new RoleSubjectsFetcher(x, roleSet, userNamesList))
+                        .map(x -> new RoleSubjectsFetcher(x, roleSet, userNamesList, roleMap))
                         .collect(Collectors.toList()));
 
         processDefaultRole(roleSet);
+        invertRoles(roleSet);
 
         rangerRoles.setRangerRoles(roleSet);
         rangerRoles.setServiceName(serviceName);
@@ -203,6 +198,43 @@ public class KeycloakUserStore {
         RequestContext.get().endMetricRecord(recorder);
 
         return rangerRoles;
+    }
+
+    public void invertRoles(Set<RangerRole> roleSet) {
+        Map<String , RangerRole> roleMap = new HashMap<>();
+        for (RangerRole role : roleSet) {
+            RangerRole existingRole = roleMap.get(role.getName());
+            if (existingRole != null) {
+                existingRole.setGroups(role.getGroups());
+                existingRole.setUsers(role.getUsers());
+            } else {
+                RangerRole newRole = new RangerRole();
+                newRole.setName(role.getName());
+                newRole.setUsers(role.getUsers());
+                newRole.setGroups(role.getGroups());
+                roleMap.put(role.getName(), newRole);
+            }
+
+            List<RangerRole.RoleMember> roles = role.getRoles();
+            for (RangerRole.RoleMember roleMember : roles) {
+                RangerRole existingRoleMember = roleMap.get(roleMember.getName());
+                if (existingRoleMember != null) {
+                    List<RangerRole.RoleMember> existingRoleMemberRoles = existingRoleMember.getRoles();
+                    // If the role already present in existing role, then skip
+                    if (existingRoleMemberRoles.stream().anyMatch(x -> x.getName().equals(role.getName()))) {
+                        continue;
+                    }
+                    existingRoleMemberRoles.add(new RangerRole.RoleMember(role.getName(), false));
+                } else {
+                    RangerRole newRoleMember = new RangerRole();
+                    newRoleMember.setName(roleMember.getName());
+                    newRoleMember.setRoles(new ArrayList<>(Arrays.asList(new RangerRole.RoleMember(role.getName(), false))));
+                    roleMap.put(roleMember.getName(), newRoleMember);
+                }
+            }
+        }
+        roleSet.clear();
+        roleSet.addAll(roleMap.values());
     }
 
     private void processDefaultRole(Set<RangerRole> roleSet) {
@@ -348,13 +380,16 @@ public class KeycloakUserStore {
         private Set<RangerRole> roleSet;
         private RoleRepresentation kRole;
         List<UserRepresentation> userNamesList;
+        Map<String, RangerRole> roleMapping;
 
         public RoleSubjectsFetcher(RoleRepresentation kRole,
                                    Set<RangerRole> roleSet,
-                                   List<UserRepresentation> userNamesList) {
+                                   List<UserRepresentation> userNamesList,
+                                   Map<String, RangerRole> roleMapping) {
             this.kRole = kRole;
             this.roleSet = roleSet;
             this.userNamesList = userNamesList;
+            this.roleMapping = roleMapping;
         }
 
         @Override
