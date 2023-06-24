@@ -64,6 +64,8 @@ import static org.apache.atlas.repository.Constants.POLICY_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.util.AccessControlUtils.checkAccessControlFeatureStatus;
 import static org.apache.atlas.repository.util.AccessControlUtils.checkAccessControlFeatureStatusForUpdate;
+import static org.apache.atlas.repository.util.AccessControlUtils.checkAllowConnectionAdminUpdateFeatureStatus;
+import static org.apache.atlas.repository.util.AccessControlUtils.checkAllowConnectionAdminUpdateForUpdate;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 
 public class ConnectionPreProcessor implements PreProcessor {
@@ -115,6 +117,7 @@ public class ConnectionPreProcessor implements PreProcessor {
 
     private void processCreateConnection(AtlasStruct struct) throws AtlasBaseException {
         checkAccessControlFeatureStatus(featureFlagStore);
+        checkAllowConnectionAdminUpdateFeatureStatus(featureFlagStore, struct);
 
         if (ATLAS_AUTHORIZER_IMPL.equalsIgnoreCase(CURRENT_AUTHORIZER_IMPL)) {
             AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processCreateConnection");
@@ -161,6 +164,7 @@ public class ConnectionPreProcessor implements PreProcessor {
 
         AtlasEntity connection = (AtlasEntity) entity;
         checkAccessControlFeatureStatusForUpdate(featureFlagStore, entity, context.getVertex(connection.getGuid()));
+        checkAllowConnectionAdminUpdateForUpdate(featureFlagStore, entity, context.getVertex(connection.getGuid()));
 
         if (ATLAS_AUTHORIZER_IMPL.equalsIgnoreCase(CURRENT_AUTHORIZER_IMPL)) {
             AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processUpdateConnection");
