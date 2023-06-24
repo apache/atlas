@@ -31,7 +31,7 @@ public interface FeatureFlagStore {
         DISABLE_ACCESS_CONTROL(DISABLE_ACCESS_CONTROL_FEATURE_FLAG_KEY, false),
         IS_INSTANCE_MIGRATED(IS_INSTANCE_MIGRATED_FEATURE_FLAG_KEY, false),
         ENABLE_LINEAGE_EVENTS(LINEAGE_EVENTS_FEATURE_FLAG_KEY, false),
-        ADD_CONNECTION_ROLE_IN_ADMIN_ROLE("add-connection-role-in-admin-role", false),
+        ADD_CONNECTION_ROLE_IN_ADMIN_ROLE("add-connection-role-in-admin-role", true),
         ALLOW_CONNECTION_ADMIN_OPS("allow-connection-admins-ops", true);
 
         private final String key;

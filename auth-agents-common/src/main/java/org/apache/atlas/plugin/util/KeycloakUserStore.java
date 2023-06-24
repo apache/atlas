@@ -50,6 +50,7 @@ import java.util.stream.Collectors;
 
 import static org.apache.atlas.featureflag.AtlasFeatureFlagClient.INSTANCE_DOMAIN_NAME;
 import static org.apache.atlas.featureflag.FeatureFlagStore.FeatureFlag.ADD_CONNECTION_ROLE_IN_ADMIN_ROLE;
+import static org.apache.atlas.featureflag.FeatureFlagStore.FeatureFlag.ALLOW_CONNECTION_ADMIN_OPS;
 import static org.apache.atlas.repository.Constants.KEYCLOAK_ROLE_ADMIN;
 import static org.apache.atlas.repository.Constants.KEYCLOAK_ROLE_API_TOKEN;
 import static org.apache.atlas.repository.Constants.KEYCLOAK_ROLE_DEFAULT;
@@ -172,6 +173,11 @@ public class KeycloakUserStore {
     public RangerRoles loadRolesIfUpdated(long lastUpdatedTime) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("loadRolesIfUpdated");
 
+        if (!featureFlagStore.evaluate(ALLOW_CONNECTION_ADMIN_OPS, INSTANCE_DOMAIN_KEY, INSTANCE_DOMAIN_NAME)) {
+            LOG.info("loadRolesIfUpdated: Skipping as roles are under maintenance");
+            return null;
+        }
+
         boolean isKeycloakUpdated = isKeycloakSubjectsStoreUpdated(lastUpdatedTime);
         if (!isKeycloakUpdated) {
             LOG.info("loadRolesIfUpdated: Skipping as no update found");
@@ -193,6 +199,7 @@ public class KeycloakUserStore {
         processDefaultRole(roleSet);
 
         if (featureFlagStore.evaluate(ADD_CONNECTION_ROLE_IN_ADMIN_ROLE, INSTANCE_DOMAIN_KEY, INSTANCE_DOMAIN_NAME)) {
+            LOG.info("Inverting roles");
             invertRoles(roleSet);
         }
 

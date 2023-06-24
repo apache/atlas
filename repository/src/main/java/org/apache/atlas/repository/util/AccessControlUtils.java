@@ -46,7 +46,6 @@ import static org.apache.atlas.AtlasErrorCode.ACCESS_CONTROL_ALREADY_EXISTS;
 import static org.apache.atlas.AtlasErrorCode.DISABLED_OPERATION;
 import static org.apache.atlas.AtlasErrorCode.OPERATION_NOT_SUPPORTED;
 import static org.apache.atlas.featureflag.AtlasFeatureFlagClient.INSTANCE_DOMAIN_NAME;
-import static org.apache.atlas.featureflag.FeatureFlagStore.FeatureFlag.ADD_CONNECTION_ROLE_IN_ADMIN_ROLE;
 import static org.apache.atlas.featureflag.FeatureFlagStore.FeatureFlag.ALLOW_CONNECTION_ADMIN_OPS;
 import static org.apache.atlas.featureflag.FeatureFlagStore.FeatureFlag.DISABLE_ACCESS_CONTROL;
 import static org.apache.atlas.repository.Constants.ATTR_ADMIN_GROUPS;
