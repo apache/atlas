@@ -19,6 +19,7 @@
 
 package org.apache.atlas.plugin.util;
 
+import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.sun.jersey.api.client.Client;
@@ -36,7 +37,6 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.atlas.authorization.hadoop.utils.RangerCredentialProvider;
 import org.apache.atlas.authorization.utils.StringUtil;
-import org.codehaus.jackson.jaxrs.JacksonJsonProvider;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.KeyManager;
