@@ -139,7 +139,7 @@ public final class AccessControlUtils {
     public static List<String> getFilteredPolicyResources(List<String> resources, String resourcePrefix) {
         return resources.stream()
                 .filter(x -> x.startsWith(resourcePrefix))
-                .map(x -> x.split(RESOURCES_SPLITTER)[1])
+                .map(x -> x.substring(resourcePrefix.length()))
                 .collect(Collectors.toList());
     }
 

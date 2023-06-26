@@ -259,8 +259,9 @@ public class CachePolicyTransformerImpl {
             String resourceName = atlasResource.split(RESOURCES_SPLITTER)[0];
 
             if (!resourceValuesMap.containsKey(resourceName)) {
-                List<String> applicables = atlasResources.stream().filter(x -> x.startsWith(resourceName + ":")).collect(Collectors.toList());
-                List<String> values = applicables.stream().map(x -> x.split(RESOURCES_SPLITTER)[1]).collect(Collectors.toList());
+                String resourceNameFinal = resourceName + ":";
+                List<String> applicables = atlasResources.stream().filter(x -> x.startsWith(resourceNameFinal)).collect(Collectors.toList());
+                List<String> values = applicables.stream().map(x -> x.substring(resourceNameFinal.length())).collect(Collectors.toList());
                 resourceValuesMap.put(resourceName, values);
             }
         }
