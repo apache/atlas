@@ -24,6 +24,7 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -42,13 +43,13 @@ import static org.apache.atlas.repository.Constants.TRAIT_NAMES_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.VERTEX_INDEX_NAME;
 import static org.apache.atlas.repository.util.AccessControlUtils.ACCESS_READ_PERSONA_METADATA;
 import static org.apache.atlas.repository.util.AccessControlUtils.ACCESS_READ_PURPOSE_GLOSSARY;
-import static org.apache.atlas.repository.util.AccessControlUtils.ACCESS_READ_PURPOSE_METADATA;
 import static org.apache.atlas.repository.util.AccessControlUtils.getConnectionQualifiedNameFromPolicyAssets;
 import static org.apache.atlas.repository.util.AccessControlUtils.getESAliasName;
 import static org.apache.atlas.repository.util.AccessControlUtils.getIsAllowPolicy;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicies;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyActions;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyAssets;
+import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyConnectionQN;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPurposeTags;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 
@@ -142,7 +143,10 @@ public class ESAliasStore implements IndexAliasStore {
 
                 if (getIsAllowPolicy(policy)) {
                     if (getPolicyActions(policy).contains(ACCESS_READ_PERSONA_METADATA)) {
-                        String connectionQName = getConnectionQualifiedNameFromPolicyAssets(entityRetriever, assets);
+                        String connectionQName = getPolicyConnectionQN(policy);
+                        if (StringUtils.isEmpty(connectionQName)) {
+                            connectionQName = getConnectionQualifiedNameFromPolicyAssets(entityRetriever, assets);
+                        }
 
                         for (String asset : assets) {
                             addPersonaMetadataFilterClauses(asset, allowClauseList);
