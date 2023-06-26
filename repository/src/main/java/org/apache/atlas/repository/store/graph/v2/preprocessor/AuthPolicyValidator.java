@@ -276,7 +276,7 @@ public class AuthPolicyValidator {
 
         for (String entity : entityResources) {
             if (!entity.startsWith(connQn)) {
-                throw new AtlasBaseException(BAD_REQUEST, entity + " does not belong to connection" + connQn);
+                throw new AtlasBaseException(BAD_REQUEST, entity + " does not belong to connection " + connQn);
             }
         }
     }
