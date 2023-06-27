@@ -34,7 +34,6 @@ import org.apache.atlas.repository.store.aliasstore.ESAliasStore;
 import org.apache.atlas.repository.store.aliasstore.IndexAliasStore;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
-import org.apache.atlas.repository.util.AccessControlUtils;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.lang.StringUtils;
@@ -55,6 +54,7 @@ import static org.apache.atlas.AtlasErrorCode.UNAUTHORIZED_CONNECTION_ADMIN;
 import static org.apache.atlas.authorize.AtlasAuthorizationUtils.getCurrentUserName;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.CREATE;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.UPDATE;
+import static org.apache.atlas.repository.Constants.ATTR_ADMIN_ROLES;
 import static org.apache.atlas.repository.Constants.KEYCLOAK_ROLE_ADMIN;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.util.AccessControlUtils.*;
@@ -111,7 +111,7 @@ public class AuthPolicyPreProcessor implements PreProcessor {
 
         entity.setAttribute(ATTR_POLICY_IS_ENABLED, entity.getAttributes().getOrDefault(ATTR_POLICY_IS_ENABLED, true));
 
-        AuthPolicyValidator validator = new AuthPolicyValidator();
+        AuthPolicyValidator validator = new AuthPolicyValidator(entityRetriever);
         if (POLICY_CATEGORY_PERSONA.equals(policyCategory)) {
             AtlasEntityWithExtInfo parent = getAccessControlEntity(policy);
             AtlasEntity parentEntity = parent.getEntity();
@@ -165,7 +165,7 @@ public class AuthPolicyPreProcessor implements PreProcessor {
 
         String policyCategory = policy.hasAttribute(ATTR_POLICY_CATEGORY) ? getPolicyCategory(policy) : getPolicyCategory(existingPolicy);
 
-        AuthPolicyValidator validator = new AuthPolicyValidator();
+        AuthPolicyValidator validator = new AuthPolicyValidator(entityRetriever);
         if (POLICY_CATEGORY_PERSONA.equals(policyCategory)) {
             AtlasEntityWithExtInfo parent = getAccessControlEntity(policy);
             AtlasEntity parentEntity = parent.getEntity();
@@ -243,10 +243,8 @@ public class AuthPolicyPreProcessor implements PreProcessor {
         if (POLICY_SUB_CATEGORY_METADATA.equals(subCategory) || POLICY_SUB_CATEGORY_DATA.equals(subCategory)) {
             //connectionAdmins check
 
-            List<String> atlasResources = getPolicyResources(policy);
-            List<String> entityResources = getFilteredPolicyResources(atlasResources, RESOURCES_ENTITY);
-
-            AtlasEntity connection = getConnectionForPolicy(entityRetriever, entityResources);
+            String connQn = getPolicyConnectionQN(policy);
+            AtlasEntity connection = getEntityByQualifiedName(entityRetriever, connQn);
             if (connection == null) {
                 throw new AtlasBaseException(RESOURCE_NOT_FOUND, "Connection entity for policy");
             }
@@ -255,10 +253,9 @@ public class AuthPolicyPreProcessor implements PreProcessor {
             Set<String> userRoles = AtlasAuthorizationUtils.getRolesForCurrentUser();
 
             List<String> connRoles = new ArrayList<>(0);
-            if (connection.hasAttribute("adminRoles")) {
-                connRoles = (List<String>) connection.getAttribute("adminRoles");
+            if (connection.hasAttribute(ATTR_ADMIN_ROLES)) {
+                connRoles = (List<String>) connection.getAttribute(ATTR_ADMIN_ROLES);
             }
-
 
             if (userRoles.contains(connectionRoleName) || (userRoles.contains(KEYCLOAK_ROLE_ADMIN) && connRoles.contains(KEYCLOAK_ROLE_ADMIN))) {
                 //valid connection admin

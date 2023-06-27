@@ -40,7 +40,7 @@ public class FeatureFlagStoreLaunchDarklyImpl implements FeatureFlagStore {
         try {
             ret = client.boolVariation(flag.getKey(), getContext(key, value), flag.getDefaultValue());
         } catch (Exception e) {
-            return false;
+            return flag.getDefaultValue();
         }
 
         return ret;
@@ -52,7 +52,7 @@ public class FeatureFlagStoreLaunchDarklyImpl implements FeatureFlagStore {
         try {
             ret = client.boolVariation(flag.getKey(), getContext(key, value), flag.getDefaultValue());
         } catch (Exception e) {
-            return false;
+            return flag.getDefaultValue();
         }
 
         return ret;
