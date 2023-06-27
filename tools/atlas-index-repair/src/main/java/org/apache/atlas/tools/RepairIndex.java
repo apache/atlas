@@ -266,12 +266,11 @@ public class RepairIndex {
         IndexSerializer indexSerializer = janusGraph.getIndexSerializer();
 
         for (String indexName : getIndexes()) {
-            displayCrlf("Restoring: " + indexName);
+            LOG.info("Restoring: " + indexName);
             long startTime = System.currentTimeMillis();
             reindexVertex(indexName, indexSerializer, referencedGUIDs);
 
-            display(": Time taken: " + (System.currentTimeMillis() - startTime) + " ms");
-            displayCrlf(": Done!");
+            LOG.info(": Time taken: " + (System.currentTimeMillis() - startTime) + " ms");
         }
     }
 
@@ -281,12 +280,12 @@ public class RepairIndex {
         IndexSerializer indexSerializer = janusGraph.getIndexSerializer();
 
         for (String indexName : getIndexes()) {
-//            displayCrlf("Restoring: " + indexName);
+            LOG.info("Restoring: " + indexName);
             long startTime = System.currentTimeMillis();
             reindexVertex(indexName, indexSerializer, guids);
 
-//            display(": Time taken: " + (System.currentTimeMillis() - startTime) + " ms");
-//            displayCrlf(": Done!");
+            LOG.info(": Time taken: " + (System.currentTimeMillis() - startTime) + " ms");
+            LOG.info(": Done!");
         }
     }
 }
