@@ -15,16 +15,12 @@ import java.util.regex.Pattern;
 
 import static org.apache.atlas.repository.Constants.ATTRIBUTE_LINK;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
-
 public class LinkPreProcessor implements PreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(LinkPreProcessor.class);
-    public static final Pattern REGEX_ONSITE_URL = Pattern.compile("(?:[\\p{L}\\p{N}\\\\\\.\\#@\\$%\\+&;\\-_~,\\?=/!]+|\\#(\\w)+)");
-    public static final Pattern REGEX_OFFSITE_URL = Pattern.compile("\\s*(?:(?:ht|f)tps?://|mailto:)[\\p{L}\\p{N}]"
+    private static final Pattern REGEX_ONSITE_URL = Pattern.compile("(?:[\\p{L}\\p{N}\\\\\\.\\#@\\$%\\+&;\\-_~,\\?=/!]+|\\#(\\w)+)");
+    private static final Pattern REGEX_OFFSITE_URL = Pattern.compile("\\s*(?:(?:ht|f)tps?://|mailto:)[\\p{L}\\p{N}]"
             + "[\\p{L}\\p{N}\\p{Zs}\\.\\#@\\$%\\+&;:\\-_~,\\?=/!\\(\\)]*+\\s*");
-    public static final Predicate<String> REGEX_ON_OFFSITE_URL = matchesEither(REGEX_ONSITE_URL, REGEX_OFFSITE_URL);
-
-    public LinkPreProcessor() {
-    }
+    private static final Predicate<String> REGEX_ON_OFFSITE_URL = matchesEither(REGEX_ONSITE_URL, REGEX_OFFSITE_URL);
 
     @Override
     public void processAttributes(AtlasStruct entityStruct, EntityMutationContext context, EntityMutations.EntityOperation operation) throws AtlasBaseException {
@@ -37,51 +33,34 @@ public class LinkPreProcessor implements PreProcessor {
 
         switch (operation) {
             case CREATE:
-                processCreateLink(link);
-                break;
             case UPDATE:
-                processUpdateLink(link);
+                processLink(link, operation.name());
                 break;
         }
-    }
-
-    private void processCreateLink(String link) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processCreateLink");
-
-        // If link is not any format of link, throw exception
-        if (link == null || link.isEmpty()) {
-            throw new AtlasBaseException("Link is empty");
-        }
-        // If link is not a valid link, throw exception
-        if (!REGEX_ON_OFFSITE_URL.apply(link)) {
-            throw new AtlasBaseException("Please provide a valid URL");
-        }
-
-        RequestContext.get().endMetricRecord(metricRecorder);
 
     }
 
-    private void processUpdateLink(String link) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processUpdateLink");
-        // If link is not any format of link, throw exception
-        if (link == null || link.isEmpty()) {
-            throw new AtlasBaseException("Link is empty");
-        }
-        // If link is not a valid link, throw exception
-        if (!REGEX_ON_OFFSITE_URL.apply(link)) {
-            throw new AtlasBaseException("Please provide a valid URL");
-        }
-        RequestContext.get().endMetricRecord(metricRecorder);
+    /**
+     * Processes the link based on the provided operation.
+     *
+     * @param link     The link to be processed.
+     * @param operation The operation to be performed.
+     * @throws AtlasBaseException If the link is not valid or empty.
+     */
+    private void processLink(String link, String operation) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord(operation);
 
+        if (link == null || link.isEmpty()) {
+            throw new AtlasBaseException("Link is empty for operation: " + operation);
+        }
+        if (!REGEX_ON_OFFSITE_URL.apply(link)) {
+            throw new AtlasBaseException("Please provide a valid URL for operation: " + operation);
+        }
+
+        RequestContext.get().endMetricRecord(metricRecorder);
     }
 
     private static Predicate<String> matchesEither(final Pattern a, final Pattern b) {
-        return new Predicate<String>() {
-            public boolean apply(String s) {
-                return a.matcher(s).matches() || b.matcher(s).matches();
-            }
-        };
+        return input -> a.matcher(input).matches() || b.matcher(input).matches();
     }
-
-
 }
