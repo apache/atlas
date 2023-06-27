@@ -863,10 +863,6 @@ public class EntityLineageService implements AtlasLineageService {
         return AtlasConfiguration.LINEAGE_MAX_NODE_COUNT.getInt();
     }
 
-    private boolean lineageMaxNodeCountReached(Set<AtlasLineageOnDemandInfo.LineageRelation> relations) {
-        return CollectionUtils.isNotEmpty(relations) && relations.size() > getLineageMaxNodeAllowedCount();
-    }
-
     private String getEdgeLabel(AtlasEdge edge) {
         AtlasVertex inVertex     = edge.getInVertex();
         AtlasVertex outVertex    = edge.getOutVertex();
