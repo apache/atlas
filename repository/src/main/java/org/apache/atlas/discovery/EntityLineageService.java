@@ -407,6 +407,8 @@ public class EntityLineageService implements AtlasLineageService {
                     } else {
                         addEdgeToResult(outgoingEdge, ret, atlasLineageOnDemandContext);
                         entitiesTraversed.incrementAndGet();
+                        if (isEntityTraversalLimitReached(entitiesTraversed))
+                            setEntityLimitInResponse(isInput, ret);
                     }
                     if (entityVertex != null && !visitedVertices.contains(getId(entityVertex))) {
                         traverseEdgesOnDemand(entityVertex, isInput, depth - 1, visitedVertices, atlasLineageOnDemandContext, ret, baseGuid, entitiesTraversed); // execute inner depth
@@ -416,6 +418,13 @@ public class EntityLineageService implements AtlasLineageService {
 
             RequestContext.get().endMetricRecord(metricRecorder);
         }
+    }
+
+    private static void setEntityLimitInResponse(boolean isInput, AtlasLineageOnDemandInfo ret) {
+        if (isInput)
+            ret.setUpstreamEntityLimitReached(true);
+        else
+            ret.setDownstreamEntityLimitReached(true);
     }
 
     private void traverseEdgesUsingBFS(String baseGuid, AtlasLineageListContext lineageListContext, AtlasLineageListInfo ret) throws AtlasBaseException {
