@@ -2522,7 +2522,6 @@
                 "policyRoles":
                 [
                     "$admin",
-                    "$member",
                     "$api-token-default-access"
                 ],
                 "policyResourceCategory": "ENTITY",
