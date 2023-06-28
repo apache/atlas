@@ -226,25 +226,23 @@ public class ConnectionPreProcessor implements PreProcessor {
             AtlasEntity connection = entityWithExtInfo.getEntity();
             String roleName = String.format(CONN_NAME_PATTERN, connection.getGuid());
 
-            if (!AtlasEntity.Status.ACTIVE.equals(connection.getStatus())) {
-                throw new AtlasBaseException("Connection is already deleted/purged");
-            }
-
             //delete connection policies
             List<AtlasEntityHeader> policies = getConnectionPolicies(connection.getGuid(), roleName);
             entityStore.deleteByIds(policies.stream().map(x -> x.getGuid()).collect(Collectors.toList()));
 
-            // Delete connection role
+            // Delete connection role in case of hard delete or purge
             if (isDeleteTypePurgeOrHard()) {
                 keycloakStore.removeRoleByName(roleName);
             }
 
         }
     }
+
     private boolean isDeleteTypePurgeOrHard() {
         DeleteType deleteType = RequestContext.get().getDeleteType();
         return deleteType == DeleteType.PURGE || deleteType == DeleteType.HARD;
     }
+
     private List<AtlasEntityHeader> getConnectionPolicies(String guid, String roleName) throws AtlasBaseException {
         List<AtlasEntityHeader> ret = new ArrayList<>();
         
@@ -253,9 +251,6 @@ public class ConnectionPreProcessor implements PreProcessor {
 
         List mustClauseList = new ArrayList();
         mustClauseList.add(mapOf("term", mapOf("__typeName.keyword", POLICY_ENTITY_TYPE)));
-        mustClauseList.add(mapOf("term", mapOf("__state", "ACTIVE")));
-
-
         mustClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, guid + "/*")));
         mustClauseList.add(mapOf("term", mapOf("policyRoles", roleName)));
 
