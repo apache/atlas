@@ -1821,7 +1821,7 @@ public class EntityREST {
 
            repairIndex.restoreSelective(guid, referredEntities);
         } catch (Exception e) {
-            System.out.println(e);
+            LOG.error("Exception while repairEntityIndex ", e);
             throw new AtlasBaseException(e);
         } finally {
             AtlasPerfTracer.log(perf);
@@ -1883,7 +1883,7 @@ public class EntityREST {
             LOG.info("Repaired index for entities for typeName " + typename + " in " + (System.currentTimeMillis() - startTime) + " ms");
 
         } catch (Exception e) {
-            System.out.println(e);
+            LOG.error("Exception while repairIndexByTypeName ", e);
             throw new AtlasBaseException(e);
         } finally {
             AtlasPerfTracer.log(perf);
