@@ -220,6 +220,11 @@ public class ConnectionPreProcessor implements PreProcessor {
     @Override
     public void processDelete(AtlasVertex vertex) throws AtlasBaseException {
         checkAccessControlFeatureStatus(featureFlagStore);
+        // Process Delete connection role and policies in case of hard delete or purge
+        if (!isDeleteTypePurgeOrHard()) {
+            LOG.info("Skipping processDelete for connection as delete type is {}", RequestContext.get().getDeleteType());
+            return;
+        }
 
         if (ATLAS_AUTHORIZER_IMPL.equalsIgnoreCase(CURRENT_AUTHORIZER_IMPL)) {
             AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = entityRetriever.toAtlasEntityWithExtInfo(vertex);
@@ -230,11 +235,7 @@ public class ConnectionPreProcessor implements PreProcessor {
             List<AtlasEntityHeader> policies = getConnectionPolicies(connection.getGuid(), roleName);
             entityStore.deleteByIds(policies.stream().map(x -> x.getGuid()).collect(Collectors.toList()));
 
-            // Delete connection role in case of hard delete or purge
-            if (isDeleteTypePurgeOrHard()) {
-                keycloakStore.removeRoleByName(roleName);
-            }
-
+            keycloakStore.removeRoleByName(roleName);
         }
     }
 
