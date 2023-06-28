@@ -18,6 +18,7 @@
 package org.apache.atlas.repository.store.graph.v2.preprocessor;
 
 
+import org.apache.atlas.DeleteType;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -231,13 +232,19 @@ public class ConnectionPreProcessor implements PreProcessor {
 
             //delete connection policies
             List<AtlasEntityHeader> policies = getConnectionPolicies(connection.getGuid(), roleName);
-            EntityMutationResponse response = entityStore.deleteByIds(policies.stream().map(x -> x.getGuid()).collect(Collectors.toList()));
+            entityStore.deleteByIds(policies.stream().map(x -> x.getGuid()).collect(Collectors.toList()));
 
-            //delete connection role
-            keycloakStore.removeRoleByName(roleName);
+            // Delete connection role
+            if (isDeleteTypePurgeOrHard()) {
+                keycloakStore.removeRoleByName(roleName);
+            }
+
         }
     }
-
+    private boolean isDeleteTypePurgeOrHard() {
+        DeleteType deleteType = RequestContext.get().getDeleteType();
+        return deleteType == DeleteType.PURGE || deleteType == DeleteType.HARD;
+    }
     private List<AtlasEntityHeader> getConnectionPolicies(String guid, String roleName) throws AtlasBaseException {
         List<AtlasEntityHeader> ret = new ArrayList<>();
         
