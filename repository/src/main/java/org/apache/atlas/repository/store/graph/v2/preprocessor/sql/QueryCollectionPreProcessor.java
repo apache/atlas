@@ -23,7 +23,7 @@ import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.featureflag.FeatureFlagStore;
-import org.apache.atlas.keycloak.client.KeycloakClient;
+import org.apache.atlas.keycloak.client.AtlasKeycloakClient;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -44,7 +44,6 @@ import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
-import org.keycloak.admin.client.resource.RoleResource;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,6 +56,7 @@ import java.util.stream.Collectors;
 
 import static org.apache.atlas.authorize.AtlasAuthorizerFactory.ATLAS_AUTHORIZER_IMPL;
 import static org.apache.atlas.authorize.AtlasAuthorizerFactory.CURRENT_AUTHORIZER_IMPL;
+import static org.apache.atlas.keycloak.client.AtlasKeycloakClient.getKeycloakClient;
 import static org.apache.atlas.repository.Constants.ATTR_ADMIN_GROUPS;
 import static org.apache.atlas.repository.Constants.ATTR_ADMIN_ROLES;
 import static org.apache.atlas.repository.Constants.ATTR_ADMIN_USERS;
@@ -237,8 +237,7 @@ public class QueryCollectionPreProcessor implements PreProcessor {
     private void updateCollectionAdminRole(AtlasEntity collection, AtlasEntity existingCollEntity, AtlasVertex vertex) throws AtlasBaseException {
         String adminRoleName = String.format(COLL_ADMIN_ROLE_PATTERN, collection.getGuid());
 
-        RoleResource rolesResource = KeycloakClient.getKeycloakClient().getRealm().roles().get(adminRoleName);
-        RoleRepresentation representation = rolesResource.toRepresentation();
+        RoleRepresentation representation = getKeycloakClient().getRoleByName(adminRoleName);
         String creatorUser = vertex.getProperty(CREATED_BY_KEY, String.class);
 
         if (collection.hasAttribute(ATTR_ADMIN_USERS)) {
@@ -275,9 +274,7 @@ public class QueryCollectionPreProcessor implements PreProcessor {
 
     private void updateCollectionViewerRole(AtlasEntity collection, AtlasEntity existingCollEntity) throws AtlasBaseException {
         String viewerRoleName = String.format(COLL_VIEWER_ROLE_PATTERN, collection.getGuid());
-
-        RoleResource rolesResource = KeycloakClient.getKeycloakClient().getRealm().roles().get(viewerRoleName);
-        RoleRepresentation representation = rolesResource.toRepresentation();
+        RoleRepresentation representation = getKeycloakClient().getRoleByName(viewerRoleName);
 
         if (collection.hasAttribute(ATTR_VIEWER_USERS)) {
             List<String> newViewerUsers = (List<String>) collection.getAttribute(ATTR_VIEWER_USERS);

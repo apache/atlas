@@ -25,22 +25,15 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.featureflag.AtlasFeatureFlagClient;
 import org.apache.atlas.featureflag.FeatureFlagStore;
 import org.apache.atlas.featureflag.FeatureFlagStoreLaunchDarklyImpl;
-import org.apache.atlas.keycloak.client.KeycloakClient;
 import org.apache.atlas.plugin.model.RangerRole;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
-import org.keycloak.admin.client.resource.RoleResource;
-import org.keycloak.representations.idm.AdminEventRepresentation;
-import org.keycloak.representations.idm.EventRepresentation;
-import org.keycloak.representations.idm.GroupRepresentation;
-import org.keycloak.representations.idm.RoleRepresentation;
-import org.keycloak.representations.idm.UserRepresentation;
+import org.keycloak.representations.idm.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.ws.rs.ForbiddenException;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -51,11 +44,8 @@ import java.util.stream.Collectors;
 import static org.apache.atlas.featureflag.AtlasFeatureFlagClient.INSTANCE_DOMAIN_NAME;
 import static org.apache.atlas.featureflag.FeatureFlagStore.FeatureFlag.ADD_CONNECTION_ROLE_IN_ADMIN_ROLE;
 import static org.apache.atlas.featureflag.FeatureFlagStore.FeatureFlag.ALLOW_CONNECTION_ADMIN_OPS;
-import static org.apache.atlas.repository.Constants.KEYCLOAK_ROLE_ADMIN;
-import static org.apache.atlas.repository.Constants.KEYCLOAK_ROLE_API_TOKEN;
-import static org.apache.atlas.repository.Constants.KEYCLOAK_ROLE_DEFAULT;
-import static org.apache.atlas.repository.Constants.KEYCLOAK_ROLE_GUEST;
-import static org.apache.atlas.repository.Constants.KEYCLOAK_ROLE_MEMBER;
+import static org.apache.atlas.keycloak.client.AtlasKeycloakClient.getKeycloakClient;
+import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.util.AccessControlUtils.INSTANCE_DOMAIN_KEY;
 
 
@@ -102,7 +92,6 @@ public class KeycloakUserStore {
             return true;
         }
 
-        KeycloakClient keycloakClient = KeycloakClient.getKeycloakClient();
         long latestKeycloakEventTime = -1L;
 
         try {
@@ -110,7 +99,7 @@ public class KeycloakUserStore {
 
             for (int from = 0; ; from += size) {
 
-                List<AdminEventRepresentation> adminEvents = keycloakClient.getRealm().getAdminEvents(OPERATION_TYPES,
+                List<AdminEventRepresentation> adminEvents = getKeycloakClient().getAdminEvents(OPERATION_TYPES,
                         null, null, null, null, null, null, null,
                         from, size);
                 Optional<AdminEventRepresentation> event = adminEvents.stream().filter(x -> RESOURCE_TYPES.contains(x.getResourceType())).findFirst();
@@ -132,7 +121,7 @@ public class KeycloakUserStore {
             //check Events for user registration event via OKTA
             for (int from = 0; ; from += size) {
 
-                List<EventRepresentation> events = keycloakClient.getRealm().getEvents(EVENT_TYPES,
+                List<EventRepresentation> events = getKeycloakClient().getEvents(EVENT_TYPES,
                         null, null, null, null, null, from, size);
 
                 Optional<EventRepresentation> event = events.stream().filter(this::isUpdateProfileEvent).findFirst();
@@ -151,11 +140,11 @@ public class KeycloakUserStore {
                 return true;
             }
 
-        } catch (ForbiddenException fbde) {
+        } catch (AtlasBaseException fbde) {
+            //TODO: handle forbidden ex.
             LOG.error("ForbiddenException while fetching latest event time, Reinitializing Keycloak Client to refresh", fbde);
-            keycloakClient.reInit();
-        }
-        catch (Exception e) {
+            getKeycloakClient().reInit();
+        } catch (Exception e) {
             LOG.error("Error while fetching latest event time", e);
         } finally {
             RequestContext.get().endMetricRecord(metricRecorder);
@@ -184,7 +173,7 @@ public class KeycloakUserStore {
             return null;
         }
 
-        List<RoleRepresentation> kRoles = KeycloakClient.getKeycloakClient().getAllRoles();
+        List<RoleRepresentation> kRoles = getKeycloakClient().getAllRoles();
         LOG.info("Found {} keycloak roles", kRoles.size());
 
         Set<RangerRole> roleSet = new HashSet<>();
@@ -217,7 +206,7 @@ public class KeycloakUserStore {
     }
 
     public void invertRoles(Set<RangerRole> roleSet) {
-        Map<String , RangerRole> roleMap = new HashMap<>();
+        Map<String, RangerRole> roleMap = new HashMap<>();
         for (RangerRole role : roleSet) {
             RangerRole existingRole = roleMap.get(role.getName());
             if (existingRole != null) {
@@ -259,7 +248,7 @@ public class KeycloakUserStore {
     private void processDefaultRole(Set<RangerRole> roleSet) {
         Optional<RangerRole> defaultRole = roleSet.stream().filter(x -> KEYCLOAK_ROLE_DEFAULT.equals(x.getName())).findFirst();
 
-        if (defaultRole.isPresent()){
+        if (defaultRole.isPresent()) {
             List<String> realmDefaultRoles = defaultRole.get().getRoles().stream().map(x -> x.getName()).collect(Collectors.toList());
             String tenantDefaultRealmUserRole = "";
 
@@ -305,7 +294,7 @@ public class KeycloakUserStore {
 
         Map<String, Set<String>> userGroupMapping = new HashMap<>();
 
-        List<UserRepresentation> kUsers = KeycloakClient.getKeycloakClient().getAllUsers();
+        List<UserRepresentation> kUsers = getKeycloakClient().getAllUsers();
         LOG.info("Found {} keycloak users", kUsers.size());
 
         List<Callable<Object>> callables = new ArrayList<>();
@@ -414,8 +403,6 @@ public class KeycloakUserStore {
             final RangerRole rangerRole = keycloakRoleToRangerRole(kRole);
 
             try {
-                RoleResource roleResource = KeycloakClient.getKeycloakClient().getRealm().roles().get(kRole.getName());
-
                 //get all groups for Roles
                 Thread groupsFetcher = new Thread(() -> {
                     int start = 0;
@@ -424,12 +411,17 @@ public class KeycloakUserStore {
                     Set<GroupRepresentation> ret = new HashSet<>();
 
                     do {
-                        Set<GroupRepresentation> kGroups = roleResource.getRoleGroupMembers(start, size);
-                        if (CollectionUtils.isNotEmpty(kGroups)) {
-                            ret.addAll(kGroups);
-                            start += size;
-                        } else {
-                            found = false;
+                        try {
+                            Set<GroupRepresentation> kGroups = getKeycloakClient().getRoleGroupMembers(kRole.getName(), start, size);
+                            if (CollectionUtils.isNotEmpty(kGroups)) {
+                                ret.addAll(kGroups);
+                                start += size;
+                            } else {
+                                found = false;
+                            }
+                        } catch (Exception e) {
+                            LOG.error("Failed to get group members with role", e);
+                            throw new RuntimeException(e);
                         }
 
                     } while (found && ret.size() % size == 0);
@@ -446,12 +438,17 @@ public class KeycloakUserStore {
                     Set<UserRepresentation> ret = new HashSet<>();
 
                     do {
-                        Set<UserRepresentation> userRepresentations = roleResource.getRoleUserMembers(start, size);
-                        if (CollectionUtils.isNotEmpty(userRepresentations)) {
-                            ret.addAll(userRepresentations);
-                            start += size;
-                        } else {
-                            found = false;
+                        try {
+                            Set<UserRepresentation> userRepresentations = getKeycloakClient().getRoleUserMembers(kRole.getName(), start, size);
+                            if (CollectionUtils.isNotEmpty(userRepresentations)) {
+                                ret.addAll(userRepresentations);
+                                start += size;
+                            } else {
+                                found = false;
+                            }
+                        } catch (Exception e) {
+                            LOG.error("Failed to get users for role {}", kRole.getName(), e);
+                            throw new RuntimeException(e);
                         }
 
                     } while (found && ret.size() % size == 0);
@@ -463,8 +460,14 @@ public class KeycloakUserStore {
 
                 //get all roles for Roles
                 Thread subRolesFetcher = new Thread(() -> {
-                    Set<RoleRepresentation> kSubRoles = roleResource.getRoleComposites();
-                    rangerRole.setRoles(keycloakRolesToRangerRoleMember(kSubRoles));
+                    Set<RoleRepresentation> kSubRoles = null;
+                    try {
+                        kSubRoles = getKeycloakClient().getRoleComposites(kRole.getName());
+                        rangerRole.setRoles(keycloakRolesToRangerRoleMember(kSubRoles));
+                    } catch (AtlasBaseException e) {
+                        LOG.error("Failed to get composite for role {}", kRole.getName(), e);
+                        throw new RuntimeException(e);
+                    }
                 });
                 subRolesFetcher.start();
 
@@ -503,7 +506,7 @@ public class KeycloakUserStore {
             AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("userGroupsFetcher");
 
             try {
-                List<GroupRepresentation> kGroups = KeycloakClient.getKeycloakClient().getRealm().users().get(kUser.getId()).groups();
+                List<GroupRepresentation> kGroups = getKeycloakClient().getGroupsForUserById(kUser.getId());
                 userGroupMapping.put(kUser.getUsername(),
                         kGroups.stream()
                                 .map(GroupRepresentation::getName)

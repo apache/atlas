@@ -20,7 +20,7 @@ package org.apache.atlas.repository.store.graph.v2.preprocessor.accesscontrol;
 
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.keycloak.client.KeycloakClient;
+import org.apache.atlas.keycloak.client.AtlasKeycloakClient;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasStruct;
@@ -38,7 +38,6 @@ import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
-import org.keycloak.admin.client.resource.RoleByIdResource;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -226,8 +225,7 @@ public class PersonaPreProcessor implements PreProcessor {
         String roleId = getPersonaRoleId(existingPersona);
         String roleName = getPersonaRoleName(existingPersona);
 
-        RoleByIdResource rolesResource = KeycloakClient.getKeycloakClient().getRealm().rolesById();
-        RoleRepresentation roleRepresentation = rolesResource.getRole(roleId);
+        RoleRepresentation roleRepresentation = AtlasKeycloakClient.getKeycloakClient().getRoleById(roleId);
 
         boolean isUpdated = false;
         if (newPersona.hasAttribute(ATTR_PERSONA_USERS)) {
@@ -254,9 +252,7 @@ public class PersonaPreProcessor implements PreProcessor {
             attributes.put("displayName", Collections.singletonList(getEntityName(newPersona)));
 
             roleRepresentation.setAttributes(attributes);
-
-            rolesResource.updateRole(roleId, roleRepresentation);
-
+            AtlasKeycloakClient.getKeycloakClient().updateRole(roleId, roleRepresentation);
             LOG.info("Updated keycloak role with name {}", roleName);
         }
     }

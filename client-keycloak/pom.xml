@@ -36,18 +36,43 @@
     </properties>
 
     <dependencies>
+<!--        <dependency>-->
+<!--            <groupId>org.keycloak</groupId>-->
+<!--            <artifactId>keycloak-admin-client</artifactId>-->
+<!--            <version>${keycloak-admin-client.version}</version>-->
+<!--            <exclusions>-->
+<!--                <exclusion>-->
+<!--                    <groupId>javax.ws.rs</groupId>-->
+<!--                    <artifactId>jsr311-api</artifactId>-->
+<!--                </exclusion>-->
+<!--            </exclusions>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>org.keycloak</groupId>
-            <artifactId>keycloak-admin-client</artifactId>
+            <artifactId>keycloak-core</artifactId>
             <version>${keycloak-admin-client.version}</version>
             <exclusions>
                 <exclusion>
-                    <groupId>javax.ws.rs</groupId>
-                    <artifactId>jsr311-api</artifactId>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
-
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>okhttp</artifactId>
+            <version>${okhttp3.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.squareup.retrofit2</groupId>
+            <artifactId>retrofit</artifactId>
+            <version>${retrofit.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.squareup.retrofit2</groupId>
+            <artifactId>converter-jackson</artifactId>
+            <version>${retrofit.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-common</artifactId>
