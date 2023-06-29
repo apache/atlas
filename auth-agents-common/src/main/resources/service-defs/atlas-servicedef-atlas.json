@@ -115,7 +115,7 @@
 			},
 			"label": "Atlas Service",
 			"description": "Atlas Service",
-			"accessTypeRestrictions": ["admin-import", "admin-export", "admin-purge", "admin-audits", "admin-entity-audits"]
+			"accessTypeRestrictions": ["admin-import", "admin-export", "admin-purge", "admin-audits", "admin-entity-audits", "admin-repair-index"]
 		},
 		{
 			"itemId": 7,
@@ -440,7 +440,13 @@
 			"itemId": 22,
 			"name": "admin-entity-audits",
 			"label": "Admin Entity Audits"
+		},
+		{
+			"itemId": 23,
+			"name": "admin-repair-index",
+			"label": "Admin Repair Index"
 		}
+
 	],
 	"configs": [
 		{
