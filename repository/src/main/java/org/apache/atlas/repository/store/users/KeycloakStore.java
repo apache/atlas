@@ -303,7 +303,7 @@ public class KeycloakStore {
             Optional<UserRepresentation> keyUserOptional = matchedUsers.stream().filter(x -> userName.equals(x.getUsername())).findFirst();
 
             if (keyUserOptional.isPresent()) {
-                getKeycloakClient().addRealmLevelRoleMappingsForUser(keyUserOptional.get().getId(), Collections.singletonList(roleRepresentation));
+                getKeycloakClient().deleteRealmLevelRoleMappingsForUser(keyUserOptional.get().getId(), Collections.singletonList(roleRepresentation));
             } else {
                 LOG.warn("Keycloak user not found with userName " + userName);
             }
