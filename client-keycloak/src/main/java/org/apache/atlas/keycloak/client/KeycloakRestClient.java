@@ -49,10 +49,6 @@ public final class KeycloakRestClient extends AbstractKeycloakClient {
         return processResponse(this.retrofit.getGroupsForUserById(this.keycloakConfig.getRealmId(), userId));
     }
 
-    public Response<List<GroupRepresentation>> getAllGroups(int start, int size) throws AtlasBaseException {
-        return processResponse(this.retrofit.getAllGroups(this.keycloakConfig.getRealmId(), start, size));
-    }
-
     public void addRealmLevelRoleMappingsForGroup(String groupId, List<RoleRepresentation> roles) throws AtlasBaseException {
         processResponse(this.retrofit.addRealmLevelRoleMappingsForGroup(this.keycloakConfig.getRealmId(), groupId, roles));
     }

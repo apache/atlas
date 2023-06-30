@@ -54,16 +54,11 @@ public interface RetrofitKeycloakClient {
 
 
     @Headers({"Accept: application/json", "Cache-Control: no-store", "Cache-Control: no-cache"})
-    @GET("admin/realms/{realmId}/groups")
-    Call<List<GroupRepresentation>> getAllGroups(@Path("realmId") String realmId, @Query("first") Integer first,
-                                                 @Query("max") Integer max);
-
-    @Headers({"Accept: application/json", "Cache-Control: no-store", "Cache-Control: no-cache"})
     @POST("admin/realms/{realmId}/groups/{id}/role-mappings/realm")
     Call<Void> addRealmLevelRoleMappingsForGroup(@Path("realmId") String realmId, @Path("id") String groupId, @Body List<RoleRepresentation> roles);
 
     @Headers({"Accept: application/json", "Cache-Control: no-store", "Cache-Control: no-cache"})
-    @DELETE("admin/realms/{realmId}/groups/{id}/role-mappings/realm")
+    @HTTP( method = "DELETE", path = "admin/realms/{realmId}/groups/{id}/role-mappings/realm", hasBody = true)
     Call<Void> deleteRealmLevelRoleMappingsForGroup(@Path("realmId") String realmId, @Path("id") String groupId, @Body List<RoleRepresentation> roles);
 
 
@@ -75,7 +70,7 @@ public interface RetrofitKeycloakClient {
                                                                     @Body List<RoleRepresentation> roles);
 
     @Headers({"Accept: application/json", "Cache-Control: no-store", "Cache-Control: no-cache"})
-    @DELETE("admin/realms/{realmId}/users/{id}/role-mappings/realm")
+    @HTTP( method = "DELETE", path = "admin/realms/{realmId}/users/{id}/role-mappings/realm", hasBody = true)
     Call<Void> deleteRealmLevelRoleMappingsForUser(@Path("realmId") String realmId, @Path("id") String userId,
                                                    @Body List<RoleRepresentation> roles);
 
@@ -85,7 +80,7 @@ public interface RetrofitKeycloakClient {
     Call<Void> createRole(@Path("realmId") String realmId, @Body RoleRepresentation role);
 
     @Headers({"Accept: application/json", "Cache-Control: no-store", "Cache-Control: no-cache"})
-    @POST("admin/realms/{realmId}/roles/{role-id}")
+    @PUT("admin/realms/{realmId}/roles-by-id/{role-id}")
     Call<Void> updateRole(@Path("realmId") String realmId, @Path("role-id") String roleId, @Body RoleRepresentation role);
 
 
@@ -105,11 +100,11 @@ public interface RetrofitKeycloakClient {
 
     @Headers({"Accept: application/json", "Cache-Control: no-store", "Cache-Control: no-cache"})
     @DELETE("admin/realms/{realmId}/roles-by-id/{role-id}")
-    Call<Void> deleteRoleById(@Path("realmId") String realmId, @Query("role-id") String roleId);
+    Call<Void> deleteRoleById(@Path("realmId") String realmId, @Path("role-id") String roleId);
 
     @Headers({"Accept: application/json", "Cache-Control: no-store", "Cache-Control: no-cache"})
-    @DELETE("admin/realms/{realmId}/roles/{role-name}}")
-    Call<Void> deleteRoleByName(@Path("realmId") String realmId, @Query("role-name") String roleName);
+    @DELETE("admin/realms/{realmId}/roles/{role-name}")
+    Call<Void> deleteRoleByName(@Path("realmId") String realmId, @Path("role-name") String roleName);
 
     /* Keycloak composites */
 
@@ -122,7 +117,7 @@ public interface RetrofitKeycloakClient {
     Call<Void> addComposites(@Path("realmId") String realmId, @Path("role-name") String roleName, @Body List<RoleRepresentation> roles);
 
     @Headers({"Accept: application/json", "Cache-Control: no-store", "Cache-Control: no-cache"})
-    @DELETE("admin/realms/{realmId}/roles/{role-name}/composites")
+    @HTTP( method = "DELETE", path = "admin/realms/{realmId}/roles/{role-name}/composites", hasBody = true)
     Call<Void> deleteComposites(@Path("realmId") String realmId, @Path("role-name") String roleName, @Body List<RoleRepresentation> roles);
 
     @Headers({"Accept: application/json", "Cache-Control: no-store", "Cache-Control: no-cache"})

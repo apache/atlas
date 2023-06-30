@@ -3,6 +3,7 @@ package org.apache.atlas.keycloak.client.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.*;
 import okhttp3.logging.HttpLoggingInterceptor;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.keycloak.client.RetrofitKeycloakClient;
 import org.apache.atlas.keycloak.client.config.KeycloakConfig;
 import org.jetbrains.annotations.NotNull;
@@ -14,6 +15,9 @@ import retrofit2.converter.jackson.JacksonConverterFactory;
 
 import java.time.OffsetDateTime;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
+
+import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
 
 public final class AtlasKeycloakAuthService {
 
@@ -44,18 +48,18 @@ public final class AtlasKeycloakAuthService {
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
         return new OkHttpClient.Builder()
                 .addInterceptor(interceptor)
-                .addInterceptor(errorHandlingInterceptor).build();
+                .addInterceptor(errorHandlingInterceptor)
+                .connectTimeout(60, TimeUnit.SECONDS)
+                .callTimeout(60, TimeUnit.SECONDS)
+                .writeTimeout(60, TimeUnit.SECONDS)
+                .readTimeout(60, TimeUnit.SECONDS)
+                .build();
     }
 
     Interceptor errorHandlingInterceptor = chain -> {
         Request request = chain.request();
         okhttp3.Response response = chain.proceed(request);
-        if (response.isSuccessful()) {
-            LOG.info("Keycloak request for url {} successful:, {}", request.url(), response.code());
-        }else{
-            LOG.error("Request for url {} failed:, {}", request.url(), new String(response.body().bytes()));
-        }
-
+        LOG.info("Keycloak: Auth Request for url {} Status: {}", request.url(), response.code());
         return response;
     };
 
@@ -66,11 +70,16 @@ public final class AtlasKeycloakAuthService {
         synchronized (this) {
             if (Objects.isNull(currentAccessToken)) {
                 try {
-                    currentAccessToken = this.retrofit.grantToken(this.keycloakConfig.getRealmId(), getTokenRequest()).execute().body();
-                    expirationTime = currentTime() + currentAccessToken.getExpiresIn() - EXPIRY_OFFSET;
-                    LOG.info("Auth token fetched with expiry:{} sec", expirationTime);
+                    retrofit2.Response<AccessTokenResponse> resp = this.retrofit.grantToken(this.keycloakConfig.getRealmId(), getTokenRequest()).execute();
+                    if (resp.isSuccessful()) {
+                        currentAccessToken = resp.body();
+                        expirationTime = currentTime() + currentAccessToken.getExpiresIn() - EXPIRY_OFFSET;
+                        LOG.info("Keycloak: Auth token fetched with expiry:{} sec", expirationTime);
+                    } else {
+                        throw new AtlasBaseException(BAD_REQUEST, resp.errorBody().string());
+                    }
                 } catch (Exception e) {
-                    LOG.error("Error while fetching access token for keycloak client.", e);
+                    LOG.error("Keycloak: Error while fetching access token for keycloak client.", e);
                     throw new RuntimeException(e);
                 }
             }

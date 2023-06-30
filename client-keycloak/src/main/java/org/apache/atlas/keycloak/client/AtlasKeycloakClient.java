@@ -93,25 +93,6 @@ public final class AtlasKeycloakClient {
         return KEYCLOAK.getGroupsForUserById(userId).body();
     }
 
-    public List<GroupRepresentation> getAllGroups() throws AtlasBaseException {
-        int start = 0;
-        int size = 500;
-        boolean found = true;
-
-        List<GroupRepresentation> ret = new ArrayList<>(0);
-        do {
-            List<GroupRepresentation> groupRepresentations = KEYCLOAK.getAllGroups(start, size).body();
-            if (CollectionUtils.isNotEmpty(groupRepresentations)) {
-                ret.addAll(groupRepresentations);
-                start += size;
-            } else {
-                found = false;
-            }
-        } while (found && ret.size() % size == 0);
-
-        return ret;
-    }
-
     public void addRealmLevelRoleMappingsForGroup(String groupId, List<RoleRepresentation> roles) throws AtlasBaseException {
         KEYCLOAK.addRealmLevelRoleMappingsForGroup(groupId, roles);
     }
