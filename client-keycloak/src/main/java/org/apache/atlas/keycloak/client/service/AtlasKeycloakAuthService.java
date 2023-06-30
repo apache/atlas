@@ -50,9 +50,12 @@ public final class AtlasKeycloakAuthService {
     Interceptor errorHandlingInterceptor = chain -> {
         Request request = chain.request();
         okhttp3.Response response = chain.proceed(request);
-        if (!response.isSuccessful()) {
+        if (response.isSuccessful()) {
+            LOG.info("Keycloak request for url {} successful:, {}", request.url(), response.code());
+        }else{
             LOG.error("Request for url {} failed:, {}", request.url(), new String(response.body().bytes()));
         }
+
         return response;
     };
 
@@ -65,6 +68,7 @@ public final class AtlasKeycloakAuthService {
                 try {
                     currentAccessToken = this.retrofit.grantToken(this.keycloakConfig.getRealmId(), getTokenRequest()).execute().body();
                     expirationTime = currentTime() + currentAccessToken.getExpiresIn() - EXPIRY_OFFSET;
+                    LOG.info("Auth token fetched with expiry:{} sec", expirationTime);
                 } catch (Exception e) {
                     LOG.error("Error while fetching access token for keycloak client.", e);
                     throw new RuntimeException(e);
