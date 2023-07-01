@@ -143,7 +143,7 @@ abstract class AbstractKeycloakClient {
             }
             String errMsg = response.errorBody().string();
             LOG.error("Keycloak: Client request processing failed code {} message:{}", response.code(), errMsg);
-            throw new AtlasBaseException(ERROR_CODE_MAP.get(response.code()), errMsg);
+            throw new AtlasBaseException(ERROR_CODE_MAP.getOrDefault(response.code(), BAD_REQUEST), errMsg);
         } catch (Exception e) {
             LOG.error("Keycloak: request failed", e);
             throw new AtlasBaseException(BAD_REQUEST, "Keycloak request failed");

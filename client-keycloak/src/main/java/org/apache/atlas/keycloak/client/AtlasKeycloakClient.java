@@ -28,15 +28,15 @@ import static org.apache.atlas.ApplicationProperties.ATLAS_CONFIGURATION_DIRECTO
  */
 public final class AtlasKeycloakClient {
 
-    public static final Logger LOG = LoggerFactory.getLogger(AtlasKeycloakClient.class);
+    public final static Logger LOG = LoggerFactory.getLogger(AtlasKeycloakClient.class);
 
-    private static final String KEYCLOAK_PROPERTIES = "keycloak.json";
-    private static final String DEFAULT_GRANT_TYPE = "client_credentials";
-    private static final String KEY_REALM_ID = "realm";
-    private static final String KEY_AUTH_SERVER_URL = "auth-server-url";
-    private static final String KEY_CLIENT_ID = "resource";
-    private static final String KEY_CREDENTIALS = "credentials";
-    private static final String KEY_SECRET = "secret";
+    private final static String KEYCLOAK_PROPERTIES = "keycloak.json";
+    private final static String DEFAULT_GRANT_TYPE = "client_credentials";
+    private final static String KEY_REALM_ID = "realm";
+    private final static String KEY_AUTH_SERVER_URL = "auth-server-url";
+    private final static String KEY_CLIENT_ID = "resource";
+    private final static String KEY_CREDENTIALS = "credentials";
+    private final static String KEY_SECRET = "secret";
 
     private static KeycloakRestClient KEYCLOAK;
     private static AtlasKeycloakClient KEYCLOAK_CLIENT;
@@ -158,6 +158,22 @@ public final class AtlasKeycloakClient {
         return KEYCLOAK.getRoleComposites(roleName).body();
     }
 
+    public void addComposites(String roleName, List<RoleRepresentation> roles) throws AtlasBaseException {
+        KEYCLOAK.addComposites(roleName, roles);
+    }
+
+    public void deleteComposites(String roleName, List<RoleRepresentation> roles) throws AtlasBaseException {
+        KEYCLOAK.deleteComposites(roleName, roles);
+    }
+
+    public List<AdminEventRepresentation> getAdminEvents(List<String> operationTypes, String authRealm, String authClient, String authUser, String authIpAddress, String resourcePath, String dateFrom, String dateTo, Integer first, Integer max) throws AtlasBaseException {
+        return KEYCLOAK.getAdminEvents(operationTypes, authRealm, authClient, authUser, authIpAddress, resourcePath, dateFrom, dateTo, first, max).body();
+    }
+
+    public List<EventRepresentation> getEvents(List<String> type, String client, String user, String dateFrom, String dateTo, String ipAddress, Integer first, Integer max) throws AtlasBaseException {
+        return KEYCLOAK.getEvents(type, client, user, dateFrom, dateTo, ipAddress, first, max).body();
+    }
+
     public static AtlasKeycloakClient getKeycloakClient() throws AtlasBaseException {
         if (Objects.isNull(KEYCLOAK_CLIENT)) {
             LOG.info("Initializing Keycloak client..");
@@ -213,21 +229,5 @@ public final class AtlasKeycloakClient {
         } else {
             throw new AtlasBaseException(AtlasErrorCode.KEYCLOAK_INIT_FAILED, "Configuration location not found " + confLocation);
         }
-    }
-
-    public void addComposites(String roleName, List<RoleRepresentation> roles) throws AtlasBaseException {
-        KEYCLOAK.addComposites(roleName, roles);
-    }
-
-    public void deleteComposites(String roleName, List<RoleRepresentation> roles) throws AtlasBaseException {
-        KEYCLOAK.deleteComposites(roleName, roles);
-    }
-
-    public List<AdminEventRepresentation> getAdminEvents(List<String> operationTypes, String authRealm, String authClient, String authUser, String authIpAddress, String resourcePath, String dateFrom, String dateTo, Integer first, Integer max) throws AtlasBaseException {
-        return KEYCLOAK.getAdminEvents(operationTypes, authRealm, authClient, authUser, authIpAddress, resourcePath, dateFrom, dateTo, first, max).body();
-    }
-
-    public List<EventRepresentation> getEvents(List<String> type, String client, String user, String dateFrom, String dateTo, String ipAddress, Integer first, Integer max) throws AtlasBaseException {
-        return KEYCLOAK.getEvents(type, client, user, dateFrom, dateTo, ipAddress, first, max).body();
     }
 }

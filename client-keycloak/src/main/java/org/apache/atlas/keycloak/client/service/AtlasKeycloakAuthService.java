@@ -24,10 +24,10 @@ public final class AtlasKeycloakAuthService {
     public final static Logger LOG = LoggerFactory.getLogger(AtlasKeycloakAuthService.class);
 
     private final static String GRANT_TYPE = "grant_type";
-    public static final String CLIENT_ID = "client_id";
-    public static final String CLIENT_SECRET = "client_secret";
-    private static final long DEFAULT_MIN_VALIDITY = 30;
-    public static final int EXPIRY_OFFSET = 300;
+    private static final String CLIENT_ID = "client_id";
+    private static final String CLIENT_SECRET = "client_secret";
+    private static final long DEFAULT_MIN_VALIDITY_MINS = 30;
+    private static final int EXPIRY_OFFSET_SEC = 300;
 
     private final RetrofitKeycloakClient retrofit;
     private final KeycloakConfig keycloakConfig;
@@ -73,7 +73,7 @@ public final class AtlasKeycloakAuthService {
                     retrofit2.Response<AccessTokenResponse> resp = this.retrofit.grantToken(this.keycloakConfig.getRealmId(), getTokenRequest()).execute();
                     if (resp.isSuccessful()) {
                         currentAccessToken = resp.body();
-                        expirationTime = currentTime() + currentAccessToken.getExpiresIn() - EXPIRY_OFFSET;
+                        expirationTime = currentTime() + currentAccessToken.getExpiresIn() - EXPIRY_OFFSET_SEC;
                         LOG.info("Keycloak: Auth token fetched with expiry:{} sec", expirationTime);
                     } else {
                         throw new AtlasBaseException(BAD_REQUEST, resp.errorBody().string());
@@ -88,7 +88,7 @@ public final class AtlasKeycloakAuthService {
     }
 
     public boolean isTokenExpired() {
-        return (currentTime() + DEFAULT_MIN_VALIDITY) >= expirationTime;
+        return (currentTime() + DEFAULT_MIN_VALIDITY_MINS) >= expirationTime;
     }
 
     public long getExpiryTime() {
