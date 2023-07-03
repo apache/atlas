@@ -33,8 +33,6 @@ abstract class AbstractKeycloakClient {
     private static final int DEFAULT_KEYCLOAK_RETRY = 3;
     public static final String AUTHORIZATION = "Authorization";
     public static final String BEARER = "Bearer ";
-    public static final String X_METASTORE_REQUEST_ID = "X-Metastore-Request-Id";
-    public static final String TRACE_ID = "trace_id";
 
     protected final KeycloakConfig keycloakConfig;
     protected final RetrofitKeycloakClient retrofit;
@@ -73,7 +71,7 @@ abstract class AbstractKeycloakClient {
     Interceptor errorHandlingInterceptor = chain -> {
         Request request = chain.request();
         okhttp3.Response response = chain.proceed(request);
-        LOG.info("Keycloak: Request for url {} Status:{}, {}:{}", request.url(), response.code(), X_METASTORE_REQUEST_ID, request.header(X_METASTORE_REQUEST_ID));
+        LOG.info("Keycloak: Request for url {} Status:{}", request.url(), response.code());
         return response;
     };
 
@@ -93,7 +91,6 @@ abstract class AbstractKeycloakClient {
             }
             Request request = chain.request().newBuilder()
                     .header(AUTHORIZATION, BEARER + currentToken)
-                    .header(X_METASTORE_REQUEST_ID, MDC.get(TRACE_ID))
                     .build();
             return chain.proceed(request);
         }
@@ -117,7 +114,6 @@ abstract class AbstractKeycloakClient {
                 }
                 return response.request().newBuilder()
                         .addHeader(AUTHORIZATION, BEARER + currentToken)
-                        .header(X_METASTORE_REQUEST_ID, MDC.get(TRACE_ID))
                         .build();
             }
         }
