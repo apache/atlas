@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.repository.store.graph.v2.preprocessor;
 
+import org.apache.atlas.DeleteType;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -231,6 +232,13 @@ public class ConnectionPreProcessor implements PreProcessor {
             AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = entityRetriever.toAtlasEntityWithExtInfo(vertex);
             AtlasEntity connection = entityWithExtInfo.getEntity();
             String roleName = String.format(CONN_NAME_PATTERN, connection.getGuid());
+
+            boolean connectionIsDeleted = AtlasEntity.Status.DELETED.equals(connection.getStatus());
+
+            if (connectionIsDeleted && DeleteType.HARD.equals(RequestContext.get().getDeleteType())) {
+                LOG.warn("Connection {} is SOFT DELETED! Can't HARD DELETE connection role and policies", connection.getAttribute(QUALIFIED_NAME));
+                return;
+            }
 
             //delete connection policies
             List<AtlasEntityHeader> policies = getConnectionPolicies(connection.getGuid(), roleName);
