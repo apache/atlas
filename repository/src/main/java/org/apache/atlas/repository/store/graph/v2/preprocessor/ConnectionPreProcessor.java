@@ -17,8 +17,6 @@
  */
 package org.apache.atlas.repository.store.graph.v2.preprocessor;
 
-
-import org.apache.atlas.DeleteType;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -30,11 +28,12 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasStruct;
-import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
+import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
+import org.apache.atlas.repository.store.graph.v1.SoftDeleteHandlerV1;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
@@ -81,18 +80,20 @@ public class ConnectionPreProcessor implements PreProcessor {
     private PreProcessorPoliciesTransformer transformer;
     private FeatureFlagStore featureFlagStore;
     private KeycloakStore keycloakStore;
+    private final DeleteHandlerDelegate deleteDelegate;
 
     public ConnectionPreProcessor(AtlasGraph graph,
                                   EntityDiscoveryService discovery,
                                   EntityGraphRetriever entityRetriever,
                                   FeatureFlagStore featureFlagStore,
+                                  DeleteHandlerDelegate deleteDelegate,
                                   AtlasEntityStore entityStore) {
         this.graph = graph;
         this.entityRetriever = entityRetriever;
         this.entityStore = entityStore;
         this.featureFlagStore = featureFlagStore;
         this.discovery = discovery;
-
+        this.deleteDelegate = deleteDelegate;
         transformer = new PreProcessorPoliciesTransformer();
         keycloakStore = new KeycloakStore();
     }
@@ -221,7 +222,7 @@ public class ConnectionPreProcessor implements PreProcessor {
     public void processDelete(AtlasVertex vertex) throws AtlasBaseException {
         checkAccessControlFeatureStatus(featureFlagStore);
         // Process Delete connection role and policies in case of hard delete or purge
-        if (!isDeleteTypePurgeOrHard()) {
+        if (isDeleteTypeSoft()) {
             LOG.info("Skipping processDelete for connection as delete type is {}", RequestContext.get().getDeleteType());
             return;
         }
@@ -239,9 +240,8 @@ public class ConnectionPreProcessor implements PreProcessor {
         }
     }
 
-    private boolean isDeleteTypePurgeOrHard() {
-        DeleteType deleteType = RequestContext.get().getDeleteType();
-        return deleteType == DeleteType.PURGE || deleteType == DeleteType.HARD;
+    private boolean isDeleteTypeSoft() {
+        return deleteDelegate.getHandler().getClass().equals(SoftDeleteHandlerV1.class);
     }
 
     private List<AtlasEntityHeader> getConnectionPolicies(String guid, String roleName) throws AtlasBaseException {
