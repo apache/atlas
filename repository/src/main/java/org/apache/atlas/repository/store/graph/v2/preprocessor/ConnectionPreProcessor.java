@@ -221,7 +221,7 @@ public class ConnectionPreProcessor implements PreProcessor {
     public void processDelete(AtlasVertex vertex) throws AtlasBaseException {
         checkAccessControlFeatureStatus(featureFlagStore);
         // Process Delete connection role and policies in case of hard delete or purge
-        if (isDeleteTypeSoft()) {
+        if (!isDeleteTypePurgeOrHard()) {
             LOG.info("Skipping processDelete for connection as delete type is {}", RequestContext.get().getDeleteType());
             return;
         }
@@ -239,9 +239,9 @@ public class ConnectionPreProcessor implements PreProcessor {
         }
     }
 
-    private boolean isDeleteTypeSoft() {
+    private boolean isDeleteTypePurgeOrHard() {
         DeleteType deleteType = RequestContext.get().getDeleteType();
-        return deleteType == DeleteType.DEFAULT || deleteType == DeleteType.SOFT;
+        return deleteType == DeleteType.PURGE || deleteType == DeleteType.HARD;
     }
 
     private List<AtlasEntityHeader> getConnectionPolicies(String guid, String roleName) throws AtlasBaseException {
