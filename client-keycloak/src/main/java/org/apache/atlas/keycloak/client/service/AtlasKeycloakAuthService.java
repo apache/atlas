@@ -28,6 +28,7 @@ public final class AtlasKeycloakAuthService {
     private static final String CLIENT_SECRET = "client_secret";
     private static final long DEFAULT_MIN_VALIDITY_MINS = 30;
     private static final int EXPIRY_OFFSET_SEC = 300;
+    private static final int TIMEOUT_IN_SECS = 60;
 
     private final RetrofitKeycloakClient retrofit;
     private final KeycloakConfig keycloakConfig;
@@ -48,15 +49,15 @@ public final class AtlasKeycloakAuthService {
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
         return new OkHttpClient.Builder()
                 .addInterceptor(interceptor)
-                .addInterceptor(errorHandlingInterceptor)
-                .connectTimeout(60, TimeUnit.SECONDS)
-                .callTimeout(60, TimeUnit.SECONDS)
-                .writeTimeout(60, TimeUnit.SECONDS)
-                .readTimeout(60, TimeUnit.SECONDS)
+                .addInterceptor(responseLoggingInterceptor)
+                .connectTimeout(TIMEOUT_IN_SECS, TimeUnit.SECONDS)
+                .callTimeout(TIMEOUT_IN_SECS, TimeUnit.SECONDS)
+                .writeTimeout(TIMEOUT_IN_SECS, TimeUnit.SECONDS)
+                .readTimeout(TIMEOUT_IN_SECS, TimeUnit.SECONDS)
                 .build();
     }
 
-    Interceptor errorHandlingInterceptor = chain -> {
+    Interceptor responseLoggingInterceptor = chain -> {
         Request request = chain.request();
         okhttp3.Response response = chain.proceed(request);
         LOG.info("Keycloak: Auth Request for url {} Status: {}", request.url(), response.code());

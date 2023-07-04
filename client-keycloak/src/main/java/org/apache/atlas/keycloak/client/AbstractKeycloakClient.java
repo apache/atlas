@@ -9,7 +9,6 @@ import org.apache.atlas.keycloak.client.config.KeycloakConfig;
 import org.apache.atlas.keycloak.client.service.AtlasKeycloakAuthService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
 import org.springframework.lang.NonNull;
 import retrofit2.Retrofit;
 import retrofit2.converter.jackson.JacksonConverterFactory;
@@ -31,8 +30,9 @@ abstract class AbstractKeycloakClient {
     private static final Map<Integer, AtlasErrorCode> ERROR_CODE_MAP = new HashMap<>();
 
     private static final int DEFAULT_KEYCLOAK_RETRY = 3;
-    public static final String AUTHORIZATION = "Authorization";
-    public static final String BEARER = "Bearer ";
+    private static final String AUTHORIZATION = "Authorization";
+    private static final String BEARER = "Bearer ";
+    private static final int TIMEOUT_IN_SEC = 60;
 
     protected final KeycloakConfig keycloakConfig;
     protected final RetrofitKeycloakClient retrofit;
@@ -47,16 +47,17 @@ abstract class AbstractKeycloakClient {
 
     public AbstractKeycloakClient(KeycloakConfig keycloakConfig) {
         this.keycloakConfig = keycloakConfig;
-        HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
-        interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+        HttpLoggingInterceptor httpInterceptor = new HttpLoggingInterceptor();
+        httpInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
         OkHttpClient okHttpClient = new OkHttpClient.Builder()
                 .addInterceptor(accessTokenInterceptor)
+                .addInterceptor(httpInterceptor)
+                .addInterceptor(responseLoggingInterceptor)
                 .authenticator(authInterceptor)
-                .addInterceptor(errorHandlingInterceptor)
-                .connectTimeout(60, TimeUnit.SECONDS)
-                .callTimeout(60, TimeUnit.SECONDS)
-                .writeTimeout(60, TimeUnit.SECONDS)
-                .readTimeout(60, TimeUnit.SECONDS)
+                .connectTimeout(TIMEOUT_IN_SEC, TimeUnit.SECONDS)
+                .callTimeout(TIMEOUT_IN_SEC, TimeUnit.SECONDS)
+                .writeTimeout(TIMEOUT_IN_SEC, TimeUnit.SECONDS)
+                .readTimeout(TIMEOUT_IN_SEC, TimeUnit.SECONDS)
                 .build();
         this.retrofit = new Retrofit.Builder().client(okHttpClient)
                 .baseUrl(this.keycloakConfig.getAuthServerUrl())
@@ -68,7 +69,7 @@ abstract class AbstractKeycloakClient {
     /**
      * Basic interceptor for logging.
      */
-    Interceptor errorHandlingInterceptor = chain -> {
+    Interceptor responseLoggingInterceptor = chain -> {
         Request request = chain.request();
         okhttp3.Response response = chain.proceed(request);
         LOG.info("Keycloak: Request for url {} Status:{}", request.url(), response.code());

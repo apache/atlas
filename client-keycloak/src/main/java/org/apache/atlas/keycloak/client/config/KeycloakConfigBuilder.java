@@ -3,7 +3,7 @@ package org.apache.atlas.keycloak.client.config;
 public final class KeycloakConfigBuilder {
 
     private String authServerUrl;
-    private String realId;
+    private String realmId;
     private String clientId;
     private String clientSecret;
     private String grantType = "client_credentials";
@@ -21,7 +21,7 @@ public final class KeycloakConfigBuilder {
     }
 
     public KeycloakConfigBuilder realId(String realId) {
-        this.realId = realId;
+        this.realmId = realId;
         return this;
     }
 
@@ -43,7 +43,7 @@ public final class KeycloakConfigBuilder {
     public KeycloakConfig build() {
         KeycloakConfig keycloakConfig = new KeycloakConfig();
         keycloakConfig.authServerUrl = authServerUrl;
-        keycloakConfig.realmId = realId;
+        keycloakConfig.realmId = realmId;
         keycloakConfig.clientId = clientId;
         keycloakConfig.clientSecret = clientSecret;
         keycloakConfig.grantType = grantType;
