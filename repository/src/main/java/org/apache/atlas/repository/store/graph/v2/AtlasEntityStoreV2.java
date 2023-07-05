@@ -1728,7 +1728,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 break;
 
             case CONNECTION_ENTITY_TYPE:
-                preProcessor = new ConnectionPreProcessor(graph, discovery, entityRetriever, featureFlagStore, this);
+                preProcessor = new ConnectionPreProcessor(graph, discovery, entityRetriever, featureFlagStore, deleteDelegate, this);
                 break;
 
             case LINK_ENTITY_TYPE:
