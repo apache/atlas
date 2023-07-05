@@ -22,7 +22,6 @@ import org.apache.atlas.RequestContext;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.featureflag.FeatureFlagStore;
-import org.apache.atlas.keycloak.client.KeycloakClient;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -43,7 +42,6 @@ import org.apache.atlas.transformer.PreProcessorPoliciesTransformer;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
-import org.keycloak.admin.client.resource.RoleResource;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,6 +54,7 @@ import java.util.stream.Collectors;
 
 import static org.apache.atlas.authorize.AtlasAuthorizerFactory.ATLAS_AUTHORIZER_IMPL;
 import static org.apache.atlas.authorize.AtlasAuthorizerFactory.CURRENT_AUTHORIZER_IMPL;
+import static org.apache.atlas.keycloak.client.AtlasKeycloakClient.getKeycloakClient;
 import static org.apache.atlas.repository.Constants.ATTR_ADMIN_GROUPS;
 import static org.apache.atlas.repository.Constants.ATTR_ADMIN_ROLES;
 import static org.apache.atlas.repository.Constants.ATTR_ADMIN_USERS;
@@ -177,8 +176,7 @@ public class ConnectionPreProcessor implements PreProcessor {
             String vertexQName = vertex.getProperty(QUALIFIED_NAME, String.class);
             entity.setAttribute(QUALIFIED_NAME, vertexQName);
 
-            RoleResource rolesResource = KeycloakClient.getKeycloakClient().getRealm().roles().get(roleName);
-            RoleRepresentation representation = rolesResource.toRepresentation();
+            RoleRepresentation representation = getKeycloakClient().getRoleByName(roleName);
             String creatorUser = vertex.getProperty(CREATED_BY_KEY, String.class);
 
             if (connection.hasAttribute(ATTR_ADMIN_USERS)) {
@@ -208,7 +206,7 @@ public class ConnectionPreProcessor implements PreProcessor {
                 List<String> currentAdminRoles = (List<String>) existingConnEntity.getAttribute(ATTR_ADMIN_ROLES);
 
                 if (CollectionUtils.isNotEmpty(newAdminRoles) || CollectionUtils.isNotEmpty(currentAdminRoles)) {
-                    keycloakStore.updateRoleRoles(roleName, currentAdminRoles, newAdminRoles, rolesResource, representation);
+                    keycloakStore.updateRoleRoles(roleName, currentAdminRoles, newAdminRoles, representation);
                 }
             }
 
