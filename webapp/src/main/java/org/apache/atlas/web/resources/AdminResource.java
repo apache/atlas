@@ -19,6 +19,7 @@
 package org.apache.atlas.web.resources;
 
 import com.sun.jersey.multipart.FormDataParam;
+import io.micrometer.core.annotation.Timed;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasConfiguration;
@@ -56,6 +57,7 @@ import org.apache.atlas.repository.impexp.MigrationProgressService;
 import org.apache.atlas.repository.impexp.ZipSink;
 import org.apache.atlas.repository.patches.AtlasPatchManager;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
+import org.apache.atlas.service.metrics.MetricsRegistry;
 import org.apache.atlas.services.MetricsService;
 import org.apache.atlas.tasks.TaskManagement;
 import org.apache.atlas.type.AtlasType;
@@ -187,6 +189,7 @@ public class AdminResource {
     private final  boolean                  isTasksEnabled;
     private final  boolean                  isOnDemandLineageEnabled;
     private final  int                      defaultLineageNodeCount;
+    private final  MetricsRegistry          metricsRegistry;
 
     static {
         try {
@@ -203,7 +206,7 @@ public class AdminResource {
                          AtlasServerService serverService,
                          ExportImportAuditService exportImportAuditService, AtlasEntityStore entityStore,
                          AtlasPatchManager patchManager, AtlasAuditService auditService,
-                         TaskManagement taskManagement, AtlasDebugMetricsSink debugMetricsRESTSink) {
+                         TaskManagement taskManagement, AtlasDebugMetricsSink debugMetricsRESTSink, MetricsRegistry metricsRegistry) {
         this.serviceState              = serviceState;
         this.metricsService            = metricsService;
         this.exportService             = exportService;
@@ -219,6 +222,7 @@ public class AdminResource {
         this.auditService              = auditService;
         this.taskManagement            = taskManagement;
         this.debugMetricsRESTSink      = debugMetricsRESTSink;
+        this.metricsRegistry           = metricsRegistry;
 
         if (atlasProperties != null) {
             this.defaultUIVersion = atlasProperties.getString(DEFAULT_UI_VERSION, UI_VERSION_V2);
@@ -498,6 +502,25 @@ public class AdminResource {
         }
 
         return metrics;
+    }
+
+    @GET
+    @Path("metrics/prometheus")
+    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
+    public void scrapMetrics(@Context HttpServletResponse httpServletResponse) {
+        try {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("==> AdminResource.scrapMetrics()");
+            }
+            this.metricsRegistry.scrape(httpServletResponse.getWriter());
+        } catch (IOException e) {
+            //do nothing
+            LOG.error("Failed to scrap metrics for prometheus");
+        } finally {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("<== AdminResource.scrapMetrics()");
+            }
+        }
     }
 
     @GET

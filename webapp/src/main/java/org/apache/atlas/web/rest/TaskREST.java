@@ -17,7 +17,7 @@
  */
 package org.apache.atlas.web.rest;
 
-import org.apache.atlas.annotation.Timed;
+import io.micrometer.core.annotation.Timed;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.tasks.TaskSearchParams;
 import org.apache.atlas.model.tasks.TaskSearchResult;
@@ -55,7 +55,7 @@ public class TaskREST {
 
     @POST
     @Path("search")
-    @Timed
+    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public TaskSearchResult getTasks(TaskSearchParams parameters) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
@@ -74,7 +74,7 @@ public class TaskREST {
 
     @PUT
     @Path("retry/{guid}")
-    @Timed
+    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public HttpStatus retryTask(@PathParam("guid") final String guid) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 

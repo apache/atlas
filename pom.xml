@@ -776,6 +776,7 @@
         <woodstox-core.version>5.0.3</woodstox-core.version>
         <zookeeper.version>3.4.6</zookeeper.version>
         <redis.client.version>3.20.1</redis.client.version>
+        <micrometer.version>1.11.1</micrometer.version>
     </properties>
 
     <modules>

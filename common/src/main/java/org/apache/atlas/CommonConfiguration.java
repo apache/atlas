@@ -17,9 +17,14 @@
  */
 package org.apache.atlas;
 
+import io.micrometer.core.aop.TimedAspect;
+import io.micrometer.prometheus.PrometheusConfig;
+import io.micrometer.prometheus.PrometheusMeterRegistry;
+import org.apache.atlas.service.metrics.MetricRegistryCondition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 
@@ -36,5 +41,16 @@ public class CommonConfiguration {
             LOGGER.warn("AtlasConfig init failed", e);
             throw e;
         }
+    }
+
+    @Bean
+    public PrometheusMeterRegistry getPrometheusMetricRegistry() {
+        return new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
+    }
+
+    @Bean
+    @Conditional(MetricRegistryCondition.class)
+    public TimedAspect timedAspect(PrometheusMeterRegistry registry) throws AtlasException {
+        return new TimedAspect(registry);
     }
 }

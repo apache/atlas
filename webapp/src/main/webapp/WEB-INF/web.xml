@@ -96,6 +96,11 @@
 
     <filter-mapping>
         <filter-name>HeaderFilter</filter-name>
+        <url-pattern>/api/atlas/admin/metrics/prometheus</url-pattern>
+    </filter-mapping>
+
+    <filter-mapping>
+        <filter-name>HeaderFilter</filter-name>
         <url-pattern>/api/atlas/admin/status</url-pattern>
     </filter-mapping>
 

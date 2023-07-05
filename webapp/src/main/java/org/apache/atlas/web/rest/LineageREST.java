@@ -22,7 +22,7 @@ package org.apache.atlas.web.rest;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
-import org.apache.atlas.annotation.Timed;
+import io.micrometer.core.annotation.Timed;
 import org.apache.atlas.discovery.AtlasLineageService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
@@ -92,7 +92,7 @@ public class LineageREST {
     @Path("/{guid}")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    @Timed
+    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public AtlasLineageOnDemandInfo getLineageGraph(@PathParam("guid") String guid,
                                                     LineageOnDemandRequest lineageOnDemandRequest) throws AtlasBaseException {
         if (!AtlasConfiguration.LINEAGE_ON_DEMAND_ENABLED.getBoolean()) {
@@ -127,7 +127,7 @@ public class LineageREST {
     @Path("/list")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    @Timed
+    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public AtlasLineageListInfo getLineageList(LineageListRequest lineageListRequest) throws AtlasBaseException {
         lineageListRequestValidator.validate(lineageListRequest);
 
@@ -162,7 +162,7 @@ public class LineageREST {
      */
     @GET
     @Path("/{guid}")
-    @Timed
+    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public AtlasLineageInfo getLineageGraph(@PathParam("guid") String guid,
                                             @QueryParam("direction") @DefaultValue(DEFAULT_DIRECTION) LineageDirection direction,
                                             @QueryParam("depth") @DefaultValue(DEFAULT_DEPTH) int depth,
@@ -199,7 +199,7 @@ public class LineageREST {
      */
     @POST
     @Path("/getlineage")
-    @Timed
+    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public AtlasLineageInfo getLineageGraph(AtlasLineageRequest request) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
         request.performValidation();
@@ -237,7 +237,7 @@ public class LineageREST {
     @Path("/uniqueAttribute/type/{typeName}")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    @Timed
+    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public AtlasLineageInfo getLineageByUniqueAttribute(@PathParam("typeName") String typeName, @QueryParam("direction") @DefaultValue(DEFAULT_DIRECTION) LineageDirection direction,
                                                         @QueryParam("depth") @DefaultValue(DEFAULT_DEPTH) int depth, @Context HttpServletRequest servletRequest) throws AtlasBaseException {
         Servlets.validateQueryParamLength("typeName", typeName);
