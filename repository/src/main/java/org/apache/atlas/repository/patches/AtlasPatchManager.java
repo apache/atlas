@@ -88,13 +88,6 @@ public class AtlasPatchManager {
         this.context = new PatchContext(atlasGraph, typeRegistry, indexer, entityGraphMapper);
 
         // register all java patches here
-        handlers.add(new UniqueAttributePatch(context));
-        handlers.add(new ClassificationTextPatch(context));
-        handlers.add(new FreeTextRequestHandlerPatch(context));
-        handlers.add(new SuggestionsRequestHandlerPatch(context));
-        handlers.add(new IndexConsistencyPatch(context));
-        handlers.add(new ReIndexPatch(context));
-        handlers.add(new ProcessNamePatch(context));
         handlers.add(new UpdateCompositeIndexStatusPatch(context));
 
         LOG.info("<== AtlasPatchManager.init()");
