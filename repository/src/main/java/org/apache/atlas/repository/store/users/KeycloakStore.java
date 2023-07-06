@@ -18,10 +18,6 @@
 
 package org.apache.atlas.repository.store.users;
 
-import org.apache.atlas.featureflag.AtlasFeatureFlagClient;
-import org.apache.atlas.featureflag.FeatureFlagStore;
-import org.apache.atlas.featureflag.FeatureFlagStoreLaunchDarklyImpl;
-
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.type.AtlasType;
 import org.apache.commons.collections.CollectionUtils;
@@ -37,8 +33,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasErrorCode.RESOURCE_NOT_FOUND;
-import static org.apache.atlas.featureflag.AtlasFeatureFlagClient.INSTANCE_DOMAIN_NAME;
-import static org.apache.atlas.featureflag.FeatureFlagStore.FeatureFlag.ADD_CONNECTION_ROLE_IN_ADMIN_ROLE;
 import static org.apache.atlas.keycloak.client.AtlasKeycloakClient.getKeycloakClient;
 import static org.apache.atlas.repository.util.AccessControlUtils.INSTANCE_DOMAIN_KEY;
 
@@ -48,12 +42,7 @@ public class KeycloakStore {
     private boolean saveUsersToAttributes = false;
     private boolean saveGroupsToAttributes = false;
 
-    private FeatureFlagStore featureFlagStore;
-
-    public KeycloakStore() {
-        AtlasFeatureFlagClient client = new AtlasFeatureFlagClient();
-        this.featureFlagStore = new FeatureFlagStoreLaunchDarklyImpl(client);
-    }
+    public KeycloakStore() {}
 
     public KeycloakStore(boolean saveUsersToAttributes, boolean saveGroupsToAttributes) {
         this.saveUsersToAttributes  = saveUsersToAttributes;
@@ -138,12 +127,7 @@ public class KeycloakStore {
         if (CollectionUtils.isNotEmpty(roleRoles)) {
             RoleRepresentation connRole = getKeycloakClient().getRoleByName(createdRole.getName());
             for (RoleRepresentation kRole : roleRoles) {
-                RoleRepresentation roleK = getKeycloakClient().getRoleByName(kRole.getName());
-                if (featureFlagStore.evaluate(ADD_CONNECTION_ROLE_IN_ADMIN_ROLE, INSTANCE_DOMAIN_KEY, INSTANCE_DOMAIN_NAME)) {
-                    getKeycloakClient().addComposites(kRole.getName(), Collections.singletonList(connRole));
-                } else {
-                    getKeycloakClient().addComposites(createdRole.getName(), Collections.singletonList(roleK));
-                }
+                getKeycloakClient().addComposites(kRole.getName(), Collections.singletonList(connRole));
             }
         }
 
@@ -376,23 +360,13 @@ public class KeycloakStore {
         for (String subRoleId : rolesToAdd) {
             LOG.info("Adding role {} to role {}", roleName, subRoleId);
             RoleRepresentation keyRole = getRoleById(subRoleId);
-            RoleRepresentation subRole = getKeycloakClient().getRoleByName(keyRole.getName());
-            if (featureFlagStore.evaluate(ADD_CONNECTION_ROLE_IN_ADMIN_ROLE, INSTANCE_DOMAIN_KEY, INSTANCE_DOMAIN_NAME)) {
-                getKeycloakClient().addComposites(keyRole.getName(), Collections.singletonList(roleRepresentation));
-            } else {
-                getKeycloakClient().addComposites(roleRepresentation.getName(), Collections.singletonList(subRole));
-            }
+            getKeycloakClient().addComposites(keyRole.getName(), Collections.singletonList(roleRepresentation));
         }
 
         for (String subRoleId : rolesToRemove) {
             LOG.info("removing role {} from role {}", roleName, subRoleId);
             RoleRepresentation keyRole = getRoleById(subRoleId);
-            RoleRepresentation subRole = getKeycloakClient().getRoleByName(keyRole.getName());
-            if (featureFlagStore.evaluate(ADD_CONNECTION_ROLE_IN_ADMIN_ROLE, INSTANCE_DOMAIN_KEY, INSTANCE_DOMAIN_NAME)) {
-                getKeycloakClient().deleteComposites(keyRole.getName(), Collections.singletonList(roleRepresentation));
-            } else {
-                getKeycloakClient().deleteComposites(roleRepresentation.getName(), Collections.singletonList(subRole));
-            }
+            getKeycloakClient().deleteComposites(keyRole.getName(), Collections.singletonList(roleRepresentation));
         }
     }
 

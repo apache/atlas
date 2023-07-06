@@ -41,7 +41,8 @@ final public class AtlasFeatureFlagClient {
 
     public AtlasFeatureFlagClient() {
         try {
-            launchDarklyClient = new LDClient(LAUNCH_DARKLY_SDK_KEY);
+            //launchDarklyClient = new LDClient(LAUNCH_DARKLY_SDK_KEY);
+            //not allowing initialising LD client due high number of threads issue
         } catch (Exception e) {
             LOG.error("Error while initializing LaunchDarkly client", e);
         }
@@ -53,6 +54,8 @@ final public class AtlasFeatureFlagClient {
 
     @PreDestroy
     public void destroy() throws IOException {
-        this.launchDarklyClient.close();
+        if (launchDarklyClient != null) {
+            launchDarklyClient.close();
+        }
     }
 }
