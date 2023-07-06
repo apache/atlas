@@ -114,7 +114,7 @@
                     <artifactId>netty-handler</artifactId>
                 </exclusion>
             </exclusions>
-            <version>2.1.8</version>
+            <version>4.0.10</version>
         </dependency>
 
 
