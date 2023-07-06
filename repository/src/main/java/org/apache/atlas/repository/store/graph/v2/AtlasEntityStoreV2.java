@@ -1955,22 +1955,20 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     private void flushAutoUpdateAttributes(AtlasEntity entity, AtlasEntityType entityType) {
         if (entityType.getAllAttributes() != null) {
-            for (String attrName : entityType.getAllAttributes().keySet()) {
-                if (entity.hasAttribute(attrName)) {
-                    AtlasAttribute atlasAttribute = entityType.getAttribute(attrName);
-                    HashMap<String, ArrayList> autoUpdateAttributes = atlasAttribute.getAttributeDef().getAutoUpdateAttributes();
-                    if (MapUtils.isNotEmpty(autoUpdateAttributes)) {
-                        List<String> flushAttributes = autoUpdateAttributes.values()
-                                                    .stream()
-                                                    .flatMap(List<String>::stream)
-                                                    .collect(Collectors.toList());
+            Set<String> flushAttributes = new HashSet<>();
 
-                        if (CollectionUtils.isNotEmpty(flushAttributes)) {
-                            flushAttributes.forEach(entity::removeAttribute);
-                        }
-                    }
+            for (String attrName : entityType.getAllAttributes().keySet()) {
+                AtlasAttribute atlasAttribute = entityType.getAttribute(attrName);
+                HashMap<String, ArrayList> autoUpdateAttributes = atlasAttribute.getAttributeDef().getAutoUpdateAttributes();
+                if (MapUtils.isNotEmpty(autoUpdateAttributes)) {
+                    autoUpdateAttributes.values()
+                            .stream()
+                            .flatMap(List<String>::stream)
+                            .forEach(flushAttributes::add);
                 }
             }
+
+            flushAttributes.forEach(entity::removeAttribute);
         }
     }
 
