@@ -101,8 +101,6 @@ import java.util.stream.Collectors;
 
 import static java.lang.Boolean.FALSE;
 import static org.apache.atlas.AtlasConfiguration.STORE_DIFFERENTIAL_AUDITS;
-import static org.apache.atlas.authorize.AtlasAuthorizerFactory.ATLAS_AUTHORIZER_IMPL;
-import static org.apache.atlas.authorize.AtlasAuthorizerFactory.CURRENT_AUTHORIZER_IMPL;
 import static org.apache.atlas.bulkimport.BulkImportResponse.ImportStatus.FAILED;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.*;
@@ -1588,6 +1586,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 }
 
                 compactAttributes(entity, entityType);
+                flushAutoUpdateAttributes(entity, entityType);
 
                 AtlasVertex vertex = getResolvedEntityVertex(discoveryContext, entity);
 
@@ -1947,6 +1946,27 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                             if (LOG.isDebugEnabled()) {
                                 LOG.debug("attribute {}.{} is present in attributes and relationshipAttributes. Removed from attributes", entityType.getTypeName(), attrName);
                             }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private void flushAutoUpdateAttributes(AtlasEntity entity, AtlasEntityType entityType) {
+        if (entityType.getAllAttributes() != null) {
+            for (String attrName : entityType.getAllAttributes().keySet()) {
+                if (entity.hasAttribute(attrName)) {
+                    AtlasAttribute atlasAttribute = entityType.getAttribute(attrName);
+                    HashMap<String, ArrayList> autoUpdateAttributes = atlasAttribute.getAttributeDef().getAutoUpdateAttributes();
+                    if (MapUtils.isNotEmpty(autoUpdateAttributes)) {
+                        List<String> flushAttributes = autoUpdateAttributes.values()
+                                                    .stream()
+                                                    .flatMap(List<String>::stream)
+                                                    .collect(Collectors.toList());
+
+                        if (CollectionUtils.isNotEmpty(flushAttributes)) {
+                            flushAttributes.forEach(entity::removeAttribute);
                         }
                     }
                 }
