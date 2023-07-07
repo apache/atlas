@@ -62,10 +62,6 @@ import static org.apache.atlas.repository.Constants.ATTR_ADMIN_USERS;
 import static org.apache.atlas.repository.Constants.CREATED_BY_KEY;
 import static org.apache.atlas.repository.Constants.POLICY_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
-import static org.apache.atlas.repository.util.AccessControlUtils.checkAccessControlFeatureStatus;
-import static org.apache.atlas.repository.util.AccessControlUtils.checkAccessControlFeatureStatusForUpdate;
-import static org.apache.atlas.repository.util.AccessControlUtils.checkAllowConnectionAdminUpdateFeatureStatus;
-import static org.apache.atlas.repository.util.AccessControlUtils.checkAllowConnectionAdminUpdateForUpdate;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 
 public class ConnectionPreProcessor implements PreProcessor {
@@ -118,9 +114,6 @@ public class ConnectionPreProcessor implements PreProcessor {
     }
 
     private void processCreateConnection(AtlasStruct struct) throws AtlasBaseException {
-        checkAccessControlFeatureStatus(featureFlagStore);
-        checkAllowConnectionAdminUpdateFeatureStatus(featureFlagStore, struct);
-
         if (ATLAS_AUTHORIZER_IMPL.equalsIgnoreCase(CURRENT_AUTHORIZER_IMPL)) {
             AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processCreateConnection");
 
@@ -165,8 +158,6 @@ public class ConnectionPreProcessor implements PreProcessor {
                                       AtlasStruct entity) throws AtlasBaseException {
 
         AtlasEntity connection = (AtlasEntity) entity;
-        checkAccessControlFeatureStatusForUpdate(featureFlagStore, entity, context.getVertex(connection.getGuid()));
-        checkAllowConnectionAdminUpdateForUpdate(featureFlagStore, entity, context.getVertex(connection.getGuid()));
 
         if (ATLAS_AUTHORIZER_IMPL.equalsIgnoreCase(CURRENT_AUTHORIZER_IMPL)) {
             AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processUpdateConnection");
@@ -219,7 +210,6 @@ public class ConnectionPreProcessor implements PreProcessor {
 
     @Override
     public void processDelete(AtlasVertex vertex) throws AtlasBaseException {
-        checkAccessControlFeatureStatus(featureFlagStore);
         // Process Delete connection role and policies in case of hard delete or purge
         if (isDeleteTypeSoft()) {
             LOG.info("Skipping processDelete for connection as delete type is {}", RequestContext.get().getDeleteType());

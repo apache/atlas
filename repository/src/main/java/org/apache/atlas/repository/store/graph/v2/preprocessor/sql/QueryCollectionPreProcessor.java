@@ -67,8 +67,6 @@ import static org.apache.atlas.repository.Constants.POLICY_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.PREFIX_QUERY_QN;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.getUUID;
-import static org.apache.atlas.repository.util.AccessControlUtils.checkAccessControlFeatureStatus;
-import static org.apache.atlas.repository.util.AccessControlUtils.checkAccessControlFeatureStatusForUpdate;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 
 public class QueryCollectionPreProcessor implements PreProcessor {
@@ -125,9 +123,6 @@ public class QueryCollectionPreProcessor implements PreProcessor {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processCreateCollection");
 
         try {
-            checkAccessControlFeatureStatus(featureFlagStore);
-
-
             entity.setAttribute(QUALIFIED_NAME, createQualifiedName());
 
             AtlasEntity collection = (AtlasEntity) entity;
@@ -157,8 +152,6 @@ public class QueryCollectionPreProcessor implements PreProcessor {
     private void processUpdate(AtlasStruct entity, AtlasVertex vertex) throws AtlasBaseException {
         String vertexQnName = vertex.getProperty(QUALIFIED_NAME, String.class);
 
-        checkAccessControlFeatureStatusForUpdate(featureFlagStore, entity, vertex);
-
         if (ATLAS_AUTHORIZER_IMPL.equalsIgnoreCase(CURRENT_AUTHORIZER_IMPL)) {
             AtlasEntity collection = (AtlasEntity) entity;
             AtlasEntity existingCollEntity = entityRetriever.toAtlasEntity(vertex);
@@ -174,7 +167,6 @@ public class QueryCollectionPreProcessor implements PreProcessor {
     @Override
     public void processDelete(AtlasVertex vertex) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processDeleteCollection");
-        checkAccessControlFeatureStatus(featureFlagStore);
 
         try {
             AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = entityRetriever.toAtlasEntityWithExtInfo(vertex);
