@@ -38,7 +38,6 @@ abstract class AbstractKeycloakClient {
     protected final RetrofitKeycloakClient retrofit;
 
     private final AtlasKeycloakAuthService authService;
-    private String currentToken;
 
     static {
         ERROR_CODE_MAP.put(HTTP_NOT_FOUND, RESOURCE_NOT_FOUND);
@@ -83,15 +82,8 @@ abstract class AbstractKeycloakClient {
         @NonNull
         @Override
         public Response intercept(@NonNull Chain chain) throws IOException {
-            if (Objects.isNull(currentToken) || authService.isTokenExpired()) {
-                synchronized (this) {
-                    if (Objects.isNull(currentToken)) {
-                        currentToken = authService.getAuthToken();
-                    }
-                }
-            }
             Request request = chain.request().newBuilder()
-                    .header(AUTHORIZATION, BEARER + currentToken)
+                    .header(AUTHORIZATION, BEARER + authService.getAuthToken())
                     .build();
             return chain.proceed(request);
         }
@@ -108,15 +100,9 @@ abstract class AbstractKeycloakClient {
                 return null;
             }
             LOG.info("Keycloak: Current keycloak token status, Expired: {}", authService.isTokenExpired());
-            synchronized (this) {
-                if (Objects.isNull(currentToken)) {
-                    currentToken = authService.getAuthToken();
-                    LOG.info("Keycloak: Token refreshed, with validity:{} sec", authService.getExpiryTime());
-                }
-                return response.request().newBuilder()
-                        .addHeader(AUTHORIZATION, BEARER + currentToken)
+            return response.request().newBuilder()
+                        .addHeader(AUTHORIZATION, BEARER + authService.getAuthToken())
                         .build();
-            }
         }
 
         private int responseCount(Response response) {
