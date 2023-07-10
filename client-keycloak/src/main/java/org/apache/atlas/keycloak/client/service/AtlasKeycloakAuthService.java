@@ -26,8 +26,7 @@ public final class AtlasKeycloakAuthService {
     private final static String GRANT_TYPE = "grant_type";
     private static final String CLIENT_ID = "client_id";
     private static final String CLIENT_SECRET = "client_secret";
-    private static final long DEFAULT_MIN_VALIDITY_MINS = 30;
-    private static final int EXPIRY_OFFSET_SEC = 300;
+    private static final int EXPIRY_OFFSET_SEC = 600;
     private static final int TIMEOUT_IN_SECS = 60;
 
     private final RetrofitKeycloakClient retrofit;
@@ -65,11 +64,11 @@ public final class AtlasKeycloakAuthService {
     };
 
     public String getAuthToken() {
-        if (Objects.nonNull(currentAccessToken)) {
+        if (!isTokenExpired()) {
             return currentAccessToken.getToken();
         }
         synchronized (this) {
-            if (Objects.isNull(currentAccessToken)) {
+            if (isTokenExpired()) {
                 try {
                     retrofit2.Response<AccessTokenResponse> resp = this.retrofit.grantToken(this.keycloakConfig.getRealmId(), getTokenRequest()).execute();
                     if (resp.isSuccessful()) {
@@ -89,14 +88,12 @@ public final class AtlasKeycloakAuthService {
     }
 
     public boolean isTokenExpired() {
-        return (currentTime() + DEFAULT_MIN_VALIDITY_MINS) >= expirationTime;
-    }
-
-    public long getExpiryTime() {
-        if (Objects.isNull(currentAccessToken)) {
-            return -1;
+        synchronized (this) {
+            if (Objects.isNull(currentAccessToken)) {
+                return true;
+            }
+            return currentTime() >= expirationTime;
         }
-        return expirationTime;
     }
 
     private RequestBody getTokenRequest() {
