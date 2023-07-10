@@ -21,7 +21,7 @@ public class NoRedisServiceImpl extends AbstractRedisService {
     @Override
     public boolean acquireDistributedLock(String key) {
         //do nothing
-        return true;
+        return false;
     }
 
     @Override
