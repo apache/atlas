@@ -32,7 +32,6 @@ import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.DirectIndexQueryResult;
 import org.apache.atlas.type.AtlasType;
-import org.apache.atlas.utils.AtlasJson;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.slf4j.Logger;
@@ -144,15 +143,7 @@ public class TaskRegistry {
     @GraphTransaction
     public void deleteByGuid(String guid) throws AtlasBaseException {
         try {
-            AtlasGraphQuery query = graph.query()
-                                         .has(Constants.TASK_TYPE_PROPERTY_KEY, Constants.TASK_TYPE_NAME)
-                                         .has(TASK_GUID, guid);
-
-            Iterator<AtlasVertex> results = query.vertices().iterator();
-
-            if (results.hasNext()) {
-                graph.removeVertex(results.next());
-            }
+            taskService.hardDelete(guid);
         } catch (Exception exception) {
             LOG.error("Error: deletingByGuid: {}", guid);
 
@@ -165,18 +156,7 @@ public class TaskRegistry {
     @GraphTransaction
     public void softDelete(String guid) throws AtlasBaseException{
         try {
-            AtlasGraphQuery query = graph.query()
-                    .has(Constants.TASK_TYPE_PROPERTY_KEY, Constants.TASK_TYPE_NAME)
-                    .has(TASK_GUID, guid);
-
-            Iterator<AtlasVertex> results = query.vertices().iterator();
-
-            if (results.hasNext()) {
-                AtlasVertex taskVertex = results.next();
-
-                setEncodedProperty(taskVertex, Constants.TASK_STATUS, AtlasTask.Status.DELETED);
-                setEncodedProperty(taskVertex, Constants.TASK_UPDATED_TIME, System.currentTimeMillis());
-            }
+            taskService.softDelete(guid);
         }
         catch (Exception exception) {
             LOG.error("Error: on soft delete: {}", guid);
@@ -534,41 +514,7 @@ public class TaskRegistry {
     }
 
     private AtlasVertex createVertex(AtlasTask task) {
-        AtlasVertex ret = graph.addVertex();
-
-        setEncodedProperty(ret, Constants.TASK_GUID, task.getGuid());
-        setEncodedProperty(ret, Constants.TASK_TYPE_PROPERTY_KEY, Constants.TASK_TYPE_NAME);
-        setEncodedProperty(ret, Constants.TASK_STATUS, task.getStatus().toString());
-        setEncodedProperty(ret, Constants.TASK_TYPE, task.getType());
-        setEncodedProperty(ret, Constants.TASK_CREATED_BY, task.getCreatedBy());
-        setEncodedProperty(ret, Constants.TASK_CREATED_TIME, task.getCreatedTime());
-        setEncodedProperty(ret, Constants.TASK_UPDATED_TIME, task.getUpdatedTime());
-        if (task.getClassificationId() != null) {
-            setEncodedProperty(ret, Constants.TASK_CLASSIFICATION_ID, task.getClassificationId());
-        }
-
-        if(task.getEntityGuid() != null) {
-            setEncodedProperty(ret, Constants.TASK_ENTITY_GUID, task.getEntityGuid());
-        }
-
-        if (task.getStartTime() != null) {
-            setEncodedProperty(ret, Constants.TASK_START_TIME, task.getStartTime().getTime());
-        }
-
-        if (task.getEndTime() != null) {
-            setEncodedProperty(ret, Constants.TASK_END_TIME, task.getEndTime().getTime());
-        }
-
-        setEncodedProperty(ret, Constants.TASK_PARAMETERS, AtlasJson.toJson(task.getParameters()));
-        setEncodedProperty(ret, Constants.TASK_ATTEMPT_COUNT, task.getAttemptCount());
-        setEncodedProperty(ret, Constants.TASK_ERROR_MESSAGE, task.getErrorMessage());
-
-        LOG.info("Creating task vertex: {}: {}, {}: {}, {}: {} ",
-                Constants.TASK_TYPE, task.getType(),
-                Constants.TASK_PARAMETERS, AtlasJson.toJson(task.getParameters()),
-                TASK_GUID, task.getGuid());
-
-        return ret;
+        return taskService.createTaskVertex(task);
     }
 
     private Map<String, Object> mapOf(String key, Object value) {

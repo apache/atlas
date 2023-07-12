@@ -19,6 +19,7 @@ package org.apache.atlas.web.rest;
 
 import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.model.tasks.TaskSearchParams;
 import org.apache.atlas.model.tasks.TaskSearchResult;
 import org.apache.atlas.tasks.TaskService;
@@ -33,6 +34,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
+import java.util.List;
 
 /**
  * REST interface for CRUD operations on tasks
@@ -86,6 +88,46 @@ public class TaskREST {
             taskService.retryTask(guid);
 
             return HttpStatus.OK;
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    @POST
+    @Path("bulk")
+    @Timed
+    public List<AtlasTask> createTasks(List<AtlasTask> tasks) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.createTasks");
+            }
+
+            List<AtlasTask> ret = taskService.createAtlasTasks(tasks);
+
+            return ret;
+
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    @DELETE
+    @Path("bulk")
+    @Timed
+    public List<AtlasTask> deleteTasks(List<AtlasTask> tasks) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.deleteTasks");
+            }
+
+            List<AtlasTask> ret = taskService.deleteAtlasTasks(tasks);
+
+            return ret;
+
         } finally {
             AtlasPerfTracer.log(perf);
         }

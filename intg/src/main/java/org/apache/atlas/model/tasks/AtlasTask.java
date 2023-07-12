@@ -101,7 +101,7 @@ public class AtlasTask {
         this.status             = Status.PENDING;
         this.attemptCount       = 0;
         this.classificationId   = classificationId;
-        this.entityGuid           = entityGuid;
+        this.entityGuid         = entityGuid;
     }
 
     public String getGuid() {

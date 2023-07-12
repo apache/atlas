@@ -1,22 +1,26 @@
 package org.apache.atlas.tasks;
 
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.DeleteType;
+import org.apache.atlas.RequestContext;
+import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.model.tasks.TaskSearchParams;
 import org.apache.atlas.model.tasks.TaskSearchResult;
 import org.apache.atlas.repository.Constants;
-import org.apache.atlas.repository.graphdb.AtlasGraph;
-import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
-import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.repository.graphdb.DirectIndexQueryResult;
+import org.apache.atlas.repository.graphdb.*;
+import org.apache.atlas.utils.AtlasJson;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang.ArrayUtils;
+import org.reflections8.Reflections;
+import org.reflections8.scanners.SubTypesScanner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
+import java.lang.reflect.Field;
 import java.util.*;
 
 import static org.apache.atlas.repository.Constants.TASK_GUID;
@@ -122,6 +126,170 @@ public class AtlasTaskService implements TaskService {
         int attemptCount = atlasVertex.getProperty(Constants.TASK_ATTEMPT_COUNT, Integer.class);
         setEncodedProperty(atlasVertex, Constants.TASK_ATTEMPT_COUNT, attemptCount+1);
         graph.commit();
+    }
+
+    @Override
+    @GraphTransaction
+    public List<AtlasTask> createAtlasTasks(List<AtlasTask> tasks) {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("createAtlasTasks");
+        List<String> supportedTypes = new ArrayList<>();
+        // Get all the supported task type dynamically
+        Reflections reflections = new Reflections("org.apache.atlas.repository.store.graph.v2.tasks", new SubTypesScanner(false));
+        Set<Class<? extends TaskFactory>> classes = reflections.getSubTypesOf(TaskFactory.class);
+        for (Class<?> clazz : classes) {
+            List<Class<?>> interfaces = Arrays.asList(clazz.getInterfaces());
+            if (interfaces.contains(TaskFactory.class)) {
+                try {
+                    Field field = clazz.getField("supportedTypes");
+                    List<String> supportedTaskTypes = (List<String>) field.get(null);
+                    supportedTypes.addAll(supportedTaskTypes);
+                } catch (NoSuchFieldException e) {
+                    e.printStackTrace();
+                } catch (IllegalAccessException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        List<AtlasTask> createdTasks = new ArrayList<>();
+
+        if (CollectionUtils.isNotEmpty(tasks)) {
+            for (AtlasTask task : tasks) {
+                String taskType = task.getType();
+                if (!supportedTypes.contains(taskType)) {
+                    LOG.error("Task type {} is not supported", taskType);
+                    continue;
+                }
+                task.setUpdatedTime(new Date());
+                task.setCreatedTime(new Date());
+                task.setStatusPending();
+                task.setAttemptCount(0);
+                task.setGuid(UUID.randomUUID().toString());
+                task.setCreatedBy(RequestContext.getCurrentUser());
+
+                createTaskVertex(task);
+                createdTasks.add(task);
+                }
+        }
+
+        graph.commit();
+        RequestContext.get().endMetricRecord(metric);
+        return createdTasks;
+    }
+
+    @Override
+    public List<AtlasTask> deleteAtlasTasks(List<AtlasTask> tasks) {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("deleteAtlasTasks");
+        List<AtlasTask> deletedTasks = new ArrayList<>();
+        if (CollectionUtils.isNotEmpty(tasks)) {
+            for (AtlasTask task : tasks) {
+                String taskGuid = task.getGuid();
+                try {
+                    deleteTask(taskGuid);
+
+                    deletedTasks.add(task);
+                } catch (AtlasBaseException e) {
+                    LOG.error("Failed to delete task {}", taskGuid);
+                }
+            }
+        }
+
+        graph.commit();
+        RequestContext.get().endMetricRecord(metric);
+        return deletedTasks;
+    }
+
+    private void deleteTask(String taskGuid) throws AtlasBaseException {
+        DeleteType deleteType = RequestContext.get().getDeleteType();
+        if (deleteType == DeleteType.SOFT || deleteType == DeleteType.DEFAULT) {
+            softDelete(taskGuid);
+        } else if (deleteType == DeleteType.HARD) {
+            hardDelete(taskGuid);
+        }
+    }
+
+    @GraphTransaction
+    public AtlasVertex createTaskVertex(AtlasTask task) {
+        AtlasVertex ret = graph.addVertex();
+
+        setEncodedProperty(ret, Constants.TASK_GUID, task.getGuid());
+        setEncodedProperty(ret, Constants.TASK_TYPE_PROPERTY_KEY, Constants.TASK_TYPE_NAME);
+        setEncodedProperty(ret, Constants.TASK_STATUS, task.getStatus().toString());
+        setEncodedProperty(ret, Constants.TASK_TYPE, task.getType());
+        setEncodedProperty(ret, Constants.TASK_CREATED_BY, task.getCreatedBy());
+        setEncodedProperty(ret, Constants.TASK_CREATED_TIME, task.getCreatedTime());
+        setEncodedProperty(ret, Constants.TASK_UPDATED_TIME, task.getUpdatedTime());
+        if (task.getClassificationId() != null) {
+            setEncodedProperty(ret, Constants.TASK_CLASSIFICATION_ID, task.getClassificationId());
+        }
+
+        if(task.getEntityGuid() != null) {
+            setEncodedProperty(ret, Constants.TASK_ENTITY_GUID, task.getEntityGuid());
+        }
+
+        if (task.getStartTime() != null) {
+            setEncodedProperty(ret, Constants.TASK_START_TIME, task.getStartTime().getTime());
+        }
+
+        if (task.getEndTime() != null) {
+            setEncodedProperty(ret, Constants.TASK_END_TIME, task.getEndTime().getTime());
+        }
+
+        setEncodedProperty(ret, Constants.TASK_PARAMETERS, AtlasJson.toJson(task.getParameters()));
+        setEncodedProperty(ret, Constants.TASK_ATTEMPT_COUNT, task.getAttemptCount());
+        setEncodedProperty(ret, Constants.TASK_ERROR_MESSAGE, task.getErrorMessage());
+
+        LOG.info("Creating task vertex: {}: {}, {}: {}, {}: {} ",
+                Constants.TASK_TYPE, task.getType(),
+                Constants.TASK_PARAMETERS, AtlasJson.toJson(task.getParameters()),
+                TASK_GUID, task.getGuid());
+
+        return ret;
+    }
+
+    @GraphTransaction
+    @Override
+    public void hardDelete(String guid) throws AtlasBaseException {
+        try {
+            AtlasGraphQuery query = graph.query()
+                    .has(Constants.TASK_TYPE_PROPERTY_KEY, Constants.TASK_TYPE_NAME)
+                    .has(TASK_GUID, guid);
+
+            Iterator<AtlasVertex> results = query.vertices().iterator();
+
+            if (results.hasNext()) {
+                graph.removeVertex(results.next());
+            }
+        } catch (Exception exception) {
+            LOG.error("Error: deletingByGuid: {}", guid);
+
+            throw new AtlasBaseException(exception);
+        } finally {
+            graph.commit();
+        }
+    }
+
+    @GraphTransaction
+    @Override
+    public void softDelete(String guid) throws AtlasBaseException{
+        try {
+            AtlasGraphQuery query = graph.query()
+                    .has(Constants.TASK_TYPE_PROPERTY_KEY, Constants.TASK_TYPE_NAME)
+                    .has(TASK_GUID, guid);
+
+            Iterator<AtlasVertex> results = query.vertices().iterator();
+
+            if (results.hasNext()) {
+                AtlasVertex taskVertex = results.next();
+
+                setEncodedProperty(taskVertex, Constants.TASK_STATUS, AtlasTask.Status.DELETED);
+                setEncodedProperty(taskVertex, Constants.TASK_UPDATED_TIME, System.currentTimeMillis());
+            }
+        }
+        catch (Exception exception) {
+            LOG.error("Error: on soft delete: {}", guid);
+
+            throw new AtlasBaseException(exception);
+        }
     }
 
     private AtlasVertex getTaskVertex(Iterator<AtlasIndexQuery.Result> iterator, String taskGuid) throws AtlasBaseException {
