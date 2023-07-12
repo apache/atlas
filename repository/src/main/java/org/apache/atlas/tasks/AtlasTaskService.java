@@ -130,7 +130,7 @@ public class AtlasTaskService implements TaskService {
 
     @Override
     @GraphTransaction
-    public List<AtlasTask> createAtlasTasks(List<AtlasTask> tasks) {
+    public List<AtlasTask> createAtlasTasks(List<AtlasTask> tasks) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("createAtlasTasks");
         List<String> supportedTypes = new ArrayList<>();
         // Get all the supported task type dynamically
@@ -143,10 +143,9 @@ public class AtlasTaskService implements TaskService {
                     Field field = clazz.getField("supportedTypes");
                     List<String> supportedTaskTypes = (List<String>) field.get(null);
                     supportedTypes.addAll(supportedTaskTypes);
-                } catch (NoSuchFieldException e) {
-                    e.printStackTrace();
-                } catch (IllegalAccessException e) {
-                    e.printStackTrace();
+                } catch (NoSuchFieldException | IllegalAccessException e) {
+                    LOG.error("Error occurred while accessing field: ", e);
+                    throw new AtlasBaseException("Error occurred while accessing field", e);
                 }
             }
         }
@@ -168,7 +167,7 @@ public class AtlasTaskService implements TaskService {
 
                 createTaskVertex(task);
                 createdTasks.add(task);
-                }
+            }
         }
 
         graph.commit();

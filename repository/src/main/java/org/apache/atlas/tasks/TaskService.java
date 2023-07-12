@@ -69,7 +69,7 @@ public interface TaskService {
      * @return Created task
      * @throws AtlasBaseException
      */
-    List<AtlasTask> createAtlasTasks(List<AtlasTask> tasks);
+    List<AtlasTask> createAtlasTasks(List<AtlasTask> tasks) throws AtlasBaseException;
 
     List<AtlasTask> deleteAtlasTasks(List<AtlasTask> tasks);
 
