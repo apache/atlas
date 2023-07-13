@@ -228,15 +228,18 @@ public class CachePolicyTransformerImpl {
                     }
 
                 } else if (POLICY_CATEGORY_PURPOSE.equals(policyCategory)) {
+                    if (policies == null) {
+                        policies = new ArrayList<>();
+                    }
+
                     List<AtlasEntityHeader> transformedAtlasPolicies = purposeTransformer.transform(atlasPolicy);
 
                     for (AtlasEntityHeader transformedPolicy : transformedAtlasPolicies) {
-                        RangerPolicy rangerPolicy;
                         if (parentServiceName.equals(transformedPolicy.getAttribute(ATTR_POLICY_SERVICE_NAME))) {
-                            rangerPolicy = toRangerPolicy(transformedPolicy, parentServiceName);
+                            RangerPolicy rangerPolicy = toRangerPolicy(transformedPolicy, parentServiceName);
                             policies.add(rangerPolicy);
                         } else {
-                            rangerPolicy = toRangerPolicy(transformedPolicy, serviceType);
+                            RangerPolicy rangerPolicy = toRangerPolicy(transformedPolicy, serviceType);
                             rangerPolicies.add(rangerPolicy);
                         }
                     }
