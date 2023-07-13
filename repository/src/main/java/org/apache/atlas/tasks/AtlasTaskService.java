@@ -29,6 +29,7 @@ import java.util.*;
 
 import static org.apache.atlas.repository.Constants.TASK_GUID;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.setEncodedProperty;
+import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationTask.PARAM_CLASSIFICATION_VERTEX_ID;
 import static org.apache.atlas.tasks.TaskRegistry.toAtlasTask;
 
 @Component
@@ -168,7 +169,7 @@ public class AtlasTaskService implements TaskService {
                     if (StringUtils.isEmpty(classificationId)) {
                         throw new AtlasBaseException(AtlasErrorCode.TASK_INVALID_PARAMETERS, task.toString());
                     }
-                    task.getParameters().put("classificationId", classificationId);
+                    task.getParameters().put(PARAM_CLASSIFICATION_VERTEX_ID, classificationId);
                 }
                 task.setUpdatedTime(new Date());
                 task.setCreatedTime(new Date());
@@ -198,7 +199,11 @@ public class AtlasTaskService implements TaskService {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, entityGuid);
         }
 
-        ret = GraphHelper.getClassificationVertex(entityVertex, classificationName).getIdForDisplay();
+        AtlasVertex classificationVertex = GraphHelper.getClassificationVertex(entityVertex, classificationName);
+
+        if (classificationVertex != null) {
+            ret = classificationVertex.getIdForDisplay();
+        }
 
         return ret;
     }
