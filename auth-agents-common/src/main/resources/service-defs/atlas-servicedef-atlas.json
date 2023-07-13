@@ -115,7 +115,7 @@
 			},
 			"label": "Atlas Service",
 			"description": "Atlas Service",
-			"accessTypeRestrictions": ["admin-import", "admin-export", "admin-purge", "admin-audits", "admin-entity-audits", "admin-repair-index"]
+			"accessTypeRestrictions": ["admin-import", "admin-export", "admin-purge", "admin-audits", "admin-entity-audits", "admin-repair-index", "api-create-task"]
 		},
 		{
 			"itemId": 7,
@@ -445,6 +445,11 @@
 			"itemId": 23,
 			"name": "admin-repair-index",
 			"label": "Admin Repair Index"
+		},
+		{
+			"itemId": 24,
+			"name": "api-create-task",
+			"label": "Create Task API"
 		}
 
 	],
