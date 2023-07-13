@@ -22,33 +22,29 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.Map;
 
 import static org.apache.atlas.repository.Constants.getStaticFileAsString;
 
 public class CacheTransformerTemplateHelper {
     private static final Logger LOG = LoggerFactory.getLogger(CacheTransformerTemplateHelper.class);
 
-    static final String RESOURCE_POLICY_TRANSFORMER = "templates/policy_cache_transformer.json";
+    static final String RESOURCE_POLICY_TRANSFORMER = "templates/policy_cache_transformer_%s.json";
 
-    private static PolicyTransformerTemplate templates;
-
-    public static PolicyTransformerTemplate getTemplate() throws AtlasBaseException {
-        if (templates == null) {
-            loadTemplate();
-        }
-
-        return templates;
-    }
-
-    private static void loadTemplate() {
+    public static PolicyTransformerTemplate getTemplate(String fileSuffix) throws AtlasBaseException {
+        PolicyTransformerTemplate templates;
         String jsonTemplate = null;
+        String fileName = String.format(RESOURCE_POLICY_TRANSFORMER, fileSuffix);
 
         try {
-            jsonTemplate = getStaticFileAsString(RESOURCE_POLICY_TRANSFORMER);
+            jsonTemplate = getStaticFileAsString(fileName);
         } catch (IOException e) {
             LOG.error("Failed to load template for policies: {}", RESOURCE_POLICY_TRANSFORMER);
+            throw new AtlasBaseException(e);
         }
         templates = new PolicyTransformerTemplate();
         templates.fromJsonString(jsonTemplate);
+
+        return templates;
     }
 }

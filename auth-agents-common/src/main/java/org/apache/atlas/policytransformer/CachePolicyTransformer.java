@@ -18,6 +18,7 @@
 package org.apache.atlas.policytransformer;
 
 import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.plugin.model.RangerPolicy;
 
 import java.util.List;
 

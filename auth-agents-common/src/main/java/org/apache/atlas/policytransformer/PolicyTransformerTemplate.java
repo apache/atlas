@@ -19,13 +19,16 @@
 package org.apache.atlas.policytransformer;
 
 import org.apache.atlas.type.AtlasType;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class PolicyTransformerTemplate {
     private static final Logger LOG = LoggerFactory.getLogger(PolicyTransformerTemplate.class);
@@ -39,8 +42,8 @@ public class PolicyTransformerTemplate {
         return actionToPoliciesMap.get(action);
     }
 
-    public Map<String, List<TemplatePolicy>> getTemplates() {
-        return actionToPoliciesMap;
+    public Set<String> getTemplateActions() {
+        return new HashSet<>(actionToPoliciesMap.keySet());
     }
 
     public void fromJsonString(String json) {
@@ -58,6 +61,7 @@ public class PolicyTransformerTemplate {
                 templatePolicy.setResources((List<String>) policy.get("resources"));
                 templatePolicy.setPolicyType((String) policy.get("policyType"));
                 templatePolicy.setPolicyResourceCategory((String) policy.get("policyResourceCategory"));
+                templatePolicy.setPolicyServiceName((String) policy.get("policyServiceName"));
 
                 policies.add(templatePolicy);
             }
@@ -67,10 +71,19 @@ public class PolicyTransformerTemplate {
     }
 
     class TemplatePolicy {
+        private String policyServiceName;
         private String policyType;
         private List<String> resources;
         private List<String> actions;
         private String policyResourceCategory;
+
+        public String getPolicyServiceName() {
+            return policyServiceName;
+        }
+
+        public void setPolicyServiceName(String policyServiceName) {
+            this.policyServiceName = policyServiceName;
+        }
 
         public String getPolicyType() {
             return policyType;

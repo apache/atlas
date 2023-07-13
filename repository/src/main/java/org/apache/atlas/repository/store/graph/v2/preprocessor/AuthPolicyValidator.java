@@ -96,6 +96,9 @@ public class AuthPolicyValidator {
         add(ENTITY_UPDATE_CLASSIFICATION.getType());
         add(ENTITY_REMOVE_CLASSIFICATION.getType());
         add(ENTITY_UPDATE_BUSINESS_METADATA.getType());
+        add("purpose-entity-update");
+        add("purpose-add-terms");
+        add("purpose-remove-terms");
     }};
 
     private static final Map<String, Set<String>> PURPOSE_POLICY_VALID_ACTIONS = new HashMap<String, Set<String>>(){{

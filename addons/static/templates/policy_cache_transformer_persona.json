@@ -291,7 +291,7 @@
         "entity-classification:*",
         "entity-business-metadata:*"
       ],
-      "actions": ["entity-update-business-metadata"]
+      "actions": ["entity-business-update-metadata"]
     }
   ],
   "persona-glossary-add-classifications": [
