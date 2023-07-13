@@ -9,10 +9,14 @@ import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.model.tasks.TaskSearchParams;
 import org.apache.atlas.model.tasks.TaskSearchResult;
 import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.*;
+import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
+import org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 import org.reflections8.Reflections;
 import org.reflections8.scanners.SubTypesScanner;
 import org.slf4j.Logger;
@@ -155,8 +159,16 @@ public class AtlasTaskService implements TaskService {
             for (AtlasTask task : tasks) {
                 String taskType = task.getType();
                 if (!supportedTypes.contains(taskType)) {
-                    LOG.error("Task type {} is not supported", taskType);
-                    continue;
+                    throw new AtlasBaseException(AtlasErrorCode.TASK_TYPE_NOT_SUPPORTED, task.getType());
+                }
+                if (isClassificationTaskType(taskType)) {
+                    String classificationName = task.getClassificationName();
+                    String entityGuid = task.getEntityGuid();
+                    String classificationId = resolveAndReturnClassificationId(classificationName, entityGuid);
+                    if (StringUtils.isEmpty(classificationId)) {
+                        throw new AtlasBaseException(AtlasErrorCode.TASK_INVALID_PARAMETERS, task.toString());
+                    }
+                    task.getParameters().put("classificationId", classificationId);
                 }
                 task.setUpdatedTime(new Date());
                 task.setCreatedTime(new Date());
@@ -173,6 +185,22 @@ public class AtlasTaskService implements TaskService {
         graph.commit();
         RequestContext.get().endMetricRecord(metric);
         return createdTasks;
+    }
+
+    private boolean isClassificationTaskType(String taskType) {
+         return ClassificationPropagateTaskFactory.supportedTypes.contains(taskType);
+    }
+
+    private String resolveAndReturnClassificationId(String classificationName, String entityGuid) throws AtlasBaseException {
+        String ret = null;
+        AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(entityGuid);
+        if (entityVertex == null) {
+            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, entityGuid);
+        }
+
+        ret = GraphHelper.getClassificationVertex(entityVertex, classificationName).getIdForDisplay();
+
+        return ret;
     }
 
     @Override
