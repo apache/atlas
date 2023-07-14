@@ -113,6 +113,7 @@ public class AtlasTaskService implements TaskService {
         return map;
     }
     @Override
+    @GraphTransaction
     public void retryTask(String taskGuid) throws AtlasBaseException {
         TaskSearchParams taskSearchParams = getMatchQuery(taskGuid);
         AtlasIndexQuery atlasIndexQuery = searchTask(taskSearchParams);
@@ -130,7 +131,6 @@ public class AtlasTaskService implements TaskService {
         setEncodedProperty(atlasVertex, Constants.TASK_STATUS, AtlasTask.Status.PENDING);
         int attemptCount = atlasVertex.getProperty(Constants.TASK_ATTEMPT_COUNT, Integer.class);
         setEncodedProperty(atlasVertex, Constants.TASK_ATTEMPT_COUNT, attemptCount+1);
-        graph.commit();
     }
 
     @Override
@@ -211,7 +211,6 @@ public class AtlasTaskService implements TaskService {
     @Override
     @GraphTransaction
     public List<AtlasTask> deleteAtlasTasks(List<AtlasTask> tasks) {
-        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("deleteAtlasTasks");
         List<AtlasTask> deletedTasks = new ArrayList<>();
         if (CollectionUtils.isNotEmpty(tasks)) {
             for (AtlasTask task : tasks) {
@@ -225,8 +224,6 @@ public class AtlasTaskService implements TaskService {
                 }
             }
         }
-
-        RequestContext.get().endMetricRecord(metric);
         return deletedTasks;
     }
 
