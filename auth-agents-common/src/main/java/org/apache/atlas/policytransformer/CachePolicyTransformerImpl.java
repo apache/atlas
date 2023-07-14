@@ -148,9 +148,9 @@ public class CachePolicyTransformerImpl {
             servicePolicies.setPolicyUpdateTime(new Date());
 
             if (service != null) {
-                List<RangerPolicy> policies = getServicePolicies(service, serviceName, null);
+                List<RangerPolicy> allPolicies = getServicePolicies(service);
                 servicePolicies.setServiceName(serviceName);
-                servicePolicies.setPolicies(policies);
+                //servicePolicies.setPolicies(policies);
                 servicePolicies.setServiceId(service.getGuid());
 
                 String serviceDefName = String.format(RESOURCE_SERVICE_DEF_PATTERN, serviceName);
@@ -163,11 +163,12 @@ public class CachePolicyTransformerImpl {
                     AtlasEntityHeader tagService = getServiceEntity(tagServiceName);
 
                     if (tagService != null) {
-                        List<RangerPolicy> atlasTagPolicies = getServicePolicies(tagService, serviceName, policies);
+                        allPolicies.addAll(getServicePolicies(tagService));
+
                         TagPolicies tagPolicies = new TagPolicies();
 
                         tagPolicies.setServiceName(tagServiceName);
-                        tagPolicies.setPolicies(atlasTagPolicies);
+                        //tagPolicies.setPolicies(atlasTagPolicies);
                         tagPolicies.setPolicyUpdateTime(new Date());
                         tagPolicies.setServiceId(tagService.getGuid());
                         tagPolicies.setPolicyVersion(-1L);
@@ -178,6 +179,16 @@ public class CachePolicyTransformerImpl {
                         servicePolicies.setTagPolicies(tagPolicies);
                     }
                 }
+
+                AtlasPerfMetrics.MetricRecorder recorder1 = RequestContext.get().startMetricRecord("filterPolicies");
+                //filter out policies based on serviceName
+                List<RangerPolicy> policiesA = allPolicies.stream().filter(x -> serviceName.equals(x.getService())).collect(Collectors.toList());
+                List<RangerPolicy> policiesB = allPolicies.stream().filter(x -> tagServiceName.equals(x.getService())).collect(Collectors.toList());
+
+                servicePolicies.setPolicies(policiesA);
+                servicePolicies.getTagPolicies().setPolicies(policiesB);
+
+                RequestContext.get().endMetricRecord(recorder1);
 
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("Found {} policies", servicePolicies.getPolicies().size());
@@ -193,7 +204,7 @@ public class CachePolicyTransformerImpl {
         return servicePolicies;
     }
 
-    private List<RangerPolicy> getServicePolicies(AtlasEntityHeader service, String parentServiceName, List<RangerPolicy> policies) throws AtlasBaseException, IOException {
+    private List<RangerPolicy> getServicePolicies(AtlasEntityHeader service) throws AtlasBaseException, IOException {
 
         List<RangerPolicy> servicePolicies = new ArrayList<>();
 
@@ -203,16 +214,14 @@ public class CachePolicyTransformerImpl {
 
         if (CollectionUtils.isNotEmpty(atlasPolicies)) {
             //transform policies
-            servicePolicies = transformAtlasPoliciesToRangerPolicies(atlasPolicies, serviceType, serviceName, policies, parentServiceName);
+            servicePolicies = transformAtlasPoliciesToRangerPolicies(atlasPolicies, serviceType, serviceName);
         }
         return servicePolicies;
     }
 
     private List<RangerPolicy> transformAtlasPoliciesToRangerPolicies(List<AtlasEntityHeader> atlasPolicies,
                                                                       String serviceType,
-                                                                      String serviceName,
-                                                                      List<RangerPolicy> policies,
-                                                                      String parentServiceName) throws IOException, AtlasBaseException {
+                                                                      String serviceName) throws IOException, AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("CachePolicyTransformerImpl."+serviceName+".transformAtlasPoliciesToRangerPolicies");
 
         List<RangerPolicy> rangerPolicies = new ArrayList<>();
@@ -228,20 +237,10 @@ public class CachePolicyTransformerImpl {
                     }
 
                 } else if (POLICY_CATEGORY_PURPOSE.equals(policyCategory)) {
-                    if (policies == null) {
-                        policies = new ArrayList<>();
-                    }
-
                     List<AtlasEntityHeader> transformedAtlasPolicies = purposeTransformer.transform(atlasPolicy);
 
                     for (AtlasEntityHeader transformedPolicy : transformedAtlasPolicies) {
-                        if (parentServiceName.equals(transformedPolicy.getAttribute(ATTR_POLICY_SERVICE_NAME))) {
-                            RangerPolicy rangerPolicy = toRangerPolicy(transformedPolicy, parentServiceName);
-                            policies.add(rangerPolicy);
-                        } else {
-                            RangerPolicy rangerPolicy = toRangerPolicy(transformedPolicy, serviceType);
-                            rangerPolicies.add(rangerPolicy);
-                        }
+                        rangerPolicies.add(toRangerPolicy(transformedPolicy, serviceType));
                     }
 
                 } else {
