@@ -23,16 +23,10 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.model.tasks.TaskSearchParams;
 import org.apache.atlas.model.tasks.TaskSearchResult;
-import org.apache.atlas.repository.Constants;
-import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-
-import static org.apache.atlas.repository.Constants.TASK_GUID;
-import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.setEncodedProperty;
 
 public interface TaskService {
 
