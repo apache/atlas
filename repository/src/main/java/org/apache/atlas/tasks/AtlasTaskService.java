@@ -209,6 +209,7 @@ public class AtlasTaskService implements TaskService {
     }
 
     @Override
+    @GraphTransaction
     public List<AtlasTask> deleteAtlasTasks(List<AtlasTask> tasks) {
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("deleteAtlasTasks");
         List<AtlasTask> deletedTasks = new ArrayList<>();
@@ -225,7 +226,6 @@ public class AtlasTaskService implements TaskService {
             }
         }
 
-        graph.commit();
         RequestContext.get().endMetricRecord(metric);
         return deletedTasks;
     }
@@ -239,7 +239,7 @@ public class AtlasTaskService implements TaskService {
         }
     }
 
-    @GraphTransaction
+    @Override
     public AtlasVertex createTaskVertex(AtlasTask task) {
         AtlasVertex ret = graph.addVertex();
 
@@ -278,7 +278,6 @@ public class AtlasTaskService implements TaskService {
         return ret;
     }
 
-    @GraphTransaction
     @Override
     public void hardDelete(String guid) throws AtlasBaseException {
         try {
@@ -295,12 +294,9 @@ public class AtlasTaskService implements TaskService {
             LOG.error("Error: deletingByGuid: {}", guid);
 
             throw new AtlasBaseException(exception);
-        } finally {
-            graph.commit();
         }
     }
 
-    @GraphTransaction
     @Override
     public void softDelete(String guid) throws AtlasBaseException{
         try {

@@ -56,7 +56,6 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
     private static final ThreadLocal<Map<String, AtlasVertex>>  guidVertexCache            = ThreadLocal.withInitial(() -> new HashMap<>());
 
     private final AtlasGraph     graph;
-    private final TaskManagement taskManagement;
 
     private static final ThreadLocal<Map<Object, String>> vertexGuidCache =
             new ThreadLocal<Map<Object, String>>() {
@@ -83,9 +82,8 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
             };
 
     @Inject
-    public GraphTransactionInterceptor(AtlasGraph graph, TaskManagement taskManagement) {
+    public GraphTransactionInterceptor(AtlasGraph graph) {
         this.graph          = graph;
-        this.taskManagement = taskManagement;
     }
 
     @Override
