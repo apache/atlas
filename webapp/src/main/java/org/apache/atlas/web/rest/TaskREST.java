@@ -102,7 +102,7 @@ public class TaskREST {
     public List<AtlasTask> createTasks(List<AtlasTask> tasks) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
-        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.API_CREATE_TASK), "deleteTasks is not allowed");
+        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.API_CUD_TASK), "create task is not allowed");
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
@@ -124,7 +124,7 @@ public class TaskREST {
     public List<AtlasTask> deleteTasks(List<AtlasTask> tasks) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
-        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.API_CREATE_TASK), "deleteTasks is not allowed");
+        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.API_CUD_TASK), "deleteTasks is not allowed");
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {

@@ -448,8 +448,8 @@
 		},
 		{
 			"itemId": 24,
-			"name": "api-create-task",
-			"label": "Create Task API"
+			"name": "api-task-cud",
+			"label": "CUD task API"
 		}
 
 	],
