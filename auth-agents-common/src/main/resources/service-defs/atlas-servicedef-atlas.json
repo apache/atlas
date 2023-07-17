@@ -115,7 +115,7 @@
 			},
 			"label": "Atlas Service",
 			"description": "Atlas Service",
-			"accessTypeRestrictions": ["admin-import", "admin-export", "admin-purge", "admin-audits", "admin-entity-audits", "admin-repair-index", "api-create-task"]
+			"accessTypeRestrictions": ["admin-import", "admin-export", "admin-purge", "admin-audits", "admin-entity-audits", "admin-repair-index", "admin-task-cud"]
 		},
 		{
 			"itemId": 7,
@@ -448,8 +448,8 @@
 		},
 		{
 			"itemId": 24,
-			"name": "api-task-cud",
-			"label": "CUD task API"
+			"name": "admin-task-cud",
+			"label": "Admin task CUD API"
 		}
 
 	],

@@ -28,8 +28,8 @@
     {
       "typeName": "AuthPolicy",
       "attributes": {
-        "name": "DENY_TASK_CUD_DENY",
-        "qualifiedName": "DENY_TASK_CUD_DENY",
+        "name": "ADMIN_ALLOW_TASK_CUD",
+        "qualifiedName": "ADMIN_ALLOW_TASK_CUD",
         "policyCategory": "bootstrap",
         "policySubCategory": "default",
         "policyServiceName": "atlas",
@@ -46,7 +46,7 @@
           "atlas-service:*"
         ],
         "policyActions": [
-          "api-task-cud"
+          "admin-task-cud"
         ]
       }
     }
