@@ -13,12 +13,11 @@ import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.*;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory;
+import org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTaskFactory;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
-import org.reflections8.Reflections;
-import org.reflections8.scanners.SubTypesScanner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -138,22 +137,9 @@ public class AtlasTaskService implements TaskService {
     public List<AtlasTask> createAtlasTasks(List<AtlasTask> tasks) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("createAtlasTasks");
         List<String> supportedTypes = new ArrayList<>();
-        // Get all the supported task type dynamically
-        Reflections reflections = new Reflections("org.apache.atlas.repository.store.graph.v2.tasks", new SubTypesScanner(false));
-        Set<Class<? extends TaskFactory>> classes = reflections.getSubTypesOf(TaskFactory.class);
-        for (Class<?> clazz : classes) {
-            List<Class<?>> interfaces = Arrays.asList(clazz.getInterfaces());
-            if (interfaces.contains(TaskFactory.class)) {
-                try {
-                    Field field = clazz.getField("supportedTypes");
-                    List<String> supportedTaskTypes = (List<String>) field.get(null);
-                    supportedTypes.addAll(supportedTaskTypes);
-                } catch (NoSuchFieldException | IllegalAccessException e) {
-                    LOG.error("Error occurred while accessing field: ", e);
-                    throw new AtlasBaseException("Error occurred while accessing field", e);
-                }
-            }
-        }
+        supportedTypes.addAll(ClassificationPropagateTaskFactory.supportedTypes);
+        supportedTypes.addAll(MeaningsTaskFactory.supportedTypes);
+
         List<AtlasTask> createdTasks = new ArrayList<>();
 
         if (CollectionUtils.isNotEmpty(tasks)) {
