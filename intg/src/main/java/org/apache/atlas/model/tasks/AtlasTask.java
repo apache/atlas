@@ -38,6 +38,14 @@ public class AtlasTask {
     @JsonIgnore
     public static final int MAX_ATTEMPT_COUNT = 3;
 
+    public String getClassificationName() {
+        return classificationName;
+    }
+
+    public void setClassificationName(String classificationName) {
+        this.classificationName = classificationName;
+    }
+
     public enum Status {
         PENDING,
         IN_PROGRESS,
@@ -86,6 +94,7 @@ public class AtlasTask {
     private Status              status;
     private String              classificationId;
     private String              entityGuid;
+    private String              classificationName;
 
     public AtlasTask() {
     }
@@ -101,7 +110,7 @@ public class AtlasTask {
         this.status             = Status.PENDING;
         this.attemptCount       = 0;
         this.classificationId   = classificationId;
-        this.entityGuid           = entityGuid;
+        this.entityGuid         = entityGuid;
     }
 
     public String getGuid() {

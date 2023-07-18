@@ -56,7 +56,7 @@ public class ClassificationPropagateTaskFactory implements TaskFactory {
 
 
 
-    private static final List<String> supportedTypes = new ArrayList<String>() {{
+    public static final List<String> supportedTypes = new ArrayList<String>() {{
         add(CLASSIFICATION_PROPAGATION_ADD);
         add(CLASSIFICATION_PROPAGATION_DELETE);
         add(CLASSIFICATION_ONLY_PROPAGATION_DELETE);

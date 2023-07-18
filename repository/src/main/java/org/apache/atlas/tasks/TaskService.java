@@ -20,8 +20,10 @@ package org.apache.atlas.tasks;
 
 
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.model.tasks.TaskSearchParams;
 import org.apache.atlas.model.tasks.TaskSearchResult;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
 
 import java.util.List;
 import java.util.Map;
@@ -54,4 +56,37 @@ public interface TaskService {
      * @throws AtlasBaseException
      */
     void retryTask(String taskGuid) throws AtlasBaseException;
+
+    /**
+     * Create a new task
+     * @param tasks to create
+     * @return Created task
+     * @throws AtlasBaseException
+     */
+    List<AtlasTask> createAtlasTasks(List<AtlasTask> tasks) throws AtlasBaseException;
+
+    List<AtlasTask> deleteAtlasTasks(List<AtlasTask> tasks);
+
+    /**
+     * Update a task
+     * @param task to create
+     * @return created task
+     * @throws AtlasBaseException
+     */
+    AtlasVertex createTaskVertex(AtlasTask task);
+
+    /**
+     * Delete a task
+     * @param guid task to delete
+     * @throws AtlasBaseException
+     */
+    void hardDelete(String guid) throws AtlasBaseException;
+
+    /**
+     * Delete a task
+     * @param guid task to soft delete
+     * @throws AtlasBaseException
+     */
+    void softDelete(String guid) throws AtlasBaseException;
+
 }

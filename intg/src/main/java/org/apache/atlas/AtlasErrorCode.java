@@ -279,7 +279,9 @@ public enum AtlasErrorCode {
 
     INDEX_ALIAS_FAILED(400, "ATLAS-400-00-108", "Error occurred while {0} ES alias: {1}"),
     JSON_ERROR(400, "ATLAS-400-00-109", "Error occurred putting object into JSONObject: {0}"),
-    DISABLED_OPERATION(400, "ATLAS-400-00-110", "This operation is temporarily disabled as it is under maintenance.");
+    DISABLED_OPERATION(400, "ATLAS-400-00-110", "This operation is temporarily disabled as it is under maintenance."),
+    TASK_INVALID_PARAMETERS(400, "ATLAS-400-00-111", "Invalid parameters for task {0}"),
+    TASK_TYPE_NOT_SUPPORTED(400, "ATLAS-400-00-112", "Task type {0} is not supported");
 
 
     private String errorCode;
