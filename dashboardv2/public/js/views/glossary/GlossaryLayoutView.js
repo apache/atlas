@@ -237,7 +237,6 @@ define(['require',
                     Utils.setUrl({
                         "url": url,
                         "urlParams": _.extend({}, _.omit(obj, 'guid', 'model', 'type', 'isNodeNotFoundAtLoad')),
-                        "mergeBrowserUrl": false,
                         "trigger": (options && !_.isUndefined(options.trigger) ? options.trigger : true),
                         "updateTabState": true
                     });
@@ -442,26 +441,43 @@ define(['require',
                 if (this.value && this.value.viewType) {
                     this.viewType = this.value.viewType;
                 }
-                if (this.guid && this.value && ((this.value.fromView && this.value.fromView) || (this.value.updateView))) {
+                if (this.guid && this.value && ((this.value.fromView) || (this.value.updateView))) {
                     var $tree = this.ui[this.viewType == "term" ? "termTree" : "categoryTree"],
                         node = $tree.jstree(true).get_node(this.guid);
                     if (node) {
                         $tree.jstree('activate_node', this.guid, { skipTrigger: true });
-                        delete this.value.fromView;
+                        // delete this.value.fromView;
                         delete this.value.updateView;
                         this.glossary.selectedItem = node.original;
                         this.query[this.viewType] = _.extend({}, _.pick(this.glossary.selectedItem, 'model', 'guid', 'gType', 'type'), { "viewType": this.viewType });
                         Utils.setUrl({
                             url: '#!/glossary/' + this.guid,
                             urlParams: this.value,
-                            mergeBrowserUrl: false,
                             trigger: false,
                             updateTabState: true
                         });
-                        this.glossaryCollection.trigger("update:details", { isGlossaryUpdate: this.value.gType == "glossary" });
+                        if (this.value.isDelete) {
+                            delete this.value.isDelete;
+                            this.glossaryCollection.trigger("update:details", { isGlossaryUpdate: this.value.gType == "glossary" });
+                        }
                     }
                 } else {
-                    this.setValues();
+                    if (this.viewType) {
+                        var $tree = this.ui[this.viewType == "term" ? "termTree" : "categoryTree"],
+                            node = $tree.jstree(true).get_node(this.guid);
+                        if (node && this.value) {
+                            $tree.jstree('activate_node', this.guid);
+                            this.query[this.viewType] = _.extend({}, _.pick(this.glossary.selectedItem, 'model', 'guid', 'gType', 'type'), { "viewType": this.viewType });
+                            Utils.setUrl({
+                                url: '#!/glossary/' + this.guid,
+                                urlParams: this.value,
+                                trigger: false,
+                                updateTabState: true
+                            });
+                        } else {
+                            this.setValues();
+                        }
+                    }
                 }
                 if (options.isTrigger) {
                     this.triggerUrl();
@@ -743,6 +759,7 @@ define(['require',
                                         gId = null
                                     }
                                 }
+                                that.value.isDelete = true;
                             }
                             Utils.notifySuccess({
                                 content: messageType + Messages.getAbbreviationMsg(false, 'deleteSuccessMessage')
@@ -760,7 +777,6 @@ define(['require',
                             }
                             Utils.setUrl({
                                 url: url,
-                                mergeBrowserUrl: false,
                                 trigger: true,
                                 urlParams: gId ? _.extend({}, that.value, {
                                     gType: 'glossary',
@@ -828,7 +844,7 @@ define(['require',
                     return;
                 }
                 if (Utils.getUrlState.isGlossaryTab() || Utils.getUrlState.isDetailPage()) {
-                    var obj = {};
+                    var obj = { "fromView": "entity" };
                     if (selectedItem.glossaryId) {
                         obj["gId"] = selectedItem.glossaryId;
                     } else if (selectedItem.type == "Glossary") {
@@ -843,7 +859,6 @@ define(['require',
                     }
                     Utils.setUrl({
                         url: '#!/glossary/' + obj.guid,
-                        mergeBrowserUrl: false,
                         trigger: true,
                         urlParams: _.omit(obj, 'model', 'type', 'isNodeNotFoundAtLoad'), //Guid has been removed from here because we need in the URL for Highlighting issue.
                         updateTabState: true
