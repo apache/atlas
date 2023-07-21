@@ -34,6 +34,7 @@ import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.model.tasks.AtlasTask;
+import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -45,47 +46,33 @@ import org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTask;
 import org.apache.atlas.tasks.TaskManagement;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.repository.Constants.*;
+import static org.apache.atlas.repository.Constants.GUID_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
 import static org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTaskFactory.UPDATE_ENTITY_MEANINGS_ON_TERM_UPDATE;
 import static org.apache.atlas.type.Constants.*;
 
 @Component
-public class TermPreProcessor implements PreProcessor {
+public class TermPreProcessor extends AbstractGlossaryPreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(TermPreProcessor.class);
-
-    private static final String ATTR_MEANINGS = "meanings";
-
-    static final boolean DEFERRED_ACTION_ENABLED = AtlasConfiguration.TASKS_USE_ENABLED.getBoolean();
-
-
-    private final AtlasTypeRegistry typeRegistry;
-    private final EntityGraphRetriever entityRetriever;
-    private final TaskManagement taskManagement;
-    private EntityDiscoveryService discovery;
 
     private AtlasEntityHeader anchor;
     public TermPreProcessor( AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, AtlasGraph graph, TaskManagement taskManagement) {
-        this.entityRetriever = entityRetriever;
-        this.typeRegistry = typeRegistry;
-        this.taskManagement = taskManagement;
-        try {
-            this.discovery = new EntityDiscoveryService(typeRegistry, graph, null, null, null, null);
-        } catch (AtlasException e) {
-            e.printStackTrace();
-        }
+        super(typeRegistry, entityRetriever, graph, taskManagement);
     }
 
     @Override
@@ -119,9 +106,12 @@ public class TermPreProcessor implements PreProcessor {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME);
         }
 
-        if (termExists(termName)) {
+        String glossaryQName = (String) anchor.getAttribute(QUALIFIED_NAME);
+        if (termExists(termName, glossaryQName)) {
             throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_TERM_ALREADY_EXISTS, termName);
         }
+
+        validateCategory(entity);
 
         entity.setAttribute(QUALIFIED_NAME, createQualifiedName());
         AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, new AtlasEntityHeader(entity)),
@@ -134,10 +124,7 @@ public class TermPreProcessor implements PreProcessor {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processUpdateTerm");
         String termName = (String) entity.getAttribute(NAME);
         String vertexName = vertex.getProperty(NAME, String.class);
-
-        if (!vertexName.equals(termName) && termExists(termName)) {
-            throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_TERM_ALREADY_EXISTS, termName);
-        }
+        String termGuid = GraphHelper.getGuid(vertex);
 
         if (StringUtils.isEmpty(termName) || isNameInvalid(termName)) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME);
@@ -145,100 +132,113 @@ public class TermPreProcessor implements PreProcessor {
 
         AtlasEntity storeObject = entityRetriever.toAtlasEntity(vertex);
         AtlasRelatedObjectId existingAnchor = (AtlasRelatedObjectId) storeObject.getRelationshipAttribute(ANCHOR);
+
+        String termQualifiedName = vertex.getProperty(QUALIFIED_NAME, String.class);
+        String glossaryQualifiedName = (String) anchor.getAttribute(QUALIFIED_NAME);
+
+        validateCategory(entity);
+
         if (existingAnchor != null && !existingAnchor.getGuid().equals(anchor.getGuid())){
-            throw new AtlasBaseException(AtlasErrorCode.ACHOR_UPDATION_NOT_SUPPORTED);
-        }
+            String updatedTermQualifiedName = moveTermToAnotherGlossary(entity, vertex, glossaryQualifiedName, termName, termQualifiedName);
 
-        String vertexQName = vertex.getProperty(QUALIFIED_NAME, String.class);
-
-        entity.setAttribute(QUALIFIED_NAME, vertexQName);
-
-        String termGuid = GraphHelper.getGuid(vertex);
-
-        if(!termName.equals(vertexName) && checkEntityTermAssociation(vertexQName)){
-            if (taskManagement != null && DEFERRED_ACTION_ENABLED) {
-                    createAndQueueTask(UPDATE_ENTITY_MEANINGS_ON_TERM_UPDATE, vertexName, termName, vertexQName, vertex);
+            if (checkEntityTermAssociation(termQualifiedName)) {
+                if (taskManagement != null && DEFERRED_ACTION_ENABLED) {
+                    createAndQueueTask(UPDATE_ENTITY_MEANINGS_ON_TERM_UPDATE, vertexName, termName, termQualifiedName, updatedTermQualifiedName, vertex);
                 } else {
-                    updateMeaningsNamesInEntitiesOnTermUpdate(vertexName, termName, vertexQName, termGuid);
+                    updateMeaningsAttributesInEntitiesOnTermUpdate(vertexName, termName, termQualifiedName, updatedTermQualifiedName, termGuid);
                 }
-        }
+            }
 
+        } else {
+
+            if (!vertexName.equals(termName) && termExists(termName, glossaryQualifiedName)) {
+                throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_TERM_ALREADY_EXISTS, termName);
+            }
+
+            entity.setAttribute(QUALIFIED_NAME, termQualifiedName);
+
+            if (!termName.equals(vertexName) && checkEntityTermAssociation(termQualifiedName)) {
+                if (taskManagement != null && DEFERRED_ACTION_ENABLED) {
+                    createAndQueueTask(UPDATE_ENTITY_MEANINGS_ON_TERM_UPDATE, vertexName, termName, termQualifiedName, null, vertex);
+                } else {
+                    updateMeaningsAttributesInEntitiesOnTermUpdate(vertexName, termName, termQualifiedName, null, termGuid);
+                }
+            }
+        }
 
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
-    private boolean checkEntityTermAssociation(String termQName) throws AtlasBaseException{
-        List<AtlasEntityHeader> entityHeader;
-        entityHeader = discovery.searchUsingTermQualifiedName(0,1,termQName,null,null);
-        Boolean hasEntityAssociation = entityHeader != null ? true : false;
-        return hasEntityAssociation;
-    }
+    private void validateCategory(AtlasEntity entity) throws AtlasBaseException {
+        String glossaryQualifiedName = (String) anchor.getAttribute(QUALIFIED_NAME);
 
+        if (entity.hasRelationshipAttribute(ATTR_CATEGORIES) && entity.getRelationshipAttribute(ATTR_CATEGORIES) != null) {
+            List<AtlasObjectId> categories = (List<AtlasObjectId>) entity.getRelationshipAttribute(ATTR_CATEGORIES);
 
-    public void updateMeaningsNamesInEntitiesOnTermUpdate(String currentTermName, String updatedTermName, String termQName, String termGuid) throws AtlasBaseException {
-        int from = 0;
-        Set<String> attributes = new HashSet<String>(){{
-            add(ATTR_MEANINGS);
-        }};
-        Set<String> relationAttributes = new HashSet<String>(){{
-            add(STATE_PROPERTY_KEY);
-            add(NAME);
-        }};
-        while (true) {
-            List<AtlasEntityHeader> entityHeaders = discovery.searchUsingTermQualifiedName(from, ELASTICSEARCH_PAGINATION_SIZE,
-                    termQName,attributes,relationAttributes);
-            if (entityHeaders == null)
-                break;
-            for (AtlasEntityHeader entityHeader : entityHeaders) {
-                List<AtlasObjectId> meanings = (List<AtlasObjectId>) entityHeader.getAttribute(ATTR_MEANINGS);
+            if (CollectionUtils.isNotEmpty(categories)) {
+                AtlasObjectId category = categories.get(0);
+                String categoryQualifiedName;
 
-                String updatedMeaningsText = meanings
-                           .stream()
-                           .filter(x -> AtlasEntity.Status.ACTIVE.name().equals(x.getAttributes().get(STATE_PROPERTY_KEY)))
-                           .map(x -> x.getGuid().equals(termGuid) ? updatedTermName : x.getAttributes().get(NAME).toString())
-                           .collect(Collectors.joining(","));
-                   AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(entityHeader.getGuid());
+                if (category.getUniqueAttributes() != null && category.getUniqueAttributes().containsKey(QUALIFIED_NAME)) {
+                    categoryQualifiedName = (String) category.getUniqueAttributes().get(QUALIFIED_NAME);
+                } else {
+                    AtlasVertex categoryVertex = entityRetriever.getEntityVertex(category.getGuid());
+                    categoryQualifiedName = categoryVertex.getProperty(QUALIFIED_NAME, String.class);
+                }
 
-                AtlasGraphUtilsV2.setEncodedProperty(entityVertex, MEANINGS_TEXT_PROPERTY_KEY, updatedMeaningsText);
-                List<String> meaningsNames = entityVertex.getMultiValuedProperty(MEANING_NAMES_PROPERTY_KEY, String.class);
-
-                if(meaningsNames.contains(currentTermName)){
-                    AtlasGraphUtilsV2.removeItemFromListPropertyValue(entityVertex, MEANING_NAMES_PROPERTY_KEY, currentTermName);
-                    AtlasGraphUtilsV2.addListProperty(entityVertex, MEANING_NAMES_PROPERTY_KEY, updatedTermName, true);
+                if (!categoryQualifiedName.endsWith(glossaryQualifiedName)) {
+                    throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Passed category doesn't belongs to Passed Glossary");
                 }
             }
-            from += ELASTICSEARCH_PAGINATION_SIZE;
-
-            if (entityHeaders.size() < ELASTICSEARCH_PAGINATION_SIZE)
-                break;
         }
-
     }
 
-    public void createAndQueueTask(String taskType,String currentTermName, String updatedTermName, String termQName, AtlasVertex termVertex) {
-        String termGuid = GraphHelper.getGuid(termVertex);
-        String currentUser = RequestContext.getCurrentUser();
-        Map<String, Object> taskParams = MeaningsTask.toParameters(currentTermName, updatedTermName, termQName, termGuid);
-        AtlasTask task = taskManagement.createTask(taskType, currentUser, taskParams);
+    public String moveTermToAnotherGlossary(AtlasEntity entity, AtlasVertex vertex,
+                                           String targetGlossaryQualifiedName,
+                                           String newTermName,
+                                           String currentTermQualifiedName) throws AtlasBaseException {
 
-        AtlasGraphUtilsV2.addEncodedProperty(termVertex, PENDING_TASKS_PROPERTY_KEY, task.getGuid());
+        //check duplicate term name
+        if (termExists(newTermName, targetGlossaryQualifiedName)) {
+            throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_TERM_ALREADY_EXISTS, newTermName);
+        }
 
-        RequestContext.get().queueTask(task);
+        //qualifiedName, __u_qualifiedName
+        String sourceGlossaryQualifiedName = currentTermQualifiedName.split("@")[1];
+
+        String updatedQualifiedName = currentTermQualifiedName.replace(sourceGlossaryQualifiedName, targetGlossaryQualifiedName);
+
+        entity.setAttribute(QUALIFIED_NAME, updatedQualifiedName);
+
+        // __glossary
+        entity.setAttribute(GLOSSARY_PROPERTY_KEY, targetGlossaryQualifiedName);
+
+        // __categories
+        /* check whether category is passed in relationshipAttributes
+            -- if it is not passed, extract it from store
+            if category does not belong to target glossary, throw an exception
+         */
+        if (!entity.hasRelationshipAttribute(ATTR_CATEGORIES)) {
+            Iterator<AtlasVertex> categoriesItr = getActiveParents(vertex, CATEGORY_TERMS_EDGE_LABEL);
+
+            if (categoriesItr.hasNext()) {
+                AtlasVertex categoryVertex = categoriesItr.next();
+
+                String categoryQualifiedName = categoryVertex.getProperty(QUALIFIED_NAME, String.class);
+
+                LOG.info("categoryQualifiedName {}, targetGlossaryQualifiedName {}", categoryQualifiedName, targetGlossaryQualifiedName);
+
+                if (!categoryQualifiedName.endsWith(targetGlossaryQualifiedName)) {
+                    throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Passed category doesn't belongs to Passed Glossary");
+                }
+            }
+        }
+
+        return updatedQualifiedName;
     }
 
     private String createQualifiedName() {
         return getUUID() + "@" + anchor.getAttribute(QUALIFIED_NAME);
-    }
-
-    private boolean termExists(String termName) {
-        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("termExists");
-        boolean ret = false;
-        String glossaryQName = (String) anchor.getAttribute(QUALIFIED_NAME);
-
-        ret = AtlasGraphUtilsV2.termExists(termName, glossaryQName);
-
-        RequestContext.get().endMetricRecord(metricRecorder);
-        return ret;
     }
 
     private void setAnchor(AtlasEntity entity, EntityMutationContext context) throws AtlasBaseException {

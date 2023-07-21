@@ -26,6 +26,7 @@ public class PreProcessorUtils {
 
     //Glossary models constants
     public static final String ANCHOR            = "anchor";
+    public static final String CATEGORY_TERMS    = "terms";
     public static final String CATEGORY_PARENT   = "parentCategory";
     public static final String CATEGORY_CHILDREN = "childrenCategories";
 

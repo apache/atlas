@@ -19,10 +19,11 @@ public class MeaningsTasks {
         protected void run(Map<String, Object> parameters) throws AtlasBaseException {
             String termGuid         = (String) parameters.get(PARAM_ENTITY_GUID);
             String termQName        = (String) parameters.get(PARAM_ENTITY_QUALIFIED_NAME);
+            String updatedTermQName = (String) parameters.get(PARAM_ENTITY_UPDATED_QUALIFIED_NAME);
             String currentTermName  = (String) parameters.get(PARAM_CURRENT_TERM_NAME);
             String updatedTermName  = (String) parameters.get(PARAM_UPDATED_TERM_NAME);
 
-            preprocessor.updateMeaningsNamesInEntitiesOnTermUpdate(currentTermName, updatedTermName, termQName, termGuid);
+            preprocessor.updateMeaningsAttributesInEntitiesOnTermUpdate(currentTermName, updatedTermName, termQName, updatedTermQName, termGuid);
 
         }
     }
