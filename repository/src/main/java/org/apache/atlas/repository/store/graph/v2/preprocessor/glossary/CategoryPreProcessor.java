@@ -24,15 +24,12 @@ import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasEntityAccessRequest;
 import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.instance.EntityMutations;
-import org.apache.atlas.repository.graph.GraphHelper;
-import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
@@ -48,6 +45,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -55,22 +53,18 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
-import static org.apache.atlas.repository.Constants.ACTIVE_STATE_VALUE;
 import static org.apache.atlas.repository.Constants.ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.CATEGORY_PARENT_EDGE_LABEL;
 import static org.apache.atlas.repository.Constants.CATEGORY_TERMS_EDGE_LABEL;
 import static org.apache.atlas.repository.Constants.GUID_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.NAME;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
-import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
 import static org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTaskFactory.UPDATE_ENTITY_MEANINGS_ON_TERM_UPDATE;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 import static org.apache.atlas.type.Constants.CATEGORIES_PARENT_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.CATEGORIES_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.GLOSSARY_PROPERTY_KEY;
-import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal.Symbols.both;
-import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal.Symbols.from;
 
 public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(CategoryPreProcessor.class);
@@ -115,7 +109,6 @@ public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME);
         }
 
-        //check duplicate category name
         String glossaryQualifiedName = (String) anchor.getAttribute(QUALIFIED_NAME);
         categoryExists(catName, glossaryQualifiedName);
         validateParent(glossaryQualifiedName);
@@ -172,13 +165,11 @@ public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
 
             AtlasObjectId targetGlossary = (AtlasObjectId) category.getRelationshipAttribute(ANCHOR);
             String targetGlossaryQualifiedName;
-            AtlasVertex targetGlossaryVertex;
 
             if (targetGlossary.getUniqueAttributes() != null && targetGlossary.getUniqueAttributes().containsKey(QUALIFIED_NAME)) {
-                targetGlossaryVertex = entityRetriever.getEntityVertex(targetGlossary);
                 targetGlossaryQualifiedName = (String) targetGlossary.getUniqueAttributes().get(QUALIFIED_NAME);
             } else {
-                targetGlossaryVertex = entityRetriever.getEntityVertex(targetGlossary.getGuid());
+                AtlasVertex targetGlossaryVertex = entityRetriever.getEntityVertex(targetGlossary.getGuid());
                 targetGlossaryQualifiedName = targetGlossaryVertex.getProperty(QUALIFIED_NAME, String.class);
             }
 
@@ -216,7 +207,7 @@ public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
             String currentCategoryQualifiedName = childCategoryVertex.getProperty(QUALIFIED_NAME, String.class);
             String updatedQualifiedName = currentCategoryQualifiedName.replace(sourceGlossaryQualifiedName, targetGlossaryQualifiedName);
 
-            // Change cat Qname
+            // Change category qualifiedName
             childCategoryVertex.setProperty(QUALIFIED_NAME, updatedQualifiedName);
 
             //change __glossary, __parentCategory
@@ -231,7 +222,7 @@ public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
                 moveChildTermToAnotherGlossary(termVertex, updatedQualifiedName, sourceGlossaryQualifiedName, targetGlossaryQualifiedName);
             }
 
-            // Get all children categories of category
+            // Get all children categories of current category
             Iterator<AtlasVertex> childCategories = getActiveChildren(childCategoryVertex, CATEGORY_PARENT_EDGE_LABEL);
 
             while (childCategories.hasNext()) {
@@ -253,23 +244,22 @@ public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
 
         try {
             String termName = termVertex.getProperty(NAME, String.class);
-            String termGuid = GraphHelper.getGuid(termVertex);
+            String termGuid = termVertex.getProperty(GUID_PROPERTY_KEY, String.class);
 
             LOG.info("Moving child term {} to Glossary {}", termName, targetGlossaryQualifiedName);
 
             //check duplicate term name
-            if (termExists(termName, targetGlossaryQualifiedName)) {
-                throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_TERM_ALREADY_EXISTS, termName);
-            }
+            termExists(termName, targetGlossaryQualifiedName);
 
-            //qualifiedName
             String currentTermQualifiedName = termVertex.getProperty(QUALIFIED_NAME, String.class);
             String updatedTermQualifiedName = currentTermQualifiedName.replace(sourceGlossaryQualifiedName, targetGlossaryQualifiedName);
 
+            //qualifiedName
             termVertex.setProperty(QUALIFIED_NAME, updatedTermQualifiedName);
 
             // __glossary, __categories
             termVertex.setProperty(GLOSSARY_PROPERTY_KEY, targetGlossaryQualifiedName);
+            termVertex.removeProperty(CATEGORIES_PROPERTY_KEY);
             termVertex.setProperty(CATEGORIES_PROPERTY_KEY, parentCategoryQualifiedName);
 
             if (checkEntityTermAssociation(currentTermQualifiedName)) {
@@ -312,8 +302,6 @@ public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
 
         boolean exists = false;
         try {
-            Map<String, Object> dsl = mapOf("from", 0);
-
             List mustClauseList = new ArrayList();
             mustClauseList.add(mapOf("term", mapOf("__glossary", glossaryQualifiedName)));
             mustClauseList.add(mapOf("term", mapOf("__typeName.keyword", ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE)));
@@ -332,7 +320,8 @@ public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
             }
 
             bool.put("must", mustClauseList);
-            dsl.put("query", mapOf("bool", bool));
+
+            Map<String, Object> dsl = mapOf("query", mapOf("bool", bool));
 
             List<AtlasEntityHeader> categories = indexSearchPaginated(dsl);
 
@@ -370,27 +359,36 @@ public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("CategoryPreProcessor.validateChildren");
         // in case new child is being added, ensure it belongs to same Glossary
 
-        List<AtlasObjectId> existingChildren = new ArrayList<>();
-        if (storedCategory != null) {
-            existingChildren = (List<AtlasObjectId>) storedCategory.getRelationshipAttribute(CATEGORY_CHILDREN);
-        }
-        Set<String> existingChildrenGuids = existingChildren.stream().map(x -> x.getGuid()).collect(Collectors.toSet());
+        try {
+            if (entity.hasRelationshipAttribute(CATEGORY_CHILDREN) && entity.getRelationshipAttribute(CATEGORY_CHILDREN) != null) {
+                List<AtlasObjectId> children = (List<AtlasObjectId>) entity.getRelationshipAttribute(CATEGORY_CHILDREN);
 
-        List<AtlasObjectId> children = (List<AtlasObjectId>) entity.getRelationshipAttribute(CATEGORY_CHILDREN);
+                if (CollectionUtils.isNotEmpty(children)) {
+                    Set<String> existingChildrenGuids = new HashSet<>();
 
-        if (CollectionUtils.isNotEmpty(children)) {
-            for (AtlasObjectId child : children) {
-                if (!existingChildrenGuids.contains(child.getGuid())) {
-                    AtlasEntity newChild = entityRetriever.toAtlasEntity(child.getGuid());
-                    AtlasRelatedObjectId newAnchor = (AtlasRelatedObjectId) newChild.getRelationshipAttribute(ANCHOR);
+                    if (storedCategory != null &&
+                            storedCategory.hasRelationshipAttribute(CATEGORY_CHILDREN) &&
+                            storedCategory.getRelationshipAttribute(CATEGORY_CHILDREN) != null) {
+                        List<AtlasObjectId> existingChildren = (List<AtlasObjectId>) storedCategory.getRelationshipAttribute(CATEGORY_CHILDREN);
 
-                    if (newAnchor != null && !newAnchor.getGuid().equals(anchor.getGuid())){
-                        throw new AtlasBaseException(AtlasErrorCode.CATEGORY_PARENT_FROM_OTHER_GLOSSARY);
+                        existingChildrenGuids = existingChildren.stream().map(x -> x.getGuid()).collect(Collectors.toSet());
+                    }
+
+                    for (AtlasObjectId child : children) {
+                        if (!existingChildrenGuids.contains(child.getGuid())) {
+                            AtlasEntity newChild = entityRetriever.toAtlasEntity(child.getGuid());
+                            AtlasRelatedObjectId newAnchor = (AtlasRelatedObjectId) newChild.getRelationshipAttribute(ANCHOR);
+
+                            if (newAnchor != null && !newAnchor.getGuid().equals(anchor.getGuid())){
+                                throw new AtlasBaseException(AtlasErrorCode.CATEGORY_PARENT_FROM_OTHER_GLOSSARY);
+                            }
+                        }
                     }
                 }
             }
+        } finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
         }
-        RequestContext.get().endMetricRecord(metricRecorder);
     }
 
     private void setAnchorAndParent(AtlasEntity entity, EntityMutationContext context) throws AtlasBaseException {

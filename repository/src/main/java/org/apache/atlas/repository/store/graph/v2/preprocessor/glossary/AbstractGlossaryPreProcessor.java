@@ -74,14 +74,19 @@ public abstract class AbstractGlossaryPreProcessor implements PreProcessor {
         }
     }
 
-    public boolean termExists(String termName, String glossaryQName) {
+    public void termExists(String termName, String glossaryQName) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("termExists");
         boolean ret = false;
 
-        ret = AtlasGraphUtilsV2.termExists(termName, glossaryQName);
+        try {
+            ret = AtlasGraphUtilsV2.termExists(termName, glossaryQName);
 
-        RequestContext.get().endMetricRecord(metricRecorder);
-        return ret;
+            if (ret) {
+                throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_TERM_ALREADY_EXISTS, termName);
+            }
+        } finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
+        }
     }
 
     public void createAndQueueTask(String taskType,
@@ -137,7 +142,9 @@ public abstract class AbstractGlossaryPreProcessor implements PreProcessor {
         return ret;
     }
 
-    public void updateMeaningsAttributesInEntitiesOnTermUpdate(String currentTermName, String updatedTermName, String termQName, String updatedTermQName, String termGuid) throws AtlasBaseException {
+    public void updateMeaningsAttributesInEntitiesOnTermUpdate(String currentTermName, String updatedTermName,
+                                                               String termQName, String updatedTermQName,
+                                                               String termGuid) throws AtlasBaseException {
         Set<String> attributes = new HashSet<String>(){{
             add(ATTR_MEANINGS);
         }};
@@ -177,8 +184,8 @@ public abstract class AbstractGlossaryPreProcessor implements PreProcessor {
                 }
 
                 if (StringUtils.isNotEmpty(updatedTermQName) && !termQName.equals(updatedTermQName)) {
-                    AtlasGraphUtilsV2.removeItemFromListPropertyValue(entityVertex, MEANINGS_PROPERTY_KEY, updatedTermQName);
-                    AtlasGraphUtilsV2.addListProperty(entityVertex, MEANINGS_PROPERTY_KEY, updatedTermQName, true);
+                    AtlasGraphUtilsV2.removeItemFromListPropertyValue(entityVertex, MEANINGS_PROPERTY_KEY, termQName);
+                    AtlasGraphUtilsV2.addEncodedProperty(entityVertex, MEANINGS_PROPERTY_KEY, updatedTermQName);
                 }
             }
 

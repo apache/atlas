@@ -18,14 +18,11 @@
 package org.apache.atlas.repository.store.graph.v2.preprocessor.glossary;
 
 
-import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
-import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasEntityAccessRequest;
 import org.apache.atlas.authorize.AtlasPrivilege;
-import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
@@ -33,16 +30,10 @@ import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.instance.EntityMutations;
-import org.apache.atlas.model.tasks.AtlasTask;
-import org.apache.atlas.repository.Constants;
-import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
-import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
-import org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTask;
 import org.apache.atlas.tasks.TaskManagement;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
@@ -52,16 +43,11 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.Constants.GUID_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
 import static org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTaskFactory.UPDATE_ENTITY_MEANINGS_ON_TERM_UPDATE;
 import static org.apache.atlas.type.Constants.*;
@@ -107,9 +93,8 @@ public class TermPreProcessor extends AbstractGlossaryPreProcessor {
         }
 
         String glossaryQName = (String) anchor.getAttribute(QUALIFIED_NAME);
-        if (termExists(termName, glossaryQName)) {
-            throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_TERM_ALREADY_EXISTS, termName);
-        }
+
+        termExists(termName, glossaryQName);
 
         validateCategory(entity);
 
@@ -124,11 +109,13 @@ public class TermPreProcessor extends AbstractGlossaryPreProcessor {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processUpdateTerm");
         String termName = (String) entity.getAttribute(NAME);
         String vertexName = vertex.getProperty(NAME, String.class);
-        String termGuid = GraphHelper.getGuid(vertex);
+        String termGuid = vertex.getProperty(GUID_PROPERTY_KEY, String.class);
 
         if (StringUtils.isEmpty(termName) || isNameInvalid(termName)) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME);
         }
+
+        validateCategory(entity);
 
         AtlasEntity storeObject = entityRetriever.toAtlasEntity(vertex);
         AtlasRelatedObjectId existingAnchor = (AtlasRelatedObjectId) storeObject.getRelationshipAttribute(ANCHOR);
@@ -136,10 +123,8 @@ public class TermPreProcessor extends AbstractGlossaryPreProcessor {
         String termQualifiedName = vertex.getProperty(QUALIFIED_NAME, String.class);
         String glossaryQualifiedName = (String) anchor.getAttribute(QUALIFIED_NAME);
 
-        validateCategory(entity);
-
         if (existingAnchor != null && !existingAnchor.getGuid().equals(anchor.getGuid())){
-            String updatedTermQualifiedName = moveTermToAnotherGlossary(entity, vertex, glossaryQualifiedName, termName, termQualifiedName);
+            String updatedTermQualifiedName = moveTermToAnotherGlossary(entity, vertex, glossaryQualifiedName, termQualifiedName);
 
             if (checkEntityTermAssociation(termQualifiedName)) {
                 if (taskManagement != null && DEFERRED_ACTION_ENABLED) {
@@ -151,8 +136,8 @@ public class TermPreProcessor extends AbstractGlossaryPreProcessor {
 
         } else {
 
-            if (!vertexName.equals(termName) && termExists(termName, glossaryQualifiedName)) {
-                throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_TERM_ALREADY_EXISTS, termName);
+            if (!vertexName.equals(termName)) {
+                termExists(termName, glossaryQualifiedName);
             }
 
             entity.setAttribute(QUALIFIED_NAME, termQualifiedName);
@@ -195,28 +180,20 @@ public class TermPreProcessor extends AbstractGlossaryPreProcessor {
 
     public String moveTermToAnotherGlossary(AtlasEntity entity, AtlasVertex vertex,
                                            String targetGlossaryQualifiedName,
-                                           String newTermName,
                                            String currentTermQualifiedName) throws AtlasBaseException {
 
         //check duplicate term name
-        if (termExists(newTermName, targetGlossaryQualifiedName)) {
-            throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_TERM_ALREADY_EXISTS, newTermName);
-        }
+        termExists((String) entity.getAttribute(NAME), targetGlossaryQualifiedName);
 
-        //qualifiedName, __u_qualifiedName
         String sourceGlossaryQualifiedName = currentTermQualifiedName.split("@")[1];
-
         String updatedQualifiedName = currentTermQualifiedName.replace(sourceGlossaryQualifiedName, targetGlossaryQualifiedName);
 
+        //qualifiedName
         entity.setAttribute(QUALIFIED_NAME, updatedQualifiedName);
 
-        // __glossary
-        entity.setAttribute(GLOSSARY_PROPERTY_KEY, targetGlossaryQualifiedName);
-
         // __categories
-        /* check whether category is passed in relationshipAttributes
-            -- if it is not passed, extract it from store
-            if category does not belong to target glossary, throw an exception
+        /*  if category is not passed in relationshipAttributes, check
+            whether category belongs to target glossary, if not throw an exception
          */
         if (!entity.hasRelationshipAttribute(ATTR_CATEGORIES)) {
             Iterator<AtlasVertex> categoriesItr = getActiveParents(vertex, CATEGORY_TERMS_EDGE_LABEL);
@@ -225,8 +202,6 @@ public class TermPreProcessor extends AbstractGlossaryPreProcessor {
                 AtlasVertex categoryVertex = categoriesItr.next();
 
                 String categoryQualifiedName = categoryVertex.getProperty(QUALIFIED_NAME, String.class);
-
-                LOG.info("categoryQualifiedName {}, targetGlossaryQualifiedName {}", categoryQualifiedName, targetGlossaryQualifiedName);
 
                 if (!categoryQualifiedName.endsWith(targetGlossaryQualifiedName)) {
                     throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Passed category doesn't belongs to Passed Glossary");
