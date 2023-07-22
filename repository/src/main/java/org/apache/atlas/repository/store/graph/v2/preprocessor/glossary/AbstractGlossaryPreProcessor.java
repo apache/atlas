@@ -4,6 +4,9 @@ import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.authorize.AtlasAuthorizationUtils;
+import org.apache.atlas.authorize.AtlasEntityAccessRequest;
+import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
@@ -21,6 +24,7 @@ import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
 import org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTask;
 import org.apache.atlas.tasks.TaskManagement;
+import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
@@ -40,6 +44,7 @@ import java.util.stream.Collectors;
 import static org.apache.atlas.repository.Constants.ACTIVE_STATE_VALUE;
 import static org.apache.atlas.repository.Constants.ELASTICSEARCH_PAGINATION_SIZE;
 import static org.apache.atlas.repository.Constants.NAME;
+import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 import static org.apache.atlas.type.Constants.MEANINGS_PROPERTY_KEY;
@@ -236,4 +241,62 @@ public abstract class AbstractGlossaryPreProcessor implements PreProcessor {
         }
     }
 
+    protected void isAuthorized(AtlasEntityHeader sourceGlossary, AtlasEntityHeader targetGlossary) throws AtlasBaseException {
+
+        // source -> CREATE + UPDATE + DELETE
+        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, sourceGlossary),
+                "create on source Glossary: ", sourceGlossary.getAttribute(NAME));
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, sourceGlossary),
+                "update on source Glossary: ", sourceGlossary.getAttribute(NAME));
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_DELETE, sourceGlossary),
+                "delete on source Glossary: ", sourceGlossary.getAttribute(NAME));
+
+
+        // target -> CREATE + UPDATE + DELETE
+        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, targetGlossary),
+                "create on source Glossary: ", targetGlossary.getAttribute(NAME));
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, targetGlossary),
+                "update on source Glossary: ", targetGlossary.getAttribute(NAME));
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_DELETE, targetGlossary),
+                "delete on source Glossary: ", targetGlossary.getAttribute(NAME));
+    }
+
+    /**
+     * Record the updated child entities, it will be used to send notification and store audit logs
+     * @param entityVertex Child entity vertex
+     * @param updatedAttributes Updated attributes while updating required attributes on updating collection
+     */
+    protected void recordUpdatedChildEntities(AtlasVertex entityVertex, Map<String, Object> updatedAttributes) {
+        RequestContext requestContext = RequestContext.get();
+        AtlasPerfMetrics.MetricRecorder metricRecorder = requestContext.startMetricRecord("recordUpdatedChildEntities");
+        AtlasEntity entity = new AtlasEntity();
+        entity = entityRetriever.mapSystemAttributes(entityVertex, entity);
+        entity.setAttributes(updatedAttributes);
+        requestContext.cacheDifferentialEntity(new AtlasEntity(entity));
+
+        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
+
+        //Add the min info attributes to entity header to be sent as part of notification
+        if(entityType != null) {
+            AtlasEntity finalEntity = entity;
+            entityType.getMinInfoAttributes().values().stream().filter(attribute -> !updatedAttributes.containsKey(attribute.getName())).forEach(attribute -> {
+                Object attrValue = null;
+                try {
+                    attrValue = entityRetriever.getVertexAttribute(entityVertex, attribute);
+                } catch (AtlasBaseException e) {
+                    LOG.error("Error while getting vertex attribute", e);
+                }
+                if(attrValue != null) {
+                    finalEntity.setAttribute(attribute.getName(), attrValue);
+                }
+            });
+            requestContext.recordEntityUpdate(new AtlasEntityHeader(finalEntity));
+        }
+
+        requestContext.endMetricRecord(metricRecorder);
+    }
 }

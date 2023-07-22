@@ -117,14 +117,20 @@ public class TermPreProcessor extends AbstractGlossaryPreProcessor {
 
         validateCategory(entity);
 
-        AtlasEntity storeObject = entityRetriever.toAtlasEntity(vertex);
-        AtlasRelatedObjectId existingAnchor = (AtlasRelatedObjectId) storeObject.getRelationshipAttribute(ANCHOR);
+        AtlasEntity storedTerm = entityRetriever.toAtlasEntity(vertex);
+        AtlasRelatedObjectId currentGlossary = (AtlasRelatedObjectId) storedTerm.getRelationshipAttribute(ANCHOR);
+        AtlasEntityHeader currentGlossaryHeader = entityRetriever.toAtlasEntityHeader(currentGlossary.getGuid());
+        String currentGlossaryQualifiedName = (String) currentGlossaryHeader.getAttribute(QUALIFIED_NAME);
 
         String termQualifiedName = vertex.getProperty(QUALIFIED_NAME, String.class);
-        String glossaryQualifiedName = (String) anchor.getAttribute(QUALIFIED_NAME);
 
-        if (existingAnchor != null && !existingAnchor.getGuid().equals(anchor.getGuid())){
-            String updatedTermQualifiedName = moveTermToAnotherGlossary(entity, vertex, glossaryQualifiedName, termQualifiedName);
+        String newGlossaryQualifiedName = (String) anchor.getAttribute(QUALIFIED_NAME);
+
+        if (!currentGlossaryQualifiedName.equals(newGlossaryQualifiedName)){
+            //Auth check
+            isAuthorized(currentGlossaryHeader, anchor);
+
+            String updatedTermQualifiedName = moveTermToAnotherGlossary(entity, vertex, currentGlossaryQualifiedName, newGlossaryQualifiedName, termQualifiedName);
 
             if (checkEntityTermAssociation(termQualifiedName)) {
                 if (taskManagement != null && DEFERRED_ACTION_ENABLED) {
@@ -137,7 +143,7 @@ public class TermPreProcessor extends AbstractGlossaryPreProcessor {
         } else {
 
             if (!vertexName.equals(termName)) {
-                termExists(termName, glossaryQualifiedName);
+                termExists(termName, newGlossaryQualifiedName);
             }
 
             entity.setAttribute(QUALIFIED_NAME, termQualifiedName);
@@ -179,13 +185,14 @@ public class TermPreProcessor extends AbstractGlossaryPreProcessor {
     }
 
     public String moveTermToAnotherGlossary(AtlasEntity entity, AtlasVertex vertex,
+                                           String sourceGlossaryQualifiedName,
                                            String targetGlossaryQualifiedName,
                                            String currentTermQualifiedName) throws AtlasBaseException {
 
         //check duplicate term name
         termExists((String) entity.getAttribute(NAME), targetGlossaryQualifiedName);
 
-        String sourceGlossaryQualifiedName = currentTermQualifiedName.split("@")[1];
+
         String updatedQualifiedName = currentTermQualifiedName.replace(sourceGlossaryQualifiedName, targetGlossaryQualifiedName);
 
         //qualifiedName

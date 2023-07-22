@@ -30,6 +30,7 @@ import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.instance.EntityMutations;
+import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
@@ -133,13 +134,16 @@ public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
 
         AtlasEntity storedCategory = entityRetriever.toAtlasEntity(vertex);
         AtlasRelatedObjectId currentGlossary = (AtlasRelatedObjectId) storedCategory.getRelationshipAttribute(ANCHOR);
-        AtlasVertex currentGlossaryVertex = entityRetriever.getEntityVertex(currentGlossary.getGuid());
-        String currentGlossaryQualifiedName = currentGlossaryVertex.getProperty(QUALIFIED_NAME, String.class);
+        AtlasEntityHeader currentGlossaryHeader = entityRetriever.toAtlasEntityHeader(currentGlossary.getGuid());
+        String currentGlossaryQualifiedName = (String) currentGlossaryHeader.getAttribute(QUALIFIED_NAME);
 
         String newGlossaryQualifiedName = (String) anchor.getAttribute(QUALIFIED_NAME);
 
         if (!currentGlossaryQualifiedName.equals(newGlossaryQualifiedName)){
-            processMoveCategoryToAnotherGlossary(entity, vertex, vertexQnName);
+            //Auth check
+            isAuthorized(currentGlossaryHeader, anchor);
+
+            processMoveCategoryToAnotherGlossary(entity, vertex, currentGlossaryQualifiedName, vertexQnName);
 
         } else {
             categoryExists(catName, newGlossaryQualifiedName);
@@ -154,6 +158,7 @@ public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
 
     private void processMoveCategoryToAnotherGlossary(AtlasEntity category,
                                                       AtlasVertex categoryVertex,
+                                                      String sourceGlossaryQualifiedName,
                                                       String currentCategoryQualifiedName) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("processMoveCategoryToAnotherGlossary");
 
@@ -180,7 +185,6 @@ public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
             categoryExists(categoryName , targetGlossaryQualifiedName);
             validateParentForGlossaryChange(category, categoryVertex, targetGlossaryQualifiedName);
 
-            String sourceGlossaryQualifiedName = currentCategoryQualifiedName.split("@")[1];
             String updatedQualifiedName = currentCategoryQualifiedName.replace(sourceGlossaryQualifiedName, targetGlossaryQualifiedName);
 
             category.setAttribute(QUALIFIED_NAME, updatedQualifiedName);
@@ -203,16 +207,22 @@ public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
 
         try {
             LOG.info("Moving child category {} to Glossary {}", childCategoryVertex.getProperty(NAME, String.class), targetGlossaryQualifiedName);
+            Map<String, Object> updatedAttributes = new HashMap<>();
 
             String currentCategoryQualifiedName = childCategoryVertex.getProperty(QUALIFIED_NAME, String.class);
             String updatedQualifiedName = currentCategoryQualifiedName.replace(sourceGlossaryQualifiedName, targetGlossaryQualifiedName);
 
             // Change category qualifiedName
             childCategoryVertex.setProperty(QUALIFIED_NAME, updatedQualifiedName);
+            updatedAttributes.put(QUALIFIED_NAME, updatedQualifiedName);
 
             //change __glossary, __parentCategory
             childCategoryVertex.setProperty(GLOSSARY_PROPERTY_KEY, targetGlossaryQualifiedName);
             childCategoryVertex.setProperty(CATEGORIES_PARENT_PROPERTY_KEY, parentCategoryQualifiedName);
+
+            //update system properties
+            GraphHelper.setModifiedByAsString(childCategoryVertex, RequestContext.get().getUser());
+            GraphHelper.setModifiedTime(childCategoryVertex, System.currentTimeMillis());
 
             // move terms to target Glossary
             Iterator<AtlasVertex> terms = getActiveChildren(childCategoryVertex, CATEGORY_TERMS_EDGE_LABEL);
@@ -230,6 +240,8 @@ public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
                 moveChildrenToAnotherGlossary(childVertex, updatedQualifiedName, sourceGlossaryQualifiedName, targetGlossaryQualifiedName);
             }
 
+            recordUpdatedChildEntities(childCategoryVertex, updatedAttributes);
+
             LOG.info("Moved child category {} to Glossary {}", childCategoryVertex.getProperty(NAME, String.class), targetGlossaryQualifiedName);
         } finally {
             RequestContext.get().endMetricRecord(recorder);
@@ -243,6 +255,8 @@ public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("moveChildTermToAnotherGlossary");
 
         try {
+            Map<String, Object> updatedAttributes = new HashMap<>();
+
             String termName = termVertex.getProperty(NAME, String.class);
             String termGuid = termVertex.getProperty(GUID_PROPERTY_KEY, String.class);
 
@@ -256,11 +270,16 @@ public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
 
             //qualifiedName
             termVertex.setProperty(QUALIFIED_NAME, updatedTermQualifiedName);
+            updatedAttributes.put(QUALIFIED_NAME, updatedTermQualifiedName);
 
             // __glossary, __categories
             termVertex.setProperty(GLOSSARY_PROPERTY_KEY, targetGlossaryQualifiedName);
             termVertex.removeProperty(CATEGORIES_PROPERTY_KEY);
             termVertex.setProperty(CATEGORIES_PROPERTY_KEY, parentCategoryQualifiedName);
+
+            //update system properties
+            GraphHelper.setModifiedByAsString(termVertex, RequestContext.get().getUser());
+            GraphHelper.setModifiedTime(termVertex, System.currentTimeMillis());
 
             if (checkEntityTermAssociation(currentTermQualifiedName)) {
                 if (taskManagement != null && DEFERRED_ACTION_ENABLED) {
@@ -269,6 +288,8 @@ public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
                     updateMeaningsAttributesInEntitiesOnTermUpdate(termName, termName, currentTermQualifiedName, updatedTermQualifiedName, termGuid);
                 }
             }
+
+            recordUpdatedChildEntities(termVertex, updatedAttributes);
 
             LOG.info("Moved child term {} to Glossary {}", termName, targetGlossaryQualifiedName);
         } finally {
