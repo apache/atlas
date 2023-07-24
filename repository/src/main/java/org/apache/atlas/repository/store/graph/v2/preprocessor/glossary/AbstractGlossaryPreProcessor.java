@@ -49,6 +49,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -57,8 +58,11 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.repository.Constants.ACTIVE_STATE_VALUE;
+import static org.apache.atlas.repository.Constants.ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE;
+import static org.apache.atlas.repository.Constants.ATLAS_GLOSSARY_TERM_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.ELASTICSEARCH_PAGINATION_SIZE;
 import static org.apache.atlas.repository.Constants.NAME;
+import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 import static org.apache.atlas.type.Constants.MEANINGS_PROPERTY_KEY;
@@ -97,7 +101,25 @@ public abstract class AbstractGlossaryPreProcessor implements PreProcessor {
         boolean ret = false;
 
         try {
-            ret = AtlasGraphUtilsV2.termExists(termName, glossaryQName);
+            List mustClauseList = new ArrayList();
+            mustClauseList.add(mapOf("term", mapOf("__glossary", glossaryQName)));
+            mustClauseList.add(mapOf("term", mapOf("__typeName.keyword", ATLAS_GLOSSARY_TERM_ENTITY_TYPE)));
+            mustClauseList.add(mapOf("term", mapOf("__state", "ACTIVE")));
+            mustClauseList.add(mapOf("term", mapOf("name.keyword", termName)));
+
+            Map<String, Object> dsl = mapOf("query", mapOf("bool", mapOf("must", mustClauseList)));
+
+            List<AtlasEntityHeader> terms = indexSearchPaginated(dsl);
+
+            if (CollectionUtils.isNotEmpty(terms)) {
+                for (AtlasEntityHeader term : terms) {
+                    String name = (String) term.getAttribute(NAME);
+                    if (termName.equals(name)) {
+                        ret = true;
+                        break;
+                    }
+                }
+            }
 
             if (ret) {
                 throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_TERM_ALREADY_EXISTS, termName);

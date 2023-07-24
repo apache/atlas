@@ -109,7 +109,7 @@ public class TermPreProcessor extends AbstractGlossaryPreProcessor {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processUpdateTerm");
         String termName = (String) entity.getAttribute(NAME);
         String vertexName = vertex.getProperty(NAME, String.class);
-        String termGuid = vertex.getProperty(GUID_PROPERTY_KEY, String.class);
+        String termGuid = entity.getGuid();
 
         if (StringUtils.isEmpty(termName) || isNameInvalid(termName)) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME);
