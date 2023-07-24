@@ -67,33 +67,38 @@ public class SoftDeleteHandlerV1 extends DeleteHandlerV1 {
 
     @Override
     protected void deleteEdge(AtlasEdge edge, boolean force) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> SoftDeleteHandlerV1.deleteEdge({}, {})",GraphHelper.string(edge), force);
-        }
-        boolean isRelationshipEdge = isRelationshipEdge(edge);
-
-        authorizeRemoveRelation(edge);
-
-        if (DEFERRED_ACTION_ENABLED && RequestContext.get().getCurrentTask() == null) {
-            if (CollectionUtils.isNotEmpty(getPropagatableClassifications(edge))) {
-                RequestContext.get().addToDeletedEdgesIds(edge.getIdForDisplay());
+        try {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("==> SoftDeleteHandlerV1.deleteEdge({}, {})", GraphHelper.string(edge), force);
             }
-        } else {
-            removeTagPropagation(edge);
-        }
+            boolean isRelationshipEdge = isRelationshipEdge(edge);
 
-        if (force) {
-            graphHelper.removeEdge(edge);
-        } else {
-            Status state = AtlasGraphUtilsV2.getState(edge);
+            authorizeRemoveRelation(edge);
 
-            if (state != DELETED) {
-                AtlasGraphUtilsV2.setEncodedProperty(edge, STATE_PROPERTY_KEY, DELETED.name());
-                AtlasGraphUtilsV2.setEncodedProperty(edge, MODIFICATION_TIMESTAMP_PROPERTY_KEY, RequestContext.get().getRequestTime());
-                AtlasGraphUtilsV2.setEncodedProperty(edge, MODIFIED_BY_KEY, RequestContext.get().getUser());
+            if (DEFERRED_ACTION_ENABLED && RequestContext.get().getCurrentTask() == null) {
+                if (CollectionUtils.isNotEmpty(getPropagatableClassifications(edge))) {
+                    RequestContext.get().addToDeletedEdgesIds(edge.getIdForDisplay());
+                }
+            } else {
+                removeTagPropagation(edge);
             }
+
+            if (force) {
+                graphHelper.removeEdge(edge);
+            } else {
+                Status state = AtlasGraphUtilsV2.getState(edge);
+
+                if (state != DELETED) {
+                    AtlasGraphUtilsV2.setEncodedProperty(edge, STATE_PROPERTY_KEY, DELETED.name());
+                    AtlasGraphUtilsV2.setEncodedProperty(edge, MODIFICATION_TIMESTAMP_PROPERTY_KEY, RequestContext.get().getRequestTime());
+                    AtlasGraphUtilsV2.setEncodedProperty(edge, MODIFIED_BY_KEY, RequestContext.get().getUser());
+                }
+            }
+            if (isRelationshipEdge)
+                AtlasRelationshipStoreV2.recordRelationshipMutation(AtlasRelationshipStoreV2.RelationshipMutation.RELATIONSHIP_SOFT_DELETE, edge, entityRetriever);
+        } catch (Exception e) {
+            LOG.error("Error while deleting edge {}", GraphHelper.string(edge), e);
+            throw new AtlasBaseException(e);
         }
-        if (isRelationshipEdge)
-            AtlasRelationshipStoreV2.recordRelationshipMutation(AtlasRelationshipStoreV2.RelationshipMutation.RELATIONSHIP_SOFT_DELETE, edge, entityRetriever);
     }
 }
