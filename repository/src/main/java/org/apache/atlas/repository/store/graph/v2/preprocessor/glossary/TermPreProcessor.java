@@ -47,10 +47,8 @@ import java.util.Iterator;
 import java.util.List;
 
 import static org.apache.atlas.repository.Constants.*;
-import static org.apache.atlas.repository.Constants.GUID_PROPERTY_KEY;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
 import static org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTaskFactory.UPDATE_ENTITY_MEANINGS_ON_TERM_UPDATE;
-import static org.apache.atlas.type.Constants.*;
 
 @Component
 public class TermPreProcessor extends AbstractGlossaryPreProcessor {

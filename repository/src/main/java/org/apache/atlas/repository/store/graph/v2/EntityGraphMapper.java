@@ -36,6 +36,7 @@ import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.instance.EntityMutationResponse;
+import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.model.instance.EntityMutations.EntityOperation;
 import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
@@ -541,6 +542,12 @@ public class EntityGraphMapper {
         if (customAttributesString != null) {
             AtlasGraphUtilsV2.setEncodedProperty(vertex, CUSTOM_ATTRIBUTES_PROPERTY_KEY, customAttributesString);
         }
+    }
+
+    public void mapGlossaryRelationshipAttribute(AtlasAttribute attribute, AtlasObjectId glossaryObjectId,
+                                                 AtlasVertex entityVertex, EntityMutationContext context) throws AtlasBaseException {
+
+        mapAttribute(attribute, glossaryObjectId, entityVertex, EntityMutations.EntityOperation.UPDATE, context);
     }
 
     public void setLabels(AtlasVertex vertex, Set<String> labels) throws AtlasBaseException {

@@ -1699,7 +1699,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 break;
 
             case ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE:
-                preProcessor = new CategoryPreProcessor(typeRegistry, entityRetriever, graph, taskManagement);
+                preProcessor = new CategoryPreProcessor(typeRegistry, entityRetriever, graph, taskManagement, entityGraphMapper);
                 break;
 
             case QUERY_ENTITY_TYPE:

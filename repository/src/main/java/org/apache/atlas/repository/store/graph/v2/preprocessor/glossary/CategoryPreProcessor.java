@@ -33,9 +33,12 @@ import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
 import org.apache.atlas.tasks.TaskManagement;
+import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
@@ -55,11 +58,13 @@ import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
 import static org.apache.atlas.repository.Constants.ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE;
+import static org.apache.atlas.repository.Constants.ATLAS_GLOSSARY_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.CATEGORY_PARENT_EDGE_LABEL;
 import static org.apache.atlas.repository.Constants.CATEGORY_TERMS_EDGE_LABEL;
 import static org.apache.atlas.repository.Constants.GUID_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.NAME;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
+import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
 import static org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTaskFactory.UPDATE_ENTITY_MEANINGS_ON_TERM_UPDATE;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
@@ -72,10 +77,13 @@ public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
 
     private AtlasEntityHeader anchor;
     private AtlasEntityHeader parentCategory;
+    private EntityGraphMapper entityGraphMapper;
+    private EntityMutationContext context;
 
     public CategoryPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever,
-                                AtlasGraph graph, TaskManagement taskManagement) {
+                                AtlasGraph graph, TaskManagement taskManagement, EntityGraphMapper entityGraphMapper) {
         super(typeRegistry, entityRetriever, graph, taskManagement);
+        this.entityGraphMapper = entityGraphMapper;
     }
 
     @Override
@@ -86,6 +94,8 @@ public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
             LOG.debug("CategoryPreProcessor.processAttributes: pre processing {}, {}",
                     entityStruct.getAttribute(QUALIFIED_NAME), operation);
         }
+
+        this.context = context;
 
         AtlasEntity entity = (AtlasEntity) entityStruct;
         AtlasVertex vertex = context.getVertex(entity.getGuid());
@@ -143,7 +153,7 @@ public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
             //Auth check
             isAuthorized(currentGlossaryHeader, anchor);
 
-            processMoveCategoryToAnotherGlossary(entity, vertex, currentGlossaryQualifiedName, vertexQnName);
+            processMoveCategoryToAnotherGlossary(entity, vertex, currentGlossaryQualifiedName, newGlossaryQualifiedName, vertexQnName);
 
         } else {
             categoryExists(catName, newGlossaryQualifiedName);
@@ -159,6 +169,7 @@ public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
     private void processMoveCategoryToAnotherGlossary(AtlasEntity category,
                                                       AtlasVertex categoryVertex,
                                                       String sourceGlossaryQualifiedName,
+                                                      String targetGlossaryQualifiedName,
                                                       String currentCategoryQualifiedName) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("processMoveCategoryToAnotherGlossary");
 
@@ -166,16 +177,6 @@ public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
             if (category.hasRelationshipAttribute(CATEGORY_CHILDREN) || category.hasRelationshipAttribute(CATEGORY_TERMS)) {
                 throw new AtlasBaseException(BAD_REQUEST, String.format("Please do not pass relationship attributes [%s, %s] while moving Category to different Glossary",
                         CATEGORY_CHILDREN, CATEGORY_TERMS));
-            }
-
-            AtlasObjectId targetGlossary = (AtlasObjectId) category.getRelationshipAttribute(ANCHOR);
-            String targetGlossaryQualifiedName;
-
-            if (targetGlossary.getUniqueAttributes() != null && targetGlossary.getUniqueAttributes().containsKey(QUALIFIED_NAME)) {
-                targetGlossaryQualifiedName = (String) targetGlossary.getUniqueAttributes().get(QUALIFIED_NAME);
-            } else {
-                AtlasVertex targetGlossaryVertex = entityRetriever.getEntityVertex(targetGlossary.getGuid());
-                targetGlossaryQualifiedName = targetGlossaryVertex.getProperty(QUALIFIED_NAME, String.class);
             }
 
             String categoryName = (String) category.getAttribute(NAME);
@@ -219,6 +220,9 @@ public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
             //change __glossary, __parentCategory
             childCategoryVertex.setProperty(GLOSSARY_PROPERTY_KEY, targetGlossaryQualifiedName);
             childCategoryVertex.setProperty(CATEGORIES_PARENT_PROPERTY_KEY, parentCategoryQualifiedName);
+
+            // update glossary relationship
+            updateGlossaryRelationship(childCategoryVertex, GLOSSARY_CATEGORY_REL_TYPE);
 
             //update system properties
             GraphHelper.setModifiedByAsString(childCategoryVertex, RequestContext.get().getUser());
@@ -276,6 +280,9 @@ public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
             termVertex.setProperty(GLOSSARY_PROPERTY_KEY, targetGlossaryQualifiedName);
             termVertex.removeProperty(CATEGORIES_PROPERTY_KEY);
             termVertex.setProperty(CATEGORIES_PROPERTY_KEY, parentCategoryQualifiedName);
+
+            // update glossary relationship
+            updateGlossaryRelationship(termVertex, GLOSSARY_TERM_REL_TYPE);
 
             //update system properties
             GraphHelper.setModifiedByAsString(termVertex, RequestContext.get().getUser());
@@ -454,6 +461,16 @@ public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
             }
         }
         RequestContext.get().endMetricRecord(metricRecorder);
+    }
+
+    private void updateGlossaryRelationship(AtlasVertex entityVertex, String relationshipType) throws AtlasBaseException {
+        AtlasObjectId glossaryObjectId = new AtlasObjectId(anchor.getGuid(), ATLAS_GLOSSARY_ENTITY_TYPE);
+
+        String typeName = getTypeName(entityVertex);
+        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
+        AtlasStructType.AtlasAttribute attribute = entityType.getRelationshipAttribute(ANCHOR, relationshipType);
+
+        entityGraphMapper.mapGlossaryRelationshipAttribute(attribute, glossaryObjectId, entityVertex, context);
     }
 
     private String createQualifiedName(AtlasVertex vertex) {
