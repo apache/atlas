@@ -190,7 +190,7 @@ public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
 
             category.setAttribute(QUALIFIED_NAME, updatedQualifiedName);
 
-            moveChildrenToAnotherGlossary(categoryVertex, updatedQualifiedName, sourceGlossaryQualifiedName, targetGlossaryQualifiedName);
+            moveChildrenToAnotherGlossary(categoryVertex, null, sourceGlossaryQualifiedName, targetGlossaryQualifiedName);
 
             LOG.info("Moved category {} to Glossary {}", categoryName, targetGlossaryQualifiedName);
 
