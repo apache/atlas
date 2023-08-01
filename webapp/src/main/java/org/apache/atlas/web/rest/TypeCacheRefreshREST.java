@@ -1,5 +1,6 @@
 package org.apache.atlas.web.rest;
 
+import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graph.IAtlasGraphProvider;
@@ -50,6 +51,7 @@ public class TypeCacheRefreshREST {
      */
     @POST
     @Path("/refresh")
+    @Timed
     public void refreshCache(@QueryParam("expectedFieldKeys") int expectedFieldKeys, @QueryParam("traceId") String traceId) throws AtlasBaseException {
         try {
             if (serviceState.getState() != ServiceState.ServiceStateValue.ACTIVE) {

@@ -18,6 +18,7 @@
 package org.apache.atlas.web.rest;
 
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.audit.AuditSearchParams;
 import org.apache.atlas.model.audit.EntityAuditSearchResult;
@@ -86,6 +87,7 @@ public class AuthREST {
 
     @GET
     @Path("download/roles/{serviceName}")
+    @Timed
     public RangerRoles downloadRoles(@PathParam("serviceName") final String serviceName,
                                      @QueryParam("pluginId") String pluginId,
                                      @DefaultValue("0") @QueryParam("lastUpdatedTime") Long lastUpdatedTime,
@@ -112,6 +114,7 @@ public class AuthREST {
 
     @GET
     @Path("download/users/{serviceName}")
+    @Timed
     public RangerUserStore downloadUserStore(@PathParam("serviceName") final String serviceName,
                                              @QueryParam("pluginId") String pluginId,
                                              @DefaultValue("0") @QueryParam("lastUpdatedTime") Long lastUpdatedTime,
@@ -138,9 +141,10 @@ public class AuthREST {
 
     @GET
     @Path("download/policies/{serviceName}")
+    @Timed
     public ServicePolicies downloadPolicies(@PathParam("serviceName") final String serviceName,
-                                            @QueryParam("pluginId") String pluginId,
-                                            @DefaultValue("0") @QueryParam("lastUpdatedTime") Long lastUpdatedTime) throws AtlasBaseException {
+                                     @QueryParam("pluginId") String pluginId,
+                                     @DefaultValue("0") @QueryParam("lastUpdatedTime") Long lastUpdatedTime) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
         try {

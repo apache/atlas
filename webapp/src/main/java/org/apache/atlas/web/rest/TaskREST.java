@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.web.rest;
 
+import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.authorize.AtlasAdminAccessRequest;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasPrivilege;
@@ -59,6 +60,7 @@ public class TaskREST {
 
     @POST
     @Path("search")
+    @Timed
     public TaskSearchResult getTasks(TaskSearchParams parameters) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
@@ -77,6 +79,7 @@ public class TaskREST {
 
     @PUT
     @Path("retry/{guid}")
+    @Timed
     public HttpStatus retryTask(@PathParam("guid") final String guid) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
@@ -95,6 +98,7 @@ public class TaskREST {
 
     @POST
     @Path("bulk")
+    @Timed
     public List<AtlasTask> createTasks(List<AtlasTask> tasks) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
@@ -116,6 +120,7 @@ public class TaskREST {
 
     @DELETE
     @Path("bulk")
+    @Timed
     public List<AtlasTask> deleteTasks(List<AtlasTask> tasks) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 

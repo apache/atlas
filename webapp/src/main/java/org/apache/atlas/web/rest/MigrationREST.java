@@ -2,6 +2,7 @@ package org.apache.atlas.web.rest;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -63,6 +64,7 @@ public class MigrationREST {
 
     @POST
     @Path("bootstrap/connections")
+    @Timed
     public EntityMutationResponse bootstrapConnections(AtlasEntity.AtlasEntitiesWithExtInfo entities) throws Exception {
         AtlasPerfTracer perf = null;
         EntityMutationResponse response = new EntityMutationResponse();
@@ -126,6 +128,7 @@ public class MigrationREST {
 
     @POST
     @Path("bootstrap/collections")
+    @Timed
     public EntityMutationResponse bootstrapCollections(AtlasEntity.AtlasEntitiesWithExtInfo entities) throws Exception {
         AtlasPerfTracer perf = null;
         EntityMutationResponse response = new EntityMutationResponse();
@@ -160,6 +163,7 @@ public class MigrationREST {
 
     @GET
     @Path("search/{typeName}")
+    @Timed
     public List<AtlasEntity> searchForType(@PathParam("typeName") String typeName, @QueryParam("minExtInfo") @DefaultValue("false") boolean minExtInfo, @QueryParam("ignoreRelationships") @DefaultValue("false") boolean ignoreRelationships) throws Exception {
         AtlasPerfTracer perf = null;
         try {
