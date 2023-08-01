@@ -45,9 +45,6 @@ import java.util.stream.Collectors;
 import static org.apache.atlas.AtlasErrorCode.ACCESS_CONTROL_ALREADY_EXISTS;
 import static org.apache.atlas.AtlasErrorCode.DISABLED_OPERATION;
 import static org.apache.atlas.AtlasErrorCode.OPERATION_NOT_SUPPORTED;
-import static org.apache.atlas.featureflag.AtlasFeatureFlagClient.INSTANCE_DOMAIN_NAME;
-import static org.apache.atlas.featureflag.FeatureFlagStore.FeatureFlag.ALLOW_CONNECTION_ADMIN_OPS;
-import static org.apache.atlas.featureflag.FeatureFlagStore.FeatureFlag.DISABLE_ACCESS_CONTROL;
 import static org.apache.atlas.repository.Constants.ATTR_ADMIN_GROUPS;
 import static org.apache.atlas.repository.Constants.ATTR_ADMIN_ROLES;
 import static org.apache.atlas.repository.Constants.ATTR_ADMIN_USERS;
@@ -425,56 +422,5 @@ public final class AccessControlUtils {
         }
 
         return false;
-    }
-
-    public static void checkAccessControlFeatureStatus(FeatureFlagStore featureFlagStore) throws AtlasBaseException {
-        if (getAccessControlFeatureFlag(featureFlagStore)) {
-            throw new AtlasBaseException(DISABLED_OPERATION);
-        }
-    }
-
-    public static void checkAccessControlFeatureStatusForUpdate(FeatureFlagStore featureFlagStore, AtlasStruct entity,
-                                                                AtlasVertex vertex) throws AtlasBaseException {
-        boolean isDisabled = getAccessControlFeatureFlag(featureFlagStore);
-
-        if (isDisabled) {
-            validateAttributeUpdateForFeatureFlag(ATTR_ADMIN_USERS, entity, vertex);
-            validateAttributeUpdateForFeatureFlag(ATTR_ADMIN_GROUPS, entity, vertex);
-            validateAttributeUpdateForFeatureFlag(ATTR_ADMIN_ROLES, entity, vertex);
-        }
-    }
-
-    public static void checkAllowConnectionAdminUpdateFeatureStatus(FeatureFlagStore featureFlagStore, AtlasStruct struct) throws AtlasBaseException {
-        if (!featureFlagStore.evaluate(ALLOW_CONNECTION_ADMIN_OPS, INSTANCE_DOMAIN_KEY, INSTANCE_DOMAIN_NAME)) {
-            AtlasEntity entity = (AtlasEntity) struct;
-            if (entity.hasAttribute(ATTR_ADMIN_ROLES)) {
-                throw new AtlasBaseException(DISABLED_OPERATION);
-            }
-        }
-    }
-
-    public static void checkAllowConnectionAdminUpdateForUpdate(FeatureFlagStore featureFlagStore, AtlasStruct entity,
-                                                                AtlasVertex vertex) throws AtlasBaseException {
-        boolean isDisabled = !featureFlagStore.evaluate(ALLOW_CONNECTION_ADMIN_OPS, INSTANCE_DOMAIN_KEY, INSTANCE_DOMAIN_NAME);
-
-        if (isDisabled) {
-            validateAttributeUpdateForFeatureFlag(ATTR_ADMIN_ROLES, entity, vertex);
-        }
-    }
-
-    public static void validateAttributeUpdateForFeatureFlag(String attrName, AtlasStruct entity, AtlasVertex vertex) throws AtlasBaseException {
-        if (entity.hasAttribute(attrName)) {
-
-            List<String> newAdmins = (List<String>) entity.getAttribute(attrName);
-            List<String> currentAdmins = (List<String>) vertex.getPropertyValues(attrName, String.class);
-
-            if (newAdmins == null || !CollectionUtils.isEqualCollection(newAdmins, currentAdmins)) {
-                throw new AtlasBaseException(DISABLED_OPERATION);
-            }
-        }
-    }
-
-    public static boolean getAccessControlFeatureFlag(FeatureFlagStore featureFlagStore) {
-        return featureFlagStore.evaluate(DISABLE_ACCESS_CONTROL, INSTANCE_DOMAIN_KEY, INSTANCE_DOMAIN_NAME);
     }
 }

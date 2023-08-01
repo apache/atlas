@@ -17,23 +17,23 @@
  */
 package org.apache.atlas.repository.store.graph.v2.preprocessor;
 
-
+import org.apache.atlas.DeleteType;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.featureflag.FeatureFlagStore;
-import org.apache.atlas.keycloak.client.KeycloakClient;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasStruct;
-import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
+import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
+import org.apache.atlas.repository.store.graph.v1.SoftDeleteHandlerV1;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
@@ -43,7 +43,6 @@ import org.apache.atlas.transformer.PreProcessorPoliciesTransformer;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
-import org.keycloak.admin.client.resource.RoleResource;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,16 +55,13 @@ import java.util.stream.Collectors;
 
 import static org.apache.atlas.authorize.AtlasAuthorizerFactory.ATLAS_AUTHORIZER_IMPL;
 import static org.apache.atlas.authorize.AtlasAuthorizerFactory.CURRENT_AUTHORIZER_IMPL;
+import static org.apache.atlas.keycloak.client.AtlasKeycloakClient.getKeycloakClient;
 import static org.apache.atlas.repository.Constants.ATTR_ADMIN_GROUPS;
 import static org.apache.atlas.repository.Constants.ATTR_ADMIN_ROLES;
 import static org.apache.atlas.repository.Constants.ATTR_ADMIN_USERS;
 import static org.apache.atlas.repository.Constants.CREATED_BY_KEY;
 import static org.apache.atlas.repository.Constants.POLICY_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
-import static org.apache.atlas.repository.util.AccessControlUtils.checkAccessControlFeatureStatus;
-import static org.apache.atlas.repository.util.AccessControlUtils.checkAccessControlFeatureStatusForUpdate;
-import static org.apache.atlas.repository.util.AccessControlUtils.checkAllowConnectionAdminUpdateFeatureStatus;
-import static org.apache.atlas.repository.util.AccessControlUtils.checkAllowConnectionAdminUpdateForUpdate;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 
 public class ConnectionPreProcessor implements PreProcessor {
@@ -80,18 +76,20 @@ public class ConnectionPreProcessor implements PreProcessor {
     private PreProcessorPoliciesTransformer transformer;
     private FeatureFlagStore featureFlagStore;
     private KeycloakStore keycloakStore;
+    private final DeleteHandlerDelegate deleteDelegate;
 
     public ConnectionPreProcessor(AtlasGraph graph,
                                   EntityDiscoveryService discovery,
                                   EntityGraphRetriever entityRetriever,
                                   FeatureFlagStore featureFlagStore,
+                                  DeleteHandlerDelegate deleteDelegate,
                                   AtlasEntityStore entityStore) {
         this.graph = graph;
         this.entityRetriever = entityRetriever;
         this.entityStore = entityStore;
         this.featureFlagStore = featureFlagStore;
         this.discovery = discovery;
-
+        this.deleteDelegate = deleteDelegate;
         transformer = new PreProcessorPoliciesTransformer();
         keycloakStore = new KeycloakStore();
     }
@@ -116,9 +114,6 @@ public class ConnectionPreProcessor implements PreProcessor {
     }
 
     private void processCreateConnection(AtlasStruct struct) throws AtlasBaseException {
-        checkAccessControlFeatureStatus(featureFlagStore);
-        checkAllowConnectionAdminUpdateFeatureStatus(featureFlagStore, struct);
-
         if (ATLAS_AUTHORIZER_IMPL.equalsIgnoreCase(CURRENT_AUTHORIZER_IMPL)) {
             AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processCreateConnection");
 
@@ -163,8 +158,6 @@ public class ConnectionPreProcessor implements PreProcessor {
                                       AtlasStruct entity) throws AtlasBaseException {
 
         AtlasEntity connection = (AtlasEntity) entity;
-        checkAccessControlFeatureStatusForUpdate(featureFlagStore, entity, context.getVertex(connection.getGuid()));
-        checkAllowConnectionAdminUpdateForUpdate(featureFlagStore, entity, context.getVertex(connection.getGuid()));
 
         if (ATLAS_AUTHORIZER_IMPL.equalsIgnoreCase(CURRENT_AUTHORIZER_IMPL)) {
             AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processUpdateConnection");
@@ -177,8 +170,7 @@ public class ConnectionPreProcessor implements PreProcessor {
             String vertexQName = vertex.getProperty(QUALIFIED_NAME, String.class);
             entity.setAttribute(QUALIFIED_NAME, vertexQName);
 
-            RoleResource rolesResource = KeycloakClient.getKeycloakClient().getRealm().roles().get(roleName);
-            RoleRepresentation representation = rolesResource.toRepresentation();
+            RoleRepresentation representation = getKeycloakClient().getRoleByName(roleName);
             String creatorUser = vertex.getProperty(CREATED_BY_KEY, String.class);
 
             if (connection.hasAttribute(ATTR_ADMIN_USERS)) {
@@ -208,7 +200,7 @@ public class ConnectionPreProcessor implements PreProcessor {
                 List<String> currentAdminRoles = (List<String>) existingConnEntity.getAttribute(ATTR_ADMIN_ROLES);
 
                 if (CollectionUtils.isNotEmpty(newAdminRoles) || CollectionUtils.isNotEmpty(currentAdminRoles)) {
-                    keycloakStore.updateRoleRoles(roleName, currentAdminRoles, newAdminRoles, rolesResource, representation);
+                    keycloakStore.updateRoleRoles(roleName, currentAdminRoles, newAdminRoles, representation);
                 }
             }
 
@@ -218,24 +210,34 @@ public class ConnectionPreProcessor implements PreProcessor {
 
     @Override
     public void processDelete(AtlasVertex vertex) throws AtlasBaseException {
-        checkAccessControlFeatureStatus(featureFlagStore);
+        // Process Delete connection role and policies in case of hard delete or purge
+        if (isDeleteTypeSoft()) {
+            LOG.info("Skipping processDelete for connection as delete type is {}", RequestContext.get().getDeleteType());
+            return;
+        }
 
         if (ATLAS_AUTHORIZER_IMPL.equalsIgnoreCase(CURRENT_AUTHORIZER_IMPL)) {
             AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = entityRetriever.toAtlasEntityWithExtInfo(vertex);
             AtlasEntity connection = entityWithExtInfo.getEntity();
             String roleName = String.format(CONN_NAME_PATTERN, connection.getGuid());
 
-            if (!AtlasEntity.Status.ACTIVE.equals(connection.getStatus())) {
-                throw new AtlasBaseException("Connection is already deleted/purged");
+            boolean connectionIsDeleted = AtlasEntity.Status.DELETED.equals(connection.getStatus());
+
+            if (connectionIsDeleted && DeleteType.HARD.equals(RequestContext.get().getDeleteType())) {
+                LOG.warn("Connection {} is SOFT DELETED! Can't HARD DELETE connection role and policies", connection.getAttribute(QUALIFIED_NAME));
+                return;
             }
 
             //delete connection policies
             List<AtlasEntityHeader> policies = getConnectionPolicies(connection.getGuid(), roleName);
-            EntityMutationResponse response = entityStore.deleteByIds(policies.stream().map(x -> x.getGuid()).collect(Collectors.toList()));
+            entityStore.deleteByIds(policies.stream().map(x -> x.getGuid()).collect(Collectors.toList()));
 
-            //delete connection role
             keycloakStore.removeRoleByName(roleName);
         }
+    }
+
+    private boolean isDeleteTypeSoft() {
+        return deleteDelegate.getHandler().getClass().equals(SoftDeleteHandlerV1.class);
     }
 
     private List<AtlasEntityHeader> getConnectionPolicies(String guid, String roleName) throws AtlasBaseException {
@@ -246,9 +248,6 @@ public class ConnectionPreProcessor implements PreProcessor {
 
         List mustClauseList = new ArrayList();
         mustClauseList.add(mapOf("term", mapOf("__typeName.keyword", POLICY_ENTITY_TYPE)));
-        mustClauseList.add(mapOf("term", mapOf("__state", "ACTIVE")));
-
-
         mustClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, guid + "/*")));
         mustClauseList.add(mapOf("term", mapOf("policyRoles", roleName)));
 

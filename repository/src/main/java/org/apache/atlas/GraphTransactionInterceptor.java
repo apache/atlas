@@ -26,9 +26,7 @@ import org.apache.atlas.exception.NotFoundException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.tasks.TaskManagement;
 import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
-import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -56,7 +54,6 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
     private static final ThreadLocal<Map<String, AtlasVertex>>  guidVertexCache            = ThreadLocal.withInitial(() -> new HashMap<>());
 
     private final AtlasGraph     graph;
-    private final TaskManagement taskManagement;
 
     private static final ThreadLocal<Map<Object, String>> vertexGuidCache =
             new ThreadLocal<Map<Object, String>>() {
@@ -83,9 +80,8 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
             };
 
     @Inject
-    public GraphTransactionInterceptor(AtlasGraph graph, TaskManagement taskManagement) {
+    public GraphTransactionInterceptor(AtlasGraph graph) {
         this.graph          = graph;
-        this.taskManagement = taskManagement;
     }
 
     @Override

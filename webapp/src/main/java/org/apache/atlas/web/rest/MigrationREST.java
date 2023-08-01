@@ -1,10 +1,8 @@
 package org.apache.atlas.web.rest;
 
-import javax.ws.rs.Path;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.keycloak.client.KeycloakClient;
 import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.EntityMutationResponse;
@@ -20,7 +18,6 @@ import org.apache.atlas.v1.model.instance.Id;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
-import org.keycloak.admin.client.resource.*;
 import org.keycloak.representations.idm.GroupRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
@@ -34,6 +31,8 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static org.apache.atlas.keycloak.client.AtlasKeycloakClient.getKeycloakClient;
 import static org.apache.atlas.repository.Constants.*;
 
 @Path("migration")
@@ -42,7 +41,7 @@ import static org.apache.atlas.repository.Constants.*;
 @Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
 @Produces({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
 public class MigrationREST {
-    private static final Logger LOG      = LoggerFactory.getLogger(MigrationREST.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MigrationREST.class);
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.MigrationREST");
 
     private static final String COLL_ADMIN_ROLE_PATTERN = "collection_admins_%s";
@@ -103,7 +102,7 @@ public class MigrationREST {
                     RoleRepresentation role = keycloakStore.getRole(roleName);
                     if (role == null) {
                         createCompositeRole(roleName, adminUsers, adminGroups, adminRoles);
-                    }else {
+                    } else {
                         updateCompositeRole(role, adminUsers, adminGroups, adminRoles);
                     }
                     AtlasEntity.AtlasEntitiesWithExtInfo policiesExtInfo = transformer.transform(entity);
@@ -153,7 +152,7 @@ public class MigrationREST {
             }
 
             return response;
-        }finally {
+        } finally {
             AtlasPerfTracer.log(perf);
         }
 
@@ -215,7 +214,7 @@ public class MigrationREST {
         }
     }
 
-    private List<AtlasEntity> getEntitiesByIndexSearch(IndexSearchParams indexSearchParams, Boolean minExtInfo, boolean ignoreRelationships) throws AtlasBaseException{
+    private List<AtlasEntity> getEntitiesByIndexSearch(IndexSearchParams indexSearchParams, Boolean minExtInfo, boolean ignoreRelationships) throws AtlasBaseException {
         List<AtlasEntity> entities = new ArrayList<>();
         String indexName = "janusgraph_vertex_index";
         AtlasIndexQuery indexQuery = graph.elasticsearchQuery(indexName);
@@ -346,15 +345,9 @@ public class MigrationREST {
     }
 
     private void updateCompositeRole(RoleRepresentation role, List<String> users, List<String> groups, List<String> roles) throws AtlasBaseException {
-        UsersResource usersResource = KeycloakClient.getKeycloakClient().getRealm().users();
-        GroupsResource groupsResource = KeycloakClient.getKeycloakClient().getRealm().groups();
-        RolesResource rolesResource      = KeycloakClient.getKeycloakClient().getRealm().roles();
-        RoleByIdResource rolesIdResource = KeycloakClient.getKeycloakClient().getRealm().rolesById();
-
-        RoleResource connectionRoleResource = rolesResource.get(role.getName());
-        List<UserRepresentation> currentUsers = connectionRoleResource.getRoleUserMembers().stream().collect(Collectors.toList());
-        List<GroupRepresentation> currentGroups = connectionRoleResource.getRoleGroupMembers().stream().collect(Collectors.toList());
-        List<RoleRepresentation> currentRoles = connectionRoleResource.getRoleComposites().stream().collect(Collectors.toList());
+        List<UserRepresentation> currentUsers = getKeycloakClient().getRoleUserMembers(role.getName()).stream().collect(Collectors.toList());
+        List<GroupRepresentation> currentGroups = getKeycloakClient().getRoleGroupMembers(role.getName()).stream().collect(Collectors.toList());
+        List<RoleRepresentation> currentRoles = getKeycloakClient().getRoleComposites(role.getName()).stream().collect(Collectors.toList());
 
         //Find users to add and remove from role, if the user is already in the role, don't add it again
         List<String> usersToAdd = users.stream().filter(user -> currentUsers.stream().noneMatch(userRep -> userRep.getUsername().equals(user))).collect(Collectors.toList());
@@ -370,49 +363,41 @@ public class MigrationREST {
 
         //Add users to role
         for (String userName : usersToAdd) {
-            List<UserRepresentation> matchedUsers = usersResource.search(userName);
+            List<UserRepresentation> matchedUsers = getKeycloakClient().searchUserByUserName(userName);
             Optional<UserRepresentation> keyUserOptional = matchedUsers.stream().filter(x -> userName.equals(x.getUsername())).findFirst();
             if (keyUserOptional.isPresent()) {
                 UserRepresentation keyUser = keyUserOptional.get();
-                UserResource userResource = usersResource.get(keyUser.getId());
-                userResource.roles().realmLevel().add(Collections.singletonList(role));
-                userResource.update(keyUser);
+                getKeycloakClient().addRealmLevelRoleMappingsForUser(keyUser.getId(), Collections.singletonList(role));
             }
         }
         //Remove users from role
         for (UserRepresentation userToRemove : usersToRemove) {
-            UserResource userResource = usersResource.get(userToRemove.getId());
-            userResource.roles().realmLevel().remove(Collections.singletonList(role));
-            userResource.update(userToRemove);
+            getKeycloakClient().deleteRealmLevelRoleMappingsForUser(userToRemove.getId(), Collections.singletonList(role));
         }
 
         //Add groups to role
         for (String groupName : groupsToAdd) {
-            List<GroupRepresentation> matchedGroups = groupsResource.groups(groupName, 0, 1);
+            List<GroupRepresentation> matchedGroups = getKeycloakClient().searchGroupByName(groupName, 0, 1);
             Optional<GroupRepresentation> keyGroupOptional = matchedGroups.stream().filter(x -> groupName.equals(x.getName())).findFirst();
             if (keyGroupOptional.isPresent()) {
                 GroupRepresentation keyGroup = keyGroupOptional.get();
-                GroupResource groupResource = groupsResource.group(keyGroup.getId());
-                groupResource.roles().realmLevel().add(Collections.singletonList(role));
-                groupResource.update(keyGroup);
+                getKeycloakClient().addRealmLevelRoleMappingsForGroup(keyGroup.getId(), Collections.singletonList(role));
             }
         }
         //Remove groups from role
         for (GroupRepresentation groupToRemove : groupsToRemove) {
-            GroupResource groupResource = groupsResource.group(groupToRemove.getId());
-            groupResource.roles().realmLevel().remove(Collections.singletonList(role));
-            groupResource.update(groupToRemove);
+            getKeycloakClient().deleteRealmLevelRoleMappingsForGroup(groupToRemove.getId(), Collections.singletonList(role));
         }
 
         //Add roles to role
         for (String roleId : rolesToAdd) {
-            RoleRepresentation roleToAdd = rolesIdResource.getRole(roleId);
-            connectionRoleResource.addComposites(Collections.singletonList(roleToAdd));
+            RoleRepresentation roleToAdd = getKeycloakClient().getRoleById(roleId);
+            getKeycloakClient().addComposites(role.getName(), Collections.singletonList(roleToAdd));
         }
 
         //Remove roles from role
         for (RoleRepresentation roleToRemove : rolesToRemove) {
-            connectionRoleResource.deleteComposites(Collections.singletonList(roleToRemove));
+            getKeycloakClient().deleteComposites(role.getName(), Collections.singletonList(roleToRemove));
         }
     }
 
@@ -421,47 +406,48 @@ public class MigrationREST {
         List<GroupRepresentation> roleGroups = new ArrayList<>();
         List<RoleRepresentation> roleRoles = new ArrayList<>();
 
-        UsersResource usersResource = KeycloakClient.getKeycloakClient().getRealm().users();
-        GroupsResource groupsResource = KeycloakClient.getKeycloakClient().getRealm().groups();
-        RolesResource rolesResource      = KeycloakClient.getKeycloakClient().getRealm().roles();
-
-        if(CollectionUtils.isNotEmpty(users)) {
+        if (CollectionUtils.isNotEmpty(users)) {
             roleUsers = users.stream().map(user -> {
-                List<UserRepresentation> matchedUsers = usersResource.search(user);
-                Optional<UserRepresentation> keyUserOptional = matchedUsers.stream().filter(x -> user.equals(x.getUsername())).findFirst();
-                if (keyUserOptional.isPresent()) {
-                    return keyUserOptional.get();
-                } else {
-                    LOG.warn("User {} not found in keycloak", user);
+                List<UserRepresentation> matchedUsers = null;
+                try {
+                    matchedUsers = getKeycloakClient().searchUserByUserName(user);
+                    Optional<UserRepresentation> keyUserOptional = matchedUsers.stream().filter(x -> user.equals(x.getUsername())).findFirst();
+                    if (keyUserOptional.isPresent()) {
+                        return keyUserOptional.get();
+                    } else {
+                        LOG.warn("User {} not found in keycloak", user);
+                    }
+                } catch (AtlasBaseException e) {
+                    LOG.error("Failed to get user by name {}", user, e);
                 }
                 return null;
             }).filter(Objects::nonNull).collect(Collectors.toList());
         }
 
-        if(CollectionUtils.isNotEmpty(groups)) {
-            roleGroups = groups.stream().map(group -> {
-                List<GroupRepresentation> matchedGroups = groupsResource.groups(group, 0, 1);
+        if (CollectionUtils.isNotEmpty(groups)) {
+            roleGroups = new ArrayList<>();
+            for(String group : groups) {
+                List<GroupRepresentation> matchedGroups = getKeycloakClient().searchGroupByName(group, 0, 1);
                 Optional<GroupRepresentation> keyGroupOptional = matchedGroups.stream().filter(x -> group.equals(x.getName())).findFirst();
                 if (keyGroupOptional.isPresent()) {
-                    return keyGroupOptional.get();
+                    roleGroups.add(keyGroupOptional.get());
                 } else {
                     LOG.warn("Group {} not found in keycloak", group);
                 }
-                return null;
-            }).filter(Objects::nonNull).collect(Collectors.toList());
+            }
         }
 
-        if(CollectionUtils.isNotEmpty(roles)) {
-            roleRoles = roles.stream().map(role -> {
-                List<RoleRepresentation> matchedRoles = rolesResource.list();
+        if (CollectionUtils.isNotEmpty(roles)) {
+            roleRoles = new ArrayList<>();
+            for(String role: roles) {
+                List<RoleRepresentation> matchedRoles = getKeycloakClient().getAllRoles();
                 Optional<RoleRepresentation> keyRoleOptional = matchedRoles.stream().filter(x -> role.equals(x.getId())).findFirst();
                 if (keyRoleOptional.isPresent()) {
-                    return keyRoleOptional.get();
-                } else  {
-                    LOG.warn("Role {} not found in keycloak", role);    
+                    roleRoles.add(keyRoleOptional.get());
+                } else {
+                    LOG.warn("Role {} not found in keycloak", role);
                 }
-                return null;
-            }).filter(Objects::nonNull).collect(Collectors.toList());
+            }
         }
 
         RoleRepresentation role = new RoleRepresentation();
@@ -472,26 +458,21 @@ public class MigrationREST {
         if (createdRole == null) {
             throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, "Failed to create role " + roleName);
         }
-        RoleResource compositeRoleResource = rolesResource.get(createdRole.getName());
 
         //Add realm role to users
         for (UserRepresentation user : roleUsers) {
-            UserResource userResource = usersResource.get(user.getId());
-            userResource.roles().realmLevel().add(Collections.singletonList(createdRole));
-            userResource.update(user);
+            getKeycloakClient().addRealmLevelRoleMappingsForUser(user.getId(), Collections.singletonList(createdRole));
         }
 
         //Add realm role to groups
         for (GroupRepresentation group : roleGroups) {
-            GroupResource groupResource = groupsResource.group(group.getId());
-            groupResource.roles().realmLevel().add(Collections.singletonList(createdRole));
-            groupResource.update(group);
+            getKeycloakClient().addRealmLevelRoleMappingsForGroup(group.getId(), Collections.singletonList(createdRole));
+
         }
 
         //Add realm role to roles
         for (RoleRepresentation roleToAdd : roleRoles) {
-            compositeRoleResource.addComposites(Collections.singletonList(roleToAdd));
-            compositeRoleResource.update(createdRole);
+            getKeycloakClient().addComposites(createdRole.getName(), Collections.singletonList(roleToAdd));
         }
 
     }

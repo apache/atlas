@@ -17,7 +17,11 @@
  */
 package org.apache.atlas.web.rest;
 
+import org.apache.atlas.authorize.AtlasAdminAccessRequest;
+import org.apache.atlas.authorize.AtlasAuthorizationUtils;
+import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.model.tasks.TaskSearchParams;
 import org.apache.atlas.model.tasks.TaskSearchResult;
 import org.apache.atlas.tasks.TaskService;
@@ -32,6 +36,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
+import java.util.List;
 
 /**
  * REST interface for CRUD operations on tasks
@@ -45,7 +50,7 @@ public class TaskREST {
     private static final Logger LOG      = LoggerFactory.getLogger(TaskREST.class);
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.TaskREST");
 
-    private TaskService taskService;
+    private final TaskService taskService;
 
     @Inject
     public TaskREST(TaskService taskService) {
@@ -83,6 +88,46 @@ public class TaskREST {
             taskService.retryTask(guid);
 
             return HttpStatus.OK;
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    @POST
+    @Path("bulk")
+    public List<AtlasTask> createTasks(List<AtlasTask> tasks) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_TASK_CUD), "create task is not allowed");
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.createTasks");
+            }
+
+            List<AtlasTask> ret = taskService.createAtlasTasks(tasks);
+
+            return ret;
+
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    @DELETE
+    @Path("bulk")
+    public List<AtlasTask> deleteTasks(List<AtlasTask> tasks) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_TASK_CUD), "deleteTasks is not allowed");
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.deleteTasks");
+            }
+
+             return taskService.deleteAtlasTasks(tasks);
+
         } finally {
             AtlasPerfTracer.log(perf);
         }

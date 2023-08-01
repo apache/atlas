@@ -189,7 +189,7 @@ public class TestModules {
             bind(TaskManagement.class).asEagerSingleton();
             bind(ClassificationPropagateTaskFactory.class).asEagerSingleton();
 
-            final GraphTransactionInterceptor graphTransactionInterceptor = new GraphTransactionInterceptor(new AtlasGraphProvider().get(), null);
+            final GraphTransactionInterceptor graphTransactionInterceptor = new GraphTransactionInterceptor(new AtlasGraphProvider().get());
             requestInjection(graphTransactionInterceptor);
             bindInterceptor(Matchers.any(), Matchers.annotatedWith(GraphTransaction.class), graphTransactionInterceptor);
         }

@@ -22,7 +22,7 @@ public class MeaningsTaskFactory implements TaskFactory {
     public static final String UPDATE_ENTITY_MEANINGS_ON_TERM_SOFT_DELETE = "UPDATE_ENTITY_MEANINGS_ON_TERM_SOFT_DELETE";
     public static final String UPDATE_ENTITY_MEANINGS_ON_TERM_HARD_DELETE = "UPDATE_ENTITY_MEANINGS_ON_TERM_HARD_DELETE";
 
-    private static final List<String> supportedTypes = new ArrayList<String>() {{
+    public static final List<String> supportedTypes = new ArrayList<String>() {{
         add(UPDATE_ENTITY_MEANINGS_ON_TERM_UPDATE);
         add(UPDATE_ENTITY_MEANINGS_ON_TERM_SOFT_DELETE);
         add(UPDATE_ENTITY_MEANINGS_ON_TERM_HARD_DELETE);

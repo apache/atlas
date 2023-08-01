@@ -31,6 +31,8 @@ public class AtlasLineageOnDemandInfo implements Serializable {
     private Set<String>                             skippedEdges;
     private Map<String, LineageInfoOnDemand>        relationsOnDemand;
     private LineageOnDemandRequest                  lineageOnDemandPayload;
+    private boolean                                 upstreamEntityLimitReached;
+    private boolean                                 downstreamEntityLimitReached;
 
     public AtlasLineageOnDemandInfo() {
     }
@@ -115,6 +117,22 @@ public class AtlasLineageOnDemandInfo implements Serializable {
 
     public void setLineageOnDemandPayload(LineageOnDemandRequest lineageOnDemandRequest) {
         this.lineageOnDemandPayload = lineageOnDemandRequest;
+    }
+
+    public boolean isUpstreamEntityLimitReached() {
+        return upstreamEntityLimitReached;
+    }
+
+    public void setUpstreamEntityLimitReached(boolean upstreamEntityLimitReached) {
+        this.upstreamEntityLimitReached = upstreamEntityLimitReached;
+    }
+
+    public boolean isDownstreamEntityLimitReached() {
+        return downstreamEntityLimitReached;
+    }
+
+    public void setDownstreamEntityLimitReached(boolean downstreamEntityLimitReached) {
+        this.downstreamEntityLimitReached = downstreamEntityLimitReached;
     }
 
     @Override
