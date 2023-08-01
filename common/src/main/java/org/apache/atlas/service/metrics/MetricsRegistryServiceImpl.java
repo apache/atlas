@@ -19,7 +19,6 @@ import java.io.PrintWriter;
 import java.time.Duration;
 
 @Component
-@ConditionalOnAtlasProperty(property = "atlas.prometheus.service.impl")
 public class MetricsRegistryServiceImpl implements MetricsRegistry {
 
     private static final Logger LOG = LoggerFactory.getLogger(MetricsRegistryServiceImpl.class);
@@ -28,7 +27,7 @@ public class MetricsRegistryServiceImpl implements MetricsRegistry {
     private static final String METHOD_DIST_SUMMARY = "method_dist_summary";
     private static final double[] PERCENTILES = {0.90, 0.99};
     private static final int SEC_MILLIS_SCALE = 1;
-    private static final String METHOD_LEVEL_METRICS_ENABLE = "atlas.prometheus.method_level_metrics.enable";
+    private static final String METHOD_LEVEL_METRICS_ENABLE = "atlas.metrics.method_level.enable";
 
     private final PrometheusMeterRegistry prometheusMeterRegistry;
     private final DistributionStatisticConfig distributionStatisticConfig;
