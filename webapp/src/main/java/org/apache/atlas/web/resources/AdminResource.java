@@ -19,7 +19,6 @@
 package org.apache.atlas.web.resources;
 
 import com.sun.jersey.multipart.FormDataParam;
-import io.micrometer.core.annotation.Timed;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasConfiguration;
@@ -506,7 +505,6 @@ public class AdminResource {
 
     @GET
     @Path("metrics/prometheus")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public void scrapMetrics(@Context HttpServletResponse httpServletResponse) {
         try {
             if (LOG.isDebugEnabled()) {

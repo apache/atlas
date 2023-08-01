@@ -20,7 +20,6 @@ package org.apache.atlas.web.rest;
 import com.google.common.collect.Lists;
 import com.sun.jersey.core.header.FormDataContentDisposition;
 import com.sun.jersey.multipart.FormDataParam;
-import io.micrometer.core.annotation.Timed;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.authorize.*;
@@ -114,7 +113,6 @@ public class EntityREST {
      */
     @GET
     @Path("/guid/{guid}")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public AtlasEntityWithExtInfo getById(@PathParam("guid") String guid, @QueryParam("minExtInfo") @DefaultValue("false") boolean minExtInfo, @QueryParam("ignoreRelationships") @DefaultValue("false") boolean ignoreRelationships) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
 
@@ -276,7 +274,6 @@ public class EntityREST {
      */
     @GET
     @Path("/guid/{guid}/header")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public AtlasEntityHeader getHeaderById(@PathParam("guid") String guid) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
 
@@ -312,7 +309,6 @@ public class EntityREST {
      */
     @GET
     @Path("/uniqueAttribute/type/{typeName}/header")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public AtlasEntityHeader getEntityHeaderByUniqueAttributes(@PathParam("typeName") String typeName,
                                                                @Context HttpServletRequest servletRequest) throws AtlasBaseException {
         Servlets.validateQueryParamLength("typeName", typeName);
@@ -356,7 +352,6 @@ public class EntityREST {
      */
     @GET
     @Path("/uniqueAttribute/type/{typeName}")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public AtlasEntityWithExtInfo getByUniqueAttributes(@PathParam("typeName") String typeName, @QueryParam("minExtInfo") @DefaultValue("false") boolean minExtInfo,
                                                         @QueryParam("ignoreRelationships") @DefaultValue("false") boolean ignoreRelationships, @Context HttpServletRequest servletRequest) throws AtlasBaseException {
         Servlets.validateQueryParamLength("typeName", typeName);
@@ -398,7 +393,6 @@ public class EntityREST {
      *******/
     @PUT
     @Path("/uniqueAttribute/type/{typeName}")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public EntityMutationResponse partialUpdateEntityByUniqueAttrs(@PathParam("typeName") String typeName,
                                                                    @Context HttpServletRequest servletRequest,
                                                                    AtlasEntityWithExtInfo entityInfo) throws Exception {
@@ -442,7 +436,6 @@ public class EntityREST {
      */
     @DELETE
     @Path("/uniqueAttribute/type/{typeName}")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public EntityMutationResponse deleteByUniqueAttribute(@PathParam("typeName") String typeName,
                                                           @Context HttpServletRequest servletRequest) throws AtlasBaseException {
         Servlets.validateQueryParamLength("typeName", typeName);
@@ -472,7 +465,6 @@ public class EntityREST {
      * @throws AtlasBaseException
      */
     @POST
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public EntityMutationResponse createOrUpdate(AtlasEntityWithExtInfo entity,
                                                  @QueryParam("replaceClassifications") @DefaultValue("false") boolean replaceClassifications,
                                                  @QueryParam("replaceBusinessAttributes") @DefaultValue("false") boolean replaceBusinessAttributes,
@@ -499,7 +491,6 @@ public class EntityREST {
      *******/
     @PUT
     @Path("/guid/{guid}")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public EntityMutationResponse partialUpdateEntityAttrByGuid(@PathParam("guid") String guid,
                                                                 @QueryParam("name") String attrName,
                                                                 Object attrValue) throws Exception {
@@ -526,7 +517,6 @@ public class EntityREST {
      */
     @DELETE
     @Path("/guid/{guid}")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public EntityMutationResponse deleteByGuid(@PathParam("guid") final String guid) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
 
@@ -550,7 +540,6 @@ public class EntityREST {
      */
     @GET
     @Path("/guid/{guid}/classification/{classificationName}")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public AtlasClassification getClassification(@PathParam("guid") String guid, @PathParam("classificationName") final String classificationName) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
         Servlets.validateQueryParamLength("classificationName", classificationName);
@@ -580,7 +569,6 @@ public class EntityREST {
      */
     @GET
     @Path("/guid/{guid}/classifications")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public AtlasClassification.AtlasClassifications getClassifications(@PathParam("guid") String guid) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
 
@@ -607,7 +595,6 @@ public class EntityREST {
      */
     @POST
     @Path("/uniqueAttribute/type/{typeName}/classifications")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public void addClassificationsByUniqueAttribute(@PathParam("typeName") String typeName, @Context HttpServletRequest servletRequest, List<AtlasClassification> classifications) throws AtlasBaseException {
         Servlets.validateQueryParamLength("typeName", typeName);
 
@@ -638,7 +625,6 @@ public class EntityREST {
      */
     @POST
     @Path("/guid/{guid}/classifications")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public void addClassifications(@PathParam("guid") final String guid, List<AtlasClassification> classifications) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
 
@@ -665,7 +651,6 @@ public class EntityREST {
      */
     @PUT
     @Path("/uniqueAttribute/type/{typeName}/classifications")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public void updateClassificationsByUniqueAttribute(@PathParam("typeName") String typeName, @Context HttpServletRequest servletRequest, List<AtlasClassification> classifications) throws AtlasBaseException {
         Servlets.validateQueryParamLength("typeName", typeName);
 
@@ -697,7 +682,6 @@ public class EntityREST {
      */
     @PUT
     @Path("/guid/{guid}/classifications")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public void updateClassifications(@PathParam("guid") final String guid, List<AtlasClassification> classifications) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
 
@@ -726,7 +710,6 @@ public class EntityREST {
      */
     @DELETE
     @Path("/uniqueAttribute/type/{typeName}/classification/{classificationName}")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public void deleteClassificationByUniqueAttribute(@PathParam("typeName") String typeName, @Context HttpServletRequest servletRequest,@PathParam("classificationName") String classificationName) throws AtlasBaseException {
         Servlets.validateQueryParamLength("typeName", typeName);
         Servlets.validateQueryParamLength("classificationName", classificationName);
@@ -759,7 +742,6 @@ public class EntityREST {
      */
     @DELETE
     @Path("/guid/{guid}/classification/{classificationName}")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public void deleteClassification(@PathParam("guid") String guid,
                                      @PathParam("classificationName") final String classificationName,
                                      @QueryParam("associatedEntityGuid") final String associatedEntityGuid) throws AtlasBaseException {
@@ -811,7 +793,6 @@ public class EntityREST {
      */
     @GET
     @Path("/bulk/uniqueAttribute/type/{typeName}")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public AtlasEntitiesWithExtInfo getEntitiesByUniqueAttributes(@PathParam("typeName") String typeName,
                                                                   @QueryParam("minExtInfo") @DefaultValue("false") boolean minExtInfo,
                                                                   @QueryParam("ignoreRelationships") @DefaultValue("false") boolean ignoreRelationships,
@@ -844,7 +825,6 @@ public class EntityREST {
      */
     @GET
     @Path("/bulk")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public AtlasEntitiesWithExtInfo getByGuids(@QueryParam("guid") List<String> guids, @QueryParam("minExtInfo") @DefaultValue("false") boolean minExtInfo, @QueryParam("ignoreRelationships") @DefaultValue("false") boolean ignoreRelationships) throws AtlasBaseException {
         if (CollectionUtils.isNotEmpty(guids)) {
             for (String guid : guids) {
@@ -875,7 +855,6 @@ public class EntityREST {
      */
     @POST
     @Path("/bulk")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public EntityMutationResponse createOrUpdate(AtlasEntitiesWithExtInfo entities,
                                                  @QueryParam("replaceClassifications") @DefaultValue("false") boolean replaceClassifications,
                                                  @QueryParam("replaceBusinessAttributes") @DefaultValue("false") boolean replaceBusinessAttributes,
@@ -917,7 +896,6 @@ public class EntityREST {
      */
     @DELETE
     @Path("/bulk")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public EntityMutationResponse deleteByGuids(@QueryParam("guid") final List<String> guids) throws AtlasBaseException {
         if (CollectionUtils.isNotEmpty(guids)) {
             for (String guid : guids) {
@@ -940,7 +918,6 @@ public class EntityREST {
 
     @DELETE
     @Path("/bulk/uniqueAttribute")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public EntityMutationResponse bulkDeleteByUniqueAttribute(List<AtlasObjectId> objectIds) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
         try {
@@ -986,7 +963,6 @@ public class EntityREST {
      */
     @POST
     @Path("/bulk/classification")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public void addClassification(ClassificationAssociateRequest request) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
@@ -1051,7 +1027,6 @@ public class EntityREST {
      */
     @POST
     @Path("/bulk/classification/displayName")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public void addClassificationByDisplayName(List<AtlasClassification> classificationList) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
@@ -1101,7 +1076,6 @@ public class EntityREST {
 
     @GET
     @Path("{guid}/audit")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public List<EntityAuditEventV2> getAuditEvents(@PathParam("guid") String guid, @QueryParam("startKey") String startKey,
                                                    @QueryParam("auditAction") EntityAuditActionV2 auditAction,
                                                    @QueryParam("count") @DefaultValue("100") short count,
@@ -1113,7 +1087,6 @@ public class EntityREST {
 
     @POST
     @Path("{guid}/auditSearch")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public EntityAuditSearchResult searchAuditEventsByGuid(AuditSearchParams parameters, @PathParam("guid") String guid) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
@@ -1147,7 +1120,6 @@ public class EntityREST {
 
     @POST
     @Path("auditSearch")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public EntityAuditSearchResult searchAuditEvents(AuditSearchParams parameters) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
@@ -1210,7 +1182,6 @@ public class EntityREST {
     @GET
     @Path("bulk/headers")
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public AtlasEntityHeaders getEntityHeaders(@QueryParam("tagUpdateStartTime") long tagUpdateStartTime) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
@@ -1236,7 +1207,6 @@ public class EntityREST {
     @Path("bulk/setClassifications")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     @Consumes(Servlets.JSON_MEDIA_TYPE)
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public void setClassifications(AtlasEntityHeaders entityHeaders) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
@@ -1256,7 +1226,6 @@ public class EntityREST {
     @Path("/guid/{guid}/businessmetadata")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     @Consumes(Servlets.JSON_MEDIA_TYPE)
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public void addOrUpdateBusinessAttributes(@PathParam("guid") final String guid, @QueryParam("isOverwrite") @DefaultValue("false") boolean isOverwrite, Map<String, Map<String, Object>> businessAttributes) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
@@ -1275,7 +1244,6 @@ public class EntityREST {
     @Path("/guid/{guid}/businessmetadata/displayName")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     @Consumes(Servlets.JSON_MEDIA_TYPE)
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public void addOrUpdateBusinessAttributesByDisplayName(@PathParam("guid") final String guid, @QueryParam("isOverwrite") @DefaultValue("false") boolean isOverwrite, Map<String, Map<String, Object>> businessAttributes) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
@@ -1294,7 +1262,6 @@ public class EntityREST {
     @Path("/guid/{guid}/businessmetadata")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     @Consumes(Servlets.JSON_MEDIA_TYPE)
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public void removeBusinessAttributes(@PathParam("guid") final String guid, Map<String, Map<String, Object>> businessAttributes) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
@@ -1313,7 +1280,6 @@ public class EntityREST {
     @Path("/guid/{guid}/businessmetadata/{bmName}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     @Consumes(Servlets.JSON_MEDIA_TYPE)
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public void addOrUpdateBusinessAttributes(@PathParam("guid") final String guid, @PathParam("bmName") final String bmName, Map<String, Object> businessAttributes) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
@@ -1332,7 +1298,6 @@ public class EntityREST {
     @Path("/guid/{guid}/businessmetadata/{bmName}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     @Consumes(Servlets.JSON_MEDIA_TYPE)
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public void removeBusinessAttributes(@PathParam("guid") final String guid, @PathParam("bmName") final String bmName, Map<String, Object> businessAttributes) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
@@ -1357,7 +1322,6 @@ public class EntityREST {
     @Path("/guid/{guid}/labels")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     @Consumes(Servlets.JSON_MEDIA_TYPE)
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public void setLabels(@PathParam("guid") final String guid, Set<String> labels) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
@@ -1381,7 +1345,6 @@ public class EntityREST {
     @Path("/guid/{guid}/labels")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     @Consumes(Servlets.JSON_MEDIA_TYPE)
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public void removeLabels(@PathParam("guid") final String guid, Set<String> labels) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
@@ -1405,7 +1368,6 @@ public class EntityREST {
     @Path("/guid/{guid}/labels")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     @Consumes(Servlets.JSON_MEDIA_TYPE)
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public void addLabels(@PathParam("guid") final String guid, Set<String> labels) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
@@ -1422,7 +1384,6 @@ public class EntityREST {
 
     @POST
     @Path("/uniqueAttribute/type/{typeName}/labels")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public void setLabels(@PathParam("typeName") String typeName, Set<String> labels,
                           @Context HttpServletRequest servletRequest) throws AtlasBaseException {
 
@@ -1450,7 +1411,6 @@ public class EntityREST {
 
     @PUT
     @Path("/uniqueAttribute/type/{typeName}/labels")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public void addLabels(@PathParam("typeName") String typeName, Set<String> labels,
                           @Context HttpServletRequest servletRequest) throws AtlasBaseException {
         Servlets.validateQueryParamLength("typeName", typeName);
@@ -1477,7 +1437,6 @@ public class EntityREST {
 
     @DELETE
     @Path("/uniqueAttribute/type/{typeName}/labels")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public void removeLabels(@PathParam("typeName") String typeName, Set<String> labels,
                              @Context HttpServletRequest servletRequest) throws AtlasBaseException {
 
@@ -1632,7 +1591,6 @@ public class EntityREST {
     @POST
     @Path("/businessmetadata/import")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public BulkImportResponse importBMAttributes(@FormDataParam("file") InputStream uploadedInputStream,
                                                  @FormDataParam("file") FormDataContentDisposition fileDetail) throws AtlasBaseException {
 
@@ -1655,7 +1613,6 @@ public class EntityREST {
      */
     @POST
     @Path("/repairindex")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public void repairIndex() throws AtlasBaseException {
 
         AtlasPerfTracer perf = null;
