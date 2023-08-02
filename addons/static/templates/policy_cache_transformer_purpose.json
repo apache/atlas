@@ -1,5 +1,5 @@
 {
-  "purpose-entity-update": [
+  "entity-update": [
     {
       "policyType": "ACCESS",
       "policyResourceCategory": "TAG",

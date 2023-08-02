@@ -96,7 +96,6 @@ public class AuthPolicyValidator {
         add(ENTITY_UPDATE_CLASSIFICATION.getType());
         add(ENTITY_REMOVE_CLASSIFICATION.getType());
         add(ENTITY_UPDATE_BUSINESS_METADATA.getType());
-        add("purpose-entity-update");
         add("purpose-add-terms");
         add("purpose-remove-terms");
     }};
