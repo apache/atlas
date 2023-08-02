@@ -3,6 +3,7 @@ package org.apache.atlas.web.filters;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.prometheus.PrometheusMeterRegistry;
+import org.apache.atlas.CommonConfiguration;
 import org.apache.atlas.service.metrics.MetricsRegistry;
 import org.apache.atlas.web.model.MetricContext;
 import org.jetbrains.annotations.NotNull;
@@ -21,6 +22,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
+import static org.apache.atlas.CommonConfiguration.getMeterRegistry;
+
 /**
  * Filter used to record HTTP request & response metrics
  */
@@ -36,8 +39,7 @@ public class MetricsFilter extends OncePerRequestFilter {
 
     @Inject
     private MetricsRegistry metricsRegistry;
-    @Inject
-    private PrometheusMeterRegistry prometheusMeterRegistry;
+
 
     public MetricsFilter() {
         SpringBeanAutowiringSupport.processInjectionBasedOnCurrentContext(this);
@@ -62,7 +64,7 @@ public class MetricsFilter extends OncePerRequestFilter {
             Timer.Sample timerSample = metricContext.getTimerSample();
             Timer.Builder builder = Timer.builder(HTTP_SERVER_REQUESTS);
             timerSample.stop(builder.tags(getTags((HttpServletRequest) request, (HttpServletResponse) response))
-                    .register(this.prometheusMeterRegistry));
+                    .register(getMeterRegistry()));
         } catch (Exception ex) {
             LOG.warn("Failed to record http requests metrics", ex);
         }
@@ -75,7 +77,7 @@ public class MetricsFilter extends OncePerRequestFilter {
     }
 
     private MetricContext startMetricsTimer(HttpServletRequest request) {
-        Timer.Sample timerSample = Timer.start(this.prometheusMeterRegistry);
+        Timer.Sample timerSample = Timer.start(getMeterRegistry());
         MetricContext timingContext = new MetricContext(timerSample);
         timingContext.attachTo(request);
         return timingContext;

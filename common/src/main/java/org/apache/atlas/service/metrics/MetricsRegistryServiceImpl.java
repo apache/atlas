@@ -1,13 +1,13 @@
 package org.apache.atlas.service.metrics;
 
 import io.micrometer.core.instrument.Meter;
+import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.binder.BaseUnits;
 import io.micrometer.core.instrument.distribution.DistributionStatisticConfig;
 import io.micrometer.prometheus.PrometheusMeterRegistry;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.annotation.ConditionalOnAtlasProperty;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +17,8 @@ import javax.inject.Inject;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.time.Duration;
+
+import static org.apache.atlas.CommonConfiguration.getMeterRegistry;
 
 @Component
 public class MetricsRegistryServiceImpl implements MetricsRegistry {
@@ -29,12 +31,10 @@ public class MetricsRegistryServiceImpl implements MetricsRegistry {
     private static final int SEC_MILLIS_SCALE = 1;
     private static final String METHOD_LEVEL_METRICS_ENABLE = "atlas.metrics.method_level.enable";
 
-    private final PrometheusMeterRegistry prometheusMeterRegistry;
     private final DistributionStatisticConfig distributionStatisticConfig;
 
     @Inject
-    public MetricsRegistryServiceImpl(PrometheusMeterRegistry prometheusMeterRegistry) {
-        this.prometheusMeterRegistry = prometheusMeterRegistry;
+    public MetricsRegistryServiceImpl() {
         this.distributionStatisticConfig =  DistributionStatisticConfig.builder().percentilePrecision(2)
                                             .percentiles(PERCENTILES)
                                             .bufferLength(3)
@@ -56,7 +56,7 @@ public class MetricsRegistryServiceImpl implements MetricsRegistry {
         }
         for (String name : metrics.getMetricsNames()) {
             AtlasPerfMetrics.Metric metric = metrics.getMetric(name);
-            this.prometheusMeterRegistry.newDistributionSummary(new Meter.Id(METHOD_DIST_SUMMARY,
+            getMeterRegistry().newDistributionSummary(new Meter.Id(METHOD_DIST_SUMMARY,
                                     Tags.of(NAME, metric.getName()), BaseUnits.MILLISECONDS, METHOD_DIST_SUMMARY,
                                     Meter.Type.TIMER), distributionStatisticConfig, SEC_MILLIS_SCALE)
                     .record(metric.getTotalTimeMSecs());
@@ -64,13 +64,17 @@ public class MetricsRegistryServiceImpl implements MetricsRegistry {
     }
 
     @Override
-    public void scrape(PrintWriter writer) throws IOException {
-        try {
-            this.prometheusMeterRegistry.scrape(writer);
-            writer.flush();
-        } finally {
-            writer.close();
-        }
+    public void scrape(PrintWriter writer) {
+        Metrics.globalRegistry.getRegistries().forEach(r -> {
+            try {
+                ((PrometheusMeterRegistry) r).scrape(writer);
+                writer.flush();
+            } catch (IOException e) {
+                LOG.warn("Failed to write metrics while scraping", e);
+            }finally {
+                writer.close();
+            }
+        });
     }
 
 }

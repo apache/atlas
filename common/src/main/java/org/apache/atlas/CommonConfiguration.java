@@ -17,6 +17,7 @@
  */
 package org.apache.atlas;
 
+import io.micrometer.core.instrument.Metrics;
 import io.micrometer.prometheus.PrometheusConfig;
 import io.micrometer.prometheus.PrometheusMeterRegistry;
 import org.slf4j.Logger;
@@ -31,6 +32,12 @@ public class CommonConfiguration {
     private static final Logger LOGGER = LoggerFactory.getLogger(CommonConfiguration.class);
     private static final String SERVICE = "service";
     private static final String ATLAS_METASTORE = "atlas-metastore";
+    private static final PrometheusMeterRegistry METER_REGISTRY;
+    static {
+        METER_REGISTRY = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
+        METER_REGISTRY.config().withHighCardinalityTagsDetector().commonTags(SERVICE, ATLAS_METASTORE);
+        Metrics.globalRegistry.add(METER_REGISTRY);
+    }
 
     @Bean
     public org.apache.commons.configuration.Configuration getAtlasConfig() throws AtlasException {
@@ -42,11 +49,8 @@ public class CommonConfiguration {
         }
     }
 
-    @Bean
-    public PrometheusMeterRegistry getPrometheusMetricRegistry() {
-        PrometheusMeterRegistry prometheusMeterRegistry = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
-        prometheusMeterRegistry.config().withHighCardinalityTagsDetector().commonTags(SERVICE, ATLAS_METASTORE);
-        return prometheusMeterRegistry;
+    public static PrometheusMeterRegistry getMeterRegistry() {
+        return METER_REGISTRY;
     }
 
 }
