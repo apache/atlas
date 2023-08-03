@@ -127,8 +127,8 @@ public class AuditFilter implements Filter {
             httpResponse.setHeader(TRACE_ID, internalRequestId);
             httpResponse.setHeader(X_ATLAN_REQUEST_ID, MDC.get(X_ATLAN_REQUEST_ID));
             currentThread.setName(oldName);
-            MDC.clear();
             RequestContext.clear();
+            MDC.clear();
         }
     }
 
