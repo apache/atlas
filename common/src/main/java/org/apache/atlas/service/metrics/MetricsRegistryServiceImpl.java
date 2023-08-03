@@ -18,7 +18,8 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.time.Duration;
 
-import static org.apache.atlas.CommonConfiguration.getMeterRegistry;
+import static org.apache.atlas.service.metrics.MetricUtils.getMeterRegistry;
+
 
 @Component
 public class MetricsRegistryServiceImpl implements MetricsRegistry {

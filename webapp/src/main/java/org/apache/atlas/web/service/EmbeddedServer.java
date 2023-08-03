@@ -48,7 +48,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import static org.apache.atlas.CommonConfiguration.getMeterRegistry;
+import static org.apache.atlas.service.metrics.MetricUtils.getMeterRegistry;
 
 /**
  * This class embeds a Jetty server and a connector.
