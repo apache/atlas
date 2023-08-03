@@ -89,6 +89,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
     private Date    createTime     = null;
     private Date    updateTime     = null;
     private Long    version        = 0L;
+    private Boolean starred       = null;
 
     private Map<String, Object>              relationshipAttributes;
     private List<AtlasClassification>        classifications;
@@ -278,6 +279,14 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
 
     public void setStatus(Status status) {
         this.status = status;
+    }
+
+    public Boolean getStarred() {
+        return starred;
+    }
+
+    public void setStarred(Boolean starred) {
+        this.starred = starred;
     }
 
     public String getCreatedBy() {
