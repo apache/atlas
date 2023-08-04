@@ -63,7 +63,11 @@ public class MetricUtils {
         if (Objects.nonNull(additionalTags) && additionalTags.length > 0) {
             tags = tags.and(additionalTags);
         }
-        return Timer.builder(timerName).tags(tags).register(getMeterRegistry());
+        return Timer.builder(timerName)
+                .publishPercentiles(0.5,0.90,0.99)
+                .publishPercentileHistogram()
+                .tags(tags)
+                .register(getMeterRegistry());
     }
 
     private Tags getTags(String httpMethod, int httpResponseStatus, String uri) {
