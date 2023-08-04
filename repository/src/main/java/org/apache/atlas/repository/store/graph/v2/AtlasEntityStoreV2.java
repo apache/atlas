@@ -58,13 +58,14 @@ import org.apache.atlas.repository.store.graph.v2.AtlasEntityComparator.AtlasEnt
 import org.apache.atlas.repository.store.graph.v1.RestoreHandlerV1;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.AuthPolicyPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.ConnectionPreProcessor;
-import org.apache.atlas.repository.store.graph.v2.preprocessor.LinkPreProcessor;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.resource.LinkPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.accesscontrol.PersonaPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.accesscontrol.PurposePreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.CategoryPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.GlossaryPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.TermPreProcessor;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.resource.ReadmePreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.sql.QueryCollectionPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.sql.QueryFolderPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.sql.QueryPreProcessor;
@@ -108,6 +109,7 @@ import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.GraphHelper.*;
 import static org.apache.atlas.repository.graph.GraphHelper.getStatus;
 import static org.apache.atlas.repository.store.graph.v2.EntityGraphMapper.validateLabels;
+import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor.RESOURCES_ENTITY_TYPES;
 import static org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTaskFactory.*;
 import static org.apache.atlas.type.Constants.HAS_LINEAGE;
 import static org.apache.atlas.type.Constants.HAS_LINEAGE_VALID;
@@ -1510,8 +1512,10 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                                 CollectionUtils.isEmpty(diffEntity.getLabels())) {
                             //do nothing, only diff is relationshipAttributes.meanings, allow update
                         } else {
-                            AtlasEntityAccessRequest accessRequest = new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, entityHeader);
-                            AtlasAuthorizationUtils.verifyAccess(accessRequest, "update entity: type=", entity.getTypeName());
+                            if (!RESOURCES_ENTITY_TYPES.contains(entityHeader.getTypeName())) {
+                                AtlasEntityAccessRequest accessRequest = new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, entityHeader);
+                                AtlasAuthorizationUtils.verifyAccess(accessRequest, "update entity: type=", entity.getTypeName());
+                            }
                         }
                     }
                 }
@@ -1735,7 +1739,11 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 break;
 
             case LINK_ENTITY_TYPE:
-                preProcessor = new LinkPreProcessor();
+                preProcessor = new LinkPreProcessor(typeRegistry, entityRetriever);
+                break;
+
+            case README_ENTITY_TYPE:
+                preProcessor = new ReadmePreProcessor(typeRegistry, entityRetriever);
                 break;
         }
 

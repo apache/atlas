@@ -154,6 +154,12 @@ public final class Constants {
      * Resource
      */
     public static final String LINK_ENTITY_TYPE = "Link";
+    public static final String README_ENTITY_TYPE = "Readme";
+
+    public static final String ASSET_RELATION_ATTR = "asset";
+
+    public static final String ASSET_README_EDGE_LABEL = "__Asset.readme";
+    public static final String ASSET_LINK_EDGE_LABEL = "__Asset.links";
 
     /**
      * Lineage relations.

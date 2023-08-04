@@ -826,15 +826,13 @@
                 "policyType": "allow",
                 "policyPriority": 1,
                 "policyUsers":
-                [],
+                [
+                    "service-account-atlan-argo",
+                    "service-account-atlan-backend"
+                ],
                 "policyGroups":
                 [],
-                "policyRoles":
-                [
-                    "$admin",
-                    "$member",
-                    "$api-token-default-access"
-                ],
+                "policyRoles": [],
                 "policyResourceCategory": "ENTITY",
                 "policyResources":
                 [
@@ -1350,15 +1348,14 @@
                 "policyType": "allow",
                 "policyPriority": 1,
                 "policyUsers":
-                [],
+                [
+                    "service-account-atlan-argo",
+                    "service-account-atlan-backend"
+                ],
                 "policyGroups":
                 [],
                 "policyRoles":
-                [
-                    "$admin",
-                    "$member",
-                    "$api-token-default-access"
-                ],
+                [],
                 "policyResourceCategory": "ENTITY",
                 "policyResources":
                 [

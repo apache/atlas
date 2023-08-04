@@ -11,6 +11,8 @@ import java.util.Set;
 
 import static org.apache.atlas.repository.Constants.ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.ATLAS_GLOSSARY_TERM_ENTITY_TYPE;
+import static org.apache.atlas.repository.Constants.LINK_ENTITY_TYPE;
+import static org.apache.atlas.repository.Constants.README_ENTITY_TYPE;
 
 
 public interface PreProcessor {
@@ -18,6 +20,11 @@ public interface PreProcessor {
     Set<String> skipInitialAuthCheckTypes = new HashSet<String>() {{
         add(ATLAS_GLOSSARY_TERM_ENTITY_TYPE);
         add(ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE);
+    }};
+
+    public static final Set<String> RESOURCES_ENTITY_TYPES = new HashSet<String>() {{
+        add(README_ENTITY_TYPE);
+        add(LINK_ENTITY_TYPE);
     }};
 
     void processAttributes(AtlasStruct entity, EntityMutationContext context, EntityMutations.EntityOperation operation) throws AtlasBaseException;
