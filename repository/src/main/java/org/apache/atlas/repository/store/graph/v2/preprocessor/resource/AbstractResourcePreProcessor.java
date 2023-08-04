@@ -53,22 +53,19 @@ public abstract class AbstractResourcePreProcessor implements PreProcessor {
         this.entityRetriever = entityRetriever;
     }
 
-    public void authorizeUpdate(AtlasEntity resourceEntity, AtlasVertex ResourceVertex, String edgeLabel) throws AtlasBaseException {
+    void authorizeResourceUpdate(AtlasEntity resourceEntity, AtlasVertex ResourceVertex, String edgeLabel) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("authorizeResourceUpdate");
 
         try {
             AtlasEntityHeader entityHeaderToAuthorize = null;
 
-            if (resourceEntity.hasRelationshipAttribute(ASSET_RELATION_ATTR) &&
-                    resourceEntity.getRelationshipAttribute(ASSET_RELATION_ATTR) != null) {
+            AtlasObjectId asset = getAssetRelationAttr(resourceEntity);
+            if (asset != null) {
                 //Found linked asset in payload
-                AtlasObjectId asset = (AtlasObjectId) resourceEntity.getRelationshipAttribute(ASSET_RELATION_ATTR);
-
                 AtlasVertex assetVertex = entityRetriever.getEntityVertex(asset);
                 entityHeaderToAuthorize = entityRetriever.toAtlasEntityHeader(assetVertex);
-            }
 
-            if (entityHeaderToAuthorize == null) {
+            } else {
                 //Check for linked asset in store
                 Iterator atlasVertexIterator = ResourceVertex.query()
                         .direction(AtlasEdgeDirection.IN)
@@ -78,13 +75,14 @@ public abstract class AbstractResourcePreProcessor implements PreProcessor {
                         .iterator();
 
                 if (atlasVertexIterator.hasNext()) {
+                    //Found linked asset in store
                     AtlasVertex assetVertex = (AtlasVertex) atlasVertexIterator.next();
                     entityHeaderToAuthorize = entityRetriever.toAtlasEntityHeader(assetVertex);
-                }
-            }
 
-            if (entityHeaderToAuthorize == null) {
-                entityHeaderToAuthorize = new AtlasEntityHeader(resourceEntity);
+                } else  {
+                    //No linked asset to the Resource, check for resource update permission
+                    entityHeaderToAuthorize = new AtlasEntityHeader(resourceEntity);
+                }
             }
 
             AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, entityHeaderToAuthorize),
@@ -92,5 +90,43 @@ public abstract class AbstractResourcePreProcessor implements PreProcessor {
         } finally {
             RequestContext.get().endMetricRecord(metricRecorder);
         }
+    }
+
+    void authorizeResourceDelete(AtlasVertex resourceVertex) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("authorizeResourceDelete");
+
+        try {
+            AtlasEntityHeader entityHeaderToAuthorize = null;
+
+            AtlasEntity resourceEntity = entityRetriever.toAtlasEntity(resourceVertex);
+
+            AtlasObjectId asset = getAssetRelationAttr(resourceEntity);
+            if (asset != null) {
+                entityHeaderToAuthorize = entityRetriever.toAtlasEntityHeader(asset.getGuid());
+
+                AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, entityHeaderToAuthorize),
+                        "update entity: ", entityHeaderToAuthorize.getTypeName());
+
+            } else {
+                entityHeaderToAuthorize = new AtlasEntityHeader(resourceEntity);
+
+                AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_DELETE, entityHeaderToAuthorize),
+                        "delete entity: ", entityHeaderToAuthorize.getTypeName());
+            }
+
+        } finally {
+            RequestContext.get().endMetricRecord(recorder);
+        }
+    }
+
+    private AtlasObjectId getAssetRelationAttr(AtlasEntity entity) {
+        AtlasObjectId ret = null;
+
+        if (entity.hasRelationshipAttribute(ASSET_RELATION_ATTR) &&
+                entity.getRelationshipAttribute(ASSET_RELATION_ATTR) != null) {
+            ret = (AtlasObjectId) entity.getRelationshipAttribute(ASSET_RELATION_ATTR);
+        }
+
+        return ret;
     }
 }

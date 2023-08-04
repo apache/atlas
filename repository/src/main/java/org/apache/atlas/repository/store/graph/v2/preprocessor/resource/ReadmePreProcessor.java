@@ -69,9 +69,14 @@ public class ReadmePreProcessor extends AbstractResourcePreProcessor {
         AtlasEntity readmeEntity = (AtlasEntity) struct;
 
         try {
-            authorizeUpdate(readmeEntity, vertex, ASSET_README_EDGE_LABEL);
+            authorizeResourceUpdate(readmeEntity, vertex, ASSET_README_EDGE_LABEL);
         } finally {
             RequestContext.get().endMetricRecord(metricRecorder);
         }
+    }
+
+    @Override
+    public void processDelete(AtlasVertex vertex) throws AtlasBaseException {
+        authorizeResourceDelete(vertex);
     }
 }

@@ -35,6 +35,9 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.*;
 
+import static org.apache.atlas.repository.Constants.SKIP_DELETE_AUTH_CHECK_TYPES;
+import static org.apache.atlas.repository.Constants.SKIP_UPDATE_AUTH_CHECK_TYPES;
+
 public class AtlasAuthorizationUtils {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasAuthorizationUtils.class);
 
@@ -51,6 +54,18 @@ public class AtlasAuthorizationUtils {
             String message = (errorMsgParams != null && errorMsgParams.length > 0) ? StringUtils.join(errorMsgParams) : "";
 
             throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, request.getUser(), message);
+        }
+    }
+
+    public static void verifyUpdateEntityAccess(AtlasEntityAccessRequest request, Object... errorMsgParams) throws AtlasBaseException {
+        if (!SKIP_UPDATE_AUTH_CHECK_TYPES.contains(request.getEntity().getTypeName())) {
+            verifyAccess(request, errorMsgParams);
+        }
+    }
+
+    public static void verifyDeleteEntityAccess(AtlasEntityAccessRequest request, Object... errorMsgParams) throws AtlasBaseException {
+        if (!SKIP_DELETE_AUTH_CHECK_TYPES.contains(request.getEntity().getTypeName())) {
+            verifyAccess(request, errorMsgParams);
         }
     }
 

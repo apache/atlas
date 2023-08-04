@@ -64,7 +64,7 @@ public class LinkPreProcessor extends AbstractResourcePreProcessor {
         try {
             validateLinkAttribute(linkEntity, UPDATE.name());
 
-            authorizeUpdate(linkEntity, vertex, ASSET_LINK_EDGE_LABEL);
+            authorizeResourceUpdate(linkEntity, vertex, ASSET_LINK_EDGE_LABEL);
         } finally {
             RequestContext.get().endMetricRecord(metricRecorder);
         }
@@ -94,5 +94,10 @@ public class LinkPreProcessor extends AbstractResourcePreProcessor {
 
     private static Predicate<String> matchesEither(final Pattern a, final Pattern b) {
         return input -> a.matcher(input).matches() || b.matcher(input).matches();
+    }
+
+    @Override
+    public void processDelete(AtlasVertex vertex) throws AtlasBaseException {
+        authorizeResourceDelete(vertex);
     }
 }
