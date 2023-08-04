@@ -65,7 +65,6 @@ public class MetricUtils {
         }
         return Timer.builder(timerName)
                 .publishPercentiles(0.5,0.90,0.99)
-                .publishPercentileHistogram()
                 .tags(tags)
                 .register(getMeterRegistry());
     }
