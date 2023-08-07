@@ -78,15 +78,32 @@ public abstract class AbstractResourcePreProcessor implements PreProcessor {
                     //Found linked asset in store
                     AtlasVertex assetVertex = (AtlasVertex) atlasVertexIterator.next();
                     entityHeaderToAuthorize = entityRetriever.toAtlasEntityHeader(assetVertex);
-
-                } else  {
-                    //No linked asset to the Resource, check for resource update permission
-                    entityHeaderToAuthorize = new AtlasEntityHeader(resourceEntity);
                 }
             }
 
-            AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, entityHeaderToAuthorize),
-                    "update entity: ", entityHeaderToAuthorize.getTypeName());
+            if (entityHeaderToAuthorize != null) {
+                //First authorize entity update access
+                AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, entityHeaderToAuthorize),
+                        "update entity: ", entityHeaderToAuthorize.getTypeName());
+
+                entityHeaderToAuthorize = new AtlasEntityHeader(resourceEntity);
+
+                try {
+                    AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, entityHeaderToAuthorize),
+                            "update entity: ", entityHeaderToAuthorize.getTypeName());
+                } catch (AtlasBaseException abe) {
+                    //ignore as this is just for access logs purpose
+                }
+            }
+
+            if (entityHeaderToAuthorize == null) {
+                //No linked asset to the Resource, check for resource update permission
+                entityHeaderToAuthorize = new AtlasEntityHeader(resourceEntity);
+
+                AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, entityHeaderToAuthorize),
+                        "update entity: ", entityHeaderToAuthorize.getTypeName());
+            }
+
         } finally {
             RequestContext.get().endMetricRecord(metricRecorder);
         }
@@ -107,7 +124,17 @@ public abstract class AbstractResourcePreProcessor implements PreProcessor {
                 AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, entityHeaderToAuthorize),
                         "update entity: ", entityHeaderToAuthorize.getTypeName());
 
+                entityHeaderToAuthorize = new AtlasEntityHeader(resourceEntity);
+
+                try {
+                    AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_DELETE, entityHeaderToAuthorize),
+                            "delete entity: ", entityHeaderToAuthorize.getTypeName());
+                } catch (AtlasBaseException abe) {
+                    //ignore as this is just for access logs purpose
+                }
+
             } else {
+                //No linked asset to the Resource, check for resource delete permission
                 entityHeaderToAuthorize = new AtlasEntityHeader(resourceEntity);
 
                 AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_DELETE, entityHeaderToAuthorize),
