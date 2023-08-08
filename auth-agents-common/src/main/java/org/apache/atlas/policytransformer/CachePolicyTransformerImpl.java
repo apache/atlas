@@ -150,7 +150,6 @@ public class CachePolicyTransformerImpl {
             if (service != null) {
                 List<RangerPolicy> allPolicies = getServicePolicies(service);
                 servicePolicies.setServiceName(serviceName);
-                //servicePolicies.setPolicies(policies);
                 servicePolicies.setServiceId(service.getGuid());
 
                 String serviceDefName = String.format(RESOURCE_SERVICE_DEF_PATTERN, serviceName);
@@ -168,7 +167,6 @@ public class CachePolicyTransformerImpl {
                         TagPolicies tagPolicies = new TagPolicies();
 
                         tagPolicies.setServiceName(tagServiceName);
-                        //tagPolicies.setPolicies(atlasTagPolicies);
                         tagPolicies.setPolicyUpdateTime(new Date());
                         tagPolicies.setServiceId(tagService.getGuid());
                         tagPolicies.setPolicyVersion(-1L);
@@ -180,7 +178,7 @@ public class CachePolicyTransformerImpl {
                     }
                 }
 
-                AtlasPerfMetrics.MetricRecorder recorder1 = RequestContext.get().startMetricRecord("filterPolicies");
+                AtlasPerfMetrics.MetricRecorder recorderFilterPolicies = RequestContext.get().startMetricRecord("filterPolicies");
                 //filter out policies based on serviceName
                 List<RangerPolicy> policiesA = allPolicies.stream().filter(x -> serviceName.equals(x.getService())).collect(Collectors.toList());
                 List<RangerPolicy> policiesB = allPolicies.stream().filter(x -> tagServiceName.equals(x.getService())).collect(Collectors.toList());
@@ -188,7 +186,7 @@ public class CachePolicyTransformerImpl {
                 servicePolicies.setPolicies(policiesA);
                 servicePolicies.getTagPolicies().setPolicies(policiesB);
 
-                RequestContext.get().endMetricRecord(recorder1);
+                RequestContext.get().endMetricRecord(recorderFilterPolicies);
 
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("Found {} policies", servicePolicies.getPolicies().size());
