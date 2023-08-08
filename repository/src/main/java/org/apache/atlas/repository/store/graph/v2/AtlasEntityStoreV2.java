@@ -1688,6 +1688,9 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     }
 
     private void autoUpdateStarredDetailsAttributes(AtlasEntity entity, AtlasVertex vertex) {
+
+        MetricRecorder metric = RequestContext.get().startMetricRecord("autoUpdateStarredDetailsAttributes");
+
         Boolean starEntityForUser = entity.getStarred();
 
         if (starEntityForUser != null) {
@@ -1718,41 +1721,9 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             }
 
             if (starEntityForUser) {
-
-                //Check and update starredBy Attribute
-                if (!starredBy.contains(requestUser)){
-                    starredBy.add(requestUser);
-                }
-
-                //Check and update starredDetailsList Attribute
-                boolean isStarredDetailsListUpdated = false;
-                for (AtlasStruct starredDetails : starredDetailsList) {
-                    String assetStarredBy = (String) starredDetails.getAttribute(ATTR_ASSET_STARRED_BY);
-                    if (assetStarredBy.equals(requestUser)) {
-                        starredDetails.setAttribute(ATTR_ASSET_STARRED_AT, requestTime);
-                        isStarredDetailsListUpdated = true;
-                        break;
-                    }
-                }
-                if (!isStarredDetailsListUpdated) {
-                    AtlasStruct starredDetails = getStarredDetailsStruct(requestUser, requestTime);
-                    starredDetailsList.add(starredDetails);
-                }
-
+                addUserToStarredAttributes(requestUser, requestTime, starredBy, starredDetailsList);
             } else {
-
-                //Check and update starredBy Attribute
-                if (starredBy.contains(requestUser)){
-                    starredBy.remove(requestUser);
-                }
-
-                for (AtlasStruct starredDetails : starredDetailsList) {
-                    String assetStarredBy = (String) starredDetails.getAttribute(ATTR_ASSET_STARRED_BY);
-                    if (assetStarredBy.equals(requestUser)) {
-                        starredDetailsList.remove(starredDetails);
-                        break;
-                    }
-                }
+                removeUserFromStarredAttributes(requestUser, starredBy, starredDetailsList);
             }
 
             // Update entity attributes
@@ -1762,6 +1733,45 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 entity.setAttribute(ATTR_STARRED_COUNT, starredBy.size());
             }
 
+        }
+
+        RequestContext.get().endMetricRecord(metric);
+    }
+
+    private void addUserToStarredAttributes(String requestUser, long requestTime, Set<String> starredBy, Set<AtlasStruct> starredDetailsList) {
+        //Check and update starredBy Attribute
+        if (!starredBy.contains(requestUser)){
+            starredBy.add(requestUser);
+        }
+
+        //Check and update starredDetailsList Attribute
+        boolean isStarredDetailsListUpdated = false;
+        for (AtlasStruct starredDetails : starredDetailsList) {
+            String assetStarredBy = (String) starredDetails.getAttribute(ATTR_ASSET_STARRED_BY);
+            if (assetStarredBy.equals(requestUser)) {
+                starredDetails.setAttribute(ATTR_ASSET_STARRED_AT, requestTime);
+                isStarredDetailsListUpdated = true;
+                break;
+            }
+        }
+        if (!isStarredDetailsListUpdated) {
+            AtlasStruct starredDetails = getStarredDetailsStruct(requestUser, requestTime);
+            starredDetailsList.add(starredDetails);
+        }
+    }
+
+    private void removeUserFromStarredAttributes(String requestUser, Set<String> starredBy, Set<AtlasStruct> starredDetailsList) {
+        //Check and update starredBy Attribute
+        if (starredBy.contains(requestUser)){
+            starredBy.remove(requestUser);
+        }
+
+        for (AtlasStruct starredDetails : starredDetailsList) {
+            String assetStarredBy = (String) starredDetails.getAttribute(ATTR_ASSET_STARRED_BY);
+            if (assetStarredBy.equals(requestUser)) {
+                starredDetailsList.remove(starredDetails);
+                break;
+            }
         }
     }
 
@@ -2060,11 +2070,11 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 }
             }
 
-            for (String attrName : entityType.getAllAttributes().keySet()) {
-                if (ATTR_STARRED_BY.equals(attrName) || ATTR_STARRED_COUNT.equals(attrName) || ATTR_STARRED_DETAILS_LIST.equals(attrName)) {
-                    flushAttributes.add(attrName);
-                }
-            }
+//            for (String attrName : entityType.getAllAttributes().keySet()) {
+//                if (ATTR_STARRED_BY.equals(attrName) || ATTR_STARRED_COUNT.equals(attrName) || ATTR_STARRED_DETAILS_LIST.equals(attrName)) {
+//                    flushAttributes.add(attrName);
+//                }
+//            }
 
             flushAttributes.forEach(entity::removeAttribute);
         }
