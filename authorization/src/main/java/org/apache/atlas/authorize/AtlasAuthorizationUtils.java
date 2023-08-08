@@ -22,6 +22,8 @@ package org.apache.atlas.authorize;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -57,15 +59,17 @@ public class AtlasAuthorizationUtils {
         }
     }
 
-    public static void verifyUpdateEntityAccess(AtlasEntityAccessRequest request, Object... errorMsgParams) throws AtlasBaseException {
-        if (!SKIP_UPDATE_AUTH_CHECK_TYPES.contains(request.getEntity().getTypeName())) {
-            verifyAccess(request, errorMsgParams);
+    public static void verifyUpdateEntityAccess(AtlasTypeRegistry typeRegistry, AtlasEntityHeader entityHeader, String message) throws AtlasBaseException {
+        if (!SKIP_UPDATE_AUTH_CHECK_TYPES.contains(entityHeader.getTypeName())) {
+            AtlasEntityAccessRequest request = new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, entityHeader);
+            verifyAccess(request, message);
         }
     }
 
-    public static void verifyDeleteEntityAccess(AtlasEntityAccessRequest request, Object... errorMsgParams) throws AtlasBaseException {
-        if (!SKIP_DELETE_AUTH_CHECK_TYPES.contains(request.getEntity().getTypeName())) {
-            verifyAccess(request, errorMsgParams);
+    public static void verifyDeleteEntityAccess(AtlasTypeRegistry typeRegistry, AtlasEntityHeader entityHeader, String message) throws AtlasBaseException {
+        if (!SKIP_DELETE_AUTH_CHECK_TYPES.contains(entityHeader.getTypeName())) {
+            AtlasEntityAccessRequest request = new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_DELETE, entityHeader);
+            verifyAccess(request, message);
         }
     }
 

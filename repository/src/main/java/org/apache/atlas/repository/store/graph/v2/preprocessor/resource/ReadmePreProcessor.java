@@ -50,17 +50,10 @@ public class ReadmePreProcessor extends AbstractResourcePreProcessor {
         AtlasEntity entity = (AtlasEntity) entityStruct;
 
         switch (operation) {
-            case CREATE:
-                processCreateReadme(entity);
-                break;
             case UPDATE:
                 processUpdateReadme(entity, context.getVertex(entity.getGuid()));
                 break;
         }
-    }
-
-    private void processCreateReadme(AtlasStruct struct) throws AtlasBaseException {
-        //Do nothing
     }
 
     private void processUpdateReadme(AtlasStruct struct, AtlasVertex vertex) throws AtlasBaseException {
