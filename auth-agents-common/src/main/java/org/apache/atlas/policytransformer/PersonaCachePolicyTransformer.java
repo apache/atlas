@@ -51,10 +51,13 @@ import static org.apache.atlas.repository.util.AccessControlUtils.getPolicySubCa
 public class PersonaCachePolicyTransformer extends AbstractCachePolicyTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PersonaCachePolicyTransformer.class);
 
+    private final static String TEMPLATE_SUFFIX = "persona";
+
     private EntityGraphRetriever entityRetriever = null;
+    private PolicyTransformerTemplate personaTemplate;
 
     public PersonaCachePolicyTransformer(EntityGraphRetriever entityRetriever) throws AtlasBaseException {
-        super();
+        personaTemplate = getTemplate(TEMPLATE_SUFFIX);
         this.entityRetriever = entityRetriever;
     }
 
@@ -69,7 +72,7 @@ public class PersonaCachePolicyTransformer extends AbstractCachePolicyTransforme
 
         int index = 0;
         for (String atlasAction : atlasActions) {
-            List<PolicyTransformerTemplate.TemplatePolicy> currentTemplates = templates.getTemplate(atlasAction);
+            List<PolicyTransformerTemplate.TemplatePolicy> currentTemplates = personaTemplate.getTemplate(atlasAction);
 
             if (CollectionUtils.isEmpty(currentTemplates)) {
                 LOG.warn("PolicyTransformerImpl: Skipping unknown action {} while transforming policy {}", atlasAction, atlasPolicy.getGuid());
