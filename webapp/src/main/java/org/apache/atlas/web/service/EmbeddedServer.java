@@ -18,6 +18,8 @@
 
 package org.apache.atlas.web.service;
 
+import io.micrometer.core.instrument.binder.jetty.JettyConnectionMetrics;
+import io.micrometer.core.instrument.binder.jetty.JettyServerThreadPoolMetrics;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.util.BeanUtil;
@@ -35,10 +37,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Date;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+
+import static org.apache.atlas.service.metrics.MetricUtils.getMeterRegistry;
 
 /**
  * This class embeds a Jetty server and a connector.
@@ -68,6 +73,8 @@ public class EmbeddedServer {
         server = new Server(pool);
 
         Connector connector = getConnector(host, port);
+        connector.addBean(new JettyConnectionMetrics(getMeterRegistry()));
+        new JettyServerThreadPoolMetrics(pool, Collections.emptyList()).bindTo(getMeterRegistry());
         server.addConnector(connector);
 
         WebAppContext application = getWebAppContext(path);
