@@ -1501,17 +1501,11 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                         }
 
                         AtlasEntity diffEntity = reqContext.getDifferentialEntity(entity.getGuid());
-
-                        if (diffEntity != null &&
-                                MapUtils.isNotEmpty(diffEntity.getRelationshipAttributes()) &&
-                                diffEntity.getRelationshipAttributes().containsKey("meanings") &&
-                                diffEntity.getRelationshipAttributes().size() == 1 &&
-                                MapUtils.isEmpty(diffEntity.getAttributes()) &&
-                                MapUtils.isEmpty(diffEntity.getCustomAttributes()) &&
-                                MapUtils.isEmpty(diffEntity.getBusinessAttributes()) &&
-                                CollectionUtils.isEmpty(diffEntity.getClassifications()) &&
-                                CollectionUtils.isEmpty(diffEntity.getLabels())) {
-                            //do nothing, only diff is relationshipAttributes.meanings, allow update
+                        boolean skipAuthBaseConditions = diffEntity != null && MapUtils.isEmpty(diffEntity.getCustomAttributes()) && MapUtils.isEmpty(diffEntity.getBusinessAttributes()) && CollectionUtils.isEmpty(diffEntity.getClassifications()) && CollectionUtils.isEmpty(diffEntity.getLabels());
+                        boolean skipAuthMeaningsUpdate = diffEntity != null && MapUtils.isNotEmpty(diffEntity.getRelationshipAttributes()) && diffEntity.getRelationshipAttributes().containsKey("meanings") && diffEntity.getRelationshipAttributes().size() == 1 && MapUtils.isEmpty(diffEntity.getAttributes());
+                        boolean skipAuthStarredDetailsUpdate = diffEntity != null && MapUtils.isEmpty(diffEntity.getRelationshipAttributes()) && MapUtils.isNotEmpty(diffEntity.getAttributes()) && diffEntity.getAttributes().size() == 3 && diffEntity.getAttributes().containsKey(ATTR_STARRED_BY) && diffEntity.getAttributes().containsKey(ATTR_STARRED_COUNT) && diffEntity.getAttributes().containsKey(ATTR_STARRED_DETAILS_LIST);
+                        if (skipAuthBaseConditions && (skipAuthMeaningsUpdate || skipAuthStarredDetailsUpdate)) {
+                            //do nothing, only diff is relationshipAttributes.meanings or starred, allow update
                         } else {
                             AtlasAuthorizationUtils.verifyUpdateEntityAccess(typeRegistry, entityHeader,"update entity: type=" + entity.getTypeName());
                         }
@@ -1595,6 +1589,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 flushAutoUpdateAttributes(entity, entityType);
 
                 AtlasVertex vertex = getResolvedEntityVertex(discoveryContext, entity);
+
+                autoUpdateStarredDetailsAttributes(entity, vertex);
 
                 try {
                     if (vertex != null) {
@@ -1690,6 +1686,102 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         RequestContext.get().endMetricRecord(metric);
 
         return context;
+    }
+
+    private void autoUpdateStarredDetailsAttributes(AtlasEntity entity, AtlasVertex vertex) {
+
+        MetricRecorder metric = RequestContext.get().startMetricRecord("autoUpdateStarredDetailsAttributes");
+
+        Boolean starEntityForUser = entity.getStarred();
+
+        if (starEntityForUser != null) {
+
+            long requestTime = RequestContext.get().getRequestTime();
+            String requestUser = RequestContext.get().getUser();
+
+            Set<String> starredBy = new HashSet<>();
+            Set<AtlasStruct> starredDetailsList = new HashSet<>();
+            int starredCount = 0;
+
+            if (vertex != null) {
+                Set<String> vertexStarredBy = vertex.getMultiValuedSetProperty(ATTR_STARRED_BY, String.class);
+                if (vertexStarredBy != null) {
+                    starredBy = vertexStarredBy;
+                }
+
+                Iterable<AtlasEdge> starredDetailsEdges = vertex.getEdges(AtlasEdgeDirection.OUT, "__" + ATTR_STARRED_DETAILS_LIST);
+                for (AtlasEdge starredDetailsEdge : starredDetailsEdges) {
+                    AtlasVertex starredDetailsVertex = starredDetailsEdge.getInVertex();
+                    String assetStarredBy = starredDetailsVertex.getProperty(ATTR_ASSET_STARRED_BY, String.class);
+                    Long assetStarredAt = starredDetailsVertex.getProperty(ATTR_ASSET_STARRED_AT, Long.class);
+                    AtlasStruct starredDetails = getStarredDetailsStruct(assetStarredBy, assetStarredAt);
+                    starredDetailsList.add(starredDetails);
+                }
+
+                starredCount = starredBy.size();
+            }
+
+            if (starEntityForUser) {
+                addUserToStarredAttributes(requestUser, requestTime, starredBy, starredDetailsList);
+            } else {
+                removeUserFromStarredAttributes(requestUser, starredBy, starredDetailsList);
+            }
+
+            // Update entity attributes
+            if (starredBy.size() != starredCount) {
+                entity.setAttribute(ATTR_STARRED_BY, starredBy);
+                entity.setAttribute(ATTR_STARRED_DETAILS_LIST, starredDetailsList);
+                entity.setAttribute(ATTR_STARRED_COUNT, starredBy.size());
+            }
+
+        }
+
+        RequestContext.get().endMetricRecord(metric);
+    }
+
+    private void addUserToStarredAttributes(String requestUser, long requestTime, Set<String> starredBy, Set<AtlasStruct> starredDetailsList) {
+        //Check and update starredBy Attribute
+        if (!starredBy.contains(requestUser)){
+            starredBy.add(requestUser);
+        }
+
+        //Check and update starredDetailsList Attribute
+        boolean isStarredDetailsListUpdated = false;
+        for (AtlasStruct starredDetails : starredDetailsList) {
+            String assetStarredBy = (String) starredDetails.getAttribute(ATTR_ASSET_STARRED_BY);
+            if (assetStarredBy.equals(requestUser)) {
+                starredDetails.setAttribute(ATTR_ASSET_STARRED_AT, requestTime);
+                isStarredDetailsListUpdated = true;
+                break;
+            }
+        }
+        if (!isStarredDetailsListUpdated) {
+            AtlasStruct starredDetails = getStarredDetailsStruct(requestUser, requestTime);
+            starredDetailsList.add(starredDetails);
+        }
+    }
+
+    private void removeUserFromStarredAttributes(String requestUser, Set<String> starredBy, Set<AtlasStruct> starredDetailsList) {
+        //Check and update starredBy Attribute
+        if (starredBy.contains(requestUser)){
+            starredBy.remove(requestUser);
+        }
+
+        for (AtlasStruct starredDetails : starredDetailsList) {
+            String assetStarredBy = (String) starredDetails.getAttribute(ATTR_ASSET_STARRED_BY);
+            if (assetStarredBy.equals(requestUser)) {
+                starredDetailsList.remove(starredDetails);
+                break;
+            }
+        }
+    }
+
+    private AtlasStruct getStarredDetailsStruct(String assetStarredBy, long assetStarredAt) {
+        AtlasStruct starredDetails = new AtlasStruct();
+        starredDetails.setTypeName(STRUCT_STARRED_DETAILS);
+        starredDetails.setAttribute(ATTR_ASSET_STARRED_BY, assetStarredBy);
+        starredDetails.setAttribute(ATTR_ASSET_STARRED_AT, assetStarredAt);
+        return starredDetails;
     }
 
     public PreProcessor getPreProcessor(String typeName) {
@@ -1982,6 +2074,12 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                             .forEach(flushAttributes::add);
                 }
             }
+
+//            for (String attrName : entityType.getAllAttributes().keySet()) {
+//                if (ATTR_STARRED_BY.equals(attrName) || ATTR_STARRED_COUNT.equals(attrName) || ATTR_STARRED_DETAILS_LIST.equals(attrName)) {
+//                    flushAttributes.add(attrName);
+//                }
+//            }
 
             flushAttributes.forEach(entity::removeAttribute);
         }

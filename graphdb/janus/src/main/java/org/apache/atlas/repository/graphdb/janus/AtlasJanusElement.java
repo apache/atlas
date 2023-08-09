@@ -216,6 +216,19 @@ public class AtlasJanusElement<T extends Element> implements AtlasElement {
     }
 
     @Override
+    public <V> Set<V> getMultiValuedSetProperty(String propertyName, Class<V> elementType) {
+        Set<V> value = new HashSet<>();
+        Iterator<? extends Property<Object>> it = getWrappedElement().properties(propertyName);
+
+        while (it.hasNext()) {
+            Property currentProperty      = it.next();
+            Object   currentPropertyValue = currentProperty.value();
+            value.add((V) currentPropertyValue);
+        }
+        return value;
+    }
+
+    @Override
     public void setListProperty(String propertyName, List<String> values) {
         setProperty(propertyName, values);
 

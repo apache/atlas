@@ -110,6 +110,7 @@ public final class AccessControlUtils {
 
     public static final String RESOURCES_ENTITY = "entity:";
     public static final String RESOURCES_ENTITY_TYPE = "entity-type:";
+    public static final String RESOURCES_TAG = "tag:";
     public static final String RESOURCES_SPLITTER = ":";
 
     private static final String CONNECTION_QN = "%s/%s/%s";

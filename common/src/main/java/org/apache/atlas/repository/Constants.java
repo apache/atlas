@@ -389,6 +389,14 @@ public final class Constants {
     public static final String ATTR_VIEWER_USERS = "viewerUsers";
     public static final String ATTR_VIEWER_GROUPS = "viewerGroups";
 
+    public static final String ATTR_STARRED_BY = "starredBy";
+    public static final String ATTR_STARRED_COUNT = "starredCount";
+    public static final String ATTR_STARRED_DETAILS_LIST = "starredDetailsList";
+    public static final String ATTR_ASSET_STARRED_BY = "assetStarredBy";
+    public static final String ATTR_ASSET_STARRED_AT = "assetStarredAt";
+
+    public static final String STRUCT_STARRED_DETAILS = "StarredDetails";
+
     public static final String KEYCLOAK_ROLE_ADMIN   = "$admin";
     public static final String KEYCLOAK_ROLE_MEMBER  = "$member";
     public static final String KEYCLOAK_ROLE_GUEST   = "$guest";
