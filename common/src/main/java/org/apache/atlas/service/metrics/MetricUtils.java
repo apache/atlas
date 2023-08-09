@@ -6,14 +6,15 @@ import io.micrometer.core.instrument.Timer;
 import io.micrometer.prometheus.PrometheusConfig;
 import io.micrometer.prometheus.PrometheusMeterRegistry;
 import org.apache.atlas.ApplicationProperties;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static org.apache.commons.lang.StringUtils.EMPTY;
 
 @Component
 public class MetricUtils {
@@ -29,8 +30,9 @@ public class MetricUtils {
     private static final String REGEX_URI_PLACEHOLDER = "\\[\\^/\\]\\+";
     private static final String HTTP_SERVER_REQUESTS = "http.server.requests";
     private static final String ATLAS_METRICS_URI_PATTERNS = "atlas.metrics.uri_patterns";
+    private static final double[] PERCENTILES = {0.5, 0.90, 0.99};
 
-    private static List<String> METRIC_URI_PATTERNS;
+    private static Map<String, String> METRIC_URI_PATTERNS_MAP;
     private static final PrometheusMeterRegistry METER_REGISTRY;
 
     static {
@@ -41,7 +43,8 @@ public class MetricUtils {
 
     public MetricUtils() {
         try {
-            METRIC_URI_PATTERNS = Arrays.asList(ApplicationProperties.get().getStringArray(ATLAS_METRICS_URI_PATTERNS));
+            METRIC_URI_PATTERNS_MAP = Arrays.stream(ApplicationProperties.get().getStringArray(ATLAS_METRICS_URI_PATTERNS))
+                    .distinct().collect(Collectors.toMap(uri->uri, uri->uri.replaceAll(REGEX_URI_PLACEHOLDER, "*")));
         } catch (Exception e) {
             LOG.error("Failed to load 'atlas.metrics.uri_patterns from properties");
         }
@@ -64,7 +67,7 @@ public class MetricUtils {
             tags = tags.and(additionalTags);
         }
         return Timer.builder(timerName)
-                .publishPercentiles(0.5,0.90,0.99)
+                .publishPercentiles(PERCENTILES)
                 .tags(tags)
                 .register(getMeterRegistry());
     }
@@ -83,10 +86,10 @@ public class MetricUtils {
             uri = uri.substring(0, uri.lastIndexOf("/"));
         }
         String updatedUrl = uri;
-        Optional<String> patternOp = METRIC_URI_PATTERNS.stream()
+        Optional<String> patternOp = METRIC_URI_PATTERNS_MAP.keySet().stream()
                 .filter(pattern -> updatedUrl.matches(pattern + "$"))
                 .findFirst();
-        return patternOp.map(s -> s.replaceAll(REGEX_URI_PLACEHOLDER, "*"));
+        return Optional.ofNullable(METRIC_URI_PATTERNS_MAP.get(patternOp.orElse(EMPTY)));
     }
 
     public static PrometheusMeterRegistry getMeterRegistry() {

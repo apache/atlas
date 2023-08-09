@@ -18,15 +18,10 @@
 
 package org.apache.atlas.web.service;
 
-import io.micrometer.core.instrument.Metrics;
-import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.binder.jetty.JettyConnectionMetrics;
 import io.micrometer.core.instrument.binder.jetty.JettyServerThreadPoolMetrics;
-import io.micrometer.prometheus.PrometheusConfig;
-import io.micrometer.prometheus.PrometheusMeterRegistry;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
-import org.apache.atlas.CommonConfiguration;
 import org.apache.atlas.util.BeanUtil;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.audit.AtlasAuditEntry;
