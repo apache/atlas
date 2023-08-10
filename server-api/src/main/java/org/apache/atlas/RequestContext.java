@@ -21,6 +21,7 @@ package org.apache.atlas;
 import org.apache.atlas.model.instance.*;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.tasks.AtlasTask;
+import org.apache.atlas.service.metrics.MetricsRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
 import org.apache.commons.collections.CollectionUtils;
@@ -92,6 +93,7 @@ public class RequestContext {
     private String traceId;
     private final Map<AtlasObjectId, Object> relationshipEndToVertexIdMap = new HashMap<>();
     private boolean     allowDuplicateDisplayName;
+    private MetricsRegistry metricsRegistry;
 
     private RequestContext() {
     }
@@ -149,15 +151,17 @@ public class RequestContext {
         this.relationshipEndToVertexIdMap.clear();
         this.relationshipMutationMap.clear();
         this.currentTask = null;
-        setTraceId(null);
 
         this.isPoliciesBootstrappingInProgress = false;
 
         if (metrics != null && !metrics.isEmpty()) {
             METRICS.debug(metrics.toString());
-
+            if (Objects.nonNull(this.metricsRegistry)){
+                this.metricsRegistry.collect(traceId, metrics);
+            }
             metrics.clear();
         }
+        setTraceId(null);
 
         if (this.entityGuidInRequest != null) {
             this.entityGuidInRequest.clear();
@@ -622,6 +626,10 @@ public class RequestContext {
 
     public boolean includeClassifications() {
         return this.includeClassifications;
+    }
+
+    public void setMetricRegistry(MetricsRegistry metricsRegistry) {
+        this.metricsRegistry = metricsRegistry;
     }
 
     public class EntityGuidPair {
