@@ -616,10 +616,15 @@ public class EntityGraphRetriever {
         return ret;
     }
 
-    public List<String> getImpactedVerticesIds(AtlasVertex entityVertex, String classificationId, List<String> edgeLabelsToExclude, List<String> verticesWithoutClassification) {
+    public List<String> getImpactedVerticesIdsClassificationAttached(AtlasVertex entityVertex, String classificationId, List<String> edgeLabelsToExclude, List<String> verticesWithoutClassification) {
         List<String> ret = new ArrayList<>();
 
-        traverseImpactedVerticesByLevel(entityVertex, null, classificationId, ret, edgeLabelsToExclude, verticesWithoutClassification);
+        GraphHelper.getAllClassificationEdges(entityVertex).forEach(classificationEdge -> {
+            AtlasVertex classificationVertex = classificationEdge.getInVertex();
+            if (classificationVertex != null && classificationId.equals(classificationVertex.getIdForDisplay())) {
+                traverseImpactedVerticesByLevel(entityVertex, null, classificationId, ret, edgeLabelsToExclude, verticesWithoutClassification);
+            }
+        });
 
         return ret;
     }

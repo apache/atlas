@@ -151,7 +151,7 @@ public class AtlasTaskService implements TaskService {
                 if (isClassificationTaskType(taskType)) {
                     String classificationName = task.getClassificationName();
                     String entityGuid = task.getEntityGuid();
-                    String classificationId = resolveAndReturnClassificationId(classificationName, entityGuid);
+                    String classificationId = StringUtils.isEmpty(task.getClassificationId()) ? resolveAndReturnClassificationId(classificationName, entityGuid) : task.getClassificationId();
                     if (StringUtils.isEmpty(classificationId)) {
                         throw new AtlasBaseException(AtlasErrorCode.TASK_INVALID_PARAMETERS, task.toString());
                     }
