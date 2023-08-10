@@ -126,12 +126,7 @@ public abstract class AbstractResourcePreProcessor implements PreProcessor {
     private void verifyAssetAccess(AtlasEntityHeader asset, AtlasPrivilege assetPrivilege,
                                    AtlasEntity resource, AtlasPrivilege resourcePrivilege) throws AtlasBaseException {
         verifyAccess(asset, assetPrivilege);
-
-        try {
-            verifyAccess(resource, resourcePrivilege);
-        } catch (AtlasBaseException abe) {
-            //ignore as this is just for access logs purpose
-        }
+        verifyAccess(resource, resourcePrivilege);
     }
 
     private void verifyAccess(AtlasEntity entity, AtlasPrivilege privilege) throws AtlasBaseException {
