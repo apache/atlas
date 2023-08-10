@@ -619,7 +619,7 @@ public class EntityGraphRetriever {
     public List<String> getImpactedVerticesIdsClassificationAttached(AtlasVertex entityVertex, String classificationId, List<String> edgeLabelsToExclude, List<String> verticesWithoutClassification) {
         List<String> ret = new ArrayList<>();
 
-        GraphHelper.getAllClassificationEdges(entityVertex).forEach(classificationEdge -> {
+        GraphHelper.getClassificationEdges(entityVertex).forEach(classificationEdge -> {
             AtlasVertex classificationVertex = classificationEdge.getInVertex();
             if (classificationVertex != null && classificationId.equals(classificationVertex.getIdForDisplay())) {
                 traverseImpactedVerticesByLevel(entityVertex, null, classificationId, ret, edgeLabelsToExclude, verticesWithoutClassification);
