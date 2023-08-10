@@ -143,8 +143,7 @@ public abstract class AbstractGlossaryPreProcessor implements PreProcessor {
     public boolean checkEntityTermAssociation(String termQName) throws AtlasBaseException {
         List<AtlasEntityHeader> entityHeader;
         entityHeader = discovery.searchUsingTermQualifiedName(0,1,termQName,null,null);
-        Boolean hasEntityAssociation = entityHeader != null ? true : false;
-        return hasEntityAssociation;
+        return entityHeader != null;
     }
 
     public List<AtlasEntityHeader> indexSearchPaginated(Map<String, Object> dsl) throws AtlasBaseException {
