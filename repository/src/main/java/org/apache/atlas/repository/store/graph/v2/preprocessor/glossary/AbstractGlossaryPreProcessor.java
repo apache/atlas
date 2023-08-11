@@ -109,13 +109,7 @@ public abstract class AbstractGlossaryPreProcessor implements PreProcessor {
             List<AtlasEntityHeader> terms = indexSearchPaginated(dsl);
 
             if (CollectionUtils.isNotEmpty(terms)) {
-                for (AtlasEntityHeader term : terms) {
-                    String name = (String) term.getAttribute(NAME);
-                    if (termName.equals(name)) {
-                        ret = true;
-                        break;
-                    }
-                }
+                ret = terms.stream().map(term -> (String) term.getAttribute(NAME)).anyMatch(name -> termName.equals(name));
             }
 
             if (ret) {
