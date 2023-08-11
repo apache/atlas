@@ -62,7 +62,7 @@ public abstract class AbstractResourcePreProcessor implements PreProcessor {
             if (asset != null) {
                 //Found linked asset in payload
                 AtlasVertex assetVertex = entityRetriever.getEntityVertex(asset);
-                assetEntity = new AtlasEntityHeader(entityRetriever.toAtlasEntity(assetVertex));
+                assetEntity = entityRetriever.toAtlasEntityHeaderWithClassifications(assetVertex);
 
             } else {
                 //Check for linked asset in store
@@ -76,7 +76,7 @@ public abstract class AbstractResourcePreProcessor implements PreProcessor {
                 if (atlasVertexIterator.hasNext()) {
                     //Found linked asset in store
                     AtlasVertex assetVertex = (AtlasVertex) atlasVertexIterator.next();
-                    assetEntity = new AtlasEntityHeader(entityRetriever.toAtlasEntity(assetVertex));
+                    assetEntity = entityRetriever.toAtlasEntityHeaderWithClassifications(assetVertex);
                 }
             }
 
@@ -101,7 +101,7 @@ public abstract class AbstractResourcePreProcessor implements PreProcessor {
 
             AtlasObjectId asset = getAssetRelationAttr(resourceEntity);
             if (asset != null) {
-                AtlasEntityHeader assetEntity =  new AtlasEntityHeader(entityRetriever.toAtlasEntity(asset.getGuid()));
+                AtlasEntityHeader assetEntity =  entityRetriever.toAtlasEntityHeaderWithClassifications(asset.getGuid());
                 verifyAssetAccess(assetEntity, AtlasPrivilege.ENTITY_UPDATE, resourceEntity, AtlasPrivilege.ENTITY_DELETE);
             } else {
                 //No linked asset to the Resource, check for resource delete permission
