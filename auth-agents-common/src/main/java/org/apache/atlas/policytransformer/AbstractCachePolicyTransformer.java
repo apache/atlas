@@ -21,7 +21,8 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.atlas.policytransformer.CacheTransformerTemplateHelper.RESOURCE_POLICY_TRANSFORMER;
+import java.util.HashMap;
+import java.util.Map;
 
 public abstract class AbstractCachePolicyTransformer implements CachePolicyTransformer {
 
@@ -29,15 +30,20 @@ public abstract class AbstractCachePolicyTransformer implements CachePolicyTrans
 
     public static final String PLACEHOLDER_ENTITY      = "{entity}";
     public static final String PLACEHOLDER_ENTITY_TYPE = "{entity-type}";
+    public static final String PLACEHOLDER_TAG = "{tag}";
 
-    public PolicyTransformerTemplate templates;
+    private static Map<String, PolicyTransformerTemplate> TEMPLATES = new HashMap<>();
 
-    public AbstractCachePolicyTransformer() throws AtlasBaseException {
-        try {
-            templates = CacheTransformerTemplateHelper.getTemplate();
-        } catch (AtlasBaseException e) {
-            LOG.error("Failed to load template for policies: {}", RESOURCE_POLICY_TRANSFORMER);
-            throw e;
+    public PolicyTransformerTemplate getTemplate(String fileSuffix) throws AtlasBaseException {
+        if (!TEMPLATES.containsKey(fileSuffix)) {
+            try {
+                TEMPLATES.put(fileSuffix, CacheTransformerTemplateHelper.getTemplate(fileSuffix));
+            } catch (AtlasBaseException e) {
+                LOG.error("Failed to load template for policies: {}", fileSuffix);
+                throw e;
+            }
         }
+
+        return TEMPLATES.get(fileSuffix);
     }
 }

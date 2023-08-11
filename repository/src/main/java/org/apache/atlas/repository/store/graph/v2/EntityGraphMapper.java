@@ -3530,7 +3530,7 @@ public class EntityGraphMapper {
         LOG.info("{} entity vertices have classification with id {} attached", propagatedVerticesIds.size(), classificationId);
 
         List<String> verticesIdsToAddClassification =  new ArrayList<>();
-        List<String> propagatedVerticesIdWithoutEdge = entityRetriever.getImpactedVerticesIds(sourceEntityVertex , classificationId,
+        List<String> propagatedVerticesIdWithoutEdge = entityRetriever.getImpactedVerticesIdsClassificationAttached(sourceEntityVertex , classificationId,
                 CLASSIFICATION_PROPAGATION_EXCLUSION_MAP.get(propagationMode), verticesIdsToAddClassification);
 
         LOG.info("To add classification with id {} to {} vertices", classificationId, verticesIdsToAddClassification.size());

@@ -1,12 +1,14 @@
 package org.apache.atlas.keycloak.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.core.instrument.Timer;
 import okhttp3.*;
 import okhttp3.logging.HttpLoggingInterceptor;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.keycloak.client.config.KeycloakConfig;
 import org.apache.atlas.keycloak.client.service.AtlasKeycloakAuthService;
+import org.apache.atlas.service.metrics.MetricUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.lang.NonNull;
@@ -33,11 +35,14 @@ abstract class AbstractKeycloakClient {
     private static final String AUTHORIZATION = "Authorization";
     private static final String BEARER = "Bearer ";
     private static final int TIMEOUT_IN_SEC = 60;
+    private static final String INTEGRATION = "integration";
+    private static final String KEYCLOAK = "keycloak";
 
     protected final KeycloakConfig keycloakConfig;
     protected final RetrofitKeycloakClient retrofit;
 
     private final AtlasKeycloakAuthService authService;
+    private MetricUtils metricUtils = null;
 
     static {
         ERROR_CODE_MAP.put(HTTP_NOT_FOUND, RESOURCE_NOT_FOUND);
@@ -46,6 +51,7 @@ abstract class AbstractKeycloakClient {
 
     public AbstractKeycloakClient(KeycloakConfig keycloakConfig) {
         this.keycloakConfig = keycloakConfig;
+        this.metricUtils = new MetricUtils();
         HttpLoggingInterceptor httpInterceptor = new HttpLoggingInterceptor();
         httpInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
         OkHttpClient okHttpClient = new OkHttpClient.Builder()
@@ -70,7 +76,11 @@ abstract class AbstractKeycloakClient {
      */
     Interceptor responseLoggingInterceptor = chain -> {
         Request request = chain.request();
+        String rawPath = request.url().uri().getRawPath();
+        Timer.Sample timerSample = this.metricUtils.start(rawPath);
         okhttp3.Response response = chain.proceed(request);
+        this.metricUtils.recordHttpTimer(timerSample, request.method(), rawPath, response.code(),
+                INTEGRATION, KEYCLOAK);
         LOG.info("Keycloak: Request for url {} Status:{}", request.url(), response.code());
         return response;
     };

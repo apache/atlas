@@ -110,6 +110,7 @@ public class CachePolicyTransformerImpl {
     private EntityGraphRetriever      entityRetriever;
 
     private PersonaCachePolicyTransformer personaTransformer;
+    private PurposeCachePolicyTransformer purposeTransformer;
 
     private AtlasEntityHeader service;
 
@@ -119,6 +120,7 @@ public class CachePolicyTransformerImpl {
         this.entityRetriever      = new EntityGraphRetriever(graph, typeRegistry);
 
         personaTransformer = new PersonaCachePolicyTransformer(entityRetriever);
+        purposeTransformer = new PurposeCachePolicyTransformer(entityRetriever);
 
         try {
             this.discoveryService = new EntityDiscoveryService(typeRegistry, graph, null, null, null, null);
@@ -146,9 +148,8 @@ public class CachePolicyTransformerImpl {
             servicePolicies.setPolicyUpdateTime(new Date());
 
             if (service != null) {
-                List<RangerPolicy> policies = getServicePolicies(service);
+                List<RangerPolicy> allPolicies = getServicePolicies(service);
                 servicePolicies.setServiceName(serviceName);
-                servicePolicies.setPolicies(policies);
                 servicePolicies.setServiceId(service.getGuid());
 
                 String serviceDefName = String.format(RESOURCE_SERVICE_DEF_PATTERN, serviceName);
@@ -156,16 +157,16 @@ public class CachePolicyTransformerImpl {
 
 
                 //Process tag based policies
-                String tagServiceName = (String) service.getAttribute("tagService");
+                String tagServiceName = (String) service.getAttribute(ATTR_SERVICE_TAG_SERVICE);
                 if (StringUtils.isNotEmpty(tagServiceName)) {
                     AtlasEntityHeader tagService = getServiceEntity(tagServiceName);
 
                     if (tagService != null) {
-                        policies = getServicePolicies(tagService);
+                        allPolicies.addAll(getServicePolicies(tagService));
+
                         TagPolicies tagPolicies = new TagPolicies();
 
                         tagPolicies.setServiceName(tagServiceName);
-                        tagPolicies.setPolicies(policies);
                         tagPolicies.setPolicyUpdateTime(new Date());
                         tagPolicies.setServiceId(tagService.getGuid());
                         tagPolicies.setPolicyVersion(-1L);
@@ -176,6 +177,16 @@ public class CachePolicyTransformerImpl {
                         servicePolicies.setTagPolicies(tagPolicies);
                     }
                 }
+
+                AtlasPerfMetrics.MetricRecorder recorderFilterPolicies = RequestContext.get().startMetricRecord("filterPolicies");
+                //filter out policies based on serviceName
+                List<RangerPolicy> policiesA = allPolicies.stream().filter(x -> serviceName.equals(x.getService())).collect(Collectors.toList());
+                List<RangerPolicy> policiesB = allPolicies.stream().filter(x -> tagServiceName.equals(x.getService())).collect(Collectors.toList());
+
+                servicePolicies.setPolicies(policiesA);
+                servicePolicies.getTagPolicies().setPolicies(policiesB);
+
+                RequestContext.get().endMetricRecord(recorderFilterPolicies);
 
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("Found {} policies", servicePolicies.getPolicies().size());
@@ -224,7 +235,11 @@ public class CachePolicyTransformerImpl {
                     }
 
                 } else if (POLICY_CATEGORY_PURPOSE.equals(policyCategory)) {
-                    rangerPolicies.add(toRangerPolicy(atlasPolicy, serviceType));
+                    List<AtlasEntityHeader> transformedAtlasPolicies = purposeTransformer.transform(atlasPolicy);
+
+                    for (AtlasEntityHeader transformedPolicy : transformedAtlasPolicies) {
+                        rangerPolicies.add(toRangerPolicy(transformedPolicy, serviceType));
+                    }
 
                 } else {
                     rangerPolicies.add(toRangerPolicy(atlasPolicy, serviceType));

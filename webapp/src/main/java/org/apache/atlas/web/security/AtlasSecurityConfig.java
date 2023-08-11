@@ -178,6 +178,7 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
             "/migration-status.html",
             "/api/atlas/admin/status",
             "/api/atlas/admin/metrics",
+            "/api/atlas/admin/metrics/prometheus",
             "/api/atlas/admin/health",
             "/api/atlas/admin/types/refresh",
             "/api/atlas/admin/isactive",

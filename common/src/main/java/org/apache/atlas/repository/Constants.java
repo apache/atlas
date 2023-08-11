@@ -34,6 +34,8 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.encodePropertyKey;
 
@@ -154,6 +156,12 @@ public final class Constants {
      * Resource
      */
     public static final String LINK_ENTITY_TYPE = "Link";
+    public static final String README_ENTITY_TYPE = "Readme";
+
+    public static final String ASSET_RELATION_ATTR = "asset";
+
+    public static final String ASSET_README_EDGE_LABEL = "__Asset.readme";
+    public static final String ASSET_LINK_EDGE_LABEL = "__Asset.links";
 
     /**
      * Lineage relations.
@@ -381,6 +389,14 @@ public final class Constants {
     public static final String ATTR_VIEWER_USERS = "viewerUsers";
     public static final String ATTR_VIEWER_GROUPS = "viewerGroups";
 
+    public static final String ATTR_STARRED_BY = "starredBy";
+    public static final String ATTR_STARRED_COUNT = "starredCount";
+    public static final String ATTR_STARRED_DETAILS_LIST = "starredDetailsList";
+    public static final String ATTR_ASSET_STARRED_BY = "assetStarredBy";
+    public static final String ATTR_ASSET_STARRED_AT = "assetStarredAt";
+
+    public static final String STRUCT_STARRED_DETAILS = "StarredDetails";
+
     public static final String KEYCLOAK_ROLE_ADMIN   = "$admin";
     public static final String KEYCLOAK_ROLE_MEMBER  = "$member";
     public static final String KEYCLOAK_ROLE_GUEST   = "$guest";
@@ -389,6 +405,16 @@ public final class Constants {
 
     public static final String REQUEST_HEADER_USER_AGENT = "User-Agent";
     public static final String REQUEST_HEADER_HOST       = "Host";
+
+    public static final Set<String> SKIP_UPDATE_AUTH_CHECK_TYPES = new HashSet<String>() {{
+        add(README_ENTITY_TYPE);
+        add(LINK_ENTITY_TYPE);
+    }};
+
+    public static final Set<String> SKIP_DELETE_AUTH_CHECK_TYPES = new HashSet<String>() {{
+        add(README_ENTITY_TYPE);
+        add(LINK_ENTITY_TYPE);
+    }};
 
     private Constants() {
     }
