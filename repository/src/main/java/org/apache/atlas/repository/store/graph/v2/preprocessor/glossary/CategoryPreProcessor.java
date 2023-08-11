@@ -64,6 +64,8 @@ import static org.apache.atlas.repository.Constants.CATEGORY_TERMS_EDGE_LABEL;
 import static org.apache.atlas.repository.Constants.GUID_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.NAME;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
+import static org.apache.atlas.repository.graph.GraphHelper.getActiveChildrenVertices;
+import static org.apache.atlas.repository.graph.GraphHelper.getActiveParentVertices;
 import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
 import static org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTaskFactory.UPDATE_ENTITY_MEANINGS_ON_TERM_UPDATE;
@@ -229,7 +231,7 @@ public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
             GraphHelper.setModifiedTime(childCategoryVertex, System.currentTimeMillis());
 
             // move terms to target Glossary
-            Iterator<AtlasVertex> terms = getActiveChildren(childCategoryVertex, CATEGORY_TERMS_EDGE_LABEL);
+            Iterator<AtlasVertex> terms = getActiveChildrenVertices(childCategoryVertex, CATEGORY_TERMS_EDGE_LABEL);
 
             while (terms.hasNext()) {
                 AtlasVertex termVertex = terms.next();
@@ -237,7 +239,7 @@ public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
             }
 
             // Get all children categories of current category
-            Iterator<AtlasVertex> childCategories = getActiveChildren(childCategoryVertex, CATEGORY_PARENT_EDGE_LABEL);
+            Iterator<AtlasVertex> childCategories = getActiveChildrenVertices(childCategoryVertex, CATEGORY_PARENT_EDGE_LABEL);
 
             while (childCategories.hasNext()) {
                 AtlasVertex childVertex = childCategories.next();
@@ -310,7 +312,7 @@ public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
 
         if (!category.hasRelationshipAttribute(CATEGORY_PARENT)) {
             // parentCategory not present in payload, check in store
-            Iterator<AtlasVertex> parentItr = getActiveParents(categoryVertex, CATEGORY_PARENT_EDGE_LABEL);
+            Iterator<AtlasVertex> parentItr = getActiveParentVertices(categoryVertex, CATEGORY_PARENT_EDGE_LABEL);
 
             if (parentItr.hasNext()) {
                 AtlasVertex parentCategory = parentItr.next();

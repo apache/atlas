@@ -47,6 +47,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import static org.apache.atlas.repository.Constants.*;
+import static org.apache.atlas.repository.graph.GraphHelper.getActiveParentVertices;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
 import static org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTaskFactory.UPDATE_ENTITY_MEANINGS_ON_TERM_UPDATE;
 
@@ -201,7 +202,7 @@ public class TermPreProcessor extends AbstractGlossaryPreProcessor {
             whether category belongs to target glossary, if not throw an exception
          */
         if (!entity.hasRelationshipAttribute(ATTR_CATEGORIES)) {
-            Iterator<AtlasVertex> categoriesItr = getActiveParents(vertex, CATEGORY_TERMS_EDGE_LABEL);
+            Iterator<AtlasVertex> categoriesItr = getActiveParentVertices(vertex, CATEGORY_TERMS_EDGE_LABEL);
 
             if (categoriesItr.hasNext()) {
                 AtlasVertex categoryVertex = categoriesItr.next();

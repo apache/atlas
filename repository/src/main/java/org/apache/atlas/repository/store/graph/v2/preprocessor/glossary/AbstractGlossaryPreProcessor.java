@@ -32,7 +32,6 @@ import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.repository.graph.GraphHelper;
-import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
@@ -50,13 +49,11 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.apache.atlas.repository.Constants.ACTIVE_STATE_VALUE;
 import static org.apache.atlas.repository.Constants.ATLAS_GLOSSARY_TERM_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.ELASTICSEARCH_PAGINATION_SIZE;
 import static org.apache.atlas.repository.Constants.NAME;
@@ -224,45 +221,6 @@ public abstract class AbstractGlossaryPreProcessor implements PreProcessor {
             if (entityHeaders.size() < ELASTICSEARCH_PAGINATION_SIZE) {
                 break;
             }
-        }
-    }
-
-    /**
-     * Get all the active parents
-     * @param vertex entity vertex
-     * @param parentEdgeLabel Edge label of parent
-     * @return Iterator of children vertices
-     */
-    protected Iterator<AtlasVertex> getActiveParents(AtlasVertex vertex, String parentEdgeLabel) throws AtlasBaseException {
-        return getEdges(vertex, parentEdgeLabel, AtlasEdgeDirection.IN);
-    }
-
-    /**
-     * Get all the active children of category
-     * @param vertex entity vertex
-     * @param childrenEdgeLabel Edge label of children
-     * @return Iterator of children vertices
-     */
-    protected Iterator<AtlasVertex> getActiveChildren(AtlasVertex vertex, String childrenEdgeLabel) throws AtlasBaseException {
-        return getEdges(vertex, childrenEdgeLabel, AtlasEdgeDirection.OUT);
-    }
-
-    protected Iterator getEdges(AtlasVertex vertex, String childrenEdgeLabel, AtlasEdgeDirection direction) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("CategoryPreProcessor.getEdges");
-
-        try {
-            return vertex.query()
-                    .direction(direction)
-                    .label(childrenEdgeLabel)
-                    .has(STATE_PROPERTY_KEY, ACTIVE_STATE_VALUE)
-                    .vertices()
-                    .iterator();
-        } catch (Exception e) {
-            LOG.error("Error while getting active children of category for edge label " + childrenEdgeLabel, e);
-            throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, e);
-        }
-        finally {
-            RequestContext.get().endMetricRecord(metricRecorder);
         }
     }
 
