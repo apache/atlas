@@ -245,13 +245,13 @@ public class AuthPolicyPreProcessor implements PreProcessor {
     }
 
     private void authorizeDeleteAuthPolicy(AtlasEntity policy) throws AtlasBaseException {
-        if (getPolicyCategory(policy).equals(POLICY_CATEGORY_BOOTSTRAP) && getPolicySubCategory(policy).equals(POLICY_SUB_CATEGORY_COLLECTION)) {
-            //skip auth check for collection bootstrap policies
-            //refer - https://linear.app/atlanproduct/issue/GOV-1245/collection-delete-is-failing-for-member-as-they-dont-have-authpolicy
-        } else {
+        if (!RequestContext.get().isSkipAuthPolicyDeleteAuthCheck()) {
             AtlasEntityAccessRequest request = new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_DELETE, new AtlasEntityHeader(policy));
             verifyAccess(request, "delete entity: guid=" + policy.getGuid());
         }
+        /* else,
+        * skip auth check
+        * */
     }
 
     private void validateConnectionAdmin(AtlasEntity policy) throws AtlasBaseException {

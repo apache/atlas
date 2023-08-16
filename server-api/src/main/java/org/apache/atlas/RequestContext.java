@@ -94,6 +94,7 @@ public class RequestContext {
     private final Map<AtlasObjectId, Object> relationshipEndToVertexIdMap = new HashMap<>();
     private boolean     allowDuplicateDisplayName;
     private MetricsRegistry metricsRegistry;
+    private boolean skipAuthPolicyDeleteAuthCheck = false;
 
     private RequestContext() {
     }
@@ -417,6 +418,14 @@ public class RequestContext {
 
     public void setPoliciesBootstrappingInProgress(boolean policiesBootstrappingInProgress) {
         isPoliciesBootstrappingInProgress = policiesBootstrappingInProgress;
+    }
+
+    public boolean isSkipAuthPolicyDeleteAuthCheck() {
+        return skipAuthPolicyDeleteAuthCheck;
+    }
+
+    public void setSkipAuthPolicyDeleteAuthCheck(boolean skipAuthPolicyDeleteAuthCheck) {
+        this.skipAuthPolicyDeleteAuthCheck = skipAuthPolicyDeleteAuthCheck;
     }
 
     public static long earliestActiveRequestTime() {
