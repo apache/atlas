@@ -22,7 +22,6 @@ package org.apache.atlas;
  * Constants used in Atlas configuration.
  */
 public final class AtlasConstants {
-
     private AtlasConstants() {
     }
 
