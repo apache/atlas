@@ -24,6 +24,7 @@ public abstract class MeaningsTask extends AbstractTask {
     private static final Logger LOG = LoggerFactory.getLogger(MeaningsTask.class);
     protected static final String PARAM_ENTITY_GUID = "entityGuid";
     protected static final String PARAM_ENTITY_QUALIFIED_NAME = "entityQName";
+    protected static final String PARAM_ENTITY_UPDATED_QUALIFIED_NAME = "updatedEntityQName";
     protected static final String PARAM_UPDATED_TERM_NAME = "updatedTermName";
     protected static final String PARAM_CURRENT_TERM_NAME = "currentTermName";
 
@@ -80,10 +81,11 @@ public abstract class MeaningsTask extends AbstractTask {
         }
     }
 
-    public static Map<String, Object> toParameters(String currentTerm, String updateTerm, String termQName, String termGuid) {
+    public static Map<String, Object> toParameters(String currentTerm, String updateTerm, String termQName, String updatedTermQName, String termGuid) {
         return new HashMap<String, Object>() {{
             put(PARAM_ENTITY_GUID, termGuid);
             put(PARAM_ENTITY_QUALIFIED_NAME, termQName);
+            put(PARAM_ENTITY_UPDATED_QUALIFIED_NAME, updatedTermQName);
             put(PARAM_CURRENT_TERM_NAME, currentTerm);
             put(PARAM_UPDATED_TERM_NAME, updateTerm);
         }};

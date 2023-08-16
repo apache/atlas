@@ -26,8 +26,11 @@ public class PreProcessorUtils {
 
     //Glossary models constants
     public static final String ANCHOR            = "anchor";
+    public static final String CATEGORY_TERMS    = "terms";
     public static final String CATEGORY_PARENT   = "parentCategory";
     public static final String CATEGORY_CHILDREN = "childrenCategories";
+    public static final String GLOSSARY_TERM_REL_TYPE = "AtlasGlossaryTermAnchor";
+    public static final String GLOSSARY_CATEGORY_REL_TYPE = "AtlasGlossaryCategoryAnchor";
 
     //Query models constants
     public static final String PREFIX_QUERY_QN   = "default/collection/";
