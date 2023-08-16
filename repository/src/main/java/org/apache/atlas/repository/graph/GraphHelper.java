@@ -1869,6 +1869,45 @@ public final class GraphHelper {
         return ret;
     }
 
+    /**
+     * Get all the active parents
+     * @param vertex entity vertex
+     * @param parentEdgeLabel Edge label of parent
+     * @return Iterator of children vertices
+     */
+    public static Iterator<AtlasVertex> getActiveParentVertices(AtlasVertex vertex, String parentEdgeLabel) throws AtlasBaseException {
+        return getActiveVertices(vertex, parentEdgeLabel, AtlasEdgeDirection.IN);
+    }
+
+    /**
+     * Get all the active children of category
+     * @param vertex entity vertex
+     * @param childrenEdgeLabel Edge label of children
+     * @return Iterator of children vertices
+     */
+    public static Iterator<AtlasVertex> getActiveChildrenVertices(AtlasVertex vertex, String childrenEdgeLabel) throws AtlasBaseException {
+        return getActiveVertices(vertex, childrenEdgeLabel, AtlasEdgeDirection.OUT);
+    }
+
+    public static Iterator<AtlasVertex> getActiveVertices(AtlasVertex vertex, String childrenEdgeLabel, AtlasEdgeDirection direction) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("CategoryPreProcessor.getEdges");
+
+        try {
+            return vertex.query()
+                    .direction(direction)
+                    .label(childrenEdgeLabel)
+                    .has(STATE_PROPERTY_KEY, ACTIVE_STATE_VALUE)
+                    .vertices()
+                    .iterator();
+        } catch (Exception e) {
+            LOG.error("Error while getting active children of category for edge label " + childrenEdgeLabel, e);
+            throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, e);
+        }
+        finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
+        }
+    }
+
     private static Set<String> parseLabelsString(String labels) {
         Set<String> ret = new HashSet<>();
 
