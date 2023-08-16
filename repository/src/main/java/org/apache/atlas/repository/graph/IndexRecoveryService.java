@@ -19,6 +19,7 @@ package org.apache.atlas.repository.graph;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
@@ -176,7 +177,8 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
                 if (shouldRun.get()) {
                     try {
                         if(!redisService.acquireDistributedLock(ATLAS_INDEX_RECOVERY_LOCK)){
-                            return;
+                            Thread.sleep(AtlasConstants.TASK_WAIT_TIME_MS);
+                            continue;
                         }
                         boolean indexHealthy = isIndexHealthy();
 
