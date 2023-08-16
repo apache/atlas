@@ -100,6 +100,8 @@ public final class AccessControlUtils {
     public static final String POLICY_CATEGORY_PURPOSE  = "purpose";
     public static final String POLICY_CATEGORY_BOOTSTRAP  = "bootstrap";
 
+    public static final String POLICY_SUB_CATEGORY_COLLECTION = "collection";
+
     public static final String POLICY_RESOURCE_CATEGORY_PERSONA_CUSTOM  = "CUSTOM";
     public static final String POLICY_RESOURCE_CATEGORY_PERSONA_ENTITY  = "ENTITY";
     public static final String POLICY_RESOURCE_CATEGORY_PURPOSE  = "TAG";
