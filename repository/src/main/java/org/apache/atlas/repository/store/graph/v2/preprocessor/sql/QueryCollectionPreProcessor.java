@@ -303,6 +303,7 @@ public class QueryCollectionPreProcessor implements PreProcessor {
         dsl.put("query", mapOf("bool", mapOf("must", mustClauseList)));
 
         indexSearchParams.setDsl(dsl);
+        indexSearchParams.setSuppressLogs(true);
 
         AtlasSearchResult result = discovery.directIndexSearch(indexSearchParams);
         if (result != null) {
