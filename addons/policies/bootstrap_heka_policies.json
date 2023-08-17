@@ -12,7 +12,7 @@
       "policySubCategory": "data",
       "policyServiceName": "heka",
       "policyType": "deny",
-      "policyPriority": 0,
+      "policyPriority": 1,
       "policyUsers": [],
       "policyGroups": [],
       "policyRoles":
