@@ -81,13 +81,17 @@ public class AuthPoliciesBootstrapper implements ActiveStateChangeHandler, Servi
     private void loadBootstrapAuthPolicies() {
         LOG.info("==> AuthPoliciesBootstrapper.loadBootstrapAuthPolicies()");
 
-        RequestContext.get().setPoliciesBootstrappingInProgress(true);
+        RequestContext.get().setSkipAuthorizationCheck(true);
 
-        String atlasHomeDir  = System.getProperty("atlas.home");
-        String policiesDirName = (StringUtils.isEmpty(atlasHomeDir) ? "." : atlasHomeDir) + File.separator + "policies";
+        try {
+            String atlasHomeDir  = System.getProperty("atlas.home");
+            String policiesDirName = (StringUtils.isEmpty(atlasHomeDir) ? "." : atlasHomeDir) + File.separator + "policies";
 
-        File topPoliciesDir  = new File(policiesDirName);
-        loadPoliciesInFolder(topPoliciesDir);
+            File topPoliciesDir  = new File(policiesDirName);
+            loadPoliciesInFolder(topPoliciesDir);
+        } finally {
+            RequestContext.get().setSkipAuthorizationCheck(false);
+        }
 
         LOG.info("<== AuthPoliciesBootstrapper.loadBootstrapAuthPolicies()");
     }

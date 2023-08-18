@@ -1437,7 +1437,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             final EntityMutationContext context = preCreateOrUpdate(entityStream, entityGraphMapper, isPartialUpdate);
 
             // Check if authorized to create entities
-            if (!RequestContext.get().isImportInProgress() && !RequestContext.get().isPoliciesBootstrappingInProgress()) {
+            if (!RequestContext.get().isImportInProgress() && !RequestContext.get().isSkipAuthorizationCheck()) {
                 for (AtlasEntity entity : context.getCreatedEntities()) {
                     if (!PreProcessor.skipInitialAuthCheckTypes.contains(entity.getTypeName())) {
                         AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, new AtlasEntityHeader(entity)),

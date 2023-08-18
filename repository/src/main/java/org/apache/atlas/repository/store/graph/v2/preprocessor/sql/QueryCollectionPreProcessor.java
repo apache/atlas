@@ -28,7 +28,6 @@ import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasStruct;
-import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -138,12 +137,12 @@ public class QueryCollectionPreProcessor implements PreProcessor {
                 AtlasEntity.AtlasEntitiesWithExtInfo policies = transformer.transform(collection);
 
                 try {
-                    RequestContext.get().setPoliciesBootstrappingInProgress(true);
+                    RequestContext.get().setSkipAuthorizationCheck(true);
                     EntityStream entityStream = new AtlasEntityStream(policies);
                     entityStore.createOrUpdate(entityStream, false);
                     LOG.info("Created bootstrap policies for collection {}", entity.getAttribute(QUALIFIED_NAME));
                 } finally {
-                    RequestContext.get().setPoliciesBootstrappingInProgress(false);
+                    RequestContext.get().setSkipAuthorizationCheck(false);
                 }
             }
         } finally {
@@ -182,7 +181,7 @@ public class QueryCollectionPreProcessor implements PreProcessor {
 
                 //delete collection policies
                 List<AtlasEntityHeader> policies = getCollectionPolicies(collectionGuid);
-                RequestContext.get().setSkipAuthPolicyDeleteAuthCheck(true);
+                RequestContext.get().setSkipAuthorizationCheck(true);
                 entityStore.deleteByIds(policies.stream().map(x -> x.getGuid()).collect(Collectors.toList()));
 
                 //delete collection roles
@@ -194,7 +193,7 @@ public class QueryCollectionPreProcessor implements PreProcessor {
             }
         } finally {
             RequestContext.get().endMetricRecord(metricRecorder);
-            RequestContext.get().setSkipAuthPolicyDeleteAuthCheck(false);
+            RequestContext.get().setSkipAuthorizationCheck(false);
         }
     }
 

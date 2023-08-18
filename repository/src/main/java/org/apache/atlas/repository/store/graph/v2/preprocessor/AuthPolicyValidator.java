@@ -265,7 +265,7 @@ public class AuthPolicyValidator {
 
         } else {
             //only allow argo & backend
-            if (!RequestContext.get().isPoliciesBootstrappingInProgress()) {
+            if (!RequestContext.get().isSkipAuthorizationCheck()) {
                 String userName = RequestContext.getCurrentUser();
                 validateOperation (!ARGO_SERVICE_USER_NAME.equals(userName) && !BACKEND_SERVICE_USER_NAME.equals(userName),
                         "Create/Update AuthPolicy with policyCategory other than persona & purpose");

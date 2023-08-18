@@ -80,7 +80,6 @@ public class RequestContext {
     private int maxAttempts = 1;
     private int attemptCount = 1;
     private boolean isImportInProgress = false;
-    private boolean isPoliciesBootstrappingInProgress = false;
     private boolean     isInNotificationProcessing = false;
     private boolean     isInTypePatching           = false;
     private boolean     createShellEntityForNonExistingReference = false;
@@ -94,7 +93,7 @@ public class RequestContext {
     private final Map<AtlasObjectId, Object> relationshipEndToVertexIdMap = new HashMap<>();
     private boolean     allowDuplicateDisplayName;
     private MetricsRegistry metricsRegistry;
-    private boolean skipAuthPolicyDeleteAuthCheck = false;
+    private boolean skipAuthorizationCheck = false;
 
     private RequestContext() {
     }
@@ -152,8 +151,7 @@ public class RequestContext {
         this.relationshipEndToVertexIdMap.clear();
         this.relationshipMutationMap.clear();
         this.currentTask = null;
-
-        this.isPoliciesBootstrappingInProgress = false;
+        this.skipAuthorizationCheck = false;
 
         if (metrics != null && !metrics.isEmpty()) {
             METRICS.debug(metrics.toString());
@@ -412,20 +410,12 @@ public class RequestContext {
         return ACTIVE_REQUESTS.size();
     }
 
-    public boolean isPoliciesBootstrappingInProgress() {
-        return isPoliciesBootstrappingInProgress;
+    public boolean isSkipAuthorizationCheck() {
+        return skipAuthorizationCheck;
     }
 
-    public void setPoliciesBootstrappingInProgress(boolean policiesBootstrappingInProgress) {
-        isPoliciesBootstrappingInProgress = policiesBootstrappingInProgress;
-    }
-
-    public boolean isSkipAuthPolicyDeleteAuthCheck() {
-        return skipAuthPolicyDeleteAuthCheck;
-    }
-
-    public void setSkipAuthPolicyDeleteAuthCheck(boolean skipAuthPolicyDeleteAuthCheck) {
-        this.skipAuthPolicyDeleteAuthCheck = skipAuthPolicyDeleteAuthCheck;
+    public void setSkipAuthorizationCheck(boolean skipAuthorizationCheck) {
+        this.skipAuthorizationCheck = skipAuthorizationCheck;
     }
 
     public static long earliestActiveRequestTime() {

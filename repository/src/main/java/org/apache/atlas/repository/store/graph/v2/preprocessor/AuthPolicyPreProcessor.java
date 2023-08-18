@@ -245,7 +245,7 @@ public class AuthPolicyPreProcessor implements PreProcessor {
     }
 
     private void authorizeDeleteAuthPolicy(AtlasEntity policy) throws AtlasBaseException {
-        if (!RequestContext.get().isSkipAuthPolicyDeleteAuthCheck()) {
+        if (!RequestContext.get().isSkipAuthorizationCheck()) {
             AtlasEntityAccessRequest request = new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_DELETE, new AtlasEntityHeader(policy));
             verifyAccess(request, "delete entity: guid=" + policy.getGuid());
         }
