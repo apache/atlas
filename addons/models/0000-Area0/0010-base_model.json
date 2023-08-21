@@ -976,7 +976,7 @@
       ],
       "description": "Atlan Type representing a Purpose model",
       "serviceType": "atlan",
-      "typeVersion": "1.1",
+      "typeVersion": "1.2",
       "attributeDefs": [
         {
           "name": "purposeClassifications",
@@ -986,6 +986,7 @@
           "isIndexable": false,
           "isOptional": true,
           "isUnique": false,
+          "skipScrubbing": true,
           "includeInNotification": false
         }
       ]
