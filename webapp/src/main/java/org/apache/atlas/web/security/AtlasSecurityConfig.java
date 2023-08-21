@@ -240,13 +240,8 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
             LOG.info("Atlas is in HA or HS Mode, enabling ActiveServerFilter");
         }
 
-        //XSS filter at first
-        if(isAlbEnabled) {
-            httpSecurity.addFilterBefore(atlasXSSPreventionFilter, BasicAuthenticationFilter.class);
-            LOG.info("XSS filter is enabled from Atlas");
-        } else {
-            LOG.info("XSS filter is disabled from Atlas");
-        }
+        // TODO: Enable XSS Filter after solving encoding problems
+        LOG.warn("XSS filter is disabled from Atlas");
         //Enable activeServerFilter regardless of HA or HS
         httpSecurity.addFilterAfter(activeServerFilter, BasicAuthenticationFilter.class);
 
