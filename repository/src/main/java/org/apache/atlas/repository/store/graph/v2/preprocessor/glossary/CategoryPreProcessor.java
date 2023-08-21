@@ -158,7 +158,10 @@ public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
             processMoveCategoryToAnotherGlossary(entity, vertex, currentGlossaryQualifiedName, newGlossaryQualifiedName, vertexQnName);
 
         } else {
-            categoryExists(catName, newGlossaryQualifiedName);
+            String vertexName = vertex.getProperty(NAME, String.class);
+            if (!vertexName.equals(catName)) {
+                categoryExists(catName, newGlossaryQualifiedName);
+            }
             validateChildren(entity, storedCategory);
             validateParent(newGlossaryQualifiedName);
 
