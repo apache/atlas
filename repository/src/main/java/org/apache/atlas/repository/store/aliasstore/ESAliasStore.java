@@ -22,9 +22,15 @@ import org.apache.atlas.ESAliasRequestBuilder.AliasAction;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchDatabase;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
+import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
+import org.elasticsearch.client.GetAliasesResponse;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.cluster.metadata.AliasMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -34,6 +40,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.apache.atlas.ESAliasRequestBuilder.ESAliasAction.ADD;
 import static org.apache.atlas.repository.Constants.PERSONA_ENTITY_TYPE;
@@ -75,13 +82,35 @@ public class ESAliasStore implements IndexAliasStore {
         ESAliasRequestBuilder requestBuilder = new ESAliasRequestBuilder();
 
         if (PERSONA_ENTITY_TYPE.equals(entity.getTypeName())) {
-            requestBuilder.addAction(ADD, new AliasAction(VERTEX_INDEX_NAME, aliasName));
+            requestBuilder.addAction(ADD, new AliasAction(getIndexNameFromAliasIfExists(VERTEX_INDEX_NAME), aliasName));
         } else {
-            requestBuilder.addAction(ADD, new AliasAction(VERTEX_INDEX_NAME, aliasName, getFilterForPurpose(entity)));
+            requestBuilder.addAction(ADD, new AliasAction(getIndexNameFromAliasIfExists(VERTEX_INDEX_NAME), aliasName, getFilterForPurpose(entity)));
         }
 
         graph.createOrUpdateESAlias(requestBuilder);
         return true;
+    }
+
+    private String getIndexNameFromAliasIfExists(final String aliasIndexName) throws AtlasBaseException {
+        try {
+            RestHighLevelClient esClient = AtlasElasticsearchDatabase.getClient();
+            GetAliasesRequest aliasesRequest = new GetAliasesRequest(aliasIndexName);
+            GetAliasesResponse aliasesResponse = esClient.indices().getAlias(aliasesRequest, RequestOptions.DEFAULT);
+            Map<String, Set<AliasMetadata>> aliases = aliasesResponse.getAliases();
+            for (Map.Entry<String, Set<AliasMetadata>> entry : aliases.entrySet()) {
+                String indexName = entry.getKey();
+                Set<AliasMetadata> aliasMetadataList = entry.getValue();
+                for (AliasMetadata aliasMetadata : aliasMetadataList) {
+                    if (aliasIndexName.equals(aliasMetadata.alias())) {
+                        return indexName;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            LOG.error("Error while fetching index for alias index {}", aliasIndexName, e);
+            throw new AtlasBaseException(e);
+        }
+        return aliasIndexName;
     }
 
     @Override
@@ -97,7 +126,7 @@ public class ESAliasStore implements IndexAliasStore {
         }
 
         ESAliasRequestBuilder requestBuilder = new ESAliasRequestBuilder();
-        requestBuilder.addAction(ADD, new AliasAction(VERTEX_INDEX_NAME, aliasName, filter));
+        requestBuilder.addAction(ADD, new AliasAction(getIndexNameFromAliasIfExists(VERTEX_INDEX_NAME), aliasName, filter));
 
         graph.createOrUpdateESAlias(requestBuilder);
 
@@ -106,7 +135,7 @@ public class ESAliasStore implements IndexAliasStore {
 
     @Override
     public boolean deleteAlias(String aliasName) throws AtlasBaseException {
-        graph.deleteESAlias(VERTEX_INDEX_NAME, aliasName);
+        graph.deleteESAlias(getIndexNameFromAliasIfExists(VERTEX_INDEX_NAME), aliasName);
         return true;
     }
 
