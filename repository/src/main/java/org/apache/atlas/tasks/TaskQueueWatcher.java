@@ -18,6 +18,7 @@
 package org.apache.atlas.tasks;
 
 import org.apache.atlas.AtlasConfiguration;
+import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.ICuratorFactory;
 import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.service.redis.RedisService;
@@ -83,7 +84,8 @@ public class TaskQueueWatcher implements Runnable {
         while (shouldRun.get()) {
             try {
                 if (!redisService.acquireDistributedLock(ATLAS_TASK_LOCK)) {
-                    return;
+                    Thread.sleep(AtlasConstants.TASK_WAIT_TIME_MS);
+                    continue;
                 }
 
                 TasksFetcher fetcher = new TasksFetcher(registry);
