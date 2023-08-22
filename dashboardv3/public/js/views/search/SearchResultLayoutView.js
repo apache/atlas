@@ -202,6 +202,7 @@ define(['require',
                 if (platform.name === "IE") {
                     this.isTableDropDisable = true;
                 }
+                this.businessMetadataAttributes = [];
             },
             bindEvents: function() {
                 var that = this;
@@ -596,6 +597,7 @@ define(['require',
                     }
                 }
                 this.downloadSearchResultsParams.searchParameters = apiObj.data;
+                this.generateBusinessMetadataAttrList();
             },
             tableRender: function(options) {
                 var that = this,
@@ -704,6 +706,39 @@ define(['require',
                 } else {
                     params.attributeLabelMap = {};
                 }
+            },
+            generateBusinessMetadataAttrList: function() {
+                var def = this.entityDefCollection.fullCollection.find({
+                        name: this.value.type,
+                    }),
+                    businessAttributeDefs,
+                    that = this;
+                businessAttributeDefs = def.get('businessAttributeDefs');
+                if (businessAttributeDefs) {
+                    _.each(
+                        businessAttributeDefs,
+                        function(businessMetadata, businessMetadataName) {
+                            _.each(businessMetadata, function(attr, index) {
+                                that.businessMetadataAttributes.push({
+                                    name: businessMetadataName + '.' + attr.name,
+                                    type: attr.typeName
+                                });
+                            });
+                        }
+                    );
+                }
+            },
+            checkIsEditorValue: function(key) {
+                var isEditorKey = false;
+                if (this.businessMetadataAttributes.length) {
+                    _.each(this.businessMetadataAttributes, function(attr) {
+                        if (attr.name === key && attr.type === "string") {
+                            isEditorKey = true;
+                            return;
+                        };
+                    });
+                }
+                return isEditorKey;
             },
             getColumnOrder: function(arr) {
                 var obj = {};
@@ -996,6 +1031,7 @@ define(['require',
                                                     }
                                                 }
                                                 tempObj.valueObject[key] = modelObj.attributes[key];
+                                                tempObj['isEditorValue'] = that.checkIsEditorValue(key);
                                                 var tablecolumn = CommonViewFunction.propertyTable(tempObj);
                                                 if (_.isArray(modelObj.attributes[key])) {
                                                     var column = $("<div>" + tablecolumn + "</div>")
@@ -1068,6 +1104,7 @@ define(['require',
                                             'valueObject': {},
                                             'isTable': false
                                         };
+                                        tempObj['isEditorValue'] = that.checkIsEditorValue(key);
                                         tempObj.valueObject[key] = modelObj[key];
                                         return CommonViewFunction.propertyTable(tempObj);
                                     }

@@ -127,7 +127,8 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                                 newVal = numberFormat(newVal);
                             }
                         }
-                        return getHighlightedString(_.escape(newVal));
+                        newVal = (options && options.isEditorValue) ? newVal : _.escape(newVal);
+                        return getHighlightedString(newVal);
                     }
                 } else {
                     return getEmptyString(key);
