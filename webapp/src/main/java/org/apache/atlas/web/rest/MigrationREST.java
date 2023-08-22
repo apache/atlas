@@ -109,13 +109,13 @@ public class MigrationREST {
                     }
                     AtlasEntity.AtlasEntitiesWithExtInfo policiesExtInfo = transformer.transform(entity);
                     try {
-                        RequestContext.get().setPoliciesBootstrappingInProgress(true);
+                        RequestContext.get().setSkipAuthorizationCheck(true);
                         EntityStream entityStream = new AtlasEntityStream(policiesExtInfo);
                         EntityMutationResponse policyResponse = entityStore.createOrUpdate(entityStream, false);
                         response.setMutatedEntities(policyResponse.getMutatedEntities());
                         LOG.info("Created bootstrap policies for connection");
                     } finally {
-                        RequestContext.get().setPoliciesBootstrappingInProgress(false);
+                        RequestContext.get().setSkipAuthorizationCheck(false);
                     }
                 }
             }
@@ -142,14 +142,14 @@ public class MigrationREST {
                     //create bootstrap policies
                     AtlasEntity.AtlasEntitiesWithExtInfo policies = transformer.transform(entity);
                     try {
-                        RequestContext.get().setPoliciesBootstrappingInProgress(true);
+                        RequestContext.get().setSkipAuthorizationCheck(true);
 
                         EntityStream entityStream = new AtlasEntityStream(policies);
                         EntityMutationResponse policyResponse = entityStore.createOrUpdate(entityStream, false);
                         response.setMutatedEntities(policyResponse.getMutatedEntities());
                         LOG.info("Created bootstrap policies for connection");
                     } finally {
-                        RequestContext.get().setPoliciesBootstrappingInProgress(false);
+                        RequestContext.get().setSkipAuthorizationCheck(false);
                     }
                 }
             }

@@ -142,12 +142,12 @@ public class ConnectionPreProcessor implements PreProcessor {
             AtlasEntitiesWithExtInfo policies = transformer.transform(connection);
 
             try {
-                RequestContext.get().setPoliciesBootstrappingInProgress(true);
+                RequestContext.get().setSkipAuthorizationCheck(true);
                 EntityStream entityStream = new AtlasEntityStream(policies);
                 entityStore.createOrUpdate(entityStream, false);
                 LOG.info("Created bootstrap policies for connection {}", connection.getAttribute(QUALIFIED_NAME));
             } finally {
-                RequestContext.get().setPoliciesBootstrappingInProgress(false);
+                RequestContext.get().setSkipAuthorizationCheck(false);
             }
 
             RequestContext.get().endMetricRecord(metricRecorder);
@@ -254,6 +254,7 @@ public class ConnectionPreProcessor implements PreProcessor {
         dsl.put("query", mapOf("bool", mapOf("must", mustClauseList)));
 
         indexSearchParams.setDsl(dsl);
+        indexSearchParams.setSuppressLogs(true);
 
         AtlasSearchResult result = discovery.directIndexSearch(indexSearchParams);
         if (result != null) {

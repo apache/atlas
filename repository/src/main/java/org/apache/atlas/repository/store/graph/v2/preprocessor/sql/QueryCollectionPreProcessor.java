@@ -28,8 +28,8 @@ import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasStruct;
-import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations;
+import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
@@ -137,12 +137,12 @@ public class QueryCollectionPreProcessor implements PreProcessor {
                 AtlasEntity.AtlasEntitiesWithExtInfo policies = transformer.transform(collection);
 
                 try {
-                    RequestContext.get().setPoliciesBootstrappingInProgress(true);
+                    RequestContext.get().setSkipAuthorizationCheck(true);
                     EntityStream entityStream = new AtlasEntityStream(policies);
                     entityStore.createOrUpdate(entityStream, false);
                     LOG.info("Created bootstrap policies for collection {}", entity.getAttribute(QUALIFIED_NAME));
                 } finally {
-                    RequestContext.get().setPoliciesBootstrappingInProgress(false);
+                    RequestContext.get().setSkipAuthorizationCheck(false);
                 }
             }
         } finally {
@@ -170,26 +170,30 @@ public class QueryCollectionPreProcessor implements PreProcessor {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processDeleteCollection");
 
         try {
-            AtlasEntityHeader collection = entityRetriever.toAtlasEntityHeader(vertex);
+            AtlasEntity.Status collectionStatus = GraphHelper.getStatus(vertex);
 
-            if (!AtlasEntity.Status.ACTIVE.equals(collection.getStatus())) {
+            if (!AtlasEntity.Status.ACTIVE.equals(collectionStatus)) {
                 throw new AtlasBaseException("Collection is already deleted/purged");
             }
 
             if (ATLAS_AUTHORIZER_IMPL.equalsIgnoreCase(CURRENT_AUTHORIZER_IMPL)) {
+                String collectionGuid = GraphHelper.getGuid(vertex);
+
                 //delete collection policies
-                List<AtlasEntityHeader> policies = getCollectionPolicies(collection.getGuid());
-                EntityMutationResponse response = entityStore.deleteByIds(policies.stream().map(x -> x.getGuid()).collect(Collectors.toList()));
+                List<AtlasEntityHeader> policies = getCollectionPolicies(collectionGuid);
+                RequestContext.get().setSkipAuthorizationCheck(true);
+                entityStore.deleteByIds(policies.stream().map(x -> x.getGuid()).collect(Collectors.toList()));
 
                 //delete collection roles
-                String adminRoleName = String.format(COLL_ADMIN_ROLE_PATTERN, collection.getGuid());
-                String viewerRoleName = String.format(COLL_VIEWER_ROLE_PATTERN, collection.getGuid());
+                String adminRoleName = String.format(COLL_ADMIN_ROLE_PATTERN, collectionGuid);
+                String viewerRoleName = String.format(COLL_VIEWER_ROLE_PATTERN, collectionGuid);
 
                 keycloakStore.removeRoleByName(adminRoleName);
                 keycloakStore.removeRoleByName(viewerRoleName);
             }
         } finally {
             RequestContext.get().endMetricRecord(metricRecorder);
+            RequestContext.get().setSkipAuthorizationCheck(false);
         }
     }
 
@@ -303,6 +307,7 @@ public class QueryCollectionPreProcessor implements PreProcessor {
         dsl.put("query", mapOf("bool", mapOf("must", mustClauseList)));
 
         indexSearchParams.setDsl(dsl);
+        indexSearchParams.setSuppressLogs(true);
 
         AtlasSearchResult result = discovery.directIndexSearch(indexSearchParams);
         if (result != null) {

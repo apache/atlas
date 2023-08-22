@@ -21,10 +21,13 @@ package org.apache.atlas.repository.store.graph.v2.preprocessor;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
+import org.apache.atlas.authorize.AtlasEntityAccessRequest;
+import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.featureflag.FeatureFlagStore;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.instance.EntityMutations.EntityOperation;
@@ -52,6 +55,7 @@ import static org.apache.atlas.AtlasErrorCode.INSTANCE_GUID_NOT_FOUND;
 import static org.apache.atlas.AtlasErrorCode.RESOURCE_NOT_FOUND;
 import static org.apache.atlas.AtlasErrorCode.UNAUTHORIZED_CONNECTION_ADMIN;
 import static org.apache.atlas.authorize.AtlasAuthorizationUtils.getCurrentUserName;
+import static org.apache.atlas.authorize.AtlasAuthorizationUtils.verifyAccess;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.CREATE;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.UPDATE;
 import static org.apache.atlas.repository.Constants.ATTR_ADMIN_ROLES;
@@ -223,6 +227,8 @@ public class AuthPolicyPreProcessor implements PreProcessor {
         try {
             AtlasEntity policy = entityRetriever.toAtlasEntity(vertex);
 
+            authorizeDeleteAuthPolicy(policy);
+
             if(!policy.getStatus().equals(AtlasEntity.Status.ACTIVE)) {
                 LOG.info("Policy with guid {} is already deleted/purged", policy.getGuid());
                 return;
@@ -236,6 +242,16 @@ public class AuthPolicyPreProcessor implements PreProcessor {
         } finally {
             RequestContext.get().endMetricRecord(metricRecorder);
         }
+    }
+
+    private void authorizeDeleteAuthPolicy(AtlasEntity policy) throws AtlasBaseException {
+        if (!RequestContext.get().isSkipAuthorizationCheck()) {
+            AtlasEntityAccessRequest request = new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_DELETE, new AtlasEntityHeader(policy));
+            verifyAccess(request, "delete entity: guid=" + policy.getGuid());
+        }
+        /* else,
+        * skip auth check
+        * */
     }
 
     private void validateConnectionAdmin(AtlasEntity policy) throws AtlasBaseException {
