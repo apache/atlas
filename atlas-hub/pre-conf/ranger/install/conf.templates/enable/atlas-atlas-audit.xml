@@ -116,7 +116,7 @@
 
 	<property>
 		<name>xasecure.audit.destination.log4j.logger</name>
-		<value>AUDIT</value>
+		<value>AUTH_AUDIT</value>
 	</property>	
 
 	<!-- ElasticSearch audit provider configuration -->
