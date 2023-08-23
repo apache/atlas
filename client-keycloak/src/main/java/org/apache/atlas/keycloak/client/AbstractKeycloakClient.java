@@ -81,7 +81,6 @@ abstract class AbstractKeycloakClient {
         okhttp3.Response response = chain.proceed(request);
         this.metricUtils.recordHttpTimer(timerSample, request.method(), rawPath, response.code(),
                 INTEGRATION, KEYCLOAK);
-        LOG.info("Keycloak: Request for url {} Status:{}", request.url(), response.code());
         return response;
     };
 
@@ -135,10 +134,11 @@ abstract class AbstractKeycloakClient {
                 return response;
             }
             String errMsg = response.errorBody().string();
-            LOG.error("Keycloak: Client request processing failed code {} message:{}", response.code(), errMsg);
+            LOG.error("Keycloak: Client request processing failed code {} message:{}, request: {} {}",
+                    response.code(), errMsg, req.request().method(), req.request().url());
             throw new AtlasBaseException(ERROR_CODE_MAP.getOrDefault(response.code(), BAD_REQUEST), errMsg);
         } catch (Exception e) {
-            LOG.error("Keycloak: request failed", e);
+            LOG.error("Keycloak: request failed, request: {} {}, Exception: {}", req.request().method(), req.request().url(), e);
             throw new AtlasBaseException(BAD_REQUEST, "Keycloak request failed");
         }
     }

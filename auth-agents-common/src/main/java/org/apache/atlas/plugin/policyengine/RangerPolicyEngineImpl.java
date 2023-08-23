@@ -123,8 +123,6 @@ public class RangerPolicyEngineImpl implements RangerPolicyEngine {
 			String requestHashCode = Integer.toHexString(System.identityHashCode(request)) + "_" + policyType;
 
 			perf = RangerPerfTracer.getPerfTracer(PERF_POLICYENGINE_REQUEST_LOG, "RangerPolicyEngine.evaluatePolicies(requestHashCode=" + requestHashCode + ")");
-
-			LOG.info("RangerPolicyEngineImpl.evaluatePolicies(" + requestHashCode + ", " + request + ")");
 		}
 
 		RangerAccessResult ret;

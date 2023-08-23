@@ -991,7 +991,6 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             }
 
             String indexName = getIndexName(params);
-            LOG.info("directIndexSearch.indexName {}", indexName);
 
             indexQuery = graph.elasticsearchQuery(indexName);
 
