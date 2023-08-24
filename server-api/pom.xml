@@ -60,5 +60,10 @@
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-client-v1</artifactId>
         </dependency>
+        <dependency>
+            <groupId>ch.qos.reload4j</groupId>
+            <artifactId>reload4j</artifactId>
+            <version>${reload4j.version}</version>
+        </dependency>
     </dependencies>
 </project>
