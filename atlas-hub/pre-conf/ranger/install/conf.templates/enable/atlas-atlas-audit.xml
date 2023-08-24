@@ -111,7 +111,7 @@
 	<!-- Log4j audit provider configuration -->
 	<property>
 		<name>xasecure.audit.destination.log4j</name>
-		<value>true</value>
+		<value>false</value>
 	</property>	
 
 	<property>
