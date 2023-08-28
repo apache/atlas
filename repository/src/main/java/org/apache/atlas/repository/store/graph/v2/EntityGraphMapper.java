@@ -3229,10 +3229,10 @@ public class EntityGraphMapper {
             Boolean updatedRestrictPropagationThroughLineage = classification.getRestrictPropagationThroughLineage();
 
             if (taskManagement != null && DEFERRED_ACTION_ENABLED) {
-                String propagationType = updatedTagPropagation ? CLASSIFICATION_PROPAGATION_ADD : CLASSIFICATION_PROPAGATION_DELETE;
-
-                createAndQueueTask(propagationType, entityVertex, classificationVertex.getIdForDisplay(), currentRestrictPropagationThroughLineage);
-
+                String propagationType = updatedTagPropagation && !currentTagPropagation ? CLASSIFICATION_PROPAGATION_ADD : CLASSIFICATION_PROPAGATION_DELETE;
+                if (currentTagPropagation != updatedTagPropagation) {
+                    createAndQueueTask(propagationType, entityVertex, classificationVertex.getIdForDisplay(), currentRestrictPropagationThroughLineage);
+                }
                 updatedTagPropagation = null;
             }
 
