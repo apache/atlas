@@ -19,7 +19,7 @@
 package org.apache.atlas.kafka.model;
 
 /**
- * HBASE Data Types for model and bridge.
+ * KAFKA Data Types for model and bridge.
  */
 public enum KafkaDataTypes {
     // Classes
