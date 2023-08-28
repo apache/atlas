@@ -103,7 +103,7 @@ public final class GraphHelper {
 
     private int     maxRetries = 3;
     private long    retrySleepTimeMillis = 1000;
-    private boolean removePropagations = false;
+    private boolean removePropagations = true;
 
     public GraphHelper(AtlasGraph graph) {
         this.graph = graph;

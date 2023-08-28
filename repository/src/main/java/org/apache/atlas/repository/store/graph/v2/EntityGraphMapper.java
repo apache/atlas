@@ -137,8 +137,7 @@ import static org.apache.atlas.repository.graph.GraphHelper.getRemovePropagation
 import static org.apache.atlas.repository.graph.GraphHelper.getPropagatedEdges;
 import static org.apache.atlas.repository.graph.GraphHelper.getPropagatableClassifications;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEntityGuid;
-import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getIdFromVertex;
-import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.isReference;
+import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.*;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_ADD;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_DELETE;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
@@ -3184,6 +3183,14 @@ public class EntityGraphMapper {
 
             if (updatedRemovePropagations != null && (updatedRemovePropagations != currentRemovePropagations)) {
                 AtlasGraphUtilsV2.setEncodedProperty(classificationVertex, CLASSIFICATION_VERTEX_REMOVE_PROPAGATIONS_KEY, updatedRemovePropagations);
+
+                // If value set true from false and source entity is deleted, remove propagated classification from propagated entities
+                if (updatedRemovePropagations && !currentRemovePropagations) {
+                    boolean isEntityDeleted = entityVertex.getProperty(STATE_PROPERTY_KEY, String.class).equals(DELETED.toString());
+                    if(isEntityDeleted && taskManagement != null && DEFERRED_ACTION_ENABLED) {
+                        createAndQueueTask(CLASSIFICATION_PROPAGATION_DELETE, entityVertex, classificationVertex.getIdForDisplay());
+                    }
+                }
 
                 isClassificationUpdated = true;
             }
