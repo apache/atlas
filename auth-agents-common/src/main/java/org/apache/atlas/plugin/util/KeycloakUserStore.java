@@ -93,7 +93,7 @@ public class KeycloakUserStore {
                         null, null, null, null, null, null, null,
                         from, size);
 
-                if (CollectionUtils.isEmpty(adminEvents) || cacheLastUpdatedTime > adminEvents.get(adminEvents.size() - 1).getTime()) {
+                if (CollectionUtils.isEmpty(adminEvents) || cacheLastUpdatedTime > adminEvents.get(0).getTime()) {
                     break;
                 }
 
@@ -115,7 +115,7 @@ public class KeycloakUserStore {
                 List<EventRepresentation> events = getKeycloakClient().getEvents(EVENT_TYPES,
                         null, null, null, null, null, from, size);
 
-                if (CollectionUtils.isEmpty(events) || cacheLastUpdatedTime > events.get(events.size() - 1).getTime()) {
+                if (CollectionUtils.isEmpty(events) || cacheLastUpdatedTime > events.get(0).getTime()) {
                     break;
                 }
 
