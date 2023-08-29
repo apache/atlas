@@ -34,7 +34,7 @@ public class RangerPerfTracer {
 	private final static String tagEndMarker = "(";
 
 	public static Log getPerfLogger(String name) {
-		return LogFactory.getLog("org.apache.atlas.perf." + name);
+		return LogFactory.getLog("org.apache.atlas.auth.perf." + name);
 	}
 
 	public static Log getPerfLogger(Class<?> cls) {
