@@ -3229,13 +3229,12 @@ public class EntityGraphMapper {
             Boolean updatedRestrictPropagationThroughLineage = classification.getRestrictPropagationThroughLineage();
 
             if (taskManagement != null && DEFERRED_ACTION_ENABLED) {
-                String propagationType = updatedTagPropagation && !currentTagPropagation ? CLASSIFICATION_PROPAGATION_ADD : CLASSIFICATION_PROPAGATION_DELETE;
-                if (currentTagPropagation != updatedTagPropagation) {
+                String propagationType = updatedTagPropagation ? CLASSIFICATION_PROPAGATION_ADD : CLASSIFICATION_PROPAGATION_DELETE;
+                if (!Objects.equals(currentTagPropagation, updatedTagPropagation) || !Objects.equals(currentRestrictPropagationThroughLineage, updatedRestrictPropagationThroughLineage)) {
                     createAndQueueTask(propagationType, entityVertex, classificationVertex.getIdForDisplay(), currentRestrictPropagationThroughLineage);
                 }
                 updatedTagPropagation = null;
             }
-
 
             // compute propagatedEntityVertices once and use it for subsequent iterations and notifications
             if (updatedTagPropagation != null && (currentTagPropagation != updatedTagPropagation || currentRestrictPropagationThroughLineage != updatedRestrictPropagationThroughLineage)) {
@@ -3979,11 +3978,11 @@ public class EntityGraphMapper {
 
     private void createAndQueueTask(String taskType, AtlasVertex entityVertex, String classificationVertexId, Boolean currentPropagateThroughLineage) throws AtlasBaseException{
 
-        deleteDelegate.getHandler().createAndQueueTask(taskType, entityVertex, classificationVertexId, null, currentPropagateThroughLineage);
+        deleteDelegate.getHandler().createAndQueueTaskWithoutCheck(taskType, entityVertex, classificationVertexId, null, currentPropagateThroughLineage);
     }
 
     private void createAndQueueTask(String taskType, AtlasVertex entityVertex, String classificationVertexId) throws AtlasBaseException {
-        deleteDelegate.getHandler().createAndQueueTask(taskType, entityVertex, classificationVertexId, null);
+        deleteDelegate.getHandler().createAndQueueTaskWithoutCheck(taskType, entityVertex, classificationVertexId, null);
     }
 
     public void removePendingTaskFromEntity(String entityGuid, String taskGuid) throws EntityNotFoundException {

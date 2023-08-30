@@ -110,7 +110,7 @@ public final class GraphHelper {
         try {
             maxRetries           = ApplicationProperties.get().getInt(RETRY_COUNT, 3);
             retrySleepTimeMillis = ApplicationProperties.get().getLong(RETRY_DELAY, 1000);
-            removePropagations   = ApplicationProperties.get().getBoolean(DEFAULT_REMOVE_PROPAGATIONS_ON_ENTITY_DELETE, false);
+            removePropagations   = ApplicationProperties.get().getBoolean(DEFAULT_REMOVE_PROPAGATIONS_ON_ENTITY_DELETE, true);
         } catch (AtlasException e) {
             LOG.error("Could not load configuration. Setting to default value for " + RETRY_COUNT, e);
         }
