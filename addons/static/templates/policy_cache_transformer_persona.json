@@ -97,7 +97,10 @@
         "entity-classification:*",
         "classification:*"
       ],
-      "actions": ["entity-add-classification"]
+      "actions": [
+        "entity-add-classification",
+        "entity-update-classification"
+      ]
     }
   ],
   "persona-entity-update-classification": [
@@ -125,7 +128,10 @@
         "entity-classification:*",
         "classification:*"
       ],
-      "actions": ["entity-remove-classification"]
+      "actions": [
+        "entity-remove-classification",
+        "entity-update-classification"
+      ]
     }
   ],
   "persona-add-terms": [
@@ -306,7 +312,10 @@
         "entity-classification:*",
         "classification:*"
       ],
-      "actions": ["entity-add-classification"]
+      "actions": [
+        "entity-add-classification",
+        "entity-update-classification"
+      ]
     }
   ],
   "persona-glossary-update-classifications": [
@@ -336,7 +345,10 @@
         "entity-classification:*",
         "classification:*"
       ],
-      "actions": ["entity-remove-classification"]
+      "actions": [
+        "entity-remove-classification",
+        "entity-update-classification"
+      ]
     }
   ],
   "select": [
