@@ -3186,7 +3186,7 @@ public class EntityGraphMapper {
                 isClassificationUpdated = true;
 
                 boolean isEntityDeleted = DELETED.toString().equals(entityVertex.getProperty(STATE_PROPERTY_KEY, String.class));
-                if (isEntityDeleted && !updatedRemovePropagations) {
+                if (isEntityDeleted && updatedRemovePropagations) {
                     removePropagation = true;
                 }
             }
