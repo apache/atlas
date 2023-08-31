@@ -92,14 +92,15 @@ public class KeycloakUserStore {
                 List<AdminEventRepresentation> adminEvents = getKeycloakClient().getAdminEvents(OPERATION_TYPES,
                         null, null, null, null, null, null, null,
                         from, size);
+
+                if (CollectionUtils.isEmpty(adminEvents) || cacheLastUpdatedTime > adminEvents.get(0).getTime()) {
+                    break;
+                }
+
                 Optional<AdminEventRepresentation> event = adminEvents.stream().filter(x -> RESOURCE_TYPES.contains(x.getResourceType())).findFirst();
 
                 if (event.isPresent()) {
                     latestKeycloakEventTime = event.get().getTime();
-                    break;
-                }
-
-                if (cacheLastUpdatedTime > adminEvents.get(adminEvents.size() - 1).getTime()) {
                     break;
                 }
             }
@@ -114,14 +115,14 @@ public class KeycloakUserStore {
                 List<EventRepresentation> events = getKeycloakClient().getEvents(EVENT_TYPES,
                         null, null, null, null, null, from, size);
 
+                if (CollectionUtils.isEmpty(events) || cacheLastUpdatedTime > events.get(0).getTime()) {
+                    break;
+                }
+
                 Optional<EventRepresentation> event = events.stream().filter(this::isUpdateProfileEvent).findFirst();
 
                 if (event.isPresent()) {
                     latestKeycloakEventTime = event.get().getTime();
-                    break;
-                }
-
-                if (cacheLastUpdatedTime > events.get(events.size() - 1).getTime()) {
                     break;
                 }
             }
