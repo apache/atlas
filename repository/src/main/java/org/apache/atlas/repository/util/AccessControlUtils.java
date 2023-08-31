@@ -94,7 +94,7 @@ public final class AccessControlUtils {
 
     public static final String ACCESS_READ_PURPOSE_METADATA = "entity-read";
     public static final String ACCESS_READ_PERSONA_METADATA = "persona-asset-read";
-    public static final String ACCESS_READ_PURPOSE_GLOSSARY = "persona-glossary-read";
+    public static final String ACCESS_READ_PERSONA_GLOSSARY = "persona-glossary-read";
 
     public static final String POLICY_CATEGORY_PERSONA  = "persona";
     public static final String POLICY_CATEGORY_PURPOSE  = "purpose";
