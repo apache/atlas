@@ -3185,12 +3185,17 @@ public class EntityGraphMapper {
                 AtlasGraphUtilsV2.setEncodedProperty(classificationVertex, CLASSIFICATION_VERTEX_REMOVE_PROPAGATIONS_KEY, updatedRemovePropagations);
 
                 // If value set true from false and source entity is deleted, remove propagated classification from propagated entities
-                if (updatedRemovePropagations && !currentRemovePropagations) {
-                    boolean isEntityDeleted = entityVertex.getProperty(STATE_PROPERTY_KEY, String.class).equals(DELETED.toString());
-                    if(isEntityDeleted && taskManagement != null && DEFERRED_ACTION_ENABLED) {
-                        createAndQueueTask(CLASSIFICATION_PROPAGATION_DELETE, entityVertex, classificationVertex.getIdForDisplay());
-                    }
+                boolean isEntityDeleted = entityVertex.getProperty(STATE_PROPERTY_KEY, String.class).equals(DELETED.toString());
+                boolean isUpdatedRemovePropagationsDifferentFromCurrent = updatedRemovePropagations != currentRemovePropagations;
+
+                if (isEntityDeleted && taskManagement != null && DEFERRED_ACTION_ENABLED && isUpdatedRemovePropagationsDifferentFromCurrent) {
+                    createAndQueueTask(
+                            updatedRemovePropagations ? CLASSIFICATION_PROPAGATION_DELETE : CLASSIFICATION_PROPAGATION_ADD,
+                            entityVertex,
+                            classificationVertex.getIdForDisplay()
+                    );
                 }
+
 
                 isClassificationUpdated = true;
             }
