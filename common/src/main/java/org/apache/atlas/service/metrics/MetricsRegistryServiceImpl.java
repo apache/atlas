@@ -52,7 +52,7 @@ public class MetricsRegistryServiceImpl implements MetricsRegistry {
                 Timer.builder(METHOD_DIST_SUMMARY).tags(Tags.of(NAME, metric.getName())).publishPercentiles(PERCENTILES)
                         .register(getMeterRegistry()).record(metric.getTotalTimeMSecs(), TimeUnit.MILLISECONDS);
             }
-        } catch (AtlasException e) {
+        } catch (Exception e) {
             LOG.error("Failed to read {} property from atlas config", METHOD_LEVEL_METRICS_ENABLE, e);
             return;
         }
