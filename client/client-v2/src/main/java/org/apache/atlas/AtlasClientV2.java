@@ -588,7 +588,7 @@ public class AtlasClientV2 extends AtlasBaseClient {
     public void addLabels(String typeName, Map<String, String> uniqAttributes, Set<String> labels) throws AtlasServiceException {
         MultivaluedMap<String, String> queryParams = attributesToQueryParams(uniqAttributes);
 
-        callAPI(formatPathParameters(API_V2.SET_LABELS_BY_UNIQUE_ATTRIBUTE, typeName), (Class<?>) null, labels, queryParams);
+        callAPI(formatPathParameters(API_V2.ADD_LABELS_BY_UNIQUE_ATTRIBUTE, typeName), (Class<?>) null, labels, queryParams);
     }
 
     public void removeLabels(String entityGuid, Set<String> labels) throws AtlasServiceException {
@@ -608,7 +608,7 @@ public class AtlasClientV2 extends AtlasBaseClient {
     public void setLabels(String typeName, Map<String, String> uniqAttributes, Set<String> labels) throws AtlasServiceException {
         MultivaluedMap<String, String> queryParams = attributesToQueryParams(uniqAttributes);
 
-        callAPI(formatPathParameters(API_V2.ADD_LABELS_BY_UNIQUE_ATTRIBUTE, typeName), (Class<?>) null, labels, queryParams);
+        callAPI(formatPathParameters(API_V2.SET_LABELS_BY_UNIQUE_ATTRIBUTE, typeName), (Class<?>) null, labels, queryParams);
     }
 
 
