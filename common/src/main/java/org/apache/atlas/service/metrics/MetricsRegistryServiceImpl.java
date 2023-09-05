@@ -30,7 +30,6 @@ public class MetricsRegistryServiceImpl implements MetricsRegistry {
     private static final String NAME = "name";
     private static final String METHOD_DIST_SUMMARY = "method_dist_summary";
     private static final double[] PERCENTILES = {0.99};
-    private static final int SEC_MILLIS_SCALE = 1;
     private static final String METHOD_LEVEL_METRICS_ENABLE = "atlas.metrics.method_level.enable";
     private static final String ATLAS_METRICS_METHOD_PATTERNS = "atlas.metrics.method_patterns";
     private final List<String> filteredMethods;
@@ -48,12 +47,14 @@ public class MetricsRegistryServiceImpl implements MetricsRegistry {
             }
 
             for (String name : this.filteredMethods) {
-                AtlasPerfMetrics.Metric metric = metrics.getMetric(name);
-                Timer.builder(METHOD_DIST_SUMMARY).tags(Tags.of(NAME, metric.getName())).publishPercentiles(PERCENTILES)
-                        .register(getMeterRegistry()).record(metric.getTotalTimeMSecs(), TimeUnit.MILLISECONDS);
+                if(metrics.hasMetric(name)) {
+                    AtlasPerfMetrics.Metric metric = metrics.getMetric(name);
+                    Timer.builder(METHOD_DIST_SUMMARY).tags(Tags.of(NAME, metric.getName())).publishPercentiles(PERCENTILES)
+                            .register(getMeterRegistry()).record(metric.getTotalTimeMSecs(), TimeUnit.MILLISECONDS);
+                }
             }
         } catch (Exception e) {
-            LOG.error("Failed to read {} property from atlas config", METHOD_LEVEL_METRICS_ENABLE, e);
+            LOG.error("Failed to collect metrics", e);
             return;
         }
     }
