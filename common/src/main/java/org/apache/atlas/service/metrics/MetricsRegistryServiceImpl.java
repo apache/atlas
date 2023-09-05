@@ -1,10 +1,8 @@
 package org.apache.atlas.service.metrics;
 
-import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tags;
-import io.micrometer.core.instrument.binder.BaseUnits;
-import io.micrometer.core.instrument.distribution.DistributionStatisticConfig;
+import io.micrometer.core.instrument.Timer;
 import io.micrometer.prometheus.PrometheusMeterRegistry;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
@@ -16,7 +14,10 @@ import org.springframework.stereotype.Component;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.time.Duration;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static org.apache.atlas.service.metrics.MetricUtils.getMeterRegistry;
 
@@ -29,20 +30,13 @@ public class MetricsRegistryServiceImpl implements MetricsRegistry {
     private static final String NAME = "name";
     private static final String METHOD_DIST_SUMMARY = "method_dist_summary";
     private static final double[] PERCENTILES = {0.99};
-    private static final int SEC_MILLIS_SCALE = 1;
     private static final String METHOD_LEVEL_METRICS_ENABLE = "atlas.metrics.method_level.enable";
-
-    private final DistributionStatisticConfig distributionStatisticConfig;
+    private static final String ATLAS_METRICS_METHOD_PATTERNS = "atlas.metrics.method_patterns";
+    private final List<String> filteredMethods;
 
     @Inject
-    public MetricsRegistryServiceImpl() {
-        this.distributionStatisticConfig =  DistributionStatisticConfig.builder().percentilePrecision(2)
-                                            .percentiles(PERCENTILES)
-                                            .bufferLength(3)
-                                            .percentilesHistogram(false)
-                                            .minimumExpectedValue(1.0)
-                                            .maximumExpectedValue(Double.MAX_VALUE)
-                                            .expiry(Duration.ofMinutes(2)).build();
+    public MetricsRegistryServiceImpl() throws AtlasException {
+        this.filteredMethods = Arrays.stream(ApplicationProperties.get().getStringArray(ATLAS_METRICS_METHOD_PATTERNS)).collect(Collectors.toList());
     }
 
     @Override
@@ -51,16 +45,17 @@ public class MetricsRegistryServiceImpl implements MetricsRegistry {
             if (!ApplicationProperties.get().getBoolean(METHOD_LEVEL_METRICS_ENABLE, false)) {
                 return;
             }
-        } catch (AtlasException e) {
-            LOG.error("Failed to read {} property from atlas config", METHOD_LEVEL_METRICS_ENABLE, e);
+
+            for (String name : this.filteredMethods) {
+                if(metrics.hasMetric(name)) {
+                    AtlasPerfMetrics.Metric metric = metrics.getMetric(name);
+                    Timer.builder(METHOD_DIST_SUMMARY).tags(Tags.of(NAME, metric.getName())).publishPercentiles(PERCENTILES)
+                            .register(getMeterRegistry()).record(metric.getTotalTimeMSecs(), TimeUnit.MILLISECONDS);
+                }
+            }
+        } catch (Exception e) {
+            LOG.error("Failed to collect metrics", e);
             return;
-        }
-        for (String name : metrics.getMetricsNames()) {
-            AtlasPerfMetrics.Metric metric = metrics.getMetric(name);
-            getMeterRegistry().newDistributionSummary(new Meter.Id(METHOD_DIST_SUMMARY,
-                                    Tags.of(NAME, metric.getName()), BaseUnits.MILLISECONDS, METHOD_DIST_SUMMARY,
-                                    Meter.Type.TIMER), distributionStatisticConfig, SEC_MILLIS_SCALE)
-                    .record(metric.getTotalTimeMSecs());
         }
     }
 
@@ -72,7 +67,7 @@ public class MetricsRegistryServiceImpl implements MetricsRegistry {
                 writer.flush();
             } catch (IOException e) {
                 LOG.warn("Failed to write metrics while scraping", e);
-            }finally {
+            } finally {
                 writer.close();
             }
         });
