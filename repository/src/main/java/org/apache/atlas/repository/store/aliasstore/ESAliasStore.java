@@ -49,7 +49,7 @@ import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.Constants.TRAIT_NAMES_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.VERTEX_INDEX_NAME;
 import static org.apache.atlas.repository.util.AccessControlUtils.ACCESS_READ_PERSONA_METADATA;
-import static org.apache.atlas.repository.util.AccessControlUtils.ACCESS_READ_PURPOSE_GLOSSARY;
+import static org.apache.atlas.repository.util.AccessControlUtils.ACCESS_READ_PERSONA_GLOSSARY;
 import static org.apache.atlas.repository.util.AccessControlUtils.getConnectionQualifiedNameFromPolicyAssets;
 import static org.apache.atlas.repository.util.AccessControlUtils.getESAliasName;
 import static org.apache.atlas.repository.util.AccessControlUtils.getIsAllowPolicy;
@@ -183,9 +183,9 @@ public class ESAliasStore implements IndexAliasStore {
 
                         addPersonaMetadataFilterConnectionClause(connectionQName, allowClauseList);
 
-                    } else if (getPolicyActions(policy).contains(ACCESS_READ_PURPOSE_GLOSSARY)) {
+                    } else if (getPolicyActions(policy).contains(ACCESS_READ_PERSONA_GLOSSARY)) {
                         for (String glossaryQName : assets) {
-                            addPersonaMetadataFilterClauses(glossaryQName, allowClauseList);
+                            addPersonaGlossaryFilterClauses(glossaryQName, allowClauseList);
                         }
                     }
                 }
@@ -209,17 +209,19 @@ public class ESAliasStore implements IndexAliasStore {
     }
 
     private void addPersonaMetadataFilterClauses(String asset, List<Map<String, Object>> clauseList) {
-        addPersonaFilterClauses(asset, clauseList);
+        clauseList.add(mapOf("term", mapOf(QUALIFIED_NAME, asset)));
+        clauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset + "/*")));
+        clauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset)));
+    }
+
+    private void addPersonaGlossaryFilterClauses(String asset, List<Map<String, Object>> clauseList) {
+        clauseList.add(mapOf("term", mapOf(QUALIFIED_NAME, asset)));
+        clauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset + "/*")));
+        clauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, "*@" + asset)));
     }
 
     private void addPersonaMetadataFilterConnectionClause(String connection, List<Map<String, Object>> clauseList) {
         clauseList.add(mapOf("term", mapOf(QUALIFIED_NAME, connection)));
-    }
-
-    private void addPersonaFilterClauses(String asset, List<Map<String, Object>> clauseList) {
-        clauseList.add(mapOf("term", mapOf(QUALIFIED_NAME, asset)));
-        clauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset + "/*")));
-        clauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, "*@" + asset)));
     }
 
     private void addPurposeMetadataFilterClauses(List<String> tags, List<Map<String, Object>> clauseList) {
