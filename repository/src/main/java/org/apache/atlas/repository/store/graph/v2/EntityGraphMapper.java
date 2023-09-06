@@ -137,8 +137,7 @@ import static org.apache.atlas.repository.graph.GraphHelper.getRemovePropagation
 import static org.apache.atlas.repository.graph.GraphHelper.getPropagatedEdges;
 import static org.apache.atlas.repository.graph.GraphHelper.getPropagatableClassifications;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEntityGuid;
-import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getIdFromVertex;
-import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.isReference;
+import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.*;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_ADD;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_DELETE;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
@@ -3178,14 +3177,18 @@ public class EntityGraphMapper {
                 isClassificationUpdated = true;
             }
 
+            boolean removePropagation = false;
             // check for removePropagationsOnEntityDelete update
             Boolean currentRemovePropagations = currentClassification.getRemovePropagationsOnEntityDelete();
             Boolean updatedRemovePropagations = classification.getRemovePropagationsOnEntityDelete();
-
-            if (updatedRemovePropagations != null && (updatedRemovePropagations != currentRemovePropagations)) {
+            if (updatedRemovePropagations != null && !updatedRemovePropagations.equals(currentRemovePropagations)) {
                 AtlasGraphUtilsV2.setEncodedProperty(classificationVertex, CLASSIFICATION_VERTEX_REMOVE_PROPAGATIONS_KEY, updatedRemovePropagations);
-
                 isClassificationUpdated = true;
+
+                boolean isEntityDeleted = DELETED.toString().equals(entityVertex.getProperty(STATE_PROPERTY_KEY, String.class));
+                if (isEntityDeleted && updatedRemovePropagations) {
+                    removePropagation = true;
+                }
             }
 
             if (isClassificationUpdated) {
@@ -3201,10 +3204,6 @@ public class EntityGraphMapper {
             mapClassification(EntityOperation.UPDATE, context, classification, entityType, entityVertex, classificationVertex);
             updateModificationMetadata(entityVertex);
 
-            // handle update of 'propagate' flag
-            Boolean currentTagPropagation = currentClassification.isPropagate();
-            Boolean updatedTagPropagation = classification.isPropagate();
-
             /* -----------------------------
                | Current Tag | Updated Tag |
                | Propagation | Propagation |
@@ -3218,17 +3217,23 @@ public class EntityGraphMapper {
                |   true      |    false    | => Remove Tag Propagation (send REMOVE classification notifications)
                |-------------|-------------| */
 
+            Boolean currentTagPropagation = currentClassification.isPropagate();
+            Boolean updatedTagPropagation = classification.isPropagate();
             Boolean currentRestrictPropagationThroughLineage = currentClassification.getRestrictPropagationThroughLineage();
             Boolean updatedRestrictPropagationThroughLineage = classification.getRestrictPropagationThroughLineage();
 
-            if (taskManagement != null && DEFERRED_ACTION_ENABLED) {
-                String propagationType = updatedTagPropagation ? CLASSIFICATION_PROPAGATION_ADD : CLASSIFICATION_PROPAGATION_DELETE;
+            if ((!Objects.equals(updatedRemovePropagations, currentRemovePropagations) ||
+                    !Objects.equals(currentTagPropagation, updatedTagPropagation) ||
+                    !Objects.equals(currentRestrictPropagationThroughLineage, updatedRestrictPropagationThroughLineage)) &&
+                    taskManagement != null && DEFERRED_ACTION_ENABLED) {
 
+                String propagationType = CLASSIFICATION_PROPAGATION_ADD;
+                if (removePropagation || !updatedTagPropagation)
+                {
+                    propagationType = CLASSIFICATION_PROPAGATION_DELETE;
+                }
                 createAndQueueTask(propagationType, entityVertex, classificationVertex.getIdForDisplay(), currentRestrictPropagationThroughLineage);
-
-                updatedTagPropagation = null;
             }
-
 
             // compute propagatedEntityVertices once and use it for subsequent iterations and notifications
             if (updatedTagPropagation != null && (currentTagPropagation != updatedTagPropagation || currentRestrictPropagationThroughLineage != updatedRestrictPropagationThroughLineage)) {
@@ -3972,11 +3977,11 @@ public class EntityGraphMapper {
 
     private void createAndQueueTask(String taskType, AtlasVertex entityVertex, String classificationVertexId, Boolean currentPropagateThroughLineage) throws AtlasBaseException{
 
-        deleteDelegate.getHandler().createAndQueueTask(taskType, entityVertex, classificationVertexId, null, currentPropagateThroughLineage);
+        deleteDelegate.getHandler().createAndQueueTaskWithoutCheck(taskType, entityVertex, classificationVertexId, null, currentPropagateThroughLineage);
     }
 
     private void createAndQueueTask(String taskType, AtlasVertex entityVertex, String classificationVertexId) throws AtlasBaseException {
-        deleteDelegate.getHandler().createAndQueueTask(taskType, entityVertex, classificationVertexId, null);
+        deleteDelegate.getHandler().createAndQueueTaskWithoutCheck(taskType, entityVertex, classificationVertexId, null);
     }
 
     public void removePendingTaskFromEntity(String entityGuid, String taskGuid) throws EntityNotFoundException {
