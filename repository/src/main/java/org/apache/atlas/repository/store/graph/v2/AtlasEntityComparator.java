@@ -19,6 +19,7 @@
 package org.apache.atlas.repository.store.graph.v2;
 
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -28,6 +29,7 @@ import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasEntityUtil;
 import org.apache.commons.collections.MapUtils;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -81,7 +83,28 @@ public class AtlasEntityComparator {
                     continue;
                 }
 
-                Object newVal  = entry.getValue();
+                TypeCategory category = attribute.getAttributeType().getTypeCategory();
+                boolean isDefaultValueNotNull = !attribute.getAttributeDef().getIsDefaultValueNull();
+                Object newVal;
+
+                if (entry.getValue() == null && isDefaultValueNotNull) {
+                    switch (category) {
+                        case PRIMITIVE:
+                            newVal = attribute.getAttributeType().createDefaultValue();
+                            break;
+                        case ARRAY:
+                            newVal = new ArrayList<>();
+                            break;
+                        case MAP:
+                            newVal = MapUtils.EMPTY_MAP;
+                            break;
+                        default:
+                            newVal = entry.getValue();
+                    }
+                } else {
+                    newVal = entry.getValue();
+                }
+
                 Object currVal = (storedEntity != null) ? storedEntity.getAttribute(attrName) : entityRetriever.getEntityAttribute(storedVertex, attribute);
 
                 if (!attribute.getAttributeType().areEqualValues(currVal, newVal, guidRefMap)) {
