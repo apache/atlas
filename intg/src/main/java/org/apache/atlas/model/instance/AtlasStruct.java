@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.ArrayList;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -39,7 +40,9 @@ import javax.xml.bind.annotation.XmlSeeAlso;
 
 import org.apache.atlas.model.PList;
 import org.apache.atlas.model.SearchFilter.SortType;
+import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.type.AtlasStructType;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 
@@ -64,6 +67,14 @@ public class AtlasStruct implements Serializable {
     public static final String     SERIALIZED_DATE_FORMAT_STR = "yyyyMMdd-HH:mm:ss.SSS-Z";
     @Deprecated
     public static final DateFormat DATE_FORMATTER             = new SimpleDateFormat(SERIALIZED_DATE_FORMAT_STR);
+
+    private static final List<String> ALLOWED_DATATYPES_FOR_DEFAULT_NULL = new ArrayList() {
+        {
+            add("int");
+            add("long");
+            add("float");
+        }
+    };
 
     private String              typeName;
     private Map<String, Object> attributes;
@@ -99,6 +110,22 @@ public class AtlasStruct implements Serializable {
         }
     }
 
+    public AtlasStruct(Map map, Map<String, AtlasStructType.AtlasAttribute> attributeTypes, boolean setDefaultValues) {
+        if (map != null) {
+            Object typeName   = map.get(KEY_TYPENAME);
+            Map    attributes = (map.get(KEY_ATTRIBUTES) instanceof Map) ? (Map) map.get(KEY_ATTRIBUTES) : map;
+
+            if (typeName != null) {
+                setTypeName(typeName.toString());
+            }
+            if (setDefaultValues) {
+                setAttributes(new HashMap<>(attributes), attributeTypes);
+            } else {
+                setAttributes(new HashMap<>(attributes));
+            }
+        }
+    }
+
     public AtlasStruct(AtlasStruct other) {
         if (other != null) {
             setTypeName(other.getTypeName());
@@ -120,6 +147,35 @@ public class AtlasStruct implements Serializable {
 
     public void setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
+    }
+
+    public void setAttributes(Map<String, Object> attributes,
+                              Map<String, AtlasStructType.AtlasAttribute> attributeTypes) {
+        if (MapUtils.isNotEmpty(attributeTypes) && MapUtils.isNotEmpty(attributes)) {
+            this.attributes = new HashMap<>();
+            for (Map.Entry<String, AtlasStructType.AtlasAttribute> entry : attributeTypes.entrySet()) {
+                String attrName = entry.getKey();
+                AtlasStructType.AtlasAttribute attrType = entry.getValue();
+                Object attrValue = attributes.get(attrName);
+
+                if (attrType.getAttributeType().getTypeCategory() == TypeCategory.PRIMITIVE) {
+                    if (attrValue == null) {
+                        if (attrType.getAttributeDef().getDefaultValue() != null) {
+                            attrValue = attrType.getAttributeType().createDefaultValue();
+                        } else if (attrType.getAttributeDef().getIsDefaultValueNull()
+                                && ALLOWED_DATATYPES_FOR_DEFAULT_NULL.contains(attrType.getAttributeType().getTypeName())) {
+                            attrValue = null;
+                        } else if (attrType.getAttributeDef().getIsOptional()) {
+                            attrValue = attrType.getAttributeType().createOptionalDefaultValue();
+                        } else {
+                            attrValue = attrType.getAttributeType().createDefaultValue();
+                        }
+                    }
+                }
+
+                this.attributes.put(attrName, attrValue);
+            }
+        }
     }
 
     public boolean hasAttribute(String name) {
