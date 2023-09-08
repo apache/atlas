@@ -5,6 +5,7 @@ services:
       context: .
       dockerfile: Dockerfile.atlas
       args:
+        - ATLAS_SERVER_JAVA_VERSION=${ATLAS_SERVER_JAVA_VERSION}
         - ATLAS_VERSION=${ATLAS_VERSION}
     image: atlas:latest
     container_name: atlas
@@ -27,6 +28,7 @@ services:
       atlas-zk:
         condition: service_started
     environment:
+      - ATLAS_SERVER_JAVA_VERSION
       - ATLAS_VERSION
     command:
       - /home/atlas/scripts/atlas.sh

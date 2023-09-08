@@ -16,12 +16,15 @@
 
 FROM ubuntu:18.04
 
+ARG TARGETARCH
+ARG ATLAS_BASE_JAVA_VERSION
+
 # Install Git, which is missing from the Ubuntu base images.
 RUN apt-get update && apt-get install -y git python
 
 # Install Java.
 RUN apt-get update && apt-get install -y openjdk-8-jdk
-ENV JAVA_HOME /usr/lib/jvm/java-8-openjdk-amd64
+ENV JAVA_HOME /usr/lib/jvm/java-${ATLAS_BASE_JAVA_VERSION}-openjdk-${TARGETARCH}
 
 # Install Maven.
 

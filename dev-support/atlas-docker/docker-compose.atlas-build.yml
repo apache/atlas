@@ -4,6 +4,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.atlas-build
+      args:
+        - ATLAS_BUILD_JAVA_VERSION=${ATLAS_BUILD_JAVA_VERSION}
     image: atlas-build
     container_name: atlas-build
     hostname: atlas-build.example.com

@@ -47,6 +47,8 @@ export MAVEN_OPTS="-Xms2g -Xmx2g"
 export M2=/home/atlas/.m2
 
 
+echo JAVA_HOME="${JAVA_HOME}"
+
 if [ "${BUILD_HOST_SRC}" == "true" ]
 then
   if [ ! -f /home/atlas/src/pom.xml ]
