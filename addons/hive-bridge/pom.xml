@@ -316,6 +316,16 @@
                                             <artifactId>jersey-client</artifactId>
                                             <version>${jersey.version}</version>
                                         </artifactItem>
+                                        <artifactItem>
+                                            <groupId>org.apache.logging.log4j</groupId>
+                                            <artifactId>log4j-core</artifactId>
+                                            <version>${log4j2.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>org.apache.logging.log4j</groupId>
+                                            <artifactId>log4j-api</artifactId>
+                                            <version>${log4j2.version}</version>
+                                        </artifactItem>
                                     </artifactItems>
                                 </configuration>
                             </execution>
