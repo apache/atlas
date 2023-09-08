@@ -1810,7 +1810,7 @@
                 <plugin>
                     <groupId>com.github.eirslett</groupId>
                     <artifactId>frontend-maven-plugin</artifactId>
-                    <version>1.4</version>
+                    <version>1.12.1</version>
                 </plugin>
 
                 <plugin>
