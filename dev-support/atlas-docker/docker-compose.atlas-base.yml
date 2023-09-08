@@ -4,6 +4,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.atlas-base
+      args:
+        - UBUNTU_VERSION=${UBUNTU_VERSION}
+        - ATLAS_BASE_JAVA_VERSION=${ATLAS_BASE_JAVA_VERSION}
     image: atlas-base
     container_name: atlas-base
     networks:
