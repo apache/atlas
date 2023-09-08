@@ -72,6 +72,7 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import static org.apache.commons.collections4.MapUtils.emptyIfNull;
 import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
 import static org.apache.atlas.AtlasErrorCode.DEPRECATED_API;
 import static org.apache.atlas.authorize.AtlasPrivilege.*;
@@ -93,6 +94,10 @@ public class EntityREST {
     public static final String PREFIX_ATTR_ = "attr_";
     public static final String QUALIFIED_NAME  = "qualifiedName";
     private static final int HUNDRED_THOUSAND = 100000;
+    private static final int TWO_MILLION = HUNDRED_THOUSAND * 10 * 2;
+    private static final Set<String> ATTRS_WITH_TWO_MILLION_LIMIT = new HashSet<String>() {{
+        add("rawQueryText");
+    }};
 
 
     private final AtlasTypeRegistry      typeRegistry;
@@ -899,15 +904,25 @@ public class EntityREST {
     }
 
     public static void validateAttributeLength(final List<AtlasEntity> entities) throws AtlasBaseException {
-        //Predicate to check attribute value exceeding length
-        Predicate<Map.Entry<String, Object>> predicateOfAttributeLengthExceedingLimit = attribute ->
-                attribute.getValue() instanceof String && ((String) attribute.getValue()).length() > HUNDRED_THOUSAND;
+        List<String> errorMessages = new ArrayList<>();
 
         for (final AtlasEntity atlasEntity : entities) {
-            Set<String> attributeKeys = org.apache.commons.collections4.MapUtils.emptyIfNull(atlasEntity.getAttributes())
-                    .entrySet().stream().filter(predicateOfAttributeLengthExceedingLimit).map(Map.Entry::getKey).collect(Collectors.toSet());
-            if (!attributeKeys.isEmpty()) {
-                throw new AtlasBaseException("Attribute(s) " + String.join(",", attributeKeys) + " exceeds limit of "+HUNDRED_THOUSAND+" characters");
+            for (Map.Entry<String, Object> attribute : atlasEntity.getAttributes().entrySet()) {
+
+                if (attribute.getValue() instanceof String && ((String) attribute.getValue()).length() > HUNDRED_THOUSAND) {
+
+                    if (ATTRS_WITH_TWO_MILLION_LIMIT.contains(attribute.getKey())) {
+                        if (((String) attribute.getValue()).length() > TWO_MILLION) {
+                            errorMessages.add("Attribute " + attribute.getKey() + " exceeds limit of " + TWO_MILLION + " characters");
+                        }
+                    } else {
+                        errorMessages.add("Attribute " + attribute.getKey() + " exceeds limit of " + HUNDRED_THOUSAND + " characters");
+                    }
+                }
+            }
+
+            if (errorMessages.size() > 0) {
+                throw new AtlasBaseException(AtlasType.toJson(errorMessages));
             }
         }
     }
