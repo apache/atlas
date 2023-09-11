@@ -90,9 +90,7 @@ public class AtlasEntityComparator {
                 if (entry.getValue() == null && isDefaultValueNotNull) {
                     switch (category) {
                         case PRIMITIVE:
-                            newVal = attribute.getAttributeDef().getIsOptional() ?
-                                    attribute.getAttributeType().createOptionalDefaultValue():
-                                    attribute.getAttributeType().createDefaultValue();
+                            newVal = attribute.getAttributeType().createDefaultValue();
                             break;
                         case ARRAY:
                             newVal = new ArrayList<>();
