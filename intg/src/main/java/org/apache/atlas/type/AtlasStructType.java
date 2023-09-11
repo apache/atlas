@@ -711,7 +711,12 @@ public class AtlasStructType extends AtlasType {
         if (val instanceof AtlasStruct) {
             ret = (AtlasStruct) val;
         } else if (val instanceof Map) {
-            ret = new AtlasStruct((Map) val);
+            ret = new AtlasStruct((Map) val, this.allAttributes, true);
+
+            if (StringUtils.isEmpty(ret.getTypeName()) && !StringUtils.isEmpty(this.getTypeName())) {
+                ret.setTypeName(this.getTypeName());
+            }
+
         } else if (val instanceof String) {
             Map map = AtlasType.fromJson(val.toString(), Map.class);
 
