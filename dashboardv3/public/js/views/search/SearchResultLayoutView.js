@@ -713,7 +713,7 @@ define(['require',
                     }),
                     businessAttributeDefs,
                     that = this;
-                businessAttributeDefs = def.get('businessAttributeDefs');
+                businessAttributeDefs = def ? def.get('businessAttributeDefs') : null;
                 if (businessAttributeDefs) {
                     _.each(
                         businessAttributeDefs,
