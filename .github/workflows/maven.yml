@@ -26,7 +26,6 @@ on:
       - development
       - master
       - lineageondemand
-      - rawquerymigration
 
 jobs:
   build:
