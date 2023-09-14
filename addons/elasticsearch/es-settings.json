@@ -57,6 +57,12 @@
           "graph_synonyms", "lowercase"
         ],
         "tokenizer": "atlan_tokenizer"
+      },
+      "truncate_analyzer": {
+        "char_filter": [
+          "truncate_filter"
+        ],
+        "tokenizer": "standard"
       }
     },
     "normalizer": {
@@ -103,6 +109,11 @@
         "type":"pattern_replace",
         "pattern":"\\d+",
         "replacement":" $0"
+      },
+      "truncate_filter": {
+        "pattern": "(^.{0,100000}).*$",
+        "type": "pattern_replace",
+        "replacement": "$1 "
       }
     }
   }
