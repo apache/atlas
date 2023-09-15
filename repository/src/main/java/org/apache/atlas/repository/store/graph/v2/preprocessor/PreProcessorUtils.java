@@ -73,7 +73,7 @@ public class PreProcessorUtils {
         entity.setAttribute(QUALIFIED_NAME, qualifiedName);
 
         //Check if parent attribute is changed
-        if (parentAttribute.getAttributeType().areEqualValues(currentParentObjectId, newParentObjectId, context.getGuidAssignments())) {
+        if (currentParentObjectId == null || parentAttribute.getAttributeType().areEqualValues(currentParentObjectId, newParentObjectId, context.getGuidAssignments())) {
             return null;
         }
 
