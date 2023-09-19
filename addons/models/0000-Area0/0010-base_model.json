@@ -879,7 +879,7 @@
       ],
       "description": "Atlan Type representing parent model for Persona, Purpose",
       "serviceType": "atlan",
-      "typeVersion": "1.1",
+      "typeVersion": "1.3",
       "attributeDefs": [
         {
           "name": "isAccessControlEnabled",
@@ -916,6 +916,36 @@
         },
         {
           "name": "channelLink",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": false
+        },
+        {
+          "name": "denyAssetTypes",
+          "typeName": "array<string>",
+          "cardinality": "SET",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": false
+        },
+        {
+          "name": "denyNavigationPages",
+          "typeName": "array<string>",
+          "cardinality": "SET",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": false
+        },
+        {
+          "name": "defaultNavigation",
           "typeName": "string",
           "cardinality": "SINGLE",
           "isIndexable": false,
