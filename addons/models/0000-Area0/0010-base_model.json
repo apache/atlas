@@ -879,7 +879,7 @@
       ],
       "description": "Atlan Type representing parent model for Persona, Purpose",
       "serviceType": "atlan",
-      "typeVersion": "1.1",
+      "typeVersion": "1.2",
       "attributeDefs": [
         {
           "name": "isAccessControlEnabled",
@@ -907,6 +907,16 @@
           "name": "denyAssetTabs",
           "typeName": "array<string>",
           "indexType": "STRING",
+          "cardinality": "SET",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": false
+        },
+        {
+          "name": "denyAssetFilters",
+          "typeName": "array<string>",
           "cardinality": "SET",
           "isIndexable": false,
           "isOptional": true,
