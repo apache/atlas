@@ -1527,6 +1527,8 @@ public abstract class DeleteHandlerV1 {
     private void updateAssetHasLineageStatus(AtlasVertex assetVertex, AtlasEdge currentEdge, Collection<AtlasEdge> removedEdges) {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("updateAssetHasLineageStatus");
 
+        removedEdges.forEach(edge -> RequestContext.get().addToDeletedEdgesIdsForResetHasLineage(edge.getIdForDisplay()));
+
         Iterator<AtlasEdge> edgeIterator = assetVertex.query()
                 .direction(AtlasEdgeDirection.BOTH)
                 .label(PROCESS_EDGE_LABELS)
@@ -1537,7 +1539,7 @@ public abstract class DeleteHandlerV1 {
         int processHasLineageCount = 0;
         while (edgeIterator.hasNext()) {
             AtlasEdge edge = edgeIterator.next();
-            if (!removedEdges.contains(edge) && !currentEdge.equals(edge)) {
+            if (!RequestContext.get().getDeletedEdgesIdsForResetHasLineage().contains(edge.getIdForDisplay()) && !currentEdge.equals(edge)) {
                 AtlasVertex relatedProcessVertex = edge.getOutVertex();
                 boolean processHasLineage = getEntityHasLineage(relatedProcessVertex);
                 if (processHasLineage) {
