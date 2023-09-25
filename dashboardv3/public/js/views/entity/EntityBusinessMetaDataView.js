@@ -265,7 +265,8 @@ define([
                         var newVal = val;
                         if (_.isObject(val) && !_.isUndefinedNull(val.value)) {
                             newVal = val.value;
-                            if (newVal.length > 0 && val.typeName.indexOf("date") > -1) {
+                            //Below condition is added to handle the multiple date scenario (typeName:"array<date>")
+                            if (newVal.length > 0 && val.typeName.indexOf("array<date>") > -1) {
                                 newVal = _.map(newVal, function(dates) {
                                     return Utils.formatDate({ date: dates, zone: false, dateFormat: Globals.dateFormat });
                                 });
