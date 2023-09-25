@@ -144,7 +144,7 @@ define(['require',
                                     if (attributesDetails) {
                                         if (bmAttributesDeails) {
                                             _.each(Object.keys(attributesDetails), function(key) {
-                                                if (bmAttributesDeails[key].typeName.toLowerCase().indexOf("date") > -1) {
+                                                if (bmAttributesDeails[key].typeName.toLowerCase().indexOf("array<date>") > -1) {
                                                     if (attributesDetails[key].length) { // multiple date values
                                                         attributesDetails[key] = _.map(attributesDetails[key], function(dateValue) {
                                                             return Utils.formatDate({ date: dateValue })
