@@ -38,6 +38,42 @@
     },
     {
         "typeName": "AuthPolicy",
+        "guid": -8,
+        "attributes": {
+            "qualifiedName": "{guid}/connection-link-assets-inverse",
+            "name": "{name}-connection-link-assets-inverse",
+            "policyCategory": "bootstrap",
+            "policySubCategory": "connection",
+            "policyType": "allow",
+            "policyServiceName": "atlas",
+            "policyRoles": [
+                "connection_admins_{guid}"
+            ],
+            "policyActions": [
+                "add-relationship",
+                "remove-relationship"
+            ],
+            "policyResourceCategory": "RELATIONSHIP",
+            "policyResources": [
+                "end-one-entity-classification:*",
+                "end-one-entity:*",
+                "end-one-entity-type:Catalog",
+                "end-one-entity-type:Connection",
+                "end-one-entity-type:Process",
+                "end-one-entity-type:ProcessExecution",
+                "end-one-entity-type:Namespace",
+
+                "end-two-entity-classification:*",
+                "end-two-entity:{entity}",
+                "end-two-entity:{entity}/*",
+                "end-two-entity-type:*",
+
+                "relationship-type:*"
+            ]
+        }
+    },
+    {
+        "typeName": "AuthPolicy",
         "guid": -2,
         "attributes": {
             "qualifiedName": "{guid}/connection-add-terms",

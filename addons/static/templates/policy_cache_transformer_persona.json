@@ -44,6 +44,27 @@
         "end-two-entity:*"
       ],
       "actions": ["add-relationship", "remove-relationship"]
+    },
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "RELATIONSHIP",
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity-type:Catalog",
+        "end-one-entity-type:Connection",
+        "end-one-entity-type:Process",
+        "end-one-entity-type:Namespace",
+        "end-one-entity-type:ProcessExecution",
+        "end-one-entity-classification:*",
+        "end-one-entity:*",
+
+        "end-two-entity-type:{entity-type}",
+        "end-two-entity-classification:*",
+        "end-two-entity:{entity}",
+        "end-two-entity:{entity}/*"
+      ],
+      "actions": ["add-relationship", "remove-relationship"]
     }
   ],
   "persona-api-create": [
