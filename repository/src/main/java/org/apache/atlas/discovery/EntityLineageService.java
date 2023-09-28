@@ -495,10 +495,7 @@ public class EntityLineageService implements AtlasLineageService {
                 neighbourVertex = currentEdge.getInVertex();
 
             String vertexGuid = getGuid(neighbourVertex);
-            if (StringUtils.isEmpty(vertexGuid))
-                continue;
-
-            if (!lineageListContext.evaluateTraversalFilter(neighbourVertex))
+            if (StringUtils.isEmpty(vertexGuid) || !lineageListContext.evaluateTraversalFilter(neighbourVertex))
                 continue;
 
             if (!skippedVertices.contains(vertexGuid) && !visitedVertices.contains(vertexGuid)) {
