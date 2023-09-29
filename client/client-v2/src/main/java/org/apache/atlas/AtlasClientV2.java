@@ -31,6 +31,7 @@ import com.sun.jersey.multipart.file.StreamDataBodyPart;
 import org.apache.atlas.bulkimport.BulkImportResponse;
 import org.apache.atlas.model.SearchFilter;
 import org.apache.atlas.model.audit.AtlasAuditEntry;
+import org.apache.atlas.model.audit.AuditReductionCriteria;
 import org.apache.atlas.model.audit.AuditSearchParameters;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.atlas.model.discovery.AtlasQuickSearchResult;
@@ -838,6 +839,14 @@ public class AtlasClientV2 extends AtlasBaseClient {
         });
     }
 
+    public void ageoutAtlasAudits(AuditReductionCriteria auditReductionCriteria, boolean useAuditConfig) throws AtlasServiceException {
+        MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
+
+        queryParams.add("useAuditConfig", String.valueOf(useAuditConfig));
+
+        callAPI(API_V2.AGEOUT_ATLAS_AUDITS, List.class, auditReductionCriteria, queryParams);
+    }
+
 
     // Glossary APIs
     public List<AtlasGlossary> getAllGlossaries(String sortByAttribute, int limit, int offset) throws AtlasServiceException {
@@ -1269,6 +1278,7 @@ public class AtlasClientV2 extends AtlasBaseClient {
 
         // Admin APIs
         public static final API_V2 GET_ATLAS_AUDITS            = new API_V2(ATLAS_AUDIT_API, HttpMethod.POST, Response.Status.OK);
+        public static final API_V2 AGEOUT_ATLAS_AUDITS         = new API_V2(ATLAS_AUDIT_API + "ageout/", HttpMethod.POST, Response.Status.OK);
 
         // Glossary APIs
         public static final API_V2 GET_ALL_GLOSSARIES              = new API_V2(GLOSSARY_URI, HttpMethod.GET, Response.Status.OK);

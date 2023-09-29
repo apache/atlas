@@ -50,6 +50,7 @@ import org.apache.atlas.query.executors.DSLQueryExecutor;
 import org.apache.atlas.query.executors.ScriptEngineBasedExecutor;
 import org.apache.atlas.query.executors.TraversalBasedExecutor;
 import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.Constants.AtlasAuditAgingType;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
@@ -60,6 +61,7 @@ import org.apache.atlas.repository.graphdb.AtlasIndexQuery.Result;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
+import org.apache.atlas.repository.store.graph.v2.tasks.AuditReductionTaskFactory;
 import org.apache.atlas.repository.store.graph.v2.tasks.searchdownload.SearchResultDownloadTask;
 import org.apache.atlas.repository.store.graph.v2.tasks.searchdownload.SearchResultDownloadTaskFactory;
 import org.apache.atlas.repository.userprofile.UserProfileService;
@@ -469,6 +471,12 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
     @Override
     @GraphTransaction
+    public Set<String> searchGUIDsWithParameters(AtlasAuditAgingType auditAgingType, Set<String> entityTypes, SearchParameters searchParameters) throws AtlasBaseException {
+        return searchEntityGUIDs(auditAgingType, entityTypes, new SearchContext(searchParameters, typeRegistry, graph, indexer.getVertexIndexKeys()));
+    }
+
+    @Override
+    @GraphTransaction
     public void createAndQueueSearchResultDownloadTask(Map<String, Object> taskParams) throws AtlasBaseException {
 
         List<AtlasTask> pendingTasks = taskManagement.getPendingTasksByType(SearchResultDownloadTaskFactory.SEARCH_RESULT_DOWNLOAD);
@@ -511,6 +519,19 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
     @Override
     @GraphTransaction
+    public AtlasTask createAndQueueAuditReductionTask(Map<String, Object> taskParams, String taskType) throws AtlasBaseException {
+        List<AtlasTask> pendingTasks = taskManagement.getPendingTasksByType(taskType);
+        if (CollectionUtils.isNotEmpty(pendingTasks) && pendingTasks.size() > AuditReductionTaskFactory.MAX_PENDING_TASKS_ALLOWED) {
+            throw new AtlasBaseException(PENDING_TASKS_ALREADY_IN_PROGRESS, String.valueOf(pendingTasks.size()));
+        }
+        AtlasTask task = taskManagement.createTask(taskType, RequestContext.getCurrentUser(), taskParams);
+        RequestContext.get().queueTask(task);
+
+        return task;
+    }
+
+    @Override
+    @GraphTransaction
     public AtlasSearchResult searchRelationsWithParameters(RelationshipSearchParameters searchParameters) throws AtlasBaseException {
         SearchContext searchContext = new SearchContext(createSearchParameters(searchParameters),
                 typeRegistry,
@@ -547,6 +568,45 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         }
 
         return ret;
+    }
+
+    public Set<String> searchEntityGUIDs(AtlasAuditAgingType auditAgingType, Set<String> entityTypes, SearchContext searchContext) throws AtlasBaseException {
+        SearchParameters searchParameters = searchContext.getSearchParameters();
+        final QueryParams params          = QueryParams.getNormalizedParams(searchParameters.getLimit(),searchParameters.getOffset());
+        String           searchID         = searchTracker.add(searchContext); // For future cancellations
+
+        searchParameters.setLimit(params.limit());
+        searchParameters.setOffset(params.offset());
+
+        Set<String> guids = new HashSet<>();
+        try {
+            List<AtlasVertex> resultList = searchContext.getSearchProcessor().execute();
+            do {
+                for (AtlasVertex atlasVertex : resultList) {
+                    if (atlasVertex != null && checkVertexMatchesSearchCriteria(atlasVertex, auditAgingType, entityTypes)) {
+                        guids.add(atlasVertex.getProperty(Constants.GUID_PROPERTY_KEY, String.class));
+                    }
+                }
+                searchParameters.setOffset(searchParameters.getOffset() + searchParameters.getLimit());
+                resultList = searchContext.getSearchProcessor().execute();
+            } while (CollectionUtils.isNotEmpty(resultList));
+            LOG.info("Total {} entities are eligible for Audit aging", guids.size());
+        } catch (Throwable t) {
+            LOG.error("Error while retrieving eligible entities for audit aging");
+        } finally {
+            searchTracker.remove(searchID);
+        }
+
+        return guids;
+    }
+
+    private boolean checkVertexMatchesSearchCriteria(AtlasVertex vertex, AtlasAuditAgingType auditAgingType, Set<String> entityTypes) {
+        if (CollectionUtils.isEmpty(entityTypes)) {
+            return true;
+        }
+        String typeName = vertex.getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY, String.class);
+        boolean typeNameMatchesCriteria = entityTypes.contains(typeName);
+        return (auditAgingType == AtlasAuditAgingType.DEFAULT) ? !typeNameMatchesCriteria : typeNameMatchesCriteria;
     }
 
     private AtlasSearchResult searchWithSearchContext(SearchContext searchContext) throws AtlasBaseException {

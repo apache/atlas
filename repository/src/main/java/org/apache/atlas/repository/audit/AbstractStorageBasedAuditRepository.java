@@ -24,6 +24,7 @@ import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
+import org.apache.atlas.repository.Constants.AtlasAuditAgingType;
 import org.apache.atlas.service.Service;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration.Configuration;
@@ -31,10 +32,7 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * This abstract base class should be used when adding support for an audit storage backend.
@@ -160,6 +158,11 @@ public abstract class AbstractStorageBasedAuditRepository implements Service, En
     assert ts != null  : "timestamp can't be null";
     String keyStr = id + FIELD_SEPARATOR + ts + FIELD_SEPARATOR + index + FIELD_SEPARATOR + System.currentTimeMillis();
     return Bytes.toBytes(keyStr);
+  }
+
+  @Override
+  public List<EntityAuditEventV2> deleteEventsV2(String entityId, Set<EntityAuditEventV2.EntityAuditActionV2> entityAuditActions, short auditCount, int ttlInDays, boolean createEventsAgeoutAllowed, AtlasAuditAgingType auditAgingType) throws AtlasBaseException, AtlasException {
+    return null;
   }
 
 }

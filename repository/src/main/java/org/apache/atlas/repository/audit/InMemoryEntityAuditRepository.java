@@ -23,10 +23,13 @@ import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.annotation.ConditionalOnAtlasProperty;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
+import org.apache.atlas.repository.Constants.AtlasAuditAgingType;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Singleton;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -103,17 +106,59 @@ public class InMemoryEntityAuditRepository implements EntityAuditRepository {
 
     @Override
     public List<EntityAuditEventV2> listEventsV2(String entityId, EntityAuditEventV2.EntityAuditActionV2 auditAction, String sortByColumn, boolean sortOrderDesc, int offset, short limit) throws AtlasBaseException {
+        return listEventsV2(entityId, auditAction, sortByColumn, sortOrderDesc, 0, offset, limit, true, true);
+    }
+
+    private List<EntityAuditEventV2> listEventsV2(String entityId, EntityAuditEventV2.EntityAuditActionV2 auditAction, String sortByColumn, boolean sortOrderDesc, int ttlInDays, int offset, short limit, boolean allowMaxResults, boolean createEventsAgeoutAllowed) throws AtlasBaseException {
         List<EntityAuditEventV2> events     = new ArrayList<>();
         SortedMap<String, EntityAuditEventV2> subMap = auditEventsV2.tailMap(entityId);
         for (EntityAuditEventV2 event : subMap.values()) {
             if (event.getEntityId().equals(entityId)) {
-                events.add(event);
+                if (auditAction == null || event.getAction() == auditAction) {
+                    if (event.getAction() == EntityAuditEventV2.EntityAuditActionV2.ENTITY_CREATE && !createEventsAgeoutAllowed) {
+                        continue;
+                    }
+                    events.add(event);
+                }
             }
         }
+
+        if (allowMaxResults && limit == -1) {
+            limit = (short) events.size();
+        }
         EntityAuditEventV2.sortEvents(events, sortByColumn, sortOrderDesc);
-        events = events.subList(
-                Math.min(events.size(), offset),
-                Math.min(events.size(), offset + limit));
+        int fromIndex = Math.min(events.size(), offset);
+        int endIndex  = Math.min(events.size(), offset + limit);
+
+        List<EntityAuditEventV2> possibleExpiredEvents = events.subList(0, fromIndex);
+
+        events = new ArrayList<>(events.subList(fromIndex, endIndex));
+
+        // This is only for Audit Aging, including expired audit events to result
+        if (CollectionUtils.isNotEmpty(possibleExpiredEvents) && ttlInDays > 0 ) {
+            LocalDateTime now = LocalDateTime.now();
+            long ttlTimestamp = Timestamp.valueOf(now.minusDays(ttlInDays)).getTime();
+            possibleExpiredEvents.removeIf(e -> (auditAction!= null && e.getAction() != auditAction) || e.getTimestamp() > ttlTimestamp);
+            if (CollectionUtils.isNotEmpty(possibleExpiredEvents)) {
+                events.addAll(possibleExpiredEvents);
+            }
+        }
+        return events;
+    }
+
+    @Override
+    public List<EntityAuditEventV2> deleteEventsV2(String entityId, Set<EntityAuditEventV2.EntityAuditActionV2> entityAuditActions, short auditCount, int ttlInDays, boolean createEventsAgeoutAllowed, AtlasAuditAgingType auditAgingType) throws AtlasBaseException, AtlasException {
+        List<EntityAuditEventV2> events = new ArrayList<>();
+        if (CollectionUtils.isEmpty(entityAuditActions)) {
+            events = listEventsV2(entityId, null, "timestamp", true, ttlInDays, auditCount, (short) -1, true, createEventsAgeoutAllowed);
+        } else {
+            for (EntityAuditEventV2.EntityAuditActionV2 auditAction : entityAuditActions) {
+                List<EntityAuditEventV2> eventsByAction = listEventsV2(entityId, auditAction, "timestamp", true, ttlInDays, auditCount, (short) -1, true, createEventsAgeoutAllowed);
+                if (CollectionUtils.isNotEmpty(eventsByAction)) {
+                    events.addAll(eventsByAction);
+                }
+            }
+        }
         return events;
     }
 

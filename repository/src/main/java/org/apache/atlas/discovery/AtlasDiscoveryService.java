@@ -22,10 +22,13 @@ package org.apache.atlas.discovery;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.*;
 import org.apache.atlas.model.profile.AtlasUserSavedSearch;
+import org.apache.atlas.model.tasks.AtlasTask;
+import org.apache.atlas.repository.Constants.AtlasAuditAgingType;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public interface AtlasDiscoveryService {
     /**
@@ -78,6 +81,14 @@ public interface AtlasDiscoveryService {
      * @throws AtlasBaseException
      */
     AtlasSearchResult searchWithParameters(SearchParameters searchParameters) throws AtlasBaseException;
+
+    /**
+     * Search for guids of entities matching the search criteria
+     * @param searchParameters Search criteria
+     * @return GUIDs of matching entities
+     * @throws AtlasBaseException
+     */
+    Set<String> searchGUIDsWithParameters(AtlasAuditAgingType auditAgingType, Set<String> entityTypes, SearchParameters searchParameters) throws AtlasBaseException;
 
     /**
      * Search for relations (edges) matching the search criteria
@@ -173,4 +184,11 @@ public interface AtlasDiscoveryService {
      * @throws IOException
      */
     AtlasSearchResultDownloadStatus getSearchResultDownloadStatus() throws IOException;
+
+    /**
+     * Creates task to age out audits
+     * @param taskParams parameters of AtlasTask
+     * @return Task created to perform audit aging
+     */
+    AtlasTask createAndQueueAuditReductionTask(Map<String, Object> taskParams, String taskType) throws AtlasBaseException;
 }

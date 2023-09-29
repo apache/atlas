@@ -22,6 +22,7 @@ import org.apache.atlas.AtlasException;
 import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.repository.Constants.AtlasAuditAgingType;
 
 import java.util.List;
 import java.util.Set;
@@ -91,6 +92,17 @@ public interface EntityAuditRepository {
      * @throws AtlasBaseException
      */
     List<EntityAuditEventV2> listEventsV2(String entityId, EntityAuditEventV2.EntityAuditActionV2 auditAction, String sortByColumn, boolean sortOrderDesc, int offset, short limit) throws AtlasBaseException;
+
+    /**
+     * Delete all events for the given entity id by keeping only auditCount number of events with entityAuditActions
+     * @param entityId entity id
+     * @param entityAuditActions operation(s) to be used to filter at HBase column
+     * @param auditCount  Max numbers of events to keep without deleting
+     * @param ttlInDays  time-to-live of events
+     * @return list of events
+     * @throws AtlasBaseException
+     */
+    List<EntityAuditEventV2> deleteEventsV2(String entityId, Set<EntityAuditEventV2.EntityAuditActionV2> entityAuditActions, short auditCount, int ttlInDays, boolean createEventsAgeoutAllowed, AtlasAuditAgingType auditAgingType) throws AtlasBaseException, AtlasException;
 
     /***
      * List events for given time range where classifications have been added, deleted or updated.

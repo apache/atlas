@@ -22,15 +22,20 @@ import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.repository.Constants.AtlasAuditAgingType;
 import org.apache.atlas.v1.model.instance.Referenceable;
+import org.apache.commons.lang.time.DateUtils;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.stream.Collectors;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.*;
+
 public class AuditRepositoryTestBase {
     protected EntityAuditRepository eventRepository;
 
@@ -203,4 +208,62 @@ public class AuditRepositoryTestBase {
         assertEquals(actual.getDetails(), expected.getDetails());
     }
 
+    @Test
+    public void testDeleteEventsV2() throws Exception {
+        String      id1       = "id1" + rand();
+        int         ttlInDays = 1;
+        long        ts        = System.currentTimeMillis() - (ttlInDays * DateUtils.MILLIS_PER_DAY);
+        AtlasEntity entity    = new AtlasEntity(rand());
+
+        int j = 0;
+        List<EntityAuditEventV2> expectedEvents = new ArrayList<>();
+        expectedEvents.add(new EntityAuditEventV2(id1, ts + j++, "user-a", EntityAuditEventV2.EntityAuditActionV2.ENTITY_CREATE, "details" + j, entity));
+        expectedEvents.add(new EntityAuditEventV2(id1, ts + j++, "user-C", EntityAuditEventV2.EntityAuditActionV2.ENTITY_UPDATE, "details" + j, entity));
+        for (int i = 0; i < 5; i++) {
+            expectedEvents.add(new EntityAuditEventV2(id1, ts + j++, "user" + i, EntityAuditEventV2.EntityAuditActionV2.ENTITY_UPDATE, "details" + j, entity));
+            expectedEvents.add(new EntityAuditEventV2(id1, ts + j++, "user" + i, EntityAuditEventV2.EntityAuditActionV2.CLASSIFICATION_ADD, "details" + j, entity));
+        }
+        expectedEvents.add(new EntityAuditEventV2(id1, ts+ j++, "User-b", EntityAuditEventV2.EntityAuditActionV2.ENTITY_DELETE, "details" + j, entity));
+        for(EntityAuditEventV2 event : expectedEvents) {
+            eventRepository.putEventsV2(event);
+        }
+
+        List<EntityAuditEventV2> events = eventRepository.listEventsV2(id1, null, "timestamp", false, 0, (short) -1);
+        assertEquals(events.size(), 13);
+        assertEventV2Equals(events.get(0), expectedEvents.get(0));
+        assertEventV2Equals(events.get(1), expectedEvents.get(1));
+
+        short expectedUpdateEventsCount = 2;
+        List<EntityAuditEventV2> deletedUpdateEvents   = eventRepository.deleteEventsV2(id1, new HashSet<>(Arrays.asList(EntityAuditEventV2.EntityAuditActionV2.ENTITY_UPDATE)), expectedUpdateEventsCount , 0, false, AtlasAuditAgingType.CUSTOM);
+        List<EntityAuditEventV2> remainingEvents       = events.stream().filter(x -> !deletedUpdateEvents.contains(x)).collect(Collectors.toList());
+        List<EntityAuditEventV2> remainingUpdateEvents = remainingEvents.stream().filter(x -> x.getAction() == EntityAuditEventV2.EntityAuditActionV2.ENTITY_UPDATE).collect(Collectors.toList());
+
+        assertEquals(remainingUpdateEvents.size(), expectedUpdateEventsCount);
+
+        short expectedEventsCount = 4;
+        List<EntityAuditEventV2> deletedEvents = eventRepository.deleteEventsV2(id1, null, expectedEventsCount , 0, false, AtlasAuditAgingType.DEFAULT);
+        remainingEvents = events.stream().filter(x -> !deletedEvents.contains(x)).collect(Collectors.toList());
+
+        assertEquals(remainingEvents.size(), expectedEventsCount + 1);
+        assertEventV2Equals(remainingEvents.get(0), events.get(0));
+        assertTrue(remainingEvents.contains(events.get(0)));
+
+        List<EntityAuditEventV2> deletedEventsIncludingCreate = eventRepository.deleteEventsV2(id1, null, expectedEventsCount , 0, true, AtlasAuditAgingType.DEFAULT);
+        remainingEvents = events.stream().filter(x -> !deletedEventsIncludingCreate.contains(x)).collect(Collectors.toList());
+
+        assertEquals(remainingEvents.size(), expectedEventsCount);
+        assertNotEquals(remainingEvents.get(3), events.get(0));
+        assertFalse(remainingEvents.contains(events.get(0)));
+
+        EntityAuditEventV2 latestEvent = new EntityAuditEventV2(id1, System.currentTimeMillis(), "User-b", EntityAuditEventV2.EntityAuditActionV2.ENTITY_DELETE, "details" + j++, entity);
+        eventRepository.putEventsV2(latestEvent);
+        List<EntityAuditEventV2> allEvents = eventRepository.listEventsV2(id1, null, "timestamp", false, 0, (short) -1);
+
+        List<EntityAuditEventV2> deletedEventsByTTL   = eventRepository.deleteEventsV2(id1, null, expectedUpdateEventsCount , ttlInDays, true, AtlasAuditAgingType.DEFAULT);
+        assertEquals(deletedEventsByTTL.size(), allEvents.size() - 1);
+
+        List<EntityAuditEventV2> remainingEventsByTTL = allEvents.stream().filter(x -> !deletedEventsByTTL.contains(x)).collect(Collectors.toList());
+        assertEquals(remainingEventsByTTL.size(), 1);
+        assertEquals(latestEvent, remainingEventsByTTL.get(0));
+    }
 }

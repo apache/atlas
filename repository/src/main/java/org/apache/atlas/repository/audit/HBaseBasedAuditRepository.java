@@ -20,6 +20,7 @@ package org.apache.atlas.repository.audit;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.RequestContext;
@@ -28,10 +29,12 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2;
+import org.apache.atlas.repository.Constants.AtlasAuditAgingType;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.time.DateUtils;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
@@ -39,6 +42,7 @@ import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
+import org.apache.hadoop.hbase.client.Delete;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
@@ -48,6 +52,7 @@ import org.apache.hadoop.hbase.filter.BinaryComparator;
 import org.apache.hadoop.hbase.filter.BinaryPrefixComparator;
 import org.apache.hadoop.hbase.filter.CompareFilter;
 import org.apache.hadoop.hbase.filter.Filter;
+import org.apache.hadoop.hbase.filter.FilterList;
 import org.apache.hadoop.hbase.filter.MultiRowRangeFilter;
 import org.apache.hadoop.hbase.filter.PageFilter;
 import org.apache.hadoop.hbase.filter.SingleColumnValueFilter;
@@ -63,14 +68,18 @@ import org.springframework.core.annotation.Order;
 import javax.inject.Singleton;
 import java.io.Closeable;
 import java.io.IOException;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 
 /**
@@ -329,8 +338,13 @@ public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditReposito
 
     @Override
     public List<EntityAuditEventV2> listEventsV2(String entityId, EntityAuditEventV2.EntityAuditActionV2 auditAction, String sortByColumn, boolean sortOrderDesc, int offset, short limit) throws AtlasBaseException {
+        return listEventsV2(entityId, auditAction, sortByColumn, sortOrderDesc, offset, limit, false, true, false, null);
+    }
+
+    private List<EntityAuditEventV2> listEventsV2(String entityId, EntityAuditEventV2.EntityAuditActionV2 auditAction, String sortByColumn, boolean sortOrderDesc, int offset, short limit, boolean isAgeoutTransaction, boolean createEventsAgeoutAllowed, boolean allowAgeoutByAuditCount, List<EntityAuditEventV2> eventsToKeep) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> HBaseBasedAuditRepository.listEventsV2(entityId={}, auditAction={}, sortByColumn={}, sortOrderDesc={}, offset={}, limit={})", entityId, auditAction, sortByColumn, offset, limit);
+            LOG.debug("==> HBaseBasedAuditRepository.listEventsV2(entityId={}, auditAction={}, sortByColumn={}, sortOrderDesc={}, offset={}, limit={})",
+                    entityId, auditAction, sortByColumn, sortOrderDesc, offset, limit);
         }
 
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("listEventsV2");
@@ -343,7 +357,7 @@ public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditReposito
             offset = 0;
         }
 
-        if (limit < 0) {
+        if (!isAgeoutTransaction && limit < 0) {
             limit = 100;
         }
 
@@ -356,18 +370,28 @@ public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditReposito
              * MultiRowRangeFilter and then again scan the table to get all the columns from the table this time.
              */
             Scan scan = new Scan().setReversed(true)
-                                  .setCaching(DEFAULT_CACHING)
-                                  .setSmall(true)
-                                  .setStopRow(Bytes.toBytes(entityId))
-                                  .setStartRow(getKey(entityId, Long.MAX_VALUE, Integer.MAX_VALUE))
-                                  .addColumn(COLUMN_FAMILY, COLUMN_ACTION)
-                                  .addColumn(COLUMN_FAMILY, COLUMN_USER);
-
+                    .setCaching(DEFAULT_CACHING)
+                    .setSmall(true)
+                    .setStopRow(Bytes.toBytes(entityId))
+                    .setStartRow(getKey(entityId, Long.MAX_VALUE, Integer.MAX_VALUE))
+                    .addColumn(COLUMN_FAMILY, COLUMN_ACTION)
+                    .addColumn(COLUMN_FAMILY, COLUMN_USER);
+            FilterList filterList = new FilterList();
             if (auditAction != null) {
                 Filter filterAction = new SingleColumnValueFilter(COLUMN_FAMILY, COLUMN_ACTION, CompareFilter.CompareOp.EQUAL, new BinaryComparator(Bytes.toBytes(auditAction.toString())));
-
-                scan.setFilter(filterAction);
+                filterList.addFilter(filterAction);
             }
+
+            if (!createEventsAgeoutAllowed) {
+                FilterList createEventFilterList          = new FilterList(FilterList.Operator.MUST_PASS_ALL);
+                Filter     filterByCreateActionType       = new SingleColumnValueFilter(COLUMN_FAMILY, COLUMN_ACTION, CompareFilter.CompareOp.NOT_EQUAL, new BinaryComparator(Bytes.toBytes(EntityAuditActionV2.ENTITY_CREATE.toString())));
+                Filter     filterByImportCreateActionType = new SingleColumnValueFilter(COLUMN_FAMILY, COLUMN_ACTION, CompareFilter.CompareOp.NOT_EQUAL, new BinaryComparator(Bytes.toBytes(EntityAuditActionV2.ENTITY_IMPORT_CREATE.toString())));
+                createEventFilterList.addFilter(filterByCreateActionType);
+                createEventFilterList.addFilter(filterByImportCreateActionType);
+                filterList.addFilter(createEventFilterList);
+            }
+
+            scan.setFilter(filterList);
 
             List<EntityAuditEventV2> events = new ArrayList<>();
 
@@ -383,10 +407,25 @@ public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditReposito
             }
 
             EntityAuditEventV2.sortEvents(events, sortByColumn, sortOrderDesc);
+            int fromIndex = Math.min(events.size(), offset);
+            int endIndex = events.size();
+            if (limit > 0) {
+                endIndex = Math.min(events.size(), offset + limit);
+            }
 
-            events = events.subList(Math.min(events.size(), offset), Math.min(events.size(), offset + limit));
+            if (isAgeoutTransaction) {
+                if (!allowAgeoutByAuditCount) { //No audit events allowed to age-out by audit count
+                    eventsToKeep.addAll(events);
+                    return Collections.emptyList();
+                }
+                eventsToKeep.addAll(events.subList(0, fromIndex));
+            }
+
+            events = events.subList(fromIndex, endIndex);
+
 
             if (events.size() > 0) {
+
                 List<MultiRowRangeFilter.RowRange> ranges = new ArrayList<>();
 
                 events.forEach(e -> {
@@ -394,11 +433,11 @@ public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditReposito
                 });
 
                 scan = new Scan().setReversed(true)
-                                 .setCaching(DEFAULT_CACHING)
-                                 .setSmall(true)
-                                 .setStopRow(Bytes.toBytes(entityId))
-                                 .setStartRow(getKey(entityId, Long.MAX_VALUE, Integer.MAX_VALUE))
-                                 .setFilter(new MultiRowRangeFilter(ranges));
+                        .setCaching(DEFAULT_CACHING)
+                        .setSmall(true)
+                        .setStopRow(Bytes.toBytes(entityId))
+                        .setStartRow(getKey(entityId, Long.MAX_VALUE, Integer.MAX_VALUE))
+                        .setFilter(new MultiRowRangeFilter(ranges));
 
                 try (ResultScanner scanner = table.getScanner(scan)) {
                     events = new ArrayList<>();
@@ -426,7 +465,8 @@ public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditReposito
             }
 
             if (LOG.isDebugEnabled()) {
-                LOG.debug("<== HBaseBasedAuditRepository.listEventsV2(entityId={}, auditAction={}, sortByColumn={}, sortOrderDesc={}, offset={}, limit={}): #recored returned {}", entityId, auditAction, sortByColumn, offset, limit, events.size());
+                LOG.debug("<== HBaseBasedAuditRepository.listEventsV2(entityId={}, auditAction={}, sortByColumn={}, sortOrderDesc={}, offset={}, limit={}): #records returned {}",
+                        entityId, auditAction, sortByColumn, sortOrderDesc, offset, limit, events.size());
             }
 
             return events;
@@ -450,6 +490,88 @@ public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditReposito
         }
 
         return ret;
+    }
+
+    @Override
+    public List<EntityAuditEventV2> deleteEventsV2(String entityId, Set<EntityAuditEventV2.EntityAuditActionV2> entityAuditActions, short allowedAuditCount, int ttlInDays, boolean createEventsAgeoutAllowed, AtlasAuditAgingType auditAgingType) throws AtlasBaseException, AtlasException {
+        final String  SORT_BY_COLUMN  = EntityAuditEventV2.SORT_COLUMN_TIMESTAMP;
+        final boolean SORT_ORDER_DESC = true;
+
+        if (LOG.isDebugEnabled()) {
+        LOG.debug("==> HBaseBasedAuditRepository.deleteEventsV2(entityId={}, auditActions={}, sortByColumn={}, sortOrderDesc={}, offset={}, limit={})",
+                entityId, Arrays.toString(entityAuditActions.toArray()), SORT_BY_COLUMN, SORT_ORDER_DESC, allowedAuditCount, -1);
+        }
+
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("deleteEventsV2");
+
+        Table                    table   = null;
+        List<EntityAuditEventV2> eventsEligibleForAgeout  = new ArrayList<>();
+        try {
+            table = connection.getTable(tableName);
+            List<EntityAuditEventV2> eventsToKeep = new ArrayList<>();
+            boolean allowAgeoutByAuditCount = allowedAuditCount > 0 || (auditAgingType == AtlasAuditAgingType.SWEEP);
+            if (CollectionUtils.isEmpty(entityAuditActions)) {
+                eventsEligibleForAgeout.addAll(listEventsV2(entityId, null, SORT_BY_COLUMN, SORT_ORDER_DESC,
+                                                    allowedAuditCount, (short) -1, true, createEventsAgeoutAllowed, allowAgeoutByAuditCount, eventsToKeep));
+            } else {
+                for (EntityAuditActionV2 eachAuditAction : entityAuditActions) {
+                    List<EntityAuditEventV2> eventsByEachAuditAction = listEventsV2(entityId, eachAuditAction, SORT_BY_COLUMN, SORT_ORDER_DESC,
+                                                    allowedAuditCount, (short) -1, true, createEventsAgeoutAllowed, allowAgeoutByAuditCount, eventsToKeep);
+
+                    if (CollectionUtils.isNotEmpty(eventsByEachAuditAction)) {
+                        eventsEligibleForAgeout.addAll(eventsByEachAuditAction);
+                    }
+                }
+            }
+
+            if (CollectionUtils.isNotEmpty(eventsToKeep)) {
+                //Limit events based on configured audit count by grouping events of all action types
+                if (allowAgeoutByAuditCount && (auditAgingType == AtlasAuditAgingType.DEFAULT || CollectionUtils.isEmpty(entityAuditActions))) {
+                    LOG.debug("Aging out audit events by audit count for entity: {}", entityId);
+                    EntityAuditEventV2.sortEvents(eventsToKeep, SORT_BY_COLUMN, SORT_ORDER_DESC);
+                    if (allowedAuditCount < eventsToKeep.size()) {
+                        eventsEligibleForAgeout.addAll(eventsToKeep.subList(allowedAuditCount, eventsToKeep.size()));
+                        eventsToKeep = eventsToKeep.subList(0, allowedAuditCount);
+                    }
+                }
+                //TTL based aging
+                LocalDateTime now = LocalDateTime.now();
+                boolean isTTLTestAutomation = AtlasConfiguration.ATLAS_AUDIT_AGING_TTL_TEST_AUTOMATION.getBoolean();
+                if (ttlInDays > 0) {
+                    LOG.debug("Aging out audit events by TTL for entity: {}", entityId);
+                    long ttlTimestamp = Timestamp.valueOf(isTTLTestAutomation ? now.minusMinutes(ttlInDays) : now.minusDays(ttlInDays)).getTime();
+                    eventsToKeep.forEach(e -> {
+                        if (e.getTimestamp() < ttlTimestamp) {
+                            eventsEligibleForAgeout.add(e);
+                        }
+                    });
+                }
+            }
+
+            List<Delete> eventsToDelete = new ArrayList<>();
+            for (EntityAuditEventV2 event : eventsEligibleForAgeout) {
+                Delete delete = new Delete(Bytes.toBytes(event.getEventKey()));
+                eventsToDelete.add(delete);
+            }
+
+            if (CollectionUtils.isNotEmpty(eventsToDelete)) {
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Deleting events from table:{} are {}", tableName, Arrays.toString(eventsToDelete.toArray()));
+                }
+                table.delete(eventsToDelete);
+            }
+
+            if (LOG.isDebugEnabled()) {
+            LOG.debug("<== HBaseBasedAuditRepository.deleteEventsV2(entityId={}, auditAction={}, sortByColumn={}, sortOrderDesc={}, offset={}, limit={}): ",
+                    entityId, Arrays.toString(entityAuditActions.toArray()), SORT_BY_COLUMN, SORT_ORDER_DESC, allowedAuditCount, -1);
+            }
+        } catch (IOException e) {
+            LOG.error("Failed deleting audit events for guid:{}", entityId);
+        } finally {
+            RequestContext.get().endMetricRecord(metric);
+            close(table);
+        }
+        return eventsEligibleForAgeout;
     }
 
     private <T> void addColumn(Put put, byte[] columnName, T columnValue) {
