@@ -31,6 +31,7 @@ import org.apache.atlas.discovery.SearchContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.audit.AtlasAuditEntry;
 import org.apache.atlas.model.audit.AtlasAuditEntry.AuditOperation;
+import org.apache.atlas.model.audit.AuditReductionCriteria;
 import org.apache.atlas.model.audit.AuditSearchParameters;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2;
@@ -52,6 +53,7 @@ import org.apache.atlas.model.metrics.AtlasMetricsStat;
 import org.apache.atlas.model.patches.AtlasPatch.AtlasPatches;
 import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.repository.audit.AtlasAuditService;
+import org.apache.atlas.repository.audit.AtlasAuditReductionService;
 import org.apache.atlas.repository.audit.EntityAuditRepository;
 import org.apache.atlas.repository.impexp.AtlasServerService;
 import org.apache.atlas.repository.impexp.ExportImportAuditService;
@@ -187,6 +189,8 @@ public class AdminResource {
     private final  boolean                  isOnDemandLineageEnabled;
     private final  int                      defaultLineageNodeCount;
 
+    private AtlasAuditReductionService auditReductionService;
+
     static {
         try {
             atlasProperties = ApplicationProperties.get();
@@ -202,7 +206,7 @@ public class AdminResource {
                          AtlasServerService serverService,
                          ExportImportAuditService exportImportAuditService, AtlasEntityStore entityStore,
                          AtlasPatchManager patchManager, AtlasAuditService auditService, EntityAuditRepository auditRepository,
-                         TaskManagement taskManagement, AtlasDebugMetricsSink debugMetricsRESTSink) {
+                         TaskManagement taskManagement, AtlasDebugMetricsSink debugMetricsRESTSink, AtlasAuditReductionService atlasAuditReductionService) {
         this.serviceState              = serviceState;
         this.metricsService            = metricsService;
         this.exportService             = exportService;
@@ -219,6 +223,7 @@ public class AdminResource {
         this.auditRepository           = auditRepository;
         this.taskManagement            = taskManagement;
         this.debugMetricsRESTSink      = debugMetricsRESTSink;
+        this.auditReductionService     = atlasAuditReductionService;
 
         if (atlasProperties != null) {
             this.defaultUIVersion = atlasProperties.getString(DEFAULT_UI_VERSION, UI_VERSION_V2);
@@ -817,6 +822,45 @@ public class AdminResource {
             return exportImportAuditService.get(userName, operation, serverName, startTime, endTime, limit, offset);
         } finally {
             AtlasPerfTracer.log(perf);
+        }
+    }
+
+    @POST
+    @Path("/audits/ageout")
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public List<AtlasTask> ageoutAuditData(AuditReductionCriteria auditReductionCriteria, @QueryParam("useAuditConfig") @DefaultValue("false") Boolean useAuditConfig) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+        try {
+            AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_AUDITS), "Admin Audits Ageout");
+
+            if (useAuditConfig) {
+                return auditReductionService.startAuditAgingByConfig();
+            }
+
+            if (!auditReductionCriteria.isAuditAgingEnabled()) {
+                LOG.warn("Audit aging should be enabled");
+                return null;
+            }
+
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AdminResource.ageoutAuditData(" + auditReductionCriteria + ")");
+            }
+
+            updateCriteriaWithDefaultValues(auditReductionCriteria);
+
+            List<Map<String, Object>> ageoutTypeCriteriaMap = auditReductionService.buildAgeoutCriteriaForAllAgingTypes(auditReductionCriteria);
+
+            return auditReductionService.startAuditAgingByCriteria(ageoutTypeCriteriaMap);
+
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    private void updateCriteriaWithDefaultValues(AuditReductionCriteria auditReductionCriteria) {
+        if (auditReductionCriteria.getDefaultAgeoutTTLInDays() <= 0) {
+            auditReductionCriteria.setDefaultAgeoutTTLInDays(AtlasConfiguration.ATLAS_AUDIT_DEFAULT_AGEOUT_TTL.getInt());
         }
     }
 

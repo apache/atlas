@@ -239,6 +239,15 @@ public final class Constants {
     public static final String PROPERTY_KEY_INDEX_RECOVERY_PREV_TIME   = encodePropertyKey(INDEX_RECOVERY_PREFIX + "prevTime");
     public static final String PROPERTY_KEY_INDEX_RECOVERY_CUSTOM_TIME = encodePropertyKey(INDEX_RECOVERY_PREFIX + "customTime");
 
+    /**
+     * Audit Reduction vertex property keys.
+     */
+    public static final String AUDIT_REDUCTION_PREFIX                  = INTERNAL_PROPERTY_KEY_PREFIX + "auditReduction_";
+    public static final String PROPERTY_KEY_AUDIT_REDUCTION_NAME       = encodePropertyKey(AUDIT_REDUCTION_PREFIX + "name");
+    public static final String PROPERTY_KEY_GUIDS_TO_AGEOUT_BY_DEFAULT = encodePropertyKey(AUDIT_REDUCTION_PREFIX + "default");
+    public static final String PROPERTY_KEY_GUIDS_TO_AGEOUT_BY_CUSTOM  = encodePropertyKey(AUDIT_REDUCTION_PREFIX + "custom");
+    public static final String PROPERTY_KEY_GUIDS_TO_SWEEPOUT          = encodePropertyKey(AUDIT_REDUCTION_PREFIX + "sweepout");
+
     public static final String SQOOP_SOURCE       = "sqoop";
     public static final String FALCON_SOURCE      = "falcon";
     public static final String HBASE_SOURCE       = "hbase";
@@ -247,6 +256,20 @@ public final class Constants {
     public static final String IMPALA_SOURCE      = "impala";
     public static final String STORM_SOURCE       = "storm";
     public static final String FILE_SPOOL_SOURCE  = "file_spool";
+
+    /**
+     * Audit Reduction related constants
+     */
+    public enum AtlasAuditAgingType { DEFAULT, CUSTOM, SWEEP }
+    public static final String AUDIT_REDUCTION_TYPE_NAME            = "__auditReductionInfo";
+    public static final String AUDIT_AGING_TYPE_KEY                 = "auditAgingType";
+    public static final String AUDIT_AGING_TTL_KEY                  = "ttl";
+    public static final String AUDIT_AGING_COUNT_KEY                = "auditCount";
+    public static final String AUDIT_AGING_ENTITY_TYPES_KEY         = "entityTypes";
+    public static final String AUDIT_AGING_ACTION_TYPES_KEY         = "actionTypes";
+    public static final String AUDIT_AGING_EXCLUDE_ENTITY_TYPES_KEY = "excludeEntityTypes";
+    public static final String CREATE_EVENTS_AGEOUT_ALLOWED_KEY     = "createEventsAgeoutAllowed";
+    public static final String AUDIT_AGING_SUBTYPES_INCLUDED_KEY    = "subTypesIncluded";
 
     /*
      * All supported file-format extensions for Bulk Imports through file upload
