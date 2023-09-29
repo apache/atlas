@@ -294,7 +294,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
                 LOG.info("Create ES index for entity audits in ES Based Audit Repo");
                 createAuditIndex();
             }
-            if (isFieldLimitDifferent()) {
+            if (shouldUpdateFieldLimitSetting()) {
                 LOG.info("Updating ES total field limit");
                 updateFieldLimit();
             }
@@ -328,24 +328,25 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
         return isSuccess(response);
     }
 
-    private boolean isFieldLimitDifferent() {
-        JsonNode fieldLimit;
+    private boolean shouldUpdateFieldLimitSetting() {
+        JsonNode currentFieldLimit;
         try {
-            fieldLimit = getIndexFieldLimit();
+            currentFieldLimit = getIndexFieldLimit();
         } catch (IOException e) {
             LOG.error("Problem while retrieving the index field limit!", e);
             return false;
         }
         Integer fieldLimitFromConfigurationFile = configuration.getInt(TOTAL_FIELD_LIMIT);
-        return fieldLimit == null || fieldLimitFromConfigurationFile.equals(fieldLimit.intValue());
+        return currentFieldLimit == null || fieldLimitFromConfigurationFile > currentFieldLimit.asInt();
     }
 
     private JsonNode getIndexFieldLimit() throws IOException {
         Request request = new Request("GET", INDEX_NAME + "/_settings");
         Response response = lowLevelClient.performRequest(request);
         ObjectMapper objectMapper = new ObjectMapper();
-        String fieldName = INDEX_NAME + ".settings.index.mapping.total_fields.limit";
-        return objectMapper.readTree(copyToString(response.getEntity().getContent(), Charset.defaultCharset())).get(fieldName);
+        String fieldPath = String.format("/%s/settings/index/mapping/total_fields/limit", INDEX_NAME);
+
+        return objectMapper.readTree(copyToString(response.getEntity().getContent(), Charset.defaultCharset())).at(fieldPath);
     }
 
     private void updateFieldLimit() {
