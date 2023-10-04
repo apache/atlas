@@ -94,6 +94,8 @@ public class RequestContext {
     private boolean     allowDuplicateDisplayName;
     private MetricsRegistry metricsRegistry;
     private boolean skipAuthorizationCheck = false;
+    private Set<String> deletedEdgesIdsForResetHasLineage = new HashSet<>(0);
+
 
     private RequestContext() {
     }
@@ -147,6 +149,7 @@ public class RequestContext {
         this.removedElementsMap.clear();
         this.deletedEdgesIds.clear();
         this.processGuidIds.clear();
+        this.deletedEdgesIdsForResetHasLineage.clear();
         this.requestContextHeaders.clear();
         this.relationshipEndToVertexIdMap.clear();
         this.relationshipMutationMap.clear();
@@ -387,6 +390,14 @@ public class RequestContext {
 
     public Set<String> getDeletedEdgesIds() {
         return deletedEdgesIds;
+    }
+
+    public void addToDeletedEdgesIdsForResetHasLineage(String edgeId) {
+        deletedEdgesIdsForResetHasLineage.add(edgeId);
+    }
+
+    public Set<String> getDeletedEdgesIdsForResetHasLineage() {
+        return deletedEdgesIdsForResetHasLineage;
     }
 
     public Set<String> getProcessGuidIds() {

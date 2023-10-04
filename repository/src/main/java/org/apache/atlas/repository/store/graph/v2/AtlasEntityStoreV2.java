@@ -2443,26 +2443,59 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         Set<AtlasEdge> inputOutputEdges = new HashSet<>();
 
         for (AtlasHasLineageRequest request : requests.getRequest()) {
-            AtlasVertex processVertex = AtlasGraphUtilsV2.findByGuid(this.graph, request.getProcessGuid());
-            AtlasVertex assetVertex = AtlasGraphUtilsV2.findByGuid(this.graph, request.getEndGuid());
-            AtlasEdge edge = null;
-            try {
-                if (processVertex != null && assetVertex != null) {
-                    edge = graphHelper.getEdge(processVertex, assetVertex, request.getLabel());
-                } else {
-                    LOG.warn("Skipping since vertex is null for processGuid {} and asset Guid {}"
-                            ,request.getProcessGuid(),request.getEndGuid()  );
-                }
-            } catch (RepositoryException re) {
-                throw new AtlasBaseException(AtlasErrorCode.HAS_LINEAGE_GET_EDGE_FAILED, re);
-            }
+            if (StringUtils.isNotEmpty(request.getAssetGuid())) {
+                //only supports repairing scenario mentioned here - https://atlanhq.atlassian.net/browse/DG-128?focusedCommentId=20652
+                repairHasLineageForAsset(request);
 
-            if (edge != null) {
-                inputOutputEdges.add(edge);
+            } else {
+                AtlasVertex processVertex = AtlasGraphUtilsV2.findByGuid(this.graph, request.getProcessGuid());
+                AtlasVertex assetVertex = AtlasGraphUtilsV2.findByGuid(this.graph, request.getEndGuid());
+                AtlasEdge edge = null;
+                try {
+                    if (processVertex != null && assetVertex != null) {
+                        edge = graphHelper.getEdge(processVertex, assetVertex, request.getLabel());
+                    } else {
+                        LOG.warn("Skipping since vertex is null for processGuid {} and asset Guid {}"
+                                ,request.getProcessGuid(),request.getEndGuid()  );
+                    }
+                } catch (RepositoryException re) {
+                    throw new AtlasBaseException(AtlasErrorCode.HAS_LINEAGE_GET_EDGE_FAILED, re);
+                }
+
+                if (edge != null) {
+                    inputOutputEdges.add(edge);
+                }
             }
         }
-        repairHasLineageWithAtlasEdges(inputOutputEdges);
+
+        if (CollectionUtils.isNotEmpty(inputOutputEdges)) {
+            repairHasLineageWithAtlasEdges(inputOutputEdges);
+        }
+
         RequestContext.get().endMetricRecord(metricRecorder);
+    }
+
+    private void repairHasLineageForAsset(AtlasHasLineageRequest request) {
+        //only supports repairing scenario mentioned here - https://atlanhq.atlassian.net/browse/DG-128?focusedCommentId=20652
+
+        AtlasVertex assetVertex = AtlasGraphUtilsV2.findByGuid(this.graph, request.getAssetGuid());
+
+        if (getEntityHasLineage(assetVertex)) {
+            Iterator<AtlasEdge> lineageEdges = assetVertex.getEdges(AtlasEdgeDirection.BOTH, PROCESS_EDGE_LABELS).iterator();
+            boolean foundActiveRel = false;
+
+            while (lineageEdges.hasNext()) {
+                AtlasEdge edge = lineageEdges.next();
+                if (getStatus(edge) == ACTIVE) {
+                    foundActiveRel = true;
+                    break;
+                }
+            }
+
+            if (!foundActiveRel) {
+                AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE, false);
+            }
+        }
     }
 
     public void repairHasLineageWithAtlasEdges(Set<AtlasEdge> inputOutputEdges) {
