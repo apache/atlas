@@ -382,8 +382,8 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>${surefire.version}</version>
-                <configuration combine.children="override">
+                <configuration>
+	                <items combine.children="override" />
                 </configuration>
             </plugin>
 
