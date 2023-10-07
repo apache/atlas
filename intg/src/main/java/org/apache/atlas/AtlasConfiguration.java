@@ -31,6 +31,7 @@ public enum AtlasConfiguration {
     WEBSERVER_KEEPALIVE_SECONDS("atlas.webserver.keepalivetimesecs", 60),
     WEBSERVER_QUEUE_SIZE("atlas.webserver.queuesize", 100),
     WEBSERVER_REQUEST_BUFFER_SIZE("atlas.jetty.request.buffer.size", 16192),
+    WEBSERVER_REQUEST_IDLE_TIMEOUT("atlas.jetty.request.idle.timeout", 45000),
 
     QUERY_PARAM_MAX_LENGTH("atlas.query.param.max.length", 4*1024),
 
