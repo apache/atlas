@@ -17,7 +17,6 @@
 
 package org.apache.atlas;
 
-import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
 import com.google.common.annotations.VisibleForTesting;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
@@ -174,7 +173,7 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
             String message = currentCause.getMessage();
             if (message != null &&
                     message.contains("Batch too large") &&
-                    currentCause.getClass().equals(InvalidQueryException.class)) {
+                    currentCause.getClass().getSimpleName().equals("InvalidQueryException")) {
                 return true;
             }
             currentCause = currentCause.getCause();
