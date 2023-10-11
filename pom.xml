@@ -738,6 +738,7 @@
         <hppc.version>0.8.1</hppc.version>
         <httpcomponents-httpclient.version>4.5.13</httpcomponents-httpclient.version>
         <httpcomponents-httpcore.version>4.4.13</httpcomponents-httpcore.version>
+        <ivy.version>2.5.2</ivy.version>
         <jackson.databind.version>2.11.3</jackson.databind.version>
         <jackson.version>2.11.3</jackson.version>
         <janusgraph.version>0.6.3</janusgraph.version>
@@ -1696,6 +1697,11 @@
                 <version>1.33</version>
             </dependency>
 
+            <dependency>
+                <groupId>org.apache.ivy</groupId>
+                <artifactId>ivy</artifactId>
+                <version>${ivy.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
