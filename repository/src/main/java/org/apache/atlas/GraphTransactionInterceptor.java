@@ -17,6 +17,7 @@
 
 package org.apache.atlas;
 
+import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
 import com.google.common.annotations.VisibleForTesting;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
@@ -34,11 +35,7 @@ import org.springframework.stereotype.Component;
 import javax.inject.Inject;
 import javax.ws.rs.core.Response;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -128,7 +125,11 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
                 } else {
                     doRollback(logRollback, t);
                 }
-                throw t;
+                if (checkForBatchTooLargeError(t)) {
+                    throw new AtlasBaseException(AtlasErrorCode.BATCH_SIZE_TOO_LARGE, t);
+                } else {
+                    throw t;
+                }
             }
         } finally {
             RequestContext.get().endMetricRecord(metric);
@@ -166,6 +167,22 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
             OBJECT_UPDATE_SYNCHRONIZER.releaseLockedObjects();
         }
     }
+
+    public boolean checkForBatchTooLargeError(Throwable t) {
+        Throwable currentCause = t;
+        while (currentCause != null) {
+            String message = currentCause.getMessage();
+            if (message != null &&
+                    message.contains("Batch too large") &&
+                    currentCause.getClass().equals(InvalidQueryException.class)) {
+                return true;
+            }
+            currentCause = currentCause.getCause();
+        }
+        return false;
+    }
+
+
 
     private void doCommitOrRollback(final String invokingClass, final String invokedMethodName) {
         if (innerFailure.get()) {
