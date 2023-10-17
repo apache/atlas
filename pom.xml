@@ -769,6 +769,7 @@
         <netty.version>4.1.94.Final</netty.version>
         <node-for-v2.version>v12.16.0</node-for-v2.version>
         <npm-for-v2.version>6.13.7</npm-for-v2.version>
+        <okio.version>3.4.0</okio.version>
         <opencsv.version>5.0</opencsv.version>
         <paranamer.version>2.7</paranamer.version>
         <PermGen>64m</PermGen>
@@ -1701,6 +1702,12 @@
                 <groupId>org.apache.ivy</groupId>
                 <artifactId>ivy</artifactId>
                 <version>${ivy.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.squareup.okio</groupId>
+                <artifactId>okio</artifactId>
+                <version>${okio.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
