@@ -111,9 +111,10 @@
         "replacement":" $0"
       },
       "truncate_filter": {
-        "pattern": "(^.{0,100000}).*$",
+        "pattern": "(.{0,100000}).*",
         "type": "pattern_replace",
-        "replacement": "$1 "
+        "replacement": "$1",
+        "flags": "DOTALL"
       }
     }
   }

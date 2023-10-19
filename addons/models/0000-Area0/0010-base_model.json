@@ -915,6 +915,16 @@
           "includeInNotification": false
         },
         {
+          "name": "denyAssetFilters",
+          "typeName": "array<string>",
+          "cardinality": "SET",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": false
+        },
+        {
           "name": "channelLink",
           "typeName": "string",
           "cardinality": "SINGLE",

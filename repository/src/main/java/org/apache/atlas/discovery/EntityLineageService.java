@@ -494,12 +494,13 @@ public class EntityLineageService implements AtlasLineageService {
             else
                 neighbourVertex = currentEdge.getInVertex();
 
-            if (!lineageListContext.evaluateTraversalFilter(neighbourVertex))
+            String vertexGuid = getGuid(neighbourVertex);
+            if (StringUtils.isEmpty(vertexGuid) || !lineageListContext.evaluateTraversalFilter(neighbourVertex))
                 continue;
 
-            if (!skippedVertices.contains(getGuid(neighbourVertex)) && !visitedVertices.contains(getGuid(neighbourVertex))) {
-                visitedVertices.add(getGuid(neighbourVertex));
-                traversalQueue.add(getGuid(neighbourVertex));
+            if (!skippedVertices.contains(vertexGuid) && !visitedVertices.contains(vertexGuid)) {
+                visitedVertices.add(vertexGuid);
+                traversalQueue.add(vertexGuid);
                 addEntitiesToCache(neighbourVertex);
             }
         }

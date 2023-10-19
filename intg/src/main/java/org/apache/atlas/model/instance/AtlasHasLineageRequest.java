@@ -40,6 +40,7 @@ public class AtlasHasLineageRequest implements Serializable {
     public AtlasHasLineageRequest() {
     }
 
+    private String assetGuid;
     private String processGuid;
     private String endGuid;
     private String label;
@@ -68,9 +69,18 @@ public class AtlasHasLineageRequest implements Serializable {
         this.label = label;
     }
 
+    public String getAssetGuid() {
+        return assetGuid;
+    }
+
+    public void setAssetGuid(String assetGuid) {
+        this.assetGuid = assetGuid;
+    }
+
     @Override
     public String toString() {
         return "AtlasHasLineageRequest{" +
+                "assetGuid='" + assetGuid + '\'' +
                 "processGuid='" + processGuid + '\'' +
                 ", endGuid='" + endGuid + '\'' +
                 ", label='" + label + '\'' +
