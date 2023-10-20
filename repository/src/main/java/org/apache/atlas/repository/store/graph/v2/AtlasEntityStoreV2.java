@@ -2494,6 +2494,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
             if (!foundActiveRel) {
                 AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE, false);
+                LOG.info("repairHasLineage: repairHasLineageForAsset: Repaired {}", request.getAssetGuid());
             }
         }
     }
