@@ -393,7 +393,7 @@ public class EntityGraphMapper {
         }
 
         updateLabels(vertex, labels);
-
+        updateModificationMetadata(vertex);
         entityChangeNotifier.onLabelsUpdatedFromEntity(graphHelper.getGuid(vertex), addedLabels, removedLabels);
     }
 
@@ -411,6 +411,7 @@ public class EntityGraphMapper {
             if (!updatedLabels.equals(existingLabels)) {
                 updateLabels(vertex, updatedLabels);
                 updatedLabels.removeAll(existingLabels);
+                updateModificationMetadata(vertex);
                 entityChangeNotifier.onLabelsUpdatedFromEntity(graphHelper.getGuid(vertex), updatedLabels, null);
             }
         }
@@ -428,6 +429,7 @@ public class EntityGraphMapper {
                 if (!updatedLabels.equals(existingLabels)) {
                     updateLabels(vertex, updatedLabels);
                     existingLabels.removeAll(updatedLabels);
+                    updateModificationMetadata(vertex);
                     entityChangeNotifier.onLabelsUpdatedFromEntity(graphHelper.getGuid(vertex), null, existingLabels);
                 }
             }
@@ -496,6 +498,7 @@ public class EntityGraphMapper {
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== setBusinessAttributes(entityVertex={}, entityType={}, businessAttributes={}", entityVertex, entityType.getTypeName(), businessAttributes);
         }
+        updateModificationMetadata(entityVertex);
     }
 
     /*
