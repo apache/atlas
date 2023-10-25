@@ -2478,10 +2478,14 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     private void repairHasLineageForAsset(AtlasHasLineageRequest request) {
         //only supports repairing scenario mentioned here - https://atlanhq.atlassian.net/browse/DG-128?focusedCommentId=20652
 
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("repairHasLineageForAssetGetById");
         AtlasVertex assetVertex = AtlasGraphUtilsV2.findByGuid(this.graph, request.getAssetGuid());
+        RequestContext.get().endMetricRecord(metricRecorder);
 
         if (getEntityHasLineage(assetVertex)) {
+            metricRecorder = RequestContext.get().startMetricRecord("repairHasLineageForAssetGetRelations");
             Iterator<AtlasEdge> lineageEdges = assetVertex.getEdges(AtlasEdgeDirection.BOTH, PROCESS_EDGE_LABELS).iterator();
+            RequestContext.get().endMetricRecord(metricRecorder);
             boolean foundActiveRel = false;
 
             while (lineageEdges.hasNext()) {
@@ -2493,7 +2497,10 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             }
 
             if (!foundActiveRel) {
+                metricRecorder = RequestContext.get().startMetricRecord("repairHasLineageForRequiredAsset");
                 AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE, false);
+                LOG.info("repairHasLineage: repairHasLineageForAsset: Repaired {}", request.getAssetGuid());
+                RequestContext.get().endMetricRecord(metricRecorder);
             }
         }
     }
