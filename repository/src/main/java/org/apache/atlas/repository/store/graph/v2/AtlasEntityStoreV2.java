@@ -2497,8 +2497,10 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             }
 
             if (!foundActiveRel) {
+                metricRecorder = RequestContext.get().startMetricRecord("repairHasLineageForRequiredAsset");
                 AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE, false);
                 LOG.info("repairHasLineage: repairHasLineageForAsset: Repaired {}", request.getAssetGuid());
+                RequestContext.get().endMetricRecord(metricRecorder);
             }
         }
     }
