@@ -128,7 +128,11 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
                 } else {
                     doRollback(logRollback, t);
                 }
-                throw t;
+                if (checkForBatchTooLargeError(t)) {
+                    throw new AtlasBaseException(AtlasErrorCode.BATCH_SIZE_TOO_LARGE, t);
+                } else {
+                    throw t;
+                }
             }
         } finally {
             RequestContext.get().endMetricRecord(metric);
@@ -166,6 +170,22 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
             OBJECT_UPDATE_SYNCHRONIZER.releaseLockedObjects();
         }
     }
+
+    public boolean checkForBatchTooLargeError(Throwable t) {
+        Throwable currentCause = t;
+        while (currentCause != null) {
+            String message = currentCause.getMessage();
+            if (message != null &&
+                    message.contains("Batch too large") &&
+                    currentCause.getClass().getSimpleName().equals("InvalidQueryException")) {
+                return true;
+            }
+            currentCause = currentCause.getCause();
+        }
+        return false;
+    }
+
+
 
     private void doCommitOrRollback(final String invokingClass, final String invokedMethodName) {
         if (innerFailure.get()) {
