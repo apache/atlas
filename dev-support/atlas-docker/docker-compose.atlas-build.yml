@@ -14,7 +14,7 @@ services:
     networks:
       - atlas
     volumes:
-      - ~/.m2:/home/atlas/.m2:delegated
+      - /Users/yida/Documents/downloadsoft/mvn:/home/atlas/.m2:delegated
       - ./scripts:/home/atlas/scripts
       - ./patches:/home/atlas/patches
       - ./dist:/home/atlas/dist

@@ -85,7 +85,19 @@ else
     git apply /home/atlas/patches/${patch}
   done
 fi
-
+#echo "Ulimit value before:"
+#ulimit -n
+### 增加文件描述符
+##ulimit -n 65536
+##exec "$@"
+#sysctl -a | grep files
+#
+#
+#echo "Ulimit value after:"
+#ulimit -n
+#
+## 退出，由于这将是容器的主进程，因此容器也将停止
+#exit 0
 mvn ${ARG_PROFILES} ${ARG_SKIPTESTS} -DskipDocs clean package
 
 mv -f distro/target/apache-atlas-${ATLAS_VERSION}-server.tar.gz     /home/atlas/dist/

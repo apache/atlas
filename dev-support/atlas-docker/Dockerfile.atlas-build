@@ -23,6 +23,8 @@ ARG TARGETARCH
 # Install necessary packages to build Atlas
 RUN apt-get update && apt-get -y install git maven
 
+
+
 # Set environment variables
 ENV JAVA_HOME  /usr/lib/jvm/java-${ATLAS_BUILD_JAVA_VERSION}-openjdk-${TARGETARCH}
 ENV MAVEN_HOME /usr/share/maven
@@ -36,6 +38,12 @@ RUN mkdir -p /home/atlas/git && \
     chown -R atlas:atlas /home/atlas
 
 COPY ./scripts/atlas-build.sh /home/atlas/scripts/
+# Add Aliyun Maven mirror to Maven's settings.xml for the atlas user
+COPY ./scripts/settings-aliyun.xml /home/atlas/.m2/settings.xml
+
+
+
+
 
 VOLUME /home/atlas/.m2
 VOLUME /home/atlas/scripts
