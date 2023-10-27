@@ -7,7 +7,7 @@ import java.io.PrintWriter;
 
 public interface MetricsRegistry {
 
-    void collect(String requestId, AtlasPerfMetrics metrics);
+    void collect(String requestId, String requestUri, AtlasPerfMetrics metrics);
 
     void scrape(PrintWriter writer) throws IOException;
 
