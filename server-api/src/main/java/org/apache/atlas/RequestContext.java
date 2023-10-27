@@ -95,7 +95,7 @@ public class RequestContext {
     private MetricsRegistry metricsRegistry;
     private boolean skipAuthorizationCheck = false;
     private Set<String> deletedEdgesIdsForResetHasLineage = new HashSet<>(0);
-
+    private String requestUri;
 
     private RequestContext() {
     }
@@ -159,7 +159,7 @@ public class RequestContext {
         if (metrics != null && !metrics.isEmpty()) {
             METRICS.debug(metrics.toString());
             if (Objects.nonNull(this.metricsRegistry)){
-                this.metricsRegistry.collect(traceId, metrics);
+                this.metricsRegistry.collect(traceId, this.requestUri, metrics);
             }
             metrics.clear();
         }
@@ -640,6 +640,14 @@ public class RequestContext {
 
     public void setMetricRegistry(MetricsRegistry metricsRegistry) {
         this.metricsRegistry = metricsRegistry;
+    }
+
+    public void setUri(String uri) {
+        this.requestUri = uri;
+    }
+
+    public String getRequestUri() {
+        return this.requestUri;
     }
 
     public class EntityGuidPair {

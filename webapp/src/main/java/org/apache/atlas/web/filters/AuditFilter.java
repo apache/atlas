@@ -20,6 +20,7 @@ package org.apache.atlas.web.filters;
 
 import org.apache.atlas.*;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
+import org.apache.atlas.service.metrics.MetricUtils;
 import org.apache.atlas.service.metrics.MetricsRegistry;
 import org.apache.atlas.util.AtlasRepositoryConfiguration;
 import org.apache.atlas.web.util.DateTimeHelper;
@@ -95,6 +96,7 @@ public class AuditFilter implements Filter {
 
             RequestContext.clear();
             RequestContext requestContext = RequestContext.get();
+            requestContext.setUri(MetricUtils.matchCanonicalPattern(httpRequest.getRequestURI()).orElse(EMPTY));
             requestContext.setTraceId(internalRequestId);
             requestContext.setUser(user, userGroups);
             requestContext.setClientIPAddress(AtlasAuthorizationUtils.getRequestIpAddress(httpRequest));

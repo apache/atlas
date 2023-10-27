@@ -6,6 +6,7 @@ import io.micrometer.core.instrument.Timer;
 import io.micrometer.prometheus.PrometheusConfig;
 import io.micrometer.prometheus.PrometheusMeterRegistry;
 import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasException;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,18 +37,15 @@ public class MetricUtils {
     private static final PrometheusMeterRegistry METER_REGISTRY;
 
     static {
-        METER_REGISTRY = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
-        METER_REGISTRY.config().withHighCardinalityTagsDetector().commonTags(SERVICE, ATLAS_METASTORE, INTEGRATION, LOCAL);
-        Metrics.globalRegistry.add(METER_REGISTRY);
-    }
-
-    public MetricUtils() {
         try {
             METRIC_URI_PATTERNS_MAP = Arrays.stream(ApplicationProperties.get().getStringArray(ATLAS_METRICS_URI_PATTERNS))
                     .distinct().collect(Collectors.toMap(uri->uri, uri->uri.replaceAll(REGEX_URI_PLACEHOLDER, "*")));
         } catch (Exception e) {
             LOG.error("Failed to load 'atlas.metrics.uri_patterns from properties");
         }
+        METER_REGISTRY = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
+        METER_REGISTRY.config().withHighCardinalityTagsDetector().commonTags(SERVICE, ATLAS_METASTORE, INTEGRATION, LOCAL);
+        Metrics.globalRegistry.add(METER_REGISTRY);
     }
 
     public Timer.Sample start(String uri) {
@@ -78,7 +76,7 @@ public class MetricUtils {
                 URI, matchCanonicalPattern(uri).get());
     }
 
-    private Optional<String> matchCanonicalPattern(String uri) {
+    public static Optional<String> matchCanonicalPattern(String uri) {
         if (Objects.isNull(uri) || uri.isEmpty()) {
             return Optional.empty();
         }

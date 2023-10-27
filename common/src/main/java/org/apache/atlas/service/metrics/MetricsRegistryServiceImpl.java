@@ -28,6 +28,7 @@ public class MetricsRegistryServiceImpl implements MetricsRegistry {
     private static final Logger LOG = LoggerFactory.getLogger(MetricsRegistryServiceImpl.class);
 
     private static final String NAME = "name";
+    private static final String URI = "uri";
     private static final String METHOD_DIST_SUMMARY = "method_dist_summary";
     private static final double[] PERCENTILES = {0.99};
     private static final String METHOD_LEVEL_METRICS_ENABLE = "atlas.metrics.method_level.enable";
@@ -40,7 +41,7 @@ public class MetricsRegistryServiceImpl implements MetricsRegistry {
     }
 
     @Override
-    public void collect(String requestId, AtlasPerfMetrics metrics) {
+    public void collect(String requestId, String requestUri, AtlasPerfMetrics metrics) {
         try {
             if (!ApplicationProperties.get().getBoolean(METHOD_LEVEL_METRICS_ENABLE, false)) {
                 return;
@@ -49,7 +50,7 @@ public class MetricsRegistryServiceImpl implements MetricsRegistry {
             for (String name : this.filteredMethods) {
                 if(metrics.hasMetric(name)) {
                     AtlasPerfMetrics.Metric metric = metrics.getMetric(name);
-                    Timer.builder(METHOD_DIST_SUMMARY).tags(Tags.of(NAME, metric.getName())).publishPercentiles(PERCENTILES)
+                    Timer.builder(METHOD_DIST_SUMMARY).tags(Tags.of(NAME, metric.getName(), URI, requestUri)).publishPercentiles(PERCENTILES)
                             .register(getMeterRegistry()).record(metric.getTotalTimeMSecs(), TimeUnit.MILLISECONDS);
                 }
             }
