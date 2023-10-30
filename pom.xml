@@ -849,6 +849,7 @@
         <module>addons/impala-hook-api</module>
         <module>addons/impala-bridge-shim</module>
         <module>addons/impala-bridge</module>
+        <module>addons/couchbase-bridge</module>
 
         <module>distro</module>
         <module>atlas-examples</module>
@@ -1612,6 +1613,12 @@
             <dependency>
                 <groupId>org.apache.atlas</groupId>
                 <artifactId>impala-bridge-shim</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>couchbase-bridge</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

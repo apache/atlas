@@ -180,6 +180,12 @@
             <outputDirectory>hook</outputDirectory>
         </fileSet>
 
+        <!-- addons/couchbase -->
+        <fileSet>
+            <directory>../addons/couchbase-bridge/target/dependency/hook</directory>
+            <outputDirectory>hook</outputDirectory>
+        </fileSet>
+
         <!-- for kafka topic setup -->
         <fileSet>
             <directory>../addons/kafka-bridge/src/bin</directory>
