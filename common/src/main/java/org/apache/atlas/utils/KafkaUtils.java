@@ -19,6 +19,7 @@
 package org.apache.atlas.utils;
 
 import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.security.SecurityUtil;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.security.UserGroupInformation;
@@ -43,6 +44,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
+import static org.apache.atlas.security.SecurityProperties.HADOOP_SECURITY_CREDENTIAL_PROVIDER_PATH;
 
 public class KafkaUtils implements AutoCloseable {
 
@@ -61,6 +63,9 @@ public class KafkaUtils implements AutoCloseable {
 
     public static final String ATLAS_KAFKA_PROPERTY_PREFIX     = "atlas.kafka";
     public static final String KAFKA_SASL_JAAS_CONFIG_PROPERTY = "sasl.jaas.config";
+
+    public static final String JAAS_PASSWORD_SUFFIX            = "password";
+    private static final String JAAS_MASK_PASSWORD             = "********";
 
     final protected Properties  kafkaConfiguration;
     final protected AdminClient adminClient;
@@ -254,6 +259,7 @@ public class KafkaUtils implements AutoCloseable {
 
             String       optionPrefix       = keyPrefix + JAAS_CONFIG_LOGIN_OPTIONS_PREFIX + ".";
             String       principalOptionKey = optionPrefix + JAAS_PRINCIPAL_PROP;
+            String       passwordOptionKey  = optionPrefix + JAAS_PASSWORD_SUFFIX;
             int          optionPrefixLen    = optionPrefix.length();
             StringBuffer optionStringBuffer = new StringBuffer();
 
@@ -271,7 +277,16 @@ public class KafkaUtils implements AutoCloseable {
                         } catch (IOException e) {
                             LOG.warn("Failed to build serverPrincipal. Using provided value:[{}]", optionVal);
                         }
-
+                        if (key.equalsIgnoreCase(passwordOptionKey)) {
+                            String jaasKafkaClientConfigurationProperty = "atlas.jaas.KafkaClient.option.password";
+                            if (JAAS_MASK_PASSWORD.equals(configuration.getString(jaasKafkaClientConfigurationProperty))) {
+                                try {
+                                    optionVal = SecurityUtil.getPassword(configuration, jaasKafkaClientConfigurationProperty, HADOOP_SECURITY_CREDENTIAL_PROVIDER_PATH);
+                                } catch (Exception e) {
+                                    LOG.error("Error in getting secure password ", e);
+                                }
+                            }
+                        }
                         optionVal = surroundWithQuotes(optionVal);
 
                         optionStringBuffer.append(String.format(" %s=%s", key.substring(optionPrefixLen), optionVal));
