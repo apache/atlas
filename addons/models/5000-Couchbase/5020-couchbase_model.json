@@ -1,0 +1,159 @@
+{
+  "enumDefs": [
+    {
+      "name":         "couchbase_field_type",
+      "typeVersion":  "1.0",
+      "service_type": "couchbase",
+      "elementDefs": [
+        { "ordinal": 0, "value": "boolean" },
+        { "ordinal": 1, "value": "number" },
+        { "ordinal": 2, "value": "string" },
+        { "ordinal": 3, "value": "array" },
+        { "ordinal": 4, "value": "object" },
+        { "ordinal": 5, "value": "binary" }
+      ]
+    }
+  ],
+  "structDefs": [],
+  "classificationDefs": [],
+  "entityDefs": [
+    {
+      "name":          "couchbase_cluster",
+      "superTypes":    [ "Asset" ],
+      "serviceType":   "couchbase",
+      "typeVersion":   "1.0",
+      "attributeDefs": [
+        {
+          "name":                  "url",
+          "typeName":              "string",
+          "cardinality":           "SINGLE",
+          "isIndexable":           true,
+          "isOptional":            false,
+          "isUnique":              true,
+          "includeInNotification": true
+        }
+      ]
+    },
+    {
+      "name":         "couchbase_bucket",
+      "superTypes":   [ "Asset" ],
+      "serviceType":  "couchbase",
+      "typeVersion":  "1.0",
+      "attributeDefs": [ ]
+    },
+    {
+      "name":          "couchbase_scope",
+      "superTypes":    [ "Asset" ],
+      "serviceType":   "couchbase",
+      "typeVersion":   "1.0",
+      "attributeDefs": []
+    },
+    {
+      "name":          "couchbase_collection",
+      "superTypes":    [ "DataSet" ],
+      "serviceType":   "couchbase",
+      "typeVersion":   "1.0",
+      "options":       { "schemaElementsAttribute": "fields" },
+      "attributeDefs": [
+        {
+          "name":                  "documentsAnalyzed",
+          "typeName":              "long",
+          "isOptional":            false,
+          "cardinality":           "SINGLE",
+          "valuesMinCount":        1,
+          "valuesMaxCount":        1,
+          "isUnique":              false,
+          "isIndexable":           false,
+          "includeInNotification": false
+        }
+      ]
+    },
+    {
+      "name":          "couchbase_field",
+      "superTypes":    [ "DataSet" ],
+      "serviceType":   "couchbase",
+      "typeVersion":   "1.0",
+      "attributeDefs": [
+        {
+          "name":                  "fieldType",
+          "typeName":              "couchbase_field_type",
+          "isOptional":            false,
+          "cardinality":           "SINGLE",
+          "valuesMinCount":        1,
+          "valuesMaxCount":        1,
+          "isUnique":              false,
+          "isIndexable":           true,
+          "includeInNotification": false
+        },
+        {
+          "name":                  "fieldPath",
+          "typeName":              "string",
+          "isOptional":            false,
+          "cardinality":           "SINGLE",
+          "valuesMinCount":        1,
+          "valuesMaxCount":        1,
+          "isUnique":              false,
+          "isIndexable":           true,
+          "includeInNotification": false
+        },
+        {
+          "name":           "documentCount",
+          "typeName":       "long",
+          "isOptional":     false,
+          "cardinality":    "SINGLE",
+          "valuesMinCount": 1,
+          "valuesMaxCount": 1,
+          "isUnique":       false,
+          "isIndexable":    false
+        }
+      ]
+    }
+  ],
+  "relationshipDefs": [
+    {
+      "name":                 "couchbase_cluster_buckets",
+      "typeVersion":          "1.0",
+      "serviceType":          "couchbase",
+      "relationshipCategory": "AGGREGATION",
+      "propagateTags":        "ONE_TO_TWO",
+      "endDef1": { "type": "couchbase_cluster", "name": "buckets", "cardinality": "SET",    "isContainer": true },
+      "endDef2": { "type": "couchbase_bucket",  "name": "cluster", "cardinality": "SINGLE", "isContainer": false }
+    },
+    {
+      "name":                 "couchbase_bucket_scopes",
+      "typeVersion":          "1.0",
+      "serviceType":          "couchbase",
+      "relationshipCategory": "AGGREGATION",
+      "propagateTags":        "ONE_TO_TWO",
+      "endDef1": { "type": "couchbase_bucket", "name": "scopes", "cardinality": "SET",    "isContainer": true },
+      "endDef2": { "type": "couchbase_scope",  "name": "bucket", "cardinality": "SINGLE", "isContainer": false }
+    },
+    {
+      "name":                 "couchbase_scope_collections",
+      "typeVersion":          "1.0",
+      "serviceType":          "couchbase",
+      "relationshipCategory": "AGGREGATION",
+      "propagateTags":        "ONE_TO_TWO",
+      "endDef1": { "type": "couchbase_scope",      "name": "collections", "cardinality": "SET",    "isContainer": true },
+      "endDef2": { "type": "couchbase_collection", "name": "scope",       "cardinality": "SINGLE", "isContainer": false }
+    },
+    {
+      "name":                 "couchbase_collection_fields",
+      "typeVersion":          "1.0",
+      "serviceType":          "couchbase",
+      "relationshipCategory": "AGGREGATION",
+      "propagateTags":        "ONE_TO_TWO",
+      "endDef1": { "type": "couchbase_collection", "name": "fields",     "cardinality": "SET",    "isContainer": true },
+      "endDef2": { "type": "couchbase_field",      "name": "collection", "cardinality": "SINGLE", "isContainer": false }
+    },
+    {
+      "name":                 "couchbase_field_fields",
+      "typeVersion":          "1.0",
+      "serviceType":          "couchbase",
+      "relationshipCategory": "AGGREGATION",
+      "propagateTags":        "ONE_TO_TWO",
+      "endDef1": { "type": "couchbase_field",  "name": "objectFields", "cardinality": "SET",    "isContainer": true },
+      "endDef2": { "type": "couchbase_field",  "name": "parentField",  "cardinality": "SINGLE", "isContainer": false }
+    }
+  ]
+}
