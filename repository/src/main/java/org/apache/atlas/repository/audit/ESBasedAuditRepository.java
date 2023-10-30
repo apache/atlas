@@ -336,7 +336,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
             LOG.error("Problem while retrieving the index field limit!", e);
             return false;
         }
-        Integer fieldLimitFromConfigurationFile = configuration.getInt(TOTAL_FIELD_LIMIT);
+        Integer fieldLimitFromConfigurationFile = configuration.getInt(TOTAL_FIELD_LIMIT, 0);
         return currentFieldLimit == null || fieldLimitFromConfigurationFile > currentFieldLimit.asInt();
     }
 
