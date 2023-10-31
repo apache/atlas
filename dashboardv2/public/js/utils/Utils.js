@@ -1296,18 +1296,25 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
             $parent.css('border', '1px solid #8fa5b1');
         }).on('tbwchange', function(e) {
             options.callback ? options.callback(e) : null;
+            e.target.value = Utils.sanitizeHtmlContent({ data: e.target.value });
         }).on('tbwmodalopen', function(e) {
             $('input[name="title"], input[name="target"]').parent().css('display', 'none');
         });
     }
 
     Utils.sanitizeHtmlContent = function(options) {
-        var editorContent, cleanedContent;
+        var editorContent, cleanedContent,
+            config = {
+                ALLOWED_TAGS: ['b', 'em', 'strong', 'u', 'a', 'ul', 'ol', 'li', 'p', 'strike', 'h1', 'h2', 'h3', 'h4'],
+                ALLOWED_ATTR: ['href'],
+                FORBID_TAGS: ['script', 'img', 'iframe', 'svg', 'title'],
+                FORBID_ATTR: ['onmouseover', 'onload', 'onclick', 'onerror']
+            };
         editorContent = options.selector ? $(options.selector).trumbowyg('html') : options.data;
         if (options && editorContent) {
-            cleanedContent = DOMPurify.sanitize(editorContent, { FORBID_TAGS: ['img', 'script', 'iframe', 'embed', 'svg', 'meta'], ALLOWED_ATTR: ['target', 'href'] });
+            cleanedContent = DOMPurify.sanitize(editorContent, config);
         }
-        return cleanedContent;
+        return cleanedContent || "";
     }
     //-----------------------------------------END---------------------//
 

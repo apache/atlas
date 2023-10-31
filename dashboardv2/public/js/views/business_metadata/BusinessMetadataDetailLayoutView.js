@@ -58,8 +58,9 @@ define(['require',
             },
             renderDetail: function() {
                 this.ui.title.html('<span>' + this.model.get('name') + '</span>');
+                var sanitizedDescription = Utils.sanitizeHtmlContent({data: this.model.get("description")});
                 if (this.model.get('description')) {
-                    this.isTextTypeChecked ? this.ui.description.text(this.model.get('description')) : this.ui.description.html(this.model.get('description'));
+                    this.isTextTypeChecked ? this.ui.description.text(sanitizedDescription) : this.ui.description.html(sanitizedDescription);
                 }
             },
             onDestroy: function() {
