@@ -301,7 +301,7 @@ define(['require',
                                 if (description.length > 50) {
                                     description = description.substr(0, 50) + "...";
                                 }
-                                return description;
+                                return Utils.sanitizeHtmlContent({data: description});
                             }
                         })
                     },

@@ -61,7 +61,7 @@ define(['require',
                 };
                 events["change " + this.ui.textType] = function(e) {
                     this.isTextTypeChecked = !this.isTextTypeChecked;
-                    this.isTextTypeChecked ? this.ui.description.text(this.model.get("description")) : this.ui.description.html(this.model.get("description"));
+                    this.isTextTypeChecked ? this.ui.description.text(this.sanitizedDescription) : this.ui.description.html(this.sanitizedDescription);
                 };
                 return events;
             },
@@ -72,6 +72,7 @@ define(['require',
             initialize: function(options) {
                 _.extend(this, _.pick(options, 'tag', 'collection', 'enumDefCollection'));
                 this.isTextTypeChecked = false;
+                this.sanitizedDescription = "";
             },
             bindEvents: function() {
                 this.listenTo(this.collection, 'reset', function() {
@@ -131,7 +132,8 @@ define(['require',
                     }
                 this.ui.title.html('<span>' + (Utils.getName(this.model.toJSON())) + '</span>');
                 if (this.model.get("description")) {
-                    this.isTextTypeChecked ? this.ui.description.text(this.model.get("description")) : this.ui.description.html(this.model.get("description"));
+                    this.sanitizedDescription = Utils.sanitizeHtmlContent({data: this.model.get("description")});
+                    this.isTextTypeChecked ? this.ui.description.text(this.sanitizedDescription) : this.ui.description.html(this.sanitizedDescription);
                 }
                 if (attributeDefs) {
                     if (!_.isArray(attributeDefs)) {

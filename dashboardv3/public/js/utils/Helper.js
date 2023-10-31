@@ -140,6 +140,11 @@ define(['require',
             $('.trumbowyg').css('border', '1px solid #8fa5b1');
         }
     });
+    $('body').on('change', '.trumbowyg-modal-box input[name="url"], .trumbowyg-modal-box input[name="text"]', function(e) {
+        var inputValue = e.target.value;
+        var sanitizedValue = Utils.sanitizeHtmlContent({ data: inputValue });
+        e.target.value = sanitizedValue;
+    });
     $('body').on('keyup input', '.modal-body', function(e) {
         var target = e.target,
             isGlossary = (e.target.dataset.id === "searchTerm" || e.target.dataset.id === "searchCategory") ? true : false; // assign term/category modal
