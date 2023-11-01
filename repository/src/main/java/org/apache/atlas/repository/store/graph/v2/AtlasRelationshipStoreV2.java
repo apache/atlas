@@ -648,9 +648,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
 
         AtlasEdge ret = null;
 
-        if (toVertex.hasEdges(AtlasEdgeDirection.IN, relationshipLabel) && fromVertex.hasEdges(AtlasEdgeDirection.OUT, relationshipLabel)) {
-            ret = graph.getEdgeBetweenVertices(fromVertex, toVertex, relationshipLabel);
-        }
+        ret = graph.getEdgeBetweenVertices(fromVertex, toVertex, relationshipLabel);
 
         RequestContext.get().endMetricRecord(metric);
         return ret;
