@@ -967,7 +967,7 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
         createdDBName = (String) createHiveDB().getAttribute(NAME);
         Set<String> labels = new HashSet<>();
         labels.add("labelByTypeName");
-        atlasClientV2.addLabels(createHiveDB().getTypeName(), toMap(NAME, createdDBName), labels);
+        atlasClientV2.setLabels(createHiveDB().getTypeName(), toMap(NAME, createdDBName), labels);
         AtlasEntityWithExtInfo info = atlasClientV2.getEntityByGuid(createHiveDB().getGuid(), false, true);
         assertNotNull(info);
         assertNotNull(info.getEntity().getLabels());
@@ -979,7 +979,7 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
         createdDBName = (String) createHiveDB().getAttribute(NAME);
         Set<String> labels = new HashSet<>();
         labels.add("labelByTypeNameNext");
-        atlasClientV2.setLabels(createHiveDB().getTypeName(), toMap(NAME, createdDBName), labels);
+        atlasClientV2.addLabels(createHiveDB().getTypeName(), toMap(NAME, createdDBName), labels);
         AtlasEntityWithExtInfo infoForSet = atlasClientV2.getEntityByGuid(createHiveDB().getGuid(), false, true);
         assertNotNull(infoForSet);
         assertNotNull(infoForSet.getEntity().getLabels());
