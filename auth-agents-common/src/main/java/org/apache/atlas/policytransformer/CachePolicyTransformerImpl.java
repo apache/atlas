@@ -188,9 +188,7 @@ public class CachePolicyTransformerImpl {
 
                 RequestContext.get().endMetricRecord(recorderFilterPolicies);
 
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Found {} policies", servicePolicies.getPolicies().size());
-                }
+                LOG.info("Found {} policies", servicePolicies.getPolicies().size());
             }
 
         } catch (Exception e) {

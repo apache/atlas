@@ -98,9 +98,9 @@ public class TaskQueueWatcher implements Runnable {
                 if (CollectionUtils.isNotEmpty(tasks)) {
                     final CountDownLatch latch = new CountDownLatch(tasks.size());
                     submitAll(tasks, latch);
+                    LOG.info("Submitted {} tasks to the queue", tasks.size());
                     waitForTasksToComplete(latch);
                 } else {
-                    LOG.info("No tasks to queue, sleeping for {} ms", pollInterval);
                     redisService.releaseDistributedLock(ATLAS_TASK_LOCK);
                 }
                 Thread.sleep(pollInterval);
@@ -153,7 +153,6 @@ public class TaskQueueWatcher implements Runnable {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("TasksFetcher: Fetching tasks for queuing");
             }
-            LOG.info("TasksFetcher: Fetching tasks for queuing");
 
             this.tasks = registry.getTasksForReQueue();
         }
