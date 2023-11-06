@@ -149,7 +149,7 @@ public class AtlasSolrQueryBuilder {
                     .append(typeIndexFieldName)
                     .append(":(");
 
-        Set<String> typesToSearch = new HashSet<>();
+        Set<String> typesToSearch = new LinkedHashSet<>();
         for (AtlasEntityType type : entityTypes) {
 
             if (includeSubtypes) {
