@@ -23,6 +23,7 @@ import org.testng.annotations.Test;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class AtlasJanusGraphIndexClientTest {
@@ -131,7 +132,7 @@ public class AtlasJanusGraphIndexClientTest {
 
     private Map<String, AtlasJanusGraphIndexClient.TermFreq>  generateTerms(int ... termFreqs) {
         int i =0;
-        Map<String, AtlasJanusGraphIndexClient.TermFreq> terms = new HashMap<>();
+        Map<String, AtlasJanusGraphIndexClient.TermFreq> terms = new LinkedHashMap<>();
         for(int count: termFreqs) {
             AtlasJanusGraphIndexClient.TermFreq termFreq1 = new AtlasJanusGraphIndexClient.TermFreq(Integer.toString(i++), count);
             terms.put(termFreq1.getTerm(), termFreq1);
