@@ -40,6 +40,8 @@ import java.util.stream.Collectors;
 
 import static org.apache.atlas.keycloak.client.AtlasKeycloakClient.getKeycloakClient;
 import static org.apache.atlas.repository.Constants.*;
+import static org.apache.atlas.repository.util.AccessControlUtils.ARGO_SERVICE_USER_NAME;
+import static org.apache.atlas.repository.util.AccessControlUtils.BACKEND_SERVICE_USER_NAME;
 
 
 public class KeycloakUserStore {
@@ -257,6 +259,8 @@ public class KeycloakUserStore {
                 apiTokenDefaultAccessRole.ifPresent(rangerRole -> nonGuestUsers.addAll(rangerRole.getUsers()));
 
                 defaultUsers.removeAll(nonGuestUsers);
+                defaultUsers.remove(new RangerRole.RoleMember(ARGO_SERVICE_USER_NAME, false));
+                defaultUsers.remove(new RangerRole.RoleMember(BACKEND_SERVICE_USER_NAME, false));
 
                 targetRole.get().getUsers().addAll(defaultUsers);
             }
