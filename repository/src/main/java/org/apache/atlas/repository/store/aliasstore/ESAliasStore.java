@@ -17,6 +17,8 @@
  */
 package org.apache.atlas.repository.store.aliasstore;
 
+import org.apache.atlas.AtlasConfiguration;
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.ESAliasRequestBuilder;
 import org.apache.atlas.ESAliasRequestBuilder.AliasAction;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -68,6 +70,8 @@ public class ESAliasStore implements IndexAliasStore {
 
     private final AtlasGraph graph;
     private final EntityGraphRetriever entityRetriever;
+
+    private final int assetsMaxLimit = AtlasConfiguration.PERSONA_POLICY_ASSET_MAX_LIMIT.getInt();
 
     @Inject
     public ESAliasStore(AtlasGraph graph,
@@ -166,7 +170,7 @@ public class ESAliasStore implements IndexAliasStore {
 
     private void personaPolicyToESDslClauses(List<AtlasEntity> policies,
                                              List<Map<String, Object>> allowClauseList) throws AtlasBaseException {
-        Set<String> terms = new HashSet<>();
+        List<String> terms = new ArrayList<>();
         for (AtlasEntity policy: policies) {
 
             if (policy.getStatus() == null || AtlasEntity.Status.ACTIVE.equals(policy.getStatus())) {
@@ -194,6 +198,10 @@ public class ESAliasStore implements IndexAliasStore {
                     }
                 }
             }
+        }
+
+        if (terms.size() > assetsMaxLimit) {
+            throw new AtlasBaseException(AtlasErrorCode.PERSONA_POLICY_ASSETS_LIMIT_EXCEEDED, String.valueOf(assetsMaxLimit), String.valueOf(terms.size()));
         }
 
         allowClauseList.add(mapOf("terms", mapOf(QUALIFIED_NAME, terms)));
