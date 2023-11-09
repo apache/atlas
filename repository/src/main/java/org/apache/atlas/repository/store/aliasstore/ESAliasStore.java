@@ -180,6 +180,7 @@ public class ESAliasStore implements IndexAliasStore {
                     if (getPolicyActions(policy).contains(ACCESS_READ_PERSONA_METADATA)) {
 
                         if (terms.size() + assets.size() + 1 > assetsMaxLimit) {
+                            // For Metadata policies, along with assets we add 1 more clause for connection qualifiedName hence omparing with "assets.size() + 1"
                             throw new AtlasBaseException(AtlasErrorCode.PERSONA_POLICY_ASSETS_LIMIT_EXCEEDED, String.valueOf(assetsMaxLimit), String.valueOf(terms.size()));
                         }
 
