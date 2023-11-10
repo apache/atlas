@@ -181,7 +181,7 @@ public class ESAliasStore implements IndexAliasStore {
 
                         if (terms.size() + assets.size() + 1 > assetsMaxLimit) {
                             // For Metadata policies, along with assets we add 1 more clause for connection qualifiedName hence comparing with "assets.size() + 1"
-                            throw new AtlasBaseException(AtlasErrorCode.PERSONA_POLICY_ASSETS_LIMIT_EXCEEDED, String.valueOf(assetsMaxLimit), String.valueOf(terms.size()));
+                            throw new AtlasBaseException(AtlasErrorCode.PERSONA_POLICY_ASSETS_LIMIT_EXCEEDED, String.valueOf(assetsMaxLimit), String.valueOf(terms.size() + assets.size() + 1));
                         }
 
                         String connectionQName = getPolicyConnectionQN(policy);
@@ -198,7 +198,7 @@ public class ESAliasStore implements IndexAliasStore {
 
                     } else if (getPolicyActions(policy).contains(ACCESS_READ_PERSONA_GLOSSARY)) {
                         if (terms.size() + assets.size() > assetsMaxLimit) {
-                            throw new AtlasBaseException(AtlasErrorCode.PERSONA_POLICY_ASSETS_LIMIT_EXCEEDED, String.valueOf(assetsMaxLimit), String.valueOf(terms.size()));
+                            throw new AtlasBaseException(AtlasErrorCode.PERSONA_POLICY_ASSETS_LIMIT_EXCEEDED, String.valueOf(assetsMaxLimit), String.valueOf(terms.size() + assets.size()));
                         }
 
                         for (String glossaryQName : assets) {
