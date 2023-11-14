@@ -16,6 +16,8 @@
  */
 package org.apache.atlas.web.security;
 
+import io.micrometer.core.instrument.Counter;
+import org.apache.atlas.service.metrics.MetricUtils;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.commons.configuration.Configuration;
 import org.keycloak.adapters.springsecurity.authentication.KeycloakAuthenticationProvider;
@@ -64,6 +66,11 @@ public class AtlasKeycloakAuthenticationProvider extends AtlasAbstractAuthentica
         }
         authentication = new KeycloakAuthenticationToken(token.getAccount(), token.isInteractive(), grantedAuthorities);
       }
+    }
+
+    if(authentication.getName().startsWith("service-account-apikey")) {
+      // Increment the counter when the authentication is for a service account.
+      Counter.builder("service_account_apikey_request_counter").register(MetricUtils.getMeterRegistry()).increment();
     }
 
     return authentication;
