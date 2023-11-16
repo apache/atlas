@@ -171,45 +171,41 @@ public class ESAliasStore implements IndexAliasStore {
     private void personaPolicyToESDslClauses(List<AtlasEntity> policies,
                                              List<Map<String, Object>> allowClauseList) throws AtlasBaseException {
         List<String> terms = new ArrayList<>();
+        
         for (AtlasEntity policy: policies) {
 
             if (policy.getStatus() == null || AtlasEntity.Status.ACTIVE.equals(policy.getStatus())) {
                 List<String> assets = getPolicyAssets(policy);
 
-                if (getIsAllowPolicy(policy)) {
-                    if (getPolicyActions(policy).contains(ACCESS_READ_PERSONA_METADATA)) {
+                if (!getIsAllowPolicy(policy)) {
+                    continue;
+                }
+                
+                if (getPolicyActions(policy).contains(ACCESS_READ_PERSONA_METADATA)) {
 
-                        int assetSize = terms.size() + assets.size() + 1;
-                        if (assetSize > assetsMaxLimit) {
-                            // For Metadata policies, along with assets we add 1 more clause for connection qualifiedName hence comparing with "assets.size() + 1"
-                            throw new AtlasBaseException(AtlasErrorCode.PERSONA_POLICY_ASSETS_LIMIT_EXCEEDED, String.valueOf(assetsMaxLimit), String.valueOf(assetSize));
-                        }
+                    String connectionQName = getPolicyConnectionQN(policy);
+                    if (StringUtils.isEmpty(connectionQName)) {
+                        connectionQName = getConnectionQualifiedNameFromPolicyAssets(entityRetriever, assets);
+                    }
 
-                        String connectionQName = getPolicyConnectionQN(policy);
-                        if (StringUtils.isEmpty(connectionQName)) {
-                            connectionQName = getConnectionQualifiedNameFromPolicyAssets(entityRetriever, assets);
-                        }
+                    for (String asset : assets) {
+                        terms.add(asset);
+                        allowClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset + "/*")));
+                    }
 
-                        for (String asset : assets) {
-                            terms.add(asset);
-                            allowClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset + "/*")));
-                        }
+                    terms.add(connectionQName);
 
-                        terms.add(connectionQName);
+                } else if (getPolicyActions(policy).contains(ACCESS_READ_PERSONA_GLOSSARY)) {
 
-                    } else if (getPolicyActions(policy).contains(ACCESS_READ_PERSONA_GLOSSARY)) {
-
-                        int assetSize = terms.size() + assets.size();
-                        if (terms.size() + assets.size() > assetsMaxLimit) {
-                            throw new AtlasBaseException(AtlasErrorCode.PERSONA_POLICY_ASSETS_LIMIT_EXCEEDED, String.valueOf(assetsMaxLimit), String.valueOf(assetSize));
-                        }
-
-                        for (String glossaryQName : assets) {
-                            terms.add(glossaryQName);
-                            allowClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, "*@" + glossaryQName)));
-                        }
+                    for (String glossaryQName : assets) {
+                        terms.add(glossaryQName);
+                        allowClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, "*@" + glossaryQName)));
                     }
                 }
+            }
+
+            if (terms.size() > assetsMaxLimit) {
+                throw new AtlasBaseException(AtlasErrorCode.PERSONA_POLICY_ASSETS_LIMIT_EXCEEDED, String.valueOf(assetsMaxLimit), String.valueOf(terms.size()));
             }
         }
 
