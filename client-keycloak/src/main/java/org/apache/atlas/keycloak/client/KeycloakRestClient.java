@@ -1,8 +1,11 @@
 package org.apache.atlas.keycloak.client;
 
+import okhttp3.FormBody;
+import okhttp3.RequestBody;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.keycloak.client.config.KeycloakConfig;
 import org.keycloak.representations.idm.*;
+import org.keycloak.representations.oidc.TokenMetadataRepresentation;
 import retrofit2.Response;
 
 import java.util.List;
@@ -13,6 +16,9 @@ import java.util.Set;
  */
 public final class KeycloakRestClient extends AbstractKeycloakClient {
 
+    private static final String TOKEN = "token";
+    private static final String CLIENT_ID = "client_id";
+    private static final String CLIENT_SECRET = "client_secret";
     public KeycloakRestClient(final KeycloakConfig keycloakConfig) {
         super(keycloakConfig);
     }
@@ -120,5 +126,17 @@ public final class KeycloakRestClient extends AbstractKeycloakClient {
     public Response<List<EventRepresentation>> getEvents(List<String> type, String client, String user, String dateFrom,
                                                          String dateTo, String ipAddress, Integer first, Integer max) throws AtlasBaseException {
         return processResponse(this.retrofit.getEvents(this.keycloakConfig.getRealmId(), type, client, user, dateFrom, dateTo, ipAddress, first, max));
+    }
+
+    public Response<TokenMetadataRepresentation> introspectToken(String token) throws AtlasBaseException {
+        return processResponse(this.retrofit.introspectToken(this.keycloakConfig.getRealmId(), getIntrospectTokenRequest(token)));
+    }
+
+    private RequestBody getIntrospectTokenRequest(String token) {
+        return new FormBody.Builder()
+                .addEncoded(TOKEN, token)
+                .addEncoded(CLIENT_ID, this.keycloakConfig.getClientId())
+                .addEncoded(CLIENT_SECRET, this.keycloakConfig.getClientSecret())
+                .build();
     }
 }
