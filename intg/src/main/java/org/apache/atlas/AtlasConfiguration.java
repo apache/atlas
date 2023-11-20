@@ -104,7 +104,9 @@ public enum AtlasConfiguration {
     INDEX_CLIENT_CONNECTION_TIMEOUT("atlas.index.client.connection.timeout.ms", 900000),
     INDEX_CLIENT_SOCKET_TIMEOUT("atlas.index.client.socket.timeout.ms", 900000),
     ENABLE_SEARCH_LOGGER("atlas.enable.search.logger", true),
-    SEARCH_LOGGER_MAX_THREADS("atlas.enable.search.logger.max.threads", 20);
+    SEARCH_LOGGER_MAX_THREADS("atlas.enable.search.logger.max.threads", 20),
+
+    PERSONA_POLICY_ASSET_MAX_LIMIT("atlas.persona.policy.asset.maxlimit", 1000);
 
 
     private static final Configuration APPLICATION_PROPERTIES;

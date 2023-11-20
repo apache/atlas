@@ -206,7 +206,6 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
 
     @Override
     public EntityAuditSearchResult searchEvents(String queryString) throws AtlasBaseException {
-        LOG.info("Hitting ES query to fetch audits: {}", queryString);
         try {
             String response = performSearchOnIndex(queryString);
             return getResultFromResponse(response);

@@ -282,7 +282,9 @@ public enum AtlasErrorCode {
     JSON_ERROR(400, "ATLAS-400-00-109", "Error occurred putting object into JSONObject: {0}"),
     DISABLED_OPERATION(400, "ATLAS-400-00-110", "This operation is temporarily disabled as it is under maintenance."),
     TASK_INVALID_PARAMETERS(400, "ATLAS-400-00-111", "Invalid parameters for task {0}"),
-    TASK_TYPE_NOT_SUPPORTED(400, "ATLAS-400-00-112", "Task type {0} is not supported");
+    TASK_TYPE_NOT_SUPPORTED(400, "ATLAS-400-00-112", "Task type {0} is not supported"),
+
+    PERSONA_POLICY_ASSETS_LIMIT_EXCEEDED(400, "ATLAS-400-00-113", "Exceeded limit of maximum allowed assets across policies for a Persona: Limit: {0}, assets: {1}");
 
 
     private String errorCode;

@@ -153,7 +153,6 @@ public class KeycloakUserStore {
 
         boolean isKeycloakUpdated = isKeycloakSubjectsStoreUpdated(lastUpdatedTime);
         if (!isKeycloakUpdated) {
-            LOG.info("loadRolesIfUpdated: Skipping as no update found");
             return null;
         }
 
@@ -272,7 +271,6 @@ public class KeycloakUserStore {
 
         boolean isKeycloakUpdated = isKeycloakSubjectsStoreUpdated(lastUpdatedTime);
         if (!isKeycloakUpdated) {
-            LOG.info("loadUserStoreIfUpdated: Skipping as no update found");
             return null;
         }
 

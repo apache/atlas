@@ -17,6 +17,8 @@
  */
 package org.apache.atlas.repository.store.aliasstore;
 
+import org.apache.atlas.AtlasConfiguration;
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.ESAliasRequestBuilder;
 import org.apache.atlas.ESAliasRequestBuilder.AliasAction;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -38,6 +40,7 @@ import org.springframework.stereotype.Component;
 import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -67,6 +70,8 @@ public class ESAliasStore implements IndexAliasStore {
 
     private final AtlasGraph graph;
     private final EntityGraphRetriever entityRetriever;
+
+    private final int assetsMaxLimit = AtlasConfiguration.PERSONA_POLICY_ASSET_MAX_LIMIT.getInt();
 
     @Inject
     public ESAliasStore(AtlasGraph graph,
@@ -165,32 +170,46 @@ public class ESAliasStore implements IndexAliasStore {
 
     private void personaPolicyToESDslClauses(List<AtlasEntity> policies,
                                              List<Map<String, Object>> allowClauseList) throws AtlasBaseException {
+        List<String> terms = new ArrayList<>();
+        
         for (AtlasEntity policy: policies) {
 
             if (policy.getStatus() == null || AtlasEntity.Status.ACTIVE.equals(policy.getStatus())) {
                 List<String> assets = getPolicyAssets(policy);
 
-                if (getIsAllowPolicy(policy)) {
-                    if (getPolicyActions(policy).contains(ACCESS_READ_PERSONA_METADATA)) {
-                        String connectionQName = getPolicyConnectionQN(policy);
-                        if (StringUtils.isEmpty(connectionQName)) {
-                            connectionQName = getConnectionQualifiedNameFromPolicyAssets(entityRetriever, assets);
-                        }
+                if (!getIsAllowPolicy(policy)) {
+                    continue;
+                }
+                
+                if (getPolicyActions(policy).contains(ACCESS_READ_PERSONA_METADATA)) {
 
-                        for (String asset : assets) {
-                            addPersonaMetadataFilterClauses(asset, allowClauseList);
-                        }
+                    String connectionQName = getPolicyConnectionQN(policy);
+                    if (StringUtils.isEmpty(connectionQName)) {
+                        connectionQName = getConnectionQualifiedNameFromPolicyAssets(entityRetriever, assets);
+                    }
 
-                        addPersonaMetadataFilterConnectionClause(connectionQName, allowClauseList);
+                    for (String asset : assets) {
+                        terms.add(asset);
+                        allowClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset + "/*")));
+                    }
 
-                    } else if (getPolicyActions(policy).contains(ACCESS_READ_PERSONA_GLOSSARY)) {
-                        for (String glossaryQName : assets) {
-                            addPersonaGlossaryFilterClauses(glossaryQName, allowClauseList);
-                        }
+                    terms.add(connectionQName);
+
+                } else if (getPolicyActions(policy).contains(ACCESS_READ_PERSONA_GLOSSARY)) {
+
+                    for (String glossaryQName : assets) {
+                        terms.add(glossaryQName);
+                        allowClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, "*@" + glossaryQName)));
                     }
                 }
             }
+
+            if (terms.size() > assetsMaxLimit) {
+                throw new AtlasBaseException(AtlasErrorCode.PERSONA_POLICY_ASSETS_LIMIT_EXCEEDED, String.valueOf(assetsMaxLimit), String.valueOf(terms.size()));
+            }
         }
+
+        allowClauseList.add(mapOf("terms", mapOf(QUALIFIED_NAME, terms)));
     }
 
     private Map<String, Object> esClausesToFilter(List<Map<String, Object>> allowClauseList) {
@@ -206,22 +225,6 @@ public class ESAliasStore implements IndexAliasStore {
 
     private String getAliasName(AtlasEntity entity) {
         return getESAliasName(entity);
-    }
-
-    private void addPersonaMetadataFilterClauses(String asset, List<Map<String, Object>> clauseList) {
-        clauseList.add(mapOf("term", mapOf(QUALIFIED_NAME, asset)));
-        clauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset + "/*")));
-        clauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset)));
-    }
-
-    private void addPersonaGlossaryFilterClauses(String asset, List<Map<String, Object>> clauseList) {
-        clauseList.add(mapOf("term", mapOf(QUALIFIED_NAME, asset)));
-        clauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset + "/*")));
-        clauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, "*@" + asset)));
-    }
-
-    private void addPersonaMetadataFilterConnectionClause(String connection, List<Map<String, Object>> clauseList) {
-        clauseList.add(mapOf("term", mapOf(QUALIFIED_NAME, connection)));
     }
 
     private void addPurposeMetadataFilterClauses(List<String> tags, List<Map<String, Object>> clauseList) {
