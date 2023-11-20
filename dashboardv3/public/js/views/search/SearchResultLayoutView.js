@@ -792,6 +792,7 @@ define(['require',
                     resizeable: true,
                     orderable: false,
                     renderable: true,
+                    sortable: true,
                     className: "searchTableName",
                     formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                         fromRaw: function(rawValue, model) {
@@ -864,6 +865,7 @@ define(['require',
                     resizeable: true,
                     orderable: true,
                     renderable: true,
+                    sortable: true,
                     formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                         fromRaw: function(rawValue, model) {
                             var obj = model.toJSON();
@@ -878,6 +880,7 @@ define(['require',
                         label: "Date Created",
                         cell: "Html",
                         editable: false,
+                        sortable: true,
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
                                 var obj = model.toJSON();
@@ -898,6 +901,7 @@ define(['require',
                         resizeable: true,
                         orderable: true,
                         renderable: true,
+                        sortable: true,
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
                                 var obj = model.toJSON();
@@ -913,6 +917,7 @@ define(['require',
                         editable: false,
                         resizeable: true,
                         orderable: true,
+                        sortable: true,
                         renderable: (columnToShow ? _.contains(columnToShow, 'typeName') : true),
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
@@ -975,7 +980,8 @@ define(['require',
                             _.each(attrObj, function(obj, key) {
                                 var key = obj.name,
                                     isRenderable = _.contains(columnToShow, key),
-                                    isSortable = obj.typeName.search(/(array|map)/i) == -1,
+                                    // isSortable = obj.typeName.search(/(array|map)/i) == -1, // commented : as sorting is required for all the columns except classifications and terms
+                                    isSortable = obj.typeName.search(/(string|date|boolean|int|number|byte|float|long|double|short)/i) == 0, // commented : as sorting is required for all the columns except non-primitive types
                                     columnLabel;
                                 if (key == "name" || key == "description" || key == "owner") {
                                     if (columnToShow) {
@@ -991,7 +997,7 @@ define(['require',
                                 col[obj.name] = {
                                     label: columnLabel,
                                     cell: "Html",
-                                    headerCell: Backgrid.HeaderHTMLDecodeCell,
+                                    // headerCell: Backgrid.HeaderHTMLDecodeCell,
                                     editable: false,
                                     resizeable: true,
                                     orderable: true,

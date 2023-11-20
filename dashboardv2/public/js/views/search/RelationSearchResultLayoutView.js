@@ -507,6 +507,7 @@ define(['require',
                     resizeable: true,
                     orderable: false,
                     renderable: true,
+                    sortable: false,
                     className: "searchTableName",
                     formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                         fromRaw: function(rawValue, model) {
@@ -540,6 +541,7 @@ define(['require',
                         editable: false,
                         resizeable: true,
                         orderable: true,
+                        sortable: true,
                         renderable: (columnToShow ? _.contains(columnToShow, 'typeName') : true),
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
@@ -556,6 +558,7 @@ define(['require',
                         editable: false,
                         resizeable: true,
                         orderable: true,
+                        sortable: false,
                         renderable: (columnToShow ? _.contains(columnToShow, 'end1') : true),
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
@@ -577,6 +580,7 @@ define(['require',
                         editable: false,
                         resizeable: true,
                         orderable: true,
+                        sortable: false,
                         renderable: (columnToShow ? _.contains(columnToShow, 'end2') : true),
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
@@ -598,6 +602,7 @@ define(['require',
                         editable: false,
                         resizeable: true,
                         orderable: true,
+                        sortable: true,
                         renderable: (columnToShow ? _.contains(columnToShow, 'end2') : true),
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
@@ -616,11 +621,13 @@ define(['require',
                             _.each(attrObj, function(obj, key) {
                                 var key = obj.name,
                                     isRenderable = _.contains(columnToShow, key),
-                                    isSortable = obj.typeName.search(/(array|map)/i) == -1;
+                                    // isSortable = obj.typeName.search(/(array|map)/i) == -1;
+                                    isSortable = obj.typeName.search(/(string|date|boolean|int|number|byte|float|long|double|short)/i) == 0; // commented : as sorting is required for all the columns except non-primitive types
+
                                 col[obj.name] = {
                                     label: obj.name.capitalize(),
                                     cell: "Html",
-                                    headerCell: Backgrid.HeaderHTMLDecodeCell,
+                                    // headerCell: Backgrid.HeaderHTMLDecodeCell,
                                     editable: false,
                                     resizeable: true,
                                     orderable: true,
