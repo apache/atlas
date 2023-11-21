@@ -9,6 +9,7 @@ import org.apache.commons.lang.StringUtils;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.keycloak.representations.idm.*;
+import org.keycloak.representations.oidc.TokenMetadataRepresentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -172,6 +173,10 @@ public final class AtlasKeycloakClient {
 
     public List<EventRepresentation> getEvents(List<String> type, String client, String user, String dateFrom, String dateTo, String ipAddress, Integer first, Integer max) throws AtlasBaseException {
         return KEYCLOAK.getEvents(type, client, user, dateFrom, dateTo, ipAddress, first, max).body();
+    }
+
+    public TokenMetadataRepresentation introspectToken(String token) throws AtlasBaseException {
+        return KEYCLOAK.introspectToken(token).body();
     }
 
     public static AtlasKeycloakClient getKeycloakClient() throws AtlasBaseException {

@@ -3,6 +3,7 @@ package org.apache.atlas.keycloak.client;
 import okhttp3.RequestBody;
 import org.keycloak.representations.AccessTokenResponse;
 import org.keycloak.representations.idm.*;
+import org.keycloak.representations.oidc.TokenMetadataRepresentation;
 import retrofit2.Call;
 import retrofit2.http.*;
 
@@ -141,5 +142,9 @@ public interface RetrofitKeycloakClient {
     @Headers({"Accept: application/json", "Content-Type: application/x-www-form-urlencoded", "Cache-Control: no-store", "Cache-Control: no-cache"})
     @POST("realms/{realmId}/protocol/openid-connect/token")
     Call<AccessTokenResponse> grantToken(@Path("realmId") String realmId, @Body RequestBody request);
+
+    @Headers({"Accept: application/json", "Content-Type: application/x-www-form-urlencoded", "Cache-Control: no-store", "Cache-Control: no-cache"})
+    @POST("realms/{realmId}/protocol/openid-connect/token/introspect")
+    Call<TokenMetadataRepresentation> introspectToken(@Path("realmId") String realmId, @Body RequestBody request);
 
 }

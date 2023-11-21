@@ -130,6 +130,8 @@ public class AtlasAuthenticationProvider extends AtlasAbstractAuthenticationProv
             } else if (keycloakAuthenticationEnabled) {
                 try {
                     authentication = atlasKeycloakAuthenticationProvider.authenticate(authentication);
+                } catch (KeycloakAuthenticationException ex) {
+                    throw new AtlasAuthenticationException("Authentication failed.");
                 } catch (Exception ex) {
                     LOG.error("Error while Keycloak authentication", ex);
                 }
