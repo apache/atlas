@@ -105,8 +105,8 @@ public class GlossaryTermUtils extends GlossaryUtils {
             if (CollectionUtils.isNotEmpty(assignedEntities) && assignedEntities.contains(objectId)) {
                 if (DEBUG_ENABLED) {
                     LOG.debug("Skipping already assigned entity {}", objectId);
-                    continue;
                 }
+                continue;
             }
 
             if (DEBUG_ENABLED) {
