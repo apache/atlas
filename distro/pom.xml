@@ -572,7 +572,7 @@ atlas.graph.storage.conf-file=${sys:atlas.home}/conf/cassandra.yml
                     <execution>
                         <configuration>
                             <skip>${skipTests}</skip>
-                            <executable>python3</executable>
+                            <executable>python</executable>
                             <workingDirectory>src/test/python</workingDirectory>
                             <arguments>
                                 <argument>unitTests.py</argument>
