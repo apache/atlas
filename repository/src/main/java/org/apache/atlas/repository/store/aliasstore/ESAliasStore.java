@@ -214,13 +214,19 @@ public class ESAliasStore implements IndexAliasStore {
                 } else if (getPolicyActions(policy).contains(ACCESS_READ_PERSONA_SUB_DOMAIN)) {
                     for (String asset : assets) {
                         //terms.add(asset);
-                        allowClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset + "/domain/*")));
+                        List<Map<String, Object>> mustMap = new ArrayList<>();
+                        mustMap.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset + "/domain/*")));
+                        mustMap.add(mapOf("term", mapOf("__typeName", "DataDomain")));
+                        allowClauseList.add(mapOf("bool", mapOf("must", mustMap)));
                     }
 
                 } else if (getPolicyActions(policy).contains(ACCESS_READ_PERSONA_PRODUCT)) {
                     for (String asset : assets) {
                         //terms.add(asset);
-                        allowClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset + "/*/product/*")));
+                        List<Map<String, Object>> mustMap = new ArrayList<>();
+                        mustMap.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset + "/*/product/*")));
+                        mustMap.add(mapOf("term", mapOf("__typeName", "DataProduct")));
+                        allowClauseList.add(mapOf("bool", mapOf("must", mustMap)));
                     }
                 }
             }
