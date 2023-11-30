@@ -503,11 +503,23 @@
         "entity-classification:*"
       ],
       "actions": ["entity-read"]
+    }
+  ],
+  "persona-domain-product-create": [
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "resources": [
+        "entity:{entity}/*/product/*",
+        "entity-type:DataProduct",
+        "entity-classification:*"
+      ],
+      "actions": ["entity-create"]
     },
     {
       "policyResourceCategory": "RELATIONSHIP",
       "policyType": "ACCESS",
-      "description": "Link/unlink any DataProduct to Domain",
+      "description": "Link/unlink this DataProduct to any parent Domain",
       "resources": [
         "relationship-type:*",
         
@@ -521,18 +533,6 @@
         "end-two-entity:{entity}/*"
       ],
       "actions": ["add-relationship", "update-relationship", "remove-relationship"]
-    }
-  ],
-  "persona-domain-product-create": [
-    {
-      "policyResourceCategory": "ENTITY",
-      "policyType": "ACCESS",
-      "resources": [
-        "entity:{entity}/*/product/*",
-        "entity-type:DataProduct",
-        "entity-classification:*"
-      ],
-      "actions": ["entity-create"]
     }
   ],
   "persona-domain-product-update": [
