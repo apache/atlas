@@ -415,7 +415,7 @@ public class KeycloakUserStore {
                 //get all users for Roles
                 Thread usersFetcher = new Thread(() -> {
                     int start = 0;
-                    int size = 500;
+                    int size = 1500;
                     boolean found = true;
                     Set<UserRepresentation> ret = new HashSet<>();
 
