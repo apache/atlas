@@ -204,15 +204,24 @@ public class ESAliasStore implements IndexAliasStore {
                         terms.add(glossaryQName);
                         allowClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, "*@" + glossaryQName)));
                     }
-                } else if (getPolicyActions(policy).contains(ACCESS_READ_PERSONA_DOMAIN)
-                        || getPolicyActions(policy).contains(ACCESS_READ_PERSONA_SUB_DOMAIN)
-                        || getPolicyActions(policy).contains(ACCESS_READ_PERSONA_PRODUCT)) {
+                } else if (getPolicyActions(policy).contains(ACCESS_READ_PERSONA_DOMAIN)) {
 
                     for (String asset : assets) {
                         terms.add(asset);
                         allowClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset + "/*")));
                     }
 
+                } else if (getPolicyActions(policy).contains(ACCESS_READ_PERSONA_SUB_DOMAIN)) {
+                    for (String asset : assets) {
+                        //terms.add(asset);
+                        allowClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset + "/domain/*")));
+                    }
+
+                } else if (getPolicyActions(policy).contains(ACCESS_READ_PERSONA_PRODUCT)) {
+                    for (String asset : assets) {
+                        //terms.add(asset);
+                        allowClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset + "/*/product/*")));
+                    }
                 }
             }
 
