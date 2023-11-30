@@ -120,8 +120,12 @@ public class AuthPolicyPreProcessor implements PreProcessor {
             AtlasEntityWithExtInfo parent = getAccessControlEntity(policy);
             AtlasEntity parentEntity = parent.getEntity();
 
-            validator.validate(policy, null, parentEntity, CREATE);
-            validateConnectionAdmin(policy);
+            String policySubCategory = getPolicySubCategory(policy);
+
+            if (!POLICY_SUB_CATEGORY_DOMAIN.equals(policySubCategory)) {
+                validator.validate(policy, null, parentEntity, CREATE);
+                validateConnectionAdmin(policy);
+            }
 
             policy.setAttribute(QUALIFIED_NAME, String.format("%s/%s", getEntityQualifiedName(parentEntity), getUUID()));
 
@@ -174,8 +178,12 @@ public class AuthPolicyPreProcessor implements PreProcessor {
             AtlasEntityWithExtInfo parent = getAccessControlEntity(policy);
             AtlasEntity parentEntity = parent.getEntity();
 
-            validator.validate(policy, existingPolicy, parentEntity, UPDATE);
-            validateConnectionAdmin(policy);
+            String policySubCategory = getPolicySubCategory(policy);
+
+            if (!POLICY_SUB_CATEGORY_DOMAIN.equals(policySubCategory)) {
+                validator.validate(policy, existingPolicy, parentEntity, UPDATE);
+                validateConnectionAdmin(policy);
+            }
 
             String qName = getEntityQualifiedName(existingPolicy);
             policy.setAttribute(QUALIFIED_NAME, qName);
