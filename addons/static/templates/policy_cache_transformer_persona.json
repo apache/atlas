@@ -381,22 +381,10 @@
         "entity:{entity}",
         "entity:{entity}/*",
         "entity-type:DataDomain",
+        "entity-type:DataProduct",
         "entity-classification:*"
       ],
       "actions": ["entity-read"]
-    }
-  ],
-  "persona-domain-create": [
-    {
-      "policyResourceCategory": "ENTITY",
-      "policyType": "ACCESS",
-      "resources": [
-        "entity:{entity}",
-        "entity:{entity}/*",
-        "entity-type:DataDomain",
-        "entity-classification:*"
-      ],
-      "actions": ["entity-create"]
     }
   ],
   "persona-domain-update": [
@@ -407,6 +395,7 @@
         "entity:{entity}",
         "entity:{entity}/*",
         "entity-type:DataDomain",
+        "entity-type:DataProduct",
         "entity-classification:*"
       ],
       "actions": ["entity-update"]
@@ -420,18 +409,16 @@
         "relationship-type:*",
 
         "end-one-entity-type:DataDomain",
+        "end-two-entity-type:DataProduct",
         "end-one-entity-classification:*",
         "end-one-entity:{entity}",
         "end-one-entity:{entity}/*",
 
         "end-two-entity-type:DataDomain",
         "end-two-entity-type:DataProduct",
-        "end-two-entity-type:DataContract",
         "end-two-entity-classification:*",
         "end-two-entity:*"
       ],
-
-
       "actions": ["add-relationship", "update-relationship", "remove-relationship"]
     },
     {
@@ -443,41 +430,28 @@
 
         "end-one-entity-type:DataDomain",
         "end-one-entity-type:DataProduct",
-        "end-one-entity-type:DataContract",
         "end-one-entity-classification:*",
         "end-one-entity:*",
 
         "end-two-entity-type:DataDomain",
+        "end-two-entity-type:DataProduct",
         "end-two-entity-classification:*",
         "end-two-entity:{entity}",
         "end-two-entity:{entity}/*"
       ],
-
       "actions": ["add-relationship", "update-relationship", "remove-relationship"]
     }
   ],
-  "persona-domain-delete": [
-    {
-      "policyResourceCategory": "ENTITY",
-      "policyType": "ACCESS",
-      "resources": [
-        "entity:{entity}",
-        "entity:{entity}/*",
-        "entity-type:{DataDomain}",
-        "entity-classification:*"
-      ],
-      "actions": ["entity-delete"]
-    }
-  ],
+
 
   "persona-domain-sub-domain-read": [
     {
       "policyResourceCategory": "ENTITY",
       "policyType": "ACCESS",
       "resources": [
-        "entity:{entity}",
-        "entity:{entity}/*",
+        "entity:{entity}/domain/*",
         "entity-type:DataDomain",
+        "entity-type:DataProduct",
         "entity-classification:*"
       ],
       "actions": ["entity-read"]
@@ -488,9 +462,9 @@
       "policyResourceCategory": "ENTITY",
       "policyType": "ACCESS",
       "resources": [
-        "entity:{entity}",
-        "entity:{entity}/*",
+        "entity:{entity}/domain/*",
         "entity-type:DataDomain",
+        "entity-type:DataProduct",
         "entity-classification:*"
       ],
       "actions": ["entity-create"]
@@ -501,9 +475,9 @@
       "policyResourceCategory": "ENTITY",
       "policyType": "ACCESS",
       "resources": [
-        "entity:{entity}",
-        "entity:{entity}/*",
+        "entity:{entity}/domain/*",
         "entity-type:DataDomain",
+        "entity-type:DataProduct",
         "entity-classification:*"
       ],
       "actions": ["entity-update"]
@@ -514,9 +488,9 @@
       "policyResourceCategory": "ENTITY",
       "policyType": "ACCESS",
       "resources": [
-        "entity:{entity}",
-        "entity:{entity}/*",
+        "entity:{entity}/domain/*",
         "entity-type:DataDomain",
+        "entity-type:DataProduct",
         "entity-classification:*"
       ],
       "actions": ["entity-delete"]
@@ -528,8 +502,7 @@
       "policyResourceCategory": "ENTITY",
       "policyType": "ACCESS",
       "resources": [
-        "entity:{entity}",
-        "entity:{entity}/*",
+        "entity:{entity}/*/product/*",
         "entity-type:DataProduct",
         "entity-classification:*"
       ],
@@ -541,8 +514,7 @@
       "policyResourceCategory": "ENTITY",
       "policyType": "ACCESS",
       "resources": [
-        "entity:{entity}",
-        "entity:{entity}/*",
+        "entity:{entity}/*/product/*",
         "entity-type:DataProduct",
         "entity-classification:*"
       ],
@@ -554,8 +526,7 @@
       "policyResourceCategory": "ENTITY",
       "policyType": "ACCESS",
       "resources": [
-        "entity:{entity}",
-        "entity:{entity}/*",
+        "entity:{entity}/*/product/*",
         "entity-type:DataProduct",
         "entity-classification:*"
       ],
@@ -575,28 +546,7 @@
 
         "end-two-entity-type:DataProduct",
         "end-two-entity-classification:*",
-        "end-two-entity:{entity}",
-        "end-two-entity:{entity}/*"
-      ],
-
-      "actions": ["add-relationship", "update-relationship", "remove-relationship"]
-    },
-    {
-      "policyResourceCategory": "RELATIONSHIP",
-      "policyType": "ACCESS",
-      "description": "Link/unlink any DataContract to this DataProduct",
-
-      "resources": [
-        "relationship-type:*",
-
-        "end-one-entity-type:DataProduct",
-        "end-one-entity-classification:*",
-        "end-one-entity:*",
-
-        "end-two-entity-type:DataContract",
-        "end-two-entity-classification:*",
-        "end-two-entity:{entity}",
-        "end-two-entity:{entity}/*"
+        "end-two-entity:{entity}/*/product/*"
       ],
 
       "actions": ["add-relationship", "update-relationship", "remove-relationship"]
@@ -607,8 +557,7 @@
       "policyResourceCategory": "ENTITY",
       "policyType": "ACCESS",
       "resources": [
-        "entity:{entity}",
-        "entity:{entity}/*",
+        "entity:{entity}/*/product/*",
         "entity-type:DataProduct",
         "entity-classification:*"
       ],
