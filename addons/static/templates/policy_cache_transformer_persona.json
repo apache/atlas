@@ -503,6 +503,24 @@
         "entity-classification:*"
       ],
       "actions": ["entity-read"]
+    },
+    {
+      "policyResourceCategory": "RELATIONSHIP",
+      "policyType": "ACCESS",
+      "description": "Link/unlink any DataProduct to Domain",
+      "resources": [
+        "relationship-type:*",
+        
+        "entity:{entity}/*",
+        "entity:{entity}",
+        "end-one-entity-type:DataDomain",
+        "end-one-entity-classification:*",
+        
+        "end-two-entity-type:DataProduct",
+        "end-two-entity-classification:*",
+        "end-two-entity:{entity}/*"
+      ],
+      "actions": ["add-relationship", "update-relationship", "remove-relationship"]
     }
   ],
   "persona-domain-product-create": [
