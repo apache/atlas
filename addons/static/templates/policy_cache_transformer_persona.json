@@ -451,7 +451,6 @@
       "resources": [
         "entity:{entity}/domain/*",
         "entity-type:DataDomain",
-        "entity-type:DataProduct",
         "entity-classification:*"
       ],
       "actions": ["entity-read"]
@@ -464,7 +463,6 @@
       "resources": [
         "entity:{entity}/domain/*",
         "entity-type:DataDomain",
-        "entity-type:DataProduct",
         "entity-classification:*"
       ],
       "actions": ["entity-create"]
@@ -477,7 +475,6 @@
       "resources": [
         "entity:{entity}/domain/*",
         "entity-type:DataDomain",
-        "entity-type:DataProduct",
         "entity-classification:*"
       ],
       "actions": ["entity-update"]
@@ -490,7 +487,6 @@
       "resources": [
         "entity:{entity}/domain/*",
         "entity-type:DataDomain",
-        "entity-type:DataProduct",
         "entity-classification:*"
       ],
       "actions": ["entity-delete"]
