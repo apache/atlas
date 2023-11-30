@@ -216,7 +216,7 @@ public class ESAliasStore implements IndexAliasStore {
                         //terms.add(asset);
                         List<Map<String, Object>> mustMap = new ArrayList<>();
                         mustMap.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset + "/domain/*")));
-                        mustMap.add(mapOf("term", mapOf("__typeName", "DataDomain")));
+                        mustMap.add(mapOf("term", mapOf("__typeName.keyword", "DataDomain")));
                         allowClauseList.add(mapOf("bool", mapOf("must", mustMap)));
                     }
 
@@ -225,7 +225,7 @@ public class ESAliasStore implements IndexAliasStore {
                         //terms.add(asset);
                         List<Map<String, Object>> mustMap = new ArrayList<>();
                         mustMap.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset + "/*/product/*")));
-                        mustMap.add(mapOf("term", mapOf("__typeName", "DataProduct")));
+                        mustMap.add(mapOf("term", mapOf("__typeName.keyword", "DataProduct")));
                         allowClauseList.add(mapOf("bool", mapOf("must", mustMap)));
                     }
                 }
