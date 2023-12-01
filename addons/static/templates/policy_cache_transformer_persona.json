@@ -579,7 +579,7 @@
 
         "end-two-entity-type:DataProduct",
         "end-two-entity-classification:*",
-        "end-two-entity:{entity}/*/product/*"
+        "end-two-entity:{entity}/*product/*"
       ],
 
       "actions": ["add-relationship", "update-relationship", "remove-relationship"]
