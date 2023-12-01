@@ -990,7 +990,7 @@ public class EntityGraphRetriever {
         ret.setLabels(getLabels(entityVertex));
 
         ret.setCreatedBy(GraphHelper.getCreatedByAsString(entityVertex));
-        ret.setUpdatedBy(GraphHelper.getModifiedByAsString(entityVertex));
+        ret.setUpdatedBy(RequestContext.get().getUser());
         ret.setCreateTime(new Date(GraphHelper.getCreatedTime(entityVertex)));
         ret.setUpdateTime(new Date(GraphHelper.getModifiedTime(entityVertex)));
 
