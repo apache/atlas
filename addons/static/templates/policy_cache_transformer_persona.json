@@ -511,6 +511,7 @@
       "policyType": "ACCESS",
       "resources": [
         "entity:{entity}/*/product/*",
+        "entity:{entity}/product/*",
         "entity-type:DataProduct",
         "entity-classification:*"
       ],
@@ -523,14 +524,14 @@
       "resources": [
         "relationship-type:*",
         
-        "entity:{entity}/*",
-        "entity:{entity}",
+        "end-one-entity:{entity}/*",
+        "end-one-entity:{entity}",
         "end-one-entity-type:DataDomain",
         "end-one-entity-classification:*",
         
+        "end-two-entity:{entity}/*",
         "end-two-entity-type:DataProduct",
-        "end-two-entity-classification:*",
-        "end-two-entity:{entity}/*"
+        "end-two-entity-classification:*"
       ],
       "actions": ["add-relationship", "update-relationship", "remove-relationship"]
     }
