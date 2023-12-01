@@ -26,7 +26,6 @@ on:
       - development
       - master
       - lineageondemand
-      - domainpoliices
 
 jobs:
   build:
