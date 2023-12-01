@@ -372,6 +372,251 @@
       ]
     }
   ],
+
+  "persona-domain-read": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "resources": [
+        "entity:{entity}",
+        "entity:{entity}/*",
+        "entity-type:DataDomain",
+        "entity-type:DataProduct",
+        "entity-classification:*"
+      ],
+      "actions": ["entity-read"]
+    }
+  ],
+  "persona-domain-update": [
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "resources": [
+        "entity:{entity}",
+        "entity-type:DataDomain",
+        "entity-classification:*"
+      ],
+      "actions": ["entity-update"]
+    },
+    {
+      "policyResourceCategory": "RELATIONSHIP",
+      "policyType": "ACCESS",
+      "description": "Link/unlink any DataDomain, DataProduct OR DataContract to this Domain",
+
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity-type:DataDomain",
+        "end-two-entity-type:DataProduct",
+        "end-one-entity-classification:*",
+        "end-one-entity:{entity}",
+        "end-one-entity:{entity}/*",
+
+        "end-two-entity-type:DataDomain",
+        "end-two-entity-type:DataProduct",
+        "end-two-entity-classification:*",
+        "end-two-entity:*"
+      ],
+      "actions": ["add-relationship", "update-relationship", "remove-relationship"]
+    },
+    {
+      "policyResourceCategory": "RELATIONSHIP",
+      "policyType": "ACCESS",
+      "description": "Link/unlink any DataDomain, DataProduct OR DataContract to this Domain",
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity-type:DataDomain",
+        "end-one-entity-type:DataProduct",
+        "end-one-entity-classification:*",
+        "end-one-entity:*",
+
+        "end-two-entity-type:DataDomain",
+        "end-two-entity-type:DataProduct",
+        "end-two-entity-classification:*",
+        "end-two-entity:{entity}",
+        "end-two-entity:{entity}/*"
+      ],
+      "actions": ["add-relationship", "update-relationship", "remove-relationship"]
+    }
+  ],
+
+
+  "persona-domain-sub-domain-read": [
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "resources": [
+        "entity:{entity}/*domain/*",
+        "entity-type:DataDomain",
+        "entity-classification:*"
+      ],
+      "actions": ["entity-read"]
+    }
+  ],
+  "persona-domain-sub-domain-create": [
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "resources": [
+        "entity:{entity}/*domain/*",
+        "entity-type:DataDomain",
+        "entity-classification:*"
+      ],
+      "actions": ["entity-create"]
+    },
+    {
+      "policyResourceCategory": "RELATIONSHIP",
+      "policyType": "ACCESS",
+      "description": "Link/unlink this DataProduct to any parent Domain",
+      "resources": [
+        "relationship-type:*",
+        
+        "end-one-entity:{entity}/*",
+        "end-one-entity:{entity}",
+        "end-one-entity-type:DataDomain",
+        "end-one-entity-classification:*",
+        
+        "end-two-entity:{entity}/*",
+        "end-one-entity:{entity}",
+        "end-two-entity-type:DataDomain",
+        "end-two-entity-classification:*"
+      ],
+      "actions": ["add-relationship", "update-relationship", "remove-relationship"]
+    }
+  ],
+  "persona-domain-sub-domain-update": [
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "resources": [
+        "entity:{entity}/*domain/*",
+        "entity-type:DataDomain",
+        "entity-classification:*"
+      ],
+      "actions": ["entity-update"]
+    }
+  ],
+  "persona-domain-sub-domain-delete": [
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "resources": [
+        "entity:{entity}/*domain/*",
+        "entity-type:DataDomain",
+        "entity-classification:*"
+      ],
+      "actions": ["entity-delete"]
+    }
+  ],
+
+  "persona-domain-product-read": [
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "resources": [
+        "entity:{entity}/*product/*",
+        "entity-type:DataProduct",
+        "entity-classification:*"
+      ],
+      "actions": ["entity-read"]
+    }
+  ],
+  "persona-domain-product-create": [
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "resources": [
+        "entity:{entity}/*product/*",
+        "entity-type:DataProduct",
+        "entity-classification:*"
+      ],
+      "actions": ["entity-create"]
+    },
+    {
+      "policyResourceCategory": "RELATIONSHIP",
+      "policyType": "ACCESS",
+      "description": "Link/unlink this DataProduct to any parent Domain",
+      "resources": [
+        "relationship-type:*",
+        
+        "end-one-entity:{entity}/*",
+        "end-one-entity:{entity}",
+        "end-one-entity-type:DataDomain",
+        "end-one-entity-classification:*",
+        
+        "end-two-entity:{entity}/*",
+        "end-two-entity-type:DataProduct",
+        "end-two-entity-classification:*"
+      ],
+      "actions": ["add-relationship", "update-relationship", "remove-relationship"]
+    },
+    {
+      "policyResourceCategory": "RELATIONSHIP",
+      "policyType": "ACCESS",
+      "description": "Link/unlink any Asset to this DataProduct",
+
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity-type:Asset",
+        "end-one-entity-classification:*",
+        "end-one-entity:*",
+
+        "end-two-entity-type:DataProduct",
+        "end-two-entity-classification:*",
+        "end-two-entity:{entity}/*product/*"
+      ],
+
+      "actions": ["add-relationship", "update-relationship", "remove-relationship"]
+    }
+  ],
+  "persona-domain-product-update": [
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "resources": [
+        "entity:{entity}/*product/*",
+        "entity-type:DataProduct",
+        "entity-classification:*"
+      ],
+      "actions": ["entity-update"]
+    },
+    {
+      "policyResourceCategory": "RELATIONSHIP",
+      "policyType": "ACCESS",
+      "description": "Link/unlink any Asset to this DataProduct",
+
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity-type:Asset",
+        "end-one-entity-classification:*",
+        "end-one-entity:*",
+
+        "end-two-entity-type:DataProduct",
+        "end-two-entity-classification:*",
+        "end-two-entity:{entity}/*product/*"
+      ],
+
+      "actions": ["add-relationship", "update-relationship", "remove-relationship"]
+    }
+  ],
+  "persona-domain-product-delete": [
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "resources": [
+        "entity:{entity}/*product/*",
+        "entity-type:DataProduct",
+        "entity-classification:*"
+      ],
+      "actions": ["entity-delete"]
+    }
+  ],
+
+
+
   "select": [
     {
       "policyType": "ACCESS",
