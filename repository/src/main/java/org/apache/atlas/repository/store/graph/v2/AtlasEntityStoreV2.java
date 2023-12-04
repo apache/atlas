@@ -1917,7 +1917,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 }
                 entity.setDeleteHandler(handler);
                 entity.setStatus(Status.DELETED);
-                // PLT-373 : set current user name
                 entity.setUpdatedBy(RequestContext.get().getUser());
                 response.addEntity(DELETE, entity);
             }
