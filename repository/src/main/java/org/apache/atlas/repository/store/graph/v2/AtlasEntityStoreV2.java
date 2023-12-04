@@ -585,6 +585,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             AtlasAuthorizationUtils.verifyDeleteEntityAccess(typeRegistry, entityHeader, "delete entity: guid=" + guid);
 
             deletionCandidates.add(vertex);
+
         } else {
             if (LOG.isDebugEnabled()) {
                 // Entity does not exist - treat as non-error, since the caller
@@ -1917,6 +1918,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 }
                 entity.setDeleteHandler(handler);
                 entity.setStatus(Status.DELETED);
+                // PLT-373 : set current user name
+                entity.setUpdatedBy(RequestContext.get().getUser());
                 response.addEntity(DELETE, entity);
             }
 
