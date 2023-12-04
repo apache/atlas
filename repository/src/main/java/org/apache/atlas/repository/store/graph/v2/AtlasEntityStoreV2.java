@@ -585,7 +585,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             AtlasAuthorizationUtils.verifyDeleteEntityAccess(typeRegistry, entityHeader, "delete entity: guid=" + guid);
 
             deletionCandidates.add(vertex);
-
         } else {
             if (LOG.isDebugEnabled()) {
                 // Entity does not exist - treat as non-error, since the caller
