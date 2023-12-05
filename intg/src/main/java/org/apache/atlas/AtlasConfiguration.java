@@ -108,7 +108,8 @@ public enum AtlasConfiguration {
 
     PERSONA_POLICY_ASSET_MAX_LIMIT("atlas.persona.policy.asset.maxlimit", 1000),
     ENABLE_KEYCLOAK_TOKEN_INTROSPECTION("atlas.canary.keycloak.token-introspection", false),
-    KEYCLOAK_ADMIN_API_RESOURCE_PAGINATION_SIZE("atlas.keycloak.admin.resource-pagination-size", 500);
+    KEYCLOAK_ADMIN_API_RESOURCE_PAGINATION_SIZE("atlas.keycloak.admin.resource-pagination-size", 500),
+    HERACLES_API_SERVER_URL("atlas.heracles.api.server.url", "http://heracles-service.heracles.svc.cluster.local"),;
 
 
     private static final Configuration APPLICATION_PROPERTIES;

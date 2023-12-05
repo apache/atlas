@@ -1,13 +1,15 @@
-package org.apache.atlas.keycloak.client;
+package org.apache.atlas.auth.client.auth;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.Timer;
+import org.apache.atlas.auth.client.config.AuthConfig;
+import org.apache.atlas.auth.client.heracles.RetrofitHeraclesClient;
+import org.apache.atlas.auth.client.keycloak.RetrofitKeycloakClient;
 import okhttp3.*;
 import okhttp3.logging.HttpLoggingInterceptor;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.keycloak.client.config.KeycloakConfig;
-import org.apache.atlas.keycloak.client.service.AtlasKeycloakAuthService;
 import org.apache.atlas.service.metrics.MetricUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,9 +28,9 @@ import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
 import static org.apache.atlas.AtlasErrorCode.RESOURCE_NOT_FOUND;
 
-abstract class AbstractKeycloakClient {
+public class AbstractAuthClient {
 
-    private final static Logger LOG = LoggerFactory.getLogger(AbstractKeycloakClient.class);
+    private final static Logger LOG = LoggerFactory.getLogger(AbstractAuthClient.class);
     private static final Map<Integer, AtlasErrorCode> ERROR_CODE_MAP = new HashMap<>();
 
     private static final int DEFAULT_KEYCLOAK_RETRY = 3;
@@ -38,10 +40,11 @@ abstract class AbstractKeycloakClient {
     private static final String INTEGRATION = "integration";
     private static final String KEYCLOAK = "keycloak";
 
-    protected final KeycloakConfig keycloakConfig;
-    protected final RetrofitKeycloakClient retrofit;
+    protected final AuthConfig authConfig;
+    protected final RetrofitKeycloakClient retrofitKeycloakClient;
+    protected final RetrofitHeraclesClient retrofitHeraclesClient;
 
-    private final AtlasKeycloakAuthService authService;
+    private final KeycloakAuthenticationService authService;
     private MetricUtils metricUtils = null;
 
     static {
@@ -49,8 +52,8 @@ abstract class AbstractKeycloakClient {
         ERROR_CODE_MAP.put(HTTP_BAD_REQUEST, BAD_REQUEST);
     }
 
-    public AbstractKeycloakClient(KeycloakConfig keycloakConfig) {
-        this.keycloakConfig = keycloakConfig;
+    public AbstractAuthClient(AuthConfig authConfig) {
+        this.authConfig = authConfig;
         this.metricUtils = new MetricUtils();
         HttpLoggingInterceptor httpInterceptor = new HttpLoggingInterceptor();
         httpInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
@@ -64,11 +67,15 @@ abstract class AbstractKeycloakClient {
                 .writeTimeout(TIMEOUT_IN_SEC, TimeUnit.SECONDS)
                 .readTimeout(TIMEOUT_IN_SEC, TimeUnit.SECONDS)
                 .build();
-        this.retrofit = new Retrofit.Builder().client(okHttpClient)
-                .baseUrl(this.keycloakConfig.getAuthServerUrl())
+        this.retrofitKeycloakClient = new Retrofit.Builder().client(okHttpClient)
+                .baseUrl(this.authConfig.getAuthServerUrl())
                 .addConverterFactory(JacksonConverterFactory.create(new ObjectMapper())).build()
                 .create(RetrofitKeycloakClient.class);
-        authService = new AtlasKeycloakAuthService(keycloakConfig);
+        this.retrofitHeraclesClient = new Retrofit.Builder().client(okHttpClient)
+                .baseUrl(this.authConfig.getHeraclesApiServerUrl())
+                .addConverterFactory(JacksonConverterFactory.create(new ObjectMapper().disable(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES))).build()
+                .create(RetrofitHeraclesClient.class);
+        authService = new KeycloakAuthenticationService(authConfig);
     }
 
     /**
@@ -97,7 +104,6 @@ abstract class AbstractKeycloakClient {
             return chain.proceed(request);
         }
     };
-
     /**
      * Called only during auth failures.
      */
@@ -110,8 +116,8 @@ abstract class AbstractKeycloakClient {
             }
             LOG.info("Keycloak: Current keycloak token status, Expired: {}", authService.isTokenExpired());
             return response.request().newBuilder()
-                        .addHeader(AUTHORIZATION, BEARER + authService.getAuthToken())
-                        .build();
+                    .addHeader(AUTHORIZATION, BEARER + authService.getAuthToken())
+                    .build();
         }
 
         private int responseCount(Response response) {
@@ -139,8 +145,9 @@ abstract class AbstractKeycloakClient {
             throw new AtlasBaseException(ERROR_CODE_MAP.getOrDefault(response.code(), BAD_REQUEST), errMsg);
         } catch (Exception e) {
             LOG.error("Keycloak: request failed, request: {} {}, Exception: {}", req.request().method(), req.request().url(), e);
-            throw new AtlasBaseException(BAD_REQUEST, "Keycloak request failed");
+            throw new AtlasBaseException(BAD_REQUEST, "Auth request failed");
         }
     }
+
 
 }

@@ -1,4 +1,4 @@
-package org.apache.atlas.keycloak.client;
+package org.apache.atlas.auth.client.keycloak;
 
 import okhttp3.RequestBody;
 import org.keycloak.representations.AccessTokenResponse;
