@@ -12,7 +12,7 @@ public class HeraclesUsersRepresentation {
     protected int filterRecord;
     protected List<HeraclesUserRepresentation> records;
     public static final String USER_PROJECTIONS = "emailVerified,enabled,id,status,username";
-    public static final String USER_SORT = "email";
+    public static final String USER_SORT = "username";
 
     public HeraclesUsersRepresentation() {
     }

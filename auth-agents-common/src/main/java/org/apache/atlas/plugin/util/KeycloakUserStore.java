@@ -278,7 +278,7 @@ public class KeycloakUserStore {
 
         Map<String, Set<String>> userGroupMapping = new HashMap<>();
         List<UserRepresentation> kUsers = getHeraclesClient().getAllUsers();
-        LOG.info("Found {} keycloak users", kUsers.size());
+        LOG.info("Found {} users", kUsers.size());
         List<Callable<Object>> callables = new ArrayList<>();
         kUsers.forEach(x -> callables.add(new UserGroupsFetcher(x, userGroupMapping)));
 

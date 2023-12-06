@@ -21,7 +21,6 @@ public final class KeycloakRestClient extends AbstractAuthClient {
     private static final String CLIENT_ID = "client_id";
     private static final String CLIENT_SECRET = "client_secret";
     public KeycloakRestClient(final AuthConfig authConfig) {
-
         super(authConfig);
     }
 

@@ -23,7 +23,7 @@ public class AtlasHeraclesClient {
 
     public static AtlasHeraclesClient getHeraclesClient() {
         if(Objects.isNull(HERACLES_CLIENT)) {
-            LOG.info("Initializing Keycloak client..");
+            LOG.info("Initializing Heracles client..");
             try{
                 init(AuthConfig.getConfig());
             } catch (Exception e) {
@@ -34,9 +34,11 @@ public class AtlasHeraclesClient {
     }
 
     private static void init(AuthConfig authConfig) {
-        if (HERACLES == null) {
-            HERACLES = new HeraclesRestClient(authConfig);
-            HERACLES_CLIENT = new AtlasHeraclesClient();
+        synchronized (AtlasHeraclesClient.class) {
+            if (HERACLES == null) {
+                HERACLES = new HeraclesRestClient(authConfig);
+                HERACLES_CLIENT = new AtlasHeraclesClient();
+            }
         }
     }
 

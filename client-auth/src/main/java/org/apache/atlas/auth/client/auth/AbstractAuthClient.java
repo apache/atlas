@@ -33,12 +33,12 @@ public class AbstractAuthClient {
     private final static Logger LOG = LoggerFactory.getLogger(AbstractAuthClient.class);
     private static final Map<Integer, AtlasErrorCode> ERROR_CODE_MAP = new HashMap<>();
 
-    private static final int DEFAULT_KEYCLOAK_RETRY = 3;
+    private static final int DEFAULT_RETRY = 3;
     private static final String AUTHORIZATION = "Authorization";
     private static final String BEARER = "Bearer ";
     private static final int TIMEOUT_IN_SEC = 60;
     private static final String INTEGRATION = "integration";
-    private static final String KEYCLOAK = "keycloak";
+    private static final String AUTH = "auth";
 
     protected final AuthConfig authConfig;
     protected final RetrofitKeycloakClient retrofitKeycloakClient;
@@ -87,7 +87,7 @@ public class AbstractAuthClient {
         Timer.Sample timerSample = this.metricUtils.start(rawPath);
         okhttp3.Response response = chain.proceed(request);
         this.metricUtils.recordHttpTimer(timerSample, request.method(), rawPath, response.code(),
-                INTEGRATION, KEYCLOAK);
+                INTEGRATION, AUTH);
         return response;
     };
 
@@ -110,11 +110,11 @@ public class AbstractAuthClient {
     Authenticator authInterceptor = new Authenticator() {
         @Override
         public Request authenticate(Route route, @NonNull Response response) {
-            if (responseCount(response) > DEFAULT_KEYCLOAK_RETRY) {
-                LOG.warn("Keycloak: Falling back, retried {} times", DEFAULT_KEYCLOAK_RETRY);
+            if (responseCount(response) > DEFAULT_RETRY) {
+                LOG.warn("Auth Client: Falling back, retried {} times", DEFAULT_RETRY);
                 return null;
             }
-            LOG.info("Keycloak: Current keycloak token status, Expired: {}", authService.isTokenExpired());
+            LOG.info("Auth Client: Current keycloak token status, Expired: {}", authService.isTokenExpired());
             return response.request().newBuilder()
                     .addHeader(AUTHORIZATION, BEARER + authService.getAuthToken())
                     .build();
@@ -140,11 +140,11 @@ public class AbstractAuthClient {
                 return response;
             }
             String errMsg = response.errorBody().string();
-            LOG.error("Keycloak: Client request processing failed code {} message:{}, request: {} {}",
+            LOG.error("Auth Client: Client request processing failed code {} message:{}, request: {} {}",
                     response.code(), errMsg, req.request().method(), req.request().url());
             throw new AtlasBaseException(ERROR_CODE_MAP.getOrDefault(response.code(), BAD_REQUEST), errMsg);
         } catch (Exception e) {
-            LOG.error("Keycloak: request failed, request: {} {}, Exception: {}", req.request().method(), req.request().url(), e);
+            LOG.error("Auth Client: request failed, request: {} {}, Exception: {}", req.request().method(), req.request().url(), e);
             throw new AtlasBaseException(BAD_REQUEST, "Auth request failed");
         }
     }

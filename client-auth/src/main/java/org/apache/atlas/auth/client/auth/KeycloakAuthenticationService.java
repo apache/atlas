@@ -59,7 +59,7 @@ public final class KeycloakAuthenticationService {
     Interceptor responseLoggingInterceptor = chain -> {
         Request request = chain.request();
         okhttp3.Response response = chain.proceed(request);
-        LOG.info("Keycloak: Auth Request for url {} Status: {}", request.url(), response.code());
+        LOG.info("Auth Client: Auth Request for url {} Status: {}", request.url(), response.code());
         return response;
     };
 
@@ -74,12 +74,12 @@ public final class KeycloakAuthenticationService {
                     if (resp.isSuccessful()) {
                         currentAccessToken = resp.body();
                         expirationTime = currentTime() + currentAccessToken.getExpiresIn() - EXPIRY_OFFSET_SEC;
-                        LOG.info("Keycloak: Auth token fetched with expiry:{} sec", expirationTime);
+                        LOG.info("Auth Client: Auth token fetched with expiry:{} sec", expirationTime);
                     } else {
                         throw new AtlasBaseException(BAD_REQUEST, resp.errorBody().string());
                     }
                 } catch (Exception e) {
-                    LOG.error("Keycloak: Error while fetching access token for keycloak client.", e);
+                    LOG.error("Auth Client: Error while fetching access token for keycloak client.", e);
                     throw new RuntimeException(e);
                 }
             }
