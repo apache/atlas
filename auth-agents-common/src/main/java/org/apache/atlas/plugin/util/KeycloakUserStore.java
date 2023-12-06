@@ -387,7 +387,7 @@ public class KeycloakUserStore {
                 //get all groups for Roles
                 Thread groupsFetcher = new Thread(() -> {
                     int start = 0;
-                    int size = AtlasConfiguration.KEYCLOAK_ADMIN_API_RESOURCE_PAGINATION_SIZE.getInt();
+                    int size = 500;
                     boolean found = true;
                     Set<GroupRepresentation> ret = new HashSet<>();
 
