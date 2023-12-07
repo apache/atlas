@@ -1,11 +1,11 @@
-package org.apache.atlas.keycloak.client.service;
+package org.apache.atlas.auth.client.auth;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.*;
 import okhttp3.logging.HttpLoggingInterceptor;
+import org.apache.atlas.auth.client.config.AuthConfig;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.keycloak.client.RetrofitKeycloakClient;
-import org.apache.atlas.keycloak.client.config.KeycloakConfig;
+import org.apache.atlas.auth.client.keycloak.RetrofitKeycloakClient;
 import org.jetbrains.annotations.NotNull;
 import org.keycloak.representations.AccessTokenResponse;
 import org.slf4j.Logger;
@@ -19,9 +19,9 @@ import java.util.concurrent.TimeUnit;
 
 import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
 
-public final class AtlasKeycloakAuthService {
+public final class KeycloakAuthenticationService {
 
-    public final static Logger LOG = LoggerFactory.getLogger(AtlasKeycloakAuthService.class);
+    public final static Logger LOG = LoggerFactory.getLogger(KeycloakAuthenticationService.class);
 
     private final static String GRANT_TYPE = "grant_type";
     private static final String CLIENT_ID = "client_id";
@@ -30,14 +30,14 @@ public final class AtlasKeycloakAuthService {
     private static final int TIMEOUT_IN_SECS = 60;
 
     private final RetrofitKeycloakClient retrofit;
-    private final KeycloakConfig keycloakConfig;
+    private final AuthConfig authConfig;
     private AccessTokenResponse currentAccessToken;
     private long expirationTime = -1;
 
-    public AtlasKeycloakAuthService(KeycloakConfig keycloakConfig) {
-        this.keycloakConfig = keycloakConfig;
+    public KeycloakAuthenticationService(AuthConfig authConfig) {
+        this.authConfig = authConfig;
         this.retrofit = new Retrofit.Builder().client(getOkHttpClient())
-                .baseUrl(this.keycloakConfig.getAuthServerUrl())
+                .baseUrl(this.authConfig.getAuthServerUrl())
                 .addConverterFactory(JacksonConverterFactory.create(new ObjectMapper())).build()
                 .create(RetrofitKeycloakClient.class);
     }
@@ -59,7 +59,7 @@ public final class AtlasKeycloakAuthService {
     Interceptor responseLoggingInterceptor = chain -> {
         Request request = chain.request();
         okhttp3.Response response = chain.proceed(request);
-        LOG.info("Keycloak: Auth Request for url {} Status: {}", request.url(), response.code());
+        LOG.info("Auth Client: Auth Request for url {} Status: {}", request.url(), response.code());
         return response;
     };
 
@@ -70,16 +70,16 @@ public final class AtlasKeycloakAuthService {
         synchronized (this) {
             if (isTokenExpired()) {
                 try {
-                    retrofit2.Response<AccessTokenResponse> resp = this.retrofit.grantToken(this.keycloakConfig.getRealmId(), getTokenRequest()).execute();
+                    retrofit2.Response<AccessTokenResponse> resp = this.retrofit.grantToken(this.authConfig.getRealmId(), getTokenRequest()).execute();
                     if (resp.isSuccessful()) {
                         currentAccessToken = resp.body();
                         expirationTime = currentTime() + currentAccessToken.getExpiresIn() - EXPIRY_OFFSET_SEC;
-                        LOG.info("Keycloak: Auth token fetched with expiry:{} sec", expirationTime);
+                        LOG.info("Auth Client: Auth token fetched with expiry:{} sec", expirationTime);
                     } else {
                         throw new AtlasBaseException(BAD_REQUEST, resp.errorBody().string());
                     }
                 } catch (Exception e) {
-                    LOG.error("Keycloak: Error while fetching access token for keycloak client.", e);
+                    LOG.error("Auth Client: Error while fetching access token for keycloak client.", e);
                     throw new RuntimeException(e);
                 }
             }
@@ -97,7 +97,7 @@ public final class AtlasKeycloakAuthService {
     }
 
     private RequestBody getTokenRequest() {
-        return new FormBody.Builder().addEncoded(CLIENT_ID, this.keycloakConfig.getClientId()).addEncoded(CLIENT_SECRET, this.keycloakConfig.getClientSecret()).addEncoded(GRANT_TYPE, this.keycloakConfig.getGrantType()).build();
+        return new FormBody.Builder().addEncoded(CLIENT_ID, this.authConfig.getClientId()).addEncoded(CLIENT_SECRET, this.authConfig.getClientSecret()).addEncoded(GRANT_TYPE, this.authConfig.getGrantType()).build();
     }
 
     private long currentTime() {

@@ -33,7 +33,7 @@ import javax.ws.rs.core.MediaType;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.apache.atlas.keycloak.client.AtlasKeycloakClient.getKeycloakClient;
+import static org.apache.atlas.auth.client.keycloak.AtlasKeycloakClient.getKeycloakClient;
 import static org.apache.atlas.repository.Constants.*;
 
 @Path("migration")
