@@ -605,11 +605,10 @@ public class EntityLineageService implements AtlasLineageService {
 
         // Handle horizontal pagination
         if (depth == 1 || entitiesTraversed.get() == getLineageMaxNodeAllowedCount()-1) { // is the vertex a leaf?
-            if (isInput && ! isOutVertexVisited) {
-                outLineageInfo.setHasUpstream(outVertex.getEdges(IN, PROCESS_OUTPUTS_EDGE).iterator().hasNext());
-            } else if (! isInput && ! isInVertexVisited) {
-                inLineageInfo.setHasDownstream(inVertex.getEdges(IN, PROCESS_INPUTS_EDGE).iterator().hasNext());
-            }
+            if (isInput && ! isOutVertexVisited)
+                setHasUpstream(atlasLineageOnDemandContext, outVertex, outLineageInfo);
+            else if (! isInput && ! isInVertexVisited)
+                setHasDownstream(atlasLineageOnDemandContext, outVertex, inLineageInfo);
         }
 
         if (!hasRelationsLimitReached) {
@@ -619,6 +618,33 @@ public class EntityLineageService implements AtlasLineageService {
         RequestContext.get().endMetricRecord(metricRecorder);
 
         return hasRelationsLimitReached;
+    }
+
+    private void setHasDownstream(AtlasLineageOnDemandContext atlasLineageOnDemandContext, AtlasVertex outVertex, LineageInfoOnDemand inLineageInfo) {
+        List<AtlasEdge> filteredEdges = new ArrayList<>();
+        Iterable<AtlasEdge> edges = outVertex.getEdges(IN, PROCESS_INPUTS_EDGE);
+        for (AtlasEdge edge : edges) {
+            if (edgeMatchesEvaluation(edge, atlasLineageOnDemandContext)) {
+                filteredEdges.add(edge);
+                break;
+            }
+        }
+        if (!filteredEdges.isEmpty())
+            inLineageInfo.setHasDownstream(true);
+    }
+
+    private void setHasUpstream(AtlasLineageOnDemandContext atlasLineageOnDemandContext, AtlasVertex outVertex, LineageInfoOnDemand outLineageInfo) {
+        List<AtlasEdge> filteredEdges = new ArrayList<>();
+        Iterable<AtlasEdge> edges = outVertex.getEdges(IN, PROCESS_OUTPUTS_EDGE);
+        for (AtlasEdge edge : edges) {
+            if (edgeMatchesEvaluation(edge, atlasLineageOnDemandContext)) {
+                filteredEdges.add(edge);
+                break;
+            }
+        }
+
+        if (!filteredEdges.isEmpty())
+            outLineageInfo.setHasUpstream(true);
     }
 
     private boolean isEntityTraversalLimitReached(AtomicInteger entitiesTraversed) {
