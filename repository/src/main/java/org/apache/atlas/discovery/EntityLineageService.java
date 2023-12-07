@@ -56,6 +56,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -621,30 +622,28 @@ public class EntityLineageService implements AtlasLineageService {
     }
 
     private void setHasDownstream(AtlasLineageOnDemandContext atlasLineageOnDemandContext, AtlasVertex outVertex, LineageInfoOnDemand inLineageInfo) {
-        List<AtlasEdge> filteredEdges = new ArrayList<>();
-        Iterable<AtlasEdge> edges = outVertex.getEdges(IN, PROCESS_INPUTS_EDGE);
-        for (AtlasEdge edge : edges) {
-            if (edgeMatchesEvaluation(edge, atlasLineageOnDemandContext)) {
-                filteredEdges.add(edge);
-                break;
-            }
-        }
+        List<AtlasEdge> filteredEdges = getFilteredAtlasEdges(outVertex, PROCESS_INPUTS_EDGE, atlasLineageOnDemandContext);
         if (!filteredEdges.isEmpty())
             inLineageInfo.setHasDownstream(true);
     }
 
-    private void setHasUpstream(AtlasLineageOnDemandContext atlasLineageOnDemandContext, AtlasVertex outVertex, LineageInfoOnDemand outLineageInfo) {
+    private void setHasUpstream(AtlasLineageOnDemandContext atlasLineageOnDemandContext, AtlasVertex inVertex, LineageInfoOnDemand outLineageInfo) {
+        List<AtlasEdge> filteredEdges = getFilteredAtlasEdges(inVertex, PROCESS_OUTPUTS_EDGE, atlasLineageOnDemandContext);
+        if (!filteredEdges.isEmpty())
+            outLineageInfo.setHasUpstream(true);
+    }
+
+    @NotNull
+    private List<AtlasEdge> getFilteredAtlasEdges(AtlasVertex outVertex, String processEdgeLabel, AtlasLineageOnDemandContext atlasLineageOnDemandContext) {
         List<AtlasEdge> filteredEdges = new ArrayList<>();
-        Iterable<AtlasEdge> edges = outVertex.getEdges(IN, PROCESS_OUTPUTS_EDGE);
+        Iterable<AtlasEdge> edges = outVertex.getEdges(IN, processEdgeLabel);
         for (AtlasEdge edge : edges) {
             if (edgeMatchesEvaluation(edge, atlasLineageOnDemandContext)) {
                 filteredEdges.add(edge);
                 break;
             }
         }
-
-        if (!filteredEdges.isEmpty())
-            outLineageInfo.setHasUpstream(true);
+        return filteredEdges;
     }
 
     private boolean isEntityTraversalLimitReached(AtomicInteger entitiesTraversed) {
