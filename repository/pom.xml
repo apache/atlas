@@ -318,7 +318,7 @@
 
         <dependency>
             <groupId>org.apache.atlas</groupId>
-            <artifactId>client-auth</artifactId>
+            <artifactId>client-keycloak</artifactId>
             <version>3.0.0-SNAPSHOT</version>
         </dependency>
 
