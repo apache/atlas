@@ -120,6 +120,10 @@
                       <artifactId>*</artifactId>
                   </exclusion>
                   <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                  <exclusion>
                       <groupId>com.codahale.metrics</groupId>
                       <artifactId>metrics-core</artifactId>
                   </exclusion>
