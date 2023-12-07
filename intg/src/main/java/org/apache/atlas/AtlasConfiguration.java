@@ -107,8 +107,7 @@ public enum AtlasConfiguration {
     SEARCH_LOGGER_MAX_THREADS("atlas.enable.search.logger.max.threads", 20),
 
     PERSONA_POLICY_ASSET_MAX_LIMIT("atlas.persona.policy.asset.maxlimit", 1000),
-    ENABLE_KEYCLOAK_TOKEN_INTROSPECTION("atlas.canary.keycloak.token-introspection", false),
-    HERACLES_API_SERVER_URL("atlas.heracles.api.server.url", "http://heracles-service.heracles.svc.cluster.local"),;
+    ENABLE_KEYCLOAK_TOKEN_INTROSPECTION("atlas.canary.keycloak.token-introspection", false);
 
 
     private static final Configuration APPLICATION_PROPERTIES;

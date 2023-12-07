@@ -58,7 +58,7 @@ import java.util.stream.Collectors;
 
 import static org.apache.atlas.authorize.AtlasAuthorizerFactory.ATLAS_AUTHORIZER_IMPL;
 import static org.apache.atlas.authorize.AtlasAuthorizerFactory.CURRENT_AUTHORIZER_IMPL;
-import static org.apache.atlas.auth.client.keycloak.AtlasKeycloakClient.getKeycloakClient;
+import static org.apache.atlas.keycloak.client.AtlasKeycloakClient.getKeycloakClient;
 import static org.apache.atlas.repository.Constants.ATTR_ADMIN_GROUPS;
 import static org.apache.atlas.repository.Constants.ATTR_ADMIN_USERS;
 import static org.apache.atlas.repository.Constants.ATTR_VIEWER_GROUPS;

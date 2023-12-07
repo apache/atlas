@@ -27,7 +27,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>client-auth</artifactId>
+    <artifactId>client-keycloak</artifactId>
 
     <properties>
         <maven.compiler.source>8</maven.compiler.source>

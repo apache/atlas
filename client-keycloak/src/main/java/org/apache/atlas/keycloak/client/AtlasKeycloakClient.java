@@ -1,18 +1,28 @@
-package org.apache.atlas.auth.client.keycloak;
+package org.apache.atlas.keycloak.client;
 
-import org.apache.atlas.auth.client.config.AuthConfig;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.keycloak.client.config.KeycloakConfig;
+import org.apache.atlas.keycloak.client.config.KeycloakConfigBuilder;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
 import org.keycloak.representations.idm.*;
 import org.keycloak.representations.oidc.TokenMetadataRepresentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+
+import static org.apache.atlas.ApplicationProperties.ATLAS_CONFIGURATION_DIRECTORY_PROPERTY;
 
 /**
  * Keycloak client, deals with token creation refresh.
@@ -20,6 +30,14 @@ import java.util.Set;
 public final class AtlasKeycloakClient {
 
     public final static Logger LOG = LoggerFactory.getLogger(AtlasKeycloakClient.class);
+
+    private final static String KEYCLOAK_PROPERTIES = "keycloak.json";
+    private final static String DEFAULT_GRANT_TYPE = "client_credentials";
+    private final static String KEY_REALM_ID = "realm";
+    private final static String KEY_AUTH_SERVER_URL = "auth-server-url";
+    private final static String KEY_CLIENT_ID = "resource";
+    private final static String KEY_CREDENTIALS = "credentials";
+    private final static String KEY_SECRET = "secret";
 
     private static KeycloakRestClient KEYCLOAK;
     private static AtlasKeycloakClient KEYCLOAK_CLIENT;
@@ -165,7 +183,13 @@ public final class AtlasKeycloakClient {
         if (Objects.isNull(KEYCLOAK_CLIENT)) {
             LOG.info("Initializing Keycloak client..");
             try {
-                init(AuthConfig.getConfig());
+                init(getConfig());
+            } catch (IOException e) {
+                LOG.error("Failed to fetch Keycloak conf {}", e.getMessage());
+                throw new AtlasBaseException(AtlasErrorCode.KEYCLOAK_INIT_FAILED, e.getMessage());
+            } catch (JSONException e) {
+                LOG.error("Failed to parse Keycloak conf {}", e.getMessage());
+                throw new AtlasBaseException(AtlasErrorCode.KEYCLOAK_INIT_FAILED, e.getMessage());
             } catch (Exception e) {
                 LOG.error("Failed to connect to Keycloak {}", e.getMessage());
                 throw new AtlasBaseException(AtlasErrorCode.KEYCLOAK_INIT_FAILED, e.getMessage());
@@ -177,12 +201,38 @@ public final class AtlasKeycloakClient {
         return KEYCLOAK_CLIENT;
     }
 
-    private static void init(AuthConfig config) {
+    private static void init(KeycloakConfig config) {
         synchronized (AtlasKeycloakClient.class) {
             if (KEYCLOAK_CLIENT == null) {
                 KEYCLOAK = new KeycloakRestClient(config);
                 KEYCLOAK_CLIENT = new AtlasKeycloakClient();
             }
+        }
+    }
+
+    private static KeycloakConfig getConfig() throws Exception {
+        String confLocation = System.getProperty(ATLAS_CONFIGURATION_DIRECTORY_PROPERTY);
+        File confFile;
+        if (StringUtils.isNotEmpty(confLocation)) {
+            confFile = new File(confLocation, KEYCLOAK_PROPERTIES);
+
+            if (confFile.exists()) {
+                String keyConf = new String(Files.readAllBytes(confFile.toPath()), StandardCharsets.UTF_8);
+                JSONObject object = new JSONObject(keyConf);
+
+                String REALM_ID = object.getString(KEY_REALM_ID);
+                String AUTH_SERVER_URL = object.getString(KEY_AUTH_SERVER_URL) + "/";
+                String CLIENT_ID = object.getString(KEY_CLIENT_ID);
+                String GRANT_TYPE = DEFAULT_GRANT_TYPE;
+                String CLIENT_SECRET = object.getJSONObject(KEY_CREDENTIALS).getString(KEY_SECRET);
+
+                LOG.info("Keycloak conf: REALM_ID:{}, AUTH_SERVER_URL:{}", REALM_ID, AUTH_SERVER_URL);
+                return KeycloakConfigBuilder.builder().realId(REALM_ID).authServerUrl(AUTH_SERVER_URL).clientId(CLIENT_ID).grantType(GRANT_TYPE).clientSecret(CLIENT_SECRET).build();
+            } else {
+                throw new AtlasBaseException(AtlasErrorCode.KEYCLOAK_INIT_FAILED, "Keycloak configuration file not found in location " + confLocation);
+            }
+        } else {
+            throw new AtlasBaseException(AtlasErrorCode.KEYCLOAK_INIT_FAILED, "Configuration location not found " + confLocation);
         }
     }
 }

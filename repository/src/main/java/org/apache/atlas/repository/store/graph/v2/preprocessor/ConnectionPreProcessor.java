@@ -55,6 +55,7 @@ import java.util.stream.Collectors;
 
 import static org.apache.atlas.authorize.AtlasAuthorizerFactory.ATLAS_AUTHORIZER_IMPL;
 import static org.apache.atlas.authorize.AtlasAuthorizerFactory.CURRENT_AUTHORIZER_IMPL;
+import static org.apache.atlas.keycloak.client.AtlasKeycloakClient.getKeycloakClient;
 import static org.apache.atlas.repository.Constants.ATTR_ADMIN_GROUPS;
 import static org.apache.atlas.repository.Constants.ATTR_ADMIN_ROLES;
 import static org.apache.atlas.repository.Constants.ATTR_ADMIN_USERS;
@@ -62,7 +63,6 @@ import static org.apache.atlas.repository.Constants.CREATED_BY_KEY;
 import static org.apache.atlas.repository.Constants.POLICY_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
-import static org.apache.atlas.auth.client.keycloak.AtlasKeycloakClient.getKeycloakClient;
 
 public class ConnectionPreProcessor implements PreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(ConnectionPreProcessor.class);
