@@ -608,7 +608,7 @@ public class EntityLineageService implements AtlasLineageService {
             if (isInput && ! isOutVertexVisited)
                 setHasUpstream(atlasLineageOnDemandContext, outVertex, outLineageInfo);
             else if (! isInput && ! isInVertexVisited)
-                setHasDownstream(atlasLineageOnDemandContext, outVertex, inLineageInfo);
+                setHasDownstream(atlasLineageOnDemandContext, inVertex, inLineageInfo);
         }
 
         if (!hasRelationsLimitReached) {
