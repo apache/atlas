@@ -59,7 +59,7 @@ public final class AtlasKeycloakClient {
 
     public List<UserRepresentation> getAllUsers() throws AtlasBaseException {
         int start = 0;
-        int size = 500;
+        int size = 2000;
         boolean found = true;
 
         List<UserRepresentation> ret = new ArrayList<>(0);
@@ -104,7 +104,7 @@ public final class AtlasKeycloakClient {
 
     public List<RoleRepresentation> getAllRoles() throws AtlasBaseException {
         int start = 0;
-        int size = 500;
+        int size = 2000;
         boolean found = true;
 
         List<RoleRepresentation> ret = new ArrayList<>(0);
