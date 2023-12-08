@@ -81,6 +81,7 @@ public class KeycloakUserStore {
 
     public boolean isKeycloakSubjectsStoreUpdated(long cacheLastUpdatedTime) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getKeycloakSubjectsStoreUpdatedTime");
+        cacheLastUpdatedTime = -1;
         if (cacheLastUpdatedTime == -1) {
             return true;
         }
@@ -389,7 +390,7 @@ public class KeycloakUserStore {
                 //get all groups for Roles
                 Thread groupsFetcher = new Thread(() -> {
                     int start = 0;
-                    int size = AtlasConfiguration.KEYCLOAK_ADMIN_CLIENT_PAGINATION_SIZE.getInt();
+                    int size = 2000;
                     boolean found = true;
                     Set<GroupRepresentation> ret = new HashSet<>();
 
@@ -416,7 +417,7 @@ public class KeycloakUserStore {
                 //get all users for Roles
                 Thread usersFetcher = new Thread(() -> {
                     int start = 0;
-                    int size = AtlasConfiguration.KEYCLOAK_ADMIN_CLIENT_PAGINATION_SIZE.getInt();
+                    int size = 2000;
                     boolean found = true;
                     Set<UserRepresentation> ret = new HashSet<>();
 
