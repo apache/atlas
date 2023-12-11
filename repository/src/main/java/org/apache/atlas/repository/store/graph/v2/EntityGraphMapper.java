@@ -201,6 +201,7 @@ public class EntityGraphMapper {
     private final IAtlasEntityChangeNotifier entityChangeNotifier;
     private final AtlasInstanceConverter    instanceConverter;
     private final EntityGraphRetriever      entityRetriever;
+    private final EntityGraphRetriever      entityRetrieverNoRelation;
     private final IFullTextMapper           fullTextMapperV2;
     private final TaskManagement            taskManagement;
     private final TransactionInterceptHelper   transactionInterceptHelper;
@@ -219,6 +220,7 @@ public class EntityGraphMapper {
         this.entityChangeNotifier = entityChangeNotifier;
         this.instanceConverter    = instanceConverter;
         this.entityRetriever      = new EntityGraphRetriever(graph, typeRegistry);
+        this.entityRetrieverNoRelation     = new EntityGraphRetriever(graph, typeRegistry, true);
         this.fullTextMapperV2     = fullTextMapperV2;
         this.taskManagement       = taskManagement;
         this.transactionInterceptHelper = transactionInterceptHelper;
@@ -3297,7 +3299,7 @@ public class EntityGraphMapper {
             String      entityGuid = graphHelper.getGuid(vertex);
             AtlasEntity entity     = instanceConverter.getAndCacheEntity(entityGuid, ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES);
 
-            if (isActive(entity)) {
+            if (entity != null) {
                 vertex.setProperty(CLASSIFICATION_TEXT_KEY, fullTextMapperV2.getClassificationTextForEntity(entity));
                 entityChangeNotifier.onClassificationUpdatedToEntity(entity, updatedClassifications);
             }
@@ -3917,8 +3919,14 @@ public class EntityGraphMapper {
                 AtlasEntity entity = null;
                 for (int i = 1; i <= MAX_NUMBER_OF_RETRIES; i++) {
                     try {
-                        //entity = instanceConverter.getAndCacheEntity(graphHelper.getGuid(vertex), ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES);
-                        entity = entityRetriever.toAtlasEntity(vertex);
+                        AtlasPerfMetrics.MetricRecorder metricRecorder2 = RequestContext.get().startMetricRecord("updateClassificationText.getAndCacheEntity");
+                        entity = instanceConverter.getAndCacheEntity(graphHelper.getGuid(vertex), ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES);
+                        RequestContext.get().endMetricRecord(metricRecorder2);
+
+                        AtlasPerfMetrics.MetricRecorder metricRecorder3 = RequestContext.get().startMetricRecord("updateClassificationText.toAtlasEntity");
+                        entity = entityRetrieverNoRelation.toAtlasEntity(vertex);
+                        RequestContext.get().endMetricRecord(metricRecorder3);
+
                         break; //do not retry on success
                     } catch (AtlasBaseException ex) {
                         if (i == MAX_NUMBER_OF_RETRIES) {
@@ -3929,7 +3937,7 @@ public class EntityGraphMapper {
                     }
                 }
 
-                if (isActive(entity)) {
+                if (entity != null) {
                     String classificationTextForEntity = fullTextMapperV2.getClassificationTextForEntity(entity);
                     vertex.setProperty(CLASSIFICATION_TEXT_KEY, classificationTextForEntity);
                     propagatedEntities.add(entity);
@@ -3944,6 +3952,8 @@ public class EntityGraphMapper {
         RequestContext.get().endMetricRecord(metricRecorder);
         return propagatedEntities;
     }
+
+
 
     private void updateLabels(AtlasVertex vertex, Set<String> labels) {
         if (CollectionUtils.isNotEmpty(labels)) {
