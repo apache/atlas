@@ -774,7 +774,7 @@ public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditReposito
                 HColumnDescriptor columnFamily = new HColumnDescriptor(COLUMN_FAMILY);
                 columnFamily.setMaxVersions(1);
                 columnFamily.setDataBlockEncoding(DataBlockEncoding.FAST_DIFF);
-                columnFamily.setCompressionType(Compression.Algorithm.GZ);
+                columnFamily.setCompressionType(Compression.Algorithm.SNAPPY);
                 columnFamily.setBloomFilterType(BloomType.ROW);
                 tableDescriptor.addFamily(columnFamily);
                 admin.createTable(tableDescriptor);
