@@ -633,7 +633,6 @@ public class EntityLineageService implements AtlasLineageService {
             outLineageInfo.setHasUpstream(true);
     }
 
-    @NotNull
     private List<AtlasEdge> getFilteredAtlasEdges(AtlasVertex outVertex, String processEdgeLabel, AtlasLineageOnDemandContext atlasLineageOnDemandContext) {
         List<AtlasEdge> filteredEdges = new ArrayList<>();
         Iterable<AtlasEdge> edges = outVertex.getEdges(IN, processEdgeLabel);
