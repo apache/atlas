@@ -390,7 +390,7 @@ public class KeycloakUserStore {
                 //get all groups for Roles
                 Thread groupsFetcher = new Thread(() -> {
                     int start = 0;
-                    int size = 2000;
+                    int size = 500;
                     boolean found = true;
                     Set<GroupRepresentation> ret = new HashSet<>();
 
@@ -417,7 +417,7 @@ public class KeycloakUserStore {
                 //get all users for Roles
                 Thread usersFetcher = new Thread(() -> {
                     int start = 0;
-                    int size = 2000;
+                    int size = 500;
                     boolean found = true;
                     Set<UserRepresentation> ret = new HashSet<>();
 
