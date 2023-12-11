@@ -36,6 +36,7 @@ import org.apache.hadoop.hbase.client.Mutation;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Row;
 import org.apache.hadoop.hbase.client.TableDescriptor;
+import org.apache.hadoop.hbase.io.encoding.DataBlockEncoding;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.util.Pair;
 import org.apache.hadoop.hbase.util.VersionInfo;
@@ -114,7 +115,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             "An HBase Compression.Algorithm enum string which will be applied to newly created column families. " +
             "The compression algorithm must be installed and available on the HBase cluster.  JanusGraph cannot install " +
             "and configure new compression algorithms on the HBase cluster by itself.",
-            ConfigOption.Type.MASKABLE, "GZ");
+            ConfigOption.Type.MASKABLE, "SNAPPY");
 
     public static final ConfigOption<Boolean> SKIP_SCHEMA_CHECK =
             new ConfigOption<>(HBASE_NS, "skip-schema-check",
@@ -820,7 +821,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                 try {
                     ColumnFamilyDescriptor cdesc = ColumnFamilyDescriptorBuilder.of(columnFamily);
 
-                    setCFOptions(cdesc, ttlInSeconds);
+                    cdesc = setCFOptions(cdesc, ttlInSeconds);
 
                     adm.addColumn(tableName, cdesc);
 
@@ -850,6 +851,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         ColumnFamilyDescriptor ret = null;
 
         if (null != compression && !compression.equals(COMPRESSION_DEFAULT)) {
+            cdesc = ColumnFamilyDescriptorBuilder.newBuilder(cdesc).setDataBlockEncoding( DataBlockEncoding.FAST_DIFF).build();
             ret = compat.setCompression(cdesc, compression);
         }
 
