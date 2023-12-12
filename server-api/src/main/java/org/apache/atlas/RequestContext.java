@@ -97,6 +97,11 @@ public class RequestContext {
     private Set<String> deletedEdgesIdsForResetHasLineage = new HashSet<>(0);
     private String requestUri;
 
+    private boolean delayTagNotifications = false;
+    private Map<AtlasClassification, Collection<Object>> deletedClassificationAndVertices = new HashMap<>();
+    private Map<AtlasClassification, Collection<Object>> addedClassificationAndVertices = new HashMap<>();
+
+
     private RequestContext() {
     }
 
@@ -168,6 +173,10 @@ public class RequestContext {
         if (this.entityGuidInRequest != null) {
             this.entityGuidInRequest.clear();
         }
+    }
+
+    public void clearEntityCache() {
+        this.entityCache.clear();
     }
 
     public Set<String> getRelationAttrsForSearch() {
@@ -382,6 +391,38 @@ public class RequestContext {
 
             addedPropagations.put(guid, classifications);
         }
+    }
+
+    public boolean isDelayTagNotifications() {
+        return delayTagNotifications;
+    }
+
+    public void setDelayTagNotifications(boolean delayTagNotifications) {
+        this.delayTagNotifications = delayTagNotifications;
+    }
+
+    public Map<AtlasClassification, Collection<Object>> getDeletedClassificationAndVertices() {
+        return deletedClassificationAndVertices;
+    }
+
+    public void setDeletedClassificationAndVertices(Map<AtlasClassification, Collection<Object>> deletedClassificationAndVertices) {
+        this.deletedClassificationAndVertices = deletedClassificationAndVertices;
+    }
+
+    public void addDeletedClassificationAndVertices(AtlasClassification classification, Collection<Object> vertices) {
+        this.deletedClassificationAndVertices.put(classification, vertices);
+    }
+
+    public Map<AtlasClassification, Collection<Object>> getAddedClassificationAndVertices() {
+        return addedClassificationAndVertices;
+    }
+
+    public void setAddedClassificationAndVertices(Map<AtlasClassification, Collection<Object>> addedClassificationAndVertices) {
+        this.addedClassificationAndVertices = addedClassificationAndVertices;
+    }
+
+    public void addAddedClassificationAndVertices(AtlasClassification classification, Collection<Object> vertices) {
+        this.addedClassificationAndVertices.put(classification, vertices);
     }
 
     public void addToDeletedEdgesIds(String edgeId) {

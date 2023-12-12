@@ -2766,11 +2766,17 @@ public class EntityGraphMapper {
                 notificationVertices.addAll(entitiesToPropagateTo);
             }
 
+
             for (AtlasClassification classification : addedClassifications.keySet()) {
                 Set<AtlasVertex>  vertices           = addedClassifications.get(classification);
-                List<AtlasEntity> propagatedEntities = updateClassificationText(classification, vertices);
 
-                entityChangeNotifier.onClassificationsAddedToEntities(propagatedEntities, Collections.singletonList(classification), false);
+                if (RequestContext.get().isDelayTagNotifications()) {
+                    RequestContext.get().addAddedClassificationAndVertices(classification, new ArrayList<>(vertices));
+                } else {
+                    List<AtlasEntity> propagatedEntities = updateClassificationText(classification, vertices);
+
+                    entityChangeNotifier.onClassificationsAddedToEntities(propagatedEntities, Collections.singletonList(classification), false);
+                }
             }
 
             RequestContext.get().endMetricRecord(metric);
@@ -3021,7 +3027,9 @@ public class EntityGraphMapper {
 
         updateModificationMetadata(entityVertex);
 
-        if (CollectionUtils.isNotEmpty(entityVertices)) {
+        if (RequestContext.get().isDelayTagNotifications()) {
+            RequestContext.get().addDeletedClassificationAndVertices(classification, new ArrayList<>(entityVertices));
+        } else if (CollectionUtils.isNotEmpty(entityVertices)) {
             List<AtlasEntity> propagatedEntities = updateClassificationText(classification, entityVertices);
 
             //Sending audit request for all entities at once
@@ -3910,7 +3918,7 @@ public class EntityGraphMapper {
         }
     }
 
-    private List<AtlasEntity> updateClassificationText(AtlasClassification classification, Collection<AtlasVertex> propagatedVertices) throws AtlasBaseException {
+    List<AtlasEntity> updateClassificationText(AtlasClassification classification, Collection<AtlasVertex> propagatedVertices) throws AtlasBaseException {
         List<AtlasEntity> propagatedEntities = new ArrayList<>();
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("updateClassificationText");
 
@@ -3919,10 +3927,7 @@ public class EntityGraphMapper {
                 AtlasEntity entity = null;
                 for (int i = 1; i <= MAX_NUMBER_OF_RETRIES; i++) {
                     try {
-                        AtlasPerfMetrics.MetricRecorder metricRecorder2 = RequestContext.get().startMetricRecord("updateClassificationText.getAndCacheEntity");
                         entity = instanceConverter.getAndCacheEntity(graphHelper.getGuid(vertex), ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES);
-                        RequestContext.get().endMetricRecord(metricRecorder2);
-
                         break; //do not retry on success
                     } catch (AtlasBaseException ex) {
                         if (i == MAX_NUMBER_OF_RETRIES) {
@@ -3937,10 +3942,6 @@ public class EntityGraphMapper {
                     String classificationTextForEntity = fullTextMapperV2.getClassificationTextForEntity(entity);
                     vertex.setProperty(CLASSIFICATION_TEXT_KEY, classificationTextForEntity);
                     propagatedEntities.add(entity);
-
-                    if (LOG.isDebugEnabled()) {
-                        LOG.debug("updateClassificationText: {}: {}", classification.getTypeName(), classificationTextForEntity);
-                    }
                 }
             }
         }
