@@ -3919,8 +3919,8 @@ public class EntityGraphMapper {
                 AtlasEntity entity = null;
                 for (int i = 1; i <= MAX_NUMBER_OF_RETRIES; i++) {
                     try {
-                        AtlasPerfMetrics.MetricRecorder metricRecorder2 = RequestContext.get().startMetricRecord("updateClassificationText.toAtlasEntity");
-                        entity = entityRetrieverNoRelation.toAtlasEntity(vertex);
+                        AtlasPerfMetrics.MetricRecorder metricRecorder2 = RequestContext.get().startMetricRecord("updateClassificationText.getAndCacheEntity");
+                        entity = instanceConverter.getAndCacheEntity(graphHelper.getGuid(vertex), ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES);
                         RequestContext.get().endMetricRecord(metricRecorder2);
 
                         break; //do not retry on success
