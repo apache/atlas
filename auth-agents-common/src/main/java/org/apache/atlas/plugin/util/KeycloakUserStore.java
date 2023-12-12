@@ -20,6 +20,7 @@
 package org.apache.atlas.plugin.util;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.plugin.model.RangerRole;
@@ -388,7 +389,7 @@ public class KeycloakUserStore {
                 //get all groups for Roles
                 Thread groupsFetcher = new Thread(() -> {
                     int start = 0;
-                    int size = 500;
+                    int size = AtlasConfiguration.KEYCLOAK_ADMIN_CLIENT_PAGINATION_SIZE.getInt();
                     boolean found = true;
                     Set<GroupRepresentation> ret = new HashSet<>();
 
@@ -415,7 +416,7 @@ public class KeycloakUserStore {
                 //get all users for Roles
                 Thread usersFetcher = new Thread(() -> {
                     int start = 0;
-                    int size = 500;
+                    int size = AtlasConfiguration.KEYCLOAK_ADMIN_CLIENT_PAGINATION_SIZE.getInt();
                     boolean found = true;
                     Set<UserRepresentation> ret = new HashSet<>();
 
