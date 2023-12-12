@@ -160,6 +160,9 @@ public class RequestContext {
         this.relationshipMutationMap.clear();
         this.currentTask = null;
         this.skipAuthorizationCheck = false;
+        this.delayTagNotifications = false;
+        deletedClassificationAndVertices.clear();
+        addedClassificationAndVertices.clear();
 
         if (metrics != null && !metrics.isEmpty()) {
             METRICS.debug(metrics.toString());

@@ -201,7 +201,6 @@ public class EntityGraphMapper {
     private final IAtlasEntityChangeNotifier entityChangeNotifier;
     private final AtlasInstanceConverter    instanceConverter;
     private final EntityGraphRetriever      entityRetriever;
-    private final EntityGraphRetriever      entityRetrieverNoRelation;
     private final IFullTextMapper           fullTextMapperV2;
     private final TaskManagement            taskManagement;
     private final TransactionInterceptHelper   transactionInterceptHelper;
@@ -220,7 +219,6 @@ public class EntityGraphMapper {
         this.entityChangeNotifier = entityChangeNotifier;
         this.instanceConverter    = instanceConverter;
         this.entityRetriever      = new EntityGraphRetriever(graph, typeRegistry);
-        this.entityRetrieverNoRelation     = new EntityGraphRetriever(graph, typeRegistry, true);
         this.fullTextMapperV2     = fullTextMapperV2;
         this.taskManagement       = taskManagement;
         this.transactionInterceptHelper = transactionInterceptHelper;
