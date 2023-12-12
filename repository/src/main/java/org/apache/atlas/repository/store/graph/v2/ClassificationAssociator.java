@@ -155,6 +155,8 @@ public class ClassificationAssociator {
         }
 
         public void setClassifications(Map<String, AtlasEntityHeader> map) throws AtlasBaseException {
+            RequestContext.get().setDelayTagNotifications(true);
+
             for (String guid  : map.keySet()) {
                 AtlasEntityHeader incomingEntityHeader = map.get(guid);
                 String typeName = incomingEntityHeader.getTypeName();
@@ -185,21 +187,6 @@ public class ClassificationAssociator {
                     throw e;
                 }
             }
-        }
-
-        private void commitChanges(String entityGuid, String typeName, Map<String, List<AtlasClassification>> operationListMap) throws AtlasBaseException {
-            if (MapUtils.isEmpty(operationListMap)) {
-                return;
-            }
-
-            RequestContext.get().setDelayTagNotifications(true);
-
-            deleteClassifications(entityGuid, typeName, operationListMap.get(PROCESS_DELETE));
-            updateClassifications(entityGuid, typeName, operationListMap.get(PROCESS_UPDATE));
-            addClassifications(entityGuid, typeName, operationListMap.get(PROCESS_ADD));
-
-            RequestContext.get().setDelayTagNotifications(false);
-
             //TODO: send Notifications & update __classificationText
             RequestContext.get().clearEntityCache();
 
@@ -246,6 +233,17 @@ public class ClassificationAssociator {
             transactionInterceptHelper.intercept();
 
             RequestContext.get().endMetricRecord(recorder);
+            RequestContext.get().setDelayTagNotifications(false);
+        }
+
+        private void commitChanges(String entityGuid, String typeName, Map<String, List<AtlasClassification>> operationListMap) throws AtlasBaseException {
+            if (MapUtils.isEmpty(operationListMap)) {
+                return;
+            }
+
+            deleteClassifications(entityGuid, typeName, operationListMap.get(PROCESS_DELETE));
+            updateClassifications(entityGuid, typeName, operationListMap.get(PROCESS_UPDATE));
+            addClassifications(entityGuid, typeName, operationListMap.get(PROCESS_ADD));
 
             operationListMap.clear();
         }
