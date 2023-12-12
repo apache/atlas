@@ -187,7 +187,8 @@ public class ClassificationAssociator {
                     throw e;
                 }
             }
-            //TODO: send Notifications & update __classificationText
+
+            //send Notifications & update __classificationText
             RequestContext.get().clearEntityCache();
 
             AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("commitChanges.notify");
@@ -228,7 +229,6 @@ public class ClassificationAssociator {
                     entityChangeNotifier.onClassificationsAddedToEntities(propagatedEntities, Collections.singletonList(addedClassification), false);
                 }
             }
-
             entityGraphMapper.updateClassificationText(null, allVertices);
             transactionInterceptHelper.intercept();
 
@@ -310,14 +310,12 @@ public class ClassificationAssociator {
             if (CollectionUtils.isEmpty(list)) {
                 return;
             }
-
-            for (AtlasClassification c : list) {
-                try {
-                    entitiesStore.deleteClassification(entityGuid, c.getTypeName());
-                } catch (AtlasBaseException e) {
-                    LOG.error("Failed to remove classification association between {}, entity with guid {}", c.getTypeName(), c.getEntityGuid());
-                    throw e;
-                }
+            String classificationNames = getClassificationNames(list);
+            try {
+                entitiesStore.deleteClassifications(entityGuid, list);
+            } catch (AtlasBaseException e) {
+                LOG.error("Failed to remove classification association between {}, entity with guid {}", classificationNames, entityGuid);
+                throw e;
             }
         }
 
