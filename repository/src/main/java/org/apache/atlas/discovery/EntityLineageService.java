@@ -620,14 +620,14 @@ public class EntityLineageService implements AtlasLineageService {
         return hasRelationsLimitReached;
     }
 
-    private void setHasDownstream(AtlasLineageOnDemandContext atlasLineageOnDemandContext, AtlasVertex outVertex, LineageInfoOnDemand inLineageInfo) {
-        List<AtlasEdge> filteredEdges = getFilteredAtlasEdges(outVertex, PROCESS_INPUTS_EDGE, atlasLineageOnDemandContext);
+    private void setHasDownstream(AtlasLineageOnDemandContext atlasLineageOnDemandContext, AtlasVertex inVertex, LineageInfoOnDemand inLineageInfo) {
+        List<AtlasEdge> filteredEdges = getFilteredAtlasEdges(inVertex, PROCESS_INPUTS_EDGE, atlasLineageOnDemandContext);
         if (!filteredEdges.isEmpty())
             inLineageInfo.setHasDownstream(true);
     }
 
-    private void setHasUpstream(AtlasLineageOnDemandContext atlasLineageOnDemandContext, AtlasVertex inVertex, LineageInfoOnDemand outLineageInfo) {
-        List<AtlasEdge> filteredEdges = getFilteredAtlasEdges(inVertex, PROCESS_OUTPUTS_EDGE, atlasLineageOnDemandContext);
+    private void setHasUpstream(AtlasLineageOnDemandContext atlasLineageOnDemandContext, AtlasVertex outVertex, LineageInfoOnDemand outLineageInfo) {
+        List<AtlasEdge> filteredEdges = getFilteredAtlasEdges(outVertex, PROCESS_OUTPUTS_EDGE, atlasLineageOnDemandContext);
         if (!filteredEdges.isEmpty())
             outLineageInfo.setHasUpstream(true);
     }
