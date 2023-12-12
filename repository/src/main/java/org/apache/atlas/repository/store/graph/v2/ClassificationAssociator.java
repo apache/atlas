@@ -310,12 +310,14 @@ public class ClassificationAssociator {
             if (CollectionUtils.isEmpty(list)) {
                 return;
             }
-            String classificationNames = getClassificationNames(list);
-            try {
-                entitiesStore.deleteClassifications(entityGuid, list);
-            } catch (AtlasBaseException e) {
-                LOG.error("Failed to remove classification association between {}, entity with guid {}", classificationNames, entityGuid);
-                throw e;
+
+            for (AtlasClassification c : list) {
+                try {
+                    entitiesStore.deleteClassification(entityGuid, c.getTypeName());
+                } catch (AtlasBaseException e) {
+                    LOG.error("Failed to remove classification association between {}, entity with guid {}", c.getTypeName(), c.getEntityGuid());
+                    throw e;
+                }
             }
         }
 
