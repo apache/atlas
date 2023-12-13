@@ -39,8 +39,8 @@ public class LoginProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(LoginProcessor.class);
     public static final String ATLAS_AUTHENTICATION_PREFIX = "atlas.authentication.";
     public static final String AUTHENTICATION_KERBEROS_METHOD = ATLAS_AUTHENTICATION_PREFIX + "method.kerberos";
-    public static final String AUTHENTICATION_PRINCIPAL = ATLAS_AUTHENTICATION_PREFIX + "principal";
-    public static final String AUTHENTICATION_KEYTAB = ATLAS_AUTHENTICATION_PREFIX + "keytab";
+    public static final String AUTHENTICATION_PRINCIPAL = AUTHENTICATION_KERBEROS_METHOD + ".principal";
+    public static final String AUTHENTICATION_KEYTAB = AUTHENTICATION_KERBEROS_METHOD + ".keytab";
 
     /**
      * Perform a SIMPLE login based on established OS identity or a kerberos based login using the configured
