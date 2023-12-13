@@ -1,6 +1,8 @@
 package org.apache.atlas.auth.client.heracles;
 
 import org.apache.atlas.auth.client.config.AuthConfig;
+import org.apache.atlas.auth.client.heracles.models.HeraclesRoleViewRepresentation;
+import org.apache.atlas.auth.client.heracles.models.HeraclesUserViewRepresentation;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.auth.client.heracles.models.HeraclesUsersRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
@@ -67,5 +69,22 @@ public class AtlasHeraclesClient {
         String template = "{\"$and\":[{\"roles\":{\"$elemMatch\":[\"{0}\"]}}]}";
         String filter = template.replace("{0}", roleName);
         return HERACLES.getUsers(start, size, HeraclesUsersRepresentation.USER_PROJECTIONS, filter,HeraclesUsersRepresentation.USER_SORT ).body().toKeycloakUserRepresentations().stream().collect(Collectors.toSet());
+    }
+
+    public List<UserRepresentation> getUsersView(int start, int size) throws AtlasBaseException {
+        List<HeraclesUserViewRepresentation> views =  HERACLES.getUsersView(start, size, HeraclesUserViewRepresentation.sortBy).body();
+        List<UserRepresentation> userRepresentations = views.stream().map(x -> {
+            UserRepresentation userRepresentation = new UserRepresentation();
+            userRepresentation.setId(x.getId());
+            userRepresentation.setUsername(x.getUsername());
+            userRepresentation.setRealmRoles(x.getRoles());
+            userRepresentation.setGroups(x.getGroups());
+            return userRepresentation;
+        }).collect(Collectors.toList());
+        return userRepresentations;
+    }
+
+    public List<HeraclesRoleViewRepresentation> getRolesView(int start, int size) throws AtlasBaseException {
+        return   HERACLES.getRolesView(start, size, HeraclesRoleViewRepresentation.sortBy).body();
     }
 }
