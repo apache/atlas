@@ -33,8 +33,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasErrorCode.RESOURCE_NOT_FOUND;
-import static org.apache.atlas.keycloak.client.AtlasKeycloakClient.getKeycloakClient;
-import static org.apache.atlas.repository.util.AccessControlUtils.INSTANCE_DOMAIN_KEY;
+import static org.apache.atlas.auth.client.keycloak.AtlasKeycloakClient.getKeycloakClient;
 
 public class KeycloakStore {
     private static final Logger LOG = LoggerFactory.getLogger(KeycloakStore.class);

@@ -39,7 +39,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static org.apache.atlas.keycloak.client.AtlasKeycloakClient.getKeycloakClient;
+import static org.apache.atlas.auth.client.keycloak.AtlasKeycloakClient.getKeycloakClient;
+import static org.apache.atlas.auth.client.heracles.AtlasHeraclesClient.getHeraclesClient;
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.util.AccessControlUtils.ARGO_SERVICE_USER_NAME;
 import static org.apache.atlas.repository.util.AccessControlUtils.BACKEND_SERVICE_USER_NAME;
@@ -277,10 +278,7 @@ public class KeycloakUserStore {
         }
 
         Map<String, Set<String>> userGroupMapping = new HashMap<>();
-
-        List<UserRepresentation> kUsers = getKeycloakClient().getAllUsers();
-        LOG.info("Found {} keycloak users", kUsers.size());
-
+        List<UserRepresentation> kUsers = getHeraclesClient().getAllUsers();
         List<Callable<Object>> callables = new ArrayList<>();
         kUsers.forEach(x -> callables.add(new UserGroupsFetcher(x, userGroupMapping)));
 
@@ -417,13 +415,13 @@ public class KeycloakUserStore {
                 //get all users for Roles
                 Thread usersFetcher = new Thread(() -> {
                     int start = 0;
-                    int size = 500;
+                    int size = 100;
                     boolean found = true;
                     Set<UserRepresentation> ret = new HashSet<>();
 
                     do {
                         try {
-                            Set<UserRepresentation> userRepresentations = getKeycloakClient().getRoleUserMembers(kRole.getName(), start, size);
+                            Set<UserRepresentation> userRepresentations = getHeraclesClient().getRoleUserMembers(kRole.getName(), start, size);
                             if (CollectionUtils.isNotEmpty(userRepresentations)) {
                                 ret.addAll(userRepresentations);
                                 start += size;
