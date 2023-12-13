@@ -20,8 +20,8 @@
 package org.apache.atlas.plugin.util;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.auth.client.heracles.models.HeraclesRoleViewRepresentation;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.plugin.model.RangerRole;
 import org.apache.atlas.utils.AtlasPerfMetrics;
@@ -189,6 +189,108 @@ public class KeycloakUserStore {
         return rangerRoles;
     }
 
+    public RangerUserStore loadUsersNew(long lastUpdatedTime) throws AtlasBaseException {
+        int userSize = 100;
+        int userFrom = 0;
+        boolean userFound = true;
+        Map<String, Set<String>> userGroupMapping = new HashMap<>();
+
+        List<UserRepresentation> ret = new ArrayList<>();
+        do {
+            List<UserRepresentation> users = getHeraclesClient().getUsersView(userFrom, userSize);
+            if (CollectionUtils.isEmpty(users)) {
+                userFound = false;
+            } else {
+                ret.addAll(users);
+                userFrom += userSize;
+            }
+            for(UserRepresentation user : users) {
+                userGroupMapping.put(user.getUsername(), new HashSet<>(user.getGroups() == null ? Collections.emptyList() : user.getGroups()));
+            }
+
+        } while (userFound && ret.size() % userSize == 0);
+
+        RangerUserStore userStore = new RangerUserStore();
+        userStore.setUserGroupMapping(userGroupMapping);
+        Date current = new Date();
+        userStore.setUserStoreUpdateTime(current);
+        userStore.setServiceName(serviceName);
+        userStore.setUserStoreVersion(-1L);
+        return userStore;
+    }
+
+    public RangerRoles loadRolesNew(long lastUpdatedTime) throws AtlasBaseException {
+        RangerRoles rangerRoles = new RangerRoles();
+        Map<String, List<RangerRole.RoleMember>> roleUserMapping = new HashMap<>();
+        Set<RangerRole> roleSet = new HashSet<>();
+
+        int userSize = 100;
+        int userFrom = 0;
+        boolean userFound = true;
+
+        List<UserRepresentation> ret = new ArrayList<>();
+        do {
+            List<UserRepresentation> users = getHeraclesClient().getUsersView(userFrom, userSize);
+            if (CollectionUtils.isEmpty(users)) {
+                userFound = false;
+            } else {
+                ret.addAll(users);
+                userFrom += userSize;
+            }
+            for(UserRepresentation user : users) {
+                Set<String> userRoles = new HashSet<>(user.getRealmRoles());
+                for(String role : userRoles) {
+                    List<RangerRole.RoleMember> roleMembers = roleUserMapping.get(role);
+                    if(roleMembers == null) {
+                        roleMembers = new ArrayList<>();
+                        roleUserMapping.put(role, roleMembers);
+                    }
+                    roleMembers.add(new RangerRole.RoleMember(user.getUsername(), false));
+                }
+            }
+
+        } while (userFound && ret.size() % userSize == 0);
+
+        int roleSize = 100;
+        int roleFrom = 0;
+        boolean roleFound = true;
+
+        List<HeraclesRoleViewRepresentation> retRole = new ArrayList<>();
+        do {
+            List<HeraclesRoleViewRepresentation> roles = getHeraclesClient().getRolesView(roleFrom, roleSize);
+            if (CollectionUtils.isEmpty(roles)) {
+                roleFound = false;
+            } else {
+                retRole.addAll(roles);
+                roleFrom += roleSize;
+            }
+
+            for(HeraclesRoleViewRepresentation role : roles) {
+                RangerRole rangerRole = new RangerRole();
+                rangerRole.setName(role.getName());
+                rangerRole.setGroups(role.getGroups().stream().map(x -> new RangerRole.RoleMember(x, true)).collect(Collectors.toList()));
+                rangerRole.setUsers(roleUserMapping.get(role.getName()));
+                rangerRole.setRoles(role.getRoles().stream().map(x -> new RangerRole.RoleMember(x, false)).collect(Collectors.toList()));
+
+                roleSet.add(rangerRole);
+            }
+
+        } while (roleFound && retRole.size() % roleSize == 0);
+
+        processDefaultRole(roleSet);
+        LOG.info("Inverting roles");
+        invertRoles(roleSet);
+
+        rangerRoles.setRangerRoles(roleSet);
+        rangerRoles.setServiceName(serviceName);
+
+        Date current = new Date();
+        rangerRoles.setRoleUpdateTime(current);
+        rangerRoles.setServiceName(serviceName);
+        rangerRoles.setRoleVersion(-1L);
+        return rangerRoles;
+    }
+
     public void invertRoles(Set<RangerRole> roleSet) {
         Map<String, RangerRole> roleMap = new HashMap<>();
         for (RangerRole role : roleSet) {
@@ -278,7 +380,7 @@ public class KeycloakUserStore {
         }
 
         Map<String, Set<String>> userGroupMapping = new HashMap<>();
-        List<UserRepresentation> kUsers = getHeraclesClient().getAllUsers();
+        List<UserRepresentation> kUsers = getKeycloakClient().getAllUsers();
         List<Callable<Object>> callables = new ArrayList<>();
         kUsers.forEach(x -> callables.add(new UserGroupsFetcher(x, userGroupMapping)));
 
@@ -421,7 +523,7 @@ public class KeycloakUserStore {
 
                     do {
                         try {
-                            Set<UserRepresentation> userRepresentations = getHeraclesClient().getRoleUserMembers(kRole.getName(), start, size);
+                            Set<UserRepresentation> userRepresentations = getKeycloakClient().getRoleUserMembers(kRole.getName(), start, size);
                             if (CollectionUtils.isNotEmpty(userRepresentations)) {
                                 ret.addAll(userRepresentations);
                                 start += size;

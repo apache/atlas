@@ -2,9 +2,13 @@ package org.apache.atlas.auth.client.heracles;
 
 import org.apache.atlas.auth.client.config.AuthConfig;
 import org.apache.atlas.auth.client.auth.AbstractAuthClient;
+import org.apache.atlas.auth.client.heracles.models.HeraclesRoleViewRepresentation;
+import org.apache.atlas.auth.client.heracles.models.HeraclesUserViewRepresentation;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.auth.client.heracles.models.HeraclesUsersRepresentation;
 import retrofit2.Response;
+
+import java.util.List;
 
 public class HeraclesRestClient extends AbstractAuthClient {
 
@@ -14,5 +18,15 @@ public class HeraclesRestClient extends AbstractAuthClient {
     public Response<HeraclesUsersRepresentation> getUsers(int offset,int limit, String columns, String filter, String sort) throws AtlasBaseException {
         return processResponse(this.retrofitHeraclesClient.getUsers(offset, columns, filter, limit,sort));
     }
+
+    public Response<List<HeraclesUserViewRepresentation>> getUsersView(int offset, int limit, String sort) throws AtlasBaseException {
+        return processResponse(this.retrofitHeraclesClient.getUsersView(offset, limit,sort));
+    }
+
+    public Response<List<HeraclesRoleViewRepresentation>> getRolesView(int offset, int limit, String sort) throws AtlasBaseException {
+        return processResponse(this.retrofitHeraclesClient.getRolesView(offset, limit,sort));
+    }
+
+
 
 }

@@ -195,7 +195,7 @@ public class RangerRolesProvider {
 
 		try {
 			if ("atlas".equals(serviceName)) {
-				roles = keycloakUserStore.loadRolesIfUpdated(lastUpdatedTimeInMillis);
+				roles = keycloakUserStore.loadRolesNew(lastUpdatedTimeInMillis);
 			} else {
 				roles = atlasAuthAdminClient.getRolesIfUpdated(lastUpdatedTimeInMillis);
 			}

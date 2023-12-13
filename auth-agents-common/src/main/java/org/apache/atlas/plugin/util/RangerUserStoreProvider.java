@@ -196,7 +196,7 @@ public class RangerUserStoreProvider {
 
 		try {
 			if ("atlas".equals(serviceName)) {
-				userStore = keycloakUserStore.loadUserStoreIfUpdated(lastUpdateTimeInMillis);
+				userStore = keycloakUserStore.loadUsersNew(lastUpdateTimeInMillis);
 			} else {
 				userStore = atlasAuthAdminClient.getUserStoreIfUpdated(lastUpdateTimeInMillis);
 			}
