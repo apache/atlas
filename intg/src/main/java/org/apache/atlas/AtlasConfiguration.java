@@ -107,7 +107,8 @@ public enum AtlasConfiguration {
     SEARCH_LOGGER_MAX_THREADS("atlas.enable.search.logger.max.threads", 20),
 
     PERSONA_POLICY_ASSET_MAX_LIMIT("atlas.persona.policy.asset.maxlimit", 1000),
-    ENABLE_KEYCLOAK_TOKEN_INTROSPECTION("atlas.canary.keycloak.token-introspection", false);
+    ENABLE_KEYCLOAK_TOKEN_INTROSPECTION("atlas.canary.keycloak.token-introspection", false),
+    KEYCLOAK_ADMIN_CLIENT_PAGINATION_SIZE("atlas.keycloak.admin.resource-pagination-size", 1500);
 
 
     private static final Configuration APPLICATION_PROPERTIES;
