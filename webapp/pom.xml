@@ -552,6 +552,7 @@
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-testtools</artifactId>
             <version>${project.version}</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>

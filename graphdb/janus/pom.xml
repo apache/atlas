@@ -120,6 +120,10 @@
                       <artifactId>*</artifactId>
                   </exclusion>
                   <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                  <exclusion>
                       <groupId>com.codahale.metrics</groupId>
                       <artifactId>metrics-core</artifactId>
                   </exclusion>
@@ -208,6 +212,10 @@
                 <exclusion>
                     <groupId>org.codehaus.woodstox</groupId>
                     <artifactId>woodstox-core-asl</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>*</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>

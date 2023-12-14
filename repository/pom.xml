@@ -111,7 +111,7 @@
                 </exclusion>
                 <exclusion>
                     <groupId>io.netty</groupId>
-                    <artifactId>netty-handler</artifactId>
+                    <artifactId>*</artifactId>
                 </exclusion>
                 <exclusion>
                     <groupId>org.slf4j</groupId>
@@ -393,6 +393,7 @@
                     <groupId>org.apache.atlas</groupId>
                     <artifactId>atlas-testtools</artifactId>
                     <version>${project.version}</version>
+                    <scope>test</scope>
                     <exclusions>
                         <exclusion>
                             <groupId>com.fasterxml.jackson.core</groupId>
