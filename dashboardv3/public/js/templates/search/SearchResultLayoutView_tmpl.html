@@ -38,15 +38,17 @@
         <div class="pagination-box clearfix row" style="display: none;{{#unless isSearchTab}}margin-top: 0px;{{/unless}}">
             <div class="form-group filter-box col-md-12" {{#if isSearchTab}} style="position: absolute;right: 0;top: -44px; padding: 0;width:auto" {{/if}}>
                 <div class="pull-right inline-content-fr no-padding-left">
+                    {{#if isSearchTab}}
+                    <div class="inline">
+                        <button type="button" data-id="downloadSearchResult" class="btn btn-action btn-sm" title="Download Search Results">
+                            <i class="fa fa-download" aria-hidden="true"></i>&nbsp;&nbsp;Download
+                        </button>
+                    </div>
+                    {{/if}}
                     <div class="inline" data-id="colManager"></div>
                     {{#if isSearchTab}}
                     {{#if entityCreate}}
                     <div class="inline"><button class="btn btn-action btn-sm" data-id="createEntity"><i class="fa fa-plus"></i>&nbsp;Create Entity</button></div>
-                    {{/if}}
-                    {{#if isSearchTab}}
-                    <button type="button" data-id="downloadSearchResult" class="btn btn-action btn-sm" title="Download Search Results">
-                        <i class="fa fa-download" aria-hidden="true"></i>&nbsp;&nbsp;Download
-                    </button>
                     {{/if}}
                     <div class="inline"><button title="Save as custom filter" class="btn btn-action btn-sm" data-id="saveFilter"><i class="fa fa-save"></i>&nbsp;Save Filter</button></div>
                     {{/if}}
