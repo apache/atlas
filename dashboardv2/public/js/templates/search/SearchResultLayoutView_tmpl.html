@@ -39,12 +39,14 @@
         <div style="padding-top: 0px;">
             <div class="row form-group pagination-box filter-box" style="display: none;">
                 <div class="col-sm-12 inline-content-fr">
-                    <div class="inline" data-id="colManager"></div>
                     {{#if isSearchTab}}
-                    <button type="button" data-id="downloadSearchResult" class="download-results btn btn-action btn-sm" title="Download Search Results">
-                        <i class="fa fa-download" aria-hidden="true"></i>&nbsp;&nbsp;Download
-                    </button>
+                    <div class="inline">
+                        <button type="button" data-id="downloadSearchResult" class="download-results btn btn-action btn-sm" title="Download Search Results">
+                            <i class="fa fa-download" aria-hidden="true"></i>&nbsp;&nbsp;Download
+                        </button>
+                    </div>
                     {{/if}}
+                    <div class="inline" data-id="colManager"></div>
                     <div class="inline">
                         <a href="javascript:void(0)" class="multiSelectTag assignTag btn btn-action btn-sm" style="display:none" title="Assign Classification" data-id="addAssignTag"><i class="fa fa-plus"></i>&nbsp;Classification</a>
                     </div>
