@@ -98,11 +98,11 @@ public class RangerPerfTracer {
 	public void log() {
 		long elapsedTime = getElapsedTime();
 		if (elapsedTime > reportingThresholdMs) {
-			logger.debug("[PRF] " + tag + data + ": " + elapsedTime);
+			logger.debug("[PERF] " + tag + data + ": " + elapsedTime);
 		}
 	}
 	public void logAlways() {
 		long elapsedTime = getElapsedTime();
-		logger.debug("[PRF] " + tag + data + ": " + elapsedTime);
+		logger.debug("[PERF] " + tag + data + ": " + elapsedTime);
 	}
 }
