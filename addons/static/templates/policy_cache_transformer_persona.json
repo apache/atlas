@@ -438,6 +438,23 @@
         "end-two-entity:{entity}/*"
       ],
       "actions": ["add-relationship", "update-relationship", "remove-relationship"]
+    },
+    {
+      "policyResourceCategory": "RELATIONSHIP",
+      "policyType": "ACCESS",
+      "description": "Link/unlink resource to this Domain",
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity-type:DataDomain",
+        "end-one-entity-classification:*",
+        "end-one-entity:{entity}",
+
+        "end-two-entity-type:Resource",
+        "end-two-entity-classification:*",
+        "end-two-entity:*"
+      ],
+      "actions": ["add-relationship", "update-relationship", "remove-relationship"]
     }
   ],
 
@@ -495,6 +512,23 @@
         "entity-classification:*"
       ],
       "actions": ["entity-update"]
+    },
+    {
+      "policyResourceCategory": "RELATIONSHIP",
+      "policyType": "ACCESS",
+      "description": "Link/unlink resource to this Sub Domain",
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity-type:DataDomain",
+        "end-one-entity-classification:*",
+        "end-one-entity:{entity}/*domain/*",
+
+        "end-two-entity-type:Resource",
+        "end-two-entity-classification:*",
+        "end-two-entity:*"
+      ],
+      "actions": ["add-relationship", "update-relationship", "remove-relationship"]
     }
   ],
   "persona-domain-sub-domain-delete": [
@@ -597,6 +631,25 @@
         "end-two-entity-type:DataProduct",
         "end-two-entity-classification:*",
         "end-two-entity:{entity}/*product/*"
+      ],
+
+      "actions": ["add-relationship", "update-relationship", "remove-relationship"]
+    },
+    {
+      "policyResourceCategory": "RELATIONSHIP",
+      "policyType": "ACCESS",
+      "description": "Link/unlink any Asset to this DataProduct",
+
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity-type:DataProduct",
+        "end-one-entity-classification:*",
+        "end-one-entity:{entity}/*product/*",
+
+        "end-two-entity-type:Asset",
+        "end-two-entity-classification:*",
+        "end-two-entity:*"
       ],
 
       "actions": ["add-relationship", "update-relationship", "remove-relationship"]
