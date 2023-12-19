@@ -1163,13 +1163,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     @Override
     @GraphTransaction
-    public void setClassifications(AtlasEntityHeaders entityHeaders) throws AtlasBaseException {
-        ClassificationAssociator.Updater associator = new ClassificationAssociator.Updater(graph, typeRegistry, this);
-        associator.setClassifications(entityHeaders.getGuidHeaderMap());
-    }
-
-    @Override
-    @GraphTransaction
     public void addOrUpdateBusinessAttributesByDisplayName(String guid, Map<String, Map<String, Object>> businessAttrbutes, boolean isOverwrite) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> addOrUpdateBusinessAttributesByDisplayName(guid={}, businessAttributes={}, isOverwrite={})", guid, businessAttrbutes, isOverwrite);
