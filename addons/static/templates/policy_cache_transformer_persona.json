@@ -394,7 +394,8 @@
       "resources": [
         "entity:{entity}",
         "entity-type:DataDomain",
-        "entity-classification:*"
+        "entity-classification:*",
+        "classification:*"
       ],
       "actions": [
         "entity-update",
@@ -531,7 +532,8 @@
       "resources": [
         "entity:{entity}/*domain/*",
         "entity-type:DataDomain",
-        "entity-classification:*"
+        "entity-classification:*",
+        "classification:*"
       ],
       "actions": [
         "entity-update",
@@ -656,7 +658,8 @@
       "resources": [
         "entity:{entity}/*product/*",
         "entity-type:DataProduct",
-        "entity-classification:*"
+        "entity-classification:*",
+        "classification:*"
       ],
       "actions": [
         "entity-update",
