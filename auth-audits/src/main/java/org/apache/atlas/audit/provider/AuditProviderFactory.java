@@ -23,7 +23,6 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.util.ShutdownHookManager;
 import org.apache.atlas.audit.destination.*;
 import org.apache.atlas.audit.provider.hdfs.HdfsAuditProvider;
-import org.apache.atlas.audit.provider.solr.SolrAuditProvider;
 import org.apache.atlas.audit.queue.AuditAsyncQueue;
 import org.apache.atlas.audit.queue.AuditBatchQueue;
 import org.apache.atlas.audit.queue.AuditFileQueue;
@@ -331,19 +330,6 @@ public class AuditProviderFactory {
 				}
 			}*/
 
-			if (isAuditToSolrEnabled) {
-				LOG.info("SolrAuditProvider is enabled");
-				SolrAuditProvider solrProvider = new SolrAuditProvider();
-				solrProvider.init(props);
-
-				if (solrProvider.isAsync()) {
-					AsyncAuditProvider asyncProvider = new AsyncAuditProvider(
-							"MySolrAuditProvider", 1000, 1000, solrProvider);
-					providers.add(asyncProvider);
-				} else {
-					providers.add(solrProvider);
-				}
-			}
 
 			if (isAuditToLog4jEnabled) {
 				Log4jAuditProvider log4jProvider = new Log4jAuditProvider();
@@ -416,8 +402,6 @@ public class AuditProviderFactory {
 				provider = new FileAuditDestination();
 			} else if (providerName.equalsIgnoreCase("hdfs")) {
 				provider = new HDFSAuditDestination();
-			} else if (providerName.equalsIgnoreCase("solr")) {
-				provider = new SolrAuditDestination();
 			} else if (providerName.equalsIgnoreCase("elasticsearch")) {
 				provider = new ElasticSearchAuditDestination();
 			} /*else if (providerName.equalsIgnoreCase("kafka")) {

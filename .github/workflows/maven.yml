@@ -25,7 +25,7 @@ on:
       - beta
       - development
       - master
-      - lineageondemand
+      - plt-474-cve-fix
 
 jobs:
   build:
