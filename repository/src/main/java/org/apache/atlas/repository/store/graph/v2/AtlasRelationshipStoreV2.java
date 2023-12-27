@@ -397,7 +397,8 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         return ret;
     }
 
-    private AtlasEdge getRelationship(AtlasVertex fromVertex, AtlasVertex toVertex, AtlasRelationship relationship) throws AtlasBaseException {
+    @Override
+    public AtlasEdge getRelationship(AtlasVertex fromVertex, AtlasVertex toVertex, AtlasRelationship relationship) throws AtlasBaseException {
         String relationshipLabel = getRelationshipEdgeLabel(fromVertex, toVertex, relationship.getTypeName());
 
         return getRelationshipEdge(fromVertex, toVertex, relationshipLabel);

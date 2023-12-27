@@ -70,6 +70,7 @@ public interface AtlasRelationshipStore {
 
     AtlasEdge getOrCreate(AtlasVertex end1Vertex, AtlasVertex end2Vertex, AtlasRelationship relationship) throws AtlasBaseException;
 
+    AtlasEdge getRelationship(AtlasVertex fromVertex, AtlasVertex toVertex, AtlasRelationship relationship) throws AtlasBaseException;
 
     /**
      * Retrieve a relationship if it exists or creates a new relationship instance.

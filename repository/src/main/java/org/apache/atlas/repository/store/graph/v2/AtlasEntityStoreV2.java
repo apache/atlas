@@ -1438,7 +1438,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                     }
                 }
             }
-
             // for existing entities, skip update if incoming entity doesn't have any change
             if (CollectionUtils.isNotEmpty(context.getUpdatedEntities())) {
                 MetricRecorder checkForUnchangedEntities = RequestContext.get().startMetricRecord("checkForUnchangedEntities");
@@ -1643,6 +1642,14 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 String entityStatusValue = entity.getStatus() != null ? entity.getStatus().toString() : null;
                 String entityActiveKey = Status.ACTIVE.toString();
                 boolean isRestoreRequested = ((StringUtils.isNotEmpty(entityStateValue) && entityStateValue.equals(entityActiveKey)) || (StringUtils.isNotEmpty(entityStatusValue) && entityStatusValue.equals(entityActiveKey)));
+
+                if (discoveryContext.isAppendRelationshipAttributeVisited() && MapUtils.isNotEmpty(entity.getAppendRelationshipAttributes())) {
+                    context.setUpdatedWithRelationshipAttributes(entity);
+                }
+
+                if (discoveryContext.isRemoveRelationshipAttributeVisited() && MapUtils.isNotEmpty(entity.getRemoveRelationshipAttributes())) {
+                    context.setUpdatedWithRemoveRelationshipAttributes(entity);
+                }
 
                 if (isRestoreRequested) {
                     Status currStatus = AtlasGraphUtilsV2.getState(vertex);
