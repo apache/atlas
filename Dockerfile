@@ -34,7 +34,6 @@ RUN apt-get update \
         netcat \
         curl \
     && cd / \
-    && mkdir /opt/ranger-atlas-plugin \
     && export MAVEN_OPTS="-Xms2g -Xmx2g" \
     && export JAVA_HOME="/usr/lib/jvm/java-8-openjdk-amd64" \
     && tar -xzvf /apache-atlas-3.0.0-SNAPSHOT-server.tar.gz -C /opt \
@@ -57,21 +56,11 @@ COPY atlas-hub/repair_index.py /opt/apache-atlas/bin/
 RUN chmod +x /opt/apache-atlas/bin/repair_index.py
 
 COPY atlas-hub/atlas_start.py.patch atlas-hub/atlas_config.py.patch /opt/apache-atlas/bin/
-COPY atlas-hub/pre-conf/ranger/lib/ /opt/apache-atlas/libext/
-COPY atlas-hub/pre-conf/ranger/install/conf.templates/enable/ /opt/apache-atlas/conf/
 COPY atlas-hub/pre-conf/atlas-log4j.xml /opt/apache-atlas/conf/
 COPY atlas-hub/pre-conf/atlas-log4j2.xml /opt/apache-atlas/conf/
-COPY atlas-hub/pre-conf/ranger/ /opt/ranger-atlas-plugin/
-COPY atlas-hub/env_change.sh /
+COPY atlas-hub/pre-conf/atlas-auth/ /opt/apache-atlas/conf/
 
 RUN curl https://repo1.maven.org/maven2/org/jolokia/jolokia-jvm/1.6.2/jolokia-jvm-1.6.2-agent.jar -o /opt/apache-atlas/libext/jolokia-jvm-agent.jar
-
-RUN cd /opt/apache-atlas/bin \
-    && sed "s~ATLAS_INSTALL_DIR~/opt/apache-atlas~g" /opt/ranger-atlas-plugin/install.properties > /tmp/install.properties \
-    && cp /tmp/install.properties /opt/ranger-atlas-plugin/install.properties \
-    && chmod +x /env_change.sh
-#     && patch -b -f < atlas_start.py.patch \
-#     && patch -b -f < atlas_config.py.patch \
 
 RUN cd /opt/apache-atlas/bin \
     && ./atlas_start.py -setup || true

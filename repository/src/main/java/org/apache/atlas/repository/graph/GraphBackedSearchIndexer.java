@@ -128,9 +128,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             throws IndexException, RepositoryException {
         this.provider     = provider;
         this.typeRegistry = typeRegistry;
-
-        //make sure solr index follows graph backed index listener
-        addIndexListener(new SolrIndexHelper(typeRegistry));
+        
 
         if (!HAConfiguration.isHAEnabled(configuration)) {
             initialize(provider.get());
