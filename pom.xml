@@ -709,7 +709,7 @@
         <guava.version>29.0-jre</guava.version>
         <guice.version>4.1.0</guice.version>
         <hadoop.hdfs-client.version>${hadoop.version}</hadoop.hdfs-client.version>
-        <hadoop.version>3.3.6</hadoop.version>
+        <hadoop.version>3.3.0</hadoop.version>
         <hbase.version>2.3.3</hbase.version>
         <hive.version>3.1.0</hive.version>
         <hppc.version>0.8.1</hppc.version>
@@ -739,7 +739,7 @@
         <launch-darkly.version>6.0.5</launch-darkly.version>
         <reload4j.version>1.2.19</reload4j.version>
         <log4j2.version>2.17.1</log4j2.version>
-        <lucene-solr.version>8.6.3</lucene-solr.version>
+        <lucene-solr.version>8.8.2</lucene-solr.version>
         <maven-site-plugin.version>3.7</maven-site-plugin.version>
         <MaxPermGen>512m</MaxPermGen>
         <node-for-v2.version>v9.11.1</node-for-v2.version>
@@ -1039,6 +1039,12 @@
                         <artifactId>*</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-auth</artifactId>
+                <version>${hadoop.version}</version>
             </dependency>
 
             <dependency>
