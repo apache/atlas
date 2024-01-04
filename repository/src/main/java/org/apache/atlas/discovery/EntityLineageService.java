@@ -319,8 +319,8 @@ public class EntityLineageService implements AtlasLineageService {
 
 
     private void traverseEdgesOnDemand(Iterator<AtlasEdge> processEdges, boolean isInput, int depth, AtlasLineageOnDemandContext atlasLineageOnDemandContext, AtlasLineageOnDemandInfo ret, AtlasVertex processVertex, String baseGuid, AtomicInteger entitiesTraversed) throws AtlasBaseException {
+        AtlasLineageOnDemandInfo.LineageDirection direction = isInput ? AtlasLineageOnDemandInfo.LineageDirection.INPUT : AtlasLineageOnDemandInfo.LineageDirection.OUTPUT;
         while (processEdges.hasNext()) {
-            AtlasLineageOnDemandInfo.LineageDirection direction = isInput ? AtlasLineageOnDemandInfo.LineageDirection.INPUT : AtlasLineageOnDemandInfo.LineageDirection.OUTPUT;
             AtlasEdge processEdge = processEdges.next();
             AtlasVertex datasetVertex = processEdge.getInVertex();
 
