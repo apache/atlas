@@ -656,10 +656,6 @@ public class EntityLineageService implements AtlasLineageService {
         return entitiesTraversed.get() == getLineageMaxNodeAllowedCount();
     }
 
-    private boolean isSelfCyclic(AtlasLineageOnDemandInfo ret, String inGuid, String outGuid) {
-        return ret.getRelations().stream().anyMatch(r -> r.getFromEntityId().equals(inGuid) && r.getToEntityId().equals(outGuid));
-    }
-
     @Override
     @GraphTransaction
     public SchemaDetails getSchemaForHiveTableByName(final String datasetName) throws AtlasBaseException {
