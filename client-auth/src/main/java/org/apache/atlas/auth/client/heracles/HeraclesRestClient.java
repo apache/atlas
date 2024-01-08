@@ -19,13 +19,15 @@ public class HeraclesRestClient extends AbstractAuthClient {
         return processResponse(this.retrofitHeraclesClient.getUsers(offset, columns, filter, limit,sort));
     }
 
-    public Response<List<HeraclesUserViewRepresentation>> getUsersView(int offset, int limit, String sort) throws AtlasBaseException {
-        return processResponse(this.retrofitHeraclesClient.getUsersView(offset, limit,sort));
+    public Response<List<HeraclesUserViewRepresentation>> getUsersMappings(int offset, int limit, String sort, String[] columns) throws AtlasBaseException {
+        return processResponse(this.retrofitHeraclesClient.getUsersMapping(offset, limit,sort, columns));
     }
 
-    public Response<List<HeraclesRoleViewRepresentation>> getRolesView(int offset, int limit, String sort) throws AtlasBaseException {
-        return processResponse(this.retrofitHeraclesClient.getRolesView(offset, limit,sort));
+    public Response<List<HeraclesRoleViewRepresentation>> getRolesMappings(int offset, int limit, String sort, String[] columns) throws AtlasBaseException {
+        return processResponse(this.retrofitHeraclesClient.getRolesMapping(offset, limit, sort, columns));
     }
+
+
 
 
 

@@ -25,4 +25,15 @@ public interface RetrofitHeraclesClient {
     @GET("/roles/view")
     Call<List<HeraclesRoleViewRepresentation>> getRolesView(@Query("offset") Integer offset, @Query("limit") Integer limit, @Query("sort") String sort);
 
+    @Headers({"Accept: application/json,text/plain", "Cache-Control: no-store", "Cache-Control: no-cache"})
+    @GET("/users/mappings")
+    Call<List<HeraclesUserViewRepresentation>> getUsersMapping(@Query("offset") Integer offset, @Query("limit") Integer limit, @Query("sort") String sort,
+                                                               @Query("columns") String[] columns);
+
+    @Headers({"Accept: application/json,text/plain", "Cache-Control: no-store", "Cache-Control: no-cache"})
+    @GET("/roles/mappings")
+    Call<List<HeraclesRoleViewRepresentation>> getRolesMapping(@Query("offset") Integer offset, @Query("limit") Integer limit, @Query("sort") String sort,
+                                                               @Query("columns") String[] columns);
+
+
 }
