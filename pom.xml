@@ -709,14 +709,14 @@
         <guava.version>29.0-jre</guava.version>
         <guice.version>4.1.0</guice.version>
         <hadoop.hdfs-client.version>${hadoop.version}</hadoop.hdfs-client.version>
-        <hadoop.version>3.3.0</hadoop.version>
+        <hadoop.version>3.3.6</hadoop.version>
         <hbase.version>2.3.3</hbase.version>
         <hive.version>3.1.0</hive.version>
         <hppc.version>0.8.1</hppc.version>
         <httpcomponents-httpclient.version>4.5.13</httpcomponents-httpclient.version>
         <httpcomponents-httpcore.version>4.4.13</httpcomponents-httpcore.version>
-        <jackson.databind.version>2.11.3</jackson.databind.version>
-        <jackson.version>2.11.3</jackson.version>
+        <jackson.databind.version>2.12.4</jackson.databind.version>
+        <jackson.version>2.12.4</jackson.version>
         <janusgraph.version>0.6.02</janusgraph.version>
         <janusgraph.cassandra.version>0.5.3</janusgraph.cassandra.version>
         <javax-inject.version>1</javax-inject.version>
