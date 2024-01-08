@@ -1,0 +1,40 @@
+# Name of the Workflow
+name: Charts Values Seed Trigger Dispatcher
+on:
+  workflow_run:
+    workflows:
+      - "Java CI with Maven"
+    branches:
+      - main
+      - beta
+      - staging
+    types:
+      - completed
+
+jobs:
+  charts-release-dispatcher:
+    name: Dispatch
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        repo: ['atlanhq/atlan']
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      # extract branch name
+      - name: Get branch name
+        id: extract_branch
+        run: |
+          echo "branch=${{ github.event.workflow_run.head_branch }}" >> $GITHUB_OUTPUT
+      - name: Repository Dispatch
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          token: ${{ secrets.my_pat }}
+          repository: ${{ matrix.repo }}
+          event-type: dispatch_chart_release_workflow
+          client-payload: |-
+            {
+              "repo": {
+                "name": "${{ github.repository }}",
+                "branch": "${{ steps.extract_branch.outputs.branch }}"
+              }
+            }
