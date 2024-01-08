@@ -27,8 +27,4 @@ public class HeraclesRestClient extends AbstractAuthClient {
         return processResponse(this.retrofitHeraclesClient.getRolesMapping(offset, limit, sort, columns));
     }
 
-
-
-
-
 }
