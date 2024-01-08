@@ -100,7 +100,7 @@ public class AuthREST {
             }
 
             KeycloakUserStore keycloakUserStore = new KeycloakUserStore(serviceName);
-            RangerRoles roles = keycloakUserStore.loadRolesNew(lastUpdatedTime);
+            RangerRoles roles = keycloakUserStore.loadRolesIfUpdated(lastUpdatedTime);
 
             if (roles == null) {
                 response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
@@ -127,7 +127,7 @@ public class AuthREST {
             }
 
             KeycloakUserStore keycloakUserStore = new KeycloakUserStore(serviceName);
-            RangerUserStore userStore = keycloakUserStore.loadUsersNew(lastUpdatedTime);
+            RangerUserStore userStore = keycloakUserStore.loadUserStoreIfUpdated(lastUpdatedTime);
 
             if (userStore == null) {
                 response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
