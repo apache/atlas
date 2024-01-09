@@ -256,20 +256,9 @@ public class AtlasLineageOnDemandInfo implements Serializable {
         }
 
         public void incrementInputRelationsCount() {
-            if (hasMoreInputs) {
-                return;
-            }
-
-            if (isInputRelationsReachedLimit) {
-                setHasMoreInputs(true);
-                return;
-            }
-
             this.inputRelationsCount++;
-
             if (inputRelationsCount == onDemandConstraints.getInputRelationsLimit()) {
                 this.setInputRelationsReachedLimit(true);
-                return;
             }
         }
 
@@ -278,20 +267,9 @@ public class AtlasLineageOnDemandInfo implements Serializable {
         }
 
         public void incrementOutputRelationsCount() {
-            if (hasMoreOutputs) {
-                return;
-            }
-
-            if (isOutputRelationsReachedLimit) {
-                setHasMoreOutputs(true);
-                return;
-            }
-
             this.outputRelationsCount++;
-
             if (outputRelationsCount == onDemandConstraints.getOutputRelationsLimit()) {
                 this.setOutputRelationsReachedLimit(true);
-                return;
             }
         }
 
