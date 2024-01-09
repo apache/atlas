@@ -71,7 +71,6 @@ public class KeycloakUserStore {
 
     public boolean isKeycloakSubjectsStoreUpdated(long cacheLastUpdatedTime) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getKeycloakSubjectsStoreUpdatedTime");
-        cacheLastUpdatedTime = -1;
         if (cacheLastUpdatedTime == -1) {
             return true;
         }
