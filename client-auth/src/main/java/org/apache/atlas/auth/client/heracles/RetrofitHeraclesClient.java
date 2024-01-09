@@ -2,7 +2,6 @@ package org.apache.atlas.auth.client.heracles;
 
 import org.apache.atlas.auth.client.heracles.models.HeraclesRoleViewRepresentation;
 import org.apache.atlas.auth.client.heracles.models.HeraclesUserViewRepresentation;
-import org.apache.atlas.auth.client.heracles.models.HeraclesUsersRepresentation;
 import retrofit2.Call;
 import retrofit2.http.GET;
 import retrofit2.http.Headers;

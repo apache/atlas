@@ -5,7 +5,6 @@ import org.apache.atlas.auth.client.auth.AbstractAuthClient;
 import org.apache.atlas.auth.client.heracles.models.HeraclesRoleViewRepresentation;
 import org.apache.atlas.auth.client.heracles.models.HeraclesUserViewRepresentation;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.auth.client.heracles.models.HeraclesUsersRepresentation;
 import retrofit2.Response;
 
 import java.util.List;

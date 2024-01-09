@@ -4,15 +4,12 @@ import org.apache.atlas.auth.client.config.AuthConfig;
 import org.apache.atlas.auth.client.heracles.models.HeraclesRoleViewRepresentation;
 import org.apache.atlas.auth.client.heracles.models.HeraclesUserViewRepresentation;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.auth.client.heracles.models.HeraclesUsersRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 public class AtlasHeraclesClient {
