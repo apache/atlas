@@ -25,7 +25,6 @@ on:
       - beta
       - development
       - master
-      - staging
       - lineageondemand
 
 jobs:
@@ -78,7 +77,7 @@ jobs:
         shell: bash
 
       - name: Get version tag
-        run: echo "##[set-output name=version;]$(echo `git ls-remote https://${{ secrets.my_pat }}@github.com/atlanhq/${REPOSITORY_NAME}.git refs/heads/${{ steps.get_branch.outputs.branch }} | awk '{ print $1}' | cut -c1-7`)abcd"
+        run: echo "##[set-output name=version;]$(echo `git ls-remote https://${{ secrets.my_pat }}@github.com/atlanhq/${REPOSITORY_NAME}.git ${{ steps.get_branch.outputs.branch }} | awk '{ print $1}' | cut -c1-7`)abcd"
         id: get_version
 
       - name: Set up Buildx 
@@ -105,6 +104,7 @@ jobs:
           tags: |
             ghcr.io/atlanhq/${{ github.event.repository.name }}-${{ steps.get_branch.outputs.branch }}:latest
             ghcr.io/atlanhq/${{ github.event.repository.name }}-${{ steps.get_branch.outputs.branch }}:${{ steps.get_version.outputs.version }}
+
       - name: Scan Image
         uses: aquasecurity/trivy-action@master
         with:
@@ -121,7 +121,7 @@ jobs:
       - name: Check out into atlan repo
         uses: actions/checkout@v2
         with:
-          ref: ${{ steps.get_branch.outputs.branch }}
+          ref: main
           repository: atlanhq/atlan
           token: ${{ secrets.my_pat }}
 
@@ -131,12 +131,13 @@ jobs:
           echo "- ${{ github.event.head_commit.message }}">>gitlog/${{ github.event.repository.name }}.txt
           chmod +x ./scripts/create_changelog.sh
           ./scripts/create_changelog.sh
+
       - name: Commit changes
         uses: EndBug/add-and-commit@v7
         with:
-          branch: ${{ steps.get_branch.outputs.branch }}
+          branch: main
           author_name: atlan-ci
           author_email: it@atlan.com
           message: '${{ github.event.repository.name }}'
           default_author: user_info
-          push: origin ${{ steps.get_branch.outputs.branch }}
+          push: origin main
