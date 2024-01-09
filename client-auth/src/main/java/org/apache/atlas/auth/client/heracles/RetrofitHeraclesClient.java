@@ -12,12 +12,6 @@ import java.util.List;
 
 public interface RetrofitHeraclesClient {
     @Headers({"Accept: application/json,text/plain", "Cache-Control: no-store", "Cache-Control: no-cache"})
-    @GET("/users")
-    Call<HeraclesUsersRepresentation> getUsers(@Query("offset") Integer offset, @Query("columns") String columns,
-                                                  @Query(value = "filter", encoded = true) String filter, @Query("limit") Integer limit,
-                                                  @Query("sort") String sort);
-
-    @Headers({"Accept: application/json,text/plain", "Cache-Control: no-store", "Cache-Control: no-cache"})
     @GET("/users/mappings")
     Call<List<HeraclesUserViewRepresentation>> getUsersMapping(@Query("offset") Integer offset, @Query("limit") Integer limit, @Query("sort") String sort,
                                                                @Query("columns") String[] columns);

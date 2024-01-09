@@ -15,10 +15,6 @@ public class HeraclesRestClient extends AbstractAuthClient {
     public HeraclesRestClient(final AuthConfig authConfig) {
         super(authConfig);
     }
-    public Response<HeraclesUsersRepresentation> getUsers(int offset,int limit, String columns, String filter, String sort) throws AtlasBaseException {
-        return processResponse(this.retrofitHeraclesClient.getUsers(offset, columns, filter, limit,sort));
-    }
-
     public Response<List<HeraclesUserViewRepresentation>> getUsersMappings(int offset, int limit, String sort, String[] columns) throws AtlasBaseException {
         return processResponse(this.retrofitHeraclesClient.getUsersMapping(offset, limit,sort, columns));
     }

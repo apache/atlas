@@ -44,33 +44,6 @@ public class AtlasHeraclesClient {
         }
     }
 
-    public List<UserRepresentation> getAllUsers() throws AtlasBaseException {
-        int start = 0;
-        int size = 100;
-        boolean found = true;
-
-        List<UserRepresentation> ret = new ArrayList<>(0);
-        do {
-
-            List<UserRepresentation> userRepresentations = HERACLES.getUsers(start, size, HeraclesUsersRepresentation.USER_PROJECTIONS, null, HeraclesUsersRepresentation.USER_SORT).body().toKeycloakUserRepresentations();
-            if (userRepresentations != null && !userRepresentations.isEmpty()) {
-                ret.addAll(userRepresentations);
-                start += size;
-            } else {
-                found = false;
-            }
-        } while (found && ret.size() % size == 0);
-
-        return ret;
-    }
-
-
-    public Set<UserRepresentation> getRoleUserMembers(String roleName, int start, int size) throws AtlasBaseException {
-        String template = "{\"$and\":[{\"roles\":{\"$elemMatch\":[\"{0}\"]}}]}";
-        String filter = template.replace("{0}", roleName);
-        return HERACLES.getUsers(start, size, HeraclesUsersRepresentation.USER_PROJECTIONS, filter,HeraclesUsersRepresentation.USER_SORT ).body().toKeycloakUserRepresentations().stream().collect(Collectors.toSet());
-    }
-
     public List<UserRepresentation> getUsersMappings(int start, int size) throws AtlasBaseException {
         String[] columns = {"roles", "groups"};
         List<HeraclesUserViewRepresentation> views =  HERACLES.getUsersMappings(start, size, HeraclesUserViewRepresentation.sortBy, columns).body();
