@@ -44,7 +44,7 @@ public class AtlasHeraclesClient {
     public List<UserRepresentation> getUsersMappings(int start, int size) throws AtlasBaseException {
         String[] columns = {"roles", "groups"};
         List<HeraclesUserViewRepresentation> views =  HERACLES.getUsersMappings(start, size, HeraclesUserViewRepresentation.sortBy, columns).body();
-        List<UserRepresentation> userRepresentations = views.stream().map(x -> {
+        return views.stream().map(x -> {
             UserRepresentation userRepresentation = new UserRepresentation();
             userRepresentation.setId(x.getId());
             userRepresentation.setUsername(x.getUsername());
@@ -52,7 +52,6 @@ public class AtlasHeraclesClient {
             userRepresentation.setGroups(x.getGroups());
             return userRepresentation;
         }).collect(Collectors.toList());
-        return userRepresentations;
     }
 
     public List<HeraclesRoleViewRepresentation> getRolesMappings(int start, int size) throws AtlasBaseException {
