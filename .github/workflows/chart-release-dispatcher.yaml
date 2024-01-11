@@ -5,6 +5,7 @@ on:
     workflows:
       - "Java CI with Maven"
     branches:
+      - master
       - beta
       - staging
     types:

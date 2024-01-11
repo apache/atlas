@@ -117,27 +117,3 @@ jobs:
         uses: github/codeql-action/upload-sarif@v2.1.33
         with:
           sarif_file: 'trivy-image-results.sarif'
-
-      - name: Check out into atlan repo
-        uses: actions/checkout@v2
-        with:
-          ref: main
-          repository: atlanhq/atlan
-          token: ${{ secrets.my_pat }}
-
-      - name: Add Changelog
-        run: |
-          mkdir -p gitlog
-          echo "- ${{ github.event.head_commit.message }}">>gitlog/${{ github.event.repository.name }}.txt
-          chmod +x ./scripts/create_changelog.sh
-          ./scripts/create_changelog.sh
-
-      - name: Commit changes
-        uses: EndBug/add-and-commit@v7
-        with:
-          branch: main
-          author_name: atlan-ci
-          author_email: it@atlan.com
-          message: '${{ github.event.repository.name }}'
-          default_author: user_info
-          push: origin main
