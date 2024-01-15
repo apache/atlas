@@ -155,7 +155,7 @@ public class KeycloakUserStore {
         List<UserRepresentation> userRetrievalResult;
 
         do {
-            userRetrievalResult = getHeraclesClient().getUsersMappings(userFrom, userSize);
+            userRetrievalResult = getHeraclesClient().getUsersMappings(userFrom, userSize, new String[]{"roles", "groups"});
 
             if (!CollectionUtils.isEmpty(userRetrievalResult)) {
                 userRetrievalResult.forEach(user -> {
@@ -177,7 +177,7 @@ public class KeycloakUserStore {
         List<HeraclesRoleViewRepresentation> roleRetrievalResult;
 
         do {
-            roleRetrievalResult = getHeraclesClient().getRolesMappings(roleFrom, roleSize);
+            roleRetrievalResult = getHeraclesClient().getRolesMappings(roleFrom, roleSize, new String[]{"roles", "groups"});
 
             if (!CollectionUtils.isEmpty(roleRetrievalResult)) {
                 roleRetrievalResult.forEach(role -> {
@@ -317,7 +317,7 @@ public class KeycloakUserStore {
         List<UserRepresentation> ret = new ArrayList<>();
 
         do {
-            List<UserRepresentation> users = getHeraclesClient().getUsersMappings(userFrom, userSize);
+            List<UserRepresentation> users = getHeraclesClient().getUsersMappings(userFrom, userSize, new String[]{"groups"});
             if (CollectionUtils.isEmpty(users)) {
                 userFound = false;
             } else {
