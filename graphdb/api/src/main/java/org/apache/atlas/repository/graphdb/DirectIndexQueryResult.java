@@ -8,6 +8,8 @@ import java.util.Map;
 public class DirectIndexQueryResult<V, E> {
     private Iterator<AtlasIndexQuery.Result<V, E>> iterator;
     private Map<String, Aggregation> aggregationMap;
+
+    private Map<String, Object> highlightMap;
     private Integer approximateCount;
 
     public Iterator<AtlasIndexQuery.Result<V, E>> getIterator() {
@@ -32,5 +34,13 @@ public class DirectIndexQueryResult<V, E> {
 
     public void setApproximateCount(Integer approximateCount) {
         this.approximateCount = approximateCount;
+    }
+
+    public Map<String, Object> getHighlightMap() {
+        return highlightMap;
+    }
+
+    public void setHighlightMap(Map<String, Object> highlightMap) {
+        this.highlightMap = highlightMap;
     }
 }

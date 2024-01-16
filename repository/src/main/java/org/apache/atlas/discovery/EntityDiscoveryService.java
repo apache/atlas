@@ -1093,6 +1093,10 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                     }
                 }
 
+                if (searchParams.isShowHighlights()) {
+                    ret.addHighlights(header.getGuid(), result.getHighLights());
+                }
+
                 ret.addEntity(header);
             }
         } catch (Exception e) {

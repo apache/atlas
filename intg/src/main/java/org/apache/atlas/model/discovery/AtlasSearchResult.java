@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 
 import javax.xml.bind.annotation.XmlAccessType;
@@ -57,6 +58,10 @@ public class AtlasSearchResult implements Serializable {
     private String                         nextMarker;
     private Map<String, Object>            aggregations;
     private Map<String,Double>             searchScore;
+
+    private Map<String, SearchMetadata>   searchMetadata;
+
+
 
     public AtlasSearchResult() {}
 
@@ -150,6 +155,19 @@ public class AtlasSearchResult implements Serializable {
     public String getNextMarker() { return nextMarker; }
 
     public void setNextMarker(String nextMarker) { this.nextMarker = nextMarker; }
+
+    public Map<String, SearchMetadata> getSearchMetadata() {
+        return searchMetadata;
+    }
+
+    public void addHighlights(String guid, Map<String, List<String>> highlights) {
+        if(MapUtils.isEmpty(this.searchMetadata)) {
+            this.searchMetadata = new HashMap<>();
+        }
+        SearchMetadata v = this.searchMetadata.getOrDefault(guid, new SearchMetadata());
+        v.addHighlights(highlights);
+        this.searchMetadata.put(guid, v);
+    }
 
     @Override
     public int hashCode() { return Objects.hash(queryType, searchParameters, queryText, type, classification, entities, attributes, fullTextResult, referredEntities, nextMarker); }
