@@ -55,6 +55,14 @@ public class KeycloakUserStore {
     private static List<String> OPERATION_TYPES = Arrays.asList("CREATE", "UPDATE", "DELETE");
     private static List<String> RESOURCE_TYPES = Arrays.asList("USER", "GROUP", "REALM_ROLE", "CLIENT", "REALM_ROLE_MAPPING", "GROUP_MEMBERSHIP", "CLIENT_ROLE_MAPPING");
 
+    private enum KEYCLOAK_FIELDS {
+        ROLES,
+        COMPOSITE_ROLES,
+        GROUPS,
+        USERS,
+
+    }
+
     private final String serviceName;
 
     public KeycloakUserStore(String serviceName) {
@@ -155,7 +163,7 @@ public class KeycloakUserStore {
         List<UserRepresentation> userRetrievalResult;
 
         do {
-            userRetrievalResult = getHeraclesClient().getUsersMappings(userFrom, userSize, new String[]{"roles"});
+            userRetrievalResult = getHeraclesClient().getUsersMappings(userFrom, userSize, new String[]{KEYCLOAK_FIELDS.ROLES.name().toLowerCase()});
 
             if (!CollectionUtils.isEmpty(userRetrievalResult)) {
                 userRetrievalResult.forEach(user -> {
@@ -177,7 +185,8 @@ public class KeycloakUserStore {
         List<HeraclesRoleViewRepresentation> roleRetrievalResult;
 
         do {
-            roleRetrievalResult = getHeraclesClient().getRolesMappings(roleFrom, roleSize, new String[]{"composite_roles", "groups"});
+            roleRetrievalResult = getHeraclesClient().getRolesMappings(roleFrom, roleSize, new String[]{KEYCLOAK_FIELDS.COMPOSITE_ROLES.name().toLowerCase(),
+                    KEYCLOAK_FIELDS.GROUPS.name()});
 
             if (!CollectionUtils.isEmpty(roleRetrievalResult)) {
                 roleRetrievalResult.forEach(role -> {
@@ -317,7 +326,8 @@ public class KeycloakUserStore {
         List<UserRepresentation> ret = new ArrayList<>();
 
         do {
-            List<UserRepresentation> users = getHeraclesClient().getUsersMappings(userFrom, userSize, new String[]{"groups"});
+            List<UserRepresentation> users = getHeraclesClient().getUsersMappings(userFrom, userSize,
+                    new String[]{KEYCLOAK_FIELDS.GROUPS.name().toLowerCase()});
             if (CollectionUtils.isEmpty(users)) {
                 userFound = false;
             } else {
