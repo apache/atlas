@@ -345,7 +345,7 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         @Override
         public Map<String, List<String>> getHighLights() {
             Object highlight = this.hit.get("highlight");
-            if(Objects.isNull(highlight)) {
+            if(Objects.nonNull(highlight)) {
                 return (Map<String, List<String>>) highlight;
             }
             return new HashMap<>();
