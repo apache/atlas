@@ -151,7 +151,7 @@ public class AtlasJanusIndexQuery implements AtlasIndexQuery<AtlasJanusVertex, A
 
         @Override
         public Map<String, List<String>> getHighLights() {
-            return null;
+            return new HashMap<>();
         }
     }
 }

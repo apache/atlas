@@ -14,10 +14,6 @@ public class ElasticsearchMetadata {
         return highlights;
     }
 
-    public void setHighlights(Map<String, List<String>> highlights) {
-        this.highlights = highlights;
-    }
-
     public void addHighlights(Map<String, List<String>> highlights) {
         if(MapUtils.isNotEmpty(highlights)) {
             if (MapUtils.isEmpty(this.highlights)) {

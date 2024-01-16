@@ -283,7 +283,7 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
 
         @Override
         public Map<String, List<String>> getHighLights() {
-            return null;
+            return new HashMap<>();
         }
     }
 
@@ -348,7 +348,7 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
             if(Objects.isNull(highlight)) {
                 return (Map<String, List<String>>) highlight;
             }
-            return null;
+            return new HashMap<>();
         }
     }
 }
