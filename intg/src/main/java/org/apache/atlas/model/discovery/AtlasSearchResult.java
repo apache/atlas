@@ -59,7 +59,7 @@ public class AtlasSearchResult implements Serializable {
     private Map<String, Object>            aggregations;
     private Map<String,Double>             searchScore;
 
-    private Map<String, SearchMetadata>   searchMetadata;
+    private Map<String, ElasticsearchMetadata>   searchMetadata;
 
 
 
@@ -156,7 +156,7 @@ public class AtlasSearchResult implements Serializable {
 
     public void setNextMarker(String nextMarker) { this.nextMarker = nextMarker; }
 
-    public Map<String, SearchMetadata> getSearchMetadata() {
+    public Map<String, ElasticsearchMetadata> getSearchMetadata() {
         return searchMetadata;
     }
 
@@ -164,7 +164,7 @@ public class AtlasSearchResult implements Serializable {
         if(MapUtils.isEmpty(this.searchMetadata)) {
             this.searchMetadata = new HashMap<>();
         }
-        SearchMetadata v = this.searchMetadata.getOrDefault(guid, new SearchMetadata());
+        ElasticsearchMetadata v = this.searchMetadata.getOrDefault(guid, new ElasticsearchMetadata());
         v.addHighlights(highlights);
         this.searchMetadata.put(guid, v);
     }
