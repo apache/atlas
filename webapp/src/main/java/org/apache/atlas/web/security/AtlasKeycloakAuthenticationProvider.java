@@ -18,7 +18,7 @@ package org.apache.atlas.web.security;
 
 import io.micrometer.core.instrument.Counter;
 import org.apache.atlas.AtlasConfiguration;
-import org.apache.atlas.keycloak.client.AtlasKeycloakClient;
+import org.apache.atlas.auth.client.keycloak.AtlasKeycloakClient;
 import org.apache.atlas.service.metrics.MetricUtils;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.commons.configuration.Configuration;

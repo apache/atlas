@@ -1,6 +1,6 @@
-package org.apache.atlas.keycloak.client.config;
+package main.java.heracles.client.config;
 
-public final class KeycloakConfig {
+public class HeraclesConfigBuilder {
 
     String authServerUrl;
     String realmId;
@@ -27,5 +27,4 @@ public final class KeycloakConfig {
     public String getGrantType() {
         return grantType;
     }
-
 }
