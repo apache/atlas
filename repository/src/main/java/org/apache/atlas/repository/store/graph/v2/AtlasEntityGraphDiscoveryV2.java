@@ -358,6 +358,8 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
         for (String attrName : entityType.getRelationshipAttributes().keySet()) {
 
             // if attribute is not in 'relationshipAttributes', try 'attributes'
+            // appendRelationshipAttribute will be ignored if same attribute is present
+            // in relationshipAttribute
             if (entity.hasRelationshipAttribute(attrName)) {
                 Object         attrVal          = entity.getRelationshipAttribute(attrName);
                 String         relationshipType = AtlasEntityUtil.getRelationshipType(attrVal);
@@ -374,10 +376,31 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
                 visitAttribute(attribute.getAttributeType(), attrVal, entity.getGuid());
 
                 visitedAttributes.add(attrName);
+            } else {
+                if (entity.hasAppendRelationshipAttribute(attrName)) {
+                    discoveryContext.setAppendRelationshipAttributeVisited(true);
+                    Object attrVal = entity.getAppendRelationshipAttribute(attrName);
+                    String relationshipType = AtlasEntityUtil.getRelationshipType(attrVal);
+                    AtlasAttribute attribute = entityType.getRelationshipAttribute(attrName, relationshipType);
+
+                    visitAttribute(attribute.getAttributeType(), attrVal, entity.getGuid());
+
+                    visitedAttributes.add(attrName);
+                }
+
+                if (entity.hasRemoveRelationshipAttribute(attrName)) {
+                    discoveryContext.setRemoveRelationshipAttributeVisited(true);
+                    Object attrVal = entity.getRemoveRelationshipAttribute(attrName);
+                    String relationshipType = AtlasEntityUtil.getRelationshipType(attrVal);
+                    AtlasAttribute attribute = entityType.getRelationshipAttribute(attrName, relationshipType);
+
+                    visitAttribute(attribute.getAttributeType(), attrVal, entity.getGuid());
+
+                    visitedAttributes.add(attrName);
+                }
             }
         }
     }
-
     void visitStruct(AtlasStructType structType, AtlasStruct struct, String referringEntityGuid) throws AtlasBaseException {
         for (AtlasAttribute attribute : structType.getAllAttributes().values()) {
             AtlasType attrType = attribute.getAttributeType();

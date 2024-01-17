@@ -44,6 +44,9 @@ public final class EntityGraphDiscoveryContext {
     private final Map<AtlasObjectId, AtlasVertex> resolvedIdsByUniqAttribs = new HashMap<>();
     private final Set<String>                     localGuids               = new HashSet<>();
 
+    private  boolean isAppendRelationshipAttributeVisited;
+    private  boolean isRemoveRelationshipAttributeVisited;
+
     public EntityGraphDiscoveryContext(AtlasTypeRegistry typeRegistry, EntityStream entityStream) {
         this.typeRegistry = typeRegistry;
         this.entityStream = entityStream;
@@ -153,5 +156,21 @@ public final class EntityGraphDiscoveryContext {
         resolvedGuids.clear();
         resolvedIdsByUniqAttribs.clear();
         localGuids.clear();
+    }
+
+    public boolean isAppendRelationshipAttributeVisited() {
+        return isAppendRelationshipAttributeVisited;
+    }
+
+    public void setAppendRelationshipAttributeVisited(boolean appendRelationshipAttributeVisited) {
+        isAppendRelationshipAttributeVisited = appendRelationshipAttributeVisited;
+    }
+
+    public boolean isRemoveRelationshipAttributeVisited() {
+        return isRemoveRelationshipAttributeVisited;
+    }
+
+    public void setRemoveRelationshipAttributeVisited(boolean removeRelationshipAttributeVisited) {
+        isRemoveRelationshipAttributeVisited = removeRelationshipAttributeVisited;
     }
 }
