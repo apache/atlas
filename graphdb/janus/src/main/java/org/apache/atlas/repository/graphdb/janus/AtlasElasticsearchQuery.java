@@ -280,6 +280,11 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         public DirectIndexQueryResult<AtlasJanusVertex, AtlasJanusEdge> getCollapseVertices(String key) {
             return null;
         }
+
+        @Override
+        public Map<String, List<String>> getHighLights() {
+            return new HashMap<>();
+        }
     }
 
 
@@ -335,6 +340,15 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
                 return -1;
             }
             return Double.parseDouble(String.valueOf(hit.get("_score")));
+        }
+
+        @Override
+        public Map<String, List<String>> getHighLights() {
+            Object highlight = this.hit.get("highlight");
+            if(Objects.nonNull(highlight)) {
+                return (Map<String, List<String>>) highlight;
+            }
+            return new HashMap<>();
         }
     }
 }

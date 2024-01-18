@@ -20,6 +20,7 @@ public class SearchParams {
     boolean excludeClassifications;
 
     RequestMetadata requestMetadata = new RequestMetadata();
+    boolean showHighlights;
 
     public String getQuery() {
         return getQuery();
@@ -117,6 +118,10 @@ public class SearchParams {
         return this.requestMetadata.getSearchInput();
     }
 
+    public boolean isShowHighlights() {
+        return showHighlights;
+    }
+
     static class RequestMetadata {
         private String searchInput;
         private Set<String> utmTags;
@@ -146,4 +151,6 @@ public class SearchParams {
             this.saveSearchLog = saveSearchLog;
         }
     }
+
+
 }

@@ -33,4 +33,5 @@ public class DirectIndexQueryResult<V, E> {
     public void setApproximateCount(Integer approximateCount) {
         this.approximateCount = approximateCount;
     }
+
 }

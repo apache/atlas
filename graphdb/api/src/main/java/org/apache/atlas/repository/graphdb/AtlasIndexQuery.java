@@ -23,6 +23,7 @@ import org.apache.atlas.model.discovery.SearchParams;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -100,6 +101,8 @@ public interface AtlasIndexQuery<V, E> {
         Set<String> getCollapseKeys();
 
         DirectIndexQueryResult<V, E> getCollapseVertices(String key);
+
+        Map<String, List<String>> getHighLights();
 
     }
 
