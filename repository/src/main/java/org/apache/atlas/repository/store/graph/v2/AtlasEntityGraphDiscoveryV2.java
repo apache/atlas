@@ -357,6 +357,12 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
     private void visitRelationships(AtlasEntityType entityType, AtlasEntity entity, List<String> visitedAttributes) throws AtlasBaseException {
         for (String attrName : entityType.getRelationshipAttributes().keySet()) {
 
+            if (entity.hasRelationshipAttribute(attrName)){
+                if (entity.hasAppendRelationshipAttribute(attrName) || entity.hasRemoveRelationshipAttribute(attrName)){
+                    throw new AtlasBaseException(AtlasErrorCode.ATTRIBUTE_ALREADY_EXISTS_IN_RELATIONSHIP_ATTRIBUTE, attrName);
+                }
+            }
+
             // if attribute is not in 'relationshipAttributes', try 'attributes'
             // appendRelationshipAttribute will be ignored if same attribute is present
             // in relationshipAttribute
