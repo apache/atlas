@@ -76,6 +76,11 @@ public class AttributeMutationContext {
         this.existingEdge       = currentEdge;
     }
 
+    public AttributeMutationContext(EntityOperation op, AtlasVertex referringVertex, AtlasAttribute attribute, Object value,
+                                    String vertexProperty, AtlasType currentElementType) {
+        this(op, referringVertex, attribute, value, vertexProperty, currentElementType, null);
+    }
+
     @Override
     public int hashCode() {
         return Objects.hash(op, referringVertex, attribute, value, vertexProperty, currentElementType, existingEdge);

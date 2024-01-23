@@ -344,6 +344,11 @@ public class RequestContext {
         }
     }
 
+    public void recordEntityUpdateForNonRelationshipAttributes(AtlasEntityHeader entity) {
+        if (entity != null && entity.getGuid() != null) {
+            updatedEntities.put(entity.getGuid(), entity);
+        }
+    }
     public void recordEntityToSkip(String guid) {
         if(! StringUtils.isEmpty(guid)) {
             entitiesToSkipUpdate.add(guid);
