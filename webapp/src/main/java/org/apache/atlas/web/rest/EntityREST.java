@@ -1174,11 +1174,11 @@ public class EntityREST {
         AtlasPerfTracer perf = null;
 
         try {
-            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.searchAuditEvents");
-            }
-
             String dslString = parameters.getQueryString();
+
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.searchAuditEvents(" + dslString + ")");
+            }
 
             EntityAuditSearchResult ret = esBasedAuditRepository.searchEvents(dslString);
 
