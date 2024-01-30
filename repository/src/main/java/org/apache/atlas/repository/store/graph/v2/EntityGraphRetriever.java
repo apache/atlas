@@ -975,76 +975,83 @@ public class EntityGraphRetriever {
     private AtlasEntityHeader mapVertexToAtlasEntityHeader(AtlasVertex entityVertex, Set<String> attributes) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("mapVertexToAtlasEntityHeader");
         AtlasEntityHeader ret = new AtlasEntityHeader();
+        try {
+            String  typeName     = entityVertex.getProperty(Constants.TYPE_NAME_PROPERTY_KEY, String.class);
+            String  guid         = entityVertex.getProperty(Constants.GUID_PROPERTY_KEY, String.class);
+            Boolean isIncomplete = isEntityIncomplete(entityVertex);
 
-        String  typeName     = entityVertex.getProperty(Constants.TYPE_NAME_PROPERTY_KEY, String.class);
-        String  guid         = entityVertex.getProperty(Constants.GUID_PROPERTY_KEY, String.class);
-        Boolean isIncomplete = isEntityIncomplete(entityVertex);
-
-        ret.setTypeName(typeName);
-        ret.setGuid(guid);
-        ret.setStatus(GraphHelper.getStatus(entityVertex));
-        if(RequestContext.get().includeClassifications()){
-            ret.setClassificationNames(getAllTraitNames(entityVertex));
-        }
-        ret.setIsIncomplete(isIncomplete);
-        ret.setLabels(getLabels(entityVertex));
-
-        ret.setCreatedBy(GraphHelper.getCreatedByAsString(entityVertex));
-        ret.setUpdatedBy(GraphHelper.getModifiedByAsString(entityVertex));
-        ret.setCreateTime(new Date(GraphHelper.getCreatedTime(entityVertex)));
-        ret.setUpdateTime(new Date(GraphHelper.getModifiedTime(entityVertex)));
-
-        if(RequestContext.get().includeMeanings()) {
-            List<AtlasTermAssignmentHeader> termAssignmentHeaders = mapAssignedTerms(entityVertex);
-            ret.setMeanings(termAssignmentHeaders);
-            ret.setMeaningNames(
-                termAssignmentHeaders.stream().map(AtlasTermAssignmentHeader::getDisplayText)
-                    .collect(Collectors.toList()));
-        }
-        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
-
-        if (entityType != null) {
-            for (AtlasAttribute headerAttribute : entityType.getHeaderAttributes().values()) {
-                Object attrValue = getVertexAttribute(entityVertex, headerAttribute);
-
-                if (attrValue != null) {
-                    ret.setAttribute(headerAttribute.getName(), attrValue);
-                }
+            ret.setTypeName(typeName);
+            ret.setGuid(guid);
+            ret.setStatus(GraphHelper.getStatus(entityVertex));
+            if(RequestContext.get().includeClassifications()){
+                ret.setClassificationNames(getAllTraitNames(entityVertex));
             }
+            ret.setIsIncomplete(isIncomplete);
+            ret.setLabels(getLabels(entityVertex));
 
-            Object displayText = getDisplayText(entityVertex, entityType);
+            ret.setCreatedBy(GraphHelper.getCreatedByAsString(entityVertex));
+            ret.setUpdatedBy(GraphHelper.getModifiedByAsString(entityVertex));
+            ret.setCreateTime(new Date(GraphHelper.getCreatedTime(entityVertex)));
+            ret.setUpdateTime(new Date(GraphHelper.getModifiedTime(entityVertex)));
 
-            if (displayText != null) {
-                ret.setDisplayText(displayText.toString());
+            if(RequestContext.get().includeMeanings()) {
+                List<AtlasTermAssignmentHeader> termAssignmentHeaders = mapAssignedTerms(entityVertex);
+                ret.setMeanings(termAssignmentHeaders);
+                ret.setMeaningNames(
+                        termAssignmentHeaders.stream().map(AtlasTermAssignmentHeader::getDisplayText)
+                                .collect(Collectors.toList()));
             }
+            AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
 
-            if (CollectionUtils.isNotEmpty(attributes)) {
-                for (String attrName : attributes) {
-                    AtlasAttribute attribute = entityType.getAttribute(attrName);
-
-                    if (attribute == null) {
-                        attrName = toNonQualifiedName(attrName);
-
-                        if (ret.hasAttribute(attrName)) {
-                            continue;
-                        }
-
-                        attribute = entityType.getAttribute(attrName);
-
-                        if (attribute == null) {
-                            attribute = entityType.getRelationshipAttribute(attrName, null);
-                        }
-                    }
-
-                    Object attrValue = getVertexAttribute(entityVertex, attribute);
+            if (entityType != null) {
+                for (AtlasAttribute headerAttribute : entityType.getHeaderAttributes().values()) {
+                    Object attrValue = getVertexAttribute(entityVertex, headerAttribute);
 
                     if (attrValue != null) {
-                        ret.setAttribute(attrName, attrValue);
+                        ret.setAttribute(headerAttribute.getName(), attrValue);
+                    }
+                }
+
+                Object displayText = getDisplayText(entityVertex, entityType);
+
+                if (displayText != null) {
+                    ret.setDisplayText(displayText.toString());
+                }
+
+                if (CollectionUtils.isNotEmpty(attributes)) {
+                    for (String attrName : attributes) {
+                        AtlasAttribute attribute = entityType.getAttribute(attrName);
+
+                        if (attribute == null) {
+                            attrName = toNonQualifiedName(attrName);
+
+                            if (ret.hasAttribute(attrName)) {
+                                continue;
+                            }
+
+                            attribute = entityType.getAttribute(attrName);
+
+                            if (attribute == null) {
+                                attribute = entityType.getRelationshipAttribute(attrName, null);
+                            }
+                        }
+
+                        Object attrValue = getVertexAttribute(entityVertex, attribute);
+
+                        if (attrValue != null) {
+                            ret.setAttribute(attrName, attrValue);
+                        }
                     }
                 }
             }
         }
-        RequestContext.get().endMetricRecord(metricRecorder);
+        catch (NullPointerException npe){
+            LOG.error("mapVertexToAtlasEntityHeader: failed for entityVertex {}", entityVertex, npe);
+            throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_SERVER_ERROR, npe, "mapVertexToAtlasEntityHeader: failed for entityVertex " + entityVertex);
+        }
+        finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
+        }
         return ret;
     }
 
