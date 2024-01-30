@@ -3,9 +3,9 @@ name: Charts Values Seed Trigger Dispatcher
 on:
   workflow_run:
     workflows:
-      - "Package Docker Image"
+      - "Java CI with Maven"
     branches:
-      - main
+      - master
       - beta
     types:
       - completed
