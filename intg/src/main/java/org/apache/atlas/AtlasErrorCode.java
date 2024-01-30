@@ -240,6 +240,8 @@ public enum AtlasErrorCode {
     CATEGORY_PARENT_FROM_OTHER_GLOSSARY(409, "ATLAS-400-00-0015", "Parent category from another Anchor(glossary) not supported"),
     CLASSIFICATION_TYPE_HAS_REFERENCES(409, "ATLAS-400-00-0016", "Given classification {0} [{1}] has references"),
     // All internal errors go here
+    UNKNOWN_SERVER_ERROR(500, "ATLAS-500-00-000", "Unknown server error detected {0}"),
+
     INTERNAL_ERROR(500, "ATLAS-500-00-001", "Internal server error {0}"),
     INDEX_CREATION_FAILED(500, "ATLAS-500-00-002", "Index creation failed for {0}"),
     INDEX_ROLLBACK_FAILED(500, "ATLAS-500-00-003", "Index rollback failed for {0}"),
@@ -271,6 +273,7 @@ public enum AtlasErrorCode {
     CINV_UNHEALTHY(500, "ATLAS-500-00-21", "Unable to process type-definition operations"),
     RUNTIME_EXCEPTION(500, "ATLAS-500-00-020", "Runtime exception {0}"),
     KEYCLOAK_INIT_FAILED(500, "ATLAS-500-00-022", "Failed to initialize keycloak client: {0}"),
+
     BATCH_SIZE_TOO_LARGE(406, "ATLAS-406-00-001", "Batch size is too large, please use a smaller batch size"),
 
 
