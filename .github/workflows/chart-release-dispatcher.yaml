@@ -3,11 +3,10 @@ name: Charts Values Seed Trigger Dispatcher
 on:
   workflow_run:
     workflows:
-      - "Java CI with Maven"
+      - "Package Docker Image"
     branches:
-      - master
+      - main
       - beta
-      - staging
     types:
       - completed
 
@@ -25,6 +24,13 @@ jobs:
         id: extract_branch
         run: |
           echo "branch=${{ github.event.workflow_run.head_branch }}" >> $GITHUB_OUTPUT
+
+      - name: Extract Repository Name
+        id: extract_repo_name
+        run: |
+          repo_name=$(basename $GITHUB_REPOSITORY)
+          echo "repo_name=${repo_name}" >> $GITHUB_OUTPUT
+
       - name: Repository Dispatch
         uses: peter-evans/repository-dispatch@v2
         with:
@@ -34,7 +40,7 @@ jobs:
           client-payload: |-
             {
               "repo": {
-                "name": "${{ github.repository }}",
+                "name": "${{ steps.extract_repo_name.outputs.repo_name }}",
                 "branch": "${{ steps.extract_branch.outputs.branch }}"
               }
             }
