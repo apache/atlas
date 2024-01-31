@@ -121,7 +121,6 @@ import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.GraphHelper.*;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getIdFromVertex;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.isReference;
-import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_ONLY_PROPAGATION_DELETE;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.BOTH;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
@@ -1045,9 +1044,10 @@ public class EntityGraphRetriever {
                 }
             }
         }
-        catch (NullPointerException npe){
-            LOG.error("mapVertexToAtlasEntityHeader: failed for entityVertex {}", entityVertex, npe);
-            throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_SERVER_ERROR, npe, "mapVertexToAtlasEntityHeader: failed for entityVertex " + entityVertex);
+        catch (NullPointerException npe) {
+            String id = entityVertex.getIdForDisplay()==null ? "null" :entityVertex.getIdForDisplay();
+            LOG.error("mapVertexToAtlasEntityHeader: failed for entityVertex with id {}", id, npe);
+            throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_SERVER_ERROR, npe, "mapVertexToAtlasEntityHeader: failed for entityVertex with id" + id);
         }
         finally {
             RequestContext.get().endMetricRecord(metricRecorder);
