@@ -1047,7 +1047,7 @@ public class EntityGraphRetriever {
         catch (NullPointerException npe) {
             String id = entityVertex.getIdForDisplay()==null ? "null" :entityVertex.getIdForDisplay();
             LOG.error("mapVertexToAtlasEntityHeader: failed for entityVertex with id {}", id, npe);
-            throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_SERVER_ERROR, npe, "mapVertexToAtlasEntityHeader: failed for entityVertex with id" + id);
+            throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_SERVER_ERROR, npe, "mapVertexToAtlasEntityHeader: failed for entityVertex with id " + id);
         }
         finally {
             RequestContext.get().endMetricRecord(metricRecorder);
