@@ -1,6 +1,7 @@
 package org.apache.atlas.service.metrics;
 
 import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.prometheus.PrometheusMeterRegistry;
@@ -16,6 +17,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -30,6 +32,7 @@ public class MetricsRegistryServiceImpl implements MetricsRegistry {
     private static final String NAME = "name";
     private static final String URI = "uri";
     private static final String METHOD_DIST_SUMMARY = "method_dist_summary";
+    private static final String APPLICATION_LEVEL_METRICS_SUMMARY = "application_level_metrics_summary";
     private static final double[] PERCENTILES = {0.99};
     private static final String METHOD_LEVEL_METRICS_ENABLE = "atlas.metrics.method_level.enable";
     private static final String ATLAS_METRICS_METHOD_PATTERNS = "atlas.metrics.method_patterns";
@@ -58,6 +61,23 @@ public class MetricsRegistryServiceImpl implements MetricsRegistry {
             LOG.error("Failed to collect metrics", e);
             return;
         }
+    }
+    public void collect(String requestId, String requestUri, List<AtlasPerfMetrics.Metric> applicationMetrics){
+        try {
+            for(AtlasPerfMetrics.Metric metric : applicationMetrics){
+                Timer.builder(APPLICATION_LEVEL_METRICS_SUMMARY).tags(convertToMicrometerTags(metric.getTags())).publishPercentiles(PERCENTILES)
+                        .register(getMeterRegistry()).record(metric.getTotalTimeMSecs(), TimeUnit.MILLISECONDS);
+            }
+        } catch (Exception e) {
+            LOG.error("Failed to collect metrics", e);
+            return;
+        }
+    }
+
+    private static Iterable<Tag> convertToMicrometerTags(Map<String, String> tagsMap) {
+        return tagsMap.entrySet().stream()
+                .map(entry -> Tag.of(entry.getKey(), entry.getValue()))
+                .collect(Collectors.toList());
     }
 
     @Override

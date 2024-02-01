@@ -19,6 +19,7 @@
 package org.apache.atlas.utils;
 
 
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -105,6 +106,7 @@ public class AtlasPerfMetrics {
         private final String name;
         private long invocations = 0;
         private long totalTimeMSecs = 0;
+        HashMap<String, String> tags = new HashMap<>();
 
         public Metric(String name) {
             this.name = name;
@@ -118,8 +120,20 @@ public class AtlasPerfMetrics {
             return invocations;
         }
 
+        public void setTotalTimeMSecs(long totalTimeMSecs) {
+            this.totalTimeMSecs = totalTimeMSecs;
+        }
+
         public long getTotalTimeMSecs() {
             return totalTimeMSecs;
         }
+
+        public void addTag(String key, String value) {
+            tags.put(key, value);
+        }
+        public HashMap<String, String> getTags() {
+            return tags;
+        }
+
     }
 }

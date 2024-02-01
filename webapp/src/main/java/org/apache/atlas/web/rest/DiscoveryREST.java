@@ -38,6 +38,7 @@ import org.apache.atlas.searchlog.SearchLoggingManagement;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.collections.CollectionUtils;
@@ -65,7 +66,6 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.Constants.REQUEST_HEADER_HOST;
 import static org.apache.atlas.repository.Constants.REQUEST_HEADER_USER_AGENT;
@@ -389,7 +389,7 @@ public class DiscoveryREST {
 
         RequestContext.get().setIncludeMeanings(!parameters.isExcludeMeanings());
         RequestContext.get().setIncludeClassifications(!parameters.isExcludeClassifications());
-        try {
+        try     {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.indexSearch(" + parameters + ")");
             }
@@ -425,6 +425,14 @@ public class DiscoveryREST {
             }
             throw abe;
         } finally {
+            if(parameters.getUtmTags() != null) {
+                AtlasPerfMetrics.Metric indexsearchMetric = new AtlasPerfMetrics.Metric("indexsearch");
+                indexsearchMetric.addTag("utmTags", String.join(",", parameters.getUtmTags()));
+                indexsearchMetric.addTag("name", "indexsearch");
+                indexsearchMetric.addTag("querySize",parameters.getDsl().getOrDefault("size", 20).toString());
+                indexsearchMetric.setTotalTimeMSecs(System.currentTimeMillis() - startTime);
+                RequestContext.get().addApplicationMetrics(indexsearchMetric);
+            }
             AtlasPerfTracer.log(perf);
         }
     }

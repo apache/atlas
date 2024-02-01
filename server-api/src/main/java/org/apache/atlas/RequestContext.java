@@ -58,6 +58,7 @@ public class RequestContext {
     private final Set<String>                            processGuidIds      = new HashSet<>();
 
     private final AtlasPerfMetrics metrics = isMetricsEnabled ? new AtlasPerfMetrics() : null;
+    private final List<AtlasPerfMetrics.Metric> applicationMetrics = new ArrayList<>();
     private List<EntityGuidPair> entityGuidInRequest = null;
     private final Set<String> entitiesToSkipUpdate = new HashSet<>();
     private final Set<String> onlyCAUpdateEntities = new HashSet<>();
@@ -172,11 +173,21 @@ public class RequestContext {
             }
             metrics.clear();
         }
+        if (CollectionUtils.isNotEmpty(applicationMetrics)) {
+            if (Objects.nonNull(this.metricsRegistry)){
+                this.metricsRegistry.collect(traceId, this.requestUri, applicationMetrics);
+            }
+            applicationMetrics.clear();
+        }
         setTraceId(null);
 
         if (this.entityGuidInRequest != null) {
             this.entityGuidInRequest.clear();
         }
+    }
+
+    public void addApplicationMetrics(AtlasPerfMetrics.Metric metric) {
+        this.applicationMetrics.add(metric);
     }
 
     public void clearEntityCache() {
