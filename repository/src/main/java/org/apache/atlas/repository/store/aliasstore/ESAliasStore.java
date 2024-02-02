@@ -192,7 +192,12 @@ public class ESAliasStore implements IndexAliasStore {
                     }
 
                     for (String asset : assets) {
-                        terms.add(asset);
+                        if (asset.contains("*") || asset.contains("?")) {
+                            //DG-898 Bug fix
+                            allowClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset)));
+                        } else {
+                            terms.add(asset);
+                        }
                         allowClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset + "/*")));
                     }
 
