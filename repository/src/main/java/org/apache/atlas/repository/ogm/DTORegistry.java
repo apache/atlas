@@ -35,7 +35,9 @@ public class DTORegistry {
     @Inject
     public DTORegistry(Set<DataTransferObject> availableDTOs) {
         for (DataTransferObject availableDTO : availableDTOs) {
-            LOG.info("Registering DTO: {}", availableDTO.getClass().getSimpleName());
+            if (LOG.isDebugEnabled()){
+                LOG.debug("Registering DTO: {}", availableDTO.getClass().getSimpleName());
+            }
             registerDTO(availableDTO);
         }
     }

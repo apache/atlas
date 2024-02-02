@@ -145,8 +145,10 @@ public class AuditProviderFactory {
 		List<AuditHandler> providers = new ArrayList<AuditHandler>();
 
 		for (Object propNameObj : props.keySet()) {
-			LOG.info("AUDIT PROPERTY: " + propNameObj.toString() + "="
-					+ props.getProperty(propNameObj.toString()));
+			if (LOG.isDebugEnabled()){
+				LOG.debug("AUDIT PROPERTY: " + propNameObj.toString() + "="
+						+ props.getProperty(propNameObj.toString()));
+			}
 		}
 
 		// Process new audit configurations
