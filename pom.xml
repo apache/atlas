@@ -715,9 +715,9 @@
         <hppc.version>0.8.1</hppc.version>
         <httpcomponents-httpclient.version>4.5.13</httpcomponents-httpclient.version>
         <httpcomponents-httpcore.version>4.4.13</httpcomponents-httpcore.version>
-        <jackson.databind.version>2.12.4</jackson.databind.version>
-        <jackson.version>2.12.4</jackson.version>
-        <janusgraph.version>0.6.03</janusgraph.version>
+        <jackson.databind.version>2.11.3</jackson.databind.version>
+        <jackson.version>2.11.3</jackson.version>
+        <janusgraph.version>0.6.0</janusgraph.version>
         <janusgraph.cassandra.version>0.5.3</janusgraph.cassandra.version>
         <javax-inject.version>1</javax-inject.version>
         <javax.servlet.version>3.1.0</javax.servlet.version>
@@ -778,7 +778,6 @@
         <zookeeper.version>3.4.6</zookeeper.version>
         <redis.client.version>3.20.1</redis.client.version>
         <micrometer.version>1.11.1</micrometer.version>
-        <netty4.version>4.1.61.Final</netty4.version>
     </properties>
 
     <modules>
@@ -835,16 +834,6 @@
             <snapshots>
                 <enabled>false</enabled>
             </snapshots>
-        </repository>
-        <repository>
-            <id>github</id>
-            <url>https://maven.pkg.github.com/atlanhq/atlan-janusgraph</url>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
         </repository>
         <repository>
             <id>hortonworks.repo</id>

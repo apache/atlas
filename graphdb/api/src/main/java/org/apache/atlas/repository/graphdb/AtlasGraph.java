@@ -383,9 +383,4 @@ public interface AtlasGraph<V, E> {
      * @throws AtlasException when error encountered in creating the client.
      */
     AtlasGraphIndexClient getGraphIndexClient()throws AtlasException;
-
-
-    void setEnableCache(boolean enableCache);
-
-    Boolean isCacheEnabled();
 }

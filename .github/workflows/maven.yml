@@ -51,16 +51,6 @@ jobs:
         run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
         id: get_branch
 
-      - name: Create Maven Settings
-        uses: s4u/maven-settings-action@v2.8.0
-        with:
-          servers: |
-            [{
-                "id": "github",
-                "username": "atlan-ci",
-                "password": "${{ secrets.my_pat }}"
-            }]
-
       - name: Build with Maven
         run: |
           branch_name=${{ steps.get_branch.outputs.branch }} 
