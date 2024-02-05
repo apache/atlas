@@ -18,6 +18,7 @@
 package org.apache.atlas.service;
 
 import org.apache.atlas.annotation.AtlasService;
+import org.apache.atlas.type.AtlasType;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -27,6 +28,7 @@ import org.springframework.context.annotation.Profile;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
+
 import java.util.List;
 
 import static org.apache.atlas.AtlasConstants.ATLAS_MIGRATION_MODE_FILENAME;
@@ -65,8 +67,8 @@ public class Services {
                     continue;
                 }
 
-                LOG.info("Starting service {}", svc.getClass().getName());
 
+                LOG.info("Starting service {}", svc.getClass().getName());
                 svc.start();
             }
         } catch (Exception e) {
