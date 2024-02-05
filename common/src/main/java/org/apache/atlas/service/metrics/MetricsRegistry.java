@@ -4,10 +4,13 @@ import org.apache.atlas.utils.AtlasPerfMetrics;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.List;
 
 public interface MetricsRegistry {
 
     void collect(String requestId, String requestUri, AtlasPerfMetrics metrics);
+
+    void collect(String requestId, String requestUri, List<AtlasPerfMetrics.Metric> applicationMetrics);
 
     void scrape(PrintWriter writer) throws IOException;
 
