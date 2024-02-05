@@ -91,6 +91,8 @@ public class DiscoveryREST {
     private final AtlasDiscoveryService discoveryService;
     private final SearchLoggingManagement loggerManagement;
 
+    private static final String INDEXSEARCH_TAG_NAME = "indexsearch";
+
     @Inject
     public DiscoveryREST(AtlasTypeRegistry typeRegistry, AtlasDiscoveryService discoveryService,
                          SearchLoggingManagement loggerManagement, Configuration configuration) {
@@ -426,9 +428,9 @@ public class DiscoveryREST {
             throw abe;
         } finally {
             if(parameters.getUtmTags() != null) {
-                AtlasPerfMetrics.Metric indexsearchMetric = new AtlasPerfMetrics.Metric("indexsearch");
+                AtlasPerfMetrics.Metric indexsearchMetric = new AtlasPerfMetrics.Metric(INDEXSEARCH_TAG_NAME);
                 indexsearchMetric.addTag("utmTags", String.join(",", parameters.getUtmTags()));
-                indexsearchMetric.addTag("name", "indexsearch");
+                indexsearchMetric.addTag("name", INDEXSEARCH_TAG_NAME);
                 indexsearchMetric.addTag("querySize",parameters.getDsl().getOrDefault("size", 20).toString());
                 indexsearchMetric.setTotalTimeMSecs(System.currentTimeMillis() - startTime);
                 RequestContext.get().addApplicationMetrics(indexsearchMetric);
