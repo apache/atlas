@@ -28,15 +28,8 @@ import org.springframework.context.annotation.Profile;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
-import org.apache.atlas.utils.AtlasPerfTracer;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-
 
 import static org.apache.atlas.AtlasConstants.ATLAS_MIGRATION_MODE_FILENAME;
 import static org.apache.atlas.AtlasConstants.ATLAS_SERVICES_ENABLED;
@@ -56,8 +49,6 @@ public class Services {
     private final boolean       servicesEnabled;
     private final String        migrationDirName;
     private final boolean       migrationEnabled;
-    private Map<String, Long> durationMap = new HashMap<>();
-    private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("Services");
 
     @Inject
     public Services(List<Service> services, Configuration configuration) {
@@ -70,28 +61,18 @@ public class Services {
 
     @PostConstruct
     public void start() {
-        AtlasPerfTracer perf = null;
         try {
             for (Service svc : services) {
                 if (!isServiceUsed(svc)) {
                     continue;
                 }
 
-                if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                    perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "Service.start(" +  svc.getClass().getName() + ")");
-                }
-                Instant start = Instant.now();
 
                 LOG.info("Starting service {}", svc.getClass().getName());
                 svc.start();
-
-                durationMap.putIfAbsent(svc.getClass().getName(), Duration.between(start, Instant.now()).toMillis());
             }
-            printHashMapInTableFormatDescendingOrder(durationMap);
         } catch (Exception e) {
             throw new RuntimeException(e);
-        } finally {
-            AtlasPerfTracer.log(perf);
         }
     }
 
@@ -135,16 +116,5 @@ public class Services {
 
     private boolean isDataMigrationService(Service svc) {
         return svc.getClass().getSimpleName().equals(dataMigrationClassName);
-    }
-
-    public static void printHashMapInTableFormatDescendingOrder(Map<String, Long> map) {
-        // Convert map to a list of entries
-        List<Map.Entry<String, Long>> list = new ArrayList<>(map.entrySet());
-
-        // Sort the list by values in descending order
-        list.sort((entry1, entry2) -> entry2.getValue().compareTo(entry1.getValue()));
-
-        LOG.info("Capturing Service startup time {}", AtlasType.toJson(list));
-
     }
 }
