@@ -25,7 +25,7 @@ on:
       - beta
       - development
       - master
-      - janusgraph-upgrade-1.0.0
+      - lineageondemand
 
 jobs:
   build:
