@@ -64,21 +64,11 @@ public class MetricsRegistryServiceImpl implements MetricsRegistry {
         }
     }
     //Use this if you want to publish Histograms
-    public void collect(String requestId, String requestUri, List<AtlasPerfMetrics.Metric> applicationMetrics){
+    public void collectIndexsearch(String requestId, String requestUri, List<AtlasPerfMetrics.Metric> applicationMetrics){
         try {
             for(AtlasPerfMetrics.Metric metric : applicationMetrics){
                 Timer.builder(APPLICATION_LEVEL_METRICS_SUMMARY)
-                        .serviceLevelObjectives(
-                                Duration.ofMillis(500),
-                                Duration.ofMillis(750),
-                                Duration.ofMillis(1000),
-                                Duration.ofMillis(1500),
-                                Duration.ofSeconds(2),
-                                Duration.ofSeconds(3),
-                                Duration.ofSeconds(5),
-                                Duration.ofSeconds(10),
-                                Duration.ofSeconds(15)
-                        )
+                        .publishPercentileHistogram()
                         .publishPercentiles(PERCENTILES)
                         .tags(convertToMicrometerTags(metric.getTags()))
                         .register(getMeterRegistry()).record(metric.getTotalTimeMSecs(), TimeUnit.MILLISECONDS);
