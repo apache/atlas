@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -62,10 +63,27 @@ public class MetricsRegistryServiceImpl implements MetricsRegistry {
             return;
         }
     }
-    public void collect(String requestId, String requestUri, List<AtlasPerfMetrics.Metric> applicationMetrics){
+    //Use this if you want to publish Histograms
+    public void collectIndexsearch(String requestId, String requestUri, List<AtlasPerfMetrics.Metric> applicationMetrics){
         try {
             for(AtlasPerfMetrics.Metric metric : applicationMetrics){
-                Timer.builder(APPLICATION_LEVEL_METRICS_SUMMARY).tags(convertToMicrometerTags(metric.getTags())).publishPercentiles(PERCENTILES)
+                Timer.builder(APPLICATION_LEVEL_METRICS_SUMMARY)
+                        .serviceLevelObjectives(
+                                Duration.ofMillis(500),
+                                Duration.ofMillis(750),
+                                Duration.ofMillis(1000),
+                                Duration.ofMillis(1200),
+                                Duration.ofMillis(1500),
+                                Duration.ofSeconds(2),
+                                Duration.ofSeconds(3),
+                                Duration.ofSeconds(4),
+                                Duration.ofSeconds(5),
+                                Duration.ofSeconds(7),
+                                Duration.ofSeconds(10),
+                                Duration.ofSeconds(15)
+                        )
+                        .publishPercentiles(PERCENTILES)
+                        .tags(convertToMicrometerTags(metric.getTags()))
                         .register(getMeterRegistry()).record(metric.getTotalTimeMSecs(), TimeUnit.MILLISECONDS);
             }
         } catch (Exception e) {

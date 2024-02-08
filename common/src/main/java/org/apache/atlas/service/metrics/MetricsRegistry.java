@@ -10,7 +10,7 @@ public interface MetricsRegistry {
 
     void collect(String requestId, String requestUri, AtlasPerfMetrics metrics);
 
-    void collect(String requestId, String requestUri, List<AtlasPerfMetrics.Metric> applicationMetrics);
+    void collectIndexsearch(String requestId, String requestUri, List<AtlasPerfMetrics.Metric> applicationMetrics);
 
     void scrape(PrintWriter writer) throws IOException;
 

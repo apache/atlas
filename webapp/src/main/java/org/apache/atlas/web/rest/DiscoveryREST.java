@@ -66,6 +66,7 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.Arrays;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.Constants.REQUEST_HEADER_HOST;
 import static org.apache.atlas.repository.Constants.REQUEST_HEADER_USER_AGENT;
@@ -92,6 +93,7 @@ public class DiscoveryREST {
     private final SearchLoggingManagement loggerManagement;
 
     private static final String INDEXSEARCH_TAG_NAME = "indexsearch";
+    private static final Set<String> TRACKING_UTM_TAGS = new HashSet<>(Arrays.asList("ui_main_list", "ui_popup_searchbar"));
 
     @Inject
     public DiscoveryREST(AtlasTypeRegistry typeRegistry, AtlasDiscoveryService discoveryService,
@@ -427,11 +429,16 @@ public class DiscoveryREST {
             }
             throw abe;
         } finally {
-            if(parameters.getUtmTags() != null) {
+            if(CollectionUtils.isNotEmpty(parameters.getUtmTags())) {
                 AtlasPerfMetrics.Metric indexsearchMetric = new AtlasPerfMetrics.Metric(INDEXSEARCH_TAG_NAME);
-                indexsearchMetric.addTag("utmTags", String.join(",", parameters.getUtmTags()));
+                indexsearchMetric.addTag("utmTag", "other");
+                for (String utmTag : parameters.getUtmTags()) {
+                    if (TRACKING_UTM_TAGS.contains(utmTag)) {
+                        indexsearchMetric.addTag("utmTag", utmTag);
+                        break;
+                    }
+                }
                 indexsearchMetric.addTag("name", INDEXSEARCH_TAG_NAME);
-                indexsearchMetric.addTag("querySize",parameters.getDsl().getOrDefault("size", 20).toString());
                 indexsearchMetric.setTotalTimeMSecs(System.currentTimeMillis() - startTime);
                 RequestContext.get().addApplicationMetrics(indexsearchMetric);
             }
