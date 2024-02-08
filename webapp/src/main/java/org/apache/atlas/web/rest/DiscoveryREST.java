@@ -431,9 +431,11 @@ public class DiscoveryREST {
         } finally {
             if(CollectionUtils.isNotEmpty(parameters.getUtmTags())) {
                 AtlasPerfMetrics.Metric indexsearchMetric = new AtlasPerfMetrics.Metric(INDEXSEARCH_TAG_NAME);
+                indexsearchMetric.addTag("utmTag", "other");
                 for (String utmTag : parameters.getUtmTags()) {
                     if (TRACKING_UTM_TAGS.contains(utmTag)) {
                         indexsearchMetric.addTag("utmTag", utmTag);
+                        break;
                     }
                 }
                 indexsearchMetric.addTag("name", INDEXSEARCH_TAG_NAME);
