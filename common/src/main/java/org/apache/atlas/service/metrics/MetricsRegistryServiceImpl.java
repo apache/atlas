@@ -80,7 +80,12 @@ public class MetricsRegistryServiceImpl implements MetricsRegistry {
                                 Duration.ofSeconds(5),
                                 Duration.ofSeconds(7),
                                 Duration.ofSeconds(10),
-                                Duration.ofSeconds(15)
+                                Duration.ofSeconds(15),
+                                Duration.ofSeconds(20),
+                                Duration.ofSeconds(25),
+                                Duration.ofSeconds(30),
+                                Duration.ofSeconds(40),
+                                Duration.ofSeconds(60)
                         )
                         .publishPercentiles(PERCENTILES)
                         .tags(convertToMicrometerTags(metric.getTags()))
