@@ -98,7 +98,7 @@ public class SoftDeleteHandlerV1 extends DeleteHandlerV1 {
                 AtlasRelationshipStoreV2.recordRelationshipMutation(AtlasRelationshipStoreV2.RelationshipMutation.RELATIONSHIP_SOFT_DELETE, edge, entityRetriever);
         } catch (Exception e) {
             LOG.error("Error while deleting edge {}", GraphHelper.string(edge), e);
-            throw new AtlasBaseException(e);
+            throw e;
         }
     }
 }
