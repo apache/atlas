@@ -55,13 +55,11 @@ Build Process
      $ git checkout tags/<tag>
 
 2. Execute the following commands to build Apache Atlas
-
    $ export MAVEN_OPTS="-Xms2g -Xmx2g"
    $ mvn clean install
    $ mvn clean package -Pdist
 
 3. After above build commands successfully complete, you should see the following files
-
    distro/target/apache-atlas-<version>-bin.tar.gz
    distro/target/apache-atlas-<version>-hbase-hook.tar.gz
    distro/target/apache-atlas-<version>-hive-hook.tar.gz
