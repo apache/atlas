@@ -68,6 +68,11 @@ public class AuthPoliciesBootstrapper implements ActiveStateChangeHandler, Servi
 
             if ("atlas".equalsIgnoreCase(authorizer)) {
                 loadBootstrapAuthPolicies();
+
+                boolean overridePolicies = ApplicationProperties.get().getBoolean("atlas.authorizer.policy.override", false);
+                if (overridePolicies) {
+                    overrideBootstrapAuthPolicies();
+                }
             } else {
                 LOG.info("AuthPoliciesBootstrapper: startInternal: Skipping as not needed");
             }
@@ -94,6 +99,20 @@ public class AuthPoliciesBootstrapper implements ActiveStateChangeHandler, Servi
         }
 
         LOG.info("<== AuthPoliciesBootstrapper.loadBootstrapAuthPolicies()");
+    }
+
+    private void overrideBootstrapAuthPolicies() {
+        LOG.info("==> AuthPoliciesBootstrapper.overrideBootstrapAuthPolicies()");
+        RequestContext.get().setSkipAuthorizationCheck(true);
+        try {
+            String atlasHomeDir  = System.getProperty("atlas.home");
+            String policiesDirName = (StringUtils.isEmpty(atlasHomeDir) ? "." : atlasHomeDir) + File.separator + "override-policies";
+            File topPoliciesDir  = new File(policiesDirName);
+            loadPoliciesInFolder(topPoliciesDir);
+        } finally {
+            RequestContext.get().setSkipAuthorizationCheck(false);
+        }
+        LOG.info("<== AuthPoliciesBootstrapper.overrideBootstrapAuthPolicies()");
     }
 
     private void loadPoliciesInFolder (File folder) {

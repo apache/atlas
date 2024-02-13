@@ -19,6 +19,8 @@
 
 package org.apache.atlas.plugin.service;
 
+import org.apache.atlas.authorizer.store.PoliciesStore;
+import org.apache.atlas.authorizer.store.UsersStore;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
@@ -149,6 +151,7 @@ public class RangerBasePlugin {
 
 	public void setRoles(RangerRoles roles) {
 		this.roles = roles;
+		UsersStore.setAllRoles(roles);
 
 		RangerPolicyEngine policyEngine = this.policyEngine;
 
@@ -165,6 +168,7 @@ public class RangerBasePlugin {
 
 	public void setUserStore(RangerUserStore userStore) {
 		this.userStore = userStore;
+		UsersStore.setUserStore(userStore);
 
 		// RangerPolicyEngine policyEngine = this.policyEngine;
 
@@ -265,6 +269,14 @@ public class RangerBasePlugin {
 	public void setPolicies(ServicePolicies policies) {
 		if (LOG.isDebugEnabled()) {
 			LOG.debug("==> setPolicies(" + policies + ")");
+		}
+
+		if (policies != null) {
+			List<RangerPolicy> resourcePolicies = policies.getPolicies();
+			List<RangerPolicy> tagPolicies = policies.getTagPolicies().getPolicies();
+
+			PoliciesStore.setResourcePolicies(resourcePolicies);
+			PoliciesStore.setTagPolicies(tagPolicies);
 		}
 
 		// guard against catastrophic failure during policy engine Initialization or

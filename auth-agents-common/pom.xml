@@ -57,6 +57,12 @@
 
         <dependency>
             <groupId>org.apache.atlas</groupId>
+            <artifactId>auth-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
             <artifactId>auth-audits</artifactId>
             <version>${project.version}</version>
         </dependency>
