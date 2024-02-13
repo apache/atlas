@@ -18,6 +18,7 @@
 
 package org.apache.atlas.repository.store.graph.v1;
 
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity.Status;
@@ -96,9 +97,13 @@ public class SoftDeleteHandlerV1 extends DeleteHandlerV1 {
             }
             if (isRelationshipEdge)
                 AtlasRelationshipStoreV2.recordRelationshipMutation(AtlasRelationshipStoreV2.RelationshipMutation.RELATIONSHIP_SOFT_DELETE, edge, entityRetriever);
+        } catch (NullPointerException npe) {
+            LOG.error("Error while deleting edge {}", GraphHelper.string(edge), npe);
+            throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_SERVER_ERROR, npe);
         } catch (Exception e) {
             LOG.error("Error while deleting edge {}", GraphHelper.string(edge), e);
-            throw e;
+            throw new AtlasBaseException(e);
         }
+
     }
 }
