@@ -99,16 +99,20 @@ public class IndexSearchParams extends SearchParams {
 
     @Override
     public String toString() {
-        return "IndexSearchParams{" +
+        String str = "IndexSearchParams{" +
                 "dsl=" + dsl +
                 ", purpose='" + purpose + '\'' +
                 ", persona='" + persona + '\'' +
-                ", queryString='" + queryString + '\'' +
                 ", allowDeletedRelations=" + allowDeletedRelations +
                 ", accessControlExclusive=" + accessControlExclusive +
                 ", includeRelationshipAttributes=" + includeRelationshipAttributes +
-                ", utmTags="+ getUtmTags() +
-                '}';
+                ", utmTags="+ getUtmTags();
+                
+        if (returnQueryInResponse) {
+            str = str + ", queryString='" + queryString + '\'';
+        }
+
+        return str + '}';
     }
 
     @Override
