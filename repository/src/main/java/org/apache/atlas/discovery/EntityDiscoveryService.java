@@ -1003,7 +1003,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             if (searchParams.getEnableFullRestriction()) {
                 addPreFiltersToSearchQuery(searchParams);
             }
-            LOG.info(searchParams.getQuery());
+            //LOG.info(searchParams.getQuery());
             AtlasPerfMetrics.MetricRecorder elasticSearchQueryMetric = RequestContext.get().startMetricRecord("elasticSearchQuery");
             DirectIndexQueryResult indexQueryResult = indexQuery.vertices(searchParams);
             if (indexQueryResult == null) {
