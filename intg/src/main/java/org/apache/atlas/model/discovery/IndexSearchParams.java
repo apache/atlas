@@ -99,10 +99,11 @@ public class IndexSearchParams extends SearchParams {
 
     @Override
     public String toString() {
-        String str = "IndexSearchParams{" +
+        return "IndexSearchParams{" +
                 "dsl=" + dsl +
                 ", purpose='" + purpose + '\'' +
                 ", persona='" + persona + '\'' +
+                ", queryString='" + queryString + '\'' +
                 ", allowDeletedRelations=" + allowDeletedRelations +
                 ", accessControlExclusive=" + accessControlExclusive +
                 ", includeRelationshipAttributes=" + includeRelationshipAttributes +
