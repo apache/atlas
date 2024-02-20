@@ -107,13 +107,9 @@ public class IndexSearchParams extends SearchParams {
                 ", allowDeletedRelations=" + allowDeletedRelations +
                 ", accessControlExclusive=" + accessControlExclusive +
                 ", includeRelationshipAttributes=" + includeRelationshipAttributes +
-                ", utmTags="+ getUtmTags();
-                
-        if (returnQueryInResponse) {
-            str = str + ", queryString='" + queryString + '\'';
-        }
-
-        return str + '}';
+                ", utmTags="+ getUtmTags() +
+                ", enableFullRestriction="+ enableFullRestriction +
+                '}';
     }
 
     @Override
