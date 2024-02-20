@@ -22,6 +22,8 @@ import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.model.instance.AtlasRelatedObjectId;
+import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
@@ -29,6 +31,7 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.aliasstore.ESAliasStore;
 import org.apache.atlas.repository.store.aliasstore.IndexAliasStore;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
+import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
@@ -145,23 +148,27 @@ public class PurposePreProcessor implements PreProcessor {
             if (!CollectionUtils.isEmpty(newTags) && !CollectionUtils.isEqualCollection(newTags, getPurposeTags(existingPurposeEntity))) {
                 validateUniquenessByTags(graph, newTags, PURPOSE_ENTITY_TYPE);
 
-                List<AtlasObjectId> policies = (List<AtlasObjectId>) existingPurposeEntity.getRelationshipAttribute(REL_ATTR_POLICIES);
+                List<AtlasRelatedObjectId> policies = (List<AtlasRelatedObjectId>) existingPurposeEntity.getRelationshipAttribute(REL_ATTR_POLICIES);
 
                 if (CollectionUtils.isNotEmpty(policies)) {
                     AtlasEntityType entityType = typeRegistry.getEntityTypeByName(POLICY_ENTITY_TYPE);
                     List<String> newTagsResources = newTags.stream().map(x -> "tag:" + x).collect(Collectors.toList());
 
-                    for (AtlasObjectId policy : policies) {
-                        AtlasVertex policyVertex = entityRetriever.getEntityVertex(policy.getGuid());
+                    for (AtlasRelatedObjectId policy : policies) {
+                        if (policy.getRelationshipStatus() == AtlasRelationship.Status.ACTIVE) {
+                            AtlasVertex policyVertex = entityRetriever.getEntityVertex(policy.getGuid());
 
-                        policyVertex.removeProperty(ATTR_POLICY_RESOURCES);
+                            if (AtlasGraphUtilsV2.getState(policyVertex) == AtlasEntity.Status.ACTIVE) {
+                                policyVertex.removeProperty(ATTR_POLICY_RESOURCES);
 
-                        AtlasEntity policyToBeUpdated = entityRetriever.toAtlasEntity(policyVertex);
-                        policyToBeUpdated.setAttribute(ATTR_POLICY_RESOURCES, newTagsResources);
+                                AtlasEntity policyToBeUpdated = entityRetriever.toAtlasEntity(policyVertex);
+                                policyToBeUpdated.setAttribute(ATTR_POLICY_RESOURCES, newTagsResources);
 
-                        context.addUpdated(policyToBeUpdated.getGuid(), policyToBeUpdated, entityType, policyVertex);
+                                context.addUpdated(policyToBeUpdated.getGuid(), policyToBeUpdated, entityType, policyVertex);
 
-                        existingPurposeExtInfo.addReferredEntity(policyToBeUpdated);
+                                existingPurposeExtInfo.addReferredEntity(policyToBeUpdated);
+                            }
+                        }
                     }
                 }
 
@@ -173,21 +180,25 @@ public class PurposePreProcessor implements PreProcessor {
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
-    private void updatePoliciesIsEnabledAttr(EntityMutationContext context, AtlasEntity existingPersonaEntity,
+    private void updatePoliciesIsEnabledAttr(EntityMutationContext context, AtlasEntity existingPurposeEntity,
                                              boolean enable) throws AtlasBaseException {
 
-        List<AtlasObjectId> policies = (List<AtlasObjectId>) existingPersonaEntity.getRelationshipAttribute(REL_ATTR_POLICIES);
+        List<AtlasRelatedObjectId> policies = (List<AtlasRelatedObjectId>) existingPurposeEntity.getRelationshipAttribute(REL_ATTR_POLICIES);
 
         if (CollectionUtils.isNotEmpty(policies)) {
             AtlasEntityType entityType = typeRegistry.getEntityTypeByName(POLICY_ENTITY_TYPE);
 
-            for (AtlasObjectId policy : policies) {
-                AtlasVertex policyVertex = entityRetriever.getEntityVertex(policy.getGuid());
+            for (AtlasRelatedObjectId policy : policies) {
+                if (policy.getRelationshipStatus() == AtlasRelationship.Status.ACTIVE) {
+                    AtlasVertex policyVertex = entityRetriever.getEntityVertex(policy.getGuid());
 
-                AtlasEntity policyToBeUpdated = entityRetriever.toAtlasEntity(policyVertex);
-                policyToBeUpdated.setAttribute(ATTR_POLICY_IS_ENABLED, enable);
+                    if (AtlasGraphUtilsV2.getState(policyVertex) == AtlasEntity.Status.ACTIVE) {
+                        AtlasEntity policyToBeUpdated = entityRetriever.toAtlasEntity(policyVertex);
+                        policyToBeUpdated.setAttribute(ATTR_POLICY_IS_ENABLED, enable);
 
-                context.addUpdated(policyToBeUpdated.getGuid(), policyToBeUpdated, entityType, policyVertex);
+                        context.addUpdated(policyToBeUpdated.getGuid(), policyToBeUpdated, entityType, policyVertex);
+                    }
+                }
             }
         }
     }
