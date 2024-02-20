@@ -297,7 +297,6 @@ public class AuthPolicyValidator {
                     validateParam (CollectionUtils.isNotEmpty(copyOfActions),
                             "Please provide valid values for attribute " + ATTR_POLICY_ACTIONS + ": Invalid actions "+ copyOfActions);
 
-                    validateParentUpdate(policy, existingPolicy);
                 }
             }
 
