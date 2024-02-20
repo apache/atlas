@@ -294,7 +294,7 @@ public class AuthPolicyValidator {
                             "Please provide valid value for attribute " + ATTR_POLICY_SUB_CATEGORY + ":"+ DATAMESH_POLICY_VALID_SUB_CATEGORIES);
 
                     //validate datamesh policy actions
-                    Set<String> validActions = PURPOSE_POLICY_VALID_ACTIONS.get(policySubCategory);
+                    Set<String> validActions = DATAMESH_POLICY_VALID_ACTIONS.get(policySubCategory);
                     List<String> copyOfActions = new ArrayList<>(policyActions);
                     copyOfActions.removeAll(validActions);
                     validateParam (CollectionUtils.isNotEmpty(copyOfActions),
