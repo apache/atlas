@@ -44,7 +44,7 @@ public class SearchParams {
     public void setQuery(String query) {
         setQuery(query);
     }
-    
+
     public void setAttributes(Set<String> attributes) {
         this.attributes = attributes;
     }
