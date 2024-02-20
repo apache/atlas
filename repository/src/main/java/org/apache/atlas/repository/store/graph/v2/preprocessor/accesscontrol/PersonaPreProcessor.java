@@ -18,6 +18,7 @@
 package org.apache.atlas.repository.store.graph.v2.preprocessor.accesscontrol;
 
 
+import com.sun.tools.javac.util.GraphUtils;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;

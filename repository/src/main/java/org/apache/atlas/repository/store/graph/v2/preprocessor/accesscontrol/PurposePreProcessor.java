@@ -200,7 +200,10 @@ public class PurposePreProcessor extends AccessControlPreProcessor {
                         policyToBeUpdated.setAttribute(ATTR_POLICY_IS_ENABLED, enable);
 
                         context.addUpdated(policyToBeUpdated.getGuid(), policyToBeUpdated, entityType, policyVertex);
+<<<<<<< HEAD
                         RequestContext.get().cacheDifferentialEntity(policyToBeUpdated);
+=======
+>>>>>>> 51d5e6def (PLT-860 Persona/Purpose disable/enable issue)
                     }
                 }
             }
