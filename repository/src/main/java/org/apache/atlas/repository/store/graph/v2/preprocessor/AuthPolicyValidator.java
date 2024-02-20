@@ -144,9 +144,10 @@ public class AuthPolicyValidator {
 
                 validateParam(CollectionUtils.isEmpty(policyActions), "Please provide attribute " + ATTR_POLICY_ACTIONS);
 
-                validateOperation (!AtlasEntity.Status.ACTIVE.equals(accessControl.getStatus()), accessControl.getTypeName() + " is not Active");
 
                 if (POLICY_CATEGORY_PERSONA.equals(policyCategory)) {
+                    validateOperation (!AtlasEntity.Status.ACTIVE.equals(accessControl.getStatus()), accessControl.getTypeName() + " is not Active");
+
                     validateParam (!PERSONA_ENTITY_TYPE.equals(accessControl.getTypeName()),  "Please provide Persona as accesscontrol");
 
                     validateParam (!PERSONA_POLICY_VALID_SUB_CATEGORIES.contains(policySubCategory),
@@ -185,6 +186,8 @@ public class AuthPolicyValidator {
                 }
 
                 if (POLICY_CATEGORY_PURPOSE.equals(policyCategory)) {
+                    validateOperation (!AtlasEntity.Status.ACTIVE.equals(accessControl.getStatus()), accessControl.getTypeName() + " is not Active");
+
                     validateParam (!PURPOSE_ENTITY_TYPE.equals(accessControl.getTypeName()),  "Please provide Purpose as accesscontrol");
 
                     validateParam (!PURPOSE_POLICY_VALID_SUB_CATEGORIES.contains(policySubCategory),
