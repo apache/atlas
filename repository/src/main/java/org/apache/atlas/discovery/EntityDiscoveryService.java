@@ -1000,7 +1000,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             String indexName = getIndexName(params);
 
             indexQuery = graph.elasticsearchQuery(indexName);
-            if (searchParams.getEnableFullRestriction()) {
+            if (searchParams.getEnableFullRestriction() && !VERTEX_INDEX_NAME.equals(indexName)) {
                 addPreFiltersToSearchQuery(searchParams);
             }
             //LOG.info(searchParams.getQuery());
