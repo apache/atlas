@@ -183,7 +183,9 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
             AsyncQueryResult response = submitAsyncSearch(searchParams, false).get();
             if(response.isRunning()) {
                 String esSearchId = response.getId();
-                SearchContextCache.put(searchParams.getAsyncSearchContextId(), esSearchId);
+                if (StringUtils.isNotEmpty(searchParams.getAsyncSearchContextId())) {
+                    SearchContextCache.put(searchParams.getAsyncSearchContextId(), esSearchId);
+                }
                 response = getAsyncSearchResponse(searchParams, esSearchId).get();
                 if (response != null) {
                     if (!response.isSuccess() && response.getSearchCancelledException() != null) {
