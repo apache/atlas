@@ -17,15 +17,19 @@
  */
 package org.apache.atlas.repository.graphdb.janus;
 
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.exception.SearchCancelledException;
 import org.apache.atlas.model.discovery.SearchParams;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.DirectIndexQueryResult;
 import org.apache.atlas.type.AtlasType;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.NotImplementedException;
+import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.nio.entity.NStringEntity;
@@ -36,6 +40,7 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.HttpAsyncResponseConsumerFactory;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.ResponseException;
+import org.elasticsearch.client.ResponseListener;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.Response;
@@ -48,6 +53,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 import java.util.stream.Stream;
 
 import static org.apache.atlas.AtlasErrorCode.INDEX_NOT_FOUND;
@@ -123,20 +130,19 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         DirectIndexQueryResult result = null;
 
         try {
-
-            String responseString =  performDirectIndexQuery(searchParams.getQuery(), false);
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("runQueryWithLowLevelClient.response : {}", responseString);
+            if(searchParams.isAsync()) {
+                return performAsyncDirectIndexQuery(searchParams);
+            } else{
+                String responseString =  performDirectIndexQuery(searchParams.getQuery(), false);
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("runQueryWithLowLevelClient.response : {}", responseString);
+                }
+                return getResultFromResponse(responseString);
             }
-            
-            result = getResultFromResponse(responseString);
-
         } catch (IOException e) {
             LOG.error("Failed to execute direct query on ES {}", e.getMessage());
             throw new AtlasBaseException(AtlasErrorCode.INDEX_SEARCH_FAILED, e.getMessage());
         }
-
-        return result;
     }
 
     private Map<String, Object> runQueryWithLowLevelClient(String query) throws AtlasBaseException {
@@ -164,6 +170,176 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
             LOG.error("Failed to execute direct query on ES {}", e.getMessage());
             throw new AtlasBaseException(AtlasErrorCode.INDEX_SEARCH_FAILED, e.getMessage());
         }
+    }
+
+    private DirectIndexQueryResult performAsyncDirectIndexQuery(SearchParams searchParams) throws AtlasBaseException, IOException {
+        DirectIndexQueryResult result = null;
+        try {
+            if(StringUtils.isNotEmpty(searchParams.getAsyncSearchContextId())) {
+                // If the search context id is present, then we need to delete the previous search context async
+                processRequestWithSameSearchContextId(searchParams);
+            }
+
+            AsyncQueryResult response = submitAsyncSearch(searchParams, false).get();
+            if(response.isRunning()) {
+                String esSearchId = response.getId();
+                SearchContextCache.put(searchParams.getAsyncSearchContextId(), esSearchId);
+                response = getAsyncSearchResponse(searchParams, esSearchId).get();
+                if (response != null) {
+                    if (!response.isSuccess() && response.getSearchCancelledException() != null) {
+                        throw response.getSearchCancelledException();
+                    }
+                    result = getResultFromResponse(response.getFullResponse(), true);
+                }
+            } else {
+                result = getResultFromResponse(response.getFullResponse(), true);
+            }
+        }catch (Exception e) {
+            LOG.error("Failed to execute direct query on ES {}", e.getMessage());
+            throw new AtlasBaseException(AtlasErrorCode.INDEX_SEARCH_FAILED, e.getMessage());
+        }
+        return result;
+    }
+
+    private void processRequestWithSameSearchContextId(SearchParams searchParams) throws AtlasBaseException, IOException {
+            String esSearchId = SearchContextCache.get(searchParams.getAsyncSearchContextId());
+            if(StringUtils.isNotEmpty(esSearchId)) {
+                deleteAsyncSearchResponse(esSearchId);
+                SearchContextCache.remove(searchParams.getAsyncSearchContextId());
+            }
+    }
+
+    private Future<AsyncQueryResult> getAsyncSearchResponse(SearchParams searchParams, String esSearchId) throws AtlasBaseException, IOException {
+        CompletableFuture<AsyncQueryResult> future = new CompletableFuture<>();
+        String endPoint = "_async_search/" + esSearchId;
+        Request request = new Request("GET", endPoint);
+        long waitTime = AtlasConfiguration.INDEXSEARCH_ASYNC_SEARCH_KEEP_ALIVE_TIME_IN_SECONDS.getLong();
+        if (searchParams.getAsyncRequestTimeoutInSecs()!= null) {
+            waitTime = searchParams.getAsyncRequestTimeoutInSecs();
+        }
+        //Reduce wait time by 10% to avoid timeout and round off to seconds
+        waitTime = (long) (waitTime * 0.9);
+        request.addParameter("wait_for_completion_timeout", waitTime + "s");
+        ResponseListener responseListener = new ResponseListener() {
+            @Override
+            public void onSuccess(Response response) {
+                try {
+                    String respString = EntityUtils.toString(response.getEntity());
+                    Map responseMap = AtlasType.fromJson(respString, Map.class);
+                    Integer completionStatus = AtlasType.fromJson(AtlasType.toJson(responseMap.get("completion_status")), Integer.class);
+                    Boolean is_running = AtlasType.fromJson(AtlasType.toJson(responseMap.get("is_running")), Boolean.class);
+                    AsyncQueryResult result = new AsyncQueryResult(respString, false);
+                    if (completionStatus != null && completionStatus == 200) {
+                        result.setSuccess(true);
+                        future.complete(result);
+                    } else if (is_running!=null && is_running) {
+                        result.setSuccess(false);
+                        future.complete(result);
+                    } else if(completionStatus != null) {
+                        future.completeExceptionally(new AtlasBaseException(AtlasErrorCode.INDEX_SEARCH_FAILED));
+                    }
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+            @Override
+            public void onFailure(Exception exception) {
+                if (exception instanceof ResponseException){
+                    int statusCode = ((ResponseException) exception).getResponse().getStatusLine().getStatusCode();
+                    SearchCancelledException searchCancelledException = new SearchCancelledException("Search cancelled as the request took too long to complete or " +
+                            "request with same context came through");
+                    AsyncQueryResult result = new AsyncQueryResult(null);
+                    result.setSuccess(false);
+                    result.setSearchCancelledException(searchCancelledException);
+                    if (statusCode == 404) {
+                        LOG.debug("Async search response not found");
+                        future.complete(result);
+                    } else if(statusCode == 400) {
+                        LOG.error("Async Search task deleted");
+                        future.complete(result);
+                    } else {
+                        future.completeExceptionally(exception);
+                    }
+                } else {
+                    future.completeExceptionally(exception);
+                }
+            }
+        };
+
+        lowLevelRestClient.performRequestAsync(request, responseListener);
+
+        return future;
+    }
+
+    private void deleteAsyncSearchResponse(String searchContextId) throws AtlasBaseException, IOException {
+        String endPoint = "_async_search/" + searchContextId;
+        Request request = new Request("DELETE", endPoint);
+        ResponseListener responseListener = new ResponseListener() {
+            @Override
+            public void onSuccess(Response response) {
+                LOG.debug("Deleted async search response");
+            }
+            @Override
+            public void onFailure(Exception exception) {
+                if (exception instanceof ResponseException && ((ResponseException) exception).getResponse().getStatusLine().getStatusCode() == 404) {
+                    LOG.debug("Async search response not found");
+                } else {
+                    LOG.error("Failed to delete async search response {}", exception.getMessage());
+                }
+            }
+        };
+        lowLevelRestClient.performRequestAsync(request, responseListener);
+    }
+
+    private Future<AsyncQueryResult> submitAsyncSearch(SearchParams searchParams, boolean source) {
+        CompletableFuture<AsyncQueryResult> future = new CompletableFuture<>();
+        HttpEntity entity = new NStringEntity(searchParams.getQuery(), ContentType.APPLICATION_JSON);
+        String endPoint;
+        String KeepAliveTime = AtlasConfiguration.INDEXSEARCH_ASYNC_SEARCH_KEEP_ALIVE_TIME_IN_SECONDS.getLong() +"s";
+        if (searchParams.getAsyncRequestTimeoutInSecs()!= null) {
+            KeepAliveTime = searchParams.getAsyncRequestTimeoutInSecs() +"s";
+        }
+
+        if (source) {
+            endPoint = index + "/_async_search";
+        } else {
+            endPoint = index + "/_async_search?_source=false";
+        }
+
+        Request request = new Request("POST", endPoint);
+        request.setEntity(entity);
+        request.addParameter("wait_for_completion_timeout", "100ms");
+        request.addParameter("keep_alive", KeepAliveTime);
+
+        ResponseListener responseListener = new ResponseListener() {
+            @Override
+            public void onSuccess(Response response) {
+                try {
+                    String respString = EntityUtils.toString(response.getEntity());
+                    Map<String, LinkedHashMap> responseMap = AtlasType.fromJson(respString, Map.class);
+                    boolean isRunning = AtlasType.fromJson(AtlasType.toJson(responseMap.get("is_running")), Boolean.class);
+                    String id = AtlasType.fromJson(AtlasType.toJson(responseMap.get("id")), String.class);
+                    AsyncQueryResult result = new AsyncQueryResult(respString, isRunning);
+                    if (isRunning && StringUtils.isNotEmpty(id)) {
+                        result.setId(id);
+                        future.complete(result);
+                    } else {
+                        future.complete(result);
+                    }
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            @Override
+            public void onFailure(Exception exception) {
+                future.completeExceptionally(exception);
+            }
+        };
+
+        lowLevelRestClient.performRequestAsync(request, responseListener);
+
+        return future;
     }
 
     private String performDirectIndexQuery(String query, boolean source) throws AtlasBaseException, IOException {
@@ -194,12 +370,17 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         return EntityUtils.toString(response.getEntity());
     }
 
-    private DirectIndexQueryResult getResultFromResponse(String responseString) {
-        DirectIndexQueryResult result = new DirectIndexQueryResult();
-
+    private DirectIndexQueryResult getResultFromResponse(String responseString, boolean async) throws IOException {
         Map<String, LinkedHashMap> responseMap = AtlasType.fromJson(responseString, Map.class);
+        return getResultFromResponse(responseMap.get("response"));
+    }
 
+    private DirectIndexQueryResult getResultFromResponse(Map<String, LinkedHashMap> responseMap) throws IOException {
+        DirectIndexQueryResult result = new DirectIndexQueryResult();
         Map<String, LinkedHashMap> hits_0 = AtlasType.fromJson(AtlasType.toJson(responseMap.get("hits")), Map.class);
+        if (hits_0 == null) {
+            return result;
+        }
         this.vertexTotals = (Integer) hits_0.get("total").get("value");
 
         List<LinkedHashMap> hits_1 = AtlasType.fromJson(AtlasType.toJson(hits_0.get("hits")), List.class);
@@ -214,7 +395,18 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         }
 
         return result;
+
     }
+
+
+    private DirectIndexQueryResult getResultFromResponse(String responseString) throws IOException {
+
+        Map<String, LinkedHashMap> responseMap = AtlasType.fromJson(responseString, Map.class);
+
+        return getResultFromResponse(responseMap);
+    }
+
+
 
     @Override
     public DirectIndexQueryResult<AtlasJanusVertex, AtlasJanusEdge> vertices(SearchParams searchParams) throws AtlasBaseException {
@@ -351,4 +543,65 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
             return new HashMap<>();
         }
     }
+
+    public class AsyncQueryResult {
+        private boolean isRunning;
+        private String id;
+        private String fullResponse;
+
+        private boolean success;
+
+        private SearchCancelledException searchCancelledException;
+
+        // Constructor for a running process
+        public AsyncQueryResult(String id) {
+            this.isRunning = true;
+            this.id = id;
+            this.fullResponse = null;
+        }
+
+        // Constructor for a completed process
+        public AsyncQueryResult(String fullResponse, boolean isRunning) {
+            this.isRunning = isRunning;
+            this.id = null;
+            this.fullResponse = fullResponse;
+        }
+
+        public void setRunning(boolean running) {
+            this.isRunning = running;
+        }
+
+        // Getters
+        public boolean isRunning() {
+            return isRunning;
+        }
+
+        void setId(String id) {
+            this.id = id;
+        }
+        public String getId() {
+            return id;
+        }
+
+        public String getFullResponse() {
+            return fullResponse;
+        }
+
+        public boolean isSuccess() {
+            return success;
+        }
+
+        public void setSuccess(boolean success) {
+            this.success = success;
+        }
+
+        public SearchCancelledException getSearchCancelledException() {
+            return searchCancelledException;
+        }
+
+        public void setSearchCancelledException(SearchCancelledException searchCancelledException) {
+            this.searchCancelledException = searchCancelledException;
+        }
+    }
+
 }
