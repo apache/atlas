@@ -184,6 +184,8 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
             if(response.isRunning()) {
                 String esSearchId = response.getId();
                 if (StringUtils.isNotEmpty(searchParams.getAsyncSearchContextId())) {
+                    Integer serialNumber = Integer.parseInt(searchParams.getAsyncSearchContextId().split("-")[1]);
+                    SearchContextCache.putSequence(searchParams.getAsyncSearchContextId().split("-")[0], serialNumber.toString());
                     SearchContextCache.put(searchParams.getAsyncSearchContextId(), esSearchId);
                 }
                 response = getAsyncSearchResponse(searchParams, esSearchId).get();
@@ -204,11 +206,17 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
     }
 
     private void processRequestWithSameSearchContextId(SearchParams searchParams) throws AtlasBaseException, IOException {
-            String esSearchId = SearchContextCache.get(searchParams.getAsyncSearchContextId());
+        // search context id is of form id - serial number now check if current id is greater than the one in cache if so extract esSearchId and delete it
+        Integer currentSerialNumber = Integer.parseInt(searchParams.getAsyncSearchContextId().split("-")[1]);
+        String currentId = searchParams.getAsyncSearchContextId().split("-")[0];
+        Integer existingSerialNumber = Integer.parseInt(SearchContextCache.getSequence(currentId));
+        if (currentSerialNumber > existingSerialNumber) {
+            String esSearchId = SearchContextCache.get(currentId);
             if(StringUtils.isNotEmpty(esSearchId)) {
                 deleteAsyncSearchResponse(esSearchId);
-                SearchContextCache.remove(searchParams.getAsyncSearchContextId());
+                SearchContextCache.remove(currentId);
             }
+        }
     }
 
     private Future<AsyncQueryResult> getAsyncSearchResponse(SearchParams searchParams, String esSearchId) throws AtlasBaseException, IOException {
