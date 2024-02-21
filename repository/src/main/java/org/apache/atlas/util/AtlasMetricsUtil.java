@@ -236,6 +236,14 @@ public class AtlasMetricsUtil {
         return true;
     }
 
+    public boolean isBackendStoreActive(){
+        return getBackendStoreStatus();
+    }
+
+    public boolean isIndexStoreActive(){
+        return getIndexStoreStatus();
+    }
+
     private void runWithTimeout(final Runnable runnable, long timeout, TimeUnit timeUnit) throws Exception {
         runWithTimeout(new Callable<Object>() {
             @Override

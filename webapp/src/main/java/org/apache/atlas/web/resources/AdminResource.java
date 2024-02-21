@@ -23,6 +23,7 @@ import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.authorize.AtlasAdminAccessRequest;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasEntityAccessRequest;
@@ -67,6 +68,7 @@ import org.apache.atlas.services.MetricsService;
 import org.apache.atlas.tasks.TaskManagement;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.util.AtlasMetricsUtil;
 import org.apache.atlas.util.SearchTracker;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.utils.AtlasPerfTracer;
@@ -188,6 +190,7 @@ public class AdminResource {
     private final  boolean                  isTasksEnabled;
     private final  boolean                  isOnDemandLineageEnabled;
     private final  int                      defaultLineageNodeCount;
+    private final AtlasMetricsUtil atlasMetricsUtil;
 
     private AtlasAuditReductionService auditReductionService;
 
@@ -206,7 +209,7 @@ public class AdminResource {
                          AtlasServerService serverService,
                          ExportImportAuditService exportImportAuditService, AtlasEntityStore entityStore,
                          AtlasPatchManager patchManager, AtlasAuditService auditService, EntityAuditRepository auditRepository,
-                         TaskManagement taskManagement, AtlasDebugMetricsSink debugMetricsRESTSink, AtlasAuditReductionService atlasAuditReductionService) {
+                         TaskManagement taskManagement, AtlasDebugMetricsSink debugMetricsRESTSink, AtlasAuditReductionService atlasAuditReductionService, AtlasMetricsUtil atlasMetricsUtil) {
         this.serviceState              = serviceState;
         this.metricsService            = metricsService;
         this.exportService             = exportService;
@@ -224,6 +227,7 @@ public class AdminResource {
         this.taskManagement            = taskManagement;
         this.debugMetricsRESTSink      = debugMetricsRESTSink;
         this.auditReductionService     = atlasAuditReductionService;
+        this.atlasMetricsUtil          = atlasMetricsUtil;
 
         if (atlasProperties != null) {
             this.defaultUIVersion = atlasProperties.getString(DEFAULT_UI_VERSION, UI_VERSION_V2);
@@ -1108,6 +1112,46 @@ public class AdminResource {
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== AdminResource.saveMetrics()");
+        }
+    }
+
+    /**
+     * API to indicate service liveness
+     * @return response payload as json
+     * @throws AtlasBaseException
+     * @HTTP 200 if Atlas is alive
+     * @HTTP 500 if Atlas is not alive and requires a restart
+     */
+    @GET
+    @Path("/liveness")
+    public Response serviceLiveliness() throws AtlasBaseException {
+
+        if (serviceState.getState() == ServiceState.ServiceStateValue.ACTIVE || serviceState.getState() == ServiceState.ServiceStateValue.MIGRATING) {
+            return Response.status(Response.Status.OK).entity("Service is live").build();
+        } else {
+            LOG.error("Atlas Service is not live");
+            throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, "Atlas Service is not live");
+        }
+    }
+
+    /**
+     * API to indicate service readiness
+     * @return response payload as json
+     * @throws AtlasBaseException
+     * @HTTP 200 if Atlas is alive and ready to accept client requests
+     * @HTTP 500 if Atlas is either not alive or not ready to accept client requests
+     */
+    @GET
+    @Path("/readiness")
+    public Response serviceReadiness() throws AtlasBaseException {
+
+        if((serviceState.getState() == ServiceState.ServiceStateValue.ACTIVE) &&
+                (atlasMetricsUtil.isIndexStoreActive() && atlasMetricsUtil.isBackendStoreActive())) {
+            return Response.status(Response.Status.OK).entity("Service is ready to accept requests").build();
+        }
+        else {
+            LOG.error("Service is not ready to accept client requests");
+            throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, "Service not ready to accept client requests");
         }
     }
 
