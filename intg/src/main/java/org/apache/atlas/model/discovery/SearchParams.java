@@ -201,7 +201,7 @@ public class SearchParams {
             return searchContextSequenceNo;
         }
 
-        public long getRequestTimeoutInSecs() {
+        public Long getRequestTimeoutInSecs() {
             return requestTimeoutInSecs;
         }
     }
