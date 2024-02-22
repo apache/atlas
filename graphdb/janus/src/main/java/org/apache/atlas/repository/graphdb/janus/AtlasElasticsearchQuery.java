@@ -26,7 +26,6 @@ import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.DirectIndexQueryResult;
 import org.apache.atlas.type.AtlasType;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang.StringUtils;
@@ -130,7 +129,7 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         DirectIndexQueryResult result = null;
 
         try {
-            if(searchParams.isAsync()) {
+            if(searchParams.isCallAsync()) {
                 return performAsyncDirectIndexQuery(searchParams);
             } else{
                 String responseString =  performDirectIndexQuery(searchParams.getQuery(), false);
@@ -175,22 +174,23 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
     private DirectIndexQueryResult performAsyncDirectIndexQuery(SearchParams searchParams) throws AtlasBaseException, IOException {
         DirectIndexQueryResult result = null;
         try {
-            if(StringUtils.isNotEmpty(searchParams.getAsyncSearchContextId())) {
+            if(StringUtils.isNotEmpty(searchParams.getSearchContextId())) {
                 // If the search context id is present, then we need to delete the previous search context async
                 processRequestWithSameSearchContextId(searchParams);
             }
-
             AsyncQueryResult response = submitAsyncSearch(searchParams, false).get();
+
             if(response.isRunning()) {
                 String esSearchId = response.getId();
-                if (StringUtils.isNotEmpty(searchParams.getAsyncSearchContextId())) {
-                    Integer serialNumber = Integer.parseInt(searchParams.getAsyncSearchContextId().split("-")[1]);
-                    SearchContextCache.putSequence(searchParams.getAsyncSearchContextId().split("-")[0], serialNumber.toString());
-                    SearchContextCache.put(searchParams.getAsyncSearchContextId(), esSearchId);
+                if (StringUtils.isNotEmpty(searchParams.getSearchContextId())) {
+                    if (searchParams.getSearchContextSequenceNo() != null) {
+                        SearchContextCache.putSequence(searchParams.getSearchContextId(), searchParams.getSearchContextSequenceNo());
+                    }
+                    SearchContextCache.put(searchParams.getSearchContextId(), esSearchId);
                 }
                 response = getAsyncSearchResponse(searchParams, esSearchId).get();
                 if (response != null) {
-                    if (!response.isSuccess() && response.getSearchCancelledException() != null) {
+                    if (response.getSearchCancelledException() != null) {
                         throw response.getSearchCancelledException();
                     }
                     result = getResultFromResponse(response.getFullResponse(), true);
@@ -205,27 +205,42 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         return result;
     }
 
-    private void processRequestWithSameSearchContextId(SearchParams searchParams) throws AtlasBaseException, IOException {
-        // search context id is of form id - serial number now check if current id is greater than the one in cache if so extract esSearchId and delete it
-        Integer currentSerialNumber = Integer.parseInt(searchParams.getAsyncSearchContextId().split("-")[1]);
-        String currentId = searchParams.getAsyncSearchContextId().split("-")[0];
-        Integer existingSerialNumber = Integer.parseInt(SearchContextCache.getSequence(currentId));
-        if (currentSerialNumber > existingSerialNumber) {
-            String esSearchId = SearchContextCache.get(currentId);
-            if(StringUtils.isNotEmpty(esSearchId)) {
-                deleteAsyncSearchResponse(esSearchId);
-                SearchContextCache.remove(currentId);
-            }
+    private void processRequestWithSameSearchContextId(SearchParams searchParams) {
+        // Extract search context ID and sequence number
+        String currentSearchContextId = searchParams.getSearchContextId();
+        Integer currentSequenceNumber = searchParams.getSearchContextSequenceNo();
+
+        // Check if cache entry exists for the given ID
+        boolean cacheEntryExists = SearchContextCache.get(currentSearchContextId) != null;
+
+        // Handle cases where sequence number is available and greater
+        if (currentSequenceNumber != null && currentSequenceNumber > SearchContextCache.getSequence(currentSearchContextId)) {
+            // Sequence number is greater, update cache
+            handleCacheUpdate(currentSearchContextId);
+        } else if (currentSequenceNumber == null || !cacheEntryExists) {
+            // Sequence number missing or no cache entry, potentially invalid or outdated
+            // Handle case where sequence number is unavailable or invalid
+            handleCacheUpdate(currentSearchContextId);
+        }
+    }
+    private void handleCacheUpdate(String currentSearchContextId) {
+        // Retrieve existing search ID from cache
+        String esSearchId = SearchContextCache.get(currentSearchContextId);
+
+        // Check if search ID exists and delete if necessary
+        if (StringUtils.isNotEmpty(esSearchId)) {
+            deleteAsyncSearchResponse(esSearchId);
+            SearchContextCache.remove(currentSearchContextId);
         }
     }
 
-    private Future<AsyncQueryResult> getAsyncSearchResponse(SearchParams searchParams, String esSearchId) throws AtlasBaseException, IOException {
+    private Future<AsyncQueryResult> getAsyncSearchResponse(SearchParams searchParams, String esSearchId)  {
         CompletableFuture<AsyncQueryResult> future = new CompletableFuture<>();
         String endPoint = "_async_search/" + esSearchId;
         Request request = new Request("GET", endPoint);
         long waitTime = AtlasConfiguration.INDEXSEARCH_ASYNC_SEARCH_KEEP_ALIVE_TIME_IN_SECONDS.getLong();
-        if (searchParams.getAsyncRequestTimeoutInSecs()!= null) {
-            waitTime = searchParams.getAsyncRequestTimeoutInSecs();
+        if (searchParams.getRequestTimeoutInSecs()!= null) {
+            waitTime = searchParams.getRequestTimeoutInSecs();
         }
         //Reduce wait time by 10% to avoid timeout and round off to seconds
         waitTime = (long) (waitTime * 0.9);
@@ -240,10 +255,8 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
                     Boolean is_running = AtlasType.fromJson(AtlasType.toJson(responseMap.get("is_running")), Boolean.class);
                     AsyncQueryResult result = new AsyncQueryResult(respString, false);
                     if (completionStatus != null && completionStatus == 200) {
-                        result.setSuccess(true);
                         future.complete(result);
-                    } else if (is_running!=null && is_running) {
-                        result.setSuccess(false);
+                    } else if (is_running !=null && is_running) {
                         future.complete(result);
                     } else if(completionStatus != null) {
                         future.completeExceptionally(new AtlasBaseException(AtlasErrorCode.INDEX_SEARCH_FAILED));
@@ -260,7 +273,6 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
                     SearchCancelledException searchCancelledException = new SearchCancelledException("Search cancelled as the request took too long to complete or " +
                             "request with same context came through");
                     AsyncQueryResult result = new AsyncQueryResult(null);
-                    result.setSuccess(false);
                     result.setSearchCancelledException(searchCancelledException);
                     if (statusCode == 404) {
                         LOG.debug("Async search response not found");
@@ -282,7 +294,7 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         return future;
     }
 
-    private void deleteAsyncSearchResponse(String searchContextId) throws AtlasBaseException, IOException {
+    private void deleteAsyncSearchResponse(String searchContextId) {
         String endPoint = "_async_search/" + searchContextId;
         Request request = new Request("DELETE", endPoint);
         ResponseListener responseListener = new ResponseListener() {
@@ -307,8 +319,8 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         HttpEntity entity = new NStringEntity(searchParams.getQuery(), ContentType.APPLICATION_JSON);
         String endPoint;
         String KeepAliveTime = AtlasConfiguration.INDEXSEARCH_ASYNC_SEARCH_KEEP_ALIVE_TIME_IN_SECONDS.getLong() +"s";
-        if (searchParams.getAsyncRequestTimeoutInSecs()!= null) {
-            KeepAliveTime = searchParams.getAsyncRequestTimeoutInSecs() +"s";
+        if (searchParams.getRequestTimeoutInSecs() !=  null) {
+            KeepAliveTime = searchParams.getRequestTimeoutInSecs() +"s";
         }
 
         if (source) {
@@ -558,9 +570,6 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         private boolean isRunning;
         private String id;
         private String fullResponse;
-
-        private boolean success;
-
         private SearchCancelledException searchCancelledException;
 
         // Constructor for a running process
@@ -595,14 +604,6 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
 
         public String getFullResponse() {
             return fullResponse;
-        }
-
-        public boolean isSuccess() {
-            return success;
-        }
-
-        public void setSuccess(boolean success) {
-            this.success = success;
         }
 
         public SearchCancelledException getSearchCancelledException() {

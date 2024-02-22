@@ -25,12 +25,13 @@ public class SearchContextCache {
         searchContextCache.put(key, value);
     }
 
-    public static void putSequence(String key, String value) {
+    public static void putSequence(String key, Integer value) {
         searchContextSequenceCache.put(key, value);
     }
 
-    public static String getSequence(String key) {
-        return (String) searchContextSequenceCache.getIfPresent(key);
+    public static Integer getSequence(String key) {
+        Integer sequence = (Integer) searchContextSequenceCache.getIfPresent(key);
+        return sequence != null ? sequence : 0;
     }
 
     public static String get(String key){
