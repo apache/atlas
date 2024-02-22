@@ -381,6 +381,7 @@
         "entity:{entity}",
         "entity:{entity}/*",
         "entity-type:DataDomain",
+        "entity-type:DataProduct",
         "entity-classification:*"
       ],
       "actions": ["entity-read"]
