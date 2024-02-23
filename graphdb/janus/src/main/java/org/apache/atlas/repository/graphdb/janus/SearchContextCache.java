@@ -30,8 +30,7 @@ public class SearchContextCache {
     }
 
     public static Integer getSequence(String key) {
-        Integer sequence = (Integer) searchContextSequenceCache.getIfPresent(key);
-        return sequence != null ? sequence : 0;
+        return (Integer) searchContextSequenceCache.getIfPresent(key);
     }
 
     public static String get(String key){
