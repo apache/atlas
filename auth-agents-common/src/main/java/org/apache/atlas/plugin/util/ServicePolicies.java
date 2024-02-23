@@ -55,6 +55,7 @@ public class ServicePolicies implements java.io.Serializable {
 	private RangerServiceDef   serviceDef;
 	private String             auditMode = RangerPolicyEngine.AUDIT_DEFAULT;
 	private TagPolicies        tagPolicies;
+	private AbacPolicies       abacPolicies;
 	private Map<String, SecurityZoneInfo> securityZones;
 	private List<RangerPolicyDelta> policyDeltas;
 	private Map<String, String> serviceConfig;
@@ -158,6 +159,14 @@ public class ServicePolicies implements java.io.Serializable {
 	 */
 	public void setTagPolicies(TagPolicies tagPolicies) {
 		this.tagPolicies = tagPolicies;
+	}
+
+	public AbacPolicies getAbacPolicies() {
+		return abacPolicies;
+	}
+
+	public void setAbacPolicies(AbacPolicies abacPolicies) {
+		this.abacPolicies = abacPolicies;
 	}
 
 	public Map<String, SecurityZoneInfo> getSecurityZones() { return securityZones; }
@@ -304,6 +313,99 @@ public class ServicePolicies implements java.io.Serializable {
 	}
 
 	@JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
+	@XmlRootElement
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class AbacPolicies implements java.io.Serializable {
+		private static final long serialVersionUID = 1L;
+
+		private String serviceName;
+		private String serviceId;
+		private Long policyVersion;
+		private Date policyUpdateTime;
+		private List<RangerPolicy> policies;
+		private RangerServiceDef serviceDef;
+		private String auditMode = RangerPolicyEngine.AUDIT_DEFAULT;
+		private Map<String, String> serviceConfig;
+
+		public String getServiceName() {
+			return serviceName;
+		}
+
+		public void setServiceName(String serviceName) {
+			this.serviceName = serviceName;
+		}
+
+		public String getServiceId() {
+			return serviceId;
+		}
+
+		public void setServiceId(String serviceId) {
+			this.serviceId = serviceId;
+		}
+
+		public Long getPolicyVersion() {
+			return policyVersion;
+		}
+
+		public void setPolicyVersion(Long policyVersion) {
+			this.policyVersion = policyVersion;
+		}
+
+		public Date getPolicyUpdateTime() {
+			return policyUpdateTime;
+		}
+
+		public void setPolicyUpdateTime(Date policyUpdateTime) {
+			this.policyUpdateTime = policyUpdateTime;
+		}
+
+		public List<RangerPolicy> getPolicies() {
+			return policies;
+		}
+
+		public void setPolicies(List<RangerPolicy> policies) {
+			this.policies = policies;
+		}
+
+		public RangerServiceDef getServiceDef() {
+			return serviceDef;
+		}
+
+		public void setServiceDef(RangerServiceDef serviceDef) {
+			this.serviceDef = serviceDef;
+		}
+
+		public String getAuditMode() {
+			return auditMode;
+		}
+
+		public void setAuditMode(String auditMode) {
+			this.auditMode = auditMode;
+		}
+
+		public Map<String, String> getServiceConfig() {
+			return serviceConfig;
+		}
+
+		public void setServiceConfig(Map<String, String> serviceConfig) {
+			this.serviceConfig = serviceConfig;
+		}
+
+		@Override
+		public String toString() {
+			return "serviceName=" + serviceName + ", "
+					+ "serviceId=" + serviceId + ", "
+					+ "policyVersion=" + policyVersion + ", "
+					+ "policyUpdateTime=" + policyUpdateTime + ", "
+					+ "policies=" + policies + ", "
+					+ "serviceDef=" + serviceDef + ", "
+					+ "auditMode=" + auditMode
+					+ "serviceConfig=" + serviceConfig
+					;
+		}
+	}
+
+	@JsonInclude(JsonInclude.Include.NON_NULL)
 	@XmlRootElement
 	@XmlAccessorType(XmlAccessType.FIELD)
 	public static class SecurityZoneInfo implements java.io.Serializable {

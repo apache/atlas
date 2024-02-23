@@ -23,9 +23,9 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.*;
 import org.apache.atlas.annotation.GraphTransaction;
-import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasSearchResultScrubRequest;
-import org.apache.atlas.authorizer.NewAuthorizerUtils;
+import org.apache.atlas.authorizer.ABACAuthorizerUtils;
+import org.apache.atlas.authorizer.AtlasAuthorizationUtils;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.*;
 import org.apache.atlas.model.discovery.AtlasSearchResult.AtlasFullTextResult;
@@ -1260,7 +1260,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             List<String> actions = new ArrayList<>();
             actions.add("entity-read");
 
-            Map<String, Object> allPreFiltersBoolClause = NewAuthorizerUtils.getPreFilterDsl(persona, purpose, actions);
+            Map<String, Object> allPreFiltersBoolClause = ABACAuthorizerUtils.getPreFilterDsl(persona, purpose, actions);
             mustClauseList.add(allPreFiltersBoolClause);
 
             String dslString = searchParams.getQuery();

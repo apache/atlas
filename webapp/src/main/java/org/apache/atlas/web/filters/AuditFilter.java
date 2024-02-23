@@ -19,7 +19,7 @@
 package org.apache.atlas.web.filters;
 
 import org.apache.atlas.*;
-import org.apache.atlas.authorize.AtlasAuthorizationUtils;
+import org.apache.atlas.authorizer.AtlasAuthorizationUtils;
 import org.apache.atlas.service.metrics.MetricUtils;
 import org.apache.atlas.service.metrics.MetricsRegistry;
 import org.apache.atlas.util.AtlasRepositoryConfiguration;

@@ -18,7 +18,6 @@
 package org.apache.atlas.repository.audit;
 
 import org.apache.atlas.RequestContext;
-import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.listener.ChangedTypeDefs;
 import org.apache.atlas.listener.TypeDefChangeListener;
