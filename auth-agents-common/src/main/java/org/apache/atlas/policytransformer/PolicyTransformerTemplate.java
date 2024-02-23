@@ -63,6 +63,11 @@ public class PolicyTransformerTemplate {
                 templatePolicy.setPolicyResourceCategory((String) policy.get("policyResourceCategory"));
                 templatePolicy.setPolicyServiceName((String) policy.get("policyServiceName"));
 
+                Object filterCriteria = policy.get("policyFilterCriteria");
+                if (filterCriteria != null) {
+                    templatePolicy.setPolicyFilterCriteria((String) filterCriteria);
+                }
+
                 policies.add(templatePolicy);
             }
 
@@ -76,6 +81,7 @@ public class PolicyTransformerTemplate {
         private List<String> resources;
         private List<String> actions;
         private String policyResourceCategory;
+        private String policyFilterCriteria;
 
         public String getPolicyServiceName() {
             return policyServiceName;
@@ -115,6 +121,14 @@ public class PolicyTransformerTemplate {
 
         public void setActions(List<String> actions) {
             this.actions = actions;
+        }
+
+        public String getPolicyFilterCriteria() {
+            return policyFilterCriteria;
+        }
+
+        public void setPolicyFilterCriteria(String policyFilterCriteria) {
+            this.policyFilterCriteria = policyFilterCriteria;
         }
     }
 }

@@ -19,8 +19,8 @@ package org.apache.atlas.services;
 
 import org.apache.atlas.annotation.AtlasService;
 import org.apache.atlas.annotation.GraphTransaction;
-import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasTypesDefFilterRequest;
+import org.apache.atlas.authorizer.AtlasAuthorizationUtils;
 import org.apache.atlas.model.instance.AtlasEntity.Status;
 import org.apache.atlas.model.metrics.AtlasMetrics;
 import org.apache.atlas.stats.StatsClient;

@@ -26,6 +26,8 @@ import org.apache.atlas.authorize.*;
 import org.apache.atlas.authorize.AtlasEntityAccessRequest.AtlasEntityAccessRequestBuilder;
 import org.apache.atlas.bulkimport.BulkImportResponse;
 import org.apache.atlas.bulkimport.BulkImportResponse.ImportInfo;
+import org.apache.atlas.authorize.AtlasPrivilege;
+import org.apache.atlas.authorizer.AtlasAuthorizationUtils;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.featureflag.FeatureFlagStore;

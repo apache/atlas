@@ -274,9 +274,11 @@ public class RangerBasePlugin {
 		if (policies != null) {
 			List<RangerPolicy> resourcePolicies = policies.getPolicies();
 			List<RangerPolicy> tagPolicies = policies.getTagPolicies().getPolicies();
+			List<RangerPolicy> abacPolicies = policies.getAbacPolicies().getPolicies();
 
 			PoliciesStore.setResourcePolicies(resourcePolicies);
 			PoliciesStore.setTagPolicies(tagPolicies);
+			PoliciesStore.setAbacPolicies(abacPolicies);
 		}
 
 		// guard against catastrophic failure during policy engine Initialization or

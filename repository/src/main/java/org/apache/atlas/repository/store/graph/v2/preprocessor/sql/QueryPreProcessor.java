@@ -19,7 +19,7 @@ package org.apache.atlas.repository.store.graph.v2.preprocessor.sql;
 
 
 import org.apache.atlas.AtlasErrorCode;
-import org.apache.atlas.authorize.AtlasAuthorizationUtils;
+import org.apache.atlas.authorizer.AtlasAuthorizationUtils;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasStruct;

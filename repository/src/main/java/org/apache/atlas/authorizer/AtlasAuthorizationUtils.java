@@ -17,10 +17,22 @@
  * limitations under the License.
  */
 
-package org.apache.atlas.authorize;
+package org.apache.atlas.authorizer;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.authorize.AtlasAccessRequest;
+import org.apache.atlas.authorize.AtlasAccessorResponse;
+import org.apache.atlas.authorize.AtlasAdminAccessRequest;
+import org.apache.atlas.authorize.AtlasAuthorizationException;
+import org.apache.atlas.authorize.AtlasAuthorizer;
+import org.apache.atlas.authorize.AtlasAuthorizerFactory;
+import org.apache.atlas.authorize.AtlasEntityAccessRequest;
+import org.apache.atlas.authorize.AtlasPrivilege;
+import org.apache.atlas.authorize.AtlasRelationshipAccessRequest;
+import org.apache.atlas.authorize.AtlasSearchResultScrubRequest;
+import org.apache.atlas.authorize.AtlasTypeAccessRequest;
+import org.apache.atlas.authorize.AtlasTypesDefFilterRequest;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -35,7 +47,12 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import javax.servlet.http.HttpServletRequest;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static org.apache.atlas.repository.Constants.SKIP_DELETE_AUTH_CHECK_TYPES;
 import static org.apache.atlas.repository.Constants.SKIP_UPDATE_AUTH_CHECK_TYPES;
@@ -170,6 +187,10 @@ public class AtlasAuthorizationUtils {
 
         RequestContext.get().endMetricRecord(metric);
 
+        if (!ret) {
+            ret = ABACAuthorizerUtils.isAccessAllowed(request.getEntity(), request.getAction());
+        }
+
         return ret;
     }
 
@@ -224,6 +245,10 @@ public class AtlasAuthorizationUtils {
 
         RequestContext.get().endMetricRecord(metric);
 
+        if (!ret) {
+            ret = ABACAuthorizerUtils.isAccessAllowed(request.getRelationshipType(), request.getEnd1Entity(), request.getEnd2Entity(), request.getAction());
+        }
+
         return ret;
     }
 
@@ -237,6 +262,17 @@ public class AtlasAuthorizationUtils {
             ret = authorizer.getAccessors(request);
         } catch (AtlasAuthorizationException e) {
             LOG.error("Unable to obtain AtlasAuthorizer", e);
+        }
+
+        AtlasAccessorResponse abacAccessors = ABACAuthorizerUtils.getAccessors(request);
+        if (abacAccessors != null) {
+            ret.getUsers().addAll(abacAccessors.getUsers());
+            ret.getRoles().addAll(abacAccessors.getRoles());
+            ret.getGroups().addAll(abacAccessors.getGroups());
+
+            ret.getDenyUsers().addAll(abacAccessors.getDenyUsers());
+            ret.getDenyGroups().addAll(abacAccessors.getDenyGroups());
+            ret.getDenyRoles().addAll(abacAccessors.getDenyRoles());
         }
 
         return ret;
