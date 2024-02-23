@@ -323,7 +323,7 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
 
         Request request = new Request("POST", endPoint);
         request.setEntity(entity);
-        request.addParameter("wait_for_completion_timeout", "10ms");
+        request.addParameter("wait_for_completion_timeout", "100ms");
         request.addParameter("keep_alive", KeepAliveTime);
 
         ResponseListener responseListener = new ResponseListener() {
