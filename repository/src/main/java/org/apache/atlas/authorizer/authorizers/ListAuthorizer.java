@@ -108,9 +108,17 @@ public class ListAuthorizer {
         List<Map<String, Object>> shouldClauses = new ArrayList<>();
 
         for (RangerPolicy policy : policies) {
-            if (!policy.getResources().isEmpty()) {
-                List<String> entities = policy.getResources().get("entity").getValues();
-                List<String> entityTypesRaw = policy.getResources().get("entity-type").getValues();
+            if (MapUtils.isNotEmpty(policy.getResources())) {
+                List<String> entities = new ArrayList<>(0);
+                List<String> entityTypesRaw = new ArrayList<>(0);
+
+                if (policy.getResources().get("entity") != null) {
+                    entities = policy.getResources().get("entity").getValues();
+                }
+
+                if (policy.getResources().get("entity-type") != null) {
+                    entityTypesRaw = policy.getResources().get("entity-type").getValues();
+                }
 
                 if (entities.contains("*") && entityTypesRaw.contains("*")) {
                     Map<String, String> emptyMap = new HashMap<>();
@@ -203,9 +211,14 @@ public class ListAuthorizer {
         //LOG.info("Found {} tag policies", policies.size());
 
         for (RangerPolicy policy : policies) {
-            if (!policy.getResources().isEmpty()) {
+            if (MapUtils.isNotEmpty(policy.getResources())) {
                 //LOG.info("policy {}", AtlasType.toJson(policy));
-                List<String> tags = policy.getResources().get("tag").getValues();
+                List<String> tags = new ArrayList<>(0);
+
+                if (policy.getResources().get("tag") != null) {
+                    tags = policy.getResources().get("tag").getValues();
+                }
+
                 if (!tags.isEmpty()) {
                     allTags.addAll(tags);
                 }
@@ -222,24 +235,27 @@ public class ListAuthorizer {
         List<Map<String, Object>> shouldClauses = new ArrayList<>();
 
         for (RangerPolicy policy : policies) {
-            if (!policy.getResources().isEmpty()) {
-                RangerPolicy.RangerPolicyResource resourceEntity = policy.getResources().get("entity");
-                RangerPolicy.RangerPolicyResource resourceTypes = policy.getResources().get("entity-type");
+            if (MapUtils.isNotEmpty(policy.getResources())) {
+                List<String> entities = new ArrayList<>(0);
+                List<String> entityTypesRaw = new ArrayList<>(0);
 
-                if (resourceEntity != null && resourceTypes != null) {
-                    List<String> entities = policy.getResources().get("entity").getValues();
-                    List<String> entityTypesRaw = policy.getResources().get("entity-type").getValues();
-
-                    if (entities.contains("*") && entityTypesRaw.contains("*")) {
-                        shouldClauses.clear();
-                        shouldClauses.add(getMap("match_all", getMap("_name", policy.getGuid() + getPolicySuffix(policy))));
-                        break;
-                    }
-
-                    Map<String, Object> dslForPolicyResources = getDSLForResources(entities, new HashSet<>(entityTypesRaw), null,
-                            policy.getGuid() + getPolicySuffix(policy));
-                    shouldClauses.add(dslForPolicyResources);
+                if (policy.getResources().get("entity") != null) {
+                    entities = policy.getResources().get("entity").getValues();
                 }
+
+                if (policy.getResources().get("entity-type") != null) {
+                    entityTypesRaw = policy.getResources().get("entity-type").getValues();
+                }
+
+                if (entities.contains("*") && entityTypesRaw.contains("*")) {
+                    shouldClauses.clear();
+                    shouldClauses.add(getMap("match_all", getMap("_name", policy.getGuid() + getPolicySuffix(policy))));
+                    break;
+                }
+
+                Map<String, Object> dslForPolicyResources = getDSLForResources(entities, new HashSet<>(entityTypesRaw), null,
+                        policy.getGuid() + getPolicySuffix(policy));
+                shouldClauses.add(dslForPolicyResources);
             }
         }
         return shouldClauses;
@@ -258,9 +274,13 @@ public class ListAuthorizer {
         //LOG.info("Found {} tag policies", policies.size());
 
         for (RangerPolicy policy : policies) {
-            if (!policy.getResources().isEmpty()) {
+            if (MapUtils.isNotEmpty(policy.getResources())) {
                 //LOG.info("policy {}", AtlasType.toJson(policy));
-                List<String> tags = policy.getResources().get("tag").getValues();
+                List<String> tags = new ArrayList<>(0);
+                if (policy.getResources().get("tag") != null) {
+                    tags = policy.getResources().get("tag").getValues();
+                }
+
                 if (!tags.isEmpty()) {
 
                     List<Map<String, Object>> tagsClauses = new ArrayList<>();
