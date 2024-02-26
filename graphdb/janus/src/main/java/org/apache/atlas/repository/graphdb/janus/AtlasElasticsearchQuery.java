@@ -180,15 +180,23 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
             AsyncQueryResult response = submitAsyncSearch(searchParams, false).get();
 
             if(response.isRunning()) {
+                /*
+                    * If the response is still running, then we need to wait for the response
+                    * We need to check if the search context ID is present and update the cache
+                    * We also need to check if the search ID exists and delete if necessary, if the sequence number is greater than the cache sequence number
+                    *
+                 */
                 String esSearchId = response.getId();
                 if (StringUtils.isNotEmpty(searchParams.getSearchContextId())) {
                     if (searchParams.getSearchContextSequenceNo() != null) {
+                        // If user pases the sequence number, then we need to update the cache to use it later to delete the search
                         SearchContextCache.putSequence(searchParams.getSearchContextId(), searchParams.getSearchContextSequenceNo());
                     }
                     SearchContextCache.put(searchParams.getSearchContextId(), esSearchId);
                 }
                 response = getAsyncSearchResponse(searchParams, esSearchId).get();
                 if (response ==  null) {
+                    // Return null, if the response is null wil help returning @204 HTTP_NO_CONTENT to the user
                     return null;
                 }
                 result = getResultFromResponse(response.getFullResponse(), true);
@@ -202,6 +210,14 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         return result;
     }
 
+    /*
+        * Process the request with the same search context ID
+        * @param searchParams
+        * Function to process the request with the same search context ID
+        * If the sequence number is greater than the cache sequence number,
+        * then we need to cancel the request and update the cache
+        * We also need to check if the search ID exists and delete if necessary
+     */
     private void processRequestWithSameSearchContextId(SearchParams searchParams) {
         // Extract search context ID and sequence number
         String currentSearchContextId = searchParams.getSearchContextId();
@@ -230,6 +246,13 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         }
     }
 
+    /*
+        * Get the async search response
+        * @param searchParams
+        * @param esSearchId
+        * @return Future<AsyncQueryResult>
+        * Function to get the async search response after we submit the async search request
+     */
     private Future<AsyncQueryResult> getAsyncSearchResponse(SearchParams searchParams, String esSearchId)  {
         CompletableFuture<AsyncQueryResult> future = new CompletableFuture<>();
         String endPoint = "_async_search/" + esSearchId;
@@ -249,6 +272,11 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
                     String id = AtlasType.fromJson(AtlasType.toJson(responseMap.get("id")), String.class);
 
                     if (isInComplete != null && isInComplete) {
+                        /*
+                           * After the wait time, if the response is still incomplete, then we need to delete the search context
+                           * and complete the future with null
+                           * So that ES don't process the request later
+                         */
                         deleteAsyncSearchResponse(id);
                         future.complete(null);
                     }
@@ -264,6 +292,11 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
                 if (exception instanceof ResponseException){
                     int statusCode = ((ResponseException) exception).getResponse().getStatusLine().getStatusCode();
                     if (statusCode == 400 || statusCode == 404) {
+                        /*
+                            * If the response is not found or deleted, then we need to complete the future with null
+                            * Else we need to complete the future with the exception
+                            * Sending null, would return 204 to the user
+                         */
                         LOG.debug("Async search response not found or deleted", exception);
                         future.complete(null);
                     } else {
@@ -317,6 +350,7 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
 
         Request request = new Request("POST", endPoint);
         request.setEntity(entity);
+
         request.addParameter("wait_for_completion_timeout", "100ms");
         request.addParameter("keep_alive", KeepAliveTime);
 
@@ -329,7 +363,13 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
                     boolean isRunning = AtlasType.fromJson(AtlasType.toJson(responseMap.get("is_running")), Boolean.class);
                     String id = AtlasType.fromJson(AtlasType.toJson(responseMap.get("id")), String.class);
                     AsyncQueryResult result = new AsyncQueryResult(respString, isRunning);
+                    /*
+                        * If the response is running, then we need to complete the future with the ID to retrieve this later
+                        * Else we will complete the future with the response, if it completes within default timeout of 100ms
+                     */
                     if (isRunning && StringUtils.isNotEmpty(id)) {
+                        // response is still running, complete the future with the ID
+                        // use the ID to retrieve the response later
                         result.setId(id);
                         future.complete(result);
                     } else {
