@@ -978,7 +978,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         RequestContext.get().setAllowDeletedRelationsIndexsearch(params.isAllowDeletedRelations());
 
         AtlasSearchResult ret = new AtlasSearchResult();
-        AtlasIndexQuery indexQuery = null;
+        AtlasIndexQuery indexQuery;
 
         ret.setSearchParameters(searchParams);
         ret.setQueryType(AtlasQueryType.INDEX);
@@ -999,7 +999,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             AtlasPerfMetrics.MetricRecorder elasticSearchQueryMetric = RequestContext.get().startMetricRecord("elasticSearchQuery");
             DirectIndexQueryResult indexQueryResult = indexQuery.vertices(searchParams);
             if (indexQueryResult == null) {
-                return ret;
+                return null;
             }
             RequestContext.get().endMetricRecord(elasticSearchQueryMetric);
             prepareSearchResult(ret, indexQueryResult, resultAttributes, true);

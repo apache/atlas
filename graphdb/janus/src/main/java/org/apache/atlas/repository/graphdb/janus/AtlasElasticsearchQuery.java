@@ -20,7 +20,6 @@ package org.apache.atlas.repository.graphdb.janus;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.exception.SearchCancelledException;
 import org.apache.atlas.model.discovery.SearchParams;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -189,12 +188,10 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
                     SearchContextCache.put(searchParams.getSearchContextId(), esSearchId);
                 }
                 response = getAsyncSearchResponse(searchParams, esSearchId).get();
-                if (response != null) {
-                    if (response.getSearchCancelledException() != null) {
-                        throw response.getSearchCancelledException();
-                    }
-                    result = getResultFromResponse(response.getFullResponse(), true);
+                if (response ==  null) {
+                    return null;
                 }
+                result = getResultFromResponse(response.getFullResponse(), true);
             } else {
                 result = getResultFromResponse(response.getFullResponse(), true);
             }
@@ -241,14 +238,20 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         if (searchParams.getRequestTimeoutInSecs()!= null) {
             waitTime = searchParams.getRequestTimeoutInSecs();
         }
-        //Reduce wait time by 10% to avoid timeout and round off to seconds
-        waitTime = (long) (waitTime * 0.9);
         request.addParameter("wait_for_completion_timeout", waitTime + "s");
         ResponseListener responseListener = new ResponseListener() {
             @Override
             public void onSuccess(Response response) {
                 try {
                     String respString = EntityUtils.toString(response.getEntity());
+                    Map<String, LinkedHashMap> responseMap = AtlasType.fromJson(respString, Map.class);
+                    Boolean isInComplete = AtlasType.fromJson(AtlasType.toJson(responseMap.get("is_partial")), Boolean.class);
+                    String id = AtlasType.fromJson(AtlasType.toJson(responseMap.get("id")), String.class);
+
+                    if (isInComplete != null && isInComplete) {
+                        deleteAsyncSearchResponse(id);
+                        future.complete(null);
+                    }
                     AsyncQueryResult result = new AsyncQueryResult(respString, false);
                     future.complete(result);
                 } catch (IOException e) {
@@ -260,18 +263,9 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
             public void onFailure(Exception exception) {
                 if (exception instanceof ResponseException){
                     int statusCode = ((ResponseException) exception).getResponse().getStatusLine().getStatusCode();
-
-                    AsyncQueryResult result = new AsyncQueryResult(null);
-                    if (statusCode == 404) {
-                        LOG.debug("Async search response not found");
-                        SearchCancelledException searchCancelledException = new SearchCancelledException("Search cancelled as the search context is not found or completed");
-                        result.setSearchCancelledException(searchCancelledException);
-                        future.complete(result);
-                    } else if(statusCode == 400) {
-                        LOG.error("Async Search task deleted");
-                        SearchCancelledException searchCancelledException = new SearchCancelledException("Search cancelled as the search context is deleted");
-                        result.setSearchCancelledException(searchCancelledException);
-                        future.complete(result);
+                    if (statusCode == 400 || statusCode == 404) {
+                        LOG.debug("Async search response not found or deleted", exception);
+                        future.complete(null);
                     } else {
                         future.completeExceptionally(exception);
                     }
@@ -562,8 +556,8 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         private boolean isRunning;
         private String id;
         private String fullResponse;
-        private SearchCancelledException searchCancelledException;
 
+        private boolean success;
         // Constructor for a running process
         public AsyncQueryResult(String id) {
             this.isRunning = true;
@@ -598,12 +592,12 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
             return fullResponse;
         }
 
-        public SearchCancelledException getSearchCancelledException() {
-            return searchCancelledException;
+        public void setSuccess(boolean success) {
+            this.success = success;
         }
 
-        public void setSearchCancelledException(SearchCancelledException searchCancelledException) {
-            this.searchCancelledException = searchCancelledException;
+        public boolean isSuccess() {
+            return success;
         }
     }
 
