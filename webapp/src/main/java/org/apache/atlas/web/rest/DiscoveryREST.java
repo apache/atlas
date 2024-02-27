@@ -51,7 +51,6 @@ import org.springframework.stereotype.Service;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
@@ -388,8 +387,7 @@ public class DiscoveryREST {
     @Path("indexsearch")
     @POST
     @Timed
-    public AtlasSearchResult indexSearch(@Context HttpServletRequest servletRequest, IndexSearchParams parameters,
-                                         @Context HttpServletResponse response) throws AtlasBaseException {
+    public AtlasSearchResult indexSearch(@Context HttpServletRequest servletRequest, IndexSearchParams parameters) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
         long startTime = System.currentTimeMillis();
 
