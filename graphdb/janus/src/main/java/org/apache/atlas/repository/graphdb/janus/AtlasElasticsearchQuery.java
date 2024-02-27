@@ -173,8 +173,8 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
     private DirectIndexQueryResult performAsyncDirectIndexQuery(SearchParams searchParams) throws AtlasBaseException, IOException {
         DirectIndexQueryResult result = null;
         try {
-            if(StringUtils.isNotEmpty(searchParams.getSearchContextId())) {
-                // If the search context id is present, then we need to delete the previous search context async
+            if(StringUtils.isNotEmpty(searchParams.getSearchContextId()) && searchParams.getSearchContextSequenceNo() != null) {
+                // If the search context id and greater sequence no is present, then we need to delete the previous search context async
                 processRequestWithSameSearchContextId(searchParams);
             }
             AsyncQueryResult response = submitAsyncSearch(searchParams, false).get();
@@ -187,12 +187,10 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
                     *
                  */
                 String esSearchId = response.getId();
-                if (StringUtils.isNotEmpty(searchParams.getSearchContextId())) {
-                    if (searchParams.getSearchContextSequenceNo() != null) {
-                        // If user pases the sequence number, then we need to update the cache to use it later to delete the search
-                        SearchContextCache.putSequence(searchParams.getSearchContextId(), searchParams.getSearchContextSequenceNo());
-                    }
-                    SearchContextCache.put(searchParams.getSearchContextId(), esSearchId);
+                String searchContextId = searchParams.getSearchContextId();
+                Integer searchContextSequenceNo = searchParams.getSearchContextSequenceNo();
+                if (StringUtils.isNotEmpty(searchContextId) && searchContextSequenceNo != null) {
+                    SearchContextCache.put(searchContextId, searchContextSequenceNo, esSearchId);
                 }
                 response = getAsyncSearchResponse(searchParams, esSearchId).get();
                 if (response ==  null) {
@@ -211,8 +209,9 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
     }
 
     /*
-        * Process the request with the same search context ID
+        * Process the request with the same search context ID and sequence number
         * @param searchParams
+        * @return void
         * Function to process the request with the same search context ID
         * If the sequence number is greater than the cache sequence number,
         * then we need to cancel the request and update the cache
@@ -222,26 +221,13 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         // Extract search context ID and sequence number
         String currentSearchContextId = searchParams.getSearchContextId();
         Integer currentSequenceNumber = searchParams.getSearchContextSequenceNo();
-        Integer cacheSequenceNumber   = SearchContextCache.getSequence(currentSearchContextId);
+        // Get the search ID from the cache if sequence number is greater than the current sequence number
+        String previousESSearchId = SearchContextCache.getESAsyncSearchIdFromContextCache(currentSearchContextId, currentSequenceNumber);
 
-        // Check if cache entry exists for the given ID
-        boolean cacheEntryExists = SearchContextCache.get(currentSearchContextId) != null;
-
-        // Handle cases where sequence number is available and greater
-        if (currentSequenceNumber != null && cacheSequenceNumber!= null && currentSequenceNumber > cacheSequenceNumber) {
-            // Sequence number is greater, cancel the request and update cache
-            handleCacheUpdate(currentSearchContextId);
-        } else if (currentSequenceNumber == null || cacheEntryExists) {
-            handleCacheUpdate(currentSearchContextId);
-        }
-    }
-    private void handleCacheUpdate(String currentSearchContextId) {
-        // Retrieve existing search ID from cache
-        String esSearchId = SearchContextCache.get(currentSearchContextId);
-
-        // Check if search ID exists and delete if necessary
-        if (StringUtils.isNotEmpty(esSearchId)) {
-            deleteAsyncSearchResponse(esSearchId);
+        if (StringUtils.isNotEmpty(previousESSearchId)) {
+            LOG.debug("Deleting the previous async search response with ID {}", previousESSearchId);
+            // If the search ID exists, then we need to delete the search context
+            deleteAsyncSearchResponse(previousESSearchId);
             SearchContextCache.remove(currentSearchContextId);
         }
     }
