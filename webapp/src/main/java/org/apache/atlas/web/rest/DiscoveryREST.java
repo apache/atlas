@@ -410,6 +410,9 @@ public class DiscoveryREST {
                 LOG.debug("Performing indexsearch for the params ({})", parameters);
             }
             AtlasSearchResult result = discoveryService.directIndexSearch(parameters);
+            if (result == null) {
+                return null;
+            }
             long endTime = System.currentTimeMillis();
 
             if (enableSearchLogging && parameters.isSaveSearchLog()) {
