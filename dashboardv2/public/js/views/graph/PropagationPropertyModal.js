@@ -23,14 +23,17 @@ define(['require',
     'modules/Modal',
     'utils/Utils',
     'utils/UrlLinks',
-    'utils/Messages'
-], function(require, PropagationPropertyModalViewTmpl, VRelationship, VEntity, Modal, Utils, UrlLinks, Messages) {
+    'utils/Messages',
+    'collection/VRelationshipList',
+], function (require, PropagationPropertyModalViewTmpl, VRelationship, VEntity, Modal, Utils, UrlLinks, Messages, VRelationshipList) {
     'use strict';
 
-    var PropogationPropertyModal = Backbone.Marionette.CompositeView.extend({
+    var PropogationPropertyModal = Backbone.Marionette.LayoutView.extend({
         template: PropagationPropertyModalViewTmpl,
-        templateHelpers: function() {},
-        regions: {},
+        templateHelpers: function () { },
+        regions: {
+            RPropagatedClassificationTable: "#r_PropagatedClassificationTable"
+        },
         ui: {
             propagationOptions: '[data-id="propagationOptions"]',
             edgeDetailName: '[data-id="edgeDetailName"]',
@@ -40,20 +43,20 @@ define(['require',
             PropagatedClassificationTable: "[data-id='PropagatedClassificationTable']"
 
         },
-        events: function() {
+        events: function () {
             var events = {},
                 that = this;
-            events["change " + this.ui.propagationOptions] = function() {
+            events["change " + this.ui.propagationOptions] = function () {
                 this.modalEdited = true;
                 this.modal.$el.find('button.ok').attr("disabled", false);
             };
-            events["click " + this.ui.editPropagationType] = function(e) {
+            events["click " + this.ui.editPropagationType] = function (e) {
                 if (this.modalEdited === true) {
                     e.preventDefault();
                     that.notifyModal();
                 }
             };
-            events["change " + this.ui.editPropagationType] = function(e) {
+            events["change " + this.ui.editPropagationType] = function (e) {
                 if (e.target.checked) {
                     this.showPropagatedClassificationTable();
                     this.viewType = "table";
@@ -62,13 +65,13 @@ define(['require',
                     this.viewType = "flow";
                 }
             };
-            events["click " + this.ui.entityClick] = function(e) {
+            events["click " + this.ui.entityClick] = function (e) {
                 var that = this,
                     url = "",
                     notifyObj = {
                         modal: true,
                         text: "Are you sure you want to navigate away from this page ?",
-                        ok: function(argument) {
+                        ok: function (argument) {
                             that.modal.trigger('cancel');
                             Utils.setUrl({
                                 url: url,
@@ -77,37 +80,31 @@ define(['require',
                             });
 
                         },
-                        cancel: function(argument) {}
+                        cancel: function (argument) { }
                     },
-                    $el = $(e.currentTarget),
-                    guid = $el.parents('tr').data('entityguid');
-                if ($el.hasClass('entityName')) {
-                    url = '#!/detailPage/' + guid + '?tabActive=lineage';
-                } else {
-                    url = '#!/tag/tagAttribute/' + $el.data('name');
-                }
+                    $entityName = $(e.currentTarget),
+                    url = $entityName.hasClass('entityName') ? '#!/detailPage/' + $entityName[0].dataset.entityguid + '?tabActive=lineage' : '#!/tag/tagAttribute/' + $entityName.data('name');
                 Utils.notifyConfirm(notifyObj);
             };
-            events["change " + this.ui.propagationState] = function(e) {
+            events["change " + this.ui.propagationState] = function (e) {
                 this.modalEdited = true;
                 this.modal.$el.find('button.ok').attr("disabled", false);
-                var $el = $(e.currentTarget).parents('tr'),
-                    entityguid = $el.data("entityguid"),
-                    classificationName = $el.find('[data-name]').data('name');
+                var $el = $(e.currentTarget),
+                    entityguid = $el[0].dataset.entityguid,
+                    classificationName = $el[0].dataset.typename,
+                    updateClassificationLists = function (fromClassifications, toClassifications) {
+                        return _.reject(fromClassifications, function (val, key) {
+                            if (val.entityGuid == entityguid && classificationName == val.typeName) {
+                                toClassifications.push(val);
+                                return true;
+                            }
+                        });
+                    };
+
                 if (e.target.checked) {
-                    this.propagatedClassifications = _.reject(this.propagatedClassifications, function(val, key) {
-                        if (val.entityGuid == entityguid && classificationName == val.typeName) {
-                            that.blockedPropagatedClassifications.push(val);
-                            return true;
-                        }
-                    });
+                    this.propagatedClassifications = updateClassificationLists(this.propagatedClassifications, this.blockedPropagatedClassifications)
                 } else {
-                    this.blockedPropagatedClassifications = _.reject(this.blockedPropagatedClassifications, function(val, key) {
-                        if (val.entityGuid == entityguid && classificationName == val.typeName) {
-                            that.propagatedClassifications.push(val);
-                            return true;
-                        }
-                    });
+                    this.blockedPropagatedClassifications = updateClassificationLists(this.blockedPropagatedClassifications, this.propagatedClassifications)
                 }
             };
             return events;
@@ -116,15 +113,16 @@ define(['require',
          * intialize a new PropogationPropertyModal Layout
          * @constructs
          */
-        initialize: function(options) {
+        initialize: function (options) {
             _.extend(this, _.pick(options, 'edgeInfo', 'relationshipId', 'lineageData', 'apiGuid', 'detailPageFetchCollection'));
             this.entityModel = new VRelationship();
             this.VEntityModel = new VEntity();
+            this.relationShipCollection = new VRelationshipList();
             this.modalEdited = false;
             this.viewType = 'flow';
             var that = this,
                 modalObj = {
-                    title: 'Enable/Disable Propagation',
+                    title: 'Classification Propagation Control',
                     content: this,
                     okText: 'Update',
                     okCloses: false,
@@ -132,21 +130,96 @@ define(['require',
                     mainClass: 'modal-lg',
                     allowCancel: true,
                 };
-
+            this.commonTableOptions = {
+                collection: this.relationShipCollection,
+                includeFilter: false,
+                includePagination: false,
+                includeFooterRecords: false,
+                includePageSize: false,
+                includeGotoPage: false,
+                includeAtlasTableSorting: false,
+                gridOpts: {
+                    className: "table table-hover backgrid table-quickMenu",
+                    emptyText: 'No records found!'
+                },
+                filterOpts: {},
+                paginatorOpts: {}
+            };
             this.modal = new Modal(modalObj)
             this.modal.open();
             this.modal.$el.find('button.ok').attr("disabled", true);
-            this.on('ok', function() {
+            this.on('ok', function () {
                 that.updateRelation();
             });
-            this.on('closeModal', function() {
+            this.on('closeModal', function () {
                 this.modal.trigger('cancel');
             });
             this.updateEdgeView(this.edgeInfo);
         },
 
-        onRender: function() {},
-        updateEdgeView: function(options) {
+        onRender: function () { },
+        renderTableLayoutView: function () {
+            var that = this;
+
+            require(['utils/TableLayout'], function (TableLayout) {
+                var cols = new Backgrid.Columns(that.getSchemaTableColumns());
+                that.RPropagatedClassificationTable.show(new TableLayout(_.extend({}, that.commonTableOptions, {
+                    columns: cols
+                })));
+            });
+
+        },
+        getSchemaTableColumns: function (options) {
+            var that = this;
+
+            return this.relationShipCollection.constructor.getTableCols({
+                typeName: {
+                    label: "Classification",
+                    cell: "html",
+                    editable: false,
+                    sortable: false,
+                    formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
+                        fromRaw: function (rawValue, model) {
+                            return "<a class='classificationName' data-id='entityClick' title='" + rawValue + "' data-name='" + rawValue + "''>" + rawValue + "</a>"
+
+                        }
+                    })
+                },
+                entityGuid: {
+                    label: "Entity Name",
+                    cell: "html",
+                    editable: false,
+                    sortable: false,
+                    formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
+                        fromRaw: function (rawValue, model) {
+                            var guid = rawValue,
+                                entityObj = that.apiGuid[that.relationshipId].referredEntities[guid],
+                                name = guid;
+                            if (entityObj) {
+                                name = Utils.getName(entityObj) + " (" + entityObj.typeName + ")";
+                            }
+                            return "<a class='entityName' data-id='entityClick' data-entityguid =" + guid + ">" + name + "</a>";
+                        }
+                    })
+                },
+                fromBlockClassification: {
+                    label: "Block Propagation",
+                    cell: "html",
+                    fixWidth: "150",
+                    editable: false,
+                    sortable: false,
+                    formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
+                        fromRaw: function (rawValue, model) {
+
+                            return "<div class='text-center'><input type='checkbox' " + (rawValue ? "checked" : "") + " data-entityguid ='" + model.attributes.entityGuid + "' + data-typeName ='" + model.attributes.typeName + "' data-id='propagationState' class='input'></div>"
+                        }
+                    })
+                },
+
+            },
+                this.relationShipCollection);
+        },
+        updateEdgeView: function (options) {
             var obj = options,
                 fromEntity = this.lineageData.guidEntityMap[obj.fromEntityId],
                 toEntity = this.lineageData.guidEntityMap[obj.toEntityId];
@@ -158,7 +231,7 @@ define(['require',
                 this.getEdgeEntity({ id: obj.relationshipId, from: fromEntity, to: toEntity });
             }
         },
-        getPropagationFlow: function(options) {
+        getPropagationFlow: function (options) {
             var relationshipData = options.relationshipData,
                 graphData = options.graphData,
                 propagateTags = relationshipData.propagateTags;
@@ -172,12 +245,12 @@ define(['require',
                 return propagateTags;
             }
         },
-        getEdgeEntity: function(options) {
+        getEdgeEntity: function (options) {
             var that = this,
                 id = options.id,
                 from = options.from,
                 to = options.to,
-                enableOtherFlow = function(relationshipObj) {
+                enableOtherFlow = function (relationshipObj) {
                     var isTwoToOne = false;
                     if (relationshipObj.propagateTags == "BOTH") {
                         that.ui.propagationOptions.find('.both').show();
@@ -195,7 +268,7 @@ define(['require',
                         }
                     }
                 },
-                updateValue = function(relationshipData) {
+                updateValue = function (relationshipData) {
                     var relationshipObj = relationshipData.relationship;
                     if (relationshipObj) {
                         that.$("input[name='propagateRelation'][value=" + that.getPropagationFlow({
@@ -221,17 +294,17 @@ define(['require',
                     this.edgeCall.abort();
                 }
                 this.edgeCall = this.entityModel.getRelationship(id, {
-                    success: function(relationshipData) {
+                    success: function (relationshipData) {
                         that.apiGuid[relationshipData.relationship.guid] = relationshipData;
                         updateValue(relationshipData);
                     },
-                    cust_error: function() {
+                    cust_error: function () {
                         that.hideLoader();
                     }
                 });
             }
         },
-        updateRelation: function() {
+        updateRelation: function () {
             var that = this,
                 entityId = that.ui.propagationOptions.attr('entity-id'),
                 PropagationValue = this.$("input[name='propagateRelation']:checked").val(),
@@ -253,7 +326,7 @@ define(['require',
             this.showLoader();
             this.entityModel.saveRelationship({
                 data: JSON.stringify(_.extend({}, that.apiGuid[entityId].relationship, relationshipProp)),
-                success: function(relationshipData) {
+                success: function (relationshipData) {
                     if (relationshipData) {
                         that.hideLoader({ buttonDisabled: true });
                         that.modal.trigger('cancel');
@@ -264,79 +337,61 @@ define(['require',
                         });
                     }
                 },
-                cust_error: function() {
+                cust_error: function () {
                     that.hideLoader();
                 }
             });
         },
-        showBlockedClassificationTable: function(options) {
-            var that = this,
-                propagationStringValue = "",
-                classificationTableValue = "",
+        showBlockedClassificationTable: function (options) {
+            var propagationData = [],
                 relationship = options.relationship,
-                referredEntities = options.referredEntities,
-                getEntityName = function(guid) {
-                    var entityObj = referredEntities[guid],
-                        name = guid;
-                    if (entityObj) {
-                        name = Utils.getName(entityObj) + " (" + entityObj.typeName + ")";
-                    }
-                    return "<a class='entityName' data-id='entityClick'>" + name + "</a>";
-                },
-                getTableRow = function(options) {
-                    var val = options.val,
-                        fromBlockClassification = options.fromBlockClassification;
-                    return "<tr data-entityguid=" + val.entityGuid + "><td class='text-center w30'><a class='classificationName' data-id='entityClick' title='" + val.typeName + "' data-name='" + val.typeName + "''>" + val.typeName + "</a></td><td class='text-center'>" + getEntityName(val.entityGuid) + "</td><td class='text-center w30'><input type='checkbox' " + (fromBlockClassification ? "checked" : "") + " data-id='propagationState' class='input'></td></tr>";
+                updateClassification = function (classificationList, isChecked) {
+                    _.each(classificationList, function (val, key) {
+                        propagationData.push(_.extend(val, { fromBlockClassification: isChecked }));
+                    });
+
                 };
+            this.blockedPropagatedClassifications = _.clone(relationship.blockedPropagatedClassifications) || [];
+            this.propagatedClassifications = _.clone(relationship.propagatedClassifications) || [];
+            updateClassification(this.blockedPropagatedClassifications, true);
+            updateClassification(this.propagatedClassifications, false);
+            this.relationShipCollection.fullCollection.reset(propagationData);
+            this.renderTableLayoutView();
 
-            this.blockedPropagatedClassifications = _.isUndefined(relationship.blockedPropagatedClassifications) ? [] : _.clone(relationship.blockedPropagatedClassifications);
-            this.propagatedClassifications = _.isUndefined(relationship.propagatedClassifications) ? [] : _.clone(relationship.propagatedClassifications);
-            _.each(this.blockedPropagatedClassifications, function(val, key) {
-                propagationStringValue += getTableRow({ "val": val, fromBlockClassification: true });
-            });
-            _.each(this.propagatedClassifications, function(val, key) {
-                propagationStringValue += getTableRow({ "val": val, fromBlockClassification: false });
-            });
-
-            classificationTableValue = "<table class='attriTable'><tr><th class='w30'>Classification</th><th>Entity Name</th><th class='w30'>Block Propagatation</th>" + propagationStringValue + "</table>";
-
-            this.ui.PropagatedClassificationTable.append(_.isEmpty(propagationStringValue) ? "No Records Found." : classificationTableValue);
         },
-        showLoader: function() {
+        showLoader: function () {
             this.modal.$el.find('button.ok').showButtonLoader();
             this.$('.overlay').removeClass('hide').addClass('show');
         },
-        hideLoader: function(options) {
+        hideLoader: function (options) {
             var buttonDisabled = options && options.buttonDisabled;
             this.modal.$el.find('button.ok').hideButtonLoader();
             this.modal.$el.find('button.ok').attr("disabled", buttonDisabled ? buttonDisabled : false);
             this.$('.overlay').removeClass('show').addClass('hide');
         },
-        notifyModal: function(options) {
+        notifyModal: function (options) {
             var that = this,
                 notifyObj = {
                     modal: true,
                     text: "It looks like you have edited something. If you leave before saving, your changes will be lost.",
-                    ok: function(argument) {
+                    ok: function (argument) {
                         that.viewType = that.ui.editPropagationType.is(":checked") ? "flow" : "table";
                         that.ui.editPropagationType.prop("checked", that.viewType === "flow" ? false : true).trigger("change");
                         that.modal.$el.find('button.ok').attr("disabled", true);
                     },
-                    cancel: function(argument) {
+                    cancel: function (argument) {
                         that.viewType = that.ui.editPropagationType.is(":checked") ? "table" : "flow";
                     }
                 };
             Utils.notifyConfirm(notifyObj);
         },
-        showEditPropagation: function() {
+        showEditPropagation: function () {
             this.$('.editPropagation').show();
             this.$('.propagatedClassificationTable').hide();
-            this.modal.$el.find('.modal-title').text("Enable/Disable Propagation");
         },
-        showPropagatedClassificationTable: function() {
+        showPropagatedClassificationTable: function () {
             this.$('.editPropagation').hide();
             this.$('.propagatedClassificationTable').show();
-            this.modal.$el.find('.modal-title').text("Select Classifications to Block Propagation");
         }
 
     });
