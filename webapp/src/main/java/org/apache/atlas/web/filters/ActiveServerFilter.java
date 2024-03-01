@@ -119,7 +119,7 @@ public class ActiveServerFilter implements Filter {
         if(requestURI.contains("/admin/")) {
             for (String s : adminUriNotFiltered) {
                 if (requestURI.contains(s)) {
-                    LOG.error("URL not supported in HA mode: {}", requestURI);
+                    LOG.trace("URL not supported in HA mode: {}", requestURI);
                     return false;
                 }
             }
