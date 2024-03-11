@@ -62,6 +62,8 @@ import org.apache.atlas.repository.store.graph.v2.preprocessor.resource.LinkPreP
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.accesscontrol.PersonaPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.accesscontrol.PurposePreProcessor;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.datamesh.DataProductPreProcessor;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.datamesh.DomainPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.CategoryPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.GlossaryPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.TermPreProcessor;
@@ -1798,6 +1800,14 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
             case ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE:
                 preProcessor = new CategoryPreProcessor(typeRegistry, entityRetriever, graph, taskManagement, entityGraphMapper);
+                break;
+
+            case DATA_DOMAIN_ENTITY_TYPE:
+                preProcessor = new DomainPreProcessor(typeRegistry, entityRetriever, graph, entityGraphMapper);
+                break;
+
+            case DATA_PRODUCT_ENTITY_TYPE:
+                preProcessor = new DataProductPreProcessor(typeRegistry, entityRetriever, graph, entityGraphMapper);
                 break;
 
             case QUERY_ENTITY_TYPE:

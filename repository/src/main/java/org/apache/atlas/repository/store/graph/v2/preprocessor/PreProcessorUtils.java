@@ -32,6 +32,12 @@ public class PreProcessorUtils {
     public static final String GLOSSARY_TERM_REL_TYPE = "AtlasGlossaryTermAnchor";
     public static final String GLOSSARY_CATEGORY_REL_TYPE = "AtlasGlossaryCategoryAnchor";
 
+    //DataMesh models constants
+    public static final String DATA_PRODUCT_TYPE = "DataProduct";
+    public static final String PARENT_DOMAIN = "parentDomain";
+    public static final String PARENT_DOMAIN_QN = "parentDomainQualifiedName";
+    public static final String SUPER_DOMAIN_QN = "superDomainQualifiedName";
+
     //Query models constants
     public static final String PREFIX_QUERY_QN   = "default/collection/";
     public static final String COLLECTION_QUALIFIED_NAME = "collectionQualifiedName";
