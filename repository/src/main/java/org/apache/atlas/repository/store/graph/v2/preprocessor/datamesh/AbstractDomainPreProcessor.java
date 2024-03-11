@@ -116,10 +116,10 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
                 "create on target Domain: ", targetDomain.getAttribute(NAME));
 
         AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, targetDomain),
-                "update on target Glossary: ", targetDomain.getAttribute(NAME));
+                "update on target Domain: ", targetDomain.getAttribute(NAME));
 
         AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_DELETE, targetDomain),
-                "delete on target Glossary: ", targetDomain.getAttribute(NAME));
+                "delete on target Domain: ", targetDomain.getAttribute(NAME));
     }
 
     /**
