@@ -39,7 +39,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
     public void processAttributes(AtlasStruct entityStruct, EntityMutationContext context,
                                   EntityMutations.EntityOperation operation) throws AtlasBaseException {
         //Handle name & qualifiedName
-        if (LOG.isDebugEnabled()) {
+        if (operation == EntityMutations.EntityOperation.UPDATE && LOG.isDebugEnabled()) {
             LOG.debug("DataProductPreProcessor.processAttributes: pre processing {}, {}",
                     entityStruct.getAttribute(QUALIFIED_NAME), operation);
         }
@@ -50,7 +50,12 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         AtlasVertex vertex = context.getVertex(entity.getGuid());
 
         setParent(entity, context);
-        processUpdateDomain(entity, vertex);
+
+        if (operation == EntityMutations.EntityOperation.UPDATE) {
+            processUpdateDomain(entity, vertex);
+        } else {
+            LOG.error("DataProductPreProcessor.processAttributes: Operation not supported {}", operation);
+        }
     }
 
     private void processUpdateDomain(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
