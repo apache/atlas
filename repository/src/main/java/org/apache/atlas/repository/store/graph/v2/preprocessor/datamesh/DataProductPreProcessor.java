@@ -43,7 +43,6 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
                     entityStruct.getAttribute(QUALIFIED_NAME), operation);
         }
 
-//        this.context = context;
 
         AtlasEntity entity = (AtlasEntity) entityStruct;
         AtlasVertex vertex = context.getVertex(entity.getGuid());
