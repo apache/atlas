@@ -107,7 +107,7 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
         if (!currentDomainQualifiedName.equals(newDomainQualifiedName)) {
             //Auth check
             isAuthorized(currentDomainHeader, parentDomain);
-            LOG.info("Edge Labels: {}", entity.getRelationshipAttributes());
+
             processMoveSubDomainToAnotherDomain(entity, vertex, currentDomainQualifiedName, newDomainQualifiedName, vertexQnName, superDomainQualifiedName);
 
         } else {
