@@ -101,14 +101,14 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
         String currentDomainQualifiedName = (String) currentDomainHeader.getAttribute(QUALIFIED_NAME);
 
         String newDomainQualifiedName = (String) parentDomain.getAttribute(QUALIFIED_NAME);
+        String superDomainQualifiedName = (String) parentDomain.getAttribute(SUPER_DOMAIN_QN);
 
 
         if (!currentDomainQualifiedName.equals(newDomainQualifiedName)) {
             //Auth check
             isAuthorized(currentDomainHeader, parentDomain);
 
-            processMoveSubDomainToAnotherDomain(entity, vertex, currentDomainQualifiedName, newDomainQualifiedName, vertexQnName);
-            entity.setAttribute(PARENT_DOMAIN_QN, newDomainQualifiedName);
+            processMoveSubDomainToAnotherDomain(entity, vertex, currentDomainQualifiedName, newDomainQualifiedName, vertexQnName, superDomainQualifiedName);
 
         } else {
             String vertexName = vertex.getProperty(NAME, String.class);
@@ -126,7 +126,8 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
                                                       AtlasVertex domainVertex,
                                                       String sourceDomainQualifiedName,
                                                       String targetDomainQualifiedName,
-                                                      String currentSubDomainQualifiedName) throws AtlasBaseException {
+                                                      String currentSubDomainQualifiedName,
+                                                      String superDomainQualifiedName) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("processMoveSubDomainToAnotherGlossary");
 
         try {
@@ -139,8 +140,10 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
             String updatedQualifiedName = currentSubDomainQualifiedName.replace(sourceDomainQualifiedName, targetDomainQualifiedName);
 
             domain.setAttribute(QUALIFIED_NAME, updatedQualifiedName);
+            domain.setAttribute(PARENT_DOMAIN_QN, targetDomainQualifiedName);
+            domain.setAttribute(SUPER_DOMAIN_QN, superDomainQualifiedName);
 
-            moveChildrenToAnotherDomain(domainVertex, null, sourceDomainQualifiedName, targetDomainQualifiedName);
+            moveChildrenToAnotherDomain(domainVertex, superDomainQualifiedName, sourceDomainQualifiedName, targetDomainQualifiedName);
 
             LOG.info("Moved subDomain {} to Domain {}", domainName, targetDomainQualifiedName);
 
@@ -168,8 +171,8 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
             updatedAttributes.put(QUALIFIED_NAME, updatedQualifiedName);
 
             //change superDomainQN, parentDomainQN
-            childDomainVertex.setProperty(SUPER_DOMAIN_QN, targetDomainQualifiedName);
-            childDomainVertex.setProperty(PARENT_DOMAIN_QN, parentDomainQualifiedName);
+            childDomainVertex.setProperty(SUPER_DOMAIN_QN, parentDomainQualifiedName);
+            childDomainVertex.setProperty(PARENT_DOMAIN_QN, targetDomainQualifiedName);
 
             //update system properties
             GraphHelper.setModifiedByAsString(childDomainVertex, RequestContext.get().getUser());
@@ -254,13 +257,12 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
-    private void domainExists(String domainName, String domainQualifiedName) throws AtlasBaseException {
+    private void domainExists(String domainName, String parentDomainQualifiedName) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("domainExists");
 
         boolean exists = false;
         try {
             List mustClauseList = new ArrayList();
-            mustClauseList.add(mapOf("term", mapOf("__dataDomain", domainQualifiedName)));
             mustClauseList.add(mapOf("term", mapOf("__typeName.keyword", DATA_DOMAIN_ENTITY_TYPE)));
             mustClauseList.add(mapOf("term", mapOf("__state", "ACTIVE")));
             mustClauseList.add(mapOf("term", mapOf("name.keyword", domainName)));
@@ -268,11 +270,10 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
 
             Map<String, Object> bool = new HashMap<>();
             if (parentDomain != null) {
-                String parentQname = (String) parentDomain.getAttribute(QUALIFIED_NAME);
-                mustClauseList.add(mapOf("term", mapOf("__parentDomain", parentQname)));
+                mustClauseList.add(mapOf("term", mapOf("parentDomainQualifiedName", parentDomainQualifiedName)));
             } else {
                 List mustNotClauseList = new ArrayList();
-                mustNotClauseList.add(mapOf("exists", mapOf("field", "__parentDomain")));
+                mustNotClauseList.add(mapOf("exists", mapOf("field", "parentDomainQualifiedName")));
                 bool.put("must_not", mustNotClauseList);
             }
 

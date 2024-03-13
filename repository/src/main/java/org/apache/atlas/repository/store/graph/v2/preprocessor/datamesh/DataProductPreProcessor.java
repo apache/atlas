@@ -23,8 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.apache.atlas.repository.Constants.*;
-import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.PARENT_DOMAIN;
-import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.PARENT_DOMAIN_QN;
+import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 
 public class DataProductPreProcessor extends AbstractDomainPreProcessor {
@@ -63,9 +62,6 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         String productName = (String) entity.getAttribute(NAME);
         String vertexQnName = vertex.getProperty(QUALIFIED_NAME, String.class);
 
-//        if (StringUtils.isEmpty(catName) || isNameInvalid(catName)) {
-//            throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME);
-//        }
 
         AtlasEntity storedProduct = entityRetriever.toAtlasEntity(vertex);
         AtlasRelatedObjectId currentDomain = (AtlasRelatedObjectId) storedProduct.getRelationshipAttribute(PARENT_DOMAIN);
@@ -73,20 +69,20 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         String currentDomainQualifiedName = (String) currentDomainHeader.getAttribute(QUALIFIED_NAME);
 
         String newDomainQualifiedName = (String) parentDomain.getAttribute(QUALIFIED_NAME);
+        String superDomainQualifiedName = (String) parentDomain.getAttribute(SUPER_DOMAIN_QN);
 
         if (!currentDomainQualifiedName.equals(newDomainQualifiedName)) {
             //Auth check
             isAuthorized(currentDomainHeader, parentDomain);
 
-            processMoveDataProductToAnotherDomain(entity, currentDomainQualifiedName, newDomainQualifiedName, vertexQnName);
+            processMoveDataProductToAnotherDomain(entity, currentDomainQualifiedName, newDomainQualifiedName, vertexQnName, superDomainQualifiedName);
             entity.setAttribute(PARENT_DOMAIN_QN, newDomainQualifiedName);
 
         } else {
             String vertexName = vertex.getProperty(NAME, String.class);
             if (!vertexName.equals(productName)) {
-                domainExists(productName, newDomainQualifiedName);
+                productExists(productName, newDomainQualifiedName);
             }
-
             entity.setAttribute(QUALIFIED_NAME, vertexQnName);
         }
 
@@ -96,7 +92,8 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
     private void processMoveDataProductToAnotherDomain(AtlasEntity product,
                                                      String sourceDomainQualifiedName,
                                                      String targetDomainQualifiedName,
-                                                     String currentDataProductQualifiedName) throws AtlasBaseException {
+                                                     String currentDataProductQualifiedName,
+                                                     String superDomainQualifiedName) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("processMoveDataProductToAnotherDomain");
 
         try {
@@ -104,11 +101,13 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
 
             LOG.info("Moving dataProduct {} to Domain {}", domainName, targetDomainQualifiedName);
 
-            domainExists(domainName, targetDomainQualifiedName);
+            productExists(domainName, targetDomainQualifiedName);
 
             String updatedQualifiedName = currentDataProductQualifiedName.replace(sourceDomainQualifiedName, targetDomainQualifiedName);
 
             product.setAttribute(QUALIFIED_NAME, updatedQualifiedName);
+            product.setAttribute(PARENT_DOMAIN_QN, targetDomainQualifiedName);
+            product.setAttribute(SUPER_DOMAIN_QN, superDomainQualifiedName);
 
             LOG.info("Moved dataProduct {} to Domain {}", domainName, targetDomainQualifiedName);
 
@@ -142,25 +141,23 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
-    private void domainExists(String domainName, String domainQualifiedName) throws AtlasBaseException {
+    private void productExists(String productName, String parentDomainQualifiedName) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("domainExists");
 
         boolean exists = false;
         try {
             List mustClauseList = new ArrayList();
-            mustClauseList.add(mapOf("term", mapOf("__dataDomain", domainQualifiedName)));
             mustClauseList.add(mapOf("term", mapOf("__typeName.keyword", DATA_DOMAIN_ENTITY_TYPE)));
             mustClauseList.add(mapOf("term", mapOf("__state", "ACTIVE")));
-            mustClauseList.add(mapOf("term", mapOf("name.keyword", domainName)));
+            mustClauseList.add(mapOf("term", mapOf("name.keyword", productName)));
 
 
             Map<String, Object> bool = new HashMap<>();
             if (parentDomain != null) {
-                String parentQname = (String) parentDomain.getAttribute(QUALIFIED_NAME);
-                mustClauseList.add(mapOf("term", mapOf("__parentDomain", parentQname)));
+                mustClauseList.add(mapOf("term", mapOf("parentDomainQualifiedName", parentDomainQualifiedName)));
             } else {
                 List mustNotClauseList = new ArrayList();
-                mustNotClauseList.add(mapOf("exists", mapOf("field", "__parentDomain")));
+                mustNotClauseList.add(mapOf("exists", mapOf("field", "parentDomainQualifiedName")));
                 bool.put("must_not", mustNotClauseList);
             }
 
@@ -168,12 +165,12 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
 
             Map<String, Object> dsl = mapOf("query", mapOf("bool", bool));
 
-            List<AtlasEntityHeader> domains = indexSearchPaginated(dsl);
+            List<AtlasEntityHeader> products = indexSearchPaginated(dsl);
 
-            if (CollectionUtils.isNotEmpty(domains)) {
-                for (AtlasEntityHeader domain : domains) {
-                    String name = (String) domain.getAttribute(NAME);
-                    if (domainName.equals(name)) {
+            if (CollectionUtils.isNotEmpty(products)) {
+                for (AtlasEntityHeader product : products) {
+                    String name = (String) product.getAttribute(NAME);
+                    if (productName.equals(name)) {
                         exists = true;
                         break;
                     }
@@ -184,7 +181,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         }
 
         if (exists) {
-            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, domainName);
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, productName);
         }
     }
 
