@@ -139,8 +139,8 @@ public final class Constants {
      */
     public static final String DATA_DOMAIN_ENTITY_TYPE     = "DataDomain";
     public static final String DATA_PRODUCT_ENTITY_TYPE    = "DataProduct";
-    public static final String DATA_PRODUCT_EDGE_LABEL     = "r:AtlasDataProduct";
-    public static final String DOMAIN_PARENT_EDGE_LABEL    = "r:AtlasDataDomainHierarchyLink";
+    public static final String DATA_PRODUCT_EDGE_LABEL     = "__DataDomain.dataProducts";
+    public static final String DOMAIN_PARENT_EDGE_LABEL    = "__DataDomain.subDomains";
 
 
 
