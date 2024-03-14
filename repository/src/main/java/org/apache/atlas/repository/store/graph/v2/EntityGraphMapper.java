@@ -2979,6 +2979,49 @@ public class EntityGraphMapper {
         }
     }
 
+    public void repairClassificationMappings(AtlasEntityHeader entityHeader, AtlasVertex entityVertex) throws AtlasBaseException {
+        if (entityHeader.getClassifications() != null) {
+            List<AtlasClassification> classifications = entityHeader.getClassifications();
+            String propagatedClassificationName = null;
+            String classificationNames = null;
+            String classificationText = null;
+            List<String> propagatedClassificationNamesList = new ArrayList<>();
+            List<String> classificationNamesList = new ArrayList<>();
+            for (AtlasClassification classification : classifications) {
+                String typeName = classification.getTypeName();
+                classificationText = fullTextMapperV2.getClassificationTextForEntity(new AtlasEntity(entityHeader));
+                if(classification.isPropagate()) {
+                    //Add to propagatedClassificationNamesList
+                    propagatedClassificationNamesList.add(typeName);
+                    //Create delimiter separated string for propagatedClassificationNames
+                    if (StringUtils.isEmpty(propagatedClassificationName)) {
+                        propagatedClassificationName = CLASSIFICATION_NAME_DELIMITER + typeName + CLASSIFICATION_NAME_DELIMITER;
+                    } else {
+                        propagatedClassificationName = propagatedClassificationName + typeName + CLASSIFICATION_NAME_DELIMITER;
+                    }
+                } else {
+                    //Add to classificationNamesList
+                    classificationNamesList.add(typeName);
+                    //Create delimiter separated string for classificationNames
+                    if (StringUtils.isEmpty(classificationNames)) {
+                        classificationNames = CLASSIFICATION_NAME_DELIMITER + typeName + CLASSIFICATION_NAME_DELIMITER;
+                    } else {
+                        classificationNames = classificationNames + typeName + CLASSIFICATION_NAME_DELIMITER;
+                    }
+                }
+            }
+
+            //Update classificationNames and propagatedClassificationNames in entityVertex
+            AtlasGraphUtilsV2.setEncodedProperty(entityVertex, CLASSIFICATION_NAMES_KEY, classificationNames);
+            AtlasGraphUtilsV2.setEncodedProperty(entityVertex, CLASSIFICATION_TEXT_KEY, classificationText);
+            AtlasGraphUtilsV2.setEncodedProperty(entityVertex, PROPAGATED_CLASSIFICATION_NAMES_KEY, propagatedClassificationName);
+
+            //Update classificationNames and propagatedClassificationNames in entityHeader
+            AtlasGraphUtilsV2.setEncodedProperty(entityVertex, TRAIT_NAMES_PROPERTY_KEY, classificationNamesList);
+            AtlasGraphUtilsV2.setEncodedProperty(entityVertex, PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, propagatedClassificationNamesList);
+        }
+    }
+
     public void addClassifications(final EntityMutationContext context, String guid, List<AtlasClassification> classifications) throws AtlasBaseException {
         if (CollectionUtils.isNotEmpty(classifications)) {
             MetricRecorder metric = RequestContext.get().startMetricRecord("addClassifications");

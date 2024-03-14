@@ -915,6 +915,34 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     @Override
     @GraphTransaction
+    public void repairClassificationMappings(final String guid) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> repairClassificationMappings({})", guid);
+        }
+
+        if (StringUtils.isEmpty(guid)) {
+            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
+        }
+
+        AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(graph, guid);
+
+        if (entityVertex == null) {
+            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
+        }
+
+        AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(entityVertex);
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE_CLASSIFICATION, entityHeader), "repair classification mappings: guid=", guid);
+
+        entityGraphMapper.repairClassificationMappings(entityHeader, entityVertex);
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== repairClassificationMappings({})", guid);
+        }
+    }
+
+    @Override
+    @GraphTransaction
     public void addClassifications(final String guid, final List<AtlasClassification> classifications) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("Adding classifications={} to entity={}", classifications, guid);

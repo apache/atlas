@@ -154,6 +154,19 @@ public class ClassificationAssociator {
             this(AtlasGraphProvider.getGraphInstance(), typeRegistry, entitiesStore, entityGraphMapper, entityChangeNotifier, instanceConverter);
         }
 
+        public void repairClassificationsMappings(List<String> guids) throws AtlasBaseException {
+
+            for (String guid  : guids) {
+                // Fetch attached classifications
+                AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(this.graph, guid);
+                List<AtlasClassification> classifications = entityRetriever.getAllClassifications(vertex);
+                for (AtlasClassification classification : classifications) {
+                    // Fetch the entity header
+
+                }
+            }
+        }
+
         public void setClassifications(Map<String, AtlasEntityHeader> map) throws AtlasBaseException {
             RequestContext.get().setDelayTagNotifications(true);
 
