@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.repository.patches;
 
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.pc.WorkItemManager;
 import org.apache.atlas.repository.Constants;
@@ -52,6 +53,11 @@ public class RelationshipTypeNamePatch extends AtlasPatchHandler {
 
     @Override
     public void apply() throws AtlasBaseException {
+        if (AtlasConfiguration.RELATIONSHIP_SEARCH_ENABLED.getBoolean() == false) {
+            LOG.info("RelationshipTypeNamePatch: Skipped, since not enabled!");
+            return;
+        }
+        LOG.info("RelationshipTypeNamePatch: Starting...");
         EdgePatchProcessor patchProcessor = new RelationshipTypeNamePatchProcessor(context);
 
         patchProcessor.apply();

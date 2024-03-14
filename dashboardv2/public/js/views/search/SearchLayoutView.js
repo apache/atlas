@@ -55,7 +55,9 @@ define(['require',
                 advancedInfoBtn: '[data-id="advancedInfo"]',
                 typeAttrFilter: '[data-id="typeAttrFilter"]',
                 tagAttrFilter: '[data-id="tagAttrFilter"]',
-                tablist: '[data-id="tab-searchlist"] li'
+                tablist: '[data-id="tab-searchlist"] li',
+                searchTabs:'[data-id="searchTabs"]',
+                searchTabBody:'[data-id="searchTabBody"]',
             },
 
             /** ui events hash */
@@ -385,6 +387,10 @@ define(['require',
                 // array of tags which is coming from url
                 this.initializeValues();
                 this.updateTabState();
+                if(!Globals.isRelationshipSearchEnabled){ // hide relationship search
+                    this.ui.searchTabs.addClass("disable-relationship-search");
+                    this.ui.searchTabBody.addClass("search-tab-body");
+                }
             },
             updateTabState: function() {
                 if ((Utils.getUrlState.isRelationTab() || Utils.getUrlState.isRelationshipDetailPage()) && !this.isRelationSearch) {

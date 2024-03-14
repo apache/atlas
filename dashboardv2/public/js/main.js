@@ -257,6 +257,19 @@ require(['App',
             App.start();
         }
     };
+    var relationshipSearch= function(){
+        var that=this;
+        this.relationshipDefCollection.fetch({
+            async: true,
+            complete: function() {
+                that.relationshipDefCollection.fullCollection.comparator = function(model) {
+                    return model.get('name').toLowerCase();
+                };
+                that.relationshipDefCollection.fullCollection.sort({ silent: true });
+                that.relationshipEventAgg.trigger("Relationship:Update");
+            }
+        });
+    };
     CommonViewFunction.userDataFetch({
         url: UrlLinks.sessionApiUrl(),
         callback: function(response) {
@@ -307,6 +320,12 @@ require(['App',
                 }
                 if (response['atlas.lineage.on.demand.default.node.count'] !== undefined) {
                     Globals.lineageNodeCount = response['atlas.lineage.on.demand.default.node.count'];
+                }
+                if (response['atlas.relationship.search.enabled'] !== undefined) {
+                    Globals.isRelationshipSearchEnabled = response['atlas.relationship.search.enabled'];
+                }
+                if(Globals.isRelationshipSearchEnabled){
+                    relationshipSearch();
                 }
                 /*  Atlas idealTimeout 
        redirectUrl: url to redirect after timeout
@@ -389,16 +408,6 @@ require(['App',
             that.businessMetadataDefCollection.fullCollection.sort({ silent: true });
             --that.asyncFetchCounter;
             startApp();
-        }
-    });
-    this.relationshipDefCollection.fetch({
-        async: true,
-        complete: function() {
-            that.relationshipDefCollection.fullCollection.comparator = function(model) {
-                return model.get('name').toLowerCase();
-            };
-            that.relationshipDefCollection.fullCollection.sort({ silent: true });
-            that.relationshipEventAgg.trigger("Relationship:Update");
         }
     });
     CommonViewFunction.fetchRootEntityAttributes({

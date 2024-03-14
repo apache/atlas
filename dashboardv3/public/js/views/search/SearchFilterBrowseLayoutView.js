@@ -124,7 +124,9 @@ define([
             this.renderGlossaryTree(opt);
             this.renderCustomFilterTree();
             this.renderBusinessMetadataTree();
-            this.renderRelationshipTree();
+            if(Globals.isRelationshipSearchEnabled){ // show, hide relationship search
+                this.renderRelationshipTree();
+            }
             this.showHideGlobalFilter();
             this.showDefaultPage();
         },

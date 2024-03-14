@@ -284,6 +284,19 @@ require(['App',
             App.start();
         }
     };
+    var relationshipSearch= function(){
+        var that=this;
+        this.relationshipDefCollection.fetch({
+            async: true,
+            complete: function() {
+                that.relationshipDefCollection.fullCollection.comparator = function(model) {
+                    return model.get('name').toLowerCase();
+                };
+                that.relationshipDefCollection.fullCollection.sort({ silent: true });
+                startApp();
+            }
+        });
+    };
     CommonViewFunction.userDataFetch({
         url: UrlLinks.sessionApiUrl(),
         callback: function(response) {
@@ -334,6 +347,12 @@ require(['App',
                 }
                 if (response['atlas.lineage.on.demand.default.node.count'] !== undefined) {
                     Globals.lineageNodeCount = response['atlas.lineage.on.demand.default.node.count'];
+                }
+                if (response['atlas.relationship.search.enabled'] !== undefined) {
+                    Globals.isRelationshipSearchEnabled = response['atlas.relationship.search.enabled'];
+                }
+                if(Globals.isRelationshipSearchEnabled){
+                    relationshipSearch();
                 }
                 /*  Atlas idealTimeout 
        redirectUrl: url to redirect after timeout

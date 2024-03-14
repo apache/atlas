@@ -21,6 +21,7 @@ import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.SortOrder;
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.discovery.AtlasDiscoveryService;
@@ -449,6 +450,10 @@ public class DiscoveryREST {
                 throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "RelationshipFilters specified without Type name");
             }
 
+            if (AtlasConfiguration.RELATIONSHIP_SEARCH_ENABLED.getBoolean() == false) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Relationship search is currently disabled, set property " + AtlasConfiguration.RELATIONSHIP_SEARCH_ENABLED.getPropertyName() + " = true to enable");
+            }
+
             return discoveryService.searchRelationsWithParameters(parameters);
         } finally {
             AtlasPerfTracer.log(perf);
@@ -485,6 +490,9 @@ public class DiscoveryREST {
                         ", " + sortByAttribute + ", " + sortOrder + ", " + limit + ", " + offset + ", " + marker + ")");
             }
 
+            if (AtlasConfiguration.RELATIONSHIP_SEARCH_ENABLED.getBoolean() == false) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Relationship search is currently disabled, set property " + AtlasConfiguration.RELATIONSHIP_SEARCH_ENABLED.getPropertyName() + " = true to enable");
+            }
             RelationshipSearchParameters parameters = new RelationshipSearchParameters();
             parameters.setRelationshipName(relationshipName);
             parameters.setSortBy(sortByAttribute);

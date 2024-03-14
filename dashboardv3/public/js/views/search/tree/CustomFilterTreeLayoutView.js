@@ -385,15 +385,18 @@ define([
                 text: "Advanced Search",
                 name: "Advanced Search",
                 state: { opened: true }
-            }, {
-                icon: "fa fa-folder-o",
-                gType: "customFilter",
-                type: "customFilterFolder",
-                children: customFilterRelationshipList,
-                text: "Relationship Search",
-                name: "Relationship Search",
-                state: { opened: true }
             }];
+            if(Globals.isRelationshipSearchEnabled){
+                treeView.push({
+                    icon: "fa fa-folder-o",
+                    gType: "customFilter",
+                    type: "customFilterFolder",
+                    children: customFilterRelationshipList,
+                    text: "Relationship Search",
+                    name: "Relationship Search",
+                    state: { opened: true }
+                });
+            }
             var customFilterList = that.isGroupView ? treeView : allCustomFilter;
             return customFilterList;
         },
