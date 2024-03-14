@@ -61,6 +61,7 @@ define(["require", "underscore"], function(require, _) {
     Globals.lineageNodeCount = 3;
     Globals.lineageDepth = 3;
     Globals.fromRelationshipSearch = false;
+    Globals.isRelationshipSearchEnabled = false;
 
     return Globals;
 });

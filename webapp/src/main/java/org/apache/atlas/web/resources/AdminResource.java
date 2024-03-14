@@ -190,6 +190,7 @@ public class AdminResource {
     private final  boolean                  isTasksEnabled;
     private final  boolean                  isOnDemandLineageEnabled;
     private final  int                      defaultLineageNodeCount;
+    private final  boolean                  isRelationshipSearchEnabled;
     private final AtlasMetricsUtil atlasMetricsUtil;
 
     private AtlasAuditReductionService auditReductionService;
@@ -237,6 +238,7 @@ public class AdminResource {
             this.isTasksEnabled = AtlasConfiguration.TASKS_USE_ENABLED.getBoolean();
             this.isOnDemandLineageEnabled = AtlasConfiguration.LINEAGE_ON_DEMAND_ENABLED.getBoolean();
             this.defaultLineageNodeCount = AtlasConfiguration.LINEAGE_ON_DEMAND_DEFAULT_NODE_COUNT.getInt();
+            this.isRelationshipSearchEnabled = AtlasConfiguration.RELATIONSHIP_SEARCH_ENABLED.getBoolean();
         } else {
             this.defaultUIVersion = UI_VERSION_V2;
             this.isTimezoneFormatEnabled = true;
@@ -245,6 +247,7 @@ public class AdminResource {
             this.isTasksEnabled = false;
             this.isOnDemandLineageEnabled = false;
             this.defaultLineageNodeCount = 3;
+            this.isRelationshipSearchEnabled = false;
         }
     }
 
@@ -396,6 +399,7 @@ public class AdminResource {
         responseData.put(AtlasConfiguration.TASKS_USE_ENABLED.getPropertyName(), isTasksEnabled);
         responseData.put(AtlasConfiguration.LINEAGE_ON_DEMAND_ENABLED.getPropertyName(), isOnDemandLineageEnabled);
         responseData.put(AtlasConfiguration.LINEAGE_ON_DEMAND_DEFAULT_NODE_COUNT.getPropertyName(), defaultLineageNodeCount);
+        responseData.put( AtlasConfiguration.RELATIONSHIP_SEARCH_ENABLED.getPropertyName(),isRelationshipSearchEnabled);
 
         if (AtlasConfiguration.SESSION_TIMEOUT_SECS.getInt() != -1) {
             responseData.put(AtlasConfiguration.SESSION_TIMEOUT_SECS.getPropertyName(), AtlasConfiguration.SESSION_TIMEOUT_SECS.getInt());
