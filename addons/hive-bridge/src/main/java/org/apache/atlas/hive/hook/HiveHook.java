@@ -336,21 +336,6 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
 
         return ret;
     }
-
-    private boolean isMatch(String name, List<Pattern> patterns) {
-        boolean ret = false;
-
-        for (Pattern p : patterns) {
-            if (p.matcher(name).matches()) {
-                ret = true;
-
-                break;
-            }
-        }
-
-        return ret;
-    }
-
     public static HiveHookObjectNamesCache getKnownObjects() {
         if (knownObjects != null && knownObjects.isCacheExpired()) {
             LOG.info("HiveHook.run(): purging cached databaseNames ({}) and tableNames ({})", knownObjects.getCachedDbCount(), knownObjects.getCachedTableCount());

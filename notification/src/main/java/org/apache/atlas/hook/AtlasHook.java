@@ -24,10 +24,12 @@ import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.kafka.NotificationProvider;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.notification.HookNotification;
 import org.apache.atlas.notification.NotificationException;
 import org.apache.atlas.notification.NotificationInterface;
 import org.apache.atlas.utils.AtlasConfigurationUtil;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.atlas.model.notification.MessageSource;
 import org.apache.commons.lang.StringUtils;
@@ -38,11 +40,15 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.security.PrivilegedExceptionAction;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 
 /**
@@ -65,6 +71,8 @@ public abstract class AtlasHook {
     public static final String CLUSTER_NAME_KEY                                   = "atlas.cluster.name";
     public static final String DEFAULT_CLUSTER_NAME                               = "primary";
     public static final String CONF_ATLAS_HOOK_MESSAGES_SORT_ENABLED              = "atlas.hook.messages.sort.enabled";
+    public static final String ATLAS_HOOK_ENTITY_IGNORE_PATTERN                   = "atlas.hook.entity.ignore.pattern";
+    public static final String ATTRIBUTE_QUALIFIED_NAME                           = "qualifiedName";
 
     protected static Configuration         atlasProperties;
     protected static NotificationInterface notificationInterface;
@@ -79,6 +87,8 @@ public abstract class AtlasHook {
     private static       ExecutorService      executor = null;
     public  static final boolean              isRESTNotificationEnabled;
     public  static final boolean              isHookMsgsSortEnabled;
+    private static final List<Pattern> entitiesToIgnore  = new ArrayList<>();
+    private static boolean shouldPreprocess = false;
 
 
     static {
@@ -105,6 +115,23 @@ public abstract class AtlasHook {
         notificationMaxRetries    = atlasProperties.getInt(ATLAS_NOTIFICATION_MAX_RETRIES, 3);
         notificationRetryInterval = atlasProperties.getInt(ATLAS_NOTIFICATION_RETRY_INTERVAL, 1000);
         notificationInterface     = NotificationProvider.get();
+
+        String[] patternsToIgnoreEntities = atlasProperties.getStringArray(ATLAS_HOOK_ENTITY_IGNORE_PATTERN);
+
+        if (patternsToIgnoreEntities != null) {
+            for (String pattern: patternsToIgnoreEntities) {
+                try {
+                    entitiesToIgnore.add(Pattern.compile(pattern));
+                } catch (Throwable t) {
+                    LOG.warn("failed to compile pattern {}", pattern, t);
+                    LOG.warn("Ignoring invalid pattern in configuration {}: {}", ATLAS_HOOK_ENTITY_IGNORE_PATTERN, pattern);
+                }
+            }
+            LOG.info("{}={}", ATLAS_HOOK_ENTITY_IGNORE_PATTERN, entitiesToIgnore);
+        }
+
+
+        shouldPreprocess = CollectionUtils.isNotEmpty(entitiesToIgnore);
 
         String currentUser = "";
 
@@ -163,6 +190,60 @@ public abstract class AtlasHook {
 
     public abstract String getMessageSource();
 
+    protected static boolean isMatch(String qualifiedName, List<Pattern> patterns) {
+        return patterns.stream().anyMatch((Pattern pattern) -> pattern.matcher(qualifiedName).matches());
+    }
+
+    private static AtlasEntity.AtlasEntitiesWithExtInfo getAtlasEntitiesWithExtInfo(HookNotification hookNotification) {
+        AtlasEntity.AtlasEntitiesWithExtInfo entitiesWithExtInfo = null;
+        switch (hookNotification.getType()) {
+            case ENTITY_CREATE_V2:
+                entitiesWithExtInfo = ((HookNotification.EntityCreateRequestV2) hookNotification).getEntities();
+                break;
+            case ENTITY_FULL_UPDATE_V2:
+                entitiesWithExtInfo = ((HookNotification.EntityUpdateRequestV2) hookNotification).getEntities();
+                break;
+        }
+        return entitiesWithExtInfo;
+
+    }
+
+    private static void preprocessEntities(List<HookNotification> hookNotifications) {
+        for (int i = 0; i < hookNotifications.size(); i++) {
+            HookNotification hookNotification = hookNotifications.get(i);
+
+            AtlasEntity.AtlasEntitiesWithExtInfo entitiesWithExtInfo = getAtlasEntitiesWithExtInfo(hookNotification);
+
+            if (entitiesWithExtInfo == null) {
+                return;
+            }
+
+            List<AtlasEntity> entities = entitiesWithExtInfo.getEntities();
+            entities = ((entities != null) ? entities : Collections.emptyList());
+            entities.removeIf((AtlasEntity entity) -> isMatch(entity.getAttribute(ATTRIBUTE_QUALIFIED_NAME).toString(), entitiesToIgnore));
+
+
+            Map<String, AtlasEntity> referredEntitiesMap = entitiesWithExtInfo.getReferredEntities();
+            referredEntitiesMap = ((referredEntitiesMap != null) ? referredEntitiesMap: Collections.emptyMap());
+            referredEntitiesMap.entrySet().removeIf((Map.Entry<String, AtlasEntity> entry) -> isMatch(entry.getValue().getAttribute(ATTRIBUTE_QUALIFIED_NAME).toString(), entitiesToIgnore));
+
+
+            if (CollectionUtils.isEmpty(entities) && CollectionUtils.isEmpty(referredEntitiesMap.values())) {
+                hookNotifications.remove(i--);
+
+                LOG.info("ignored message: {}", hookNotification);
+            }
+        }
+    }
+    private static void  notifyEntitiesPostPreprocess(List<HookNotification> messages, UserGroupInformation ugi, int maxRetries, MessageSource source) {
+        if (shouldPreprocess) {
+            preprocessEntities(messages);
+        }
+        if (CollectionUtils.isNotEmpty(messages)) {
+            notifyEntitiesInternal(messages, maxRetries, ugi, notificationInterface, logFailedMessages, failedMessagesLogger, source);
+        }
+    }
+
     /**
      * Notify atlas of the entity through message. The entity can be a
      * complex entity with reference to other entities.
@@ -174,12 +255,12 @@ public abstract class AtlasHook {
      */
     public static void notifyEntities(List<HookNotification> messages, UserGroupInformation ugi, int maxRetries, MessageSource source) {
         if (executor == null) { // send synchronously
-            notifyEntitiesInternal(messages, maxRetries, ugi, notificationInterface, logFailedMessages, failedMessagesLogger, source);
+            notifyEntitiesPostPreprocess(messages, ugi, maxRetries, source);
         } else {
             executor.submit(new Runnable() {
                 @Override
                 public void run() {
-                    notifyEntitiesInternal(messages, maxRetries, ugi, notificationInterface, logFailedMessages, failedMessagesLogger, source);
+                    notifyEntitiesPostPreprocess(messages, ugi, maxRetries, source);
                 }
             });
         }

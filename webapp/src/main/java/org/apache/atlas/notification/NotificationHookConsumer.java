@@ -39,6 +39,7 @@ import org.apache.atlas.model.notification.HookNotification.EntityUpdateRequestV
 import org.apache.atlas.model.notification.HookNotification.EntityPartialUpdateRequestV2;
 import org.apache.atlas.notification.NotificationInterface.NotificationType;
 import org.apache.atlas.notification.preprocessor.EntityPreprocessor;
+import org.apache.atlas.notification.preprocessor.GenericEntityPreprocessor;
 import org.apache.atlas.notification.preprocessor.PreprocessorContext;
 import org.apache.atlas.notification.preprocessor.PreprocessorContext.PreprocessAction;
 import org.apache.atlas.repository.store.graph.EntityCorrelationStore;
@@ -149,6 +150,8 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
     public static final String CONSUMER_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633                  = "atlas.notification.consumer.skip.hive_column_lineage.hive-20633";
     public static final String CONSUMER_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633_INPUTS_THRESHOLD = "atlas.notification.consumer.skip.hive_column_lineage.hive-20633.inputs.threshold";
+    public static final String CONSUMER_PREPROCESS_ENTITY_TYPE_IGNORE_PATTERN                = "atlas.notification.consumer.preprocess.entity.type.ignore.pattern";
+    public static final String CONSUMER_PREPROCESS_ENTITY_IGNORE_PATTERN                     = "atlas.notification.consumer.preprocess.entity.ignore.pattern";
     public static final String CONSUMER_PREPROCESS_HIVE_TABLE_IGNORE_PATTERN                 = "atlas.notification.consumer.preprocess.hive_table.ignore.pattern";
     public static final String CONSUMER_PREPROCESS_HIVE_TABLE_PRUNE_PATTERN                  = "atlas.notification.consumer.preprocess.hive_table.prune.pattern";
     public static final String CONSUMER_PREPROCESS_HIVE_TABLE_CACHE_SIZE                     = "atlas.notification.consumer.preprocess.hive_table.cache.size";
@@ -182,6 +185,8 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     private final boolean                       updateHiveProcessNameWithQualifiedName;
     private final int                           largeMessageProcessingTimeThresholdMs;
     private final boolean                       consumerDisabled;
+    private final List<Pattern>                 entityTypesToIgnore = new ArrayList<>();
+    private final List<Pattern>                 entitiesToIgnore = new ArrayList<>();
     private final List<Pattern>                 hiveTablesToIgnore = new ArrayList<>();
     private final List<Pattern>                 hiveTablesToPrune  = new ArrayList<>();
     private final List<String>                  hiveDummyDatabasesToIgnore;
@@ -246,8 +251,35 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
         authnCache = (authorizeUsingMessageUser && authnCacheTtlSeconds > 0) ? new PassiveExpiringMap<>(authnCacheTtlSeconds * 1000) : null;
 
+        String[] patternEntityTypesToIgnore = applicationProperties.getStringArray(CONSUMER_PREPROCESS_ENTITY_TYPE_IGNORE_PATTERN);
+        String[] patternEntitiesToIgnore = applicationProperties.getStringArray(CONSUMER_PREPROCESS_ENTITY_IGNORE_PATTERN);
+
         String[] patternHiveTablesToIgnore = applicationProperties.getStringArray(CONSUMER_PREPROCESS_HIVE_TABLE_IGNORE_PATTERN);
         String[] patternHiveTablesToPrune  = applicationProperties.getStringArray(CONSUMER_PREPROCESS_HIVE_TABLE_PRUNE_PATTERN);
+
+        if (patternEntityTypesToIgnore != null) {
+            for (String pattern: patternEntityTypesToIgnore) {
+                try {
+                    this.entityTypesToIgnore.add(Pattern.compile(pattern));
+                } catch (Throwable t) {
+                    LOG.warn("failed to compile pattern {}", pattern, t);
+                    LOG.warn("Ignoring invalid pattern in configuration {}: {}", CONSUMER_PREPROCESS_ENTITY_TYPE_IGNORE_PATTERN, pattern);
+                }
+            }
+            LOG.info("{}={}", CONSUMER_PREPROCESS_ENTITY_TYPE_IGNORE_PATTERN, entityTypesToIgnore);
+        }
+
+        if (patternEntitiesToIgnore != null) {
+            for (String pattern: patternEntitiesToIgnore) {
+                try {
+                    this.entitiesToIgnore.add(Pattern.compile(pattern));
+                } catch (Throwable t) {
+                    LOG.warn("failed to compile pattern {}", pattern, t);
+                    LOG.warn("Ignoring invalid pattern in configuration {}: {}", CONSUMER_PREPROCESS_ENTITY_IGNORE_PATTERN, pattern);
+                }
+            }
+            LOG.info("{}={}", CONSUMER_PREPROCESS_ENTITY_IGNORE_PATTERN, entitiesToIgnore);
+        }
 
         if (patternHiveTablesToIgnore != null) {
             for (String pattern : patternHiveTablesToIgnore) {
@@ -1073,6 +1105,36 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         }
     }
 
+    private void preprocessEntities(PreprocessorContext context) {
+        GenericEntityPreprocessor genericEntityPreprocessor = new GenericEntityPreprocessor(this.entityTypesToIgnore, this.entitiesToIgnore);
+
+        List<AtlasEntity> entities = context.getEntities();
+
+        if (entities != null) {
+            for (int i = 0; i < entities.size(); i++) {
+                AtlasEntity entity = entities.get(i);
+                genericEntityPreprocessor.preprocess(entity, context);
+
+                if (context.isIgnoredEntity(entity.getGuid())) {
+                    entities.remove(i--);
+                }
+            }
+        }
+
+        Map<String, AtlasEntity> referredEntities = context.getReferredEntities();
+
+        if (referredEntities != null) {
+            for (Iterator<Map.Entry<String, AtlasEntity>> iterator = referredEntities.entrySet().iterator(); iterator.hasNext(); ) {
+                AtlasEntity entity = iterator.next().getValue();
+                genericEntityPreprocessor.preprocess(entity, context);
+
+                if (context.isIgnoredEntity(entity.getGuid())) {
+                    iterator.remove();
+                }
+            }
+        }
+    }
+
     private PreprocessorContext preProcessNotificationMessage(AtlasKafkaMessage<HookNotification> kafkaMsg) {
         PreprocessorContext context = null;
 
@@ -1080,6 +1142,10 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
             context = new PreprocessorContext(kafkaMsg, typeRegistry, hiveTablesToIgnore, hiveTablesToPrune, hiveTablesCache,
                     hiveDummyDatabasesToIgnore, hiveDummyTablesToIgnore, hiveTablePrefixesToIgnore, hiveTypesRemoveOwnedRefAttrs,
                     rdbmsTypesRemoveOwnedRefAttrs, s3V2DirectoryPruneObjectPrefix, updateHiveProcessNameWithQualifiedName, entityCorrelationManager);
+
+            if (CollectionUtils.isNotEmpty(this.entityTypesToIgnore) || CollectionUtils.isNotEmpty(this.entitiesToIgnore)) {
+                preprocessEntities(context);
+            }
 
             if (context.isHivePreprocessEnabled()) {
                 preprocessHiveTypes(context);
