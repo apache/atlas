@@ -2994,6 +2994,7 @@
                 "policyResources":
                 [
                     "entity-type:DataProduct",
+                    "entity-classification:*",
                     "entity:*"
                 ],
                 "policyActions":
