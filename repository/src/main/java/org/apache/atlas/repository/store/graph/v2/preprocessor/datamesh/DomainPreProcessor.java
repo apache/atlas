@@ -93,7 +93,7 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
         String vertexQnName = vertex.getProperty(QUALIFIED_NAME, String.class);
 
         AtlasEntity storedDomain = entityRetriever.toAtlasEntity(vertex);
-        if(storedDomain.getRelationshipAttribute(PARENT_DOMAIN) == null){
+        if(vertex.getProperty(PARENT_DOMAIN, String.class) == null){
             throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Cannot move Root Domain");
         }
         AtlasRelatedObjectId currentDomain = (AtlasRelatedObjectId) storedDomain.getRelationshipAttribute(PARENT_DOMAIN);
