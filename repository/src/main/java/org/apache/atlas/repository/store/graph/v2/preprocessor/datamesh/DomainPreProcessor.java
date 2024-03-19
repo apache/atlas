@@ -92,29 +92,43 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
         String domainName = (String) entity.getAttribute(NAME);
         String vertexQnName = vertex.getProperty(QUALIFIED_NAME, String.class);
 
+        AtlasEntityHeader currentParentDomainHeader = null;
+        String currentParentDomainQualifiedName = "";
+
         AtlasEntity storedDomain = entityRetriever.toAtlasEntity(vertex);
-        AtlasRelatedObjectId currentDomain = (AtlasRelatedObjectId) storedDomain.getRelationshipAttribute(PARENT_DOMAIN);
-        AtlasEntityHeader currentDomainHeader = entityRetriever.toAtlasEntityHeader(currentDomain.getGuid());
-        String currentDomainQualifiedName = (String) currentDomainHeader.getAttribute(QUALIFIED_NAME);
+        AtlasRelatedObjectId currentParentDomain = (AtlasRelatedObjectId) storedDomain.getRelationshipAttribute(PARENT_DOMAIN);
 
-        String newDomainQualifiedName = (String) parentDomain.getAttribute(QUALIFIED_NAME);
-        String superDomainQualifiedName = (String) parentDomain.getAttribute(SUPER_DOMAIN_QN);
+        String newParentDomainQualifiedName = "";
+        String superDomainQualifiedName = "";
+
+        if(currentParentDomain != null){
+            currentParentDomainHeader = entityRetriever.toAtlasEntityHeader(currentParentDomain.getGuid());
+            currentParentDomainQualifiedName = (String) currentParentDomainHeader.getAttribute(QUALIFIED_NAME);
+        }
+
+        if (parentDomain != null) {
+            newParentDomainQualifiedName = (String) parentDomain.getAttribute(QUALIFIED_NAME);
+            superDomainQualifiedName = (String) parentDomain.getAttribute(SUPER_DOMAIN_QN);
+            if(superDomainQualifiedName == null){
+                superDomainQualifiedName = newParentDomainQualifiedName;
+            }
+        }
 
 
-        if (!currentDomainQualifiedName.equals(newDomainQualifiedName)) {
+        if (!currentParentDomainQualifiedName.equals(newParentDomainQualifiedName)  && !newParentDomainQualifiedName.isEmpty()) {
             if(storedDomain.getRelationshipAttribute(PARENT_DOMAIN) == null){
                 throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Cannot move Root Domain");
             }
 
             //Auth check
-            isAuthorized(currentDomainHeader, parentDomain);
+            isAuthorized(currentParentDomainHeader, parentDomain);
 
-            processMoveSubDomainToAnotherDomain(entity, vertex, currentDomainQualifiedName, newDomainQualifiedName, vertexQnName, superDomainQualifiedName);
+            processMoveSubDomainToAnotherDomain(entity, vertex, currentParentDomainQualifiedName, newParentDomainQualifiedName, vertexQnName, superDomainQualifiedName);
 
         } else {
             String vertexName = vertex.getProperty(NAME, String.class);
             if (!vertexName.equals(domainName)) {
-                domainExists(domainName, newDomainQualifiedName);
+                domainExists(domainName, newParentDomainQualifiedName);
             }
 
             entity.setAttribute(QUALIFIED_NAME, vertexQnName);

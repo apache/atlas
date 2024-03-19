@@ -29,6 +29,7 @@ import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 public class DataProductPreProcessor extends AbstractDomainPreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(DomainPreProcessor.class);
     private AtlasEntityHeader parentDomain;
+    private EntityMutationContext context;
     public DataProductPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever,
                               AtlasGraph graph, EntityGraphMapper entityGraphMapper) {
         super(typeRegistry, entityRetriever, graph);
@@ -42,7 +43,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
             LOG.debug("DataProductPreProcessor.processAttributes: pre processing {}, {}",
                     entityStruct.getAttribute(QUALIFIED_NAME), operation);
         }
-
+        this.context = context;
 
         AtlasEntity entity = (AtlasEntity) entityStruct;
         AtlasVertex vertex = context.getVertex(entity.getGuid());
@@ -61,26 +62,39 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         String productName = (String) entity.getAttribute(NAME);
         String vertexQnName = vertex.getProperty(QUALIFIED_NAME, String.class);
 
+        AtlasEntityHeader currentParentDomainHeader = null;
+        String currentParentDomainQualifiedName = "";
 
         AtlasEntity storedProduct = entityRetriever.toAtlasEntity(vertex);
-        AtlasRelatedObjectId currentDomain = (AtlasRelatedObjectId) storedProduct.getRelationshipAttribute(PARENT_DOMAIN);
-        AtlasEntityHeader currentDomainHeader = entityRetriever.toAtlasEntityHeader(currentDomain.getGuid());
-        String currentDomainQualifiedName = (String) currentDomainHeader.getAttribute(QUALIFIED_NAME);
+        AtlasRelatedObjectId currentParentDomain = (AtlasRelatedObjectId) storedProduct.getRelationshipAttribute(DATA_DOMAIN);
 
-        String newDomainQualifiedName = (String) parentDomain.getAttribute(QUALIFIED_NAME);
-        String superDomainQualifiedName = (String) parentDomain.getAttribute(SUPER_DOMAIN_QN);
+        String newParentDomainQualifiedName = "";
+        String superDomainQualifiedName = "";
 
-        if (!currentDomainQualifiedName.equals(newDomainQualifiedName)) {
+        if(currentParentDomain != null){
+            currentParentDomainHeader = entityRetriever.toAtlasEntityHeader(currentParentDomain.getGuid());
+            currentParentDomainQualifiedName = (String) currentParentDomainHeader.getAttribute(QUALIFIED_NAME);
+        }
+
+        if (parentDomain != null) {
+            newParentDomainQualifiedName = (String) parentDomain.getAttribute(QUALIFIED_NAME);
+            superDomainQualifiedName = (String) parentDomain.getAttribute(SUPER_DOMAIN_QN);
+            if(superDomainQualifiedName == null){
+                superDomainQualifiedName = newParentDomainQualifiedName;
+            }
+        }
+
+        if (!currentParentDomainQualifiedName.equals(newParentDomainQualifiedName) && !newParentDomainQualifiedName.isEmpty()) {
             //Auth check
-            isAuthorized(currentDomainHeader, parentDomain);
+            isAuthorized(currentParentDomainHeader, parentDomain);
 
-            processMoveDataProductToAnotherDomain(entity, currentDomainQualifiedName, newDomainQualifiedName, vertexQnName, superDomainQualifiedName);
-            entity.setAttribute(PARENT_DOMAIN_QN, newDomainQualifiedName);
+            processMoveDataProductToAnotherDomain(entity, currentParentDomainQualifiedName, newParentDomainQualifiedName, vertexQnName, superDomainQualifiedName);
+            entity.setAttribute(PARENT_DOMAIN_QN, newParentDomainQualifiedName);
 
         } else {
             String vertexName = vertex.getProperty(NAME, String.class);
             if (!vertexName.equals(productName)) {
-                productExists(productName, newDomainQualifiedName);
+                productExists(productName, newParentDomainQualifiedName);
             }
             entity.setAttribute(QUALIFIED_NAME, vertexQnName);
         }
@@ -118,24 +132,48 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
     private void setParent(AtlasEntity entity, EntityMutationContext context) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("DataProductPreProcessor.setParent");
         if (parentDomain == null) {
-            AtlasObjectId objectId = (AtlasObjectId) entity.getRelationshipAttribute(PARENT_DOMAIN);
+            Object relationshipAttribute = entity.getRelationshipAttribute(PARENT_DOMAIN);
 
-            if (objectId != null) {
-                if (StringUtils.isNotEmpty(objectId.getGuid())) {
-                    AtlasVertex vertex = context.getVertex(objectId.getGuid());
+            if(relationshipAttribute instanceof AtlasObjectId){
+                AtlasObjectId objectId = (AtlasObjectId) relationshipAttribute;
+                if (objectId != null) {
+                    if (StringUtils.isNotEmpty(objectId.getGuid())) {
+                        AtlasVertex vertex = context.getVertex(objectId.getGuid());
+
+                        if (vertex == null) {
+                            parentDomain = entityRetriever.toAtlasEntityHeader(objectId.getGuid());
+                        } else {
+                            parentDomain = entityRetriever.toAtlasEntityHeader(vertex);
+                        }
+
+                    } else if (MapUtils.isNotEmpty(objectId.getUniqueAttributes()) &&
+                            StringUtils.isNotEmpty((String) objectId.getUniqueAttributes().get(QUALIFIED_NAME))) {
+                        parentDomain = new AtlasEntityHeader(objectId.getTypeName(), objectId.getUniqueAttributes());
+
+                    }
+                }
+            }
+            else if(relationshipAttribute instanceof Map){
+                Map<String, Object> relationshipMap = (Map<String, Object>) relationshipAttribute;
+                if (StringUtils.isNotEmpty((String) relationshipMap.get("guid"))) {
+                    AtlasVertex vertex = context.getVertex((String) relationshipMap.get("guid"));
 
                     if (vertex == null) {
-                        parentDomain = entityRetriever.toAtlasEntityHeader(objectId.getGuid());
+                        parentDomain = entityRetriever.toAtlasEntityHeader((String) relationshipMap.get("guid"));
                     } else {
                         parentDomain = entityRetriever.toAtlasEntityHeader(vertex);
                     }
 
-                } else if (MapUtils.isNotEmpty(objectId.getUniqueAttributes()) &&
-                        StringUtils.isNotEmpty((String) objectId.getUniqueAttributes().get(QUALIFIED_NAME))) {
-                    parentDomain = new AtlasEntityHeader(objectId.getTypeName(), objectId.getUniqueAttributes());
+                }
+                else  {
+                    parentDomain = new AtlasEntityHeader((String) relationshipMap.get("typeName"), relationshipMap);
 
                 }
             }
+            else{
+                LOG.warn("DataProductPreProcessor.setParent: Invalid relationshipAttribute {}", relationshipAttribute);
+            }
+
         }
         RequestContext.get().endMetricRecord(metricRecorder);
     }
@@ -146,7 +184,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         boolean exists = false;
         try {
             List mustClauseList = new ArrayList();
-            mustClauseList.add(mapOf("term", mapOf("__typeName.keyword", DATA_DOMAIN_ENTITY_TYPE)));
+            mustClauseList.add(mapOf("term", mapOf("__typeName.keyword", DATA_PRODUCT_ENTITY_TYPE)));
             mustClauseList.add(mapOf("term", mapOf("__state", "ACTIVE")));
             mustClauseList.add(mapOf("term", mapOf("name.keyword", productName)));
 
