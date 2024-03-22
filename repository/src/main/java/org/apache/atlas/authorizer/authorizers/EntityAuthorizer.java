@@ -102,11 +102,8 @@ public class EntityAuthorizer {
         boolean result = true;
 
         for (JsonNode crit : criterion) {
+            result = !condition.equals("OR");
 
-            result = true;
-            if (condition.equals("OR")) {
-                result = false;
-            }
             boolean evaluation = false;
 
             if (crit.has("condition")) {
@@ -121,6 +118,9 @@ public class EntityAuthorizer {
                 }
                 result = true;
             } else {
+                if (evaluation) {
+                    return true;
+                }
                 result = result || evaluation;
             }
         }
@@ -142,43 +142,47 @@ public class EntityAuthorizer {
 
         List<String> entityAttributeValues = new ArrayList<>();
 
-        switch (attributeName) {
-            case "__traitNames":
-                List<AtlasClassification> tags = entity.getClassifications();
-                if (tags != null) {
-                    for (AtlasClassification tag: tags) {
-                        if (StringUtils.isEmpty(tag.getEntityGuid()) || tag.getEntityGuid().equals(entity.getGuid())) {
-                            entityAttributeValues.add(tag.getTypeName());
+        Object attrValue = entity.getAttribute(attributeName);
+        if (attrValue != null) {
+            if (attrValue instanceof Collection) {
+                entityAttributeValues.addAll((Collection<? extends String>) attrValue);
+            } else {
+                entityAttributeValues.add((String) attrValue);
+            }
+        } else {
+            // try fetching from vertex
+            if (vertex != null) {
+                entityAttributeValues.addAll(vertex.getPropertyValues(attributeName, String.class));
+            }
+        }
+
+        if (entityAttributeValues.size() == 0) {
+            switch (attributeName) {
+                case "__traitNames":
+                    List<AtlasClassification> tags = entity.getClassifications();
+                    if (tags != null) {
+                        for (AtlasClassification tag : tags) {
+                            if (StringUtils.isEmpty(tag.getEntityGuid()) || tag.getEntityGuid().equals(entity.getGuid())) {
+                                entityAttributeValues.add(tag.getTypeName());
+                            }
                         }
                     }
-                }
-                break;
+                    break;
 
-            case "__propagatedTraitNames":
-                tags = entity.getClassifications();
-                if (tags != null) {
-                    for (AtlasClassification tag: tags) {
-                        if (StringUtils.isNotEmpty(tag.getEntityGuid()) && !tag.getEntityGuid().equals(entity.getGuid())) {
-                            entityAttributeValues.add(tag.getTypeName());
+                case "__propagatedTraitNames":
+                    tags = entity.getClassifications();
+                    if (tags != null) {
+                        for (AtlasClassification tag : tags) {
+                            if (StringUtils.isNotEmpty(tag.getEntityGuid()) && !tag.getEntityGuid().equals(entity.getGuid())) {
+                                entityAttributeValues.add(tag.getTypeName());
+                            }
                         }
                     }
-                }
-                break;
+                    break;
 
-            default:
-                Object attrValue = entity.getAttribute(attributeName);
-                if (attrValue != null) {
-                    if (attrValue instanceof Collection) {
-                        entityAttributeValues.addAll((Collection<? extends String>) entity.getAttribute(attributeName));
-                    } else {
-                        entityAttributeValues.add((String) entity.getAttribute(attributeName));
-                    }
-                } else {
-                    // try fetching from vertex
-                    if (vertex != null) {
-                        entityAttributeValues.addAll(vertex.getPropertyValues(attributeName, String.class));
-                    }
-                }
+                default:
+                    LOG.warn("Value for attribute {} not found", attributeName);
+            }
         }
 
         String operator = crit.get("operator").asText();
