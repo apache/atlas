@@ -74,16 +74,7 @@ public class ABACAuthorizerUtils {
             return false;
         }
 
-        if (action == ENTITY_CREATE) {
-            return verifyEntityCreateAccess(entityHeader, action);
-        } else {
-            if (StringUtils.isNotEmpty(entityHeader.getGuid())) {
-                return verifyAccess(entityHeader, action);
-            } else {
-                // for evaluator request with typeName & qualifiedName
-                return verifyAccessForEvaluator(entityHeader, action);
-            }
-        }
+        return verifyAccess(entityHeader, action);
     }
 
     public static boolean isAccessAllowed(String relationShipType, AtlasEntityHeader endOneEntity, AtlasEntityHeader endTwoEntity, AtlasPrivilege action) {
@@ -91,35 +82,11 @@ public class ABACAuthorizerUtils {
             return false;
         }
 
-        if (action == ENTITY_CREATE) {
-            return verifyRelationshipAccessInMem(relationShipType, endOneEntity, endTwoEntity, action);
-        } else {
-            return verifyRelationshipAccess(relationShipType, endOneEntity, endTwoEntity, action);
-        }
+        return verifyAccess(relationShipType, endOneEntity, endTwoEntity, action);
     }
 
-    private static boolean verifyAccess(AtlasEntityHeader entityHeader, AtlasPrivilege action) {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("verifyAccess");
-        AccessResult result = new AccessResult();
-
-        AtlasEntityAccessRequest request = new AtlasEntityAccessRequest(typeRegistry, action, entityHeader);
-        NewAtlasAuditHandler auditHandler = new NewAtlasAuditHandler(request, SERVICE_DEF_ATLAS);
-
-        try {
-            result = EntityAuthorizer.isAccessAllowed(entityHeader.getGuid(), action.getType());
-            auditHandler.processResult(result, request);
-        } catch (AtlasBaseException e) {
-            LOG.error(e.getMessage());
-        } finally {
-            auditHandler.flushAudit();
-            RequestContext.get().endMetricRecord(recorder);
-        }
-
-        return result.isAllowed();
-    }
-
-    private static boolean verifyEntityCreateAccess(AtlasEntityHeader entity, AtlasPrivilege action) {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("verifyEntityCreateAccess");
+    private static boolean verifyAccess(AtlasEntityHeader entity, AtlasPrivilege action) {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("verifyEntityAccess");
 
         AccessResult result = null;
 
@@ -127,37 +94,8 @@ public class ABACAuthorizerUtils {
         NewAtlasAuditHandler auditHandler = new NewAtlasAuditHandler(request, SERVICE_DEF_ATLAS);
 
         try {
-            if (AtlasPrivilege.ENTITY_CREATE == action) {
-                result = EntityAuthorizer.isAccessAllowedInMemory(entity, action.getType());
-                auditHandler.processResult(result, request);
-            } else {
-                result = new AccessResult();
-            }
-        } finally {
-            auditHandler.flushAudit();
-            RequestContext.get().endMetricRecord(recorder);
-        }
-
-        return result.isAllowed();
-    }
-
-    private static boolean verifyRelationshipAccess(String relationShipType, AtlasEntityHeader endOneEntity, AtlasEntityHeader endTwoEntity, AtlasPrivilege action) {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("verifyAccess");
-        AccessResult result = new AccessResult();
-
-        AtlasRelationshipAccessRequest request = new AtlasRelationshipAccessRequest(typeRegistry,
-                action,
-                relationShipType,
-                endOneEntity,
-                endTwoEntity);
-
-        NewAtlasAuditHandler auditHandler = new NewAtlasAuditHandler(request, SERVICE_DEF_ATLAS);
-
-        try {
-            result = RelationshipAuthorizer.isRelationshipAccessAllowed(action.getType(), endOneEntity, endTwoEntity);
+            result = EntityAuthorizer.isAccessAllowedInMemory(entity, action.getType());
             auditHandler.processResult(result, request);
-        } catch (AtlasBaseException e) {
-            LOG.error(e.getMessage());
         } finally {
             auditHandler.flushAudit();
             RequestContext.get().endMetricRecord(recorder);
@@ -166,7 +104,7 @@ public class ABACAuthorizerUtils {
         return result.isAllowed();
     }
 
-    private static boolean verifyRelationshipAccessInMem(String relationshipType, AtlasEntityHeader endOneEntity, AtlasEntityHeader endTwoEntity, AtlasPrivilege action) {
+    private static boolean verifyAccess(String relationshipType, AtlasEntityHeader endOneEntity, AtlasEntityHeader endTwoEntity, AtlasPrivilege action) {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("verifyAccess");
         AccessResult result = new AccessResult();
 
@@ -179,28 +117,6 @@ public class ABACAuthorizerUtils {
 
         try {
             result = RelationshipAuthorizer.isAccessAllowedInMemory(action.getType(), relationshipType, endOneEntity, endTwoEntity);
-            auditHandler.processResult(result, request);
-        } catch (AtlasBaseException e) {
-            LOG.error(e.getMessage());
-        } finally {
-            auditHandler.flushAudit();
-            RequestContext.get().endMetricRecord(recorder);
-        }
-
-        return result.isAllowed();
-    }
-
-    private static boolean verifyAccessForEvaluator(AtlasEntityHeader entityHeader, AtlasPrivilege action) {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("verifyAccess");
-        AccessResult result = new AccessResult();
-
-        AtlasEntityAccessRequest request = new AtlasEntityAccessRequest(typeRegistry, action, entityHeader);
-        NewAtlasAuditHandler auditHandler = new NewAtlasAuditHandler(request, SERVICE_DEF_ATLAS);
-
-        try {
-            String entityQNAme = (String) entityHeader.getAttribute(QUALIFIED_NAME);
-
-            result = EntityAuthorizer.isAccessAllowedEvaluator(entityHeader.getTypeName(), entityQNAme, action.getType());
             auditHandler.processResult(result, request);
         } catch (AtlasBaseException e) {
             LOG.error(e.getMessage());
