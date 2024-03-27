@@ -18,6 +18,7 @@
 
 package org.apache.atlas.repository.patches;
 
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.model.patches.AtlasPatch.AtlasPatches;
 import org.apache.atlas.model.patches.AtlasPatch.PatchStatus;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
@@ -77,7 +78,11 @@ public class AtlasPatchManager {
             }
         } catch (Exception ex) {
             LOG.error("Error applying patches.", ex);
+        } finally {
+            // After all the patches are applied, we are clearing the request created at time of applying all the patches.
+            RequestContext.clear();
         }
+
 
         LOG.info("<== AtlasPatchManager.applyAll()");
     }

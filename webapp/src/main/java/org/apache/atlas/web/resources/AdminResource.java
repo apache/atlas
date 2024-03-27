@@ -91,6 +91,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.apache.atlas.RequestContext;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -450,11 +451,17 @@ public class AdminResource {
             LOG.debug("==> AdminResource.scheduleSaveAndDeleteMetrics()");
         }
 
-        // auto persist
-        saveMetrics();
+        try {
+            // auto persist
+            saveMetrics();
 
-        // auto purge
-        metricsService.purgeMetricsStats();
+            // auto purge
+            metricsService.purgeMetricsStats();
+        } finally {
+            // After collecting metrics at regular intervals the request created is now cleared.
+            RequestContext.clear();
+        }
+
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== AdminResource.scheduleSaveAndDeleteMetrics()");

@@ -20,6 +20,7 @@ package org.apache.atlas.web.service;
 
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.util.BeanUtil;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.audit.AtlasAuditEntry;
@@ -138,6 +139,9 @@ public class EmbeddedServer {
                 auditService.add(AtlasAuditEntry.AuditOperation.SERVER_STATE_ACTIVE, date, date, null, null, 0);
             } catch (AtlasBaseException e) {
                 LOG.error("Exception occurred during audit", e);
+            } finally {
+                // After server related audits are added, the request created and now cleared here.
+                RequestContext.clear();
             }
         }
     }

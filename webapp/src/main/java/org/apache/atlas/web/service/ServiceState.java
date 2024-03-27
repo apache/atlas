@@ -106,6 +106,9 @@ public class ServiceState {
                 auditService.add(AtlasAuditEntry.AuditOperation.SERVER_STATE_ACTIVE, date, date, null, null, 0);
             } catch (AtlasBaseException e) {
                 LOG.error("Exception occurred during audit", e);
+            } finally {
+                // In HA environment, after the server related audits are added, the request created are now cleared.
+                RequestContext.clear();
             }
         }
     }
