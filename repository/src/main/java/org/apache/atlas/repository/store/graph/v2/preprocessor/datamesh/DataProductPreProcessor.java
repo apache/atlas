@@ -84,7 +84,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
             }
         }
 
-        if (!currentParentDomainQualifiedName.equals(newParentDomainQualifiedName) && !newParentDomainQualifiedName.isEmpty()) {
+        if (!currentParentDomainQualifiedName.equals(newParentDomainQualifiedName) && entity.hasRelationshipAttribute(PARENT_DOMAIN)) {
             //Auth check
             isAuthorized(currentParentDomainHeader, parentDomain);
 
@@ -132,7 +132,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
     private void setParent(AtlasEntity entity, EntityMutationContext context) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("DataProductPreProcessor.setParent");
         if (parentDomain == null) {
-            Object relationshipAttribute = entity.getRelationshipAttribute(PARENT_DOMAIN);
+            Object relationshipAttribute = entity.getRelationshipAttribute(DATA_DOMAIN);
 
             if(relationshipAttribute instanceof AtlasObjectId){
                 AtlasObjectId objectId = (AtlasObjectId) relationshipAttribute;

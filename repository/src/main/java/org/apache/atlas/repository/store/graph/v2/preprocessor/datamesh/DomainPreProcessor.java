@@ -115,7 +115,7 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
         }
 
 
-        if (!currentParentDomainQualifiedName.equals(newParentDomainQualifiedName)  && !newParentDomainQualifiedName.isEmpty()) {
+        if (!currentParentDomainQualifiedName.equals(newParentDomainQualifiedName)  && entity.hasRelationshipAttribute(PARENT_DOMAIN)) {
             if(storedDomain.getRelationshipAttribute(PARENT_DOMAIN) == null){
                 throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Cannot move Root Domain");
             }
