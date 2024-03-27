@@ -84,7 +84,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
             }
         }
 
-        if (!currentParentDomainQualifiedName.equals(newParentDomainQualifiedName) && entity.hasRelationshipAttribute(PARENT_DOMAIN)) {
+        if (!currentParentDomainQualifiedName.equals(newParentDomainQualifiedName) && entity.hasRelationshipAttribute(DATA_DOMAIN)) {
             //Auth check
             isAuthorized(currentParentDomainHeader, parentDomain);
 

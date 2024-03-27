@@ -114,14 +114,15 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
             }
         }
 
-
         if (!currentParentDomainQualifiedName.equals(newParentDomainQualifiedName)  && entity.hasRelationshipAttribute(PARENT_DOMAIN)) {
             if(storedDomain.getRelationshipAttribute(PARENT_DOMAIN) == null){
                 throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Cannot move Root Domain");
             }
 
             //Auth check
-            isAuthorized(currentParentDomainHeader, parentDomain);
+            if(parentDomain != null && currentParentDomainHeader != null){
+                isAuthorized(currentParentDomainHeader, parentDomain);
+            }
 
             processMoveSubDomainToAnotherDomain(entity, vertex, currentParentDomainQualifiedName, newParentDomainQualifiedName, vertexQnName, superDomainQualifiedName);
 
@@ -147,18 +148,30 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
 
         try {
             String domainName = (String) domain.getAttribute(NAME);
+            String updatedQualifiedName = "";
 
             LOG.info("Moving subdomain {} to Domain {}", domainName, targetDomainQualifiedName);
 
             domainExists(domainName, targetDomainQualifiedName);
 
-            String updatedQualifiedName = currentSubDomainQualifiedName.replace(sourceDomainQualifiedName, targetDomainQualifiedName);
 
-            domain.setAttribute(QUALIFIED_NAME, updatedQualifiedName);
-            domain.setAttribute(PARENT_DOMAIN_QN, targetDomainQualifiedName);
-            domain.setAttribute(SUPER_DOMAIN_QN, superDomainQualifiedName);
+            // Move Sub-Domain as root Domain
+            if(targetDomainQualifiedName.isEmpty()){
+                targetDomainQualifiedName = "default";
+                updatedQualifiedName = currentSubDomainQualifiedName.replace(sourceDomainQualifiedName, targetDomainQualifiedName);
+                domain.setAttribute(QUALIFIED_NAME, updatedQualifiedName);
+                domain.setAttribute(PARENT_DOMAIN_QN, null);
+                domain.setAttribute(SUPER_DOMAIN_QN, null);
+                superDomainQualifiedName = updatedQualifiedName ;
+            }
+            else{
+                updatedQualifiedName = currentSubDomainQualifiedName.replace(sourceDomainQualifiedName, targetDomainQualifiedName);
+                domain.setAttribute(QUALIFIED_NAME, updatedQualifiedName);
+                domain.setAttribute(PARENT_DOMAIN_QN, targetDomainQualifiedName);
+                domain.setAttribute(SUPER_DOMAIN_QN, superDomainQualifiedName);
+            }
 
-            moveChildrenToAnotherDomain(domainVertex, superDomainQualifiedName, sourceDomainQualifiedName, targetDomainQualifiedName);
+            moveChildrenToAnotherDomain(domainVertex, superDomainQualifiedName, null, sourceDomainQualifiedName, targetDomainQualifiedName);
 
             LOG.info("Moved subDomain {} to Domain {}", domainName, targetDomainQualifiedName);
 
@@ -168,6 +181,7 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
     }
 
     private void moveChildrenToAnotherDomain(AtlasVertex childDomainVertex,
+                                               String superDomainQualifiedName,
                                                String parentDomainQualifiedName,
                                                String sourceDomainQualifiedName,
                                                String targetDomainQualifiedName) throws AtlasBaseException {
@@ -179,14 +193,14 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
             Map<String, Object> updatedAttributes = new HashMap<>();
 
             String currentDomainQualifiedName = childDomainVertex.getProperty(QUALIFIED_NAME, String.class);
-            String updatedQualifiedName = currentDomainQualifiedName.replace(sourceDomainQualifiedName, targetDomainQualifiedName);
+            String updatedDomainQualifiedName = currentDomainQualifiedName.replace(sourceDomainQualifiedName, targetDomainQualifiedName);
 
             // Change domain qualifiedName
-            childDomainVertex.setProperty(QUALIFIED_NAME, updatedQualifiedName);
-            updatedAttributes.put(QUALIFIED_NAME, updatedQualifiedName);
+            childDomainVertex.setProperty(QUALIFIED_NAME, updatedDomainQualifiedName);
+            updatedAttributes.put(QUALIFIED_NAME, updatedDomainQualifiedName);
 
             //change superDomainQN, parentDomainQN
-            childDomainVertex.setProperty(SUPER_DOMAIN_QN, targetDomainQualifiedName);
+            childDomainVertex.setProperty(SUPER_DOMAIN_QN, superDomainQualifiedName);
             childDomainVertex.setProperty(PARENT_DOMAIN_QN, parentDomainQualifiedName);
 
             //update system properties
@@ -198,7 +212,7 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
 
             while (products.hasNext()) {
                 AtlasVertex productVertex = products.next();
-                moveChildDataProductToAnotherDomain(productVertex, parentDomainQualifiedName, sourceDomainQualifiedName, targetDomainQualifiedName);
+                moveChildDataProductToAnotherDomain(productVertex, superDomainQualifiedName, updatedDomainQualifiedName, sourceDomainQualifiedName, targetDomainQualifiedName);
             }
 
             // Get all children domains of current domain
@@ -206,7 +220,7 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
 
             while (childDomains.hasNext()) {
                 AtlasVertex childVertex = childDomains.next();
-                moveChildrenToAnotherDomain(childVertex, updatedQualifiedName, sourceDomainQualifiedName, targetDomainQualifiedName);
+                moveChildrenToAnotherDomain(childVertex, superDomainQualifiedName, updatedDomainQualifiedName, sourceDomainQualifiedName, targetDomainQualifiedName);
             }
 
             recordUpdatedChildEntities(childDomainVertex, updatedAttributes);
@@ -218,6 +232,7 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
     }
 
     private void moveChildDataProductToAnotherDomain(AtlasVertex productVertex,
+                                                     String superDomainQualifiedName,
                                                      String parentDomainQualifiedName,
                                                      String sourceDomainQualifiedName,
                                                      String targetDomainQualifiedName) throws AtlasBaseException {
@@ -234,8 +249,8 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
             productVertex.setProperty(QUALIFIED_NAME, updatedQualifiedName);
             updatedAttributes.put(QUALIFIED_NAME, updatedQualifiedName);
 
-            productVertex.setProperty(PARENT_DOMAIN_QN, targetDomainQualifiedName);
-            productVertex.setProperty(SUPER_DOMAIN_QN, parentDomainQualifiedName);
+            productVertex.setProperty(PARENT_DOMAIN_QN, parentDomainQualifiedName);
+            productVertex.setProperty(SUPER_DOMAIN_QN, superDomainQualifiedName);
 
             //update system properties
             GraphHelper.setModifiedByAsString(productVertex, RequestContext.get().getUser());
