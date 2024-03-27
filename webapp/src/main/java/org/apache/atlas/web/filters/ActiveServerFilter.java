@@ -18,6 +18,10 @@
 
 package org.apache.atlas.web.filters;
 
+import org.apache.atlas.AtlasConfiguration;
+import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.web.service.ActiveInstanceState;
 import org.apache.atlas.web.service.ServiceState;
 import org.slf4j.Logger;
@@ -37,6 +41,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.HttpHeaders;
 import java.io.IOException;
+import java.util.HashMap;
 
 /**
  * A servlet {@link Filter} that redirects web requests from a passive Atlas server instance to an active one.
@@ -78,6 +83,35 @@ public class ActiveServerFilter implements Filter {
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse,
                          FilterChain filterChain) throws IOException, ServletException {
+        // If maintenance mode is enabled, return a 503
+        if (AtlasConfiguration.ATLAS_MAINTENANCE_MODE.getBoolean()) {
+            // Block all the POST, PUT, DELETE operations
+            HttpServletRequest httpServletRequest = (HttpServletRequest) servletRequest;
+            HttpServletResponse httpServletResponse = (HttpServletResponse) servletResponse;
+            if (httpServletRequest.getMethod().equals(HttpMethod.POST) || httpServletRequest.getMethod().equals(HttpMethod.PUT) || httpServletRequest.getMethod().equals(HttpMethod.DELETE)) {
+                // If API path contains indexsearch, then allow the request
+                if (httpServletRequest.getRequestURI().contains("indexsearch")) {
+                    filterChain.doFilter(servletRequest, servletResponse);
+                } else {
+                    LOG.error("Maintenance mode enabled. Blocking request: {}", httpServletRequest.getRequestURI());
+                    // Properly handle the maintenance mode and send properly formatted response
+                    httpServletResponse.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+                    httpServletResponse.setContentType("application/json");
+                    httpServletResponse.setCharacterEncoding("UTF-8");
+                    AtlasBaseException serverException = new AtlasBaseException(AtlasErrorCode.MAINTENANCE_MODE_ENABLED,
+                            AtlasErrorCode.MAINTENANCE_MODE_ENABLED.getFormattedErrorMessage());
+                    HashMap<String, Object> errorMap = new HashMap<>();
+                    errorMap.put("errorCode", serverException.getAtlasErrorCode().getErrorCode());
+                    errorMap.put("errorMessage", serverException.getMessage());
+                    String jsonResp = AtlasType.toJson(errorMap);
+                    httpServletResponse.getOutputStream().write(jsonResp.getBytes());
+                    httpServletResponse.getOutputStream().flush();
+                    return;
+                }
+            }
+        }
+
+
         if (isFilteredURI(servletRequest)) {
             LOG.debug("Is a filtered URI: {}. Passing request downstream.",
                     ((HttpServletRequest)servletRequest).getRequestURI());
