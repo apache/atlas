@@ -146,7 +146,8 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
 
                     } else if (MapUtils.isNotEmpty(objectId.getUniqueAttributes()) &&
                             StringUtils.isNotEmpty((String) objectId.getUniqueAttributes().get(QUALIFIED_NAME))) {
-                        parentDomain = new AtlasEntityHeader(objectId.getTypeName(), objectId.getUniqueAttributes());
+                        AtlasVertex parentDomainVertex = entityRetriever.getEntityVertex(objectId);
+                        parentDomain = entityRetriever.toAtlasEntityHeader(parentDomainVertex, attributes);
 
                     }
                 }
