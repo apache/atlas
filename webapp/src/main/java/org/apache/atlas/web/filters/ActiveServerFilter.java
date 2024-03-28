@@ -88,7 +88,8 @@ public class ActiveServerFilter implements Filter {
             // Block all the POST, PUT, DELETE operations
             HttpServletRequest request = (HttpServletRequest) servletRequest;
             HttpServletResponse response = (HttpServletResponse) servletResponse;
-            if (isBlockedMethod(request.getMethod()) && !request.getRequestURI().contains("indexsearch")) {
+            if (isBlockedMethod(request.getMethod()) && !request.getRequestURI().contains("search") &&
+                    !request.getRequestURI().contains("lineage")) {
                 LOG.error("Maintenance mode enabled. Blocking request: {}", request.getRequestURI());
                 sendMaintenanceModeResponse(response);
                 return; // Stop further processing
