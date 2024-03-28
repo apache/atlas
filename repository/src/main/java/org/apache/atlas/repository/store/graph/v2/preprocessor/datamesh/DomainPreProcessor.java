@@ -41,11 +41,7 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.GraphHelper.getActiveChildrenVertices;
@@ -268,21 +264,21 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("DomainPreProcessor.setParent");
         if (parentDomain == null) {
             AtlasObjectId objectId = (AtlasObjectId) entity.getRelationshipAttribute(PARENT_DOMAIN);
+            Set<String> attributes = new HashSet<>(Arrays.asList(QUALIFIED_NAME, SUPER_DOMAIN_QN, PARENT_DOMAIN_QN, "__typeName"));
 
             if (objectId != null) {
                 if (StringUtils.isNotEmpty(objectId.getGuid())) {
-                    AtlasVertex vertex = context.getVertex(objectId.getGuid());
+                    AtlasVertex vertex = entityRetriever.getEntityVertex(objectId.getGuid());
 
                     if (vertex == null) {
-                        parentDomain = entityRetriever.toAtlasEntityHeader(objectId.getGuid());
+                        parentDomain = entityRetriever.toAtlasEntityHeader(objectId.getGuid(), attributes);
                     } else {
-                        parentDomain = entityRetriever.toAtlasEntityHeader(vertex);
+                        parentDomain = entityRetriever.toAtlasEntityHeader(vertex, attributes);
                     }
-
                 } else if (MapUtils.isNotEmpty(objectId.getUniqueAttributes()) &&
                         StringUtils.isNotEmpty((String) objectId.getUniqueAttributes().get(QUALIFIED_NAME))) {
-                    parentDomain = new AtlasEntityHeader(objectId.getTypeName(), objectId.getUniqueAttributes());
-
+                    AtlasVertex parentDomainVertex = entityRetriever.getEntityVertex(objectId);
+                    parentDomain = entityRetriever.toAtlasEntityHeader(parentDomainVertex);
                 }
             }
         }

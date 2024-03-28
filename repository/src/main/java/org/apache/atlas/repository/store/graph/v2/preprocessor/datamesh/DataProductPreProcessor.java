@@ -17,10 +17,7 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
@@ -133,17 +130,18 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("DataProductPreProcessor.setParent");
         if (parentDomain == null) {
             Object relationshipAttribute = entity.getRelationshipAttribute(DATA_DOMAIN);
+            Set<String> attributes = new HashSet<>(Arrays.asList(QUALIFIED_NAME, SUPER_DOMAIN_QN, PARENT_DOMAIN_QN, "__typeName"));
 
             if(relationshipAttribute instanceof AtlasObjectId){
                 AtlasObjectId objectId = (AtlasObjectId) relationshipAttribute;
                 if (objectId != null) {
                     if (StringUtils.isNotEmpty(objectId.getGuid())) {
-                        AtlasVertex vertex = context.getVertex(objectId.getGuid());
+                        AtlasVertex vertex = entityRetriever.getEntityVertex(objectId.getGuid());
 
                         if (vertex == null) {
-                            parentDomain = entityRetriever.toAtlasEntityHeader(objectId.getGuid());
+                            parentDomain = entityRetriever.toAtlasEntityHeader(objectId.getGuid(), attributes);
                         } else {
-                            parentDomain = entityRetriever.toAtlasEntityHeader(vertex);
+                            parentDomain = entityRetriever.toAtlasEntityHeader(vertex, attributes);
                         }
 
                     } else if (MapUtils.isNotEmpty(objectId.getUniqueAttributes()) &&
@@ -156,12 +154,12 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
             else if(relationshipAttribute instanceof Map){
                 Map<String, Object> relationshipMap = (Map<String, Object>) relationshipAttribute;
                 if (StringUtils.isNotEmpty((String) relationshipMap.get("guid"))) {
-                    AtlasVertex vertex = context.getVertex((String) relationshipMap.get("guid"));
+                    AtlasVertex vertex = entityRetriever.getEntityVertex((String) relationshipMap.get("guid"));
 
                     if (vertex == null) {
-                        parentDomain = entityRetriever.toAtlasEntityHeader((String) relationshipMap.get("guid"));
+                        parentDomain = entityRetriever.toAtlasEntityHeader((String) relationshipMap.get("guid"), attributes);
                     } else {
-                        parentDomain = entityRetriever.toAtlasEntityHeader(vertex);
+                        parentDomain = entityRetriever.toAtlasEntityHeader(vertex, attributes);
                     }
 
                 }
