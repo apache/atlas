@@ -164,6 +164,11 @@ public final class Constants {
     public static final String ASSET_LINK_EDGE_LABEL = "__Asset.links";
 
     /**
+     * Contract
+     */
+    public static final String CONTRACT_ENTITY_TYPE = "DataContract";
+
+    /**
      * Lineage relations.
      */
     public static final String PROCESS_OUTPUTS = "__Process.outputs";
