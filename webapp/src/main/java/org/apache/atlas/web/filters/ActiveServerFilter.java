@@ -57,6 +57,9 @@ public class ActiveServerFilter implements Filter {
     private static final Logger LOG = LoggerFactory.getLogger(ActiveServerFilter.class);
     private static final String MIGRATION_STATUS_STATIC_PAGE = "migration-status.html";
 
+    private static final String[] WHITELISTED_APIS_SIGNATURE = {"search", "lineage", "auditSearch", "accessors"
+        , "evaluator"};
+
     private final ActiveInstanceState activeInstanceState;
     private ServiceState serviceState;
 
@@ -88,8 +91,7 @@ public class ActiveServerFilter implements Filter {
             // Block all the POST, PUT, DELETE operations
             HttpServletRequest request = (HttpServletRequest) servletRequest;
             HttpServletResponse response = (HttpServletResponse) servletResponse;
-            if (isBlockedMethod(request.getMethod()) && !request.getRequestURI().contains("search") &&
-                    !request.getRequestURI().contains("lineage")) {
+            if (isBlockedMethod(request.getMethod()) && !isWhitelistedAPI(request.getRequestURI())) {
                 LOG.error("Maintenance mode enabled. Blocking request: {}", request.getRequestURI());
                 sendMaintenanceModeResponse(response);
                 return; // Stop further processing
@@ -146,6 +148,15 @@ public class ActiveServerFilter implements Filter {
         } else {
             return false;
         }
+    }
+
+    private boolean isWhitelistedAPI(String requestURI) {
+        for (String api : WHITELISTED_APIS_SIGNATURE) {
+            if (requestURI.contains(api)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void sendMaintenanceModeResponse(HttpServletResponse response) throws IOException {
