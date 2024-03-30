@@ -222,7 +222,7 @@ public class AuthPolicyPreProcessor implements PreProcessor {
             //create ES alias
             parent.addReferredEntity(policy);
 
-        } if (POLICY_CATEGORY_DATAMESH.equals(policyCategory)) {
+        } else if (POLICY_CATEGORY_DATAMESH.equals(policyCategory)) {
             validator.validate(policy, existingPolicy, null, UPDATE);
         } else {
             validator.validate(policy, null, null, UPDATE);
