@@ -1166,15 +1166,16 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
         mustClauses.add(clientQuery);
 
-        Map<String, Object> filterClause = getMap("filter", getMap("terms", getMap("_index", Collections.singletonList(aliasName))));
-
+        List<Map<String, Object>>filterClauses = new ArrayList<>();
+        filterClauses.add(getMap("terms", getMap("_index", Collections.singletonList(aliasName))));
+        Map<String, Object> filterClause = getMap("filter", filterClauses);
 
         Map<String, Object> boolQuery = new HashMap<>();
         boolQuery.put("must", mustClauses);
         boolQuery.put("filter",filterClause);
 
         List<Map<String, Object>> shouldClauses = new ArrayList<>();
-        shouldClauses.add(boolQuery);
+        shouldClauses.add(getMap("bool", boolQuery));
         shouldClauses.add(getStaticBoolQuery());
 
         Map<String, Object> topBoolQuery = getMap("bool", getMap("should", shouldClauses));
@@ -1190,7 +1191,10 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         )));
         mustClauses.add(mustClause);
 
-        Map<String, Object> filterClause = getMap("filter", getMap("terms", getMap("_index", Collections.singletonList(VERTEX_INDEX_NAME))));
+        List<Map<String, Object>>filterClauses = new ArrayList<>();
+        filterClauses.add(getMap("terms", getMap("_index", Collections.singletonList(VERTEX_INDEX_NAME))));
+
+        Map<String, Object> filterClause = getMap("filter", filterClauses);
 
         Map<String, Object> boolQuery = new HashMap<>();
         boolQuery.put("must", mustClauses);
