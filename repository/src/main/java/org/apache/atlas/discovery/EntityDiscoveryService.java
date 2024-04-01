@@ -1200,6 +1200,6 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         boolQuery.put("must", mustClauses);
         boolQuery.put("filter",filterClause);
 
-        return boolQuery;
+        return getMap("bool", boolQuery);
     }
 }
