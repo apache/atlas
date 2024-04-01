@@ -284,12 +284,12 @@ public class CachePolicyTransformerImpl {
     private void setPolicyResourcesForDatameshPolicies(RangerPolicy rangerPolicy, AtlasEntityHeader atlasPolicy) {
         Map<String, RangerPolicyResource> resources = getFinalResources(atlasPolicy);
 
-        if (resources.containsKey("entity-classification")) {
+        if (!resources.containsKey("entity-classification")) {
             RangerPolicyResource resource = new RangerPolicyResource(Arrays.asList("*"), false, false);
             resources.put("entity-classification", resource);
         }
 
-        if (resources.containsKey("entity-type")) {
+        if (!resources.containsKey("entity-type")) {
             RangerPolicyResource resource = new RangerPolicyResource(Arrays.asList("*"), false, false);
             resources.put("entity-type", resource);
         }
