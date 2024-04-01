@@ -53,6 +53,7 @@ import javax.inject.Inject;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -71,6 +72,7 @@ import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_IS
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_PRIORITY;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_SERVICE_NAME;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_SUB_CATEGORY;
+import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGORY_DATAMESH;
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGORY_PERSONA;
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGORY_PURPOSE;
 import static org.apache.atlas.repository.util.AccessControlUtils.getIsPolicyEnabled;
@@ -239,6 +241,18 @@ public class CachePolicyTransformerImpl {
                         rangerPolicies.add(toRangerPolicy(transformedPolicy, serviceType));
                     }
 
+                }
+                else if (POLICY_CATEGORY_DATAMESH.equals(policyCategory)) {
+                    RangerPolicy rangerPolicy = getRangerPolicy(atlasPolicy, serviceType);
+
+                    //GET policy Item
+                    setPolicyItems(rangerPolicy, atlasPolicy);
+
+                    //GET policy Resources
+                    setPolicyResourcesForDatameshPolicies(rangerPolicy, atlasPolicy);
+
+                    rangerPolicies.add(rangerPolicy);
+
                 } else {
                     rangerPolicies.add(toRangerPolicy(atlasPolicy, serviceType));
                 }
@@ -264,6 +278,26 @@ public class CachePolicyTransformerImpl {
     }
 
     private void setPolicyResources(RangerPolicy rangerPolicy, AtlasEntityHeader atlasPolicy) throws IOException {
+        rangerPolicy.setResources(getFinalResources(atlasPolicy));
+    }
+
+    private void setPolicyResourcesForDatameshPolicies(RangerPolicy rangerPolicy, AtlasEntityHeader atlasPolicy) {
+        Map<String, RangerPolicyResource> resources = getFinalResources(atlasPolicy);
+
+        if (resources.containsKey("entity-classification")) {
+            RangerPolicyResource resource = new RangerPolicyResource(Arrays.asList("*"), false, false);
+            resources.put("entity-classification", resource);
+        }
+
+        if (resources.containsKey("entity-type")) {
+            RangerPolicyResource resource = new RangerPolicyResource(Arrays.asList("*"), false, false);
+            resources.put("entity-type", resource);
+        }
+
+        rangerPolicy.setResources(resources);
+    }
+
+    private Map<String, RangerPolicyResource> getFinalResources(AtlasEntityHeader atlasPolicy) {
         List<String> atlasResources = (List<String>) atlasPolicy.getAttribute("policyResources");
 
         Map<String, List<String>> resourceValuesMap = new HashMap<>();
@@ -285,7 +319,7 @@ public class CachePolicyTransformerImpl {
             resources.put(key, resource);
         }
 
-        rangerPolicy.setResources(resources);
+        return resources;
     }
 
     private <T> T getResourceAsObject(String resourceName, Class<T> clazz) throws IOException {
