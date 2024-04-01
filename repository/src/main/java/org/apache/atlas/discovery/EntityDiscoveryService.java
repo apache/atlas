@@ -1150,8 +1150,8 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
         if (StringUtils.isNotEmpty(aliasName)) {
             if(params.isAccessControlExclusive()) {
+                accessControlExclusiveDsl(params, aliasName);
                 aliasName = aliasName+","+VERTEX_INDEX_NAME;
-                accessControlExclusiveDsl(params.getDsl(), aliasName);
             }
             return aliasName;
         } else {
@@ -1159,20 +1159,19 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         }
     }
 
-    private void accessControlExclusiveDsl(Map dsl, String aliasName) {
+    private void accessControlExclusiveDsl(IndexSearchParams params, String aliasName) {
 
         List<Map<String, Object>> mustClauses = new ArrayList<>();
-        Map<String, Object> clientQuery = (Map<String, Object>) dsl.get("query");
+        Map<String, Object> clientQuery = (Map<String, Object>) params.getDsl().get("query");
 
         mustClauses.add(clientQuery);
 
         List<Map<String, Object>>filterClauses = new ArrayList<>();
         filterClauses.add(getMap("terms", getMap("_index", Collections.singletonList(aliasName))));
-        Map<String, Object> filterClause = getMap("filter", filterClauses);
 
         Map<String, Object> boolQuery = new HashMap<>();
         boolQuery.put("must", mustClauses);
-        boolQuery.put("filter",filterClause);
+        boolQuery.put("filter",filterClauses);
 
         List<Map<String, Object>> shouldClauses = new ArrayList<>();
         shouldClauses.add(getMap("bool", boolQuery));
@@ -1180,7 +1179,10 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
         Map<String, Object> topBoolQuery = getMap("bool", getMap("should", shouldClauses));
 
-        dsl.put("query", topBoolQuery);
+        Map copyOfDsl = new HashMap(params.getDsl());
+        copyOfDsl.put("query", topBoolQuery);
+
+        params.setDsl(copyOfDsl);
     }
 
     private Map<String, Object> getStaticBoolQuery() {
@@ -1194,12 +1196,10 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         List<Map<String, Object>>filterClauses = new ArrayList<>();
         filterClauses.add(getMap("terms", getMap("_index", Collections.singletonList(VERTEX_INDEX_NAME))));
 
-        Map<String, Object> filterClause = getMap("filter", filterClauses);
-
         Map<String, Object> boolQuery = new HashMap<>();
         boolQuery.put("must", mustClauses);
-        boolQuery.put("filter",filterClause);
+        boolQuery.put("filter", filterClauses);
 
-        return boolQuery;
+        return getMap("bool", boolQuery);
     }
 }
