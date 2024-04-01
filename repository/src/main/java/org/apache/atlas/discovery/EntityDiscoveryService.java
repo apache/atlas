@@ -1151,8 +1151,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         if (StringUtils.isNotEmpty(aliasName)) {
             if(params.isAccessControlExclusive()) {
                 aliasName = aliasName+","+VERTEX_INDEX_NAME;
-                Map < String, Object > dsl = accessControlExclusiveDsl(params.getDsl(), aliasName);
-                params.setDsl(dsl);
+                accessControlExclusiveDsl(params.getDsl(), aliasName);
             }
             return aliasName;
         } else {
@@ -1160,8 +1159,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         }
     }
 
-    private Map<String, Object> accessControlExclusiveDsl(Map dsl, String aliasName) {
-        Map<String, Object> accessControlDsl = new HashMap<>();
+    private void accessControlExclusiveDsl(Map dsl, String aliasName) {
 
         List<Map<String, Object>> mustClauses = new ArrayList<>();
         Map<String, Object> clientQuery = (Map<String, Object>) dsl.get("query");
@@ -1181,8 +1179,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
         Map<String, Object> topBoolQuery = getMap("bool", getMap("should", shouldClauses));
 
-        accessControlDsl.put("query", topBoolQuery);
-        return accessControlDsl;
+        dsl.put("query", topBoolQuery);
     }
 
     private Map<String, Object> getStaticBoolQuery() {
