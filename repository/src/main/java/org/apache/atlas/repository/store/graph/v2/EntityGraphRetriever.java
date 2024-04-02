@@ -553,7 +553,7 @@ public class EntityGraphRetriever {
     public void verifyClassificationsPropagationMode(List<AtlasClassification> incomingClassifications) throws AtlasBaseException {
         for(AtlasClassification incomingClassification : incomingClassifications){
             if(Boolean.TRUE.equals(incomingClassification.isPropagate()))
-                determinePropagationMode(incomingClassification.getRestrictPropagationThroughLineage(),incomingClassification.getRestrictPropagationThroughHierachy());
+                determinePropagationMode(incomingClassification.getRestrictPropagationThroughLineage(),incomingClassification.getRestrictPropagationThroughHierarchy());
         }
     }
 
