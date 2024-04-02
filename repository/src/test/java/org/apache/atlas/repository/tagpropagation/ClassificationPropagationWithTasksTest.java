@@ -122,22 +122,22 @@ public class ClassificationPropagationWithTasksTest extends AtlasTestBase {
     @Test
     public void parameterValidation() throws AtlasBaseException {
         try {
-            entityGraphMapper.propagateClassification(null, null, null, null);
-            entityGraphMapper.propagateClassification("unknown", "abcd", "xyz", null);
+            entityGraphMapper.propagateClassification(null, null, null, null,null);
+            entityGraphMapper.propagateClassification("unknown", "abcd", "xyz", null,null);
         }
         catch (AtlasBaseException e) {
             assertNotNull(e.getCause());
             assertTrue(e.getCause() instanceof EntityNotFoundException);
         }
 
-        List<String> ret = entityGraphMapper.propagateClassification(HDFS_PATH_EMPLOYEES, StringUtils.EMPTY, StringUtils.EMPTY, null);
+        List<String> ret = entityGraphMapper.propagateClassification(HDFS_PATH_EMPLOYEES, StringUtils.EMPTY, StringUtils.EMPTY, null,null);
         assertNull(ret);
 
         ret = entityGraphMapper.deleteClassificationPropagation(StringUtils.EMPTY, StringUtils.EMPTY);
         assertNull(ret);
 
         AtlasEntity hdfs_employees = getEntity(HDFS_PATH_EMPLOYEES);
-        ret = entityGraphMapper.propagateClassification(hdfs_employees.getGuid(), StringUtils.EMPTY, StringUtils.EMPTY, null);
+        ret = entityGraphMapper.propagateClassification(hdfs_employees.getGuid(), StringUtils.EMPTY, StringUtils.EMPTY, null,null);
         assertNull(ret);
     }
 
@@ -167,7 +167,7 @@ public class ClassificationPropagationWithTasksTest extends AtlasTestBase {
 
         AtlasEntity entityUpdated = getEntity(HDFS_PATH_EMPLOYEES);
         assertNotNull(entityUpdated.getPendingTasks());
-        List<String> impactedEntities = entityGraphMapper.propagateClassification(hdfs_employees.getGuid(), classificationVertex.getId().toString(), StringUtils.EMPTY, null);
+        List<String> impactedEntities = entityGraphMapper.propagateClassification(hdfs_employees.getGuid(), classificationVertex.getId().toString(), StringUtils.EMPTY, null,null);
         assertNotNull(impactedEntities);
     }
 
@@ -197,7 +197,7 @@ public class ClassificationPropagationWithTasksTest extends AtlasTestBase {
         final String TAG_NAME = "tagX";
 
         AtlasEntity hdfs_employees = getEntity(HDFS_PATH_EMPLOYEES);
-        entityGraphMapper.propagateClassification(hdfs_employees.getGuid(), StringUtils.EMPTY, StringUtils.EMPTY, null);
+        entityGraphMapper.propagateClassification(hdfs_employees.getGuid(), StringUtils.EMPTY, StringUtils.EMPTY, null,null);
 
         AtlasClassification tagX = new AtlasClassification(TAG_NAME);
         tagX.setEntityGuid(hdfs_employees.getGuid());

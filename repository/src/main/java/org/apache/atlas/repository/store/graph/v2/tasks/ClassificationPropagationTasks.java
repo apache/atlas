@@ -41,8 +41,8 @@ public class ClassificationPropagationTasks {
             String classificationVertexId   = (String) parameters.get(PARAM_CLASSIFICATION_VERTEX_ID);
             String relationshipGuid         = (String) parameters.get(PARAM_RELATIONSHIP_GUID);
             Boolean previousRestrictPropagationThroughLineage = (Boolean) parameters.get(PARAM_PREVIOUS_CLASSIFICATION_RESTRICT_PROPAGATE_THROUGH_LINEAGE);
-
-            entityGraphMapper.propagateClassification(entityGuid, classificationVertexId, relationshipGuid, previousRestrictPropagationThroughLineage);
+            Boolean previousRestrictPropagationThroughHierarchy = (Boolean) parameters.get(PARAM_PREVIOUS_CLASSIFICATION_RESTRICT_PROPAGATE_THROUGH_HIERARCHY);
+            entityGraphMapper.propagateClassification(entityGuid, classificationVertexId, relationshipGuid, previousRestrictPropagationThroughLineage,previousRestrictPropagationThroughHierarchy);
         }
     }
 
