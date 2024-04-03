@@ -1458,6 +1458,7 @@ public class EntityLineageService implements AtlasLineageService {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processEdge");
         AtlasVertex inVertex     = edge.getInVertex();
         AtlasVertex outVertex    = edge.getOutVertex();
+        boolean     inIsProcess  = Objects.equals(AtlasGraphUtilsV2.getTypeName(inVertex), PROCESS_SUPER_TYPE);
         String      inGuid       = AtlasGraphUtilsV2.getIdFromVertex(inVertex);
         String      outGuid      = AtlasGraphUtilsV2.getIdFromVertex(outVertex);
         String      relationGuid = AtlasGraphUtilsV2.getEncodedProperty(edge, RELATIONSHIP_GUID_PROPERTY_KEY, String.class);
@@ -1465,12 +1466,12 @@ public class EntityLineageService implements AtlasLineageService {
 
         if (!entities.containsKey(inGuid)) {
             AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeader(inVertex, attributes);
-            entityHeader.setDepth(level);
+            if (!inIsProcess) entityHeader.setDepth(level);
             entities.put(inGuid, entityHeader);
         }
         if (!entities.containsKey(outGuid)) {
             AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeader(outVertex, attributes);
-            entityHeader.setDepth(level);
+            if (inIsProcess) entityHeader.setDepth(level);
             entities.put(outGuid, entityHeader);
         }
         if (isInputEdge) {
