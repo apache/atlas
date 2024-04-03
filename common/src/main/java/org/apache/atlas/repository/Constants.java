@@ -399,6 +399,7 @@ public final class Constants {
     public static final String ATTR_STARRED_DETAILS_LIST = "starredDetailsList";
     public static final String ATTR_ASSET_STARRED_BY = "assetStarredBy";
     public static final String ATTR_ASSET_STARRED_AT = "assetStarredAt";
+    public static final String ATTR_CERTIFICATE_STATUS = "certificateStatus";
 
     public static final String STRUCT_STARRED_DETAILS = "StarredDetails";
 

@@ -5,27 +5,29 @@ import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasEntityAccessRequest;
 import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
-import org.apache.atlas.model.instance.AtlasObjectId;
-import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
-import org.apache.atlas.repository.store.graph.v2.preprocessor.resource.AbstractResourcePreProcessor;
+import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Iterator;
+import java.util.HashMap;
+import java.util.Map;
 
+import static org.apache.atlas.AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND;
+import static org.apache.atlas.AtlasErrorCode.TYPE_NAME_INVALID;
 import static org.apache.atlas.repository.Constants.*;
-import static org.apache.atlas.repository.Constants.ASSET_RELATION_ATTR;
 
 public abstract class AbstractContractPreProcessor implements PreProcessor {
-    private static final Logger LOG = LoggerFactory.getLogger(AbstractResourcePreProcessor.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractContractPreProcessor.class);
 
     public final AtlasTypeRegistry typeRegistry;
     public final EntityGraphRetriever entityRetriever;
@@ -39,81 +41,40 @@ public abstract class AbstractContractPreProcessor implements PreProcessor {
         this.entityRetriever = entityRetriever;
     }
 
-    void authorizeResourceUpdate(AtlasEntity resourceEntity, AtlasVertex ResourceVertex, String edgeLabel) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("authorizeResourceUpdate");
-
+    void authorizeContractCreateOrUpdate(AtlasEntity contractEntity, AtlasEntity.AtlasEntityWithExtInfo associatedAsset) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("authorizeContractUpdate");
         try {
-            AtlasEntityHeader assetEntity = null;
+            AtlasEntityHeader entityHeader = new AtlasEntityHeader(associatedAsset.getEntity());
 
-            AtlasObjectId asset = getAssetRelationAttr(resourceEntity);
-            if (asset != null) {
-                //Found linked asset in payload
-                AtlasVertex assetVertex = entityRetriever.getEntityVertex(asset);
-                assetEntity = entityRetriever.toAtlasEntityHeaderWithClassifications(assetVertex);
-
-            } else {
-                //Check for linked asset in store
-                Iterator atlasVertexIterator = ResourceVertex.query()
-                        .direction(AtlasEdgeDirection.IN)
-                        .label(edgeLabel)
-                        .has(STATE_PROPERTY_KEY, ACTIVE_STATE_VALUE)
-                        .vertices()
-                        .iterator();
-
-                if (atlasVertexIterator.hasNext()) {
-                    //Found linked asset in store
-                    AtlasVertex assetVertex = (AtlasVertex) atlasVertexIterator.next();
-                    assetEntity = entityRetriever.toAtlasEntityHeaderWithClassifications(assetVertex);
-                }
-            }
-
-            if (assetEntity != null) {
-                //First authorize entity update access
-                verifyAssetAccess(assetEntity, AtlasPrivilege.ENTITY_UPDATE, resourceEntity, AtlasPrivilege.ENTITY_UPDATE);
-            } else {
-                //No linked asset to the Resource, check for resource update permission
-                verifyAccess(resourceEntity, AtlasPrivilege.ENTITY_UPDATE);
-            }
+            //First authorize entity update access
+            verifyAssetAccess(entityHeader, AtlasPrivilege.ENTITY_UPDATE, contractEntity, AtlasPrivilege.ENTITY_UPDATE);
 
         } finally {
             RequestContext.get().endMetricRecord(metricRecorder);
         }
     }
 
-    void authorizeResourceDelete(AtlasVertex resourceVertex) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("authorizeResourceDelete");
+
+    void authorizeContractDelete(AtlasVertex contractVertex, String typeName) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("authorizeContractDelete");
 
         try {
-            AtlasEntity resourceEntity = entityRetriever.toAtlasEntity(resourceVertex);
+            AtlasEntity contractEntity = entityRetriever.toAtlasEntity(contractVertex);
+            String contractQName = contractEntity.getAttribute(QUALIFIED_NAME).toString();
+            AtlasEntity.AtlasEntityWithExtInfo assetEntity = getAssociatedAsset(contractQName, typeName);
+            AtlasEntityHeader entityHeader = new AtlasEntityHeader(assetEntity.getEntity());
 
-            AtlasObjectId asset = getAssetRelationAttr(resourceEntity);
-            if (asset != null) {
-                AtlasEntityHeader assetEntity =  entityRetriever.toAtlasEntityHeaderWithClassifications(asset.getGuid());
-                verifyAssetAccess(assetEntity, AtlasPrivilege.ENTITY_UPDATE, resourceEntity, AtlasPrivilege.ENTITY_DELETE);
-            } else {
-                //No linked asset to the Resource, check for resource delete permission
-                verifyAccess(resourceEntity, AtlasPrivilege.ENTITY_DELETE);
-            }
+            verifyAssetAccess(entityHeader, AtlasPrivilege.ENTITY_UPDATE, contractEntity, AtlasPrivilege.ENTITY_DELETE);
         } finally {
             RequestContext.get().endMetricRecord(recorder);
         }
     }
 
-    private AtlasObjectId getAssetRelationAttr(AtlasEntity entity) {
-        AtlasObjectId ret = null;
-
-        if (entity.hasRelationshipAttribute(ASSET_RELATION_ATTR) &&
-                entity.getRelationshipAttribute(ASSET_RELATION_ATTR) != null) {
-            ret = (AtlasObjectId) entity.getRelationshipAttribute(ASSET_RELATION_ATTR);
-        }
-
-        return ret;
-    }
 
     private void verifyAssetAccess(AtlasEntityHeader asset, AtlasPrivilege assetPrivilege,
-                                   AtlasEntity resource, AtlasPrivilege resourcePrivilege) throws AtlasBaseException {
+                                   AtlasEntity contract, AtlasPrivilege contractPrivilege) throws AtlasBaseException {
         verifyAccess(asset, assetPrivilege);
-        verifyAccess(resource, resourcePrivilege);
+        verifyAccess(contract, contractPrivilege);
     }
 
     private void verifyAccess(AtlasEntity entity, AtlasPrivilege privilege) throws AtlasBaseException {
@@ -123,6 +84,37 @@ public abstract class AbstractContractPreProcessor implements PreProcessor {
     private void verifyAccess(AtlasEntityHeader entityHeader, AtlasPrivilege privilege) throws AtlasBaseException {
         String errorMessage = privilege.name() + " entity: " + entityHeader.getTypeName();
         AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, privilege, entityHeader), errorMessage);
+    }
+
+    AtlasEntity.AtlasEntityWithExtInfo getAssociatedAsset(String contractQName, String typeName) throws AtlasBaseException {
+        String datasetQName = contractQName.substring(0, contractQName.lastIndexOf('/'));
+
+        Map<String, Object> uniqAttributes = new HashMap<>();
+        uniqAttributes.put(QUALIFIED_NAME, datasetQName);
+
+        AtlasEntityType entityType = ensureEntityType(typeName);
+
+        AtlasVertex entityVertex = AtlasGraphUtilsV2.getVertexByUniqueAttributes(graph, entityType, uniqAttributes);
+
+        EntityGraphRetriever entityRetriever = new EntityGraphRetriever(graph, typeRegistry, true);
+
+        AtlasEntity.AtlasEntityWithExtInfo ret = entityRetriever.toAtlasEntityWithExtInfo(entityVertex);
+
+        if (ret == null) {
+            throw new AtlasBaseException(INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND, entityType.getTypeName(),
+                    uniqAttributes.toString());
+        }
+        return ret;
+    }
+
+    AtlasEntityType ensureEntityType(String typeName) throws AtlasBaseException {
+        AtlasEntityType ret = typeRegistry.getEntityTypeByName(typeName);
+
+        if (ret == null) {
+            throw new AtlasBaseException(TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), typeName);
+        }
+
+        return ret;
     }
 
 

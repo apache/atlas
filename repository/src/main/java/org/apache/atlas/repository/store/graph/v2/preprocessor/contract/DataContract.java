@@ -8,9 +8,14 @@ import java.util.regex.Pattern;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.commons.lang.StringUtils;
+
+import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
 
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -122,6 +127,31 @@ public class DataContract {
         public String data_type;
 
 
+    }
+
+    public static DataContract deserialize(String contractString) throws AtlasBaseException {
+
+        if (StringUtils.isEmpty(contractString)) {
+            throw new AtlasBaseException(BAD_REQUEST, "Missing attribute: contract.");
+        }
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS);
+        DataContract contract;
+        try {
+            contract = objectMapper.readValue(contractString, DataContract.class);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            throw new AtlasBaseException("Failed at this");
+        }
+        return contract;
+    }
+
+    public static String serialize(DataContract contract) throws JsonProcessingException {
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS);
+        return objectMapper.writeValueAsString(contract);
     }
 
 

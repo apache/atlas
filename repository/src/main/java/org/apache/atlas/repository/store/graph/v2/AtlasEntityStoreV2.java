@@ -1838,7 +1838,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 break;
 
             case CONTRACT_ENTITY_TYPE:
-                preProcessor = new ContractPreProcessor(graph, typeRegistry, entityRetriever, this);
+                preProcessor = new ContractPreProcessor(graph, typeRegistry, entityRetriever, this, entityGraphMapper);
                 break;
         }
 

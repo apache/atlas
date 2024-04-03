@@ -1,5 +1,6 @@
 package org.apache.atlas.repository.store.graph.v2.preprocessor.contract;
 
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -30,7 +31,7 @@ public class ContractVersionUtils {
     private AtlasEntityStore entityStore;
 
     private AtlasEntity entity;
-    private AtlasEntity existingEntity;
+
     public final AtlasGraph graph;
     private List<AtlasEntity> versionList;
 
@@ -47,7 +48,8 @@ public class ContractVersionUtils {
     }
 
     private void extractAllVersions() {
-        String entityQNamePrefix = (String) entity.getAttribute(QUALIFIED_NAME);
+        String contractQName = (String) entity.getAttribute(QUALIFIED_NAME);
+        String datasetQName = contractQName.substring(0, contractQName.lastIndexOf("/contract"));
 
         AtlasEntityType entityType = atlasTypeRegistry.getEntityTypeByName("DataContract");
         Integer versionCounter = 1;
@@ -57,10 +59,20 @@ public class ContractVersionUtils {
 
         while (found) {
             Map<String, Object> uniqAttributes = new HashMap<>();
-            uniqAttributes.put(QUALIFIED_NAME, String.format("%s/version/V%s", entityQNamePrefix, versionCounter++));
+            uniqAttributes.put(QUALIFIED_NAME, String.format("%s/contract/version/V%s", datasetQName, versionCounter++));
             try {
                 AtlasVertex entityVertex = AtlasGraphUtilsV2.getVertexByUniqueAttributes(graph, entityType, uniqAttributes);
                 AtlasEntity entity = entityRetriever.toAtlasEntity(entityVertex);
+//
+//                EntityGraphRetriever entityRetriever = new EntityGraphRetriever(graph, typeRegistry, true);
+//
+//                AtlasEntity.AtlasEntityWithExtInfo ret = entityRetriever.toAtlasEntityWithExtInfo(entityVertex);
+//
+//                if (ret == null) {
+//                    throw new AtlasBaseException(AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND, entityType.getTypeName(),
+//                            uniqAttributes.toString());
+//                }
+//                return ret;
 
                 versionList.add(entity);
             } catch (AtlasBaseException ex) {
@@ -108,20 +120,20 @@ public class ContractVersionUtils {
         return result;
     }
 
-    public void createNewVersion() throws AtlasBaseException {
-        AtlasVertex vertex = context.getVertex(entity.getGuid());
-        AtlasEntity existingContractEntity = entityRetriever.toAtlasEntity(vertex);
-//        this.newEntity = new AtlasEntity(existingEntity);
-        this.existingEntity.setAttribute(QUALIFIED_NAME, null);
-
-        try {
-            RequestContext.get().setSkipAuthorizationCheck(true);
-            EntityStream entityStream = new AtlasEntityStream(existingEntity);
-            entityStore.createOrUpdate(entityStream, false);
-            LOG.info("Created bootstrap policies for connection {}", existingEntity.getAttribute(QUALIFIED_NAME));
-        } finally {
-            RequestContext.get().setSkipAuthorizationCheck(false);
-        }
-
-    }
+//    public void createNewVersion() throws AtlasBaseException {
+//        AtlasVertex vertex = context.getVertex(entity.getGuid());
+//        AtlasEntity existingContractEntity = entityRetriever.toAtlasEntity(vertex);
+////        this.newEntity = new AtlasEntity(existingEntity);
+//        this.existingEntity.setAttribute(QUALIFIED_NAME, null);
+//
+//        try {
+//            RequestContext.get().setSkipAuthorizationCheck(true);
+//            EntityStream entityStream = new AtlasEntityStream(existingEntity);
+//            entityStore.createOrUpdate(entityStream, false);
+//            LOG.info("Created bootstrap policies for connection {}", existingEntity.getAttribute(QUALIFIED_NAME));
+//        } finally {
+//            RequestContext.get().setSkipAuthorizationCheck(false);
+//        }
+//
+//    }
 }
