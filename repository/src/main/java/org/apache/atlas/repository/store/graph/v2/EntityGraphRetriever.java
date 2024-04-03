@@ -561,7 +561,7 @@ public class EntityGraphRetriever {
         String propagationMode;
 
         if (Boolean.TRUE.equals(currentRestrictPropagationThroughLineage) && Boolean.TRUE.equals(currentRestrictPropagationThroughHierarchy)) {
-            throw new AtlasBaseException("Both currentRestrictPropagationThroughLineage and currentRestrictPropagationThroughHierarchy cannot be true simultaneously.");
+            throw new AtlasBaseException("Both restrictPropagationThroughLineage and restrictPropagationThroughHierarchy cannot be true simultaneously.");
         } else if (Boolean.TRUE.equals(currentRestrictPropagationThroughLineage)) {
             propagationMode = CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE;
         } else if (Boolean.TRUE.equals(currentRestrictPropagationThroughHierarchy)) {
