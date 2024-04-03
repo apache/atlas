@@ -95,15 +95,15 @@ public class AtlasClassification extends AtlasStruct implements Serializable {
             setDisplayName(other.getDisplayName());
             setRemovePropagationsOnEntityDelete(other.getRemovePropagationsOnEntityDelete());
             setRestrictPropagationThroughLineage(other.getRestrictPropagationThroughLineage());
-            setRestrictPropagationThroughHierarchy(other.getRestrictPropagationThroughHierachy());
+            setRestrictPropagationThroughHierarchy(other.getRestrictPropagationThroughHierarchy());
         }
     }
 
-    public void setRestrictPropagationThroughHierarchy(Boolean restrictPropagationThroughHierachy) {
-        this.restrictPropagationThroughHierarchy = restrictPropagationThroughHierachy;
+    public void setRestrictPropagationThroughHierarchy(Boolean restrictPropagationThroughHierarchy) {
+        this.restrictPropagationThroughHierarchy = restrictPropagationThroughHierarchy;
     }
 
-    public Boolean getRestrictPropagationThroughHierachy() {
+    public Boolean getRestrictPropagationThroughHierarchy() {
         return this.restrictPropagationThroughHierarchy;
     }
 
