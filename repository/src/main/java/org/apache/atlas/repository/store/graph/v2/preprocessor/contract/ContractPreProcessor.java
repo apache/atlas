@@ -5,10 +5,12 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasStruct;
+import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -30,6 +32,9 @@ import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 public class ContractPreProcessor extends AbstractContractPreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(ContractPreProcessor.class);
     public static final String ATTR_CONTRACT = "contract";
+    public static final String ATTR_VERSION = "contractVersion";
+    public static final String ATTR_ASSET_QUALIFIED_NAME = "contractAssetQualifiedName";
+    public static final String ATTR_PARENT_GUID = "parentGuid";
     public static final String CONTRACT_QUALIFIED_NAME_SUFFIX = "contract";
     public static final String VERSION_PREFIX = "version";
     public static final String CONTRACT_ATTR_STATUS = "status";
@@ -53,6 +58,7 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
                 processCreateContract(entity, context);
                 break;
             case UPDATE:
+                // Updating an existing version of the contract
                 processUpdateContract(entity, context);
         }
 
@@ -68,6 +74,87 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
             throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Can't update a specific version of contract");
         }
         // Add cases for update in status field and certificateStatus
+    }
+    private void processCreateContract(AtlasEntity entity, EntityMutationContext context) throws AtlasBaseException {
+        /*
+          Low-level Design
+               | Authorization
+               | Deserialization of the JSON
+               ---| Validation of spec
+               | Validation of contract
+               | Create Version
+               | Create Draft
+               ---| asset to contract sync
+               | Create Publish
+               ---| two-way sync of attribute
+         */
+
+        String contractQName = (String) entity.getAttribute(QUALIFIED_NAME);
+        validateAttribute(!contractQName.endsWith(String.format("/%s", CONTRACT_QUALIFIED_NAME_SUFFIX)), "Invalid qualifiedName for the contract.");
+
+        String contractString = (String) entity.getAttribute(ATTR_CONTRACT);
+        DataContract contract = DataContract.deserialize(contractString);
+        DataContract.Dataset dataset = contract.dataset;
+        AtlasEntityWithExtInfo associatedAsset = getAssociatedAsset(contractQName, dataset.type.name());
+
+        authorizeContractCreateOrUpdate(entity, associatedAsset);
+
+        contractAttributeSync(entity, contract);
+        contractString = DataContract.serialize(contract);
+        entity.setAttribute(ATTR_CONTRACT, contractString);
+
+
+        ContractVersionUtils versionUtil = new ContractVersionUtils(entity, context, entityRetriever, typeRegistry, entityStore, graph);
+        AtlasEntity latestExistingVersion = versionUtil.getLatestVersion();
+
+        if (latestExistingVersion != null) {
+            // Contract already exist
+            String qName = (String) latestExistingVersion.getAttribute(QUALIFIED_NAME);
+            Integer latestVersionNumber = Integer.valueOf(qName.substring(qName.lastIndexOf("/V") + 2));
+            List<String> attributes = getDiffAttributes(context, entity, latestExistingVersion);
+            if (attributes.isEmpty()) {
+                removeCreatingVertex(context, entity);
+                return;
+            }
+
+            if (attributes.size() == 1 && attributes.contains(ATTR_CERTIFICATE_STATUS)) {
+                if (Objects.equals(entity.getAttribute(ATTR_CERTIFICATE_STATUS).toString(), DataContract.STATUS.VERIFIED.name())) {
+                    //update existing entity
+                    updateExistingVersion(context, entity, latestExistingVersion);
+                }
+                // Contract status changed, either to draft or verified
+                return;
+            } else if (attributes.contains(ATTR_CONTRACT)) {
+                //Contract is changed
+                if (isEqualContract(contractString, (String) latestExistingVersion.getAttribute(ATTR_CONTRACT))) {
+                    // Update the same asset(entity)
+                    updateExistingVersion(context, entity, latestExistingVersion);
+
+                } else {
+                    // Create New version of entity
+                    entity.setAttribute(QUALIFIED_NAME, String.format("%s/%s/V%s", contractQName, VERSION_PREFIX, ++latestVersionNumber));
+                    entity.setAttribute(ATTR_VERSION, String.format("V%s", latestVersionNumber));
+                    entity.setAttribute(ATTR_ASSET_QUALIFIED_NAME, associatedAsset.getEntity().getAttribute(QUALIFIED_NAME));
+                    entity.setAttribute(ATTR_PARENT_GUID, latestExistingVersion.getGuid());
+
+                }
+
+                return;
+            }
+
+        } else {
+            // Create new contract
+            entity.setAttribute(QUALIFIED_NAME, String.format("%s/%s/%s", contractQName, VERSION_PREFIX, "V1"));
+            entity.setAttribute(ATTR_VERSION, "V1");
+            entity.setAttribute(ATTR_ASSET_QUALIFIED_NAME, associatedAsset.getEntity().getAttribute(QUALIFIED_NAME));
+
+        }
+
+        if (contract.getStatus() == DataContract.STATUS.VERIFIED &&
+                entity.getAttribute(ATTR_CERTIFICATE_STATUS).equals(DataContract.STATUS.VERIFIED.name())) {
+            datasetAttributeSync(associatedAsset.getEntity(), contract);
+        }
+
     }
 
     private List<String> getDiffAttributes(EntityMutationContext context, AtlasEntity entity, AtlasEntity latestExistingVersion) throws AtlasBaseException {
@@ -101,110 +188,8 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
 
     }
 
-    private void processCreateContract(AtlasEntity entity, EntityMutationContext context) throws AtlasBaseException {
-        /*
-          Low-level Design
-               | Authorization
-               | Deserialization of the JSON
-               ---| Validation of spec
-               | Validation of contract
-               | Create Version
-               | Create Draft
-               ---| asset to contract sync
-               | Create Publish
-               ---| two-way sync of attribute
-         */
-
-        String contractQName = (String) entity.getAttribute(QUALIFIED_NAME);
-        String contractString = (String) entity.getAttribute(ATTR_CONTRACT);
-        DataContract contract = DataContract.deserialize(contractString);
-        DataContract.Dataset dataset = contract.dataset;
-        AtlasEntityWithExtInfo associatedAsset = getAssociatedAsset(contractQName, dataset.type.name());
-
-        authorizeContractCreateOrUpdate(entity, associatedAsset);
-
-        contractAttributeSync(entity, contract);
-        contractString = updateContract(contract, contractString);
-        entity.setAttribute(ATTR_CONTRACT, contractString);
-
-        validateAttribute(!contractQName.endsWith(String.format("/%s", CONTRACT_QUALIFIED_NAME_SUFFIX)), "Invalid qualifiedName for the contract.");
-
-        ContractVersionUtils versionUtil = new ContractVersionUtils(entity, context, entityRetriever, typeRegistry, entityStore, graph);
-        AtlasEntity latestExistingVersion = versionUtil.getLatestVersion();
-
-        if (latestExistingVersion != null) {
-            // Contract already exist
-            String qName = (String) latestExistingVersion.getAttribute(QUALIFIED_NAME);
-            Integer latestVersionNumber = Integer.valueOf(qName.substring(qName.lastIndexOf("/V") + 2));
-            List<String> attributes = getDiffAttributes(context, entity, latestExistingVersion);
-            if (attributes.isEmpty()) {
-                context.getCreatedEntities().remove(entity);
-                Set<String> guids = new HashSet<>();
-                guids.add(entity.getGuid());
-                entityStore.purgeByIds(guids);
-                return;
-            }
-
-            if (attributes.size() == 1 && attributes.contains(ATTR_CERTIFICATE_STATUS)) {
-                if (Objects.equals(entity.getAttribute(ATTR_CERTIFICATE_STATUS).toString(), DataContract.STATUS.VERIFIED.name())) {
-                    //update existing entity
-                    updateExistingVersion(context, entity, latestExistingVersion);
-                }
-                // Contract status changed, either to draft or verified
-                return;
-            } else if (attributes.contains(ATTR_CONTRACT)) {
-                //Contract is changed
-                if (isEqualContract(contractString, (String) latestExistingVersion.getAttribute(ATTR_CONTRACT))) {
-                    // Update the same asset(entity)
-                    updateExistingVersion(context, entity, latestExistingVersion);
-
-                } else {
-                    // Create New version of entity
-                    entity.setAttribute(QUALIFIED_NAME, String.format("%s/%s/V%s", contractQName, VERSION_PREFIX, ++latestVersionNumber));
-
-                }
-
-                return;
-            }
-
-        } else {
-            // Create new contract
-            entity.setAttribute(QUALIFIED_NAME, String.format("%s/%s/%s", contractQName, VERSION_PREFIX, "V1"));
-
-        }
-
-        entity.setAttribute("assetQualifiedName", associatedAsset.getEntity().getAttribute(QUALIFIED_NAME));
-        if (contract.getStatus() == DataContract.STATUS.VERIFIED &&
-                entity.getAttribute(ATTR_CERTIFICATE_STATUS).equals(DataContract.STATUS.VERIFIED.name())) {
-            datasetAttributeSync(associatedAsset.getEntity(), contract);
-        }
-
-    }
-
-    private String updateContract(DataContract contract, String contractString) throws AtlasBaseException {
-        ObjectMapper objectMapper = new ObjectMapper();
-        try {
-            String contractObjString = DataContract.serialize(contract);
-            Map<String, Object> mapJson = objectMapper.readValue(contractString, new TypeReference<Map<String, Object>>() {
-            });
-            Map<String, Object> mapTargetJson = objectMapper.readValue(contractObjString, new TypeReference<Map<String, Object>>() {
-            });
-
-            for (Map.Entry<String, Object> keyVal : mapTargetJson.entrySet()) {
-                mapJson.replace(keyVal.getKey(), keyVal.getValue());
-            }
-            return objectMapper.writeValueAsString(mapJson);
-        } catch (JsonProcessingException ex) {
-            throw new AtlasBaseException(JSON_ERROR, ex.getMessage());
-        }
-
-    }
-
     private void updateExistingVersion(EntityMutationContext context, AtlasEntity entity, AtlasEntity latestExistingVersion) throws AtlasBaseException {
-        context.getCreatedEntities().remove(entity);
-        Set<String> guids = new HashSet<>();
-        guids.add(entity.getGuid());
-        entityStore.purgeByIds(guids);
+        removeCreatingVertex(context, entity);
         entity.setAttribute(QUALIFIED_NAME, latestExistingVersion.getAttribute(QUALIFIED_NAME));
         entity.setGuid(latestExistingVersion.getGuid());
 
@@ -213,6 +198,19 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
         AtlasEntityType entityType = ensureEntityType(entity.getTypeName());
 
         context.addUpdated(entity.getGuid(), entity, entityType, vertex);
+
+    }
+
+    private void removeCreatingVertex(EntityMutationContext context, AtlasEntity entity) throws AtlasBaseException {
+        context.getCreatedEntities().remove(entity);
+        try {
+            RequestContext.get().setSkipAuthorizationCheck(true);
+            Set<String> guids = new HashSet<>();
+            guids.add(entity.getGuid());
+            entityStore.purgeByIds(guids);
+        } finally {
+            RequestContext.get().setSkipAuthorizationCheck(false);
+        }
 
     }
 

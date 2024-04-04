@@ -1,13 +1,13 @@
 package org.apache.atlas.repository.store.graph.v2.preprocessor.contract;
 
 import java.lang.String;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -16,9 +16,11 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.commons.lang.StringUtils;
 
 import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
+import static org.apache.atlas.AtlasErrorCode.JSON_ERROR;
 
 
 @JsonIgnoreProperties(ignoreUnknown = true)
+@JsonPropertyOrder({"kind", "status", "template_version", "dataset", "columns"})
 public class DataContract {
     @JsonProperty(required = true)
     public String kind;
@@ -27,7 +29,7 @@ public class DataContract {
     public String templateVersion;
     public Dataset dataset;
     public List<Column> columns;
-
+    private Map<String, Object> unknownFields = new HashMap<>();
     public STATUS getStatus() {
         return status;
     }
@@ -35,6 +37,16 @@ public class DataContract {
     @JsonSetter("status")
     public void setStatus(STATUS status) {
         this.status = status;
+    }
+
+    @JsonAnySetter
+    public void setUnknownFields(String key, Object value) {
+        unknownFields.put(key, value);
+    }
+
+    @JsonAnyGetter
+    public Map<String, Object> getUnknownFields() {
+        return unknownFields;
     }
 
     public enum STATUS {
@@ -81,12 +93,23 @@ public class DataContract {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
+    @JsonPropertyOrder({"name", "type", "description"})
     public static final class Dataset {
         public String name;
         @JsonProperty(required = true)
         public  DATASET_TYPE type;
         public String description;
+        private Map<String, Object> unknownFields = new HashMap<>();
 
+        @JsonAnySetter
+        public void setUnknownFields(String key, Object value) {
+            unknownFields.put(key, value);
+        }
+
+        @JsonAnyGetter
+        public Map<String, Object> getUnknownFields() {
+            return unknownFields;
+        }
 
         @JsonSetter("type")
         public void setType(DATASET_TYPE type) {
@@ -117,6 +140,7 @@ public class DataContract {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
+    @JsonPropertyOrder({"name", "description", "data_type"})
     public static final class Column {
         public String name;
 
@@ -125,6 +149,17 @@ public class DataContract {
         public boolean is_primary;
 
         public String data_type;
+        private Map<String, Object> unknownFields = new HashMap<>();
+
+        @JsonAnySetter
+        public void setUnknownFields(String key, Object value) {
+            unknownFields.put(key, value);
+        }
+        @JsonAnyGetter
+        public Map<String, Object> getUnknownFields() {
+            return unknownFields;
+        }
+
 
 
     }
@@ -147,11 +182,15 @@ public class DataContract {
         return contract;
     }
 
-    public static String serialize(DataContract contract) throws JsonProcessingException {
+    public static String serialize(DataContract contract) throws AtlasBaseException {
 
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS);
-        return objectMapper.writeValueAsString(contract);
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS);
+            return objectMapper.writeValueAsString(contract);
+        } catch (JsonProcessingException ex) {
+            throw new AtlasBaseException(JSON_ERROR, ex.getMessage());
+        }
     }
 
 
