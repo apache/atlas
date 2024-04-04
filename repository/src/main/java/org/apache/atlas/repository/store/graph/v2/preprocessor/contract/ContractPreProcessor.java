@@ -35,6 +35,7 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
     public static final String ATTR_VERSION = "contractVersion";
     public static final String ATTR_ASSET_QUALIFIED_NAME = "contractAssetQualifiedName";
     public static final String ATTR_PARENT_GUID = "parentGuid";
+    public static final String ATTR_HAS_CONTRACT = "hasContract";
     public static final String CONTRACT_QUALIFIED_NAME_SUFFIX = "contract";
     public static final String VERSION_PREFIX = "version";
     public static final String CONTRACT_ATTR_STATUS = "status";
@@ -123,7 +124,7 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
                     updateExistingVersion(context, entity, latestExistingVersion);
                 }
                 // Contract status changed, either to draft or verified
-                return;
+
             } else if (attributes.contains(ATTR_CONTRACT)) {
                 //Contract is changed
                 if (isEqualContract(contractString, (String) latestExistingVersion.getAttribute(ATTR_CONTRACT))) {
@@ -138,8 +139,6 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
                     entity.setAttribute(ATTR_PARENT_GUID, latestExistingVersion.getGuid());
 
                 }
-
-                return;
             }
 
         } else {
@@ -149,11 +148,7 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
             entity.setAttribute(ATTR_ASSET_QUALIFIED_NAME, associatedAsset.getEntity().getAttribute(QUALIFIED_NAME));
 
         }
-
-        if (contract.getStatus() == DataContract.STATUS.VERIFIED &&
-                entity.getAttribute(ATTR_CERTIFICATE_STATUS).equals(DataContract.STATUS.VERIFIED.name())) {
-            datasetAttributeSync(associatedAsset.getEntity(), contract);
-        }
+        datasetAttributeSync(associatedAsset.getEntity(), contract, entity);
 
     }
 
@@ -240,11 +235,21 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
 
     }
 
-    private void datasetAttributeSync(AtlasEntity associatedAsset, DataContract contract) throws AtlasBaseException {
-
-        DataContract.Dataset dataset = contract.dataset;
-        // Will implement dataset attribute sync from the contract attributes
-
+    private void datasetAttributeSync(AtlasEntity associatedAsset, DataContract contract, AtlasEntity contractAsset) throws AtlasBaseException {
+        associatedAsset.setAttribute(ATTR_HAS_CONTRACT, true);
+        if (contract.getStatus() == DataContract.STATUS.VERIFIED &&
+                contractAsset.getAttribute(ATTR_CERTIFICATE_STATUS).equals(DataContract.STATUS.VERIFIED.name())) {
+            DataContract.Dataset dataset = contract.dataset;
+            // Will implement dataset attribute sync from the contract attributes
+        }
+        try {
+            RequestContext.get().setSkipAuthorizationCheck(true);
+            EntityStream entityStream = new AtlasEntityStream(associatedAsset);
+            entityStore.createOrUpdate(entityStream, false);
+            LOG.info("Updated associated asset attributes of contract {}", associatedAsset.getAttribute(QUALIFIED_NAME));
+        } finally {
+            RequestContext.get().setSkipAuthorizationCheck(false);
+        }
     }
 
     private static void validateAttribute(boolean isInvalid, String errorMessage) throws AtlasBaseException {
