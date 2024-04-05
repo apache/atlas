@@ -55,8 +55,12 @@ public class EntitiesExtractor {
                 if (context.isHiveDBIncrementalSkipLineage()) {
                     extractors.get(INCREMENTAL_EXTRACT).fullFetch(entity, context);
                     break;
-                } else if (context.isHiveTableIncrementalSkipLineage()) {
-                    extractors.get(INCREMENTAL_EXTRACT).connectedFetch(entity, context);
+                } else if (context.isHiveTableIncremental()) {
+                    if (context.skipLineage) {
+                        extractors.get(INCREMENTAL_EXTRACT).connectedFetch(entity, context);
+                    } else {
+                        extractor.connectedFetch(entity, context);
+                    }
                     break;
                 }
 

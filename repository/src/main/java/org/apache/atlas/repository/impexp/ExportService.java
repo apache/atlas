@@ -408,7 +408,7 @@ public class ExportService {
             skipLineage  = result.getRequest().getSkipLineageOptionValue();
             this.changeMarker = result.getRequest().getChangeTokenFromOptions();
             this.isHiveDBIncremental = checkHiveDBIncrementalSkipLineage(result.getRequest());
-            this.isHiveTableIncremental = checkHiveTableIncrementalSkipLineage(result.getRequest());
+            this.isHiveTableIncremental = checkHiveTableIncremental(result.getRequest());
             this.isSkipConnectedFetch = false;
         }
 
@@ -422,14 +422,13 @@ public class ExportService {
                     request.getSkipLineageOptionValue();
         }
 
-        private boolean checkHiveTableIncrementalSkipLineage(AtlasExportRequest request) {
-            if(CollectionUtils.isEmpty(request.getItemsToExport())) {
+        private boolean checkHiveTableIncremental(AtlasExportRequest request) {
+            if (CollectionUtils.isEmpty(request.getItemsToExport())) {
                 return false;
             }
 
             return request.getItemsToExport().get(0).getTypeName().equalsIgnoreCase(ATLAS_TYPE_HIVE_TABLE) &&
-                    request.getFetchTypeOptionValue().equalsIgnoreCase(AtlasExportRequest.FETCH_TYPE_INCREMENTAL) &&
-                    request.getSkipLineageOptionValue();
+                    request.getFetchTypeOptionValue().equalsIgnoreCase(AtlasExportRequest.FETCH_TYPE_INCREMENTAL);
         }
 
         public List<AtlasEntity> getEntitiesWithModifiedTimestamp(AtlasEntityWithExtInfo entityWithExtInfo) {
@@ -498,6 +497,10 @@ public class ExportService {
         }
 
         public boolean isHiveTableIncrementalSkipLineage() {
+            return isHiveTableIncremental;
+        }
+
+        public boolean isHiveTableIncremental() {
             return isHiveTableIncremental;
         }
 
