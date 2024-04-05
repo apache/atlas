@@ -4,6 +4,7 @@ import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.authorize.AtlasAccessRequest;
+import org.apache.atlas.authorize.AtlasAccessResult;
 import org.apache.atlas.authorize.AtlasAccessorResponse;
 import org.apache.atlas.authorize.AtlasEntityAccessRequest;
 import org.apache.atlas.authorize.AtlasPrivilege;
@@ -69,26 +70,26 @@ public class ABACAuthorizerUtils {
         SERVICE_DEF_ATLAS = getResourceAsObject("/service-defs/atlas-servicedef-atlas.json", RangerServiceDef.class);
     }
 
-    public static boolean isAccessAllowed(AtlasEntityHeader entityHeader, AtlasPrivilege action) {
+    public static AtlasAccessResult isAccessAllowed(AtlasEntityHeader entityHeader, AtlasPrivilege action) {
         if (!ABACAuthorizerEnabled) {
-            return false;
+            return new AtlasAccessResult();
         }
 
         return verifyAccess(entityHeader, action);
     }
 
-    public static boolean isAccessAllowed(String relationShipType, AtlasEntityHeader endOneEntity, AtlasEntityHeader endTwoEntity, AtlasPrivilege action) {
+    public static AtlasAccessResult isAccessAllowed(String relationShipType, AtlasEntityHeader endOneEntity, AtlasEntityHeader endTwoEntity, AtlasPrivilege action) {
         if (!ABACAuthorizerEnabled) {
-            return false;
+            return new AtlasAccessResult();
         }
 
         return verifyAccess(relationShipType, endOneEntity, endTwoEntity, action);
     }
 
-    private static boolean verifyAccess(AtlasEntityHeader entity, AtlasPrivilege action) {
+    private static AtlasAccessResult verifyAccess(AtlasEntityHeader entity, AtlasPrivilege action) {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("verifyEntityAccess");
 
-        AccessResult result = null;
+        AtlasAccessResult result = null;
 
         AtlasEntityAccessRequest request = new AtlasEntityAccessRequest(typeRegistry, action, entity);
         NewAtlasAuditHandler auditHandler = new NewAtlasAuditHandler(request, SERVICE_DEF_ATLAS);
@@ -101,12 +102,12 @@ public class ABACAuthorizerUtils {
             RequestContext.get().endMetricRecord(recorder);
         }
 
-        return result.isAllowed();
+        return result;
     }
 
-    private static boolean verifyAccess(String relationshipType, AtlasEntityHeader endOneEntity, AtlasEntityHeader endTwoEntity, AtlasPrivilege action) {
+    private static AtlasAccessResult verifyAccess(String relationshipType, AtlasEntityHeader endOneEntity, AtlasEntityHeader endTwoEntity, AtlasPrivilege action) {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("verifyAccess");
-        AccessResult result = new AccessResult();
+        AtlasAccessResult result = new AtlasAccessResult(false);
 
         AtlasRelationshipAccessRequest request = new AtlasRelationshipAccessRequest(typeRegistry,
                 action,
@@ -125,7 +126,7 @@ public class ABACAuthorizerUtils {
             RequestContext.get().endMetricRecord(recorder);
         }
 
-        return result.isAllowed();
+        return result;
     }
 
     public static AtlasAccessorResponse getAccessors(AtlasAccessRequest request) {

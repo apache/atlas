@@ -6,6 +6,7 @@ import org.apache.atlas.audit.provider.AuditHandler;
 import org.apache.atlas.audit.provider.AuditProviderFactory;
 import org.apache.atlas.audit.provider.MiscUtil;
 import org.apache.atlas.authorize.AtlasAccessRequest;
+import org.apache.atlas.authorize.AtlasAccessResult;
 import org.apache.atlas.authorize.AtlasEntityAccessRequest;
 import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.authorize.AtlasRelationshipAccessRequest;
@@ -150,7 +151,7 @@ class NewAtlasAuditHandler {
         resourcePath = rangerResource.getAsString();
     }
 
-    public void processResult(AccessResult result, AtlasAccessRequest request) {
+    public void processResult(AtlasAccessResult result, AtlasAccessRequest request) {
 
         AuthzAuditEvent auditEvent = getAuthzEvents(result, request);
 
@@ -222,7 +223,7 @@ class NewAtlasAuditHandler {
         return ret;
     }
 
-    public AuthzAuditEvent getAuthzEvents(AccessResult result, AtlasAccessRequest request) {
+    public AuthzAuditEvent getAuthzEvents(AtlasAccessResult result, AtlasAccessRequest request) {
         AuthzAuditEvent ret = null;
 
         if(request != null) {

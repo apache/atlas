@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.atlas.RequestContext;
-import org.apache.atlas.authorizer.AccessResult;
+import org.apache.atlas.authorize.AtlasAccessResult;
 import org.apache.atlas.authorizer.store.PoliciesStore;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
@@ -29,8 +29,8 @@ public class EntityAuthorizer {
 
     private static final Logger LOG = LoggerFactory.getLogger(EntityAuthorizer.class);
 
-    public static AccessResult isAccessAllowedInMemory(AtlasEntityHeader entity, String action) {
-        AccessResult result;
+    public static AtlasAccessResult isAccessAllowedInMemory(AtlasEntityHeader entity, String action) {
+        AtlasAccessResult result;
 
         result = isAccessAllowedInMemory(entity, action, POLICY_TYPE_DENY);
         if (result.isAllowed()) {
@@ -41,9 +41,9 @@ public class EntityAuthorizer {
         return isAccessAllowedInMemory(entity, action, POLICY_TYPE_ALLOW);
     }
 
-    private static AccessResult isAccessAllowedInMemory(AtlasEntityHeader entity, String action, String policyType) {
+    private static AtlasAccessResult isAccessAllowedInMemory(AtlasEntityHeader entity, String action, String policyType) {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("isAccessAllowedInMemory."+policyType);
-        AccessResult result;
+        AtlasAccessResult result;
 
         List<RangerPolicy> policies = PoliciesStore.getRelevantPolicies(null, null, "atlas_abac", Arrays.asList(action), policyType);
         result = evaluateABACPoliciesInMemory(policies, entity);
@@ -52,8 +52,8 @@ public class EntityAuthorizer {
         return result;
     }
 
-    private static AccessResult evaluateABACPoliciesInMemory(List<RangerPolicy> abacPolicies, AtlasEntityHeader entity) {
-        AccessResult result = new AccessResult();
+    private static AtlasAccessResult evaluateABACPoliciesInMemory(List<RangerPolicy> abacPolicies, AtlasEntityHeader entity) {
+        AtlasAccessResult result = new AtlasAccessResult(false);
 
         AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(entity.getGuid());
         ObjectMapper mapper = new ObjectMapper();
@@ -74,9 +74,7 @@ public class EntityAuthorizer {
             }
             if (matched) {
                 //LOG.info("Matched with policy {}", policy.getGuid());
-                result.setAllowed(true);
-                result.setPolicyId(policy.getGuid());
-                return result;
+                return new AtlasAccessResult(true, policy.getGuid(), policy.getPolicyPriority());
             }
         }
         return result;
