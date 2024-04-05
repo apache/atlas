@@ -24,18 +24,56 @@ import org.slf4j.LoggerFactory;
 public class AtlasAccessResult {
     private static Logger LOG = LoggerFactory.getLogger(AtlasAccessResult.class);
 
-    private boolean isAllowed;
+    private boolean isAllowed = false;
     private String  policyId  = "-1";
-    private boolean explicitDeny;
+    private int  policyPriority = -1;
+    private boolean explicitDeny = false;
+
+    public AtlasAccessResult() {
+
+    }
+
+    public AtlasAccessResult(boolean isAllowed) {
+        this.isAllowed = isAllowed;
+    }
 
     public AtlasAccessResult(boolean isAllowed, String policyId) {
-        this.isAllowed = isAllowed;
+        this(isAllowed);
         this.policyId = policyId;
 
-        this.explicitDeny = !isAllowed && !policyId.equals("-1");
+        this.explicitDeny = !isAllowed && !"-1".equals(policyId);
+    }
+
+    public AtlasAccessResult(boolean isAllowed, String policyId, int policyPriority) {
+        this(isAllowed, policyId);
+        this.policyPriority = policyPriority;
     }
 
     public boolean isExplicitDeny() {
         return explicitDeny;
+    }
+
+    public boolean isAllowed() {
+        return isAllowed;
+    }
+
+    public int getPolicyPriority() {
+        return policyPriority;
+    }
+
+    public void setAllowed(boolean allowed) {
+        isAllowed = allowed;
+    }
+
+    public String getPolicyId() {
+        return policyId;
+    }
+
+    public void setPolicyId(String policyId) {
+        this.policyId = policyId;
+    }
+
+    public void setPolicyPriority(int policyPriority) {
+        this.policyPriority = policyPriority;
     }
 }

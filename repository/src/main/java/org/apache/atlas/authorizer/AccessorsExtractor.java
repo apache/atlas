@@ -3,32 +3,22 @@ package org.apache.atlas.authorizer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.authorize.AtlasAccessRequest;
-import org.apache.atlas.authorize.AtlasAccessorRequest;
 import org.apache.atlas.authorize.AtlasAccessorResponse;
 import org.apache.atlas.authorize.AtlasEntityAccessRequest;
-import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.authorize.AtlasRelationshipAccessRequest;
-import org.apache.atlas.authorizer.authorizers.AuthorizerCommon;
-import org.apache.atlas.authorizer.authorizers.EntityAuthorizer;
-import org.apache.atlas.authorizer.authorizers.RelationshipAuthorizer;
 import org.apache.atlas.authorizer.store.PoliciesStore;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.plugin.model.RangerPolicy;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
-import org.apache.atlas.type.AtlasEntityType;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -48,7 +38,7 @@ import static org.apache.atlas.authorize.AtlasPrivilege.ENTITY_UPDATE_CLASSIFICA
 import static org.apache.atlas.authorize.AtlasPrivilege.RELATIONSHIP_ADD;
 import static org.apache.atlas.authorize.AtlasPrivilege.RELATIONSHIP_REMOVE;
 import static org.apache.atlas.authorize.AtlasPrivilege.RELATIONSHIP_UPDATE;
-import static org.apache.atlas.authorizer.authorizers.EntityAuthorizer.validateFilterCriteriaWithEntity;
+import static org.apache.atlas.authorizer.authorizers.EntityAuthorizer.validateEntityFilterCriteria;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 
 public class AccessorsExtractor {
@@ -140,7 +130,7 @@ public class AccessorsExtractor {
 
                     if (filterCriteriaNode != null && filterCriteriaNode.get("entity") != null) {
                         JsonNode entityFilterCriteriaNode = filterCriteriaNode.get("entity");
-                        boolean matched = EntityAuthorizer.validateFilterCriteriaWithEntity(entityFilterCriteriaNode, entity, vertex);
+                        boolean matched = validateEntityFilterCriteria(entityFilterCriteriaNode, entity, vertex);
 
                         if (matched) {
                             matchedPolicies.add(policy);
@@ -177,11 +167,11 @@ public class AccessorsExtractor {
 
                     if (filterCriteriaNode != null && filterCriteriaNode.get("endOneEntity") != null) {
                         JsonNode entityFilterCriteriaNode = filterCriteriaNode.get("endOneEntity");
-                        boolean matched = validateFilterCriteriaWithEntity(entityFilterCriteriaNode, entityOne, vertexOne);
+                        boolean matched = validateEntityFilterCriteria(entityFilterCriteriaNode, entityOne, vertexOne);
 
                         if (matched) {
                             entityFilterCriteriaNode = filterCriteriaNode.get("endTwoEntity");
-                            matched = validateFilterCriteriaWithEntity(entityFilterCriteriaNode, entityTwo, vertexTwo);
+                            matched = validateEntityFilterCriteria(entityFilterCriteriaNode, entityTwo, vertexTwo);
                         }
 
                         if (matched) {

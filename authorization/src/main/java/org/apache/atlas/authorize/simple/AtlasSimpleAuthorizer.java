@@ -109,7 +109,7 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
     }
 
     @Override
-    public boolean isAccessAllowed(AtlasAdminAccessRequest request) throws AtlasAuthorizationException {
+    public AtlasAccessResult isAccessAllowed(AtlasAdminAccessRequest request) throws AtlasAuthorizationException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> SimpleAtlasAuthorizer.isAccessAllowed({})", request);
         }
@@ -138,11 +138,11 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
             LOG.debug("<== SimpleAtlasAuthorizer.isAccessAllowed({}): {}", request, ret);
         }
 
-        return ret;
+        return new AtlasAccessResult(ret, null);
     }
 
     @Override
-    public boolean isAccessAllowed(AtlasTypeAccessRequest request) throws AtlasAuthorizationException {
+    public AtlasAccessResult isAccessAllowed(AtlasTypeAccessRequest request) throws AtlasAuthorizationException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> SimpleAtlasAuthorizer.isAccessAllowed({})", request);
         }
@@ -175,7 +175,7 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
             LOG.debug("<== SimpleAtlasAuthorizer.isAccessAllowed({}): {}", request, ret);
         }
 
-        return ret;
+        return new AtlasAccessResult(ret, null);
     }
 
     @Override
@@ -202,7 +202,7 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
     }
 
     @Override
-    public boolean isAccessAllowed(AtlasRelationshipAccessRequest request) throws AtlasAuthorizationException {
+    public AtlasAccessResult isAccessAllowed(AtlasRelationshipAccessRequest request) throws AtlasAuthorizationException {
         final Set<String> roles                       = getRoles(request.getUser(), request.getUserGroups());
         final String      relationShipType            = request.getRelationshipType();
         final Set<String> end1EntityTypeAndSuperTypes = request.getEnd1EntityTypeAndAllSuperTypes();
@@ -258,11 +258,11 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
             }
         }
 
-        return hasEnd1EntityAccess && hasEnd2EntityAccess;
+        return new AtlasAccessResult(hasEnd1EntityAccess && hasEnd2EntityAccess, null);
     }
 
     @Override
-    public boolean isAccessAllowed(AtlasEntityAccessRequest request) throws AtlasAuthorizationException {
+    public AtlasAccessResult isAccessAllowed(AtlasEntityAccessRequest request) throws AtlasAuthorizationException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> SimpleAtlasAuthorizer.isAccessAllowed({})", request);
         }
@@ -314,7 +314,7 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
             LOG.debug("<== SimpleAtlasAuthorizer.isAccessAllowed({}): {}", request, ret);
         }
 
-        return ret;
+        return new AtlasAccessResult(ret, null);
     }
 
     @Override
@@ -504,7 +504,7 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
             entityAccessRequest.setClientIPAddress(request.getClientIPAddress());
 
 
-            if (!isAccessAllowed(entityAccessRequest)) {
+            if (!isAccessAllowed(entityAccessRequest).isAllowed()) {
                 scrubEntityHeader(entity, request.getTypeRegistry());
             }
         }
@@ -532,7 +532,7 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
                 typeRequest.setForwardedAddresses(request.getForwardedAddresses());
                 typeRequest.setRemoteIPAddress(request.getRemoteIPAddress());
 
-                if (!isAccessAllowed(typeRequest)) {
+                if (!isAccessAllowed(typeRequest).isAllowed()) {
                     iter.remove();
                 }
             }
