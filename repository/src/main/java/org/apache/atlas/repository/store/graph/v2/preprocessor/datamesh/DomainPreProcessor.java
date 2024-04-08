@@ -76,12 +76,37 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
 
         setParent(entity, context);
 
-        if (operation == EntityMutations.EntityOperation.UPDATE) {
-            processUpdateDomain(entity, vertex);
-        } else {
-            LOG.error("DataProductPreProcessor.processAttributes: Operation not supported {}", operation);
+        switch (operation) {
+            case CREATE:
+                processCreateDomain(entity, vertex);
+                break;
+            case UPDATE:
+                processUpdateDomain(entity, vertex);
+                break;
         }
     }
+
+    private void processCreateDomain(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processCreateDomain");
+        String domainName = (String) entity.getAttribute(NAME);
+        String parentDomainQualifiedName = (String) entity.getAttribute(PARENT_DOMAIN_QN);
+
+        domainExists(domainName, parentDomainQualifiedName);
+        entity.setAttribute(QUALIFIED_NAME, createQualifiedName(parentDomainQualifiedName, domainName));
+
+        RequestContext.get().endMetricRecord(metricRecorder);
+    }
+
+    public static String createQualifiedName(String parentDomainQualifiedName, String domainName) {
+        if (StringUtils.isNotEmpty(parentDomainQualifiedName)) {
+            return parentDomainQualifiedName + "/" + getUUID();
+        } else{
+            String camelDomainName = toCamelCase(domainName);
+            String prefixQN = "default/domain"+"/"+camelDomainName;
+            return prefixQN + "/" + getUUID();
+        }
+    }
+
 
     private void processUpdateDomain(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processUpdateDomain");

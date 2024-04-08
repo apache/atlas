@@ -42,6 +42,8 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.apache.atlas.repository.Constants.NAME;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
@@ -120,6 +122,27 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
 
         AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_DELETE, targetDomain),
                 "delete on target Domain: ", targetDomain.getAttribute(NAME));
+    }
+
+    public static String toCamelCase(String domainName) {
+        domainName = domainName.toLowerCase();
+        Pattern pattern = Pattern.compile("[^a-zA-Z0-9]+(.*)");
+        Matcher matcher = pattern.matcher(domainName);
+
+        StringBuilder camelCaseString = new StringBuilder();
+
+        int lastIndex = 0;
+        while (matcher.find()) {
+            camelCaseString.append(domainName, lastIndex, matcher.start());
+            camelCaseString.append(Character.toUpperCase(matcher.group(1).charAt(0)));
+
+            lastIndex = matcher.end();
+        }
+
+        // Append the remaining substring
+        camelCaseString.append(domainName.substring(lastIndex));
+
+        return camelCaseString.toString();
     }
 
     /**
