@@ -62,6 +62,7 @@ public class AtlasExportRequest implements Serializable {
     public static final String MATCH_TYPE_CONTAINS = "contains";
     public static final String MATCH_TYPE_MATCHES = "matches";
     public static final String MATCH_TYPE_FOR_TYPE = "forType";
+    public static final String OMIT_ZIP_RESPONSE_FOR_EMPTY_EXPORT = "omitZipResponseForEmptyExport";
 
     private List<AtlasObjectId> itemsToExport = new ArrayList<>();
     private Map<String, Object> options = new HashMap<>();
@@ -149,6 +150,25 @@ public class AtlasExportRequest implements Serializable {
         } else {
             return replicateToServerName;
         }
+    }
+
+    public Boolean getOmitZipResponseForEmptyExport() {
+
+        if (MapUtils.isEmpty(getOptions()) ||
+                !getOptions().containsKey(AtlasExportRequest.OMIT_ZIP_RESPONSE_FOR_EMPTY_EXPORT)) {
+            return false;
+        }
+
+        Object o = getOptions().get(AtlasExportRequest.OMIT_ZIP_RESPONSE_FOR_EMPTY_EXPORT);
+        if (o instanceof String) {
+            return Boolean.parseBoolean((String) o);
+        }
+
+        if (o instanceof Boolean) {
+            return (Boolean) o;
+        }
+
+        return false;
     }
 
     public StringBuilder toString(StringBuilder sb) {
