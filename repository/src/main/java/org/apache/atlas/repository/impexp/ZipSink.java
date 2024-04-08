@@ -127,4 +127,8 @@ public class ZipSink {
     private void recordAddedEntityGuids(AtlasEntity entity) {
         guids.add(entity.getGuid());
     }
+
+    public Set<String> getGuids() {
+        return guids;
+    }
 }

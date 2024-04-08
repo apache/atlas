@@ -127,6 +127,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.web.filters.AtlasCSRFPreventionFilter.CSRF_TOKEN;
+import static javax.servlet.http.HttpServletResponse.SC_NO_CONTENT;
 
 
 /**
@@ -624,7 +625,6 @@ public class AdminResource {
                                                          Servlets.getHostName(httpServletRequest),
                                                          AtlasAuthorizationUtils.getRequestIpAddress(httpServletRequest));
 
-            exportSink.close();
 
             httpServletResponse.addHeader("Content-Encoding","gzip");
             httpServletResponse.setContentType("application/zip");
@@ -632,9 +632,20 @@ public class AdminResource {
                                           "attachment; filename=" + result.getClass().getSimpleName());
             httpServletResponse.setHeader("Transfer-Encoding", "chunked");
 
-            httpServletResponse.getOutputStream().flush();
             isSuccessful = true;
-            return Response.ok().build();
+            if (CollectionUtils.isNotEmpty(exportSink.getGuids())) {
+                httpServletResponse.getOutputStream().flush();
+                return Response.ok().build();
+            } else {
+                if (request.getOmitZipResponseForEmptyExport()) {
+                    httpServletResponse.setStatus(SC_NO_CONTENT);
+                    httpServletResponse.getOutputStream().flush();
+                    return Response.status(Response.Status.NO_CONTENT).build();
+                } else {
+                    httpServletResponse.getOutputStream().flush();
+                    return Response.ok().build();
+                }
+            }
         } catch (IOException excp) {
             LOG.error("export() failed", excp);
 
