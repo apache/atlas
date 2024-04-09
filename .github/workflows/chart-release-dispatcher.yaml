@@ -6,6 +6,7 @@ on:
       - "Java CI with Maven"
     branches:
       - master
+      - staging
       - beta
     types:
       - completed

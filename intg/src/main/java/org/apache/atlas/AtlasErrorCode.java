@@ -274,6 +274,8 @@ public enum AtlasErrorCode {
     RUNTIME_EXCEPTION(500, "ATLAS-500-00-020", "Runtime exception {0}"),
     KEYCLOAK_INIT_FAILED(500, "ATLAS-500-00-022", "Failed to initialize keycloak client: {0}"),
 
+    MAINTENANCE_MODE_ENABLED(503, "ATLAS-503-00-001", "Atlas is in maintenance mode for this specific operation. Please try again later."),
+
     BATCH_SIZE_TOO_LARGE(406, "ATLAS-406-00-001", "Batch size is too large, please use a smaller batch size"),
 
 

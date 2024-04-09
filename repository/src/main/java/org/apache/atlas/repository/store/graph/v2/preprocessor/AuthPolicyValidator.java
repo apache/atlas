@@ -52,6 +52,10 @@ public class AuthPolicyValidator {
         add(POLICY_SUB_CATEGORY_DATA);
     }};
 
+    private static final Set<String> DATAMESH_POLICY_VALID_SUB_CATEGORIES = new HashSet<String>(){{
+        add(POLICY_SUB_CATEGORY_PRODUCT);
+    }};
+
     private static final Set<String> PERSONA_METADATA_POLICY_ACTIONS = new HashSet<String>(){{
         add("persona-asset-read");
         add("persona-asset-update");
@@ -105,6 +109,14 @@ public class AuthPolicyValidator {
         put(POLICY_SUB_CATEGORY_DATA, DATA_POLICY_ACTIONS);
     }};
 
+    private static final Set<String> DATAMESH_POLICY_ACTIONS = new HashSet<String>(){{
+        add(ENTITY_READ.getType());
+    }};
+
+    private static final Map<String, Set<String>> DATAMESH_POLICY_VALID_ACTIONS = new HashMap<String, Set<String>>(){{
+        put(POLICY_SUB_CATEGORY_PRODUCT, DATAMESH_POLICY_ACTIONS);
+    }};
+
     private static final Set<String> PERSONA_POLICY_VALID_RESOURCE_KEYS = new HashSet<String>() {{
         add("entity");
         add("entity-type");
@@ -120,7 +132,7 @@ public class AuthPolicyValidator {
             policyCategory = getPolicyCategory(existingPolicy);
         }
 
-        if (POLICY_CATEGORY_PERSONA.equals(policyCategory) || POLICY_CATEGORY_PURPOSE.equals(policyCategory)) {
+        if (POLICY_CATEGORY_PERSONA.equals(policyCategory) || POLICY_CATEGORY_PURPOSE.equals(policyCategory) || POLICY_CATEGORY_DATAMESH.equals(policyCategory)) {
 
             if (operation == CREATE) {
                 String policySubCategory = getPolicySubCategory(policy);
@@ -132,9 +144,10 @@ public class AuthPolicyValidator {
 
                 validateParam(CollectionUtils.isEmpty(policyActions), "Please provide attribute " + ATTR_POLICY_ACTIONS);
 
-                validateOperation (!AtlasEntity.Status.ACTIVE.equals(accessControl.getStatus()), accessControl.getTypeName() + " is not Active");
 
                 if (POLICY_CATEGORY_PERSONA.equals(policyCategory)) {
+                    validateOperation (!AtlasEntity.Status.ACTIVE.equals(accessControl.getStatus()), accessControl.getTypeName() + " is not Active");
+
                     validateParam (!PERSONA_ENTITY_TYPE.equals(accessControl.getTypeName()),  "Please provide Persona as accesscontrol");
 
                     validateParam (!PERSONA_POLICY_VALID_SUB_CATEGORIES.contains(policySubCategory),
@@ -173,6 +186,8 @@ public class AuthPolicyValidator {
                 }
 
                 if (POLICY_CATEGORY_PURPOSE.equals(policyCategory)) {
+                    validateOperation (!AtlasEntity.Status.ACTIVE.equals(accessControl.getStatus()), accessControl.getTypeName() + " is not Active");
+
                     validateParam (!PURPOSE_ENTITY_TYPE.equals(accessControl.getTypeName()),  "Please provide Purpose as accesscontrol");
 
                     validateParam (!PURPOSE_POLICY_VALID_SUB_CATEGORIES.contains(policySubCategory),
@@ -184,6 +199,18 @@ public class AuthPolicyValidator {
 
                     //validate purpose policy actions
                     Set<String> validActions = PURPOSE_POLICY_VALID_ACTIONS.get(policySubCategory);
+                    List<String> copyOfActions = new ArrayList<>(policyActions);
+                    copyOfActions.removeAll(validActions);
+                    validateParam (CollectionUtils.isNotEmpty(copyOfActions),
+                            "Please provide valid values for attribute " + ATTR_POLICY_ACTIONS + ": Invalid actions "+ copyOfActions);
+                }
+
+                if (POLICY_CATEGORY_DATAMESH.equals(policyCategory)) {
+                    validateParam (!DATAMESH_POLICY_VALID_SUB_CATEGORIES.contains(policySubCategory),
+                            "Please provide valid value for attribute " + ATTR_POLICY_SUB_CATEGORY + ":"+ DATAMESH_POLICY_VALID_SUB_CATEGORIES);
+
+                    //validate datamesh policy actions
+                    Set<String> validActions = DATAMESH_POLICY_VALID_ACTIONS.get(policySubCategory);
                     List<String> copyOfActions = new ArrayList<>(policyActions);
                     copyOfActions.removeAll(validActions);
                     validateParam (CollectionUtils.isNotEmpty(copyOfActions),
@@ -261,6 +288,19 @@ public class AuthPolicyValidator {
 
                     validateParentUpdate(policy, existingPolicy);
                 }
+
+                if (POLICY_CATEGORY_DATAMESH.equals(policyCategory)) {
+                    validateParam (!DATAMESH_POLICY_VALID_SUB_CATEGORIES.contains(policySubCategory),
+                            "Please provide valid value for attribute " + ATTR_POLICY_SUB_CATEGORY + ":"+ DATAMESH_POLICY_VALID_SUB_CATEGORIES);
+
+                    //validate datamesh policy actions
+                    Set<String> validActions = DATAMESH_POLICY_VALID_ACTIONS.get(policySubCategory);
+                    List<String> copyOfActions = new ArrayList<>(policyActions);
+                    copyOfActions.removeAll(validActions);
+                    validateParam (CollectionUtils.isNotEmpty(copyOfActions),
+                            "Please provide valid values for attribute " + ATTR_POLICY_ACTIONS + ": Invalid actions "+ copyOfActions);
+
+                }
             }
 
         } else {
@@ -268,7 +308,7 @@ public class AuthPolicyValidator {
             if (!RequestContext.get().isSkipAuthorizationCheck()) {
                 String userName = RequestContext.getCurrentUser();
                 validateOperation (!ARGO_SERVICE_USER_NAME.equals(userName) && !BACKEND_SERVICE_USER_NAME.equals(userName),
-                        "Create/Update AuthPolicy with policyCategory other than persona & purpose");
+                        "Create/Update AuthPolicy with policyCategory other than persona, purpose and datamesh");
             }
         }
     }
