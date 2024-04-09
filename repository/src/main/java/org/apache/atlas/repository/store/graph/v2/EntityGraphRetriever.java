@@ -1019,8 +1019,13 @@ public class EntityGraphRetriever {
             ret.setTypeName(typeName);
             ret.setGuid(guid);
             ret.setStatus(GraphHelper.getStatus(entityVertex));
-            if(RequestContext.get().includeClassifications()){
-                ret.setClassificationNames(getAllTraitNames(entityVertex));
+            RequestContext context = RequestContext.get();
+            boolean includeClassifications = context.includeClassifications();
+            boolean includeClassificationNames = context.isIncludeClassificationNames();
+            if(includeClassifications){
+                ret.setClassificationNames(getAllTraitNamesFromAttribute(entityVertex));
+            } else if (!includeClassifications && includeClassificationNames) {
+                ret.setClassifications(getAllClassifications(entityVertex));
             }
             ret.setIsIncomplete(isIncomplete);
             ret.setLabels(getLabels(entityVertex));
