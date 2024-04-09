@@ -36,7 +36,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
     public void processAttributes(AtlasStruct entityStruct, EntityMutationContext context,
                                   EntityMutations.EntityOperation operation) throws AtlasBaseException {
         //Handle name & qualifiedName
-        if (operation == EntityMutations.EntityOperation.UPDATE && LOG.isDebugEnabled()) {
+        if (LOG.isDebugEnabled()) {
             LOG.debug("DataProductPreProcessor.processAttributes: pre processing {}, {}",
                     entityStruct.getAttribute(QUALIFIED_NAME), operation);
         }
@@ -47,10 +47,39 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
 
         setParent(entity, context);
 
-        if (operation == EntityMutations.EntityOperation.UPDATE) {
-            processUpdateDomain(entity, vertex);
-        } else {
-            LOG.error("DataProductPreProcessor.processAttributes: Operation not supported {}", operation);
+        switch (operation) {
+            case CREATE:
+                processCreateProduct(entity, vertex);
+                break;
+            case UPDATE:
+                processUpdateDomain(entity, vertex);
+                break;
+        }
+    }
+
+    private void processCreateProduct(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processCreateDomain");
+        String domainName = (String) entity.getAttribute(NAME);
+        String parentDomainQualifiedName = (String) entity.getAttribute(PARENT_DOMAIN_QN);
+
+        productExists(domainName, parentDomainQualifiedName);
+        String newQualifiedName = createQualifiedName(parentDomainQualifiedName);
+        if(!newQualifiedName.isEmpty()){
+            entity.setAttribute(QUALIFIED_NAME, newQualifiedName);
+        }
+        else{
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Parent Domain Qualified Name is empty");
+        }
+
+        RequestContext.get().endMetricRecord(metricRecorder);
+    }
+
+    public static String createQualifiedName(String parentDomainQualifiedName) {
+        if (StringUtils.isNotEmpty(parentDomainQualifiedName) && parentDomainQualifiedName !=null) {
+            return parentDomainQualifiedName + "/product/" + getUUID();
+        }
+        else{
+           return "";
         }
     }
 

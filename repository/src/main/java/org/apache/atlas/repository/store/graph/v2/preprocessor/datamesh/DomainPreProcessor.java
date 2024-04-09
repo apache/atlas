@@ -64,7 +64,7 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
     public void processAttributes(AtlasStruct entityStruct, EntityMutationContext context,
                                   EntityMutations.EntityOperation operation) throws AtlasBaseException {
         //Handle name & qualifiedName
-        if (operation == EntityMutations.EntityOperation.UPDATE && LOG.isDebugEnabled()) {
+        if (LOG.isDebugEnabled()) {
             LOG.debug("DomainPreProcessor.processAttributes: pre processing {}, {}",
                     entityStruct.getAttribute(QUALIFIED_NAME), operation);
         }
@@ -92,21 +92,19 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
         String parentDomainQualifiedName = (String) entity.getAttribute(PARENT_DOMAIN_QN);
 
         domainExists(domainName, parentDomainQualifiedName);
-        entity.setAttribute(QUALIFIED_NAME, createQualifiedName(parentDomainQualifiedName, domainName));
+        entity.setAttribute(QUALIFIED_NAME, createQualifiedName(parentDomainQualifiedName));
 
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
-    public static String createQualifiedName(String parentDomainQualifiedName, String domainName) {
-        if (StringUtils.isNotEmpty(parentDomainQualifiedName)) {
-            return parentDomainQualifiedName + "/" + getUUID();
+    public static String createQualifiedName(String parentDomainQualifiedName) {
+        if (StringUtils.isNotEmpty(parentDomainQualifiedName) && parentDomainQualifiedName !=null) {
+            return parentDomainQualifiedName + "/domain/" + getUUID();
         } else{
-            String camelDomainName = toCamelCase(domainName);
-            String prefixQN = "default/domain"+"/"+camelDomainName;
+            String prefixQN = "default/domain";
             return prefixQN + "/" + getUUID();
         }
     }
-
 
     private void processUpdateDomain(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processUpdateDomain");

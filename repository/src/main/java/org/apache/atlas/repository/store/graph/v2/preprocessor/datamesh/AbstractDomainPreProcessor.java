@@ -124,27 +124,6 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
                 "delete on target Domain: ", targetDomain.getAttribute(NAME));
     }
 
-    public static String toCamelCase(String domainName) {
-        domainName = domainName.toLowerCase();
-        Pattern pattern = Pattern.compile("[^a-zA-Z0-9]+(.*)");
-        Matcher matcher = pattern.matcher(domainName);
-
-        StringBuilder camelCaseString = new StringBuilder();
-
-        int lastIndex = 0;
-        while (matcher.find()) {
-            camelCaseString.append(domainName, lastIndex, matcher.start());
-            camelCaseString.append(Character.toUpperCase(matcher.group(1).charAt(0)));
-
-            lastIndex = matcher.end();
-        }
-
-        // Append the remaining substring
-        camelCaseString.append(domainName.substring(lastIndex));
-
-        return camelCaseString.toString();
-    }
-
     /**
      * Record the updated child entities, it will be used to send notification and store audit logs
      * @param entityVertex Child entity vertex
