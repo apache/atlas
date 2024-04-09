@@ -1025,7 +1025,7 @@ public class EntityGraphRetriever {
             if(includeClassifications){
                 ret.setClassificationNames(getAllTraitNamesFromAttribute(entityVertex));
             } else if (!includeClassifications && includeClassificationNames) {
-                ret.setClassifications(getAllClassifications(entityVertex));
+                ret.setClassificationNames(getAllTraitNamesFromAttribute(entityVertex));
             }
             ret.setIsIncomplete(isIncomplete);
             ret.setLabels(getLabels(entityVertex));
