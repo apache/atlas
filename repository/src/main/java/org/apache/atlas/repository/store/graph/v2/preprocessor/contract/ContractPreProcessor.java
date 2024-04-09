@@ -1,7 +1,6 @@
 package org.apache.atlas.repository.store.graph.v2.preprocessor.contract;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
@@ -10,7 +9,6 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasStruct;
-import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -35,7 +33,9 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
     public static final String ATTR_VERSION = "contractVersion";
     public static final String ATTR_ASSET_QUALIFIED_NAME = "contractAssetQualifiedName";
     public static final String ATTR_PARENT_GUID = "parentGuid";
-    public static final String ATTR_HAS_CONTRACT = "hasContract";
+    public static final String ASSET_ATTR_HAS_CONTRACT = "hasContract";
+    public static final String ASSET_ATTR_DESCRIPTION = "description";
+
     public static final String CONTRACT_QUALIFIED_NAME_SUFFIX = "contract";
     public static final String VERSION_PREFIX = "version";
     public static final String CONTRACT_ATTR_STATUS = "status";
@@ -69,7 +69,7 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
         String contractString = (String) entity.getAttribute(ATTR_CONTRACT);
         AtlasVertex vertex = context.getVertex(entity.getGuid());
         AtlasEntity existingContractEntity = entityRetriever.toAtlasEntity(vertex);
-
+        // TODO: Check for qualifiedName to understand if a particular version is getting updated or duplicate contract in payload
         if (!isEqualContract(contractString, (String) existingContractEntity.getAttribute(ATTR_CONTRACT))) {
             // Update the same asset(entity)
             throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Can't update a specific version of contract");
@@ -148,7 +148,7 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
             entity.setAttribute(ATTR_ASSET_QUALIFIED_NAME, associatedAsset.getEntity().getAttribute(QUALIFIED_NAME));
 
         }
-        datasetAttributeSync(associatedAsset.getEntity(), contract, entity);
+        datasetAttributeSync(context, associatedAsset.getEntity(), contract, entity);
 
     }
 
@@ -209,7 +209,7 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
 
     }
 
-    private void contractAttributeSync(AtlasEntity entity, DataContract contract) {
+    private void contractAttributeSync(AtlasEntity entity, DataContract contract) throws AtlasBaseException {
         // Sync certificateStatus
         if (!Objects.equals(entity.getAttribute(ATTR_CERTIFICATE_STATUS), contract.getStatus().name())) {
             /*
@@ -223,32 +223,38 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
 
              */
             if (Objects.equals(entity.getAttribute(ATTR_CERTIFICATE_STATUS), DataContract.STATUS.VERIFIED.name())) {
-                contract.setStatus(DataContract.STATUS.VERIFIED);
+                contract.setStatus(String.valueOf(DataContract.STATUS.VERIFIED));
             } else if (Objects.equals(contract.getStatus(), DataContract.STATUS.VERIFIED)) {
                 entity.setAttribute(ATTR_CERTIFICATE_STATUS, DataContract.STATUS.VERIFIED.name());
             } else {
                 entity.setAttribute(ATTR_CERTIFICATE_STATUS, DataContract.STATUS.DRAFT);
-                contract.setStatus(DataContract.STATUS.DRAFT);
+                contract.setStatus(String.valueOf(DataContract.STATUS.DRAFT));
             }
 
         }
 
     }
 
-    private void datasetAttributeSync(AtlasEntity associatedAsset, DataContract contract, AtlasEntity contractAsset) throws AtlasBaseException {
-        associatedAsset.setAttribute(ATTR_HAS_CONTRACT, true);
+    private void datasetAttributeSync(EntityMutationContext context, AtlasEntity associatedAsset, DataContract contract, AtlasEntity contractAsset) throws AtlasBaseException {
+        associatedAsset.setAttribute(ASSET_ATTR_HAS_CONTRACT, true);
         if (contract.getStatus() == DataContract.STATUS.VERIFIED &&
                 contractAsset.getAttribute(ATTR_CERTIFICATE_STATUS).equals(DataContract.STATUS.VERIFIED.name())) {
             DataContract.Dataset dataset = contract.dataset;
             // Will implement dataset attribute sync from the contract attributes
+            if (!dataset.description.isEmpty()) {
+            associatedAsset.setAttribute(ASSET_ATTR_DESCRIPTION, dataset.description);
+            }
         }
         try {
-            RequestContext.get().setSkipAuthorizationCheck(true);
-            EntityStream entityStream = new AtlasEntityStream(associatedAsset);
-            entityStore.createOrUpdate(entityStream, false);
-            LOG.info("Updated associated asset attributes of contract {}", associatedAsset.getAttribute(QUALIFIED_NAME));
+            AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(associatedAsset.getGuid());
+            AtlasEntityType entityType = ensureEntityType(associatedAsset.getTypeName());
+            context.addUpdated(associatedAsset.getGuid(), associatedAsset, entityType, vertex);
+//            RequestContext.get().setSkipAuthorizationCheck(true);
+//            EntityStream entityStream = new AtlasEntityStream(associatedAsset);
+//            entityStore.createOrUpdate(entityStream, false);
+//            LOG.info("Updated associated asset attributes of contract {}", associatedAsset.getAttribute(QUALIFIED_NAME));
         } finally {
-            RequestContext.get().setSkipAuthorizationCheck(false);
+//            RequestContext.get().setSkipAuthorizationCheck(false);
         }
     }
 

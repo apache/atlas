@@ -1,9 +1,7 @@
 package org.apache.atlas.repository.store.graph.v2.preprocessor.contract;
 
 import java.lang.String;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -15,28 +13,39 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.commons.lang.StringUtils;
 
-import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
-import static org.apache.atlas.AtlasErrorCode.JSON_ERROR;
+import javax.validation.*;
+import javax.validation.constraints.NotNull;
+import java.util.Set;
+
+import static org.apache.atlas.AtlasErrorCode.*;
 
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonPropertyOrder({"kind", "status", "template_version", "dataset", "columns"})
 public class DataContract {
-    @JsonProperty(required = true)
-    public String kind;
-    public STATUS status;
+    @Valid @NotNull
+    public String                               kind;
+
+    public STATUS                               status;
+
     @JsonProperty(value = "template_version", defaultValue = "0.0.1")
-    public String templateVersion;
-    public Dataset dataset;
-    public List<Column> columns;
-    private Map<String, Object> unknownFields = new HashMap<>();
+    public String                               templateVersion;
+    @Valid @NotNull
+    public Dataset                              dataset;
+    @Valid
+    public List<Column>                         columns;
+    private Map<String, Object>                 unknownFields = new HashMap<>();
     public STATUS getStatus() {
         return status;
     }
 
     @JsonSetter("status")
-    public void setStatus(STATUS status) {
-        this.status = status;
+    public void setStatus(String status) throws AtlasBaseException {
+        try {
+            this.status = STATUS.from(status);
+        } catch (IllegalArgumentException ex) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_VALUE, "status " + status + " is inappropriate. Accepted values: " + Arrays.toString(STATUS.values()));
+        }
     }
 
     @JsonAnySetter
@@ -57,7 +66,6 @@ public class DataContract {
             if(StringUtils.isEmpty(s)) {
                 return DRAFT;
             }
-
             switch (s.toLowerCase()) {
                 case "draft":
                     return DRAFT;
@@ -79,9 +87,9 @@ public class DataContract {
         this.kind = kind;
     }
 
-    public void setTemplateVersion(String templateVersion) {
+    public void setTemplateVersion(String templateVersion) throws AtlasBaseException {
         if (!isSemVer(templateVersion)) {
-            throw new IllegalArgumentException("Invalid version syntax");
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_VALUE, "Invalid template_version syntax");
         }
         this.templateVersion = templateVersion;
     }
@@ -95,8 +103,9 @@ public class DataContract {
     @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonPropertyOrder({"name", "type", "description"})
     public static final class Dataset {
+        @NotNull
         public String name;
-        @JsonProperty(required = true)
+        @NotNull
         public  DATASET_TYPE type;
         public String description;
         private Map<String, Object> unknownFields = new HashMap<>();
@@ -112,8 +121,12 @@ public class DataContract {
         }
 
         @JsonSetter("type")
-        public void setType(DATASET_TYPE type) {
-            this.type = type;
+        public void setType(String type) throws AtlasBaseException {
+            try {
+                this.type = DATASET_TYPE.from(type);
+            } catch (IllegalArgumentException | AtlasBaseException ex) {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_VALUE, "dataset.type " + type + " is inappropriate. Accepted values: " + Arrays.toString(DATASET_TYPE.values()));
+            }
         }
 
         public enum DATASET_TYPE {
@@ -131,7 +144,7 @@ public class DataContract {
                     case "materialisedview":
                         return MaterialisedView;
                     default:
-                        throw new AtlasBaseException("dataset.type value not supported yet.");
+                        throw new AtlasBaseException(String.format("dataset.type: %s value not supported yet.", s));
                 }
             }
         }
@@ -142,6 +155,7 @@ public class DataContract {
     @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonPropertyOrder({"name", "description", "data_type"})
     public static final class Column {
+        @NotNull
         public String name;
 
         public String description;
@@ -160,8 +174,6 @@ public class DataContract {
             return unknownFields;
         }
 
-
-
     }
 
     public static DataContract deserialize(String contractString) throws AtlasBaseException {
@@ -175,11 +187,26 @@ public class DataContract {
         DataContract contract;
         try {
             contract = objectMapper.readValue(contractString, DataContract.class);
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            throw new AtlasBaseException("Failed at this");
+        } catch (JsonProcessingException ex) {
+            throw new AtlasBaseException(ex.getOriginalMessage());
         }
+        contract.validate();
         return contract;
+
+    }
+
+    public void validate() throws AtlasBaseException {
+        Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
+        Set<ConstraintViolation<DataContract>> violations = validator.validate(this);
+        if (!violations.isEmpty()) {
+            List<String> errorMessageList = new ArrayList<>();
+            for (ConstraintViolation<DataContract> violation : violations) {
+                errorMessageList.add(String.format("Field: %s -> %s", violation.getPropertyPath(), violation.getMessage()));
+                System.out.println(violation.getMessage());
+            }
+            throw new AtlasBaseException(StringUtils.join(errorMessageList, "; "));
+        }
+
     }
 
     public static String serialize(DataContract contract) throws AtlasBaseException {
