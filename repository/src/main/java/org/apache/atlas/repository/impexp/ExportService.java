@@ -442,12 +442,13 @@ public class ExportService {
                 return ret;
             }
 
-            for (AtlasEntity entity : entityWithExtInfo.getReferredEntities().values()) {
-                if((doesTimestampQualify(entity))) {
-                    ret.add(entity);
+            if (entityWithExtInfo.getReferredEntities() != null) {
+                for (AtlasEntity entity : entityWithExtInfo.getReferredEntities().values()) {
+                    if((doesTimestampQualify(entity))) {
+                        ret.add(entity);
+                    }
                 }
             }
-
             return ret;
         }
 
