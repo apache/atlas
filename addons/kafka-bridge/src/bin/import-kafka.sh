@@ -62,6 +62,11 @@ if [ -z "${ATLAS_CONF_DIR}" ] && [ -e /etc/atlas/conf ];then
 fi
 ATLASCPPATH=${ATLASCPPATH}:${ATLAS_CONF_DIR}
 
+if [ -d "${ATLAS_CONF_DIR}" ] && [ -f "${ATLAS_CONF_DIR}/atlas-env.sh" ]; then
+  #source the atlas-env.sh file, use the exported argument into atlas-jvm
+  source ${ATLAS_CONF_DIR}/atlas-env.sh
+fi
+
 # log dir for applications
 ATLAS_LOG_DIR="${ATLAS_LOG_DIR:-/var/log/atlas}"
 export ATLAS_LOG_DIR
