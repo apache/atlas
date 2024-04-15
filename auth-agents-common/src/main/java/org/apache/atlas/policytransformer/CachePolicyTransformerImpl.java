@@ -285,21 +285,22 @@ public class CachePolicyTransformerImpl {
                 }
 
                 AtlasPerfMetrics.MetricRecorder recorderFilterPolicies = RequestContext.get().startMetricRecord("filterPolicies");
-                //filter out policies based on serviceName
-                List<RangerPolicy> policiesA = new ArrayList<>();
-                List<RangerPolicy> policiesB = new ArrayList<>();
-                List<RangerPolicy> policiesC = new ArrayList<>();
 
-                try {
-                    policiesA = allPolicies.stream().filter(x -> serviceName.equals(x.getService())).collect(Collectors.toList());
-                    policiesB = allPolicies.stream().filter(x -> tagServiceName.equals(x.getService())).collect(Collectors.toList());
+                //filter out policies based on serviceName
+                List<RangerPolicy> policiesA = allPolicies.stream().filter(x -> serviceName.equals(x.getService())).collect(Collectors.toList());
+                List<RangerPolicy> policiesB = allPolicies.stream().filter(x -> tagServiceName.equals(x.getService())).collect(Collectors.toList());
+
+                List<RangerPolicy> policiesC = new ArrayList<>(0);
+                if (StringUtils.isNotEmpty(abacServiceName)) {
                     policiesC = allPolicies.stream().filter(x -> abacServiceName.equals(x.getService())).collect(Collectors.toList());
-                } catch (NullPointerException exception) {
-                    //TODO: handle NPE
                 }
 
                 servicePolicies.setPolicies(policiesA);
                 servicePolicies.getTagPolicies().setPolicies(policiesB);
+
+                if (servicePolicies.getAbacPolicies() == null) {
+                    servicePolicies.setAbacPolicies(new ServicePolicies.AbacPolicies());
+                }
                 servicePolicies.getAbacPolicies().setPolicies(policiesC);
 
                 RequestContext.get().endMetricRecord(recorderFilterPolicies);

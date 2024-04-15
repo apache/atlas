@@ -23,22 +23,29 @@ import java.util.List;
 
 import static org.apache.atlas.authorizer.ABACAuthorizerUtils.POLICY_TYPE_ALLOW;
 import static org.apache.atlas.authorizer.ABACAuthorizerUtils.POLICY_TYPE_DENY;
-import static org.apache.atlas.authorizer.authorizers.AuthorizerCommon.isResourceMatch;
 
 public class EntityAuthorizer {
 
     private static final Logger LOG = LoggerFactory.getLogger(EntityAuthorizer.class);
 
     public static AtlasAccessResult isAccessAllowedInMemory(AtlasEntityHeader entity, String action) {
-        AtlasAccessResult result;
 
-        result = isAccessAllowedInMemory(entity, action, POLICY_TYPE_DENY);
-        if (result.isAllowed()) {
-            result.setAllowed(false);
-            return result;
+        AtlasAccessResult denyResult = isAccessAllowedInMemory(entity, action, POLICY_TYPE_DENY);
+        if (denyResult.isAllowed() && denyResult.getPolicyPriority() == RangerPolicy.POLICY_PRIORITY_OVERRIDE) {
+            return new AtlasAccessResult(false, denyResult.getPolicyId(), denyResult.getPolicyPriority());
         }
 
-        return isAccessAllowedInMemory(entity, action, POLICY_TYPE_ALLOW);
+        AtlasAccessResult allowResult = isAccessAllowedInMemory(entity, action, POLICY_TYPE_ALLOW);
+        if (allowResult.isAllowed() && allowResult.getPolicyPriority() == RangerPolicy.POLICY_PRIORITY_OVERRIDE) {
+            return allowResult;
+        }
+
+        if (denyResult.isAllowed() && !"-1".equals(denyResult.getPolicyId())) {
+            // explicit deny
+            return new AtlasAccessResult(false, denyResult.getPolicyId(), denyResult.getPolicyPriority());
+        } else {
+            return allowResult;
+        }
     }
 
     private static AtlasAccessResult isAccessAllowedInMemory(AtlasEntityHeader entity, String action, String policyType) {
@@ -73,8 +80,10 @@ public class EntityAuthorizer {
                 matched = validateEntityFilterCriteria(entityFilterCriteriaNode, entity, vertex);
             }
             if (matched) {
-                //LOG.info("Matched with policy {}", policy.getGuid());
-                return new AtlasAccessResult(true, policy.getGuid(), policy.getPolicyPriority());
+                result = new AtlasAccessResult(true, policy.getGuid(), policy.getPolicyPriority());
+                if (policy.getPolicyPriority() == RangerPolicy.POLICY_PRIORITY_OVERRIDE) {
+                    return result;
+                }
             }
         }
         return result;
