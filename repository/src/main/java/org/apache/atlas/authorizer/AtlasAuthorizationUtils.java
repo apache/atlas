@@ -196,14 +196,22 @@ public class AtlasAuthorizationUtils {
                 try {
                     if (!atlasPoliciesResult.isAllowed()) {
                         // 2
-                        return abacPoliciesResult.isAllowed() && abacPoliciesResult.getPolicyPriority() == RangerPolicy.POLICY_PRIORITY_OVERRIDE;
+                        if (atlasPoliciesResult.isExplicitDeny()) {
+                            return abacPoliciesResult.isAllowed() && abacPoliciesResult.getPolicyPriority() == RangerPolicy.POLICY_PRIORITY_OVERRIDE;
+                        } else {
+                            return abacPoliciesResult.isAllowed();
+                        }
                     } else {
                         if (atlasPoliciesResult.getPolicyPriority() == RangerPolicy.POLICY_PRIORITY_OVERRIDE) {
                             //3
                             return !(!abacPoliciesResult.isAllowed() && abacPoliciesResult.getPolicyPriority() == RangerPolicy.POLICY_PRIORITY_OVERRIDE);
                         } else {
                             //4
-                            return abacPoliciesResult.isAllowed();
+                            if (abacPoliciesResult.isExplicitDeny()) {
+                                return abacPoliciesResult.isAllowed();
+                            } else {
+                                return atlasPoliciesResult.isAllowed();
+                            }
                         }
                     }
                 } finally {
@@ -216,8 +224,6 @@ public class AtlasAuthorizationUtils {
         } else {
             return true;
         }
-
-
 
         return false;
     }
@@ -273,25 +279,32 @@ public class AtlasAuthorizationUtils {
                     return false;
                 }
 
-
                 metric = RequestContext.get().startMetricRecord("isAccessAllowed.abac");
                 AtlasAccessResult abacPoliciesResult = ABACAuthorizerUtils.isAccessAllowed(request.getRelationshipType(),
-                                                                                        request.getEnd1Entity(),
-                                                                                        request.getEnd2Entity(),
-                                                                                        request.getAction());
+                        request.getEnd1Entity(),
+                        request.getEnd2Entity(),
+                        request.getAction());
 
                 // reference - https://docs.google.com/spreadsheets/d/1npyX1cpm8-a8LwzmObgf8U1hZh6bO7FF8cpXjHMMQ08/edit?usp=sharing
                 try {
                     if (!atlasPoliciesResult.isAllowed()) {
                         // 2
-                        return abacPoliciesResult.isAllowed() && abacPoliciesResult.getPolicyPriority() == RangerPolicy.POLICY_PRIORITY_OVERRIDE;
+                        if (atlasPoliciesResult.isExplicitDeny()) {
+                            return abacPoliciesResult.isAllowed() && abacPoliciesResult.getPolicyPriority() == RangerPolicy.POLICY_PRIORITY_OVERRIDE;
+                        } else {
+                            return abacPoliciesResult.isAllowed();
+                        }
                     } else {
                         if (atlasPoliciesResult.getPolicyPriority() == RangerPolicy.POLICY_PRIORITY_OVERRIDE) {
                             //3
                             return !(!abacPoliciesResult.isAllowed() && abacPoliciesResult.getPolicyPriority() == RangerPolicy.POLICY_PRIORITY_OVERRIDE);
                         } else {
                             //4
-                            return abacPoliciesResult.isAllowed();
+                            if (abacPoliciesResult.isExplicitDeny()) {
+                                return abacPoliciesResult.isAllowed();
+                            } else {
+                                return atlasPoliciesResult.isAllowed();
+                            }
                         }
                     }
                 } finally {

@@ -21,7 +21,6 @@ import java.util.List;
 
 import static org.apache.atlas.authorizer.ABACAuthorizerUtils.POLICY_TYPE_ALLOW;
 import static org.apache.atlas.authorizer.ABACAuthorizerUtils.POLICY_TYPE_DENY;
-import static org.apache.atlas.authorizer.authorizers.AuthorizerCommon.isResourceMatch;
 import static org.apache.atlas.authorizer.authorizers.EntityAuthorizer.validateEntityFilterCriteria;
 
 public class RelationshipAuthorizer {
@@ -34,15 +33,22 @@ public class RelationshipAuthorizer {
     }};
 
     public static AtlasAccessResult isAccessAllowedInMemory(String action, String relationshipType, AtlasEntityHeader endOneEntity, AtlasEntityHeader endTwoEntity) throws AtlasBaseException {
-        AtlasAccessResult result;
-
-        result = checkRelationshipAccessAllowedInMemory(action, relationshipType, endOneEntity, endTwoEntity, POLICY_TYPE_DENY);
-        if (result.isAllowed()) {
-            result.setAllowed(false);
-            return result;
+        AtlasAccessResult denyResult = checkRelationshipAccessAllowedInMemory(action, relationshipType, endOneEntity, endTwoEntity, POLICY_TYPE_DENY);
+        if (denyResult.isAllowed() && denyResult.getPolicyPriority() == RangerPolicy.POLICY_PRIORITY_OVERRIDE) {
+            return new AtlasAccessResult(false, denyResult.getPolicyId(), denyResult.getPolicyPriority());
         }
 
-        return checkRelationshipAccessAllowedInMemory(action, relationshipType, endOneEntity, endTwoEntity, POLICY_TYPE_ALLOW);
+        AtlasAccessResult allowResult = checkRelationshipAccessAllowedInMemory(action, relationshipType, endOneEntity, endTwoEntity, POLICY_TYPE_ALLOW);
+        if (allowResult.isAllowed() && allowResult.getPolicyPriority() == RangerPolicy.POLICY_PRIORITY_OVERRIDE) {
+            return allowResult;
+        }
+
+        if (denyResult.isAllowed() && !"-1".equals(denyResult.getPolicyId())) {
+            // explicit deny
+            return new AtlasAccessResult(false, denyResult.getPolicyId(), denyResult.getPolicyPriority());
+        } else {
+            return allowResult;
+        }
     }
 
     private static AtlasAccessResult checkRelationshipAccessAllowedInMemory(String action, String relationshipType, AtlasEntityHeader endOneEntity,
@@ -79,10 +85,10 @@ public class RelationshipAuthorizer {
                     }
                     //ret = ret || eval;
                     if (eval) {
-                        result.setAllowed(true);
-                        result.setPolicyId(policy.getGuid());
-                        result.setPolicyPriority(policy.getPolicyPriority());
-                        break;
+                        result = new AtlasAccessResult(true, policy.getGuid(), policy.getPolicyPriority());
+                        if (policy.getPolicyPriority() == RangerPolicy.POLICY_PRIORITY_OVERRIDE) {
+                            return result;
+                        }
                     }
                 }
             }
