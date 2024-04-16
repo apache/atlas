@@ -243,7 +243,7 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
         AtlasEntity entity = new AtlasEntity(associatedAsset.getTypeName());
         entity.setGuid(associatedAsset.getGuid());
         entity.setAttribute(QUALIFIED_NAME, associatedAsset.getAttribute(QUALIFIED_NAME));
-        if (!associatedAsset.getAttribute(ASSET_ATTR_HAS_CONTRACT).equals(true)) {
+        if (associatedAsset.getAttribute(ASSET_ATTR_HAS_CONTRACT) == null || associatedAsset.getAttribute(ASSET_ATTR_HAS_CONTRACT).equals(false)) {
             entity.setAttribute(ASSET_ATTR_HAS_CONTRACT, true);
         }
         entity.setAttribute(ASSET_ATTR_CONTRACT_VERSION_QUALIFIED_NAME, contractAsset.getAttribute(QUALIFIED_NAME));
