@@ -33,6 +33,7 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
+import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
@@ -46,6 +47,7 @@ import java.util.*;
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.GraphHelper.getActiveChildrenVertices;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
+import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_RESOURCES;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 
 public class DomainPreProcessor extends AbstractDomainPreProcessor {
@@ -81,7 +83,7 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
                 processCreateDomain(entity, vertex);
                 break;
             case UPDATE:
-                processUpdateDomain(entity, vertex);
+                processUpdateDomain(entity, vertex, context);
                 break;
         }
     }
@@ -106,7 +108,7 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
         }
     }
 
-    private void processUpdateDomain(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
+    private void processUpdateDomain(AtlasEntity entity, AtlasVertex vertex, EntityMutationContext context) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processUpdateDomain");
         String domainName = (String) entity.getAttribute(NAME);
         String vertexQnName = vertex.getProperty(QUALIFIED_NAME, String.class);
@@ -143,7 +145,7 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
                 isAuthorized(currentParentDomainHeader, parentDomain);
             }
 
-            processMoveSubDomainToAnotherDomain(entity, vertex, currentParentDomainQualifiedName, newParentDomainQualifiedName, vertexQnName, superDomainQualifiedName);
+            processMoveSubDomainToAnotherDomain(entity, vertex, currentParentDomainQualifiedName, newParentDomainQualifiedName, vertexQnName, superDomainQualifiedName, context);
 
         } else {
             String vertexName = vertex.getProperty(NAME, String.class);
@@ -162,7 +164,8 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
                                                       String sourceDomainQualifiedName,
                                                       String targetDomainQualifiedName,
                                                       String currentSubDomainQualifiedName,
-                                                      String superDomainQualifiedName) throws AtlasBaseException {
+                                                      String superDomainQualifiedName,
+                                                      EntityMutationContext context) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("processMoveSubDomainToAnotherGlossary");
 
         try {
@@ -190,7 +193,7 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
                 domain.setAttribute(SUPER_DOMAIN_QN, superDomainQualifiedName);
             }
 
-            moveChildrenToAnotherDomain(domainVertex, superDomainQualifiedName, null, sourceDomainQualifiedName, targetDomainQualifiedName);
+            moveChildrenToAnotherDomain(domainVertex, superDomainQualifiedName, null, sourceDomainQualifiedName, targetDomainQualifiedName, context);
 
             LOG.info("Moved subDomain {} to Domain {}", domainName, targetDomainQualifiedName);
 
@@ -203,7 +206,8 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
                                                String superDomainQualifiedName,
                                                String parentDomainQualifiedName,
                                                String sourceDomainQualifiedName,
-                                               String targetDomainQualifiedName) throws AtlasBaseException {
+                                               String targetDomainQualifiedName,
+                                               EntityMutationContext context) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("moveChildrenToAnotherDomain");
 
 
@@ -222,6 +226,9 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
             childDomainVertex.setProperty(SUPER_DOMAIN_QN, superDomainQualifiedName);
             childDomainVertex.setProperty(PARENT_DOMAIN_QN, parentDomainQualifiedName);
 
+            //update policy
+            updatePolicy(currentDomainQualifiedName, updatedDomainQualifiedName, context);
+
             //update system properties
             GraphHelper.setModifiedByAsString(childDomainVertex, RequestContext.get().getUser());
             GraphHelper.setModifiedTime(childDomainVertex, System.currentTimeMillis());
@@ -231,7 +238,7 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
 
             while (products.hasNext()) {
                 AtlasVertex productVertex = products.next();
-                moveChildDataProductToAnotherDomain(productVertex, superDomainQualifiedName, updatedDomainQualifiedName, sourceDomainQualifiedName, targetDomainQualifiedName);
+                moveChildDataProductToAnotherDomain(productVertex, superDomainQualifiedName, updatedDomainQualifiedName, sourceDomainQualifiedName, targetDomainQualifiedName, context);
             }
 
             // Get all children domains of current domain
@@ -239,7 +246,7 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
 
             while (childDomains.hasNext()) {
                 AtlasVertex childVertex = childDomains.next();
-                moveChildrenToAnotherDomain(childVertex, superDomainQualifiedName, updatedDomainQualifiedName, sourceDomainQualifiedName, targetDomainQualifiedName);
+                moveChildrenToAnotherDomain(childVertex, superDomainQualifiedName, updatedDomainQualifiedName, sourceDomainQualifiedName, targetDomainQualifiedName, context);
             }
 
             recordUpdatedChildEntities(childDomainVertex, updatedAttributes);
@@ -254,7 +261,8 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
                                                      String superDomainQualifiedName,
                                                      String parentDomainQualifiedName,
                                                      String sourceDomainQualifiedName,
-                                                     String targetDomainQualifiedName) throws AtlasBaseException {
+                                                     String targetDomainQualifiedName,
+                                                     EntityMutationContext context) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("moveChildDataProductToAnotherDomain");
 
         try {
@@ -262,14 +270,17 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
             LOG.info("Moving dataProduct {} to Domain {}", productName, targetDomainQualifiedName);
             Map<String, Object> updatedAttributes = new HashMap<>();
 
-            String currentDomainQualifiedName = productVertex.getProperty(PARENT_DOMAIN_QN, String.class);
-            String updatedQualifiedName = currentDomainQualifiedName.replace(sourceDomainQualifiedName, targetDomainQualifiedName);
+            String currentQualifiedName = productVertex.getProperty(PARENT_DOMAIN_QN, String.class);
+            String updatedQualifiedName = currentQualifiedName.replace(sourceDomainQualifiedName, targetDomainQualifiedName);
 
             productVertex.setProperty(QUALIFIED_NAME, updatedQualifiedName);
             updatedAttributes.put(QUALIFIED_NAME, updatedQualifiedName);
 
             productVertex.setProperty(PARENT_DOMAIN_QN, parentDomainQualifiedName);
             productVertex.setProperty(SUPER_DOMAIN_QN, superDomainQualifiedName);
+
+            //update policy
+            updatePolicy(currentQualifiedName, updatedQualifiedName, context);
 
             //update system properties
             GraphHelper.setModifiedByAsString(productVertex, RequestContext.get().getUser());
@@ -280,6 +291,59 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
             LOG.info("Moved dataProduct {} to Domain {}", productName, targetDomainQualifiedName);
         } finally {
             RequestContext.get().endMetricRecord(recorder);
+        }
+    }
+
+    private void updatePolicy(String currentQualifiedName, String updatedQualifiedName, EntityMutationContext context) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("updateDomainPolicy");
+        try {
+            LOG.info("Updating policy for entity {}", currentQualifiedName);
+            Map<String, Object> updatedpolicyResources = new HashMap<>();
+
+            String currentResource = "entity:"+ currentQualifiedName;
+            String updatedResource = "entity:"+ updatedQualifiedName;
+
+            updatedpolicyResources.put(currentResource, updatedResource);
+
+            List<AtlasEntityHeader> policies = getPolicy(currentResource);
+            if (CollectionUtils.isNotEmpty(policies)) {
+                AtlasEntityType entityType = typeRegistry.getEntityTypeByName(POLICY_ENTITY_TYPE);
+                for (AtlasEntityHeader policy : policies) {
+                    AtlasEntity policyEntity = entityRetriever.toAtlasEntity(policy.getGuid());
+                    List<String> policyResources = (List<String>) policyEntity.getAttribute(ATTR_POLICY_RESOURCES);
+                    policyResources.remove(currentResource);
+                    policyResources.add(updatedResource);
+                    AtlasVertex policyVertex = context.getVertex(policy.getGuid());
+                    policyVertex.removeProperty(ATTR_POLICY_RESOURCES);
+                    policyEntity.setAttribute(ATTR_POLICY_RESOURCES, policyResources);
+                    context.addUpdated(policyEntity.getGuid(), policyEntity, entityType, policyVertex);
+                }
+            }
+
+        }finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
+        }
+
+    }
+
+    private List<AtlasEntityHeader> getPolicy(String resource) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getPolicy");
+        try {
+            List mustClauseList = new ArrayList();
+            mustClauseList.add(mapOf("term", mapOf("__typeName.keyword", POLICY_ENTITY_TYPE)));
+            mustClauseList.add(mapOf("term", mapOf("__state", "ACTIVE")));
+            mustClauseList.add(mapOf("term", mapOf("policyResources", Arrays.asList(resource))));
+
+            Map<String, Object> bool = new HashMap<>();
+            bool.put("must", mustClauseList);
+
+            Map<String, Object> dsl = mapOf("query", mapOf("bool", bool));
+
+            List<AtlasEntityHeader> policies = indexSearchPaginated(dsl);
+
+            return policies;
+        } finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
         }
     }
 
@@ -348,7 +412,7 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
         }
 
         if (exists) {
-            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, domainName);
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, domainName+" already exists");
         }
     }
 }
