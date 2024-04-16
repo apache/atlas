@@ -99,8 +99,7 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
 
         String contractString = (String) entity.getAttribute(ATTR_CONTRACT);
         DataContract contract = DataContract.deserialize(contractString);
-        DataContract.Dataset dataset = contract.dataset;
-        AtlasEntityWithExtInfo associatedAsset = getAssociatedAsset(contractQName, dataset.type.name());
+        AtlasEntityWithExtInfo associatedAsset = getAssociatedAsset(contractQName, contract.type.name());
 
         authorizeContractCreateOrUpdate(entity, associatedAsset);
 
@@ -250,7 +249,6 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
         entity.setAttribute(ASSET_ATTR_CONTRACT_VERSION_QUALIFIED_NAME, contractAsset.getAttribute(QUALIFIED_NAME));
         if (contract.getStatus() == DataContract.STATUS.VERIFIED &&
                 contractAsset.getAttribute(ATTR_CERTIFICATE_STATUS).equals(DataContract.STATUS.VERIFIED.name())) {
-            DataContract.Dataset dataset = contract.dataset;
             // Will implement dataset attribute sync from the contract attributes
             // if (!dataset.description.isEmpty()) {
             // associatedAsset.setAttribute(ASSET_ATTR_DESCRIPTION, dataset.description);

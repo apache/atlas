@@ -21,7 +21,7 @@ import static org.apache.atlas.AtlasErrorCode.*;
 
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-@JsonPropertyOrder({"kind", "status", "template_version", "dataset", "columns"})
+@JsonPropertyOrder({"kind", "status", "template_version", "dataset", "type", "columns"})
 public class DataContract {
     @Valid @NotNull
     public String                               kind;
@@ -31,10 +31,41 @@ public class DataContract {
     @JsonProperty(value = "template_version", defaultValue = "0.0.1")
     public String                               templateVersion;
     @Valid @NotNull
-    public Dataset                              dataset;
+    public String                              dataset;
+    @Valid @NotNull
+    public DATASET_TYPE                        type;
     @Valid
     public List<Column>                         columns;
     private Map<String, Object>                 unknownFields = new HashMap<>();
+
+    @JsonSetter("type")
+    public void setType(String type) throws AtlasBaseException {
+        try {
+            this.type = DATASET_TYPE.from(type);
+        } catch (IllegalArgumentException | AtlasBaseException ex) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_VALUE, "type " + type + " is inappropriate. Accepted values: " + Arrays.toString(DATASET_TYPE.values()));
+        }
+    }
+
+    public enum DATASET_TYPE {
+        @JsonProperty("Table") Table,
+        @JsonProperty("View") View,
+        @JsonProperty("MaterialisedView") MaterialisedView;
+
+        public static DATASET_TYPE from(String s) throws AtlasBaseException {
+
+            switch (s.toLowerCase()) {
+                case "table":
+                    return Table;
+                case "view":
+                    return View;
+                case "materialisedview":
+                    return MaterialisedView;
+                default:
+                    throw new AtlasBaseException(String.format("dataset.type: %s value not supported yet.", s));
+            }
+        }
+    }
     public STATUS getStatus() {
         return status;
     }
@@ -98,58 +129,6 @@ public class DataContract {
         Pattern versionPattern = Pattern.compile("^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$");
         Matcher matcher = versionPattern.matcher(version);
         return matcher.matches();
-    }
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    @JsonPropertyOrder({"name", "type", "description"})
-    public static final class Dataset {
-        @NotNull
-        public String name;
-        @NotNull
-        public  DATASET_TYPE type;
-        public String description;
-        private Map<String, Object> unknownFields = new HashMap<>();
-
-        @JsonAnySetter
-        public void setUnknownFields(String key, Object value) {
-            unknownFields.put(key, value);
-        }
-
-        @JsonAnyGetter
-        public Map<String, Object> getUnknownFields() {
-            return unknownFields;
-        }
-
-        @JsonSetter("type")
-        public void setType(String type) throws AtlasBaseException {
-            try {
-                this.type = DATASET_TYPE.from(type);
-            } catch (IllegalArgumentException | AtlasBaseException ex) {
-                throw new AtlasBaseException(AtlasErrorCode.INVALID_VALUE, "dataset.type " + type + " is inappropriate. Accepted values: " + Arrays.toString(DATASET_TYPE.values()));
-            }
-        }
-
-        public enum DATASET_TYPE {
-            @JsonProperty("Table") Table,
-            @JsonProperty("View") View,
-            @JsonProperty("MaterialisedView") MaterialisedView;
-
-            public static DATASET_TYPE from(String s) throws AtlasBaseException {
-
-                switch (s.toLowerCase()) {
-                    case "table":
-                        return Table;
-                    case "view":
-                        return View;
-                    case "materialisedview":
-                        return MaterialisedView;
-                    default:
-                        throw new AtlasBaseException(String.format("dataset.type: %s value not supported yet.", s));
-                }
-            }
-        }
-
-
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
