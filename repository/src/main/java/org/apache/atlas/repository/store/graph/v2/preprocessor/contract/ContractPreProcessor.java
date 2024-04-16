@@ -34,6 +34,8 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
     public static final String ATTR_ASSET_QUALIFIED_NAME = "contractAssetQualifiedName";
     public static final String ATTR_PARENT_GUID = "parentGuid";
     public static final String ASSET_ATTR_HAS_CONTRACT = "hasContract";
+    public static final String ASSET_ATTR_CONTRACT_VERSION_QUALIFIED_NAME = "latestContractQualifiedName";
+
     public static final String ASSET_ATTR_DESCRIPTION = "description";
 
     public static final String CONTRACT_QUALIFIED_NAME_SUFFIX = "contract";
@@ -41,12 +43,14 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
     public static final String CONTRACT_ATTR_STATUS = "status";
     private final AtlasEntityStore entityStore;
     private final EntityGraphMapper entityGraphMapper;
+    private boolean storeDifferentialAudits;
 
 
     public ContractPreProcessor(AtlasGraph graph, AtlasTypeRegistry typeRegistry,
-                                EntityGraphRetriever entityRetriever, AtlasEntityStore entityStore, EntityGraphMapper entityGraphMapper) {
+                                EntityGraphRetriever entityRetriever, AtlasEntityStore entityStore, EntityGraphMapper entityGraphMapper, boolean storeDifferentialAudits) {
 
         super(graph, typeRegistry, entityRetriever);
+        this.storeDifferentialAudits = storeDifferentialAudits;
         this.entityStore = entityStore;
         this.entityGraphMapper = entityGraphMapper;
     }
@@ -236,19 +240,37 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
     }
 
     private void datasetAttributeSync(EntityMutationContext context, AtlasEntity associatedAsset, DataContract contract, AtlasEntity contractAsset) throws AtlasBaseException {
-        associatedAsset.setAttribute(ASSET_ATTR_HAS_CONTRACT, true);
+        // Creating new empty AtlasEntity to update with selective attributes only
+        AtlasEntity entity = new AtlasEntity(associatedAsset.getTypeName());
+        entity.setGuid(associatedAsset.getGuid());
+        entity.setAttribute(QUALIFIED_NAME, associatedAsset.getAttribute(QUALIFIED_NAME));
+        if (!associatedAsset.getAttribute(ASSET_ATTR_HAS_CONTRACT).equals(true)) {
+            entity.setAttribute(ASSET_ATTR_HAS_CONTRACT, true);
+        }
+        entity.setAttribute(ASSET_ATTR_CONTRACT_VERSION_QUALIFIED_NAME, contractAsset.getAttribute(QUALIFIED_NAME));
         if (contract.getStatus() == DataContract.STATUS.VERIFIED &&
                 contractAsset.getAttribute(ATTR_CERTIFICATE_STATUS).equals(DataContract.STATUS.VERIFIED.name())) {
             DataContract.Dataset dataset = contract.dataset;
             // Will implement dataset attribute sync from the contract attributes
-            if (!dataset.description.isEmpty()) {
-            associatedAsset.setAttribute(ASSET_ATTR_DESCRIPTION, dataset.description);
-            }
+            // if (!dataset.description.isEmpty()) {
+            // associatedAsset.setAttribute(ASSET_ATTR_DESCRIPTION, dataset.description);
+            // }
         }
         try {
-            AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(associatedAsset.getGuid());
-            AtlasEntityType entityType = ensureEntityType(associatedAsset.getTypeName());
-            context.addUpdated(associatedAsset.getGuid(), associatedAsset, entityType, vertex);
+            AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(entity.getGuid());
+            AtlasEntityType entityType = ensureEntityType(entity.getTypeName());
+            AtlasEntityComparator entityComparator = new AtlasEntityComparator(typeRegistry, entityRetriever, context.getGuidAssignments(), true, true);
+            AtlasEntityComparator.AtlasEntityDiffResult diffResult   = entityComparator.getDiffResult(entity, vertex, !storeDifferentialAudits);
+            RequestContext        reqContext           = RequestContext.get();
+
+            if (diffResult.hasDifference()) {
+                context.addUpdated(entity.getGuid(), entity, entityType, vertex);
+                if (storeDifferentialAudits) {
+                    diffResult.getDiffEntity().setGuid(entity.getGuid());
+                    reqContext.cacheDifferentialEntity(diffResult.getDiffEntity());
+                }
+            }
+
 //            RequestContext.get().setSkipAuthorizationCheck(true);
 //            EntityStream entityStream = new AtlasEntityStream(associatedAsset);
 //            entityStore.createOrUpdate(entityStream, false);
