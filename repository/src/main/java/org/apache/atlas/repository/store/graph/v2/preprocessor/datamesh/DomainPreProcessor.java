@@ -332,7 +332,7 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
             List mustClauseList = new ArrayList();
             mustClauseList.add(mapOf("term", mapOf("__typeName.keyword", POLICY_ENTITY_TYPE)));
             mustClauseList.add(mapOf("term", mapOf("__state", "ACTIVE")));
-            mustClauseList.add(mapOf("term", mapOf("policyResources", Arrays.asList(resource))));
+            mustClauseList.add(mapOf("terms", mapOf("policyResources", Arrays.asList(resource))));
 
             Map<String, Object> bool = new HashMap<>();
             bool.put("must", mustClauseList);
