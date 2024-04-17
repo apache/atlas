@@ -339,7 +339,7 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
 
             Map<String, Object> dsl = mapOf("query", mapOf("bool", bool));
 
-            List<AtlasEntityHeader> policies = indexSearchPaginated(dsl);
+            List<AtlasEntityHeader> policies = indexSearchPaginated(dsl, POLICY_ENTITY_TYPE);
 
             return policies;
         } finally {
@@ -396,7 +396,7 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
 
             Map<String, Object> dsl = mapOf("query", mapOf("bool", bool));
 
-            List<AtlasEntityHeader> domains = indexSearchPaginated(dsl);
+            List<AtlasEntityHeader> domains = indexSearchPaginated(dsl, DATA_DOMAIN_ENTITY_TYPE);
 
             if (CollectionUtils.isNotEmpty(domains)) {
                 for (AtlasEntityHeader domain : domains) {
