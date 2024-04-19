@@ -378,7 +378,6 @@ public final class Constants {
 
     public static final String CATALOG_PROCESS_INPUT_RELATIONSHIP_LABEL = "__Process.inputs";
     public static final String CATALOG_PROCESS_OUTPUT_RELATIONSHIP_LABEL = "__Process.outputs";
-    public static final String COLUMN_LINEAGE_RELATIONSHIP_LABEL = "__Process.columnProcesses";
     public static final String CLASSIFICATION_PROPAGATION_MODE_DEFAULT  ="DEFAULT";
     public static final String CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE  ="RESTRICT_LINEAGE";
 
@@ -388,14 +387,12 @@ public final class Constants {
     public static final HashMap<String, ArrayList<String>> CLASSIFICATION_PROPAGATION_MODE_LABELS_MAP = new HashMap<String, ArrayList<String>>(){{
         put(CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE, new ArrayList<>(
                 Arrays.asList(CATALOG_PROCESS_INPUT_RELATIONSHIP_LABEL,
-                CATALOG_PROCESS_OUTPUT_RELATIONSHIP_LABEL,
-                COLUMN_LINEAGE_RELATIONSHIP_LABEL
+                CATALOG_PROCESS_OUTPUT_RELATIONSHIP_LABEL
         )));
         put(CLASSIFICATION_PROPAGATION_MODE_DEFAULT, null);
         put(CLASSIFICATION_PROPAGATION_MODE_RESTRICT_HIERARCHY, new ArrayList<>(
                 Arrays.asList(CATALOG_PROCESS_INPUT_RELATIONSHIP_LABEL,
-                        CATALOG_PROCESS_OUTPUT_RELATIONSHIP_LABEL,
-                        COLUMN_LINEAGE_RELATIONSHIP_LABEL
+                        CATALOG_PROCESS_OUTPUT_RELATIONSHIP_LABEL
                 )));
     }};
 
