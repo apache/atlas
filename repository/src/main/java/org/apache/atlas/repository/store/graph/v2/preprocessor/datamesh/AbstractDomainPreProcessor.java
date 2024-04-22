@@ -149,7 +149,7 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
                     LOG.info("Policy resources {}", policyResources);
                     policyResources.remove(currentResource);
                     policyResources.add(updatedResource);
-                    AtlasVertex policyVertex = context.getVertex(policy.getGuid());
+                    AtlasVertex policyVertex = entityRetriever.getEntityVertex(policy.getGuid());
                     LOG.info("Policy Vertex {}", policyVertex);
                     LOG.info("Context {}", context);
                     policyVertex.removeProperty(ATTR_POLICY_RESOURCES);
