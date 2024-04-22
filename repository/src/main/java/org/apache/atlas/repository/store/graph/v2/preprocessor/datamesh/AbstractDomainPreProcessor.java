@@ -30,6 +30,7 @@ import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
+import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.AbstractGlossaryPreProcessor;
 import org.apache.atlas.type.AtlasEntityType;
@@ -42,14 +43,12 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 
 import static org.apache.atlas.repository.Constants.*;
-import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.PARENT_DOMAIN_QN;
-import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.SUPER_DOMAIN_QN;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_CATEGORY;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_RESOURCES;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 
 public abstract class AbstractDomainPreProcessor implements PreProcessor {
-    private static final Logger LOG = LoggerFactory.getLogger(AbstractGlossaryPreProcessor.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractDomainPreProcessor.class);
 
 
     protected final AtlasTypeRegistry typeRegistry;
@@ -127,6 +126,63 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
 
         AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_DELETE, targetDomain),
                 "delete on target Domain: ", targetDomain.getAttribute(NAME));
+    }
+
+    protected void updatePolicy(String currentQualifiedName, String updatedQualifiedName, EntityMutationContext context) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("updateDomainPolicy");
+        try {
+            LOG.info("Updating policy for entity {}", currentQualifiedName);
+            Map<String, Object> updatedpolicyResources = new HashMap<>();
+
+            String currentResource = "entity:"+ currentQualifiedName;
+            String updatedResource = "entity:"+ updatedQualifiedName;
+
+            updatedpolicyResources.put(currentResource, updatedResource);
+
+            List<AtlasEntityHeader> policies = getPolicy(currentResource);
+            if (CollectionUtils.isNotEmpty(policies)) {
+                AtlasEntityType entityType = typeRegistry.getEntityTypeByName(POLICY_ENTITY_TYPE);
+                for (AtlasEntityHeader policy : policies) {
+                    LOG.info("Updating policy {} for entity {}", policy.getGuid(), currentQualifiedName);
+                    AtlasEntity policyEntity = entityRetriever.toAtlasEntity(policy.getGuid());
+                    List<String> policyResources = (List<String>) policyEntity.getAttribute(ATTR_POLICY_RESOURCES);
+                    LOG.info("Policy resources {}", policyResources);
+                    policyResources.remove(currentResource);
+                    policyResources.add(updatedResource);
+                    AtlasVertex policyVertex = context.getVertex(policy.getGuid());
+                    LOG.info("Policy Vertex {}", policyVertex);
+                    LOG.info("Context {}", context);
+                    policyVertex.removeProperty(ATTR_POLICY_RESOURCES);
+                    policyEntity.setAttribute(ATTR_POLICY_RESOURCES, policyResources);
+                    context.addUpdated(policyEntity.getGuid(), policyEntity, entityType, policyVertex);
+                }
+            }
+
+        }finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
+        }
+
+    }
+
+    protected List<AtlasEntityHeader> getPolicy(String resource) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getPolicy");
+        try {
+            List mustClauseList = new ArrayList();
+            mustClauseList.add(mapOf("term", mapOf("__typeName.keyword", POLICY_ENTITY_TYPE)));
+            mustClauseList.add(mapOf("term", mapOf("__state", "ACTIVE")));
+            mustClauseList.add(mapOf("terms", mapOf("policyResources", Arrays.asList(resource))));
+
+            Map<String, Object> bool = new HashMap<>();
+            bool.put("must", mustClauseList);
+
+            Map<String, Object> dsl = mapOf("query", mapOf("bool", bool));
+
+            List<AtlasEntityHeader> policies = indexSearchPaginated(dsl, POLICY_ENTITY_TYPE);
+
+            return policies;
+        } finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
+        }
     }
 
     /**
