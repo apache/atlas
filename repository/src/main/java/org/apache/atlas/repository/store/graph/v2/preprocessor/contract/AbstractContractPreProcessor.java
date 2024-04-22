@@ -55,22 +55,6 @@ public abstract class AbstractContractPreProcessor implements PreProcessor {
     }
 
 
-    void authorizeContractDelete(AtlasVertex contractVertex, String typeName) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("authorizeContractDelete");
-
-        try {
-            AtlasEntity contractEntity = entityRetriever.toAtlasEntity(contractVertex);
-            String contractQName = contractEntity.getAttribute(QUALIFIED_NAME).toString();
-            AtlasEntity.AtlasEntityWithExtInfo assetEntity = getAssociatedAsset(contractQName, typeName);
-            AtlasEntityHeader entityHeader = new AtlasEntityHeader(assetEntity.getEntity());
-
-            verifyAssetAccess(entityHeader, AtlasPrivilege.ENTITY_UPDATE, contractEntity, AtlasPrivilege.ENTITY_DELETE);
-        } finally {
-            RequestContext.get().endMetricRecord(recorder);
-        }
-    }
-
-
     private void verifyAssetAccess(AtlasEntityHeader asset, AtlasPrivilege assetPrivilege,
                                    AtlasEntity contract, AtlasPrivilege contractPrivilege) throws AtlasBaseException {
         verifyAccess(asset, assetPrivilege);

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
@@ -26,33 +27,36 @@ import java.util.*;
 import static org.apache.atlas.AtlasErrorCode.*;
 import static org.apache.atlas.repository.Constants.ATTR_CERTIFICATE_STATUS;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
+import static org.apache.atlas.type.AtlasTypeUtil.getAtlasObjectId;
 
 public class ContractPreProcessor extends AbstractContractPreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(ContractPreProcessor.class);
-    public static final String ATTR_CONTRACT = "contract";
-    public static final String ATTR_VERSION = "contractVersion";
-    public static final String ATTR_ASSET_QUALIFIED_NAME = "contractAssetQualifiedName";
-    public static final String ATTR_PARENT_GUID = "parentGuid";
+    public static final String ATTR_CONTRACT = "dataContractJson";
+    public static final String ATTR_VERSION = "dataContractVersion";
+    public static final String REL_ATTR_GOVERNED_ASSET = "dataContractGovernedAsset";
+    public static final String REL_ATTR_LATEST_CONTRACT = "dataContractLatest";
+    public static final String REL_ATTR_GOVERNED_ASSET_CERTIFIED = "dataContractGovernedAssetCertified";
+    public static final String REL_ATTR_PREVIOUS_VERSION = "dataContractPreviousVersion";
     public static final String ASSET_ATTR_HAS_CONTRACT = "hasContract";
-    public static final String ASSET_ATTR_CONTRACT_VERSION_QUALIFIED_NAME = "latestContractQualifiedName";
-
     public static final String ASSET_ATTR_DESCRIPTION = "description";
 
     public static final String CONTRACT_QUALIFIED_NAME_SUFFIX = "contract";
     public static final String VERSION_PREFIX = "version";
     public static final String CONTRACT_ATTR_STATUS = "status";
     private final AtlasEntityStore entityStore;
-    private final EntityGraphMapper entityGraphMapper;
-    private boolean storeDifferentialAudits;
+    private final boolean storeDifferentialAudits;
+    private EntityDiscoveryService discovery;
+
 
 
     public ContractPreProcessor(AtlasGraph graph, AtlasTypeRegistry typeRegistry,
-                                EntityGraphRetriever entityRetriever, AtlasEntityStore entityStore, EntityGraphMapper entityGraphMapper, boolean storeDifferentialAudits) {
+                                EntityGraphRetriever entityRetriever, AtlasEntityStore entityStore,
+                                boolean storeDifferentialAudits, EntityDiscoveryService discovery) {
 
         super(graph, typeRegistry, entityRetriever);
         this.storeDifferentialAudits = storeDifferentialAudits;
         this.entityStore = entityStore;
-        this.entityGraphMapper = entityGraphMapper;
+        this.discovery = discovery;
     }
 
     @Override
@@ -107,50 +111,38 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
         contractString = DataContract.serialize(contract);
         entity.setAttribute(ATTR_CONTRACT, contractString);
 
-
-        ContractVersionUtils versionUtil = new ContractVersionUtils(entity, context, entityRetriever, typeRegistry, entityStore, graph);
-        AtlasEntity latestExistingVersion = versionUtil.getLatestVersion();
-
-        if (latestExistingVersion != null) {
+        ContractVersionUtils versionUtil = new ContractVersionUtils(entity, context, entityRetriever, typeRegistry, entityStore, graph, discovery);
+        AtlasEntity currentVersionEntity = versionUtil.getCurrentVersion();
+        String latestVersion =  "V1";
+        if (currentVersionEntity != null) {
             // Contract already exist
-            String qName = (String) latestExistingVersion.getAttribute(QUALIFIED_NAME);
-            Integer latestVersionNumber = Integer.valueOf(qName.substring(qName.lastIndexOf("/V") + 2));
-            List<String> attributes = getDiffAttributes(context, entity, latestExistingVersion);
+            String qName = (String) currentVersionEntity.getAttribute(QUALIFIED_NAME);
+            Integer currentVersionNumber = Integer.valueOf(qName.substring(qName.lastIndexOf("/V") + 2));
+            List<String> attributes = getDiffAttributes(context, entity, currentVersionEntity);
             if (attributes.isEmpty()) {
+                // No changes in the contract, Not creating new version
                 removeCreatingVertex(context, entity);
                 return;
+            } else if (isEqualContract(contractString, (String) currentVersionEntity.getAttribute(ATTR_CONTRACT))) {
+                // No change in contract, metadata changed
+                updateExistingVersion(context, entity, currentVersionEntity);
+                return;
+            } else {
+                // contract changed (metadata might/not changed). Create new version.
+                latestVersion =  String.format("V%s", currentVersionNumber + 1);
+
+                // Attach previous version via rel
+                entity.setRelationshipAttribute(REL_ATTR_PREVIOUS_VERSION, getAtlasObjectId(currentVersionEntity));
+                AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(currentVersionEntity.getGuid());
+                AtlasEntityType entityType = ensureEntityType(currentVersionEntity.getTypeName());
+                context.addUpdated(currentVersionEntity.getGuid(), currentVersionEntity, entityType, vertex);
+
             }
-
-            if (attributes.size() == 1 && attributes.contains(ATTR_CERTIFICATE_STATUS)) {
-                if (Objects.equals(entity.getAttribute(ATTR_CERTIFICATE_STATUS).toString(), DataContract.STATUS.VERIFIED.name())) {
-                    //update existing entity
-                    updateExistingVersion(context, entity, latestExistingVersion);
-                }
-                // Contract status changed, either to draft or verified
-
-            } else if (attributes.contains(ATTR_CONTRACT)) {
-                //Contract is changed
-                if (isEqualContract(contractString, (String) latestExistingVersion.getAttribute(ATTR_CONTRACT))) {
-                    // Update the same asset(entity)
-                    updateExistingVersion(context, entity, latestExistingVersion);
-
-                } else {
-                    // Create New version of entity
-                    entity.setAttribute(QUALIFIED_NAME, String.format("%s/%s/V%s", contractQName, VERSION_PREFIX, ++latestVersionNumber));
-                    entity.setAttribute(ATTR_VERSION, String.format("V%s", latestVersionNumber));
-                    entity.setAttribute(ATTR_ASSET_QUALIFIED_NAME, associatedAsset.getEntity().getAttribute(QUALIFIED_NAME));
-                    entity.setAttribute(ATTR_PARENT_GUID, latestExistingVersion.getGuid());
-
-                }
-            }
-
-        } else {
-            // Create new contract
-            entity.setAttribute(QUALIFIED_NAME, String.format("%s/%s/%s", contractQName, VERSION_PREFIX, "V1"));
-            entity.setAttribute(ATTR_VERSION, "V1");
-            entity.setAttribute(ATTR_ASSET_QUALIFIED_NAME, associatedAsset.getEntity().getAttribute(QUALIFIED_NAME));
-
         }
+        entity.setAttribute(QUALIFIED_NAME, String.format("%s/%s/%s", contractQName, VERSION_PREFIX, latestVersion));
+        entity.setAttribute(ATTR_VERSION, latestVersion);
+        entity.setRelationshipAttribute(REL_ATTR_GOVERNED_ASSET, getAtlasObjectId(associatedAsset.getEntity()));
+
         datasetAttributeSync(context, associatedAsset.getEntity(), contract, entity);
 
     }
@@ -186,10 +178,10 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
 
     }
 
-    private void updateExistingVersion(EntityMutationContext context, AtlasEntity entity, AtlasEntity latestExistingVersion) throws AtlasBaseException {
+    private void updateExistingVersion(EntityMutationContext context, AtlasEntity entity, AtlasEntity currentVersionEntity) throws AtlasBaseException {
         removeCreatingVertex(context, entity);
-        entity.setAttribute(QUALIFIED_NAME, latestExistingVersion.getAttribute(QUALIFIED_NAME));
-        entity.setGuid(latestExistingVersion.getGuid());
+        entity.setAttribute(QUALIFIED_NAME, currentVersionEntity.getAttribute(QUALIFIED_NAME));
+        entity.setGuid(currentVersionEntity.getGuid());
 
         AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(entity.getGuid());
 
@@ -246,35 +238,18 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
         if (associatedAsset.getAttribute(ASSET_ATTR_HAS_CONTRACT) == null || associatedAsset.getAttribute(ASSET_ATTR_HAS_CONTRACT).equals(false)) {
             entity.setAttribute(ASSET_ATTR_HAS_CONTRACT, true);
         }
-        entity.setAttribute(ASSET_ATTR_CONTRACT_VERSION_QUALIFIED_NAME, contractAsset.getAttribute(QUALIFIED_NAME));
-        if (contract.getStatus() == DataContract.STATUS.VERIFIED &&
-                contractAsset.getAttribute(ATTR_CERTIFICATE_STATUS).equals(DataContract.STATUS.VERIFIED.name())) {
-            // Will implement dataset attribute sync from the contract attributes
-            // if (!dataset.description.isEmpty()) {
-            // associatedAsset.setAttribute(ASSET_ATTR_DESCRIPTION, dataset.description);
-            // }
-        }
-        try {
-            AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(entity.getGuid());
-            AtlasEntityType entityType = ensureEntityType(entity.getTypeName());
-            AtlasEntityComparator entityComparator = new AtlasEntityComparator(typeRegistry, entityRetriever, context.getGuidAssignments(), true, true);
-            AtlasEntityComparator.AtlasEntityDiffResult diffResult   = entityComparator.getDiffResult(entity, vertex, !storeDifferentialAudits);
-            RequestContext        reqContext           = RequestContext.get();
+        AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(entity.getGuid());
+        AtlasEntityType entityType = ensureEntityType(entity.getTypeName());
+        AtlasEntityComparator entityComparator = new AtlasEntityComparator(typeRegistry, entityRetriever, context.getGuidAssignments(), true, true);
+        AtlasEntityComparator.AtlasEntityDiffResult diffResult   = entityComparator.getDiffResult(entity, vertex, !storeDifferentialAudits);
+        RequestContext        reqContext           = RequestContext.get();
+        context.addUpdated(entity.getGuid(), entity, entityType, vertex);
 
-            if (diffResult.hasDifference()) {
-                context.addUpdated(entity.getGuid(), entity, entityType, vertex);
-                if (storeDifferentialAudits) {
-                    diffResult.getDiffEntity().setGuid(entity.getGuid());
-                    reqContext.cacheDifferentialEntity(diffResult.getDiffEntity());
-                }
+        if (diffResult.hasDifference()) {
+            if (storeDifferentialAudits) {
+                diffResult.getDiffEntity().setGuid(entity.getGuid());
+                reqContext.cacheDifferentialEntity(diffResult.getDiffEntity());
             }
-
-//            RequestContext.get().setSkipAuthorizationCheck(true);
-//            EntityStream entityStream = new AtlasEntityStream(associatedAsset);
-//            entityStore.createOrUpdate(entityStream, false);
-//            LOG.info("Updated associated asset attributes of contract {}", associatedAsset.getAttribute(QUALIFIED_NAME));
-        } finally {
-//            RequestContext.get().setSkipAuthorizationCheck(false);
         }
     }
 
