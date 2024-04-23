@@ -21,7 +21,8 @@ import static org.apache.atlas.AtlasErrorCode.*;
 
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-@JsonPropertyOrder({"kind", "status", "template_version", "dataset", "type", "columns"})
+@JsonPropertyOrder({"kind", "status", "template_version", "datasource", "dataset", "type", "description", "owners",
+        "tags", "certificate", "columns"})
 public class DataContract {
     @Valid @NotNull
     public String                               kind;
@@ -31,12 +32,18 @@ public class DataContract {
     @JsonProperty(value = "template_version", defaultValue = "0.0.1")
     public String                               templateVersion;
     @Valid @NotNull
+    public String                              datasource;
+    @Valid @NotNull
     public String                              dataset;
     @Valid @NotNull
     public DATASET_TYPE                        type;
+    public String                              description;
+    public List<String>                        owners;
+    public List<BusinessTag>                   tags;
+    public String                              certificate;
     @Valid
-    public List<Column>                         columns;
-    private Map<String, Object>                 unknownFields = new HashMap<>();
+    public List<Column>                        columns;
+    private Map<String, Object>                unknownFields = new HashMap<>();
 
     @JsonSetter("type")
     public void setType(String type) throws AtlasBaseException {
@@ -131,6 +138,23 @@ public class DataContract {
         return matcher.matches();
     }
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    @JsonPropertyOrder({"name"})
+    public static final class BusinessTag {
+        @NotNull
+        public String name;
+        private Map<String, Object> unknownFields = new HashMap<>();
+
+        @JsonAnySetter
+        public void setUnknownFields(String key, Object value) {
+            unknownFields.put(key, value);
+        }
+        @JsonAnyGetter
+        public Map<String, Object> getUnknownFields() {
+            return unknownFields;
+        }
+
+    }
     @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonPropertyOrder({"name", "description", "data_type"})
     public static final class Column {

@@ -70,15 +70,15 @@ public class ContractVersionUtils {
         if (this.versionList == null) {
             extractAllVersions();
         }
+        if (this.versionList == null) {
+            return null;
+        }
         Collections.sort(this.versionList, (e1, e2) -> {
             String e1QName = (String) e1.getAttribute(QUALIFIED_NAME);
             String e2QName = (String) e2.getAttribute(QUALIFIED_NAME);
 
             return e2QName.compareTo(e1QName);
         });
-        if (this.versionList.isEmpty()) {
-            return null;
-        }
         return new AtlasEntity(this.versionList.get(0));
     }
 }

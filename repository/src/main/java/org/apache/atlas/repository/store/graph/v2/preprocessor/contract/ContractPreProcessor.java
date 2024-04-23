@@ -33,9 +33,8 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(ContractPreProcessor.class);
     public static final String ATTR_CONTRACT = "dataContractJson";
     public static final String ATTR_VERSION = "dataContractVersion";
-    public static final String REL_ATTR_GOVERNED_ASSET = "dataContractGovernedAsset";
-    public static final String REL_ATTR_LATEST_CONTRACT = "dataContractLatest";
-    public static final String REL_ATTR_GOVERNED_ASSET_CERTIFIED = "dataContractGovernedAssetCertified";
+    public static final String REL_ATTR_GOVERNED_ASSET = "dataContractAsset";
+    public static final String REL_ATTR_GOVERNED_ASSET_CERTIFIED = "dataContractAssetCertified";
     public static final String REL_ATTR_PREVIOUS_VERSION = "dataContractPreviousVersion";
     public static final String ASSET_ATTR_HAS_CONTRACT = "hasContract";
     public static final String ASSET_ATTR_DESCRIPTION = "description";
@@ -113,11 +112,11 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
 
         ContractVersionUtils versionUtil = new ContractVersionUtils(entity, context, entityRetriever, typeRegistry, entityStore, graph, discovery);
         AtlasEntity currentVersionEntity = versionUtil.getCurrentVersion();
-        String latestVersion =  "V1";
+        int newVersionNumber =  1;
         if (currentVersionEntity != null) {
             // Contract already exist
             String qName = (String) currentVersionEntity.getAttribute(QUALIFIED_NAME);
-            Integer currentVersionNumber = Integer.valueOf(qName.substring(qName.lastIndexOf("/V") + 2));
+            int currentVersionNumber = Integer.parseInt(qName.substring(qName.lastIndexOf("/V") + 2));
             List<String> attributes = getDiffAttributes(context, entity, currentVersionEntity);
             if (attributes.isEmpty()) {
                 // No changes in the contract, Not creating new version
@@ -129,7 +128,7 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
                 return;
             } else {
                 // contract changed (metadata might/not changed). Create new version.
-                latestVersion =  String.format("V%s", currentVersionNumber + 1);
+                newVersionNumber =  currentVersionNumber + 1;
 
                 // Attach previous version via rel
                 entity.setRelationshipAttribute(REL_ATTR_PREVIOUS_VERSION, getAtlasObjectId(currentVersionEntity));
@@ -139,9 +138,12 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
 
             }
         }
-        entity.setAttribute(QUALIFIED_NAME, String.format("%s/%s/%s", contractQName, VERSION_PREFIX, latestVersion));
-        entity.setAttribute(ATTR_VERSION, latestVersion);
+        entity.setAttribute(QUALIFIED_NAME, String.format("%s/%s/V%s", contractQName, VERSION_PREFIX, newVersionNumber));
+        entity.setAttribute(ATTR_VERSION, newVersionNumber);
         entity.setRelationshipAttribute(REL_ATTR_GOVERNED_ASSET, getAtlasObjectId(associatedAsset.getEntity()));
+        if (Objects.equals(entity.getAttribute(ATTR_CERTIFICATE_STATUS), DataContract.STATUS.VERIFIED.name()) ) {
+            entity.setRelationshipAttribute(REL_ATTR_GOVERNED_ASSET_CERTIFIED, getAtlasObjectId(associatedAsset.getEntity()));
+        }
 
         datasetAttributeSync(context, associatedAsset.getEntity(), contract, entity);
 
