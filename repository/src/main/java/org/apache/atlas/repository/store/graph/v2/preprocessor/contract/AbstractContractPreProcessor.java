@@ -70,8 +70,7 @@ public abstract class AbstractContractPreProcessor implements PreProcessor {
         AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, privilege, entityHeader), errorMessage);
     }
 
-    AtlasEntity.AtlasEntityWithExtInfo getAssociatedAsset(String contractQName, String typeName) throws AtlasBaseException {
-        String datasetQName = contractQName.substring(0, contractQName.lastIndexOf('/'));
+    AtlasEntity.AtlasEntityWithExtInfo getAssociatedAsset(String datasetQName, String typeName) throws AtlasBaseException {
 
         Map<String, Object> uniqAttributes = new HashMap<>();
         uniqAttributes.put(QUALIFIED_NAME, datasetQName);

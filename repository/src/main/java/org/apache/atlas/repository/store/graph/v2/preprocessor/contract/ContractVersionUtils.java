@@ -23,14 +23,13 @@ public class ContractVersionUtils {
     public final EntityGraphRetriever entityRetriever;
     private final AtlasTypeRegistry atlasTypeRegistry;
     private AtlasEntityStore entityStore;
-
-    private AtlasEntity entity;
+    private String contractQName;
 
     public final AtlasGraph graph;
     private List<AtlasEntityHeader> versionList;
     private EntityDiscoveryService discovery;
 
-    public ContractVersionUtils(AtlasEntity entity, EntityMutationContext context, EntityGraphRetriever entityRetriever,
+    public ContractVersionUtils(String contractQName, EntityMutationContext context, EntityGraphRetriever entityRetriever,
                                 AtlasTypeRegistry atlasTypeRegistry, AtlasEntityStore entityStore, AtlasGraph graph,
                                 EntityDiscoveryService discovery) {
         this.context = context;
@@ -38,13 +37,11 @@ public class ContractVersionUtils {
         this.atlasTypeRegistry = atlasTypeRegistry;
         this.graph = graph;
         this.entityStore = entityStore;
-        this.entity = entity;
+        this.contractQName = contractQName;
         this.discovery = discovery;
     }
 
     private void extractAllVersions() throws AtlasBaseException {
-        String contractQName = (String) entity.getAttribute(QUALIFIED_NAME);
-        String datasetQName = contractQName.substring(0, contractQName.lastIndexOf("/contract"));
         List<AtlasEntityHeader> ret = new ArrayList<>();
 
         IndexSearchParams indexSearchParams = new IndexSearchParams();
@@ -52,11 +49,14 @@ public class ContractVersionUtils {
 
         List mustClauseList = new ArrayList();
         mustClauseList.add(mapOf("term", mapOf("__typeName.keyword", CONTRACT_ENTITY_TYPE)));
-        mustClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, String.format("%s/contract/version/*", datasetQName))));
+        mustClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, String.format("%s/*", contractQName))));
 
         dsl.put("query", mapOf("bool", mapOf("must", mustClauseList)));
+        Set<String> attributes = new HashSet<>();
+        attributes.add(ATTR_CONTRACT);
 
         indexSearchParams.setDsl(dsl);
+        indexSearchParams.setAttributes(attributes);
         indexSearchParams.setSuppressLogs(true);
 
         AtlasSearchResult result = discovery.directIndexSearch(indexSearchParams);
