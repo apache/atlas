@@ -34,8 +34,8 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(ContractPreProcessor.class);
     public static final String ATTR_VERSION = "dataContractVersion";
     public static final String ATTR_ASSET_GUID = "dataContractAssetGuid";
-    public static final String REL_ATTR_GOVERNED_ASSET = "dataContractAssetLatest";
-    public static final String REL_ATTR_GOVERNED_ASSET_CERTIFIED = "dataContractAssetCertified";
+    public static final String REL_ATTR_LATEST_CONTRACT = "dataContractLatest";
+    public static final String REL_ATTR_GOVERNED_ASSET_CERTIFIED = "dataContractLatestCertified";
     public static final String REL_ATTR_PREVIOUS_VERSION = "dataContractPreviousVersion";
     public static final String ASSET_ATTR_HAS_CONTRACT = "hasContract";
     public static final String ASSET_ATTR_DESCRIPTION = "description";
@@ -144,10 +144,6 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
         entity.setAttribute(QUALIFIED_NAME, String.format("%s/V%s", contractQName, newVersionNumber));
         entity.setAttribute(ATTR_VERSION, newVersionNumber);
         entity.setAttribute(ATTR_ASSET_GUID, associatedAsset.getEntity().getGuid());
-        entity.setRelationshipAttribute(REL_ATTR_GOVERNED_ASSET, getAtlasObjectId(associatedAsset.getEntity()));
-        if (Objects.equals(entity.getAttribute(ATTR_CERTIFICATE_STATUS), DataContract.STATUS.VERIFIED.name()) ) {
-            entity.setRelationshipAttribute(REL_ATTR_GOVERNED_ASSET_CERTIFIED, getAtlasObjectId(associatedAsset.getEntity()));
-        }
 
         datasetAttributeSync(context, associatedAsset.getEntity(), contract, entity);
 
@@ -244,6 +240,13 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
         if (associatedAsset.getAttribute(ASSET_ATTR_HAS_CONTRACT) == null || associatedAsset.getAttribute(ASSET_ATTR_HAS_CONTRACT).equals(false)) {
             entity.setAttribute(ASSET_ATTR_HAS_CONTRACT, true);
         }
+
+        // Update relationship with contract
+        entity.setRelationshipAttribute(REL_ATTR_LATEST_CONTRACT, getAtlasObjectId(contractAsset));
+        if (Objects.equals(contractAsset.getAttribute(ATTR_CERTIFICATE_STATUS), DataContract.STATUS.VERIFIED.name()) ) {
+            entity.setRelationshipAttribute(REL_ATTR_GOVERNED_ASSET_CERTIFIED, getAtlasObjectId(contractAsset));
+        }
+
         AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(entity.getGuid());
         AtlasEntityType entityType = ensureEntityType(entity.getTypeName());
         AtlasEntityComparator entityComparator = new AtlasEntityComparator(typeRegistry, entityRetriever, context.getGuidAssignments(), true, true);
