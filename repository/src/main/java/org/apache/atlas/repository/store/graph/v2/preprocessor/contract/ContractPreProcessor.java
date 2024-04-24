@@ -33,7 +33,8 @@ import static org.apache.atlas.type.AtlasTypeUtil.getAtlasObjectId;
 public class ContractPreProcessor extends AbstractContractPreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(ContractPreProcessor.class);
     public static final String ATTR_VERSION = "dataContractVersion";
-    public static final String REL_ATTR_GOVERNED_ASSET = "dataContractAsset";
+    public static final String ATTR_ASSET_GUID = "dataContractAssetGuid";
+    public static final String REL_ATTR_GOVERNED_ASSET = "dataContractAssetLatest";
     public static final String REL_ATTR_GOVERNED_ASSET_CERTIFIED = "dataContractAssetCertified";
     public static final String REL_ATTR_PREVIOUS_VERSION = "dataContractPreviousVersion";
     public static final String ASSET_ATTR_HAS_CONTRACT = "hasContract";
@@ -127,7 +128,7 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
             } else if (isEqualContract(contractString, (String) currentVersionEntity.getAttribute(ATTR_CONTRACT))) {
                 // No change in contract, metadata changed
                 updateExistingVersion(context, entity, currentVersionEntity);
-                return;
+                newVersionNumber = currentVersionNumber;
             } else {
                 // contract changed (metadata might/not changed). Create new version.
                 newVersionNumber =  currentVersionNumber + 1;
@@ -142,6 +143,7 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
         }
         entity.setAttribute(QUALIFIED_NAME, String.format("%s/V%s", contractQName, newVersionNumber));
         entity.setAttribute(ATTR_VERSION, newVersionNumber);
+        entity.setAttribute(ATTR_ASSET_GUID, associatedAsset.getEntity().getGuid());
         entity.setRelationshipAttribute(REL_ATTR_GOVERNED_ASSET, getAtlasObjectId(associatedAsset.getEntity()));
         if (Objects.equals(entity.getAttribute(ATTR_CERTIFICATE_STATUS), DataContract.STATUS.VERIFIED.name()) ) {
             entity.setRelationshipAttribute(REL_ATTR_GOVERNED_ASSET_CERTIFIED, getAtlasObjectId(associatedAsset.getEntity()));
