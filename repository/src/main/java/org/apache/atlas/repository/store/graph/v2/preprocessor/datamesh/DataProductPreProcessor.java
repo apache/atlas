@@ -72,7 +72,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
     }
 
     private static String createQualifiedName(String parentDomainQualifiedName) throws AtlasBaseException {
-        if (StringUtils.isNotEmpty(parentDomainQualifiedName)) {
+        if (StringUtils.isEmpty(parentDomainQualifiedName)) {
             throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Parent Domain Qualified Name cannot be empty or null");
         }
         return parentDomainQualifiedName + "/product/" + getUUID();
