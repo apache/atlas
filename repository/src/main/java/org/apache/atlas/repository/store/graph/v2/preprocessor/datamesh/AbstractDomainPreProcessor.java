@@ -143,18 +143,22 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
             if (CollectionUtils.isNotEmpty(policies)) {
                 AtlasEntityType entityType = typeRegistry.getEntityTypeByName(POLICY_ENTITY_TYPE);
                 for (AtlasEntityHeader policy : policies) {
-                    LOG.info("Updating policy {} for entity {}", policy.getGuid(), currentQualifiedName);
-                    AtlasEntity policyEntity = entityRetriever.toAtlasEntity(policy.getGuid());
-                    List<String> policyResources = (List<String>) policyEntity.getAttribute(ATTR_POLICY_RESOURCES);
-                    LOG.info("Policy resources {}", policyResources);
+                    AtlasVertex policyVertex = entityRetriever.getEntityVertex(policy.getGuid());
+
+                    AtlasEntity policyEntity = entityRetriever.toAtlasEntity(policyVertex);
+                    LOG.info("Policy entity guid {} and policy header guid {}", policyEntity.getGuid(), policy.getGuid());
+
+                    List<String> policyResources = (List<String>) policyVertex.getProperty(ATTR_POLICY_RESOURCES, List.class);
                     policyResources.remove(currentResource);
                     policyResources.add(updatedResource);
-                    AtlasVertex policyVertex = entityRetriever.getEntityVertex(policy.getGuid());
-                    LOG.info("Policy Vertex {}", policyVertex);
-                    LOG.info("Context {}", context);
+                    LOG.info("Policy resources after update {}", policyResources);
+
+
                     policyVertex.removeProperty(ATTR_POLICY_RESOURCES);
                     policyEntity.setAttribute(ATTR_POLICY_RESOURCES, policyResources);
+
                     context.addUpdated(policyEntity.getGuid(), policyEntity, entityType, policyVertex);
+                    LOG.info("Context {}", context);
                 }
             }
 
@@ -167,7 +171,7 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
     protected List<AtlasEntityHeader> getPolicy(String resource) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getPolicy");
         try {
-            List mustClauseList = new ArrayList();
+            List<Map<String, Object>> mustClauseList = new ArrayList<>();
             mustClauseList.add(mapOf("term", mapOf("__typeName.keyword", POLICY_ENTITY_TYPE)));
             mustClauseList.add(mapOf("term", mapOf("__state", "ACTIVE")));
             mustClauseList.add(mapOf("terms", mapOf("policyResources", Arrays.asList(resource))));

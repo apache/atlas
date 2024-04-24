@@ -25,7 +25,7 @@ import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcess
 import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 
 public class DataProductPreProcessor extends AbstractDomainPreProcessor {
-    private static final Logger LOG = LoggerFactory.getLogger(DomainPreProcessor.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DataProductPreProcessor.class);
     private AtlasEntityHeader parentDomain;
     private EntityMutationContext context;
     public DataProductPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever,
@@ -209,7 +209,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
 
         boolean exists = false;
         try {
-            List mustClauseList = new ArrayList();
+            List<Map<String, Object>> mustClauseList = new ArrayList();
             mustClauseList.add(mapOf("term", mapOf("__typeName.keyword", DATA_PRODUCT_ENTITY_TYPE)));
             mustClauseList.add(mapOf("term", mapOf("__state", "ACTIVE")));
             mustClauseList.add(mapOf("term", mapOf("name.keyword", productName)));
@@ -219,7 +219,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
             if (parentDomain != null) {
                 mustClauseList.add(mapOf("term", mapOf("parentDomainQualifiedName", parentDomainQualifiedName)));
             } else {
-                List mustNotClauseList = new ArrayList();
+                List<Map<String, Object>> mustNotClauseList = new ArrayList();
                 mustNotClauseList.add(mapOf("exists", mapOf("field", "parentDomainQualifiedName")));
                 bool.put("must_not", mustNotClauseList);
             }
