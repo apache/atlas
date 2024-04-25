@@ -158,8 +158,8 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
                         LOG.info("CurrentResource {} not found in the policy resources. Skipping update.", currentResource);
                     }
 
-                    policyVertex.removeProperty(ATTR_POLICY_RESOURCES);
                     if(AtlasGraphUtilsV2.getState(policyVertex) == AtlasEntity.Status.ACTIVE){
+                        policyVertex.removeProperty(ATTR_POLICY_RESOURCES);
                         policyEntity.setAttribute(ATTR_POLICY_RESOURCES, policyResources);
                         context.addUpdated(policyEntity.getGuid(), policyEntity, entityType, policyVertex);
                     }
