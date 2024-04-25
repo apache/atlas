@@ -653,7 +653,7 @@ public class EntityLineageService implements AtlasLineageService {
     }
 
     private boolean isEntityTraversalLimitReached(AtomicInteger entitiesTraversed) {
-        return entitiesTraversed.get() == getLineageMaxNodeAllowedCount();
+        return entitiesTraversed.get() >= getLineageMaxNodeAllowedCount();
     }
 
     @Override
