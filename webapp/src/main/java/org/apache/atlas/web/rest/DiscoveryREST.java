@@ -94,6 +94,7 @@ public class DiscoveryREST {
 
     private static final String INDEXSEARCH_TAG_NAME = "indexsearch";
     private static final Set<String> TRACKING_UTM_TAGS = new HashSet<>(Arrays.asList("ui_main_list", "ui_popup_searchbar"));
+    private static final String UTM_TAG_FROM_PRODUCT = "project_webapp";
 
     @Inject
     public DiscoveryREST(AtlasTypeRegistry typeRegistry, AtlasDiscoveryService discoveryService,
@@ -433,7 +434,7 @@ public class DiscoveryREST {
             }
             throw abe;
         } finally {
-            if(CollectionUtils.isNotEmpty(parameters.getUtmTags())) {
+            if(CollectionUtils.isNotEmpty(parameters.getUtmTags()) && parameters.getUtmTags().contains(UTM_TAG_FROM_PRODUCT)) {
                 AtlasPerfMetrics.Metric indexsearchMetric = new AtlasPerfMetrics.Metric(INDEXSEARCH_TAG_NAME);
                 indexsearchMetric.addTag("utmTag", "other");
                 for (String utmTag : parameters.getUtmTags()) {
