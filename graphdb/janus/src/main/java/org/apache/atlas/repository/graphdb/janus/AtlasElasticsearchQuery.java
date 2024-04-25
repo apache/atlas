@@ -172,10 +172,15 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
 
     private DirectIndexQueryResult performAsyncDirectIndexQuery(SearchParams searchParams) throws AtlasBaseException, IOException {
         DirectIndexQueryResult result = null;
+        boolean contextIdExists = StringUtils.isNotEmpty(searchParams.getSearchContextId()) && searchParams.getSearchContextSequenceNo() != null;
         try {
-            if(StringUtils.isNotEmpty(searchParams.getSearchContextId()) && searchParams.getSearchContextSequenceNo() != null) {
+            if(contextIdExists) {
                 // If the search context id and greater sequence no is present, then we need to delete the previous search context async
-                processRequestWithSameSearchContextId(searchParams);
+                try {
+                    processRequestWithSameSearchContextId(searchParams);
+                } catch (Exception e) {
+                    LOG.error("Failed to process the request with the same search context ID {}", e.getMessage());
+                }
             }
             AsyncQueryResult response = submitAsyncSearch(searchParams, false).get();
 
@@ -189,8 +194,12 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
                 String esSearchId = response.getId();
                 String searchContextId = searchParams.getSearchContextId();
                 Integer searchContextSequenceNo = searchParams.getSearchContextSequenceNo();
-                if (StringUtils.isNotEmpty(searchContextId) && searchContextSequenceNo != null) {
-                    SearchContextCache.put(searchContextId, searchContextSequenceNo, esSearchId);
+                if (contextIdExists) {
+                    try {
+                        SearchContextCache.put(searchContextId, searchContextSequenceNo, esSearchId);
+                    } catch (Exception e) {
+                        LOG.error("Failed to update the search context cache {}", e.getMessage());
+                    }
                 }
                 response = getAsyncSearchResponse(searchParams, esSearchId).get();
                 if (response ==  null) {
@@ -204,6 +213,15 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         }catch (Exception e) {
             LOG.error("Failed to execute direct query on ES {}", e.getMessage());
             throw new AtlasBaseException(AtlasErrorCode.INDEX_SEARCH_FAILED, e.getMessage());
+        } finally {
+            if (contextIdExists) {
+                // If the search context id is present, then we need to remove the search context from the cache
+                try {
+                    SearchContextCache.remove(searchParams.getSearchContextId());
+                } catch (Exception e) {
+                    LOG.error("Failed to remove the search context from the cache {}", e.getMessage());
+                }
+            }
         }
         return result;
     }
@@ -228,7 +246,6 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
             LOG.debug("Deleting the previous async search response with ID {}", previousESSearchId);
             // If the search ID exists, then we need to delete the search context
             deleteAsyncSearchResponse(previousESSearchId);
-            SearchContextCache.remove(currentSearchContextId);
         }
     }
 
