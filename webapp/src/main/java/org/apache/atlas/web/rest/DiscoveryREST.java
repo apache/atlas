@@ -434,14 +434,18 @@ public class DiscoveryREST {
             }
             throw abe;
         } finally {
-            if(CollectionUtils.isNotEmpty(parameters.getUtmTags()) && parameters.getUtmTags().contains(UTM_TAG_FROM_PRODUCT)) {
+            if(CollectionUtils.isNotEmpty(parameters.getUtmTags())) {
                 AtlasPerfMetrics.Metric indexsearchMetric = new AtlasPerfMetrics.Metric(INDEXSEARCH_TAG_NAME);
                 indexsearchMetric.addTag("utmTag", "other");
+                indexsearchMetric.addTag("source", "other");
                 for (String utmTag : parameters.getUtmTags()) {
                     if (TRACKING_UTM_TAGS.contains(utmTag)) {
                         indexsearchMetric.addTag("utmTag", utmTag);
                         break;
                     }
+                }
+                if (parameters.getUtmTags().contains(UTM_TAG_FROM_PRODUCT)) {
+                    indexsearchMetric.addTag("source", UTM_TAG_FROM_PRODUCT);
                 }
                 indexsearchMetric.addTag("name", INDEXSEARCH_TAG_NAME);
                 indexsearchMetric.setTotalTimeMSecs(System.currentTimeMillis() - startTime);
