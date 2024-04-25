@@ -122,7 +122,7 @@ public abstract class AbstractRedisService implements RedisService {
         Config config = initAtlasConfig();
         config.useSentinelServers()
                 .setClientName(ATLAS_METASTORE_SERVICE)
-                .setReadMode(ReadMode.MASTER)
+                .setReadMode(ReadMode.MASTER_SLAVE)
                 .setCheckSentinelsList(false)
                 .setKeepAlive(true)
                 .setMasterConnectionMinimumIdleSize(10)
