@@ -480,7 +480,19 @@
       "actions": ["add-relationship", "update-relationship", "remove-relationship"]
     }
   ],
-
+  "persona-domain-business-update-metadata": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "resources": [
+        "entity:{entity}",
+        "entity-type:DataDomain",
+        "entity-classification:*",
+        "entity-business-metadata:*"
+      ],
+      "actions": ["entity-update-business-metadata"]
+    }
+  ],
 
   "persona-domain-sub-domain-read": [
     {
@@ -587,6 +599,19 @@
         "entity-classification:*"
       ],
       "actions": ["entity-delete"]
+    }
+  ],
+  "persona-domain-sub-domain-business-update-metadata": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "resources": [
+        "entity:{entity}/*domain/*",
+        "entity-type:DataDomain",
+        "entity-classification:*",
+        "entity-business-metadata:*"
+      ],
+      "actions": ["entity-update-business-metadata"]
     }
   ],
 
@@ -719,8 +744,19 @@
       "actions": ["entity-delete"]
     }
   ],
-
-
+  "persona-domain-product-business-update-metadata": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "resources": [
+        "entity:{entity}/*product/*",
+        "entity-type:DataProduct",
+        "entity-classification:*",
+        "entity-business-metadata:*"
+      ],
+      "actions": ["entity-update-business-metadata"]
+    }
+  ],
 
   "select": [
     {
