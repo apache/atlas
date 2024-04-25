@@ -29,6 +29,7 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
@@ -146,19 +147,22 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
                     AtlasVertex policyVertex = entityRetriever.getEntityVertex(policy.getGuid());
 
                     AtlasEntity policyEntity = entityRetriever.toAtlasEntity(policyVertex);
-                    LOG.info("Policy entity guid {} and policy header guid {}", policyEntity.getGuid(), policy.getGuid());
 
                     List<String> policyResources = (List<String>) policyEntity.getAttribute(ATTR_POLICY_RESOURCES);
-                    LOG.info("Policy resources before update {}", policyResources);
-                    policyResources.remove(currentResource);
-                    LOG.info("Policy resources after removing oldQN {}", policyResources);
-                    policyResources.add(updatedResource);
-                    LOG.info("Policy resources after update {}", policyResources);
+                    // Check if currentResource exists in the list before removing it
+                    if (policyResources.contains(currentResource)) {
+                        policyResources.remove(currentResource);
+                        policyResources.add(updatedResource);
+                        LOG.info("Policy resources after updating QN: {}", policyResources);
+                    } else {
+                        LOG.info("CurrentResource {} not found in the policy resources. Skipping update.", currentResource);
+                    }
 
                     policyVertex.removeProperty(ATTR_POLICY_RESOURCES);
-                    policyEntity.setAttribute(ATTR_POLICY_RESOURCES, policyResources);
-
-                    context.addUpdated(policyEntity.getGuid(), policyEntity, entityType, policyVertex);
+                    if(AtlasGraphUtilsV2.getState(policyVertex) == AtlasEntity.Status.ACTIVE){
+                        policyEntity.setAttribute(ATTR_POLICY_RESOURCES, policyResources);
+                        context.addUpdated(policyEntity.getGuid(), policyEntity, entityType, policyVertex);
+                    }
                 }
             }
 
