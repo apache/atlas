@@ -159,7 +159,6 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
                     policyEntity.setAttribute(ATTR_POLICY_RESOURCES, policyResources);
 
                     context.addUpdated(policyEntity.getGuid(), policyEntity, entityType, policyVertex);
-                    LOG.info("Context {}", context);
                 }
             }
 
