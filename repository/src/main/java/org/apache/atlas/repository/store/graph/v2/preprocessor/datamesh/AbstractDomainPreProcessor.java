@@ -152,6 +152,7 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
                     if (policyEntity.hasRelationshipAttribute("accessControl")) {
                         AtlasVertex accessControl = entityRetriever.getEntityVertex(((AtlasObjectId) policyEntity.getRelationshipAttribute("accessControl")).getGuid());
                         context.getDiscoveryContext().addResolvedGuid(GraphHelper.getGuid(accessControl), accessControl);
+                        LOG.info("Resolved accessControl vertex: {}", accessControl);
                     }
 
                     List<String> policyResources = (List<String>) policyEntity.getAttribute(ATTR_POLICY_RESOURCES);
