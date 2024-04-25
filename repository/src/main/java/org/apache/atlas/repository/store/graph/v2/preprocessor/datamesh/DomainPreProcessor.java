@@ -265,7 +265,7 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
             LOG.info("Moving dataProduct {} to Domain {}", productName, targetDomainQualifiedName);
             Map<String, Object> updatedAttributes = new HashMap<>();
 
-            String currentQualifiedName = productVertex.getProperty(PARENT_DOMAIN_QN, String.class);
+            String currentQualifiedName = productVertex.getProperty(QUALIFIED_NAME, String.class);
             String updatedQualifiedName = currentQualifiedName.replace(sourceDomainQualifiedName, targetDomainQualifiedName);
 
             productVertex.setProperty(QUALIFIED_NAME, updatedQualifiedName);
