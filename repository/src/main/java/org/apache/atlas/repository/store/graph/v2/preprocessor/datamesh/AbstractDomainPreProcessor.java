@@ -149,7 +149,9 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
                     LOG.info("Policy entity guid {} and policy header guid {}", policyEntity.getGuid(), policy.getGuid());
 
                     List<String> policyResources = (List<String>) policyEntity.getAttribute(ATTR_POLICY_RESOURCES);
+                    LOG.info("Policy resources before update {}", policyResources);
                     policyResources.remove(currentResource);
+                    LOG.info("Policy resources after removing oldQN {}", policyResources);
                     policyResources.add(updatedResource);
                     LOG.info("Policy resources after update {}", policyResources);
 
