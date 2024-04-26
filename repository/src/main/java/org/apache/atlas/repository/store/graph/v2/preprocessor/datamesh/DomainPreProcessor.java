@@ -33,7 +33,6 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
-import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
@@ -176,6 +175,7 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
 
             // Move Sub-Domain as root Domain
             if(targetDomainQualifiedName.isEmpty()){
+                LOG.info("Moving subDomain {} as root Domain", domainName);
                 targetDomainQualifiedName = "default";
                 updatedQualifiedName = currentSubDomainQualifiedName.replace(sourceDomainQualifiedName, targetDomainQualifiedName);
                 domain.setAttribute(QUALIFIED_NAME, updatedQualifiedName);

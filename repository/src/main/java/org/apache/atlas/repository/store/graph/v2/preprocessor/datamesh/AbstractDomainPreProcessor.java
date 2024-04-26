@@ -31,7 +31,6 @@ import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
@@ -152,10 +151,10 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
                     if (policyEntity.hasRelationshipAttribute("accessControl")) {
                         AtlasVertex accessControl = entityRetriever.getEntityVertex(((AtlasObjectId) policyEntity.getRelationshipAttribute("accessControl")).getGuid());
                         context.getDiscoveryContext().addResolvedGuid(GraphHelper.getGuid(accessControl), accessControl);
-                        LOG.info("Resolved accessControl vertex: {}", accessControl);
                     }
 
                     List<String> policyResources = (List<String>) policyEntity.getAttribute(ATTR_POLICY_RESOURCES);
+
                     // Check if currentResource exists in the list before removing it
                     if (policyResources.contains(currentResource)) {
                         policyResources.remove(currentResource);

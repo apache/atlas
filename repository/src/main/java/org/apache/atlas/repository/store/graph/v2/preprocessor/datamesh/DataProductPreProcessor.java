@@ -9,7 +9,6 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
-import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
@@ -131,11 +130,11 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("processMoveDataProductToAnotherDomain");
 
         try {
-            String domainName = (String) product.getAttribute(NAME);
+            String productName = (String) product.getAttribute(NAME);
 
-            LOG.info("Moving dataProduct {} to Domain {}", domainName, targetDomainQualifiedName);
+            LOG.info("Moving dataProduct {} to Domain {}", productName, targetDomainQualifiedName);
 
-            productExists(domainName, targetDomainQualifiedName);
+            productExists(productName, targetDomainQualifiedName);
 
             String updatedQualifiedName = currentDataProductQualifiedName.replace(sourceDomainQualifiedName, targetDomainQualifiedName);
 
@@ -146,7 +145,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
             //Update policy
             updatePolicy(currentDataProductQualifiedName, updatedQualifiedName, context);
 
-            LOG.info("Moved dataProduct {} to Domain {}", domainName, targetDomainQualifiedName);
+            LOG.info("Moved dataProduct {} to Domain {}", productName, targetDomainQualifiedName);
 
         } finally {
             RequestContext.get().endMetricRecord(recorder);
