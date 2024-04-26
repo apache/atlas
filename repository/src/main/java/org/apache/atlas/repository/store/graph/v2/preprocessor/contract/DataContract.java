@@ -21,7 +21,7 @@ import static org.apache.atlas.AtlasErrorCode.*;
 
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-@JsonPropertyOrder({"kind", "status", "template_version", "datasource", "dataset", "type", "description", "owners",
+@JsonPropertyOrder({"kind", "status", "template_version", "data_source", "dataset", "type", "description", "owners",
         "tags", "certificate", "columns"})
 public class DataContract {
     @Valid @NotNull
@@ -32,7 +32,7 @@ public class DataContract {
     @JsonProperty(value = "template_version", defaultValue = "0.0.1")
     public String                               templateVersion;
     @Valid @NotNull
-    public String                              datasource;
+    public String                              data_source;
     @Valid @NotNull
     public String                              dataset;
     @Valid @NotNull

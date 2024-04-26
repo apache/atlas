@@ -54,6 +54,7 @@ public class ContractVersionUtils {
         dsl.put("query", mapOf("bool", mapOf("must", mustClauseList)));
         Set<String> attributes = new HashSet<>();
         attributes.add(ATTR_CONTRACT);
+        attributes.add(ATTR_CERTIFICATE_STATUS);
 
         indexSearchParams.setDsl(dsl);
         indexSearchParams.setAttributes(attributes);
