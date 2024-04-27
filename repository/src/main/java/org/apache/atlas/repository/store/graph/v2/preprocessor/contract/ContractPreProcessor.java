@@ -77,12 +77,10 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
         String contractString = (String) entity.getAttribute(ATTR_CONTRACT);
         AtlasVertex vertex = context.getVertex(entity.getGuid());
         AtlasEntity existingContractEntity = entityRetriever.toAtlasEntity(vertex);
-        // TODO: Check for qualifiedName to understand if a particular version is getting updated or duplicate contract in payload
         if (!isEqualContract(contractString, (String) existingContractEntity.getAttribute(ATTR_CONTRACT))) {
             // Update the same asset(entity)
             throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Can't update a specific version of contract");
         }
-        // Add cases for update in status field and certificateStatus
     }
     private void processCreateContract(AtlasEntity entity, EntityMutationContext context) throws AtlasBaseException {
         /*
@@ -104,8 +102,8 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
         String contractString = (String) entity.getAttribute(ATTR_CONTRACT);
         DataContract contract = DataContract.deserialize(contractString);
         String datasetQName = contractQName.substring(0, contractQName.lastIndexOf('/'));
-        contractQName = String.format("%s/%s/%s", datasetQName, contract.type.name(), CONTRACT_QUALIFIED_NAME_SUFFIX);
-        AtlasEntityWithExtInfo associatedAsset = getAssociatedAsset(datasetQName, contract.type.name());
+        contractQName = String.format("%s/%s/%s", datasetQName, contract.getType().name(), CONTRACT_QUALIFIED_NAME_SUFFIX);
+        AtlasEntityWithExtInfo associatedAsset = getAssociatedAsset(datasetQName, contract.getType().name());
 
         authorizeContractCreateOrUpdate(entity, associatedAsset);
 
@@ -219,13 +217,13 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
                VERIFIED                 -            stat -> VERIFIED  >
 
              */
-            if (Objects.equals(entity.getAttribute(ATTR_CERTIFICATE_STATUS), DataContract.STATUS.VERIFIED.name())) {
-                contract.setStatus(String.valueOf(DataContract.STATUS.VERIFIED));
-            } else if (Objects.equals(contract.getStatus(), DataContract.STATUS.VERIFIED)) {
-                entity.setAttribute(ATTR_CERTIFICATE_STATUS, DataContract.STATUS.VERIFIED.name());
+            if (Objects.equals(entity.getAttribute(ATTR_CERTIFICATE_STATUS), DataContract.Status.VERIFIED.name())) {
+                contract.setStatus(String.valueOf(DataContract.Status.VERIFIED));
+            } else if (Objects.equals(contract.getStatus(), DataContract.Status.VERIFIED)) {
+                entity.setAttribute(ATTR_CERTIFICATE_STATUS, DataContract.Status.VERIFIED.name());
             } else {
-                entity.setAttribute(ATTR_CERTIFICATE_STATUS, DataContract.STATUS.DRAFT);
-                contract.setStatus(String.valueOf(DataContract.STATUS.DRAFT));
+                entity.setAttribute(ATTR_CERTIFICATE_STATUS, DataContract.Status.DRAFT);
+                contract.setStatus(String.valueOf(DataContract.Status.DRAFT));
             }
 
         }
@@ -243,7 +241,7 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
 
         // Update relationship with contract
         entity.setRelationshipAttribute(REL_ATTR_LATEST_CONTRACT, getAtlasObjectId(contractAsset));
-        if (Objects.equals(contractAsset.getAttribute(ATTR_CERTIFICATE_STATUS), DataContract.STATUS.VERIFIED.name()) ) {
+        if (Objects.equals(contractAsset.getAttribute(ATTR_CERTIFICATE_STATUS), DataContract.Status.VERIFIED.name()) ) {
             entity.setRelationshipAttribute(REL_ATTR_GOVERNED_ASSET_CERTIFIED, getAtlasObjectId(contractAsset));
         }
 
