@@ -7,6 +7,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.discovery.AtlasSearchResult;
+import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasStruct;
@@ -25,14 +27,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.*;
 
 import static org.apache.atlas.AtlasErrorCode.*;
-import static org.apache.atlas.repository.Constants.ATTR_CERTIFICATE_STATUS;
-import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
-import static org.apache.atlas.repository.Constants.ATTR_CONTRACT;
+import static org.apache.atlas.repository.Constants.*;
+import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 import static org.apache.atlas.type.AtlasTypeUtil.getAtlasObjectId;
 
 public class ContractPreProcessor extends AbstractContractPreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(ContractPreProcessor.class);
-    public static final String ATTR_VERSION = "dataContractVersion";
     public static final String ATTR_ASSET_GUID = "dataContractAssetGuid";
     public static final String REL_ATTR_LATEST_CONTRACT = "dataContractLatest";
     public static final String REL_ATTR_GOVERNED_ASSET_CERTIFIED = "dataContractLatestCertified";
@@ -45,7 +45,7 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
     public static final String CONTRACT_ATTR_STATUS = "status";
     private final AtlasEntityStore entityStore;
     private final boolean storeDifferentialAudits;
-    private EntityDiscoveryService discovery;
+    private final EntityDiscoveryService discovery;
 
 
 
@@ -107,12 +107,13 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
 
         authorizeContractCreateOrUpdate(entity, associatedAsset);
 
-        contractAttributeSync(entity, contract);
-        contractString = DataContract.serialize(contract);
+        boolean contractSync = syncContractCertificateStatus(entity, contract);
+        if (contractSync) {
+            contractString = DataContract.serialize(contract);
+        }
         entity.setAttribute(ATTR_CONTRACT, contractString);
 
-        ContractVersionUtils versionUtil = new ContractVersionUtils(contractQName, context, entityRetriever, typeRegistry, entityStore, graph, discovery);
-        AtlasEntity currentVersionEntity = versionUtil.getCurrentVersion();
+        AtlasEntity currentVersionEntity = getCurrentVersion(contractQName);
         int newVersionNumber =  1;
         if (currentVersionEntity != null) {
             // Contract already exist
@@ -140,7 +141,7 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
             }
         }
         entity.setAttribute(QUALIFIED_NAME, String.format("%s/V%s", contractQName, newVersionNumber));
-        entity.setAttribute(ATTR_VERSION, newVersionNumber);
+        entity.setAttribute(ATTR_CONTRACT_VERSION, newVersionNumber);
         entity.setAttribute(ATTR_ASSET_GUID, associatedAsset.getEntity().getGuid());
 
         datasetAttributeSync(context, associatedAsset.getEntity(), contract, entity);
@@ -191,6 +192,34 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
 
     }
 
+    public AtlasEntity getCurrentVersion(String contractQName) throws AtlasBaseException {
+        IndexSearchParams indexSearchParams = new IndexSearchParams();
+        Map<String, Object> dsl = new HashMap<>();
+        int size = 1;
+
+        List<Map<String, Object>> mustClauseList = new ArrayList<>();
+        mustClauseList.add(mapOf("term", mapOf("__typeName.keyword", CONTRACT_ENTITY_TYPE)));
+        mustClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, String.format("%s/*", contractQName))));
+
+        dsl.put("query", mapOf("bool", mapOf("must", mustClauseList)));
+        dsl.put("sort", Collections.singletonList(mapOf(ATTR_CONTRACT_VERSION, mapOf("order", "desc"))));
+        dsl.put("size", size);
+
+        final Set<String> attributes = new HashSet<>();
+        attributes.add(ATTR_CONTRACT);
+        attributes.add(ATTR_CERTIFICATE_STATUS);
+
+        indexSearchParams.setDsl(dsl);
+        indexSearchParams.setAttributes(attributes);
+        indexSearchParams.setSuppressLogs(true);
+
+        AtlasSearchResult result = discovery.directIndexSearch(indexSearchParams);
+        if (result == null) {
+            return null;
+        }
+        return new AtlasEntity(result.getEntities().get(0));
+    }
+
     private void removeCreatingVertex(EntityMutationContext context, AtlasEntity entity) throws AtlasBaseException {
         context.getCreatedEntities().remove(entity);
         try {
@@ -204,7 +233,8 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
 
     }
 
-    private void contractAttributeSync(AtlasEntity entity, DataContract contract) throws AtlasBaseException {
+    private boolean syncContractCertificateStatus(AtlasEntity entity, DataContract contract) throws AtlasBaseException {
+        boolean contractSync = false;
         // Sync certificateStatus
         if (!Objects.equals(entity.getAttribute(ATTR_CERTIFICATE_STATUS), contract.getStatus().name())) {
             /*
@@ -219,14 +249,17 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
              */
             if (Objects.equals(entity.getAttribute(ATTR_CERTIFICATE_STATUS), DataContract.Status.VERIFIED.name())) {
                 contract.setStatus(String.valueOf(DataContract.Status.VERIFIED));
+                contractSync = true;
             } else if (Objects.equals(contract.getStatus(), DataContract.Status.VERIFIED)) {
                 entity.setAttribute(ATTR_CERTIFICATE_STATUS, DataContract.Status.VERIFIED.name());
             } else {
                 entity.setAttribute(ATTR_CERTIFICATE_STATUS, DataContract.Status.DRAFT);
                 contract.setStatus(String.valueOf(DataContract.Status.DRAFT));
+                contractSync = true;
             }
 
         }
+        return contractSync;
 
     }
 

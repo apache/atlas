@@ -167,6 +167,8 @@ public final class Constants {
      * Contract
      */
     public static final String CONTRACT_ENTITY_TYPE = "DataContract";
+    public static final String ATTR_CONTRACT_VERSION = "dataContractVersion";
+
 
     /**
      * Lineage relations.
