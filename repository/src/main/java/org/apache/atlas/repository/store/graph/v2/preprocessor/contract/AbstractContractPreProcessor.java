@@ -79,13 +79,7 @@ public abstract class AbstractContractPreProcessor implements PreProcessor {
 
         AtlasVertex entityVertex = AtlasGraphUtilsV2.getVertexByUniqueAttributes(graph, entityType, uniqAttributes);
 
-        AtlasEntity.AtlasEntityWithExtInfo ret = entityRetriever.toAtlasEntityWithExtInfo(entityVertex);
-
-        if (ret == null) {
-            throw new AtlasBaseException(INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND, entityType.getTypeName(),
-                    uniqAttributes.toString());
-        }
-        return ret;
+        return entityRetriever.toAtlasEntityWithExtInfo(entityVertex);
     }
 
     AtlasEntityType ensureEntityType(String typeName) throws AtlasBaseException {

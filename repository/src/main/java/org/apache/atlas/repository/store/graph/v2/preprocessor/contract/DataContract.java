@@ -27,24 +27,27 @@ public class DataContract {
     private static final String KIND_VALUE = "DataContract";
     private static final Pattern versionPattern = Pattern.compile("^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$");
     private static final ObjectMapper objectMapper = new ObjectMapper();
+    static {
+        objectMapper.enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS);
+    }
 
     @Valid @NotNull
-    private String                               kind;
-    private Status                               status;
+    public String                               kind;
+    public Status                               status;
     @JsonProperty(value = "template_version", defaultValue = "0.0.1")
-    private String                               templateVersion;
+    public String                               templateVersion;
     @Valid @NotNull
-    private String                               data_source;
+    public String                               data_source;
     @Valid @NotNull
-    private String                               dataset;
+    public String                               dataset;
     @Valid @NotNull
-    private DatasetType                          type;
-    private String                               description;
-    private List<String>                         owners;
-    private List<BusinessTag>                    tags;
-    private String                               certificate;
+    public DatasetType                          type;
+    public String                               description;
+    public List<String>                         owners;
+    public List<BusinessTag>                    tags;
+    public String                               certificate;
     @Valid
-    private List<Column>                         columns;
+    public List<Column>                         columns;
     private final Map<String, Object>            unknownFields = new HashMap<>();
 
     public enum Status {
@@ -124,6 +127,7 @@ public class DataContract {
         this.templateVersion = templateVersion;
     }
 
+    @JsonSetter("data_source")
     public void setDataSource(String data_source) {
         this.data_source = data_source;
     }
@@ -132,7 +136,6 @@ public class DataContract {
         this.dataset = dataset;
     }
 
-    @JsonSetter("type")
     public void setType(String type) throws AtlasBaseException {
         try {
             this.type = DatasetType.from(type);
@@ -177,7 +180,7 @@ public class DataContract {
     public static final class BusinessTag {
         @NotNull
         public String name;
-        private Map<String, Object> unknownFields = new HashMap<>();
+        private final Map<String, Object> unknownFields = new HashMap<>();
 
         @JsonAnySetter
         public void setUnknownFields(String key, Object value) {
@@ -194,14 +197,14 @@ public class DataContract {
     @JsonPropertyOrder({"name", "description", "data_type"})
     public static final class Column {
         @NotNull
-        private String name;
+        public String name;
 
-        private String description;
+        public String description;
 
-        private boolean is_primary;
+        public boolean is_primary;
 
-        private String data_type;
-        private Map<String, Object> unknownFields = new HashMap<>();
+        public String data_type;
+        private final Map<String, Object> unknownFields = new HashMap<>();
 
         @JsonAnySetter
         public void setUnknownFields(String key, Object value) {
@@ -211,22 +214,6 @@ public class DataContract {
         public Map<String, Object> getUnknownFields() {
             return unknownFields;
         }
-
-        public void setName(String name) {
-            this.name = name;
-        }
-
-        public void setDescription(String description) {
-            this.description = description;
-        }
-
-        public void setIs_primary(boolean is_primary) {
-            this.is_primary = is_primary;
-        }
-
-        public void setData_type(String data_type) {
-            this.data_type = data_type;
-        }
     }
 
     public static DataContract deserialize(String contractString) throws AtlasBaseException {
@@ -235,7 +222,6 @@ public class DataContract {
             throw new AtlasBaseException(BAD_REQUEST, "Missing attribute: contract.");
         }
 
-        objectMapper.enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS);
         DataContract contract;
         try {
             contract = objectMapper.readValue(contractString, DataContract.class);
@@ -264,7 +250,6 @@ public class DataContract {
     public static String serialize(DataContract contract) throws AtlasBaseException {
 
         try {
-            objectMapper.enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS);
             return objectMapper.writeValueAsString(contract);
         } catch (JsonProcessingException ex) {
             throw new AtlasBaseException(JSON_ERROR, ex.getMessage());

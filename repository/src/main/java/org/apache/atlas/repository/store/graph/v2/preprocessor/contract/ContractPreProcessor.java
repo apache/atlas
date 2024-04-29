@@ -19,6 +19,7 @@ import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.*;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,6 +48,7 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
     private final boolean storeDifferentialAudits;
     private final EntityDiscoveryService discovery;
 
+    private final AtlasEntityComparator entityComparator;
 
 
     public ContractPreProcessor(AtlasGraph graph, AtlasTypeRegistry typeRegistry,
@@ -57,6 +59,8 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
         this.storeDifferentialAudits = storeDifferentialAudits;
         this.entityStore = entityStore;
         this.discovery = discovery;
+        this.entityComparator = new AtlasEntityComparator(typeRegistry, entityRetriever, null, true, true);
+
     }
 
     @Override
@@ -110,15 +114,15 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
         boolean contractSync = syncContractCertificateStatus(entity, contract);
         if (contractSync) {
             contractString = DataContract.serialize(contract);
+            entity.setAttribute(ATTR_CONTRACT, contractString);
         }
-        entity.setAttribute(ATTR_CONTRACT, contractString);
 
-        AtlasEntity currentVersionEntity = getCurrentVersion(contractQName);
-        int newVersionNumber =  1;
+        AtlasEntity currentVersionEntity = getCurrentVersion(associatedAsset.getEntity().getGuid());
+        Long newVersionNumber = 1L;
         if (currentVersionEntity != null) {
             // Contract already exist
             String qName = (String) currentVersionEntity.getAttribute(QUALIFIED_NAME);
-            int currentVersionNumber = Integer.parseInt(qName.substring(qName.lastIndexOf("/V") + 2));
+            Long currentVersionNumber = (Long) currentVersionEntity.getAttribute(ATTR_CONTRACT_VERSION);
             List<String> attributes = getDiffAttributes(context, entity, currentVersionEntity);
             if (attributes.isEmpty()) {
                 // No changes in the contract, Not creating new version
@@ -149,7 +153,6 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
     }
 
     private List<String> getDiffAttributes(EntityMutationContext context, AtlasEntity entity, AtlasEntity latestExistingVersion) throws AtlasBaseException {
-        AtlasEntityComparator entityComparator = new AtlasEntityComparator(typeRegistry, entityRetriever, context.getGuidAssignments(), true, true);
         AtlasEntityComparator.AtlasEntityDiffResult diffResult = entityComparator.getDiffResult(entity, latestExistingVersion, false);
         List<String> attributesSet = new ArrayList<>();
 
@@ -183,23 +186,21 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
         removeCreatingVertex(context, entity);
         entity.setAttribute(QUALIFIED_NAME, currentVersionEntity.getAttribute(QUALIFIED_NAME));
         entity.setGuid(currentVersionEntity.getGuid());
-
-        AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(entity.getGuid());
-
+        AtlasVertex vertex = context.getVertex(entity.getGuid());
         AtlasEntityType entityType = ensureEntityType(entity.getTypeName());
 
         context.addUpdated(entity.getGuid(), entity, entityType, vertex);
 
     }
 
-    public AtlasEntity getCurrentVersion(String contractQName) throws AtlasBaseException {
+    public AtlasEntity getCurrentVersion(String datasetGuid) throws AtlasBaseException {
         IndexSearchParams indexSearchParams = new IndexSearchParams();
         Map<String, Object> dsl = new HashMap<>();
         int size = 1;
 
         List<Map<String, Object>> mustClauseList = new ArrayList<>();
         mustClauseList.add(mapOf("term", mapOf("__typeName.keyword", CONTRACT_ENTITY_TYPE)));
-        mustClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, String.format("%s/*", contractQName))));
+        mustClauseList.add(mapOf("term", mapOf(ATTR_ASSET_GUID, datasetGuid)));
 
         dsl.put("query", mapOf("bool", mapOf("must", mustClauseList)));
         dsl.put("sort", Collections.singletonList(mapOf(ATTR_CONTRACT_VERSION, mapOf("order", "desc"))));
@@ -208,13 +209,14 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
         final Set<String> attributes = new HashSet<>();
         attributes.add(ATTR_CONTRACT);
         attributes.add(ATTR_CERTIFICATE_STATUS);
+        attributes.add(ATTR_CONTRACT_VERSION);
 
         indexSearchParams.setDsl(dsl);
         indexSearchParams.setAttributes(attributes);
         indexSearchParams.setSuppressLogs(true);
 
         AtlasSearchResult result = discovery.directIndexSearch(indexSearchParams);
-        if (result == null) {
+        if (result == null || CollectionUtils.isEmpty(result.getEntities())) {
             return null;
         }
         return new AtlasEntity(result.getEntities().get(0));
@@ -222,14 +224,7 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
 
     private void removeCreatingVertex(EntityMutationContext context, AtlasEntity entity) throws AtlasBaseException {
         context.getCreatedEntities().remove(entity);
-        try {
-            RequestContext.get().setSkipAuthorizationCheck(true);
-            Set<String> guids = new HashSet<>();
-            guids.add(entity.getGuid());
-            entityStore.purgeByIds(guids);
-        } finally {
-            RequestContext.get().setSkipAuthorizationCheck(false);
-        }
+        graph.removeVertex(context.getVertex(entity.getGuid()));
 
     }
 
