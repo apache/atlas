@@ -163,6 +163,13 @@ public final class Constants {
     public static final String ASSET_LINK_EDGE_LABEL = "__Asset.links";
 
     /**
+     * Contract
+     */
+    public static final String CONTRACT_ENTITY_TYPE = "DataContract";
+    public static final String ATTR_CONTRACT_VERSION = "dataContractVersion";
+
+
+    /**
      * Lineage relations.
      */
     public static final String PROCESS_OUTPUTS = "__Process.outputs";
@@ -403,7 +410,8 @@ public final class Constants {
     public static final String ATTR_STARRED_DETAILS_LIST = "starredDetailsList";
     public static final String ATTR_ASSET_STARRED_BY = "assetStarredBy";
     public static final String ATTR_ASSET_STARRED_AT = "assetStarredAt";
-
+    public static final String ATTR_CERTIFICATE_STATUS = "certificateStatus";
+    public static final String ATTR_CONTRACT = "dataContractJson";
     public static final String STRUCT_STARRED_DETAILS = "StarredDetails";
 
     public static final String KEYCLOAK_ROLE_ADMIN   = "$admin";
