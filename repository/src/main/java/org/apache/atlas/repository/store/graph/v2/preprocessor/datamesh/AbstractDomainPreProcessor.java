@@ -24,7 +24,6 @@ import org.apache.atlas.authorize.AtlasEntityAccessRequest;
 import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
@@ -44,6 +43,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 
 import static org.apache.atlas.repository.Constants.*;
+import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_CATEGORY;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_RESOURCES;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
@@ -66,43 +66,6 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
         } catch (AtlasException e) {
             e.printStackTrace();
         }
-    }
-
-    public List<AtlasEntityHeader> indexSearchPaginated(Map<String, Object> dsl, String entityType) throws AtlasBaseException {
-        IndexSearchParams searchParams = new IndexSearchParams();
-        List<AtlasEntityHeader> ret = new ArrayList<>();
-
-        List<Map> sortList = new ArrayList<>(0);
-        sortList.add(mapOf("__timestamp", mapOf("order", "asc")));
-        sortList.add(mapOf("__guid", mapOf("order", "asc")));
-        dsl.put("sort", sortList);
-
-        int from = 0;
-        int size = 100;
-        boolean hasMore = true;
-        do {
-            dsl.put("from", from);
-            dsl.put("size", size);
-            searchParams.setDsl(dsl);
-
-            if (entityType.equals(POLICY_ENTITY_TYPE)) {
-                Set<String> attributes = new HashSet<>(Arrays.asList(ATTR_POLICY_RESOURCES, ATTR_POLICY_CATEGORY));
-                searchParams.setAttributes(attributes);
-            }
-
-            List<AtlasEntityHeader> headers = discovery.directIndexSearch(searchParams).getEntities();
-
-            if (CollectionUtils.isNotEmpty(headers)) {
-                ret.addAll(headers);
-            } else {
-                hasMore = false;
-            }
-
-            from += size;
-
-        } while (hasMore);
-
-        return ret;
     }
 
     protected void isAuthorized(AtlasEntityHeader sourceDomain, AtlasEntityHeader targetDomain) throws AtlasBaseException {
@@ -188,8 +151,9 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
             bool.put("must", mustClauseList);
 
             Map<String, Object> dsl = mapOf("query", mapOf("bool", bool));
+            Set<String> attributes = new HashSet<>(Arrays.asList(ATTR_POLICY_RESOURCES, ATTR_POLICY_CATEGORY));
 
-            List<AtlasEntityHeader> policies = indexSearchPaginated(dsl, POLICY_ENTITY_TYPE);
+            List<AtlasEntityHeader> policies = indexSearchPaginated(dsl, attributes, discovery);
 
             return policies;
         } finally {

@@ -341,7 +341,7 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
 
             Map<String, Object> dsl = mapOf("query", mapOf("bool", bool));
 
-            List<AtlasEntityHeader> domains = indexSearchPaginated(dsl, DATA_DOMAIN_ENTITY_TYPE);
+            List<AtlasEntityHeader> domains = indexSearchPaginated(dsl, null, this.discovery);
 
             if (CollectionUtils.isNotEmpty(domains)) {
                 for (AtlasEntityHeader domain : domains) {

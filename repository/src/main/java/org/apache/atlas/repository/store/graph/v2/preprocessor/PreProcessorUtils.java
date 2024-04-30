@@ -1,7 +1,10 @@
 package org.apache.atlas.repository.store.graph.v2.preprocessor;
 
+import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
@@ -11,13 +14,19 @@ import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.NanoIdUtils;
 import org.apache.atlas.utils.AtlasEntityUtil;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.*;
+
 import static org.apache.atlas.repository.Constants.QUERY_COLLECTION_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.Constants.ENTITY_TYPE_PROPERTY_KEY;
+import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_CATEGORY;
+import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_RESOURCES;
+import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 
 public class PreProcessorUtils {
     private static final Logger LOG = LoggerFactory.getLogger(PreProcessorUtils.class);
@@ -114,5 +123,41 @@ public class PreProcessorUtils {
         entity.setAttribute(COLLECTION_QUALIFIED_NAME, newCollectionQualifiedName);
 
         return newCollectionQualifiedName;
+    }
+
+    public static List<AtlasEntityHeader> indexSearchPaginated(Map<String, Object> dsl, Set<String> attributes, EntityDiscoveryService discovery) throws AtlasBaseException {
+        IndexSearchParams searchParams = new IndexSearchParams();
+        List<AtlasEntityHeader> ret = new ArrayList<>();
+
+        List<Map> sortList = new ArrayList<>(0);
+        sortList.add(mapOf("__timestamp", mapOf("order", "asc")));
+        sortList.add(mapOf("__guid", mapOf("order", "asc")));
+        dsl.put("sort", sortList);
+
+        int from = 0;
+        int size = 100;
+        boolean hasMore = true;
+        do {
+            dsl.put("from", from);
+            dsl.put("size", size);
+            searchParams.setDsl(dsl);
+
+            if (CollectionUtils.isNotEmpty(attributes)) {
+                searchParams.setAttributes(attributes);
+            }
+
+            List<AtlasEntityHeader> headers = discovery.directIndexSearch(searchParams).getEntities();
+
+            if (CollectionUtils.isNotEmpty(headers)) {
+                ret.addAll(headers);
+            } else {
+                hasMore = false;
+            }
+
+            from += size;
+
+        } while (hasMore);
+
+        return ret;
     }
 }
