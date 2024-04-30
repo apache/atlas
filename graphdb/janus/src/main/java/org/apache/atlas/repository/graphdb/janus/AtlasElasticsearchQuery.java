@@ -240,16 +240,21 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         * We also need to check if the search ID exists and delete if necessary
      */
     private void processRequestWithSameSearchContextId(SearchParams searchParams) {
-        // Extract search context ID and sequence number
-        String currentSearchContextId = searchParams.getSearchContextId();
-        Integer currentSequenceNumber = searchParams.getSearchContextSequenceNo();
-        // Get the search ID from the cache if sequence number is greater than the current sequence number
-        String previousESSearchId = SearchContextCache.getESAsyncSearchIdFromContextCache(currentSearchContextId, currentSequenceNumber);
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("processRequestWithSameSearchContextId");
+        try {
+            // Extract search context ID and sequence number
+            String currentSearchContextId = searchParams.getSearchContextId();
+            Integer currentSequenceNumber = searchParams.getSearchContextSequenceNo();
+            // Get the search ID from the cache if sequence number is greater than the current sequence number
+            String previousESSearchId = SearchContextCache.getESAsyncSearchIdFromContextCache(currentSearchContextId, currentSequenceNumber);
 
-        if (StringUtils.isNotEmpty(previousESSearchId)) {
-            LOG.debug("Deleting the previous async search response with ID {}", previousESSearchId);
-            // If the search ID exists, then we need to delete the search context
-            deleteAsyncSearchResponse(previousESSearchId);
+            if (StringUtils.isNotEmpty(previousESSearchId)) {
+                LOG.debug("Deleting the previous async search response with ID {}", previousESSearchId);
+                // If the search ID exists, then we need to delete the search context
+                deleteAsyncSearchResponse(previousESSearchId);
+            }
+        } finally {
+            RequestContext.get().endMetricRecord(metric);
         }
     }
 
