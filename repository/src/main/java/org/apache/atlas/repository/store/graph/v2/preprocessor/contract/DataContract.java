@@ -21,6 +21,7 @@ import static org.apache.atlas.AtlasErrorCode.*;
 
 
 @JsonIgnoreProperties(ignoreUnknown = true)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({"kind", "status", "template_version", "data_source", "dataset", "type", "description", "owners",
         "tags", "certificate", "columns"})
 public class DataContract {
@@ -144,20 +145,12 @@ public class DataContract {
         }
     }
 
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
     public void setOwners(List<String> owners) {
         this.owners = owners;
     }
 
     public void setTags(List<BusinessTag> tags) {
         this.tags = tags;
-    }
-
-    public void setCertificate(String certificate) {
-        this.certificate = certificate;
     }
 
     public void setColumns(List<Column> columns) {
@@ -169,13 +162,13 @@ public class DataContract {
         unknownFields.put(key, value);
     }
 
-
     private boolean isSemVer(String version) {
         Matcher matcher = versionPattern.matcher(version);
         return matcher.matches();
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     @JsonPropertyOrder({"name"})
     public static final class BusinessTag {
         @NotNull
@@ -194,14 +187,13 @@ public class DataContract {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     @JsonPropertyOrder({"name", "description", "data_type"})
     public static final class Column {
         @NotNull
         public String name;
 
         public String description;
-
-        public boolean is_primary;
 
         public String data_type;
         private final Map<String, Object> unknownFields = new HashMap<>();
