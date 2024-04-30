@@ -81,6 +81,8 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
         String contractString = (String) entity.getAttribute(ATTR_CONTRACT);
         AtlasVertex vertex = context.getVertex(entity.getGuid());
         AtlasEntity existingContractEntity = entityRetriever.toAtlasEntity(vertex);
+        // No update to relationships allowed for the existing contract version
+        resetAllRelationshipAttributes(entity);
         if (!isEqualContract(contractString, (String) existingContractEntity.getAttribute(ATTR_CONTRACT))) {
             // Update the same asset(entity)
             throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Can't update a specific version of contract");
@@ -128,6 +130,7 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
                 removeCreatingVertex(context, entity);
                 return;
             } else if (isEqualContract(contractString, (String) currentVersionEntity.getAttribute(ATTR_CONTRACT))) {
+                resetAllRelationshipAttributes(entity);
                 // No change in contract, metadata changed
                 updateExistingVersion(context, entity, currentVersionEntity);
                 newVersionNumber = currentVersionNumber;
@@ -135,6 +138,7 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
                 // contract changed (metadata might/not changed). Create new version.
                 newVersionNumber =  currentVersionNumber + 1;
 
+                resetAllRelationshipAttributes(entity);
                 // Attach previous version via rel
                 entity.setRelationshipAttribute(REL_ATTR_PREVIOUS_VERSION, getAtlasObjectId(currentVersionEntity));
                 AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(currentVersionEntity.getGuid());
@@ -185,7 +189,7 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
         removeCreatingVertex(context, entity);
         entity.setAttribute(QUALIFIED_NAME, currentVersionEntity.getAttribute(QUALIFIED_NAME));
         entity.setGuid(currentVersionEntity.getGuid());
-        AtlasVertex vertex = context.getVertex(entity.getGuid());
+        AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(entity.getGuid());
         AtlasEntityType entityType = ensureEntityType(entity.getTypeName());
 
         context.addUpdated(entity.getGuid(), entity, entityType, vertex);
@@ -219,6 +223,18 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
     private void removeCreatingVertex(EntityMutationContext context, AtlasEntity entity) {
         context.getCreatedEntities().remove(entity);
         graph.removeVertex(context.getVertex(entity.getGuid()));
+    }
+
+    private void resetAllRelationshipAttributes(AtlasEntity entity) {
+        if (entity.getRemoveRelationshipAttributes() != null) {
+            entity.setRemoveRelationshipAttributes(null);
+        }
+        if (entity.getAppendRelationshipAttributes() != null) {
+            entity.setAppendRelationshipAttributes(null);
+        }
+        if (entity.getRelationshipAttributes() != null) {
+            entity.setRelationshipAttributes(null);
+        }
     }
 
     private boolean syncContractCertificateStatus(AtlasEntity entity, DataContract contract) throws AtlasBaseException {
