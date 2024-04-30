@@ -62,7 +62,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         String productName = (String) entity.getAttribute(NAME);
         String parentDomainQualifiedName = (String) entity.getAttribute(PARENT_DOMAIN_QN);
         Map<String, String> customAttributes = new HashMap<>();
-        customAttributes.put("isQualifiedNameMigrated", "true");
+        customAttributes.put(MIGRATION_CUSTOM_ATTRIBUTE, "true");
 
         productExists(productName, parentDomainQualifiedName);
         String newQualifiedName = createQualifiedName(parentDomainQualifiedName);

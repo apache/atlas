@@ -38,6 +38,7 @@ public class PreProcessorUtils {
     public static final String PARENT_DOMAIN_QN = "parentDomainQualifiedName";
     public static final String SUPER_DOMAIN_QN = "superDomainQualifiedName";
     public static final String DATA_DOMAIN = "dataDomain";
+    public static final String MIGRATION_CUSTOM_ATTRIBUTE = "isQualifiedNameMigrated";
 
     //Query models constants
     public static final String PREFIX_QUERY_QN   = "default/collection/";

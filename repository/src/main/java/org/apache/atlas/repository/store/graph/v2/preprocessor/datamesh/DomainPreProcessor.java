@@ -91,7 +91,7 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
         String domainName = (String) entity.getAttribute(NAME);
         String parentDomainQualifiedName = (String) entity.getAttribute(PARENT_DOMAIN_QN);
         Map<String, String> customAttributes = new HashMap<>();
-        customAttributes.put("isQualifiedNameMigrated", "true");
+        customAttributes.put(MIGRATION_CUSTOM_ATTRIBUTE, "true");
 
         domainExists(domainName, parentDomainQualifiedName);
         entity.setAttribute(QUALIFIED_NAME, createQualifiedName(parentDomainQualifiedName));
