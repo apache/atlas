@@ -442,13 +442,20 @@ public class EntityLineageService implements AtlasLineageService {
         visitedVertices.add(baseGuid);
         Set<String> skippedVertices = new HashSet<>();
         Queue<String> traversalQueue = new LinkedList<>();
+        boolean isDataset;
 
         AtlasVertex baseVertex = AtlasGraphUtilsV2.findByGuid(this.graph, baseGuid);
-        enqueueNeighbours(baseVertex, validateEntityTypeAndCheckIfDataSet(baseGuid), lineageListContext, traversalQueue, visitedVertices, skippedVertices);
+        isDataset = validateEntityTypeAndCheckIfDataSet(baseGuid);
+        enqueueNeighbours(baseVertex, isDataset, lineageListContext, traversalQueue, visitedVertices, skippedVertices);
         int currentDepth = 0;
+        int level = 0;
 
         while (!traversalQueue.isEmpty() && !lineageListContext.isEntityLimitReached() && currentDepth < lineageListContext.getDepth()) {
             currentDepth++;
+
+            if (!isDataset)
+                level++;
+
             int entitiesInCurrentDepth = traversalQueue.size();
             for (int i = 0; i < entitiesInCurrentDepth; i++) {
                 if (lineageListContext.isEntityLimitReached())
@@ -459,7 +466,7 @@ public class EntityLineageService implements AtlasLineageService {
                 if (Objects.isNull(currentVertex))
                     throw new AtlasBaseException("Found null vertex during lineage graph traversal for guid: " + currentGUID);
 
-                boolean isDataset = validateEntityTypeAndCheckIfDataSet(currentGUID);
+                isDataset = validateEntityTypeAndCheckIfDataSet(currentGUID);
                 if (!lineageListContext.evaluateVertexFilter(currentVertex)) {
                     enqueueNeighbours(currentVertex, isDataset, lineageListContext, traversalQueue, visitedVertices, skippedVertices);
                     continue;
@@ -471,7 +478,7 @@ public class EntityLineageService implements AtlasLineageService {
                 }
 
                 lineageListContext.incrementEntityCount();
-                appendToResult(currentVertex, lineageListContext, ret);
+                appendToResult(currentVertex, lineageListContext, ret, level);
                 enqueueNeighbours(currentVertex, isDataset, lineageListContext, traversalQueue, visitedVertices, skippedVertices);
                 if (isLastEntityInLastDepth(lineageListContext.getDepth(), currentDepth, entitiesInCurrentDepth, i)) {
                     ret.setHasMore(false);
@@ -518,8 +525,10 @@ public class EntityLineageService implements AtlasLineageService {
         }
     }
 
-    private void appendToResult(AtlasVertex currentVertex, AtlasLineageListContext lineageListContext, AtlasLineageListInfo ret) throws AtlasBaseException {
-        ret.getEntities().add(entityRetriever.toAtlasEntityHeader(currentVertex, lineageListContext.getAttributes()));
+    private void appendToResult(AtlasVertex currentVertex, AtlasLineageListContext lineageListContext, AtlasLineageListInfo ret, Integer level) throws AtlasBaseException {
+        AtlasEntityHeader entity = entityRetriever.toAtlasEntityHeader(currentVertex, lineageListContext.getAttributes());
+        entity.setDepth(level);
+        ret.getEntities().add(entity);
     }
 
     private static void addEntitiesToCache(AtlasVertex vertex) {
