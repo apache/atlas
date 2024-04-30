@@ -3579,7 +3579,7 @@ public class EntityGraphMapper {
             Boolean updatedRestrictPropagationThroughLineage = classification.getRestrictPropagationThroughLineage();
             Boolean currentRestrictPropagationThroughHierarchy = currentClassification.getRestrictPropagationThroughHierarchy();
             Boolean updatedRestrictPropagationThroughHierarchy = classification.getRestrictPropagationThroughHierarchy();
-
+            String propagationMode = entityRetriever.determinePropagationMode(updatedRestrictPropagationThroughLineage, updatedRestrictPropagationThroughHierarchy);
             if ((!Objects.equals(updatedRemovePropagations, currentRemovePropagations) ||
                     !Objects.equals(currentTagPropagation, updatedTagPropagation) ||
                     !Objects.equals(currentRestrictPropagationThroughLineage, updatedRestrictPropagationThroughLineage)) &&
@@ -3607,11 +3607,7 @@ public class EntityGraphMapper {
                         deleteDelegate.getHandler().removeTagPropagation(classificationVertex);
                     }
                     if (CollectionUtils.isEmpty(entitiesToPropagateTo)) {
-                        String propagationMode;
-                        if (updatedRemovePropagations !=null) {
-                            propagationMode = entityRetriever.determinePropagationMode(updatedRestrictPropagationThroughLineage, updatedRestrictPropagationThroughHierarchy);
-                        }
-                        else{
+                        if (updatedRemovePropagations ==null) {
                             propagationMode = CLASSIFICATION_PROPAGATION_MODE_DEFAULT;
                         }
                         Boolean toExclude = propagationMode == CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_LINEAGE ? true : false;
