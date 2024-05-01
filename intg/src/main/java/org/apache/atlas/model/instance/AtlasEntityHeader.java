@@ -155,11 +155,11 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
         this.guid = guid;
     }
 
-    public Integer getDepth() {
+    public int getDepth() {
         return depth;
     }
 
-    public void setDepth(Integer depth) {
+    public void setDepth(int depth) {
         this.depth = depth;
     }
 

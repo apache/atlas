@@ -442,18 +442,18 @@ public class EntityLineageService implements AtlasLineageService {
         visitedVertices.add(baseGuid);
         Set<String> skippedVertices = new HashSet<>();
         Queue<String> traversalQueue = new LinkedList<>();
-        boolean isDataset;
 
         AtlasVertex baseVertex = AtlasGraphUtilsV2.findByGuid(this.graph, baseGuid);
-        isDataset = validateEntityTypeAndCheckIfDataSet(baseGuid);
-        enqueueNeighbours(baseVertex, isDataset, lineageListContext, traversalQueue, visitedVertices, skippedVertices);
+        boolean isBaseNodeDataset = validateEntityTypeAndCheckIfDataSet(baseGuid);
+        enqueueNeighbours(baseVertex, isBaseNodeDataset, lineageListContext, traversalQueue, visitedVertices, skippedVertices);
         int currentDepth = 0;
-        int level = 0;
+        int level = isBaseNodeDataset? 0: 1;
 
         while (!traversalQueue.isEmpty() && !lineageListContext.isEntityLimitReached() && currentDepth < lineageListContext.getDepth()) {
             currentDepth++;
 
-            if (!isDataset)
+            // update level at every alternate depth
+            if ((isBaseNodeDataset && currentDepth % 2 != 0) || (!isBaseNodeDataset && currentDepth % 2 == 0))
                 level++;
 
             int entitiesInCurrentDepth = traversalQueue.size();
@@ -466,7 +466,7 @@ public class EntityLineageService implements AtlasLineageService {
                 if (Objects.isNull(currentVertex))
                     throw new AtlasBaseException("Found null vertex during lineage graph traversal for guid: " + currentGUID);
 
-                isDataset = validateEntityTypeAndCheckIfDataSet(currentGUID);
+                boolean isDataset = validateEntityTypeAndCheckIfDataSet(currentGUID);
                 if (!lineageListContext.evaluateVertexFilter(currentVertex)) {
                     enqueueNeighbours(currentVertex, isDataset, lineageListContext, traversalQueue, visitedVertices, skippedVertices);
                     continue;
@@ -525,7 +525,7 @@ public class EntityLineageService implements AtlasLineageService {
         }
     }
 
-    private void appendToResult(AtlasVertex currentVertex, AtlasLineageListContext lineageListContext, AtlasLineageListInfo ret, Integer level) throws AtlasBaseException {
+    private void appendToResult(AtlasVertex currentVertex, AtlasLineageListContext lineageListContext, AtlasLineageListInfo ret, int level) throws AtlasBaseException {
         AtlasEntityHeader entity = entityRetriever.toAtlasEntityHeader(currentVertex, lineageListContext.getAttributes());
         entity.setDepth(level);
         ret.getEntities().add(entity);
