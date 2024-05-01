@@ -57,7 +57,6 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private String                          guid                = null;
-    private Integer                         depth               = null;
     private AtlasEntity.Status              status              = AtlasEntity.Status.ACTIVE;
     private String                          displayText         = null;
     private List<String>                    classificationNames = null;
@@ -72,7 +71,9 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
     private Date                            createTime          = null;
     private Date                            updateTime          = null;
     private String                          deleteHandler       = null;
+    private Integer                         depth               = null;
     private Map<String, AtlasSearchResult>  collapse    = null;
+
 
     public AtlasEntityHeader() {
         this(null, null);
@@ -155,13 +156,13 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
         this.guid = guid;
     }
 
-    public int getDepth() {
-        return depth;
-    }
+    public Integer getDepth() {
+            return depth;
+        }
 
-    public void setDepth(int depth) {
-        this.depth = depth;
-    }
+    public void setDepth(Integer depth) {
+            this.depth = depth;
+        }
 
     public AtlasEntity.Status getStatus() {
         return status;
