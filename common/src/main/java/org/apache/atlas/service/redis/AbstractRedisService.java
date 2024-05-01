@@ -32,7 +32,6 @@ public abstract class AbstractRedisService implements RedisService {
     private static final String ATLAS_METASTORE_SERVICE = "atlas-metastore-service";
 
     RedissonClient redisClient;
-
     RedissonClient searchContextCacheRedisClient;
     Map<String, RLock> keyLockMap;
     Configuration atlasConfig;
@@ -138,10 +137,10 @@ public abstract class AbstractRedisService implements RedisService {
         return config;
     }
 
-    Config getSearchContextCacheConfig() throws AtlasException {
+    Config getSearchContextCacheConfig() {
         Config config = new Config();
         config.useSentinelServers()
-                .setClientName(ATLAS_METASTORE_SERVICE)
+                .setClientName(ATLAS_METASTORE_SERVICE+"-searchContextCache")
                 .setReadMode(ReadMode.MASTER_SLAVE)
                 .setCheckSentinelsList(false)
                 .setKeepAlive(true)
