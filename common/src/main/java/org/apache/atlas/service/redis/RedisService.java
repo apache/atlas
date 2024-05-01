@@ -8,12 +8,6 @@ public interface RedisService {
 
   void releaseDistributedLock(String key);
 
-  String getValue(String key);
-
-  String putValue(String key, String value);
-
-  void removeValue(String key);
-
   Logger getLogger();
 
 }

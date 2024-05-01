@@ -30,21 +30,6 @@ public class NoRedisServiceImpl extends AbstractRedisService {
     }
 
     @Override
-    public String getValue(String key) {
-        return null;
-    }
-
-    @Override
-    public String putValue(String key, String value) {
-        return null;
-    }
-
-    @Override
-    public void removeValue(String key) {
-
-    }
-
-    @Override
     public Logger getLogger() {
         return LOG;
     }
