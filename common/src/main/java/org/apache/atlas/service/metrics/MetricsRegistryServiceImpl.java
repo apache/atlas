@@ -1,12 +1,10 @@
 package org.apache.atlas.service.metrics;
 
-import io.micrometer.core.instrument.Metrics;
-import io.micrometer.core.instrument.Tag;
-import io.micrometer.core.instrument.Tags;
-import io.micrometer.core.instrument.Timer;
+import io.micrometer.core.instrument.*;
 import io.micrometer.prometheus.PrometheusMeterRegistry;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.utils.AtlasMetricType;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,35 +62,42 @@ public class MetricsRegistryServiceImpl implements MetricsRegistry {
         }
     }
     //Use this if you want to publish Histograms
-    public void collectIndexsearch(String requestId, String requestUri, List<AtlasPerfMetrics.Metric> applicationMetrics){
+    public void collectIApplicationMetrics(String requestId, String requestUri, List<AtlasPerfMetrics.Metric> applicationMetrics){
         try {
             for(AtlasPerfMetrics.Metric metric : applicationMetrics){
-                Timer.builder(APPLICATION_LEVEL_METRICS_SUMMARY)
-                        .serviceLevelObjectives(
-                                Duration.ofMillis(500),
-                                Duration.ofMillis(750),
-                                Duration.ofMillis(1000),
-                                Duration.ofMillis(1200),
-                                Duration.ofMillis(1500),
-                                Duration.ofSeconds(2),
-                                Duration.ofSeconds(3),
-                                Duration.ofSeconds(4),
-                                Duration.ofSeconds(5),
-                                Duration.ofSeconds(7),
-                                Duration.ofSeconds(10),
-                                Duration.ofSeconds(15),
-                                Duration.ofSeconds(20),
-                                Duration.ofSeconds(25),
-                                Duration.ofSeconds(30),
-                                Duration.ofSeconds(40),
-                                Duration.ofSeconds(60),
-                                Duration.ofSeconds(90),
-                                Duration.ofSeconds(120),
-                                Duration.ofSeconds(180)
-                        )
-                        .publishPercentiles(PERCENTILES)
-                        .tags(convertToMicrometerTags(metric.getTags()))
-                        .register(getMeterRegistry()).record(metric.getTotalTimeMSecs(), TimeUnit.MILLISECONDS);
+                if (metric.getMetricType() == AtlasMetricType.COUNTER) {
+                    Counter.builder(metric.getName())
+                            .tags(convertToMicrometerTags(metric.getTags()))
+                            .register(getMeterRegistry())
+                            .increment(metric.getInvocations());
+                } else {
+                    Timer.builder(APPLICATION_LEVEL_METRICS_SUMMARY)
+                            .serviceLevelObjectives(
+                                    Duration.ofMillis(500),
+                                    Duration.ofMillis(750),
+                                    Duration.ofMillis(1000),
+                                    Duration.ofMillis(1200),
+                                    Duration.ofMillis(1500),
+                                    Duration.ofSeconds(2),
+                                    Duration.ofSeconds(3),
+                                    Duration.ofSeconds(4),
+                                    Duration.ofSeconds(5),
+                                    Duration.ofSeconds(7),
+                                    Duration.ofSeconds(10),
+                                    Duration.ofSeconds(15),
+                                    Duration.ofSeconds(20),
+                                    Duration.ofSeconds(25),
+                                    Duration.ofSeconds(30),
+                                    Duration.ofSeconds(40),
+                                    Duration.ofSeconds(60),
+                                    Duration.ofSeconds(90),
+                                    Duration.ofSeconds(120),
+                                    Duration.ofSeconds(180)
+                            )
+                            .publishPercentiles(PERCENTILES)
+                            .tags(convertToMicrometerTags(metric.getTags()))
+                            .register(getMeterRegistry()).record(metric.getTotalTimeMSecs(), TimeUnit.MILLISECONDS);
+                }
             }
         } catch (Exception e) {
             LOG.error("Failed to collect metrics", e);
