@@ -1075,17 +1075,30 @@ public class AtlasStructType extends AtlasType {
         }
 
         public static boolean hastokenizeChar(String value) {
-            if (value != null) {
+            if (StringUtils.isNotEmpty(value)) {
                 for (int i = 0; i < value.length(); i++) {
                     if (hastokenizeChar(value, i)) {
+                        return true;
+                    } else if (hasCJKChar(value,i)) {
                         return true;
                     }
                 }
             }
-
             return false;
         }
 
+        private static boolean hasCJKChar(String value,int i){
+            char ch = value.charAt(i);
+            Character.UnicodeBlock block = Character.UnicodeBlock.of(ch);
+
+            if (Character.UnicodeBlock.CJK_UNIFIED_IDEOGRAPHS.equals(block) ||
+                    Character.UnicodeBlock.CJK_COMPATIBILITY_IDEOGRAPHS.equals(block) ||
+                    Character.UnicodeBlock.CJK_UNIFIED_IDEOGRAPHS_EXTENSION_A.equals(block) ||
+                    Character.UnicodeBlock.HIRAGANA.equals(block)) {
+                return true;
+            }
+            return false;
+        }
 
         private static boolean hastokenizeChar(String value, int i) {
             char c = value.charAt(i);

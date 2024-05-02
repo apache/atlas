@@ -64,6 +64,8 @@ public class ClassificationSearchProcessorTest extends BasicTestSetup {
     private int    dimensionTagEntities                 = 10;
     private String dimensionTagDeleteGuid;
     private String dimensionalTagGuid;
+    private String CJKGUID1;
+    private String CJKGUID2;
 
     @BeforeClass
     public void setup() throws Exception {
@@ -72,6 +74,8 @@ public class ClassificationSearchProcessorTest extends BasicTestSetup {
         setupTestData();
         createDimensionTaggedEntityAndDelete();
         createDimensionalTaggedEntityWithAttr();
+        createChineseEntityWithClassificationSingleChar();
+        createChineseEntityWithClassificationMultipleChar();
     }
 
     @Test(priority = -1)
@@ -355,6 +359,360 @@ public class ClassificationSearchProcessorTest extends BasicTestSetup {
         dimensionalTagGuid = entityHeader.getGuid();
 
     }
+
+    private void createChineseEntityWithClassificationSingleChar() throws AtlasBaseException {
+        AtlasEntity entityToDelete = new AtlasEntity(HDFS_PATH);
+        entityToDelete.setAttribute("name", "h1");
+        entityToDelete.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, "h1qualified");
+        entityToDelete.setAttribute("path", "h1");
+
+        List<AtlasClassification> cls = new ArrayList<>();
+        cls.add(new AtlasClassification(JDBC_CLASSIFICATION, new HashMap<String, Object>() {{
+            put("attr1", "狗");
+        }}));
+        entityToDelete.setClassifications(cls);
+
+        //create entity
+        final EntityMutationResponse response = entityStore.createOrUpdate(new AtlasEntityStream(new AtlasEntity.AtlasEntitiesWithExtInfo(entityToDelete)), false);
+        AtlasEntityHeader entityHeader = response.getCreatedEntities().get(0);
+        CJKGUID1 = entityHeader.getGuid();
+
+    }
+
+    private void createChineseEntityWithClassificationMultipleChar() throws AtlasBaseException {
+        AtlasEntity entityToDelete = new AtlasEntity(HDFS_PATH);
+        entityToDelete.setAttribute("name", "h2");
+        entityToDelete.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, "h2qualified");
+        entityToDelete.setAttribute("path", "h2");
+
+
+        List<AtlasClassification> cls = new ArrayList<>();
+        cls.add(new AtlasClassification(JDBC_CLASSIFICATION, new HashMap<String, Object>() {{
+            put("attr1", "数据");
+        }}));
+        entityToDelete.setClassifications(cls);
+
+        //create entity
+        final EntityMutationResponse response = entityStore.createOrUpdate(new AtlasEntityStream(new AtlasEntity.AtlasEntitiesWithExtInfo(entityToDelete)), false);
+        AtlasEntityHeader entityHeader = response.getCreatedEntities().get(0);
+        CJKGUID2 = entityHeader.getGuid();
+
+    }
+
+    //Equals with single char
+    @Test
+    public void searchJapaneseChineseByTagEquals() throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+        params.setClassification(JDBC_CLASSIFICATION);
+        FilterCriteria filterCriteria = getSingleFilterCondition("attr1", Operator.EQ, "狗");
+        params.setTagFilters(filterCriteria);
+        params.setLimit(20);
+
+        SearchContext context = new SearchContext(params, typeRegistry, graph, indexer.getVertexIndexKeys());
+        ClassificationSearchProcessor processor = new ClassificationSearchProcessor(context);
+        List<AtlasVertex> vertices = processor.execute();
+
+        Assert.assertTrue(CollectionUtils.isNotEmpty(vertices));
+        assertEquals(vertices.size(), 1);
+        List<String> guids = vertices.stream().map(g -> {
+            try {
+                return entityRetriever.toAtlasEntityHeader(g).getGuid();
+            } catch (AtlasBaseException e) {
+                fail("Failure in mapping vertex to AtlasEntityHeader");
+            }
+            return "";
+        }).collect(Collectors.toList());
+        Assert.assertTrue(guids.contains(CJKGUID1));
+
+    }
+
+    //NEQ with single char
+    @Test
+    public void searchJapaneseChineseByTagNotEquals() throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+        params.setClassification(JDBC_CLASSIFICATION);
+        FilterCriteria filterCriteria = getSingleFilterCondition("attr1", Operator.NEQ, "狗");
+        params.setTagFilters(filterCriteria);
+        params.setLimit(20);
+
+        SearchContext context = new SearchContext(params, typeRegistry, graph, indexer.getVertexIndexKeys());
+        ClassificationSearchProcessor processor = new ClassificationSearchProcessor(context);
+        List<AtlasVertex> vertices = processor.execute();
+
+        Assert.assertTrue(CollectionUtils.isNotEmpty(vertices));
+        assertEquals(vertices.size(), 1);
+        List<String> guids = vertices.stream().map(g -> {
+            try {
+                return entityRetriever.toAtlasEntityHeader(g).getGuid();
+            } catch (AtlasBaseException e) {
+                fail("Failure in mapping vertex to AtlasEntityHeader");
+            }
+            return "";
+        }).collect(Collectors.toList());
+        Assert.assertTrue(guids.contains(CJKGUID2));
+
+    }
+
+    //Contains with single char
+    @Test
+    public void searchJapaneseChineseByTagContains() throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+        params.setClassification(JDBC_CLASSIFICATION);
+        FilterCriteria filterCriteria = getSingleFilterCondition("attr1", Operator.CONTAINS, "狗");
+        params.setTagFilters(filterCriteria);
+        params.setLimit(20);
+
+        SearchContext context = new SearchContext(params, typeRegistry, graph, indexer.getVertexIndexKeys());
+        ClassificationSearchProcessor processor = new ClassificationSearchProcessor(context);
+        List<AtlasVertex> vertices = processor.execute();
+
+        Assert.assertTrue(CollectionUtils.isNotEmpty(vertices));
+        assertEquals(vertices.size(), 1);
+        List<String> guids = vertices.stream().map(g -> {
+            try {
+                return entityRetriever.toAtlasEntityHeader(g).getGuid();
+            } catch (AtlasBaseException e) {
+                fail("Failure in mapping vertex to AtlasEntityHeader");
+            }
+            return "";
+        }).collect(Collectors.toList());
+        Assert.assertTrue(guids.contains(CJKGUID1));
+
+    }
+
+    //Begins with single char
+    @Test
+    public void searchJapaneseChineseByTagBeginswith() throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+        params.setClassification(JDBC_CLASSIFICATION);
+        FilterCriteria filterCriteria = getSingleFilterCondition("attr1", Operator.STARTS_WITH, "狗");
+        params.setTagFilters(filterCriteria);
+        params.setLimit(20);
+
+        SearchContext context = new SearchContext(params, typeRegistry, graph, indexer.getVertexIndexKeys());
+        ClassificationSearchProcessor processor = new ClassificationSearchProcessor(context);
+        List<AtlasVertex> vertices = processor.execute();
+
+        Assert.assertTrue(CollectionUtils.isNotEmpty(vertices));
+        assertEquals(vertices.size(), 1);
+        List<String> guids = vertices.stream().map(g -> {
+            try {
+                return entityRetriever.toAtlasEntityHeader(g).getGuid();
+            } catch (AtlasBaseException e) {
+                fail("Failure in mapping vertex to AtlasEntityHeader");
+            }
+            return "";
+        }).collect(Collectors.toList());
+        Assert.assertTrue(guids.contains(CJKGUID1));
+
+    }
+
+    //ENDS with single char
+    @Test
+    public void searchJapaneseChineseByTagEndsWith() throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+        params.setClassification(JDBC_CLASSIFICATION);
+        FilterCriteria filterCriteria = getSingleFilterCondition("attr1", Operator.ENDS_WITH, "狗");
+        params.setTagFilters(filterCriteria);
+        params.setLimit(20);
+
+        SearchContext context = new SearchContext(params, typeRegistry, graph, indexer.getVertexIndexKeys());
+        ClassificationSearchProcessor processor = new ClassificationSearchProcessor(context);
+        List<AtlasVertex> vertices = processor.execute();
+
+        Assert.assertTrue(CollectionUtils.isNotEmpty(vertices));
+        assertEquals(vertices.size(), 1);
+        List<String> guids = vertices.stream().map(g -> {
+            try {
+                return entityRetriever.toAtlasEntityHeader(g).getGuid();
+            } catch (AtlasBaseException e) {
+                fail("Failure in mapping vertex to AtlasEntityHeader");
+            }
+            return "";
+        }).collect(Collectors.toList());
+        Assert.assertTrue(guids.contains(CJKGUID1));
+
+    }
+
+    //ISNULL check
+    @Test
+    public void searchJapaneseChineseByTagISNULL() throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+        params.setClassification(JDBC_CLASSIFICATION);
+        FilterCriteria filterCriteria = getSingleFilterCondition("attr1", Operator.IS_NULL, "");
+        params.setTagFilters(filterCriteria);
+        params.setLimit(20);
+
+        SearchContext context = new SearchContext(params, typeRegistry, graph, indexer.getVertexIndexKeys());
+        ClassificationSearchProcessor processor = new ClassificationSearchProcessor(context);
+        List<AtlasVertex> vertices = processor.execute();
+
+        Assert.assertTrue(CollectionUtils.isNotEmpty(vertices));
+        assertEquals(vertices.size(), 2); //customer_dim_view, product_dim_view entities
+    }
+
+    //ISNOT NULL CHECK
+    @Test
+    public void searchJapaneseChineseByTagISNOTNULL() throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+        params.setClassification(JDBC_CLASSIFICATION);
+        FilterCriteria filterCriteria = getSingleFilterCondition("attr1", Operator.NOT_NULL, "狗");
+        params.setTagFilters(filterCriteria);
+        params.setLimit(20);
+
+        SearchContext context = new SearchContext(params, typeRegistry, graph, indexer.getVertexIndexKeys());
+        ClassificationSearchProcessor processor = new ClassificationSearchProcessor(context);
+        List<AtlasVertex> vertices = processor.execute();
+
+        Assert.assertTrue(CollectionUtils.isNotEmpty(vertices));
+        assertEquals(vertices.size(), 2);
+        List<String> guids = vertices.stream().map(g -> {
+            try {
+                return entityRetriever.toAtlasEntityHeader(g).getGuid();
+            } catch (AtlasBaseException e) {
+                fail("Failure in mapping vertex to AtlasEntityHeader");
+            }
+            return "";
+        }).collect(Collectors.toList());
+        Assert.assertTrue(guids.contains(CJKGUID1));
+
+    }
+
+    //Equals with Multiple char
+    @Test
+    public void searchJapaneseChineseByTagEqualsMultiple() throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+        params.setClassification(JDBC_CLASSIFICATION);
+        FilterCriteria filterCriteria = getSingleFilterCondition("attr1", Operator.EQ, "数据");
+        params.setTagFilters(filterCriteria);
+        params.setLimit(20);
+
+        SearchContext context = new SearchContext(params, typeRegistry, graph, indexer.getVertexIndexKeys());
+        ClassificationSearchProcessor processor = new ClassificationSearchProcessor(context);
+        List<AtlasVertex> vertices = processor.execute();
+
+        Assert.assertTrue(CollectionUtils.isNotEmpty(vertices));
+        assertEquals(vertices.size(), 1);
+        List<String> guids = vertices.stream().map(g -> {
+            try {
+                return entityRetriever.toAtlasEntityHeader(g).getGuid();
+            } catch (AtlasBaseException e) {
+                fail("Failure in mapping vertex to AtlasEntityHeader");
+            }
+            return "";
+        }).collect(Collectors.toList());
+        Assert.assertTrue(guids.contains(CJKGUID2));
+
+    }
+
+    //NEQ with Multiple char
+    @Test
+    public void searchJapaneseChineseByTagNotEqualsMultiple() throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+        params.setClassification(JDBC_CLASSIFICATION);
+        FilterCriteria filterCriteria = getSingleFilterCondition("attr1", Operator.NEQ, "数据");
+        params.setTagFilters(filterCriteria);
+        params.setLimit(20);
+
+        SearchContext context = new SearchContext(params, typeRegistry, graph, indexer.getVertexIndexKeys());
+        ClassificationSearchProcessor processor = new ClassificationSearchProcessor(context);
+        List<AtlasVertex> vertices = processor.execute();
+
+        Assert.assertTrue(CollectionUtils.isNotEmpty(vertices));
+        assertEquals(vertices.size(), 1);
+        List<String> guids = vertices.stream().map(g -> {
+            try {
+                return entityRetriever.toAtlasEntityHeader(g).getGuid();
+            } catch (AtlasBaseException e) {
+                fail("Failure in mapping vertex to AtlasEntityHeader");
+            }
+            return "";
+        }).collect(Collectors.toList());
+        Assert.assertTrue(guids.contains(CJKGUID1));
+
+    }
+
+    //Contains with Multiple char
+    @Test
+    public void searchJapaneseChineseByTagContainsMultiple() throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+        params.setClassification(JDBC_CLASSIFICATION);
+        FilterCriteria filterCriteria = getSingleFilterCondition("attr1", Operator.CONTAINS, "数据");
+        params.setTagFilters(filterCriteria);
+        params.setLimit(20);
+
+        SearchContext context = new SearchContext(params, typeRegistry, graph, indexer.getVertexIndexKeys());
+        ClassificationSearchProcessor processor = new ClassificationSearchProcessor(context);
+        List<AtlasVertex> vertices = processor.execute();
+
+        Assert.assertTrue(CollectionUtils.isNotEmpty(vertices));
+        assertEquals(vertices.size(), 1);
+        List<String> guids = vertices.stream().map(g -> {
+            try {
+                return entityRetriever.toAtlasEntityHeader(g).getGuid();
+            } catch (AtlasBaseException e) {
+                fail("Failure in mapping vertex to AtlasEntityHeader");
+            }
+            return "";
+        }).collect(Collectors.toList());
+        Assert.assertTrue(guids.contains(CJKGUID2));
+
+    }
+
+    //Begins with Multiple char
+    @Test
+    public void searchJapaneseChineseByTagBeginsWithMultiple() throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+        params.setClassification(JDBC_CLASSIFICATION);
+        FilterCriteria filterCriteria = getSingleFilterCondition("attr1", Operator.STARTS_WITH, "数据");
+        params.setTagFilters(filterCriteria);
+        params.setLimit(20);
+
+        SearchContext context = new SearchContext(params, typeRegistry, graph, indexer.getVertexIndexKeys());
+        ClassificationSearchProcessor processor = new ClassificationSearchProcessor(context);
+        List<AtlasVertex> vertices = processor.execute();
+
+        Assert.assertTrue(CollectionUtils.isNotEmpty(vertices));
+        assertEquals(vertices.size(), 1);
+        List<String> guids = vertices.stream().map(g -> {
+            try {
+                return entityRetriever.toAtlasEntityHeader(g).getGuid();
+            } catch (AtlasBaseException e) {
+                fail("Failure in mapping vertex to AtlasEntityHeader");
+            }
+            return "";
+        }).collect(Collectors.toList());
+        Assert.assertTrue(guids.contains(CJKGUID2));
+
+    }
+
+    //ENDS with single char
+    @Test
+    public void searchJapaneseChineseByTagEndsWithMultiple() throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+        params.setClassification(JDBC_CLASSIFICATION);
+        FilterCriteria filterCriteria = getSingleFilterCondition("attr1", Operator.ENDS_WITH, "数据");
+        params.setTagFilters(filterCriteria);
+        params.setLimit(20);
+
+        SearchContext context = new SearchContext(params, typeRegistry, graph, indexer.getVertexIndexKeys());
+        ClassificationSearchProcessor processor = new ClassificationSearchProcessor(context);
+        List<AtlasVertex> vertices = processor.execute();
+
+        Assert.assertTrue(CollectionUtils.isNotEmpty(vertices));
+        assertEquals(vertices.size(), 1);
+        List<String> guids = vertices.stream().map(g -> {
+            try {
+                return entityRetriever.toAtlasEntityHeader(g).getGuid();
+            } catch (AtlasBaseException e) {
+                fail("Failure in mapping vertex to AtlasEntityHeader");
+            }
+            return "";
+        }).collect(Collectors.toList());
+        Assert.assertTrue(guids.contains(CJKGUID2));
+
+    }
+
 
     @AfterClass
     public void teardown() throws Exception {
