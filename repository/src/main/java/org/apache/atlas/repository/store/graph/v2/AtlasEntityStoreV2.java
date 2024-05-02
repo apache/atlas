@@ -1803,11 +1803,11 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 break;
 
             case DATA_DOMAIN_ENTITY_TYPE:
-                preProcessor = new DomainPreProcessor(typeRegistry, entityRetriever, graph, entityGraphMapper);
+                preProcessor = new DomainPreProcessor(typeRegistry, entityRetriever, graph);
                 break;
 
             case DATA_PRODUCT_ENTITY_TYPE:
-                preProcessor = new DataProductPreProcessor(typeRegistry, entityRetriever, graph, entityGraphMapper);
+                preProcessor = new DataProductPreProcessor(typeRegistry, entityRetriever, graph);
                 break;
 
             case QUERY_ENTITY_TYPE:

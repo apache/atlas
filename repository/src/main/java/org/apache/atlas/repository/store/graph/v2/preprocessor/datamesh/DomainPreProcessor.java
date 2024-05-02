@@ -30,7 +30,6 @@ import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -51,13 +50,11 @@ import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 public class DomainPreProcessor extends AbstractDomainPreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(DomainPreProcessor.class);
     private AtlasEntityHeader parentDomain;
-    private EntityGraphMapper entityGraphMapper;
     private EntityMutationContext context;
 
     public DomainPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever,
-                              AtlasGraph graph, EntityGraphMapper entityGraphMapper) {
+                              AtlasGraph graph) {
         super(typeRegistry, entityRetriever, graph);
-        this.entityGraphMapper = entityGraphMapper;
     }
 
     @Override
@@ -90,22 +87,9 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processCreateDomain");
         String domainName = (String) entity.getAttribute(NAME);
         String parentDomainQualifiedName = (String) entity.getAttribute(PARENT_DOMAIN_QN);
-        Map<String, String> customAttributes = new HashMap<>();
-        customAttributes.put(MIGRATION_CUSTOM_ATTRIBUTE, "true");
 
         domainExists(domainName, parentDomainQualifiedName);
-        entity.setAttribute(QUALIFIED_NAME, createQualifiedName(parentDomainQualifiedName));
-        entity.setCustomAttributes(customAttributes);
-
         RequestContext.get().endMetricRecord(metricRecorder);
-    }
-
-    private static String createQualifiedName(String parentDomainQualifiedName) {
-        if (StringUtils.isNotEmpty(parentDomainQualifiedName)) {
-            return parentDomainQualifiedName + "/domain/" + getUUID();
-        } else{
-            return "default/domain" + "/" + getUUID();
-        }
     }
 
     private void processUpdateDomain(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {

@@ -6,7 +6,6 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.*;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -28,7 +27,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
     private AtlasEntityHeader parentDomain;
     private EntityMutationContext context;
     public DataProductPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever,
-                              AtlasGraph graph, EntityGraphMapper entityGraphMapper) {
+                              AtlasGraph graph) {
         super(typeRegistry, entityRetriever, graph);
     }
 
@@ -61,23 +60,9 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processCreateProduct");
         String productName = (String) entity.getAttribute(NAME);
         String parentDomainQualifiedName = (String) entity.getAttribute(PARENT_DOMAIN_QN);
-        Map<String, String> customAttributes = new HashMap<>();
-        customAttributes.put(MIGRATION_CUSTOM_ATTRIBUTE, "true");
 
         productExists(productName, parentDomainQualifiedName);
-        String newQualifiedName = createQualifiedName(parentDomainQualifiedName);
-
-        entity.setAttribute(QUALIFIED_NAME, newQualifiedName);
-        entity.setCustomAttributes(customAttributes);
-
         RequestContext.get().endMetricRecord(metricRecorder);
-    }
-
-    private static String createQualifiedName(String parentDomainQualifiedName) throws AtlasBaseException {
-        if (StringUtils.isEmpty(parentDomainQualifiedName)) {
-            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Parent Domain Qualified Name cannot be empty or null");
-        }
-        return parentDomainQualifiedName + "/product/" + getUUID();
     }
 
     private void processUpdateDomain(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
