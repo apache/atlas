@@ -137,10 +137,10 @@ public abstract class AbstractRedisService implements RedisService {
         return config;
     }
 
-    Config getSearchContextCacheConfig() {
+    Config getCacheImplConfig() {
         Config config = new Config();
         config.useSentinelServers()
-                .setClientName(ATLAS_METASTORE_SERVICE+"-searchContextCache")
+                .setClientName(ATLAS_METASTORE_SERVICE+"-redisCache")
                 .setReadMode(ReadMode.MASTER_SLAVE)
                 .setCheckSentinelsList(false)
                 .setKeepAlive(true)

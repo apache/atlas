@@ -181,11 +181,7 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         try {
             if(contextIdExists) {
                 // If the search context id and greater sequence no is present, then we need to delete the previous search context async
-                try {
                     processRequestWithSameSearchContextId(searchParams);
-                } catch (Exception e) {
-                    LOG.error("Failed to process the request with the same search context ID {}", e.getMessage());
-                }
             }
             AsyncQueryResult response = submitAsyncSearch(searchParams, false).get();
             //Sleep for 5 seconds to allow ES to process the request
@@ -242,6 +238,8 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         * We also need to check if the search ID exists and delete if necessary
      */
     private void processRequestWithSameSearchContextId(SearchParams searchParams) {
+        AtlasPerfMetrics.MetricRecorder funcMetric = RequestContext.get().startMetricRecord("processRequestWithSameSearchContextId");
+
         try {
             AtlasPerfMetrics.Metric metric = new AtlasPerfMetrics.Metric("process_async_request_count");
             metric.setMetricType(AtlasMetricType.COUNTER);
@@ -267,6 +265,9 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         }
         catch (Exception e) {
             LOG.error("Failed to process the request with the same search context ID {}", e.getMessage());
+        }
+        finally {
+            RequestContext.get().endMetricRecord(funcMetric);
         }
     }
 
