@@ -239,10 +239,7 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
      */
     private void processRequestWithSameSearchContextId(SearchParams searchParams) {
         AtlasPerfMetrics.MetricRecorder funcMetric = RequestContext.get().startMetricRecord("processRequestWithSameSearchContextId");
-
         try {
-            AtlasPerfMetrics.Metric metric = new AtlasPerfMetrics.Metric("process_async_request_count");
-            metric.setMetricType(AtlasMetricType.COUNTER);
             // Extract search context ID and sequence number
             String currentSearchContextId = searchParams.getSearchContextId();
             Integer currentSequenceNumber = searchParams.getSearchContextSequenceNo();
@@ -254,14 +251,12 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
                 // If the search ID exists, then we need to delete the search context
                 deleteAsyncSearchResponse(previousESSearchId);
             }
-            metric.incrementInvocations();
-            RequestContext.get().addApplicationMetrics(metric);
         } catch (RedisException e) {
-            AtlasPerfMetrics.Metric metric = new AtlasPerfMetrics.Metric("async_request_redis_failure_counter");
-            metric.setMetricType(AtlasMetricType.COUNTER);
-            metric.incrementInvocations();
+            AtlasPerfMetrics.Metric failureCounter = new AtlasPerfMetrics.Metric("async_request_redis_failure_counter");
+            failureCounter.setMetricType(AtlasMetricType.COUNTER);
+            failureCounter.incrementInvocations();
             LOG.error("Failed to process the request with the same search context ID {}", e.getMessage());
-            RequestContext.get().addApplicationMetrics(metric);
+            RequestContext.get().addApplicationMetrics(failureCounter);
         }
         catch (Exception e) {
             LOG.error("Failed to process the request with the same search context ID {}", e.getMessage());
