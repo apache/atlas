@@ -21,6 +21,7 @@ package org.apache.atlas.web.filters;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.repository.graphdb.janus.FeatureFlagStore;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.web.service.ActiveInstanceState;
 import org.apache.atlas.web.service.ServiceState;
@@ -88,13 +89,15 @@ public class ActiveServerFilter implements Filter {
                          FilterChain filterChain) throws IOException, ServletException {
         // If maintenance mode is enabled, return a 503
         if (AtlasConfiguration.ATLAS_MAINTENANCE_MODE.getBoolean()) {
-            // Block all the POST, PUT, DELETE operations
-            HttpServletRequest request = (HttpServletRequest) servletRequest;
-            HttpServletResponse response = (HttpServletResponse) servletResponse;
-            if (isBlockedMethod(request.getMethod()) && !isWhitelistedAPI(request.getRequestURI())) {
-                LOG.error("Maintenance mode enabled. Blocking request: {}", request.getRequestURI());
-                sendMaintenanceModeResponse(response);
-                return; // Stop further processing
+            if (FeatureFlagStore.evaluate("maintenance_mode", "true")) {
+                // Block all the POST, PUT, DELETE operations
+                HttpServletRequest request = (HttpServletRequest) servletRequest;
+                HttpServletResponse response = (HttpServletResponse) servletResponse;
+                if (isBlockedMethod(request.getMethod()) && !isWhitelistedAPI(request.getRequestURI())) {
+                    LOG.error("Maintenance mode enabled. Blocking request: {}", request.getRequestURI());
+                    sendMaintenanceModeResponse(response);
+                    return; // Stop further processing
+                }
             }
         }
         
