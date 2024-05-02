@@ -1434,4 +1434,33 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
             fail("The BusinessMetadata Attribute should have been assigned " +e);
         }
     }
+
+
+    @Test(dependsOnMethods = "deleteLabelsToEntity")
+    public void testCJKaddLabel() {
+
+        Set<String> labels = new HashSet();
+        labels.add("国家");
+        try {
+            AtlasEntity tblEntity = getEntityFromStore(tblEntityGuid);
+            int count = tblEntity.getLabels().size();
+            entityStore.setLabels(tblEntityGuid, labels);
+            tblEntity = getEntityFromStore(tblEntityGuid);
+            assertEquals(tblEntity.getLabels().size(), count + 1);
+        } catch (Exception e) {
+            LOG.error("An error occurred : " + e);
+        }
+    }
+
+    @Test()
+    public void addCJKCustomAttributes() throws Exception {
+
+        AtlasEntity tblEntity = getEntityFromStore(tblEntityGuid);
+        Map<String, String> customAttributes = new HashMap<>();
+        customAttributes.put("国家", "国家");
+        tblEntity.setCustomAttributes(customAttributes);
+        entityStore.createOrUpdate(new AtlasEntityStream(tblEntity), false);
+        tblEntity = getEntityFromStore(tblEntityGuid);
+        assertEquals(customAttributes, tblEntity.getCustomAttributes());
+    }
 }

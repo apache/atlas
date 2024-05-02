@@ -466,6 +466,16 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     @Override
     @GraphTransaction
     public AtlasSearchResult searchWithParameters(SearchParameters searchParameters) throws AtlasBaseException {
+        String query = searchParameters.getQuery();
+
+        if (StringUtils.isNotEmpty(query)) {
+
+            String modifiedString = StringUtils.strip(query, "*");
+
+            if (AtlasStructType.AtlasAttribute.hastokenizeChar(modifiedString)) {
+                searchParameters.setQuery(modifiedString);
+            }
+        }
         return searchWithSearchContext(new SearchContext(searchParameters, typeRegistry, graph, indexer.getVertexIndexKeys()));
     }
 

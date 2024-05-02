@@ -49,6 +49,8 @@ public class TestAtlasStructType {
     private final AtlasStructType structType;
     private final List<Object>    validValues;
     private final List<Object>    invalidValues;
+    private final List<String>    tokenizedValue;
+    private final List<String>    nonTokenizedValue;
 
     {
         AtlasAttributeDef multiValuedAttribMinMax = new AtlasAttributeDef();
@@ -126,6 +128,31 @@ public class TestAtlasStructType {
         invalidValues.add(new HashSet());   // incorrect datatype
         invalidValues.add(new ArrayList()); // incorrect datatype
         invalidValues.add(new String[] {}); // incorrect datatype
+
+        tokenizedValue = new ArrayList<>();
+
+        tokenizedValue.add("test[data"); //added special char [
+        tokenizedValue.add("test]data"); //added special char ]
+        tokenizedValue.add("狗"); //single char chinese data
+        tokenizedValue.add("数据"); //mutiple char chinese data
+        tokenizedValue.add("test data"); //english words with space
+        tokenizedValue.add("testdata "); //space after testdata
+        tokenizedValue.add("私は日本語を話します"); //japanese word
+        tokenizedValue.add("元帳"); //japanese ledger char
+        tokenizedValue.add("mydata&"); //added special char &
+        tokenizedValue.add("test.1data");
+        tokenizedValue.add("test:1data");
+
+        nonTokenizedValue = new ArrayList<>();
+
+        nonTokenizedValue.add("test.data");
+        nonTokenizedValue.add("test:data");
+        nonTokenizedValue.add("test_data");
+        nonTokenizedValue.add("test:");
+        nonTokenizedValue.add("test.");
+        nonTokenizedValue.add("test_");
+        nonTokenizedValue.add("レシート");
+        nonTokenizedValue.add("test");
     }
 
     @Test
@@ -196,6 +223,16 @@ public class TestAtlasStructType {
         } catch (AtlasBaseException excp) {
             assertTrue(excp.getAtlasErrorCode() == AtlasErrorCode.INVALID_ATTRIBUTE_TYPE_FOR_CARDINALITY);
             invalidStructDef.removeAttribute("invalidAttributeDef");
+        }
+    }
+
+    @Test
+    public void testTokenizeChar() {
+        for (String valid : tokenizedValue) {
+            assertTrue(AtlasStructType.AtlasAttribute.hastokenizeChar(valid));
+        }
+        for (String invalid : nonTokenizedValue) {
+            assertFalse(AtlasStructType.AtlasAttribute.hastokenizeChar(invalid));
         }
     }
 

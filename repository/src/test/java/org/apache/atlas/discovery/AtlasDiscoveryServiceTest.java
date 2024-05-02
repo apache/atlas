@@ -42,6 +42,7 @@ import org.testng.Assert;
 import org.testng.annotations.*;
 
 import javax.inject.Inject;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -69,6 +70,7 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
         createDimensionalTaggedEntity("sales");
         createSpecialCharTestEntities();
         setupRelationshipTestData();
+        createJapaneseEntityWithDescription();
     }
 
     /*  TermSearchProcessor(TSP),
@@ -1047,6 +1049,78 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
         assertEquals(sr.getRelations().size(), 4);
     }
 
+    @Test
+    public void cjkCharQuickSearch() throws AtlasBaseException {
+        addLabels();
+        String searchValue = "你";
+        int expected = 1;
+
+        QuickSearchParameters params = new QuickSearchParameters();
+        params.setQuery(searchValue);
+        params.setLimit(5);
+        params.setOffset(0);
+
+        AtlasQuickSearchResult searchResult = discoveryService.quickSearch(params);
+        assertSearchResult(searchResult.getSearchResults(), expected, searchValue);
+    }
+
+    @Test(dependsOnMethods = "cjkCharQuickSearch")
+    public void cjkCharBasicSearch() throws AtlasBaseException {
+        String searchValue = "你好";
+        int expected = 1;
+
+        SearchParameters params = new SearchParameters();
+        params.setQuery(searchValue);
+        params.setLimit(5);
+        params.setOffset(0);
+
+        AtlasSearchResult searchResult = discoveryService.searchWithParameters(params);
+        assertSearchResult(searchResult, expected, searchValue);
+    }
+
+    @Test
+    public void japaneseReceiptStarSearch() throws AtlasBaseException {
+        String searchValue = "レシート";
+        int expected = 1;
+
+        SearchParameters params = new SearchParameters();
+        params.setQuery(searchValue);
+        params.setTypeName(HDFS_PATH);
+        params.setLimit(5);
+        params.setOffset(0);
+
+        AtlasSearchResult searchResult = discoveryService.searchWithParameters(params);
+        assertSearchResult(searchResult, expected, searchValue);
+    }
+
+    @Test
+    public void japaneseLedgerSearch() throws AtlasBaseException {
+        String searchValue = "元帳";
+        int expected = 2;
+
+        SearchParameters params = new SearchParameters();
+        params.setQuery(searchValue);
+        params.setLimit(5);
+        params.setOffset(0);
+
+        AtlasSearchResult searchResult = discoveryService.searchWithParameters(params);
+        assertSearchResult(searchResult, expected, searchValue);
+    }
+    
+    @Test
+    public void japaneseLedgerStarSearch() throws AtlasBaseException {
+        String searchValue = "の台*";
+        int expected = 1;
+
+        SearchParameters params = new SearchParameters();
+        params.setQuery(searchValue);
+        params.setLimit(5);
+        params.setOffset(0);
+
+        AtlasSearchResult searchResult = discoveryService.searchWithParameters(params);
+        assertSearchResult(searchResult, expected, searchValue);
+    }
+
     private String gethiveTableSalesFactGuid() throws AtlasBaseException {
         if (salesFactGuid == null) {
             SearchParameters params = new SearchParameters();
@@ -1105,6 +1179,21 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
         entityStore.addClassification(Arrays.asList(guid), new AtlasClassification(DIMENSIONAL_CLASSIFICATION, attr));
     }
 
+    private void createJapaneseEntityWithDescription() throws AtlasBaseException {
+        AtlasEntity entity = new AtlasEntity(HDFS_PATH);
+        entity.setAttribute("name", "元帳");
+        entity.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, "レシート");
+        entity.setAttribute("path", "レシート");
+
+        entityStore.createOrUpdate(new AtlasEntityStream(new AtlasEntity.AtlasEntitiesWithExtInfo(entity)), false);
+
+        AtlasEntity entity2 = new AtlasEntity(HDFS_PATH);
+        entity2.setAttribute("name", "cjk");
+        entity2.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, "の台帳");
+        entity2.setAttribute("path", "cjk");
+
+        entityStore.createOrUpdate(new AtlasEntityStream(new AtlasEntity.AtlasEntitiesWithExtInfo(entity2)), false);
+    }
 
     private void assertSearchProcessorWithoutMarker(SearchParameters params, int expected) throws AtlasBaseException {
         assertSearchProcessor(params, expected, false);

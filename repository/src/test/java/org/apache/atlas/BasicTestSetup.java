@@ -56,6 +56,7 @@ public abstract class BasicTestSetup extends AtlasTestBase {
     private static final   String STORAGE_DESC_TYPE = "hive_storagedesc";
     private static final   String VIEW_TYPE         = "hive_process";
     protected static final String DATASET_SUBTYPE   = "Asset";
+    protected static final String HDFS_PATH         = "hdfs_path";
 
     //Classification type //
     public static final String DIMENSION_CLASSIFICATION    = "Dimension";
@@ -94,6 +95,7 @@ public abstract class BasicTestSetup extends AtlasTestBase {
     protected void setupTestData() {
         loadBaseModels();
         loadHiveDataset();
+        loadFsDataset();
         loadEmployeeDataset();
         assignGlossary();
     }
@@ -145,6 +147,18 @@ public abstract class BasicTestSetup extends AtlasTestBase {
              hiveEntities = entityStore.createOrUpdate(new AtlasEntityStream(hiveTestEntities), false);
         } catch (AtlasBaseException e) {
             fail("Hive entities need to be created for test to run!");
+        }
+    }
+
+    protected void loadFsDataset() {
+        if (!baseLoaded) {
+            loadBaseModels();
+        }
+
+        try {
+            loadModelFromJson("1000-Hadoop/1020-fs_model.json", typeDefStore, typeRegistry);
+        } catch (IOException | AtlasBaseException e) {
+            fail("Fs model setup is required for test to run!");
         }
     }
 
@@ -342,7 +356,8 @@ public abstract class BasicTestSetup extends AtlasTestBase {
                 new AtlasClassificationDef(PII_CLASSIFICATION, "PII Classification", "1.0"),
                 new AtlasClassificationDef(METRIC_CLASSIFICATION, "Metric Classification", "1.0"),
                 new AtlasClassificationDef(ETL_CLASSIFICATION, "ETL Classification", "1.0"),
-                new AtlasClassificationDef(JDBC_CLASSIFICATION, "JdbcAccess Classification", "1.0"),
+                new AtlasClassificationDef(JDBC_CLASSIFICATION, "JdbcAccess Classification", "1.0",
+                        Arrays.asList(new AtlasStructDef.AtlasAttributeDef("attr1","string"))),
                 new AtlasClassificationDef(LOGDATA_CLASSIFICATION, "LogData Classification", "1.0"),
                 new AtlasClassificationDef(DIMENSIONAL_CLASSIFICATION,"Dimensional Classification", "1.0" ,
                         Arrays.asList(new AtlasStructDef.AtlasAttributeDef("attr1","string"))));
@@ -758,5 +773,25 @@ public abstract class BasicTestSetup extends AtlasTestBase {
             }
         }
         return entities;
+    }
+
+    public void addLabels(){
+
+        for(AtlasEntityHeader entity : hiveEntities.getCreatedEntities()) {
+
+            if (entity.getTypeName().equals(HIVE_TABLE_TYPE)){
+                Set<String> labels = new HashSet<>();
+                labels.add("你好");
+
+                try {
+                    entityStore.setLabels(entity.getGuid(), labels);
+
+                } catch (AtlasBaseException e) {
+                    fail("Failed to add Labels for Chinese characters to entity");
+                }
+                break;
+            }
+        }
+
     }
 }
