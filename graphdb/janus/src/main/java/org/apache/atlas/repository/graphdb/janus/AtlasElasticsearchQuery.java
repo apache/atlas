@@ -26,6 +26,7 @@ import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.DirectIndexQueryResult;
 import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.utils.AtlasMetricType;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.NotImplementedException;
@@ -48,6 +49,7 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.janusgraph.util.encoding.LongEncoding;
+import org.redisson.client.RedisException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -180,7 +182,7 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
             if(contextIdExists) {
                 // If the search context id and greater sequence no is present, then we need to delete the previous search context async
                 try {
-                    CompletableFuture.runAsync(() -> processRequestWithSameSearchContextId(searchParams));
+                    processRequestWithSameSearchContextId(searchParams);
                 } catch (Exception e) {
                     LOG.error("Failed to process the request with the same search context ID {}", e.getMessage());
                 }
@@ -240,8 +242,9 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         * We also need to check if the search ID exists and delete if necessary
      */
     private void processRequestWithSameSearchContextId(SearchParams searchParams) {
-        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("processRequestWithSameSearchContextId");
         try {
+            AtlasPerfMetrics.Metric metric = new AtlasPerfMetrics.Metric("process_async_request_count");
+            metric.setMetricType(AtlasMetricType.COUNTER);
             // Extract search context ID and sequence number
             String currentSearchContextId = searchParams.getSearchContextId();
             Integer currentSequenceNumber = searchParams.getSearchContextSequenceNo();
@@ -253,8 +256,17 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
                 // If the search ID exists, then we need to delete the search context
                 deleteAsyncSearchResponse(previousESSearchId);
             }
-        } finally {
-            RequestContext.get().endMetricRecord(metric);
+            metric.incrementInvocations();
+            RequestContext.get().addApplicationMetrics(metric);
+        } catch (RedisException e) {
+            AtlasPerfMetrics.Metric metric = new AtlasPerfMetrics.Metric("async_request_redis_failure_counter");
+            metric.setMetricType(AtlasMetricType.COUNTER);
+            metric.incrementInvocations();
+            LOG.error("Failed to process the request with the same search context ID {}", e.getMessage());
+            RequestContext.get().addApplicationMetrics(metric);
+        }
+        catch (Exception e) {
+            LOG.error("Failed to process the request with the same search context ID {}", e.getMessage());
         }
     }
 
