@@ -128,6 +128,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
 
         try {
             String productName = (String) product.getAttribute(NAME);
+            String updatedQualifiedName;
 
             if(StringUtils.isEmpty(targetDomainQualifiedName)){
                 throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "DataProduct can only be moved to another Domain.");
@@ -138,10 +139,11 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
             productExists(productName, targetDomainQualifiedName);
 
             if(StringUtils.isEmpty(sourceDomainQualifiedName)){
-                sourceDomainQualifiedName = "default";
+                updatedQualifiedName = targetDomainQualifiedName + product.getAttribute(QUALIFIED_NAME);
             }
-
-            String updatedQualifiedName = currentDataProductQualifiedName.replace(sourceDomainQualifiedName, targetDomainQualifiedName);
+            else{
+                updatedQualifiedName = currentDataProductQualifiedName.replace(sourceDomainQualifiedName, targetDomainQualifiedName);
+            }
 
             product.setAttribute(QUALIFIED_NAME, updatedQualifiedName);
             product.setAttribute(PARENT_DOMAIN_QN, targetDomainQualifiedName);
@@ -184,7 +186,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
 
 
             Map<String, Object> bool = new HashMap<>();
-            if (parentDomain != null) {
+            if (parentDomain != null && StringUtils.isNotEmpty(parentDomainQualifiedName)){
                 mustClauseList.add(mapOf("term", mapOf("parentDomainQualifiedName", parentDomainQualifiedName)));
             } else {
                 List<Map<String, Object>> mustNotClauseList = new ArrayList();

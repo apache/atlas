@@ -90,9 +90,11 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
     private void processCreateDomain(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processCreateDomain");
         String domainName = (String) entity.getAttribute(NAME);
-        String parentDomainQualifiedName = (String) entity.getAttribute(PARENT_DOMAIN_QN);
+        if(parentDomain != null ){
+            String parentDomainQualifiedName = (String) parentDomain.getAttribute(QUALIFIED_NAME);
+            domainExists(domainName, parentDomainQualifiedName);
+        }
 
-        domainExists(domainName, parentDomainQualifiedName);
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
@@ -311,7 +313,7 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
 
 
             Map<String, Object> bool = new HashMap<>();
-            if (parentDomain != null) {
+            if (parentDomain != null && StringUtils.isNotEmpty(parentDomainQualifiedName)) {
                 mustClauseList.add(mapOf("term", mapOf("parentDomainQualifiedName", parentDomainQualifiedName)));
             } else {
                 List<Map<String, Object>> mustNotClauseList = new ArrayList();

@@ -107,6 +107,7 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
                 AtlasEntityType entityType = typeRegistry.getEntityTypeByName(POLICY_ENTITY_TYPE);
 
                 for (AtlasEntityHeader policy : policies) {
+                    LOG.info("Updating policy {}", policy);
                     AtlasVertex policyVertex = entityRetriever.getEntityVertex(policy.getGuid());
 
                     AtlasEntity policyEntity = entityRetriever.toAtlasEntity(policyVertex);
