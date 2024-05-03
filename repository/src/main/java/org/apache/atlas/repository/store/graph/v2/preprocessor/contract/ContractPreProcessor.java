@@ -114,10 +114,9 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
         authorizeContractCreateOrUpdate(entity, associatedAsset);
 
         boolean contractSync = syncContractCertificateStatus(entity, contract);
-        if (contractSync) {
-            contractString = DataContract.serialize(contract);
-            entity.setAttribute(ATTR_CONTRACT, contractString);
-        }
+        contractString = DataContract.serialize(contract);
+        entity.setAttribute(ATTR_CONTRACT, contractString);
+
 
         AtlasEntity currentVersionEntity = getCurrentVersion(associatedAsset.getEntity().getGuid());
         Long newVersionNumber = 1L;
