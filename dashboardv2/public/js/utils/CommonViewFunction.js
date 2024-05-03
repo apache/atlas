@@ -155,7 +155,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                             scope.$('td div[data-id="' + id + '"]').html('<a href="#!/detailPage/' + id + '">' + _.escape(id) + '</a>');
                         }
                         if (deleteButton.length) {
-                            scope.$('td div[data-id="' + id + '"]').addClass('block readOnlyLink');
+                            scope.$('td div[data-id="' + id + '"]').addClass('block whitespace-normal readOnlyLink');
                             scope.$('td div[data-id="' + id + '"]').append(deleteButton);
                         }
                     },
@@ -248,7 +248,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                     if (readOnly) {
                         if (!fetch) {
                             tempLink += '<button title="Deleted" class="btn btn-action btn-md deleteBtn"><i class="fa fa-trash"></i></button>';
-                            subLink += '<div class="block readOnlyLink">' + tempLink + '</div>';
+                            subLink += '<div class="block whitespace-normal readOnlyLink">' + tempLink + '</div>';
                         } else {
                             fetch = false;
                             subLink += tempLink;
