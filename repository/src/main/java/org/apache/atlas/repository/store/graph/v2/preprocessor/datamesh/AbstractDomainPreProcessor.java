@@ -111,8 +111,10 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
                     AtlasVertex policyVertex = entityRetriever.getEntityVertex(policy.getGuid());
 
                     AtlasEntity policyEntity = entityRetriever.toAtlasEntity(policyVertex);
+                    String policyCategory = (String) policyEntity.getAttribute(ATTR_POLICY_CATEGORY);
 
-                    if (policyEntity.hasRelationshipAttribute("accessControl") && policyEntity.getAttribute(ATTR_POLICY_CATEGORY) != MESH_POLICY_CATEGORY) {
+                    if (policyEntity.hasRelationshipAttribute("accessControl") && !StringUtils.equals(policyCategory, MESH_POLICY_CATEGORY)) {
+                        LOG.info("PolicyCategory {}", policyCategory);
                         AtlasVertex accessControl = entityRetriever.getEntityVertex(((AtlasObjectId) policyEntity.getRelationshipAttribute("accessControl")).getGuid());
                         context.getDiscoveryContext().addResolvedGuid(GraphHelper.getGuid(accessControl), accessControl);
                     }
