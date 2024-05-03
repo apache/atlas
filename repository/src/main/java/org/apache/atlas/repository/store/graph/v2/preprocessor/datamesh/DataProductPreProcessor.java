@@ -3,6 +3,7 @@ package org.apache.atlas.repository.store.graph.v2.preprocessor.datamesh;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.featureflag.FeatureFlagStore;
 import org.apache.atlas.model.instance.*;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -29,8 +30,8 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
     private List<String> currentResources;
     private Map<String, String> updatedPolicyResources;
     public DataProductPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever,
-                              AtlasGraph graph) {
-        super(typeRegistry, entityRetriever, graph);
+                                   AtlasGraph graph, FeatureFlagStore featureFlagStore) {
+        super(typeRegistry, entityRetriever, graph, featureFlagStore);
         this.currentResources = new ArrayList<>();
         this.updatedPolicyResources = new HashMap<>();
     }

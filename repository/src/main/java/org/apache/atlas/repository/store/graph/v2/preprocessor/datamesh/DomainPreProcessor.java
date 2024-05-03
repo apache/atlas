@@ -21,6 +21,7 @@ package org.apache.atlas.repository.store.graph.v2.preprocessor.datamesh;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.featureflag.FeatureFlagStore;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
@@ -55,8 +56,8 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
     private Map<String, String> updatedPolicyResources;
 
     public DomainPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever,
-                              AtlasGraph graph) {
-        super(typeRegistry, entityRetriever, graph);
+                              AtlasGraph graph, FeatureFlagStore featureFlagStore) {
+        super(typeRegistry, entityRetriever, graph, featureFlagStore);
         this.currentResources = new ArrayList<>();
         this.updatedPolicyResources = new HashMap<>();
     }

@@ -24,14 +24,17 @@ import org.apache.atlas.authorize.AtlasEntityAccessRequest;
 import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.featureflag.FeatureFlagStore;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.AuthPolicyPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -56,12 +59,15 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
 
     protected final AtlasTypeRegistry typeRegistry;
     protected final EntityGraphRetriever entityRetriever;
-
+    private final PreProcessor preProcessor;
+    private final FeatureFlagStore featureFlagStore;
     protected EntityDiscoveryService discovery;
 
-    AbstractDomainPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, AtlasGraph graph) {
+    AbstractDomainPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, AtlasGraph graph, FeatureFlagStore featureFlagStore) {
         this.entityRetriever = entityRetriever;
         this.typeRegistry = typeRegistry;
+        this.preProcessor = new AuthPolicyPreProcessor(graph, typeRegistry, entityRetriever, featureFlagStore);
+        this.featureFlagStore = featureFlagStore;
 
         try {
             this.discovery = new EntityDiscoveryService(typeRegistry, graph, null, null, null, null);
@@ -134,6 +140,7 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
                     policyVertex.removeProperty(ATTR_POLICY_RESOURCES);
                     policyEntity.setAttribute(ATTR_POLICY_RESOURCES, updatedPolicyResourcesList);
                     context.addUpdated(policyEntity.getGuid(), policyEntity, entityType, policyVertex);
+                    this.preProcessor.processAttributes(policyEntity, context, EntityMutations.EntityOperation.UPDATE);
                 }
             }
 
