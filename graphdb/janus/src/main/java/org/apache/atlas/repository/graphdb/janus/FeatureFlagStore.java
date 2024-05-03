@@ -12,19 +12,34 @@ public class FeatureFlagStore {
         FeatureFlagStore.redisService = redisService;
     }
 
-    public static boolean evaluate(String key,String expectedValue) {
-        String updatedKey = createFeatureFlagNamespace(key);
-        if (updatedKey == null) {
-            return false;
+    public static boolean evaluate(String key, String expectedValue) {
+        boolean ret = false;
+        try{
+            if (StringUtils.isEmpty(key) || StringUtils.isEmpty(expectedValue))
+                return ret;
+            String value = redisService.getValue(addFeatureFlagNamespace(key));
+            ret = StringUtils.equals(value, expectedValue);
+        } catch (Exception e) {
+            return ret;
         }
-        String value = redisService.getValue(updatedKey);
-        return StringUtils.equals(value, expectedValue);
+        return ret;
     }
 
-    private static String createFeatureFlagNamespace(String value) {
-        if(StringUtils.isEmpty(value)) {
-            return null;
-        }
-        return "ff:"+ value;
+    public static void setFlag(String key, String value) {
+        if (StringUtils.isEmpty(key) || StringUtils.isEmpty(value))
+            return;
+
+        redisService.putValue(addFeatureFlagNamespace(key), value);
+    }
+
+    public static void deleteFlag(String key) {
+        if (StringUtils.isEmpty(key))
+            return;
+
+        redisService.removeValue(addFeatureFlagNamespace(key));
+    }
+
+    private static String addFeatureFlagNamespace(String key) {
+        return "ff:"+key;
     }
 }

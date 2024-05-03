@@ -48,6 +48,7 @@ import org.apache.atlas.model.metrics.AtlasMetrics;
 import org.apache.atlas.model.patches.AtlasPatch.AtlasPatches;
 import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.repository.audit.AtlasAuditService;
+import org.apache.atlas.repository.graphdb.janus.FeatureFlagStore;
 import org.apache.atlas.repository.impexp.AtlasServerService;
 import org.apache.atlas.repository.impexp.ExportImportAuditService;
 import org.apache.atlas.repository.impexp.ExportService;
@@ -930,6 +931,19 @@ public class AdminResource {
         return debugMetricsRESTSink.getMetrics();
     }
 
+    @POST
+    @Path("featureFlag")
+    @Produces(MediaType.APPLICATION_JSON)
+    public void setFeatureFlag(@QueryParam("key") String key, @QueryParam("value") String value) {
+        FeatureFlagStore.setFlag(key, value);
+    }
+
+    @DELETE
+    @Path("featureFlag/{flag}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public void deleteFeatureFlag(@PathParam("flag") String key) {
+        FeatureFlagStore.deleteFlag(key);
+    }
     private String getEditableEntityTypes(Configuration config) {
         String ret = DEFAULT_EDITABLE_ENTITY_TYPES;
 
