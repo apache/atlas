@@ -2,10 +2,13 @@ package org.apache.atlas.repository.graphdb.janus;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.service.redis.RedisService;
 import org.apache.atlas.utils.AtlasPerfMetrics;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 @Component
 public class SearchContextCache {
+    private static final Logger LOG = LoggerFactory.getLogger(SearchContextCache.class);
     private static RedisService redisService = null;
 
     public static final String INVALID_SEQUENCE = "invalid_sequence";
@@ -30,6 +33,7 @@ public class SearchContextCache {
         try {
             return redisService.getValue(key);
         } catch (Exception e) {
+            LOG.error("Error while fetching value from Redis", e);
             return null;
         }
 
