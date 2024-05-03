@@ -51,12 +51,14 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(DomainPreProcessor.class);
     private AtlasEntityHeader parentDomain;
     private EntityMutationContext context;
-    private List<String> currentResources = new ArrayList<>();
-    private Map<String, String> updatedPolicyResources = new HashMap<>();
+    private List<String> currentResources ;
+    private Map<String, String> updatedPolicyResources;
 
     public DomainPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever,
                               AtlasGraph graph) {
         super(typeRegistry, entityRetriever, graph);
+        this.currentResources = new ArrayList<>();
+        this.updatedPolicyResources = new HashMap<>();
     }
 
     @Override
