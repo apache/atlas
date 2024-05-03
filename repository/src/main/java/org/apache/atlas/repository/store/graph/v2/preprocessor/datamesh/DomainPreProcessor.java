@@ -220,7 +220,7 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
             String currentResource = "entity:"+ currentDomainQualifiedName;
             String updatedResource = "entity:"+ updatedDomainQualifiedName;
             this.updatedPolicyResources.put(currentResource, updatedResource);
-            this.currentResources.add(currentDomainQualifiedName);
+            this.currentResources.add(currentResource);
 
             //update system properties
             GraphHelper.setModifiedByAsString(childDomainVertex, RequestContext.get().getUser());
@@ -275,7 +275,7 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
             String currentResource = "entity:"+ currentQualifiedName;
             String updatedResource = "entity:"+ updatedQualifiedName;
             this.updatedPolicyResources.put(currentResource, updatedResource);
-            this.currentResources.add(currentQualifiedName);
+            this.currentResources.add(currentResource);
 
             //update system properties
             GraphHelper.setModifiedByAsString(productVertex, RequestContext.get().getUser());

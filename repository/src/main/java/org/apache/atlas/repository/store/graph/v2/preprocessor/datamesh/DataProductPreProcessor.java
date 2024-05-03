@@ -151,7 +151,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
             String currentResource = "entity:"+ currentDataProductQualifiedName;
             String updatedResource = "entity:"+ updatedQualifiedName;
             this.updatedPolicyResources.put(currentResource, updatedResource);
-            this.currentResources.add(currentDataProductQualifiedName);
+            this.currentResources.add(currentResource);
 
             LOG.info("Moved dataProduct {} to Domain {}", productName, targetDomainQualifiedName);
 
