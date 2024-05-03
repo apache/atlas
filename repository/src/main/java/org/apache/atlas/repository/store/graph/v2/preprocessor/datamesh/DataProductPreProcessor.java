@@ -26,6 +26,8 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(DataProductPreProcessor.class);
     private AtlasEntityHeader parentDomain;
     private EntityMutationContext context;
+    private List<String> currentResources = new ArrayList<>();
+    private Map<String, String> updatedPolicyResources = new HashMap<>();
     public DataProductPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever,
                               AtlasGraph graph) {
         super(typeRegistry, entityRetriever, graph);
@@ -92,11 +94,16 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
             }
         }
 
+        if(entity.hasRelationshipAttribute(DATA_DOMAIN) && entity.getRelationshipAttribute(DATA_DOMAIN) == null){
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "DataProduct can only be moved to another Domain.");
+        }
+
         if (!currentParentDomainQualifiedName.equals(newParentDomainQualifiedName) && entity.hasRelationshipAttribute(DATA_DOMAIN)) {
             //Auth check
             isAuthorized(currentParentDomainHeader, parentDomain);
 
             processMoveDataProductToAnotherDomain(entity, currentParentDomainQualifiedName, newParentDomainQualifiedName, vertexQnName, superDomainQualifiedName);
+            updatePolicy(this.currentResources, this.updatedPolicyResources, this.context);
             entity.setAttribute(PARENT_DOMAIN_QN, newParentDomainQualifiedName);
 
         } else {
@@ -120,9 +127,17 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         try {
             String productName = (String) product.getAttribute(NAME);
 
+            if(StringUtils.isEmpty(targetDomainQualifiedName)){
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "DataProduct can only be moved to another Domain.");
+            }
+
             LOG.info("Moving dataProduct {} to Domain {}", productName, targetDomainQualifiedName);
 
             productExists(productName, targetDomainQualifiedName);
+
+            if(StringUtils.isEmpty(sourceDomainQualifiedName)){
+                sourceDomainQualifiedName = "default";
+            }
 
             String updatedQualifiedName = currentDataProductQualifiedName.replace(sourceDomainQualifiedName, targetDomainQualifiedName);
 
@@ -130,8 +145,11 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
             product.setAttribute(PARENT_DOMAIN_QN, targetDomainQualifiedName);
             product.setAttribute(SUPER_DOMAIN_QN, superDomainQualifiedName);
 
-            //Update policy
-            updatePolicy(currentDataProductQualifiedName, updatedQualifiedName, context);
+            //Store domainPolicies and resources to be updated
+            String currentResource = "entity:"+ currentDataProductQualifiedName;
+            String updatedResource = "entity:"+ updatedQualifiedName;
+            this.updatedPolicyResources.put(currentResource, updatedResource);
+            this.currentResources.add(currentDataProductQualifiedName);
 
             LOG.info("Moved dataProduct {} to Domain {}", productName, targetDomainQualifiedName);
 

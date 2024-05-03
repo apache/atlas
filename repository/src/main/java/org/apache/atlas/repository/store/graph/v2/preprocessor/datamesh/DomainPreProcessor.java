@@ -51,6 +51,8 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(DomainPreProcessor.class);
     private AtlasEntityHeader parentDomain;
     private EntityMutationContext context;
+    private List<String> currentResources = new ArrayList<>();
+    private Map<String, String> updatedPolicyResources = new HashMap<>();
 
     public DomainPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever,
                               AtlasGraph graph) {
@@ -106,6 +108,10 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
         String newParentDomainQualifiedName = "";
         String superDomainQualifiedName = "";
 
+        if(entity.hasRelationshipAttribute(SUB_DOMAIN_REL_TYPE) || entity.hasRelationshipAttribute(DATA_PRODUCT_REL_TYPE)){
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Cannot update Domain with subDomains or dataProducts");
+        }
+
         if(currentParentDomain != null){
             currentParentDomainHeader = entityRetriever.toAtlasEntityHeader(currentParentDomain.getGuid());
             currentParentDomainQualifiedName = (String) currentParentDomainHeader.getAttribute(QUALIFIED_NAME);
@@ -125,9 +131,7 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
             }
 
             //Auth check
-            if(parentDomain != null && currentParentDomainHeader != null){
-                isAuthorized(currentParentDomainHeader, parentDomain);
-            }
+            isAuthorized(currentParentDomainHeader, parentDomain);
 
             processMoveSubDomainToAnotherDomain(entity, vertex, currentParentDomainQualifiedName, newParentDomainQualifiedName, vertexQnName, superDomainQualifiedName);
 
@@ -178,6 +182,7 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
             }
 
             moveChildrenToAnotherDomain(domainVertex, superDomainQualifiedName, null, sourceDomainQualifiedName, targetDomainQualifiedName);
+            updatePolicy(this.currentResources, this.updatedPolicyResources, this.context);
 
             LOG.info("Moved subDomain {} to Domain {}", domainName, targetDomainQualifiedName);
 
@@ -209,8 +214,11 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
             childDomainVertex.setProperty(SUPER_DOMAIN_QN, superDomainQualifiedName);
             childDomainVertex.setProperty(PARENT_DOMAIN_QN, parentDomainQualifiedName);
 
-            //update policy
-            updatePolicy(currentDomainQualifiedName, updatedDomainQualifiedName, context);
+            //Store domainPolicies and resources to be updated
+            String currentResource = "entity:"+ currentDomainQualifiedName;
+            String updatedResource = "entity:"+ updatedDomainQualifiedName;
+            this.updatedPolicyResources.put(currentResource, updatedResource);
+            this.currentResources.add(currentDomainQualifiedName);
 
             //update system properties
             GraphHelper.setModifiedByAsString(childDomainVertex, RequestContext.get().getUser());
@@ -261,8 +269,11 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
             productVertex.setProperty(PARENT_DOMAIN_QN, parentDomainQualifiedName);
             productVertex.setProperty(SUPER_DOMAIN_QN, superDomainQualifiedName);
 
-            //update policy
-            updatePolicy(currentQualifiedName, updatedQualifiedName, context);
+            //Store domainPolicies and resources to be updated
+            String currentResource = "entity:"+ currentQualifiedName;
+            String updatedResource = "entity:"+ updatedQualifiedName;
+            this.updatedPolicyResources.put(currentResource, updatedResource);
+            this.currentResources.add(currentQualifiedName);
 
             //update system properties
             GraphHelper.setModifiedByAsString(productVertex, RequestContext.get().getUser());

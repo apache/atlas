@@ -70,42 +70,40 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
 
     protected void isAuthorized(AtlasEntityHeader sourceDomain, AtlasEntityHeader targetDomain) throws AtlasBaseException {
 
-        // source -> CREATE + UPDATE + DELETE
-        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, sourceDomain),
-                "create on source Domain: ", sourceDomain.getAttribute(NAME));
+       if(sourceDomain != null){
+           // source -> CREATE + UPDATE + DELETE
+           AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, sourceDomain),
+                   "create on source Domain: ", sourceDomain.getAttribute(NAME));
 
-        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, sourceDomain),
-                "update on source Domain: ", sourceDomain.getAttribute(NAME));
+           AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, sourceDomain),
+                   "update on source Domain: ", sourceDomain.getAttribute(NAME));
 
-        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_DELETE, sourceDomain),
-                "delete on source Domain: ", sourceDomain.getAttribute(NAME));
+           AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_DELETE, sourceDomain),
+                   "delete on source Domain: ", sourceDomain.getAttribute(NAME));
+       }
 
+       if(targetDomain != null){
+           // target -> CREATE + UPDATE + DELETE
+           AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, targetDomain),
+                   "create on target Domain: ", targetDomain.getAttribute(NAME));
 
-        // target -> CREATE + UPDATE + DELETE
-        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, targetDomain),
-                "create on target Domain: ", targetDomain.getAttribute(NAME));
+           AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, targetDomain),
+                   "update on target Domain: ", targetDomain.getAttribute(NAME));
 
-        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, targetDomain),
-                "update on target Domain: ", targetDomain.getAttribute(NAME));
-
-        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_DELETE, targetDomain),
-                "delete on target Domain: ", targetDomain.getAttribute(NAME));
+           AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_DELETE, targetDomain),
+                   "delete on target Domain: ", targetDomain.getAttribute(NAME));
+       }
     }
 
-    protected void updatePolicy(String currentQualifiedName, String updatedQualifiedName, EntityMutationContext context) throws AtlasBaseException {
+    protected void updatePolicy(List<String> currentResources, Map<String, String> updatedPolicyResources, EntityMutationContext context) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("updateDomainPolicy");
         try {
-            LOG.info("Updating policy for entity {}", currentQualifiedName);
-            Map<String, Object> updatedpolicyResources = new HashMap<>();
+            LOG.info("Updating policies for entities {}", currentResources);
 
-            String currentResource = "entity:"+ currentQualifiedName;
-            String updatedResource = "entity:"+ updatedQualifiedName;
-
-            updatedpolicyResources.put(currentResource, updatedResource);
-
-            List<AtlasEntityHeader> policies = getPolicy(currentResource);
+            List<AtlasEntityHeader> policies = getPolicy(currentResources);
             if (CollectionUtils.isNotEmpty(policies)) {
                 AtlasEntityType entityType = typeRegistry.getEntityTypeByName(POLICY_ENTITY_TYPE);
+
                 for (AtlasEntityHeader policy : policies) {
                     AtlasVertex policyVertex = entityRetriever.getEntityVertex(policy.getGuid());
 
@@ -118,17 +116,18 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
 
                     List<String> policyResources = (List<String>) policyEntity.getAttribute(ATTR_POLICY_RESOURCES);
 
-                    // Check if currentResource exists in the list before removing it
-                    if (policyResources.contains(currentResource)) {
-                        policyResources.remove(currentResource);
-                        policyResources.add(updatedResource);
-                        LOG.info("Policy resources after updating QN: {}", policyResources);
-                    } else {
-                        LOG.info("CurrentResource {} not found in the policy resources. Skipping update.", currentResource);
+                    List<String> updatedPolicyResourcesList = new ArrayList<>();
+
+                    for (String resource : policyResources) {
+                        if (updatedPolicyResources.containsKey(resource)) {
+                            updatedPolicyResourcesList.add(updatedPolicyResources.get(resource));
+                        } else {
+                            updatedPolicyResourcesList.add(resource);
+                        }
                     }
 
                     policyVertex.removeProperty(ATTR_POLICY_RESOURCES);
-                    policyEntity.setAttribute(ATTR_POLICY_RESOURCES, policyResources);
+                    policyEntity.setAttribute(ATTR_POLICY_RESOURCES, updatedPolicyResourcesList);
                     context.addUpdated(policyEntity.getGuid(), policyEntity, entityType, policyVertex);
                 }
             }
@@ -139,13 +138,13 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
 
     }
 
-    protected List<AtlasEntityHeader> getPolicy(String resource) throws AtlasBaseException {
+    protected List<AtlasEntityHeader> getPolicy(List<String> resources) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getPolicy");
         try {
             List<Map<String, Object>> mustClauseList = new ArrayList<>();
             mustClauseList.add(mapOf("term", mapOf("__typeName.keyword", POLICY_ENTITY_TYPE)));
             mustClauseList.add(mapOf("term", mapOf("__state", "ACTIVE")));
-            mustClauseList.add(mapOf("terms", mapOf("policyResources", Arrays.asList(resource))));
+            mustClauseList.add(mapOf("terms", mapOf("policyResources", resources)));
 
             Map<String, Object> bool = new HashMap<>();
             bool.put("must", mustClauseList);

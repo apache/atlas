@@ -44,6 +44,8 @@ public class PreProcessorUtils {
     //DataMesh models constants
     public static final String DATA_PRODUCT_TYPE = "DataProduct";
     public static final String PARENT_DOMAIN = "parentDomain";
+    public static final String SUB_DOMAIN_REL_TYPE = "subDomains";
+    public static final String DATA_PRODUCT_REL_TYPE = "dataProducts";
     public static final String PARENT_DOMAIN_QN = "parentDomainQualifiedName";
     public static final String SUPER_DOMAIN_QN = "superDomainQualifiedName";
     public static final String DATA_DOMAIN = "dataDomain";
