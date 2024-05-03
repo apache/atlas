@@ -90,10 +90,9 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
     private void processCreateDomain(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processCreateDomain");
         String domainName = (String) entity.getAttribute(NAME);
-        if(parentDomain != null ){
-            String parentDomainQualifiedName = (String) parentDomain.getAttribute(QUALIFIED_NAME);
-            domainExists(domainName, parentDomainQualifiedName);
-        }
+        String parentDomainQualifiedName = (String) entity.getAttribute(PARENT_DOMAIN_QN);
+
+        domainExists(domainName, parentDomainQualifiedName);
 
         RequestContext.get().endMetricRecord(metricRecorder);
     }
