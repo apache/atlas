@@ -91,6 +91,9 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processCreateDomain");
         String domainName = (String) entity.getAttribute(NAME);
         String parentDomainQualifiedName = (String) entity.getAttribute(PARENT_DOMAIN_QN);
+        if(parentDomain != null ){
+            parentDomainQualifiedName = (String) parentDomain.getAttribute(QUALIFIED_NAME);
+        }
 
         domainExists(domainName, parentDomainQualifiedName);
 
