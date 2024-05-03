@@ -32,6 +32,7 @@ public abstract class AbstractRedisService implements RedisService {
     private static final String ATLAS_METASTORE_SERVICE = "atlas-metastore-service";
 
     RedissonClient redisClient;
+    RedissonClient redisCacheClient;
     Map<String, RLock> keyLockMap;
     Configuration atlasConfig;
     long waitTimeInMS;
@@ -71,6 +72,25 @@ public abstract class AbstractRedisService implements RedisService {
         }
     }
 
+    @Override
+    public String getValue(String key) {
+        // If value doesn't exist, return null else return the value
+        return (String) redisCacheClient.getBucket(convertToNamespace(key)).get();
+    }
+
+    @Override
+    public String putValue(String key, String value) {
+        // Put the value in the redis cache with TTL
+        redisCacheClient.getBucket(convertToNamespace(key)).set(value, 30, TimeUnit.SECONDS);
+        return value;
+    }
+
+    @Override
+    public void removeValue(String key)  {
+        // Remove the value from the redis cache
+        redisCacheClient.getBucket(convertToNamespace(key)).delete();
+    }
+
     private String getHostAddress() throws UnknownHostException {
         return InetAddress.getLocalHost().getHostAddress();
     }
@@ -83,6 +103,11 @@ public abstract class AbstractRedisService implements RedisService {
         Config redisConfig = new Config();
         redisConfig.setLockWatchdogTimeout(watchdogTimeoutInMS);
         return redisConfig;
+    }
+
+    private String convertToNamespace(String key){
+        // Append key with namespace :atlas
+        return "atlas:"+key;
     }
 
     Config getLocalConfig() throws AtlasException {
@@ -109,6 +134,26 @@ public abstract class AbstractRedisService implements RedisService {
                 .addSentinelAddress(formatUrls(atlasConfig.getStringArray(ATLAS_REDIS_SENTINEL_URLS)))
                 .setUsername(atlasConfig.getString(ATLAS_REDIS_USERNAME))
                 .setPassword(atlasConfig.getString(ATLAS_REDIS_PASSWORD));
+        return config;
+    }
+
+    Config getCacheImplConfig() {
+        Config config = new Config();
+        config.useSentinelServers()
+                .setClientName(ATLAS_METASTORE_SERVICE+"-redisCache")
+                .setReadMode(ReadMode.MASTER_SLAVE)
+                .setCheckSentinelsList(false)
+                .setKeepAlive(true)
+                .setMasterConnectionMinimumIdleSize(10)
+                .setMasterConnectionPoolSize(20)
+                .setSlaveConnectionMinimumIdleSize(10)
+                .setSlaveConnectionPoolSize(20)
+                .setMasterName(atlasConfig.getString(ATLAS_REDIS_MASTER_NAME))
+                .addSentinelAddress(formatUrls(atlasConfig.getStringArray(ATLAS_REDIS_SENTINEL_URLS)))
+                .setUsername(atlasConfig.getString(ATLAS_REDIS_USERNAME))
+                .setPassword(atlasConfig.getString(ATLAS_REDIS_PASSWORD))
+                .setTimeout(50) //Setting UP timeout to 50ms
+                .setRetryAttempts(0);
         return config;
     }
 

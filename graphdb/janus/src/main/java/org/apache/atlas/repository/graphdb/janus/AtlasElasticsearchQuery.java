@@ -19,12 +19,15 @@ package org.apache.atlas.repository.graphdb.janus;
 
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.SearchParams;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.DirectIndexQueryResult;
 import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.utils.AtlasMetricType;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang.StringUtils;
@@ -46,6 +49,7 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.janusgraph.util.encoding.LongEncoding;
+import org.redisson.client.RedisException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -171,14 +175,16 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
     }
 
     private DirectIndexQueryResult performAsyncDirectIndexQuery(SearchParams searchParams) throws AtlasBaseException, IOException {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("performAsyncDirectIndexQuery");
         DirectIndexQueryResult result = null;
+        boolean contextIdExists = StringUtils.isNotEmpty(searchParams.getSearchContextId()) && searchParams.getSearchContextSequenceNo() != null;
         try {
-            if(StringUtils.isNotEmpty(searchParams.getSearchContextId()) && searchParams.getSearchContextSequenceNo() != null) {
-                // If the search context id and greater sequence no is present, then we need to delete the previous search context async
-                processRequestWithSameSearchContextId(searchParams);
+            if(contextIdExists) {
+                // If the search context id and greater sequence no is present,
+                // then we need to delete the previous search context async
+                    processRequestWithSameSearchContextId(searchParams);
             }
             AsyncQueryResult response = submitAsyncSearch(searchParams, false).get();
-
             if(response.isRunning()) {
                 /*
                     * If the response is still running, then we need to wait for the response
@@ -189,8 +195,8 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
                 String esSearchId = response.getId();
                 String searchContextId = searchParams.getSearchContextId();
                 Integer searchContextSequenceNo = searchParams.getSearchContextSequenceNo();
-                if (StringUtils.isNotEmpty(searchContextId) && searchContextSequenceNo != null) {
-                    SearchContextCache.put(searchContextId, searchContextSequenceNo, esSearchId);
+                if (contextIdExists) {
+                    CompletableFuture.runAsync(() -> SearchContextCache.put(searchContextId, searchContextSequenceNo, esSearchId));
                 }
                 response = getAsyncSearchResponse(searchParams, esSearchId).get();
                 if (response ==  null) {
@@ -204,6 +210,16 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         }catch (Exception e) {
             LOG.error("Failed to execute direct query on ES {}", e.getMessage());
             throw new AtlasBaseException(AtlasErrorCode.INDEX_SEARCH_FAILED, e.getMessage());
+        } finally {
+            if (contextIdExists) {
+                // If the search context id is present, then we need to remove the search context from the cache
+                try {
+                    CompletableFuture.runAsync(() -> SearchContextCache.remove(searchParams.getSearchContextId()));
+                } catch (Exception e) {
+                    LOG.error("Failed to remove the search context from the cache {}", e.getMessage());
+                }
+            }
+            RequestContext.get().endMetricRecord(metric);
         }
         return result;
     }
@@ -218,17 +234,31 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         * We also need to check if the search ID exists and delete if necessary
      */
     private void processRequestWithSameSearchContextId(SearchParams searchParams) {
-        // Extract search context ID and sequence number
-        String currentSearchContextId = searchParams.getSearchContextId();
-        Integer currentSequenceNumber = searchParams.getSearchContextSequenceNo();
-        // Get the search ID from the cache if sequence number is greater than the current sequence number
-        String previousESSearchId = SearchContextCache.getESAsyncSearchIdFromContextCache(currentSearchContextId, currentSequenceNumber);
+        AtlasPerfMetrics.MetricRecorder funcMetric = RequestContext.get().startMetricRecord("processRequestWithSameSearchContextId");
+        try {
+            // Extract search context ID and sequence number
+            String currentSearchContextId = searchParams.getSearchContextId();
+            Integer currentSequenceNumber = searchParams.getSearchContextSequenceNo();
+            // Get the search ID from the cache if sequence number is greater than the current sequence number
+            String previousESSearchId = SearchContextCache.getESAsyncSearchIdFromContextCache(currentSearchContextId, currentSequenceNumber);
 
-        if (StringUtils.isNotEmpty(previousESSearchId)) {
-            LOG.debug("Deleting the previous async search response with ID {}", previousESSearchId);
-            // If the search ID exists, then we need to delete the search context
-            deleteAsyncSearchResponse(previousESSearchId);
-            SearchContextCache.remove(currentSearchContextId);
+            if (StringUtils.isNotEmpty(previousESSearchId)) {
+                LOG.debug("Deleting the previous async search response with ID {}", previousESSearchId);
+                // If the search ID exists, then we need to delete the search context
+                deleteAsyncSearchResponse(previousESSearchId);
+            }
+        } catch (RedisException e) {
+            AtlasPerfMetrics.Metric failureCounter = new AtlasPerfMetrics.Metric("async_request_redis_failure_counter");
+            failureCounter.setMetricType(AtlasMetricType.COUNTER);
+            failureCounter.incrementInvocations();
+            LOG.error("Failed to process the request with the same search context ID {}", e.getMessage());
+            RequestContext.get().addApplicationMetrics(failureCounter);
+        }
+        catch (Exception e) {
+            LOG.error("Failed to process the request with the same search context ID {}", e.getMessage());
+        }
+        finally {
+            RequestContext.get().endMetricRecord(funcMetric);
         }
     }
 
