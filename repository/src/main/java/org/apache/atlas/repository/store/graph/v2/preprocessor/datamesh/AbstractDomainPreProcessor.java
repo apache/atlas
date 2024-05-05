@@ -107,6 +107,7 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("updateDomainPolicy");
         try {
             LOG.info("Updating policies for entities {}", currentResources);
+            Map<String, Object> updatedAttributes = new HashMap<>();
 
             List<AtlasEntityHeader> policies = getPolicy(currentResources);
             if (CollectionUtils.isNotEmpty(policies)) {
@@ -136,10 +137,12 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
                             updatedPolicyResourcesList.add(resource);
                         }
                     }
+                    updatedAttributes.put(ATTR_POLICY_RESOURCES, updatedPolicyResourcesList);
 
                     policyVertex.removeProperty(ATTR_POLICY_RESOURCES);
                     policyEntity.setAttribute(ATTR_POLICY_RESOURCES, updatedPolicyResourcesList);
                     context.addUpdated(policyEntity.getGuid(), policyEntity, entityType, policyVertex);
+                    recordUpdatedChildEntities(policyVertex, updatedAttributes);
                     this.preProcessor.processAttributes(policyEntity, context, EntityMutations.EntityOperation.UPDATE);
                 }
             }

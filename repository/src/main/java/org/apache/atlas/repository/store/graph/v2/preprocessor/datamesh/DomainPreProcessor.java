@@ -115,6 +115,7 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
         String newParentDomainQualifiedName = "";
         String superDomainQualifiedName = "";
 
+        // Validate Relationship
         if(entity.hasRelationshipAttribute(SUB_DOMAIN_REL_TYPE) || entity.hasRelationshipAttribute(DATA_PRODUCT_REL_TYPE)){
             throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Cannot update Domain with subDomains or dataProducts");
         }
