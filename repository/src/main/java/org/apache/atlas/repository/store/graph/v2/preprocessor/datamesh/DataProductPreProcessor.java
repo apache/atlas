@@ -3,7 +3,6 @@ package org.apache.atlas.repository.store.graph.v2.preprocessor.datamesh;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.featureflag.FeatureFlagStore;
 import org.apache.atlas.model.instance.*;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -12,7 +11,6 @@ import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,8 +28,8 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
     private List<String> currentResources;
     private Map<String, String> updatedPolicyResources;
     public DataProductPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever,
-                                   AtlasGraph graph, FeatureFlagStore featureFlagStore) {
-        super(typeRegistry, entityRetriever, graph, featureFlagStore);
+                                   AtlasGraph graph) {
+        super(typeRegistry, entityRetriever, graph);
         this.currentResources = new ArrayList<>();
         this.updatedPolicyResources = new HashMap<>();
     }

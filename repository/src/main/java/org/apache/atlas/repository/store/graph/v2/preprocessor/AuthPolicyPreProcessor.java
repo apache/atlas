@@ -24,7 +24,6 @@ import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasEntityAccessRequest;
 import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.featureflag.FeatureFlagStore;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
@@ -70,17 +69,14 @@ public class AuthPolicyPreProcessor implements PreProcessor {
     private final AtlasGraph graph;
     private final AtlasTypeRegistry typeRegistry;
     private final EntityGraphRetriever entityRetriever;
-    private final FeatureFlagStore featureFlagStore ;
     private IndexAliasStore aliasStore;
 
     public AuthPolicyPreProcessor(AtlasGraph graph,
                                   AtlasTypeRegistry typeRegistry,
-                                  EntityGraphRetriever entityRetriever,
-                                  FeatureFlagStore featureFlagStore) {
+                                  EntityGraphRetriever entityRetriever) {
         this.graph = graph;
         this.typeRegistry = typeRegistry;
         this.entityRetriever = entityRetriever;
-        this.featureFlagStore = featureFlagStore;
 
         aliasStore = new ESAliasStore(graph, entityRetriever);
     }
