@@ -462,7 +462,8 @@ public final class Constants {
                 if (FeatureFlagStore.evaluate("use_temp_es_index", "true")) {
                     indexSuffix = "_temp";
                 }
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                LOG.error("Failed to evaluate feature flag with error", e);
             }
         }
         return indexSuffix == null ? VERTEX_INDEX_NAME : VERTEX_INDEX_NAME + indexSuffix;
