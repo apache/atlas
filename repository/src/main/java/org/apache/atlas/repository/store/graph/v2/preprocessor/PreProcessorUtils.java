@@ -24,8 +24,6 @@ import java.util.*;
 import static org.apache.atlas.repository.Constants.QUERY_COLLECTION_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.Constants.ENTITY_TYPE_PROPERTY_KEY;
-import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_CATEGORY;
-import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_RESOURCES;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 
 public class PreProcessorUtils {
@@ -42,15 +40,18 @@ public class PreProcessorUtils {
     public static final String GLOSSARY_CATEGORY_REL_TYPE = "AtlasGlossaryCategoryAnchor";
 
     //DataMesh models constants
-    public static final String DATA_PRODUCT_TYPE = "DataProduct";
-    public static final String PARENT_DOMAIN = "parentDomain";
+    public static final String PARENT_DOMAIN_REL_TYPE = "parentDomain";
     public static final String SUB_DOMAIN_REL_TYPE = "subDomains";
     public static final String DATA_PRODUCT_REL_TYPE = "dataProducts";
-    public static final String PARENT_DOMAIN_QN = "parentDomainQualifiedName";
-    public static final String SUPER_DOMAIN_QN = "superDomainQualifiedName";
-    public static final String DATA_DOMAIN = "dataDomain";
+    public static final String DATA_DOMAIN_REL_TYPE = "dataDomain";
+
     public static final String MESH_POLICY_CATEGORY = "datamesh";
-    public static final String MIGRATION_CUSTOM_ATTRIBUTE = "isQualifiedNameMigrated";
+
+    public static final String DATA_PRODUCT_EDGE_LABEL     = "__DataDomain.dataProducts";
+    public static final String DOMAIN_PARENT_EDGE_LABEL    = "__DataDomain.subDomains";
+
+    public static final String PARENT_DOMAIN_QN_ATTR = "parentDomainQualifiedName";
+    public static final String SUPER_DOMAIN_QN_ATTR = "superDomainQualifiedName";
 
     //Query models constants
     public static final String PREFIX_QUERY_QN   = "default/collection/";
@@ -132,6 +133,10 @@ public class PreProcessorUtils {
         IndexSearchParams searchParams = new IndexSearchParams();
         List<AtlasEntityHeader> ret = new ArrayList<>();
 
+        if (CollectionUtils.isNotEmpty(attributes)) {
+            searchParams.setAttributes(attributes);
+        }
+
         List<Map> sortList = new ArrayList<>(0);
         sortList.add(mapOf("__timestamp", mapOf("order", "asc")));
         sortList.add(mapOf("__guid", mapOf("order", "asc")));
@@ -144,10 +149,6 @@ public class PreProcessorUtils {
             dsl.put("from", from);
             dsl.put("size", size);
             searchParams.setDsl(dsl);
-
-            if (CollectionUtils.isNotEmpty(attributes)) {
-                searchParams.setAttributes(attributes);
-            }
 
             List<AtlasEntityHeader> headers = discovery.directIndexSearch(searchParams).getEntities();
 

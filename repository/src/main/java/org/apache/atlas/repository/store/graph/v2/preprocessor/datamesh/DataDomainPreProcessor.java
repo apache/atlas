@@ -21,7 +21,6 @@ package org.apache.atlas.repository.store.graph.v2.preprocessor.datamesh;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.featureflag.FeatureFlagStore;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
@@ -36,7 +35,6 @@ import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,50 +46,47 @@ import static org.apache.atlas.repository.graph.GraphHelper.getActiveChildrenVer
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 
-public class DomainPreProcessor extends AbstractDomainPreProcessor {
-    private static final Logger LOG = LoggerFactory.getLogger(DomainPreProcessor.class);
-    private AtlasEntityHeader parentDomain;
+public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
+    private static final Logger LOG = LoggerFactory.getLogger(DataDomainPreProcessor.class);
+
     private EntityMutationContext context;
-    private List<String> currentResources ;
     private Map<String, String> updatedPolicyResources;
 
-    public DomainPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever,
-                              AtlasGraph graph, FeatureFlagStore featureFlagStore) {
-        super(typeRegistry, entityRetriever, graph, featureFlagStore);
-        this.currentResources = new ArrayList<>();
+    public DataDomainPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever,
+                                  AtlasGraph graph) {
+        super(typeRegistry, entityRetriever, graph);
         this.updatedPolicyResources = new HashMap<>();
     }
 
     @Override
     public void processAttributes(AtlasStruct entityStruct, EntityMutationContext context,
                                   EntityMutations.EntityOperation operation) throws AtlasBaseException {
-        //Handle name & qualifiedName
         if (LOG.isDebugEnabled()) {
-            LOG.debug("DomainPreProcessor.processAttributes: pre processing {}, {}",
+            LOG.debug("DataDomainPreProcessor.processAttributes: pre processing {}, {}",
                     entityStruct.getAttribute(QUALIFIED_NAME), operation);
         }
 
         this.context = context;
 
         AtlasEntity entity = (AtlasEntity) entityStruct;
-        AtlasVertex vertex = context.getVertex(entity.getGuid());
-
-        setParent(entity);
 
         switch (operation) {
             case CREATE:
-                processCreateDomain(entity, vertex);
+                processCreateDomain(entity);
                 break;
             case UPDATE:
+                AtlasVertex vertex = context.getVertex(entity.getGuid());
                 processUpdateDomain(entity, vertex);
                 break;
         }
     }
 
-    private void processCreateDomain(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
+    private void processCreateDomain(AtlasEntity entity) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processCreateDomain");
         String domainName = (String) entity.getAttribute(NAME);
-        String parentDomainQualifiedName = (String) entity.getAttribute(PARENT_DOMAIN_QN);
+        String parentDomainQualifiedName = (String) entity.getAttribute(PARENT_DOMAIN_QN_ATTR);
+
+        AtlasEntityHeader parentDomain = getParent(entity);
         if(parentDomain != null ){
             parentDomainQualifiedName = (String) parentDomain.getAttribute(QUALIFIED_NAME);
         }
@@ -103,52 +98,55 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
 
     private void processUpdateDomain(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processUpdateDomain");
-        String domainName = (String) entity.getAttribute(NAME);
-        String vertexQnName = vertex.getProperty(QUALIFIED_NAME, String.class);
-
-        AtlasEntityHeader currentParentDomainHeader = null;
-        String currentParentDomainQualifiedName = "";
-
-        AtlasEntity storedDomain = entityRetriever.toAtlasEntity(vertex);
-        AtlasRelatedObjectId currentParentDomain = (AtlasRelatedObjectId) storedDomain.getRelationshipAttribute(PARENT_DOMAIN);
-
-        String newParentDomainQualifiedName = "";
-        String superDomainQualifiedName = "";
 
         // Validate Relationship
         if(entity.hasRelationshipAttribute(SUB_DOMAIN_REL_TYPE) || entity.hasRelationshipAttribute(DATA_PRODUCT_REL_TYPE)){
-            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Cannot update Domain with subDomains or dataProducts");
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Cannot update Domain's subDomains or dataProducts relations");
         }
 
-        if(currentParentDomain != null){
-            currentParentDomainHeader = entityRetriever.toAtlasEntityHeader(currentParentDomain.getGuid());
+        String vertexQnName = vertex.getProperty(QUALIFIED_NAME, String.class);
+
+        AtlasEntity storedDomain = entityRetriever.toAtlasEntity(vertex);
+        AtlasRelatedObjectId currentParentDomainObjectId = (AtlasRelatedObjectId) storedDomain.getRelationshipAttribute(PARENT_DOMAIN_REL_TYPE);
+
+        String newSuperDomainQualifiedName = "";
+        String newParentDomainQualifiedName = "";
+        String currentParentDomainQualifiedName = "";
+
+        AtlasEntityHeader currentParentDomainHeader = null;
+
+        if(currentParentDomainObjectId != null){
+            currentParentDomainHeader = entityRetriever.toAtlasEntityHeader(currentParentDomainObjectId.getGuid());
             currentParentDomainQualifiedName = (String) currentParentDomainHeader.getAttribute(QUALIFIED_NAME);
         }
 
-        if (parentDomain != null) {
-            newParentDomainQualifiedName = (String) parentDomain.getAttribute(QUALIFIED_NAME);
-            superDomainQualifiedName = (String) parentDomain.getAttribute(SUPER_DOMAIN_QN);
-            if(superDomainQualifiedName == null){
-                superDomainQualifiedName = newParentDomainQualifiedName;
+        AtlasEntityHeader newParentDomainHeader = getParent(entity);
+        if (newParentDomainHeader != null) {
+            newParentDomainQualifiedName = (String) newParentDomainHeader.getAttribute(QUALIFIED_NAME);
+
+            newSuperDomainQualifiedName = (String) newParentDomainHeader.getAttribute(SUPER_DOMAIN_QN_ATTR);
+            if(StringUtils.isEmpty(newSuperDomainQualifiedName)) {
+                newSuperDomainQualifiedName = newParentDomainQualifiedName;
             }
         }
 
-        if (!currentParentDomainQualifiedName.equals(newParentDomainQualifiedName)  && entity.hasRelationshipAttribute(PARENT_DOMAIN)) {
-            if(storedDomain.getRelationshipAttribute(PARENT_DOMAIN) == null){
-                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Cannot move Root Domain");
+        if (!newParentDomainQualifiedName.equals(currentParentDomainQualifiedName) && entity.hasRelationshipAttribute(PARENT_DOMAIN_REL_TYPE)) {
+            if(storedDomain.getRelationshipAttribute(PARENT_DOMAIN_REL_TYPE) == null){
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Cannot move Super Domain inside another domain");
             }
 
             //Auth check
-            isAuthorized(currentParentDomainHeader, parentDomain);
+            isAuthorized(currentParentDomainHeader, newParentDomainHeader);
 
-            processMoveSubDomainToAnotherDomain(entity, vertex, currentParentDomainQualifiedName, newParentDomainQualifiedName, vertexQnName, superDomainQualifiedName);
+            processMoveSubDomainToAnotherDomain(entity, vertex, currentParentDomainQualifiedName, newParentDomainQualifiedName, vertexQnName, newSuperDomainQualifiedName);
 
         } else {
-            String vertexName = vertex.getProperty(NAME, String.class);
-            if (!vertexName.equals(domainName)) {
-                domainExists(domainName, newParentDomainQualifiedName);
-            }
+            String domainCurrentName = vertex.getProperty(NAME, String.class);
+            String domainNewName = (String) entity.getAttribute(NAME);
 
+            if (!domainCurrentName.equals(domainNewName)) {
+                domainExists(domainNewName, currentParentDomainQualifiedName);
+            }
             entity.setAttribute(QUALIFIED_NAME, vertexQnName);
         }
 
@@ -159,9 +157,9 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
                                                       AtlasVertex domainVertex,
                                                       String sourceDomainQualifiedName,
                                                       String targetDomainQualifiedName,
-                                                      String currentSubDomainQualifiedName,
+                                                      String currentDomainQualifiedName,
                                                       String superDomainQualifiedName) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("processMoveSubDomainToAnotherGlossary");
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("processMoveSubDomainToAnotherDomain");
 
         try {
             String domainName = (String) domain.getAttribute(NAME);
@@ -171,26 +169,24 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
 
             domainExists(domainName, targetDomainQualifiedName);
 
-
-            // Move Sub-Domain as root Domain
             if(targetDomainQualifiedName.isEmpty()){
-                LOG.info("Moving subDomain {} as root Domain", domainName);
+                //Moving subDomain to make it Super Domain
                 targetDomainQualifiedName = "default";
-                updatedQualifiedName = currentSubDomainQualifiedName.replace(sourceDomainQualifiedName, targetDomainQualifiedName);
+                updatedQualifiedName = currentDomainQualifiedName.replace(sourceDomainQualifiedName, targetDomainQualifiedName);
                 domain.setAttribute(QUALIFIED_NAME, updatedQualifiedName);
-                domain.setAttribute(PARENT_DOMAIN_QN, null);
-                domain.setAttribute(SUPER_DOMAIN_QN, null);
+                domain.setAttribute(PARENT_DOMAIN_QN_ATTR, null);
+                domain.setAttribute(SUPER_DOMAIN_QN_ATTR, null);
                 superDomainQualifiedName = updatedQualifiedName ;
             }
             else{
-                updatedQualifiedName = currentSubDomainQualifiedName.replace(sourceDomainQualifiedName, targetDomainQualifiedName);
+                updatedQualifiedName = currentDomainQualifiedName.replace(sourceDomainQualifiedName, targetDomainQualifiedName);
                 domain.setAttribute(QUALIFIED_NAME, updatedQualifiedName);
-                domain.setAttribute(PARENT_DOMAIN_QN, targetDomainQualifiedName);
-                domain.setAttribute(SUPER_DOMAIN_QN, superDomainQualifiedName);
+                domain.setAttribute(PARENT_DOMAIN_QN_ATTR, targetDomainQualifiedName);
+                domain.setAttribute(SUPER_DOMAIN_QN_ATTR, superDomainQualifiedName);
             }
 
             moveChildrenToAnotherDomain(domainVertex, superDomainQualifiedName, null, sourceDomainQualifiedName, targetDomainQualifiedName);
-            updatePolicy(this.currentResources, this.updatedPolicyResources, this.context);
+            updatePolicies(this.updatedPolicyResources, this.context);
 
             LOG.info("Moved subDomain {} to Domain {}", domainName, targetDomainQualifiedName);
 
@@ -219,14 +215,13 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
             updatedAttributes.put(QUALIFIED_NAME, updatedDomainQualifiedName);
 
             //change superDomainQN, parentDomainQN
-            childDomainVertex.setProperty(SUPER_DOMAIN_QN, superDomainQualifiedName);
-            childDomainVertex.setProperty(PARENT_DOMAIN_QN, parentDomainQualifiedName);
+            childDomainVertex.setProperty(SUPER_DOMAIN_QN_ATTR, superDomainQualifiedName);
+            childDomainVertex.setProperty(PARENT_DOMAIN_QN_ATTR, parentDomainQualifiedName);
 
             //Store domainPolicies and resources to be updated
             String currentResource = "entity:"+ currentDomainQualifiedName;
             String updatedResource = "entity:"+ updatedDomainQualifiedName;
             this.updatedPolicyResources.put(currentResource, updatedResource);
-            this.currentResources.add(currentResource);
 
             //update system properties
             GraphHelper.setModifiedByAsString(childDomainVertex, RequestContext.get().getUser());
@@ -274,14 +269,13 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
             productVertex.setProperty(QUALIFIED_NAME, updatedQualifiedName);
             updatedAttributes.put(QUALIFIED_NAME, updatedQualifiedName);
 
-            productVertex.setProperty(PARENT_DOMAIN_QN, parentDomainQualifiedName);
-            productVertex.setProperty(SUPER_DOMAIN_QN, superDomainQualifiedName);
+            productVertex.setProperty(PARENT_DOMAIN_QN_ATTR, parentDomainQualifiedName);
+            productVertex.setProperty(SUPER_DOMAIN_QN_ATTR, superDomainQualifiedName);
 
             //Store domainPolicies and resources to be updated
             String currentResource = "entity:"+ currentQualifiedName;
             String updatedResource = "entity:"+ updatedQualifiedName;
             this.updatedPolicyResources.put(currentResource, updatedResource);
-            this.currentResources.add(currentResource);
 
             //update system properties
             GraphHelper.setModifiedByAsString(productVertex, RequestContext.get().getUser());
@@ -295,57 +289,22 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
         }
     }
 
-    private void setParent(AtlasEntity entity) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("DomainPreProcessor.setParent");
-        if (parentDomain == null) {
-            AtlasObjectId objectId = (AtlasObjectId) entity.getRelationshipAttribute(PARENT_DOMAIN);
-            Set<String> attributes = new HashSet<>(Arrays.asList(QUALIFIED_NAME, SUPER_DOMAIN_QN, PARENT_DOMAIN_QN, "__typeName"));
-            parentDomain = getParent(objectId, attributes);
-        }
+    private AtlasEntityHeader getParent(AtlasEntity domainEntity) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("DataDomainPreProcessor.getParent");
+
+        AtlasObjectId objectId = (AtlasObjectId) domainEntity.getRelationshipAttribute(PARENT_DOMAIN_REL_TYPE);
+
         RequestContext.get().endMetricRecord(metricRecorder);
+        return getParent(objectId, PARENT_ATTRIBUTES);
     }
 
     private void domainExists(String domainName, String parentDomainQualifiedName) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("domainExists");
-
-        boolean exists = false;
         try {
-            List<Map<String, Object>> mustClauseList = new ArrayList();
-            mustClauseList.add(mapOf("term", mapOf("__typeName.keyword", DATA_DOMAIN_ENTITY_TYPE)));
-            mustClauseList.add(mapOf("term", mapOf("__state", "ACTIVE")));
-            mustClauseList.add(mapOf("term", mapOf("name.keyword", domainName)));
+            exists(DATA_DOMAIN_ENTITY_TYPE, domainName, parentDomainQualifiedName);
 
-
-            Map<String, Object> bool = new HashMap<>();
-            if (parentDomain != null && StringUtils.isNotEmpty(parentDomainQualifiedName)) {
-                mustClauseList.add(mapOf("term", mapOf("parentDomainQualifiedName", parentDomainQualifiedName)));
-            } else {
-                List<Map<String, Object>> mustNotClauseList = new ArrayList();
-                mustNotClauseList.add(mapOf("exists", mapOf("field", "parentDomainQualifiedName")));
-                bool.put("must_not", mustNotClauseList);
-            }
-
-            bool.put("must", mustClauseList);
-
-            Map<String, Object> dsl = mapOf("query", mapOf("bool", bool));
-
-            List<AtlasEntityHeader> domains = indexSearchPaginated(dsl, null, this.discovery);
-
-            if (CollectionUtils.isNotEmpty(domains)) {
-                for (AtlasEntityHeader domain : domains) {
-                    String name = (String) domain.getAttribute(NAME);
-                    if (domainName.equals(name)) {
-                        exists = true;
-                        break;
-                    }
-                }
-            }
         } finally {
             RequestContext.get().endMetricRecord(metricRecorder);
-        }
-
-        if (exists) {
-            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, domainName+" already exists");
         }
     }
 }

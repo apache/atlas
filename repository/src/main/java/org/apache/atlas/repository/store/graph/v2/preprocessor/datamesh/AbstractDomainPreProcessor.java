@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.repository.store.graph.v2.preprocessor.datamesh;
 
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
@@ -24,7 +25,6 @@ import org.apache.atlas.authorize.AtlasEntityAccessRequest;
 import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.featureflag.FeatureFlagStore;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
@@ -40,7 +40,6 @@ import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,8 +48,8 @@ import java.util.*;
 
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
-import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_CATEGORY;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_RESOURCES;
+import static org.apache.atlas.repository.util.AccessControlUtils.REL_ATTR_ACCESS_CONTROL;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 
 public abstract class AbstractDomainPreProcessor implements PreProcessor {
@@ -60,14 +59,16 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
     protected final AtlasTypeRegistry typeRegistry;
     protected final EntityGraphRetriever entityRetriever;
     private final PreProcessor preProcessor;
-    private final FeatureFlagStore featureFlagStore;
     protected EntityDiscoveryService discovery;
 
-    AbstractDomainPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, AtlasGraph graph, FeatureFlagStore featureFlagStore) {
+    private static final Set<String> POLICY_ATTRIBUTES_FOR_SEARCH = new HashSet<>(Arrays.asList(ATTR_POLICY_RESOURCES));
+
+    static final Set<String> PARENT_ATTRIBUTES            = new HashSet<>(Arrays.asList(SUPER_DOMAIN_QN_ATTR, PARENT_DOMAIN_QN_ATTR));
+
+    AbstractDomainPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, AtlasGraph graph) {
         this.entityRetriever = entityRetriever;
         this.typeRegistry = typeRegistry;
-        this.preProcessor = new AuthPolicyPreProcessor(graph, typeRegistry, entityRetriever, featureFlagStore);
-        this.featureFlagStore = featureFlagStore;
+        this.preProcessor = new AuthPolicyPreProcessor(graph, typeRegistry, entityRetriever);
 
         try {
             this.discovery = new EntityDiscoveryService(typeRegistry, graph, null, null, null, null);
@@ -103,26 +104,22 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
        }
     }
 
-    protected void updatePolicy(List<String> currentResources, Map<String, String> updatedPolicyResources, EntityMutationContext context) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("updateDomainPolicy");
+    protected void updatePolicies(Map<String, String> updatedPolicyResources, EntityMutationContext context) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("updatePolicies");
         try {
-            LOG.info("Updating policies for entities {}", currentResources);
-            Map<String, Object> updatedAttributes = new HashMap<>();
+            AtlasEntityType entityType = typeRegistry.getEntityTypeByName(POLICY_ENTITY_TYPE);
 
-            List<AtlasEntityHeader> policies = getPolicy(currentResources);
+            List<AtlasEntityHeader> policies = getPolicies(updatedPolicyResources.keySet());
+
             if (CollectionUtils.isNotEmpty(policies)) {
-                AtlasEntityType entityType = typeRegistry.getEntityTypeByName(POLICY_ENTITY_TYPE);
-
                 for (AtlasEntityHeader policy : policies) {
-                    LOG.info("Updating policy {}", policy);
                     AtlasVertex policyVertex = entityRetriever.getEntityVertex(policy.getGuid());
 
                     AtlasEntity policyEntity = entityRetriever.toAtlasEntity(policyVertex);
-                    String policyCategory = (String) policyEntity.getAttribute(ATTR_POLICY_CATEGORY);
 
-                    if (policyEntity.hasRelationshipAttribute("accessControl") && !StringUtils.equals(policyCategory, MESH_POLICY_CATEGORY)) {
-                        LOG.info("PolicyCategory {}", policyCategory);
-                        AtlasVertex accessControl = entityRetriever.getEntityVertex(((AtlasObjectId) policyEntity.getRelationshipAttribute("accessControl")).getGuid());
+                    if (policyEntity.hasRelationshipAttribute(REL_ATTR_ACCESS_CONTROL) && policyEntity.getRelationshipAttribute(REL_ATTR_ACCESS_CONTROL) != null) {
+                        AtlasObjectId accessControlObjId = (AtlasObjectId) policyEntity.getRelationshipAttribute(REL_ATTR_ACCESS_CONTROL);
+                        AtlasVertex accessControl = entityRetriever.getEntityVertex(accessControlObjId.getGuid());
                         context.getDiscoveryContext().addResolvedGuid(GraphHelper.getGuid(accessControl), accessControl);
                     }
 
@@ -137,24 +134,65 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
                             updatedPolicyResourcesList.add(resource);
                         }
                     }
+                    Map<String, Object> updatedAttributes = new HashMap<>();
                     updatedAttributes.put(ATTR_POLICY_RESOURCES, updatedPolicyResourcesList);
 
-                    policyVertex.removeProperty(ATTR_POLICY_RESOURCES);
+                    //policyVertex.removeProperty(ATTR_POLICY_RESOURCES);
                     policyEntity.setAttribute(ATTR_POLICY_RESOURCES, updatedPolicyResourcesList);
+
                     context.addUpdated(policyEntity.getGuid(), policyEntity, entityType, policyVertex);
                     recordUpdatedChildEntities(policyVertex, updatedAttributes);
                     this.preProcessor.processAttributes(policyEntity, context, EntityMutations.EntityOperation.UPDATE);
                 }
             }
 
-        }finally {
+        } finally {
             RequestContext.get().endMetricRecord(metricRecorder);
         }
-
     }
 
-    protected List<AtlasEntityHeader> getPolicy(List<String> resources) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getPolicy");
+    protected void exists(String assetType, String assetName, String parentDomainQualifiedName) throws AtlasBaseException {
+        boolean exists = false;
+
+        List<Map<String, Object>> mustClauseList = new ArrayList();
+        mustClauseList.add(mapOf("term", mapOf("__typeName.keyword", assetType)));
+        mustClauseList.add(mapOf("term", mapOf("__state", "ACTIVE")));
+        mustClauseList.add(mapOf("term", mapOf("name.keyword", assetName)));
+
+
+        Map<String, Object> bool = new HashMap<>();
+        if (StringUtils.isNotEmpty(parentDomainQualifiedName)) {
+            mustClauseList.add(mapOf("term", mapOf("parentDomainQualifiedName", parentDomainQualifiedName)));
+        } else {
+            List<Map<String, Object>> mustNotClauseList = new ArrayList();
+            mustNotClauseList.add(mapOf("exists", mapOf("field", "parentDomainQualifiedName")));
+            bool.put("must_not", mustNotClauseList);
+        }
+
+        bool.put("must", mustClauseList);
+
+        Map<String, Object> dsl = mapOf("query", mapOf("bool", bool));
+
+        List<AtlasEntityHeader> assets = indexSearchPaginated(dsl, null, this.discovery);
+
+        if (CollectionUtils.isNotEmpty(assets)) {
+            for (AtlasEntityHeader asset : assets) {
+                String name = (String) asset.getAttribute(NAME);
+                if (assetName.equals(name)) {
+                    exists = true;
+                    break;
+                }
+            }
+        }
+
+        if (exists) {
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST,
+                    String.format("%s with name %s already exists in the domain", assetType, assetName));
+        }
+    }
+
+    protected List<AtlasEntityHeader> getPolicies(Set<String> resources) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getPolicies");
         try {
             List<Map<String, Object>> mustClauseList = new ArrayList<>();
             mustClauseList.add(mapOf("term", mapOf("__typeName.keyword", POLICY_ENTITY_TYPE)));
@@ -165,11 +203,8 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
             bool.put("must", mustClauseList);
 
             Map<String, Object> dsl = mapOf("query", mapOf("bool", bool));
-            Set<String> attributes = new HashSet<>(Arrays.asList(ATTR_POLICY_RESOURCES, ATTR_POLICY_CATEGORY));
 
-            List<AtlasEntityHeader> policies = indexSearchPaginated(dsl, attributes, discovery);
-
-            return policies;
+            return indexSearchPaginated(dsl, POLICY_ATTRIBUTES_FOR_SEARCH, discovery);
         } finally {
             RequestContext.get().endMetricRecord(metricRecorder);
         }
