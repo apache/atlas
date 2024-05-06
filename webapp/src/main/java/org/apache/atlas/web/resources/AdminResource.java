@@ -934,14 +934,16 @@ public class AdminResource {
     @POST
     @Path("featureFlag")
     @Produces(MediaType.APPLICATION_JSON)
-    public void setFeatureFlag(@QueryParam("key") String key, @QueryParam("value") String value) {
+    public void setFeatureFlag(@QueryParam("key") String key, @QueryParam("value") String value) throws AtlasBaseException {
+        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_FEATURE_FLAG_CUD), "featureFlag");
         FeatureFlagStore.setFlag(key, value);
     }
 
     @DELETE
     @Path("featureFlag/{flag}")
     @Produces(MediaType.APPLICATION_JSON)
-    public void deleteFeatureFlag(@PathParam("flag") String key) {
+    public void deleteFeatureFlag(@PathParam("flag") String key) throws AtlasBaseException {
+        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_FEATURE_FLAG_CUD), "featureFlag");
         FeatureFlagStore.deleteFlag(key);
     }
     private String getEditableEntityTypes(Configuration config) {
