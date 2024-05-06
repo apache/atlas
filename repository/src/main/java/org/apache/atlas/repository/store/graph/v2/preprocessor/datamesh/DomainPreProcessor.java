@@ -36,6 +36,7 @@ import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,8 +56,8 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
     private Map<String, String> updatedPolicyResources;
 
     public DomainPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever,
-                              AtlasGraph graph) {
-        super(typeRegistry, entityRetriever, graph);
+                              AtlasGraph graph, FeatureFlagStore featureFlagStore) {
+        super(typeRegistry, entityRetriever, graph, featureFlagStore);
         this.currentResources = new ArrayList<>();
         this.updatedPolicyResources = new HashMap<>();
     }

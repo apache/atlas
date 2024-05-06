@@ -60,12 +60,14 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
     protected final AtlasTypeRegistry typeRegistry;
     protected final EntityGraphRetriever entityRetriever;
     private final PreProcessor preProcessor;
+    private final FeatureFlagStore featureFlagStore;
     protected EntityDiscoveryService discovery;
 
-    AbstractDomainPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, AtlasGraph graph) {
+    AbstractDomainPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, AtlasGraph graph, FeatureFlagStore featureFlagStore) {
         this.entityRetriever = entityRetriever;
         this.typeRegistry = typeRegistry;
-        this.preProcessor = new AuthPolicyPreProcessor(graph, typeRegistry, entityRetriever);
+        this.preProcessor = new AuthPolicyPreProcessor(graph, typeRegistry, entityRetriever, featureFlagStore);
+        this.featureFlagStore = featureFlagStore;
 
         try {
             this.discovery = new EntityDiscoveryService(typeRegistry, graph, null, null, null, null);
