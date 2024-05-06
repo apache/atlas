@@ -1,4 +1,4 @@
-package org.apache.atlas.repository.graphdb.janus;
+package org.apache.atlas.service;
 
 import org.apache.atlas.service.redis.RedisService;
 import org.apache.commons.lang.StringUtils;

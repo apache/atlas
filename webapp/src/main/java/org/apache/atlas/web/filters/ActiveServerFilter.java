@@ -21,7 +21,7 @@ package org.apache.atlas.web.filters;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.repository.graphdb.janus.FeatureFlagStore;
+import org.apache.atlas.service.FeatureFlagStore;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.web.service.ActiveInstanceState;
 import org.apache.atlas.web.service.ServiceState;
@@ -58,7 +58,7 @@ public class ActiveServerFilter implements Filter {
     private static final Logger LOG = LoggerFactory.getLogger(ActiveServerFilter.class);
     private static final String MIGRATION_STATUS_STATIC_PAGE = "migration-status.html";
     private static final String[] WHITELISTED_APIS_SIGNATURE = {"search", "lineage", "auditSearch", "accessors"
-        , "evaluator"};
+        , "evaluator", "featureFlag"};
     private static final String DISABLE_WRITE_FLAG = "disable_writes";
 
     private final ActiveInstanceState activeInstanceState;
