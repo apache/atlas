@@ -70,17 +70,14 @@ public class AuthPolicyPreProcessor implements PreProcessor {
     private final AtlasGraph graph;
     private final AtlasTypeRegistry typeRegistry;
     private final EntityGraphRetriever entityRetriever;
-    private final FeatureFlagStore featureFlagStore ;
     private IndexAliasStore aliasStore;
 
     public AuthPolicyPreProcessor(AtlasGraph graph,
                                   AtlasTypeRegistry typeRegistry,
-                                  EntityGraphRetriever entityRetriever,
-                                  FeatureFlagStore featureFlagStore) {
+                                  EntityGraphRetriever entityRetriever) {
         this.graph = graph;
         this.typeRegistry = typeRegistry;
         this.entityRetriever = entityRetriever;
-        this.featureFlagStore = featureFlagStore;
 
         aliasStore = new ESAliasStore(graph, entityRetriever);
     }
