@@ -1,0 +1,23 @@
+{
+  "entities": [
+    {
+      "typeName": "StakeholderTitle",
+      "attributes":
+      {
+        "qualifiedName": "stakeholderTitle/default/DOMAIN_OWNERS",
+        "name": "Domain Owners",
+        "domainGuid": "*"
+      }
+    },
+    {
+      "typeName": "StakeholderTitle",
+      "attributes":
+      {
+        "qualifiedName": "stakeholderTitle/default/DATA_STEWARDS",
+        "name": "Data Stewards",
+        "domainGuid": "*"
+      }
+    }
+  ]
+}
+
