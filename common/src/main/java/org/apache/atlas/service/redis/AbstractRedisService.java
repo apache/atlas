@@ -81,7 +81,14 @@ public abstract class AbstractRedisService implements RedisService {
     @Override
     public String putValue(String key, String value) {
         // Put the value in the redis cache with TTL
-        redisCacheClient.getBucket(convertToNamespace(key)).set(value, 30, TimeUnit.SECONDS);
+        redisCacheClient.getBucket(convertToNamespace(key)).set(value);
+        return value;
+    }
+
+    @Override
+    public String putValue(String key, String value, int timeout) {
+        // Put the value in the redis cache with TTL
+        redisCacheClient.getBucket(convertToNamespace(key)).set(value, timeout, TimeUnit.SECONDS);
         return value;
     }
 

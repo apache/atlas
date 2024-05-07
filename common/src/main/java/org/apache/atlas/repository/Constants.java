@@ -19,7 +19,9 @@
 package org.apache.atlas.repository;
 
 import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.service.FeatureFlagStore;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -448,6 +450,20 @@ public final class Constants {
         } catch (AtlasException e) {
             return encodePropertyKey(defaultKey);
         }
+    }
+
+    public static String getESIndex() {
+        String indexSuffix  = null;
+        if(AtlasConfiguration.ATLAS_MAINTENANCE_MODE.getBoolean()) {
+            try {
+                if (FeatureFlagStore.evaluate("use_temp_es_index", "true")) {
+                    indexSuffix = "_temp";
+                }
+            } catch (Exception e) {
+                LOG.error("Failed to evaluate feature flag with error", e);
+            }
+        }
+        return indexSuffix == null ? VERTEX_INDEX_NAME : VERTEX_INDEX_NAME + indexSuffix;
     }
 
     public static String getStaticFileAsString(String fileName) throws IOException {

@@ -24,7 +24,7 @@ public class SearchContextCache {
        try {
            // Build the string in format `sequence/esAsyncId` and store it in redis
            String val = sequence + "/" + esAsyncId;
-           redisService.putValue(key, val);
+           redisService.putValue(key, val, 30);
        } finally {
            RequestContext.get().endMetricRecord(metric);
        }

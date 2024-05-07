@@ -45,6 +45,7 @@ import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.userprofile.UserProfileService;
 import org.apache.atlas.searchlog.ESSearchLogger;
+import org.apache.atlas.service.FeatureFlagStore;
 import org.apache.atlas.stats.StatsClient;
 import org.apache.atlas.type.*;
 import org.apache.atlas.type.AtlasBuiltInTypes.AtlasObjectIdType;
@@ -75,9 +76,7 @@ import static org.apache.atlas.AtlasErrorCode.*;
 import static org.apache.atlas.SortOrder.ASCENDING;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
-import static org.apache.atlas.repository.Constants.ASSET_ENTITY_TYPE;
-import static org.apache.atlas.repository.Constants.OWNER_ATTRIBUTE;
-import static org.apache.atlas.repository.Constants.VERTEX_INDEX_NAME;
+import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery.BASIC_SEARCH_STATE_FILTER;
 import static org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery.TO_RANGE_LIST;
 
@@ -1134,8 +1133,10 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     }
 
     private String getIndexName(IndexSearchParams params) throws AtlasBaseException {
+        String vertexIndexName = getESIndex();
+
         if (StringUtils.isEmpty(params.getPersona()) && StringUtils.isEmpty(params.getPurpose())) {
-            return VERTEX_INDEX_NAME;
+            return vertexIndexName;
         }
 
         String qualifiedName = "";
@@ -1151,7 +1152,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         if (StringUtils.isNotEmpty(aliasName)) {
             if(params.isAccessControlExclusive()) {
                 accessControlExclusiveDsl(params, aliasName);
-                aliasName = aliasName+","+VERTEX_INDEX_NAME;
+                aliasName = aliasName+","+vertexIndexName;
             }
             return aliasName;
         } else {
