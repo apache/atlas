@@ -341,16 +341,21 @@ public final class GraphHelper {
         return ret;
     }
 
-    public static boolean getRestrictPropagationThroughLineage(AtlasVertex classificationVertex) {
-        boolean ret = false;
-
-        if (classificationVertex != null) {
-            Boolean restrictPropagationThroughLineage = AtlasGraphUtilsV2.getEncodedProperty(classificationVertex, CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_LINEAGE, Boolean.class);
-
-            ret = (restrictPropagationThroughLineage == null) ? false : restrictPropagationThroughLineage;
+    public static boolean getRestrictPropagation(AtlasVertex classificationVertex, String propertyName) {
+        if (classificationVertex == null) {
+            return false;
         }
+        Boolean restrictPropagation = AtlasGraphUtilsV2.getEncodedProperty(classificationVertex, propertyName, Boolean.class);
 
-        return ret;
+        return restrictPropagation != null && restrictPropagation;
+    }
+
+    public static boolean getRestrictPropagationThroughLineage(AtlasVertex classificationVertex) {
+        return getRestrictPropagation(classificationVertex,CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_LINEAGE);
+    }
+
+    public static boolean getRestrictPropagationThroughHierarchy(AtlasVertex classificationVertex) {
+        return getRestrictPropagation(classificationVertex,CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_HIERARCHY);
     }
 
     public static AtlasVertex getClassificationVertex(AtlasVertex entityVertex, String classificationName) {
@@ -780,7 +785,18 @@ public final class GraphHelper {
     public static List<String> getPropagatedTraitNames(AtlasVertex entityVertex) {
         return getTraitNames(entityVertex, true);
     }
-
+    public static List<String> getAllTraitNamesFromAttribute(AtlasVertex entityVertex) {
+        List<String>     ret   = new ArrayList<>();
+        List<String>    traitNames = entityVertex.getMultiValuedProperty(TRAIT_NAMES_PROPERTY_KEY, String.class);
+        if (traitNames != null) {
+            ret.addAll(traitNames);
+        }
+        List<String>    propagatedTraitNames = entityVertex.getMultiValuedProperty(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, String.class);
+        if (propagatedTraitNames != null) {
+            ret.addAll(propagatedTraitNames);
+        }
+        return ret;
+    }
     public static List<String> getAllTraitNames(AtlasVertex entityVertex) {
         return getTraitNames(entityVertex, null);
     }

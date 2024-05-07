@@ -380,6 +380,7 @@ public class EntityGraphRetriever {
             ret.setPropagate(isPropagationEnabled(classificationVertex));
             ret.setRemovePropagationsOnEntityDelete(getRemovePropagations(classificationVertex));
             ret.setRestrictPropagationThroughLineage(getRestrictPropagationThroughLineage(classificationVertex));
+            ret.setRestrictPropagationThroughHierarchy(getRestrictPropagationThroughHierarchy(classificationVertex));
 
             String strValidityPeriods = AtlasGraphUtilsV2.getEncodedProperty(classificationVertex, CLASSIFICATION_VALIDITY_PERIODS_KEY, String.class);
 
@@ -527,16 +528,14 @@ public class EntityGraphRetriever {
                 String            classificationId      = classificationVertex.getIdForDisplay();
                 String            sourceEntityId        = getClassificationEntityGuid(classificationVertex);
                 AtlasVertex       sourceEntityVertex    = AtlasGraphUtilsV2.findByGuid(this.graph, sourceEntityId);
-                String propagationMode = CLASSIFICATION_PROPAGATION_MODE_DEFAULT;
+                String propagationMode;
 
                 Boolean restrictPropagationThroughLineage = AtlasGraphUtilsV2.getProperty(classificationVertex, CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_LINEAGE, Boolean.class);
-
-                if (restrictPropagationThroughLineage != null && restrictPropagationThroughLineage) {
-                    propagationMode = CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE;
-                }
-
+                Boolean restrictPropagationThroughHierarchy = AtlasGraphUtilsV2.getProperty(classificationVertex, CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_HIERARCHY, Boolean.class);
+                propagationMode = determinePropagationMode(restrictPropagationThroughLineage,restrictPropagationThroughHierarchy);
+                Boolean toExclude = propagationMode == CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE ? true : false;
                 List<AtlasVertex> entitiesPropagatingTo = getImpactedVerticesV2(sourceEntityVertex, relationshipGuidToExclude,
-                        classificationId, CLASSIFICATION_PROPAGATION_EXCLUSION_MAP.get(propagationMode));
+                        classificationId, CLASSIFICATION_PROPAGATION_MODE_LABELS_MAP.get(propagationMode),toExclude);
 
                 LOG.info("Traversed {} vertices for Classification vertex id {} excluding RelationShip GUID {}", entitiesPropagatingTo.size(), classificationId, relationshipGuidToExclude);
 
@@ -547,14 +546,39 @@ public class EntityGraphRetriever {
         RequestContext.get().endMetricRecord(metricRecorder);
         return ret;
     }
-
-    public List<AtlasVertex> getImpactedVerticesV2(AtlasVertex entityVertex) {
-        return getImpactedVerticesV2(entityVertex, (List<String>) null);
+    /**
+     * Checks for if the AtlasClassification has valid config of restrict flags
+     * Both Restrict flags can't be true with propagate flag allowed
+     */
+    public void verifyClassificationsPropagationMode(List<AtlasClassification> incomingClassifications) throws AtlasBaseException {
+        for(AtlasClassification incomingClassification : incomingClassifications){
+            if(Boolean.TRUE.equals(incomingClassification.isPropagate()))
+                determinePropagationMode(incomingClassification.getRestrictPropagationThroughLineage(),incomingClassification.getRestrictPropagationThroughHierarchy());
+        }
     }
 
-    public List<AtlasVertex> getImpactedVerticesV2(AtlasVertex entityVertex,  List<String> edgeLabelsToExclude){
+    public String determinePropagationMode(Boolean currentRestrictPropagationThroughLineage, Boolean currentRestrictPropagationThroughHierarchy) throws AtlasBaseException {
+        String propagationMode;
+
+        if (Boolean.TRUE.equals(currentRestrictPropagationThroughLineage) && Boolean.TRUE.equals(currentRestrictPropagationThroughHierarchy)) {
+            throw new AtlasBaseException("Both restrictPropagationThroughLineage and restrictPropagationThroughHierarchy cannot be true simultaneously.");
+        } else if (Boolean.TRUE.equals(currentRestrictPropagationThroughLineage)) {
+            propagationMode = CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE;
+        } else if (Boolean.TRUE.equals(currentRestrictPropagationThroughHierarchy)) {
+            propagationMode = CLASSIFICATION_PROPAGATION_MODE_RESTRICT_HIERARCHY;
+        } else {
+            propagationMode = CLASSIFICATION_PROPAGATION_MODE_DEFAULT;
+        }
+
+        return propagationMode;
+    }
+    public List<AtlasVertex> getImpactedVerticesV2(AtlasVertex entityVertex) {
+        return getImpactedVerticesV2(entityVertex, (List<String>) null,false);
+    }
+
+    public List<AtlasVertex> getImpactedVerticesV2(AtlasVertex entityVertex,  List<String> edgeLabelsToCheck,Boolean toExclude){
         List<AtlasVertex> ret = new ArrayList<>();
-        traverseImpactedVertices(entityVertex, null, null, ret, edgeLabelsToExclude);
+        traverseImpactedVertices(entityVertex, null, null, ret, edgeLabelsToCheck,toExclude);
 
         return ret;
     }
@@ -562,7 +586,7 @@ public class EntityGraphRetriever {
     public List<AtlasVertex> getImpactedVerticesV2(AtlasVertex entityVertex, String relationshipGuidToExclude) {
         List<AtlasVertex> ret = new ArrayList<>();
 
-        traverseImpactedVertices(entityVertex, relationshipGuidToExclude, null, ret, null);
+        traverseImpactedVertices(entityVertex, relationshipGuidToExclude, null, ret, null,false);
 
         return ret;
     }
@@ -574,13 +598,13 @@ public class EntityGraphRetriever {
     public List<AtlasVertex> getIncludedImpactedVerticesV2(AtlasVertex entityVertex, String relationshipGuidToExclude, String classificationId) {
         List<AtlasVertex> ret = new ArrayList<>(Arrays.asList(entityVertex));
 
-        traverseImpactedVertices(entityVertex, relationshipGuidToExclude, classificationId, ret, null);
+        traverseImpactedVertices(entityVertex, relationshipGuidToExclude, classificationId, ret, null,false);
 
         return ret;
     }
-    public List<AtlasVertex> getIncludedImpactedVerticesV2(AtlasVertex entityVertex, String relationshipGuidToExclude, String classificationId, List<String> edgeLabelsToExclude) {
+    public List<AtlasVertex> getIncludedImpactedVerticesV2(AtlasVertex entityVertex, String relationshipGuidToExclude, String classificationId, List<String> edgeLabelsToCheck,Boolean toExclude) {
         List<String> vertexIds = new ArrayList<>();
-        traverseImpactedVerticesByLevel(entityVertex, relationshipGuidToExclude, classificationId, vertexIds, edgeLabelsToExclude, null);
+        traverseImpactedVerticesByLevel(entityVertex, relationshipGuidToExclude, classificationId, vertexIds, edgeLabelsToCheck,toExclude, null);
 
         List<AtlasVertex> ret = vertexIds.stream().map(x -> graph.getVertex(x))
                 .filter(vertex -> vertex != null)
@@ -593,35 +617,35 @@ public class EntityGraphRetriever {
     public List<AtlasVertex> getImpactedVerticesV2(AtlasVertex entityVertex, String relationshipGuidToExclude, String classificationId) {
         List<AtlasVertex> ret = new ArrayList<>();
 
-        traverseImpactedVertices(entityVertex, relationshipGuidToExclude, classificationId, ret, null);
+        traverseImpactedVertices(entityVertex, relationshipGuidToExclude, classificationId, ret, null,false);
 
         return ret;
     }
 
-    public List<AtlasVertex> getImpactedVerticesV2(AtlasVertex entityVertex, String relationshipGuidToExclude, String classificationId, List<String> edgeLabelsToExclude) {
+    public List<AtlasVertex> getImpactedVerticesV2(AtlasVertex entityVertex, String relationshipGuidToExclude, String classificationId, List<String> edgeLabelsToCheck,Boolean toExclude) {
         List<AtlasVertex> ret = new ArrayList<>();
 
-        traverseImpactedVertices(entityVertex, relationshipGuidToExclude, classificationId, ret, edgeLabelsToExclude);
+        traverseImpactedVertices(entityVertex, relationshipGuidToExclude, classificationId, ret, edgeLabelsToCheck,toExclude);
 
         return ret;
     }
 
 
-    public List<String> getImpactedVerticesIds(AtlasVertex entityVertex, String relationshipGuidToExclude, String classificationId, List<String> edgeLabelsToExclude) {
+    public List<String> getImpactedVerticesIds(AtlasVertex entityVertex, String relationshipGuidToExclude, String classificationId, List<String> edgeLabelsToCheck,Boolean toExclude) {
         List<String> ret = new ArrayList<>();
 
-        traverseImpactedVerticesByLevel(entityVertex, relationshipGuidToExclude, classificationId, ret, edgeLabelsToExclude, null);
+        traverseImpactedVerticesByLevel(entityVertex, relationshipGuidToExclude, classificationId, ret, edgeLabelsToCheck,toExclude, null);
 
         return ret;
     }
 
-    public List<String> getImpactedVerticesIdsClassificationAttached(AtlasVertex entityVertex, String classificationId, List<String> edgeLabelsToExclude, List<String> verticesWithoutClassification) {
+    public List<String> getImpactedVerticesIdsClassificationAttached(AtlasVertex entityVertex, String classificationId, List<String> edgeLabelsToCheck,Boolean toExclude, List<String> verticesWithoutClassification) {
         List<String> ret = new ArrayList<>();
 
         GraphHelper.getClassificationEdges(entityVertex).forEach(classificationEdge -> {
             AtlasVertex classificationVertex = classificationEdge.getInVertex();
             if (classificationVertex != null && classificationId.equals(classificationVertex.getIdForDisplay())) {
-                traverseImpactedVerticesByLevel(entityVertex, null, classificationId, ret, edgeLabelsToExclude, verticesWithoutClassification);
+                traverseImpactedVerticesByLevel(entityVertex, null, classificationId, ret, edgeLabelsToCheck, toExclude, verticesWithoutClassification);
             }
         });
 
@@ -631,7 +655,7 @@ public class EntityGraphRetriever {
 
 
     private void traverseImpactedVertices(final AtlasVertex entityVertexStart, final String relationshipGuidToExclude,
-                                          final String classificationId, final List<AtlasVertex> result, List<String> edgeLabelsToExclude) {
+                                          final String classificationId, final List<AtlasVertex> result, List<String> edgeLabelsToCheck,Boolean toExclude) {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("traverseImpactedVertices");
         Set<String>              visitedVertices = new HashSet<>();
         Queue<AtlasVertex>       queue           = new ArrayDeque<>();
@@ -660,13 +684,19 @@ public class EntityGraphRetriever {
             if (tagPropagationEdges == null) {
                 continue;
             }
-
-            if (edgeLabelsToExclude != null && !edgeLabelsToExclude.isEmpty()) {
-                tagPropagationEdges = Arrays.stream(tagPropagationEdges)
-                        .filter(x -> !edgeLabelsToExclude.contains(x))
-                        .collect(Collectors.toList())
-                        .toArray(new String[0]);
+            // Main Crux of toExclude over here
+            if (edgeLabelsToCheck != null && !edgeLabelsToCheck.isEmpty()) {
+                if (toExclude) {
+                    tagPropagationEdges = Arrays.stream(tagPropagationEdges)
+                            .filter(x -> !edgeLabelsToCheck.contains(x))
+                            .toArray(String[]::new);
+                } else {
+                    tagPropagationEdges = Arrays.stream(tagPropagationEdges)
+                            .filter(edgeLabelsToCheck::contains)
+                            .toArray(String[]::new);
+                }
             }
+
 
             Iterator<AtlasEdge> propagationEdges = entityVertex.getEdges(AtlasEdgeDirection.BOTH, tagPropagationEdges).iterator();
 
@@ -721,7 +751,7 @@ public class EntityGraphRetriever {
     }
 
     private void traverseImpactedVerticesByLevel(final AtlasVertex entityVertexStart, final String relationshipGuidToExclude,
-                                          final String classificationId, final List<String> result, List<String> edgeLabelsToExclude, List<String> verticesWithoutClassification) {
+                                          final String classificationId, final List<String> result, List<String> edgeLabelsToCheck,Boolean toExclude, List<String> verticesWithoutClassification) {
         AtlasPerfMetrics.MetricRecorder metricRecorder                          = RequestContext.get().startMetricRecord("traverseImpactedVerticesByLevel");
         Set<String>                 visitedVerticesIds                          = new HashSet<>();
         Set<String>                 verticesAtCurrentLevel                      = new HashSet<>();
@@ -770,7 +800,7 @@ public class EntityGraphRetriever {
                             }
 
                             return CompletableFuture.supplyAsync(() -> getAdjacentVerticesIds(entityVertex, classificationId,
-                                    relationshipGuidToExclude, edgeLabelsToExclude, visitedVerticesIds), executorService);
+                                    relationshipGuidToExclude, edgeLabelsToCheck,toExclude, visitedVerticesIds), executorService);
                         }).collect(Collectors.toList());
 
                 futures.stream().map(CompletableFuture::join).forEach(x -> {
@@ -793,7 +823,7 @@ public class EntityGraphRetriever {
     }
 
     private Set<String> getAdjacentVerticesIds(AtlasVertex entityVertex,final String classificationId, final String relationshipGuidToExclude
-            ,List<String> edgeLabelsToExclude, Set<String> visitedVerticesIds) {
+            ,List<String> edgeLabelsToCheck,Boolean toExclude, Set<String> visitedVerticesIds) {
 
         AtlasEntityType         entityType          = typeRegistry.getEntityTypeByName(getTypeName(entityVertex));
         String[]                tagPropagationEdges = entityType != null ? entityType.getTagPropagationEdgesArray() : null;
@@ -804,11 +834,18 @@ public class EntityGraphRetriever {
             return null;
         }
 
-        if (edgeLabelsToExclude != null && !edgeLabelsToExclude.isEmpty()) {
-            tagPropagationEdges = Arrays.stream(tagPropagationEdges)
-                    .filter(x -> !edgeLabelsToExclude.contains(x))
-                    .collect(Collectors.toList())
-                    .toArray(new String[0]);
+        if (edgeLabelsToCheck != null && !edgeLabelsToCheck.isEmpty()) {
+            if (toExclude) {
+                tagPropagationEdges = Arrays.stream(tagPropagationEdges)
+                        .filter(x -> !edgeLabelsToCheck.contains(x))
+                        .collect(Collectors.toList())
+                        .toArray(new String[0]);
+            } else{
+                tagPropagationEdges = Arrays.stream(tagPropagationEdges)
+                        .filter(x -> edgeLabelsToCheck.contains(x))
+                        .collect(Collectors.toList())
+                        .toArray(new String[0]);
+            }
         }
 
         Iterator<AtlasEdge> propagationEdges = entityVertex.getEdges(AtlasEdgeDirection.BOTH, tagPropagationEdges).iterator();
@@ -982,8 +1019,13 @@ public class EntityGraphRetriever {
             ret.setTypeName(typeName);
             ret.setGuid(guid);
             ret.setStatus(GraphHelper.getStatus(entityVertex));
-            if(RequestContext.get().includeClassifications()){
-                ret.setClassificationNames(getAllTraitNames(entityVertex));
+            RequestContext context = RequestContext.get();
+            boolean includeClassifications = context.includeClassifications();
+            boolean includeClassificationNames = context.isIncludeClassificationNames();
+            if(includeClassifications){
+                ret.setClassificationNames(getAllTraitNamesFromAttribute(entityVertex));
+            } else if (!includeClassifications && includeClassificationNames) {
+                ret.setClassificationNames(getAllTraitNamesFromAttribute(entityVertex));
             }
             ret.setIsIncomplete(isIncomplete);
             ret.setLabels(getLabels(entityVertex));

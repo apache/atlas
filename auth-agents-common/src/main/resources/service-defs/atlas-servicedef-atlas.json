@@ -450,6 +450,11 @@
 			"itemId": 24,
 			"name": "admin-task-cud",
 			"label": "Admin task CUD API"
+		},
+		{
+			"itemId": 25,
+			"name": "admin-featureFlag-cud",
+			"label": "Admin featureflag CUD API"
 		}
 
 	],

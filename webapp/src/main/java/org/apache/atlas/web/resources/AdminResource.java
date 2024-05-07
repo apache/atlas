@@ -56,6 +56,7 @@ import org.apache.atlas.repository.impexp.MigrationProgressService;
 import org.apache.atlas.repository.impexp.ZipSink;
 import org.apache.atlas.repository.patches.AtlasPatchManager;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
+import org.apache.atlas.service.FeatureFlagStore;
 import org.apache.atlas.service.metrics.MetricsRegistry;
 import org.apache.atlas.services.MetricsService;
 import org.apache.atlas.tasks.TaskManagement;
@@ -930,6 +931,21 @@ public class AdminResource {
         return debugMetricsRESTSink.getMetrics();
     }
 
+    @POST
+    @Path("featureFlag")
+    @Produces(MediaType.APPLICATION_JSON)
+    public void setFeatureFlag(@QueryParam("key") String key, @QueryParam("value") String value) throws AtlasBaseException {
+        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_FEATURE_FLAG_CUD), "featureFlag");
+        FeatureFlagStore.setFlag(key, value);
+    }
+
+    @DELETE
+    @Path("featureFlag/{flag}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public void deleteFeatureFlag(@PathParam("flag") String key) throws AtlasBaseException {
+        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_FEATURE_FLAG_CUD), "featureFlag");
+        FeatureFlagStore.deleteFlag(key);
+    }
     private String getEditableEntityTypes(Configuration config) {
         String ret = DEFAULT_EDITABLE_ENTITY_TYPES;
 

@@ -19,6 +19,8 @@ public class SearchParams {
     boolean excludeMeanings;
     boolean excludeClassifications;
 
+    boolean includeClassificationNames = false;
+
     RequestMetadata requestMetadata = new RequestMetadata();
 
     Async async = new Async();
@@ -98,6 +100,14 @@ public class SearchParams {
 
     public void setExcludeMeanings(boolean excludeMeanings) {
         this.excludeMeanings = excludeMeanings;
+    }
+
+    public boolean isIncludeClassificationNames() {
+        return includeClassificationNames;
+    }
+
+    public void setIncludeClassificationNames(boolean includeClassificationNames) {
+        this.includeClassificationNames = includeClassificationNames;
     }
 
     public boolean isSaveSearchLog() {

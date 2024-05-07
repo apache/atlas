@@ -261,7 +261,7 @@ public class ClassificationAssociator {
             operationListMap.clear();
         }
 
-        private Map<String, List<AtlasClassification>> computeChanges(AtlasEntityHeader incomingEntityHeader, AtlasEntityHeader entityToBeUpdated) {
+        private Map<String, List<AtlasClassification>> computeChanges(AtlasEntityHeader incomingEntityHeader, AtlasEntityHeader entityToBeUpdated) throws AtlasBaseException {
             if (incomingEntityHeader == null || entityToBeUpdated == null) {
                 return null;
             }
@@ -283,6 +283,8 @@ public class ClassificationAssociator {
             return operationListMap;
         }
 
+
+
         private void bucket(String op, Map<String, List<AtlasClassification>> operationListMap, List<AtlasClassification> results) {
             if (CollectionUtils.isEmpty(results)) {
                 return;
@@ -295,7 +297,6 @@ public class ClassificationAssociator {
             if (CollectionUtils.isEmpty(list)) {
                 return;
             }
-
             String classificationNames = getClassificationNames(list);
             try {
                 entitiesStore.addClassifications(entityGuid, list);
@@ -309,7 +310,6 @@ public class ClassificationAssociator {
             if (CollectionUtils.isEmpty(list)) {
                 return;
             }
-
             String classificationNames = getClassificationNames(list);
             try {
                 entitiesStore.updateClassifications(entityGuid, list);

@@ -18,6 +18,11 @@
 
 package org.apache.atlas.web.filters;
 
+import org.apache.atlas.AtlasConfiguration;
+import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.service.FeatureFlagStore;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.web.service.ActiveInstanceState;
 import org.apache.atlas.web.service.ServiceState;
 import org.slf4j.Logger;
@@ -37,6 +42,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.HttpHeaders;
 import java.io.IOException;
+import java.util.HashMap;
 
 /**
  * A servlet {@link Filter} that redirects web requests from a passive Atlas server instance to an active one.
@@ -51,6 +57,9 @@ public class ActiveServerFilter implements Filter {
 
     private static final Logger LOG = LoggerFactory.getLogger(ActiveServerFilter.class);
     private static final String MIGRATION_STATUS_STATIC_PAGE = "migration-status.html";
+    private static final String[] WHITELISTED_APIS_SIGNATURE = {"search", "lineage", "auditSearch", "accessors"
+        , "evaluator", "featureFlag"};
+    private static final String DISABLE_WRITE_FLAG = "disable_writes";
 
     private final ActiveInstanceState activeInstanceState;
     private ServiceState serviceState;
@@ -78,6 +87,20 @@ public class ActiveServerFilter implements Filter {
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse,
                          FilterChain filterChain) throws IOException, ServletException {
+        // If maintenance mode is enabled, return a 503
+        if (AtlasConfiguration.ATLAS_MAINTENANCE_MODE.getBoolean()) {
+            if (FeatureFlagStore.evaluate(DISABLE_WRITE_FLAG, "true")) {
+                // Block all the POST, PUT, DELETE operations
+                HttpServletRequest request = (HttpServletRequest) servletRequest;
+                HttpServletResponse response = (HttpServletResponse) servletResponse;
+                if (isBlockedMethod(request.getMethod()) && !isWhitelistedAPI(request.getRequestURI())) {
+                    LOG.error("Maintenance mode enabled. Blocking request: {}", request.getRequestURI());
+                    sendMaintenanceModeResponse(response);
+                    return; // Stop further processing
+                }
+            }
+        }
+        
         if (isFilteredURI(servletRequest)) {
             LOG.debug("Is a filtered URI: {}. Passing request downstream.",
                     ((HttpServletRequest)servletRequest).getRequestURI());
@@ -111,6 +134,7 @@ public class ActiveServerFilter implements Filter {
 
     final String adminUriNotFiltered[] = { "/admin/export", "/admin/import", "/admin/importfile", "/admin/audits",
             "/admin/purge", "/admin/expimp/audit", "/admin/metrics", "/admin/server", "/admin/audit/", "admin/tasks"};
+
     private boolean isFilteredURI(ServletRequest servletRequest) {
         HttpServletRequest httpServletRequest = (HttpServletRequest) servletRequest;
         String requestURI = httpServletRequest.getRequestURI();
@@ -126,6 +150,43 @@ public class ActiveServerFilter implements Filter {
             return true;
         } else {
             return false;
+        }
+    }
+
+    private boolean isWhitelistedAPI(String requestURI) {
+        for (String api : WHITELISTED_APIS_SIGNATURE) {
+            if (requestURI.contains(api)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void sendMaintenanceModeResponse(HttpServletResponse response) throws IOException {
+        response.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+
+        AtlasBaseException serverException = new AtlasBaseException(AtlasErrorCode.MAINTENANCE_MODE_ENABLED,
+                AtlasErrorCode.MAINTENANCE_MODE_ENABLED.getFormattedErrorMessage());
+
+        HashMap<String, Object> errorMap = new HashMap<>();
+        errorMap.put("errorCode", serverException.getAtlasErrorCode().getErrorCode());
+        errorMap.put("errorMessage", serverException.getMessage());
+
+        String jsonResponse = AtlasType.toJson(errorMap);
+        response.getOutputStream().write(jsonResponse.getBytes());
+        response.getOutputStream().flush();
+    }
+
+    private boolean isBlockedMethod(String method) {
+        switch (method) {
+            case HttpMethod.POST:
+            case HttpMethod.PUT:
+            case HttpMethod.DELETE:
+                return true;
+            default:
+                return false;
         }
     }
 
