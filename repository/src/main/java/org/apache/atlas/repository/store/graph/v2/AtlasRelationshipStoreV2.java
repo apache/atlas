@@ -74,6 +74,7 @@ import static org.apache.atlas.repository.Constants.PROVENANCE_TYPE_KEY;
 import static org.apache.atlas.repository.Constants.RELATIONSHIPTYPE_TAG_PROPAGATION_KEY;
 import static org.apache.atlas.repository.Constants.RELATIONSHIP_GUID_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.VERSION_PROPERTY_KEY;
+import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.*;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_RELATIONSHIP_UPDATE;
 
@@ -104,6 +105,11 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
     private static final String END_2_DOC_ID_KEY = "end2DocId";
     private static final String ES_DOC_ID_MAP_KEY = "esDocIdMap";
 
+    private static Set<String> EXCLUDE_MUTATION_REL_TYPE_NAMES = new HashSet<String>() {{
+        add("parent_domain_sub_domains");
+        add("data_domain_data_products");
+    }};
+
     public enum RelationshipMutation {
         RELATIONSHIP_CREATE,
         RELATIONSHIP_UPDATE,
@@ -128,6 +134,8 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> create({})", relationship);
         }
+
+        validateRelationshipType(relationship.getTypeName());
 
         AtlasVertex end1Vertex = getVertexFromEndPoint(relationship.getEnd1());
         AtlasVertex end2Vertex = getVertexFromEndPoint(relationship.getEnd2());
@@ -160,6 +168,8 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         String      edgeType   = AtlasGraphUtilsV2.getTypeName(edge);
         AtlasVertex end1Vertex = edge.getOutVertex();
         AtlasVertex end2Vertex = edge.getInVertex();
+
+        validateRelationshipType(edgeType);
 
         // update shouldn't change endType
         if (StringUtils.isNotEmpty(relationship.getTypeName()) && !StringUtils.equalsIgnoreCase(edgeType, relationship.getTypeName())) {
@@ -320,6 +330,8 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
                 throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIP_ALREADY_DELETED, guid);
             }
 
+            validateRelationshipType(getTypeName(edge));
+
             edgesToDelete.add(edge);
             AtlasRelationship relationshipToDelete = entityRetriever.mapEdgeToAtlasRelationship(edge);
             deletedRelationships.add(relationshipToDelete);
@@ -368,6 +380,9 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         if (getState(edge) == DELETED) {
             throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIP_ALREADY_DELETED, guid);
         }
+
+        validateRelationshipType(getTypeName(edge));
+
         deleteDelegate.getHandler().resetHasLineageOnInputOutputDelete(Collections.singleton(edge), null);
         deleteDelegate.getHandler().deleteRelationships(Collections.singleton(edge), forceDelete);
 
@@ -998,5 +1013,12 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
     private static void setEdgeVertexIdsInContext(AtlasEdge edge) {
         RequestContext.get().addRelationshipEndToVertexIdMapping(GraphHelper.getAtlasObjectIdForOutVertex(edge), edge.getOutVertex().getId());
         RequestContext.get().addRelationshipEndToVertexIdMapping(GraphHelper.getAtlasObjectIdForInVertex(edge), edge.getInVertex().getId());
+    }
+
+    private static void validateRelationshipType(String relationshipTypeName) throws AtlasBaseException {
+        if (EXCLUDE_MUTATION_REL_TYPE_NAMES.contains(relationshipTypeName)) {
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST,
+                    String.format("Mutating relationship of type %s is not supported via relationship APIs, please use entity APIs", relationshipTypeName));
+        }
     }
 }
