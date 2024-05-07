@@ -408,8 +408,21 @@
       "policyResourceCategory": "ENTITY",
       "policyType": "ACCESS",
       "resources": [
-        "entity:default/*/{entity}*",
+        "entity:default/*/{entity}",
         "entity-type:Persona",
+        "entity-classification:*"
+      ],
+      "actions": [
+        "entity-create",
+        "entity-update",
+        "entity-delete"
+      ]
+    },
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "resources": [
+        "entity:default/*/{entity}/*",
         "entity-type:AuthPolicy",
         "entity-classification:*"
       ],
@@ -423,7 +436,7 @@
       "policyResourceCategory": "ENTITY",
       "policyType": "ACCESS",
       "resources": [
-        "entity:stakeholderTitle/domain/{entity}/*",
+        "entity:stakeholderTitle/domain/*/{entity}",
         "entity-type:StakeholderTitle",
         "entity-classification:*"
       ],
@@ -569,6 +582,35 @@
         "entity-add-classification",
         "entity-update-classification",
         "entity-remove-classification"
+      ]
+    },
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "resources": [
+        "entity:default/*/{entity}/*",
+        "entity-type:Persona",
+        "entity-type:AuthPolicy",
+        "entity-classification:*"
+      ],
+      "actions": [
+        "entity-create",
+        "entity-update",
+        "entity-delete"
+      ]
+    },
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "resources": [
+        "entity:stakeholderTitle/domain/*/{entity}/*domain/*",
+        "entity-type:StakeholderTitle",
+        "entity-classification:*"
+      ],
+      "actions": [
+        "entity-create",
+        "entity-update",
+        "entity-delete"
       ]
     },
     {

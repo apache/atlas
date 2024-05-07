@@ -19,9 +19,13 @@ package org.apache.atlas.repository.store.graph.v2.preprocessor.accesscontrol;
 
 
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.authorize.AtlasAuthorizationUtils;
+import org.apache.atlas.authorize.AtlasEntityAccessRequest;
+import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.auth.client.keycloak.AtlasKeycloakClient;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
@@ -41,6 +45,7 @@ import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +55,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
 import static org.apache.atlas.AtlasErrorCode.OPERATION_NOT_SUPPORTED;
+import static org.apache.atlas.repository.Constants.NAME;
 import static org.apache.atlas.repository.Constants.POLICY_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_ACCESS_CONTROL_ENABLED;
@@ -138,31 +145,54 @@ public class PersonaPreProcessor implements PreProcessor {
         aliasStore.deleteAlias(getESAliasName(persona));
     }
 
-    private void processCreatePersona(AtlasStruct entity) throws AtlasBaseException {
+    private void processCreatePersona(AtlasEntity entity) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processCreatePersona");
 
-        validateNoPoliciesAttached((AtlasEntity) entity);
+        validateNoPoliciesAttached(entity);
 
         String tenantId = getTenantId(entity);
 
-        entity.setAttribute(QUALIFIED_NAME, String.format("%s/%s", tenantId, getUUID()));
+        if (entity.hasRelationshipAttribute("dataDomain")) {
+            if (! entity.hasRelationshipAttribute("stakeholderTitle")) {
+                throw new AtlasBaseException(BAD_REQUEST, "Relation stakeholderTitle not found");
+            }
+
+            entity.setAttribute("domainGuid", getGuidFromRelationAttribute(entity, "dataDomain"));
+            entity.setAttribute("stakeholderTitleGuid", getGuidFromRelationAttribute(entity, "stakeholderTitle"));
+
+            String personaQualifiedName = String.format("default/%s/%s",
+                    getUUID(),
+                    getQualifiedNameFromRelationAttribute(entity, "dataDomain"));
+
+            entity.setAttribute(QUALIFIED_NAME, personaQualifiedName);
+
+            //TODO: validate Stakeholder & StakeholderTitle pair is unique
+
+        } else {
+
+            entity.setAttribute(QUALIFIED_NAME, String.format("%s/%s", tenantId, getUUID()));
+        }
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, new AtlasEntityHeader(entity)),
+                "create Persona: ", entity.getAttribute(NAME));
+
         entity.setAttribute(ATTR_ACCESS_CONTROL_ENABLED, entity.getAttributes().getOrDefault(ATTR_ACCESS_CONTROL_ENABLED, true));
 
         //create keycloak role
-        String roleId = createKeycloakRole((AtlasEntity) entity);
+        String roleId = createKeycloakRole(entity);
 
         entity.setAttribute(ATTR_PERSONA_ROLE_ID, roleId);
 
         //create ES alias
-        aliasStore.createAlias((AtlasEntity) entity);
+        aliasStore.createAlias(entity);
 
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
-    private void processUpdatePersona(EntityMutationContext context, AtlasStruct entity) throws AtlasBaseException {
+    private void processUpdatePersona(EntityMutationContext context, AtlasEntity entity) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processUpdatePersona");
 
-        AtlasEntity persona = (AtlasEntity) entity;
+        AtlasEntity persona = entity;
         validateNoPoliciesAttached(persona);
         AtlasVertex vertex = context.getVertex(persona.getGuid());
 
@@ -172,9 +202,20 @@ public class PersonaPreProcessor implements PreProcessor {
             throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Persona not Active");
         }
 
+        String domainGuid = (String) entity.getAttribute("domainGuid");
+        if (StringUtils.isNotEmpty(domainGuid)) {
+            entity.removeAttribute("domainGuid");
+            entity.removeAttribute("stakeholderTitleGuid");
+            entity.getRelationshipAttributes().remove("dataDomain");
+            entity.getRelationshipAttributes().remove("stakeholderTitle");
+        }
+
         String vertexQName = vertex.getProperty(QUALIFIED_NAME, String.class);
         entity.setAttribute(QUALIFIED_NAME, vertexQName);
         entity.setAttribute(ATTR_PERSONA_ROLE_ID, getPersonaRoleId(existingPersonaEntity));
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, new AtlasEntityHeader(entity)),
+                "update Persona: ", entity.getAttribute(NAME));
 
         boolean isEnabled = getIsAccessControlEnabled(persona);
         if (getIsAccessControlEnabled(existingPersonaEntity) != isEnabled) {
@@ -262,5 +303,33 @@ public class PersonaPreProcessor implements PreProcessor {
             AtlasKeycloakClient.getKeycloakClient().updateRole(roleId, roleRepresentation);
             LOG.info("Updated keycloak role with name {}", roleName);
         }
+    }
+
+    private String getGuidFromRelationAttribute(AtlasEntity entity, String relationshipAttributeName) throws AtlasBaseException {
+        AtlasObjectId relationObjectId = (AtlasObjectId) entity.getRelationshipAttribute(relationshipAttributeName);
+
+        String guid = relationObjectId.getGuid();
+        if (StringUtils.isEmpty(guid)) {
+            AtlasVertex vertex = entityRetriever.getEntityVertex(relationObjectId);
+            guid = vertex.getProperty("__guid", String.class);
+        }
+
+        return guid;
+    }
+
+    private String getQualifiedNameFromRelationAttribute(AtlasEntity entity, String relationshipAttributeName) throws AtlasBaseException {
+        AtlasObjectId relationObjectId = (AtlasObjectId) entity.getRelationshipAttribute(relationshipAttributeName);
+        String qualifiedName = null;
+
+        if (relationObjectId.getUniqueAttributes() != null) {
+            qualifiedName = (String) relationObjectId.getUniqueAttributes().get(QUALIFIED_NAME);
+        }
+
+        if (StringUtils.isEmpty(qualifiedName)) {
+            AtlasVertex vertex = entityRetriever.getEntityVertex(relationObjectId);
+            qualifiedName = vertex.getProperty(QUALIFIED_NAME, String.class);
+        }
+
+        return qualifiedName;
     }
 }

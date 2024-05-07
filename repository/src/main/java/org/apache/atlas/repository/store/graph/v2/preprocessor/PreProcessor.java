@@ -18,6 +18,8 @@ public interface PreProcessor {
     Set<String> skipInitialAuthCheckTypes = new HashSet<String>() {{
         add(ATLAS_GLOSSARY_TERM_ENTITY_TYPE);
         add(ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE);
+        add("Persona");
+        add("StakeholderTitle");
     }};
 
     void processAttributes(AtlasStruct entity, EntityMutationContext context, EntityMutations.EntityOperation operation) throws AtlasBaseException;

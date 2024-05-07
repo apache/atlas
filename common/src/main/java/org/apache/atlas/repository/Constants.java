@@ -431,6 +431,8 @@ public final class Constants {
     public static final Set<String> SKIP_UPDATE_AUTH_CHECK_TYPES = new HashSet<String>() {{
         add(README_ENTITY_TYPE);
         add(LINK_ENTITY_TYPE);
+        add("Persona");
+        add("StakeholderTitle");
     }};
 
     public static final Set<String> SKIP_DELETE_AUTH_CHECK_TYPES = new HashSet<String>() {{
