@@ -177,7 +177,7 @@ public class RequestContext {
         }
         if (CollectionUtils.isNotEmpty(applicationMetrics)) {
             if (Objects.nonNull(this.metricsRegistry)){
-                this.metricsRegistry.collectIApplicationMetrics(traceId, this.requestUri, applicationMetrics);
+                this.metricsRegistry.collectApplicationMetrics(traceId, this.requestUri, applicationMetrics);
             }
             applicationMetrics.clear();
         }

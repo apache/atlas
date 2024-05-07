@@ -28,7 +28,7 @@ public class RedisServiceLocalImpl extends AbstractRedisService {
     }
 
     @Override
-    public String putValue(String key, String value) {
+    public String putValue(String key, String value, int timeout) {
         return null;
     }
 

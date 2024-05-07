@@ -19,7 +19,9 @@
 package org.apache.atlas.repository;
 
 import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.service.FeatureFlagStore;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -384,7 +386,6 @@ public final class Constants {
 
     public static final String CATALOG_PROCESS_INPUT_RELATIONSHIP_LABEL = "__Process.inputs";
     public static final String CATALOG_PROCESS_OUTPUT_RELATIONSHIP_LABEL = "__Process.outputs";
-    public static final String COLUMN_LINEAGE_RELATIONSHIP_LABEL = "__Process.columnProcesses";
     public static final String CLASSIFICATION_PROPAGATION_MODE_DEFAULT  ="DEFAULT";
     public static final String CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE  ="RESTRICT_LINEAGE";
 
@@ -394,14 +395,12 @@ public final class Constants {
     public static final HashMap<String, ArrayList<String>> CLASSIFICATION_PROPAGATION_MODE_LABELS_MAP = new HashMap<String, ArrayList<String>>(){{
         put(CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE, new ArrayList<>(
                 Arrays.asList(CATALOG_PROCESS_INPUT_RELATIONSHIP_LABEL,
-                CATALOG_PROCESS_OUTPUT_RELATIONSHIP_LABEL,
-                COLUMN_LINEAGE_RELATIONSHIP_LABEL
+                CATALOG_PROCESS_OUTPUT_RELATIONSHIP_LABEL
         )));
         put(CLASSIFICATION_PROPAGATION_MODE_DEFAULT, null);
         put(CLASSIFICATION_PROPAGATION_MODE_RESTRICT_HIERARCHY, new ArrayList<>(
                 Arrays.asList(CATALOG_PROCESS_INPUT_RELATIONSHIP_LABEL,
-                        CATALOG_PROCESS_OUTPUT_RELATIONSHIP_LABEL,
-                        COLUMN_LINEAGE_RELATIONSHIP_LABEL
+                        CATALOG_PROCESS_OUTPUT_RELATIONSHIP_LABEL
                 )));
     }};
 
@@ -457,6 +456,20 @@ public final class Constants {
         } catch (AtlasException e) {
             return encodePropertyKey(defaultKey);
         }
+    }
+
+    public static String getESIndex() {
+        String indexSuffix  = null;
+        if(AtlasConfiguration.ATLAS_MAINTENANCE_MODE.getBoolean()) {
+            try {
+                if (FeatureFlagStore.evaluate("use_temp_es_index", "true")) {
+                    indexSuffix = "_temp";
+                }
+            } catch (Exception e) {
+                LOG.error("Failed to evaluate feature flag with error", e);
+            }
+        }
+        return indexSuffix == null ? VERTEX_INDEX_NAME : VERTEX_INDEX_NAME + indexSuffix;
     }
 
     public static String getStaticFileAsString(String fileName) throws IOException {

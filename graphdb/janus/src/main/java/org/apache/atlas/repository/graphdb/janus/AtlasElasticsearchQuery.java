@@ -180,11 +180,11 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         boolean contextIdExists = StringUtils.isNotEmpty(searchParams.getSearchContextId()) && searchParams.getSearchContextSequenceNo() != null;
         try {
             if(contextIdExists) {
-                // If the search context id and greater sequence no is present, then we need to delete the previous search context async
+                // If the search context id and greater sequence no is present,
+                // then we need to delete the previous search context async
                     processRequestWithSameSearchContextId(searchParams);
             }
             AsyncQueryResult response = submitAsyncSearch(searchParams, false).get();
-            //Sleep for 5 seconds to allow ES to process the request
             if(response.isRunning()) {
                 /*
                     * If the response is still running, then we need to wait for the response
@@ -196,11 +196,7 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
                 String searchContextId = searchParams.getSearchContextId();
                 Integer searchContextSequenceNo = searchParams.getSearchContextSequenceNo();
                 if (contextIdExists) {
-                    try {
-                        CompletableFuture.runAsync(() -> SearchContextCache.put(searchContextId, searchContextSequenceNo, esSearchId));
-                    } catch (Exception e) {
-                        LOG.error("Failed to update the search context cache {}", e.getMessage());
-                    }
+                    CompletableFuture.runAsync(() -> SearchContextCache.put(searchContextId, searchContextSequenceNo, esSearchId));
                 }
                 response = getAsyncSearchResponse(searchParams, esSearchId).get();
                 if (response ==  null) {

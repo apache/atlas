@@ -1,23 +1,15 @@
 package org.apache.atlas.repository.graphdb.janus;
-
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.service.redis.RedisService;
 import org.apache.atlas.utils.AtlasPerfMetrics;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
-
-import java.util.concurrent.TimeUnit;
-
 @Component
 public class SearchContextCache {
+    private static final Logger LOG = LoggerFactory.getLogger(SearchContextCache.class);
     private static RedisService redisService = null;
-
-    private static final Cache<String, String> searchContextLocalCache = CacheBuilder.newBuilder()
-            .maximumSize(200)
-            .expireAfterWrite(30, TimeUnit.SECONDS)
-            .build();
 
     public static final String INVALID_SEQUENCE = "invalid_sequence";
 
@@ -32,21 +24,16 @@ public class SearchContextCache {
        try {
            // Build the string in format `sequence/esAsyncId` and store it in redis
            String val = sequence + "/" + esAsyncId;
-           redisService.putValue(key, val);
-           searchContextLocalCache.put(key, val);
+           redisService.putValue(key, val, 30);
        } finally {
            RequestContext.get().endMetricRecord(metric);
        }
     }
     public static String get(String key) {
-        String ret = null;
         try {
-            ret = searchContextLocalCache.getIfPresent(key);
-            if (ret == null) {
-                ret = redisService.getValue(key);
-            }
-            return ret;
+            return redisService.getValue(key);
         } catch (Exception e) {
+            LOG.error("Error while fetching value from Redis", e);
             return null;
         }
 
@@ -80,7 +67,6 @@ public class SearchContextCache {
     public static void remove(String key) {
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("removeFromCache");
         try {
-            searchContextLocalCache.invalidate(key);
             redisService.removeValue(key);
         } finally {
             RequestContext.get().endMetricRecord(metric);

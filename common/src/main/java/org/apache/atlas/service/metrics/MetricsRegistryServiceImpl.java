@@ -62,7 +62,7 @@ public class MetricsRegistryServiceImpl implements MetricsRegistry {
         }
     }
     //Use this if you want to publish Histograms
-    public void collectIApplicationMetrics(String requestId, String requestUri, List<AtlasPerfMetrics.Metric> applicationMetrics){
+    public void collectApplicationMetrics(String requestId, String requestUri, List<AtlasPerfMetrics.Metric> applicationMetrics){
         try {
             for(AtlasPerfMetrics.Metric metric : applicationMetrics){
                 if (metric.getMetricType() == AtlasMetricType.COUNTER) {
