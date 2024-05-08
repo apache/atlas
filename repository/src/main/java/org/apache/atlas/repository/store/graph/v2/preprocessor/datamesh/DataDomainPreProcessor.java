@@ -190,13 +190,32 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
                 domain.setAttribute(SUPER_DOMAIN_QN_ATTR, superDomainQualifiedName);
             }
 
-            moveChildrenToAnotherDomain(domainVertex, superDomainQualifiedName, null, sourceDomainQualifiedName, targetDomainQualifiedName);
+            moveChildren(domainVertex, superDomainQualifiedName, updatedQualifiedName, sourceDomainQualifiedName, targetDomainQualifiedName);
             updatePolicies(this.updatedPolicyResources, this.context);
 
             LOG.info("Moved subDomain {} to Domain {}", domainName, targetDomainQualifiedName);
 
         } finally {
             RequestContext.get().endMetricRecord(recorder);
+        }
+    }
+
+    private void moveChildren(AtlasVertex domainVertex,
+                              String superDomainQualifiedName,
+                              String parentDomainQualifiedName,
+                              String sourceDomainQualifiedName,
+                              String targetDomainQualifiedName) throws AtlasBaseException {
+        // move products to target Domain
+        Iterator<AtlasVertex> products = getActiveChildrenVertices(domainVertex, DATA_PRODUCT_EDGE_LABEL);
+        while (products.hasNext()) {
+            AtlasVertex productVertex = products.next();
+            moveChildDataProductToAnotherDomain(productVertex, superDomainQualifiedName, parentDomainQualifiedName, sourceDomainQualifiedName, targetDomainQualifiedName);
+        }
+        // Get all children domains of current domain
+        Iterator<AtlasVertex> childDomains = getActiveChildrenVertices(domainVertex, DOMAIN_PARENT_EDGE_LABEL);
+        while (childDomains.hasNext()) {
+            AtlasVertex childVertex = childDomains.next();
+            moveChildrenToAnotherDomain(childVertex, superDomainQualifiedName, parentDomainQualifiedName, sourceDomainQualifiedName, targetDomainQualifiedName);
         }
     }
 
@@ -213,7 +232,7 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
             Map<String, Object> updatedAttributes = new HashMap<>();
 
             String currentDomainQualifiedName = childDomainVertex.getProperty(QUALIFIED_NAME, String.class);
-            String updatedDomainQualifiedName = currentDomainQualifiedName.replace(sourceDomainQualifiedName, targetDomainQualifiedName);
+            String updatedDomainQualifiedName = parentDomainQualifiedName + getOwnQualifiedNameForChild(currentDomainQualifiedName);
 
             // Change domain qualifiedName
             childDomainVertex.setProperty(QUALIFIED_NAME, updatedDomainQualifiedName);
@@ -269,7 +288,7 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
             Map<String, Object> updatedAttributes = new HashMap<>();
 
             String currentQualifiedName = productVertex.getProperty(QUALIFIED_NAME, String.class);
-            String updatedQualifiedName = currentQualifiedName.replace(sourceDomainQualifiedName, targetDomainQualifiedName);
+            String updatedQualifiedName = parentDomainQualifiedName + getOwnQualifiedNameForChild(currentQualifiedName);
 
             productVertex.setProperty(QUALIFIED_NAME, updatedQualifiedName);
             updatedAttributes.put(QUALIFIED_NAME, updatedQualifiedName);
@@ -319,6 +338,11 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
         } else{
             return "default/domain/" + getUUID() + "/super";
         }
+    }
+    
+    private String getOwnQualifiedNameForChild(String childQualifiedName) {
+        String[] splitted = childQualifiedName.split("/");
+        return String.format("/%s/%s", splitted[splitted.length -2], splitted[splitted.length -1]);
     }
 }
 
