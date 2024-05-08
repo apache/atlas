@@ -37,6 +37,7 @@ import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.AuthPolicyPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
 import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
@@ -109,10 +110,15 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
         try {
             AtlasEntityType entityType = typeRegistry.getEntityTypeByName(POLICY_ENTITY_TYPE);
 
+            LOG.info("updatedPolicyResources.size: {} ", updatedPolicyResources.size());
+            LOG.info("updatedPolicyResources {} ", AtlasType.toJson(updatedPolicyResources));
+
             List<AtlasEntityHeader> policies = getPolicies(updatedPolicyResources.keySet());
+            LOG.info("policies.size: {} ", policies.size());
 
             if (CollectionUtils.isNotEmpty(policies)) {
                 for (AtlasEntityHeader policy : policies) {
+                    LOG.info("Updating policy {} ", policy.getGuid());
                     AtlasVertex policyVertex = entityRetriever.getEntityVertex(policy.getGuid());
 
                     AtlasEntity policyEntity = entityRetriever.toAtlasEntity(policyVertex);
