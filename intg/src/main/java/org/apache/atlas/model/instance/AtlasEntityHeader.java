@@ -73,6 +73,7 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
     private String                          deleteHandler       = null;
     private Integer                         depth               = null;
     private Integer                         traversalOrder      = null;
+
     private Map<String, AtlasSearchResult>  collapse    = null;
 
 

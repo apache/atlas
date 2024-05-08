@@ -3005,6 +3005,76 @@
                     "entity-delete"
                 ]
             }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "attributes":
+            {
+                "name": "READ_DATA_CONTRACT",
+                "qualifiedName": "READ_DATA_CONTRACT",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyPriority": 1,
+                "policyUsers":
+                [],
+                "policyGroups":
+                [],
+                "policyRoles":
+                [
+                    "$admin",
+                    "$member",
+                    "$api-token-default-access"
+                ],
+                "policyResourceCategory": "ENTITY",
+                "policyResources":
+                [
+                    "entity-type:DataContract",
+                    "entity-classification:*",
+                    "entity:*"
+                ],
+                "policyActions":
+                [
+                    "entity-read"
+                ]
+            }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "attributes":
+            {
+                "name": "CU_DATA_CONTRACT",
+                "qualifiedName": "CU_DATA_CONTRACT",
+                "description": "cu allow for data contract",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyPriority": 1,
+                "policyUsers":
+                [],
+                "policyGroups":
+                [],
+                "policyRoles":
+                [
+                    "$admin",
+                    "$member",
+                    "$api-token-default-access"
+                ],
+                "policyResourceCategory": "ENTITY",
+                "policyResources":
+                [
+                    "entity-type:DataContract",
+                    "entity-classification:*",
+                    "entity:*"
+                ],
+                "policyActions":
+                [
+                    "entity-create",
+                    "entity-update"
+                ]
+            }
         }
     ]
 }

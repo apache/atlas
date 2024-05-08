@@ -94,6 +94,7 @@ public class DiscoveryREST {
 
     private static final String INDEXSEARCH_TAG_NAME = "indexsearch";
     private static final Set<String> TRACKING_UTM_TAGS = new HashSet<>(Arrays.asList("ui_main_list", "ui_popup_searchbar"));
+    private static final String UTM_TAG_FROM_PRODUCT = "project_webapp";
 
     @Inject
     public DiscoveryREST(AtlasTypeRegistry typeRegistry, AtlasDiscoveryService discoveryService,
@@ -393,6 +394,7 @@ public class DiscoveryREST {
 
         RequestContext.get().setIncludeMeanings(!parameters.isExcludeMeanings());
         RequestContext.get().setIncludeClassifications(!parameters.isExcludeClassifications());
+        RequestContext.get().setIncludeClassificationNames(parameters.isIncludeClassificationNames());
         try     {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.indexSearch(" + parameters + ")");
@@ -435,11 +437,15 @@ public class DiscoveryREST {
             if(CollectionUtils.isNotEmpty(parameters.getUtmTags())) {
                 AtlasPerfMetrics.Metric indexsearchMetric = new AtlasPerfMetrics.Metric(INDEXSEARCH_TAG_NAME);
                 indexsearchMetric.addTag("utmTag", "other");
+                indexsearchMetric.addTag("source", "other");
                 for (String utmTag : parameters.getUtmTags()) {
                     if (TRACKING_UTM_TAGS.contains(utmTag)) {
                         indexsearchMetric.addTag("utmTag", utmTag);
                         break;
                     }
+                }
+                if (parameters.getUtmTags().contains(UTM_TAG_FROM_PRODUCT)) {
+                    indexsearchMetric.addTag("source", UTM_TAG_FROM_PRODUCT);
                 }
                 indexsearchMetric.addTag("name", INDEXSEARCH_TAG_NAME);
                 indexsearchMetric.setTotalTimeMSecs(System.currentTimeMillis() - startTime);

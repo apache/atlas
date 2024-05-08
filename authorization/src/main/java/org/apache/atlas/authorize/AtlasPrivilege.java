@@ -51,7 +51,9 @@ public enum AtlasPrivilege {
      ADMIN_ENTITY_AUDITS("admin-entity-audits"),
      ADMIN_REPAIR_INDEX("admin-repair-index"),
 
-     ADMIN_TASK_CUD("admin-task-cud");
+     ADMIN_TASK_CUD("admin-task-cud"),
+
+     ADMIN_FEATURE_FLAG_CUD("admin-featureFlag-cud");
      private final String type;
 
      AtlasPrivilege(String actionType){

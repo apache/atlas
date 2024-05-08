@@ -88,6 +88,8 @@ public class RequestContext {
     private boolean     allowDeletedRelationsIndexsearch = false;
     private boolean     includeMeanings = true;
     private boolean     includeClassifications = true;
+
+    private boolean     includeClassificationNames = false;
     private String      currentTypePatchAction = "";
     private AtlasTask   currentTask;
     private String traceId;
@@ -175,7 +177,7 @@ public class RequestContext {
         }
         if (CollectionUtils.isNotEmpty(applicationMetrics)) {
             if (Objects.nonNull(this.metricsRegistry)){
-                this.metricsRegistry.collectIndexsearch(traceId, this.requestUri, applicationMetrics);
+                this.metricsRegistry.collectApplicationMetrics(traceId, this.requestUri, applicationMetrics);
             }
             applicationMetrics.clear();
         }
@@ -717,6 +719,14 @@ public class RequestContext {
 
     public boolean isCacheEnabled() {
         return this.cacheEnabled;
+    }
+
+    public boolean isIncludeClassificationNames() {
+        return includeClassificationNames;
+    }
+
+    public void setIncludeClassificationNames(boolean includeClassificationNames) {
+        this.includeClassificationNames = includeClassificationNames;
     }
 
     public class EntityGuidPair {
