@@ -23,6 +23,7 @@ import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
 import org.apache.atlas.repository.store.users.KeycloakStore;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,27 +81,28 @@ public class StakeholderTitlePreProcessor implements PreProcessor {
                 throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Can not attach a Stakeholder while creating StakeholderTitle");
             }
 
-            String qualifiedName;
+            if (StringUtils.isNotEmpty(RequestContext.getCurrentUser())) {
+                String qualifiedName;
 
-            String domainGuid = (String) entity.getAttribute("domainGuid");
-            if ("*".equals(domainGuid)) {
-                qualifiedName = String.format("stakeholderTitle/domain/default/%s", getUUID());
-                //TODO: validate name duplication
-            } else {
+                String domainGuid = (String) entity.getAttribute("domainGuid");
+                if ("*".equals(domainGuid)) {
+                    qualifiedName = String.format("stakeholderTitle/domain/default/%s", getUUID());
+                    //TODO: validate name duplication
+                } else {
 
-                AtlasVertex domain = entityRetriever.getEntityVertex(domainGuid);
-                qualifiedName = String.format("stakeholderTitle/domain/%s/%s",
-                        getUUID(),
-                        domain.getProperty(QUALIFIED_NAME, String.class));
+                    AtlasVertex domain = entityRetriever.getEntityVertex(domainGuid);
+                    qualifiedName = String.format("stakeholderTitle/domain/%s/%s",
+                            getUUID(),
+                            domain.getProperty(QUALIFIED_NAME, String.class));
 
-                //TODO: validate name duplication
+                    //TODO: validate name duplication
+                }
+
+                entity.setAttribute(QUALIFIED_NAME, qualifiedName);
+
+                AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, new AtlasEntityHeader(entity)),
+                        "create StakeholderTitle: ", entity.getAttribute(NAME));
             }
-
-            entity.setAttribute(QUALIFIED_NAME, qualifiedName);
-
-            AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, new AtlasEntityHeader(entity)),
-                    "create StakeholderTitle: ", entity.getAttribute(NAME));
-
         } finally {
             RequestContext.get().endMetricRecord(metricRecorder);
         }
