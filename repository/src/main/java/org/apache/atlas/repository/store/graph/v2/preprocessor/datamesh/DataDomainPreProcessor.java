@@ -177,6 +177,7 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
                 //Moving subDomain to make it Super Domain
                 targetDomainQualifiedName = "default";
                 updatedQualifiedName = currentDomainQualifiedName.replace(sourceDomainQualifiedName, targetDomainQualifiedName);
+                updatedQualifiedName = updatedQualifiedName + "/super";
                 domain.setAttribute(QUALIFIED_NAME, updatedQualifiedName);
                 domain.setAttribute(PARENT_DOMAIN_QN_ATTR, null);
                 domain.setAttribute(SUPER_DOMAIN_QN_ATTR, null);
