@@ -190,6 +190,9 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
                 domain.setAttribute(SUPER_DOMAIN_QN_ATTR, superDomainQualifiedName);
             }
 
+            String currentQualifiedName = domainVertex.getProperty(QUALIFIED_NAME, String.class);
+            this.updatedPolicyResources.put("entity:" + currentQualifiedName, "entity:" + updatedQualifiedName);
+
             moveChildren(domainVertex, superDomainQualifiedName, updatedQualifiedName, sourceDomainQualifiedName, targetDomainQualifiedName);
             updatePolicies(this.updatedPolicyResources, this.context);
 
@@ -339,7 +342,7 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
             return "default/domain/" + getUUID() + "/super";
         }
     }
-    
+
     private String getOwnQualifiedNameForChild(String childQualifiedName) {
         String[] splitted = childQualifiedName.split("/");
         return String.format("/%s/%s", splitted[splitted.length -2], splitted[splitted.length -1]);
