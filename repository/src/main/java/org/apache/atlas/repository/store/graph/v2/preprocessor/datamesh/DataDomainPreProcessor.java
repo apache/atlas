@@ -84,12 +84,16 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
     private void processCreateDomain(AtlasEntity entity) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processCreateDomain");
         String domainName = (String) entity.getAttribute(NAME);
+
         String parentDomainQualifiedName = (String) entity.getAttribute(PARENT_DOMAIN_QN_ATTR);
 
         AtlasEntityHeader parentDomain = getParent(entity);
         if(parentDomain != null ){
             parentDomainQualifiedName = (String) parentDomain.getAttribute(QUALIFIED_NAME);
         }
+
+        entity.setAttribute(QUALIFIED_NAME, createQualifiedName(parentDomainQualifiedName));
+        entity.setCustomAttributes(customAttributes);
 
         domainExists(domainName, parentDomainQualifiedName);
 
@@ -305,6 +309,14 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
 
         } finally {
             RequestContext.get().endMetricRecord(metricRecorder);
+        }
+    }
+
+    private static String createQualifiedName(String parentDomainQualifiedName) {
+        if (StringUtils.isNotEmpty(parentDomainQualifiedName)) {
+            return parentDomainQualifiedName + "/domain/" + getUUID();
+        } else{
+            return "default/domain/" + getUUID() + "/super";
         }
     }
 }

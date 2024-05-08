@@ -65,6 +65,12 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
 
     static final Set<String> PARENT_ATTRIBUTES            = new HashSet<>(Arrays.asList(SUPER_DOMAIN_QN_ATTR, PARENT_DOMAIN_QN_ATTR));
 
+    static final Map<String, String> customAttributes = new HashMap<>();
+
+    static {
+        customAttributes.put(MIGRATION_CUSTOM_ATTRIBUTE, "true");
+    }
+
     AbstractDomainPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, AtlasGraph graph) {
         this.entityRetriever = entityRetriever;
         this.typeRegistry = typeRegistry;
