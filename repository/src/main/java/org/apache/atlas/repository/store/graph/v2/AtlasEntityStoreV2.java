@@ -58,6 +58,7 @@ import org.apache.atlas.repository.store.graph.v2.AtlasEntityComparator.AtlasEnt
 import org.apache.atlas.repository.store.graph.v1.RestoreHandlerV1;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.AuthPolicyPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.ConnectionPreProcessor;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.accesscontrol.StakeholderPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.contract.ContractPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.datamesh.StakeholderTitlePreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.resource.LinkPreProcessor;
@@ -1834,6 +1835,10 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
             case POLICY_ENTITY_TYPE:
                 preProcessor = new AuthPolicyPreProcessor(graph, typeRegistry, entityRetriever);
+                break;
+
+            case STAKEHOLDER_ENTITY_TYPE:
+                preProcessor = new StakeholderPreProcessor(graph, typeRegistry, entityRetriever, this);
                 break;
 
             case CONNECTION_ENTITY_TYPE:

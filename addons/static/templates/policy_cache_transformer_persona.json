@@ -406,10 +406,11 @@
     },
     {
       "policyResourceCategory": "ENTITY",
+      "description": "Create Stakeholder for this Domain",
       "policyType": "ACCESS",
       "resources": [
         "entity:default/*/{entity}",
-        "entity-type:Persona",
+        "entity-type:Stakeholder",
         "entity-classification:*"
       ],
       "actions": [
@@ -419,22 +420,28 @@
       ]
     },
     {
-      "policyResourceCategory": "ENTITY",
+      "policyResourceCategory": "RELATIONSHIP",
       "policyType": "ACCESS",
+      "description": "Link/unlink any Stakeholder to this Domain",
+
       "resources": [
-        "entity:default/*/{entity}/*",
-        "entity-type:AuthPolicy",
-        "entity-classification:*"
+        "relationship-type:*",
+
+        "end-one-entity-type:DataDomain",
+        "end-one-entity-classification:*",
+        "end-one-entity:{entity}",
+
+        "end-two-entity-type:Stakeholder",
+        "end-two-entity-classification:*",
+        "end-two-entity:default/*/{entity}"
       ],
-      "actions": [
-        "entity-create",
-        "entity-update",
-        "entity-delete"
-      ]
+      "actions": ["add-relationship", "update-relationship", "remove-relationship"]
     },
     {
       "policyResourceCategory": "ENTITY",
       "policyType": "ACCESS",
+      "description": "Create Stakeholder Title for this Domain",
+
       "resources": [
         "entity:stakeholderTitle/domain/*/{entity}",
         "entity-type:StakeholderTitle",
@@ -587,10 +594,11 @@
     {
       "policyResourceCategory": "ENTITY",
       "policyType": "ACCESS",
+      "description": "Create Stakeholder for Sub Domains",
+
       "resources": [
         "entity:default/*/{entity}/*",
-        "entity-type:Persona",
-        "entity-type:AuthPolicy",
+        "entity-type:Stakeholder",
         "entity-classification:*"
       ],
       "actions": [
@@ -600,8 +608,28 @@
       ]
     },
     {
+      "policyResourceCategory": "RELATIONSHIP",
+      "policyType": "ACCESS",
+      "description": "Link/unlink Stakeholder to Sub Domains",
+
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity-type:DataDomain",
+        "end-one-entity-classification:*",
+        "end-one-entity:{entity}/*domain/*",
+
+        "end-two-entity-type:Stakeholder",
+        "end-two-entity-classification:*",
+        "end-two-entity:default/*/{entity}/*"
+      ],
+      "actions": ["add-relationship", "update-relationship", "remove-relationship"]
+    },
+    {
       "policyResourceCategory": "ENTITY",
       "policyType": "ACCESS",
+      "description": "Create Stakeholder Title for Sub Domains",
+
       "resources": [
         "entity:stakeholderTitle/domain/*/{entity}/*domain/*",
         "entity-type:StakeholderTitle",

@@ -104,6 +104,10 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
             throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Cannot update Domain's subDomains or dataProducts relations");
         }
 
+        if(entity.hasRelationshipAttribute("stakeholders")){
+            throw new AtlasBaseException(AtlasErrorCode.OPERATION_NOT_SUPPORTED, "Managing Stakeholders via Domain update");
+        }
+
         String vertexQnName = vertex.getProperty(QUALIFIED_NAME, String.class);
 
         AtlasEntity storedDomain = entityRetriever.toAtlasEntity(vertex);

@@ -158,6 +158,7 @@ public final class Constants {
     public static final String PURPOSE_ENTITY_TYPE        = "Purpose";
     public static final String POLICY_ENTITY_TYPE         = "AuthPolicy";
     public static final String SERVICE_ENTITY_TYPE        = "AuthService";
+    public static final String STAKEHOLDER_ENTITY_TYPE    = "Stakeholder";
 
     /**
      * Resource

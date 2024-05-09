@@ -78,7 +78,7 @@ public class StakeholderTitlePreProcessor implements PreProcessor {
 
         try {
             if (entity.hasRelationshipAttribute("stakeholders")) {
-                throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Can not attach a Stakeholder while creating StakeholderTitle");
+                throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Managing Stakeholders while creating StakeholderTitle");
             }
 
             if (RequestContext.get().isSkipAuthorizationCheck()) {
@@ -120,7 +120,7 @@ public class StakeholderTitlePreProcessor implements PreProcessor {
             }
 
             if (entity.hasRelationshipAttribute("stakeholders")) {
-                throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Can not attach/detach a Stakeholder while updating StakeholderTitle");
+                throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Managing Stakeholders while updating StakeholderTitle");
             }
 
             AtlasVertex vertex = context.getVertex(entity.getGuid());

@@ -984,7 +984,7 @@
       ],
       "description": "Atlan Type representing a Persona model",
       "serviceType": "atlan",
-      "typeVersion": "1.2",
+      "typeVersion": "1.1",
       "attributeDefs": [
         {
           "name": "personaGroups",
@@ -1017,26 +1017,6 @@
           "isOptional": true,
           "isUnique": false,
           "includeInNotification": false
-        },
-        {
-          "name": "domainQualifiedName",
-          "typeName": "string",
-          "indexType": "STRING",
-          "cardinality": "SINGLE",
-          "isIndexable": false,
-          "isOptional": true,
-          "isUnique": false,
-          "includeInNotification": false
-        },
-        {
-          "name": "stakeholderTitleGuid",
-          "typeName": "string",
-          "indexType": "STRING",
-          "cardinality": "SINGLE",
-          "isIndexable": false,
-          "isOptional": true,
-          "isUnique": false,
-          "includeInNotification": false
         }
       ]
     },
@@ -1057,6 +1037,29 @@
           "isIndexable": false,
           "isOptional": true,
           "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": false
+        }
+      ]
+    },
+    {
+      "name": "StakeholderTitle",
+      "description": "Instance of a stakeholder title for Domains in Atlan",
+      "superTypes": [
+        "Catalog"
+      ],
+      "serviceType": "atlan",
+      "typeVersion": "1.0",
+      "attributeDefs": [
+        {
+          "name": "domainQualifiedNames",
+          "description": "qualified name array representing the Domains for which this StakeholderTitle is applicable",
+          "typeName": "array<string>",
+          "indexType": "STRING",
+          "isOptional": true,
+          "cardinality": "SET",
+          "isUnique": false,
+          "isIndexable": false,
           "skipScrubbing": true,
           "includeInNotification": false
         }

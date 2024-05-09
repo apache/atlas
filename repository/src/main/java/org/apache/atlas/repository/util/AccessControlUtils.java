@@ -337,7 +337,7 @@ public final class AccessControlUtils {
     public static void validateNoPoliciesAttached(AtlasEntity entity) throws AtlasBaseException {
         List<AtlasObjectId> policies = (List<AtlasObjectId>) entity.getRelationshipAttribute(REL_ATTR_POLICIES);
         if (CollectionUtils.isNotEmpty(policies)) {
-            throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Can not attach a policy while creating/updating Persona/Purpose");
+            throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Can not attach a policy while creating/updating Persona/Purpose/Stakeholder");
         }
     }
 
