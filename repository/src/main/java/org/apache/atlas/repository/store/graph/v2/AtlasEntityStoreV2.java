@@ -1538,8 +1538,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         PreProcessor preProcessor;
 
         List<AtlasEntity> copyOfCreated = new ArrayList<>(context.getCreatedEntities());
-        for (int i = 0; i < copyOfCreated.size() ; i++) {
-            AtlasEntity entity = ((List<AtlasEntity>) context.getCreatedEntities()).get(i);
+        for (AtlasEntity entity : copyOfCreated) {
             entityType = context.getType(entity.getGuid());
             preProcessor = getPreProcessor(entityType.getTypeName());
 
@@ -1549,8 +1548,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
 
         List<AtlasEntity> copyOfUpdated = new ArrayList<>(context.getUpdatedEntities());
-        for (int i = 0; i < copyOfUpdated.size() ; i++) {
-            AtlasEntity entity = ((List<AtlasEntity>) context.getUpdatedEntities()).get(i);
+        for (AtlasEntity entity: copyOfUpdated) {
             entityType = context.getType(entity.getGuid());
             preProcessor = getPreProcessor(entityType.getTypeName());
 
