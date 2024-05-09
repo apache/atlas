@@ -6,7 +6,7 @@
       {
         "qualifiedName": "stakeholderTitle/default/DOMAIN_OWNERS",
         "name": "Domain Owners",
-        "domainGuid": "*"
+        "domainQualifiedNames": ["*"]
       }
     },
     {
@@ -15,7 +15,7 @@
       {
         "qualifiedName": "stakeholderTitle/default/DATA_STEWARDS",
         "name": "Data Stewards",
-        "domainGuid": "*"
+        "domainQualifiedNames": ["*"]
       }
     }
   ]
