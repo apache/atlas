@@ -32,6 +32,7 @@ import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.util.NanoIdUtils;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -252,19 +253,18 @@ public final class AccessControlUtils {
     }
 
     public static String getPersonaRoleName(AtlasEntity persona) {
-        String qualifiedName = getStringAttribute(persona, QUALIFIED_NAME);
-
-        String[] parts = qualifiedName.split("/");
-
-        return "persona_" + parts[parts.length - 1];
+        return "persona_" + getESAliasName(persona);
     }
 
     public static String getESAliasName(AtlasEntity entity) {
         String qualifiedName = getStringAttribute(entity, QUALIFIED_NAME);
+        return getESAliasName(qualifiedName);
+    }
 
+    public static String getESAliasName(String qualifiedName) {
         String[] parts = qualifiedName.split("/");
 
-        return parts[parts.length - 1];
+        return parts[1];
     }
 
     public static List<AtlasEntity> getPolicies(AtlasEntity.AtlasEntityWithExtInfo accessControl) {

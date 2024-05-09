@@ -44,6 +44,7 @@ import org.apache.atlas.repository.graphdb.AtlasIndexQuery.Result;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.userprofile.UserProfileService;
+import org.apache.atlas.repository.util.AccessControlUtils;
 import org.apache.atlas.searchlog.ESSearchLogger;
 import org.apache.atlas.service.FeatureFlagStore;
 import org.apache.atlas.stats.StatsClient;
@@ -1146,8 +1147,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             qualifiedName = params.getPurpose();
         }
 
-        String[] parts = qualifiedName.split("/");
-        String aliasName = parts[parts.length - 1];
+        String aliasName = AccessControlUtils.getESAliasName(qualifiedName);
 
         if (StringUtils.isNotEmpty(aliasName)) {
             if(params.isAccessControlExclusive()) {
