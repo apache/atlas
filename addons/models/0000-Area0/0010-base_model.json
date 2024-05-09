@@ -984,7 +984,7 @@
       ],
       "description": "Atlan Type representing a Persona model",
       "serviceType": "atlan",
-      "typeVersion": "1.1",
+      "typeVersion": "1.2",
       "attributeDefs": [
         {
           "name": "personaGroups",
@@ -1019,7 +1019,7 @@
           "includeInNotification": false
         },
         {
-          "name": "domainGuid",
+          "name": "domainQualifiedName",
           "typeName": "string",
           "indexType": "STRING",
           "cardinality": "SINGLE",

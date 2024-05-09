@@ -157,12 +157,13 @@ public class PersonaPreProcessor implements PreProcessor {
                 throw new AtlasBaseException(BAD_REQUEST, "Relation stakeholderTitle not found");
             }
 
-            entity.setAttribute("domainGuid", getGuidFromRelationAttribute(entity, "dataDomain"));
+            String domainQualifiedName = getQualifiedNameFromRelationAttribute(entity, "dataDomain");
+            entity.setAttribute("domainQualifiedName", domainQualifiedName);
             entity.setAttribute("stakeholderTitleGuid", getGuidFromRelationAttribute(entity, "stakeholderTitle"));
 
             String personaQualifiedName = String.format("default/%s/%s",
                     getUUID(),
-                    getQualifiedNameFromRelationAttribute(entity, "dataDomain"));
+                    domainQualifiedName);
 
             entity.setAttribute(QUALIFIED_NAME, personaQualifiedName);
 

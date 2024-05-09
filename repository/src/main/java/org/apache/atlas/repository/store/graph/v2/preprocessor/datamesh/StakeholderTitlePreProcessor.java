@@ -81,28 +81,31 @@ public class StakeholderTitlePreProcessor implements PreProcessor {
                 throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Can not attach a Stakeholder while creating StakeholderTitle");
             }
 
-            if (StringUtils.isNotEmpty(RequestContext.getCurrentUser())) {
-                String qualifiedName;
-
-                String domainGuid = (String) entity.getAttribute("domainGuid");
-                if ("*".equals(domainGuid)) {
-                    qualifiedName = String.format("stakeholderTitle/domain/default/%s", getUUID());
-                    //TODO: validate name duplication
-                } else {
-
-                    AtlasVertex domain = entityRetriever.getEntityVertex(domainGuid);
-                    qualifiedName = String.format("stakeholderTitle/domain/%s/%s",
-                            getUUID(),
-                            domain.getProperty(QUALIFIED_NAME, String.class));
-
-                    //TODO: validate name duplication
-                }
-
-                entity.setAttribute(QUALIFIED_NAME, qualifiedName);
-
-                AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, new AtlasEntityHeader(entity)),
-                        "create StakeholderTitle: ", entity.getAttribute(NAME));
+            if (RequestContext.get().isSkipAuthorizationCheck()) {
+                return;
             }
+
+            String qualifiedName;
+
+            String domainGuid = (String) entity.getAttribute("domainGuid");
+            if ("*".equals(domainGuid)) {
+                qualifiedName = String.format("stakeholderTitle/domain/default/%s", getUUID());
+                //TODO: validate name duplication
+            } else {
+
+                AtlasVertex domain = entityRetriever.getEntityVertex(domainGuid);
+                qualifiedName = String.format("stakeholderTitle/domain/%s/%s",
+                        getUUID(),
+                        domain.getProperty(QUALIFIED_NAME, String.class));
+
+                //TODO: validate name duplication
+            }
+
+            entity.setAttribute(QUALIFIED_NAME, qualifiedName);
+
+            AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, new AtlasEntityHeader(entity)),
+                    "create StakeholderTitle: ", entity.getAttribute(NAME));
+
         } finally {
             RequestContext.get().endMetricRecord(metricRecorder);
         }
@@ -112,6 +115,10 @@ public class StakeholderTitlePreProcessor implements PreProcessor {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processUpdateStakeholderTitle");
 
         try {
+            if (RequestContext.get().isSkipAuthorizationCheck()) {
+                return;
+            }
+
             if (entity.hasRelationshipAttribute("stakeholders")) {
                 throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Can not attach/detach a Stakeholder while updating StakeholderTitle");
             }
