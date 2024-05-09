@@ -27,13 +27,17 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
 import static org.apache.atlas.AtlasErrorCode.OPERATION_NOT_SUPPORTED;
+import static org.apache.atlas.repository.Constants.DATA_DOMAIN_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.NAME;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.getUUID;
+import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 
 public class StakeholderTitlePreProcessor implements PreProcessor {
 
@@ -85,26 +89,43 @@ public class StakeholderTitlePreProcessor implements PreProcessor {
                 return;
             }
 
-            String qualifiedName;
+            List<String> domainQualifiedNames = null;
 
-            String domainGuid = (String) entity.getAttribute("domainGuid");
-            if ("*".equals(domainGuid)) {
-                qualifiedName = String.format("stakeholderTitle/domain/default/%s", getUUID());
-                //TODO: validate name duplication
+            if (entity.hasAttribute("domainQualifiedNames")) {
+                domainQualifiedNames = (List<String>) entity.getAttribute("domainQualifiedNames");
+                if (domainQualifiedNames.size() == 0) {
+                    throw new AtlasBaseException(BAD_REQUEST, "Please pass attribute domainQualifiedNames");
+                }
+
             } else {
-
-                AtlasVertex domain = entityRetriever.getEntityVertex(domainGuid);
-                qualifiedName = String.format("stakeholderTitle/domain/%s/%s",
-                        getUUID(),
-                        domain.getProperty(QUALIFIED_NAME, String.class));
-
-                //TODO: validate name duplication
+                throw new AtlasBaseException(BAD_REQUEST, "Please pass attribute domainQualifiedNames");
             }
 
-            entity.setAttribute(QUALIFIED_NAME, qualifiedName);
+            if ((domainQualifiedNames.size() == 1 && "*".equals(domainQualifiedNames.get(0)))
+                    || domainQualifiedNames.contains("*")) {
 
-            AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, new AtlasEntityHeader(entity)),
-                    "create StakeholderTitle: ", entity.getAttribute(NAME));
+                AtlasEntityHeader allDomainEntityHeader = new AtlasEntityHeader(DATA_DOMAIN_ENTITY_TYPE, mapOf(QUALIFIED_NAME, "*/super"));
+                AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, new AtlasEntityHeader(allDomainEntityHeader)),
+                        "create StakeholderTitle for all domains");
+
+                String qualifiedName = String.format("stakeholderTitle/domain/default/%s", getUUID());
+                entity.setAttribute(QUALIFIED_NAME, qualifiedName);
+                entity.setAttribute("domainQualifiedNames", Collections.singletonList("*"));
+            } else {
+                for (String domainQualifiedName : domainQualifiedNames) {
+                    //AtlasVertex domainVertex = entityRetriever.getEntityVertex(new AtlasObjectId(DATA_DOMAIN_ENTITY_TYPE, mapOf(QUALIFIED_NAME, domainQualifiedName)));
+                    //AtlasEntityHeader domainHeader = entityRetriever.toAtlasEntityHeader(domainVertex);
+                    AtlasEntityHeader domainHeader = new AtlasEntityHeader(DATA_DOMAIN_ENTITY_TYPE, mapOf(QUALIFIED_NAME, domainQualifiedName));
+                    String qualifiedName = String.format("stakeholderTitle/domain/%s/%s", getUUID(), domainQualifiedName);
+
+                    entity.setAttribute(QUALIFIED_NAME, qualifiedName);
+
+                    AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, new AtlasEntityHeader(domainHeader)),
+                            "create StakeholderTitle for domain ", domainQualifiedName);
+                }
+
+                entity.setAttribute(QUALIFIED_NAME, String.format("stakeholderTitle/domain/%s", getUUID()));
+            }
 
         } finally {
             RequestContext.get().endMetricRecord(metricRecorder);
