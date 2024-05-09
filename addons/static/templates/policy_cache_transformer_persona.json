@@ -438,6 +438,24 @@
       "actions": ["add-relationship", "update-relationship", "remove-relationship"]
     },
     {
+      "policyResourceCategory": "RELATIONSHIP",
+      "policyType": "ACCESS",
+      "description": "Link/unlink any Stakeholder Title to this Domain's Stakeholder",
+
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity-type:StakeholderTitle",
+        "end-one-entity-classification:*",
+        "end-one-entity:*",
+
+        "end-two-entity-type:Stakeholder",
+        "end-two-entity-classification:*",
+        "end-two-entity:default/*/{entity}"
+      ],
+      "actions": ["add-relationship", "update-relationship", "remove-relationship"]
+    },
+    {
       "policyResourceCategory": "ENTITY",
       "policyType": "ACCESS",
       "description": "Create Stakeholder Title for this Domain",
@@ -618,6 +636,24 @@
         "end-one-entity-type:DataDomain",
         "end-one-entity-classification:*",
         "end-one-entity:{entity}/*domain/*",
+
+        "end-two-entity-type:Stakeholder",
+        "end-two-entity-classification:*",
+        "end-two-entity:default/*/{entity}/*"
+      ],
+      "actions": ["add-relationship", "update-relationship", "remove-relationship"]
+    },
+    {
+      "policyResourceCategory": "RELATIONSHIP",
+      "policyType": "ACCESS",
+      "description": "Link/unlink any Stakeholder Title to sub-domains's Stakeholder",
+
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity-type:StakeholderTitle",
+        "end-one-entity-classification:*",
+        "end-one-entity:*",
 
         "end-two-entity-type:Stakeholder",
         "end-two-entity-classification:*",
