@@ -158,7 +158,9 @@ public final class Constants {
     public static final String PURPOSE_ENTITY_TYPE        = "Purpose";
     public static final String POLICY_ENTITY_TYPE         = "AuthPolicy";
     public static final String SERVICE_ENTITY_TYPE        = "AuthService";
-    public static final String STAKEHOLDER_ENTITY_TYPE    = "Stakeholder";
+
+    public static final String STAKEHOLDER_ENTITY_TYPE          = "Stakeholder";
+    public static final String STAKEHOLDER_TITLE_ENTITY_TYPE    = "StakeholderTitle";
 
     /**
      * Resource
@@ -432,8 +434,8 @@ public final class Constants {
     public static final Set<String> SKIP_UPDATE_AUTH_CHECK_TYPES = new HashSet<String>() {{
         add(README_ENTITY_TYPE);
         add(LINK_ENTITY_TYPE);
-        add("Persona");
-        add("StakeholderTitle");
+        add(STAKEHOLDER_ENTITY_TYPE);
+        add(STAKEHOLDER_TITLE_ENTITY_TYPE);
     }};
 
     public static final Set<String> SKIP_DELETE_AUTH_CHECK_TYPES = new HashSet<String>() {{
