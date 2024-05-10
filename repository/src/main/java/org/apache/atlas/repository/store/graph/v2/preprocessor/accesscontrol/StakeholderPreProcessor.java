@@ -45,6 +45,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -290,7 +292,7 @@ public class StakeholderPreProcessor extends PersonaPreProcessor {
 
         Map<String, Object> dsl = mapOf("query", mapOf("bool", bool));
 
-        List<AtlasEntityHeader> assets = indexSearchPaginated(dsl, null, this.discovery);
+        List<AtlasEntityHeader> assets = indexSearchPaginated(dsl, Collections.singleton(ATTR_DOMAIN_QUALIFIED_NAMES), this.discovery);
 
         if (CollectionUtils.isNotEmpty(assets)) {
             AtlasEntityHeader stakeholderTitleHeader = assets.get(0);
