@@ -130,7 +130,7 @@ public class StakeholderTitlePreProcessor implements PreProcessor {
                     || domainQualifiedNames.contains(STAR)) {
 
                 AtlasEntityHeader allDomainEntityHeader = new AtlasEntityHeader(DATA_DOMAIN_ENTITY_TYPE, mapOf(QUALIFIED_NAME, "*/super"));
-                AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, new AtlasEntityHeader(allDomainEntityHeader)),
+                AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, new AtlasEntityHeader(allDomainEntityHeader)),
                         "create StakeholderTitle for all domains");
 
                 String qualifiedName = String.format(PATTERN_QUALIFIED_NAME_ALL_DOMAINS, getUUID());
@@ -140,12 +140,11 @@ public class StakeholderTitlePreProcessor implements PreProcessor {
                 for (String domainQualifiedName : domainQualifiedNames) {
 
                     AtlasEntityHeader domainHeader = new AtlasEntityHeader(DATA_DOMAIN_ENTITY_TYPE, mapOf(QUALIFIED_NAME, domainQualifiedName));
-                    String qualifiedName = String.format("stakeholderTitle/domain/%s/%s", getUUID(), domainQualifiedName);
-
-                    entity.setAttribute(QUALIFIED_NAME, qualifiedName);
-
-                    AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, new AtlasEntityHeader(domainHeader)),
+                    AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, new AtlasEntityHeader(domainHeader)),
                             "create StakeholderTitle for domain ", domainQualifiedName);
+
+                    String qualifiedName = String.format("stakeholderTitle/domain/%s/%s", getUUID(), domainQualifiedName);
+                    entity.setAttribute(QUALIFIED_NAME, qualifiedName);
                 }
 
                 entity.setAttribute(QUALIFIED_NAME, String.format(PATTERN_QUALIFIED_NAME_DOMAIN, getUUID()));
@@ -175,6 +174,22 @@ public class StakeholderTitlePreProcessor implements PreProcessor {
             if (!currentName.equals(newName)) {
                 verifyDuplicateAssetByName(STAKEHOLDER_TITLE_ENTITY_TYPE, newName, discovery,
                         String.format("Stakeholder title with name %s already exists", newName));
+            }
+
+            List<String> currentDomainQualifiedNames;
+
+            if (entity.hasAttribute(ATTR_DOMAIN_QUALIFIED_NAMES)) {
+                // updating domains list authorize only on all domains in the list
+                currentDomainQualifiedNames = (List<String>) entity.getAttribute(ATTR_DOMAIN_QUALIFIED_NAMES);
+            } else {
+                // updating other metadata, authorize update on all existing    domains
+                currentDomainQualifiedNames = vertex.getListProperty(ATTR_DOMAIN_QUALIFIED_NAMES, String.class);
+            }
+
+            for (String domainQualifiedName: currentDomainQualifiedNames) {
+                AtlasEntityHeader domainHeader = new AtlasEntityHeader(DATA_DOMAIN_ENTITY_TYPE, mapOf(QUALIFIED_NAME, domainQualifiedName));
+                AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, new AtlasEntityHeader(domainHeader)),
+                        "create StakeholderTitle for domain ", domainQualifiedName);
             }
 
             String vertexQName = vertex.getProperty(QUALIFIED_NAME, String.class);
