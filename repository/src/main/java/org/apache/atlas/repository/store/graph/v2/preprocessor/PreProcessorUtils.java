@@ -54,6 +54,7 @@ public class PreProcessorUtils {
     public static final String PARENT_DOMAIN_QN_ATTR = "parentDomainQualifiedName";
     public static final String SUPER_DOMAIN_QN_ATTR = "superDomainQualifiedName";
 
+
     //Migration Constants
     public static final String MIGRATION = "MIGRATION:";
     public static final String DATA_MESH_QN = MIGRATION + "DATA_MESH_QN";
@@ -61,7 +62,6 @@ public class PreProcessorUtils {
     public static final String SUCCESSFUL = "SUCCESSFUL";
 
     public static final String FAILED = "FAILED";
-
 
     //Query models constants
     public static final String PREFIX_QUERY_QN   = "default/collection/";
