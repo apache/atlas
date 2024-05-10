@@ -21,10 +21,11 @@ name: Java CI with Maven
 on:
   push:
     branches:
-      - staging
+      - alpha
       - beta
       - development
       - master
+      - lineageondemand
 
 jobs:
   build:
