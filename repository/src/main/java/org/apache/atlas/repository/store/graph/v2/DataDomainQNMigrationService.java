@@ -15,6 +15,7 @@ import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.NanoIdUtils;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -183,8 +184,9 @@ public class DataDomainQNMigrationService implements MigrationService{
         String currentResource = "entity:"+ currentQualifiedName;
         String updatedResource = "entity:"+ updatedQualifiedName;
         this.updatedPolicyResources.put(currentResource, updatedResource);
-
-        Map<String,String> customAttributes = new HashMap<>();
+        Map<String,String> customAttributes = GraphHelper.getCustomAttributes(vertex);
+        if(Objects.isNull(customAttributes) || MapUtils.isEmpty(customAttributes))
+            customAttributes = new HashMap<>();
         customAttributes.put(MIGRATION_CUSTOM_ATTRIBUTE, "true");
         vertex.setProperty(CUSTOM_ATTRIBUTES_PROPERTY_KEY, AtlasEntityType.toJson(customAttributes));
 
@@ -214,7 +216,9 @@ public class DataDomainQNMigrationService implements MigrationService{
             vertex.setProperty(PARENT_DOMAIN_QN_ATTR, parentDomainQualifiedName);
             vertex.setProperty(SUPER_DOMAIN_QN_ATTR, rootDomainQualifiedName);
 
-            Map<String, String> customAttributes = new HashMap<>();
+            Map<String,String> customAttributes = GraphHelper.getCustomAttributes(vertex);
+            if(Objects.isNull(customAttributes) || MapUtils.isEmpty(customAttributes))
+                customAttributes = new HashMap<>();
             customAttributes.put(MIGRATION_CUSTOM_ATTRIBUTE, "true");
             vertex.setProperty(CUSTOM_ATTRIBUTES_PROPERTY_KEY, AtlasEntityType.toJson(customAttributes));
         }
