@@ -198,7 +198,7 @@ public class StakeholderTitlePreProcessor implements PreProcessor {
                 throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Can not delete StakeholderTitle as it has reference to Active Stakeholder");
             }
 
-            List<String> domainQualifiedNames = vertex.getListProperty(ATTR_DOMAIN_QUALIFIED_NAMES, String.class);
+            List<String> domainQualifiedNames = vertex.getMultiValuedProperty(ATTR_DOMAIN_QUALIFIED_NAMES, String.class);
 
             authorizeDomainAccess(domainQualifiedNames, AtlasPrivilege.ENTITY_UPDATE);
 
