@@ -180,9 +180,6 @@ public class StakeholderTitlePreProcessor implements PreProcessor {
             String vertexQName = vertex.getProperty(QUALIFIED_NAME, String.class);
             entity.setAttribute(QUALIFIED_NAME, vertexQName);
 
-            AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, new AtlasEntityHeader(entity)),
-                    "update StakeholderTitle: ", entity.getAttribute(NAME));
-
         } finally {
             RequestContext.get().endMetricRecord(metricRecorder);
         }
