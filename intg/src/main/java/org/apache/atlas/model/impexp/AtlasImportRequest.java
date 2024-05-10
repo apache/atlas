@@ -43,6 +43,7 @@ public class AtlasImportRequest implements Serializable {
     public  static final String TRANSFORMS_KEY             = "transforms";
     public  static final String TRANSFORMERS_KEY           = "transformers";
     public  static final String OPTION_KEY_REPLICATED_FROM = "replicatedFrom";
+    public  static final String OPTION_KEY_SKIP_UPDATE_REPLICATION_ATTR = "skipUpdateReplicationAttr";
     public  static final String OPTION_KEY_MIGRATION_FILE_NAME = "migrationFileName";
     public  static final String OPTION_KEY_MIGRATION       = "migration";
     public  static final String OPTION_KEY_NUM_WORKERS     = "numWorkers";
@@ -120,6 +121,23 @@ public class AtlasImportRequest implements Serializable {
     @JsonIgnore
     public boolean isReplicationOptionSet() {
         return MapUtils.isNotEmpty(options) && options.containsKey(OPTION_KEY_REPLICATED_FROM);
+    }
+
+    @JsonIgnore
+    public boolean skipUpdateReplicationAttr() {
+        if (MapUtils.isNotEmpty(getOptions()) && getOptions().containsKey(OPTION_KEY_SKIP_UPDATE_REPLICATION_ATTR)) {
+
+            Object o = getOptions().get(AtlasExportRequest.OPTION_KEY_SKIP_UPDATE_REPLICATION_ATTR);
+            if (o instanceof String) {
+                return Boolean.parseBoolean((String) o);
+            }
+
+            if (o instanceof Boolean) {
+                return (Boolean) o;
+            }
+
+        }
+        return false;
     }
 
     @JsonIgnore

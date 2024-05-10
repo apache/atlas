@@ -53,6 +53,7 @@ public class AtlasExportRequest implements Serializable {
     public static final String OPTION_ATTR_MATCH_TYPE = "matchType";
     public static final String OPTION_SKIP_LINEAGE = "skipLineage";
     public static final String OPTION_KEY_REPLICATED_TO = "replicatedTo";
+    public static final String OPTION_KEY_SKIP_UPDATE_REPLICATION_ATTR = "skipUpdateReplicationAttr";
     public static final String FETCH_TYPE_FULL = "full";
     public static final String FETCH_TYPE_CONNECTED = "connected";
     public static final String FETCH_TYPE_INCREMENTAL = "incremental";
@@ -139,6 +140,23 @@ public class AtlasExportRequest implements Serializable {
     @JsonIgnore
     public boolean isReplicationOptionSet() {
         return MapUtils.isNotEmpty(options) && options.containsKey(OPTION_KEY_REPLICATED_TO);
+    }
+
+    @JsonIgnore
+    public boolean skipUpdateReplicationAttr() {
+        if (MapUtils.isNotEmpty(getOptions()) && getOptions().containsKey(OPTION_KEY_SKIP_UPDATE_REPLICATION_ATTR)) {
+
+            Object o = getOptions().get(AtlasExportRequest.OPTION_KEY_SKIP_UPDATE_REPLICATION_ATTR);
+            if (o instanceof String) {
+                return Boolean.parseBoolean((String) o);
+            }
+
+            if (o instanceof Boolean) {
+                return (Boolean) o;
+            }
+
+        }
+        return false;
     }
 
     @JsonIgnore

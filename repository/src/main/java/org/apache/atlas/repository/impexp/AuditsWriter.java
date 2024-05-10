@@ -97,6 +97,7 @@ public class AuditsWriter {
                                             String attrNameReplicated,
                                             long lastModifiedTimestamp) throws AtlasBaseException {
         if (!isReplicationSet || CollectionUtils.isEmpty(exportedGuids)) {
+            LOG.warn("Skipping Updating Replication Attributes");
             return;
         }
 
@@ -200,13 +201,15 @@ public class AuditsWriter {
         private AtlasExportRequest request;
         private String targetServerName;
         private boolean replicationOptionState;
+        private boolean skipUpdateReplicationAttr;
         private String targetServerFullName;
 
         public void add(String userName, AtlasExportResult result,
                         long startTime, long endTime,
                         List<String> entityGuids) throws AtlasBaseException {
             request = result.getRequest();
-            replicationOptionState = request.isReplicationOptionSet();
+            replicationOptionState    = request.isReplicationOptionSet();
+            skipUpdateReplicationAttr = request.skipUpdateReplicationAttr();
 
             saveCurrentServer();
 
@@ -220,7 +223,7 @@ public class AuditsWriter {
                 return;
             }
 
-            updateReplicationAttribute(replicationOptionState, targetServerName, targetServerFullName,
+            updateReplicationAttribute((replicationOptionState && !skipUpdateReplicationAttr), targetServerName, targetServerFullName,
                     entityGuids, Constants.ATTR_NAME_REPLICATED_TO, result.getChangeMarker());
         }
     }
@@ -228,6 +231,7 @@ public class AuditsWriter {
     private class ImportAudits {
         private AtlasImportRequest request;
         private boolean replicationOptionState;
+        private boolean skipUpdateReplicationAttr;
         private String sourceServerName;
         private String sourceServerFullName;
 
@@ -235,7 +239,8 @@ public class AuditsWriter {
                         long startTime, long endTime,
                         List<String> entityGuids) throws AtlasBaseException {
             request = result.getRequest();
-            replicationOptionState = request.isReplicationOptionSet();
+            replicationOptionState    = request.isReplicationOptionSet();
+            skipUpdateReplicationAttr = request.skipUpdateReplicationAttr();
 
             saveCurrentServer();
 
@@ -250,7 +255,7 @@ public class AuditsWriter {
                 return;
             }
 
-            updateReplicationAttribute(replicationOptionState, sourceServerName, sourceServerFullName, entityGuids,
+            updateReplicationAttribute((replicationOptionState && !skipUpdateReplicationAttr), sourceServerName, sourceServerFullName, entityGuids,
                     Constants.ATTR_NAME_REPLICATED_FROM, result.getExportResult().getChangeMarker());
         }
 
