@@ -11,8 +11,11 @@ import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.*;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
+import org.apache.atlas.repository.store.graph.v2.DataMeshQNMigrationService;
 import org.apache.atlas.repository.store.graph.v2.EntityStream;
+import org.apache.atlas.repository.store.graph.v2.MigrationService;
 import org.apache.atlas.repository.store.users.KeycloakStore;
+import org.apache.atlas.service.redis.RedisService;
 import org.apache.atlas.transformer.PreProcessorPoliciesTransformer;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.v1.model.instance.Id;
@@ -35,6 +38,8 @@ import java.util.stream.Collectors;
 
 import static org.apache.atlas.auth.client.keycloak.AtlasKeycloakClient.getKeycloakClient;
 import static org.apache.atlas.repository.Constants.*;
+import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.DATA_MESH_QN;
+import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.MIGRATION;
 
 @Path("migration")
 @Singleton
@@ -53,13 +58,64 @@ public class MigrationREST {
     private final PreProcessorPoliciesTransformer transformer;
     private KeycloakStore keycloakStore;
     private AtlasGraph graph;
+    DataMeshQNMigrationService dataMeshQNMigrationService;
+    private final RedisService redisService;
 
     @Inject
-    public MigrationREST(AtlasEntityStore entityStore, AtlasGraph graph) {
+    public MigrationREST(AtlasEntityStore entityStore, AtlasGraph graph, DataMeshQNMigrationService dataMeshQNMigrationService,RedisService redisService) {
         this.entityStore = entityStore;
         this.graph = graph;
         this.transformer = new PreProcessorPoliciesTransformer();
         keycloakStore = new KeycloakStore();
+        this.redisService = redisService;
+        this.dataMeshQNMigrationService = dataMeshQNMigrationService;
+
+    }
+
+    @POST
+    @Path("submit")
+    @Timed
+    public Boolean submit (@QueryParam("migrationType") String migrationType) throws Exception {
+        AtlasPerfTracer perf = null;
+        MigrationService migrationService;
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MigrationREST.submit()");
+            }
+            if( (MIGRATION + migrationType).equals(DATA_MESH_QN) ){
+                dataMeshQNMigrationService.run();
+            }
+
+        } catch (Exception e) {
+            LOG.error("Error while submitting migration", e);
+            return Boolean.FALSE;
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+        return Boolean.TRUE;
+    }
+
+
+    @GET
+    @Path("status")
+    @Timed
+    public String getMigrationStatus(@QueryParam("migrationType") String migrationType) throws Exception{
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MigrationREST.getMigrationStatus()");
+            }
+
+            String value = redisService.getValue(MIGRATION + migrationType);
+
+            return Objects.nonNull(value) ? value : "No Migration Found with this key";
+        } catch (Exception e) {
+            LOG.error("Error while fetching status for migration", e);
+            throw e;
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
     }
 
     @POST
