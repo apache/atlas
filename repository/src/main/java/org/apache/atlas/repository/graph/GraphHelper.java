@@ -1946,7 +1946,6 @@ public final class GraphHelper {
         }
     }
 
-
     private static Set<String> parseLabelsString(String labels) {
         Set<String> ret = new HashSet<>();
 

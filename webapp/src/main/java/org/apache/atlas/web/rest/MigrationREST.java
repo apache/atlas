@@ -76,24 +76,26 @@ public class MigrationREST {
     }
 
     @POST
-    @Path("updateQn")
+    @Path("submit")
     @Timed
-    public Boolean updateQn (@QueryParam("migrationType") String migrationType) throws Exception {
+    public Boolean submit (@QueryParam("migrationType") String migrationType) throws Exception {
         AtlasPerfTracer perf = null;
         MigrationService migrationService;
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MigrationREST.updateQn()");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MigrationREST.submit()");
             }
+
             migrationService = getMigrationService(MIGRATION + migrationType);
-            return Objects.nonNull(migrationService)?migrationService.startMigration():Boolean.FALSE;
+
+            return Objects.nonNull(migrationService) ? migrationService.startMigration() : Boolean.FALSE;
+
         } catch (Exception e) {
-            LOG.error("Error while updating qualified names", e);
+            LOG.error("Error while submitting migration", e);
             throw e;
         } finally {
             AtlasPerfTracer.log(perf);
         }
-
     }
 
     private MigrationService getMigrationService(String migrationType){
@@ -101,26 +103,27 @@ public class MigrationREST {
             case DATA_MESH_QN:
                 return migrationServicesMap.get("DataDomainQNMigrationService");
             default:
-                LOG.info("No service type found");
+                LOG.warn("No service type found");
                 return null;
         }
     }
 
     @GET
-    @Path("migrationStatus")
+    @Path("status")
     @Timed
-    public String migrationStatus(@QueryParam("migrationType") String migrationType) throws Exception{
+    public String getMigrationStatus(@QueryParam("migrationType") String migrationType) throws Exception{
         AtlasPerfTracer perf = null;
-        MigrationService migrationService = null;
+
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MigrationREST.migrationStatus()");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MigrationREST.getMigrationStatus()");
             }
 
             String value = redisService.getValue(MIGRATION + migrationType);
-            return Objects.nonNull(value)?value:"No Migration Found with this key";
+
+            return Objects.nonNull(value) ? value : "No Migration Found with this key";
         } catch (Exception e) {
-            LOG.error("Error while updating qualified names", e);
+            LOG.error("Error while fetching status for migration", e);
             throw e;
         } finally {
             AtlasPerfTracer.log(perf);

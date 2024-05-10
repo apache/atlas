@@ -59,7 +59,6 @@ public class PreProcessorUtils {
     public static final String DATA_MESH_QN = MIGRATION + "DATA_MESH_QN";
     public static final String IN_PROGRESS = "IN_PROGRESS";
     public static final String SUCCESSFUL = "SUCCESSFUL";
-    public static final String PARTIAL_SUCCESSFUL = "PARTIAL_SUCCESSFUL";
 
     public static final String FAILED = "FAILED";
     //Query models constants
