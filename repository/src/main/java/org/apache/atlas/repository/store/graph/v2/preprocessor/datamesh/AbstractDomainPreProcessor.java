@@ -40,6 +40,7 @@ import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,6 +65,12 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
     private static final Set<String> POLICY_ATTRIBUTES_FOR_SEARCH = new HashSet<>(Arrays.asList(ATTR_POLICY_RESOURCES));
 
     static final Set<String> PARENT_ATTRIBUTES            = new HashSet<>(Arrays.asList(SUPER_DOMAIN_QN_ATTR, PARENT_DOMAIN_QN_ATTR));
+
+    static final Map<String, String> customAttributes = new HashMap<>();
+
+    static {
+        customAttributes.put(MIGRATION_CUSTOM_ATTRIBUTE, "true");
+    }
 
     AbstractDomainPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, AtlasGraph graph) {
         this.entityRetriever = entityRetriever;
@@ -103,10 +110,16 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
         try {
             AtlasEntityType entityType = typeRegistry.getEntityTypeByName(POLICY_ENTITY_TYPE);
 
+            if (MapUtils.isEmpty(updatedPolicyResources)) {
+                return;
+            }
+
             List<AtlasEntityHeader> policies = getPolicies(updatedPolicyResources.keySet());
+            LOG.info("Found {} policies to update", policies.size());
 
             if (CollectionUtils.isNotEmpty(policies)) {
                 for (AtlasEntityHeader policy : policies) {
+                    LOG.info("Updating Policy {}", policy.getGuid());
                     AtlasVertex policyVertex = entityRetriever.getEntityVertex(policy.getGuid());
 
                     AtlasEntity policyEntity = entityRetriever.toAtlasEntity(policyVertex);
