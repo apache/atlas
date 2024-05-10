@@ -448,6 +448,7 @@ public final class Constants {
         add(README_ENTITY_TYPE);
         add(LINK_ENTITY_TYPE);
         add(POLICY_ENTITY_TYPE);
+        add(STAKEHOLDER_TITLE_ENTITY_TYPE);
     }};
 
     private Constants() {
