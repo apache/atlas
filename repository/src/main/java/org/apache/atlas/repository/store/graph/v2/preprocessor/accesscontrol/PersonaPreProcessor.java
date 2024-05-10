@@ -19,6 +19,7 @@ package org.apache.atlas.repository.store.graph.v2.preprocessor.accesscontrol;
 
 
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.auth.client.keycloak.AtlasKeycloakClient;
 import org.apache.atlas.model.instance.AtlasEntity;

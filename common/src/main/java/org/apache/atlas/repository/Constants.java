@@ -141,6 +141,15 @@ public final class Constants {
     public static final String DATA_DOMAIN_ENTITY_TYPE     = "DataDomain";
     public static final String DATA_PRODUCT_ENTITY_TYPE    = "DataProduct";
 
+    public static final String STAKEHOLDER_ENTITY_TYPE       = "Stakeholder";
+    public static final String STAKEHOLDER_TITLE_ENTITY_TYPE = "StakeholderTitle";
+
+    public static final String REL_DOMAIN_TO_DOMAINS  = "parent_domain_sub_domains";
+    public static final String REL_DOMAIN_TO_PRODUCTS = "data_domain_data_products";
+
+    public static final String REL_DOMAIN_TO_STAKEHOLDERS            = "data_domain_stakeholders";
+    public static final String REL_STAKEHOLDER_TITLE_TO_STAKEHOLDERS = "stakeholder_title_stakeholders";
+
 
     /**
      * SQL property keys.
@@ -158,9 +167,6 @@ public final class Constants {
     public static final String PURPOSE_ENTITY_TYPE        = "Purpose";
     public static final String POLICY_ENTITY_TYPE         = "AuthPolicy";
     public static final String SERVICE_ENTITY_TYPE        = "AuthService";
-
-    public static final String STAKEHOLDER_ENTITY_TYPE          = "Stakeholder";
-    public static final String STAKEHOLDER_TITLE_ENTITY_TYPE    = "StakeholderTitle";
 
     /**
      * Resource

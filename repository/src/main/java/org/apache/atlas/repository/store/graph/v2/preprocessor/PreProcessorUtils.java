@@ -1,5 +1,6 @@
 package org.apache.atlas.repository.store.graph.v2.preprocessor;
 
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.IndexSearchParams;
@@ -21,9 +22,11 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
+import static org.apache.atlas.repository.Constants.NAME;
 import static org.apache.atlas.repository.Constants.QUERY_COLLECTION_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.Constants.ENTITY_TYPE_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.STAKEHOLDER_ENTITY_TYPE;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 
 public class PreProcessorUtils {
@@ -163,5 +166,25 @@ public class PreProcessorUtils {
         } while (hasMore);
 
         return ret;
+    }
+
+    public static void verifyDuplicateAssetByName(String typeName, String assetName, EntityDiscoveryService discovery, String errorMessage) throws AtlasBaseException {
+        boolean exists = false;
+
+        List<Map<String, Object>> mustClauseList = new ArrayList();
+        mustClauseList.add(mapOf("term", mapOf("__typeName.keyword", typeName)));
+        mustClauseList.add(mapOf("term", mapOf("__state", "ACTIVE")));
+        mustClauseList.add(mapOf("term", mapOf("name.keyword", assetName)));
+
+
+        Map<String, Object> bool = mapOf("must", mustClauseList);
+
+        Map<String, Object> dsl = mapOf("query", mapOf("bool", bool));
+
+        List<AtlasEntityHeader> assets = indexSearchPaginated(dsl, null, discovery);
+
+        if (CollectionUtils.isNotEmpty(assets)) {
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, errorMessage);
+        }
     }
 }

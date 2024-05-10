@@ -73,6 +73,10 @@ import static org.apache.atlas.repository.Constants.HOME_ID_KEY;
 import static org.apache.atlas.repository.Constants.PROVENANCE_TYPE_KEY;
 import static org.apache.atlas.repository.Constants.RELATIONSHIPTYPE_TAG_PROPAGATION_KEY;
 import static org.apache.atlas.repository.Constants.RELATIONSHIP_GUID_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.REL_DOMAIN_TO_DOMAINS;
+import static org.apache.atlas.repository.Constants.REL_DOMAIN_TO_PRODUCTS;
+import static org.apache.atlas.repository.Constants.REL_DOMAIN_TO_STAKEHOLDERS;
+import static org.apache.atlas.repository.Constants.REL_STAKEHOLDER_TITLE_TO_STAKEHOLDERS;
 import static org.apache.atlas.repository.Constants.VERSION_PROPERTY_KEY;
 import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.*;
@@ -106,8 +110,10 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
     private static final String ES_DOC_ID_MAP_KEY = "esDocIdMap";
 
     private static Set<String> EXCLUDE_MUTATION_REL_TYPE_NAMES = new HashSet<String>() {{
-        add("parent_domain_sub_domains");
-        add("data_domain_data_products");
+        add(REL_DOMAIN_TO_DOMAINS);
+        add(REL_DOMAIN_TO_PRODUCTS);
+        add(REL_DOMAIN_TO_STAKEHOLDERS);
+        add(REL_STAKEHOLDER_TITLE_TO_STAKEHOLDERS);
     }};
 
     public enum RelationshipMutation {
