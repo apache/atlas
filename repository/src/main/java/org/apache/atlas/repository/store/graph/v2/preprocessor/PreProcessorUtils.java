@@ -43,6 +43,7 @@ public class PreProcessorUtils {
     public static final String PARENT_DOMAIN_REL_TYPE = "parentDomain";
     public static final String SUB_DOMAIN_REL_TYPE = "subDomains";
     public static final String DATA_PRODUCT_REL_TYPE = "dataProducts";
+    public static final String MIGRATION_CUSTOM_ATTRIBUTE = "isQualifiedNameMigrated";
     public static final String DATA_DOMAIN_REL_TYPE = "dataDomain";
 
     public static final String MESH_POLICY_CATEGORY = "datamesh";
@@ -53,7 +54,14 @@ public class PreProcessorUtils {
     public static final String PARENT_DOMAIN_QN_ATTR = "parentDomainQualifiedName";
     public static final String SUPER_DOMAIN_QN_ATTR = "superDomainQualifiedName";
 
-    public static final String MIGRATION_CUSTOM_ATTRIBUTE = "isQualifiedNameMigrated";
+    //Migration Constants
+    public static final String MIGRATION = "MIGRATION:";
+    public static final String DATA_MESH_QN = MIGRATION + "DATA_MESH_QN";
+    public static final String IN_PROGRESS = "IN_PROGRESS";
+    public static final String SUCCESSFUL = "SUCCESSFUL";
+
+    public static final String FAILED = "FAILED";
+
 
     //Query models constants
     public static final String PREFIX_QUERY_QN   = "default/collection/";
