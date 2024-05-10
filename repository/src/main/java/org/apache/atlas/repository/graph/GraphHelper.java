@@ -1924,6 +1924,29 @@ public final class GraphHelper {
         }
     }
 
+    public static Iterator<AtlasVertex> getAllChildrenVertices(AtlasVertex vertex, String childrenEdgeLabel) throws AtlasBaseException {
+        return getAllVertices(vertex, childrenEdgeLabel, AtlasEdgeDirection.OUT);
+    }
+
+    public static Iterator<AtlasVertex> getAllVertices(AtlasVertex vertex, String childrenEdgeLabel, AtlasEdgeDirection direction) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("CategoryPreProcessor.getEdges");
+
+        try {
+            return vertex.query()
+                    .direction(direction)
+                    .label(childrenEdgeLabel)
+                    .vertices()
+                    .iterator();
+        } catch (Exception e) {
+            LOG.error("Error while getting all children of category for edge label " + childrenEdgeLabel, e);
+            throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, e);
+        }
+        finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
+        }
+    }
+
+
     private static Set<String> parseLabelsString(String labels) {
         Set<String> ret = new HashSet<>();
 
