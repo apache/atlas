@@ -11,6 +11,7 @@ import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.*;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
+import org.apache.atlas.repository.store.graph.v2.DataMeshQNMigrationService;
 import org.apache.atlas.repository.store.graph.v2.EntityStream;
 import org.apache.atlas.repository.store.graph.v2.MigrationService;
 import org.apache.atlas.repository.store.users.KeycloakStore;
@@ -57,22 +58,18 @@ public class MigrationREST {
     private final PreProcessorPoliciesTransformer transformer;
     private KeycloakStore keycloakStore;
     private AtlasGraph graph;
-    private final Map<String, MigrationService> migrationServicesMap = new HashMap<>();
-    List<MigrationService> migrationServices;
+    DataMeshQNMigrationService dataMeshQNMigrationService;
     private final RedisService redisService;
 
     @Inject
-    public MigrationREST(AtlasEntityStore entityStore, AtlasGraph graph, List<MigrationService> migrationServices,RedisService redisService) {
+    public MigrationREST(AtlasEntityStore entityStore, AtlasGraph graph, DataMeshQNMigrationService dataMeshQNMigrationService,RedisService redisService) {
         this.entityStore = entityStore;
         this.graph = graph;
         this.transformer = new PreProcessorPoliciesTransformer();
-        this.migrationServices = migrationServices;
         keycloakStore = new KeycloakStore();
         this.redisService = redisService;
-        for (MigrationService service : migrationServices) {
-            String[] path = service.getClass().getName().split("\\.");
-            migrationServicesMap.put(path[path.length - 1], service);
-        }
+        this.dataMeshQNMigrationService = dataMeshQNMigrationService;
+
     }
 
     @POST
@@ -85,28 +82,19 @@ public class MigrationREST {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MigrationREST.submit()");
             }
-
-            migrationService = getMigrationService(MIGRATION + migrationType);
-
-            return Objects.nonNull(migrationService) ? migrationService.startMigration() : Boolean.FALSE;
+            if( (MIGRATION + migrationType).equals(DATA_MESH_QN) ){
+                dataMeshQNMigrationService.run();
+            }
 
         } catch (Exception e) {
             LOG.error("Error while submitting migration", e);
-            throw e;
+            return Boolean.FALSE;
         } finally {
             AtlasPerfTracer.log(perf);
         }
+        return Boolean.TRUE;
     }
 
-    private MigrationService getMigrationService(String migrationType){
-        switch (migrationType){
-            case DATA_MESH_QN:
-                return migrationServicesMap.get("DataDomainQNMigrationService");
-            default:
-                LOG.warn("No service type found");
-                return null;
-        }
-    }
 
     @GET
     @Path("status")

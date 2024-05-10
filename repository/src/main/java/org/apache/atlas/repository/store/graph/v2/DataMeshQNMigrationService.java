@@ -1,5 +1,6 @@
 package org.apache.atlas.repository.store.graph.v2;
 
+import jline.internal.Log;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.discovery.EntityDiscoveryService;
@@ -19,7 +20,6 @@ import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
@@ -33,9 +33,9 @@ import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_CA
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_RESOURCES;
 
 @Component
-public class DataDomainQNMigrationService implements MigrationService{
+public class DataMeshQNMigrationService implements MigrationService, Runnable {
 
-    private static final Logger LOG = LoggerFactory.getLogger(DataDomainQNMigrationService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DataMeshQNMigrationService.class);
 
     private final AtlasEntityStore entityStore;
     private final EntityDiscoveryService discovery;
@@ -56,7 +56,7 @@ public class DataDomainQNMigrationService implements MigrationService{
     private final RedisService redisService;
 
     @Inject
-    public DataDomainQNMigrationService(AtlasEntityStore entityStore, RedisService redisService, EntityDiscoveryService discovery, EntityGraphRetriever entityRetriever, AtlasTypeRegistry typeRegistry, TransactionInterceptHelper transactionInterceptHelper) {
+    public DataMeshQNMigrationService(AtlasEntityStore entityStore, RedisService redisService, EntityDiscoveryService discovery, EntityGraphRetriever entityRetriever, AtlasTypeRegistry typeRegistry, TransactionInterceptHelper transactionInterceptHelper) {
         this.entityRetriever = entityRetriever;
         this.entityStore = entityStore;
         this.discovery = discovery;
@@ -67,7 +67,6 @@ public class DataDomainQNMigrationService implements MigrationService{
         this.redisService = redisService;
     }
 
-    @Async
     public Boolean startMigration() throws Exception{
         redisService.putValue(DATA_MESH_QN, IN_PROGRESS);
 
@@ -132,20 +131,34 @@ public class DataDomainQNMigrationService implements MigrationService{
             Iterator<AtlasVertex> products = getAllChildrenVertices(vertex, DATA_PRODUCT_EDGE_LABEL);
 
             while (products.hasNext()) {
-                AtlasVertex productVertex = products.next();
-                migrateDataProductAttributes(productVertex, updatedQualifiedName, superDomainQualifiedName);
-                if(skipSuperDomain)
-                    break;
+                try {
+                    AtlasVertex productVertex = products.next();
+                    if (Objects.nonNull(productVertex)) {
+                        migrateDataProductAttributes(productVertex, updatedQualifiedName, superDomainQualifiedName);
+                    }
+                    if (skipSuperDomain)
+                        break;
+                }
+                catch (NullPointerException e){
+                    LOG.error("Null Pointer Exception occured for products with parent : {}",currentQualifiedName);
+                }
             }
 
             // Get all children domains of current domain
             Iterator<AtlasVertex> childDomains = getAllChildrenVertices(vertex, DOMAIN_PARENT_EDGE_LABEL);
 
             while (childDomains.hasNext()) {
-                AtlasVertex childVertex = childDomains.next();
-                migrateDomainAttributes(childVertex, updatedQualifiedName, superDomainQualifiedName);
-                if(skipSuperDomain)
-                    break;
+                try {
+                    AtlasVertex childVertex = childDomains.next();
+                    if (Objects.nonNull(childVertex)) {
+                        migrateDomainAttributes(childVertex, updatedQualifiedName, superDomainQualifiedName);
+                    }
+                    if (skipSuperDomain)
+                        break;
+                }
+                catch (NullPointerException e){
+                    LOG.error("Null Pointer Exception occured for  subdomains with parent : {}",currentQualifiedName);
+                }
             }
 
             recordUpdatedChildEntities(vertex, updatedAttributes);
@@ -429,5 +442,15 @@ public class DataDomainQNMigrationService implements MigrationService{
         Map<String, Object> map = new HashMap<>();
         map.put(key, value);
         return map;
+    }
+
+    @Override
+    public void run() {
+        try {
+            startMigration();
+        } catch (Exception e) {
+            LOG.error("Error running migration : {}",e.toString());
+            throw new RuntimeException(e);
+        }
     }
 }
