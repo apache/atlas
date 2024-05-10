@@ -65,6 +65,9 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
             parentDomainQualifiedName = (String) parentDomain.getAttribute(QUALIFIED_NAME);
         }
 
+        entity.setAttribute(QUALIFIED_NAME, createQualifiedName(parentDomainQualifiedName));
+        entity.setCustomAttributes(customAttributes);
+
         productExists(productName, parentDomainQualifiedName);
 
         RequestContext.get().endMetricRecord(metricRecorder);
@@ -179,4 +182,11 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         }
     }
 
+    private static String createQualifiedName(String parentDomainQualifiedName) throws AtlasBaseException {
+        if (StringUtils.isEmpty(parentDomainQualifiedName)) {
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Parent Domain Qualified Name cannot be empty or null");
+        }
+        return parentDomainQualifiedName + "/product/" + getUUID();
+
+    }
 }
