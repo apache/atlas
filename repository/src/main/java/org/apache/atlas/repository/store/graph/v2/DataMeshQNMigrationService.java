@@ -32,7 +32,6 @@ import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcess
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_CATEGORY;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_RESOURCES;
 
-@Component
 public class DataMeshQNMigrationService implements MigrationService, Runnable {
 
     private static final Logger LOG = LoggerFactory.getLogger(DataMeshQNMigrationService.class);
@@ -54,7 +53,7 @@ public class DataMeshQNMigrationService implements MigrationService, Runnable {
     private boolean forceRegen;
     private final TransactionInterceptHelper   transactionInterceptHelper;
 
-    public DataMeshQNMigrationService(AtlasEntityStore entityStore, EntityDiscoveryService discovery, EntityGraphRetriever entityRetriever, AtlasTypeRegistry typeRegistry, TransactionInterceptHelper transactionInterceptHelper,boolean forceRegen) {
+    public DataMeshQNMigrationService(AtlasEntityStore entityStore, EntityDiscoveryService discovery, EntityGraphRetriever entityRetriever, AtlasTypeRegistry typeRegistry, TransactionInterceptHelper transactionInterceptHelper, boolean forceRegen) {
         this.entityRetriever = entityRetriever;
         this.entityStore = entityStore;
         this.discovery = discovery;
