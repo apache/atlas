@@ -13,6 +13,7 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.service.redis.RedisService;
 import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.NanoIdUtils;
 import org.apache.commons.collections.CollectionUtils;
@@ -135,7 +136,7 @@ public class DataMeshQNMigrationService implements MigrationService, Runnable {
                         break;
                 }
                 catch (NullPointerException e){
-                    LOG.error("Null Pointer Exception occured for products with parent : {}",currentQualifiedName);
+                    LOG.error("Null Pointer Exception occured for subdomains with parent : " + currentQualifiedName, e);
                 }
             }
 
@@ -152,7 +153,7 @@ public class DataMeshQNMigrationService implements MigrationService, Runnable {
                         break;
                 }
                 catch (NullPointerException e){
-                    LOG.error("Null Pointer Exception occured for  subdomains with parent : {}",currentQualifiedName);
+                    LOG.error("Null Pointer Exception occured for subdomains with parent : " + currentQualifiedName, e);
                 }
             }
 
@@ -166,21 +167,23 @@ public class DataMeshQNMigrationService implements MigrationService, Runnable {
     public void commitChanges() {
         try {
             updatePolicy(this.updatedPolicyResources);
-            this.updatedPolicyResources.clear();
         } catch (AtlasBaseException e) {
             this.errorOccured = true;
             this.skipSuperDomain = true;
-            throw new RuntimeException(e);
+            LOG.error("Failed to update set of policies: ", e);
+            LOG.error("Failed policies: {}", AtlasType.toJson(this.updatedPolicyResources));
+        } finally {
+            this.updatedPolicyResources.clear();
         }
 
         try {
-            if(!skipSuperDomain) {
-                transactionInterceptHelper.intercept();
-                this.counter = 0;
-            }
+            transactionInterceptHelper.intercept();
         } catch (Exception e){
             this.skipSuperDomain = true;
             this.errorOccured = true;
+            LOG.error("Failed to commit set of assets: ", e);
+        } finally {
+            this.counter = 0;
         }
     }
 
