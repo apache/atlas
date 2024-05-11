@@ -32,7 +32,6 @@ import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcess
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_CATEGORY;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_RESOURCES;
 
-@Component
 public class DataMeshQNMigrationService implements MigrationService, Runnable {
 
     private static final Logger LOG = LoggerFactory.getLogger(DataMeshQNMigrationService.class);
@@ -51,12 +50,10 @@ public class DataMeshQNMigrationService implements MigrationService, Runnable {
     boolean skipSuperDomain = false;
 
     private int counter;
-
+    private boolean forceRegen;
     private final TransactionInterceptHelper   transactionInterceptHelper;
-    private final RedisService redisService;
 
-    @Inject
-    public DataMeshQNMigrationService(AtlasEntityStore entityStore, RedisService redisService, EntityDiscoveryService discovery, EntityGraphRetriever entityRetriever, AtlasTypeRegistry typeRegistry, TransactionInterceptHelper transactionInterceptHelper) {
+    public DataMeshQNMigrationService(AtlasEntityStore entityStore, EntityDiscoveryService discovery, EntityGraphRetriever entityRetriever, AtlasTypeRegistry typeRegistry, TransactionInterceptHelper transactionInterceptHelper, boolean forceRegen) {
         this.entityRetriever = entityRetriever;
         this.entityStore = entityStore;
         this.discovery = discovery;
@@ -64,11 +61,10 @@ public class DataMeshQNMigrationService implements MigrationService, Runnable {
         this.updatedPolicyResources = new HashMap<>();
         this.counter = 0;
         this.transactionInterceptHelper = transactionInterceptHelper;
-        this.redisService = redisService;
+        this.forceRegen = forceRegen;
     }
 
     public Boolean startMigration() throws Exception{
-        redisService.putValue(DATA_MESH_QN, IN_PROGRESS);
 
         Set<String> attributes = new HashSet<>(Arrays.asList(SUPER_DOMAIN_QN_ATTR, PARENT_DOMAIN_QN_ATTR, "__customAttributes"));
 
@@ -79,13 +75,6 @@ public class DataMeshQNMigrationService implements MigrationService, Runnable {
             updateChunk(superDomain);
         }
 
-        if(errorOccured) {
-            redisService.putValue(DATA_MESH_QN, FAILED);
-        } else {
-            redisService.putValue(DATA_MESH_QN, SUCCESSFUL);
-        }
-
-        LOG.info("MIGRATION_RESULT {} ",redisService.getValue(DATA_MESH_QN));
         return Boolean.TRUE;
     }
 
@@ -120,8 +109,14 @@ public class DataMeshQNMigrationService implements MigrationService, Runnable {
         Map<String, Object> updatedAttributes = new HashMap<>();
 
         Map<String,String> customAttributes = GraphHelper.getCustomAttributes(vertex);
-        if(customAttributes != null && customAttributes.get(MIGRATION_CUSTOM_ATTRIBUTE) != null && customAttributes.get(MIGRATION_CUSTOM_ATTRIBUTE).equals("true")){
+        if(!this.forceRegen && customAttributes != null && customAttributes.get(MIGRATION_CUSTOM_ATTRIBUTE) != null && customAttributes.get(MIGRATION_CUSTOM_ATTRIBUTE).equals("true")){
             LOG.info("Entity already migrated for entity: {}", currentQualifiedName);
+
+            updatedQualifiedName = vertex.getProperty(QUALIFIED_NAME,String.class);
+
+            if (StringUtils.isEmpty(superDomainQualifiedName)) {
+                superDomainQualifiedName = vertex.getProperty(QUALIFIED_NAME,String.class);
+            }
 
         } else {
             superDomainQualifiedName = commitChangesInMemory(currentQualifiedName, updatedQualifiedName, parentDomainQualifiedName, superDomainQualifiedName, vertex, updatedAttributes);
@@ -235,7 +230,7 @@ public class DataMeshQNMigrationService implements MigrationService, Runnable {
         LOG.info("Migrating qualified name for Product: {}", currentQualifiedName);
         Map<String,String> customAttributes = GraphHelper.getCustomAttributes(vertex);
 
-        if(customAttributes != null && customAttributes.get(MIGRATION_CUSTOM_ATTRIBUTE) != null && customAttributes.get(MIGRATION_CUSTOM_ATTRIBUTE).equals("true")) {
+        if(!this.forceRegen && customAttributes != null && customAttributes.get(MIGRATION_CUSTOM_ATTRIBUTE) != null && customAttributes.get(MIGRATION_CUSTOM_ATTRIBUTE).equals("true")) {
             LOG.info("Product already migrated: {}", currentQualifiedName);
 
         } else {
