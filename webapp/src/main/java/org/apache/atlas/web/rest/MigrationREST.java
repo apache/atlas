@@ -3,6 +3,7 @@ package org.apache.atlas.web.rest;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.Timed;
+import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -10,13 +11,11 @@ import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.*;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
-import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
-import org.apache.atlas.repository.store.graph.v2.DataMeshQNMigrationService;
-import org.apache.atlas.repository.store.graph.v2.EntityStream;
-import org.apache.atlas.repository.store.graph.v2.MigrationService;
+import org.apache.atlas.repository.store.graph.v2.*;
 import org.apache.atlas.repository.store.users.KeycloakStore;
 import org.apache.atlas.service.redis.RedisService;
 import org.apache.atlas.transformer.PreProcessorPoliciesTransformer;
+import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.v1.model.instance.Id;
 import org.apache.atlas.web.util.Servlets;
@@ -59,30 +58,42 @@ public class MigrationREST {
     private KeycloakStore keycloakStore;
     private AtlasGraph graph;
     DataMeshQNMigrationService dataMeshQNMigrationService;
+
+    private final EntityGraphRetriever entityRetriever;
     private final RedisService redisService;
+    protected final AtlasTypeRegistry typeRegistry;
+    private final EntityDiscoveryService discovery;
+
+    private final TransactionInterceptHelper   transactionInterceptHelper;
 
     @Inject
-    public MigrationREST(AtlasEntityStore entityStore, AtlasGraph graph, DataMeshQNMigrationService dataMeshQNMigrationService,RedisService redisService) {
+    public MigrationREST(AtlasEntityStore entityStore, AtlasGraph graph, RedisService redisService,EntityDiscoveryService discovery, EntityGraphRetriever entityRetriever, AtlasTypeRegistry typeRegistry, TransactionInterceptHelper   transactionInterceptHelper) {
         this.entityStore = entityStore;
         this.graph = graph;
         this.transformer = new PreProcessorPoliciesTransformer();
         keycloakStore = new KeycloakStore();
         this.redisService = redisService;
-        this.dataMeshQNMigrationService = dataMeshQNMigrationService;
-
+        this.discovery = discovery;
+        this.entityRetriever = entityRetriever;
+        this.typeRegistry = typeRegistry;
+        this.transactionInterceptHelper = transactionInterceptHelper;
     }
 
     @POST
     @Path("submit")
     @Timed
-    public Boolean submit (@QueryParam("migrationType") String migrationType) throws Exception {
+    public Boolean submit (@QueryParam("migrationType") String migrationType,@QueryParam("forceMigration") boolean forceMigration) throws Exception {
         AtlasPerfTracer perf = null;
         MigrationService migrationService;
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MigrationREST.submit()");
             }
-            if( (MIGRATION + migrationType).equals(DATA_MESH_QN) ){
+            if( (MIGRATION + migrationType).equals(DATA_MESH_QN)){
+                if(Objects.isNull(forceMigration) ){
+                    forceMigration = false;
+                }
+                dataMeshQNMigrationService = new DataMeshQNMigrationService(entityStore, discovery, entityRetriever, typeRegistry, transactionInterceptHelper, forceMigration);
                 dataMeshQNMigrationService.run();
             }
 

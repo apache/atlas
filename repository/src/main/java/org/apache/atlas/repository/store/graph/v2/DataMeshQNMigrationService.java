@@ -51,11 +51,10 @@ public class DataMeshQNMigrationService implements MigrationService, Runnable {
     boolean skipSuperDomain = false;
 
     private int counter;
-
+    private boolean forceRegen;
     private final TransactionInterceptHelper   transactionInterceptHelper;
 
-    @Inject
-    public DataMeshQNMigrationService(AtlasEntityStore entityStore, RedisService redisService, EntityDiscoveryService discovery, EntityGraphRetriever entityRetriever, AtlasTypeRegistry typeRegistry, TransactionInterceptHelper transactionInterceptHelper) {
+    public DataMeshQNMigrationService(AtlasEntityStore entityStore, EntityDiscoveryService discovery, EntityGraphRetriever entityRetriever, AtlasTypeRegistry typeRegistry, TransactionInterceptHelper transactionInterceptHelper,boolean forceRegen) {
         this.entityRetriever = entityRetriever;
         this.entityStore = entityStore;
         this.discovery = discovery;
@@ -63,6 +62,7 @@ public class DataMeshQNMigrationService implements MigrationService, Runnable {
         this.updatedPolicyResources = new HashMap<>();
         this.counter = 0;
         this.transactionInterceptHelper = transactionInterceptHelper;
+        this.forceRegen = forceRegen;
     }
 
     public Boolean startMigration() throws Exception{
@@ -110,7 +110,7 @@ public class DataMeshQNMigrationService implements MigrationService, Runnable {
         Map<String, Object> updatedAttributes = new HashMap<>();
 
         Map<String,String> customAttributes = GraphHelper.getCustomAttributes(vertex);
-        if(customAttributes != null && customAttributes.get(MIGRATION_CUSTOM_ATTRIBUTE) != null && customAttributes.get(MIGRATION_CUSTOM_ATTRIBUTE).equals("true")){
+        if(!this.forceRegen && customAttributes != null && customAttributes.get(MIGRATION_CUSTOM_ATTRIBUTE) != null && customAttributes.get(MIGRATION_CUSTOM_ATTRIBUTE).equals("true")){
             LOG.info("Entity already migrated for entity: {}", currentQualifiedName);
 
             updatedQualifiedName = vertex.getProperty(QUALIFIED_NAME,String.class);
@@ -231,7 +231,7 @@ public class DataMeshQNMigrationService implements MigrationService, Runnable {
         LOG.info("Migrating qualified name for Product: {}", currentQualifiedName);
         Map<String,String> customAttributes = GraphHelper.getCustomAttributes(vertex);
 
-        if(customAttributes != null && customAttributes.get(MIGRATION_CUSTOM_ATTRIBUTE) != null && customAttributes.get(MIGRATION_CUSTOM_ATTRIBUTE).equals("true")) {
+        if(!this.forceRegen && customAttributes != null && customAttributes.get(MIGRATION_CUSTOM_ATTRIBUTE) != null && customAttributes.get(MIGRATION_CUSTOM_ATTRIBUTE).equals("true")) {
             LOG.info("Product already migrated: {}", currentQualifiedName);
 
         } else {
