@@ -166,7 +166,7 @@ public class StakeholderTitlePreProcessor implements PreProcessor {
             }
 
             if (CollectionUtils.isEmpty(domainQualifiedNames)) {
-                domainQualifiedNames = vertex.getListProperty(ATTR_DOMAIN_QUALIFIED_NAMES, String.class);
+                domainQualifiedNames = vertex.getMultiValuedProperty(ATTR_DOMAIN_QUALIFIED_NAMES, String.class);
             }
 
             authorizeDomainAccess(domainQualifiedNames);
