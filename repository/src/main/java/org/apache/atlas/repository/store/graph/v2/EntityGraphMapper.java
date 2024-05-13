@@ -3011,7 +3011,7 @@ public class EntityGraphMapper {
                     }
                 }
             }
-            //Delete all the properties
+            //Delete array/set properties first
             entityVertex.removeProperty(TRAIT_NAMES_PROPERTY_KEY);
             entityVertex.removeProperty(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY);
 
