@@ -236,31 +236,19 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
 
         switch ((String) entity.getAttribute(DAAP_VISIBILITY_ATTR)) {
             case PRIVATE:
-                policy.setAttribute(ATTR_POLICY_USERS,Arrays.asList());
-                policy.setAttribute(ATTR_POLICY_GROUPS,Arrays.asList());
+                setPolicyAttributes(policy, Arrays.asList(), Arrays.asList());
                 break;
             case PROTECTED:
-                // create policy for policyUsers and policyGroups
-                policy.setAttribute(ATTR_POLICY_USERS, entity.getAttribute(DAAP_VISIBILITY_USERS_ATTR));
-                policy.setAttribute(ATTR_POLICY_GROUPS, entity.getAttribute(DAAP_VISIBILITY_GROUPS_ATTR));
+                setPolicyAttributes(policy,
+                        (List<String>) entity.getAttribute(DAAP_VISIBILITY_USERS_ATTR),
+                        (List<String>) entity.getAttribute(DAAP_VISIBILITY_GROUPS_ATTR)
+                );
                 break;
             case PUBLIC:
-                // set empty user list
-                policy.setAttribute(ATTR_POLICY_USERS, Arrays.asList());
-                // set user groups oto public to allow access for all
-                policy.setAttribute(ATTR_POLICY_GROUPS, Arrays.asList("public"));
+                setPolicyAttributes(policy, Arrays.asList(), Arrays.asList("public"));
                 break;
         }
-
-        try {
-            RequestContext.get().setSkipAuthorizationCheck(true);
-            AtlasEntity.AtlasEntitiesWithExtInfo policiesExtInfo = new AtlasEntity.AtlasEntitiesWithExtInfo();
-            policiesExtInfo.addEntity(policy);
-            EntityStream entityStream = new AtlasEntityStream(policiesExtInfo);
-            entityStore.createOrUpdate(entityStream, false); // adding new policy
-        } finally {
-            RequestContext.get().setSkipAuthorizationCheck(false);
-        }
+        createOrUpdatePolicy(policy);
     }
 
     private void updateDaapVisibilityPolicy(AtlasEntity newEntity, AtlasEntity currentEntity,  String currentProductDaapVisibility, String newProductDaapVisibility) throws AtlasBaseException{
@@ -275,46 +263,42 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
                 switch (newProductDaapVisibility) {
                     case PROTECTED:
                         // create policy for policyUsers and policyGroups
-                        policy.setAttribute(ATTR_POLICY_USERS, newEntity.getAttribute(DAAP_VISIBILITY_USERS_ATTR));
-                        policy.setAttribute(ATTR_POLICY_GROUPS, newEntity.getAttribute(DAAP_VISIBILITY_GROUPS_ATTR));
+                        setPolicyAttributes(policy,
+                                (List<String>) newEntity.getAttribute(DAAP_VISIBILITY_USERS_ATTR),
+                                (List<String>) newEntity.getAttribute(DAAP_VISIBILITY_GROUPS_ATTR)
+                        );
                         break;
                     case PUBLIC:
-                        // set empty user list
-                        policy.setAttribute(ATTR_POLICY_USERS, Arrays.asList());
-                        // set user groups to public to allow access for all
-                        policy.setAttribute(ATTR_POLICY_GROUPS, Arrays.asList("public"));
+                        setPolicyAttributes(policy, Arrays.asList(), Arrays.asList("public"));
                 }
                 break;
             case PROTECTED:
                 switch (newProductDaapVisibility) {
                     case PRIVATE:
-                        // create policy for policyUsers and policyGroups
-                        policy.setAttribute(ATTR_POLICY_USERS,Arrays.asList());
-                        policy.setAttribute(ATTR_POLICY_GROUPS,Arrays.asList());
+                        setPolicyAttributes(policy, Arrays.asList(), Arrays.asList());
                         break;
                     case PUBLIC:
-                        // set empty user list
-                        policy.setAttribute(ATTR_POLICY_USERS, Arrays.asList());
-                        // set user groups to public to allow access for all
-                        policy.setAttribute(ATTR_POLICY_GROUPS, Arrays.asList("public"));
+                        setPolicyAttributes(policy, Arrays.asList(), Arrays.asList("public"));
                 }
                 break;
             case PUBLIC:
                 switch (newProductDaapVisibility) {
                     case PRIVATE:
-                        // create policy for policyUsers and policyGroups
-                        policy.setAttribute(ATTR_POLICY_USERS,Arrays.asList());
-                        policy.setAttribute(ATTR_POLICY_GROUPS,Arrays.asList());
+                        setPolicyAttributes(policy, Arrays.asList(), Arrays.asList());
                         break;
                     case PROTECTED:
-                        // create policy for policyUsers and policyGroups
-                        policy.setAttribute(ATTR_POLICY_USERS, newEntity.getAttribute(DAAP_VISIBILITY_USERS_ATTR));
-                        policy.setAttribute(ATTR_POLICY_GROUPS, newEntity.getAttribute(DAAP_VISIBILITY_GROUPS_ATTR));
+                        setPolicyAttributes(policy,
+                                (List<String>) newEntity.getAttribute(DAAP_VISIBILITY_USERS_ATTR),
+                                (List<String>) newEntity.getAttribute(DAAP_VISIBILITY_GROUPS_ATTR)
+                        );
                         break;
                 }
                 break;
         }
+        createOrUpdatePolicy(policy);
+    }
 
+    private void createOrUpdatePolicy(AtlasEntity policy) throws AtlasBaseException{
         try {
             RequestContext.get().setSkipAuthorizationCheck(true);
             AtlasEntity.AtlasEntitiesWithExtInfo policiesExtInfo = new AtlasEntity.AtlasEntitiesWithExtInfo();
@@ -324,5 +308,11 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         } finally {
             RequestContext.get().setSkipAuthorizationCheck(false);
         }
+    }
+
+    // Helper method to set policy attributes
+    private void setPolicyAttributes(AtlasEntity policy, List<String> users, List<String> groups) {
+        policy.setAttribute(ATTR_POLICY_USERS, users);
+        policy.setAttribute(ATTR_POLICY_GROUPS, groups);
     }
 }
