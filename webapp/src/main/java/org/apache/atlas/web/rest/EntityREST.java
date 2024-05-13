@@ -1275,11 +1275,11 @@ public class EntityREST {
     }
 
     @POST
-    @Path("bulk/repairClassificationsMappings")
+    @Path("repairClassificationsMappings/{guid}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Timed
-    public void repairClassifications(List<String> guids) throws AtlasBaseException {
+    public void repairClassifications(@PathParam("guid") String guid) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
         try {
@@ -1287,8 +1287,7 @@ public class EntityREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.repairClassifications()");
             }
 
-            ClassificationAssociator.Updater associator = new ClassificationAssociator.Updater(typeRegistry, entitiesStore, entityGraphMapper, entityChangeNotifier, instanceConverter);
-            associator.repairClassificationsMappings(guids);
+            entitiesStore.repairClassificationMappings(guid);
         } finally {
             AtlasPerfTracer.log(perf);
         }

@@ -2991,7 +2991,7 @@ public class EntityGraphMapper {
             for (AtlasClassification classification : classifications) {
                 String typeName = classification.getTypeName();
                 classificationText = fullTextMapperV2.getClassificationTextForEntity(new AtlasEntity(entityHeader));
-                if(classification.isPropagate()) {
+                if(classification.isPropagate() && !classification.getEntityGuid().equals(entityHeader.getGuid())) {
                     //Add to propagatedClassificationNamesList
                     propagatedClassificationNamesList.add(typeName);
                     //Create delimiter separated string for propagatedClassificationNames
@@ -3011,15 +3011,25 @@ public class EntityGraphMapper {
                     }
                 }
             }
+            //Delete all the properties
+            entityVertex.removeProperty(TRAIT_NAMES_PROPERTY_KEY);
+            entityVertex.removeProperty(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY);
+
 
             //Update classificationNames and propagatedClassificationNames in entityVertex
-            AtlasGraphUtilsV2.setEncodedProperty(entityVertex, CLASSIFICATION_NAMES_KEY, classificationNames);
-            AtlasGraphUtilsV2.setEncodedProperty(entityVertex, CLASSIFICATION_TEXT_KEY, classificationText);
-            AtlasGraphUtilsV2.setEncodedProperty(entityVertex, PROPAGATED_CLASSIFICATION_NAMES_KEY, propagatedClassificationName);
-
+            AtlasGraphUtilsV2.setProperty(entityVertex, CLASSIFICATION_NAMES_KEY, classificationNames);
+            AtlasGraphUtilsV2.setProperty(entityVertex, CLASSIFICATION_TEXT_KEY, classificationText);
+            AtlasGraphUtilsV2.setProperty(entityVertex, PROPAGATED_CLASSIFICATION_NAMES_KEY, propagatedClassificationName);
+            // Make classificationNames unique list as it is of type SET
+            classificationNamesList = classificationNamesList.stream().distinct().collect(Collectors.toList());
             //Update classificationNames and propagatedClassificationNames in entityHeader
-            AtlasGraphUtilsV2.setEncodedProperty(entityVertex, TRAIT_NAMES_PROPERTY_KEY, classificationNamesList);
-            AtlasGraphUtilsV2.setEncodedProperty(entityVertex, PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, propagatedClassificationNamesList);
+            for(String classificationName : classificationNamesList) {
+                AtlasGraphUtilsV2.addEncodedProperty(entityVertex, TRAIT_NAMES_PROPERTY_KEY, classificationName);
+            }
+            for (String classificationName : propagatedClassificationNamesList) {
+                //AtlasGraphUtilsV2.addProperty(entityVertex, PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, classificationName);
+                entityVertex.addListProperty(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, classificationName);
+            }
         }
     }
 
