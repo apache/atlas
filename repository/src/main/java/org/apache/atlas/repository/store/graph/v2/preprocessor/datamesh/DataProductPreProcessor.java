@@ -113,7 +113,16 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
             newParentDomainQualifiedName = (String) newParentDomainHeader.getAttribute(QUALIFIED_NAME);
         }
 
+        // check for daapVisibility change
+        String currentProductDaapVisibility = storedProduct.getAttribute(DAAP_VISIBILITY).toString();
+        String newProductDaapVisibility = (String) entity.getAttribute(DAAP_VISIBILITY);
+
         if (newParentDomainQualifiedName != null && !newParentDomainQualifiedName.equals(currentParentDomainQualifiedName)) {
+
+            if (newProductDaapVisibility != null && !newProductDaapVisibility.equals(currentProductDaapVisibility)){
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Moving the product to another domain, along with the change in Dapp visibility, is not allowed");
+            }
+
             //Auth check
             isAuthorized(currentParentDomainHeader, newParentDomainHeader);
 
@@ -135,10 +144,6 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
             }
             entity.setAttribute(QUALIFIED_NAME, vertexQnName);
         }
-
-        // check for daapVisibility change
-        String currentProductDaapVisibility = storedProduct.getAttribute(DAAP_VISIBILITY).toString();
-        String newProductDaapVisibility = (String) entity.getAttribute(DAAP_VISIBILITY);
 
         if (newProductDaapVisibility != null && !newProductDaapVisibility.equals(currentProductDaapVisibility)) {
             updateDaapVisibilityPolicy(entity, storedProduct, currentProductDaapVisibility,newProductDaapVisibility);
