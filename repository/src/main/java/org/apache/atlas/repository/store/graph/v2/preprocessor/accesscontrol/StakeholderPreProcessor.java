@@ -60,6 +60,7 @@ import static org.apache.atlas.repository.Constants.STAKEHOLDER_TITLE_ENTITY_TYP
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.indexSearchPaginated;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.verifyDuplicateAssetByName;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.datamesh.StakeholderTitlePreProcessor.ATTR_DOMAIN_QUALIFIED_NAMES;
+import static org.apache.atlas.repository.store.graph.v2.preprocessor.datamesh.StakeholderTitlePreProcessor.STAR;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_ACCESS_CONTROL_ENABLED;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_PERSONA_ROLE_ID;
 import static org.apache.atlas.repository.util.AccessControlUtils.REL_ATTR_POLICIES;
@@ -259,8 +260,8 @@ public class StakeholderPreProcessor extends PersonaPreProcessor {
         List<Map<String, Object>> mustClauseList = new ArrayList();
         mustClauseList.add(mapOf("term", mapOf("__typeName.keyword", STAKEHOLDER_ENTITY_TYPE)));
         mustClauseList.add(mapOf("term", mapOf("__state", "ACTIVE")));
-        mustClauseList.add(mapOf("term", mapOf("domainQualifiedName", domainQualifiedName)));
-        mustClauseList.add(mapOf("term", mapOf("stakeholderTitleGuid", stakeholderTitleGuid)));
+        mustClauseList.add(mapOf("term", mapOf(ATTR_DOMAIN_QUALIFIED_NAME, domainQualifiedName)));
+        mustClauseList.add(mapOf("term", mapOf(ATTR_STAKEHOLDER_TITLE_GUID, stakeholderTitleGuid)));
 
 
         Map<String, Object> bool = mapOf("must", mustClauseList);
@@ -299,11 +300,13 @@ public class StakeholderPreProcessor extends PersonaPreProcessor {
 
             List<String> domainQualifiedNames = (List<String>) stakeholderTitleHeader.getAttribute(ATTR_DOMAIN_QUALIFIED_NAMES);
 
-            Optional parentDomain = domainQualifiedNames.stream().filter(x -> domainQualifiedName.startsWith(x)).findFirst();
+            if (!domainQualifiedNames.contains(STAR)) {
+                Optional parentDomain = domainQualifiedNames.stream().filter(x -> domainQualifiedName.startsWith(x)).findFirst();
 
-            if (!parentDomain.isPresent()) {
-                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST,
-                        String.format("Provided StakeholderTitle is not applicable to the domain"));
+                if (!parentDomain.isPresent()) {
+                    throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST,
+                            String.format("Provided StakeholderTitle is not applicable to the domain"));
+                }
             }
         }
     }
