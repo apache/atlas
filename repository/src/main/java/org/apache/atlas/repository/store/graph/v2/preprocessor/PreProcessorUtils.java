@@ -53,7 +53,9 @@ public class PreProcessorUtils {
 
     public static final String PARENT_DOMAIN_QN_ATTR = "parentDomainQualifiedName";
     public static final String SUPER_DOMAIN_QN_ATTR = "superDomainQualifiedName";
-
+    public static  final String DAAP_VISIBILITY = "daapVisibility";
+    public static  final String DAAP_VISIBILITY_USERS = "daapVisibilityUsers";
+    public static  final String DAAP_VISIBILITY_GROUPS = "daapVisibilityGroups";
 
     //Migration Constants
     public static final String MIGRATION = "MIGRATION:";
