@@ -49,12 +49,14 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
 
     private EntityMutationContext context;
     private Map<String, String> updatedPolicyResources;
+    private EntityGraphRetriever retrieverNoRelation = null;
     private Map<String, String> updatedDomainQualifiedNames;
 
     public DataDomainPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever,
                                   AtlasGraph graph) {
         super(typeRegistry, entityRetriever, graph);
         this.updatedPolicyResources = new HashMap<>();
+        this.retrieverNoRelation = new EntityGraphRetriever(graph, typeRegistry, true);
         this.updatedDomainQualifiedNames = new HashMap<>();
     }
 
@@ -88,14 +90,32 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
 
         String domainName = (String) entity.getAttribute(NAME);
 
-        String parentDomainQualifiedName = (String) entity.getAttribute(PARENT_DOMAIN_QN_ATTR);
+        String parentDomainQualifiedName = "";
+        AtlasObjectId parentDomainObject = (AtlasObjectId) entity.getRelationshipAttribute(PARENT_DOMAIN_REL_TYPE);
+        AtlasVertex parentDomain = null;
 
-        AtlasEntityHeader parentDomain = getParent(entity);
-        if(parentDomain != null ){
-            parentDomainQualifiedName = (String) parentDomain.getAttribute(QUALIFIED_NAME);
+        if(parentDomainObject != null ){
+            parentDomain = retrieverNoRelation.getEntityVertex(parentDomainObject);
+            parentDomainQualifiedName = parentDomain.getProperty(QUALIFIED_NAME, String.class);
+        } else {
+            entity.removeAttribute(PARENT_DOMAIN_QN_ATTR);
+            entity.removeAttribute(SUPER_DOMAIN_QN_ATTR);
         }
 
         entity.setAttribute(QUALIFIED_NAME, createQualifiedName(parentDomainQualifiedName));
+
+        if(StringUtils.isNotEmpty(parentDomainQualifiedName)) {
+            entity.setAttribute(PARENT_DOMAIN_QN_ATTR, parentDomainQualifiedName);
+            String superDomainQualifiedName = "";
+            if(StringUtils.isEmpty(parentDomain.getProperty(SUPER_DOMAIN_QN_ATTR, String.class))){
+                superDomainQualifiedName = parentDomainQualifiedName;
+            }
+            else {
+                superDomainQualifiedName =  parentDomain.getProperty(SUPER_DOMAIN_QN_ATTR, String.class);
+            }
+            entity.setAttribute(SUPER_DOMAIN_QN_ATTR, superDomainQualifiedName);
+        }
+
         entity.setCustomAttributes(customAttributes);
 
         domainExists(domainName, parentDomainQualifiedName);
@@ -152,6 +172,9 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
         } else {
             String domainCurrentName = vertex.getProperty(NAME, String.class);
             String domainNewName = (String) entity.getAttribute(NAME);
+
+            entity.removeAttribute(PARENT_DOMAIN_QN_ATTR);
+            entity.removeAttribute(SUPER_DOMAIN_QN_ATTR);
 
             if (!domainCurrentName.equals(domainNewName)) {
                 domainExists(domainNewName, currentParentDomainQualifiedName);

@@ -18,6 +18,7 @@ import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,12 +41,14 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
     private EntityMutationContext context;
     private AtlasEntityStore entityStore;
     private Map<String, String> updatedPolicyResources;
+    private EntityGraphRetriever retrieverNoRelation = null;
 
     public DataProductPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever,
                                    AtlasGraph graph, AtlasEntityStore entityStore) {
         super(typeRegistry, entityRetriever, graph);
         this.updatedPolicyResources = new HashMap<>();
         this.entityStore = entityStore;
+        this.retrieverNoRelation = new EntityGraphRetriever(graph, typeRegistry, true);
     }
 
     @Override
@@ -73,16 +76,24 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
 
     private void processCreateProduct(AtlasEntity entity,AtlasVertex vertex) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processCreateProduct");
+        AtlasObjectId parentDomainObject = (AtlasObjectId) entity.getRelationshipAttribute(DATA_DOMAIN_REL_TYPE);
         String productName = (String) entity.getAttribute(NAME);
-        String parentDomainQualifiedName = (String) entity.getAttribute(PARENT_DOMAIN_QN_ATTR);
+        String parentDomainQualifiedName = "";
 
-        AtlasEntityHeader parentDomain = getParent(entity);
-        if(parentDomain != null ){
-            parentDomainQualifiedName = (String) parentDomain.getAttribute(QUALIFIED_NAME);
+        if (parentDomainObject == null) {
+            entity.removeAttribute(PARENT_DOMAIN_QN_ATTR);
+            entity.removeAttribute(SUPER_DOMAIN_QN_ATTR);
+        } else {
+            AtlasVertex parentDomain = retrieverNoRelation.getEntityVertex(parentDomainObject);
+            parentDomainQualifiedName = parentDomain.getProperty(QUALIFIED_NAME, String.class);
+
+            entity.setAttribute(QUALIFIED_NAME, createQualifiedName(parentDomainQualifiedName));
+
+            entity.setAttribute(PARENT_DOMAIN_QN_ATTR, parentDomainQualifiedName);
+
+            String superDomainQualifiedName = parentDomain.getProperty(SUPER_DOMAIN_QN_ATTR, String.class);
+            entity.setAttribute(SUPER_DOMAIN_QN_ATTR, superDomainQualifiedName);
         }
-
-        entity.setAttribute(QUALIFIED_NAME, createQualifiedName(parentDomainQualifiedName));
-        entity.setCustomAttributes(customAttributes);
 
         productExists(productName, parentDomainQualifiedName);
 
@@ -138,6 +149,12 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
             updatePolicies(this.updatedPolicyResources, this.context);
 
         } else {
+            entity.removeAttribute(PARENT_DOMAIN_QN_ATTR);
+            entity.removeAttribute(SUPER_DOMAIN_QN_ATTR);
+            currentParentDomainQualifiedName = "";
+            if (entity.getRelationshipAttributes() != null) {
+                entity.getRelationshipAttributes().remove(DATA_PRODUCT_REL_TYPE);
+            }
             String productCurrentName = vertex.getProperty(NAME, String.class);
             String productNewName = (String) entity.getAttribute(NAME);
 
