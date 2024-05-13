@@ -1858,7 +1858,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 break;
 
             case "StakeholderTitle":
-                preProcessor = new StakeholderTitlePreProcessor(graph, typeRegistry, entityRetriever, this);
+                preProcessor = new StakeholderTitlePreProcessor(graph, typeRegistry, entityRetriever);
                 break;
         }
 
