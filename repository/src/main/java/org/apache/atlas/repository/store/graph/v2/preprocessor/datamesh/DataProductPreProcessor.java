@@ -14,7 +14,6 @@ import org.apache.atlas.repository.store.graph.v2.EntityStream;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +29,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
     private static final String PRIVATE = "Private";
     private static final String PROTECTED = "Protected";
     private static final String PUBLIC = "Public";
+    private static final String DATA_PRODUCT = "dataProduct";
 
 
 
@@ -59,7 +59,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
 
         switch (operation) {
             case CREATE:
-                processCreateProduct(entity,vertex);
+                processCreateProduct(entity, vertex);
                 break;
             case UPDATE:
                 processUpdateProduct(entity, vertex);
@@ -82,7 +82,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
 
         productExists(productName, parentDomainQualifiedName);
 
-        createDaapVisibilityPolicy(entity,vertex);
+        createDaapVisibilityPolicy(entity, vertex);
 
         RequestContext.get().endMetricRecord(metricRecorder);
     }
@@ -114,13 +114,15 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         }
 
         // check for daapVisibility change
-        String currentProductDaapVisibility = storedProduct.getAttribute(DAAP_VISIBILITY).toString();
-        String newProductDaapVisibility = (String) entity.getAttribute(DAAP_VISIBILITY);
+        String currentProductDaapVisibility = storedProduct.getAttribute(DAAP_VISIBILITY_ATTR).toString();
+        String newProductDaapVisibility = (String) entity.getAttribute(DAAP_VISIBILITY_ATTR);// check case if attribute is not sent from FE
+
+        boolean isDaapVisibilityChanged = (newProductDaapVisibility != null && !newProductDaapVisibility.equals(currentProductDaapVisibility));
 
         if (newParentDomainQualifiedName != null && !newParentDomainQualifiedName.equals(currentParentDomainQualifiedName)) {
 
-            if (newProductDaapVisibility != null && !newProductDaapVisibility.equals(currentProductDaapVisibility)){
-                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Moving the product to another domain, along with the change in Dapp visibility, is not allowed");
+            if(isDaapVisibilityChanged){
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Moving the product to another domain along with the change in Daap visibility is not allowed");
             }
 
             //Auth check
@@ -145,8 +147,8 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
             entity.setAttribute(QUALIFIED_NAME, vertexQnName);
         }
 
-        if (newProductDaapVisibility != null && !newProductDaapVisibility.equals(currentProductDaapVisibility)) {
-            updateDaapVisibilityPolicy(entity, storedProduct, currentProductDaapVisibility,newProductDaapVisibility);
+        if (isDaapVisibilityChanged) {
+            updateDaapVisibilityPolicy(entity, storedProduct, currentProductDaapVisibility, newProductDaapVisibility);
         }
 
         RequestContext.get().endMetricRecord(metricRecorder);
@@ -230,16 +232,17 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         policy.setAttribute(ATTR_POLICY_RESOURCES, Arrays.asList("entity:" + entity.getAttribute(QUALIFIED_NAME)));
         policy.setAttribute(ATTR_POLICY_RESOURCES_CATEGORY, POLICY_RESOURCE_CATEGORY_PERSONA_ENTITY);
         policy.setAttribute(ATTR_POLICY_SERVICE_NAME, "atlas");
-        policy.setAttribute(ATTR_POLICY_SUB_CATEGORY, DATA_PRODUCT_ENTITY_TYPE);
+        policy.setAttribute(ATTR_POLICY_SUB_CATEGORY, DATA_PRODUCT); // create new constant attr
 
-        switch ((String) entity.getAttribute(DAAP_VISIBILITY)) {
+        switch ((String) entity.getAttribute(DAAP_VISIBILITY_ATTR)) {
             case PRIVATE:
-                // do nothing for private daapVisibility
+                policy.setAttribute(ATTR_POLICY_USERS,Arrays.asList());
+                policy.setAttribute(ATTR_POLICY_GROUPS,Arrays.asList());
                 break;
             case PROTECTED:
                 // create policy for policyUsers and policyGroups
-                policy.setAttribute(ATTR_POLICY_USERS, entity.getAttribute(DAAP_VISIBILITY_USERS));
-                policy.setAttribute(ATTR_POLICY_GROUPS, entity.getAttribute(DAAP_VISIBILITY_GROUPS));
+                policy.setAttribute(ATTR_POLICY_USERS, entity.getAttribute(DAAP_VISIBILITY_USERS_ATTR));
+                policy.setAttribute(ATTR_POLICY_GROUPS, entity.getAttribute(DAAP_VISIBILITY_GROUPS_ATTR));
                 break;
             case PUBLIC:
                 // set empty user list
@@ -272,8 +275,8 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
                 switch (newProductDaapVisibility) {
                     case PROTECTED:
                         // create policy for policyUsers and policyGroups
-                        policy.setAttribute(ATTR_POLICY_USERS, newEntity.getAttribute(DAAP_VISIBILITY_USERS));
-                        policy.setAttribute(ATTR_POLICY_GROUPS, newEntity.getAttribute(DAAP_VISIBILITY_GROUPS));
+                        policy.setAttribute(ATTR_POLICY_USERS, newEntity.getAttribute(DAAP_VISIBILITY_USERS_ATTR));
+                        policy.setAttribute(ATTR_POLICY_GROUPS, newEntity.getAttribute(DAAP_VISIBILITY_GROUPS_ATTR));
                         break;
                     case PUBLIC:
                         // set empty user list
@@ -305,8 +308,8 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
                         break;
                     case PROTECTED:
                         // create policy for policyUsers and policyGroups
-                        policy.setAttribute(ATTR_POLICY_USERS, newEntity.getAttribute(DAAP_VISIBILITY_USERS));
-                        policy.setAttribute(ATTR_POLICY_GROUPS, newEntity.getAttribute(DAAP_VISIBILITY_GROUPS));
+                        policy.setAttribute(ATTR_POLICY_USERS, newEntity.getAttribute(DAAP_VISIBILITY_USERS_ATTR));
+                        policy.setAttribute(ATTR_POLICY_GROUPS, newEntity.getAttribute(DAAP_VISIBILITY_GROUPS_ATTR));
                         break;
                 }
                 break;
