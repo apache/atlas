@@ -89,9 +89,9 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         policy.setAttribute(ATTR_POLICY_TYPE,POLICY_TYPE_ALLOW);
         policy.setAttribute(ATTR_POLICY_RESOURCES, Arrays.asList("entity:"+entity.getAttribute(QUALIFIED_NAME)));
         policy.setAttribute("accessControlPolicyCategory",POLICY_CATEGORY_PERSONA);
-        policy.setAttribute("policyResourceCategory","entity");
-        policy.setAttribute("policyServiceName","atlas");
-        policy.setAttribute("policySubCategory","dataProduct");
+        policy.setAttribute(ATTR_POLICY_RESOURCES_CATEGORY,"entity");
+        policy.setAttribute(ATTR_POLICY_SERVICE_NAME,"atlas");
+        policy.setAttribute(ATTR_POLICY_SUB_CATEGORY,"dataProduct");
 
         switch ((String) entity.getAttribute("daapVisibility")) {
             case "Private":
