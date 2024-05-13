@@ -72,7 +72,7 @@ import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 public class StakeholderPreProcessor extends PersonaPreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(StakeholderPreProcessor.class);
 
-    public static final String ATTR_DOMAIN_QUALIFIED_NAME  = "domainQualifiedName";
+    public static final String ATTR_DOMAIN_QUALIFIED_NAME  = "stakeholderDomainQualifiedName";
     public static final String ATTR_STAKEHOLDER_TITLE_GUID = "stakeholderTitleGuid";
 
     public static final String REL_ATTR_STAKEHOLDER_TITLE = "stakeholderTitle";
