@@ -4,8 +4,8 @@
       "typeName": "StakeholderTitle",
       "attributes":
       {
-        "qualifiedName": "stakeholderTitle/default/DOMAIN_OWNERS",
-        "name": "Domain Owners",
+        "qualifiedName": "stakeholderTitle/default/DOMAIN_OWNER",
+        "name": "Domain Owner",
         "domainQualifiedNames": ["*"]
       }
     },
@@ -13,8 +13,26 @@
       "typeName": "StakeholderTitle",
       "attributes":
       {
-        "qualifiedName": "stakeholderTitle/default/DATA_STEWARDS",
-        "name": "Data Stewards",
+        "qualifiedName": "stakeholderTitle/default/DATA_PRODUCT_OWNER",
+        "name": "Data Product Owner",
+        "domainQualifiedNames": ["*"]
+      }
+    },
+    {
+      "typeName": "StakeholderTitle",
+      "attributes":
+      {
+        "qualifiedName": "stakeholderTitle/default/DATA_ENGINEER",
+        "name": "Data Engineer",
+        "domainQualifiedNames": ["*"]
+      }
+    },
+    {
+      "typeName": "StakeholderTitle",
+      "attributes":
+      {
+        "qualifiedName": "stakeholderTitle/default/ARCHITECT",
+        "name": "Architect",
         "domainQualifiedNames": ["*"]
       }
     }
