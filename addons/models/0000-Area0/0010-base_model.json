@@ -1052,7 +1052,7 @@
       "typeVersion": "1.0",
       "attributeDefs": [
         {
-          "name": "domainQualifiedNames",
+          "name": "stakeholderTitleDomainQualifiedNames",
           "description": "qualified name array representing the Domains for which this StakeholderTitle is applicable",
           "typeName": "array<string>",
           "indexType": "STRING",

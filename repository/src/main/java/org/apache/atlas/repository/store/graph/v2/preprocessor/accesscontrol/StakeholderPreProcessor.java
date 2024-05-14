@@ -268,7 +268,7 @@ public class StakeholderPreProcessor extends PersonaPreProcessor {
 
         if (CollectionUtils.isNotEmpty(assets)) {
             throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST,
-                    format("Stakeholder for provided title & domain combination already exists with name: {}", assets.get(0).getAttribute(NAME)));
+                    format("Stakeholder for provided title & domain combination already exists with name: %s", assets.get(0).getAttribute(NAME)));
         }
     }
 
