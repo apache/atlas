@@ -95,7 +95,7 @@ public class StakeholderTitlePreProcessor implements PreProcessor {
             validateRelations(entity);
 
             if (RequestContext.get().isSkipAuthorizationCheck()) {
-                // To create bootstrap titles with provided aualifiedName
+                // To create bootstrap titles with provided qualifiedName
                 return;
             }
 
@@ -112,7 +112,7 @@ public class StakeholderTitlePreProcessor implements PreProcessor {
             }
 
             if (CollectionUtils.isEmpty(domainQualifiedNames)) {
-                throw new AtlasBaseException(BAD_REQUEST, "Please provide attribute domainQualifiedNames");
+                throw new AtlasBaseException(BAD_REQUEST, "Please provide attribute " + ATTR_DOMAIN_QUALIFIED_NAMES);
             }
 
             if (domainQualifiedNames.contains(STAR)) {
