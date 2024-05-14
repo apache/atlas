@@ -19,6 +19,7 @@ package org.apache.atlas.repository.store.graph.v2.preprocessor.accesscontrol;
 
 
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.auth.client.keycloak.AtlasKeycloakClient;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -73,12 +74,12 @@ import static org.apache.atlas.repository.util.AccessControlUtils.validateNoPoli
 public class PersonaPreProcessor implements PreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(PersonaPreProcessor.class);
 
-    private final AtlasGraph graph;
-    private final AtlasTypeRegistry typeRegistry;
-    private final EntityGraphRetriever entityRetriever;
-    private IndexAliasStore aliasStore;
-    private AtlasEntityStore entityStore;
-    private KeycloakStore keycloakStore;
+    protected final AtlasGraph graph;
+    protected AtlasTypeRegistry typeRegistry;
+    protected final EntityGraphRetriever entityRetriever;
+    protected IndexAliasStore aliasStore;
+    protected AtlasEntityStore entityStore;
+    protected KeycloakStore keycloakStore;
 
     public PersonaPreProcessor(AtlasGraph graph,
                                AtlasTypeRegistry typeRegistry,
@@ -209,7 +210,7 @@ public class PersonaPreProcessor implements PreProcessor {
         }
     }
 
-    private String createKeycloakRole(AtlasEntity entity) throws AtlasBaseException {
+    protected String createKeycloakRole(AtlasEntity entity) throws AtlasBaseException {
         String roleName = getPersonaRoleName(entity);
         List<String> users = getPersonaUsers(entity);
         List<String> groups = getPersonaGroups(entity);
@@ -228,7 +229,7 @@ public class PersonaPreProcessor implements PreProcessor {
         return role.getId();
     }
 
-    private void updateKeycloakRole(AtlasEntity newPersona, AtlasEntity existingPersona) throws AtlasBaseException {
+    protected void updateKeycloakRole(AtlasEntity newPersona, AtlasEntity existingPersona) throws AtlasBaseException {
         String roleId = getPersonaRoleId(existingPersona);
         String roleName = getPersonaRoleName(existingPersona);
 

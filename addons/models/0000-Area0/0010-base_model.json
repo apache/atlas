@@ -1041,6 +1041,29 @@
           "includeInNotification": false
         }
       ]
+    },
+    {
+      "name": "StakeholderTitle",
+      "description": "Instance of a stakeholder title for Domains in Atlan",
+      "superTypes": [
+        "Asset"
+      ],
+      "serviceType": "atlan",
+      "typeVersion": "1.0",
+      "attributeDefs": [
+        {
+          "name": "stakeholderTitleDomainQualifiedNames",
+          "description": "qualified name array representing the Domains for which this StakeholderTitle is applicable",
+          "typeName": "array<string>",
+          "indexType": "STRING",
+          "isOptional": true,
+          "cardinality": "SET",
+          "isUnique": false,
+          "isIndexable": false,
+          "skipScrubbing": true,
+          "includeInNotification": false
+        }
+      ]
     }
   ],
   "relationshipDefs": [

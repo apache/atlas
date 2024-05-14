@@ -1,0 +1,41 @@
+{
+  "entities": [
+    {
+      "typeName": "StakeholderTitle",
+      "attributes":
+      {
+        "qualifiedName": "stakeholderTitle/default/DOMAIN_OWNER",
+        "name": "Domain Owner",
+        "stakeholderTitleDomainQualifiedNames": ["*"]
+      }
+    },
+    {
+      "typeName": "StakeholderTitle",
+      "attributes":
+      {
+        "qualifiedName": "stakeholderTitle/default/DATA_PRODUCT_OWNER",
+        "name": "Data Product Owner",
+        "stakeholderTitleDomainQualifiedNames": ["*"]
+      }
+    },
+    {
+      "typeName": "StakeholderTitle",
+      "attributes":
+      {
+        "qualifiedName": "stakeholderTitle/default/DATA_ENGINEER",
+        "name": "Data Engineer",
+        "stakeholderTitleDomainQualifiedNames": ["*"]
+      }
+    },
+    {
+      "typeName": "StakeholderTitle",
+      "attributes":
+      {
+        "qualifiedName": "stakeholderTitle/default/ARCHITECT",
+        "name": "Architect",
+        "stakeholderTitleDomainQualifiedNames": ["*"]
+      }
+    }
+  ]
+}
+

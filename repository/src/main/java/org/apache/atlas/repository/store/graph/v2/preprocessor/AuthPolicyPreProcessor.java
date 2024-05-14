@@ -24,7 +24,6 @@ import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasEntityAccessRequest;
 import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.featureflag.FeatureFlagStore;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
@@ -52,6 +51,7 @@ import java.util.stream.Collectors;
 import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
 import static org.apache.atlas.AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND;
 import static org.apache.atlas.AtlasErrorCode.INSTANCE_GUID_NOT_FOUND;
+import static org.apache.atlas.AtlasErrorCode.OPERATION_NOT_SUPPORTED;
 import static org.apache.atlas.AtlasErrorCode.RESOURCE_NOT_FOUND;
 import static org.apache.atlas.AtlasErrorCode.UNAUTHORIZED_CONNECTION_ADMIN;
 import static org.apache.atlas.authorize.AtlasAuthorizationUtils.getCurrentUserName;
@@ -61,6 +61,7 @@ import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.UP
 import static org.apache.atlas.repository.Constants.ATTR_ADMIN_ROLES;
 import static org.apache.atlas.repository.Constants.KEYCLOAK_ROLE_ADMIN;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
+import static org.apache.atlas.repository.Constants.STAKEHOLDER_ENTITY_TYPE;
 import static org.apache.atlas.repository.util.AccessControlUtils.*;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicySubCategory;
 
@@ -105,6 +106,10 @@ public class AuthPolicyPreProcessor implements PreProcessor {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processCreatePolicy");
         AtlasEntity policy = (AtlasEntity) entity;
 
+        AtlasEntityWithExtInfo parent = getAccessControlEntity(policy);
+        AtlasEntity parentEntity = parent.getEntity();
+        verifyParentTypeName(parentEntity);
+
         String policyCategory = getPolicyCategory(policy);
         if (StringUtils.isEmpty(policyCategory)) {
             throw new AtlasBaseException(BAD_REQUEST, "Please provide attribute " + ATTR_POLICY_CATEGORY);
@@ -114,9 +119,6 @@ public class AuthPolicyPreProcessor implements PreProcessor {
 
         AuthPolicyValidator validator = new AuthPolicyValidator(entityRetriever);
         if (POLICY_CATEGORY_PERSONA.equals(policyCategory)) {
-            AtlasEntityWithExtInfo parent = getAccessControlEntity(policy);
-            AtlasEntity parentEntity = parent.getEntity();
-
             String policySubCategory = getPolicySubCategory(policy);
 
             if (!POLICY_SUB_CATEGORY_DOMAIN.equals(policySubCategory)) {
@@ -139,9 +141,6 @@ public class AuthPolicyPreProcessor implements PreProcessor {
             aliasStore.updateAlias(parent, policy);
 
         } else if (POLICY_CATEGORY_PURPOSE.equals(policyCategory)) {
-            AtlasEntityWithExtInfo parent = getAccessControlEntity(policy);
-            AtlasEntity parentEntity = parent.getEntity();
-
             policy.setAttribute(QUALIFIED_NAME, String.format("%s/%s", getEntityQualifiedName(parentEntity), getUUID()));
 
             validator.validate(policy, null, parentEntity, CREATE);
@@ -319,5 +318,11 @@ public class AuthPolicyPreProcessor implements PreProcessor {
 
         RequestContext.get().endMetricRecord(metricRecorder);
         return ret;
+    }
+
+    private void verifyParentTypeName(AtlasEntity parentEntity) throws AtlasBaseException {
+        if (parentEntity.getTypeName().equals(STAKEHOLDER_ENTITY_TYPE)) {
+            throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Updating policies for " + STAKEHOLDER_ENTITY_TYPE);
+        }
     }
 }

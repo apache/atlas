@@ -83,6 +83,9 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
 
     private void processCreateDomain(AtlasEntity entity) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processCreateDomain");
+
+        validateStakeholderRelationship(entity);
+
         String domainName = (String) entity.getAttribute(NAME);
 
         String parentDomainQualifiedName = (String) entity.getAttribute(PARENT_DOMAIN_QN_ATTR);
@@ -107,6 +110,8 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
         if(entity.hasRelationshipAttribute(SUB_DOMAIN_REL_TYPE) || entity.hasRelationshipAttribute(DATA_PRODUCT_REL_TYPE)){
             throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Cannot update Domain's subDomains or dataProducts relations");
         }
+
+        validateStakeholderRelationship(entity);
 
         String vertexQnName = vertex.getProperty(QUALIFIED_NAME, String.class);
 
@@ -346,6 +351,12 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
     private String getOwnQualifiedNameForChild(String childQualifiedName) {
         String[] splitted = childQualifiedName.split("/");
         return String.format("/%s/%s", splitted[splitted.length -2], splitted[splitted.length -1]);
+    }
+
+    private void validateStakeholderRelationship(AtlasEntity entity) throws AtlasBaseException {
+        if(entity.hasRelationshipAttribute(STAKEHOLDER_REL_TYPE)){
+            throw new AtlasBaseException(AtlasErrorCode.OPERATION_NOT_SUPPORTED, "Managing Stakeholders while creating/updating a domain");
+        }
     }
 }
 

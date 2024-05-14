@@ -1,5 +1,6 @@
 package org.apache.atlas.repository.store.graph.v2.preprocessor;
 
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.IndexSearchParams;
@@ -45,6 +46,7 @@ public class PreProcessorUtils {
     public static final String DATA_PRODUCT_REL_TYPE = "dataProducts";
     public static final String MIGRATION_CUSTOM_ATTRIBUTE = "isQualifiedNameMigrated";
     public static final String DATA_DOMAIN_REL_TYPE = "dataDomain";
+    public static final String STAKEHOLDER_REL_TYPE = "stakeholders";
 
     public static final String MESH_POLICY_CATEGORY = "datamesh";
 
@@ -173,5 +175,23 @@ public class PreProcessorUtils {
         } while (hasMore);
 
         return ret;
+    }
+
+    public static void verifyDuplicateAssetByName(String typeName, String assetName, EntityDiscoveryService discovery, String errorMessage) throws AtlasBaseException {
+        List<Map<String, Object>> mustClauseList = new ArrayList();
+        mustClauseList.add(mapOf("term", mapOf("__typeName.keyword", typeName)));
+        mustClauseList.add(mapOf("term", mapOf("__state", "ACTIVE")));
+        mustClauseList.add(mapOf("term", mapOf("name.keyword", assetName)));
+
+
+        Map<String, Object> bool = mapOf("must", mustClauseList);
+
+        Map<String, Object> dsl = mapOf("query", mapOf("bool", bool));
+
+        List<AtlasEntityHeader> assets = indexSearchPaginated(dsl, null, discovery);
+
+        if (CollectionUtils.isNotEmpty(assets)) {
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, errorMessage);
+        }
     }
 }
