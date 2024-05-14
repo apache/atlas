@@ -95,7 +95,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
             entity.setAttribute(SUPER_DOMAIN_QN_ATTR, superDomainQualifiedName);
         }
 
-        productExists(productName, parentDomainQualifiedName);
+        productExists(productName, parentDomainQualifiedName, null);
 
         createDaapVisibilityPolicy(entity, vertex);
 
@@ -144,7 +144,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
                 newSuperDomainQualifiedName = newParentDomainQualifiedName;
             }
 
-            processMoveDataProductToAnotherDomain(entity, currentParentDomainQualifiedName, newParentDomainQualifiedName, vertexQnName, newSuperDomainQualifiedName);
+            processMoveDataProductToAnotherDomain(entity, currentParentDomainQualifiedName, newParentDomainQualifiedName, vertexQnName, newSuperDomainQualifiedName, storedProduct.getGuid());
 
             updatePolicies(this.updatedPolicyResources, this.context);
 
@@ -159,7 +159,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
             String productNewName = (String) entity.getAttribute(NAME);
 
             if (!productCurrentName.equals(productNewName)) {
-                productExists(productNewName, currentParentDomainQualifiedName);
+                productExists(productNewName, currentParentDomainQualifiedName, storedProduct.getGuid());
             }
             entity.setAttribute(QUALIFIED_NAME, vertexQnName);
         }
@@ -179,7 +179,8 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
                                                        String sourceDomainQualifiedName,
                                                        String targetDomainQualifiedName,
                                                        String currentDataProductQualifiedName,
-                                                       String superDomainQualifiedName) throws AtlasBaseException {
+                                                       String superDomainQualifiedName,
+                                                       String guid) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("processMoveDataProductToAnotherDomain");
 
         try {
@@ -187,7 +188,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
 
             LOG.info("Moving dataProduct {} to Domain {}", productName, targetDomainQualifiedName);
 
-            productExists(productName, targetDomainQualifiedName);
+            productExists(productName, targetDomainQualifiedName, guid);
 
             String updatedQualifiedName;
             if(StringUtils.isEmpty(sourceDomainQualifiedName)){
@@ -221,11 +222,11 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         return getParent(relationshipAttribute, PARENT_ATTRIBUTES);
     }
 
-    private void productExists(String productName, String parentDomainQualifiedName) throws AtlasBaseException {
+    private void productExists(String productName, String parentDomainQualifiedName, String guid) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("domainExists");
 
         try {
-            exists(DATA_PRODUCT_ENTITY_TYPE, productName, parentDomainQualifiedName);
+            exists(DATA_PRODUCT_ENTITY_TYPE, productName, parentDomainQualifiedName, guid);
 
         } finally {
             RequestContext.get().endMetricRecord(metricRecorder);

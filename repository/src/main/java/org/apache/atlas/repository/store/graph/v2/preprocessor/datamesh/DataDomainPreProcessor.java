@@ -118,7 +118,7 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
 
         entity.setCustomAttributes(customAttributes);
 
-        domainExists(domainName, parentDomainQualifiedName);
+        domainExists(domainName, parentDomainQualifiedName, null);
 
         RequestContext.get().endMetricRecord(metricRecorder);
     }
@@ -167,7 +167,7 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
             //Auth check
             isAuthorized(currentParentDomainHeader, newParentDomainHeader);
 
-            processMoveSubDomainToAnotherDomain(entity, vertex, currentParentDomainQualifiedName, newParentDomainQualifiedName, vertexQnName, newSuperDomainQualifiedName);
+            processMoveSubDomainToAnotherDomain(entity, vertex, currentParentDomainQualifiedName, newParentDomainQualifiedName, vertexQnName, newSuperDomainQualifiedName, storedDomain.getGuid());
 
         } else {
             String domainCurrentName = vertex.getProperty(NAME, String.class);
@@ -177,7 +177,7 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
             entity.removeAttribute(SUPER_DOMAIN_QN_ATTR);
 
             if (!domainCurrentName.equals(domainNewName)) {
-                domainExists(domainNewName, currentParentDomainQualifiedName);
+                domainExists(domainNewName, currentParentDomainQualifiedName, storedDomain.getGuid());
             }
             entity.setAttribute(QUALIFIED_NAME, vertexQnName);
         }
@@ -190,7 +190,8 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
                                                       String sourceDomainQualifiedName,
                                                       String targetDomainQualifiedName,
                                                       String currentDomainQualifiedName,
-                                                      String superDomainQualifiedName) throws AtlasBaseException {
+                                                      String superDomainQualifiedName,
+                                                      String guid) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("processMoveSubDomainToAnotherDomain");
 
         try {
@@ -199,7 +200,7 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
 
             LOG.info("Moving subdomain {} to Domain {}", domainName, targetDomainQualifiedName);
 
-            domainExists(domainName, targetDomainQualifiedName);
+            domainExists(domainName, targetDomainQualifiedName, guid);
 
             if(targetDomainQualifiedName.isEmpty()){
                 //Moving subDomain to make it Super Domain
@@ -356,10 +357,10 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
         return getParent(objectId, PARENT_ATTRIBUTES);
     }
 
-    private void domainExists(String domainName, String parentDomainQualifiedName) throws AtlasBaseException {
+    private void domainExists(String domainName, String parentDomainQualifiedName,String guid) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("domainExists");
         try {
-            exists(DATA_DOMAIN_ENTITY_TYPE, domainName, parentDomainQualifiedName);
+            exists(DATA_DOMAIN_ENTITY_TYPE, domainName, parentDomainQualifiedName, guid);
 
         } finally {
             RequestContext.get().endMetricRecord(metricRecorder);
