@@ -1046,7 +1046,7 @@
       "name": "StakeholderTitle",
       "description": "Instance of a stakeholder title for Domains in Atlan",
       "superTypes": [
-        "Catalog"
+        "Asset"
       ],
       "serviceType": "atlan",
       "typeVersion": "1.0",
