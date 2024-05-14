@@ -239,18 +239,20 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         switch ((String) entity.getAttribute(DAAP_VISIBILITY_ATTR)) {
             case PRIVATE:
                 setPolicyAttributes(policy, Arrays.asList(), Arrays.asList());
+                // do not create any auth policy in case of private daap visibility
                 break;
             case PROTECTED:
                 setPolicyAttributes(policy,
                         (List<String>) entity.getAttribute(DAAP_VISIBILITY_USERS_ATTR),
                         (List<String>) entity.getAttribute(DAAP_VISIBILITY_GROUPS_ATTR)
                 );
+                createPolicy(policy);
                 break;
             case PUBLIC:
                 setPolicyAttributes(policy, Arrays.asList(), Arrays.asList("public"));
+                createPolicy(policy);
                 break;
         }
-        createPolicy(policy);
     }
 
     private void updateDaapVisibilityPolicy(AtlasEntity newEntity, AtlasEntity currentEntity,  String currentProductDaapVisibility, String newProductDaapVisibility) throws AtlasBaseException{
@@ -270,15 +272,18 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
                                 (List<String>) newEntity.getAttribute(DAAP_VISIBILITY_USERS_ATTR),
                                 (List<String>) newEntity.getAttribute(DAAP_VISIBILITY_GROUPS_ATTR)
                         );
+                        updatedAttributes.put(ATTR_POLICY_IS_ENABLED, true);
                         break;
                     case PUBLIC:
                         updatedAttributes = setPolicyAttributes(policy, Arrays.asList(), Arrays.asList("public"));
+                        updatedAttributes.put(ATTR_POLICY_IS_ENABLED, true);
                 }
                 break;
             case PROTECTED:
                 switch (newProductDaapVisibility) {
                     case PRIVATE:
                         updatedAttributes = setPolicyAttributes(policy, Arrays.asList(), Arrays.asList());
+                        updatedAttributes.put(ATTR_POLICY_IS_ENABLED, false);
                         break;
                     case PUBLIC:
                         updatedAttributes = setPolicyAttributes(policy, Arrays.asList(), Arrays.asList("public"));
@@ -288,6 +293,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
                 switch (newProductDaapVisibility) {
                     case PRIVATE:
                         updatedAttributes = setPolicyAttributes(policy, Arrays.asList(), Arrays.asList());
+                        updatedAttributes.put(ATTR_POLICY_IS_ENABLED, false);
                         break;
                     case PROTECTED:
                         updatedAttributes = setPolicyAttributes(policy,
