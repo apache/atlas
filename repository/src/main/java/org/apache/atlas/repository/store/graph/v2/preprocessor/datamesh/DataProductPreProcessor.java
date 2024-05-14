@@ -119,7 +119,8 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         String currentProductDaapVisibility = storedProduct.getAttribute(DAAP_VISIBILITY_ATTR).toString();
         String newProductDaapVisibility = (String) entity.getAttribute(DAAP_VISIBILITY_ATTR);// check case if attribute is not sent from FE
 
-        boolean isDaapVisibilityChanged = (newProductDaapVisibility != null && !newProductDaapVisibility.equals(currentProductDaapVisibility));
+        boolean isDaapVisibilityChanged = (newProductDaapVisibility != null && ((!newProductDaapVisibility.equals(currentProductDaapVisibility)) || newProductDaapVisibility.equals(PROTECTED)));
+
 
         if (newParentDomainQualifiedName != null && !newParentDomainQualifiedName.equals(currentParentDomainQualifiedName)) {
 
@@ -277,6 +278,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
                     case PUBLIC:
                         updatedAttributes = setPolicyAttributes(policy, Arrays.asList(), Arrays.asList("public"));
                         updatedAttributes.put(ATTR_POLICY_IS_ENABLED, true);
+                        break;
                 }
                 break;
             case PROTECTED:
@@ -285,8 +287,16 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
                         updatedAttributes = setPolicyAttributes(policy, Arrays.asList(), Arrays.asList());
                         updatedAttributes.put(ATTR_POLICY_IS_ENABLED, false);
                         break;
+                    case PROTECTED:
+                        // create policy for policyUsers and policyGroups
+                        updatedAttributes = setPolicyAttributes(policy,
+                                (List<String>) newEntity.getAttribute(DAAP_VISIBILITY_USERS_ATTR),
+                                (List<String>) newEntity.getAttribute(DAAP_VISIBILITY_GROUPS_ATTR)
+                        );
+                        break;
                     case PUBLIC:
                         updatedAttributes = setPolicyAttributes(policy, Arrays.asList(), Arrays.asList("public"));
+                        break;
                 }
                 break;
             case PUBLIC:
