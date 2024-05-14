@@ -76,6 +76,7 @@ import static org.apache.atlas.repository.Constants.RELATIONSHIP_GUID_PROPERTY_K
 import static org.apache.atlas.repository.Constants.REL_DOMAIN_TO_DOMAINS;
 import static org.apache.atlas.repository.Constants.REL_DOMAIN_TO_PRODUCTS;
 import static org.apache.atlas.repository.Constants.REL_DOMAIN_TO_STAKEHOLDERS;
+import static org.apache.atlas.repository.Constants.REL_POLICY_TO_ACCESS_CONTROL;
 import static org.apache.atlas.repository.Constants.REL_STAKEHOLDER_TITLE_TO_STAKEHOLDERS;
 import static org.apache.atlas.repository.Constants.VERSION_PROPERTY_KEY;
 import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
@@ -114,6 +115,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         add(REL_DOMAIN_TO_PRODUCTS);
         add(REL_DOMAIN_TO_STAKEHOLDERS);
         add(REL_STAKEHOLDER_TITLE_TO_STAKEHOLDERS);
+        add(REL_POLICY_TO_ACCESS_CONTROL);
     }};
 
     public enum RelationshipMutation {
