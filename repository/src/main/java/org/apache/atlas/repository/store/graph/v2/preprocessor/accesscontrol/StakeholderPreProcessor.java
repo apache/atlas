@@ -76,7 +76,7 @@ public class StakeholderPreProcessor extends PersonaPreProcessor {
     public static final String ATTR_STAKEHOLDER_TITLE_GUID = "stakeholderTitleGuid";
 
     public static final String REL_ATTR_STAKEHOLDER_TITLE = "stakeholderTitle";
-    public static final String REL_ATTR_STAKEHOLDER_DOMAIN = "dataDomain";
+    public static final String REL_ATTR_STAKEHOLDER_DOMAIN = "stakeholderDataDomain";
 
     protected EntityDiscoveryService discovery;
 
