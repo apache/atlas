@@ -267,6 +267,11 @@ public interface AtlasEntityStore {
     EntityMutationResponse deleteByIds(List<String> guid) throws AtlasBaseException;
 
     /*
+     * Repair classification mappings
+     */
+    public void repairClassificationMappings(final String guid) throws AtlasBaseException;
+
+    /*
      * Return list of deleted entity guids
      */
     EntityMutationResponse restoreByIds(List<String> guid) throws AtlasBaseException;

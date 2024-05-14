@@ -1275,6 +1275,25 @@ public class EntityREST {
     }
 
     @POST
+    @Path("repairClassificationsMappings/{guid}")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Timed
+    public void repairClassifications(@PathParam("guid") String guid) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.repairClassifications()");
+            }
+
+            entitiesStore.repairClassificationMappings(guid);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    @POST
     @Path("/guid/{guid}/businessmetadata")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     @Consumes(Servlets.JSON_MEDIA_TYPE)
