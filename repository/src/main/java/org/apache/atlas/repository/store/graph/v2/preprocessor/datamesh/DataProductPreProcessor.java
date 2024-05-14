@@ -12,6 +12,8 @@ import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
 import org.apache.atlas.repository.store.graph.v2.EntityStream;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils;
+import org.apache.atlas.repository.util.AtlasEntityUtils;
+import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.lang.StringUtils;
@@ -248,46 +250,47 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
                 setPolicyAttributes(policy, Arrays.asList(), Arrays.asList("public"));
                 break;
         }
-        createOrUpdatePolicy(policy);
+        createPolicy(policy);
     }
 
     private void updateDaapVisibilityPolicy(AtlasEntity newEntity, AtlasEntity currentEntity,  String currentProductDaapVisibility, String newProductDaapVisibility) throws AtlasBaseException{
-
-        AtlasEntity policy = new AtlasEntity();
-        policy.setTypeName(POLICY_ENTITY_TYPE);
-        policy.setAttribute(NAME,newEntity.getAttribute(NAME));
-        policy.setAttribute(QUALIFIED_NAME,currentEntity.getGuid()+"/read-policy");
+        AtlasObjectId atlasObjectId = new AtlasObjectId();
+        atlasObjectId.setTypeName(POLICY_ENTITY_TYPE);
+        atlasObjectId.setUniqueAttributes(AtlasEntityUtils.mapOf(QUALIFIED_NAME,currentEntity.getGuid()+"/read-policy"));
+        AtlasVertex policyVertex = entityRetriever.getEntityVertex(atlasObjectId);
+        AtlasEntity policy = entityRetriever.toAtlasEntity(policyVertex);
+        Map<String, Object> updatedAttributes = new HashMap<>();
 
         switch (currentProductDaapVisibility) {
             case PRIVATE:
                 switch (newProductDaapVisibility) {
                     case PROTECTED:
                         // create policy for policyUsers and policyGroups
-                        setPolicyAttributes(policy,
+                        updatedAttributes = setPolicyAttributes(policy,
                                 (List<String>) newEntity.getAttribute(DAAP_VISIBILITY_USERS_ATTR),
                                 (List<String>) newEntity.getAttribute(DAAP_VISIBILITY_GROUPS_ATTR)
                         );
                         break;
                     case PUBLIC:
-                        setPolicyAttributes(policy, Arrays.asList(), Arrays.asList("public"));
+                        updatedAttributes = setPolicyAttributes(policy, Arrays.asList(), Arrays.asList("public"));
                 }
                 break;
             case PROTECTED:
                 switch (newProductDaapVisibility) {
                     case PRIVATE:
-                        setPolicyAttributes(policy, Arrays.asList(), Arrays.asList());
+                        updatedAttributes = setPolicyAttributes(policy, Arrays.asList(), Arrays.asList());
                         break;
                     case PUBLIC:
-                        setPolicyAttributes(policy, Arrays.asList(), Arrays.asList("public"));
+                        updatedAttributes = setPolicyAttributes(policy, Arrays.asList(), Arrays.asList("public"));
                 }
                 break;
             case PUBLIC:
                 switch (newProductDaapVisibility) {
                     case PRIVATE:
-                        setPolicyAttributes(policy, Arrays.asList(), Arrays.asList());
+                        updatedAttributes = setPolicyAttributes(policy, Arrays.asList(), Arrays.asList());
                         break;
                     case PROTECTED:
-                        setPolicyAttributes(policy,
+                        updatedAttributes = setPolicyAttributes(policy,
                                 (List<String>) newEntity.getAttribute(DAAP_VISIBILITY_USERS_ATTR),
                                 (List<String>) newEntity.getAttribute(DAAP_VISIBILITY_GROUPS_ATTR)
                         );
@@ -295,10 +298,13 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
                 }
                 break;
         }
-        createOrUpdatePolicy(policy);
+
+        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(POLICY_ENTITY_TYPE);
+        context.addUpdated(policy.getGuid(), policy, entityType, policyVertex);
+        recordUpdatedChildEntities(policyVertex, updatedAttributes);
     }
 
-    private void createOrUpdatePolicy(AtlasEntity policy) throws AtlasBaseException{
+    private void createPolicy(AtlasEntity policy) throws AtlasBaseException{
         try {
             RequestContext.get().setSkipAuthorizationCheck(true);
             AtlasEntity.AtlasEntitiesWithExtInfo policiesExtInfo = new AtlasEntity.AtlasEntitiesWithExtInfo();
@@ -311,8 +317,12 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
     }
 
     // Helper method to set policy attributes
-    private void setPolicyAttributes(AtlasEntity policy, List<String> users, List<String> groups) {
+    private Map<String, Object> setPolicyAttributes(AtlasEntity policy, List<String> users, List<String> groups) {
+        Map<String, Object> updatedAttributes = new HashMap<>();
         policy.setAttribute(ATTR_POLICY_USERS, users);
         policy.setAttribute(ATTR_POLICY_GROUPS, groups);
+        updatedAttributes.put(ATTR_POLICY_USERS, users);
+        updatedAttributes.put(ATTR_POLICY_GROUPS, groups);
+        return updatedAttributes;
     }
 }
