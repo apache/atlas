@@ -192,7 +192,8 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
 
             String updatedQualifiedName;
             if(StringUtils.isEmpty(sourceDomainQualifiedName)){
-                updatedQualifiedName = targetDomainQualifiedName + "/" + product.getAttribute(QUALIFIED_NAME);
+                String[] arr = product.getAttribute(QUALIFIED_NAME).toString().split("/");
+                updatedQualifiedName = targetDomainQualifiedName + "/product/" + arr[ arr.length - 1];
             } else {
                 updatedQualifiedName = currentDataProductQualifiedName.replace(sourceDomainQualifiedName, targetDomainQualifiedName);
             }

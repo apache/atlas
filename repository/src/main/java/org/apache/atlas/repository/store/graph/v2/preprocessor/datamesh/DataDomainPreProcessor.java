@@ -160,7 +160,9 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
         }
 
         if (!newParentDomainQualifiedName.equals(currentParentDomainQualifiedName) && entity.hasRelationshipAttribute(PARENT_DOMAIN_REL_TYPE)) {
-            if(storedDomain.getRelationshipAttribute(PARENT_DOMAIN_REL_TYPE) == null){
+            if(storedDomain.getRelationshipAttribute(PARENT_DOMAIN_REL_TYPE) == null &&
+                    Objects.isNull(storedDomain.getAttribute(PARENT_DOMAIN_QN_ATTR)) &&
+                    StringUtils.isEmpty( (String) storedDomain.getAttribute(PARENT_DOMAIN_QN_ATTR))){
                 throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Cannot move Super Domain inside another domain");
             }
 
@@ -213,7 +215,13 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
                 superDomainQualifiedName = updatedQualifiedName ;
             }
             else{
-                updatedQualifiedName = currentDomainQualifiedName.replace(sourceDomainQualifiedName, targetDomainQualifiedName);
+                if(StringUtils.isEmpty(sourceDomainQualifiedName)){
+                    String[] arr = currentDomainQualifiedName.split("/");
+                    updatedQualifiedName = targetDomainQualifiedName + "/domain/" + arr[arr.length - 1];
+                }else {
+                    updatedQualifiedName = currentDomainQualifiedName.replace(sourceDomainQualifiedName, targetDomainQualifiedName);
+                }
+
                 domain.setAttribute(QUALIFIED_NAME, updatedQualifiedName);
                 domain.setAttribute(PARENT_DOMAIN_QN_ATTR, targetDomainQualifiedName);
                 domain.setAttribute(SUPER_DOMAIN_QN_ATTR, superDomainQualifiedName);
