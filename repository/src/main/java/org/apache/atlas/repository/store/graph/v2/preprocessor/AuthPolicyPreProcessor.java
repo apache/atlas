@@ -107,8 +107,11 @@ public class AuthPolicyPreProcessor implements PreProcessor {
         AtlasEntity policy = (AtlasEntity) entity;
 
         AtlasEntityWithExtInfo parent = getAccessControlEntity(policy);
-        AtlasEntity parentEntity = parent.getEntity();
-        verifyParentTypeName(parentEntity);
+        AtlasEntity parentEntity = null;
+        if (parent != null) {
+            parentEntity = parent.getEntity();
+            verifyParentTypeName(parentEntity);
+        }
 
         String policyCategory = getPolicyCategory(policy);
         if (StringUtils.isEmpty(policyCategory)) {
