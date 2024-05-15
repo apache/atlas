@@ -47,7 +47,7 @@ public class StakeholderTitlePreProcessor implements PreProcessor {
     public static final String PATTERN_QUALIFIED_NAME_DOMAIN = "stakeholderTitle/domain/%s";
 
 
-    public static final String STAR = "*";
+    public static final String STAR = "*/super";
     public static final String ATTR_DOMAIN_QUALIFIED_NAMES = "stakeholderTitleDomainQualifiedNames";
 
     public static final String REL_ATTR_STAKEHOLDERS = "stakeholders";
