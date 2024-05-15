@@ -143,7 +143,8 @@ public class StakeholderPreProcessor extends PersonaPreProcessor {
         validateNoPoliciesAttached(entity);
 
         if (!entity.hasRelationshipAttribute(REL_ATTR_STAKEHOLDER_TITLE) || !entity.hasRelationshipAttribute(REL_ATTR_STAKEHOLDER_DOMAIN)) {
-            throw new AtlasBaseException(BAD_REQUEST, "Relationships stakeholderTitle and dataDomain are mandatory");
+            throw new AtlasBaseException(BAD_REQUEST,
+                    String.format("Relationships %s and %s are mandatory", REL_ATTR_STAKEHOLDER_TITLE, REL_ATTR_STAKEHOLDER_DOMAIN));
         }
 
         String domainQualifiedName = getQualifiedNameFromRelationAttribute(entity, REL_ATTR_STAKEHOLDER_DOMAIN);

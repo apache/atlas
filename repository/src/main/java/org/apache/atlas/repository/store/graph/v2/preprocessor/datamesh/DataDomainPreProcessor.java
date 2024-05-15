@@ -34,7 +34,6 @@ import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,18 +43,19 @@ import java.util.*;
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.GraphHelper.getActiveChildrenVertices;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
-import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 
 public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(DataDomainPreProcessor.class);
 
     private EntityMutationContext context;
     private Map<String, String> updatedPolicyResources;
+    private Map<String, String> updatedDomainQualifiedNames;
 
     public DataDomainPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever,
                                   AtlasGraph graph) {
         super(typeRegistry, entityRetriever, graph);
         this.updatedPolicyResources = new HashMap<>();
+        this.updatedDomainQualifiedNames = new HashMap<>();
     }
 
     @Override
@@ -197,9 +197,11 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
 
             String currentQualifiedName = domainVertex.getProperty(QUALIFIED_NAME, String.class);
             this.updatedPolicyResources.put("entity:" + currentQualifiedName, "entity:" + updatedQualifiedName);
+            this.updatedDomainQualifiedNames.put(currentQualifiedName, updatedQualifiedName);
 
             moveChildren(domainVertex, superDomainQualifiedName, updatedQualifiedName, sourceDomainQualifiedName, targetDomainQualifiedName);
             updatePolicies(this.updatedPolicyResources, this.context);
+            updateStakeholderTitlesAndStakeholders(this.updatedDomainQualifiedNames, this.context);
 
             LOG.info("Moved subDomain {} to Domain {}", domainName, targetDomainQualifiedName);
 
@@ -254,6 +256,7 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
             String currentResource = "entity:"+ currentDomainQualifiedName;
             String updatedResource = "entity:"+ updatedDomainQualifiedName;
             this.updatedPolicyResources.put(currentResource, updatedResource);
+            this.updatedDomainQualifiedNames.put(currentDomainQualifiedName, updatedDomainQualifiedName);
 
             //update system properties
             GraphHelper.setModifiedByAsString(childDomainVertex, RequestContext.get().getUser());
