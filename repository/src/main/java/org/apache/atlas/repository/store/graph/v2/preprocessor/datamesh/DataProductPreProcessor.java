@@ -258,7 +258,15 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         AtlasObjectId atlasObjectId = new AtlasObjectId();
         atlasObjectId.setTypeName(POLICY_ENTITY_TYPE);
         atlasObjectId.setUniqueAttributes(AtlasEntityUtils.mapOf(QUALIFIED_NAME,currentEntity.getGuid()+"/read-policy"));
-        AtlasVertex policyVertex = entityRetriever.getEntityVertex(atlasObjectId);
+        AtlasVertex policyVertex = null;
+        try {
+            policyVertex = entityRetriever.getEntityVertex(atlasObjectId);
+        }
+        catch(AtlasBaseException exp){
+            if(!exp.getAtlasErrorCode().equals(AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND)){
+                throw exp;
+            }
+        }
 
         AtlasEntity policy;
         if (policyVertex == null) {
