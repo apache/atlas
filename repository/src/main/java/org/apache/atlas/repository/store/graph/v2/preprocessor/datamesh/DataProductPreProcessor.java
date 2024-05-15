@@ -238,14 +238,12 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         String productGuid = vertex.getProperty("__guid", String.class);
         String vis =  AtlasEntityUtils.getStringAttribute(entity,DAAP_VISIBILITY_ATTR);
 
-        if (!vis.equals(PRIVATE)) {
+        if (vis != null && !vis.equals(PRIVATE)){
             AtlasEntity policy = getPolicyEntity(entity, productGuid);
 
             switch (vis) {
                 case PROTECTED:
-                    setProtectedPolicyAttributes(policy, AtlasEntityUtils.getListAttribute(entity,DAAP_VISIBILITY_USERS_ATTR),
-                            AtlasEntityUtils.getListAttribute(entity,DAAP_VISIBILITY_GROUPS_ATTR)
-                    );
+                    setProtectedPolicyAttributes(policy, entity);
                     break;
                 case PUBLIC:
                     setPublicPolicyAttributes(policy);
@@ -276,15 +274,18 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         }
         else if (newProductDaapVisibility.equals(PROTECTED)) {
             updatedAttributes = setProtectedPolicyAttributes(policy,
-                    AtlasEntityUtils.getListAttribute(newEntity,DAAP_VISIBILITY_USERS_ATTR),
-                    AtlasEntityUtils.getListAttribute(newEntity,DAAP_VISIBILITY_GROUPS_ATTR)
+                   newEntity
             );
         }
         else if (newProductDaapVisibility.equals(PUBLIC)) {
             updatedAttributes = setPublicPolicyAttributes(policy);
         }
 
-        updatePolicy(policy, policyVertex, updatedAttributes);
+        if (policyVertex == null) {
+            createPolicy(policy);
+        } else {
+            updatePolicy(policy, policyVertex, updatedAttributes);
+        }
     }
 
     private void createPolicy(AtlasEntity policy) throws AtlasBaseException{
@@ -318,12 +319,15 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         return updatedAttributes;
     }
 
-    private Map<String, Object> setProtectedPolicyAttributes(AtlasEntity policy, List<String> users, List<String> groups) {
-        Map<String, Object> updatedAttributes = new HashMap<>();
+    private Map<String, Object> setProtectedPolicyAttributes(AtlasEntity policy, AtlasEntity entity) {
+        List<String> users = AtlasEntityUtils.getListAttribute(entity, DAAP_VISIBILITY_USERS_ATTR);
+        List<String> groups = AtlasEntityUtils.getListAttribute(entity, DAAP_VISIBILITY_GROUPS_ATTR);
+
         policy.setAttribute(ATTR_POLICY_USERS, users);
         policy.setAttribute(ATTR_POLICY_GROUPS, groups);
         policy.setAttribute(ATTR_POLICY_IS_ENABLED, true);
 
+        Map<String, Object> updatedAttributes = new HashMap<>();
         updatedAttributes.put(ATTR_POLICY_USERS, users);
         updatedAttributes.put(ATTR_POLICY_GROUPS, groups);
         updatedAttributes.put(ATTR_POLICY_IS_ENABLED, true);
@@ -344,14 +348,18 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
 
     private Boolean isDaapVisibilityChanged(AtlasEntity storedProduct, AtlasEntity newProduct){
 
-        boolean isDaapVisibilityChanged = false;
+        boolean isDaapVisibilityChanged;
         // check for daapVisibility change
         String currentProductDaapVisibility = AtlasEntityUtils.getStringAttribute(storedProduct, DAAP_VISIBILITY_ATTR);
         String newProductDaapVisibility = AtlasEntityUtils.getStringAttribute(newProduct, DAAP_VISIBILITY_ATTR); // check case if attribute is not sent from FE
 
-        isDaapVisibilityChanged = (newProductDaapVisibility != null && (!newProductDaapVisibility.equals(currentProductDaapVisibility)));
+        if(newProductDaapVisibility == null){
+            return false;
+        }
+
+        isDaapVisibilityChanged = (!newProductDaapVisibility.equals(currentProductDaapVisibility));
         if(isDaapVisibilityChanged){
-            return isDaapVisibilityChanged;
+            return true;
         }
 
         // check if new daap visibility and old daap visibility is protected then check if any user, groups added changed
