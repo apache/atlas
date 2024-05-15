@@ -6,7 +6,7 @@
       {
         "qualifiedName": "stakeholderTitle/default/DOMAIN_OWNER",
         "name": "Domain Owner",
-        "stakeholderTitleDomainQualifiedNames": ["*"]
+        "stakeholderTitleDomainQualifiedNames": ["*/super"]
       }
     },
     {
@@ -15,7 +15,7 @@
       {
         "qualifiedName": "stakeholderTitle/default/DATA_PRODUCT_OWNER",
         "name": "Data Product Owner",
-        "stakeholderTitleDomainQualifiedNames": ["*"]
+        "stakeholderTitleDomainQualifiedNames": ["*/super"]
       }
     },
     {
@@ -24,7 +24,7 @@
       {
         "qualifiedName": "stakeholderTitle/default/DATA_ENGINEER",
         "name": "Data Engineer",
-        "stakeholderTitleDomainQualifiedNames": ["*"]
+        "stakeholderTitleDomainQualifiedNames": ["*/super"]
       }
     },
     {
@@ -33,7 +33,7 @@
       {
         "qualifiedName": "stakeholderTitle/default/ARCHITECT",
         "name": "Architect",
-        "stakeholderTitleDomainQualifiedNames": ["*"]
+        "stakeholderTitleDomainQualifiedNames": ["*/super"]
       }
     }
   ]
