@@ -150,6 +150,11 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         if (isDaapVisibilityChanged) {
             updateDaapVisibilityPolicy(entity, storedProduct);
         }
+        else{
+            // if isDaapVisibilityChanged is false, then do not update any daap visibility attributes in product entity as well
+            entity.removeAttribute(DAAP_VISIBILITY_USERS_ATTR);
+            entity.removeAttribute(DAAP_VISIBILITY_GROUPS_ATTR);
+        }
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
