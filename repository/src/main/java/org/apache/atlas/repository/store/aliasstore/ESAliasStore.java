@@ -213,7 +213,7 @@ public class ESAliasStore implements IndexAliasStore {
 
                     for (String asset : assets) {
                         terms.add(asset);
-                        allowClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset + "/*")));
+                        allowClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset + "*")));
                     }
 
                 } else if (getPolicyActions(policy).contains(ACCESS_READ_PERSONA_SUB_DOMAIN)) {
