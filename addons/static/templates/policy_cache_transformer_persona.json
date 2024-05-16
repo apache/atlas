@@ -414,6 +414,7 @@
         "entity-classification:*"
       ],
       "actions": [
+        "entity-read",
         "entity-create",
         "entity-update",
         "entity-delete"
@@ -616,6 +617,7 @@
         "entity-classification:*"
       ],
       "actions": [
+        "entity-read",
         "entity-create",
         "entity-update",
         "entity-delete"

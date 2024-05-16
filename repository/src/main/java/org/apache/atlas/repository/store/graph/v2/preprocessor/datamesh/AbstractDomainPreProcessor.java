@@ -49,8 +49,11 @@ import java.util.*;
 
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
+import static org.apache.atlas.repository.store.graph.v2.preprocessor.accesscontrol.StakeholderPreProcessor.ATTR_DOMAIN_QUALIFIED_NAME;
+import static org.apache.atlas.repository.store.graph.v2.preprocessor.datamesh.StakeholderTitlePreProcessor.ATTR_DOMAIN_QUALIFIED_NAMES;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_RESOURCES;
 import static org.apache.atlas.repository.util.AccessControlUtils.REL_ATTR_ACCESS_CONTROL;
+import static org.apache.atlas.repository.util.AtlasEntityUtils.getListAttribute;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 
 public abstract class AbstractDomainPreProcessor implements PreProcessor {
@@ -59,10 +62,12 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
 
     protected final AtlasTypeRegistry typeRegistry;
     protected final EntityGraphRetriever entityRetriever;
+    protected EntityGraphRetriever entityRetrieverNoRelations;
     private final PreProcessor preProcessor;
     protected EntityDiscoveryService discovery;
 
     private static final Set<String> POLICY_ATTRIBUTES_FOR_SEARCH = new HashSet<>(Arrays.asList(ATTR_POLICY_RESOURCES));
+    private static final Set<String> STAKEHOLDER_ATTRIBUTES_FOR_SEARCH = new HashSet<>(Arrays.asList(ATTR_DOMAIN_QUALIFIED_NAMES, ATTR_DOMAIN_QUALIFIED_NAME));
 
     static final Set<String> PARENT_ATTRIBUTES            = new HashSet<>(Arrays.asList(SUPER_DOMAIN_QN_ATTR, PARENT_DOMAIN_QN_ATTR));
 
@@ -78,6 +83,7 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
         this.preProcessor = new AuthPolicyPreProcessor(graph, typeRegistry, entityRetriever);
 
         try {
+            this.entityRetrieverNoRelations = new EntityGraphRetriever(graph, typeRegistry, true);
             this.discovery = new EntityDiscoveryService(typeRegistry, graph, null, null, null, null);
         } catch (AtlasException e) {
             e.printStackTrace();
@@ -158,6 +164,60 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
         }
     }
 
+    protected void updateStakeholderTitlesAndStakeholders(Map<String, String> updatedDomainQualifiedNames, EntityMutationContext context) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("updateStakeholderTitlesAndStakeholders");
+        try {
+
+            if (MapUtils.isEmpty(updatedDomainQualifiedNames)) {
+                return;
+            }
+
+            List<AtlasEntityHeader> assets = getStakeholderTitlesAndStakeholders(updatedDomainQualifiedNames.keySet());
+
+            if (CollectionUtils.isNotEmpty(assets)) {
+                for (AtlasEntityHeader asset : assets) {
+                    AtlasVertex vertex = entityRetrieverNoRelations.getEntityVertex(asset.getGuid());
+                    AtlasEntity entity = entityRetrieverNoRelations.toAtlasEntity(vertex);
+                    Map<String, Object> updatedAttributes = new HashMap<>();
+                    AtlasEntityType entityType = null;
+
+                    if (entity.getTypeName().equals(STAKEHOLDER_ENTITY_TYPE)) {
+                        entityType = typeRegistry.getEntityTypeByName(STAKEHOLDER_ENTITY_TYPE);
+
+                        String currentDomainQualifiedName = (String) asset.getAttribute(ATTR_DOMAIN_QUALIFIED_NAME);
+
+                        entity.setAttribute(ATTR_DOMAIN_QUALIFIED_NAME, updatedDomainQualifiedNames.get(currentDomainQualifiedName));
+                        updatedAttributes.put(ATTR_DOMAIN_QUALIFIED_NAME, updatedDomainQualifiedNames.get(currentDomainQualifiedName));
+
+                    } else if (entity.getTypeName().equals(STAKEHOLDER_TITLE_ENTITY_TYPE)) {
+                        entityType = typeRegistry.getEntityTypeByName(STAKEHOLDER_TITLE_ENTITY_TYPE);
+
+                        List<String> currentDomainQualifiedNames = getListAttribute(asset, ATTR_DOMAIN_QUALIFIED_NAMES);
+
+                        List<String> newDomainQualifiedNames = new ArrayList<>();
+
+                        for (String qualifiedName : currentDomainQualifiedNames) {
+                            if (updatedDomainQualifiedNames.containsKey(qualifiedName)) {
+                                newDomainQualifiedNames.add(updatedDomainQualifiedNames.get(qualifiedName));
+                            } else {
+                                newDomainQualifiedNames.add(qualifiedName);
+                            }
+                        }
+
+                        entity.setAttribute(ATTR_DOMAIN_QUALIFIED_NAMES, newDomainQualifiedNames);
+                        updatedAttributes.put(ATTR_DOMAIN_QUALIFIED_NAMES, newDomainQualifiedNames);
+                    }
+
+                    context.addUpdated(entity.getGuid(), entity, entityType, vertex);
+                    recordUpdatedChildEntities(vertex, updatedAttributes);
+                }
+            }
+
+        } finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
+        }
+    }
+
     protected void exists(String assetType, String assetName, String parentDomainQualifiedName) throws AtlasBaseException {
         boolean exists = false;
 
@@ -212,6 +272,29 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
             Map<String, Object> dsl = mapOf("query", mapOf("bool", bool));
 
             return indexSearchPaginated(dsl, POLICY_ATTRIBUTES_FOR_SEARCH, discovery);
+        } finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
+        }
+    }
+
+    protected List<AtlasEntityHeader> getStakeholderTitlesAndStakeholders(Set<String> qualifiedNames) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getStakeholderTitlesAndStakeholders");
+        try {
+            List<Map<String, Object>> mustClauseList = new ArrayList<>();
+            mustClauseList.add(mapOf("terms", mapOf("__typeName.keyword", Arrays.asList(STAKEHOLDER_ENTITY_TYPE, STAKEHOLDER_TITLE_ENTITY_TYPE))));
+
+            List<Map<String, Object>> shouldClauseList = new ArrayList<>();
+            shouldClauseList.add(mapOf("terms", mapOf("stakeholderTitleDomainQualifiedNames", qualifiedNames)));
+            shouldClauseList.add(mapOf("terms", mapOf("stakeholderDomainQualifiedName", qualifiedNames)));
+
+            mustClauseList.add(mapOf("bool", mapOf("should", shouldClauseList)));
+
+            Map<String, Object> bool = new HashMap<>();
+            bool.put("must", mustClauseList);
+
+            Map<String, Object> dsl = mapOf("query", mapOf("bool", bool));
+
+            return indexSearchPaginated(dsl, STAKEHOLDER_ATTRIBUTES_FOR_SEARCH, discovery);
         } finally {
             RequestContext.get().endMetricRecord(metricRecorder);
         }
