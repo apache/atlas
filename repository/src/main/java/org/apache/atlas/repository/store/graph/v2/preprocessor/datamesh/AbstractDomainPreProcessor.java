@@ -205,7 +205,7 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
                         }
 
                         entity.setAttribute(ATTR_DOMAIN_QUALIFIED_NAMES, newDomainQualifiedNames);
-                        updatedAttributes.put(ATTR_DOMAIN_QUALIFIED_NAME, newDomainQualifiedNames);
+                        updatedAttributes.put(ATTR_DOMAIN_QUALIFIED_NAMES, newDomainQualifiedNames);
                     }
 
                     context.addUpdated(entity.getGuid(), entity, entityType, vertex);
