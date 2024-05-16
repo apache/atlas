@@ -193,6 +193,16 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
 
         context.addUpdated(entity.getGuid(), entity, entityType, vertex);
 
+        AtlasEntityComparator entityComparator = new AtlasEntityComparator(typeRegistry, entityRetriever, context.getGuidAssignments(), true, true);
+        AtlasEntityComparator.AtlasEntityDiffResult diffResult   = entityComparator.getDiffResult(entity, vertex, !storeDifferentialAudits);
+        RequestContext        reqContext           = RequestContext.get();
+        if (diffResult.hasDifference()) {
+            if (storeDifferentialAudits) {
+                diffResult.getDiffEntity().setGuid(entity.getGuid());
+                reqContext.cacheDifferentialEntity(diffResult.getDiffEntity());
+            }
+        }
+
     }
 
     public AtlasEntity getCurrentVersion(String datasetGuid) throws AtlasBaseException {
