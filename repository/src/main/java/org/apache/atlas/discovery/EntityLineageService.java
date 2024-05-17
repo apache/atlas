@@ -427,8 +427,8 @@ public class EntityLineageService implements AtlasLineageService {
                     }
                     if (entityVertex != null && !visitedVertices.contains(getId(entityVertex))) {
                         traverseEdgesOnDemand(entityVertex, isInput, depth - 1, nextLevel, visitedVertices, atlasLineageOnDemandContext, ret, baseGuid, entitiesTraversed, traversalOrder); // execute inner depth
-                        AtlasEntityHeader baseEntity = ret.getGuidEntityMap().get(baseGuid);
-                        baseEntity.setFinishTime(traversalOrder.get());
+                        AtlasEntityHeader traversedEntity = ret.getGuidEntityMap().get(AtlasGraphUtilsV2.getIdFromVertex(entityVertex));
+                        traversedEntity.setFinishTime(traversalOrder.get());
                     }
                 }
             }
