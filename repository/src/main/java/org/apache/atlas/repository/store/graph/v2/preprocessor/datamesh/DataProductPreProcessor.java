@@ -91,6 +91,9 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
             entity.setAttribute(PARENT_DOMAIN_QN_ATTR, parentDomainQualifiedName);
 
             String superDomainQualifiedName = parentDomain.getProperty(SUPER_DOMAIN_QN_ATTR, String.class);
+            if(StringUtils.isEmpty(superDomainQualifiedName)) {
+                superDomainQualifiedName = parentDomainQualifiedName;
+            }
             entity.setAttribute(SUPER_DOMAIN_QN_ATTR, superDomainQualifiedName);
         }
 
