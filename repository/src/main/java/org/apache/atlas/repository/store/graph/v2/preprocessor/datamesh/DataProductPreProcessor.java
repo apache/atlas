@@ -79,7 +79,6 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         AtlasObjectId parentDomainObject = (AtlasObjectId) entity.getRelationshipAttribute(DATA_DOMAIN_REL_TYPE);
         String productName = (String) entity.getAttribute(NAME);
         String parentDomainQualifiedName = "";
-        entity.setAttribute(QUALIFIED_NAME, createQualifiedName(parentDomainQualifiedName));
 
         if (parentDomainObject == null) {
             entity.removeAttribute(PARENT_DOMAIN_QN_ATTR);
@@ -94,6 +93,8 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
             String superDomainQualifiedName = parentDomain.getProperty(SUPER_DOMAIN_QN_ATTR, String.class);
             entity.setAttribute(SUPER_DOMAIN_QN_ATTR, superDomainQualifiedName);
         }
+
+        entity.setAttribute(QUALIFIED_NAME, createQualifiedName(parentDomainQualifiedName));
 
         productExists(productName, parentDomainQualifiedName, null);
 
