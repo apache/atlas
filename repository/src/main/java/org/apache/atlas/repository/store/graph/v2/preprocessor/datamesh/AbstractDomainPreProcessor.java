@@ -226,7 +226,7 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
         mustClauseList.add(mapOf("term", mapOf("__state", "ACTIVE")));
         mustClauseList.add(mapOf("term", mapOf("name.keyword", assetName)));
         List<Map<String, Object>> mustNotClauseList = new ArrayList();
-        if(Objects.nonNull(guid) && StringUtils.isNotEmpty(guid)){
+        if(StringUtils.isNotEmpty(guid)){
             mustNotClauseList.add(mapOf("term", mapOf("__guid", guid)));
         }
 
