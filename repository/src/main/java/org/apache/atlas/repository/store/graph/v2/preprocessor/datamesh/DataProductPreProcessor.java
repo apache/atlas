@@ -151,9 +151,6 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         } else {
             entity.removeAttribute(PARENT_DOMAIN_QN_ATTR);
             entity.removeAttribute(SUPER_DOMAIN_QN_ATTR);
-            if(Objects.isNull(currentParentDomainQualifiedName)) {
-                currentParentDomainQualifiedName = "";
-            }
             String productCurrentName = vertex.getProperty(NAME, String.class);
             String productNewName = (String) entity.getAttribute(NAME);
 
