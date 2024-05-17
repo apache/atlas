@@ -79,6 +79,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         AtlasObjectId parentDomainObject = (AtlasObjectId) entity.getRelationshipAttribute(DATA_DOMAIN_REL_TYPE);
         String productName = (String) entity.getAttribute(NAME);
         String parentDomainQualifiedName = "";
+        entity.setAttribute(QUALIFIED_NAME, createQualifiedName(parentDomainQualifiedName));
 
         if (parentDomainObject == null) {
             entity.removeAttribute(PARENT_DOMAIN_QN_ATTR);
@@ -87,7 +88,6 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
             AtlasVertex parentDomain = retrieverNoRelation.getEntityVertex(parentDomainObject);
             parentDomainQualifiedName = parentDomain.getProperty(QUALIFIED_NAME, String.class);
 
-            entity.setAttribute(QUALIFIED_NAME, createQualifiedName(parentDomainQualifiedName));
 
             entity.setAttribute(PARENT_DOMAIN_QN_ATTR, parentDomainQualifiedName);
 
@@ -144,16 +144,15 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
                 newSuperDomainQualifiedName = newParentDomainQualifiedName;
             }
 
-            processMoveDataProductToAnotherDomain(entity, currentParentDomainQualifiedName, newParentDomainQualifiedName, vertexQnName, newSuperDomainQualifiedName, storedProduct.getGuid());
+            processMoveDataProductToAnotherDomain(entity, currentParentDomainQualifiedName, newParentDomainQualifiedName, vertexQnName, newSuperDomainQualifiedName);
 
             updatePolicies(this.updatedPolicyResources, this.context);
 
         } else {
             entity.removeAttribute(PARENT_DOMAIN_QN_ATTR);
             entity.removeAttribute(SUPER_DOMAIN_QN_ATTR);
-            currentParentDomainQualifiedName = "";
-            if (entity.getRelationshipAttributes() != null) {
-                entity.getRelationshipAttributes().remove(DATA_PRODUCT_REL_TYPE);
+            if(Objects.isNull(currentParentDomainQualifiedName)) {
+                currentParentDomainQualifiedName = "";
             }
             String productCurrentName = vertex.getProperty(NAME, String.class);
             String productNewName = (String) entity.getAttribute(NAME);
@@ -179,8 +178,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
                                                        String sourceDomainQualifiedName,
                                                        String targetDomainQualifiedName,
                                                        String currentDataProductQualifiedName,
-                                                       String superDomainQualifiedName,
-                                                       String guid) throws AtlasBaseException {
+                                                       String superDomainQualifiedName) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("processMoveDataProductToAnotherDomain");
 
         try {
@@ -188,7 +186,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
 
             LOG.info("Moving dataProduct {} to Domain {}", productName, targetDomainQualifiedName);
 
-            productExists(productName, targetDomainQualifiedName, guid);
+            productExists(productName, targetDomainQualifiedName, product.getGuid());
 
             String updatedQualifiedName;
             if(StringUtils.isEmpty(sourceDomainQualifiedName)){
@@ -224,7 +222,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
     }
 
     private void productExists(String productName, String parentDomainQualifiedName, String guid) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("domainExists");
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("productExists");
 
         try {
             exists(DATA_PRODUCT_ENTITY_TYPE, productName, parentDomainQualifiedName, guid);
