@@ -211,8 +211,7 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
             }
             else{
                 if(StringUtils.isEmpty(sourceDomainQualifiedName)){
-                    String[] arr = currentDomainQualifiedName.split("/");
-                    updatedQualifiedName = targetDomainQualifiedName + "/domain/" + arr[arr.length - 1];
+                    updatedQualifiedName = createQualifiedName(targetDomainQualifiedName);
                 }else {
                     updatedQualifiedName = currentDomainQualifiedName.replace(sourceDomainQualifiedName, targetDomainQualifiedName);
                 }
