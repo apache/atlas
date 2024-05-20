@@ -302,8 +302,7 @@ public class EntityLineageService implements AtlasLineageService {
             if (direction == AtlasLineageOnDemandInfo.LineageDirection.OUTPUT || direction == AtlasLineageOnDemandInfo.LineageDirection.BOTH)
                 traverseEdgesOnDemand(datasetVertex, false, depth, level, new HashSet<>(), atlasLineageOnDemandContext, ret, guid, outputEntitiesTraversed, traversalOrder);
             AtlasEntityHeader baseEntityHeader = entityRetriever.toAtlasEntityHeader(datasetVertex, atlasLineageOnDemandContext.getAttributes());
-            baseEntityHeader.setDepth(level);
-            baseEntityHeader.setTraversalOrder(0);
+            setGraphTraversalMetadata(level, traversalOrder, baseEntityHeader);
             ret.getGuidEntityMap().put(guid, baseEntityHeader);
         } else  {
             AtlasVertex processVertex = AtlasGraphUtilsV2.findByGuid(this.graph, guid);
@@ -319,6 +318,12 @@ public class EntityLineageService implements AtlasLineageService {
         }
         RequestContext.get().endMetricRecord(metricRecorder);
         return ret;
+    }
+
+    private static void setGraphTraversalMetadata(int level, AtomicInteger traversalOrder, AtlasEntityHeader baseEntityHeader) {
+        baseEntityHeader.setDepth(level);
+        baseEntityHeader.setTraversalOrder(0);
+        baseEntityHeader.setFinishTime(traversalOrder.get());
     }
 
     private void traverseEdgesOnDemand(Iterator<AtlasEdge> processEdges, boolean isInput, int depth, int level, AtlasLineageOnDemandContext atlasLineageOnDemandContext, AtlasLineageOnDemandInfo ret, AtlasVertex processVertex, String baseGuid, AtomicInteger entitiesTraversed, AtomicInteger traversalOrder) throws AtlasBaseException {
@@ -427,6 +432,8 @@ public class EntityLineageService implements AtlasLineageService {
                     }
                     if (entityVertex != null && !visitedVertices.contains(getId(entityVertex))) {
                         traverseEdgesOnDemand(entityVertex, isInput, depth - 1, nextLevel, visitedVertices, atlasLineageOnDemandContext, ret, baseGuid, entitiesTraversed, traversalOrder); // execute inner depth
+                        AtlasEntityHeader traversedEntity = ret.getGuidEntityMap().get(AtlasGraphUtilsV2.getIdFromVertex(entityVertex));
+                        traversedEntity.setFinishTime(traversalOrder.get());
                     }
                 }
             }

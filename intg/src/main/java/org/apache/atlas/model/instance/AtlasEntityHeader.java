@@ -73,6 +73,7 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
     private String                          deleteHandler       = null;
     private Integer                         depth               = null;
     private Integer                         traversalOrder      = null;
+    private Integer                         finishTime          = null;
 
     private Map<String, AtlasSearchResult>  collapse    = null;
 
@@ -161,6 +162,14 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
     public Integer getTraversalOrder() { return traversalOrder; }
 
     public void setTraversalOrder(Integer traversalOrder) { this.traversalOrder = traversalOrder; }
+
+    public Integer getFinishTime() {
+        return finishTime;
+    }
+
+    public void setFinishTime(Integer finishTime) {
+        this.finishTime = finishTime;
+    }
 
     public AtlasEntity.Status getStatus() {
         return status;
