@@ -54,6 +54,8 @@ public class ClassificationPropagateTaskFactory implements TaskFactory {
 
     public static final String CLASSIFICATION_PROPAGATION_RELATIONSHIP_UPDATE = "CLASSIFICATION_PROPAGATION_RELATIONSHIP_UPDATE";
 
+    public static final String CLEANUP_CLASSIFICATION_PROPAGATION = "CLEANUP_CLASSIFICATION_PROPAGATION";
+
 
 
     public static final List<String> supportedTypes = new ArrayList<String>() {{
@@ -63,6 +65,7 @@ public class ClassificationPropagateTaskFactory implements TaskFactory {
         add(CLASSIFICATION_ONLY_PROPAGATION_DELETE_ON_HARD_DELETE);
         add(CLASSIFICATION_REFRESH_PROPAGATION);
         add(CLASSIFICATION_PROPAGATION_RELATIONSHIP_UPDATE);
+        add(CLEANUP_CLASSIFICATION_PROPAGATION);
 
     }};
 
@@ -101,6 +104,10 @@ public class ClassificationPropagateTaskFactory implements TaskFactory {
 
             case CLASSIFICATION_PROPAGATION_RELATIONSHIP_UPDATE:
                 return new ClassificationPropagationTasks.UpdateRelationship(task, graph, entityGraphMapper, deleteDelegate, relationshipStore);
+
+                case CLEANUP_CLASSIFICATION_PROPAGATION:
+                return new ClassificationPropagationTasks.CleanUpClassificationPropagation(task, graph, entityGraphMapper, deleteDelegate, relationshipStore);
+
 
             default:
                 LOG.warn("Type: {} - {} not found!. The task will be ignored.", taskType, taskGuid);

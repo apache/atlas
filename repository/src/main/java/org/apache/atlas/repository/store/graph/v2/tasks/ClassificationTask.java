@@ -34,6 +34,7 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -50,6 +51,8 @@ public abstract class ClassificationTask extends AbstractTask {
     public static final String PARAM_RELATIONSHIP_GUID        = "relationshipGuid";
     public static final String PARAM_RELATIONSHIP_OBJECT      = "relationshipObject";
     public static final String PARAM_RELATIONSHIP_EDGE_ID     = "relationshipEdgeId";
+
+    public static final String PARAM_CLASSIFICATION_NAME      = "classificationName";
     public static final String PARAM_REFERENCED_VERTEX_ID     = "referencedVertexId";
     public static final String PARAM_IS_TERM_ENTITY_EDGE       = "isTermEntityEdge";
     public static final String PARAM_PREVIOUS_CLASSIFICATION_RESTRICT_PROPAGATE_THROUGH_LINEAGE = "previousRestrictPropagationThroughLineage";
@@ -75,7 +78,7 @@ public abstract class ClassificationTask extends AbstractTask {
     }
 
     @Override
-    public AtlasTask.Status perform() throws AtlasBaseException {
+    public AtlasTask.Status perform() throws AtlasBaseException, IOException {
         Map<String, Object> params = getTaskDef().getParameters();
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord(getTaskGuid());
 
@@ -101,7 +104,7 @@ public abstract class ClassificationTask extends AbstractTask {
             run(params);
 
             setStatus(COMPLETE);
-        } catch (AtlasBaseException e) {
+        } catch (AtlasBaseException | IOException e) {
             LOG.error("Task: {}: Error performing task!", getTaskGuid(), e);
 
             setStatus(FAILED);
@@ -177,5 +180,5 @@ public abstract class ClassificationTask extends AbstractTask {
         graph.commit();
     }
 
-    protected abstract void run(Map<String, Object> parameters) throws AtlasBaseException;
+    protected abstract void run(Map<String, Object> parameters) throws AtlasBaseException, IOException;
 }

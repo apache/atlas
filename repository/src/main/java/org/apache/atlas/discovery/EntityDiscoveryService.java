@@ -46,7 +46,6 @@ import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.userprofile.UserProfileService;
 import org.apache.atlas.repository.util.AccessControlUtils;
 import org.apache.atlas.searchlog.ESSearchLogger;
-import org.apache.atlas.service.FeatureFlagStore;
 import org.apache.atlas.stats.StatsClient;
 import org.apache.atlas.type.*;
 import org.apache.atlas.type.AtlasBuiltInTypes.AtlasObjectIdType;
@@ -70,6 +69,7 @@ import org.springframework.stereotype.Component;
 import javax.inject.Inject;
 import javax.script.ScriptEngine;
 import javax.script.ScriptException;
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -1006,6 +1006,49 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
             ret.setAggregations(indexQueryResult.getAggregationMap());
             ret.setApproximateCount(indexQuery.vertexTotals());
+        } catch (Exception e) {
+            LOG.error("Error while performing direct search for the params ({}), {}", searchParams, e.getMessage());
+            throw e;
+        }
+        return ret;
+    }
+
+    public int getQueryResponseCount(SearchParams searchParams) throws AtlasBaseException, IOException {
+        IndexSearchParams params = (IndexSearchParams) searchParams;
+        String indexName = getIndexName(params);
+        AtlasIndexQuery indexQuery = graph.elasticsearchQuery(indexName);
+        return indexQuery.getNumVertices(searchParams);
+
+    }
+
+    @Override
+    public DirectIndexQueryResult directIndexSearch(SearchParams searchParams, boolean returnVertices) throws AtlasBaseException {
+        IndexSearchParams params = (IndexSearchParams) searchParams;
+        RequestContext.get().setRelationAttrsForSearch(params.getRelationAttributes());
+        RequestContext.get().setAllowDeletedRelationsIndexsearch(params.isAllowDeletedRelations());
+
+        DirectIndexQueryResult ret = null;
+        AtlasIndexQuery indexQuery;
+
+        Set<String> resultAttributes = new HashSet<>();
+        if (CollectionUtils.isNotEmpty(searchParams.getAttributes())) {
+            resultAttributes.addAll(searchParams.getAttributes());
+        }
+
+        try {
+            if(LOG.isDebugEnabled()){
+                LOG.debug("Performing ES search for the params ({})", searchParams);
+            }
+
+            String indexName = getIndexName(params);
+
+            indexQuery = graph.elasticsearchQuery(indexName);
+            AtlasPerfMetrics.MetricRecorder elasticSearchQueryMetric = RequestContext.get().startMetricRecord("elasticSearchQuery");
+            ret = indexQuery.vertices(searchParams);
+            if (ret == null) {
+                return null;
+            }
+            RequestContext.get().endMetricRecord(elasticSearchQueryMetric);
         } catch (Exception e) {
             LOG.error("Error while performing direct search for the params ({}), {}", searchParams, e.getMessage());
             throw e;

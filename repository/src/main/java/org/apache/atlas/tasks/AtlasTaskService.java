@@ -148,7 +148,7 @@ public class AtlasTaskService implements TaskService {
                 if (!supportedTypes.contains(taskType)) {
                     throw new AtlasBaseException(AtlasErrorCode.TASK_TYPE_NOT_SUPPORTED, task.getType());
                 }
-                if (isClassificationTaskType(taskType)) {
+                if (isClassificationTaskType(taskType) && !taskType.equals(ClassificationPropagateTaskFactory.CLEANUP_CLASSIFICATION_PROPAGATION)) {
                     String classificationName = task.getClassificationName();
                     String entityGuid = task.getEntityGuid();
                     String classificationId = StringUtils.isEmpty(task.getClassificationId()) ? resolveAndReturnClassificationId(classificationName, entityGuid) : task.getClassificationId();

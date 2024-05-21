@@ -935,11 +935,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
         }
 
-        AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(entityVertex);
-
-        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE_CLASSIFICATION, entityHeader), "repair classification mappings: guid=", guid);
-
-        entityGraphMapper.repairClassificationMappings(entityHeader, entityVertex);
+        entityGraphMapper.repairClassificationMappings(entityVertex);
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== repairClassificationMappings({})", guid);

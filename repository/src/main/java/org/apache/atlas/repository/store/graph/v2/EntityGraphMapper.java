@@ -24,10 +24,12 @@ import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasEntityAccessRequest;
 import org.apache.atlas.authorize.AtlasPrivilege;
+import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.exception.EntityNotFoundException;
 import org.apache.atlas.model.TimeBoundary;
 import org.apache.atlas.model.TypeCategory;
+import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
@@ -53,6 +55,8 @@ import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.graphdb.DirectIndexQueryResult;
+import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
@@ -82,22 +86,11 @@ import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
-import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Objects;
-import java.util.Set;
-import java.util.UUID;
-import java.util.Date;
+import java.io.IOException;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -203,13 +196,15 @@ public class EntityGraphMapper {
     private final EntityGraphRetriever      entityRetriever;
     private final IFullTextMapper           fullTextMapperV2;
     private final TaskManagement            taskManagement;
+
+    private final EntityDiscoveryService discoveryService;
     private final TransactionInterceptHelper   transactionInterceptHelper;
 
-    @Inject
+    @Autowired
     public EntityGraphMapper(DeleteHandlerDelegate deleteDelegate, RestoreHandlerV1 restoreHandlerV1, AtlasTypeRegistry typeRegistry, AtlasGraph graph,
                              AtlasRelationshipStore relationshipStore, IAtlasEntityChangeNotifier entityChangeNotifier,
                              AtlasInstanceConverter instanceConverter, IFullTextMapper fullTextMapperV2,
-                             TaskManagement taskManagement, TransactionInterceptHelper transactionInterceptHelper) {
+                             TaskManagement taskManagement, TransactionInterceptHelper transactionInterceptHelper,@Lazy EntityDiscoveryService discoveryService) {
         this.restoreHandlerV1 = restoreHandlerV1;
         this.graphHelper          = new GraphHelper(graph);
         this.deleteDelegate       = deleteDelegate;
@@ -222,6 +217,7 @@ public class EntityGraphMapper {
         this.fullTextMapperV2     = fullTextMapperV2;
         this.taskManagement       = taskManagement;
         this.transactionInterceptHelper = transactionInterceptHelper;
+        this.discoveryService = discoveryService;
     }
 
     @VisibleForTesting
@@ -2980,35 +2976,93 @@ public class EntityGraphMapper {
         }
     }
 
-    public void repairClassificationMappings(AtlasEntityHeader entityHeader, AtlasVertex entityVertex) throws AtlasBaseException {
-        if (entityHeader.getClassifications() != null) {
-            List<AtlasClassification> classifications = entityHeader.getClassifications();
-            String propagatedClassificationName = null;
-            String classificationNames = null;
-            String classificationText = null;
-            List<String> propagatedClassificationNamesList = new ArrayList<>();
-            List<String> classificationNamesList = new ArrayList<>();
+    public void cleanUpClassificationPropagation(String classificationName) throws AtlasBaseException, IOException {
+        IndexSearchParams searchParams = new IndexSearchParams();
+        int batchSize = 100;
+        DirectIndexQueryResult indexQueryResult;
+        Map<String, Object> dsl = buildMap(classificationName);
+        searchParams.setDsl(dsl);
+        int totalCount = discoveryService.getQueryResponseCount(searchParams);
+        LOG.info("Total entities found for classification {} are {}", classificationName, totalCount);
+        int counter = 0;
+        dsl.put("from", 0);
+        dsl.put("size", batchSize);
+        searchParams.setDsl(dsl);
+        while (counter <= totalCount) {
+            try {
+                indexQueryResult = discoveryService.directIndexSearch(searchParams, true);
+                if (indexQueryResult == null) {
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("No entities found for classification {}", classificationName);
+                    }
+                    return;
+                }
+                Iterator<AtlasIndexQuery.Result> results = indexQueryResult.getIterator();
+                if (!results.hasNext()) {
+                    LOG.info("No entities found for classification {}", classificationName);
+                    return;
+                }
+                while (results.hasNext()) {
+                    AtlasVertex vertex = results.next().getVertex();
+                    String guid = GraphHelper.getGuid(vertex);
+                    GraphTransactionInterceptor.lockObjectAndReleasePostCommit(guid);
+                    List<AtlasClassification> deletedClassifications = new ArrayList<>();
+                    List<AtlasEdge> classificationEdges = GraphHelper.getClassificationEdges(vertex, null, classificationName);
+
+                    for (AtlasEdge edge : classificationEdges) {
+                        AtlasClassification classification = entityRetriever.toAtlasClassification(edge.getInVertex());
+                        deletedClassifications.add(classification);
+                        deleteDelegate.getHandler().deleteEdgeReference(edge, TypeCategory.CLASSIFICATION, false, true, null, vertex);
+                    }
+
+                    AtlasEntity entity = repairClassificationMappings(vertex);
+
+                    entityChangeNotifier.onClassificationDeletedFromEntity(entity, deletedClassifications);
+
+                    counter++;
+                }
+            } catch (AtlasBaseException e) {
+                throw new AtlasBaseException(AtlasErrorCode.INDEX_SEARCH_FAILED, e);
+            } finally {
+                transactionInterceptHelper.intercept();
+                LOG.info("Processed cleaning up {} entities", counter);
+            }
+        }
+    }
+
+    private Map<String, Object> getMap(String key, Object value) {
+        Map<String, Object> map = new HashMap<>();
+        map.put(key, value);
+        return map;
+    }
+
+    public Map<String, Object> buildMap(String classificationName) {
+        Map<String, Object> dsl = new HashMap<>();
+        Map<String, Object> query = new HashMap<>();
+        List<Object> shouldClauses = new ArrayList<>();
+        Map<String, Object> terms1 = getMap("terms", getMap("__traitNames", Collections.singletonList(classificationName)));
+        Map<String, Object> terms2 = getMap("terms", getMap("__propagatedTraitNames", Collections.singletonList(classificationName)));
+        shouldClauses.add(terms1);
+        shouldClauses.add(terms2);
+        query.put("bool", getMap("should", shouldClauses));
+        dsl.put("query", query);
+        return dsl;
+    }
+    public AtlasEntity repairClassificationMappings(AtlasVertex entityVertex) throws AtlasBaseException {
+        String guid = GraphHelper.getGuid(entityVertex);
+        AtlasEntity entity = instanceConverter.getEntity(guid, ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES);
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE_CLASSIFICATION, new AtlasEntityHeader(entity)), "repair classification mappings: guid=", guid);
+
+        if (entity.getClassifications() != null) {
+            List<AtlasClassification> classifications = entity.getClassifications();
+            List<String> classificationNames = new ArrayList<>();
+            List<String> propagatedClassificationNames = new ArrayList<>();
             for (AtlasClassification classification : classifications) {
-                String typeName = classification.getTypeName();
-                classificationText = fullTextMapperV2.getClassificationTextForEntity(new AtlasEntity(entityHeader));
-                if(classification.isPropagate() && !classification.getEntityGuid().equals(entityHeader.getGuid())) {
-                    //Add to propagatedClassificationNamesList
-                    propagatedClassificationNamesList.add(typeName);
-                    //Create delimiter separated string for propagatedClassificationNames
-                    if (StringUtils.isEmpty(propagatedClassificationName)) {
-                        propagatedClassificationName = CLASSIFICATION_NAME_DELIMITER + typeName + CLASSIFICATION_NAME_DELIMITER;
-                    } else {
-                        propagatedClassificationName = propagatedClassificationName + typeName + CLASSIFICATION_NAME_DELIMITER;
-                    }
+                if (isPropagatedClassification(classification, guid)) {
+                    propagatedClassificationNames.add(classification.getTypeName());
                 } else {
-                    //Add to classificationNamesList
-                    classificationNamesList.add(typeName);
-                    //Create delimiter separated string for classificationNames
-                    if (StringUtils.isEmpty(classificationNames)) {
-                        classificationNames = CLASSIFICATION_NAME_DELIMITER + typeName + CLASSIFICATION_NAME_DELIMITER;
-                    } else {
-                        classificationNames = classificationNames + typeName + CLASSIFICATION_NAME_DELIMITER;
-                    }
+                    classificationNames.add(classification.getTypeName());
                 }
             }
             //Delete array/set properties first
@@ -3017,20 +3071,20 @@ public class EntityGraphMapper {
 
 
             //Update classificationNames and propagatedClassificationNames in entityVertex
-            AtlasGraphUtilsV2.setProperty(entityVertex, CLASSIFICATION_NAMES_KEY, classificationNames);
-            AtlasGraphUtilsV2.setProperty(entityVertex, CLASSIFICATION_TEXT_KEY, classificationText);
-            AtlasGraphUtilsV2.setProperty(entityVertex, PROPAGATED_CLASSIFICATION_NAMES_KEY, propagatedClassificationName);
+            entityVertex.setProperty(CLASSIFICATION_NAMES_KEY, getDelimitedClassificationNames(classificationNames));
+            entityVertex.setProperty(PROPAGATED_CLASSIFICATION_NAMES_KEY, getDelimitedClassificationNames(propagatedClassificationNames));
+            entityVertex.setProperty(CLASSIFICATION_TEXT_KEY, fullTextMapperV2.getClassificationTextForEntity(entity));
             // Make classificationNames unique list as it is of type SET
-            classificationNamesList = classificationNamesList.stream().distinct().collect(Collectors.toList());
+            classificationNames = classificationNames.stream().distinct().collect(Collectors.toList());
             //Update classificationNames and propagatedClassificationNames in entityHeader
-            for(String classificationName : classificationNamesList) {
+            for(String classificationName : classificationNames) {
                 AtlasGraphUtilsV2.addEncodedProperty(entityVertex, TRAIT_NAMES_PROPERTY_KEY, classificationName);
             }
-            for (String classificationName : propagatedClassificationNamesList) {
-                //AtlasGraphUtilsV2.addProperty(entityVertex, PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, classificationName);
+            for (String classificationName : propagatedClassificationNames) {
                 entityVertex.addListProperty(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, classificationName);
             }
         }
+        return entity;
     }
 
     public void addClassifications(final EntityMutationContext context, String guid, List<AtlasClassification> classifications) throws AtlasBaseException {

@@ -26,6 +26,7 @@ import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
 import org.apache.atlas.type.AtlasType;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
 
@@ -119,6 +120,19 @@ public class ClassificationPropagationTasks {
             AtlasRelationship relationship       = AtlasType.fromJson((String) parameters.get(PARAM_RELATIONSHIP_OBJECT), AtlasRelationship.class);
 
             entityGraphMapper.updateTagPropagations(relationshipEdgeId, relationship);
+        }
+    }
+
+    public static class CleanUpClassificationPropagation extends ClassificationTask {
+        public CleanUpClassificationPropagation(AtlasTask task, AtlasGraph graph, EntityGraphMapper entityGraphMapper, DeleteHandlerDelegate deleteDelegate, AtlasRelationshipStore relationshipStore) {
+            super(task, graph, entityGraphMapper, deleteDelegate, relationshipStore);
+        }
+
+        @Override
+        protected void run(Map<String, Object> parameters) throws AtlasBaseException, IOException {
+            String            classificationName      = (String) parameters.get(PARAM_CLASSIFICATION_NAME);
+
+            entityGraphMapper.cleanUpClassificationPropagation(classificationName);
         }
     }
 }
