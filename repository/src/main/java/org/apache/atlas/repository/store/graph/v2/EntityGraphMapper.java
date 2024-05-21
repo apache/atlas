@@ -3028,6 +3028,13 @@ public class EntityGraphMapper {
                 transactionInterceptHelper.intercept();
                 LOG.info("Processed cleaning up {} entities", counter);
             }
+
+            // Fetch all classificationVertex by classificationName and delete them if remaining
+            List<AtlasVertex> classificationVertices = GraphHelper.getAllClassificationVertex(graph, classificationName);
+            for (AtlasVertex classificationVertex : classificationVertices) {
+                deleteDelegate.getHandler().deleteClassificationVertex(classificationVertex, true);
+            }
+            transactionInterceptHelper.intercept();
         }
     }
 

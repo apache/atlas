@@ -376,6 +376,13 @@ public final class GraphHelper {
         return ret;
     }
 
+    public static List<AtlasVertex> getAllClassificationVertex(AtlasGraph graph,  String classificationName) {
+        Iterable vertices = graph.query().has(TYPE_NAME_PROPERTY_KEY, classificationName).vertices();
+        if (vertices == null) {
+            return Collections.emptyList();
+        }
+        return IteratorUtils.toList(vertices.iterator());
+    }
     public static AtlasEdge getClassificationEdge(AtlasVertex entityVertex, AtlasVertex classificationVertex) {
         AtlasEdge ret   = null;
         Iterable  edges = entityVertex.query().direction(AtlasEdgeDirection.OUT).label(CLASSIFICATION_LABEL)
