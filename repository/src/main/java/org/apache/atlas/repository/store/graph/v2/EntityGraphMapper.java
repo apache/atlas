@@ -3061,11 +3061,11 @@ public class EntityGraphMapper {
         AtlasEntity entity = instanceConverter.getEntity(guid, ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES);
 
         AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE_CLASSIFICATION, new AtlasEntityHeader(entity)), "repair classification mappings: guid=", guid);
+        List<String> classificationNames = new ArrayList<>();
+        List<String> propagatedClassificationNames = new ArrayList<>();
 
         if (entity.getClassifications() != null) {
             List<AtlasClassification> classifications = entity.getClassifications();
-            List<String> classificationNames = new ArrayList<>();
-            List<String> propagatedClassificationNames = new ArrayList<>();
             for (AtlasClassification classification : classifications) {
                 if (isPropagatedClassification(classification, guid)) {
                     propagatedClassificationNames.add(classification.getTypeName());
@@ -3073,25 +3073,26 @@ public class EntityGraphMapper {
                     classificationNames.add(classification.getTypeName());
                 }
             }
-            //Delete array/set properties first
-            entityVertex.removeProperty(TRAIT_NAMES_PROPERTY_KEY);
-            entityVertex.removeProperty(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY);
-
-
-            //Update classificationNames and propagatedClassificationNames in entityVertex
-            entityVertex.setProperty(CLASSIFICATION_NAMES_KEY, getDelimitedClassificationNames(classificationNames));
-            entityVertex.setProperty(PROPAGATED_CLASSIFICATION_NAMES_KEY, getDelimitedClassificationNames(propagatedClassificationNames));
-            entityVertex.setProperty(CLASSIFICATION_TEXT_KEY, fullTextMapperV2.getClassificationTextForEntity(entity));
-            // Make classificationNames unique list as it is of type SET
-            classificationNames = classificationNames.stream().distinct().collect(Collectors.toList());
-            //Update classificationNames and propagatedClassificationNames in entityHeader
-            for(String classificationName : classificationNames) {
-                AtlasGraphUtilsV2.addEncodedProperty(entityVertex, TRAIT_NAMES_PROPERTY_KEY, classificationName);
-            }
-            for (String classificationName : propagatedClassificationNames) {
-                entityVertex.addListProperty(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, classificationName);
-            }
         }
+        //Delete array/set properties first
+        entityVertex.removeProperty(TRAIT_NAMES_PROPERTY_KEY);
+        entityVertex.removeProperty(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY);
+
+
+        //Update classificationNames and propagatedClassificationNames in entityVertex
+        entityVertex.setProperty(CLASSIFICATION_NAMES_KEY, getDelimitedClassificationNames(classificationNames));
+        entityVertex.setProperty(PROPAGATED_CLASSIFICATION_NAMES_KEY, getDelimitedClassificationNames(propagatedClassificationNames));
+        entityVertex.setProperty(CLASSIFICATION_TEXT_KEY, fullTextMapperV2.getClassificationTextForEntity(entity));
+        // Make classificationNames unique list as it is of type SET
+        classificationNames = classificationNames.stream().distinct().collect(Collectors.toList());
+        //Update classificationNames and propagatedClassificationNames in entityHeader
+        for(String classificationName : classificationNames) {
+            AtlasGraphUtilsV2.addEncodedProperty(entityVertex, TRAIT_NAMES_PROPERTY_KEY, classificationName);
+        }
+        for (String classificationName : propagatedClassificationNames) {
+            entityVertex.addListProperty(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, classificationName);
+        }
+
         return entity;
     }
 
