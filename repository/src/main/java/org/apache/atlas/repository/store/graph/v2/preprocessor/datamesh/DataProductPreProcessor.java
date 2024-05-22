@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
+import static org.apache.atlas.AtlasErrorCode.OPERATION_NOT_SUPPORTED;
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
 import static org.apache.atlas.repository.util.AccessControlUtils.*;
@@ -81,7 +82,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         String parentDomainQualifiedName = "";
 
         if (parentDomainObject == null) {
-            throw new AtlasBaseException("Cannot create a Product without a Domain Relationship");
+            throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Cannot create a Product without a Domain Relationship");
         } else {
             AtlasVertex parentDomain = retrieverNoRelation.getEntityVertex(parentDomainObject);
             parentDomainQualifiedName = parentDomain.getProperty(QUALIFIED_NAME, String.class);
