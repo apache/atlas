@@ -1859,7 +1859,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         switch (typeName) {
             case ATLAS_GLOSSARY_ENTITY_TYPE:
-                preProcessors.add(new GlossaryPreProcessor(typeRegistry, entityRetriever));
+                preProcessors.add(new GlossaryPreProcessor(typeRegistry, entityRetriever, graph));
                 break;
 
             case ATLAS_GLOSSARY_TERM_ENTITY_TYPE:

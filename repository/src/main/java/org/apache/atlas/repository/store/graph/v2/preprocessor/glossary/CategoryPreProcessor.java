@@ -124,15 +124,16 @@ public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
         }
 
         String glossaryQualifiedName = (String) anchor.getAttribute(QUALIFIED_NAME);
+        categoryExists(catName, glossaryQualifiedName);
+        validateParent(glossaryQualifiedName);
+
         if (parentCategory != null) {
             parentQname = (String) parentCategory.getAttribute(QUALIFIED_NAME);
         }
         String lexicographicalSortOrder = (String) entity.getAttribute(LEXICOGRAPHICAL_SORT_ORDER);
         if(StringUtils.isEmpty(lexicographicalSortOrder)){
-            assignNewLexicographicalSortOrder(entity,glossaryQualifiedName, parentQname);
+            assignNewLexicographicalSortOrder(entity,glossaryQualifiedName, parentQname, this.discovery);
         }
-        categoryExists(catName, glossaryQualifiedName);
-        validateParent(glossaryQualifiedName);
 
         entity.setAttribute(QUALIFIED_NAME, createQualifiedName(vertex));
         AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, new AtlasEntityHeader(entity)),
