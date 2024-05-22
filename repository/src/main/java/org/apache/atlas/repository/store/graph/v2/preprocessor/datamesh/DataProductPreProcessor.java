@@ -81,8 +81,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         String parentDomainQualifiedName = "";
 
         if (parentDomainObject == null) {
-            entity.removeAttribute(PARENT_DOMAIN_QN_ATTR);
-            entity.removeAttribute(SUPER_DOMAIN_QN_ATTR);
+            throw new AtlasBaseException("Cannot create a Product without a Domain Relationship");
         } else {
             AtlasVertex parentDomain = retrieverNoRelation.getEntityVertex(parentDomainObject);
             parentDomainQualifiedName = parentDomain.getProperty(QUALIFIED_NAME, String.class);
