@@ -39,6 +39,7 @@ import static org.apache.atlas.repository.Constants.NAME;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.getUUID;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.isNameInvalid;
+import static org.apache.atlas.type.Constants.LEXICOGRAPHICAL_SORT_ORDER;
 
 public class GlossaryPreProcessor implements PreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(GlossaryPreProcessor.class);
@@ -77,7 +78,11 @@ public class GlossaryPreProcessor implements PreProcessor {
         if (StringUtils.isEmpty(glossaryName) || isNameInvalid(glossaryName)) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME);
         }
-
+        String lexicographicalSortOrder = (String) entity.getAttribute(LEXICOGRAPHICAL_SORT_ORDER);
+        // TODO : Figure the placement for this method for glossary creation.
+//        if(StringUtils.isEmpty(lexicographicalSortOrder)){
+//            assignNewLexicographicalSortOrder(entity,null, null);
+//        }
         if (glossaryExists(glossaryName)) {
             throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_ALREADY_EXISTS,glossaryName);
         }

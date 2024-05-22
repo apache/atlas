@@ -26,7 +26,6 @@ import org.apache.atlas.authorize.AtlasEntityAccessRequest;
 import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
@@ -41,17 +40,14 @@ import org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTask;
 import org.apache.atlas.tasks.TaskManagement;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.util.lexoRank.LexoRank;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.repository.Constants.ATLAS_GLOSSARY_TERM_ENTITY_TYPE;
@@ -60,10 +56,8 @@ import static org.apache.atlas.repository.Constants.NAME;
 import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.indexSearchPaginated;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
-import static org.apache.atlas.type.Constants.MEANINGS_PROPERTY_KEY;
-import static org.apache.atlas.type.Constants.MEANINGS_TEXT_PROPERTY_KEY;
-import static org.apache.atlas.type.Constants.MEANING_NAMES_PROPERTY_KEY;
-import static org.apache.atlas.type.Constants.PENDING_TASKS_PROPERTY_KEY;
+import static org.apache.atlas.type.Constants.*;
+import static org.apache.atlas.type.Constants.LEXICOGRAPHICAL_SORT_ORDER;
 
 public abstract class AbstractGlossaryPreProcessor implements PreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractGlossaryPreProcessor.class);
@@ -72,6 +66,8 @@ public abstract class AbstractGlossaryPreProcessor implements PreProcessor {
 
     protected static final String ATTR_MEANINGS   = "meanings";
     protected static final String ATTR_CATEGORIES = "categories";
+
+    protected static final String INIT_LEXORANK_OFFSET = "0|100000:";
 
     protected final AtlasTypeRegistry typeRegistry;
     protected final EntityGraphRetriever entityRetriever;
@@ -250,5 +246,104 @@ public abstract class AbstractGlossaryPreProcessor implements PreProcessor {
         }
 
         requestContext.endMetricRecord(metricRecorder);
+    }
+
+
+    public void assignNewLexicographicalSortOrder(AtlasEntity entity, String glossaryQualifiedName, String parentQualifiedName) {
+        Set<String> attributes = new HashSet<>();
+        attributes.add(LEXICOGRAPHICAL_SORT_ORDER);
+        List<AtlasEntityHeader> categories = null;
+        Map<String, Object> dslQuery = generateDSLQueryForLastCategory(glossaryQualifiedName, parentQualifiedName);
+        String lexoRank = "";
+        try {
+            categories = indexSearchPaginated(dslQuery, attributes, this.discovery);
+        } catch (AtlasBaseException e) {
+            throw new RuntimeException(e);
+        }
+
+        if (CollectionUtils.isNotEmpty(categories)) {
+            for (AtlasEntityHeader category : categories) {
+                String lexicographicalSortOrder = (String) category.getAttribute(LEXICOGRAPHICAL_SORT_ORDER);
+                if(StringUtils.isNotEmpty(lexicographicalSortOrder)){
+                    LexoRank parsedLexoRank = LexoRank.parse(lexicographicalSortOrder);
+                    LexoRank nextLexoRank = parsedLexoRank.genNext().genNext();
+                    lexoRank = nextLexoRank.toString();
+                } else {
+                    LexoRank parsedLexoRank = LexoRank.parse(INIT_LEXORANK_OFFSET);
+                    LexoRank nextLexoRank = parsedLexoRank.genNext().genNext();
+                    lexoRank = nextLexoRank.toString();
+                }
+            }
+        } else {
+            LexoRank parsedLexoRank = LexoRank.parse(INIT_LEXORANK_OFFSET);
+            LexoRank nextLexoRank = parsedLexoRank.genNext().genNext();
+            lexoRank = nextLexoRank.toString();
+        }
+        entity.setAttribute(LEXICOGRAPHICAL_SORT_ORDER, lexoRank);
+    }
+
+
+    public static Map<String, Object> generateDSLQueryForLastCategory(String glossaryQualifiedName, String parentQualifiedName) {
+
+        Map<String, Object> sortKeyOrder = mapOf(LEXICOGRAPHICAL_SORT_ORDER, mapOf("order", "desc"));
+        Map<String, Object> scoreSortOrder = mapOf("_score", mapOf("order", "desc"));
+        Map<String, Object> displayNameSortOrder = mapOf("displayName.keyword", mapOf("order", "desc"));
+
+        Object[] sortArray = {sortKeyOrder, scoreSortOrder, displayNameSortOrder};
+
+        Map<String, Object> functionScore = mapOf("query", buildBoolQuery(glossaryQualifiedName, parentQualifiedName));
+
+        Map<String, Object> dsl = new HashMap<>();
+        dsl.put("from", 0);
+        dsl.put("size", 1);
+        dsl.put("sort", sortArray);
+        dsl.put("query", mapOf("function_score", functionScore));
+
+        return dsl;
+    }
+
+    private static Map<String, Object> buildBoolQuery(String glossaryQualifiedName, String parentQualifiedName) {
+        Map<String, Object> boolQuery = new HashMap<>();
+        int mustArrayLength = 0;
+        if(StringUtils.isEmpty(parentQualifiedName) && StringUtils.isEmpty(glossaryQualifiedName)){
+            mustArrayLength = 2;
+        } else if(StringUtils.isEmpty(parentQualifiedName) && StringUtils.isNotEmpty(glossaryQualifiedName)){
+            mustArrayLength = 3;
+        } else {
+            mustArrayLength = 4;
+        }
+        Map<String, Object>[] mustArray = new Map[mustArrayLength];
+        Map<String, Object> boolFilter = new HashMap<>();
+        Map<String, Object>[] mustNotArray = new Map[2];
+
+        mustArray[0] = mapOf("term", mapOf("__state", "ACTIVE"));
+        if(StringUtils.isNotEmpty(glossaryQualifiedName)) {
+            mustArray[1] = mapOf("terms", mapOf("__typeName.keyword", Arrays.asList("AtlasGlossaryTerm", "AtlasGlossaryCategory")));
+            mustArray[2] = mapOf("term", mapOf("__glossary", glossaryQualifiedName));
+        } else{
+            mustArray[1] = mapOf("terms", mapOf("__typeName.keyword", Arrays.asList("AtlasGlossary")));
+        }
+
+        if(StringUtils.isEmpty(parentQualifiedName)) {
+            mustNotArray[0] = mapOf("exists", mapOf("field", "__categories"));
+            mustNotArray[1] = mapOf("exists", mapOf("field", "__parentCategory"));
+            boolFilter.put("must_not", mustNotArray);
+        }
+        else {
+            Map<String, Object>[] shouldParentArray = new Map[2];
+            shouldParentArray[0] = mapOf("term", mapOf("__categories", parentQualifiedName));
+            shouldParentArray[1] = mapOf("term", mapOf("__parentCategory", parentQualifiedName));
+            mustArray[3] = mapOf("bool",mapOf("should", shouldParentArray));
+        }
+
+        boolFilter.put("must", mustArray);
+
+        Map<String, Object> nestedBoolQuery = mapOf("bool", boolFilter);
+
+        Map<String, Object> topBoolFilter = mapOf("filter", nestedBoolQuery);
+
+        boolQuery.put("bool", topBoolFilter);
+
+        return boolQuery;
     }
 }

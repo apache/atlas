@@ -40,6 +40,7 @@ import org.apache.atlas.tasks.TaskManagement;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.util.lexoRank.LexoRank;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
@@ -47,6 +48,7 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -70,9 +72,7 @@ import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
 import static org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTaskFactory.UPDATE_ENTITY_MEANINGS_ON_TERM_UPDATE;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
-import static org.apache.atlas.type.Constants.CATEGORIES_PARENT_PROPERTY_KEY;
-import static org.apache.atlas.type.Constants.CATEGORIES_PROPERTY_KEY;
-import static org.apache.atlas.type.Constants.GLOSSARY_PROPERTY_KEY;
+import static org.apache.atlas.type.Constants.*;
 
 public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(CategoryPreProcessor.class);
@@ -117,12 +117,20 @@ public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
     private void processCreateCategory(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processCreateCategory");
         String catName = (String) entity.getAttribute(NAME);
+        String parentQname = null;
 
         if (StringUtils.isEmpty(catName) || isNameInvalid(catName)) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME);
         }
 
         String glossaryQualifiedName = (String) anchor.getAttribute(QUALIFIED_NAME);
+        if (parentCategory != null) {
+            parentQname = (String) parentCategory.getAttribute(QUALIFIED_NAME);
+        }
+        String lexicographicalSortOrder = (String) entity.getAttribute(LEXICOGRAPHICAL_SORT_ORDER);
+        if(StringUtils.isEmpty(lexicographicalSortOrder)){
+            assignNewLexicographicalSortOrder(entity,glossaryQualifiedName, parentQname);
+        }
         categoryExists(catName, glossaryQualifiedName);
         validateParent(glossaryQualifiedName);
 
@@ -489,4 +497,5 @@ public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
 
         return getUUID() + "@" + anchor.getAttribute(QUALIFIED_NAME);
     }
+
 }
