@@ -393,7 +393,7 @@ public final class GraphHelper {
                         hasPropagatedTraitNames,
                         hasTraitNames
                 )
-        ).vertices();
+        ).vertices(limit);
         if (vertices == null) {
             return Collections.emptyList();
         }
