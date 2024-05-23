@@ -34,7 +34,6 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -78,7 +77,7 @@ public abstract class ClassificationTask extends AbstractTask {
     }
 
     @Override
-    public AtlasTask.Status perform() throws AtlasBaseException, IOException {
+    public AtlasTask.Status perform() throws AtlasBaseException {
         Map<String, Object> params = getTaskDef().getParameters();
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord(getTaskGuid());
 
@@ -104,7 +103,7 @@ public abstract class ClassificationTask extends AbstractTask {
             run(params);
 
             setStatus(COMPLETE);
-        } catch (AtlasBaseException | IOException e) {
+        } catch (AtlasBaseException e) {
             LOG.error("Task: {}: Error performing task!", getTaskGuid(), e);
 
             setStatus(FAILED);
@@ -180,5 +179,5 @@ public abstract class ClassificationTask extends AbstractTask {
         graph.commit();
     }
 
-    protected abstract void run(Map<String, Object> parameters) throws AtlasBaseException, IOException;
+    protected abstract void run(Map<String, Object> parameters) throws AtlasBaseException;
 }
