@@ -2985,7 +2985,7 @@ public class EntityGraphMapper {
                 List<AtlasVertex> vertices = GraphHelper.getAllAssetsWithClassificationAttached(graph, classificationName, batchSize);
                 if (CollectionUtils.isEmpty(vertices)) {
                     LOG.info("No entities found for classification {}", classificationName);
-                    return;
+                    break;
                 }
                 for(AtlasVertex vertex : vertices) {
                     String guid = GraphHelper.getGuid(vertex);
