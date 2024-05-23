@@ -3018,6 +3018,8 @@ public class EntityGraphMapper {
                 deleteDelegate.getHandler().deleteClassificationVertex(classificationVertex, true);
             }
             transactionInterceptHelper.intercept();
+            LOG.info("Completed cleaning up classification {}", classificationName);
+
         }
     }
 
