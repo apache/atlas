@@ -84,11 +84,11 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
         AtlasEntity existingContractEntity = entityRetriever.toAtlasEntity(vertex);
         // No update to relationships allowed for the existing contract version
         resetAllRelationshipAttributes(entity);
-        if (!StringUtils.isEmpty(contractString) &&
-                !isEqualContract(contractString, (String) existingContractEntity.getAttribute(ATTR_CONTRACT))) {
-            // Update the same asset(entity)
-            throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Can't update a specific version of contract");
-        }
+//        if (!StringUtils.isEmpty(contractString) &&
+//                !isEqualContract(contractString, (String) existingContractEntity.getAttribute(ATTR_CONTRACT))) {
+//            // Update the same asset(entity)
+//            throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Can't update a specific version of contract");
+//        }
     }
     private void processCreateContract(AtlasEntity entity, EntityMutationContext context) throws AtlasBaseException {
         /*
