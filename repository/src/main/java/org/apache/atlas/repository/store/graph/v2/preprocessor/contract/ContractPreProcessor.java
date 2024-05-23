@@ -19,6 +19,7 @@ import org.apache.atlas.repository.store.graph.v2.*;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,7 +84,8 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
         AtlasEntity existingContractEntity = entityRetriever.toAtlasEntity(vertex);
         // No update to relationships allowed for the existing contract version
         resetAllRelationshipAttributes(entity);
-        if (!isEqualContract(contractString, (String) existingContractEntity.getAttribute(ATTR_CONTRACT))) {
+        if (!StringUtils.isEmpty(contractString) &&
+                !isEqualContract(contractString, (String) existingContractEntity.getAttribute(ATTR_CONTRACT))) {
             // Update the same asset(entity)
             throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Can't update a specific version of contract");
         }
@@ -128,7 +130,7 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
                 // No changes in the contract, Not creating new version
                 removeCreatingVertex(context, entity);
                 return;
-            } else if (isEqualContract(contractString, (String) currentVersionEntity.getAttribute(ATTR_CONTRACT))) {
+            } else if (contract.equals(DataContract.deserialize((String) currentVersionEntity.getAttribute(ATTR_CONTRACT)))) {
                 resetAllRelationshipAttributes(entity);
                 // No change in contract, metadata changed
                 updateExistingVersion(context, entity, currentVersionEntity);

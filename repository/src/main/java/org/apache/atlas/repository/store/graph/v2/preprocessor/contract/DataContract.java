@@ -9,8 +9,10 @@ import com.fasterxml.jackson.annotation.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.commons.lang.StringUtils;
 
 import javax.validation.*;
@@ -27,7 +29,7 @@ import static org.apache.atlas.AtlasErrorCode.*;
 public class DataContract {
     private static final String KIND_VALUE = "DataContract";
     private static final Pattern versionPattern = Pattern.compile("^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$");
-    private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
     static {
         objectMapper.enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS);
     }
@@ -184,6 +186,20 @@ public class DataContract {
             return unknownFields;
         }
 
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) { return true; }
+            if (o == null || getClass() != o.getClass()) { return false; }
+            BusinessTag that = (BusinessTag) o;
+            return Objects.equals(name, that.name) &&
+                    Objects.equals(unknownFields, that.unknownFields);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(super.hashCode(), name, unknownFields);
+        }
+
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -205,6 +221,22 @@ public class DataContract {
         @JsonAnyGetter
         public Map<String, Object> getUnknownFields() {
             return unknownFields;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) { return true; }
+            if (o == null || getClass() != o.getClass()) { return false; }
+            Column that = (Column) o;
+            return Objects.equals(name, that.name) &&
+                    Objects.equals(description, that.description) &&
+                    Objects.equals(data_type, that.data_type) &&
+                    Objects.equals(unknownFields, that.unknownFields);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(super.hashCode(), name, description, data_type, unknownFields);
         }
     }
 
@@ -248,5 +280,30 @@ public class DataContract {
         }
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) { return true; }
+        if (o == null || getClass() != o.getClass()) { return false; }
+
+        DataContract that = (DataContract) o;
+        return Objects.equals(kind, that.kind) &&
+                Objects.equals(status, that.status) &&
+                Objects.equals(templateVersion, that.templateVersion) &&
+                Objects.equals(data_source, that.data_source) &&
+                Objects.equals(dataset, that.dataset) &&
+                Objects.equals(type, that.type) &&
+                Objects.equals(description, that.description) &&
+                Objects.equals(owners, that.owners) &&
+                Objects.equals(tags, that.tags) &&
+                Objects.equals(certificate, that.certificate) &&
+                Objects.equals(columns, that.columns) &&
+                Objects.equals(unknownFields, that.unknownFields);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), kind, status, templateVersion, data_source, dataset, type, description, owners,
+                tags, certificate, columns, unknownFields);
+    }
 }
 
