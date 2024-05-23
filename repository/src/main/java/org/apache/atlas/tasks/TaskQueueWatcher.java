@@ -88,10 +88,11 @@ public class TaskQueueWatcher implements Runnable {
         }
         while (shouldRun.get()) {
             try {
-                if (!redisService.acquireDistributedLock(ATLAS_TASK_LOCK)) {
-                    Thread.sleep(AtlasConstants.TASK_WAIT_TIME_MS);
-                    continue;
-                }
+//                if (!redisService.acquireDistributedLock(ATLAS_TASK_LOCK)) {
+//                    Thread.sleep(AtlasConstants.TASK_WAIT_TIME_MS);
+//                    continue;
+//                }
+                Thread.sleep(100);
 
                 TasksFetcher fetcher = new TasksFetcher(registry);
 

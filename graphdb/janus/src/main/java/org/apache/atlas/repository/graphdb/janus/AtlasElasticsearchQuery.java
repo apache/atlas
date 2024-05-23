@@ -128,34 +128,6 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         return result;
     }
 
-     public int getNumVertices(SearchParams searchParams) throws AtlasBaseException, IOException {
-        // Make a count query
-        String query = searchParams.getQuery();
-        HttpEntity entity = new NStringEntity(query, ContentType.APPLICATION_JSON);
-        String endPoint = index + "/_count";
-        Request request = new Request("GET", endPoint);
-        request.setEntity(entity);
-        Response response;
-        try {
-            response = lowLevelRestClient.performRequest(request);
-        } catch (ResponseException rex) {
-            if (rex.getResponse().getStatusLine().getStatusCode() == 404) {
-                LOG.warn(String.format("ES index with name %s not found", index));
-                throw new AtlasBaseException(INDEX_NOT_FOUND, index);
-            } else {
-                throw new AtlasBaseException(rex);
-            }
-        } catch (IOException e) {
-            throw new AtlasBaseException(AtlasErrorCode.INDEX_SEARCH_FAILED, e.getMessage());
-        }
-        return getVertexCountFromResponse(EntityUtils.toString(response.getEntity()));
-
-    }
-    int getVertexCountFromResponse(String responseString) throws IOException {
-        Map<String, Object> responseMap = AtlasType.fromJson(responseString, Map.class);
-        return  (Integer) responseMap.get("count");
-    }
-
     private DirectIndexQueryResult runQueryWithLowLevelClient(SearchParams searchParams) throws AtlasBaseException {
         DirectIndexQueryResult result = null;
 

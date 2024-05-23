@@ -17,7 +17,6 @@
  */
 package org.apache.atlas.repository.graphdb.janus;
 
-import java.io.IOException;
 import java.util.*;
 
 import com.google.common.base.Preconditions;
@@ -48,11 +47,6 @@ public class AtlasJanusIndexQuery implements AtlasIndexQuery<AtlasJanusVertex, A
     @Override
     public DirectIndexQueryResult<AtlasJanusVertex, AtlasJanusEdge> vertices(SearchParams searchParams) throws AtlasBaseException {
         return null;
-    }
-
-    @Override
-    public int getNumVertices(SearchParams searchParams) throws AtlasBaseException, IOException {
-        return 0;
     }
 
     @Override

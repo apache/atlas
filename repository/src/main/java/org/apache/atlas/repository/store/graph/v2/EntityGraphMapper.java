@@ -2977,34 +2977,18 @@ public class EntityGraphMapper {
         }
     }
 
-    public void cleanUpClassificationPropagation(String classificationName) throws AtlasBaseException, IOException {
-        IndexSearchParams searchParams = new IndexSearchParams();
+    public void cleanUpClassificationPropagation(String classificationName) throws AtlasBaseException {
         int batchSize = 100;
-        DirectIndexQueryResult indexQueryResult;
-        Map<String, Object> dsl = buildMap(classificationName);
-        searchParams.setDsl(dsl);
-        int totalCount = discoveryService.getQueryResponseCount(searchParams);
-        LOG.info("Total entities found for classification {} are {}", classificationName, totalCount);
         int counter = 0;
-        dsl.put("from", 0);
-        dsl.put("size", batchSize);
-        searchParams.setDsl(dsl);
-        while (counter <= totalCount) {
+        while (true) {
             try {
-                indexQueryResult = discoveryService.directIndexSearch(searchParams, true);
-                if (indexQueryResult == null) {
-                    if (LOG.isDebugEnabled()) {
-                        LOG.debug("No entities found for classification {}", classificationName);
-                    }
-                    return;
-                }
-                Iterator<AtlasIndexQuery.Result> results = indexQueryResult.getIterator();
-                if (!results.hasNext()) {
+
+                List<AtlasVertex> vertices = GraphHelper.getAllAssetsWithClassificationAttached(graph, classificationName, batchSize);
+                if (CollectionUtils.isEmpty(vertices)) {
                     LOG.info("No entities found for classification {}", classificationName);
                     return;
                 }
-                while (results.hasNext()) {
-                    AtlasVertex vertex = results.next().getVertex();
+                for(AtlasVertex vertex : vertices) {
                     String guid = GraphHelper.getGuid(vertex);
                     GraphTransactionInterceptor.lockObjectAndReleasePostCommit(guid);
                     List<AtlasClassification> deletedClassifications = new ArrayList<>();
@@ -3038,24 +3022,6 @@ public class EntityGraphMapper {
         }
     }
 
-    private Map<String, Object> getMap(String key, Object value) {
-        Map<String, Object> map = new HashMap<>();
-        map.put(key, value);
-        return map;
-    }
-
-    public Map<String, Object> buildMap(String classificationName) {
-        Map<String, Object> dsl = new HashMap<>();
-        Map<String, Object> query = new HashMap<>();
-        List<Object> shouldClauses = new ArrayList<>();
-        Map<String, Object> terms1 = getMap("terms", getMap("__traitNames", Collections.singletonList(classificationName)));
-        Map<String, Object> terms2 = getMap("terms", getMap("__propagatedTraitNames", Collections.singletonList(classificationName)));
-        shouldClauses.add(terms1);
-        shouldClauses.add(terms2);
-        query.put("bool", getMap("should", shouldClauses));
-        dsl.put("query", query);
-        return dsl;
-    }
     public AtlasEntity repairClassificationMappings(AtlasVertex entityVertex) throws AtlasBaseException {
         String guid = GraphHelper.getGuid(entityVertex);
         AtlasEntity entity = instanceConverter.getEntity(guid, ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES);

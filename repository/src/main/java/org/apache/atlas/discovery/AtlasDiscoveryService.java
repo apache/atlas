@@ -160,14 +160,6 @@ public interface AtlasDiscoveryService {
     AtlasSearchResult directIndexSearch(SearchParams searchParams) throws AtlasBaseException;
 
     /**
-     * Search for direct ES query
-     * @param searchParams Search criteria
-     * @return Matching entities
-     * @throws AtlasBaseException
-     */
-    DirectIndexQueryResult directIndexSearch(SearchParams searchParams, boolean returnVertices) throws AtlasBaseException;
-
-    /**
      * Search for direct ES query on search logs index
      * @param searchParams Search criteria
      * @return Matching search logs

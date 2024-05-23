@@ -44,8 +44,6 @@ public interface AtlasIndexQuery<V, E> {
 
     DirectIndexQueryResult<V, E> vertices(SearchParams searchParams)  throws AtlasBaseException ;
 
-    int getNumVertices(SearchParams searchParams) throws AtlasBaseException, IOException;
-
     /**
      * Gets the query results form index
      *
