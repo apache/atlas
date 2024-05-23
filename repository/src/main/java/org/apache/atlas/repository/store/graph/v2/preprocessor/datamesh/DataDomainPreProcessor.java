@@ -49,12 +49,14 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
 
     private EntityMutationContext context;
     private Map<String, String> updatedPolicyResources;
+    private EntityGraphRetriever retrieverNoRelation = null;
     private Map<String, String> updatedDomainQualifiedNames;
 
     public DataDomainPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever,
                                   AtlasGraph graph) {
         super(typeRegistry, entityRetriever, graph);
         this.updatedPolicyResources = new HashMap<>();
+        this.retrieverNoRelation = new EntityGraphRetriever(graph, typeRegistry, true);
         this.updatedDomainQualifiedNames = new HashMap<>();
     }
 
@@ -88,17 +90,32 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
 
         String domainName = (String) entity.getAttribute(NAME);
 
-        String parentDomainQualifiedName = (String) entity.getAttribute(PARENT_DOMAIN_QN_ATTR);
+        String parentDomainQualifiedName = "";
+        AtlasObjectId parentDomainObject = (AtlasObjectId) entity.getRelationshipAttribute(PARENT_DOMAIN_REL_TYPE);
+        AtlasVertex parentDomain = null;
 
-        AtlasEntityHeader parentDomain = getParent(entity);
-        if(parentDomain != null ){
-            parentDomainQualifiedName = (String) parentDomain.getAttribute(QUALIFIED_NAME);
+        if(parentDomainObject != null ){
+            parentDomain = retrieverNoRelation.getEntityVertex(parentDomainObject);
+            parentDomainQualifiedName = parentDomain.getProperty(QUALIFIED_NAME, String.class);
+            if(StringUtils.isNotEmpty(parentDomainQualifiedName)) {
+                entity.setAttribute(PARENT_DOMAIN_QN_ATTR, parentDomainQualifiedName);
+                String superDomainQualifiedName = parentDomain.getProperty(SUPER_DOMAIN_QN_ATTR, String.class);
+                if(StringUtils.isEmpty(parentDomain.getProperty(SUPER_DOMAIN_QN_ATTR, String.class))) {
+                    superDomainQualifiedName = parentDomainQualifiedName;
+                }
+                entity.setAttribute(SUPER_DOMAIN_QN_ATTR, superDomainQualifiedName);
+            }
+        } else {
+            entity.removeAttribute(PARENT_DOMAIN_QN_ATTR);
+            entity.removeAttribute(SUPER_DOMAIN_QN_ATTR);
         }
 
         entity.setAttribute(QUALIFIED_NAME, createQualifiedName(parentDomainQualifiedName));
+
+
         entity.setCustomAttributes(customAttributes);
 
-        domainExists(domainName, parentDomainQualifiedName);
+        domainExists(domainName, parentDomainQualifiedName, null);
 
         RequestContext.get().endMetricRecord(metricRecorder);
     }
@@ -140,7 +157,8 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
         }
 
         if (!newParentDomainQualifiedName.equals(currentParentDomainQualifiedName) && entity.hasRelationshipAttribute(PARENT_DOMAIN_REL_TYPE)) {
-            if(storedDomain.getRelationshipAttribute(PARENT_DOMAIN_REL_TYPE) == null){
+            if(storedDomain.getRelationshipAttribute(PARENT_DOMAIN_REL_TYPE) == null &&
+                    StringUtils.isEmpty( (String) storedDomain.getAttribute(PARENT_DOMAIN_QN_ATTR))){
                 throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Cannot move Super Domain inside another domain");
             }
 
@@ -153,8 +171,11 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
             String domainCurrentName = vertex.getProperty(NAME, String.class);
             String domainNewName = (String) entity.getAttribute(NAME);
 
+            entity.removeAttribute(PARENT_DOMAIN_QN_ATTR);
+            entity.removeAttribute(SUPER_DOMAIN_QN_ATTR);
+
             if (!domainCurrentName.equals(domainNewName)) {
-                domainExists(domainNewName, currentParentDomainQualifiedName);
+                domainExists(domainNewName, currentParentDomainQualifiedName, storedDomain.getGuid());
             }
             entity.setAttribute(QUALIFIED_NAME, vertexQnName);
         }
@@ -176,7 +197,7 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
 
             LOG.info("Moving subdomain {} to Domain {}", domainName, targetDomainQualifiedName);
 
-            domainExists(domainName, targetDomainQualifiedName);
+            domainExists(domainName, targetDomainQualifiedName, domain.getGuid());
 
             if(targetDomainQualifiedName.isEmpty()){
                 //Moving subDomain to make it Super Domain
@@ -189,7 +210,12 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
                 superDomainQualifiedName = updatedQualifiedName ;
             }
             else{
-                updatedQualifiedName = currentDomainQualifiedName.replace(sourceDomainQualifiedName, targetDomainQualifiedName);
+                if(StringUtils.isEmpty(sourceDomainQualifiedName)){
+                    updatedQualifiedName = createQualifiedName(targetDomainQualifiedName);
+                }else {
+                    updatedQualifiedName = currentDomainQualifiedName.replace(sourceDomainQualifiedName, targetDomainQualifiedName);
+                }
+
                 domain.setAttribute(QUALIFIED_NAME, updatedQualifiedName);
                 domain.setAttribute(PARENT_DOMAIN_QN_ATTR, targetDomainQualifiedName);
                 domain.setAttribute(SUPER_DOMAIN_QN_ATTR, superDomainQualifiedName);
@@ -333,10 +359,10 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
         return getParent(objectId, PARENT_ATTRIBUTES);
     }
 
-    private void domainExists(String domainName, String parentDomainQualifiedName) throws AtlasBaseException {
+    private void domainExists(String domainName, String parentDomainQualifiedName,String guid) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("domainExists");
         try {
-            exists(DATA_DOMAIN_ENTITY_TYPE, domainName, parentDomainQualifiedName);
+            exists(DATA_DOMAIN_ENTITY_TYPE, domainName, parentDomainQualifiedName, guid);
 
         } finally {
             RequestContext.get().endMetricRecord(metricRecorder);
