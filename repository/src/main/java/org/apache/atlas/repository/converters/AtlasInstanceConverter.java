@@ -322,7 +322,7 @@ public class AtlasInstanceConverter {
         return entity;
     }
 
-    public AtlasEntity getEntity(String guid,boolean ignoreRelationshipAttributes) throws AtlasBaseException {
+    public AtlasEntity getEntity(String guid, boolean ignoreRelationshipAttributes) throws AtlasBaseException {
         AtlasEntity entity = null;
         if (ignoreRelationshipAttributes) {
             entity = entityGraphRetrieverIgnoreRelationshipAttrs.toAtlasEntity(guid);
