@@ -29,7 +29,6 @@ import org.apache.atlas.model.discovery.SearchParams;
 import org.apache.atlas.model.profile.AtlasUserSavedSearch;
 import org.apache.atlas.model.searchlog.SearchLogSearchParams;
 import org.apache.atlas.model.searchlog.SearchLogSearchResult;
-import org.apache.atlas.repository.graphdb.DirectIndexQueryResult;
 
 import java.util.List;
 
