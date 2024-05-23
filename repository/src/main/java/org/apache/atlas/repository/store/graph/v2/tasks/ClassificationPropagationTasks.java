@@ -26,7 +26,6 @@ import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
 import org.apache.atlas.type.AtlasType;
 
-import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
 
@@ -129,7 +128,7 @@ public class ClassificationPropagationTasks {
         }
 
         @Override
-        protected void run(Map<String, Object> parameters) throws AtlasBaseException, IOException {
+        protected void run(Map<String, Object> parameters) throws AtlasBaseException {
             String            classificationName      = (String) parameters.get(PARAM_CLASSIFICATION_NAME);
 
             entityGraphMapper.cleanUpClassificationPropagation(classificationName);
