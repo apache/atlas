@@ -24,12 +24,10 @@ import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasEntityAccessRequest;
 import org.apache.atlas.authorize.AtlasPrivilege;
-import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.exception.EntityNotFoundException;
 import org.apache.atlas.model.TimeBoundary;
 import org.apache.atlas.model.TypeCategory;
-import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
@@ -55,8 +53,6 @@ import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.repository.graphdb.DirectIndexQueryResult;
-import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
@@ -86,11 +82,22 @@ import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import javax.inject.Inject;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
+import java.util.Date;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -196,15 +203,13 @@ public class EntityGraphMapper {
     private final EntityGraphRetriever      entityRetriever;
     private final IFullTextMapper           fullTextMapperV2;
     private final TaskManagement            taskManagement;
-
-    private final EntityDiscoveryService discoveryService;
     private final TransactionInterceptHelper   transactionInterceptHelper;
 
-    @Autowired
+    @Inject
     public EntityGraphMapper(DeleteHandlerDelegate deleteDelegate, RestoreHandlerV1 restoreHandlerV1, AtlasTypeRegistry typeRegistry, AtlasGraph graph,
                              AtlasRelationshipStore relationshipStore, IAtlasEntityChangeNotifier entityChangeNotifier,
                              AtlasInstanceConverter instanceConverter, IFullTextMapper fullTextMapperV2,
-                             TaskManagement taskManagement, TransactionInterceptHelper transactionInterceptHelper,@Lazy EntityDiscoveryService discoveryService) {
+                             TaskManagement taskManagement, TransactionInterceptHelper transactionInterceptHelper) {
         this.restoreHandlerV1 = restoreHandlerV1;
         this.graphHelper          = new GraphHelper(graph);
         this.deleteDelegate       = deleteDelegate;
@@ -216,9 +221,7 @@ public class EntityGraphMapper {
         this.entityRetriever      = new EntityGraphRetriever(graph, typeRegistry);
         this.fullTextMapperV2     = fullTextMapperV2;
         this.taskManagement       = taskManagement;
-        this.transactionInterceptHelper = transactionInterceptHelper;
-        this.discoveryService = discoveryService;
-    }
+        this.transactionInterceptHelper = transactionInterceptHelper;}
 
     @VisibleForTesting
     public void setTasksUseFlag(boolean value) {
@@ -3006,14 +3009,14 @@ public class EntityGraphMapper {
                     counter++;
                 }
             } catch (AtlasBaseException e) {
-                throw new AtlasBaseException(AtlasErrorCode.INDEX_SEARCH_FAILED, e);
+                throw e;
             } finally {
                 transactionInterceptHelper.intercept();
                 LOG.info("Processed cleaning up {} entities", counter);
             }
 
             // Fetch all classificationVertex by classificationName and delete them if remaining
-            List<AtlasVertex> classificationVertices = GraphHelper.getAllClassificationVertex(graph, classificationName);
+            List<AtlasVertex> classificationVertices = GraphHelper.getAllClassificationVerticesByClassificationName(graph, classificationName);
             for (AtlasVertex classificationVertex : classificationVertices) {
                 deleteDelegate.getHandler().deleteClassificationVertex(classificationVertex, true);
             }

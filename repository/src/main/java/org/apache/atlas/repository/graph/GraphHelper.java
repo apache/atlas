@@ -376,7 +376,7 @@ public final class GraphHelper {
         return ret;
     }
 
-    public static List<AtlasVertex> getAllClassificationVertex(AtlasGraph graph, String classificationName) {
+    public static List<AtlasVertex> getAllClassificationVerticesByClassificationName(AtlasGraph graph, String classificationName) {
         Iterable vertices = graph.query().has(TYPE_NAME_PROPERTY_KEY, classificationName).vertices();
         if (vertices == null) {
             return Collections.emptyList();
