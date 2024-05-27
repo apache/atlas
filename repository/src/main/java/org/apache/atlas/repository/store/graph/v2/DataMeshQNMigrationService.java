@@ -25,6 +25,7 @@ import java.util.*;
 
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.Constants.POLICY_ENTITY_TYPE;
+import static org.apache.atlas.repository.graph.GraphHelper.getActiveChildrenVertices;
 import static org.apache.atlas.repository.graph.GraphHelper.getAllChildrenVertices;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_CATEGORY;
@@ -130,7 +131,7 @@ public class DataMeshQNMigrationService implements MigrationService {
         }
 
         if (!skipSuperDomain) {
-            Iterator<AtlasVertex> products = getAllChildrenVertices(vertex, DATA_PRODUCT_EDGE_LABEL);
+            Iterator<AtlasVertex> products = getActiveChildrenVertices(vertex, DATA_PRODUCT_EDGE_LABEL);
             List<AtlasVertex> productsList = new ArrayList<>();
             products.forEachRemaining(productsList::add);
 
@@ -147,7 +148,7 @@ public class DataMeshQNMigrationService implements MigrationService {
             }
 
             // Get all children domains of current domain
-            Iterator<AtlasVertex> childDomains = getAllChildrenVertices(vertex, DOMAIN_PARENT_EDGE_LABEL);
+            Iterator<AtlasVertex> childDomains = getActiveChildrenVertices(vertex, DOMAIN_PARENT_EDGE_LABEL);
             List<AtlasVertex> childDomainsList = new ArrayList<>();
             childDomains.forEachRemaining(childDomainsList::add);
 
