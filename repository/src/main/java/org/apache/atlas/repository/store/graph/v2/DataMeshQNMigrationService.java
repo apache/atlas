@@ -170,7 +170,7 @@ public class DataMeshQNMigrationService implements MigrationService {
         }
     }
 
-    public void commitChanges() {
+    public void commitChanges() throws AtlasBaseException {
         try {
             updatePolicy(this.updatedPolicyResources);
         } catch (AtlasBaseException e) {
@@ -178,6 +178,7 @@ public class DataMeshQNMigrationService implements MigrationService {
             this.skipSuperDomain = true;
             LOG.error("Failed to update set of policies: ", e);
             LOG.error("Failed policies: {}", AtlasType.toJson(this.updatedPolicyResources));
+            throw e;
         } finally {
             this.updatedPolicyResources.clear();
         }
@@ -189,6 +190,7 @@ public class DataMeshQNMigrationService implements MigrationService {
             this.skipSuperDomain = true;
             this.errorOccured = true;
             LOG.error("Failed to commit set of assets: ", e);
+            throw e;
         } finally {
             this.counter = 0;
         }
