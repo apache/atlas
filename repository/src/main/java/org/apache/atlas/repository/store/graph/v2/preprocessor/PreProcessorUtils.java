@@ -60,12 +60,14 @@ public class PreProcessorUtils {
     public static  final String DAAP_VISIBILITY_GROUPS_ATTR = "daapVisibilityGroups";
 
     //Migration Constants
-    public static final String MIGRATION = "MIGRATION:";
-    public static final String DATA_MESH_QN = MIGRATION + "DATA_MESH_QN";
-    public static final String IN_PROGRESS = "IN_PROGRESS";
-    public static final String SUCCESSFUL = "SUCCESSFUL";
+    public static final String MIGRATION_TYPE_PREFIX = "MIGRATION:";
+    public static final String DATA_MESH_QN = MIGRATION_TYPE_PREFIX + "DATA_MESH_QN";
 
-    public static final String FAILED = "FAILED";
+    public enum MigrationStatus {
+        IN_PROGRESS,
+        SUCCESSFUL,
+        FAILED;
+    }
 
     //Query models constants
     public static final String PREFIX_QUERY_QN   = "default/collection/";
