@@ -50,6 +50,8 @@ public abstract class ClassificationTask extends AbstractTask {
     public static final String PARAM_RELATIONSHIP_GUID        = "relationshipGuid";
     public static final String PARAM_RELATIONSHIP_OBJECT      = "relationshipObject";
     public static final String PARAM_RELATIONSHIP_EDGE_ID     = "relationshipEdgeId";
+
+    public static final String PARAM_CLASSIFICATION_NAME      = "classificationName";
     public static final String PARAM_REFERENCED_VERTEX_ID     = "referencedVertexId";
     public static final String PARAM_IS_TERM_ENTITY_EDGE       = "isTermEntityEdge";
     public static final String PARAM_PREVIOUS_CLASSIFICATION_RESTRICT_PROPAGATE_THROUGH_LINEAGE = "previousRestrictPropagationThroughLineage";

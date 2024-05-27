@@ -121,4 +121,17 @@ public class ClassificationPropagationTasks {
             entityGraphMapper.updateTagPropagations(relationshipEdgeId, relationship);
         }
     }
+
+    public static class CleanUpClassificationPropagation extends ClassificationTask {
+        public CleanUpClassificationPropagation(AtlasTask task, AtlasGraph graph, EntityGraphMapper entityGraphMapper, DeleteHandlerDelegate deleteDelegate, AtlasRelationshipStore relationshipStore) {
+            super(task, graph, entityGraphMapper, deleteDelegate, relationshipStore);
+        }
+
+        @Override
+        protected void run(Map<String, Object> parameters) throws AtlasBaseException {
+            String            classificationName      = (String) parameters.get(PARAM_CLASSIFICATION_NAME);
+
+            entityGraphMapper.cleanUpClassificationPropagation(classificationName);
+        }
+    }
 }
