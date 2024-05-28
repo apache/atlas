@@ -176,7 +176,6 @@ public class TermPreProcessor extends AbstractGlossaryPreProcessor {
 
     private String validateAndGetCategory(AtlasEntity entity) throws AtlasBaseException {
         String glossaryQualifiedName = (String) anchor.getAttribute(QUALIFIED_NAME);
-
         String categoryQualifiedName = null;
 
         if (entity.hasRelationshipAttribute(ATTR_CATEGORIES) && entity.getRelationshipAttribute(ATTR_CATEGORIES) != null) {
