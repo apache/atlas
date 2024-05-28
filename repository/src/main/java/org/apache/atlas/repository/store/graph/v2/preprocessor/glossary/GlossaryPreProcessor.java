@@ -92,8 +92,10 @@ public class GlossaryPreProcessor implements PreProcessor {
             throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_ALREADY_EXISTS,glossaryName);
         }
 
-        if(StringUtils.isEmpty(lexicographicalSortOrder)){
+        if(StringUtils.isEmpty(lexicographicalSortOrder)) {
             assignNewLexicographicalSortOrder((AtlasEntity) entity, null, null, this.discovery);
+        } else {
+            isValidLexoRank(lexicographicalSortOrder);
         }
 
         entity.setAttribute(QUALIFIED_NAME, createQualifiedName());
@@ -111,6 +113,10 @@ public class GlossaryPreProcessor implements PreProcessor {
 
         if (StringUtils.isEmpty(glossaryName) || isNameInvalid(glossaryName)) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME);
+        }
+        String lexicographicalSortOrder = (String) entity.getAttribute(LEXICOGRAPHICAL_SORT_ORDER);
+        if(StringUtils.isNotEmpty(lexicographicalSortOrder)) {
+            isValidLexoRank(lexicographicalSortOrder);
         }
 
         String vertexQnName = vertex.getProperty(QUALIFIED_NAME, String.class);

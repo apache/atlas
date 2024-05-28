@@ -133,6 +133,8 @@ public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
         String lexicographicalSortOrder = (String) entity.getAttribute(LEXICOGRAPHICAL_SORT_ORDER);
         if(StringUtils.isEmpty(lexicographicalSortOrder)){
             assignNewLexicographicalSortOrder(entity,glossaryQualifiedName, parentQname, this.discovery);
+        } else {
+            isValidLexoRank(lexicographicalSortOrder);
         }
 
         entity.setAttribute(QUALIFIED_NAME, createQualifiedName(vertex));
@@ -159,6 +161,11 @@ public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
         String currentGlossaryQualifiedName = (String) currentGlossaryHeader.getAttribute(QUALIFIED_NAME);
 
         String newGlossaryQualifiedName = (String) anchor.getAttribute(QUALIFIED_NAME);
+
+        String lexicographicalSortOrder = (String) entity.getAttribute(LEXICOGRAPHICAL_SORT_ORDER);
+        if(StringUtils.isNotEmpty(lexicographicalSortOrder)) {
+            isValidLexoRank(lexicographicalSortOrder);
+        }
 
         if (!currentGlossaryQualifiedName.equals(newGlossaryQualifiedName)){
             //Auth check

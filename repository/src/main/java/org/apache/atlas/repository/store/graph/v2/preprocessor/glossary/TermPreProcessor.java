@@ -95,6 +95,7 @@ public class TermPreProcessor extends AbstractGlossaryPreProcessor {
 
         String glossaryQName = (String) anchor.getAttribute(QUALIFIED_NAME);
 
+
         termExists(termName, glossaryQName);
 
         String parentQname = validateAndGetCategory(entity);
@@ -102,6 +103,8 @@ public class TermPreProcessor extends AbstractGlossaryPreProcessor {
         String lexicographicalSortOrder = (String) entity.getAttribute(LEXICOGRAPHICAL_SORT_ORDER);
         if(StringUtils.isEmpty(lexicographicalSortOrder)){
             assignNewLexicographicalSortOrder(entity, glossaryQName, parentQname, this.discovery);
+        } else {
+            isValidLexoRank(lexicographicalSortOrder);
         }
 
         entity.setAttribute(QUALIFIED_NAME, createQualifiedName());
@@ -131,6 +134,11 @@ public class TermPreProcessor extends AbstractGlossaryPreProcessor {
         String termQualifiedName = vertex.getProperty(QUALIFIED_NAME, String.class);
 
         String newGlossaryQualifiedName = (String) anchor.getAttribute(QUALIFIED_NAME);
+
+        String lexicographicalSortOrder = (String) entity.getAttribute(LEXICOGRAPHICAL_SORT_ORDER);
+        if(StringUtils.isNotEmpty(lexicographicalSortOrder)) {
+            isValidLexoRank(lexicographicalSortOrder);
+        }
 
         if (!currentGlossaryQualifiedName.equals(newGlossaryQualifiedName)){
             //Auth check

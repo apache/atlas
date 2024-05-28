@@ -23,6 +23,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.apache.atlas.repository.Constants.QUERY_COLLECTION_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
@@ -89,6 +91,9 @@ public class PreProcessorUtils {
 
     public static final String CHILDREN_QUERIES = "__Namespace.childrenQueries";
     public static final String CHILDREN_FOLDERS = "__Namespace.childrenFolders";
+    public static final int REBALANCING_TRIGGER = 119;
+    public static final int PRE_DELIMITER_LENGTH = 9;
+    public static final String LEXORANK_HARD_LIMIT = "" + (256 - PRE_DELIMITER_LENGTH);
 
     public static String getUUID(){
         return NanoIdUtils.randomNanoId();
@@ -204,6 +209,23 @@ public class PreProcessorUtils {
 
         if (CollectionUtils.isNotEmpty(assets)) {
             throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, errorMessage);
+        }
+    }
+
+    public static void isValidLexoRank(String input) throws AtlasBaseException {
+        String pattern = "^0\\|[0-9a-z]{6}:(?:[0-9a-z]{0," + LEXORANK_HARD_LIMIT + "})?$";
+
+        Pattern regex = Pattern.compile(pattern);
+
+        Matcher matcher = regex.matcher(input);
+
+        if(!matcher.matches()){
+            throw new AtlasBaseException("Invalid LexicographicSortOrder");
+        }
+        // TODO : Add the rebalancing logic here
+        int colonIndex = input.indexOf(":");
+        if (colonIndex != -1 && input.substring(colonIndex + 1).length() >= REBALANCING_TRIGGER) {
+            // Rebalancing trigger
         }
     }
 
