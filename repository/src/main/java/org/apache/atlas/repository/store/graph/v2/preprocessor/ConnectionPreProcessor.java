@@ -176,7 +176,7 @@ public class ConnectionPreProcessor implements PreProcessor {
             if (connection.hasAttribute(ATTR_ADMIN_USERS)) {
                 List<String> newAdminUsers = (List<String>) connection.getAttribute(ATTR_ADMIN_USERS);
                 List<String> currentAdminUsers = (List<String>) existingConnEntity.getAttribute(ATTR_ADMIN_USERS);
-                if (StringUtils.isNotEmpty(creatorUser) && !newAdminUsers.contains(creatorUser)) {
+                if (StringUtils.isNotEmpty(creatorUser) && CollectionUtils.isNotEmpty(currentAdminUsers)) {
                     newAdminUsers.add(creatorUser);
                 }
 
