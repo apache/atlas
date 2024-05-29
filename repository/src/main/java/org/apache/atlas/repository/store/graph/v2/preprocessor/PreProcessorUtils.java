@@ -214,7 +214,8 @@ public class PreProcessorUtils {
 
     public static void isValidLexoRank(String input, String glossaryQualifiedName, String parentQualifiedName, EntityDiscoveryService discovery) throws AtlasBaseException {
         String pattern = "^0\\|[0-9a-z]{6}:(?:[0-9a-z]{0," + LEXORANK_HARD_LIMIT + "})?$";
-
+        // TODO : To remove this after migration is successful on all tenants and custom-sort is successfully GA
+        Boolean requestFromMigration = RequestContext.get().getRequestContextHeaders().getOrDefault("x-atlan-request-id", "").contains("custom-sort-migration");
         Pattern regex = Pattern.compile(pattern);
 
         Matcher matcher = regex.matcher(input);
@@ -222,20 +223,21 @@ public class PreProcessorUtils {
         if(!matcher.matches()){
             throw new AtlasBaseException("Invalid LexicographicSortOrder");
         }
+        if(!requestFromMigration) {
+            Map<String, Object> dslQuery = createDSLforCheckingPreExistingLexoRank(input, glossaryQualifiedName, parentQualifiedName);
+            List<AtlasEntityHeader> categories = new ArrayList<>();
+            try {
+                IndexSearchParams searchParams = new IndexSearchParams();
+                searchParams.setAttributes(new HashSet<>());
+                searchParams.setDsl(dslQuery);
+                categories = discovery.directIndexSearch(searchParams).getEntities();
+            } catch (AtlasBaseException e) {
+                e.printStackTrace();
+            }
 
-        Map<String, Object> dslQuery = createDSLforCheckingPreExistingLexoRank(input, glossaryQualifiedName, parentQualifiedName);
-        List<AtlasEntityHeader> categories = new ArrayList<>();
-        try {
-            IndexSearchParams searchParams = new IndexSearchParams();
-            searchParams.setAttributes(new HashSet<>());
-            searchParams.setDsl(dslQuery);
-            categories = discovery.directIndexSearch(searchParams).getEntities();
-        } catch (AtlasBaseException e) {
-            e.printStackTrace();
-        }
-
-        if(!CollectionUtils.isEmpty(categories)){
-            throw new AtlasBaseException("Invalid LexicographicSortOrder");
+            if (!CollectionUtils.isEmpty(categories)) {
+                throw new AtlasBaseException("Invalid LexicographicSortOrder");
+            }
         }
         // TODO : Add the rebalancing logic here
         int colonIndex = input.indexOf(":");
