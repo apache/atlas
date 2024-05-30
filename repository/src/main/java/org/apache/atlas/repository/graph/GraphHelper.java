@@ -403,11 +403,9 @@ public final class GraphHelper {
                 }
                 LOG.info("classificationVerticesSet size: {}", classificationVerticesSet.size());
             }
-            return new ArrayList<>(classificationVerticesSet);
         }
-        //
 
-        return IteratorUtils.toList(classificationVertices.iterator());
+        return new ArrayList<>(classificationVerticesSet);
     }
     public static AtlasEdge getClassificationEdge(AtlasVertex entityVertex, AtlasVertex classificationVertex) {
         AtlasEdge ret   = null;
