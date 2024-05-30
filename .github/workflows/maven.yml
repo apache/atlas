@@ -25,7 +25,7 @@ on:
       - beta
       - development
       - master
-      - tagcleanup
+      - lineageondemand
 
 jobs:
   build:

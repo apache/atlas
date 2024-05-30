@@ -3007,7 +3007,7 @@ public class EntityGraphMapper {
                 offset += CHUNK_SIZE;
             } finally {
                 transactionInterceptHelper.intercept();
-                LOG.info("Cleaned up {} entities", offset);
+                LOG.info("Cleaned up {} entities for classification {}", offset, classificationName);
             }
 
         } while (offset < totalVertexSize);
