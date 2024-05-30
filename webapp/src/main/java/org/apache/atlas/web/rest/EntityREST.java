@@ -97,6 +97,8 @@ public class EntityREST {
     private static final int TWO_MILLION = HUNDRED_THOUSAND * 10 * 2;
     private static final Set<String> ATTRS_WITH_TWO_MILLION_LIMIT = new HashSet<String>() {{
         add("rawQueryText");
+        add("variablesSchemaBase64");
+        add("visualBuilderSchemaBase64");
     }};
 
 
