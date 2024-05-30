@@ -73,6 +73,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasErrorCode.RELATIONSHIP_CREATE_INVALID_PARAMS;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
@@ -384,21 +385,28 @@ public final class GraphHelper {
         return IteratorUtils.toList(vertices.iterator());
     }
 
-    public static List<AtlasVertex> getAllAssetsWithClassificationAttached(AtlasGraph graph, String classificationName, int limit) {
-        AtlasGraphQuery query = graph.query();
-        AtlasGraphQuery hasPropagatedTraitNames = query.createChildQuery().has(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, classificationName);
-        AtlasGraphQuery hasTraitNames = query.createChildQuery().has(TRAIT_NAMES_PROPERTY_KEY, classificationName);
-        Iterable vertices = query.or(
-                Arrays.asList(
-                        hasPropagatedTraitNames,
-                        hasTraitNames
-                )
-        ).vertices(limit);
-        if (vertices == null) {
+    public static List<AtlasVertex> getAllAssetsWithClassificationAttached(AtlasGraph graph, String classificationName) {
+        Iterable classificationVertices = graph.query().has(TYPE_NAME_PROPERTY_KEY, classificationName).vertices();
+        if (classificationVertices == null) {
             return Collections.emptyList();
         }
+        List<AtlasVertex> classificationVerticesList = IteratorUtils.toList(classificationVertices.iterator());
+            LOG.info("classificationVerticesList size: {}", classificationVerticesList.size());
+        HashSet<AtlasVertex> entityVerticesSet = new HashSet<>();
+        for (AtlasVertex classificationVertex : classificationVerticesList) {
+            Iterable attachedVertices =  classificationVertex.query()
+                    .direction(AtlasEdgeDirection.IN)
+                    .label(CLASSIFICATION_LABEL).vertices();
+            if (attachedVertices != null) {
+                Iterator<AtlasVertex> attachedVerticesIterator = attachedVertices.iterator();
+                while (attachedVerticesIterator.hasNext()) {
+                    entityVerticesSet.add(attachedVerticesIterator.next());
+                }
+                LOG.info("entityVerticesSet size: {}", entityVerticesSet.size());
+            }
+        }
 
-        return IteratorUtils.toList(vertices.iterator());
+        return entityVerticesSet.stream().collect(Collectors.toList());
     }
     public static AtlasEdge getClassificationEdge(AtlasVertex entityVertex, AtlasVertex classificationVertex) {
         AtlasEdge ret   = null;
