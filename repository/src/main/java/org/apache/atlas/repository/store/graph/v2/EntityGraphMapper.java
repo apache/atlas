@@ -2981,13 +2981,12 @@ public class EntityGraphMapper {
 
     public void cleanUpClassificationPropagation(String classificationName) throws AtlasBaseException {
         List<AtlasVertex> vertices = GraphHelper.getAllAssetsWithClassificationAttached(graph, classificationName);
-        int batchSize = 2;
         int totalVertexSize = vertices.size();
         LOG.info("To clean up tag {} from {} entities", classificationName, totalVertexSize);
         int toIndex;
         int offset = 0;
         do {
-            toIndex = Math.min((offset + batchSize), totalVertexSize);
+            toIndex = Math.min((offset + CHUNK_SIZE), totalVertexSize);
             List<AtlasVertex> entityVertices = vertices.subList(offset, toIndex);
             List<String> impactedGuids = entityVertices.stream().map(GraphHelper::getGuid).collect(Collectors.toList());
             try {
@@ -3005,7 +3004,7 @@ public class EntityGraphMapper {
 
                     entityChangeNotifier.onClassificationDeletedFromEntity(entity, deletedClassifications);
                 }
-                offset += batchSize;
+                offset += CHUNK_SIZE;
             } finally {
                 transactionInterceptHelper.intercept();
                 LOG.info("Cleaned up {} entities", offset);
