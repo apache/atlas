@@ -384,21 +384,28 @@ public final class GraphHelper {
         return IteratorUtils.toList(vertices.iterator());
     }
 
-    public static List<AtlasVertex> getAllAssetsWithClassificationAttached(AtlasGraph graph, String classificationName, int limit) {
-        AtlasGraphQuery query = graph.query();
-        AtlasGraphQuery hasPropagatedTraitNames = query.createChildQuery().has(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, classificationName);
-        AtlasGraphQuery hasTraitNames = query.createChildQuery().has(TRAIT_NAMES_PROPERTY_KEY, classificationName);
-        Iterable vertices = query.or(
-                Arrays.asList(
-                        hasPropagatedTraitNames,
-                        hasTraitNames
-                )
-        ).vertices(limit);
-        if (vertices == null) {
+    public static List<AtlasVertex> getAllAssetsWithClassificationAttached(AtlasGraph graph, String classificationName) {
+        Iterable classificationVertices = graph.query().has(TYPE_NAME_PROPERTY_KEY, classificationName).vertices();
+        if (classificationVertices == null) {
             return Collections.emptyList();
         }
+        List<AtlasVertex> classificationVerticesList = IteratorUtils.toList(classificationVertices.iterator());
+        HashSet<AtlasVertex> classificationVerticesSet = new HashSet<>();
+        for (AtlasVertex classificationVertex : classificationVerticesList) {
+            Iterable attachedVertices =  classificationVertex.query()
+                    .direction(AtlasEdgeDirection.IN)
+                    .label(CLASSIFICATION_LABEL).vertices();
+            if (attachedVertices != null) {
+                Iterator<AtlasVertex> attachedVerticesIterator = attachedVertices.iterator();
+                while (attachedVerticesIterator.hasNext()) {
+                    classificationVerticesSet.add(attachedVerticesIterator.next());
+                }
+            }
+            return new ArrayList<>(classificationVerticesSet);
+        }
+        //
 
-        return IteratorUtils.toList(vertices.iterator());
+        return IteratorUtils.toList(classificationVertices.iterator());
     }
     public static AtlasEdge getClassificationEdge(AtlasVertex entityVertex, AtlasVertex classificationVertex) {
         AtlasEdge ret   = null;

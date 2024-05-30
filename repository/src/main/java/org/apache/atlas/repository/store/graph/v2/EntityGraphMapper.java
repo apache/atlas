@@ -2980,22 +2980,23 @@ public class EntityGraphMapper {
     }
 
     public void cleanUpClassificationPropagation(String classificationName) throws AtlasBaseException {
-        int batchSize = 100;
-        int counter = 0;
-        while (true) {
+        List<AtlasVertex> vertices = GraphHelper.getAllAssetsWithClassificationAttached(graph, classificationName);
+        int batchSize = 2;
+        int totalVertexSize = vertices.size();
+        LOG.info("Clean up tag {} from {} entities", classificationName, totalVertexSize);
+        int toIndex;
+        int offset = 0;
+        do {
+            toIndex = Math.min((offset + batchSize), totalVertexSize);
+            List<AtlasVertex> entityVertices = vertices.subList(offset, toIndex);
+            List<String> impactedGuids = entityVertices.stream().map(GraphHelper::getGuid).collect(Collectors.toList());
             try {
-
-                List<AtlasVertex> vertices = GraphHelper.getAllAssetsWithClassificationAttached(graph, classificationName, batchSize);
-                if (CollectionUtils.isEmpty(vertices)) {
-                    LOG.info("No entities found for classification {}", classificationName);
-                    break;
-                }
-                for(AtlasVertex vertex : vertices) {
+                GraphTransactionInterceptor.lockObjectAndReleasePostCommit(impactedGuids);
+                for (AtlasVertex vertex : entityVertices) {
                     String guid = GraphHelper.getGuid(vertex);
                     GraphTransactionInterceptor.lockObjectAndReleasePostCommit(guid);
                     List<AtlasClassification> deletedClassifications = new ArrayList<>();
                     List<AtlasEdge> classificationEdges = GraphHelper.getClassificationEdges(vertex, null, classificationName);
-
                     for (AtlasEdge edge : classificationEdges) {
                         AtlasClassification classification = entityRetriever.toAtlasClassification(edge.getInVertex());
                         deletedClassifications.add(classification);
@@ -3006,24 +3007,21 @@ public class EntityGraphMapper {
 
                     entityChangeNotifier.onClassificationDeletedFromEntity(entity, deletedClassifications);
 
-                    counter++;
+                    offset += batchSize;
                 }
-            } catch (AtlasBaseException e) {
-                throw e;
             } finally {
                 transactionInterceptHelper.intercept();
-                LOG.info("Processed cleaning up {} entities", counter);
+                LOG.info("Cleaned up {} entities", offset);
             }
 
-            // Fetch all classificationVertex by classificationName and delete them if remaining
-            List<AtlasVertex> classificationVertices = GraphHelper.getAllClassificationVerticesByClassificationName(graph, classificationName);
-            for (AtlasVertex classificationVertex : classificationVertices) {
-                deleteDelegate.getHandler().deleteClassificationVertex(classificationVertex, true);
-            }
-            transactionInterceptHelper.intercept();
-            LOG.info("Completed cleaning up classification {}", classificationName);
-
+        } while (offset < totalVertexSize);
+        // Fetch all classificationVertex by classificationName and delete them if remaining
+        List<AtlasVertex> classificationVertices = GraphHelper.getAllClassificationVerticesByClassificationName(graph, classificationName);
+        for (AtlasVertex classificationVertex : classificationVertices) {
+            deleteDelegate.getHandler().deleteClassificationVertex(classificationVertex, true);
         }
+        transactionInterceptHelper.intercept();
+        LOG.info("Completed cleaning up classification {}", classificationName);
     }
 
     public AtlasEntity repairClassificationMappings(AtlasVertex entityVertex) throws AtlasBaseException {
