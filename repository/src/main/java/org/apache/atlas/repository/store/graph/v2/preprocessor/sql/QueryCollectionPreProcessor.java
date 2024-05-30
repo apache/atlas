@@ -234,16 +234,18 @@ public class QueryCollectionPreProcessor implements PreProcessor {
         String adminRoleName = String.format(COLL_ADMIN_ROLE_PATTERN, collection.getGuid());
 
         RoleRepresentation representation = getKeycloakClient().getRoleByName(adminRoleName);
-        String creatorUser = vertex.getProperty(CREATED_BY_KEY, String.class);
+        //String creatorUser = vertex.getProperty(CREATED_BY_KEY, String.class);
 
         if (collection.hasAttribute(ATTR_ADMIN_USERS)) {
             List<String> newAdminUsers = (List<String>) collection.getAttribute(ATTR_ADMIN_USERS);
             List<String> currentAdminUsers = (List<String>) existingCollEntity.getAttribute(ATTR_ADMIN_USERS);
 
             if (CollectionUtils.isNotEmpty(newAdminUsers) || CollectionUtils.isNotEmpty(currentAdminUsers)) {
-                if (StringUtils.isNotEmpty(creatorUser) && !newAdminUsers.contains(creatorUser)) {
-                    newAdminUsers.add(creatorUser);
-                }
+               /*
+                   if (StringUtils.isNotEmpty(creatorUser) && !newAdminUsers.contains(creatorUser)) {
+                        newAdminUsers.add(creatorUser);
+                    }
+                */
                 collection.setAttribute(ATTR_ADMIN_USERS, newAdminUsers);
                 keycloakStore.updateRoleUsers(adminRoleName, currentAdminUsers, newAdminUsers, representation);
             }
