@@ -390,6 +390,7 @@ public final class GraphHelper {
             return Collections.emptyList();
         }
         List<AtlasVertex> classificationVerticesList = IteratorUtils.toList(classificationVertices.iterator());
+        LOG.info("classificationVerticesList size: {}", classificationVerticesList.size();
         HashSet<AtlasVertex> classificationVerticesSet = new HashSet<>();
         for (AtlasVertex classificationVertex : classificationVerticesList) {
             Iterable attachedVertices =  classificationVertex.query()
@@ -400,6 +401,7 @@ public final class GraphHelper {
                 while (attachedVerticesIterator.hasNext()) {
                     classificationVerticesSet.add(attachedVerticesIterator.next());
                 }
+                LOG.info("classificationVerticesSet size: {}", classificationVerticesSet.size();
             }
             return new ArrayList<>(classificationVerticesSet);
         }

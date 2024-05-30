@@ -2983,7 +2983,7 @@ public class EntityGraphMapper {
         List<AtlasVertex> vertices = GraphHelper.getAllAssetsWithClassificationAttached(graph, classificationName);
         int batchSize = 2;
         int totalVertexSize = vertices.size();
-        LOG.info("Clean up tag {} from {} entities", classificationName, totalVertexSize);
+        LOG.info("To clean up tag {} from {} entities", classificationName, totalVertexSize);
         int toIndex;
         int offset = 0;
         do {
@@ -2993,8 +2993,6 @@ public class EntityGraphMapper {
             try {
                 GraphTransactionInterceptor.lockObjectAndReleasePostCommit(impactedGuids);
                 for (AtlasVertex vertex : entityVertices) {
-                    String guid = GraphHelper.getGuid(vertex);
-                    GraphTransactionInterceptor.lockObjectAndReleasePostCommit(guid);
                     List<AtlasClassification> deletedClassifications = new ArrayList<>();
                     List<AtlasEdge> classificationEdges = GraphHelper.getClassificationEdges(vertex, null, classificationName);
                     for (AtlasEdge edge : classificationEdges) {
@@ -3006,9 +3004,8 @@ public class EntityGraphMapper {
                     AtlasEntity entity = repairClassificationMappings(vertex);
 
                     entityChangeNotifier.onClassificationDeletedFromEntity(entity, deletedClassifications);
-
-                    offset += batchSize;
                 }
+                offset += batchSize;
             } finally {
                 transactionInterceptHelper.intercept();
                 LOG.info("Cleaned up {} entities", offset);
