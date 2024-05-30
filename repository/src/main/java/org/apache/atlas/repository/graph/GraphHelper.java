@@ -73,6 +73,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasErrorCode.RELATIONSHIP_CREATE_INVALID_PARAMS;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
@@ -391,7 +392,7 @@ public final class GraphHelper {
         }
         List<AtlasVertex> classificationVerticesList = IteratorUtils.toList(classificationVertices.iterator());
         LOG.info("classificationVerticesList size: {}", classificationVerticesList.size());
-        HashSet<AtlasVertex> classificationVerticesSet = new HashSet<>();
+        HashSet<AtlasVertex> entityVerticesSet = new HashSet<>();
         for (AtlasVertex classificationVertex : classificationVerticesList) {
             Iterable attachedVertices =  classificationVertex.query()
                     .direction(AtlasEdgeDirection.IN)
@@ -399,13 +400,13 @@ public final class GraphHelper {
             if (attachedVertices != null) {
                 Iterator<AtlasVertex> attachedVerticesIterator = attachedVertices.iterator();
                 while (attachedVerticesIterator.hasNext()) {
-                    classificationVerticesSet.add(attachedVerticesIterator.next());
+                    entityVerticesSet.add(attachedVerticesIterator.next());
                 }
-                LOG.info("classificationVerticesSet size: {}", classificationVerticesSet.size());
+                LOG.info("classificationVerticesSet size: {}", entityVerticesSet.size());
             }
         }
 
-        return new ArrayList<>(classificationVerticesSet);
+        return entityVerticesSet.stream().collect(Collectors.toList());
     }
     public static AtlasEdge getClassificationEdge(AtlasVertex entityVertex, AtlasVertex classificationVertex) {
         AtlasEdge ret   = null;
