@@ -445,7 +445,10 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         if (hits_0 == null) {
             return result;
         }
-        this.vertexTotals = (Integer) hits_0.get("total").get("value");
+        LinkedHashMap approximateCount = hits_0.get("total");
+        if (approximateCount != null) {
+            this.vertexTotals = (Integer) approximateCount.get("value");
+        }
 
         List<LinkedHashMap> hits_1 = AtlasType.fromJson(AtlasType.toJson(hits_0.get("hits")), List.class);
 
