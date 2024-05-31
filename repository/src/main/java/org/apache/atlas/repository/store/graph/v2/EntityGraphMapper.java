@@ -2225,14 +2225,8 @@ public class EntityGraphMapper {
                 AtlasType      elementType         = arrType.getElementType();
                 boolean        isStructType        = (TypeCategory.STRUCT == elementType.getTypeCategory()) ||
                         (TypeCategory.STRUCT == attribute.getDefinedInType().getTypeCategory());
-                boolean        isReference         = isReference(elementType);
-                boolean        isSoftReference     = ctx.getAttribute().getAttributeDef().isSoftReferenced();
 
-                if (isReference && !isSoftReference) {
-                    currentElements = (List) getCollectionElementsUsingRelationship(ctx.getReferringVertex(), attribute, isStructType);
-                } else {
-                    currentElements = (List) getArrayElementsProperty(elementType, isSoftReference, ctx.getReferringVertex(), ctx.getVertexProperty());
-                }
+                currentElements = (List) getCollectionElementsUsingRelationship(ctx.getReferringVertex(), attribute, isStructType);
             }
 
             if(ctx.getAttribute().getRelationshipEdgeLabel().equals(OUTPUT_PORT_PRODUCT_EDGE_LABEL)){
@@ -2261,20 +2255,16 @@ public class EntityGraphMapper {
         if (CollectionUtils.isNotEmpty(createdElements)) {
             List<String> assetGuids = createdElements.stream().map(x -> ((AtlasEdge) x).getOutVertex().getProperty("__guid", String.class)).collect(Collectors.toList());
             portGuids.addAll(assetGuids);
-            toVertex.removeProperty(internalAttr);
-            if (CollectionUtils.isNotEmpty(portGuids)) {
-                portGuids.forEach(guid -> AtlasGraphUtilsV2.addEncodedProperty(toVertex, internalAttr , guid));
-            }
         }
 
         if (CollectionUtils.isNotEmpty(deletedElements)) {
             List<String> assetGuids = deletedElements.stream().map(x -> x.getOutVertex().getProperty("__guid", String.class)).collect(Collectors.toList());
             portGuids.removeAll(assetGuids);
-            toVertex.removeProperty(internalAttr);
-            if (CollectionUtils.isNotEmpty(portGuids)) {
-                portGuids.forEach(guid -> AtlasGraphUtilsV2.addEncodedProperty(toVertex, internalAttr , guid));
-            }
+        }
 
+        toVertex.removeProperty(internalAttr);
+        if (CollectionUtils.isNotEmpty(portGuids)) {
+            portGuids.forEach(guid -> AtlasGraphUtilsV2.addEncodedProperty(toVertex, internalAttr , guid));
         }
     }
 
