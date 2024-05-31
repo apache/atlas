@@ -2242,7 +2242,7 @@ public class EntityGraphMapper {
                 addOrRemoveInternalAttr(toVertex, INPUT_PORT_GUIDS_ATTR, createdElements, currentElements, deletedElements, portGuids);
             }
         }else{
-           throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "InternalProductAttribute can only be added to Product entity");
+           throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Can not update product relations while updating any asset");
         }
         RequestContext.get().endMetricRecord(metricRecorder);
     }
