@@ -93,19 +93,11 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
     protected void isAuthorized(AtlasEntityHeader sourceDomain, AtlasEntityHeader targetDomain) throws AtlasBaseException {
 
        if(sourceDomain != null){
-           // source -> CREATE + UPDATE + DELETE
-           AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, sourceDomain),
-                   "create on source Domain: ", sourceDomain.getAttribute(NAME));
-
            AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, sourceDomain),
                    "update on source Domain: ", sourceDomain.getAttribute(NAME));
        }
 
        if(targetDomain != null){
-           // target -> CREATE + UPDATE + DELETE
-           AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, targetDomain),
-                   "create on target Domain: ", targetDomain.getAttribute(NAME));
-
            AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, targetDomain),
                    "update on target Domain: ", targetDomain.getAttribute(NAME));
        }
