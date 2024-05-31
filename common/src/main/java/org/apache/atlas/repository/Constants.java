@@ -149,7 +149,8 @@ public final class Constants {
 
     public static final String REL_DOMAIN_TO_STAKEHOLDERS            = "data_domain_stakeholders";
     public static final String REL_STAKEHOLDER_TITLE_TO_STAKEHOLDERS = "stakeholder_title_stakeholders";
-
+    public static final String INPUT_PORT_PRODUCT_EDGE_LABEL = "__Asset.inputPortDataProducts";
+    public static final String OUTPUT_PORT_PRODUCT_EDGE_LABEL = "__Asset.outputPortDataProducts";
 
     /**
      * SQL property keys.
