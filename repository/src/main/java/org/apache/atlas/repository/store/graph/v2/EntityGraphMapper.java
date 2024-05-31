@@ -2215,7 +2215,6 @@ public class EntityGraphMapper {
         MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("addInternalProductAttrForAppend");
         AtlasVertex toVertex = ctx.getReferringVertex();
         String toVertexType = getTypeName(toVertex);
-        List<String> portGuids = new ArrayList<>();
 
         if (TYPE_PRODUCT.equals(toVertexType)) {
 
@@ -2230,10 +2229,10 @@ public class EntityGraphMapper {
             }
 
             if(ctx.getAttribute().getRelationshipEdgeLabel().equals(OUTPUT_PORT_PRODUCT_EDGE_LABEL)){
-                addOrRemoveInternalAttr(toVertex, OUTPUT_PORT_GUIDS_ATTR, createdElements, currentElements, deletedElements, portGuids);
+                addOrRemoveInternalAttr(toVertex, OUTPUT_PORT_GUIDS_ATTR, createdElements, currentElements, deletedElements);
             }
             if (ctx.getAttribute().getRelationshipEdgeLabel().equals(INPUT_PORT_PRODUCT_EDGE_LABEL)) {
-                addOrRemoveInternalAttr(toVertex, INPUT_PORT_GUIDS_ATTR, createdElements, currentElements, deletedElements, portGuids);
+                addOrRemoveInternalAttr(toVertex, INPUT_PORT_GUIDS_ATTR, createdElements, currentElements, deletedElements);
             }
         }else{
            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Can not update product relations while updating any asset");
@@ -2241,8 +2240,8 @@ public class EntityGraphMapper {
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
-    private void addOrRemoveInternalAttr(AtlasVertex toVertex, String internalAttr, List<Object> createdElements, List<Object> currentElements, List<AtlasEdge> deletedElements, List<String> portGuids) {
-        portGuids = toVertex.getMultiValuedProperty(internalAttr, String.class);
+    private void addOrRemoveInternalAttr(AtlasVertex toVertex, String internalAttr, List<Object> createdElements, List<Object> currentElements, List<AtlasEdge> deletedElements) {
+        List<String> portGuids = toVertex.getMultiValuedProperty(internalAttr, String.class);
 
         if (CollectionUtils.isNotEmpty(currentElements) && CollectionUtils.isEmpty(portGuids)) {
             List<String> currentGuids = currentElements.stream()
