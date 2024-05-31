@@ -17,7 +17,6 @@
  */
 package org.apache.atlas.repository.store.graph.v2.preprocessor;
 
-import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.DeleteType;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.discovery.EntityDiscoveryService;
@@ -172,13 +171,13 @@ public class ConnectionPreProcessor implements PreProcessor {
             entity.setAttribute(QUALIFIED_NAME, vertexQName);
 
             RoleRepresentation representation = getKeycloakClient().getRoleByName(roleName);
-           // String creatorUser = vertex.getProperty(CREATED_BY_KEY, String.class);
+            String creatorUser = vertex.getProperty(CREATED_BY_KEY, String.class);
 
             if (connection.hasAttribute(ATTR_ADMIN_USERS)) {
                 List<String> newAdminUsers = (List<String>) connection.getAttribute(ATTR_ADMIN_USERS);
                 List<String> currentAdminUsers = (List<String>) existingConnEntity.getAttribute(ATTR_ADMIN_USERS);
-                if (CollectionUtils.isEmpty(newAdminUsers)) {
-                    throw new AtlasBaseException(AtlasErrorCode.ADMIN_LIST_SHOULD_NOT_BE_EMPTY, connection.getTypeName());
+                if (StringUtils.isNotEmpty(creatorUser) && CollectionUtils.isEmpty(newAdminUsers)) {
+                    newAdminUsers.add(creatorUser);
                 }
 
                 connection.setAttribute(ATTR_ADMIN_USERS, newAdminUsers);
