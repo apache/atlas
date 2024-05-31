@@ -2253,7 +2253,7 @@ public class EntityGraphMapper {
 
         if (CollectionUtils.isNotEmpty(createdElements)) {
             List<String> assetGuids = createdElements.stream().map(x -> ((AtlasEdge) x).getOutVertex().getProperty("__guid", String.class)).collect(Collectors.toList());
-            portGuids.addAll(assetGuids);
+            portGuids = (List<String>) CollectionUtils.union(portGuids, assetGuids);
         }
 
         if (CollectionUtils.isNotEmpty(deletedElements)) {
