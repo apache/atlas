@@ -34,7 +34,6 @@ import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.time.DateUtils;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
@@ -79,7 +78,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 
 /**
@@ -106,6 +104,7 @@ public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditReposito
     public static final String CONFIG_PREFIX = "atlas.audit";
     public static final String CONFIG_TABLE_NAME = CONFIG_PREFIX + ".hbase.tablename";
     public static final String DEFAULT_TABLE_NAME = "ATLAS_ENTITY_AUDIT_EVENTS";
+    public static final String CONFIG_COMPRESSION_ALGORITHM     = CONFIG_PREFIX + ".hbase.compression-algorithm";
     public static final String CONFIG_PERSIST_ENTITY_DEFINITION = CONFIG_PREFIX + ".persistEntityDefinition";
 
     public static final byte[] COLUMN_FAMILY = Bytes.toBytes("dt");
@@ -114,6 +113,7 @@ public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditReposito
     public static final byte[] COLUMN_USER = Bytes.toBytes("u");
     public static final byte[] COLUMN_DEFINITION = Bytes.toBytes("f");
 
+    private static final String  HBASE_STORE_COMPRESSION_PROPERTY   = "atlas.graph.storage.hbase.compression-algorithm";
     private static final String  AUDIT_REPOSITORY_MAX_SIZE_PROPERTY = "atlas.hbase.client.keyvalue.maxsize";
     private static final String  AUDIT_EXCLUDE_ATTRIBUTE_PROPERTY   = "atlas.audit.hbase.entity";
     private static final String  FIELD_SEPARATOR = ":";
@@ -132,7 +132,8 @@ public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditReposito
             throw new RuntimeException(e);
         }
     }
-    private TableName tableName;
+    private TableName  tableName;
+    private String     compressionType;
     private Connection connection;
 
     /**
@@ -774,7 +775,7 @@ public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditReposito
                 HColumnDescriptor columnFamily = new HColumnDescriptor(COLUMN_FAMILY);
                 columnFamily.setMaxVersions(1);
                 columnFamily.setDataBlockEncoding(DataBlockEncoding.FAST_DIFF);
-                columnFamily.setCompressionType(Compression.Algorithm.SNAPPY);
+                columnFamily.setCompressionType(Compression.Algorithm.valueOf(compressionType));
                 columnFamily.setBloomFilterType(BloomType.ROW);
                 tableDescriptor.addFamily(columnFamily);
                 admin.createTable(tableDescriptor);
@@ -846,6 +847,8 @@ public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditReposito
 
         String tableNameStr = atlasConf.getString(CONFIG_TABLE_NAME, DEFAULT_TABLE_NAME);
         tableName = TableName.valueOf(tableNameStr);
+
+        compressionType = atlasConf.getString(CONFIG_COMPRESSION_ALGORITHM, atlasConf.getString(HBASE_STORE_COMPRESSION_PROPERTY, "SNAPPY"));
 
         try {
             connection = createConnection(hbaseConf);
