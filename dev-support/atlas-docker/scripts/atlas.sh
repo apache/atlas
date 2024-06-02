@@ -42,6 +42,9 @@ then
   sed -i "s/atlas.kafka.zookeeper.connect=.*$/atlas.kafka.zookeeper.connect=atlas-zk.example.com:2181/"    /opt/atlas/conf/atlas-application.properties
   sed -i "s/atlas.kafka.bootstrap.servers=.*$/atlas.kafka.bootstrap.servers=atlas-kafka.example.com:9092/" /opt/atlas/conf/atlas-application.properties
 
+  echo ""                                                     >> /opt/atlas/conf/atlas-application.properties
+  echo "atlas.graph.storage.hbase.compression-algorithm=NONE" >> /opt/atlas/conf/atlas-application.properties
+
   chown -R atlas:atlas ${ATLAS_HOME}/
 
   touch ${ATLAS_HOME}/.setupDone
