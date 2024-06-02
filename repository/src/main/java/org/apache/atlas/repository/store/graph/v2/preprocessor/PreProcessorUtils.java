@@ -26,6 +26,7 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static org.apache.atlas.glossary.GlossaryUtils.ATLAS_GLOSSARY_TERM_TYPENAME;
 import static org.apache.atlas.repository.Constants.QUERY_COLLECTION_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.Constants.ENTITY_TYPE_PROPERTY_KEY;
@@ -262,7 +263,8 @@ public class PreProcessorUtils {
             Set<String> attributes = new HashSet<>();
             attributes.add(LEXICOGRAPHICAL_SORT_ORDER);
             List<AtlasEntityHeader> categories = null;
-            Map<String, Object> dslQuery = generateDSLQueryForLastCategory(glossaryQualifiedName, parentQualifiedName);
+            boolean isTerm = entity.getTypeName().equals(ATLAS_GLOSSARY_TERM_TYPENAME) ? true : false;
+            Map<String, Object> dslQuery = generateDSLQueryForLastCategory(glossaryQualifiedName, parentQualifiedName, isTerm);
             try {
                 IndexSearchParams searchParams = new IndexSearchParams();
                 searchParams.setAttributes(attributes);
@@ -359,7 +361,7 @@ public class PreProcessorUtils {
 
         return boolQuery;
     }
-    public static Map<String, Object> generateDSLQueryForLastCategory(String glossaryQualifiedName, String parentQualifiedName) {
+    public static Map<String, Object> generateDSLQueryForLastCategory(String glossaryQualifiedName, String parentQualifiedName, boolean isTerm) {
 
         Map<String, Object> sortKeyOrder = mapOf(LEXICOGRAPHICAL_SORT_ORDER, mapOf("order", "desc"));
         Map<String, Object> scoreSortOrder = mapOf("_score", mapOf("order", "desc"));
@@ -367,7 +369,7 @@ public class PreProcessorUtils {
 
         Object[] sortArray = {sortKeyOrder, scoreSortOrder, displayNameSortOrder};
 
-        Map<String, Object> functionScore = mapOf("query", buildBoolQuery(glossaryQualifiedName, parentQualifiedName));
+        Map<String, Object> functionScore = mapOf("query", buildBoolQuery(glossaryQualifiedName, parentQualifiedName, isTerm));
 
         Map<String, Object> dsl = new HashMap<>();
         dsl.put("from", 0);
@@ -378,7 +380,7 @@ public class PreProcessorUtils {
         return dsl;
     }
 
-    private static Map<String, Object> buildBoolQuery(String glossaryQualifiedName, String parentQualifiedName) {
+    private static Map<String, Object> buildBoolQuery(String glossaryQualifiedName, String parentQualifiedName, boolean isTerm) {
         Map<String, Object> boolQuery = new HashMap<>();
         int mustArrayLength = 0;
         if(StringUtils.isEmpty(parentQualifiedName) && StringUtils.isEmpty(glossaryQualifiedName)){
@@ -394,7 +396,8 @@ public class PreProcessorUtils {
 
         mustArray[0] = mapOf("term", mapOf("__state", "ACTIVE"));
         if(StringUtils.isNotEmpty(glossaryQualifiedName)) {
-            mustArray[1] = mapOf("terms", mapOf("__typeName.keyword", Arrays.asList("AtlasGlossaryTerm", "AtlasGlossaryCategory")));
+            String typeName = isTerm ? "AtlasGlossaryTerm" : "AtlasGlossaryCategory";
+            mustArray[1] = mapOf("term", mapOf("__typeName.keyword", typeName));
             mustArray[2] = mapOf("term", mapOf("__glossary", glossaryQualifiedName));
         } else{
             mustArray[1] = mapOf("terms", mapOf("__typeName.keyword", Arrays.asList("AtlasGlossary")));
