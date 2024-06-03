@@ -350,6 +350,7 @@ public class AtlasGraphUtilsV2 {
                 vertex = findByTypeAndUniquePropertyName(graph, typeName, uniqAttrValues);
 
                 // if no instance of given typeName is found, try to find an instance of type's sub-type
+                // Added exception for few types to solve https://atlanhq.atlassian.net/browse/PLT-1638
                 if (vertex == null && !entitySubTypes.isEmpty() && !AtlasTypeRegistry.TYPENAMES_TO_SKIP_SUPER_TYPE_CHECK.contains(typeName)) {
                     vertex = findBySuperTypeAndUniquePropertyName(graph, typeName, uniqAttrValues);
                 }
@@ -357,6 +358,7 @@ public class AtlasGraphUtilsV2 {
                 vertex = findByTypeAndPropertyName(graph, typeName, attrNameValues);
 
                 // if no instance of given typeName is found, try to find an instance of type's sub-type
+                // Added exception for few types to solve https://atlanhq.atlassian.net/browse/PLT-1638
                 if (vertex == null && !entitySubTypes.isEmpty() && !AtlasTypeRegistry.TYPENAMES_TO_SKIP_SUPER_TYPE_CHECK.contains(typeName)) {
                     vertex = findBySuperTypeAndPropertyName(graph, typeName, attrNameValues);
                 }
