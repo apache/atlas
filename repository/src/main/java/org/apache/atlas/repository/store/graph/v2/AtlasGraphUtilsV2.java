@@ -35,8 +35,9 @@ import org.apache.atlas.repository.graphdb.*;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasEnumType;
 import org.apache.atlas.type.AtlasStructType;
-import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
+import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.util.FileUtils;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
@@ -349,14 +350,14 @@ public class AtlasGraphUtilsV2 {
                 vertex = findByTypeAndUniquePropertyName(graph, typeName, uniqAttrValues);
 
                 // if no instance of given typeName is found, try to find an instance of type's sub-type
-                if (vertex == null && !entitySubTypes.isEmpty()) {
+                if (vertex == null && !entitySubTypes.isEmpty() && !AtlasTypeRegistry.TYPENAMES_TO_SKIP_SUPER_TYPE_CHECK.contains(typeName)) {
                     vertex = findBySuperTypeAndUniquePropertyName(graph, typeName, uniqAttrValues);
                 }
             } else {
                 vertex = findByTypeAndPropertyName(graph, typeName, attrNameValues);
 
                 // if no instance of given typeName is found, try to find an instance of type's sub-type
-                if (vertex == null && !entitySubTypes.isEmpty()) {
+                if (vertex == null && !entitySubTypes.isEmpty() && !AtlasTypeRegistry.TYPENAMES_TO_SKIP_SUPER_TYPE_CHECK.contains(typeName)) {
                     vertex = findBySuperTypeAndPropertyName(graph, typeName, attrNameValues);
                 }
             }
