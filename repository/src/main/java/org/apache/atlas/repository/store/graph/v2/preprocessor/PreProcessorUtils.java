@@ -17,6 +17,7 @@ import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.NanoIdUtils;
 import org.apache.atlas.util.lexoRank.LexoRank;
 import org.apache.atlas.utils.AtlasEntityUtil;
+import org.apache.atlas.v1.model.instance.Id;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -30,6 +31,8 @@ import static org.apache.atlas.glossary.GlossaryUtils.ATLAS_GLOSSARY_TERM_TYPENA
 import static org.apache.atlas.repository.Constants.QUERY_COLLECTION_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.Constants.ENTITY_TYPE_PROPERTY_KEY;
+import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_IS_ENABLED;
+import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_SERVICE_NAME;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 import static org.apache.atlas.type.Constants.LEXICOGRAPHICAL_SORT_ORDER;
 
@@ -46,6 +49,7 @@ public class PreProcessorUtils {
     public static final String GLOSSARY_TERM_REL_TYPE = "AtlasGlossaryTermAnchor";
     public static final String GLOSSARY_CATEGORY_REL_TYPE = "AtlasGlossaryCategoryAnchor";
     public static final String INIT_LEXORANK_OFFSET = "0|100000:";
+    public static final String INIT_TERM_LEXORANK_OFFSET = "0|500000:";
 
     //DataMesh models constants
     public static final String PARENT_DOMAIN_REL_TYPE = "parentDomain";
@@ -278,13 +282,13 @@ public class PreProcessorUtils {
                 for (AtlasEntityHeader category : categories) {
                     String lexicographicalSortOrder = (String) category.getAttribute(LEXICOGRAPHICAL_SORT_ORDER);
                     if (StringUtils.isNotEmpty(lexicographicalSortOrder)) {
-                        lastLexoRank = getValidLexorank(lexicographicalSortOrder, glossaryQualifiedName, parentQualifiedName, discovery);
+                        lastLexoRank = lexicographicalSortOrder;
                     } else {
-                        lastLexoRank = INIT_LEXORANK_OFFSET;
+                        lastLexoRank = isTerm ? INIT_TERM_LEXORANK_OFFSET : INIT_LEXORANK_OFFSET;
                     }
                 }
             } else {
-                lastLexoRank = INIT_LEXORANK_OFFSET;
+                lastLexoRank = isTerm ? INIT_TERM_LEXORANK_OFFSET : INIT_LEXORANK_OFFSET;
             }
         }
 
@@ -295,17 +299,6 @@ public class PreProcessorUtils {
         entity.setAttribute(LEXICOGRAPHICAL_SORT_ORDER, lexoRank);
         lexoRankCache.put(glossaryQualifiedName + "-" + parentQualifiedName, lexoRank);
         RequestContext.get().setLexoRankCache(lexoRankCache);
-    }
-
-    private static String getValidLexorank(String lastLexoRank, String glossaryQualifiedName, String parentQualifiedName, EntityDiscoveryService discovery) {
-        LexoRank parsedLexoRank = LexoRank.parse(lastLexoRank);
-        LexoRank nextLexoRank = parsedLexoRank.genNext().genNext();
-        try {
-            isValidLexoRank(nextLexoRank.toString(), glossaryQualifiedName, parentQualifiedName, discovery);
-            return lastLexoRank;
-        } catch (AtlasBaseException e){
-            return parsedLexoRank.between(nextLexoRank).genPrev().genPrev().toString();
-        }
     }
 
     public static Map<String, Object> createDSLforCheckingPreExistingLexoRank(String lexoRank, String glossaryQualifiedName, String parentQualifiedName) {
@@ -329,37 +322,28 @@ public class PreProcessorUtils {
 
     private static Map<String, Object> buildBoolQueryDuplicateLexoRank(String lexoRank, String glossaryQualifiedName, String parentQualifiedName) {
         Map<String, Object> boolQuery = new HashMap<>();
-        int mustArrayLength = 0;
-        if(StringUtils.isEmpty(parentQualifiedName) && StringUtils.isEmpty(glossaryQualifiedName)){
-            mustArrayLength = 3;
-        } else if(StringUtils.isEmpty(parentQualifiedName) && StringUtils.isNotEmpty(glossaryQualifiedName)){
-            mustArrayLength = 4;
-        } else {
-            mustArrayLength = 5;
-        }
-        Map<String, Object>[] mustArray = new Map[mustArrayLength];
         Map<String, Object> boolFilter = new HashMap<>();
-        Map<String, Object>[] mustNotArray = new Map[2];
-
-        mustArray[0] = mapOf("term", mapOf("__state", "ACTIVE"));
-        mustArray[1] = mapOf("term", mapOf(LEXICOGRAPHICAL_SORT_ORDER, lexoRank));
+        List<Map<String, Object>> mustArray = new ArrayList<>();
+        List<Map<String, Object>> mustNotArray = new ArrayList<>();
+        mustArray.add(mapOf("term", mapOf("__state", "ACTIVE")));
+        mustArray.add(mapOf("term", mapOf(LEXICOGRAPHICAL_SORT_ORDER, lexoRank)));
         if(StringUtils.isNotEmpty(glossaryQualifiedName)) {
-            mustArray[2] = mapOf("terms", mapOf("__typeName.keyword", Arrays.asList("AtlasGlossaryTerm", "AtlasGlossaryCategory")));
-            mustArray[3] = mapOf("term", mapOf("__glossary", glossaryQualifiedName));
+            mustArray.add(mapOf("terms", mapOf("__typeName.keyword", Arrays.asList("AtlasGlossaryTerm", "AtlasGlossaryCategory"))));
+            mustArray.add(mapOf("term", mapOf("__glossary", glossaryQualifiedName)));
         } else{
-            mustArray[2] = mapOf("terms", mapOf("__typeName.keyword", Arrays.asList("AtlasGlossary")));
+            mustArray.add(mapOf("terms", mapOf("__typeName.keyword", Arrays.asList("AtlasGlossary"))));
         }
 
         if(StringUtils.isEmpty(parentQualifiedName)) {
-            mustNotArray[0] = mapOf("exists", mapOf("field", "__categories"));
-            mustNotArray[1] = mapOf("exists", mapOf("field", "__parentCategory"));
+            mustNotArray.add(mapOf("exists", mapOf("field", "__categories")));
+            mustNotArray.add(mapOf("exists", mapOf("field", "__parentCategory")));
             boolFilter.put("must_not", mustNotArray);
         }
         else {
-            Map<String, Object>[] shouldParentArray = new Map[2];
-            shouldParentArray[0] = mapOf("term", mapOf("__categories", parentQualifiedName));
-            shouldParentArray[1] = mapOf("term", mapOf("__parentCategory", parentQualifiedName));
-            mustArray[4] = mapOf("bool",mapOf("should", shouldParentArray));
+            List<Map<String, Object>> shouldParentArray = new ArrayList<>();
+            shouldParentArray.add(mapOf("term", mapOf("__categories", parentQualifiedName)));
+            shouldParentArray.add(mapOf("term", mapOf("__parentCategory", parentQualifiedName)));
+            mustArray.add(mapOf("bool",mapOf("should", shouldParentArray)));
         }
 
         boolFilter.put("must", mustArray);
