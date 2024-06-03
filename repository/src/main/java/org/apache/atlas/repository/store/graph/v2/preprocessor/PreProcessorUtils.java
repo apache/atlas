@@ -278,7 +278,7 @@ public class PreProcessorUtils {
                 for (AtlasEntityHeader category : categories) {
                     String lexicographicalSortOrder = (String) category.getAttribute(LEXICOGRAPHICAL_SORT_ORDER);
                     if (StringUtils.isNotEmpty(lexicographicalSortOrder)) {
-                        lastLexoRank = lexicographicalSortOrder;
+                        lastLexoRank = getValidLexorank(lexicographicalSortOrder, glossaryQualifiedName, parentQualifiedName, discovery);
                     } else {
                         lastLexoRank = INIT_LEXORANK_OFFSET;
                     }
@@ -295,6 +295,17 @@ public class PreProcessorUtils {
         entity.setAttribute(LEXICOGRAPHICAL_SORT_ORDER, lexoRank);
         lexoRankCache.put(glossaryQualifiedName + "-" + parentQualifiedName, lexoRank);
         RequestContext.get().setLexoRankCache(lexoRankCache);
+    }
+
+    private static String getValidLexorank(String lastLexoRank, String glossaryQualifiedName, String parentQualifiedName, EntityDiscoveryService discovery) {
+        LexoRank parsedLexoRank = LexoRank.parse(lastLexoRank);
+        LexoRank nextLexoRank = parsedLexoRank.genNext().genNext();
+        try {
+            isValidLexoRank(nextLexoRank.toString(), glossaryQualifiedName, parentQualifiedName, discovery);
+            return lastLexoRank;
+        } catch (AtlasBaseException e){
+            return parsedLexoRank.between(nextLexoRank).genPrev().genPrev().toString();
+        }
     }
 
     public static Map<String, Object> createDSLforCheckingPreExistingLexoRank(String lexoRank, String glossaryQualifiedName, String parentQualifiedName) {
