@@ -259,15 +259,15 @@ public class PreProcessorUtils {
         }
         String lexoRank = "";
         String lastLexoRank = "";
+        boolean isTerm = entity.getTypeName().equals(ATLAS_GLOSSARY_TERM_TYPENAME) ? true : false;
 
-        if(lexoRankCache.containsKey(glossaryQualifiedName + "-" + parentQualifiedName)) {
-            lastLexoRank = lexoRankCache.get(glossaryQualifiedName + "-" + parentQualifiedName);
+        if(lexoRankCache.containsKey(entity.getTypeName() + "-" + glossaryQualifiedName + "-" + parentQualifiedName)) {
+            lastLexoRank = lexoRankCache.get(entity.getTypeName() + "-" + glossaryQualifiedName + "-" + parentQualifiedName);
 
         } else {
             Set<String> attributes = new HashSet<>();
             attributes.add(LEXICOGRAPHICAL_SORT_ORDER);
             List<AtlasEntityHeader> categories = null;
-            boolean isTerm = entity.getTypeName().equals(ATLAS_GLOSSARY_TERM_TYPENAME) ? true : false;
             Map<String, Object> dslQuery = generateDSLQueryForLastCategory(glossaryQualifiedName, parentQualifiedName, isTerm);
             try {
                 IndexSearchParams searchParams = new IndexSearchParams();
@@ -297,7 +297,7 @@ public class PreProcessorUtils {
         lexoRank = nextLexoRank.toString();
 
         entity.setAttribute(LEXICOGRAPHICAL_SORT_ORDER, lexoRank);
-        lexoRankCache.put(glossaryQualifiedName + "-" + parentQualifiedName, lexoRank);
+        lexoRankCache.put(entity.getTypeName() + "-" + glossaryQualifiedName + "-" + parentQualifiedName, lexoRank);
         RequestContext.get().setLexoRankCache(lexoRankCache);
     }
 
