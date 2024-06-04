@@ -49,6 +49,7 @@ import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.patches.PatchContext;
 import org.apache.atlas.repository.patches.ReIndexPatch;
+import org.apache.atlas.repository.store.aliasstore.ESAliasStore;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscovery;
@@ -147,6 +148,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     private final AtlasRelationshipStore atlasRelationshipStore;
     private final FeatureFlagStore featureFlagStore;
 
+    private final ESAliasStore esAliasStore;
+
     @Inject
     public AtlasEntityStoreV2(AtlasGraph graph, DeleteHandlerDelegate deleteDelegate, RestoreHandlerV1 restoreHandlerV1, AtlasTypeRegistry typeRegistry,
                               IAtlasEntityChangeNotifier entityChangeNotifier, EntityGraphMapper entityGraphMapper, TaskManagement taskManagement,
@@ -163,6 +166,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         this.taskManagement = taskManagement;
         this.atlasRelationshipStore = atlasRelationshipStore;
         this.featureFlagStore = featureFlagStore;
+        this.esAliasStore = new ESAliasStore(graph, entityRetriever);
 
         try {
             this.discovery = new EntityDiscoveryService(typeRegistry, graph, null, null, null, null);
@@ -2702,6 +2706,12 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             LOG.info("Updated asset {}  with term {} ",  getGuid(assetVertex) ,  StringUtils.join(termNameList, ","));
         }
 
+    }
+    @Override
+    public void repairAlias(String guid) throws AtlasBaseException {
+        // Fetch entity with extenfo
+        AtlasEntity.AtlasEntityWithExtInfo entity = entityRetriever.toAtlasEntityWithExtInfo(guid);
+        this.esAliasStore.rebuildAlias(entity);
     }
 }
 

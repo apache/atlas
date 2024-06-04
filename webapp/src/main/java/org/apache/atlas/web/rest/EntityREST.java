@@ -1930,4 +1930,11 @@ public class EntityREST {
             AtlasPerfTracer.log(perf);
         }
     }
+
+    @POST
+    @Path("/repairalias/{guid}")
+    @Timed
+    public void repairAlias(@PathParam("guid") String guid) throws AtlasBaseException {
+        entitiesStore.repairAlias(guid);
+    }
 }
