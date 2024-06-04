@@ -2709,8 +2709,25 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     }
     @Override
     public void repairAlias(String guid) throws AtlasBaseException {
-        // Fetch entity with extenfo
+        // Fetch entity with extInfo
         AtlasEntity.AtlasEntityWithExtInfo entity = entityRetriever.toAtlasEntityWithExtInfo(guid);
+
+        if (entity == null) {
+            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
+        }
+
+        // Validate entity status
+        if (entity.getEntity().getStatus() != ACTIVE) {
+            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_DELETED, guid);
+        }
+
+        // Validate entity type
+        String entityType = entity.getEntity().getTypeName();
+        if (!PERSONA_ENTITY_TYPE.equals(entityType)) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_OBJECT_ID, entityType);
+        }
+
+        // Rebuild alias
         this.esAliasStore.rebuildAlias(entity);
     }
 }
