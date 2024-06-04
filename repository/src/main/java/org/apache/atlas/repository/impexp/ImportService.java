@@ -47,6 +47,8 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
 import static org.apache.atlas.model.impexp.AtlasImportRequest.TRANSFORMERS_KEY;
@@ -191,7 +193,9 @@ public class ImportService {
         if (StringUtils.isBlank(fileName)) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "FILENAME parameter not found");
         }
-
+        if(!validateFilePath(fileName)){
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "FILENAME IS INVALID");
+        }
         AtlasImportResult result = null;
         try {
             LOG.info("==> import(user={}, from={}, fileName={})", userName, requestingIP, fileName);
@@ -296,4 +300,32 @@ public class ImportService {
     private boolean isMigrationMode(AtlasImportRequest request) {
         return request.getOptions().containsKey(AtlasImportRequest.OPTION_KEY_MIGRATION);
     }
+
+    private boolean validateFilePath(String filePath) {
+        String allowedDirectory = "/var/app/allowed/";
+
+        try {
+            Path normalizedPath = Paths.get(filePath).normalize();
+
+            if (filePath.contains("..") || filePath.contains("./") || filePath.contains(".\\")) {
+                LOG.error("Invalid file path: directory traversal attempt detected.");
+                return false;
+            }
+
+            if (!normalizedPath.isAbsolute()) {
+                LOG.error("Invalid file path: path must be absolute.");
+                return false;
+            }
+
+            if (!normalizedPath.startsWith(Paths.get(allowedDirectory))) {
+                LOG.error("Invalid file path: access outside allowed directory.");
+                return false;
+            }
+
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
 }
