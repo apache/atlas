@@ -2216,6 +2216,11 @@ public class EntityGraphMapper {
         AtlasVertex toVertex = ctx.getReferringVertex();
         String toVertexType = getTypeName(toVertex);
 
+        if(currentElements.isEmpty() && createdElements.isEmpty() && deletedElements.isEmpty()){
+            RequestContext.get().endMetricRecord(metricRecorder);
+            return;
+        }
+
         if (TYPE_PRODUCT.equals(toVertexType)) {
 
             if(currentElements == null){
