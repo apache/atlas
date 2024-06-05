@@ -1932,7 +1932,7 @@ public class EntityREST {
     }
 
     @POST
-    @Path("/repairAccesscontrolAlias/{guid}")
+    @Path("/repair/accesscontrolAlias/{guid}")
     @Timed
     public void repairAccessControlAlias(@PathParam("guid") String guid) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
