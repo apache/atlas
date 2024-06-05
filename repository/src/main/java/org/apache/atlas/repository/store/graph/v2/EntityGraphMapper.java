@@ -85,7 +85,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
-import javax.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -1908,7 +1907,7 @@ public class EntityGraphMapper {
         AtlasAttribute inverseRefAttribute = attribute.getInverseRefAttribute();
         Cardinality    cardinality         = attribute.getAttributeDef().getCardinality();
         List<AtlasEdge> removedElements    = new ArrayList<>();
-       List<Object>   newElementsCreated  = new ArrayList<>();
+        List<Object>   newElementsCreated  = new ArrayList<>();
         List<Object>   allArrayElements    = null;
         List<Object>   currentElements;
         boolean deleteExistingRelations = shouldDeleteExistingRelations(ctx, attribute);
@@ -2235,7 +2234,7 @@ public class EntityGraphMapper {
             }
 
             if(ctx.getAttribute().getRelationshipEdgeLabel().equals(OUTPUT_PORT_PRODUCT_EDGE_LABEL)){
-                addOrRemoveInternalAttr(toVertex, "OutputPortGuids", createdElements, currentElements, deletedElements);
+                addOrRemoveInternalAttr(toVertex, OUTPUT_PORT_GUIDS_ATTR, createdElements, currentElements, deletedElements);
             }
             if (ctx.getAttribute().getRelationshipEdgeLabel().equals(INPUT_PORT_PRODUCT_EDGE_LABEL)) {
                 addOrRemoveInternalAttr(toVertex, INPUT_PORT_GUIDS_ATTR, createdElements, currentElements, deletedElements);
