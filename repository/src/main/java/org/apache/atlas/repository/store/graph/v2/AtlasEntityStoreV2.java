@@ -116,6 +116,7 @@ import static org.apache.atlas.repository.graph.GraphHelper.*;
 import static org.apache.atlas.repository.graph.GraphHelper.getStatus;
 import static org.apache.atlas.repository.store.graph.v2.EntityGraphMapper.validateLabels;
 import static org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTaskFactory.*;
+import static org.apache.atlas.repository.util.AccessControlUtils.REL_ATTR_POLICIES;
 import static org.apache.atlas.type.Constants.HAS_LINEAGE;
 import static org.apache.atlas.type.Constants.HAS_LINEAGE_VALID;
 import static org.apache.atlas.type.Constants.MEANINGS_TEXT_PROPERTY_KEY;
@@ -2709,26 +2710,36 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     }
     @Override
     public void repairAlias(String guid) throws AtlasBaseException {
-        // Fetch entity with extInfo
-        AtlasEntity.AtlasEntityWithExtInfo entity = entityRetriever.toAtlasEntityWithExtInfo(guid);
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("repairAlias");
+        // Fetch accesscontrolEntity with extInfo
+        AtlasEntity.AtlasEntityWithExtInfo accesscontrolEntity = entityRetriever.toAtlasEntityWithExtInfo(guid);
 
-        if (entity == null) {
+        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, new AtlasEntityHeader(accesscontrolEntity.getEntity())));
+
+        if (accesscontrolEntity == null) {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
         }
 
-        // Validate entity status
-        if (entity.getEntity().getStatus() != ACTIVE) {
+        // Validate accesscontrolEntity status
+        if (accesscontrolEntity.getEntity().getStatus() != ACTIVE) {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_DELETED, guid);
         }
 
-        // Validate entity type
-        String entityType = entity.getEntity().getTypeName();
+        // Validate accesscontrolEntity type
+        String entityType = accesscontrolEntity.getEntity().getTypeName();
         if (!PERSONA_ENTITY_TYPE.equals(entityType)) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_OBJECT_ID, entityType);
         }
 
+        List<AtlasObjectId> policies = (List<AtlasObjectId>) accesscontrolEntity.getEntity().getRelationshipAttribute(REL_ATTR_POLICIES);
+        for (AtlasObjectId policy : policies) {
+            accesscontrolEntity.addReferredEntity(entityRetriever.toAtlasEntity(policy));
+        }
+
         // Rebuild alias
-        this.esAliasStore.rebuildAlias(entity);
+        this.esAliasStore.rebuildAlias(accesscontrolEntity);
+
+        RequestContext.get().endMetricRecord(metric);
     }
 }
 
