@@ -2709,7 +2709,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     }
     @Override
-    public void repairAlias(String guid) throws AtlasBaseException {
+    public void repairAccesscontrolAlias(String guid) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("repairAlias");
         // Fetch accesscontrolEntity with extInfo
         AtlasEntity.AtlasEntityWithExtInfo accesscontrolEntity = entityRetriever.toAtlasEntityWithExtInfo(guid);
