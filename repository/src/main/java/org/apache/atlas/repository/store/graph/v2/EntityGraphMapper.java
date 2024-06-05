@@ -2039,7 +2039,6 @@ public class EntityGraphMapper {
 
         boolean isNewElementsNull = newElements == null;
 
-
         if (isNewElementsNull) {
             newElements = new ArrayList();
         }
@@ -2215,7 +2214,7 @@ public class EntityGraphMapper {
         AtlasVertex toVertex = ctx.getReferringVertex();
         String toVertexType = getTypeName(toVertex);
 
-        if((currentElements.isEmpty() || currentElements == null) && createdElements.isEmpty() && deletedElements.isEmpty()){
+        if((currentElements == null || currentElements.isEmpty()) && createdElements.isEmpty() && deletedElements.isEmpty()){
             RequestContext.get().endMetricRecord(metricRecorder);
             return;
         }
