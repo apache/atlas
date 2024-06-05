@@ -31,6 +31,7 @@ import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.store.graph.BulkImporter;
 import org.apache.atlas.repository.store.graph.v2.EntityImportStream;
+import org.apache.atlas.repository.util.FilterUtil;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -193,7 +194,7 @@ public class ImportService {
         if (StringUtils.isBlank(fileName)) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "FILENAME parameter not found");
         }
-        if(!validateFilePath(fileName)){
+        if(!FilterUtil.validateFilePath(fileName)){
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "FILENAME IS INVALID");
         }
         AtlasImportResult result = null;
@@ -299,33 +300,6 @@ public class ImportService {
 
     private boolean isMigrationMode(AtlasImportRequest request) {
         return request.getOptions().containsKey(AtlasImportRequest.OPTION_KEY_MIGRATION);
-    }
-
-    private boolean validateFilePath(String filePath) {
-        String allowedDirectory = "/var/app/allowed/";
-
-        try {
-            Path normalizedPath = Paths.get(filePath).normalize();
-
-            if (filePath.contains("..") || filePath.contains("./") || filePath.contains(".\\")) {
-                LOG.error("Invalid file path: directory traversal attempt detected.");
-                return false;
-            }
-
-            if (!normalizedPath.isAbsolute()) {
-                LOG.error("Invalid file path: path must be absolute.");
-                return false;
-            }
-
-            if (!normalizedPath.startsWith(Paths.get(allowedDirectory))) {
-                LOG.error("Invalid file path: access outside allowed directory.");
-                return false;
-            }
-
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
     }
 
 }

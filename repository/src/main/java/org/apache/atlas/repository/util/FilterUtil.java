@@ -29,6 +29,8 @@ import org.apache.commons.collections.PredicateUtils;
 import org.apache.commons.collections.functors.NotPredicate;
 import org.apache.commons.lang.StringUtils;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -173,5 +175,29 @@ public class FilterUtil {
     public static void addParamsToHideInternalType(SearchFilter searchFilter) {
         searchFilter.setParam(SearchFilter.PARAM_NOT_NAME, Constants.TYPE_NAME_INTERNAL);
         searchFilter.setParam(SearchFilter.PARAM_NOT_SUPERTYPE, Constants.TYPE_NAME_INTERNAL);
+    }
+
+    public static boolean validateFilePath(String fileToImport) {
+        String allowedDirectory = "/var/app/allowed/";
+
+        try {
+            Path normalizedPath = Paths.get(fileToImport).normalize();
+
+            if (fileToImport.contains("..") || fileToImport.contains("./") || fileToImport.contains(".\\")) {
+                return false;
+            }
+
+            if (!normalizedPath.isAbsolute()) {
+                return false;
+            }
+
+            if (!normalizedPath.startsWith(Paths.get(allowedDirectory))) {
+                return false;
+            }
+
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 }
