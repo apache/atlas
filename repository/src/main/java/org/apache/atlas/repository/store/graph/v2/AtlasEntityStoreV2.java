@@ -49,6 +49,7 @@ import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.patches.PatchContext;
 import org.apache.atlas.repository.patches.ReIndexPatch;
+import org.apache.atlas.repository.store.aliasstore.ESAliasStore;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscovery;
@@ -115,6 +116,7 @@ import static org.apache.atlas.repository.graph.GraphHelper.*;
 import static org.apache.atlas.repository.graph.GraphHelper.getStatus;
 import static org.apache.atlas.repository.store.graph.v2.EntityGraphMapper.validateLabels;
 import static org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTaskFactory.*;
+import static org.apache.atlas.repository.util.AccessControlUtils.REL_ATTR_POLICIES;
 import static org.apache.atlas.type.Constants.HAS_LINEAGE;
 import static org.apache.atlas.type.Constants.HAS_LINEAGE_VALID;
 import static org.apache.atlas.type.Constants.MEANINGS_TEXT_PROPERTY_KEY;
@@ -147,6 +149,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     private final AtlasRelationshipStore atlasRelationshipStore;
     private final FeatureFlagStore featureFlagStore;
 
+    private final ESAliasStore esAliasStore;
+
     @Inject
     public AtlasEntityStoreV2(AtlasGraph graph, DeleteHandlerDelegate deleteDelegate, RestoreHandlerV1 restoreHandlerV1, AtlasTypeRegistry typeRegistry,
                               IAtlasEntityChangeNotifier entityChangeNotifier, EntityGraphMapper entityGraphMapper, TaskManagement taskManagement,
@@ -163,6 +167,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         this.taskManagement = taskManagement;
         this.atlasRelationshipStore = atlasRelationshipStore;
         this.featureFlagStore = featureFlagStore;
+        this.esAliasStore = new ESAliasStore(graph, entityRetriever);
 
         try {
             this.discovery = new EntityDiscoveryService(typeRegistry, graph, null, null, null, null);
@@ -2702,6 +2707,35 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             LOG.info("Updated asset {}  with term {} ",  getGuid(assetVertex) ,  StringUtils.join(termNameList, ","));
         }
 
+    }
+    @Override
+    public void repairAccesscontrolAlias(String guid) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("repairAlias");
+        // Fetch accesscontrolEntity with extInfo
+        AtlasEntity.AtlasEntityWithExtInfo accesscontrolEntity = entityRetriever.toAtlasEntityWithExtInfo(guid);
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, new AtlasEntityHeader(accesscontrolEntity.getEntity())));
+
+        // Validate accesscontrolEntity status
+        if (accesscontrolEntity.getEntity().getStatus() != ACTIVE) {
+            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_DELETED, guid);
+        }
+
+        // Validate accesscontrolEntity type
+        String entityType = accesscontrolEntity.getEntity().getTypeName();
+        if (!PERSONA_ENTITY_TYPE.equals(entityType)) {
+            throw new AtlasBaseException(AtlasErrorCode.OPERATION_NOT_SUPPORTED, entityType);
+        }
+
+        List<AtlasObjectId> policies = (List<AtlasObjectId>) accesscontrolEntity.getEntity().getRelationshipAttribute(REL_ATTR_POLICIES);
+        for (AtlasObjectId policy : policies) {
+            accesscontrolEntity.addReferredEntity(entityRetriever.toAtlasEntity(policy));
+        }
+
+        // Rebuild alias
+        this.esAliasStore.updateAlias(accesscontrolEntity, null);
+
+        RequestContext.get().endMetricRecord(metric);
     }
 }
 

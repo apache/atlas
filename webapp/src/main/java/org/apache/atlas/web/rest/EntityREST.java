@@ -1930,4 +1930,29 @@ public class EntityREST {
             AtlasPerfTracer.log(perf);
         }
     }
+
+    @POST
+    @Path("/repair/accesscontrolAlias/{guid}")
+    @Timed
+    public void repairAccessControlAlias(@PathParam("guid") String guid) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("guid", guid);
+
+        AtlasPerfTracer perf = null;
+
+
+       try {
+           if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+               perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.repairAccessControlAlias");
+           }
+
+           entitiesStore.repairAccesscontrolAlias(guid);
+
+           LOG.info("Repaired access control alias for entity with guid {}", guid);
+
+       } finally {
+              AtlasPerfTracer.log(perf);
+       }
+
+
+    }
 }
