@@ -196,7 +196,7 @@ public class ConnectionPreProcessor implements PreProcessor {
             List<String> finalStateRoles = emptyRole ? new ArrayList<>() : newAdminRoles;
             List<String> finalStateGroups = emptyGroup ? new ArrayList<>() : newAdminGroups;
 
-            if (CollectionUtils.isNotEmpty(finalStateUsers) && CollectionUtils.isEmpty(finalStateGroups) && CollectionUtils.isEmpty(finalStateRoles)) {
+            if (CollectionUtils.isEmpty(finalStateUsers) && CollectionUtils.isEmpty(finalStateGroups) && CollectionUtils.isEmpty(finalStateRoles)) {
                 throw new AtlasBaseException(AtlasErrorCode.ADMIN_LIST_SHOULD_NOT_BE_EMPTY, existingConnEntity.getTypeName());
             }
 
