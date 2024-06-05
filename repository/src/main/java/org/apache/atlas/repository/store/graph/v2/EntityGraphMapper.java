@@ -2128,7 +2128,6 @@ public class EntityGraphMapper {
 
         boolean isNewElementsNull = elementsDeleted == null;
 
-
         if (isNewElementsNull) {
             elementsDeleted = new ArrayList();
         }
