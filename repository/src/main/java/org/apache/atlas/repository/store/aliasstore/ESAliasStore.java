@@ -141,23 +141,6 @@ public class ESAliasStore implements IndexAliasStore {
         return true;
     }
 
-    public void rebuildAlias(AtlasEntity.AtlasEntityWithExtInfo accessControl) throws AtlasBaseException {
-        String aliasName = getAliasName(accessControl.getEntity());
-
-        Map<String, Object> filter;
-
-        if (PERSONA_ENTITY_TYPE.equals(accessControl.getEntity().getTypeName())) {
-            filter = getFilterForPersona(accessControl);
-        } else {
-            filter = getFilterForPurpose(accessControl.getEntity());
-        }
-
-        ESAliasRequestBuilder requestBuilder = new ESAliasRequestBuilder();
-        requestBuilder.addAction(ADD, new AliasAction(getIndexNameFromAliasIfExists(VERTEX_INDEX_NAME), aliasName, filter));
-
-        graph.createOrUpdateESAlias(requestBuilder);
-    }
-
     @Override
     public boolean deleteAlias(String aliasName) throws AtlasBaseException {
         graph.deleteESAlias(getIndexNameFromAliasIfExists(VERTEX_INDEX_NAME), aliasName);
@@ -171,17 +154,6 @@ public class ESAliasStore implements IndexAliasStore {
         if (policy != null) {
             policies.add(policy);
         }
-        if (CollectionUtils.isNotEmpty(policies)) {
-            personaPolicyToESDslClauses(policies, allowClauseList);
-        }
-
-        return esClausesToFilter(allowClauseList);
-    }
-
-    private Map<String, Object> getFilterForPersona(AtlasEntity.AtlasEntityWithExtInfo persona) throws AtlasBaseException {
-        List<Map<String, Object>> allowClauseList = new ArrayList<>();
-
-        List<AtlasEntity> policies = getPolicies(persona);
         if (CollectionUtils.isNotEmpty(policies)) {
             personaPolicyToESDslClauses(policies, allowClauseList);
         }

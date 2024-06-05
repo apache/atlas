@@ -2716,10 +2716,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, new AtlasEntityHeader(accesscontrolEntity.getEntity())));
 
-        if (accesscontrolEntity == null) {
-            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
-        }
-
         // Validate accesscontrolEntity status
         if (accesscontrolEntity.getEntity().getStatus() != ACTIVE) {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_DELETED, guid);
@@ -2728,7 +2724,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         // Validate accesscontrolEntity type
         String entityType = accesscontrolEntity.getEntity().getTypeName();
         if (!PERSONA_ENTITY_TYPE.equals(entityType)) {
-            throw new AtlasBaseException(AtlasErrorCode.INVALID_OBJECT_ID, entityType);
+            throw new AtlasBaseException(AtlasErrorCode.OPERATION_NOT_SUPPORTED, entityType);
         }
 
         List<AtlasObjectId> policies = (List<AtlasObjectId>) accesscontrolEntity.getEntity().getRelationshipAttribute(REL_ATTR_POLICIES);
@@ -2737,7 +2733,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
 
         // Rebuild alias
-        this.esAliasStore.rebuildAlias(accesscontrolEntity);
+        this.esAliasStore.updateAlias(accesscontrolEntity, null);
 
         RequestContext.get().endMetricRecord(metric);
     }
