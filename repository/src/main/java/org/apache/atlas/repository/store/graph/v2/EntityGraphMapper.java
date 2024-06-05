@@ -85,6 +85,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
+import javax.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -2216,7 +2217,7 @@ public class EntityGraphMapper {
         AtlasVertex toVertex = ctx.getReferringVertex();
         String toVertexType = getTypeName(toVertex);
 
-        if(currentElements.isEmpty() && createdElements.isEmpty() && deletedElements.isEmpty()){
+        if((currentElements.isEmpty() || currentElements == null) && createdElements.isEmpty() && deletedElements.isEmpty()){
             RequestContext.get().endMetricRecord(metricRecorder);
             return;
         }
@@ -2234,7 +2235,7 @@ public class EntityGraphMapper {
             }
 
             if(ctx.getAttribute().getRelationshipEdgeLabel().equals(OUTPUT_PORT_PRODUCT_EDGE_LABEL)){
-                addOrRemoveInternalAttr(toVertex, OUTPUT_PORT_GUIDS_ATTR, createdElements, currentElements, deletedElements);
+                addOrRemoveInternalAttr(toVertex, "OutputPortGuids", createdElements, currentElements, deletedElements);
             }
             if (ctx.getAttribute().getRelationshipEdgeLabel().equals(INPUT_PORT_PRODUCT_EDGE_LABEL)) {
                 addOrRemoveInternalAttr(toVertex, INPUT_PORT_GUIDS_ATTR, createdElements, currentElements, deletedElements);
@@ -2250,6 +2251,7 @@ public class EntityGraphMapper {
 
         if (CollectionUtils.isNotEmpty(currentElements) && CollectionUtils.isEmpty(portGuids)) {
             List<String> currentGuids = currentElements.stream()
+                    .filter(x -> ((AtlasEdge) x).getProperty(STATE_PROPERTY_KEY, String.class).equals("ACTIVE"))
                     .map(x -> ((AtlasEdge) x).getOutVertex().getProperty("__guid", String.class))
                     .collect(Collectors.toList());
 
