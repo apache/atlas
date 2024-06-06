@@ -2170,7 +2170,7 @@ public class EntityGraphMapper {
 
             case INPUT_PORT_PRODUCT_EDGE_LABEL:
             case OUTPUT_PORT_PRODUCT_EDGE_LABEL:
-                addInternalProductAttr(ctx, new ArrayList<>(0) , removedElements, null);
+                addInternalProductAttr(ctx, null , removedElements);
                 break;
         }
 
