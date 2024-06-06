@@ -248,7 +248,7 @@ public class ESAliasStore implements IndexAliasStore {
     }
 
     private String validateAndConvertAsset(String asset) {
-        if(asset.equals("*/super"))
+        if(asset.equals("*/super") || asset.equals("*"))
             asset = "default/domain/*/super";
         return asset;
     }
