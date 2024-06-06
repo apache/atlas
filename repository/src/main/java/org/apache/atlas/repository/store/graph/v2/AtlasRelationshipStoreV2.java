@@ -68,17 +68,7 @@ import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.
 import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.NONE;
 import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.ONE_TO_TWO;
 import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.TWO_TO_ONE;
-import static org.apache.atlas.repository.Constants.ENTITY_TYPE_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.HOME_ID_KEY;
-import static org.apache.atlas.repository.Constants.PROVENANCE_TYPE_KEY;
-import static org.apache.atlas.repository.Constants.RELATIONSHIPTYPE_TAG_PROPAGATION_KEY;
-import static org.apache.atlas.repository.Constants.RELATIONSHIP_GUID_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.REL_DOMAIN_TO_DOMAINS;
-import static org.apache.atlas.repository.Constants.REL_DOMAIN_TO_PRODUCTS;
-import static org.apache.atlas.repository.Constants.REL_DOMAIN_TO_STAKEHOLDERS;
-import static org.apache.atlas.repository.Constants.REL_POLICY_TO_ACCESS_CONTROL;
-import static org.apache.atlas.repository.Constants.REL_STAKEHOLDER_TITLE_TO_STAKEHOLDERS;
-import static org.apache.atlas.repository.Constants.VERSION_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.*;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_RELATIONSHIP_UPDATE;
@@ -116,6 +106,8 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         add(REL_DOMAIN_TO_STAKEHOLDERS);
         add(REL_STAKEHOLDER_TITLE_TO_STAKEHOLDERS);
         add(REL_POLICY_TO_ACCESS_CONTROL);
+        add(REL_DATA_PRODUCT_TO_OUTPUT_PORTS);
+        add(REL_DATA_PRODUCT_TO_INPUT_PORTS);
     }};
 
     public enum RelationshipMutation {
