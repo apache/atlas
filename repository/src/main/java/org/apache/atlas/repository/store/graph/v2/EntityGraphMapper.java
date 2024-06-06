@@ -2008,7 +2008,7 @@ public class EntityGraphMapper {
 
             case INPUT_PORT_PRODUCT_EDGE_LABEL:
             case OUTPUT_PORT_PRODUCT_EDGE_LABEL:
-                addInternalProductAttr(ctx, newElementsCreated, removedElements, currentElements);
+                addInternalProductAttr(ctx, newElementsCreated, removedElements);
                 break;
         }
 
@@ -2098,7 +2098,7 @@ public class EntityGraphMapper {
 
             case INPUT_PORT_PRODUCT_EDGE_LABEL:
             case OUTPUT_PORT_PRODUCT_EDGE_LABEL:
-                addInternalProductAttr(ctx, newElementsCreated, new ArrayList<>(0), null);
+                addInternalProductAttr(ctx, newElementsCreated, null);
                 break;
         }
 
@@ -2209,65 +2209,37 @@ public class EntityGraphMapper {
         }
     }
 
-    private void addInternalProductAttr(AttributeMutationContext ctx, List<Object> createdElements, List<AtlasEdge> deletedElements, List<Object> currentElements) throws AtlasBaseException {
+    private void addInternalProductAttr(AttributeMutationContext ctx, List<Object> createdElements, List<AtlasEdge> deletedElements) throws AtlasBaseException {
         MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("addInternalProductAttrForAppend");
         AtlasVertex toVertex = ctx.getReferringVertex();
         String toVertexType = getTypeName(toVertex);
 
-        if((currentElements == null || currentElements.isEmpty()) && createdElements.isEmpty() && deletedElements.isEmpty()){
+        if (CollectionUtils.isEmpty(createdElements) && CollectionUtils.isEmpty(deletedElements)){
             RequestContext.get().endMetricRecord(metricRecorder);
             return;
         }
 
         if (TYPE_PRODUCT.equals(toVertexType)) {
+            String attrName = ctx.getAttribute().getRelationshipEdgeLabel().equals(OUTPUT_PORT_PRODUCT_EDGE_LABEL)
+                    ? OUTPUT_PORT_GUIDS_ATTR
+                    : INPUT_PORT_GUIDS_ATTR;
 
-            if(currentElements == null){
-                AtlasAttribute attribute           = ctx.getAttribute();
-                AtlasArrayType arrType             = (AtlasArrayType) attribute.getAttributeType();
-                AtlasType      elementType         = arrType.getElementType();
-                boolean        isStructType        = (TypeCategory.STRUCT == elementType.getTypeCategory()) ||
-                        (TypeCategory.STRUCT == attribute.getDefinedInType().getTypeCategory());
-
-                currentElements = (List) getCollectionElementsUsingRelationship(ctx.getReferringVertex(), attribute, isStructType);
-            }
-
-            if(ctx.getAttribute().getRelationshipEdgeLabel().equals(OUTPUT_PORT_PRODUCT_EDGE_LABEL)){
-                addOrRemoveInternalAttr(toVertex, OUTPUT_PORT_GUIDS_ATTR, createdElements, currentElements, deletedElements);
-            }
-            if (ctx.getAttribute().getRelationshipEdgeLabel().equals(INPUT_PORT_PRODUCT_EDGE_LABEL)) {
-                addOrRemoveInternalAttr(toVertex, INPUT_PORT_GUIDS_ATTR, createdElements, currentElements, deletedElements);
-            }
+            addOrRemoveDaapInternalAttr(toVertex, attrName, createdElements, deletedElements);
         }else{
            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Can not update product relations while updating any asset");
         }
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
-    private void addOrRemoveInternalAttr(AtlasVertex toVertex, String internalAttr, List<Object> createdElements, List<Object> currentElements, List<AtlasEdge> deletedElements) {
-        List<String> portGuids = toVertex.getMultiValuedProperty(internalAttr, String.class);
-
-        if (CollectionUtils.isNotEmpty(currentElements) && CollectionUtils.isEmpty(portGuids)) {
-            List<String> currentGuids = currentElements.stream()
-                    .filter(x -> ((AtlasEdge) x).getProperty(STATE_PROPERTY_KEY, String.class).equals("ACTIVE"))
-                    .map(x -> ((AtlasEdge) x).getOutVertex().getProperty("__guid", String.class))
-                    .collect(Collectors.toList());
-
-            portGuids.addAll(currentGuids);
-        }
-
+    private void addOrRemoveDaapInternalAttr(AtlasVertex toVertex, String internalAttr, List<Object> createdElements, List<AtlasEdge> deletedElements) {
         if (CollectionUtils.isNotEmpty(createdElements)) {
-            List<String> assetGuids = createdElements.stream().map(x -> ((AtlasEdge) x).getOutVertex().getProperty("__guid", String.class)).collect(Collectors.toList());
-            portGuids = (List<String>) CollectionUtils.union(portGuids, assetGuids);
+            List<String> addedGuids = createdElements.stream().map(x -> ((AtlasEdge) x).getOutVertex().getProperty("__guid", String.class)).collect(Collectors.toList());
+            addedGuids.forEach(guid -> AtlasGraphUtilsV2.addEncodedProperty(toVertex, internalAttr, guid));
         }
 
         if (CollectionUtils.isNotEmpty(deletedElements)) {
-            List<String> assetGuids = deletedElements.stream().map(x -> x.getOutVertex().getProperty("__guid", String.class)).collect(Collectors.toList());
-            portGuids.removeAll(assetGuids);
-        }
-
-        toVertex.removeProperty(internalAttr);
-        if (CollectionUtils.isNotEmpty(portGuids)) {
-            portGuids.forEach(guid -> AtlasGraphUtilsV2.addEncodedProperty(toVertex, internalAttr , guid));
+            List<String> removedGuids = deletedElements.stream().map(x -> x.getOutVertex().getProperty("__guid", String.class)).collect(Collectors.toList());
+            removedGuids.forEach(guid -> AtlasGraphUtilsV2.removeItemFromListPropertyValue(toVertex, internalAttr, guid));
         }
     }
 
