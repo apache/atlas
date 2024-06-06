@@ -1,7 +1,7 @@
 package org.apache.atlas.repository.store.graph.v2;
 
-import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.service.redis.RedisService;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -14,7 +14,7 @@ import java.util.*;
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
 
-public class DataMeshAttrMigrationService implements MigrationService {
+public class DataMeshAttrMigrationService {
 
     private static final Logger LOG = LoggerFactory.getLogger(DataMeshQNMigrationService.class);
 
@@ -24,19 +24,17 @@ public class DataMeshAttrMigrationService implements MigrationService {
     private final RedisService redisService;
 
     private String productGuid;
-    private boolean forceRegen;
     private final TransactionInterceptHelper   transactionInterceptHelper;
 
-    public DataMeshAttrMigrationService(EntityGraphRetriever entityRetriever, String productGuid, AtlasTypeRegistry typeRegistry, TransactionInterceptHelper transactionInterceptHelper, RedisService redisService, boolean forceRegen) {
+    public DataMeshAttrMigrationService(EntityGraphRetriever entityRetriever, String productGuid, AtlasTypeRegistry typeRegistry, TransactionInterceptHelper transactionInterceptHelper, RedisService redisService) {
         this.entityRetriever = entityRetriever;
         this.typeRegistry = typeRegistry;
         this.redisService = redisService;
         this.transactionInterceptHelper = transactionInterceptHelper;
-        this.forceRegen = forceRegen;
         this.productGuid = productGuid;
     }
 
-    public void startMigration() throws Exception {
+    public void migrateProduct() throws Exception {
         try {
             redisService.putValue(DATA_MESH_ATTR, MigrationStatus.IN_PROGRESS.name());
 
@@ -44,7 +42,7 @@ public class DataMeshAttrMigrationService implements MigrationService {
             migrateAttr(productVertex);
             commitChanges();
         } catch (Exception e) {
-            LOG.error("Migration failed", e);
+            LOG.error("Migration failed for entity", e);
             redisService.putValue(DATA_MESH_ATTR, MigrationStatus.FAILED.name());
             throw e;
         }
@@ -53,20 +51,23 @@ public class DataMeshAttrMigrationService implements MigrationService {
     }
 
     private void migrateAttr(AtlasVertex vertex) throws AtlasBaseException {
-        List<Object> outputPorts = vertex.getMultiValuedProperty("outputPorts", Object.class);
-        List<String> outputPortGuids = vertex.getMultiValuedProperty(OUTPUT_PORT_GUIDS_ATTR, String.class);
+        AtlasEntity productEntity = entityRetriever.toAtlasEntity(vertex);
+        List<Object> outputPorts = (List<Object>) productEntity.getRelationshipAttribute(OUTPUT_PORT_ATTR);
+        List<String> outputPortGuids = getAssetGuids(outputPorts);
+        List<String> outputPortGuidsAttr = vertex.getMultiValuedProperty(OUTPUT_PORT_GUIDS_ATTR, String.class);
 
-        List<Object> inputPorts = vertex.getMultiValuedProperty("inputPorts", Object.class);
-        List<String> inputPortGuids = vertex.getMultiValuedProperty(INPUT_PORT_GUIDS_ATTR, String.class);
+        List<Object> inputPorts = (List<Object>) productEntity.getRelationshipAttribute(INPUT_PORT_ATTR);
+        List<String> inputPortGuids = getAssetGuids(inputPorts);
+        List<String> inputPortGuidsAttr = vertex.getMultiValuedProperty(INPUT_PORT_GUIDS_ATTR, String.class);
 
-        if(outputPorts.size() != outputPortGuids.size()) {
+        if(CollectionUtils.isEqualCollection(outputPortGuids, outputPortGuidsAttr)) {
            LOG.info("Migrating outputPort guid attribute: {} for Product: {}", OUTPUT_PORT_GUIDS_ATTR, vertex.getProperty(QUALIFIED_NAME, String.class));
-           addGuids(vertex, OUTPUT_PORT_GUIDS_ATTR, outputPorts, outputPortGuids);
+           addInternalAttr(vertex, OUTPUT_PORT_GUIDS_ATTR, outputPorts, outputPortGuids);
         }
 
-        if(inputPorts.size() != inputPortGuids.size()) {
+        if(CollectionUtils.isEqualCollection(inputPortGuids, inputPortGuidsAttr)) {
             LOG.info("Migrating inputPort guid attribute: {} for Product: {}", INPUT_PORT_GUIDS_ATTR, vertex.getProperty(QUALIFIED_NAME, String.class));
-            addGuids(vertex, INPUT_PORT_GUIDS_ATTR, inputPorts, inputPortGuids);
+            addInternalAttr(vertex, INPUT_PORT_GUIDS_ATTR, inputPorts, inputPortGuids);
         }
     }
 
@@ -80,29 +81,20 @@ public class DataMeshAttrMigrationService implements MigrationService {
         }
     }
 
-    private void addGuids(AtlasVertex productVertex, String internalAttr, List<Object> currentElements, List<String> currentGuids){
-        currentGuids = new ArrayList<>();
-        for(Object port : currentElements){
-            if(port instanceof Map){
-                Map<String, Object> portMap = (Map<String, Object>) port;
-                currentGuids.add((String) portMap.get("guid"));
+    private List<String> getAssetGuids(List<Object> elements){
+        List<String> guids = new ArrayList<>();
+        for(Object element : elements){
+            if(element instanceof Map){
+                Map<String, Object> elementMap = (Map<String, Object>) element;
+                guids.add((String) elementMap.get("guid"));
             }
         }
-
-        if (CollectionUtils.isNotEmpty(currentGuids)) {
-            currentGuids.forEach(guid -> AtlasGraphUtilsV2.addEncodedProperty(productVertex, internalAttr , guid));
-        }
+        return guids;
     }
 
-    @Override
-    public void run() {
-        try {
-            LOG.info("Starting migration: {}", DATA_MESH_ATTR);
-            startMigration();
-            LOG.info("Finished migration: {}", DATA_MESH_ATTR);
-        } catch (Exception e) {
-            LOG.error("Error running migration : {}",e.toString());
-            throw new RuntimeException(e);
+    private void addInternalAttr(AtlasVertex productVertex, String internalAttr, List<Object> currentElements, List<String> currentGuids){
+        if (CollectionUtils.isNotEmpty(currentGuids)) {
+            currentGuids.forEach(guid -> AtlasGraphUtilsV2.addEncodedProperty(productVertex, internalAttr , guid));
         }
     }
 }
