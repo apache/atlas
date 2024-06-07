@@ -220,12 +220,13 @@ public class ConnectionPreProcessor implements PreProcessor {
     // if the list is empty -> we want to remove all elements
     // if the list is non-empty -> we want to replace
     // if the list is equal to prev value -> no update is required
+    // if the list is null -> we don't want to change
     private List<String> determineFinalState(List<String> newAdmins, List<String> currentAdmins) {
         if (newAdmins == null) {
-            return new ArrayList<>();
+            return currentAdmins;
         }
         if (CollectionUtils.isEmpty(newAdmins)) {
-            return currentAdmins;
+            return new ArrayList<>();
         }
 
         List<String> sortedNewAdmins = newAdmins.stream().sorted().collect(Collectors.toList());
