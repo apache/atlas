@@ -60,12 +60,12 @@ public class DataMeshAttrMigrationService {
         List<String> inputPortGuids = getAssetGuids(inputPorts);
         List<String> inputPortGuidsAttr = vertex.getMultiValuedProperty(INPUT_PORT_GUIDS_ATTR, String.class);
 
-        if(CollectionUtils.isEqualCollection(outputPortGuids, outputPortGuidsAttr)) {
+        if(!CollectionUtils.isEqualCollection(outputPortGuids, outputPortGuidsAttr)) {
            LOG.info("Migrating outputPort guid attribute: {} for Product: {}", OUTPUT_PORT_GUIDS_ATTR, vertex.getProperty(QUALIFIED_NAME, String.class));
            addInternalAttr(vertex, OUTPUT_PORT_GUIDS_ATTR, outputPorts, outputPortGuids);
         }
 
-        if(CollectionUtils.isEqualCollection(inputPortGuids, inputPortGuidsAttr)) {
+        if(!CollectionUtils.isEqualCollection(inputPortGuids, inputPortGuidsAttr)) {
             LOG.info("Migrating inputPort guid attribute: {} for Product: {}", INPUT_PORT_GUIDS_ATTR, vertex.getProperty(QUALIFIED_NAME, String.class));
             addInternalAttr(vertex, INPUT_PORT_GUIDS_ATTR, inputPorts, inputPortGuids);
         }
