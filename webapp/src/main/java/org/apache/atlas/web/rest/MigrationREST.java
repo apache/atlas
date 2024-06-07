@@ -147,22 +147,22 @@ public class MigrationREST {
     }
 
     @POST
-    @Path("migrateProductInternalAttr")
+    @Path("dataproduct/inputs-outputs")
     @Timed
     public Boolean migrateProductInternalAttr (@QueryParam("guid") String guid) throws Exception {
         AtlasPerfTracer perf = null;
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MigrationREST.migrateProductInternalAttr(" + DATA_MESH_ATTR + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MigrationREST.migrateProductInternalAttr(" + guid + ")");
             }
 
-            DataMeshAttrMigrationService migrationService = new DataMeshAttrMigrationService(entityRetriever, guid, transactionInterceptHelper);
+            DataProductInputsOutputsMigrationService migrationService = new DataProductInputsOutputsMigrationService(entityRetriever, guid, transactionInterceptHelper);
             migrationService.migrateProduct();
 
         } catch (Exception e) {
-            LOG.error("Error while submitting migration", e);
-            return Boolean.FALSE;
+            LOG.error("Error while migration inputs/outputs for Dataproduct: {}", guid, e);
+            throw e;
         } finally {
             AtlasPerfTracer.log(perf);
         }

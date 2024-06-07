@@ -66,7 +66,6 @@ public class PreProcessorUtils {
     //Migration Constants
     public static final String MIGRATION_TYPE_PREFIX = "MIGRATION:";
     public static final String DATA_MESH_QN = MIGRATION_TYPE_PREFIX + "DATA_MESH_QN";
-    public static final String DATA_MESH_ATTR = MIGRATION_TYPE_PREFIX + "DATA_MESH_ATTR";
 
     public enum MigrationStatus {
         IN_PROGRESS,

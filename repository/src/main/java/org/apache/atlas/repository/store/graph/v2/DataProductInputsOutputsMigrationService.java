@@ -1,5 +1,6 @@
 package org.apache.atlas.repository.store.graph.v2;
 
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasRelatedObjectId;
@@ -10,12 +11,11 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
 
-public class DataMeshAttrMigrationService {
+public class DataProductInputsOutputsMigrationService {
 
-    private static final Logger LOG = LoggerFactory.getLogger(DataMeshQNMigrationService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DataProductInputsOutputsMigrationService.class);
 
     private final EntityGraphRetriever entityRetriever;
 
@@ -23,7 +23,7 @@ public class DataMeshAttrMigrationService {
     private String productGuid;
     private final TransactionInterceptHelper   transactionInterceptHelper;
 
-    public DataMeshAttrMigrationService(EntityGraphRetriever entityRetriever, String productGuid, TransactionInterceptHelper transactionInterceptHelper) {
+    public DataProductInputsOutputsMigrationService(EntityGraphRetriever entityRetriever, String productGuid, TransactionInterceptHelper transactionInterceptHelper) {
         this.entityRetriever = entityRetriever;
         this.transactionInterceptHelper = transactionInterceptHelper;
         this.productGuid = productGuid;
@@ -32,32 +32,36 @@ public class DataMeshAttrMigrationService {
     public void migrateProduct() throws Exception {
         try {
             AtlasVertex productVertex = entityRetriever.getEntityVertex(this.productGuid);
+            if(productVertex == null) {
+                throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, this.productGuid);
+            }
+
             migrateAttr(productVertex);
             commitChanges();
         } catch (Exception e) {
-            LOG.error("Migration failed for entity", e);
+            LOG.error("Error while migration inputs/outputs for Dataproduct: {}", this.productGuid, e);
             throw e;
         }
     }
 
     private void migrateAttr(AtlasVertex vertex) throws AtlasBaseException {
         AtlasEntity productEntity = entityRetriever.toAtlasEntity(vertex);
-        List<Object> outputPorts = (List<Object>) productEntity.getRelationshipAttribute(OUTPUT_PORT_ATTR);
-        List<String> outputPortGuids = getAssetGuids(outputPorts);
-        List<String> outputPortGuidsAttr = vertex.getMultiValuedProperty(OUTPUT_PORT_GUIDS_ATTR, String.class);
+        List<Object> outputPortsRelation = (List<Object>) productEntity.getRelationshipAttribute(OUTPUT_PORT_ATTR);
+        List<String> outputPortsRelationGuids = getAssetGuids(outputPortsRelation);
+        List<String> outputPortGuidsAttr = (List<String>) productEntity.getAttribute(OUTPUT_PORT_GUIDS_ATTR);
 
-        List<Object> inputPorts = (List<Object>) productEntity.getRelationshipAttribute(INPUT_PORT_ATTR);
-        List<String> inputPortGuids = getAssetGuids(inputPorts);
-        List<String> inputPortGuidsAttr = vertex.getMultiValuedProperty(INPUT_PORT_GUIDS_ATTR, String.class);
+        List<Object> inputPortsRelation = (List<Object>) productEntity.getRelationshipAttribute(INPUT_PORT_ATTR);
+        List<String> inputPortsRelationGuids = getAssetGuids(inputPortsRelation);
+        List<String> inputPortGuidsAttr = (List<String>) productEntity.getAttribute(INPUT_PORT_GUIDS_ATTR);
 
-        if(!CollectionUtils.isEqualCollection(outputPortGuids, outputPortGuidsAttr)) {
-           LOG.info("Migrating outputPort guid attribute: {} for Product: {}", OUTPUT_PORT_GUIDS_ATTR, vertex.getProperty(QUALIFIED_NAME, String.class));
-           addInternalAttr(vertex, OUTPUT_PORT_GUIDS_ATTR, outputPortGuids);
+        if(!CollectionUtils.isEqualCollection(outputPortsRelationGuids, outputPortGuidsAttr)) {
+           LOG.info("Migrating outputPort guid attribute: {} for Product: {}", OUTPUT_PORT_GUIDS_ATTR, productEntity.getGuid());
+           addInternalAttr(vertex, OUTPUT_PORT_GUIDS_ATTR, outputPortsRelationGuids);
         }
 
-        if(!CollectionUtils.isEqualCollection(inputPortGuids, inputPortGuidsAttr)) {
-            LOG.info("Migrating inputPort guid attribute: {} for Product: {}", INPUT_PORT_GUIDS_ATTR, vertex.getProperty(QUALIFIED_NAME, String.class));
-            addInternalAttr(vertex, INPUT_PORT_GUIDS_ATTR, inputPortGuids);
+        if(!CollectionUtils.isEqualCollection(inputPortsRelationGuids, inputPortGuidsAttr)) {
+            LOG.info("Migrating inputPort guid attribute: {} for Product: {}", INPUT_PORT_GUIDS_ATTR, productEntity.getGuid());
+            addInternalAttr(vertex, INPUT_PORT_GUIDS_ATTR, inputPortsRelationGuids);
         }
     }
 
@@ -81,6 +85,7 @@ public class DataMeshAttrMigrationService {
     }
 
     private void addInternalAttr(AtlasVertex productVertex, String internalAttr, List<String> currentGuids){
+        productVertex.removeProperty(internalAttr);
         if (CollectionUtils.isNotEmpty(currentGuids)) {
             currentGuids.forEach(guid -> AtlasGraphUtilsV2.addEncodedProperty(productVertex, internalAttr , guid));
         }
