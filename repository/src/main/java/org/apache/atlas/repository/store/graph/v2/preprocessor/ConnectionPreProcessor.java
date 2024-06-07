@@ -220,7 +220,7 @@ public class ConnectionPreProcessor implements PreProcessor {
     // if the list is empty -> we want to remove all elements
     // if the list is non-empty -> we want to replace
     // if the list is equal to prev value -> no update is required
-    private static List<String> determineFinalState(List<String> newAdmins, List<String> currentAdmins) {
+    private List<String> determineFinalState(List<String> newAdmins, List<String> currentAdmins) {
         if (newAdmins == null || newAdmins.isEmpty()) {
             return new ArrayList<>();
         }
