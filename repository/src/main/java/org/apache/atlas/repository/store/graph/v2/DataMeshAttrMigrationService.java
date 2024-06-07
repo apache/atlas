@@ -52,12 +52,12 @@ public class DataMeshAttrMigrationService {
 
         if(!CollectionUtils.isEqualCollection(outputPortGuids, outputPortGuidsAttr)) {
            LOG.info("Migrating outputPort guid attribute: {} for Product: {}", OUTPUT_PORT_GUIDS_ATTR, vertex.getProperty(QUALIFIED_NAME, String.class));
-           addInternalAttr(vertex, OUTPUT_PORT_GUIDS_ATTR, outputPorts, outputPortGuids);
+           addInternalAttr(vertex, OUTPUT_PORT_GUIDS_ATTR, outputPortGuids);
         }
 
         if(!CollectionUtils.isEqualCollection(inputPortGuids, inputPortGuidsAttr)) {
             LOG.info("Migrating inputPort guid attribute: {} for Product: {}", INPUT_PORT_GUIDS_ATTR, vertex.getProperty(QUALIFIED_NAME, String.class));
-            addInternalAttr(vertex, INPUT_PORT_GUIDS_ATTR, inputPorts, inputPortGuids);
+            addInternalAttr(vertex, INPUT_PORT_GUIDS_ATTR, inputPortGuids);
         }
     }
 
@@ -80,7 +80,7 @@ public class DataMeshAttrMigrationService {
         return guids;
     }
 
-    private void addInternalAttr(AtlasVertex productVertex, String internalAttr, List<Object> currentElements, List<String> currentGuids){
+    private void addInternalAttr(AtlasVertex productVertex, String internalAttr, List<String> currentGuids){
         if (CollectionUtils.isNotEmpty(currentGuids)) {
             currentGuids.forEach(guid -> AtlasGraphUtilsV2.addEncodedProperty(productVertex, internalAttr , guid));
         }
