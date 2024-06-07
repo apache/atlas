@@ -4,13 +4,18 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasRelatedObjectId;
+import org.apache.atlas.repository.graph.GraphHelper;
+import org.apache.atlas.repository.graphdb.AtlasEdge;
+import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
+import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
 
 public class DataProductInputsOutputsMigrationService {
@@ -45,22 +50,20 @@ public class DataProductInputsOutputsMigrationService {
     }
 
     private void migrateAttr(AtlasVertex vertex) throws AtlasBaseException {
-        AtlasEntity productEntity = entityRetriever.toAtlasEntity(vertex);
-        List<Object> outputPortsRelation = (List<Object>) productEntity.getRelationshipAttribute(OUTPUT_PORT_ATTR);
-        List<String> outputPortsRelationGuids = getAssetGuids(outputPortsRelation);
-        List<String> outputPortGuidsAttr = (List<String>) productEntity.getAttribute(OUTPUT_PORT_GUIDS_ATTR);
+        List<String> outputPortsRelationGuids = getAssetGuids(vertex, OUTPUT_PORT_PRODUCT_EDGE_LABEL);
+        List<String> outputPortGuidsAttr = vertex.getMultiValuedProperty(OUTPUT_PORT_GUIDS_ATTR, String.class);
 
-        List<Object> inputPortsRelation = (List<Object>) productEntity.getRelationshipAttribute(INPUT_PORT_ATTR);
-        List<String> inputPortsRelationGuids = getAssetGuids(inputPortsRelation);
-        List<String> inputPortGuidsAttr = (List<String>) productEntity.getAttribute(INPUT_PORT_GUIDS_ATTR);
+
+        List<String> inputPortsRelationGuids = getAssetGuids(vertex, INPUT_PORT_PRODUCT_EDGE_LABEL);
+        List<String> inputPortGuidsAttr = vertex.getMultiValuedProperty(INPUT_PORT_GUIDS_ATTR, String.class);
 
         if(!CollectionUtils.isEqualCollection(outputPortsRelationGuids, outputPortGuidsAttr)) {
-           LOG.info("Migrating outputPort guid attribute: {} for Product: {}", OUTPUT_PORT_GUIDS_ATTR, productEntity.getGuid());
+           LOG.info("Migrating outputPort guid attribute: {} for Product: {}", OUTPUT_PORT_GUIDS_ATTR, this.productGuid);
            addInternalAttr(vertex, OUTPUT_PORT_GUIDS_ATTR, outputPortsRelationGuids);
         }
 
         if(!CollectionUtils.isEqualCollection(inputPortsRelationGuids, inputPortGuidsAttr)) {
-            LOG.info("Migrating inputPort guid attribute: {} for Product: {}", INPUT_PORT_GUIDS_ATTR, productEntity.getGuid());
+            LOG.info("Migrating inputPort guid attribute: {} for Product: {}", INPUT_PORT_GUIDS_ATTR, this.productGuid);
             addInternalAttr(vertex, INPUT_PORT_GUIDS_ATTR, inputPortsRelationGuids);
         }
     }
@@ -75,11 +78,12 @@ public class DataProductInputsOutputsMigrationService {
         }
     }
 
-    private List<String> getAssetGuids(List<Object> elements){
+    private List<String> getAssetGuids(AtlasVertex vertex, String edgeLabel) throws AtlasBaseException {
         List<String> guids = new ArrayList<>();
-        for(Object element : elements){
-            AtlasRelatedObjectId relatedObjectId = (AtlasRelatedObjectId) element;
-            guids.add(relatedObjectId.getGuid());
+        Iterator<AtlasVertex> activeChildren = GraphHelper.getActiveParentVertices(vertex, edgeLabel);
+        while(activeChildren.hasNext()) {
+            AtlasVertex child = activeChildren.next();
+            guids.add(child.getProperty(GUID_PROPERTY_KEY, String.class));
         }
         return guids;
     }
