@@ -4,7 +4,6 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.service.redis.RedisService;
 import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,32 +19,25 @@ public class DataMeshAttrMigrationService {
 
     private final EntityGraphRetriever entityRetriever;
 
-    private final RedisService redisService;
 
     private String productGuid;
     private final TransactionInterceptHelper   transactionInterceptHelper;
 
-    public DataMeshAttrMigrationService(EntityGraphRetriever entityRetriever, String productGuid, TransactionInterceptHelper transactionInterceptHelper, RedisService redisService) {
+    public DataMeshAttrMigrationService(EntityGraphRetriever entityRetriever, String productGuid, TransactionInterceptHelper transactionInterceptHelper) {
         this.entityRetriever = entityRetriever;
-        this.redisService = redisService;
         this.transactionInterceptHelper = transactionInterceptHelper;
         this.productGuid = productGuid;
     }
 
     public void migrateProduct() throws Exception {
         try {
-            redisService.putValue(DATA_MESH_ATTR, MigrationStatus.IN_PROGRESS.name());
-
             AtlasVertex productVertex = entityRetriever.getEntityVertex(this.productGuid);
             migrateAttr(productVertex);
             commitChanges();
         } catch (Exception e) {
             LOG.error("Migration failed for entity", e);
-            redisService.putValue(DATA_MESH_ATTR, MigrationStatus.FAILED.name());
             throw e;
         }
-
-        redisService.putValue(DATA_MESH_ATTR, MigrationStatus.SUCCESSFUL.name());
     }
 
     private void migrateAttr(AtlasVertex vertex) throws AtlasBaseException {

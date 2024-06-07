@@ -157,7 +157,7 @@ public class MigrationREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MigrationREST.migrateProductInternalAttr(" + DATA_MESH_ATTR + ")");
             }
 
-            DataMeshAttrMigrationService migrationService = new DataMeshAttrMigrationService(entityRetriever, guid, transactionInterceptHelper, redisService);
+            DataMeshAttrMigrationService migrationService = new DataMeshAttrMigrationService(entityRetriever, guid, transactionInterceptHelper);
             migrationService.migrateProduct();
 
         } catch (Exception e) {
