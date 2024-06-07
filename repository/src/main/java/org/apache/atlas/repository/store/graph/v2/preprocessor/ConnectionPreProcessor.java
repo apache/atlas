@@ -238,6 +238,9 @@ public class ConnectionPreProcessor implements PreProcessor {
 
     private Optional<List<String>> getAttributeList(AtlasEntity entity, String attributeName) {
         if (entity.hasAttribute(attributeName)) {
+            if (Objects.isNull(entity.getAttribute(attributeName))) {
+                return Optional.of(new ArrayList<>());
+            }
             return Optional.of((List<String>) entity.getAttribute(attributeName));
         }
         return Optional.empty();
