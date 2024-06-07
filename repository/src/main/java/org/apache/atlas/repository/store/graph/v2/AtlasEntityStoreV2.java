@@ -1545,8 +1545,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
 
             // Notify the change listeners
-            entityChangeNotifier.onEntitiesMutated(ret, RequestContext.get().isImportInProgress());
-            atlasRelationshipStore.onRelationshipsMutated(RequestContext.get().getRelationshipMutationMap());
+            // entityChangeNotifier.onEntitiesMutated(ret, RequestContext.get().isImportInProgress());
+            // atlasRelationshipStore.onRelationshipsMutated(RequestContext.get().getRelationshipMutationMap());
             if (LOG.isDebugEnabled()) {
                 LOG.debug("<== createOrUpdate()");
             }
