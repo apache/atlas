@@ -2,9 +2,9 @@ package org.apache.atlas.repository.store.graph.v2;
 
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.service.redis.RedisService;
-import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,15 +20,13 @@ public class DataMeshAttrMigrationService {
 
     private final EntityGraphRetriever entityRetriever;
 
-    private final AtlasTypeRegistry typeRegistry;
     private final RedisService redisService;
 
     private String productGuid;
     private final TransactionInterceptHelper   transactionInterceptHelper;
 
-    public DataMeshAttrMigrationService(EntityGraphRetriever entityRetriever, String productGuid, AtlasTypeRegistry typeRegistry, TransactionInterceptHelper transactionInterceptHelper, RedisService redisService) {
+    public DataMeshAttrMigrationService(EntityGraphRetriever entityRetriever, String productGuid, TransactionInterceptHelper transactionInterceptHelper, RedisService redisService) {
         this.entityRetriever = entityRetriever;
-        this.typeRegistry = typeRegistry;
         this.redisService = redisService;
         this.transactionInterceptHelper = transactionInterceptHelper;
         this.productGuid = productGuid;
@@ -84,10 +82,8 @@ public class DataMeshAttrMigrationService {
     private List<String> getAssetGuids(List<Object> elements){
         List<String> guids = new ArrayList<>();
         for(Object element : elements){
-            if(element instanceof Map){
-                Map<String, Object> elementMap = (Map<String, Object>) element;
-                guids.add((String) elementMap.get("guid"));
-            }
+            AtlasRelatedObjectId relatedObjectId = (AtlasRelatedObjectId) element;
+            guids.add(relatedObjectId.getGuid());
         }
         return guids;
     }
