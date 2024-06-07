@@ -194,21 +194,18 @@ public class ConnectionPreProcessor implements PreProcessor {
 
             // Update Keycloak roles
             RoleRepresentation representation = getKeycloakClient().getRoleByName(roleName);
-            if (newAdminUsers != null) {
-                List<String> finalStateUsers = determineFinalState(newAdminUsers, currentAdminUsers);
-                keycloakStore.updateRoleUsers(roleName, currentAdminUsers, finalStateUsers, representation);
+            List<String> finalStateUsers = determineFinalState(newAdminUsers, currentAdminUsers);
+            keycloakStore.updateRoleUsers(roleName, currentAdminUsers, finalStateUsers, representation);
 
-            }
-            if (newAdminGroups != null) {
-                List<String> finalStateGroups = determineFinalState(newAdminGroups, currentAdminGroups);
-                keycloakStore.updateRoleGroups(roleName, currentAdminGroups, finalStateGroups, representation);
 
-            }
-            if (newAdminRoles != null) {
-                List<String> finalStateRoles = determineFinalState(newAdminRoles, currentAdminRoles);
-                keycloakStore.updateRoleRoles(roleName, currentAdminRoles, finalStateRoles, representation);
+            List<String> finalStateGroups = determineFinalState(newAdminGroups, currentAdminGroups);
+            keycloakStore.updateRoleGroups(roleName, currentAdminGroups, finalStateGroups, representation);
 
-            }
+
+            List<String> finalStateRoles = determineFinalState(newAdminRoles, currentAdminRoles);
+            keycloakStore.updateRoleRoles(roleName, currentAdminRoles, finalStateRoles, representation);
+
+
             RequestContext.get().endMetricRecord(metricRecorder);
         }
     }
