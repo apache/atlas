@@ -196,19 +196,19 @@ public class ConnectionPreProcessor implements PreProcessor {
             RoleRepresentation representation = getKeycloakClient().getRoleByName(roleName);
             if (newAdminUsers != null) {
                 List<String> finalStateUsers = determineFinalState(newAdminUsers, currentAdminUsers);
-                if(CollectionUtils.isNotEmpty(finalStateUsers)) {
+                if (CollectionUtils.isNotEmpty(finalStateUsers)) {
                     keycloakStore.updateRoleUsers(roleName, currentAdminUsers, finalStateUsers, representation);
                 }
             }
             if (newAdminGroups != null) {
                 List<String> finalStateGroups = determineFinalState(newAdminGroups, currentAdminGroups);
-                if(CollectionUtils.isNotEmpty(finalStateGroups)) {
+                if (CollectionUtils.isNotEmpty(finalStateGroups)) {
                     keycloakStore.updateRoleGroups(roleName, currentAdminGroups, finalStateGroups, representation);
                 }
             }
             if (newAdminRoles != null) {
                 List<String> finalStateRoles = determineFinalState(newAdminRoles, currentAdminRoles);
-                if(CollectionUtils.isNotEmpty(finalStateRoles)) {
+                if (CollectionUtils.isNotEmpty(finalStateRoles)) {
                     keycloakStore.updateRoleRoles(roleName, currentAdminRoles, finalStateRoles, representation);
                 }
             }
@@ -221,8 +221,11 @@ public class ConnectionPreProcessor implements PreProcessor {
     // if the list is non-empty -> we want to replace
     // if the list is equal to prev value -> no update is required
     private List<String> determineFinalState(List<String> newAdmins, List<String> currentAdmins) {
-        if (newAdmins == null || newAdmins.isEmpty()) {
+        if (newAdmins == null) {
             return new ArrayList<>();
+        }
+        if (CollectionUtils.isEmpty(newAdmins)) {
+            return currentAdmins;
         }
 
         List<String> sortedNewAdmins = newAdmins.stream().sorted().collect(Collectors.toList());
@@ -245,6 +248,7 @@ public class ConnectionPreProcessor implements PreProcessor {
         }
         return Optional.empty();
     }
+
     @Override
     public void processDelete(AtlasVertex vertex) throws AtlasBaseException {
         // Process Delete connection role and policies in case of hard delete or purge
