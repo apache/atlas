@@ -242,27 +242,6 @@ public class ConnectionPreProcessor implements PreProcessor {
         }
         return Optional.empty();
     }
-
-
-    private void updateKeycloakRoleUsers(String roleName, List<String> currentUsers, List<String> newUsers, RoleRepresentation representation) throws AtlasBaseException {
-        if (!newUsers.isEmpty() || !currentUsers.isEmpty()) {
-            keycloakStore.updateRoleUsers(roleName, currentUsers, newUsers, representation);
-        }
-    }
-
-    private void updateKeycloakRoleGroups(String roleName, List<String> currentGroups, List<String> newGroups, RoleRepresentation representation) throws AtlasBaseException {
-
-        keycloakStore.updateRoleGroups(roleName, currentGroups, newGroups, representation);
-
-    }
-
-    private void updateKeycloakRoleRoles(String roleName, List<String> currentRoles, List<String> newRoles, RoleRepresentation representation) throws AtlasBaseException {
-        if (!newRoles.isEmpty() || !currentRoles.isEmpty()) {
-            keycloakStore.updateRoleRoles(roleName, currentRoles, newRoles, representation);
-        }
-    }
-
-
     @Override
     public void processDelete(AtlasVertex vertex) throws AtlasBaseException {
         // Process Delete connection role and policies in case of hard delete or purge
