@@ -195,7 +195,7 @@ public class ConnectionPreProcessor implements PreProcessor {
             // Update Keycloak roles
             RoleRepresentation representation = getKeycloakClient().getRoleByName(roleName);
             List<String> finalStateUsers = determineFinalState(newAdminUsers, currentAdminUsers);
-            keycloakStore.updateRoleUsers(roleName, currentAdminUsers, finalStateUsers, representation);
+             keycloakStore.updateRoleUsers(roleName, currentAdminUsers, finalStateUsers, representation);
 
 
             List<String> finalStateGroups = determineFinalState(newAdminGroups, currentAdminGroups);
@@ -210,28 +210,13 @@ public class ConnectionPreProcessor implements PreProcessor {
         }
     }
 
-
+    // if the list is null -> we don't want to change
     // if the list is empty -> we want to remove all elements
     // if the list is non-empty -> we want to replace
-    // if the list is equal to prev value -> no update is required
-    // if the list is null -> we don't want to change
     private List<String> determineFinalState(List<String> newAdmins, List<String> currentAdmins) {
-        if (newAdmins == null) {
-            return currentAdmins;
-        }
-        if (CollectionUtils.isEmpty(newAdmins)) {
-            return new ArrayList<>();
-        }
-
-        List<String> sortedNewAdmins = newAdmins.stream().sorted().collect(Collectors.toList());
-        List<String> sortedCurrentAdmins = currentAdmins.stream().sorted().collect(Collectors.toList());
-
-        if (sortedNewAdmins.equals(sortedCurrentAdmins)) {
-            return new ArrayList<>();
-        }
-
-        return newAdmins;
+        return newAdmins == null ? currentAdmins : newAdmins.isEmpty() ? new ArrayList<>() : newAdmins;
     }
+
 
 
     private Optional<List<String>> getAttributeList(AtlasEntity entity, String attributeName) {
