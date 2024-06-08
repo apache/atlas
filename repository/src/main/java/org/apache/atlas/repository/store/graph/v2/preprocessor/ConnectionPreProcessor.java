@@ -195,14 +195,14 @@ public class ConnectionPreProcessor implements PreProcessor {
             // Update Keycloak roles
             RoleRepresentation representation = getKeycloakClient().getRoleByName(roleName);
             List<String> finalStateUsers = determineFinalState(newAdminUsers, currentAdminUsers);
-             keycloakStore.updateRoleUsers(roleName, currentAdminUsers, finalStateUsers, representation);
-
-
             List<String> finalStateGroups = determineFinalState(newAdminGroups, currentAdminGroups);
-            keycloakStore.updateRoleGroups(roleName, currentAdminGroups, finalStateGroups, representation);
-
-
             List<String> finalStateRoles = determineFinalState(newAdminRoles, currentAdminRoles);
+            if (allEmpty(finalStateUsers, finalStateGroups, finalStateRoles)) {
+                throw new AtlasBaseException(AtlasErrorCode.ADMIN_LIST_SHOULD_NOT_BE_EMPTY, existingConnEntity.getTypeName());
+            }
+
+            keycloakStore.updateRoleUsers(roleName, currentAdminUsers, finalStateUsers, representation);
+            keycloakStore.updateRoleGroups(roleName, currentAdminGroups, finalStateGroups, representation);
             keycloakStore.updateRoleRoles(roleName, currentAdminRoles, finalStateRoles, representation);
 
 
@@ -217,6 +217,12 @@ public class ConnectionPreProcessor implements PreProcessor {
         return newAdmins == null ? currentAdmins : newAdmins.isEmpty() ? new ArrayList<>() : newAdmins;
     }
 
+    private boolean allEmpty(List<String>... lists) {
+        if (lists == null || lists.length == 0) {
+            return true;
+        }
+        return Stream.of(lists).allMatch(list -> list != null && list.isEmpty());
+    }
 
 
     private Optional<List<String>> getAttributeList(AtlasEntity entity, String attributeName) {
