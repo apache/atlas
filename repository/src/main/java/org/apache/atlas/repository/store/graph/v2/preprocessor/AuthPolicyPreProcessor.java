@@ -187,7 +187,7 @@ public class AuthPolicyPreProcessor implements PreProcessor {
                     i--;
                 }
             }
-            resources.add("default/domain/*/super");
+            resources.add("entity:default/domain/*/super");
         }
 
         policy.setAttribute(ATTR_POLICY_RESOURCES, resources);
