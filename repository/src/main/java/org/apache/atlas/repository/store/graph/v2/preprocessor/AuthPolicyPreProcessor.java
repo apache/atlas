@@ -42,10 +42,7 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
@@ -127,6 +124,8 @@ public class AuthPolicyPreProcessor implements PreProcessor {
             if (!POLICY_SUB_CATEGORY_DOMAIN.equals(policySubCategory)) {
                 validator.validate(policy, null, parentEntity, CREATE);
                 validateConnectionAdmin(policy);
+            } else {
+                validateAndReduce(policy);
             }
 
             policy.setAttribute(QUALIFIED_NAME, String.format("%s/%s", getEntityQualifiedName(parentEntity), getUUID()));
@@ -164,6 +163,36 @@ public class AuthPolicyPreProcessor implements PreProcessor {
 
         RequestContext.get().endMetricRecord(metricRecorder);
     }
+
+    private void validateAndReduce(AtlasEntity policy) {
+        ArrayList<String> resources = (ArrayList<String>) policy.getAttribute(ATTR_POLICY_RESOURCES);
+        boolean hasAllDomainPattern = false;
+
+        for (int i = 0; i < resources.size(); i++) {
+            String[] resourceParts = resources.get(i).split(":");
+            String resource = resourceParts[resourceParts.length - 1];
+            if (resource.equals("*") || resource.equals("*/super") || resource.equals("default/domain/*/super")) {
+                resources.remove(i);
+                hasAllDomainPattern = true;
+                i--;
+            }
+        }
+
+        if (hasAllDomainPattern) {
+            for (int i = 0; i < resources.size(); i++) {
+                String[] resourceParts = resources.get(i).split(":");
+                String resource = resourceParts[resourceParts.length - 1];
+                if (resource.matches("default/domain/.+/super(/.+)?")) {
+                    resources.remove(i);
+                    i--;
+                }
+            }
+            resources.add("default/domain/*/super");
+        }
+
+        policy.setAttribute(ATTR_POLICY_RESOURCES, resources);
+    }
+
 
     private void processUpdatePolicy(AtlasStruct entity, AtlasVertex vertex) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processUpdatePolicy");

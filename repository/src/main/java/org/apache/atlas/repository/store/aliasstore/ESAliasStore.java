@@ -215,7 +215,9 @@ public class ESAliasStore implements IndexAliasStore {
 
                     for (String asset : assets) {
                         asset = validateAndConvertAsset(asset);
-                        terms.add(asset);
+                        if(!asset.equals("default/domain/*/super")) {
+                            terms.add(asset);
+                        }
                         allowClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset + "*")));
                     }
 
