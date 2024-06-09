@@ -211,6 +211,8 @@ public class AuthPolicyPreProcessor implements PreProcessor {
             if (!POLICY_SUB_CATEGORY_DOMAIN.equals(policySubCategory)) {
                 validator.validate(policy, existingPolicy, parentEntity, UPDATE);
                 validateConnectionAdmin(policy);
+            } else {
+                validateAndReduce(policy);
             }
 
             String qName = getEntityQualifiedName(existingPolicy);
