@@ -175,12 +175,14 @@ public class ConnectionPreProcessor implements PreProcessor {
                 return;
             }
 
-            // Throw exception if all new admin attributes are empty -
-            // it will handle the cases in which request have empty or null values for all three
-            if (CollectionUtils.isEmpty(newAdminUsers) && CollectionUtils.isEmpty(newAdminGroups) && CollectionUtils.isEmpty(newAdminRoles)) {
+            // Throw exception if all new admin attributes are empty but not null
+            boolean emptyName = newAdminUsers != null && newAdminUsers.isEmpty();
+            boolean emptyGroup = newAdminGroups != null && newAdminGroups.isEmpty();
+            boolean emptyRole = newAdminRoles != null && newAdminRoles.isEmpty();
+
+            if (emptyName && emptyGroup && emptyRole) {
                 throw new AtlasBaseException(AtlasErrorCode.ADMIN_LIST_SHOULD_NOT_BE_EMPTY, existingConnEntity.getTypeName());
             }
-
             // Update Keycloak roles
             RoleRepresentation representation = getKeycloakClient().getRoleByName(roleName);
             List<String> finalStateUsers = determineFinalState(newAdminUsers, currentAdminUsers);
