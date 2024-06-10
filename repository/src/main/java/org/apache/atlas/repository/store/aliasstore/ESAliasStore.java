@@ -65,6 +65,7 @@ import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 @Component
 public class ESAliasStore implements IndexAliasStore {
     private static final Logger LOG = LoggerFactory.getLogger(ESAliasStore.class);
+    public static final String NEW_WILDCARD_DOMAIN_SUPER = "default/domain/*/super";
 
     private final AtlasGraph graph;
     private final EntityGraphRetriever entityRetriever;
@@ -215,7 +216,7 @@ public class ESAliasStore implements IndexAliasStore {
 
                     for (String asset : assets) {
                         asset = validateAndConvertAsset(asset);
-                        if(!asset.equals("default/domain/*/super")) {
+                        if(!asset.equals(NEW_WILDCARD_DOMAIN_SUPER)) {
                             terms.add(asset);
                         }
                         allowClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset + "*")));
@@ -251,7 +252,7 @@ public class ESAliasStore implements IndexAliasStore {
 
     private String validateAndConvertAsset(String asset) {
         if(asset.equals("*/super") || asset.equals("*"))
-            asset = "default/domain/*/super";
+            asset = NEW_WILDCARD_DOMAIN_SUPER;
         return asset;
     }
     private Map<String, Object> esClausesToFilter(List<Map<String, Object>> allowClauseList) {

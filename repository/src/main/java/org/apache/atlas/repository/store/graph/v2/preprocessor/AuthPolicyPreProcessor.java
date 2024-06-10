@@ -64,6 +64,7 @@ import static org.apache.atlas.repository.util.AccessControlUtils.getPolicySubCa
 
 public class AuthPolicyPreProcessor implements PreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(AuthPolicyPreProcessor.class);
+    public static final String ENTITY_DEFAULT_DOMAIN_SUPER = "entity:default/domain/*/super";
 
     private final AtlasGraph graph;
     private final AtlasTypeRegistry typeRegistry;
@@ -187,7 +188,7 @@ public class AuthPolicyPreProcessor implements PreProcessor {
                     i--;
                 }
             }
-            resources.add("entity:default/domain/*/super");
+            resources.add(ENTITY_DEFAULT_DOMAIN_SUPER);
         }
 
         policy.setAttribute(ATTR_POLICY_RESOURCES, resources);
