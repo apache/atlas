@@ -42,6 +42,8 @@ import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.HttpHeaders;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.HashMap;
 
 /**
@@ -234,11 +236,19 @@ public class ActiveServerFilter implements Filter {
         LOG.info("Not active. Redirecting to {}", redirectLocation);
         // A POST/PUT/DELETE require special handling by sending HTTP 307 instead of the regular 301/302.
         // Reference: http://stackoverflow.com/questions/2068418/whats-the-difference-between-a-302-and-a-307-redirect
+        String sanitizedLocation = sanitizeRedirectLocation(redirectLocation);
         if (isUnsafeHttpMethod(servletRequest)) {
-            httpServletResponse.setHeader(HttpHeaders.LOCATION, redirectLocation);
+            httpServletResponse.setHeader(HttpHeaders.LOCATION, sanitizedLocation);
             httpServletResponse.setStatus(HttpServletResponse.SC_TEMPORARY_REDIRECT);
         } else {
-            httpServletResponse.sendRedirect(redirectLocation);
+            httpServletResponse.sendRedirect(sanitizedLocation);
+        }
+    }
+    private String sanitizeRedirectLocation(String redirectLocation) {
+        try {
+            return URLEncoder.encode(redirectLocation, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException("Encoding not supported", e);
         }
     }
 
