@@ -204,7 +204,7 @@ public class ConnectionPreProcessor implements PreProcessor {
     // if the list is empty -> we want to remove all elements
     // if the list is non-empty -> we want to replace
     private List<String> determineFinalState(List<String> newAdmins, List<String> currentAdmins) {
-        return newAdmins == null ? currentAdmins : newAdmins.isEmpty() ? new ArrayList<>() : newAdmins;
+        return newAdmins == null ? currentAdmins : newAdmins;
     }
 
     private boolean allEmpty(List<String>... lists) {
