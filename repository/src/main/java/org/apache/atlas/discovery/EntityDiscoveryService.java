@@ -1101,6 +1101,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
                 if (searchParams.isShowHighlights()) {
                     ret.addHighlights(header.getGuid(), result.getHighLights());
+                    ret.addSort(header.getGuid(), result.getSort());
                 }
 
                 ret.addEntity(header);

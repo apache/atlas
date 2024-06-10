@@ -153,5 +153,10 @@ public class AtlasJanusIndexQuery implements AtlasIndexQuery<AtlasJanusVertex, A
         public Map<String, List<String>> getHighLights() {
             return new HashMap<>();
         }
+
+        @Override
+        public ArrayList<Object> getSort() {
+            return new ArrayList<>();
+        }
     }
 }

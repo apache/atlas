@@ -544,6 +544,11 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         public Map<String, List<String>> getHighLights() {
             return new HashMap<>();
         }
+
+        @Override
+        public ArrayList<Object> getSort() {
+            return new ArrayList<>();
+        }
     }
 
 
@@ -608,6 +613,15 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
                 return (Map<String, List<String>>) highlight;
             }
             return new HashMap<>();
+        }
+
+        @Override
+        public ArrayList<Object> getSort() {
+            Object sort = this.hit.get("sort");
+            if (Objects.nonNull(sort) && sort instanceof List) {
+                return (ArrayList<Object>) sort;
+            }
+            return new ArrayList<>();
         }
     }
 
