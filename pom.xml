@@ -857,6 +857,7 @@
         <module>addons/kafka-bridge</module>
         <module>tools/classification-updater</module>
         <module>tools/atlas-index-repair</module>
+        <module>tools/notification-analyzer</module>
         <module>addons/impala-hook-api</module>
         <module>addons/impala-bridge-shim</module>
         <module>addons/impala-bridge</module>
