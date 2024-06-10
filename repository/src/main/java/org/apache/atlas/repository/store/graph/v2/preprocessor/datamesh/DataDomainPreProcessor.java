@@ -163,7 +163,7 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
             }
 
             //Auth check
-            isAuthorized(currentParentDomainHeader, newParentDomainHeader);
+            isAuthorizedToMove(DATA_DOMAIN_ENTITY_TYPE, currentParentDomainHeader, newParentDomainHeader);
 
             processMoveSubDomainToAnotherDomain(entity, vertex, currentParentDomainQualifiedName, newParentDomainQualifiedName, vertexQnName, newSuperDomainQualifiedName);
 
