@@ -6,9 +6,7 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,7 +15,6 @@
  */
 package org.apache.atlas.repository.store.graph.v2.preprocessor;
 
-import com.google.common.collect.Sets;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.DeleteType;
 import org.apache.atlas.RequestContext;
@@ -53,15 +50,11 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.apache.atlas.auth.client.keycloak.AtlasKeycloakClient.getKeycloakClient;
 import static org.apache.atlas.authorize.AtlasAuthorizerFactory.ATLAS_AUTHORIZER_IMPL;
 import static org.apache.atlas.authorize.AtlasAuthorizerFactory.CURRENT_AUTHORIZER_IMPL;
-import static org.apache.atlas.repository.Constants.ATTR_ADMIN_GROUPS;
-import static org.apache.atlas.repository.Constants.ATTR_ADMIN_ROLES;
-import static org.apache.atlas.repository.Constants.ATTR_ADMIN_USERS;
-import static org.apache.atlas.repository.Constants.POLICY_ENTITY_TYPE;
-import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
+import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
-import static org.apache.atlas.auth.client.keycloak.AtlasKeycloakClient.getKeycloakClient;
 
 public class ConnectionPreProcessor implements PreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(ConnectionPreProcessor.class);
@@ -175,28 +168,25 @@ public class ConnectionPreProcessor implements PreProcessor {
             List<String> currentAdminRoles = getAttributeList(existingConnEntity, ATTR_ADMIN_ROLES).orElseGet(ArrayList::new);
 
             // Check conditions and throw exceptions as necessary
+
+            // If all new admin attributes are null, no action required as these are not meant to update in the request
             if (newAdminUsers == null && newAdminGroups == null && newAdminRoles == null) {
-                // If all new admin attributes are null, no action required as these are not meant to update in the request
                 RequestContext.get().endMetricRecord(metricRecorder);
                 return;
             }
 
-            // Check if any new admin attribute list is empty
-            boolean emptyName = newAdminUsers != null && newAdminUsers.isEmpty();
-            boolean emptyGroup = newAdminGroups != null && newAdminGroups.isEmpty();
-            boolean emptyRole = newAdminRoles != null && newAdminRoles.isEmpty();
-
-            // Throw exception if all new admin attributes are empty
-            if (emptyName && emptyGroup && emptyRole) {
+            // Throw exception if all new admin attributes are empty -
+            // it will handle the cases in which request have empty or null values for all three
+            if (CollectionUtils.isEmpty(newAdminUsers) && CollectionUtils.isEmpty(newAdminGroups) && CollectionUtils.isEmpty(newAdminRoles)) {
                 throw new AtlasBaseException(AtlasErrorCode.ADMIN_LIST_SHOULD_NOT_BE_EMPTY, existingConnEntity.getTypeName());
             }
-
 
             // Update Keycloak roles
             RoleRepresentation representation = getKeycloakClient().getRoleByName(roleName);
             List<String> finalStateUsers = determineFinalState(newAdminUsers, currentAdminUsers);
             List<String> finalStateGroups = determineFinalState(newAdminGroups, currentAdminGroups);
             List<String> finalStateRoles = determineFinalState(newAdminRoles, currentAdminRoles);
+            //this is the case where the final state after comparison with current and new value of all the attributes become empty
             if (allEmpty(finalStateUsers, finalStateGroups, finalStateRoles)) {
                 throw new AtlasBaseException(AtlasErrorCode.ADMIN_LIST_SHOULD_NOT_BE_EMPTY, existingConnEntity.getTypeName());
             }
@@ -228,7 +218,7 @@ public class ConnectionPreProcessor implements PreProcessor {
     private Optional<List<String>> getAttributeList(AtlasEntity entity, String attributeName) {
         if (entity.hasAttribute(attributeName)) {
             if (Objects.isNull(entity.getAttribute(attributeName))) {
-                return Optional.of(new ArrayList<>());
+                return Optional.of(new ArrayList<>(0));
             }
             return Optional.of((List<String>) entity.getAttribute(attributeName));
         }
