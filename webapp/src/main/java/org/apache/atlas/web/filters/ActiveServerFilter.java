@@ -244,11 +244,22 @@ public class ActiveServerFilter implements Filter {
             httpServletResponse.sendRedirect(sanitizedLocation);
         }
     }
-    private static String sanitizeRedirectLocation(String redirectLocation) {
+    public static String sanitizeRedirectLocation(String redirectLocation) {
         if (redirectLocation == null) return null;
         try {
-            String encodedUrl = URLEncoder.encode(redirectLocation, "UTF-8");
-            return encodedUrl.replaceAll("\\r", "").replaceAll("\\n", "");
+            // Remove CR and LF characters to preemptively prevent response splitting
+            String preProcessedUrl = redirectLocation.replace("\r", "").replace("\n", "");
+
+            // Encode any percent signs not already part of a percent-encoded sequence
+            preProcessedUrl = preProcessedUrl.replaceAll("%(?![0-9a-fA-F]{2})", "%25");
+
+            // URL encode the entire string
+            String encodedUrl = URLEncoder.encode(preProcessedUrl, "UTF-8");
+
+            // Normalize encoded sequences that might be affected by double encoding
+            encodedUrl = encodedUrl.replaceAll("%25([0-9a-fA-F]{2})", "%$1");
+
+            return encodedUrl;
         } catch (UnsupportedEncodingException e) {
             throw new RuntimeException("UTF-8 encoding not supported", e);
         }
