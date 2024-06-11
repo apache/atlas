@@ -427,6 +427,7 @@ public final class Constants {
     public static final String ATTR_ASSET_STARRED_AT = "assetStarredAt";
     public static final String ATTR_CERTIFICATE_STATUS = "certificateStatus";
     public static final String ATTR_CONTRACT = "dataContractSpec";
+    public static final String ATTR_CONTRACT_JSON = "dataContractJson";
     public static final String STRUCT_STARRED_DETAILS = "StarredDetails";
 
     public static final String KEYCLOAK_ROLE_ADMIN   = "$admin";

@@ -12,7 +12,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.commons.lang.StringUtils;
 
 import javax.validation.*;
@@ -29,9 +28,11 @@ import static org.apache.atlas.AtlasErrorCode.*;
 public class DataContract {
     private static final String KIND_VALUE = "DataContract";
     private static final Pattern versionPattern = Pattern.compile("^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$");
-    private static final ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+    private static final ObjectMapper objectMapperYAML = new ObjectMapper(new YAMLFactory());
+    private static final ObjectMapper objectMapperJSON = new ObjectMapper();
     static {
-        objectMapper.enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS);
+        objectMapperYAML.enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS);
+        objectMapperJSON.enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS);
     }
 
     @Valid @NotNull
@@ -248,9 +249,13 @@ public class DataContract {
 
         DataContract contract;
         try {
-            contract = objectMapper.readValue(contractString, DataContract.class);
+            contract = objectMapperYAML.readValue(contractString, DataContract.class);
         } catch (JsonProcessingException ex) {
-            throw new AtlasBaseException(ex.getOriginalMessage());
+            try {
+                contract = objectMapperJSON.readValue(contractString, DataContract.class);
+            } catch (JsonProcessingException e) {
+                throw new AtlasBaseException(ex.getOriginalMessage());
+            }
         }
         contract.validate();
         return contract;
@@ -274,7 +279,7 @@ public class DataContract {
     public static String serialize(DataContract contract) throws AtlasBaseException {
 
         try {
-            return objectMapper.writeValueAsString(contract);
+            return objectMapperYAML.writeValueAsString(contract);
         } catch (JsonProcessingException ex) {
             throw new AtlasBaseException(JSON_ERROR, ex.getMessage());
         }
@@ -304,6 +309,15 @@ public class DataContract {
     public int hashCode() {
         return Objects.hash(super.hashCode(), kind, status, templateVersion, data_source, dataset, type, description, owners,
                 tags, certificate, columns, unknownFields);
+    }
+
+    public static String serializeJSON(DataContract contract) throws AtlasBaseException {
+
+        try {
+            return objectMapperJSON.writeValueAsString(contract);
+        } catch (JsonProcessingException ex) {
+            throw new AtlasBaseException(JSON_ERROR, ex.getMessage());
+        }
     }
 }
 
