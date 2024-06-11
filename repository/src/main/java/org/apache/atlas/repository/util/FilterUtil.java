@@ -183,12 +183,9 @@ public class FilterUtil {
         String allowedDirectory = "/var/app/allowed/";
 
         try {
-            // Decode URL-encoded characters first
             String decodedPath = URLDecoder.decode(fileToImport, "UTF-8");
 
             Path normalizedPath = Paths.get(decodedPath).normalize();
-
-            // Check for directory traversal attempts after decoding
             if (decodedPath.contains("..") || decodedPath.contains("./") || decodedPath.contains(".\\")) {
                 return false;
             }
@@ -205,7 +202,6 @@ public class FilterUtil {
         } catch (UnsupportedEncodingException e) {
             return false;
         } catch (Exception e) {
-            // Handle other exceptions, such as those thrown by Paths.get() for invalid paths
             return false;
         }
     }

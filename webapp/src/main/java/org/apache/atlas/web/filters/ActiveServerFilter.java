@@ -247,16 +247,12 @@ public class ActiveServerFilter implements Filter {
     public static String sanitizeRedirectLocation(String redirectLocation) {
         if (redirectLocation == null) return null;
         try {
-            // Remove CR and LF characters to preemptively prevent response splitting
             String preProcessedUrl = redirectLocation.replace("\r", "").replace("\n", "");
 
-            // Encode any percent signs not already part of a percent-encoded sequence
             preProcessedUrl = preProcessedUrl.replaceAll("%(?![0-9a-fA-F]{2})", "%25");
 
-            // URL encode the entire string
             String encodedUrl = URLEncoder.encode(preProcessedUrl, "UTF-8");
 
-            // Normalize encoded sequences that might be affected by double encoding
             encodedUrl = encodedUrl.replaceAll("%25([0-9a-fA-F]{2})", "%$1");
 
             return encodedUrl;
