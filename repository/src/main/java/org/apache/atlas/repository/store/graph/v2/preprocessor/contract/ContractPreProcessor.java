@@ -192,6 +192,7 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
         AtlasEntityType entityType = ensureEntityType(entity.getTypeName());
 
         context.addUpdated(entity.getGuid(), entity, entityType, vertex);
+        recordEntityMutatedDetails(context, entity, vertex);
 
     }
 
@@ -283,11 +284,14 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
 
         AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(entity.getGuid());
         AtlasEntityType entityType = ensureEntityType(entity.getTypeName());
+        context.addUpdated(entity.getGuid(), entity, entityType, vertex);
+        recordEntityMutatedDetails(context, entity, vertex);
+    }
+
+    private void recordEntityMutatedDetails(EntityMutationContext context, AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
         AtlasEntityComparator entityComparator = new AtlasEntityComparator(typeRegistry, entityRetriever, context.getGuidAssignments(), true, true);
         AtlasEntityComparator.AtlasEntityDiffResult diffResult   = entityComparator.getDiffResult(entity, vertex, !storeDifferentialAudits);
         RequestContext        reqContext           = RequestContext.get();
-        context.addUpdated(entity.getGuid(), entity, entityType, vertex);
-
         if (diffResult.hasDifference()) {
             if (storeDifferentialAudits) {
                 diffResult.getDiffEntity().setGuid(entity.getGuid());
