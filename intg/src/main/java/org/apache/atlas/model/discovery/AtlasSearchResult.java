@@ -174,12 +174,12 @@ public class AtlasSearchResult implements Serializable {
         if(MapUtils.isEmpty(this.searchMetadata)) {
             this.searchMetadata = new LinkedHashMap<>();
         }
-        ElasticsearchMetadata v = this.searchMetadata.getOrDefault(guid, new ElasticsearchMetadata());
-        v.addSort(sort);
+        ElasticsearchMetadata sortMetadata = this.searchMetadata.getOrDefault(guid, new ElasticsearchMetadata());
+        sortMetadata.addSort(sort);
         if (this.searchMetadata.containsKey(guid)) {
-           this.searchMetadata.replace(guid, v);
+           this.searchMetadata.replace(guid, sortMetadata);
         } else {
-            this.searchMetadata.put(guid, v);
+            this.searchMetadata.put(guid, sortMetadata);
         }
     }
 
