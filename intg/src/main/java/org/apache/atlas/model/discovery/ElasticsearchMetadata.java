@@ -31,13 +31,7 @@ public class ElasticsearchMetadata {
     public Object getSort() { return sort; }
 
     public void addSort(ArrayList<Object> sort) {
-
-        if(!sort.isEmpty()) {
-            if (MapUtils.isEmpty(this.highlights)) {
-                this.sort = new ArrayList<>();
-            }
-            this.sort = sort;
-        }
+        this.sort = sort;
     }
 
     @Override
