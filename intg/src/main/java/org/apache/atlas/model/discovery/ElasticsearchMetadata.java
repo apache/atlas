@@ -1,5 +1,6 @@
 package org.apache.atlas.model.discovery;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.apache.commons.collections.MapUtils;
 
 import java.util.HashMap;
@@ -10,6 +11,8 @@ import java.util.ArrayList;
 public class ElasticsearchMetadata {
 
     private Map<String, List<String>> highlights;
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     private ArrayList<Object> sort;
 
     public Map<String, List<String>> getHighlights() {
