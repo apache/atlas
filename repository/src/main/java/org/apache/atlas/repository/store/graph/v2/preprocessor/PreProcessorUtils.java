@@ -220,7 +220,7 @@ public class PreProcessorUtils {
         }
     }
 
-    public static void isValidLexoRank(boolean isTerm, String input, String glossaryQualifiedName, String parentQualifiedName, EntityDiscoveryService discovery) throws AtlasBaseException {
+    public static void isValidLexoRank(String entityType, String input, String glossaryQualifiedName, String parentQualifiedName, EntityDiscoveryService discovery) throws AtlasBaseException {
         // TODO : To remove this after migration is successful on all tenants and custom-sort is successfully GA
         Pattern regex = Pattern.compile(LEXORANK_VALID_PATTERN);
 
@@ -233,7 +233,15 @@ public class PreProcessorUtils {
         if(requestFromMigration) {
             return;
         }
-        Map<String, Object> dslQuery = createDSLforCheckingPreExistingLexoRank(isTerm, input, glossaryQualifiedName, parentQualifiedName);
+        Map<String, String> lexoRankCache = RequestContext.get().getLexoRankCache();
+        if(Objects.isNull(lexoRankCache)) {
+            lexoRankCache = new HashMap<>();
+        }
+        String cacheKey = entityType + "-" + glossaryQualifiedName + "-" + parentQualifiedName;
+        if(lexoRankCache.containsKey(cacheKey)){
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Duplicate Lexorank found");
+        }
+        Map<String, Object> dslQuery = createDSLforCheckingPreExistingLexoRank(entityType.equals(ATLAS_GLOSSARY_TERM_TYPENAME), input, glossaryQualifiedName, parentQualifiedName);
         List<AtlasEntityHeader> assetsWithDuplicateRank = new ArrayList<>();
         try {
             IndexSearchParams searchParams = new IndexSearchParams();
@@ -249,6 +257,8 @@ public class PreProcessorUtils {
             throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Duplicate Lexorank found");
         }
 
+        lexoRankCache.put(cacheKey, input);
+        RequestContext.get().setLexoRankCache(lexoRankCache);
         // TODO : Add the rebalancing logic here
         int colonIndex = input.indexOf(":");
         if (colonIndex != -1 && input.substring(colonIndex + 1).length() >= REBALANCING_TRIGGER) {
