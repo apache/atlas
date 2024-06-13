@@ -103,6 +103,7 @@ public class EmbeddedServer {
         ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory(http_config));
         connector.setPort(port);
         connector.setHost(host);
+        connector.setIdleTimeout(AtlasConfiguration.WEBSERVER_REQUEST_IDLE_TIMEOUT.getLong());
         return connector;
     }
 
