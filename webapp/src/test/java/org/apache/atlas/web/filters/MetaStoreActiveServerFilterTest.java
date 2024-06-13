@@ -10,11 +10,27 @@ import static org.junit.Assert.assertNull;
 public class MetaStoreActiveServerFilterTest {
 
     @Test
-    public void testSanitizeRedirectLocation_WithValidUrl() {
-        String testUrl = "http://example.com/page?param=value";
-        String expected = "http%3A%2F%2Fexample.com%2Fpage%3Fparam%3Dvalue";
+    public void testSanitizeRedirectLocation_WithValidUr1() {
+        String testUrl = "https://dom-sub-uat.atlan.com/api/meta/entity/guid/fd7a69c9-738b-4b35-a0db-1da00cbd86cd";
+        String expected = "https%3A%2F%2Fdom-sub-uat.atlan.com%2Fapi%2Fmeta%2Fentity%2Fguid%2Ffd7a69c9-738b-4b35-a0db-1da00cbd86cd";
         String actual = sanitizeRedirectLocation(testUrl);
-        assertEquals("The URLs do not match.",expected, actual);
+        assertEquals("The URLs do match.",expected, actual);
+    }
+
+    @Test
+    public void testSanitizeRedirectLocation_WithValidUrl2() {
+        String testUrl = "https://datamesh.atlan.com/api/meta/entity/bulk?replaceBusinessAttributes=true&replaceClassifications=true";
+        String expected = "https%3A%2F%2Fdatamesh.atlan.com%2Fapi%2Fmeta%2Fentity%2Fbulk%3FreplaceBusinessAttributes%3Dtrue%26replaceClassifications%3Dtrue";
+        String actual = sanitizeRedirectLocation(testUrl);
+        assertEquals("The URLs do match.",expected, actual);
+    }
+
+    @Test
+    public void testSanitizeRedirectLocation_WithValidUrl3() {
+        String testUrl = "https://datamesh.atlan.com/api/meta/entity/guid/fd7a69c9-738b-4b35-a0db-1da00cbd86cd";
+        String expected = "https%3A%2F%2Fdatamesh.atlan.com%2Fapi%2Fmeta%2Fentity%2Fguid%2Ffd7a69c9-738b-4b35-a0db-1da00cbd86cd";
+        String actual = sanitizeRedirectLocation(testUrl);
+        assertEquals("The URLs do match.",expected, actual);
     }
 
     @Test

@@ -36,11 +36,6 @@ public class FilterUtilTest {
                 validateFilePath("var/app/allowed/file.txt"));
     }
 
-    @Test
-    public void testValidateFilePath_AbsoluteButOutsideAllowed() {
-        assertFalse("Should return false for absolute paths that do not start with the allowed directory.",
-                validateFilePath("/var/app/notallowed/file.txt"));
-    }
 
     @Test
     public void testValidateFilePath_WithUnusualCharacters() {

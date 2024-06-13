@@ -180,7 +180,6 @@ public class FilterUtil {
     }
 
     public static boolean validateFilePath(String fileToImport) {
-        String allowedDirectory = "/var/app/allowed/";
 
         try {
             String decodedPath = URLDecoder.decode(fileToImport, "UTF-8");
@@ -191,10 +190,6 @@ public class FilterUtil {
             }
 
             if (!normalizedPath.isAbsolute()) {
-                return false;
-            }
-
-            if (!normalizedPath.startsWith(Paths.get(allowedDirectory))) {
                 return false;
             }
 
