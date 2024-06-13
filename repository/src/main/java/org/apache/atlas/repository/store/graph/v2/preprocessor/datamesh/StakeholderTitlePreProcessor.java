@@ -48,6 +48,7 @@ public class StakeholderTitlePreProcessor implements PreProcessor {
 
 
     public static final String STAR = "*/super";
+    public static final String NEW_STAR = "default/domain/*/super";
     public static final String ATTR_DOMAIN_QUALIFIED_NAMES = "stakeholderTitleDomainQualifiedNames";
 
     public static final String REL_ATTR_STAKEHOLDERS = "stakeholders";
@@ -114,12 +115,12 @@ public class StakeholderTitlePreProcessor implements PreProcessor {
             if (CollectionUtils.isEmpty(domainQualifiedNames)) {
                 throw new AtlasBaseException(BAD_REQUEST, "Please provide attribute " + ATTR_DOMAIN_QUALIFIED_NAMES);
             }
-
-            if (domainQualifiedNames.contains(STAR)) {
+            domainQualifiedNames.replaceAll(s -> s.equals(STAR) ? NEW_STAR : s);
+            if (domainQualifiedNames.contains(NEW_STAR)) {
                 if (domainQualifiedNames.size() > 1) {
 
                     domainQualifiedNames.clear();
-                    domainQualifiedNames.add(STAR);
+                    domainQualifiedNames.add(NEW_STAR);
                     entity.setAttribute(ATTR_DOMAIN_QUALIFIED_NAMES, domainQualifiedNames);
                 }
 
@@ -211,8 +212,8 @@ public class StakeholderTitlePreProcessor implements PreProcessor {
         for (String domainQualifiedName: domainQualifiedNames) {
             String domainQualifiedNameToAuth;
 
-            if (domainQualifiedNames.contains(STAR)) {
-                domainQualifiedNameToAuth = "*/super";
+            if (domainQualifiedNames.contains(STAR) || domainQualifiedNames.contains(NEW_STAR)) {
+                domainQualifiedNameToAuth = NEW_STAR;
             } else {
                 domainQualifiedNameToAuth = domainQualifiedName;
             }
