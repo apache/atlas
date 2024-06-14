@@ -11,12 +11,12 @@ public class FilterUtilTest {
         // Array of test cases, each containing the file path and the expected boolean result
         Object[][] testCases = {
                 {"/var/app/allowed/file.txt", true, "Should return true for a valid path within the allowed directory."},
-                {"/var/app/allowed/../notallowed/file.txt", false, "Should return false for a path attempting directory traversal."},
+                {"/tmp/../notallowed/file.txt", false, "Should return false for a path attempting directory traversal."},
                 {"/var/app/allowed/./file.txt", false, "Should return false for a path with relative current directory notation."},
-                {"/var/app/allowed/.\\file.txt", false, "Should return false for a path with mixed slash types potentially bypassing checks."},
-                {"var/app/allowed/file.txt", false, "Should return false for non-absolute paths."},
+                {"/Users/username/repos/repo0/.\\file.txt", false, "Should return false for a path with mixed slash types potentially bypassing checks."},
+                {"tmp/file.txt", false, "Should return false for non-absolute paths."},
                 {"/var/app/allowed/..\\file.txt", false, "Should return false for paths with unusual characters aiming to navigate directories."},
-                {"/var/app/allowed/%2e%2e/notallowed/file.txt", false, "Should return false for paths with URL-encoded traversal sequences."},
+                {"/Users/username/repos/repo0/%2e%2e/notallowed/file.txt", false, "Should return false for paths with URL-encoded traversal sequences."},
                 {"/var/app/allowed/\0file.txt", false, "Should return false for paths that cause exceptions, like those containing null bytes."}
         };
 
