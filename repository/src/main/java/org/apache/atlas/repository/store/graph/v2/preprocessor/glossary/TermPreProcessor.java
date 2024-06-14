@@ -138,6 +138,9 @@ public class TermPreProcessor extends AbstractGlossaryPreProcessor {
         String lexicographicalSortOrder = (String) entity.getAttribute(LEXICOGRAPHICAL_SORT_ORDER);
         if(StringUtils.isNotEmpty(lexicographicalSortOrder)) {
             isValidLexoRank(entity.getTypeName(), lexicographicalSortOrder, newGlossaryQualifiedName, parentQname, this.discovery);
+        } else {
+            lexicographicalSortOrder = (String) storedTerm.getAttribute(LEXICOGRAPHICAL_SORT_ORDER);
+            entity.setAttribute(LEXICOGRAPHICAL_SORT_ORDER, lexicographicalSortOrder);
         }
 
         if (!currentGlossaryQualifiedName.equals(newGlossaryQualifiedName)){

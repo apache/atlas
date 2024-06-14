@@ -106,7 +106,7 @@ public class GlossaryPreProcessor implements PreProcessor {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processUpdateGlossary");
         String glossaryName = (String) entity.getAttribute(NAME);
         String vertexName = vertex.getProperty(NAME, String.class);
-
+        AtlasEntity storedGlossary = entityRetriever.toAtlasEntity(vertex);
         if (!vertexName.equals(glossaryName) && glossaryExists(glossaryName)) {
             throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_ALREADY_EXISTS,glossaryName);
         }
@@ -117,6 +117,9 @@ public class GlossaryPreProcessor implements PreProcessor {
         String lexicographicalSortOrder = (String) entity.getAttribute(LEXICOGRAPHICAL_SORT_ORDER);
         if(StringUtils.isNotEmpty(lexicographicalSortOrder)) {
             isValidLexoRank(entity.getTypeName(), lexicographicalSortOrder, "", "", this.discovery);
+        } else {
+            lexicographicalSortOrder = (String) storedGlossary.getAttribute(LEXICOGRAPHICAL_SORT_ORDER);
+            entity.setAttribute(LEXICOGRAPHICAL_SORT_ORDER, lexicographicalSortOrder);
         }
 
         String vertexQnName = vertex.getProperty(QUALIFIED_NAME, String.class);

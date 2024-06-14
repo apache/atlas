@@ -226,8 +226,8 @@ public class PreProcessorUtils {
 
         Matcher matcher = regex.matcher(input);
 
-        if(!matcher.matches()){
-            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid value for attribute");
+        if(!matcher.matches() || StringUtils.isEmpty(input)){
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid value for lexicographicalSortOrder attribute");
         }
         Boolean requestFromMigration = RequestContext.get().getRequestContextHeaders().getOrDefault("x-atlan-request-id", "").contains("custom-sort-migration");
         if(requestFromMigration) {
