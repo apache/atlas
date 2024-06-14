@@ -7,51 +7,29 @@ import static org.junit.Assert.*;
 
 public class FilterUtilTest {
     @Test
-    public void testValidateFilePath_ValidPath() {
-        assertTrue("Should return true for a valid path within the allowed directory.",
-                validateFilePath("/var/app/allowed/file.txt"));
-    }
+    public void testValidateFilePath() {
+        // Array of test cases, each containing the file path and the expected boolean result
+        Object[][] testCases = {
+                {"/var/app/allowed/file.txt", true, "Should return true for a valid path within the allowed directory."},
+                {"/var/app/allowed/../notallowed/file.txt", false, "Should return false for a path attempting directory traversal."},
+                {"/var/app/allowed/./file.txt", false, "Should return false for a path with relative current directory notation."},
+                {"/var/app/allowed/.\\file.txt", false, "Should return false for a path with mixed slash types potentially bypassing checks."},
+                {"var/app/allowed/file.txt", false, "Should return false for non-absolute paths."},
+                {"/var/app/allowed/..\\file.txt", false, "Should return false for paths with unusual characters aiming to navigate directories."},
+                {"/var/app/allowed/%2e%2e/notallowed/file.txt", false, "Should return false for paths with URL-encoded traversal sequences."},
+                {"/var/app/allowed/\0file.txt", false, "Should return false for paths that cause exceptions, like those containing null bytes."}
+        };
 
-    @Test
-    public void testValidateFilePath_RelativeTraversal() {
-        assertFalse("Should return false for a path attempting directory traversal.",
-                validateFilePath("/var/app/allowed/../notallowed/file.txt"));
-    }
+        for (Object[] testCase : testCases) {
+            String path = (String) testCase[0];
+            boolean expected = (Boolean) testCase[1];
+            String message = (String) testCase[2];
 
-    @Test
-    public void testValidateFilePath_DotSlash() {
-        assertFalse("Should return false for a path with relative current directory notation.",
-                validateFilePath("/var/app/allowed/./file.txt"));
-    }
-
-    @Test
-    public void testValidateFilePath_BackSlash() {
-        assertFalse("Should return false for a path with mixed slash types potentially bypassing checks.",
-                validateFilePath("/var/app/allowed/.\\file.txt"));
-    }
-
-    @Test
-    public void testValidateFilePath_NotAbsolute() {
-        assertFalse("Should return false for non-absolute paths.",
-                validateFilePath("var/app/allowed/file.txt"));
-    }
-
-
-    @Test
-    public void testValidateFilePath_WithUnusualCharacters() {
-        assertFalse("Should return false for paths with unusual characters aiming to navigate directories.",
-                validateFilePath("/var/app/allowed/..\\file.txt"));
-    }
-
-    @Test
-    public void testValidateFilePath_WithEncodedTraversal() {
-        assertFalse("Should return false for paths with URL-encoded traversal sequences.",
-                validateFilePath("/var/app/allowed/%2e%2e/notallowed/file.txt"));
-    }
-
-    @Test
-    public void testValidateFilePath_CatchException() {
-        assertFalse("Should return false for paths that cause exceptions, like those containing null bytes.",
-                validateFilePath("/var/app/allowed/\0file.txt"));
+            if (expected) {
+                assertTrue(message, validateFilePath(path));
+            } else {
+                assertFalse(message, validateFilePath(path));
+            }
+        }
     }
 }
