@@ -76,7 +76,8 @@ define(['require',
             templateHelpers: function() {
                 return {
                     entityUpdate: Globals.entityUpdate,
-                    isTasksEnabled: Globals.isTasksEnabled
+                    isTasksEnabled: Globals.isTasksEnabled,
+                    isUiTasksTabEnabled: Globals.isUiTasksTabEnabled
                 };
             },
             /** ui events hash */
@@ -327,7 +328,7 @@ define(['require',
                     this.renderRelationshipLayoutView(obj);
                     this.renderAuditTableLayoutView(obj);
                     this.renderTagTableLayoutView(obj);
-                    if (Globals.isTasksEnabled) { this.renderPendingTaskTableLayoutView(); }
+                    if (Globals.isTasksEnabled && Globals.isUiTasksTabEnabled) { this.renderPendingTaskTableLayoutView(); }
 
                     // To render profile tab check for attribute "profileData" or typeName = "hive_db","hbase_namespace"
                     if (collectionJSON && (!_.isUndefined(collectionJSON.attributes['profileData']) || collectionJSON.typeName === "hive_db" || collectionJSON.typeName === "hbase_namespace")) {
