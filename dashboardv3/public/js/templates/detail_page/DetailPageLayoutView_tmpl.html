@@ -62,7 +62,9 @@
                 <li role="schema" class="tab schemaTable" style="display:none"><a href="#tab-schema" aria-controls="tab-schema" role="tab" data-toggle="tab">Schema</a></li>
                 <li role="profile" class="tab profileTab" style="display:none"><a href="#tab-profile" aria-controls="tab-profile" role="tab" data-toggle="tab">Profile</a></li>
                 {{#if isTasksEnabled}}
+                {{#if isUiTasksTabEnabled }}
                 <li role="pendingTask" class="tab"><a href="#tab-pendingTask" aria-controls="tab-pendingTask" role="tab" data-toggle="tab">Tasks</a></li>
+                {{/if}}
                 {{/if}}
             </ul>
         </div>

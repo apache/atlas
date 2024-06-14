@@ -154,6 +154,7 @@ public class AdminResource {
     private static final String UI_DATE_TIMEZONE_FORMAT_ENABLED = "atlas.ui.date.timezone.format.enabled";
     private static final String UI_DATE_FORMAT                 = "atlas.ui.date.format";
     private static final String UI_DATE_DEFAULT_FORMAT         = "MM/DD/YYYY hh:mm:ss A";
+    private static final String UI_TASKS_TAB_USE_ENABLED       = "atlas.tasks.ui.tab.enabled";
     private static final String OPERATION_STATUS               = "operationStatus";
     private static final List TIMEZONE_LIST                    = Arrays.asList(TimeZone.getAvailableIDs());
 
@@ -194,6 +195,7 @@ public class AdminResource {
     private final  int                      defaultLineageNodeCount;
     private final  boolean                  isRelationshipSearchEnabled;
     private final AtlasMetricsUtil atlasMetricsUtil;
+    private final  boolean                  isUiTasksTabEnabled;
 
     private AtlasAuditReductionService auditReductionService;
 
@@ -238,6 +240,7 @@ public class AdminResource {
             this.uiDateFormat = atlasProperties.getString(UI_DATE_FORMAT, UI_DATE_DEFAULT_FORMAT);
             this.isDebugMetricsEnabled = AtlasConfiguration.DEBUG_METRICS_ENABLED.getBoolean();
             this.isTasksEnabled = AtlasConfiguration.TASKS_USE_ENABLED.getBoolean();
+            this.isUiTasksTabEnabled = AtlasConfiguration.UI_TASKS_TAB_USE_ENABLED.getBoolean();
             this.isOnDemandLineageEnabled = AtlasConfiguration.LINEAGE_ON_DEMAND_ENABLED.getBoolean();
             this.defaultLineageNodeCount = AtlasConfiguration.LINEAGE_ON_DEMAND_DEFAULT_NODE_COUNT.getInt();
             this.isRelationshipSearchEnabled = AtlasConfiguration.RELATIONSHIP_SEARCH_ENABLED.getBoolean();
@@ -247,6 +250,7 @@ public class AdminResource {
             this.uiDateFormat = UI_DATE_DEFAULT_FORMAT;
             this.isDebugMetricsEnabled = false;
             this.isTasksEnabled = false;
+            this.isUiTasksTabEnabled = false;
             this.isOnDemandLineageEnabled = false;
             this.defaultLineageNodeCount = 3;
             this.isRelationshipSearchEnabled = false;
@@ -399,6 +403,7 @@ public class AdminResource {
         responseData.put(UI_DATE_FORMAT, uiDateFormat);
         responseData.put(AtlasConfiguration.DEBUG_METRICS_ENABLED.getPropertyName(), isDebugMetricsEnabled);
         responseData.put(AtlasConfiguration.TASKS_USE_ENABLED.getPropertyName(), isTasksEnabled);
+        responseData.put(AtlasConfiguration.UI_TASKS_TAB_USE_ENABLED.getPropertyName(), isUiTasksTabEnabled);
         responseData.put(AtlasConfiguration.LINEAGE_ON_DEMAND_ENABLED.getPropertyName(), isOnDemandLineageEnabled);
         responseData.put(AtlasConfiguration.LINEAGE_ON_DEMAND_DEFAULT_NODE_COUNT.getPropertyName(), defaultLineageNodeCount);
         responseData.put( AtlasConfiguration.RELATIONSHIP_SEARCH_ENABLED.getPropertyName(),isRelationshipSearchEnabled);

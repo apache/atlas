@@ -110,7 +110,8 @@ public enum AtlasConfiguration {
     ATLAS_AUDIT_AGING_SEARCH_MAX_LIMIT("atlas.audit.aging.search.maxlimit", 10000),
     ATLAS_AUDIT_DEFAULT_AGEOUT_IGNORE_TTL("atlas.audit.default.ageout.ignore.ttl", false),
     ATLAS_AUDIT_AGING_TTL_TEST_AUTOMATION("atlas.audit.aging.ttl.test.automation", false),//Only for test automation
-    RELATIONSHIP_SEARCH_ENABLED("atlas.relationship.search.enabled" ,false);
+    RELATIONSHIP_SEARCH_ENABLED("atlas.relationship.search.enabled" ,false),
+    UI_TASKS_TAB_USE_ENABLED("atlas.tasks.ui.tab.enabled", false);
 
     private static final Configuration APPLICATION_PROPERTIES;
 

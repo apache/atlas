@@ -54,6 +54,7 @@ define(["require", "underscore"], function(require, _) {
 
     Globals.isDebugMetricsEnabled = false;
     Globals.isTasksEnabled = false;
+    Globals.isUiTasksTabEnabled = false;
     Globals.idealTimeoutSeconds = 900;
     Globals.isFullScreenView = false;
     Globals.isLineageOnDemandEnabled = false;

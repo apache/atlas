@@ -314,6 +314,9 @@ require(['App',
                 if (response['atlas.tasks.enabled'] !== undefined) {
                     Globals.isTasksEnabled = response['atlas.tasks.enabled'];
                 }
+                if (response['atlas.tasks.ui.tab.enabled'] !== undefined) {
+                    Globals.isUiTasksTabEnabled = response['atlas.tasks.ui.tab.enabled'];
+                }
                 if (response['atlas.session.timeout.secs']) { Globals.idealTimeoutSeconds = response['atlas.session.timeout.secs']; }
                 if (response['atlas.lineage.on.demand.enabled'] !== undefined) {
                     Globals.isLineageOnDemandEnabled = response['atlas.lineage.on.demand.enabled'];
