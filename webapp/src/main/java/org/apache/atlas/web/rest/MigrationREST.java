@@ -38,8 +38,7 @@ import java.util.stream.Collectors;
 
 import static org.apache.atlas.auth.client.keycloak.AtlasKeycloakClient.getKeycloakClient;
 import static org.apache.atlas.repository.Constants.*;
-import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.DATA_MESH_QN;
-import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.MIGRATION_TYPE_PREFIX;
+import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
 
 @Path("migration")
 @Singleton
@@ -145,6 +144,29 @@ public class MigrationREST {
         } finally {
             AtlasPerfTracer.log(perf);
         }
+    }
+
+    @POST
+    @Path("dataproduct/inputs-outputs")
+    @Timed
+    public Boolean migrateProductInternalAttr (@QueryParam("guid") String guid) throws Exception {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MigrationREST.migrateProductInternalAttr(" + guid + ")");
+            }
+
+            DataProductInputsOutputsMigrationService migrationService = new DataProductInputsOutputsMigrationService(entityRetriever, guid, transactionInterceptHelper);
+            migrationService.migrateProduct();
+
+        } catch (Exception e) {
+            LOG.error("Error while migration inputs/outputs for Dataproduct: {}", guid, e);
+            throw e;
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+        return Boolean.TRUE;
     }
 
     @POST
