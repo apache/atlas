@@ -15,6 +15,7 @@ public class FilterUtilTest {
                 {"/var/app/allowed/./file.txt", false, "Should return false for a path with relative current directory notation."},
                 {"/Users/username/repos/repo0/.\\file.txt", false, "Should return false for a path with mixed slash types potentially bypassing checks."},
                 {"tmp/file.txt", false, "Should return false for non-absolute paths."},
+                {"", false, "Should return false for empty paths"},
                 {"/var/app/allowed/..\\file.txt", false, "Should return false for paths with unusual characters aiming to navigate directories."},
                 {"/Users/username/repos/repo0/%2e%2e/notallowed/file.txt", false, "Should return false for paths with URL-encoded traversal sequences."},
                 {"/var/app/allowed/\0file.txt", false, "Should return false for paths that cause exceptions, like those containing null bytes."}

@@ -18,6 +18,7 @@
 
 package org.apache.atlas.repository.migration;
 
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.migration.MigrationImportStatus;
 import org.apache.atlas.repository.Constants;
@@ -57,16 +58,14 @@ public class DataMigrationStatusService {
     }
 
 
-    public void init(String fileToImport) {
+    public void init(String fileToImport) throws AtlasBaseException {
         try {
             if(!validateFilePath(fileToImport)){
-                throw new AtlasBaseException("File Path is invalid");
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "File Path is invalid");
             }
             this.status = new MigrationImportStatus(fileToImport, DigestUtils.md5Hex(new FileInputStream(fileToImport)));
         } catch (IOException e) {
             LOG.error("Not able to create Migration status", e);
-        } catch (AtlasBaseException e) {
-            LOG.error("File Path is invalid");
         }
 
         if (!this.migrationStatusVertexManagement.exists(status.getFileHash())) {
@@ -77,17 +76,15 @@ public class DataMigrationStatusService {
     }
 
 
-    public MigrationImportStatus getCreate(String fileName) {
+    public MigrationImportStatus getCreate(String fileName) throws AtlasBaseException {
         MigrationImportStatus create = null;
         try {
             if(!validateFilePath(fileName)){
-                throw new AtlasBaseException("File Path is invalid");
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "File Path is invalid");
             }
             create = getCreate(new MigrationImportStatus(fileName, DigestUtils.md5Hex(new FileInputStream(fileName))));
         } catch (IOException e) {
             LOG.error("Exception occurred while creating migration import", e);
-        } catch (AtlasBaseException e) {
-            LOG.error("File Path is invalid");
         }
 
         return create;

@@ -86,7 +86,7 @@ public class MigrationImport extends ImportStrategy {
         return ret;
     }
 
-    private DataMigrationStatusService createMigrationStatusService(AtlasImportResult importResult) {
+    private DataMigrationStatusService createMigrationStatusService(AtlasImportResult importResult) throws AtlasBaseException {
         DataMigrationStatusService dataMigrationStatusService = new DataMigrationStatusService();
         dataMigrationStatusService.init(importResult.getRequest().getOptions().get(AtlasImportRequest.OPTION_KEY_MIGRATION_FILE_NAME));
         return dataMigrationStatusService;
