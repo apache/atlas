@@ -81,6 +81,9 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         String productName = (String) entity.getAttribute(NAME);
         String parentDomainQualifiedName = "";
 
+        entity.removeAttribute(OUTPUT_PORT_GUIDS_ATTR);
+        entity.removeAttribute(INPUT_PORT_GUIDS_ATTR);
+
         if (parentDomainObject == null) {
             throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Cannot create a Product without a Domain Relationship");
         } else {
@@ -108,6 +111,9 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
 
     private void processUpdateProduct(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processUpdateProduct");
+
+        entity.removeAttribute(OUTPUT_PORT_GUIDS_ATTR);
+        entity.removeAttribute(INPUT_PORT_GUIDS_ATTR);
 
         if(entity.hasRelationshipAttribute(DATA_DOMAIN_REL_TYPE) && entity.getRelationshipAttribute(DATA_DOMAIN_REL_TYPE) == null){
             throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "DataProduct can only be moved to another Domain.");
