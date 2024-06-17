@@ -26,6 +26,8 @@ public class SearchParams {
     Async async = new Async();
     boolean showHighlights;
 
+    boolean showSearchMetadata;
+
     public String getQuery() {
         return getQuery();
     }
@@ -154,8 +156,12 @@ public class SearchParams {
         return this.requestMetadata.getSearchInput();
     }
 
-    public boolean isShowHighlights() {
+    public boolean getShowHighlights() {
         return showHighlights;
+    }
+
+    public boolean getShowSearchMetadata() {
+        return showSearchMetadata;
     }
 
 
