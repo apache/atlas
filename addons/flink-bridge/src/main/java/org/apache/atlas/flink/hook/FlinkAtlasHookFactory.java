@@ -20,9 +20,9 @@ package org.apache.atlas.flink.hook;
 
 import org.apache.flink.configuration.IllegalConfigurationException;
 import org.apache.flink.configuration.ReadableConfig;
-import org.apache.flink.core.execution.JobListenerFactory;
+import org.apache.flink.core.execution.PipelineExecutorServiceLoader;
 
-public class FlinkAtlasHookFactory implements JobListenerFactory<FlinkAtlasHook> {
+public class FlinkAtlasHookFactory implements PipelineExecutorServiceLoader<FlinkAtlasHook> {
 
 	@Override
 	public FlinkAtlasHook createFromConfig(ReadableConfig readableConfig, ClassLoader classLoader) throws IllegalConfigurationException {
